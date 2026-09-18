@@ -89,6 +89,27 @@ No PyPI publish workflow yet.
 
 `docs/validation/md-decks/` is empty.
 
+## Running the checks
+
+```bash
+scripts/ci-local.sh            # all gates, across every interpreter uv can supply
+scripts/ci-local.sh --quick    # current interpreter only
+```
+
+Three gates, and two of them are things `pytest` alone cannot catch:
+
+- **datapack drift** — a pack edited under an unchanged version string moves
+  every activity the engine reports;
+- **test matrix** — across 3.11 through 3.14;
+- **core-only install** — `pip install openimcc` must need numpy and scipy
+  alone. A developer machine has the extras installed, so one convenience
+  import in a core module breaks users while every local test still passes.
+  The gate refuses to report success if pandas or pyyaml turn out to be
+  present, because then it would be proving nothing.
+
+`.github/workflows/ci.yml` runs the same set. The two are mirrors and must be
+changed together.
+
 ## Decisions taken
 
 - **Apache-2.0 for code, CC-BY-4.0 for data.** Split because the halves have

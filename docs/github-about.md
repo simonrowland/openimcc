@@ -26,14 +26,16 @@ non-ideality of the oxide mixture is not fitted with interaction parameters, it
 emerges from speciation. Oxides associate into complexes and what stays unbound
 sets the activity.
 
-This is, as far as we can establish, the only open implementation — the
-canonical one is not distributed. It ships auditable datapacks where every
-coefficient carries a provenance class, and a benchmark harness run against 402
-published measurements that reports what it *cannot* answer alongside what it
-can: 304 points score, 94 fall outside the declared temperature domain, 4 are
-refused on data quality. The Na₂O–SiO₂ binaries are entirely out of domain, so
-sodium scores zero of 54 — a real coverage gap we would rather publish than
-hide.
+This is, as far as we can establish, the only open implementation; melt
+thermochemistry of this kind is otherwise the province of commercial software
+(FactSage, Thermo-Calc, MTDATA, HSC Chemistry). It ships auditable datapacks
+where every coefficient carries a provenance class, and a benchmark harness run
+against 402 published measurements that reports what it *cannot* answer
+alongside what it can: 298 points score, 94 fall outside the declared
+temperature domain, and 10 are refused — 4 on data quality, 6 because the
+partial-pressure observable is not wired yet. The Na₂O–SiO₂ binaries are
+entirely out of domain, so sodium scores zero of 54 — a real coverage gap we
+would rather publish than hide.
 
 It is not a phase-equilibrium code. It does homogeneous speciation inside one
 liquid, and pairs with MELTS-family codes rather than competing with them.

@@ -1,3 +1,8 @@
+# The same gates are runnable locally with scripts/ci-local.sh, which exists
+# because Actions is not always available (a billing lock stops jobs before they
+# start, and a workflow that never runs is decorative). The two are mirrors:
+# CHANGE BOTH. The local script is the one that has actually been executed.
+
 name: ci
 
 on:
@@ -9,7 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        # 3.14 included because scripts/ci-local.sh verifies it passes; keep
+        # the two matrices in step.
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

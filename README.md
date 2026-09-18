@@ -9,10 +9,11 @@ a temperature.
 > not closed; see [Datapacks and provenance](#datapacks-and-provenance).
 
 There is, as far as we can establish, no other open-source IMCC implementation.
-The canonical one (MAGMA, the Fegley/Schaefer lineage) is not distributed. This
-package exists to fill that gap with something auditable: every coefficient
-carries a provenance class, every benchmark point carries its convention, and
-refusals are reported as data rather than quietly dropped.
+Melt thermochemistry of this kind is otherwise the province of commercial
+software — FactSage, Thermo-Calc, MTDATA, HSC Chemistry. This package exists to
+fill that gap with something auditable: every coefficient carries a provenance
+class, every benchmark point carries its convention, and refusals are reported
+as data rather than quietly dropped.
 
 ## What it computes
 
@@ -231,18 +232,11 @@ later.
   lava vaporization on Io*, Icarus **169**, 216–241 (2004).
   [doi:10.1016/j.icarus.2003.11.023](https://doi.org/10.1016/j.icarus.2003.11.023)
 
+## Author
+
+Simon Rowland <simon@simonrowland.com>
+
 ## Licence
 
-Split deliberately, because the two halves have different origins:
-
-- **Code** — Apache-2.0, see `LICENSE`. Chosen over MIT for the express patent
-  grant and explicit contribution terms; attribution requirements are in
-  `NOTICE`.
-- **Datapacks, benchmark sets and validation decks** — CC-BY-4.0, see
-  `LICENSE-DATA`. Attribution is required; the underlying measurements belong to
-  the cited authors and the tabulations are ours.
-
-## Citing
-
-See `CITATION.cff`. If you use a datapack, cite the underlying source (FC87 /
-SF04 / NIST-JANAF) as well as this package — the coefficients are theirs.
+Code Apache-2.0 (`LICENSE`); datapacks, benchmark sets and validation decks
+CC-BY-4.0 (`LICENSE-DATA`); attribution in `NOTICE`.
