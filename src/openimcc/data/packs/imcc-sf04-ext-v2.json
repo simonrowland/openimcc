@@ -1,0 +1,1891 @@
+{
+  "imcc_sf04_datapack_version": "1.0.2+EXT-2.0.0",
+  "created": "2026-08-11",
+  "spec": "docs/imcc-sf04-spec.md",
+  "model": "IMCC-SF04-EXT",
+  "parents": [
+    "SiO2",
+    "MgO",
+    "FeO",
+    "CaO",
+    "Al2O3",
+    "TiO2",
+    "Na2O",
+    "K2O",
+    "CoO"
+  ],
+  "pack_arithmetic": "log10 K_j(T)=A_j+B_j/T_K; v2 adds research-only CoO parent and Co2SiO4 complex",
+  "sources": {
+    "central_table": "NIST-JANAF Thermochemical Tables, explicit liquid tables linked per row",
+    "local_inventory": "../VapoRock/data/archive/JANAF-Species-Tables.md and JANAF-data.xlsx",
+    "central_table_ext2": "Barin 1995 3rd ed. Vol. I, CoO p.543 and Co2SiO4 p.546"
+  },
+  "transcription": "Official HTML table values transcribed at 100 K spacing; direct G and displayed logKf arithmetic cross-checked.",
+  "provenance_split": {
+    "published": "published-imcc (remains only in datapack/datapack.json)",
+    "extension": "extension-compound-thermo (this file only)"
+  },
+  "merge_semantics": {
+    "mode": "v1-carry-forward-plus-novel-complex",
+    "novel_complexes_added": 1,
+    "published_fits_replaced": 8,
+    "runtime_pack_rows": 39,
+    "published_rows_carried_forward": 30,
+    "extension_rows_active": 9,
+    "research_loader": "direct ImccDatapack construction; production load_datapack remains intentionally fixed at 8 parents/38 rows"
+  },
+  "rows": [
+    {
+      "row": 1,
+      "complex": "Mg2SiO4",
+      "reaction": "2 MgO(l) + SiO2(l) = Mg2SiO4(l)",
+      "nu": {
+        "SiO2": 1.0,
+        "MgO": 2.0,
+        "FeO": 0.0,
+        "CaO": 0.0,
+        "Al2O3": 0.0,
+        "TiO2": 0.0,
+        "Na2O": 0.0,
+        "K2O": 0.0,
+        "CoO": 0.0
+      },
+      "A": -0.8147913344253478,
+      "B": 7154.9056538993145,
+      "source": "https://janaf.nist.gov/tables/Mg-029.html",
+      "T_domain_K": [
+        1700,
+        2500
+      ],
+      "T_domain_basis": "nine-point NIST-JANAF liquid-standard-state regression at 100 K spacing",
+      "provenance_class": "extension-compound-thermo",
+      "janaf_liquid_table_range_K": [
+        298,
+        4000
+      ],
+      "janaf_range_caveat": "Below fusion, the explicit JANAF (l) table is a metastable-liquid standard state; no crystal value or fabricated fusion correction is used.",
+      "derivation": "2 MgO(l) + SiO2(l) = Mg2SiO4(l); all reference states are explicit JANAF (l), p\u00b0=0.1 MPa. At each T, delta_rG\u00b0=G\u00b0compound-sum(nu_i G\u00b0parent_i), log10K=-delta_rG\u00b0/(R T ln10), then least-squares fit against 1/T.",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "merge_action": "replace-same-name-published-fit",
+      "fit_metadata": {
+        "regression_T_K": [
+          1700,
+          1800,
+          1900,
+          2000,
+          2100,
+          2200,
+          2300,
+          2400,
+          2500
+        ],
+        "regression_range_K": [
+          1700,
+          2500
+        ],
+        "regression_points": 9,
+        "max_abs_fit_residual_dex": 0.00278882251157464,
+        "rms_fit_residual_dex": 0.0015791856365609271,
+        "max_abs_direct_G_vs_tabulated_logKf_dex": 0.0006899405039759721,
+        "fusion_transition_K": 2171,
+        "direct_G_spot_checks": [
+          {
+            "T_K": 1700,
+            "G_compound_kJ_mol": -1417.978,
+            "G_parent_sum_kJ_mol": -1307.487,
+            "delta_G_reaction_kJ_mol": -110.49099999999999,
+            "log10K_direct_G": 3.394908776906653,
+            "log10K_fit": 3.3939766972801313,
+            "fit_residual_dex": 0.0009320796265215314,
+            "log10K_tabulated_logKf": 3.395000000000003,
+            "direct_vs_tabulated_delta_dex": 9.12230933503011e-05
+          },
+          {
+            "T_K": 2100,
+            "G_compound_kJ_mol": -1188.252,
+            "G_parent_sum_kJ_mol": -1083.989,
+            "delta_G_reaction_kJ_mol": -104.26299999999992,
+            "log10K_direct_G": 2.5933494926811567,
+            "log10K_fit": 2.592306596002897,
+            "fit_residual_dex": 0.0010428966782596305,
+            "log10K_tabulated_logKf": 2.5939999999999976,
+            "direct_vs_tabulated_delta_dex": 0.000650507318840976
+          },
+          {
+            "T_K": 2500,
+            "G_compound_kJ_mol": -963.154,
+            "G_parent_sum_kJ_mol": -865.306,
+            "delta_G_reaction_kJ_mol": -97.84799999999996,
+            "log10K_direct_G": 2.0443821046228035,
+            "log10K_fit": 2.047170927134378,
+            "fit_residual_dex": -0.00278882251157464,
+            "log10K_tabulated_logKf": 2.0440000000000005,
+            "direct_vs_tabulated_delta_dex": -0.0003821046228029701
+          }
+        ]
+      },
+      "replaces_published_fit": {
+        "A": -0.94,
+        "B": 7434,
+        "source": "FC87 Table 3 (p. 211), R1",
+        "source_provenance_class": "janaf_direct_liquid"
+      }
+    },
+    {
+      "row": 2,
+      "complex": "MgSiO3",
+      "reaction": "MgO(l) + SiO2(l) = MgSiO3(l)",
+      "nu": {
+        "SiO2": 1.0,
+        "MgO": 1.0,
+        "FeO": 0.0,
+        "CaO": 0.0,
+        "Al2O3": 0.0,
+        "TiO2": 0.0,
+        "Na2O": 0.0,
+        "K2O": 0.0,
+        "CoO": 0.0
+      },
+      "A": 0.44226933184462136,
+      "B": 2275.5261228263453,
+      "source": "https://janaf.nist.gov/tables/Mg-013.html",
+      "T_domain_K": [
+        1700,
+        2500
+      ],
+      "T_domain_basis": "nine-point NIST-JANAF liquid-standard-state regression at 100 K spacing",
+      "provenance_class": "extension-compound-thermo",
+      "janaf_liquid_table_range_K": [
+        298,
+        3000
+      ],
+      "janaf_range_caveat": "Below fusion, the explicit JANAF (l) table is a metastable-liquid standard state; no crystal value or fabricated fusion correction is used.",
+      "derivation": "MgO(l) + SiO2(l) = MgSiO3(l); all reference states are explicit JANAF (l), p\u00b0=0.1 MPa. At each T, delta_rG\u00b0=G\u00b0compound-sum(nu_i G\u00b0parent_i), log10K=-delta_rG\u00b0/(R T ln10), then least-squares fit against 1/T.",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "merge_action": "replace-same-name-published-fit",
+      "fit_metadata": {
+        "regression_T_K": [
+          1700,
+          1800,
+          1900,
+          2000,
+          2100,
+          2200,
+          2300,
+          2400,
+          2500
+        ],
+        "regression_range_K": [
+          1700,
+          2500
+        ],
+        "regression_points": 9,
+        "max_abs_fit_residual_dex": 0.0010590262880632029,
+        "rms_fit_residual_dex": 0.0007591392447536976,
+        "max_abs_direct_G_vs_tabulated_logKf_dex": 0.0011289316487703704,
+        "fusion_transition_K": 1850,
+        "direct_G_spot_checks": [
+          {
+            "T_K": 1700,
+            "G_compound_kJ_mol": -1016.266,
+            "G_parent_sum_kJ_mol": -958.2729999999999,
+            "delta_G_reaction_kJ_mol": -57.99300000000005,
+            "log10K_direct_G": 1.7818731362658289,
+            "log10K_fit": 1.7808141099777657,
+            "fit_residual_dex": 0.0010590262880632029,
+            "log10K_tabulated_logKf": 1.782,
+            "direct_vs_tabulated_delta_dex": 0.00012686373417114538
+          },
+          {
+            "T_K": 2100,
+            "G_compound_kJ_mol": -869.215,
+            "G_parent_sum_kJ_mol": -807.865,
+            "delta_G_reaction_kJ_mol": -61.35000000000002,
+            "log10K_direct_G": 1.5259679020936396,
+            "log10K_fit": 1.5258531998571667,
+            "fit_residual_dex": 0.00011470223647291888,
+            "log10K_tabulated_logKf": 1.5269999999999975,
+            "direct_vs_tabulated_delta_dex": 0.0010320979063578317
+          },
+          {
+            "T_K": 2500,
+            "G_compound_kJ_mol": -725.349,
+            "G_parent_sum_kJ_mol": -660.655,
+            "delta_G_reaction_kJ_mol": -64.69400000000007,
+            "log10K_direct_G": 1.3516807280319256,
+            "log10K_fit": 1.3524797809751594,
+            "fit_residual_dex": -0.0007990529432337912,
+            "log10K_tabulated_logKf": 1.350999999999999,
+            "direct_vs_tabulated_delta_dex": -0.0006807280319265363
+          }
+        ]
+      },
+      "replaces_published_fit": {
+        "A": 0.42,
+        "B": 2329,
+        "source": "FC87 Table 3 (p. 211), R2",
+        "source_provenance_class": "janaf_direct_liquid"
+      }
+    },
+    {
+      "row": 3,
+      "complex": "MgAl2O4",
+      "reaction": "MgO(l) + Al2O3(l) = MgAl2O4(l)",
+      "nu": {
+        "SiO2": 0.0,
+        "MgO": 1.0,
+        "FeO": 0.0,
+        "CaO": 0.0,
+        "Al2O3": 1.0,
+        "TiO2": 0.0,
+        "Na2O": 0.0,
+        "K2O": 0.0,
+        "CoO": 0.0
+      },
+      "A": 1.9114077239043958,
+      "B": -1085.2384088521858,
+      "source": "https://janaf.nist.gov/tables/Al-090.html",
+      "T_domain_K": [
+        1700,
+        2500
+      ],
+      "T_domain_basis": "nine-point NIST-JANAF liquid-standard-state regression at 100 K spacing",
+      "provenance_class": "extension-compound-thermo",
+      "janaf_liquid_table_range_K": [
+        298,
+        4000
+      ],
+      "janaf_range_caveat": "Below fusion, the explicit JANAF (l) table is a metastable-liquid standard state; no crystal value or fabricated fusion correction is used.",
+      "derivation": "MgO(l) + Al2O3(l) = MgAl2O4(l); all reference states are explicit JANAF (l), p\u00b0=0.1 MPa. At each T, delta_rG\u00b0=G\u00b0compound-sum(nu_i G\u00b0parent_i), log10K=-delta_rG\u00b0/(R T ln10), then least-squares fit against 1/T.",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "merge_action": "replace-same-name-published-fit",
+      "fit_metadata": {
+        "regression_T_K": [
+          1700,
+          1800,
+          1900,
+          2000,
+          2100,
+          2200,
+          2300,
+          2400,
+          2500
+        ],
+        "regression_range_K": [
+          1700,
+          2500
+        ],
+        "regression_points": 9,
+        "max_abs_fit_residual_dex": 0.019513809694655215,
+        "rms_fit_residual_dex": 0.01183000261286097,
+        "max_abs_direct_G_vs_tabulated_logKf_dex": 0.001262635373382004,
+        "fusion_transition_K": 2408,
+        "direct_G_spot_checks": [
+          {
+            "T_K": 1700,
+            "G_compound_kJ_mol": -1496.608,
+            "G_parent_sum_kJ_mol": -1455.7649999999999,
+            "delta_G_reaction_kJ_mol": -40.843000000000075,
+            "log10K_direct_G": 1.2549280862260155,
+            "log10K_fit": 1.273032189285463,
+            "fit_residual_dex": -0.01810410305944754,
+            "log10K_tabulated_logKf": 1.2549999999999955,
+            "direct_vs_tabulated_delta_dex": 7.191377397997023e-05
+          },
+          {
+            "T_K": 2100,
+            "G_compound_kJ_mol": -1324.359,
+            "G_parent_sum_kJ_mol": -1267.7559999999999,
+            "delta_G_reaction_kJ_mol": -56.603000000000065,
+            "log10K_direct_G": 1.4078950474687262,
+            "log10K_fit": 1.3946275292128787,
+            "fit_residual_dex": 0.013267518255847488,
+            "log10K_tabulated_logKf": 1.408999999999999,
+            "direct_vs_tabulated_delta_dex": 0.0011049525312727404
+          },
+          {
+            "T_K": 2500,
+            "G_compound_kJ_mol": -1156.661,
+            "G_parent_sum_kJ_mol": -1086.888,
+            "delta_G_reaction_kJ_mol": -69.77300000000014,
+            "log10K_direct_G": 1.4577985506688664,
+            "log10K_fit": 1.4773123603635216,
+            "fit_residual_dex": -0.019513809694655215,
+            "log10K_tabulated_logKf": 1.458000000000002,
+            "direct_vs_tabulated_delta_dex": 0.0002014493311355281
+          }
+        ]
+      },
+      "replaces_published_fit": {
+        "A": 1.18,
+        "B": 464,
+        "source": "FC87 Table 3 (p. 211), R3",
+        "source_provenance_class": "janaf_direct_liquid"
+      }
+    },
+    {
+      "row": 4,
+      "complex": "MgTiO3",
+      "reaction": "MgO(l) + TiO2(l) = MgTiO3(l)",
+      "nu": {
+        "SiO2": 0.0,
+        "MgO": 1.0,
+        "FeO": 0.0,
+        "CaO": 0.0,
+        "Al2O3": 0.0,
+        "TiO2": 1.0,
+        "Na2O": 0.0,
+        "K2O": 0.0,
+        "CoO": 0.0
+      },
+      "A": -0.09322309353548386,
+      "B": 3161.3492495833366,
+      "source": "https://janaf.nist.gov/tables/Mg-016.html",
+      "T_domain_K": [
+        1700,
+        2500
+      ],
+      "T_domain_basis": "nine-point NIST-JANAF liquid-standard-state regression at 100 K spacing",
+      "provenance_class": "extension-compound-thermo",
+      "janaf_liquid_table_range_K": [
+        298,
+        4000
+      ],
+      "janaf_range_caveat": "Below fusion, the explicit JANAF (l) table is a metastable-liquid standard state; no crystal value or fabricated fusion correction is used.",
+      "derivation": "MgO(l) + TiO2(l) = MgTiO3(l); all reference states are explicit JANAF (l), p\u00b0=0.1 MPa. At each T, delta_rG\u00b0=G\u00b0compound-sum(nu_i G\u00b0parent_i), log10K=-delta_rG\u00b0/(R T ln10), then least-squares fit against 1/T.",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "merge_action": "replace-same-name-published-fit",
+      "fit_metadata": {
+        "regression_T_K": [
+          1700,
+          1800,
+          1900,
+          2000,
+          2100,
+          2200,
+          2300,
+          2400,
+          2500
+        ],
+        "regression_range_K": [
+          1700,
+          2500
+        ],
+        "regression_points": 9,
+        "max_abs_fit_residual_dex": 0.002236265180550312,
+        "rms_fit_residual_dex": 0.0011418857832223477,
+        "max_abs_direct_G_vs_tabulated_logKf_dex": 0.0009947882567311606,
+        "fusion_transition_K": 1953,
+        "direct_G_spot_checks": [
+          {
+            "T_K": 1700,
+            "G_compound_kJ_mol": -1032.835,
+            "G_parent_sum_kJ_mol": -975.2729999999999,
+            "delta_G_reaction_kJ_mol": -57.562000000000126,
+            "log10K_direct_G": 1.7686303772823233,
+            "log10K_fit": 1.766394112101773,
+            "fit_residual_dex": 0.002236265180550312,
+            "log10K_tabulated_logKf": 1.7689999999999984,
+            "direct_vs_tabulated_delta_dex": 0.0003696227176750444
+          },
+          {
+            "T_K": 2100,
+            "G_compound_kJ_mol": -899.195,
+            "G_parent_sum_kJ_mol": -842.448,
+            "delta_G_reaction_kJ_mol": -56.74700000000007,
+            "log10K_direct_G": 1.4114767814198508,
+            "log10K_fit": 1.4121813110280097,
+            "fit_residual_dex": -0.0007045296081589214,
+            "log10K_tabulated_logKf": 1.4110000000000014,
+            "direct_vs_tabulated_delta_dex": -0.0004767814198494147
+          },
+          {
+            "T_K": 2500,
+            "G_compound_kJ_mol": -766.907,
+            "G_parent_sum_kJ_mol": -710.828,
+            "delta_G_reaction_kJ_mol": -56.079000000000065,
+            "log10K_direct_G": 1.1716836730964597,
+            "log10K_fit": 1.1713166062978508,
+            "fit_residual_dex": 0.0003670667986088727,
+            "log10K_tabulated_logKf": 1.1720000000000006,
+            "direct_vs_tabulated_delta_dex": 0.00031632690354088666
+          }
+        ]
+      },
+      "replaces_published_fit": {
+        "A": -0.13,
+        "B": 3246,
+        "source": "FC87 Table 3 (p. 211), R4",
+        "source_provenance_class": "janaf_direct_liquid"
+      }
+    },
+    {
+      "row": 5,
+      "complex": "MgTi2O5",
+      "reaction": "MgO(l) + 2 TiO2(l) = MgTi2O5(l)",
+      "nu": {
+        "SiO2": 0.0,
+        "MgO": 1.0,
+        "FeO": 0.0,
+        "CaO": 0.0,
+        "Al2O3": 0.0,
+        "TiO2": 2.0,
+        "Na2O": 0.0,
+        "K2O": 0.0,
+        "CoO": 0.0
+      },
+      "A": 0.594184806417921,
+      "B": 2665.1670620464974,
+      "source": "https://janaf.nist.gov/tables/Mg-023.html",
+      "T_domain_K": [
+        1700,
+        2500
+      ],
+      "T_domain_basis": "nine-point NIST-JANAF liquid-standard-state regression at 100 K spacing",
+      "provenance_class": "extension-compound-thermo",
+      "janaf_liquid_table_range_K": [
+        298,
+        4000
+      ],
+      "janaf_range_caveat": "Below fusion, the explicit JANAF (l) table is a metastable-liquid standard state; no crystal value or fabricated fusion correction is used.",
+      "derivation": "MgO(l) + 2 TiO2(l) = MgTi2O5(l); all reference states are explicit JANAF (l), p\u00b0=0.1 MPa. At each T, delta_rG\u00b0=G\u00b0compound-sum(nu_i G\u00b0parent_i), log10K=-delta_rG\u00b0/(R T ln10), then least-squares fit against 1/T.",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "merge_action": "replace-same-name-published-fit",
+      "fit_metadata": {
+        "regression_T_K": [
+          1700,
+          1800,
+          1900,
+          2000,
+          2100,
+          2200,
+          2300,
+          2400,
+          2500
+        ],
+        "regression_range_K": [
+          1700,
+          2500
+        ],
+        "regression_points": 9,
+        "max_abs_fit_residual_dex": 0.0010193479347115897,
+        "rms_fit_residual_dex": 0.0007437016131446652,
+        "max_abs_direct_G_vs_tabulated_logKf_dex": 0.001251596078570838,
+        "fusion_transition_K": 1963,
+        "direct_G_spot_checks": [
+          {
+            "T_K": 1700,
+            "G_compound_kJ_mol": -1671.721,
+            "G_parent_sum_kJ_mol": -1601.3319999999999,
+            "delta_G_reaction_kJ_mol": -70.38900000000012,
+            "log10K_direct_G": 2.1627484039214306,
+            "log10K_fit": 2.1619301370335076,
+            "fit_residual_dex": 0.0008182668879230803,
+            "log10K_tabulated_logKf": 2.1640000000000015,
+            "direct_vs_tabulated_delta_dex": 0.001251596078570838
+          },
+          {
+            "T_K": 2100,
+            "G_compound_kJ_mol": -1483.696,
+            "G_parent_sum_kJ_mol": -1408.772,
+            "delta_G_reaction_kJ_mol": -74.92399999999998,
+            "log10K_direct_G": 1.863596073291993,
+            "log10K_fit": 1.8633119788210148,
+            "fit_residual_dex": 0.00028409447097810236,
+            "log10K_tabulated_logKf": 1.8629999999999995,
+            "direct_vs_tabulated_delta_dex": -0.0005960732919934042
+          },
+          {
+            "T_K": 2500,
+            "G_compound_kJ_mol": -1296.419,
+            "G_parent_sum_kJ_mol": -1217.005,
+            "delta_G_reaction_kJ_mol": -79.41399999999999,
+            "log10K_direct_G": 1.6592322833018085,
+            "log10K_fit": 1.66025163123652,
+            "fit_residual_dex": -0.0010193479347115897,
+            "log10K_tabulated_logKf": 1.658999999999999,
+            "direct_vs_tabulated_delta_dex": -0.00023228330180957713
+          }
+        ]
+      },
+      "replaces_published_fit": {
+        "A": 0.51,
+        "B": 2845,
+        "source": "FC87 Table 3 (p. 211), R5",
+        "source_provenance_class": "janaf_direct_liquid"
+      }
+    },
+    {
+      "row": 6,
+      "complex": "Mg2TiO4",
+      "reaction": "2 MgO(l) + TiO2(l) = Mg2TiO4(l)",
+      "nu": {
+        "SiO2": 0.0,
+        "MgO": 2.0,
+        "FeO": 0.0,
+        "CaO": 0.0,
+        "Al2O3": 0.0,
+        "TiO2": 1.0,
+        "Na2O": 0.0,
+        "K2O": 0.0,
+        "CoO": 0.0
+      },
+      "A": 0.7075506822858006,
+      "B": 3727.1375441445994,
+      "source": "https://janaf.nist.gov/tables/Mg-032.html",
+      "T_domain_K": [
+        1700,
+        2500
+      ],
+      "T_domain_basis": "nine-point NIST-JANAF liquid-standard-state regression at 100 K spacing",
+      "provenance_class": "extension-compound-thermo",
+      "janaf_liquid_table_range_K": [
+        298,
+        4000
+      ],
+      "janaf_range_caveat": "Below fusion, the explicit JANAF (l) table is a metastable-liquid standard state; no crystal value or fabricated fusion correction is used.",
+      "derivation": "2 MgO(l) + TiO2(l) = Mg2TiO4(l); all reference states are explicit JANAF (l), p\u00b0=0.1 MPa. At each T, delta_rG\u00b0=G\u00b0compound-sum(nu_i G\u00b0parent_i), log10K=-delta_rG\u00b0/(R T ln10), then least-squares fit against 1/T.",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "merge_action": "replace-same-name-published-fit",
+      "fit_metadata": {
+        "regression_T_K": [
+          1700,
+          1800,
+          1900,
+          2000,
+          2100,
+          2200,
+          2300,
+          2400,
+          2500
+        ],
+        "regression_range_K": [
+          1700,
+          2500
+        ],
+        "regression_points": 9,
+        "max_abs_fit_residual_dex": 0.0058946581599612635,
+        "rms_fit_residual_dex": 0.0030148788330074516,
+        "max_abs_direct_G_vs_tabulated_logKf_dex": 0.0014881701521658464,
+        "fusion_transition_K": 2013,
+        "direct_G_spot_checks": [
+          {
+            "T_K": 1700,
+            "G_compound_kJ_mol": -1419.062,
+            "G_parent_sum_kJ_mol": -1324.487,
+            "delta_G_reaction_kJ_mol": -94.57499999999982,
+            "log10K_direct_G": 2.905879189942585,
+            "log10K_fit": 2.8999845317826236,
+            "fit_residual_dex": 0.0058946581599612635,
+            "log10K_tabulated_logKf": 2.905999999999999,
+            "direct_vs_tabulated_delta_dex": 0.00012081005741393369
+          },
+          {
+            "T_K": 2100,
+            "G_compound_kJ_mol": -1218.278,
+            "G_parent_sum_kJ_mol": -1118.5720000000001,
+            "delta_G_reaction_kJ_mol": -99.7059999999999,
+            "log10K_direct_G": 2.480002537019531,
+            "log10K_fit": 2.4823780842594196,
+            "fit_residual_dex": -0.0023755472398887534,
+            "log10K_tabulated_logKf": 2.4800000000000004,
+            "direct_vs_tabulated_delta_dex": -2.537019530457485e-06
+          },
+          {
+            "T_K": 2500,
+            "G_compound_kJ_mol": -1020.8,
+            "G_parent_sum_kJ_mol": -915.479,
+            "delta_G_reaction_kJ_mol": -105.32099999999991,
+            "log10K_direct_G": 2.2005188418871944,
+            "log10K_fit": 2.19840569994364,
+            "fit_residual_dex": 0.0021131419435542753,
+            "log10K_tabulated_logKf": 2.1999999999999993,
+            "direct_vs_tabulated_delta_dex": -0.0005188418871950873
+          }
+        ]
+      },
+      "replaces_published_fit": {
+        "A": 0.67,
+        "B": 3812,
+        "source": "FC87 Table 3 (p. 211), R6",
+        "source_provenance_class": "janaf_direct_liquid"
+      }
+    },
+    {
+      "row": 7,
+      "complex": "Al6Si2O13",
+      "reaction": "3 Al2O3(liq) + 2 SiO2(liq) = Al6Si2O13(liq)",
+      "nu": {
+        "SiO2": 2,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 3,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -2.94,
+      "B": 9375,
+      "source": "FC87 Table 3 (p. 211), R7",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R7: JANAF solid mullite + estimated liquid Cp/fusion (mullite Tm 2023 K)",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 8,
+      "complex": "CaAl2O4",
+      "reaction": "CaO(liq) + Al2O3(liq) = CaAl2O4(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 1,
+        "Al2O3": 1,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -1.89,
+      "B": 10060,
+      "source": "FC87 Table 3 (p. 211), R8",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R8: formation from solid oxides (Rein & Chipman) + JANAF endpoint functions",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 9,
+      "complex": "CaAl4O7",
+      "reaction": "CaO(liq) + 2 Al2O3(liq) = CaAl4O7(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 1,
+        "Al2O3": 2,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -0.59,
+      "B": 9713,
+      "source": "FC87 Table 3 (p. 211), R9",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R9: formation (Allibert et al.; confirmed Blander & Pelton) + estimated liquid entropy/Cp",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 10,
+      "complex": "Ca12Al14O33",
+      "reaction": "12 CaO(liq) + 7 Al2O3(liq) = Ca12Al14O33(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 12,
+        "Al2O3": 7,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -6.3,
+      "B": 72239,
+      "source": "FC87 Table 3 (p. 211), R10",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R10: per R8; formation from solid oxides (Rein & Chipman)",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 11,
+      "complex": "CaSiO3",
+      "reaction": "CaO(liq) + SiO2(liq) = CaSiO3(liq)",
+      "nu": {
+        "SiO2": 1,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 1,
+        "Al2O3": 0,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 0.54,
+      "B": 5568,
+      "source": "FC87 Table 3 (p. 211), R11",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R11: drop calorimetry 900-1850 K (Richet & Bottinga) + pseudowollastonite Cp; cross-checks 1700-2600 K (Stout & Piwinskii); exercised to 3500 K above measurements",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 12,
+      "complex": "CaAl2Si2O8",
+      "reaction": "CaO(liq) + Al2O3(liq) + 2 SiO2(liq) = CaAl2Si2O8(liq)",
+      "nu": {
+        "SiO2": 2,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 1,
+        "Al2O3": 1,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 2.63,
+      "B": 5326,
+      "source": "FC87 Table 3 (p. 211), R12",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R12: anorthite fusion/liquid Cp (Richet & Bottinga) + solid data (Kelley; Hemingway et al.)",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 13,
+      "complex": "CaMgSi2O6",
+      "reaction": "CaO(liq) + MgO(liq) + 2 SiO2(liq) = CaMgSi2O6(liq)",
+      "nu": {
+        "SiO2": 2,
+        "MgO": 1,
+        "FeO": 0,
+        "CaO": 1,
+        "Al2O3": 0,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 1.46,
+      "B": 8485,
+      "source": "FC87 Table 3 (p. 211), R13",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R13: diopside drop calorimetry (Stebbins et al.) + Robie et al. formation",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 14,
+      "complex": "Ca2MgSi2O7",
+      "reaction": "2 CaO(liq) + MgO(liq) + 2 SiO2(liq) = Ca2MgSi2O7(liq)",
+      "nu": {
+        "SiO2": 2,
+        "MgO": 1,
+        "FeO": 0,
+        "CaO": 2,
+        "Al2O3": 0,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 0.63,
+      "B": 15327,
+      "source": "FC87 Table 3 (p. 211), R14",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R14: akermanite drop calorimetry (Proks et al.) + Pankratz & Kelley / Robie et al.",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 15,
+      "complex": "Ca2Al2SiO7",
+      "reaction": "2 CaO(liq) + Al2O3(liq) + SiO2(liq) = Ca2Al2SiO7(liq)",
+      "nu": {
+        "SiO2": 1,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 2,
+        "Al2O3": 1,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 2.01,
+      "B": 10710,
+      "source": "FC87 Table 3 (p. 211), R15",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R15: gehlenite data (Pankratz & Kelley; Hemingway et al.); liquid entropy/Cp borrowed from akermanite",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 16,
+      "complex": "CaTiO3",
+      "reaction": "CaO(liq) + TiO2(liq) = CaTiO3(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 1,
+        "Al2O3": 0,
+        "TiO2": 1,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -0.08,
+      "B": 7055,
+      "source": "FC87 Table 3 (p. 211), R16",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R16: perovskite (Kelley; Robie et al.); liquid entropy/Cp estimated from Na/Li titanates",
+      "transcription_note": "pass-A text layer OCR-garbled B ('7(155'); pass-B visual read resolves to 7055",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 17,
+      "complex": "Ca2SiO4",
+      "reaction": "2 CaO(liq) + SiO2(liq) = Ca2SiO4(liq)",
+      "nu": {
+        "SiO2": 1,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 2,
+        "Al2O3": 0,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 0.63,
+      "B": 8416,
+      "source": "FC87 Table 3 (p. 211), R17",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R17: larnite (Kelley; Hemingway et al.); liquid entropy/Cp estimated from CaSiO3 + CaMgSi2O6",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 18,
+      "complex": "CaTiSiO5",
+      "reaction": "CaO(liq) + TiO2(liq) + SiO2(liq) = CaTiSiO5(liq)",
+      "nu": {
+        "SiO2": 1,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 1,
+        "Al2O3": 0,
+        "TiO2": 1,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -0.18,
+      "B": 10071,
+      "source": "FC87 Table 3 (p. 211), R18",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R18: titanite solid/liquid/fusion (Kelley; Robie et al.)",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 19,
+      "complex": "FeTiO3",
+      "reaction": "FeO(liq) + TiO2(liq) = FeTiO3(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 1,
+        "CaO": 0,
+        "Al2O3": 0,
+        "TiO2": 1,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -0.51,
+      "B": 3569,
+      "source": "FC87 Table 3 (p. 211), R19",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R19: ilmenite solid/liquid/fusion (Kelley; Robie et al.)",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 20,
+      "complex": "Fe2SiO4",
+      "reaction": "2 FeO(liq) + SiO2(liq) = Fe2SiO4(liq)",
+      "nu": {
+        "SiO2": 1,
+        "MgO": 0,
+        "FeO": 2,
+        "CaO": 0,
+        "Al2O3": 0,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -0.63,
+      "B": 3103,
+      "source": "FC87 Table 3 (p. 211), R20",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R20: fayalite solid/liquid/fusion (Kelley; Robie et al.)",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 21,
+      "complex": "FeAl2O4",
+      "reaction": "FeO(liq) + Al2O3(liq) = FeAl2O4(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 1,
+        "CaO": 0,
+        "Al2O3": 1,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -1.76,
+      "B": 5692,
+      "source": "FC87 Table 3 (p. 211), R21",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R21: hercynite formation (Chan et al.); liquid entropy/Cp estimated vs JANAF liquid MgAl2O4",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 22,
+      "complex": "CaAl12O19",
+      "reaction": "CaO(liq) + 6 Al2O3(liq) = CaAl12O19(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 1,
+        "Al2O3": 6,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -3.79,
+      "B": 22612,
+      "source": "FC87 Table 3 (p. 211), R22",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R22: per R9; formation (Allibert et al.; confirmed Blander & Pelton) + estimated fusion terms",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 23,
+      "complex": "Mg2Al4Si5O18",
+      "reaction": "2 MgO(liq) + 2 Al2O3(liq) + 5 SiO2(liq) = Mg2Al4Si5O18(liq)",
+      "nu": {
+        "SiO2": 5,
+        "MgO": 2,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 2,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 7.48,
+      "B": 0,
+      "source": "FC87 Table 3 (p. 211), R23",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R23: cordierite (Pankratz & Kelley; Robie et al.); estimated metastable congruent Tm 1740 K; Richet & Bottinga drop calorimetry",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 24,
+      "complex": "Na2SiO3",
+      "reaction": "Na2O(l) + SiO2(l) = Na2SiO3(l)",
+      "nu": {
+        "SiO2": 1.0,
+        "MgO": 0.0,
+        "FeO": 0.0,
+        "CaO": 0.0,
+        "Al2O3": 0.0,
+        "TiO2": 0.0,
+        "Na2O": 1.0,
+        "K2O": 0.0,
+        "CoO": 0.0
+      },
+      "A": -0.9130104573352984,
+      "B": 13236.425451626852,
+      "source": "https://janaf.nist.gov/tables/Na-017.html",
+      "T_domain_K": [
+        1700,
+        2500
+      ],
+      "T_domain_basis": "nine-point NIST-JANAF liquid-standard-state regression at 100 K spacing",
+      "provenance_class": "extension-compound-thermo",
+      "janaf_liquid_table_range_K": [
+        298,
+        2500
+      ],
+      "janaf_range_caveat": "Below fusion, the explicit JANAF (l) table is a metastable-liquid standard state; no crystal value or fabricated fusion correction is used.",
+      "derivation": "Na2O(l) + SiO2(l) = Na2SiO3(l); all reference states are explicit JANAF (l), p\u00b0=0.1 MPa. At each T, delta_rG\u00b0=G\u00b0compound-sum(nu_i G\u00b0parent_i), log10K=-delta_rG\u00b0/(R T ln10), then least-squares fit against 1/T.",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "merge_action": "replace-same-name-published-fit",
+      "fit_metadata": {
+        "regression_T_K": [
+          1700,
+          1800,
+          1900,
+          2000,
+          2100,
+          2200,
+          2300,
+          2400,
+          2500
+        ],
+        "regression_range_K": [
+          1700,
+          2500
+        ],
+        "regression_points": 9,
+        "max_abs_fit_residual_dex": 0.007412229986134555,
+        "rms_fit_residual_dex": 0.004631788184603525,
+        "max_abs_direct_G_vs_tabulated_logKf_dex": 0.0011543590933875691,
+        "fusion_transition_K": 1362,
+        "direct_G_spot_checks": [
+          {
+            "T_K": 1700,
+            "G_compound_kJ_mol": -952.091,
+            "G_parent_sum_kJ_mol": -728.639,
+            "delta_G_reaction_kJ_mol": -223.452,
+            "log10K_direct_G": 6.8657099312825975,
+            "log10K_fit": 6.873122161268732,
+            "fit_residual_dex": -0.007412229986134555,
+            "log10K_tabulated_logKf": 6.866000000000003,
+            "direct_vs_tabulated_delta_dex": 0.0002900687174056671
+          },
+          {
+            "T_K": 2100,
+            "G_compound_kJ_mol": -775.23,
+            "G_parent_sum_kJ_mol": -558.323,
+            "delta_G_reaction_kJ_mol": -216.90700000000004,
+            "log10K_direct_G": 5.395160875948248,
+            "log10K_fit": 5.3900492815346315,
+            "fit_residual_dex": 0.005111594413616416,
+            "log10K_tabulated_logKf": 5.396000000000001,
+            "direct_vs_tabulated_delta_dex": 0.0008391240517529042
+          },
+          {
+            "T_K": 2500,
+            "G_compound_kJ_mol": -602.322,
+            "G_parent_sum_kJ_mol": -392.96000000000004,
+            "delta_G_reaction_kJ_mol": -209.36199999999997,
+            "log10K_direct_G": 4.374294070272663,
+            "log10K_fit": 4.381559723315442,
+            "fit_residual_dex": -0.007265653042779263,
+            "log10K_tabulated_logKf": 4.3740000000000006,
+            "direct_vs_tabulated_delta_dex": -0.00029407027266259433
+          }
+        ]
+      },
+      "replaces_published_fit": {
+        "A": -1.33,
+        "B": 13870,
+        "source": "FC87 Table 3 (p. 211), R24",
+        "source_provenance_class": "janaf_direct_liquid"
+      }
+    },
+    {
+      "row": 25,
+      "complex": "Na2Si2O5",
+      "reaction": "Na2O(l) + 2 SiO2(l) = Na2Si2O5(l)",
+      "nu": {
+        "SiO2": 2.0,
+        "MgO": 0.0,
+        "FeO": 0.0,
+        "CaO": 0.0,
+        "Al2O3": 0.0,
+        "TiO2": 0.0,
+        "Na2O": 1.0,
+        "K2O": 0.0,
+        "CoO": 0.0
+      },
+      "A": -0.20387967789646488,
+      "B": 13504.884429129666,
+      "source": "https://janaf.nist.gov/tables/Na-029.html",
+      "T_domain_K": [
+        1700,
+        2500
+      ],
+      "T_domain_basis": "nine-point NIST-JANAF liquid-standard-state regression at 100 K spacing",
+      "provenance_class": "extension-compound-thermo",
+      "janaf_liquid_table_range_K": [
+        298,
+        2500
+      ],
+      "janaf_range_caveat": "Below fusion, the explicit JANAF (l) table is a metastable-liquid standard state; no crystal value or fabricated fusion correction is used.",
+      "derivation": "Na2O(l) + 2 SiO2(l) = Na2Si2O5(l); all reference states are explicit JANAF (l), p\u00b0=0.1 MPa. At each T, delta_rG\u00b0=G\u00b0compound-sum(nu_i G\u00b0parent_i), log10K=-delta_rG\u00b0/(R T ln10), then least-squares fit against 1/T.",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "merge_action": "replace-same-name-published-fit",
+      "fit_metadata": {
+        "regression_T_K": [
+          1700,
+          1800,
+          1900,
+          2000,
+          2100,
+          2200,
+          2300,
+          2400,
+          2500
+        ],
+        "regression_range_K": [
+          1700,
+          2500
+        ],
+        "regression_points": 9,
+        "max_abs_fit_residual_dex": 0.008488084733680346,
+        "rms_fit_residual_dex": 0.0052978262371761,
+        "max_abs_direct_G_vs_tabulated_logKf_dex": 0.0012686873293876744,
+        "fusion_transition_K": 1147,
+        "direct_G_spot_checks": [
+          {
+            "T_K": 1700,
+            "G_compound_kJ_mol": -1589.334,
+            "G_parent_sum_kJ_mol": -1337.6979999999999,
+            "delta_G_reaction_kJ_mol": -251.6360000000002,
+            "log10K_direct_G": 7.7316819015637765,
+            "log10K_fit": 7.740169986297457,
+            "fit_residual_dex": -0.008488084733680346,
+            "log10K_tabulated_logKf": 7.732000000000006,
+            "direct_vs_tabulated_delta_dex": 0.00031809843622987444
+          },
+          {
+            "T_K": 2100,
+            "G_compound_kJ_mol": -1340.65,
+            "G_parent_sum_kJ_mol": -1090.064,
+            "delta_G_reaction_kJ_mol": -250.586,
+            "log10K_direct_G": 6.2328637769199124,
+            "log10K_fit": 6.227017669308138,
+            "fit_residual_dex": 0.00584610761177462,
+            "log10K_tabulated_logKf": 6.233999999999998,
+            "direct_vs_tabulated_delta_dex": 0.0011362230800857631
+          },
+          {
+            "T_K": 2500,
+            "G_compound_kJ_mol": -1097.356,
+            "G_parent_sum_kJ_mol": -848.964,
+            "delta_G_reaction_kJ_mol": -248.39199999999994,
+            "log10K_direct_G": 5.189765347594918,
+            "log10K_fit": 5.198074093755402,
+            "fit_residual_dex": -0.008308746160484048,
+            "log10K_tabulated_logKf": 5.189,
+            "direct_vs_tabulated_delta_dex": -0.0007653475949176425
+          }
+        ]
+      },
+      "replaces_published_fit": {
+        "A": -1.39,
+        "B": 15350,
+        "source": "FC87 Table 3 (p. 211), R25",
+        "source_provenance_class": "janaf_direct_liquid"
+      }
+    },
+    {
+      "row": 26,
+      "complex": "NaAlSiO4",
+      "reaction": "0.5 Na2O(liq) + 0.5 Al2O3(liq) + SiO2(liq) = NaAlSiO4(liq)",
+      "nu": {
+        "SiO2": 1,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0.5,
+        "TiO2": 0,
+        "Na2O": 0.5,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 0.65,
+      "B": 6997,
+      "source": "FC87 Table 3 (p. 211), R26",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R26: nepheline (Kelley; Robie et al.; Stebbins et al.); metastable Tm 1750 K estimated",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 27,
+      "complex": "NaAlSi3O8",
+      "reaction": "0.5 Na2O(liq) + 0.5 Al2O3(liq) + 3 SiO2(liq) = NaAlSi3O8(liq)",
+      "nu": {
+        "SiO2": 3,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0.5,
+        "TiO2": 0,
+        "Na2O": 0.5,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 1.29,
+      "B": 8788,
+      "source": "FC87 Table 3 (p. 211), R27",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R27: analbite/albite (Robie et al.; Stebbins et al. fusion + liquid Cp)",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 28,
+      "complex": "NaAlO2",
+      "reaction": "0.5 Na2O(liq) + 0.5 Al2O3(liq) = NaAlO2(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0.5,
+        "TiO2": 0,
+        "Na2O": 0.5,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": 0.55,
+      "B": 3058,
+      "source": "FC87 Table 3 (p. 211), R28",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R28: third-law solid + NBS compilation; liquid entropy/Cp estimated as NaBO2",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 29,
+      "complex": "Na2TiO3",
+      "reaction": "Na2O(liq) + TiO2(liq) = Na2TiO3(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0,
+        "TiO2": 1,
+        "Na2O": 1,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -1.38,
+      "B": 15445,
+      "source": "FC87 Table 3 (p. 211), R29",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R29: per R28; third-law solid; liquid Cp from Richet & Bottinga mean",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 30,
+      "complex": "NaAlSi2O6",
+      "reaction": "0.5 Na2O(liq) + 0.5 Al2O3(liq) + 2 SiO2(liq) = NaAlSi2O6(liq)",
+      "nu": {
+        "SiO2": 2,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0.5,
+        "TiO2": 0,
+        "Na2O": 0.5,
+        "K2O": 0,
+        "CoO": 0.0
+      },
+      "A": -1.02,
+      "B": 9607,
+      "source": "FC87 Table 3 (p. 211), R30",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R30: jadeite (Robie et al.; Kelley); metastable Tm 1325 K (Bell & Roseboom extrapolation); liquid terms estimated",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 31,
+      "complex": "K2SiO3",
+      "reaction": "K2O(liq) + SiO2(liq) = K2SiO3(liq)",
+      "nu": {
+        "SiO2": 1,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 1,
+        "CoO": 0.0
+      },
+      "A": 0.27,
+      "B": 12735,
+      "source": "SF04 Table 2 (p. 218)",
+      "source_ref_cited_by_paper": "Hastie and Bonnell (1985)",
+      "supersedes": {
+        "source": "FC87 Table 3 (p. 211), R31",
+        "A": 0.15,
+        "B": 14600
+      },
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "SF04-as-exercised",
+      "provenance_class": "published-imcc",
+      "janaf_liquid_table_range_K": [
+        298,
+        3000
+      ],
+      "janaf_range_caveat": "JANAF liquid table ends at 3000 K; SF04 exercised domain 1700-3000 K sits inside it. The superseded FC87 fit was exercised to 3500 K (above table top)",
+      "derivation": "FC87 Appendix 1 R31: liquid SiO2 + K2SiO3 formation from JANAF; liquid K2O from Glushko et al. SF04 Table 2 prints the revised fit",
+      "source_provenance_class": "janaf_direct_liquid"
+    },
+    {
+      "row": 32,
+      "complex": "K2Si2O5",
+      "reaction": "K2O(liq) + 2 SiO2(liq) = K2Si2O5(liq)",
+      "nu": {
+        "SiO2": 2,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 1,
+        "CoO": 0.0
+      },
+      "A": 0.35,
+      "B": 14685,
+      "source": "SF04 Table 2 (p. 218)",
+      "source_ref_cited_by_paper": "Hastie and Bonnell (1985)",
+      "supersedes": {
+        "source": "FC87 Table 3 (p. 211), R32",
+        "A": -0.73,
+        "B": 18466
+      },
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "SF04-as-exercised",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R32: solid formation/fusion/liquid Cp (Beyer et al.); SF04 Table 2 prints the revised fit",
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 33,
+      "complex": "KAlSiO4",
+      "reaction": "0.5 K2O(liq) + 0.5 Al2O3(liq) + SiO2(liq) = KAlSiO4(liq)",
+      "nu": {
+        "SiO2": 1,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0.5,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0.5,
+        "CoO": 0.0
+      },
+      "A": 0.97,
+      "B": 8675,
+      "source": "FC87 Table 3 (p. 211), R33",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R33: kalsilite (Robie et al.; Tm 2033 K Schairer & Bowen); liquid terms estimated by NaAlSiO4 analogy",
+      "transcription_note": "pass-A text layer dropped the leading 1/2 on K2O; pass-B visual confirms 0.5 K2O",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 34,
+      "complex": "KAlSi3O8",
+      "reaction": "0.5 K2O(liq) + 0.5 Al2O3(liq) + 3 SiO2(liq) = KAlSi3O8(liq)",
+      "nu": {
+        "SiO2": 3,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0.5,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0.5,
+        "CoO": 0.0
+      },
+      "A": 1.11,
+      "B": 11229,
+      "source": "FC87 Table 3 (p. 211), R34",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R34: high sanidine (Robie et al.; Stebbins et al. incl. estimated congruent Tm 1473 K)",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 35,
+      "complex": "KAlO2",
+      "reaction": "0.5 K2O(liq) + 0.5 Al2O3(liq) = KAlO2(liq)",
+      "nu": {
+        "SiO2": 0,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0.5,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0.5,
+        "CoO": 0.0
+      },
+      "A": 0.72,
+      "B": 4679,
+      "source": "FC87 Table 3 (p. 211), R35",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R35: liquid KAlO2 formation from Glushko et al. (Gurvich compilation); not JANAF; exact modern table row needs acquisition (scout section 2)",
+      "transcription_note": "pass-A text layer mangled the reaction line ('=' OCR'd as '+'); pass-B visual confirms 0.5 K2O + 0.5 Al2O3 = KAlO2",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "partial_non_janaf_direct_liquid"
+    },
+    {
+      "row": 36,
+      "complex": "KAlSi2O6",
+      "reaction": "0.5 K2O(liq) + 0.5 Al2O3(liq) + 2 SiO2(liq) = KAlSi2O6(liq)",
+      "nu": {
+        "SiO2": 2,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0.5,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0.5,
+        "CoO": 0.0
+      },
+      "A": 1.53,
+      "B": 10125,
+      "source": "FC87 Table 3 (p. 211), R36",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
+      "provenance_class": "published-imcc",
+      "derivation": "FC87 Appendix 1 R36: leucite (Robie et al.; Pankratz; Tm 1959 K Schairer & Bowen); liquid entropy/Cp estimated",
+      "T_domain_paper_demonstrated_K": [
+        2500,
+        3500
+      ],
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 37,
+      "complex": "K2Si4O9",
+      "reaction": "K2O(liq) + 4 SiO2(liq) = K2Si4O9(liq)",
+      "nu": {
+        "SiO2": 4,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 0,
+        "Al2O3": 0,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 1,
+        "CoO": 0.0
+      },
+      "A": -0.96,
+      "B": 17572,
+      "source": "SF04 Table 2 (p. 218)",
+      "source_ref_cited_by_paper": "Hastie and Bonnell (1985)",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "SF04-as-exercised",
+      "provenance_class": "published-imcc",
+      "derivation": "SF04-added complex; no independent liquid table located (scout section 2); fit exercised 1700-3000 K",
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 38,
+      "complex": "KCaAlSi2O7",
+      "reaction": "0.5 K2O(liq) + CaO(liq) + 0.5 Al2O3 + 2 SiO2(liq) = KCaAlSi2O7(liq)",
+      "nu": {
+        "SiO2": 2,
+        "MgO": 0,
+        "FeO": 0,
+        "CaO": 1,
+        "Al2O3": 0.5,
+        "TiO2": 0,
+        "Na2O": 0,
+        "K2O": 0.5,
+        "CoO": 0.0
+      },
+      "A": 4.3,
+      "B": 17037,
+      "source": "SF04 Table 2 (p. 218)",
+      "source_ref_cited_by_paper": "Hastie and Bonnell (1985)",
+      "T_domain_K": [
+        1700,
+        3000
+      ],
+      "T_domain_basis": "SF04-as-exercised",
+      "provenance_class": "published-imcc",
+      "derivation": "SF04-added complex; no independent liquid table located (scout section 2); fit exercised 1700-3000 K",
+      "transcription_note": "SF04 prints 0.5 Al2O3 without the '(liq)' marker (typography); all species are liquid standard state per the table convention",
+      "source_provenance_class": "authority_by_publication"
+    },
+    {
+      "row": 39,
+      "complex": "Co2SiO4",
+      "reaction": "2 CoO(l) + SiO2(l) = Co2SiO4(l)",
+      "nu": {
+        "SiO2": 1.0,
+        "MgO": 0.0,
+        "FeO": 0.0,
+        "CaO": 0.0,
+        "Al2O3": 0.0,
+        "TiO2": 0.0,
+        "Na2O": 0.0,
+        "K2O": 0.0,
+        "CoO": 2.0
+      },
+      "A": -0.14189967602168338,
+      "B": 2612.4436389058715,
+      "source": "https://onlinelibrary.wiley.com/doi/book/10.1002/9783527619825",
+      "source_compilation": "Ihsan Barin, Thermochemical Data of Pure Substances, 3rd ed. (1995), Vol. I",
+      "source_tables": "Co2SiO4 p.546; CoO p.543; SiO2(l) NIST-JANAF Si-013 inherited from EXT-1 parent set",
+      "source_access_copy": "https://pdfcoffee.com/thermochemical-data-of-pure-substances-barin-pdf-pdf-free.html",
+      "T_domain_K": [
+        1700,
+        2000
+      ],
+      "T_domain_basis": "four-point central-table liquid-standard-state regression at 100 K spacing",
+      "provenance_class": "extension-compound-thermo",
+      "phase_basis": "Co2SiO4 explicit liquid; CoO metastable liquid below fusion from tabled crystal+fusion data",
+      "fusion_transition_K": 2078.0,
+      "delta_H_fusion_kJ_mol": 54.392,
+      "metastable_liquid_construction": "At Tm=2078 K, Barin gives H_liq=-77.924 kJ/mol, S_liq=189.873 J/(mol K), Cp_liq=60.668 J/(mol K), and deltaHfus=54.392 kJ/mol. H_liq(T)=H_liq(Tm)+Cp_liq(T-Tm)/1000; S_liq(T)=S_liq(Tm)+Cp_liq ln(T/Tm); G_liq=H_liq-T S_liq/1000. Unit check: J/(mol K)*K/1000=kJ/mol. Delta_fG_liq=Delta_fG_cr+[G_liq-G_cr], since elemental references cancel.",
+      "derivation": "At each T, delta_rG=delta_fG[Co2SiO4(l)]-2 delta_fG[CoO(l)]-delta_fG[SiO2(l)]; log10K=-delta_rG/(R T ln10); least-squares fit log10K=A+B/T.",
+      "merge_action": "add-novel-complex-and-CoO-parent-in-research-only-pack",
+      "fit_metadata": {
+        "regression_T_K": [
+          1700,
+          1800,
+          1900,
+          2000
+        ],
+        "regression_range_K": [
+          1700,
+          2000
+        ],
+        "regression_points": 4,
+        "max_abs_fit_residual_dex": 0.0029812878706338974,
+        "rms_fit_residual_dex": 0.0027351427140192984,
+        "max_abs_direct_G_vs_displayed_logKf_dex": 0.0005878457769910028,
+        "direct_G_spot_checks": [
+          {
+            "complex": "Co2SiO4",
+            "T_K": 1700,
+            "Co2SiO4_delta_f_G_liq_kJ_mol": -863.355,
+            "CoO_G_liq_constructed_kJ_mol": -402.93328146546594,
+            "CoO_delta_f_G_liq_kJ_mol": -104.40728146546594,
+            "SiO2_delta_f_G_liq_kJ_mol": -609.059,
+            "delta_r_G_kJ_mol": -45.48143706906819,
+            "log10K_direct": 1.397447121413574,
+            "log10K_fit": 1.3948318762758882,
+            "fit_residual_dex": 0.00261524513768574,
+            "log10K_displayed_bridge": 1.398034967190565,
+            "direct_vs_displayed_dex": 0.0005878457769910028,
+            "spot_check": true
+          },
+          {
+            "complex": "Co2SiO4",
+            "T_K": 1800,
+            "Co2SiO4_delta_f_G_liq_kJ_mol": -834.376,
+            "CoO_G_liq_constructed_kJ_mol": -420.8775396408324,
+            "CoO_delta_f_G_liq_kJ_mol": -99.89753964083242,
+            "SiO2_delta_f_G_liq_kJ_mol": -589.559,
+            "delta_r_G_kJ_mol": -45.021920718335195,
+            "log10K_direct": 1.3064766132776113,
+            "log10K_fit": 1.3094579011482452,
+            "fit_residual_dex": -0.0029812878706338974,
+            "log10K_displayed_bridge": 1.306210959357454,
+            "direct_vs_displayed_dex": -0.00026565392015731604,
+            "spot_check": true
+          },
+          {
+            "complex": "Co2SiO4",
+            "T_K": 2000,
+            "Co2SiO4_delta_f_G_liq_kJ_mol": -774.919,
+            "CoO_G_liq_constructed_kJ_mol": -457.75994490656075,
+            "CoO_delta_f_G_liq_kJ_mol": -89.66094490656074,
+            "SiO2_delta_f_G_liq_kJ_mol": -550.907,
+            "delta_r_G_kJ_mol": -44.69011018687843,
+            "log10K_direct": 1.1671631193237926,
+            "log10K_fit": 1.1643221434312525,
+            "fit_residual_dex": 0.0028409758925400652,
+            "log10K_displayed_bridge": 1.1676842640998295,
+            "direct_vs_displayed_dex": 0.0005211447760369303,
+            "spot_check": true
+          }
+        ],
+        "CoO_liquid_construction_validation": [
+          {
+            "T_K": 2100,
+            "derived_G_liq_kJ_mol": -476.6643404795341,
+            "tabulated_G_liq_kJ_mol": -476.666,
+            "derived_minus_tabulated_kJ_mol": 0.001659520465921105
+          },
+          {
+            "T_K": 2200,
+            "derived_G_liq_kJ_mol": -495.8577405716281,
+            "tabulated_G_liq_kJ_mol": -495.859,
+            "derived_minus_tabulated_kJ_mol": 0.0012594283718954102
+          },
+          {
+            "T_K": 2500,
+            "derived_G_liq_kJ_mol": -555.046087561027,
+            "tabulated_G_liq_kJ_mol": -555.048,
+            "derived_minus_tabulated_kJ_mol": 0.0019124389730222902
+          }
+        ]
+      }
+    }
+  ],
+  "errata": [
+    "K2SiO3 is not fitted because NIST-JANAF has no K2O(l) parent table.",
+    "Na4SiO4 is index-only and K4SiO4 is absent in the bounded central set; neither orthosilicate is activated.",
+    "Mn/Ni/Zn silicate liquid table bodies were not held. Co2SiO4 is the sole v2 addition, from Barin p.546 with CoO p.543.",
+    "The research-only 9-parent/39-row pack bypasses the intentionally fixed 8-parent/38-row public loader by direct ImccDatapack construction. No production identity or loader behavior is changed."
+  ]
+}

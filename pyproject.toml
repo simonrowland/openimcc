@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openimcc"
+version = "0.1.0.dev0"
+description = "Ideal-mixing-of-complex-components speciation for silicate melts: activities, activity coefficients, and degree of association"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "LICENSE-DATA", "NOTICE"]
+keywords = [
+    "IMCC", "ideal mixing of complex components", "silicate melt",
+    "melt speciation", "activity coefficient", "geochemistry",
+    "thermodynamics", "volatility", "MAGMA",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Programming Language :: Python :: 3",
+]
+
+# Core = the speciation solve. Measured, not guessed: kernel.py imports numpy +
+# scipy.optimize.least_squares, adapter.py imports numpy, cli.py imports nothing
+# outside the stdlib and this package.
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+# gas.py holds the vapour-species side and is a LEAF -- neither kernel.py,
+# adapter.py nor the package __init__ imports it. Verified by blocking pandas at
+# import time and running a full solve: D = 1.98367, no failure. So pandas is a
+# genuine extra rather than a cosmetic one.
+gas = ["pandas>=2.0"]
+# bench.py reads melt-activity-bench.v1 YAML fixtures.
+bench = ["pyyaml>=6.0"]
+all = ["openimcc[gas,bench]"]
+dev = ["openimcc[all]", "pytest>=7.4", "pytest-timeout"]
+
+[project.scripts]
+# Two entry points, not one: cli.py and bench.py have separate parsers upstream
+# and bench.py carries the only pyyaml dependency. Folding bench in as an
+# `openimcc bench` subcommand would drag that dependency onto the core CLI's
+# import path, so they stay split until bench's import is made lazy.
+openimcc = "openimcc.cli:main"
+openimcc-bench = "openimcc.bench:main"
+
+[project.urls]
+Source = "https://github.com/simonrowland/openimcc"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/openimcc"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/", "tests/", "benchmarks/", "docs/", "tools/", "CITATION.cff"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

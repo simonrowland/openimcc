@@ -1,0 +1,52 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it. If you use a datapack, cite the
+  underlying source as well -- the coefficients belong to those authors.
+title: "openimcc: ideal mixing of complex components for silicate melts"
+abstract: >-
+  An open implementation of the ideal-mixing-of-complex-components (IMCC) model
+  for silicate melt speciation, returning parent-oxide activities, activity
+  coefficients and degree of association. Ships auditable datapacks with
+  per-row provenance and an empirical benchmark harness that reports refusals
+  as data.
+type: software
+authors:
+  - family-names: Rowland
+    given-names: Simon
+    # orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"   # add before release
+version: 0.1.0.dev0
+license: Apache-2.0
+keywords:
+  - IMCC
+  - silicate melt
+  - melt speciation
+  - activity coefficient
+  - geochemistry
+  - volatility
+references:
+  - type: article
+    title: "A vaporization model for iron/silicate fractionation in the Mercury protoplanet"
+    authors:
+      - family-names: Fegley
+        given-names: Bruce
+      - family-names: Cameron
+        given-names: A. G. W.
+    journal: "Earth and Planetary Science Letters"
+    volume: 82
+    start: 207
+    end: 222
+    year: 1987
+    doi: 10.1016/0012-821X(87)90196-8
+  - type: article
+    title: "A thermodynamic model of high temperature lava vaporization on Io"
+    authors:
+      - family-names: Schaefer
+        given-names: Laura
+      - family-names: Fegley
+        given-names: Bruce
+    journal: "Icarus"
+    volume: 169
+    start: 216
+    end: 241
+    year: 2004
+    doi: 10.1016/j.icarus.2003.11.023

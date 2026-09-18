@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - name: datapack drift gate
+        # Runs before the tests on purpose: a drifted pack makes every residual
+        # below it meaningless, so fail on that first rather than reporting a
+        # confusing test failure downstream.
+        run: python tools/packmanifest.py --check
+      - run: pytest -q
+
+  core-install-is-really-core:
+    # Guards the dependency tiering claimed in the README: the core solve must
+    # work with neither pandas nor pyyaml installed. Easy to regress by adding
+    # one convenience import to kernel.py or adapter.py, and nothing else would
+    # notice until a user's install broke.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e .
+      - run: |
+          python - <<'PY'
+          import importlib.util, sys
+          for forbidden in ("pandas", "yaml"):
+              if importlib.util.find_spec(forbidden):
+                  sys.exit(f"{forbidden} present; this job must run without it")
+          from openimcc import load_datapack, evaluate
+          pack = load_datapack("src/openimcc/data/packs/imcc-sf04-v1.0.2.json")
+          r = evaluate({"SiO2": 0.45, "MgO": 0.10, "CaO": 0.15,
+                        "Al2O3": 0.15, "FeO": 0.15}, 1800.0, pack)
+          assert r.D > 1.0, r.D
+          print("core-only solve OK, D =", r.D)
+          PY
