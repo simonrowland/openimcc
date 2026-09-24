@@ -83,8 +83,10 @@ records used to fit the gas rows are retained in `data-src/janaf/` and included
 in source distributions, not the runtime wheel. NIST SRD 13 is public data,
 and the publication attributions are recorded in `NOTICE`.
 
-The benchmark runner's `partial_pressure` observable is a separate gap: it is
-awaiting a rewire onto `openimcc.gas` and currently returns a typed refusal.
+The benchmark runner's `partial_pressure` observable is wired to
+`openimcc.gas`: it passes parent-oxide activities on the pure-liquid standard
+state, converts bar to Pa, and retains out-of-domain predictions with a domain
+flag. Missing or invalid inputs remain typed refusals.
 
 ## Use
 
@@ -165,39 +167,42 @@ residual computed across mismatched bases is wrong *and looks plausible*.
 Residual is **log10(predicted / measured)**, i.e. dex.
 
 ```
-402 points   298 scored   94 out-of-domain   10 refused
-RMSE 0.883 dex   median |residual| 0.577 dex
+402 points   304 predictions   301 headline-scored   3 flagged
+94 out-of-domain   4 refused
+Headline RMSE 0.883 dex   flagged RMSE 0.305 dex   median |headline residual| 0.581 dex
 ```
 
-| species | n | scored | RMSE (dex) | median abs (dex) |
-|---|--:|--:|--:|--:|
-| SiO | 132 | 89 | **0.452** | 0.319 |
-| Ca | 99 | 99 | 0.834 | 0.615 |
-| Mg | 52 | 48 | 1.064 | 0.981 |
-| Al | 62 | 62 | **1.211** | 0.568 |
-| K | 3 | **0** | — | — |
-| Na | 54 | **0** | — | — |
+| species | n | headline scored | flagged | RMSE (dex) | flagged RMSE (dex) | median abs (dex) |
+|---|--:|--:|--:|--:|--:|--:|
+| SiO | 132 | 89 | 3 | **0.452** | 0.305 | 0.328 |
+| Ca | 99 | 99 | 0 | 0.834 | — | 0.615 |
+| Mg | 52 | 48 | 0 | 1.064 | — | 0.981 |
+| Al | 62 | 62 | 0 | **1.211** | — | 0.568 |
+| K | 3 | **3** | 0 | 0.931 | — | 0.948 |
+| Na | 54 | **0** | 0 | — | — | — |
 
 ### Read this before quoting the number
 
-**98 of 402 points do not score, and that is the most informative part of the
-output.** Dropping them would improve nothing and would flatter the RMSE:
+**101 of 402 points do not enter the headline RMSE, and that is the most
+informative part of the output.** Three are visible flagged predictions; the
+other 98 are refusals or out-of-domain points. Dropping them would improve
+nothing and would flatter the RMSE:
 
 - **All 94 out-of-domain points are Na2O–SiO2 binaries.** The pack declares a
   domain of 1700–3000 K for every row; Yamaguchi 1983 and Tsaplin 2000 sit at
   1173–1673 K, entirely below the floor. So `Na` scores **0 of 54** — we hold
   Na-silicate activity data and the published coefficients do not reach it. That
   is a real coverage gap, not a rounding error.
-- **Of the 10 refused, 4** are the digitised flux set: *"OCR scatter
+- **All 4 refused points** are the digitised flux set: *"OCR scatter
   digitization and no independent experimental fO2 pin"* — a data-quality
-  refusal, not an engine failure. **The other 6** are every `partial_pressure`
-  point (3 SiO, 3 K): that observable is not wired in this package yet, so K
-  scores 0 of 3. See [Gas layer](#gas-layer-not-yet-self-contained).
+  refusal, not an engine failure. K now scores **3 of 3**. The three SiO
+  pressures are predictions below the SiO2(l) band, retained with flags and
+  excluded from the headline RMSE. See [Gas layer](#gas-layer).
 
 **And the scored points are themselves an extrapolation.** 34 of the 38 rows
 carry a paper-demonstrated domain of **2500–3500 K** (Fegley & Cameron computed
 vaporization at 2500, 3000 and 3500 K). The whole bench sits 600–1300 K *below*
-that. So `RMSE 0.879 dex` is not "the model is off by a factor of 7.6" so much
+that. So `headline RMSE 0.883 dex` is not "the model is off by a factor of 7.6" so much
 as "these coefficients, used several hundred kelvin below where their authors
 demonstrated them, hold to about half a dex in the median." Al is the worst
 (RMSE 1.211 with median 0.568 — heavy tails, a few points far out), SiO the

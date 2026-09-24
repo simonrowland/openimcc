@@ -364,15 +364,37 @@ def test_activity_and_fugacity_scaling(
     gas_pack: ImccGasDatapack,
 ) -> None:
     # Premise: SiO2 -> SiO + 1/2 O2 has n_gas=1, so (5) is linear in a_SiO2.
-    # Algebra: p(a/2) = K*(a/2) = p(a)/2. Unit check: both activities and p/p°
-    # are dimensionless. Sanity: halving a unit activity halves p_SiO.
+    # Algebra: p(a/2) = K*(a/2) = p(a)/2 and p(2a) = 2*p(a). Unit check:
+    # both activities and p/p° are dimensionless. Sanity: halving a unit
+    # activity halves p_SiO.
     p_full = evaluate_gas(
-        {"SiO2": 1.0}, 2000.0, 1.0, gas_pack, allow_extrapolation=True
+        {"SiO2": 1.0}, 2000.0, 1.0, gas_pack, gas_species=("SiO",)
     )["SiO"]
     p_half = evaluate_gas(
-        {"SiO2": 0.5}, 2000.0, 1.0, gas_pack, allow_extrapolation=True
+        {"SiO2": 0.5}, 2000.0, 1.0, gas_pack, gas_species=("SiO",)
+    )["SiO"]
+    p_double = evaluate_gas(
+        {"SiO2": 2.0}, 2000.0, 1.0, gas_pack, gas_species=("SiO",)
     )["SiO"]
     assert p_half == pytest.approx(0.5 * p_full, rel=1e-12)
+    assert p_double == pytest.approx(2.0 * p_full, rel=1e-12)
+
+    # Premise: K2O -> 2 K + 1/2 O2 has n_gas=2, so (5) is proportional to
+    # a_K2O**(1/2). Algebra: p(a/2)/p(a) = sqrt(1/2), and
+    # p(2a)/p(a) = sqrt(2). Unit check: the exponent applies to the
+    # dimensionless parent activity, not a single-cation conversion. Sanity:
+    # a_K2O=0.25 gives the ratios below exactly.
+    p_k = evaluate_gas(
+        {"K2O": 0.25}, 1800.0, 1.0e-10, gas_pack, gas_species=("K",)
+    )["K"]
+    p_k_half = evaluate_gas(
+        {"K2O": 0.125}, 1800.0, 1.0e-10, gas_pack, gas_species=("K",)
+    )["K"]
+    p_k_double = evaluate_gas(
+        {"K2O": 0.5}, 1800.0, 1.0e-10, gas_pack, gas_species=("K",)
+    )["K"]
+    assert p_k_half / p_k == pytest.approx(2.0**-0.5, rel=1e-12)
+    assert p_k_double / p_k == pytest.approx(2.0**0.5, rel=1e-12)
 
     # Premise: Na2O -> 2 Na + 1/2 O2 has n_O2/n_gas=1/4. Algebra: changing
     # fO2 from 1 to 1e-4 multiplies p_Na by (1e-4)^(-1/4)=10. Unit check:

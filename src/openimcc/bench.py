@@ -10,9 +10,10 @@ Basis (must match the harness; a mismatched basis is silently wrong):
 
 - ``activity`` and ``activity_coefficient`` compare IMCC parent-formula
   values directly. Gamma is ``a/x`` on the parent-oxide formula-unit basis.
-- ``partial_pressure`` converts those parent-formula activities onto each
-  rail's single-cation basis, then holds the tracked analytical gas layer
-  constant. Activity and pressure are never coerced into each other.
+- ``partial_pressure`` passes those parent-formula activities to
+  ``openimcc.gas.evaluate_gas`` and converts its bar result to the Pa basis of
+  the tracked measurements. Activity and pressure are never coerced into each
+  other.
 - Residual is ``log10(predicted/measured)`` (the bench-set fair-comparison
   convention). ``ratio`` is the linear ``predicted/measured``.
 
@@ -69,6 +70,8 @@ _SUPPORTED_OBSERVABLES = frozenset(
     {"activity", "activity_coefficient", "partial_pressure"}
 )
 _ID_ENCODED_XTOKEN = re.compile(r"_x\d{3,}(?:_|$)")
+BAR_TO_PA = 1.0e5
+"""Pressure conversion used at the bench boundary: 1 bar = 100,000 Pa."""
 
 
 @dataclass(frozen=True)
@@ -90,6 +93,8 @@ class PointResult:
     convention: str
     units: str
     score: bool
+    domain_flag: str | None = None
+    provenance_class: str | None = None
 
 
 @dataclass(frozen=True)
@@ -99,7 +104,9 @@ class Aggregate:
     key: str
     n: int
     n_ok: int
+    n_flagged: int
     rmse: float | None
+    flagged_rmse: float | None
     median_abs_residual: float | None
     status_counts: Mapping[str, int]
 
@@ -114,7 +121,9 @@ class BenchReport:
     pack_version: str
     n: int
     n_ok: int
+    n_flagged: int
     rmse: float | None
+    flagged_rmse: float | None
     median_abs_residual: float | None
     status_counts: Mapping[str, int]
     per_species: tuple[Aggregate, ...]
@@ -176,60 +185,6 @@ def _normalize_wt(values: Mapping[str, Any]) -> dict[str, float]:
     if total <= 0.0:
         return {}
     return {key: 100.0 * value / total for key, value in positive.items()}
-
-
-_FORMULA_TOKEN = re.compile(r"([A-Z][a-z]?)(\d*)")
-
-
-def _parse_oxide_formula(formula: str) -> dict[str, int]:
-    """Element counts for a simple oxide formula.
-
-    Deliberately narrow: parent oxides are flat formulae like SiO2, Al2O3,
-    Na2O, P2O5 -- no brackets, no hydrates, no charges. A general chemical
-    parser would be more code and more ways to be subtly wrong on input this
-    module never sees. Anything the narrow grammar does not consume raises
-    rather than being silently skipped, because a dropped element would change
-    the cation count and therefore the basis.
-    """
-    counts: dict[str, int] = {}
-    consumed = 0
-    for match in _FORMULA_TOKEN.finditer(formula):
-        if match.start() != consumed:
-            break
-        element, digits = match.groups()
-        counts[element] = counts.get(element, 0) + (int(digits) if digits else 1)
-        consumed = match.end()
-    if consumed != len(formula) or not counts:
-        raise ValueError(f"cannot parse oxide formula {formula!r}")
-    return counts
-
-
-def _oxide_cations_per_formula(parent_oxide: str) -> float:
-    """Cations per formula unit, e.g. Na2O -> 2, SiO2 -> 1, Al2O3 -> 2.
-
-    This is what converts a parent-oxide activity to the single-cation basis,
-    so getting it wrong rescales every gas comparison silently.
-    """
-    elements = _parse_oxide_formula(str(parent_oxide))
-    cations = [float(n) for el, n in elements.items() if el != "O"]
-    if "O" not in elements or len(cations) != 1:
-        raise ValueError(
-            f"expected a one-cation-family oxide formula, got {parent_oxide!r}"
-        )
-    return cations[0]
-
-
-def _single_cation_gas_activities(
-    parent_oxide_activities: Mapping[str, float],
-) -> dict[str, float]:
-    converted: dict[str, float] = {}
-    for parent_oxide, activity in parent_oxide_activities.items():
-        cations = _oxide_cations_per_formula(parent_oxide)
-        # Premise: M_nO_m contains n units of the single-cation component
-        # MO_(m/n). Algebra: a_parent = a_single**n, so
-        # a_single = a_parent**(1/n). Sanity: K2O/Na2O/Li2O use sqrt(a_M2O).
-        converted[str(parent_oxide)] = float(activity) ** (1.0 / cations)
-    return _positive_finite(converted)
 
 
 def id_encodes_composition_token(point_id: str) -> bool:
@@ -397,60 +352,136 @@ def _prediction_for_point(
     activities: Mapping[str, float],
     gammas: Mapping[str, float],
     reason: str,
-) -> tuple[float | None, str, str]:
-    """Return (predicted, reason, status).
+    *,
+    gas_datapack: Any = None,
+    gas_evaluate: Any = None,
+    gas_species_provenance: Any = None,
+    gas_reason: str = "",
+    gas_domain_error: Any = None,
+    gas_extrapolation_labels: Mapping[str, str] | None = None,
+) -> tuple[float | None, str, str, str | None, str | None]:
+    """Return (predicted, reason, status, provenance class, domain flag).
 
     ``unsupported_observable`` is a runner verdict, not an engine crash.
     Activity stays on the parent-formula basis; pressure goes through the
-    single-cation conversion plus the shared analytical gas layer.
+    shared analytical gas layer, which also takes parent-formula activities.
     """
     if status != "ok":
-        return None, reason, status
+        return None, reason, status, None, None
     observable = str(point["observable"])
     if observable not in _SUPPORTED_OBSERVABLES:
-        return None, f"unsupported observable {observable!r}", "unsupported_observable"
+        return (
+            None,
+            f"unsupported observable {observable!r}",
+            "unsupported_observable",
+            None,
+            None,
+        )
     parent = str(point["parent_oxide"])
+    provenance_class: str | None = None
+    domain_flag: str | None = None
     if observable == "activity":
         value: float | None = activities.get(parent)
     elif observable == "activity_coefficient":
         value = gammas.get(parent)
     else:
-        if "fO2_bar" not in point:
+        species = str(point.get("species") or "")
+        if gas_species_provenance is not None and species:
+            try:
+                provenance_class = str(gas_species_provenance(species)["authority"])
+            except ImccRefusal:
+                pass
+        if point.get("fO2_bar") is None:
             return (
                 None,
                 "gas comparison refused: observation has no independent fO2 pin",
                 "refused",
+                provenance_class,
+                None,
             )
-        # The gas observable is not wired in this package yet.
-        #
-        # Upstream this branch called the simulator's analytical vapour stack,
-        # which reads a large vapour-pressure catalogue through two further
-        # simulator subsystems. That stack is not worth porting: openimcc.gas
-        # already covers every species this bench uses (Al, Ca, K, Mg, Na, SiO
-        # are all in IMCC_GAS_CHANNEL_SPECIES), and its evaluate_gas takes
-        # parent-oxide activities, T and fO2 -- exactly what is in scope here.
-        # So the move is a rewire, not a transplant.
-        #
-        # ★ WHOEVER DOES THAT REWIRE: assert the units first. evaluate_gas
-        # returns BAR; the upstream layer returned Pa, and every `measured`
-        # value in a melt-activity-bench.v1 partial_pressure point is in Pa.
-        # That is exactly 5 dex. Miss it and every gas residual shifts by five
-        # orders of magnitude while the log-residual table still looks
-        # entirely plausible.
-        return (
-            None,
-            "partial_pressure is not wired in openimcc yet: the gas layer "
-            "rewire onto openimcc.gas.evaluate_gas is pending (see "
-            "docs/EXTRACTION.md)",
-            "refused",
-        )
+        units = str(point.get("units") or "")
+        if units != "Pa":
+            return (
+                None,
+                f"partial_pressure refused: expected units 'Pa', got {units!r}",
+                "refused",
+                provenance_class,
+                None,
+            )
+        if gas_reason:
+            return None, gas_reason, "refused", provenance_class, None
+        if (
+            gas_datapack is None
+            or gas_evaluate is None
+            or gas_species_provenance is None
+        ):
+            return (
+                None,
+                "partial_pressure refused: gas layer is unavailable",
+                "refused",
+                provenance_class,
+                None,
+            )
+
+        try:
+            gas_values = gas_evaluate(
+                activities,
+                float(point["temperature_K"]),
+                float(point["fO2_bar"]),
+                gas_datapack,
+                gas_species=(species,),
+            )
+            value = gas_values.get(species)
+        except ImccRefusal as exc:
+            if gas_domain_error is not None and isinstance(exc, gas_domain_error):
+                try:
+                    gas_values = gas_evaluate(
+                        activities,
+                        float(point["temperature_K"]),
+                        float(point["fO2_bar"]),
+                        gas_datapack,
+                        gas_species=(species,),
+                        allow_extrapolation=True,
+                    )
+                    value = gas_values.get(species)
+                except (ImccRefusal, TypeError, ValueError) as retry_exc:
+                    return (
+                        None,
+                        _reason_line(retry_exc),
+                        "refused",
+                        provenance_class,
+                        None,
+                    )
+                domain_flag = _reason_line(exc)
+                label = (gas_extrapolation_labels or {}).get(species)
+                if label:
+                    domain_flag = f"{domain_flag}; {label}"
+            else:
+                return None, _reason_line(exc), "refused", provenance_class, None
+        except (TypeError, ValueError) as exc:
+            return (
+                None,
+                f"gas comparison refused: {_reason_line(exc)}",
+                "refused",
+                provenance_class,
+                None,
+            )
+
+        # Premise: evaluate_gas returns p_i / p° numerically in bar, while
+        # every partial_pressure measurement is in Pa. Algebra: p_Pa =
+        # p_bar * (1 bar / 1) * 1e5 Pa/bar. Unit check: BAR_TO_PA has units
+        # Pa/bar, so the product is Pa. Sanity: 1 bar becomes 100000 Pa;
+        # omitting this factor shifts every log10 residual by exactly -5 dex.
+        value = None if value is None else float(value) * BAR_TO_PA
     if value is None or not math.isfinite(float(value)) or float(value) <= 0.0:
         return (
             None,
             f"engine returned no positive {observable} for {parent}",
             "refused",
+            provenance_class,
+            None,
         )
-    return float(value), "", "ok"
+    return float(value), "", "ok", provenance_class, domain_flag
 
 
 def _residual_and_ratio(
@@ -487,12 +518,25 @@ def _status_counts(rows: Sequence[PointResult]) -> dict[str, int]:
 
 
 def _aggregate(key: str, rows: Sequence[PointResult]) -> Aggregate:
-    residuals = [row.residual for row in rows if row.residual is not None]
+    flagged_residuals = [
+        row.residual
+        for row in rows
+        if row.domain_flag is not None and row.residual is not None
+    ]
+    residuals = [
+        row.residual
+        for row in rows
+        if row.domain_flag is None and row.residual is not None
+    ]
     return Aggregate(
         key=key,
         n=len(rows),
         n_ok=sum(row.status == "ok" for row in rows),
+        n_flagged=sum(row.domain_flag is not None for row in rows),
         rmse=_rmse(value for value in residuals if value is not None),
+        flagged_rmse=_rmse(
+            value for value in flagged_residuals if value is not None
+        ),
         median_abs_residual=_median_abs(
             value for value in residuals if value is not None
         ),
@@ -541,6 +585,34 @@ def run_bench(
         species=species,
         limit=limit,
     )
+    gas_datapack: Any = None
+    gas_evaluate: Any = None
+    gas_species_provenance: Any = None
+    gas_reason = ""
+    gas_domain_error: Any = None
+    gas_extrapolation_labels: Mapping[str, str] | None = None
+    if any(str(point.get("observable")) == "partial_pressure" for point in selected):
+        try:
+            from openimcc.gas import (
+                IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS as _gas_extrapolation_labels,
+                ImccGasTemperatureOutsideDomainError as _gas_domain_error,
+                evaluate_gas as _evaluate_gas,
+                gas_species_provenance as _gas_species_provenance,
+                load_gas_datapack,
+            )
+
+            gas_evaluate = _evaluate_gas
+            gas_species_provenance = _gas_species_provenance
+            gas_domain_error = _gas_domain_error
+            gas_extrapolation_labels = _gas_extrapolation_labels
+            gas_datapack = load_gas_datapack()
+        except ImportError as exc:
+            gas_reason = (
+                "partial_pressure refused: gas layer unavailable; install "
+                f'"openimcc[gas]" (pandas import failed: {_reason_line(exc)})'
+            )
+        except ImccRefusal as exc:
+            gas_reason = f"partial_pressure refused: {_reason_line(exc)}"
     cache: dict[tuple[str, float], tuple[str, dict[str, float], dict[str, float], str]] = {}
     rows: list[PointResult] = []
     for point in selected:
@@ -559,8 +631,24 @@ def run_bench(
             status = "refused"
             engine_reason = str(point["dropped_reason"])
         enriched = {**point, "composition_wt_pct": composition}
-        predicted, prediction_reason, status = _prediction_for_point(
-            enriched, status, activities, gammas, engine_reason
+        (
+            predicted,
+            prediction_reason,
+            status,
+            provenance_class,
+            domain_flag,
+        ) = _prediction_for_point(
+            enriched,
+            status,
+            activities,
+            gammas,
+            engine_reason,
+            gas_datapack=gas_datapack,
+            gas_evaluate=gas_evaluate,
+            gas_species_provenance=gas_species_provenance,
+            gas_reason=gas_reason,
+            gas_domain_error=gas_domain_error,
+            gas_extrapolation_labels=gas_extrapolation_labels,
         )
         measured = float(point["measured"])
         score = bool(point.get("score", True))
@@ -582,6 +670,8 @@ def run_bench(
                 convention=str(point.get("convention") or ""),
                 units=str(point.get("units") or ""),
                 score=score,
+                domain_flag=domain_flag,
+                provenance_class=provenance_class,
             )
         )
     by_species: dict[str, list[PointResult]] = defaultdict(list)
@@ -597,7 +687,9 @@ def run_bench(
         pack_version=engine.version,
         n=overall.n,
         n_ok=overall.n_ok,
+        n_flagged=overall.n_flagged,
         rmse=overall.rmse,
+        flagged_rmse=overall.flagged_rmse,
         median_abs_residual=overall.median_abs_residual,
         status_counts=overall.status_counts,
         per_species=tuple(
@@ -624,7 +716,7 @@ def _render_aggregate_table(title: str, aggregates: Sequence[Aggregate]) -> list
     lines = [title, ""]
     header = (
         f"{'key':<32} {'N':>5} {'N_ok':>5} {'RMSE':>10} {'med|r|':>10} "
-        f"{'refused':>8} {'ood':>8}"
+        f"{'flagged':>8} {'flagRMSE':>10} {'refused':>8} {'ood':>8}"
     )
     lines.append(header)
     lines.append("-" * len(header))
@@ -632,6 +724,7 @@ def _render_aggregate_table(title: str, aggregates: Sequence[Aggregate]) -> list
         lines.append(
             f"{row.key:<32} {row.n:>5} {row.n_ok:>5} "
             f"{_fmt_float(row.rmse):>10} {_fmt_float(row.median_abs_residual):>10} "
+            f"{row.n_flagged:>8} {_fmt_float(row.flagged_rmse):>10} "
             f"{row.status_counts.get('refused', 0):>8} "
             f"{row.status_counts.get('out_of_domain', 0):>8}"
         )
@@ -648,7 +741,10 @@ def render_report(report: BenchReport) -> str:
         f"  model: {report.pack_model_id}  version={report.pack_version}",
         (
             f"  N={report.n}  N_ok={report.n_ok}  "
+            f"scored={report.n_ok - report.n_flagged}  "
+            f"flagged={report.n_flagged}  "
             f"RMSE={_fmt_float(report.rmse)}  "
+            f"flagged_RMSE={_fmt_float(report.flagged_rmse)}  "
             f"median|residual|={_fmt_float(report.median_abs_residual)}"
         ),
         f"  statuses: {_fmt_status_counts(report.status_counts)}",
@@ -660,7 +756,8 @@ def render_report(report: BenchReport) -> str:
     lines.append("")
     point_header = (
         f"{'id':<28} {'pop':<24} {'sp':<6} {'obs':<18} "
-        f"{'meas':>10} {'pred':>10} {'resid':>10} {'ratio':>10} {'status':<22}"
+        f"{'meas':>10} {'pred':>10} {'resid':>10} {'ratio':>10} "
+        f"{'status':<22} {'domain_flag':<88} {'provenance_class':<44}"
     )
     lines.append(point_header)
     lines.append("-" * len(point_header))
@@ -669,7 +766,8 @@ def render_report(report: BenchReport) -> str:
             f"{row.point_id:<28} {row.population:<24} {row.species:<6} "
             f"{row.observable:<18} {_fmt_float(row.measured):>10} "
             f"{_fmt_float(row.predicted):>10} {_fmt_float(row.residual):>10} "
-            f"{_fmt_float(row.ratio):>10} {row.status:<22}"
+            f"{_fmt_float(row.ratio):>10} {row.status:<22} "
+            f"{row.domain_flag or '—':<88} {row.provenance_class or '—':<44}"
         )
     return "\n".join(lines) + "\n"
 

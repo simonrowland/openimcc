@@ -21,10 +21,41 @@ flagged `secondary_transcription_unverified_primary`. The K, K2 and KO channel
 authority therefore carries that flag. Once the LH84 primary coefficient table
 is available, re-certify the row and remove the flag.
 
-### 2. The bench's `partial_pressure` observable is not wired
+### 2. The bench's `partial_pressure` observable is wired (done)
 
-It returns a typed refusal, so 6 of 402 points (3 SiO, 3 K) do not score and K
-scores 0 of 3.
+The runner now passes each point's parent-oxide activities, temperature and
+independent fO2 pin to `openimcc.gas.evaluate_gas`, converts the returned bar
+value to the bench's Pa units, and carries the gas channel's provenance class
+into each result row. The datapack loads once per run. The tracked set with
+`imcc-sf04-v1.0.2` produces these six Hastie 1981 KEMS outcomes:
+
+| id | T (K) | fO2 (bar) | measured (Pa) | predicted (Pa) | log10 residual | domain flag | provenance class |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| `hastie_k_1917_186` | 1917.186331 | 5.694375450e-6 | 2.820005790 | 0.361935171 | −0.891619212 | — | `secondary_transcription_unverified_primary` |
+| `hastie_k_1917_282` | 1917.281980 | 5.703622101e-6 | 3.210036717 | 0.362238799 | −0.947515035 | — | `secondary_transcription_unverified_primary` |
+| `hastie_k_1955_825` | 1955.824724 | 1.082207471e-5 | 4.530018754 | 0.504424868 | −0.953303511 | — | `secondary_transcription_unverified_primary` |
+| `hastie_sio_1907_796` | 1907.795668 | 4.851884054e-6 | 0.082727519 | 0.049889861 | −0.219637706 | `SiO2(l) [1996, 3000] K` | `lam1987_transcribed` |
+| `hastie_sio_1909_739` | 1909.739189 | 5.016024124e-6 | 0.116737396 | 0.051569589 | −0.354816329 | `SiO2(l) [1996, 3000] K` | `lam1987_transcribed` |
+| `hastie_sio_1948_149` | 1948.149056 | 9.545997137e-6 | 0.206709293 | 0.097839724 | −0.324844781 | `SiO2(l) [1996, 3000] K` | `lam1987_transcribed` |
+
+The three SiO points are predicted with the bench's per-point extrapolation
+opt-in and carry the SiO2(l) certified band in `domain_flag`. The fresh full-set
+summary is 304 predictions, 301 headline-scored, 3 flagged, 94 out-of-domain
+and 4 refused; headline RMSE **0.883362 dex**, flagged RMSE **0.305319 dex**.
+The 396 non-gas rows retain their pre-rewire predictions, residuals, statuses
+and reasons exactly.
+
+Known gap: **K partial pressure is ~0.9 dex low on Hastie 1981 case 4; the
+reviewer's decomposition attributes −0.845 dex to the IMCC a_K2O (free-parent
+activity, gamma ~ 4e-13) against VapoRock on the same K2O(l) row, not to the
+K2O(l) transcription (a JANAF crystal swap moves it −0.010 dex).**
+
+Short decomposition:
+
+| source | dex |
+| --- | ---: |
+| IMCC a_K2O versus VapoRock at the same T, pin and K2O(l) row | −0.845 |
+| remaining VapoRock-versus-measurement residual | −0.047 |
 
 Upstream this called the simulator's analytical vapour stack, which reads a
 large catalogue through two further subsystems. **That is not worth porting.**
@@ -33,13 +64,12 @@ all six of SiO, Ca, Al, Na, Mg, K are in `IMCC_GAS_CHANNEL_SPECIES` — and take
 parent-oxide activities, T and fO2, which is exactly what the bench holds. So
 this is a rewire, not a transplant.
 
-> ★ **Whoever does the rewire: assert the units first.** `evaluate_gas` returns
-> **bar**; every `measured` value on a `partial_pressure` point is in **Pa**.
-> That is exactly 5 dex. Measured on one CMAS state at 1873 K, raw
-> `log10(gas/simulator)` was −4.58 (SiO), −4.99 (Ca), −5.32 (Al), −5.75 (Mg);
-> corrected for the 1e5, +0.42 / +0.01 / −0.32 / −0.75, i.e. agreement to about
-> a dex. Miss the conversion and every gas residual shifts five orders of
-> magnitude while the log-residual table still looks entirely plausible.
+> ★ **Unit evidence for the completed rewire.** `evaluate_gas` returns **bar**;
+> every `measured` value on a `partial_pressure` point is in **Pa**. The runner
+> asserts `units: Pa` and applies the single named `1 bar = 1e5 Pa` conversion.
+> A regression test compares a direct gas result against the Pa prediction, so
+> dropping or doubling the factor fails instead of silently shifting the log
+> residual by five orders of magnitude.
 
 ### 3. Test coverage
 

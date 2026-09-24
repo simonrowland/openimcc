@@ -17,12 +17,14 @@ import os
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import TYPE_CHECKING, Mapping, Sequence
 
 import numpy as np
-import pandas as pd
 
 from openimcc.kernel import ImccRefusal
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 # --------------------------------------------------------------------------- #
@@ -345,6 +347,8 @@ def load_gas_datapack(
     ``oxide_path`` arguments always win for callers building a diagnostic pack.
     Both files are read-only.
     """
+    import pandas as pd
+
     # Resolved lazily: an unconfigured install must fail with a typed refusal
     # at CALL time, not at import time, or `import openimcc.gas` breaks for
     # everyone who only wanted the species constants.
@@ -539,6 +543,8 @@ def _oxide_row_for_T(
     df: pd.DataFrame, oxide: str, T: float, allow_extrapolation: bool = False
 ) -> pd.Series:
     """Select the condensate interval closest to T, refusing extrapolation by default."""
+    import pandas as pd
+
     if oxide not in df.index:
         raise ImccGasSpeciesNotFoundError(
             f"no condensate G(T) row for oxide {oxide!r}"

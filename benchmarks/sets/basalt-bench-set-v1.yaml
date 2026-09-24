@@ -63,11 +63,11 @@ reference_anchors:
 fair_comparison:
   residual: log10(predicted/measured)
   gas_layer: >-
-    For partial-pressure or flux observations, every engine's parent-formula
-    oxide activity is converted to the rail's single-cation component basis,
-    then passed through the same tracked analytical gas layer at the point's
-    pinned fO2. An engine's internally coupled gas result is never substituted
-    into that population.
+    For partial-pressure or flux observations, the gas layer takes each
+    engine's parent-oxide activity on the pure-liquid parent standard state,
+    then passes it through the same tracked analytical gas layer at the
+    point's pinned fO2. An engine's internally coupled gas result is never
+    substituted into that population.
   direct_activity: Compare pure-liquid-standard-state activity directly.
   activity_coefficient: >-
     Compare gamma=a/x on the named parent-oxide formula-unit basis; adapters

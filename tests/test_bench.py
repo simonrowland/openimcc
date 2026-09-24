@@ -15,7 +15,6 @@ import pytest
 
 from openimcc import evaluate, load_datapack
 from openimcc.bench import (
-    _single_cation_gas_activities,
     main,
     render_report,
     run_bench,
@@ -30,6 +29,7 @@ _CMAS_WT = {
     "MgO": 15.0,
     "Al2O3": 15.0,
 }
+_K_CMAS_WT = {**_CMAS_WT, "K2O": 1.0}
 
 
 def _write_fixture(path: Path, points: list[dict], compositions: dict | None = None) -> Path:
@@ -206,28 +206,159 @@ def test_bench_reports_the_engine_verbatim(tmp_path: Path) -> None:
     assert row.residual == math.log10(expected / 0.2)
 
 
-def test_single_cation_conversion_is_the_nth_root_of_the_parent_activity() -> None:
-    """a_parent = a_single**n for M_nO_m, so a_single = a_parent**(1/n).
+def _partial_pressure_point(
+    point_id: str = "pp_k_1800",
+    *,
+    species: str = "K",
+    parent_oxide: str = "K2O",
+    temperature_K: float = 1800.0,
+    measured: float = 1.0,
+    units: str = "Pa",
+    fO2_bar: float = 1.0e-10,
+) -> dict:
+    return {
+        "id": point_id,
+        "population": "inline_gas",
+        "composition_id": "k_cmas_in_domain",
+        "material_class": "cmas_slag",
+        "temperature_K": temperature_K,
+        "parent_oxide": parent_oxide,
+        "species": species,
+        "observable": "partial_pressure",
+        "measured": measured,
+        "units": units,
+        "score": True,
+        "fO2_bar": fO2_bar,
+        "convention": f"p({species}) against an independent fO2 pin",
+    }
 
-    Derivation: the parent oxide M_nO_m is n formula units of the single-cation
-    component MO_(m/n). In an ideal mixture of those units the parent activity
-    is the product of n identical single-cation activities, so taking the nth
-    root inverts it.
 
-    Sanity: SiO2 has one cation, so the value is unchanged; Na2O and Al2O3 have
-    two, so each is a square root. A wrong exponent here rescales every gas
-    comparison and the residual table still looks plausible, which is why the
-    expected values are written out longhand rather than recomputed from the
-    same expression the code uses.
-    """
-    parent = {"SiO2": 0.25, "Al2O3": 0.04, "Na2O": 1.0e-8, "K2O": 4.0e-10, "MgO": 0.1}
-    got = _single_cation_gas_activities(parent)
+def _partial_pressure_fixture(path: Path, points: list[dict]) -> Path:
+    return _write_fixture(
+        path,
+        points,
+        compositions={
+            "k_cmas_in_domain": {
+                "material_class": "cmas_slag",
+                "composition_wt_pct": dict(_K_CMAS_WT),
+            }
+        },
+    )
 
-    assert got["SiO2"] == pytest.approx(0.25)          # 1 cation -> unchanged
-    assert got["MgO"] == pytest.approx(0.1)            # 1 cation -> unchanged
-    assert got["Al2O3"] == pytest.approx(0.2)          # 2 cations -> sqrt(0.04)
-    assert got["Na2O"] == pytest.approx(1.0e-4)        # 2 cations -> sqrt(1e-8)
-    assert got["K2O"] == pytest.approx(2.0e-5)         # 2 cations -> sqrt(4e-10)
+
+def test_partial_pressure_uses_parent_basis_and_converts_bar_to_pa(
+    tmp_path: Path,
+) -> None:
+    fixture = _partial_pressure_fixture(
+        tmp_path / "bench.yaml",
+        [_partial_pressure_point()],
+    )
+    report = run_bench(fixture, DATAPACK_PATH)
+    row = report.points[0]
+
+    assert row.status == "ok", row.reason
+    assert row.predicted is not None
+    assert row.domain_flag is None
+    assert row.provenance_class == "secondary_transcription_unverified_primary"
+
+    pack = load_datapack(DATAPACK_PATH)
+    imcc = evaluate(dict(_K_CMAS_WT), 1800.0, pack, basis_type="wt")
+    activities = dict(zip(imcc.parent_oxides, imcc.parent_activity))
+    from openimcc.gas import evaluate_gas, load_gas_datapack
+
+    gas_bar = evaluate_gas(
+        activities,
+        1800.0,
+        1.0e-10,
+        load_gas_datapack(),
+        gas_species=("K",),
+    )["K"]
+    # The literal is deliberate: this test turns red if the named conversion
+    # disappears or is changed to 1e4/1e6.
+    assert row.predicted == pytest.approx(gas_bar * 100000.0)
+
+
+def test_partial_pressure_units_are_a_typed_refusal(tmp_path: Path) -> None:
+    fixture = _partial_pressure_fixture(
+        tmp_path / "bench.yaml",
+        [_partial_pressure_point(units="bar")],
+    )
+    row = run_bench(fixture, DATAPACK_PATH).points[0]
+
+    assert row.status == "refused"
+    assert row.predicted is None
+    assert row.residual is None
+    assert "expected units 'Pa'" in row.reason
+    assert row.provenance_class == "secondary_transcription_unverified_primary"
+
+
+@pytest.mark.parametrize("fO2_mode", ["missing", "null"])
+def test_partial_pressure_missing_or_null_fO2_is_a_typed_refusal(
+    tmp_path: Path, fO2_mode: str
+) -> None:
+    point = _partial_pressure_point()
+    if fO2_mode == "missing":
+        point.pop("fO2_bar")
+    else:
+        point["fO2_bar"] = None
+
+    row = run_bench(
+        _partial_pressure_fixture(tmp_path / "bench.yaml", [point]),
+        DATAPACK_PATH,
+    ).points[0]
+
+    assert row.status == "refused"
+    assert row.predicted is None
+    assert row.reason == (
+        "gas comparison refused: observation has no independent fO2 pin"
+    )
+    assert row.provenance_class == "secondary_transcription_unverified_primary"
+
+
+def test_partial_pressure_loads_gas_datapack_once_per_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import openimcc.gas as gas
+
+    calls = 0
+    original = gas.load_gas_datapack
+
+    def counted_load():
+        nonlocal calls
+        calls += 1
+        return original()
+
+    monkeypatch.setattr(gas, "load_gas_datapack", counted_load)
+    fixture = _partial_pressure_fixture(
+        tmp_path / "bench.yaml",
+        [
+            _partial_pressure_point("pp_k_1800_a"),
+            _partial_pressure_point("pp_k_1800_b"),
+        ],
+    )
+    report = run_bench(fixture, DATAPACK_PATH)
+
+    assert calls == 1
+    assert all(row.status == "ok" for row in report.points)
+
+
+def test_partial_pressure_refuses_when_pandas_is_unavailable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _partial_pressure_fixture(
+        tmp_path / "bench.yaml",
+        [_partial_pressure_point()],
+    )
+    monkeypatch.delitem(sys.modules, "openimcc.gas", raising=False)
+    monkeypatch.setitem(sys.modules, "pandas", None)
+
+    row = run_bench(fixture, DATAPACK_PATH).points[0]
+
+    assert row.status == "refused"
+    assert row.predicted is None
+    assert "pandas" in row.reason
+    assert "openimcc[gas]" in row.reason
+    assert row.provenance_class == "secondary_transcription_unverified_primary"
 
 
 def test_filters_and_limit(tmp_path: Path) -> None:
@@ -268,15 +399,10 @@ def test_text_and_json_render(tmp_path: Path) -> None:
     assert ids == {"ok_sio2_1800", "ood_t500", "refused_held"}
 
 
-def test_activity_scores_while_the_gas_observable_refuses(tmp_path: Path) -> None:
-    """The package's current gas posture, pinned.
-
-    Activities are this engine's own output and must score. partial_pressure
-    borrowed the simulator's vapour stack, which did not travel, so it refuses
-    -- with a reason a user can act on rather than a traceback. When the rewire
-    onto openimcc.gas lands (see docs/EXTRACTION.md), this test is the one that
-    should change, and it should change to an assertion about a NUMBER in Pa.
-    """
+def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
+    tmp_path: Path,
+) -> None:
+    """The bench opts into a flagged prediction for a gas-domain gap."""
     fixture = _write_fixture(
         tmp_path / "bench.yaml",
         [
@@ -294,22 +420,30 @@ def test_activity_scores_while_the_gas_observable_refuses(tmp_path: Path) -> Non
                 "score": True,
                 "convention": "a(SiO2), parent-oxide formula-unit basis",
             },
-            {
-                "id": "pp_sio_1800",
-                "population": "inline_gas",
-                "composition_id": "cmas_in_domain",
-                "material_class": "cmas_slag",
-                "temperature_K": 1800.0,
-                "parent_oxide": "SiO2",
-                "species": "SiO",
-                "observable": "partial_pressure",
-                "measured": 1.0,
-                "units": "Pa",
-                "score": True,
-                "fO2_bar": 1.0e-10,
-                "convention": "p(SiO) against an independent fO2 pin",
-            },
+            _partial_pressure_point(
+                "pp_sio_2000",
+                species="SiO",
+                parent_oxide="SiO2",
+                temperature_K=2000.0,
+            ),
+            _partial_pressure_point(
+                "pp_sio_1900",
+                species="SiO",
+                parent_oxide="SiO2",
+                temperature_K=1900.0,
+                measured=1.0e-3,
+            ),
         ],
+        compositions={
+            "cmas_in_domain": {
+                "material_class": "cmas_slag",
+                "composition_wt_pct": dict(_CMAS_WT),
+            },
+            "k_cmas_in_domain": {
+                "material_class": "cmas_slag",
+                "composition_wt_pct": dict(_K_CMAS_WT),
+            },
+        },
     )
     report = run_bench(fixture, DATAPACK_PATH)
     by_id = {row.point_id: row for row in report.points}
@@ -318,11 +452,31 @@ def test_activity_scores_while_the_gas_observable_refuses(tmp_path: Path) -> Non
     assert activity.status == "ok", activity.reason
     assert activity.predicted is not None and math.isfinite(float(activity.predicted))
 
-    gas_row = by_id["pp_sio_1800"]
-    assert gas_row.status == "refused"
-    assert gas_row.predicted is None
-    assert "not wired in openimcc yet" in gas_row.reason
+    in_domain = by_id["pp_sio_2000"]
+    assert in_domain.status == "ok", in_domain.reason
+    assert in_domain.predicted is not None
+    assert in_domain.domain_flag is None
+    assert in_domain.provenance_class == "lam1987_transcribed"
 
-    # The refusal stays out of the score, like every other refusal.
-    assert report.n_ok == 1
-    assert report.status_counts["refused"] == 1
+    flagged = by_id["pp_sio_1900"]
+    assert flagged.status == "ok", flagged.reason
+    assert flagged.predicted is not None
+    assert flagged.residual is not None
+    assert "outside declared G(T) interval" in flagged.domain_flag
+    assert "SiO2(l) [1996, 3000] K" in flagged.domain_flag
+    assert flagged.provenance_class == "lam1987_transcribed"
+
+    headline_residuals = [activity.residual, in_domain.residual]
+    expected_headline_rmse = math.sqrt(
+        sum(float(value) ** 2 for value in headline_residuals) / 2.0
+    )
+    assert report.n_ok == 3
+    assert report.n_flagged == 1
+    assert report.status_counts["refused"] == 0
+    assert report.rmse == pytest.approx(expected_headline_rmse)
+    assert report.flagged_rmse == pytest.approx(abs(flagged.residual))
+
+    rendered = render_report(report)
+    assert "flagged=1" in rendered
+    assert "flagged_RMSE=" in rendered
+    assert "SiO2(l) [1996, 3000] K" in rendered
