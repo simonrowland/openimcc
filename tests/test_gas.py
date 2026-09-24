@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import math
+import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -41,7 +44,8 @@ from openimcc.gas import (
 # log10(p_gas) = -(n_gas*G_gas + n_O2*G_O2 - G_parent) /
 # (n_gas*R*T*ln(10)). Algebra: source kJ/mol values are converted to J/mol
 # before the stoichiometric sum. Unit check: the denominator is J/mol. Sanity:
-# SiO2(l) -> SiO(g) + 1/2 O2(g) at 2000 K rounds to -6.669.
+# SiO2(l) -> SiO2(g) at 2000 K rounds to -6.669 (n_O2 = 0); SiO2(l) ->
+# SiO(g) + 1/2 O2(g) rounds to -7.759.
 _RUNG2B_AGAINST_JANAF_PRINTED_GAS_COLUMNS = {
     2000.0: {
         "Na": -1.890,
@@ -288,6 +292,13 @@ def test_p1_g1_against_janaf_printed_gas_columns(
     pressures = evaluate_gas(
         unit_activities, T, fO2=1.0, datapack=gas_pack, allow_extrapolation=True
     )
+    # Gate derivation: half the last stored digit is 0.0005 dex; the maximum
+    # evaluate_gas residual against the unrounded reference is 5.2e-5 dex,
+    # leaving 0.000448 dex of margin to 0.001 dex. Today's worst case is
+    # 0.000508 dex (Si), so 0.0005 dex would false-fail. At 2000 K, 0.001 dex
+    # is 38.3 J/mol on G_gas. These tests prove the evaluate_gas assembly and
+    # stoichiometry path, including the condensate parent; they are not an
+    # independent fit (G1 covers the fit).
     worst = 0.0
     nonzero_errors = 0
     for species, expected_log10 in _RUNG2B_AGAINST_JANAF_PRINTED_GAS_COLUMNS[T].items():
@@ -295,12 +306,12 @@ def test_p1_g1_against_janaf_printed_gas_columns(
         error = abs(actual_log10 - expected_log10)
         worst = max(worst, error)
         nonzero_errors += error > 0.0
-        assert error <= 0.01, (
+        assert error <= 0.001, (
             f"{species} at {T} K: |{actual_log10:.6f} - {expected_log10:.6f}| "
-            f"= {error:.6f} dex > 0.01 dex"
+            f"= {error:.6f} dex > 0.001 dex"
         )
     assert nonzero_errors >= 1
-    assert worst <= 0.01
+    assert worst <= 0.001
 
 
 def test_t625_against_janaf_printed_gas_columns(
@@ -321,9 +332,9 @@ def test_t625_against_janaf_printed_gas_columns(
     for species, expected_log10 in refs.items():
         actual_log10 = math.log10(pressures[species])
         error = abs(actual_log10 - expected_log10)
-        assert 0.0 < error <= 0.01, (
+        assert 0.0 < error <= 0.001, (
             f"{species} at {T} K: independently rounded reference must have "
-            f"nonzero error <= 0.01 dex, got {error:.6f}"
+            f"nonzero error <= 0.001 dex, got {error:.6f}"
         )
 
 
@@ -511,8 +522,42 @@ def test_imcc_adapter_activities_reach_all_channels(
         allow_extrapolation=True,
     )
     assert set(result) == set(IMCC_GAS_CHANNEL_SPECIES)
+    assert all(value >= 0.0 for value in result.values())
+    assert result["O2"] == 1.0e-10
     assert result["Na"] > 0.0
     assert result["K"] > 0.0
+
+
+def test_gas_imports_without_pandas_and_refuses_at_load() -> None:
+    probe = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "\n".join(
+                [
+                    "import sys",
+                    'sys.modules["pandas"] = None',
+                    "import openimcc.gas as gas",
+                    "from openimcc import ImccRefusal",
+                    "try:",
+                    "    gas.load_gas_datapack()",
+                    "except ImccRefusal as exc:",
+                    '    assert \'install "openimcc[gas]" (pandas import failed:\' in str(exc)',
+                    "else:",
+                    "    raise AssertionError(\"load_gas_datapack unexpectedly succeeded\")",
+                ]
+            ),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=Path(__file__).resolve().parents[1],
+        env={
+            **os.environ,
+            "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src"),
+        },
+    )
+    assert probe.returncode == 0, probe.stderr
 
 
 def _unread_gas_pack() -> ImccGasDatapack:

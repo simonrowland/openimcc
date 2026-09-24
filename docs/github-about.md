@@ -31,9 +31,9 @@ thermochemistry of this kind is otherwise the province of commercial software
 (FactSage, Thermo-Calc, MTDATA, HSC Chemistry). It ships auditable datapacks
 where every coefficient carries a provenance class, and a benchmark harness run
 against 402 published measurements that reports what it *cannot* answer
-alongside what it can: 298 points score, 94 fall outside the declared
-temperature domain, and 10 are refused — 4 on data quality, 6 because the
-partial-pressure observable is not wired yet. The Na₂O–SiO₂ binaries are
+alongside what it can: 304 predictions are produced — 301 headline-scored and
+3 flagged — while 94 fall outside the declared temperature domain and 4 are
+refused. Headline RMSE is 0.883 dex; flagged RMSE is 0.305 dex. The Na₂O–SiO₂ binaries are
 entirely out of domain, so sodium scores zero of 54 — a real coverage gap we
 would rather publish than hide.
 

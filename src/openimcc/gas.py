@@ -80,6 +80,16 @@ class ImccGasDataUnavailableError(ImccRefusal):
     code = "imcc_gas_data_unavailable"
 
 
+def _pandas():
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise ImccGasDataUnavailableError(
+            f'install "openimcc[gas]" (pandas import failed: {exc})'
+        ) from exc
+    return pd
+
+
 def _vaporock_root() -> Path:
     """Root of the explicitly selected VapoRock checkout.
 
@@ -347,7 +357,7 @@ def load_gas_datapack(
     ``oxide_path`` arguments always win for callers building a diagnostic pack.
     Both files are read-only.
     """
-    import pandas as pd
+    pd = _pandas()
 
     # Resolved lazily: an unconfigured install must fail with a typed refusal
     # at CALL time, not at import time, or `import openimcc.gas` breaks for
@@ -543,7 +553,7 @@ def _oxide_row_for_T(
     df: pd.DataFrame, oxide: str, T: float, allow_extrapolation: bool = False
 ) -> pd.Series:
     """Select the condensate interval closest to T, refusing extrapolation by default."""
-    import pandas as pd
+    pd = _pandas()
 
     if oxide not in df.index:
         raise ImccGasSpeciesNotFoundError(

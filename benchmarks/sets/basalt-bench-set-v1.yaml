@@ -2310,9 +2310,9 @@ points:
     score: false
     dropped_reason: OCR scatter digitization and no independent experimental fO2 pin
 # Tsaplin activities are on the PARENT-OXIDE FORMULA-UNIT basis and enter as
-# published. Do not apply the single-cation sqrt conversion: that path applies
-# only to partial_pressure/evaporation_flux. The a(Na2O) rows stay held; never
-# promote the non-authoritative _oxide_component_stoichiometry proxy.
+# published. Do not apply the single-cation sqrt conversion: these activities
+# remain on the parent-oxide formula-unit basis. The a(Na2O) rows stay held;
+# never promote the non-authoritative _oxide_component_stoichiometry proxy.
   - id: tsaplin2000_a_sio2_x0805_1473
     population: tsaplin2000_kems_na2o_sio2
     composition_id: tsaplin2000_na2o_sio2_x0805
