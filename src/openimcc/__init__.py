@@ -79,6 +79,7 @@ _GAS_EXPORTS = frozenset({
     "ImccGasTemperatureOutsideDomainError",
     "R_J_MOL_K",
     "evaluate_gas",
+    "gas_species_provenance",
     "load_gas_datapack",
 })
 
@@ -94,6 +95,7 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         ImccGasTemperatureOutsideDomainError,
         R_J_MOL_K,
         evaluate_gas,
+        gas_species_provenance,
         load_gas_datapack,
     )
 
@@ -143,6 +145,7 @@ __all__ = [
     # --- gas (lazy; needs the [gas] extra) --------------------------------
     "load_gas_datapack",
     "evaluate_gas",
+    "gas_species_provenance",
     "ImccGasDatapack",
     "ImccGasSpeciesNotFoundError",
     "ImccGasTemperatureOutsideDomainError",

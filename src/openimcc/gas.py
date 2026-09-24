@@ -5,15 +5,17 @@ G(T) rows from the JANAF tables, compute equilibrium partial pressures for the
 SF04 vaporization reaction set.
 
 This module is intentionally thin: it performs no fO2 modeling (fO2 is pinned by
-the caller), no melt equilibrium solve (activities are inputs), and no authority
-claims.  It is a diagnostic shadow, consistent with the IMCC-SF04 spec r2.1.
+the caller), no melt equilibrium solve (activities are inputs), and does not
+silently upgrade data authority.  It is a diagnostic shadow, consistent with
+the IMCC-SF04 spec r2.1.
 """
 
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
+from importlib import resources
 from pathlib import Path
 from typing import Mapping, Sequence
 
@@ -58,26 +60,16 @@ class ImccGasTemperatureOutsideDomainError(ImccRefusal):
 
 
 # --------------------------------------------------------------------------- #
-# VapoRock data paths (sibling checkout, read-only)
+# Packaged data and explicit VapoRock override
 # --------------------------------------------------------------------------- #
 
 
-# Candidate VapoRock locations, searched in order. The sibling checkout stays the
-# default because that is how a dev workspace is laid out, but it MUST NOT be the
-# only option: a CI job directory sits one level deeper, so ``../VapoRock`` resolves
-# to <jobs-root>/VapoRock and does not exist. That single assumption made 29 tests
-# fail on every runner while passing on every dev box (2026-08-29) -- the worst
-# possible shape, because nobody who could reproduce it could see it and nobody who
-# could see it could reproduce it. The studio workaround was a symlink in the jobs
-# root, which the jobs reaper then deleted in the same run (ls -1dt */ matches a
-# symlink-to-directory on macOS), so the fix un-fixed itself. Resolve it in code.
-_VAPOROCK_ENV_VAR = "RPS_VAPOROCK_ROOT"
-
-
 _VAPOROCK_ENV_VAR = "OPENIMCC_VAPOROCK_ROOT"
-
 _GAS_TABLE_RELPATH = Path("src") / "vaporock" / "data" / "JANAF-vapor-data-full.csv"
 _CONDENSATE_TABLE_RELPATH = Path("data") / "condensate-thermo-data.csv"
+_PACKAGED_DATA_PACKAGE = "openimcc.data.gas"
+_PACKAGED_GAS_NAME = "gas-shomate.csv"
+_PACKAGED_CONDENSATE_NAME = "condensate.csv"
 
 
 class ImccGasDataUnavailableError(ImccRefusal):
@@ -87,31 +79,16 @@ class ImccGasDataUnavailableError(ImccRefusal):
 
 
 def _vaporock_root() -> Path:
-    """Root of the VapoRock checkout supplying the gas tables.
+    """Root of the explicitly selected VapoRock checkout.
 
-    Configuration only -- this deliberately does NOT search the filesystem.
-
-    The previous implementation tried a sibling directory, a vendored copy and
-    two paths under the user's home. That is unacceptable in a distributed
-    package for two reasons. It silently binds results to whatever happens to
-    sit next to the checkout, so two users running the same command can get
-    different numbers with no diagnostic. And it makes the failure mode a
-    FileNotFoundError pointing at a path the user never chose.
-
-    We also cannot simply ship the tables: VapoRock is AGPL-3.0 and this
-    package is Apache-2.0, so redistributing its data files here is not clearly
-    permitted. The underlying values are NIST-JANAF (public domain); the
-    intended fix is to regenerate our own tables from that source, after which
-    this configuration hook becomes optional rather than required.
+    The normal source is the package's own tables.  This path exists only for a
+    caller who deliberately sets ``OPENIMCC_VAPOROCK_ROOT``.
     """
     override = os.environ.get(_VAPOROCK_ENV_VAR)
     if not override:
         raise ImccGasDataUnavailableError(
-            "the gas layer needs JANAF tables, which are not bundled: VapoRock "
-            "is AGPL-3.0 and this package is Apache-2.0, so its data files "
-            f"cannot be redistributed here. Set {_VAPOROCK_ENV_VAR} to a "
-            "VapoRock checkout, or pass gas_path= and oxide_path= to "
-            "load_gas_datapack() explicitly."
+            f"{_VAPOROCK_ENV_VAR} is not set; packaged gas tables are the "
+            "default, and this helper resolves only an explicit VapoRock override"
         )
     root = Path(override).expanduser()
     if not (root / _GAS_TABLE_RELPATH).is_file():
@@ -122,14 +99,35 @@ def _vaporock_root() -> Path:
     return root.resolve()
 
 
+def _packaged_resource(name: str):
+    resource = resources.files(_PACKAGED_DATA_PACKAGE).joinpath(name)
+    if not resource.is_file():
+        raise ImccGasDataUnavailableError(
+            f"packaged gas resource {name!r} is missing from "
+            f"{_PACKAGED_DATA_PACKAGE}"
+        )
+    return resource
+
+
+def _packaged_database_path(name: str) -> Path:
+    """Filesystem path used for diagnostics when the package is unpacked."""
+    return Path(__file__).resolve().parent / "data" / "gas" / name
+
+
 def default_gas_database_path() -> Path:
-    """Path to the JANAF gas table. Raises a typed refusal when unconfigured."""
-    return _vaporock_root() / _GAS_TABLE_RELPATH
+    """Path to the packaged gas table, or to an explicit VapoRock override."""
+    if os.environ.get(_VAPOROCK_ENV_VAR):
+        return _vaporock_root() / _GAS_TABLE_RELPATH
+    _packaged_resource(_PACKAGED_GAS_NAME)
+    return _packaged_database_path(_PACKAGED_GAS_NAME)
 
 
 def default_condensate_database_path() -> Path:
-    """Path to the condensate-oxide table. Typed refusal when unconfigured."""
-    return _vaporock_root() / _CONDENSATE_TABLE_RELPATH
+    """Path to the packaged condensate table, or to an explicit override."""
+    if os.environ.get(_VAPOROCK_ENV_VAR):
+        return _vaporock_root() / _CONDENSATE_TABLE_RELPATH
+    _packaged_resource(_PACKAGED_CONDENSATE_NAME)
+    return _packaged_database_path(_PACKAGED_CONDENSATE_NAME)
 
 
 # --------------------------------------------------------------------------- #
@@ -175,6 +173,57 @@ _SF04_REACTIONS: dict[str, tuple[str, int, float]] = {
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 
+# These authority labels mirror the row-level classes in PROVENANCE.yaml.  A
+# reaction is only as authoritative as its least-authoritative input row, so a
+# potassium channel inherits the K2O(l) secondary-transcription flag while the
+# other channels retain their JANAF/Lamoreaux classes.
+_GAS_PROVENANCE_AUTHORITY = {
+    species: "janaf_fitted" for species in IMCC_GAS_CHANNEL_SPECIES
+}
+_OXIDE_PROVENANCE_AUTHORITY = {
+    "MgO": "lam1987_transcribed",
+    "CaO": "lam1987_transcribed",
+    "Al2O3": "lam1987_transcribed",
+    "SiO2": "lam1987_transcribed",
+    "SiO2(cr)": "lam1987_transcribed",
+    "Na2O": "lam1984_transcribed",
+    "K2O": "secondary_transcription_unverified_primary",
+    "FeO": "janaf_transcribed",
+}
+_PROVENANCE_AUTHORITY_RANK = {
+    "secondary_transcription_unverified_primary": 0,
+    "lam1984_transcribed": 1,
+    "lam1987_transcribed": 1,
+    "janaf_transcribed": 2,
+    "janaf_fitted": 3,
+}
+
+
+def gas_species_provenance(species: str) -> dict[str, str | None]:
+    """Return the row authorities feeding one retained gas channel.
+
+    ``evaluate_gas`` intentionally keeps its historical ``dict[str, float]``
+    return type.  Callers that need the data-quality label query it separately;
+    the overall authority is the least-authoritative row in that reaction.
+    """
+    if species not in _SF04_REACTIONS:
+        raise ImccGasSpeciesNotFoundError(
+            f"unknown retained gas species {species!r}"
+        )
+    oxide, _, _ = _SF04_REACTIONS[species]
+    gas_authority = _GAS_PROVENANCE_AUTHORITY[species]
+    oxide_authority = _OXIDE_PROVENANCE_AUTHORITY.get(oxide)
+    authorities = [gas_authority]
+    if oxide_authority is not None:
+        authorities.append(oxide_authority)
+    authority = min(authorities, key=_PROVENANCE_AUTHORITY_RANK.__getitem__)
+    return {
+        "species_name": species,
+        "authority": authority,
+        "gas_authority": gas_authority,
+        "condensate_authority": oxide_authority,
+    }
+
 IMCC_SF04_WORKBOOK_GRID_K = (
     1500.0,
     1625.0,
@@ -189,47 +238,31 @@ IMCC_SF04_WORKBOOK_GRID_K = (
 )
 
 # EXTRAPOLATED-INFORMATIONAL labels for every channel whose gas or parent-oxide
-# digitization does not cover the full Schaefer-2004 workbook grid above.  The
-# evaluator still refuses these temperatures unless allow_extrapolation=True;
-# these labels disclose the reason and never widen the executable domain.
+# table does not cover the full Schaefer-2004 workbook grid above.  The fitted
+# gas rows cover 1500--3000 K; these labels therefore describe parent-oxide
+# gaps only.  The evaluator still refuses these temperatures unless
+# allow_extrapolation=True; labels disclose the reason and never widen the
+# executable domain.
 IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS: dict[str, str] = {
     "SiO": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
-    "Fe": "Fe(g) [3133.345, 6000] K lies above the whole workbook grid",
-    "FeO": "FeO(g) [5000, 6000] K lies above the whole workbook grid",
     "Mg": "MgO(l) [3100, 3500] K lies above the whole workbook grid",
-    "MgO": (
-        "MgO(g) [5000, 6000] K and MgO(l) [3100, 3500] K lie above "
-        "the whole workbook grid"
-    ),
-    "SiO2": (
-        "SiO2(g) [4500, 6000] K lies above the whole workbook grid; "
-        "SiO2(l) [1996, 3000] K also misses workbook T < 1996 K"
-    ),
+    "MgO": "MgO(l) [3100, 3500] K lies above the whole workbook grid",
+    "SiO2": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
     "AlO": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
     "AlO2": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
     "Al2O": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
     "Al2O2": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
-    "Si": (
-        "Si(g) [3504.616, 6000] K lies above the whole workbook grid; "
-        "SiO2(l) [1996, 3000] K also misses workbook T < 1996 K"
-    ),
-    "Al": (
-        "Al(g) [2790.812, 6000] K lies above the whole workbook grid; "
-        "Al2O3(l) [2327, 3000] K also misses workbook T < 2327 K"
-    ),
-    "CaO": (
-        "CaO(g) [4500, 6000] K and CaO(l) [2900, 3800] K lie above "
-        "the whole workbook grid"
-    ),
-    "Ca": (
-        "Ca(g) [1774, 6000] K misses 1500/1625/1750 K; "
-        "CaO(l) [2900, 3800] K lies above the whole workbook grid"
-    ),
+    "Si": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
+    "Al": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
+    "CaO": "CaO(l) [2900, 3800] K lies above the whole workbook grid",
+    "Ca": "CaO(l) [2900, 3800] K lies above the whole workbook grid",
 }
 
 IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "Na",
     "K",
+    "Fe",
+    "FeO",
     "O",
     "Na2",
     "NaO",
@@ -238,9 +271,10 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "O2",
 )
 
-# F3-6 closure ledger.  The first seven species have no gas G(T) row anywhere
-# in the read-only VapoRock JANAF tree.  The titanium gas rows exist, but no
-# TiO2(l) parent row exists, so their melt-oxide reactions remain incomplete.
+# Closure ledger for species outside the retained channel set.  The first seven
+# entries have no gas G(T) row in the vendored JANAF source set.  The titanium
+# gas rows exist, but no TiO2(l) parent row exists, so those reactions remain
+# incomplete.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     "Na2O": "needs a source-rated Na2O(g) standard-Gibbs row",
     "K2O": "needs a source-rated K2O(g) standard-Gibbs row",
@@ -305,39 +339,63 @@ def load_gas_datapack(
 ) -> ImccGasDatapack:
     """Load the JANAF gas and condensate-oxide thermodynamic tables.
 
-    With no arguments the tables are located via the OPENIMCC_VAPOROCK_ROOT
-    environment variable; absent that this raises ImccGasDataUnavailableError.
+    With no arguments the packaged tables are opened through
+    :mod:`importlib.resources`.  Setting ``OPENIMCC_VAPOROCK_ROOT`` explicitly
+    selects the matching VapoRock files instead.  Explicit ``gas_path`` and
+    ``oxide_path`` arguments always win for callers building a diagnostic pack.
     Both files are read-only.
     """
     # Resolved lazily: an unconfigured install must fail with a typed refusal
     # at CALL time, not at import time, or `import openimcc.gas` breaks for
     # everyone who only wanted the species constants.
-    gas_path = Path(gas_path) if gas_path is not None else default_gas_database_path()
-    oxide_path = (
-        Path(oxide_path)
-        if oxide_path is not None
-        else default_condensate_database_path()
-    )
-
-    gas_df = pd.read_csv(gas_path)
+    if gas_path is not None:
+        gas_source = Path(gas_path)
+        gas_display_path = gas_source
+        gas_df = pd.read_csv(gas_source)
+    elif os.environ.get(_VAPOROCK_ENV_VAR):
+        gas_source = _vaporock_root() / _GAS_TABLE_RELPATH
+        gas_display_path = gas_source
+        gas_df = pd.read_csv(gas_source)
+    else:
+        gas_resource = _packaged_resource(_PACKAGED_GAS_NAME)
+        gas_display_path = _packaged_database_path(_PACKAGED_GAS_NAME)
+        with gas_resource.open("rb") as handle:
+            gas_df = pd.read_csv(handle)
     if "species_name" not in gas_df.columns:
         raise ImccGasSpeciesNotFoundError(
-            f"JANAF gas database {gas_path} missing 'species_name' column"
+            f"JANAF gas database {gas_display_path} missing 'species_name' column"
         )
     gas_df = gas_df.set_index("species_name")
 
-    oxide_df = pd.read_csv(oxide_path)
+    if oxide_path is not None:
+        oxide_source = Path(oxide_path)
+        oxide_display_path = oxide_source
+        oxide_df = pd.read_csv(oxide_source)
+    elif os.environ.get(_VAPOROCK_ENV_VAR):
+        oxide_source = _vaporock_root() / _CONDENSATE_TABLE_RELPATH
+        if not oxide_source.is_file():
+            raise ImccGasDataUnavailableError(
+                f"{_VAPOROCK_ENV_VAR}={os.environ[_VAPOROCK_ENV_VAR]!r} does not contain "
+                f"{_CONDENSATE_TABLE_RELPATH}"
+            )
+        oxide_display_path = oxide_source
+        oxide_df = pd.read_csv(oxide_source)
+    else:
+        oxide_resource = _packaged_resource(_PACKAGED_CONDENSATE_NAME)
+        oxide_display_path = _packaged_database_path(_PACKAGED_CONDENSATE_NAME)
+        with oxide_resource.open("rb") as handle:
+            oxide_df = pd.read_csv(handle)
     if "species_name" not in oxide_df.columns:
         raise ImccGasSpeciesNotFoundError(
-            f"condensate database {oxide_path} missing 'species_name' column"
+            f"condensate database {oxide_display_path} missing 'species_name' column"
         )
     oxide_df = oxide_df.set_index("species_name")
 
     return ImccGasDatapack(
         gas_df=gas_df,
         oxide_df=oxide_df,
-        gas_path=gas_path,
-        oxide_path=oxide_path,
+        gas_path=gas_display_path,
+        oxide_path=oxide_display_path,
     )
 
 
@@ -351,33 +409,34 @@ def _janaf_gibbs(T: float, row: pd.Series) -> float:
 
     Derivation
     ----------
-    Premise: the VapoRock JANAF CSV stores NIST Shomate coefficients in
-    columns A–H with ``t = T/1000`` (T in K). This function uses A–G only,
-    matching VapoRock ``_janaf_dH`` / ``_janaf_S`` / ``_janaf_G``. It is not
-    the NASA Glenn seven-coefficient family (NASA/TP-2002-211556), which
+    Premise: the packaged and explicit-override gas CSVs store NIST Shomate
+    coefficients in columns A–H with ``t = T/1000`` (T in K). This function
+    uses A–G only, matching the historical ``_janaf_dH`` / ``_janaf_S`` /
+    ``_janaf_G`` implementation. It is not the NASA Glenn seven-coefficient
+    family (NASA/TP-2002-211556), which
     writes ``Cp°/R``, ``H°/(RT)``, and ``S°/R`` as polynomials in T (K) with
     integration constants ``a1…a7``.
 
     NIST WebBook Shomate enthalpy includes a ``− H`` term so that
     ``H°(T) − H°_298.15`` is ~0 at 298.15 K on a segment that covers 298.15 K.
-    VapoRock's ``_janaf_dH`` omits that ``− H`` term (their comment: H removed
-    because the F offset already reproduces the LAMOR/JANAF scale). This
-    function follows that transcription:
+    The source transcription omits that ``− H`` term because the F offset
+    already reproduces the LAMOR/JANAF scale. This function follows that
+    transcription:
 
         dH(t) = A t + B/2 t^2 + C/3 t^3 + D/4 t^4 − E/t + F        (kJ/mol)
         S(t)  = A ln(t) + B t + C/2 t^2 + D/3 t^3 − E/(2 t^2) + G  (J/mol/K)
         G°(T) = dH(t) * 1000 − T * S(t)                            (J/mol)
 
     Column H is present on the CSV row and is unused here. Reference state
-    on the VapoRock table is ideal gas at 1 bar, elements in their 298 K
+    on the gas table is ideal gas at 1 bar, elements in their 298 K
     standard states, so those baselines cancel in a reaction ΔG° assembled
     from these rows.
 
     Unit check: dH in kJ/mol * 1000 → J/mol; T * S (K * J/mol/K) → J/mol.
-    Sanity (in-domain): O2(g) 700–2000 K row at T = 2000 K gives
+    Sanity (in-domain): the packaged O2(g) row at T = 2000 K gives
     G° ≈ −478320.38 J/mol. Sign is negative; −T S dominates
-    (S ≈ 268.75 J/mol/K, T S ≈ 537.5 kJ/mol). 298.15 K is below that row's
-    T_min = 700 K, so this function does not claim a 298.15 K JANAF match
+    (S ≈ 268.75 J/mol/K, T S ≈ 537.5 kJ/mol). 298.15 K is below the packaged
+    fit's T_min = 1500 K, so this function does not claim a 298.15 K JANAF match
     from these coefficients.
     """
     t = T / 1000.0
@@ -405,7 +464,7 @@ def _lamor_gibbs(T: float, row: pd.Series) -> float:
 
     Derivation
     ----------
-    The VapoRock condensate table (LAMOR / JANAF fits) stores a 5-coefficient
+    The packaged condensate table (LAMOR / JANAF fits) stores a 5-coefficient
     polynomial fit plus ΔH°298/R.  With τ = T/1000 K:
 
         poly(τ) = dG_A + dG_B τ + dG_C τ^2 + dG_D τ^3 + dG_E τ^4
@@ -446,7 +505,7 @@ def _nearest_interval_row(
     selected row's ``[T_min, T_max]``. That default refusal is the V2
     refusal-semantics contract in the IMCC-SF04 spec §2.
 
-    This is not VapoRock ``_calc_gibbs_species_JANAF_singleT`` interval
+    This is not legacy VapoRock ``_calc_gibbs_species_JANAF_singleT`` interval
     parity. That path, after replacing the lowest ``T_min`` with 0 and the
     highest ``T_max`` with 1e8, masks with ``(T > T_min) & (T <= T_max)``.
     At a shared breakpoint ``T = T_max(i) = T_min(i+1)`` that mask selects

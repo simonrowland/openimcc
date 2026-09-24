@@ -5,22 +5,21 @@ measured against the code rather than estimated.
 
 ## Known gaps
 
-### 1. The gas layer is not self-contained (licence)
+### 1. The gas layer is self-contained (done; one provenance gap remains)
 
-`openimcc.gas` works, but its JANAF tables are not bundled: they come from
-[VapoRock](https://gitlab.com/ENKI-portal/vaporock), which is **AGPL-3.0**,
-while this package is Apache-2.0. Redistributing its data files here is not
-clearly permitted — the underlying values are NIST-JANAF public domain, but
-VapoRock's compilation of them is covered by its licence.
+The packaged gas tables now load by default through `importlib.resources`.
+Twenty-two Shomate rows are fitted deterministically from vendored NIST-JANAF
+records, with the exact source hash and fit residual recorded per row. The
+maximum fit residual is **1.9231 J/mol** (**3.7465e-5 log10 K**), well below the
+0.01 log10 K gate. The eight condensate rows reproduce the current published
+coefficient values exactly. `OPENIMCC_VAPOROCK_ROOT` remains an explicit
+comparison override.
 
-Today: set `OPENIMCC_VAPOROCK_ROOT`, or pass `gas_path=` / `oxide_path=`
-explicitly. Unset, `load_gas_datapack()` raises a typed
-`ImccGasDataUnavailableError` and the gas tests skip.
-
-**Fix:** regenerate the tables from NIST-JANAF directly under our own
-provenance. Roughly 6 KB covering the ~22 species in
-`IMCC_GAS_CHANNEL_SPECIES`. This removes the AGPL contact entirely and makes
-`pip install "openimcc[gas]"` work out of the box.
+Known gap: the shipped K2O(l) coefficients are a secondary transcription from
+the VapoRock condensate CSV, cited to Lamoreaux & Hildenbrand 1984, and are
+flagged `secondary_transcription_unverified_primary`. The K, K2 and KO channel
+authority therefore carries that flag. Once the LH84 primary coefficient table
+is available, re-certify the row and remove the flag.
 
 ### 2. The bench's `partial_pressure` observable is not wired
 

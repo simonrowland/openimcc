@@ -62,24 +62,26 @@ Core is `numpy` + `scipy` only. The vapour layer (`openimcc.gas`) is the sole
 consumer of `pandas` and nothing on the core path imports it, so the base
 install stays small.
 
-### Gas layer: not yet self-contained
+### Gas layer
 
-`openimcc.gas` computes equilibrium partial pressures for the SF04 gas set, and
-the code is here — but **its JANAF tables are not bundled**. They live in
-[VapoRock](https://gitlab.com/ENKI-portal/vaporock), which is AGPL-3.0, and this
-package is Apache-2.0, so redistributing them here is not clearly permitted.
+`openimcc.gas` computes equilibrium partial pressures for the SF04 gas set.
+The default tables ship in `openimcc.data.gas` and are loaded through
+`importlib.resources`, so a fresh `pip install "openimcc[gas]"` works without a
+neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
+NIST-JANAF 4th-edition records; the condensate rows retain their source-attributed
+Lamoreaux/Hildenbrand and JANAF coefficients. Row-level source hashes, methods,
+temperature ranges and fit residuals are in `PROVENANCE.yaml`.
 
-Point it at a checkout to use it:
+For comparison with an existing VapoRock installation, opt in explicitly:
 
 ```bash
 export OPENIMCC_VAPOROCK_ROOT=/path/to/VapoRock
 ```
 
-Without that, `load_gas_datapack()` raises a typed
-`ImccGasDataUnavailableError` naming the variable, and the gas-dependent tests
-skip rather than fail. The underlying values are NIST-JANAF (public domain), so
-the intended fix is to regenerate our own tables — roughly 6 KB for the ~22
-species in `IMCC_GAS_CHANNEL_SPECIES` — after which this step goes away.
+When set, that variable overrides both packaged tables. The packaged source
+records used to fit the gas rows are retained in `data-src/janaf/` and included
+in source distributions, not the runtime wheel. NIST SRD 13 is public data,
+and the publication attributions are recorded in `NOTICE`.
 
 The benchmark runner's `partial_pressure` observable is a separate gap: it is
 awaiting a rewire onto `openimcc.gas` and currently returns a typed refusal.
