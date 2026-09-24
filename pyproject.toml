@@ -41,7 +41,7 @@ gas = ["pandas>=2.0"]
 # bench.py reads melt-activity-bench.v1 YAML fixtures.
 bench = ["pyyaml>=6.0"]
 all = ["openimcc[gas,bench]"]
-dev = ["openimcc[all]", "pytest>=7.4", "pytest-timeout"]
+dev = ["openimcc[all]", "pytest>=7.4", "pytest-cov", "pytest-timeout"]
 
 [project.scripts]
 # Two entry points, not one: cli.py and bench.py have separate parsers upstream
