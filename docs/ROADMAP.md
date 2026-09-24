@@ -71,13 +71,13 @@ this is a rewire, not a transplant.
 > dropping or doubling the factor fails instead of silently shifting the log
 > residual by five orders of magnitude.
 
-### 3. Test coverage
+### 3. Test coverage (done)
 
-Measured on the pre-extraction package: **67.9%** overall (1354 statements).
-`kernel.py` 78.9%, `model.py` 81.6%, `cli.py` 60.8%, `bench.py` 54.2%,
-`gas.py` 50.6%. `kernel.py` is the physics and matters most — 21% of the solver
-is unexercised, with untested runs around lines 661–666, 715–723, 730–736 and
-984–989. Target ≥85% on kernel and model before 0.1.0 final.
+Measured on the current tree: **93%** overall (1445 statements). `kernel.py`
+99%, `model.py` 99%, `gas.py` 90%, `cli.py` 86%, `bench.py` 85%. The ≥85% target
+on kernel and model is met. Line coverage shows the physics executes, not that
+a test notices when it changes; the published-reference and conformance tests
+are what pin the numbers.
 
 ### 4. The MAGMA workbook regression cannot be distributed
 
@@ -85,9 +85,23 @@ is unexercised, with untested runs around lines 661–666, 715–723, 730–736 
 `tests/fixtures/imcc_sf04_magma_workbook.csv`, a 327 KB derivative of
 `Schaefer2004-MAGMA-valid.xlsx` from the VapoRock data directory. Same AGPL
 problem as item 1, plus the workbook is MAGMA output whose own redistribution
-terms are unestablished. The test skips when the file is absent. Replacing it
-with an independently sourced reference set would restore the regression for
-everyone.
+terms are unestablished. The test skips when the file is absent.
+
+An independent, public partial reference now ships at
+`benchmarks/references/schaefer-fegley-2004/`: 5 Table 5 composition rows
+(`transcribed`), 13 Table 9 flux rows (`transcribed`) with 13 Eq. 11 pressures
+(`derived_eq11`), and 350 Fig. 10 points (`digitized_figure`) with 350 Table 7
+pressure derivations (`derived_table7`). It is covered by
+`tests/test_sf04_published_reference.py` and does **not** replace the workbook
+fixture. Bishop Tuff, Type B CAI, the Al/Ca/Ti/K2/Zn channels, and 1500, 1625,
+and 2500 K remain unavailable from the published paper.
+
+The published-reference comparison also records a model difference for sodium:
+openimcc's Na, NaO, and Na2 are low against SF04 at every comparable point. Na
+has median residual −1.08 dex and residual −1.42 dex at the printed Table 9
+anchor. O, SiO, and FeO match the anchor on the roughly 0.02-dex scale, so the
+sodium result is not a pin or unit error. It is left for later diagnosis; the
+reference work does not tune the model.
 
 ### 5. Provenance vocabulary is not uniform across packs
 
@@ -101,9 +115,8 @@ An audit of all five packs found **zero reverse-engineered rows**.
 
 ### 6. Documentation
 
-- **`docs/datapack-format.md` does not exist.** The pack schema is documented
-  nowhere, so a third party cannot author or audit a pack — which undercuts the
-  auditability this package claims. Highest-value doc gap.
+- `docs/datapack-format.md` documents the pack schema, what the loader and
+  kernel refuse, and in what order (done).
 - `docs/spec.md` — the model spec has not been ported.
 - `CONTRIBUTING.md`, in particular how to propose a **datapack row**: the
   unusual contribution type here, and the one needing a provenance rule.

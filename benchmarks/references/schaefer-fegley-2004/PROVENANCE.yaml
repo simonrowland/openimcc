@@ -1,0 +1,47 @@
+schema: sf04-published-reference-v1
+license: CC-BY-4.0
+source:
+  citation: >-
+    Schaefer, L. & Fegley, B. (2004), A thermodynamic model of high
+    temperature lava vaporization on Io, Icarus 169, 216-241.
+  doi: 10.1016/j.icarus.2003.08.023
+  paper_pages: 216-241
+  independence: >-
+    Values come only from the published paper and the recorded raster
+    calibration; no VapoRock checkout or workbook fixture is an input.
+files:
+  - path: README.md
+    sha256: 2878e106a942fca76c17d79a487daad32d41ae0e563b70ef7c66cb7d7bd99a04
+    kind: documentation
+  - path: compositions.csv
+    sha256: 183fc51ac9b68d241ecef9eba11da48929a91bf5fa83fa200669a7762242ff78
+    source_locators:
+      - "Schaefer & Fegley (2004), Table 5, p. 224"
+    method_classes:
+      - transcribed
+  - path: table9_anchors.csv
+    sha256: f95b71d1327f446686f65e0b9a0d251f12973c3428247cb02aece8874e99bcbb
+    source_locators:
+      - "Schaefer & Fegley (2004), Table 9, p. 234"
+      - "Schaefer & Fegley (2004), Eq. 11, pp. 233-234"
+    method_classes:
+      - transcribed
+      - derived_eq11
+  - path: fig10_digitized.csv
+    sha256: 2fb78882b5324f80bb1a0259954e51b189ea057a8817c799e17f56236b89a3e2
+    source_locators:
+      - "Schaefer & Fegley (2004), Fig. 10, p. 227"
+      - "Schaefer & Fegley (2004), Table 7, p. 226"
+    method_classes:
+      - digitized_figure
+      - derived_table7
+  - path: PROVENANCE.yaml
+    sha256: null
+    kind: manifest
+    note: self-hash intentionally omitted; all other shipped files are hashed above.
+build_script:
+  path: tools/build_sf04_reference.py
+  sha256: e8af7bed9d6abe6af9a51baf3601f640375c2933e4634db20fb1523c4a53aa1a
+  inputs:
+    - "SF04 PDF page 12 / printed page 227"
+    - "recorded panel calibration in the build script"

@@ -23,8 +23,10 @@ FIXTURE = Path("tests/fixtures/imcc_sf04_magma_workbook.csv")
 #
 # The regression is still valuable, so the test runs for anyone who has the
 # file locally and skips for everyone else rather than failing. Replacing it
-# with an independently sourced reference set is tracked in
-# docs/PRE-EXTRACTION-CHECKLIST.md.
+# with the independent public SF04 reference at
+# benchmarks/references/schaefer-fegley-2004/ is covered separately by
+# tests/test_sf04_published_reference.py. That reference does not replace this
+# optional workbook regression.
 pytestmark = pytest.mark.skipif(
     not FIXTURE.is_file(),
     reason=(
