@@ -29,6 +29,11 @@ EXT4 = Path(
     "docs-private/research/2026-08-09-upstream-mission/IMCC-impl/ext4"
 )
 _MISSING = object()
+NONFINITE = [
+    pytest.param(math.nan, id="nan"),
+    pytest.param(math.inf, id="inf"),
+    pytest.param(-math.inf, id="neg-inf"),
+]
 
 
 def _ext4() -> Path:
@@ -97,6 +102,31 @@ def test_ext_pack_keeps_published_core_distinct(tmp_path: Path) -> None:
     assert pack.kernel_datapack.n_parents == 10
     assert pack.kernel_datapack.n_complexes == 39
     assert pack.extension_species == ("FeS",)
+
+
+@pytest.mark.parametrize("field", ["A", "B"])
+@pytest.mark.parametrize("value", NONFINITE)
+def test_extension_row_nonfinite_ab_is_malformed(
+    tmp_path: Path, field: str, value: float
+) -> None:
+    with pytest.raises(ImccMalformedDatapackError) as exc:
+        load_datapack(_write_ext_pack(tmp_path, **{field: value}))
+
+    assert exc.value.code == "imcc_malformed_datapack"
+    assert "A and B must be finite" in str(exc.value)
+
+
+@pytest.mark.parametrize("value", NONFINITE)
+def test_extension_row_nonfinite_domain_is_malformed(
+    tmp_path: Path, value: float
+) -> None:
+    with pytest.raises(ImccMalformedDatapackError) as exc:
+        load_datapack(
+            _write_ext_pack(tmp_path, T_domain_K=[value, 3000.0])
+        )
+
+    assert exc.value.code == "imcc_malformed_datapack"
+    assert "endpoints must be finite Kelvin values" in str(exc.value)
 
 
 @pytest.mark.parametrize("component", ["S", "P2O5"])

@@ -404,8 +404,16 @@ def load_datapack(path: str | Path) -> ImccLoadedDatapack:
             raise ImccMalformedDatapackError(
                 f"row {idx} A/B must be numeric"
             )
-        A.append(float(A_val))
-        B.append(float(B_val))
+        A_float = float(A_val)
+        B_float = float(B_val)
+        if idx >= len(rows) and (
+            not np.isfinite(A_float) or not np.isfinite(B_float)
+        ):
+            raise ImccMalformedDatapackError(
+                f"{row_label} A and B must be finite"
+            )
+        A.append(A_float)
+        B.append(B_float)
 
         t_domain = row.get("T_domain_K")
         if not isinstance(t_domain, list) or len(t_domain) != 2:
@@ -419,7 +427,15 @@ def load_datapack(path: str | Path) -> ImccLoadedDatapack:
             raise ImccMalformedDatapackError(
                 f"row {idx} T_domain_K values must be numeric"
             )
-        domains.append((float(t_domain[0]), float(t_domain[1])))
+        domain_values = (float(t_domain[0]), float(t_domain[1]))
+        if idx >= len(rows) and not all(
+            np.isfinite(value) for value in domain_values
+        ):
+            raise ImccMalformedDatapackError(
+                f"{row_label} endpoints must be finite Kelvin values, "
+                f"got ({t_domain[0]!r}, {t_domain[1]!r})"
+            )
+        domains.append(domain_values)
 
         basis = row.get("T_domain_basis")
         if not isinstance(basis, str):
@@ -464,6 +480,27 @@ def load_datapack(path: str | Path) -> ImccLoadedDatapack:
         extension_parents=extension_parents,
         extension_species=extension_species,
     )
+
+
+def _amount_as_float(value: Any, label: str) -> float:
+    """Convert one supplied amount, refusing a non-numeric value as invalid input.
+
+    A bare float() here would raise an untyped ValueError or TypeError for
+    "abc" or None, so a caller would get a crash instead of a refusal that
+    names the bad entry.
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        raise ImccCompositionIncompleteError(
+            f"{label} is not a number: {value!r}"
+        ) from None
+    except OverflowError:
+        # An int beyond float range (e.g. 10**400). The value is not echoed:
+        # its repr can run to hundreds of digits.
+        raise ImccCompositionIncompleteError(
+            f"{label} is too large to represent as a float"
+        ) from None
 
 
 def _sp_extension_refusal(component_names: Sequence[str]) -> ImccSPComponentRequiresExtensionError:
@@ -555,6 +592,19 @@ def evaluate(
     pack_version = kernel_pack.version
     model_id = kernel_pack.model_id
 
+    if isinstance(composition, Mapping):
+        for name, raw in composition.items():
+            if not np.isfinite(_amount_as_float(raw, f"composition value for {name}")):
+                raise ImccCompositionIncompleteError(
+                    "composition contains non-finite values"
+                )
+    if extra_mol:
+        for species, mol in extra_mol.items():
+            value = _amount_as_float(mol, f"extra component {species}")
+            if not np.isfinite(value):
+                raise ImccCompositionIncompleteError(
+                    f"extra component {species} has non-finite moles {value}"
+                )
     supplied_sp_names: set[str] = set()
     if isinstance(composition, Mapping):
         supplied_sp_names.update(
@@ -631,9 +681,11 @@ def evaluate(
         basis = total
     else:
         basis = float(basis)
-        if basis <= 0.0:
+        # nan and inf both pass a bare `<= 0.0` (IEEE 754); see the matching
+        # guard in kernel.solve_imcc_sf04.
+        if not np.isfinite(basis) or basis <= 0.0:
             raise ImccCompositionIncompleteError(
-                "declared basis must be positive"
+                f"declared basis must be a positive finite number, got {basis}"
             )
         if abs(total - basis) > 1.0e-6 * basis:
             raise ImccCompositionIncompleteError(

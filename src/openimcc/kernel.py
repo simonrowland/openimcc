@@ -182,6 +182,8 @@ class ImccDatapack:
             raise ValueError("reactions length must match n_complexes")
         if len(self.parent_oxides) != n_parents:
             raise ValueError("parent_oxides length must match nu rows")
+        if not np.all(np.isfinite(nu)):
+            raise ValueError("nu must be finite")
         # Fractional stoichiometries are allowed; negative coefficients are not.
         if np.any(nu < 0.0):
             raise ValueError("nu must be non-negative")
@@ -870,6 +872,8 @@ def solve_imcc_sf04(
         )
 
     total = float(parent_mol.sum())
+    if not math.isfinite(total):
+        raise ImccCompositionIncompleteError("parent mole total is not finite")
     if total <= 0.0:
         raise ImccCompositionIncompleteError("total parent moles are zero")
 
@@ -877,8 +881,16 @@ def solve_imcc_sf04(
         basis = total
     else:
         basis = float(basis)
-        if basis <= 0.0:
-            raise ImccCompositionIncompleteError("declared basis must be positive")
+        # `basis <= 0.0` alone is not a guard: under IEEE 754 every ordered
+        # comparison with nan is False, and inf <= 0 is False, so both pass.
+        # The division `parent_mol / basis` below then yields all zeros (inf)
+        # or all nan, and the call used to refuse much later as "no positive
+        # parent oxides" -- a true refusal carrying a false reason, since the
+        # composition was fine and the basis was the invalid input.
+        if not math.isfinite(basis) or basis <= 0.0:
+            raise ImccCompositionIncompleteError(
+                f"declared basis must be a positive finite number, got {basis}"
+            )
         if abs(total - basis) > 1.0e-6 * basis:
             raise ImccCompositionIncompleteError(
                 f"parent mol sum {total:.12g} does not match declared basis "
@@ -895,6 +907,12 @@ def solve_imcc_sf04(
     if extra_mol:
         for species, mol in extra_mol.items():
             value = float(mol)
+            # Checked before the zero-skip and the sign test, for the same
+            # IEEE 754 reason as the basis guard: nan and inf pass `< 0.0`.
+            if not math.isfinite(value):
+                raise ImccCompositionIncompleteError(
+                    f"extra component {species} has non-finite moles {value}"
+                )
             if value == 0.0:
                 continue
             if value < 0.0:
@@ -917,7 +935,7 @@ def solve_imcc_sf04(
         )
     try:
         max_iter_f = float(max_iter)
-    except (TypeError, ValueError) as exc:
+    except (OverflowError, TypeError, ValueError) as exc:
         raise ValueError(
             f"max_iter must be a finite number, got {max_iter!r}"
         ) from exc

@@ -405,11 +405,14 @@ Every published or extension row must have:
 The loader converts the row vectors into a parent-by-complex matrix and
 constructs ImccDatapack. Its constructor additionally refuses with ordinary
 ValueError if the matrix is not 2-D, shapes do not agree, a nu coefficient
-is negative, a complex column is all zero, A/B is non-finite, or a domain
-endpoint is non-finite. Inverted but finite domain endpoints are retained and
-will fail the later temperature gate rather than being rejected here. An
-invalid nu scalar can also surface the built-in TypeError/ValueError from
-exact-rational parsing; it is not converted to the custom refusal.
+is non-finite or negative, a complex column is all zero, A/B is non-finite, or
+a domain endpoint is non-finite. For extension rows, the loader converts the
+non-finite A/B and domain refusals to ImccMalformedDatapackError before
+construction, matching the published-pack refusal class. Inverted but finite
+domain endpoints are retained and will fail the later temperature gate rather
+than being rejected here. An invalid nu scalar can also surface the built-in
+TypeError/ValueError from exact-rational parsing; it is not converted to the
+custom refusal.
 
 Finally, published identity labeling checks that parent and reaction names are
 globally unique, coverage labels exactly match all species, and every coverage
@@ -433,18 +436,21 @@ checks happen when evaluate() delegates to the kernel:
 | Condition | Refusal or result |
 |---|---|
 | A raw ImccDatapack has no proven identity | ImccUnprovenDatapackError; use load_datapack() or explicitly label a research pack. |
-| S/P names with nonzero values are supplied without an ext pack and explicit enablement, or an ext pack is used without enable_sp_extension=True | ImccSPComponentRequiresExtensionError, code imcc_sp_extension_required. Only nonzero S/P values count as supplied; on a plain pack, a zero-valued S/P mapping key remains an unknown component and raises ImccComponentOutsideDomainError. The flag does not widen a plain pack. |
+| A composition mapping or extra_mol value is not a number (for example a string or None) | ImccCompositionIncompleteError, code imcc_composition_incomplete, with "<entry> is not a number: <value>" naming the key (an integer beyond float range gives "<entry> is too large to represent as a float"). Checked first, with the finiteness check, so it precedes every other composition screen. |
+| A composition mapping contains a non-finite value (nan or ±inf) | ImccCompositionIncompleteError, code imcc_composition_incomplete, with "composition contains non-finite values". Checked before the ferric, S/P extension, and outside-domain screens, including for non-parent keys such as Fe2O3, S, and P2O5. |
+| Finite nonzero S/P names are supplied without an ext pack and explicit enablement, or an ext pack is used without enable_sp_extension=True | ImccSPComponentRequiresExtensionError, code imcc_sp_extension_required. Only finite nonzero S/P values count as supplied; on a plain pack, a zero-valued S/P mapping key remains an unknown component and raises ImccComponentOutsideDomainError. The flag does not widen a plain pack. |
 | basis_type is not mol or wt, vector is not 1-D, has the wrong length, is non-finite, negative, or sums to zero | ImccCompositionIncompleteError. An overlong vector on a plain pack is intercepted earlier by the S/P gate and raises ImccSPComponentRequiresExtensionError; an overlong vector on an enabled extension pack raises ImccComponentOutsideDomainError. |
 | An enabled S/P pack receives only S and P2O5 with positive values | ImccCompositionIncompleteError because the total supplied moles are positive but the canonical eight-oxide composition total is zero. |
-| Mapping contains Fe2O3 with a nonzero value | ImccFerricInputUnsupportedError; the caller must convert to FeO under its redox model. |
+| Mapping contains Fe2O3 with a finite nonzero value | ImccFerricInputUnsupportedError; the caller must convert to FeO under its redox model. Non-finite mapping values are refused by the preceding row. |
 | Mapping or extra_mol contains another component outside the loaded parent basis | ImccComponentOutsideDomainError. |
-| Declared basis is non-positive or differs from the input sum by more than 1e-6 relative | ImccCompositionIncompleteError. If no basis is supplied, the input sum is used. Weight input is converted to moles before the kernel call. |
+| Declared basis is non-positive, non-finite (nan or ±inf), or differs from the input sum by more than 1e-6 relative | ImccCompositionIncompleteError, with the message naming the basis. A non-finite basis is caught here explicitly: an ordered check such as `basis <= 0` admits nan and inf under IEEE 754. If no basis is supplied, the input sum is used; a finite vector whose implicit parent total is non-finite is refused as "parent mole total is not finite," not as a declared-basis error. Weight input is converted to moles before the kernel call. |
 | The canonical eight-oxide alkali fraction X_Me2O = (n_Na2O+n_K2O)/sum(n_canonical_oxide) exceeds 0.5 | ImccCompositionOutsideValidatedEnvelopeError, code imcc_composition_outside_validated_envelope, unless allow_out_of_envelope=True; then the result is marked outside_validated. |
 | T_K is not finite or is not positive | ImccTOutsideDatapackDomainError. |
 | An active row is outside its T_domain_K | ImccTOutsideDatapackDomainError, unless allow_extrapolation=True; then the result is marked extrapolated. |
+| extra_mol has a non-finite amount (nan or ±inf) | ImccCompositionIncompleteError naming the non-finite amount. Checked first, before the S/P extension gate, zero-skip, sign check, and ferric screen, so a non-finite `Fe2O3` or S/P amount is reported as non-finite rather than as another refusal. |
 | extra_mol has negative nonzero moles | ImccCompositionIncompleteError from the sign check, including negative `Fe2O3`. A positive `Fe2O3` extra is the ferric refusal; another positive extra is a component-outside-domain refusal. |
 | tol is not convertible to float | built-in TypeError, because `float(tol)` is called outside the guarded `max_iter` conversion. |
-| tol is non-positive or non-finite, or max_iter is non-finite/non-numeric | built-in ValueError. A finite max_iter <= 0 reaches the solver and produces ImccNonconvergenceError. |
+| tol is non-positive or non-finite, or max_iter is non-finite/non-numeric (including an integer too large to convert to float) | built-in ValueError. A finite max_iter <= 0 reaches the solver and produces ImccNonconvergenceError. |
 | The parent-balance solve produces non-finite residuals, misses the tolerance within its evaluation budget, or cannot complete continuation | ImccNonconvergenceError with diagnostics. |
 
 The composition envelope is therefore a validated model-use boundary, not a

@@ -280,6 +280,22 @@ def test_refusal_composition_incomplete() -> None:
         solve_imcc_sf04(np.array([np.nan, 0.5]), 1000.0, pack)
 
 
+@pytest.mark.parametrize("nu_value", [float("nan"), float("inf"), float("-inf")])
+def test_datapack_refuses_nonfinite_nu(nu_value: float) -> None:
+    with pytest.raises(ValueError) as exc:
+        ImccDatapack(
+            reactions=("AB",),
+            nu=np.array([[nu_value], [1.0]]),
+            A=np.array([0.0]),
+            B=np.array([0.0]),
+            domains=[(0.0, 1.0e6)],
+            version="nonfinite-nu",
+            parent_oxides=("A", "B"),
+        )
+
+    assert "nu must be finite" in str(exc.value)
+
+
 def test_refusal_component_outside_domain() -> None:
     pack = make_ab_datapack()
     parent = np.array([0.5, 0.5])
@@ -585,6 +601,15 @@ def test_sc130_max_iter_nonfinite_refused(max_iter: float) -> None:
     parent = np.array([0.5, 0.5])
     with pytest.raises(ValueError, match="max_iter must be a finite"):
         solve_imcc_sf04(parent, 1000.0, pack, max_iter=max_iter)
+
+
+def test_sc130_max_iter_huge_int_refused() -> None:
+    pack = make_ab_datapack()
+    parent = np.array([0.5, 0.5])
+    with pytest.raises(ValueError) as exc:
+        solve_imcc_sf04(parent, 1000.0, pack, max_iter=10**400)
+
+    assert "max_iter must be a finite number" in str(exc.value)
 
 
 @pytest.mark.parametrize(
