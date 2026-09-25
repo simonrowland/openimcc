@@ -14,9 +14,11 @@ from __future__ import annotations
 
 import math
 import os
+from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Mapping, Sequence
 
 import numpy as np
@@ -61,6 +63,12 @@ class ImccGasTemperatureOutsideDomainError(ImccRefusal):
     code = "imcc_gas_T_outside_domain"
 
 
+class ImccGasInvalidFugacityError(ImccRefusal):
+    """Raised when the caller's bar-relative oxygen fugacity is invalid."""
+
+    code = "imcc_gas_invalid_fO2"
+
+
 # --------------------------------------------------------------------------- #
 # Packaged data and explicit VapoRock override
 # --------------------------------------------------------------------------- #
@@ -78,6 +86,36 @@ class ImccGasDataUnavailableError(ImccRefusal):
     """The gas thermodynamic tables have not been located."""
 
     code = "imcc_gas_data_unavailable"
+
+
+@dataclass(frozen=True)
+class ImccGasResult(MappingABC[str, float]):
+    """Immutable gas pressures plus the validity metadata for each channel."""
+
+    _values: Mapping[str, float]
+    unit: str
+    domain_flags: Mapping[str, str | None]
+    provenance_class: Mapping[str, str]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_values", MappingProxyType(dict(self._values)))
+        object.__setattr__(
+            self, "domain_flags", MappingProxyType(dict(self.domain_flags))
+        )
+        object.__setattr__(
+            self,
+            "provenance_class",
+            MappingProxyType(dict(self.provenance_class)),
+        )
+
+    def __getitem__(self, species: str) -> float:
+        return self._values[species]
+
+    def __iter__(self):
+        return iter(self._values)
+
+    def __len__(self) -> int:
+        return len(self._values)
 
 
 def _pandas():
@@ -214,9 +252,7 @@ _PROVENANCE_AUTHORITY_RANK = {
 def gas_species_provenance(species: str) -> dict[str, str | None]:
     """Return the row authorities feeding one retained gas channel.
 
-    ``evaluate_gas`` intentionally keeps its historical ``dict[str, float]``
-    return type.  Callers that need the data-quality label query it separately;
-    the overall authority is the least-authoritative row in that reaction.
+    The overall authority is the least-authoritative row in that reaction.
     """
     if species not in _SF04_REACTIONS:
         raise ImccGasSpeciesNotFoundError(
@@ -252,7 +288,7 @@ IMCC_SF04_WORKBOOK_GRID_K = (
 # EXTRAPOLATED-INFORMATIONAL labels for every channel whose gas or parent-oxide
 # table does not cover the full Schaefer-2004 workbook grid above.  The fitted
 # gas rows cover 1500--3000 K; these labels therefore describe parent-oxide
-# gaps only.  The evaluator still refuses these temperatures unless
+# gaps only.  Strict evaluation still refuses these temperatures unless
 # allow_extrapolation=True; labels disclose the reason and never widen the
 # executable domain.
 IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS: dict[str, str] = {
@@ -506,6 +542,19 @@ def _lamor_gibbs(T: float, row: pd.Series) -> float:
     return -R_J_MOL_K * T * np.polyval(G_poly_coefs, T) + R_J_MOL_K * dH298 * 1000.0
 
 
+def _outside_interval_flag(
+    row_name: str, T: float, row: pd.Series, *, label: str = "G(T)"
+) -> str | None:
+    low = float(row["T_min"])
+    high = float(row["T_max"])
+    if T < low or T > high:
+        return (
+            f"T={T} K outside declared {label} interval for {row_name!r} "
+            f"[{low:g}, {high:g}] K"
+        )
+    return None
+
+
 def _nearest_interval_row(
     df: pd.DataFrame, species: str, T: float, allow_extrapolation: bool = False
 ) -> pd.Series:
@@ -516,7 +565,7 @@ def _nearest_interval_row(
     ``rows.iloc[0]`` (first row of that species in the loaded frame). Then,
     unless ``allow_extrapolation=True``, raise
     ``ImccGasTemperatureOutsideDomainError`` when ``T`` is outside that
-    selected row's ``[T_min, T_max]``. That default refusal is the V2
+    selected row's ``[T_min, T_max]``. That strict-mode refusal is the V2
     refusal-semantics contract in the IMCC-SF04 spec §2.
 
     This is not legacy VapoRock ``_calc_gibbs_species_JANAF_singleT`` interval
@@ -587,9 +636,9 @@ def evaluate_gas(
     fO2: float,
     datapack: ImccGasDatapack,
     parent_oxides: Sequence[str] | None = None,
-    allow_extrapolation: bool = False,
-    gas_species: Sequence[str] | None = None,
-) -> dict[str, float]:
+    allow_extrapolation: bool = True,
+    gas_species: Sequence[str] | str | None = None,
+) -> ImccGasResult:
     """Compute equilibrium partial pressures for the SF04 retained gas set.
 
     Parameters
@@ -609,13 +658,10 @@ def evaluate_gas(
     parent_oxides:
         Ordered parent-oxide names.  Defaults to the IMCC-SF04 8-oxide basis.
     allow_extrapolation:
-        If False (default), raise ``ImccGasTemperatureOutsideDomainError``
-        when a finite T falls outside the declared G(T) interval of the
-        interval selected by ``_nearest_interval_row`` for any species
-        consumed by the reaction set.  If True, evaluate at that finite T
-        even when it lies outside the selected row (legacy run_gate.py
-        behavior).  Non-finite or non-positive T and fO2 raise
-        ``ValueError`` before this flag is consulted.
+        If True (default), evaluate finite temperatures outside the selected
+        row and return a per-species ``domain_flags`` entry.  If False, refuse
+        with ``ImccGasTemperatureOutsideDomainError`` instead.  Non-finite or
+        non-positive T raises ``ValueError`` before this flag is consulted.
     gas_species:
         Optional retained-species subset.  The default evaluates every
         available channel.  A subset permits channel-specific diagnostics
@@ -623,10 +669,11 @@ def evaluate_gas(
 
     Returns
     -------
-    dict[str, float]
-        Partial pressure of each retained gas species, reported in bar
-        because p° = 1 bar makes p_i / p° numerically equal to p_i / bar
-        (see Derivation).
+    ImccGasResult
+        A read-only mapping of partial pressures in bar.  ``unit`` is
+        ``"bar"``; ``domain_flags`` names extrapolated source rows; and
+        ``provenance_class`` carries the least-authoritative class returned by
+        ``gas_species_provenance`` for each channel.
 
     Derivation
     ----------
@@ -665,7 +712,7 @@ def evaluate_gas(
 
         p̃_gas = (K° * a_oxide / fO2^n_O2)^(1 / n_gas)               (5)
 
-    The returned dict reports those p̃_gas values as bar.  For the special
+    The returned mapping reports those p̃_gas values as bar.  For the special
     retained species O2, p̃_O2 = fO2 by definition.  For n_O2 = 0, (5)
     reduces to p̃_gas = K° * a_oxide.
 
@@ -694,11 +741,20 @@ def evaluate_gas(
         reactions = tuple((name, _SF04_REACTIONS[name]) for name in requested)
 
     T = float(T_K)
-    p_O2 = float(fO2)
+    try:
+        p_O2 = float(fO2)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ImccGasInvalidFugacityError(
+            "fO2 must be finite and positive p_O2/p° (bar-relative, not "
+            f"log10 fO2); got {fO2}"
+        ) from exc
     if not math.isfinite(T) or T <= 0.0:
         raise ValueError(f"temperature must be finite and positive, got {T_K}")
     if not math.isfinite(p_O2) or p_O2 <= 0.0:
-        raise ValueError(f"fO2 must be finite and positive, got {fO2}")
+        raise ImccGasInvalidFugacityError(
+            "fO2 must be finite and positive p_O2/p° (bar-relative, not "
+            f"log10 fO2); got {fO2}"
+        )
 
     if isinstance(activities, Mapping):
         act = {name: float(activities.get(name, 0.0)) for name in parent_oxides}
@@ -720,16 +776,29 @@ def evaluate_gas(
                 f"activity of {oxide!r} must be finite and >= 0, got {a_used}"
             )
 
-    # G°(O2, T) is needed for every O2-producing reaction.
-    O2_row = _nearest_interval_row(
-        datapack.gas_df, "O2(g)", T, allow_extrapolation=allow_extrapolation
-    )
-    G_O2 = _janaf_gibbs(T, O2_row)
+    # G°(O2, T) is needed only for reactions that produce or consume O2.
+    needs_O2_row = any(n_O2 != 0.0 for _, (_, _, n_O2) in reactions)
+    O2_row = None
+    G_O2 = 0.0
+    if needs_O2_row:
+        O2_row = _nearest_interval_row(
+            datapack.gas_df, "O2(g)", T, allow_extrapolation=allow_extrapolation
+        )
+        G_O2 = _janaf_gibbs(T, O2_row)
 
     result: dict[str, float] = {}
+    domain_flags: dict[str, str | None] = {}
+    provenance_class: dict[str, str] = {}
     for gas_name, (oxide, n_gas, n_O2) in reactions:
+        flags: list[str] = []
         if gas_name == "O2":
+            # O2 is the caller-pinned fO2 value, so this channel evaluates no
+            # Gibbs row and must never inherit the O2(g) row's domain flag.
             result[gas_name] = p_O2
+            domain_flags[gas_name] = None
+            provenance_class[gas_name] = str(
+                gas_species_provenance(gas_name)["authority"]
+            )
             continue
 
         gas_species = f"{gas_name}(g)"
@@ -737,6 +806,14 @@ def evaluate_gas(
             datapack.gas_df, gas_species, T, allow_extrapolation=allow_extrapolation
         )
         G_gas = _janaf_gibbs(T, gas_row)
+        flag = _outside_interval_flag(gas_species, T, gas_row)
+        if flag is not None:
+            flags.append(flag)
+
+        if O2_row is not None and n_O2 != 0.0:
+            flag = _outside_interval_flag("O2(g)", T, O2_row)
+            if flag is not None:
+                flags.append(flag)
 
         if oxide:
             oxide_name = f"{oxide}(l)"
@@ -748,6 +825,9 @@ def evaluate_gas(
             )
             G_oxide = _lamor_gibbs(T, oxide_row)
             a_oxide = act[oxide]
+            flag = _outside_interval_flag(oxide_name, T, oxide_row)
+            if flag is not None:
+                flags.append(flag)
         else:
             G_oxide = 0.0
             a_oxide = 1.0
@@ -758,5 +838,14 @@ def evaluate_gas(
 
         p_gas = (Kp * a_oxide / (p_O2**n_O2)) ** (1.0 / n_gas)
         result[gas_name] = float(p_gas)
+        domain_flags[gas_name] = "; ".join(flags) or None
+        provenance_class[gas_name] = str(
+            gas_species_provenance(gas_name)["authority"]
+        )
 
-    return result
+    return ImccGasResult(
+        result,
+        unit="bar",
+        domain_flags=domain_flags,
+        provenance_class=provenance_class,
+    )

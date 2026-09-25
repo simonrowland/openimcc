@@ -21,6 +21,8 @@ from openimcc.gas import (
     IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES,
     IMCC_SF04_WORKBOOK_GRID_K,
     ImccGasDatapack,
+    ImccGasInvalidFugacityError,
+    ImccGasResult,
     ImccGasSpeciesNotFoundError,
     ImccGasTemperatureOutsideDomainError,
     default_condensate_database_path,
@@ -225,6 +227,7 @@ def test_parent_domain_gaps_refuse_with_typed_errors(
             1.0,
             gas_pack,
             gas_species=(species,),
+            allow_extrapolation=False,
         )
     assert exc.value.code == "imcc_gas_T_outside_domain"
     assert source_species in str(exc.value)
@@ -249,9 +252,137 @@ def test_gas_domain_refusal_is_typed(gas_pack: ImccGasDatapack) -> None:
             fO2=1.0,
             datapack=diagnostic_pack,
             gas_species=("Fe",),
+            allow_extrapolation=False,
         )
     assert exc.value.code == "imcc_gas_T_outside_domain"
     assert "Fe(g)" in str(exc.value)
+
+
+def test_sf04_basalt_at_1800_predicts_and_flags_source_rows(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    from openimcc import evaluate as evaluate_imcc
+    from openimcc import load_datapack
+
+    composition = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    imcc_pack = load_datapack(Path("src/openimcc/data/packs/imcc-sf04-v1.0.2.json"))
+    imcc_result = evaluate_imcc(
+        composition,
+        T_K=1800.0,
+        pack=imcc_pack,
+        basis_type="wt",
+        allow_extrapolation=True,
+    )
+    activities = dict(zip(imcc_result.parent_oxides, imcc_result.parent_activity))
+
+    result = evaluate_gas(activities, 1800.0, 1.0e-10, gas_pack)
+
+    assert isinstance(result, ImccGasResult)
+    assert set(result) == set(IMCC_GAS_CHANNEL_SPECIES)
+    assert all(math.isfinite(value) and value >= 0.0 for value in result.values())
+    flagged = {
+        "SiO",
+        "SiO2",
+        "Si",
+        "Mg",
+        "MgO",
+        "CaO",
+        "Ca",
+        "AlO",
+        "AlO2",
+        "Al2O",
+        "Al2O2",
+        "Al",
+    }
+    assert all(result.domain_flags[species] is not None for species in flagged)
+    assert all(
+        result.domain_flags[species] is None
+        for species in set(result) - flagged
+    )
+    assert "MgO(l)" in result.domain_flags["Mg"]
+    assert "[3100, 3500] K" in result.domain_flags["Mg"]
+    assert "T=1800.0 K" in result.domain_flags["SiO"]
+
+
+def test_o2_pin_is_never_domain_flagged_at_3200_k(
+    gas_pack: ImccGasDatapack,
+    unit_activities: dict[str, float],
+) -> None:
+    o2_only = evaluate_gas(
+        unit_activities,
+        3200.0,
+        1.0e-8,
+        gas_pack,
+        gas_species=("O2",),
+    )
+    full = evaluate_gas(unit_activities, 3200.0, 1.0e-8, gas_pack)
+
+    assert o2_only.domain_flags["O2"] is None
+    assert full.domain_flags["O2"] is None
+    # The same O2(g) row remains visible on reactions that actually consume it.
+    assert "O2(g)" in full.domain_flags["SiO"]
+
+
+def test_gas_result_is_frozen_bar_mapping_and_preserves_numbers(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = {
+        "SiO2": 1.0,
+        "MgO": 1.0,
+        "FeO": 1.0,
+        "CaO": 1.0,
+        "Al2O3": 1.0,
+        "Na2O": 1.0,
+        "K2O": 1.0,
+    }
+    result = evaluate_gas(
+        activities,
+        2000.0,
+        1.0,
+        gas_pack,
+        allow_extrapolation=True,
+        gas_species=("Na", "K", "SiO", "O2"),
+    )
+
+    assert result.unit == "bar"
+    assert dict(result) == {
+        "Na": 0.012891128142910052,
+        "K": 2.1523860349175448,
+        "SiO": 1.741275855555553e-08,
+        "O2": 1.0,
+    }
+    assert result.domain_flags["Na"] is None
+    assert result.provenance_class["Na"] == "lam1984_transcribed"
+    with pytest.raises(TypeError):
+        result.domain_flags["Na"] = "mutated"  # type: ignore[index]
+    with pytest.raises((AttributeError, TypeError)):
+        result.unit = "Pa"  # type: ignore[misc]
+
+
+def test_negative_fugacity_refuses_with_bar_relative_hint(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(
+        ImccGasInvalidFugacityError,
+        match=r"p_O2/p°.*bar-relative.*not log10 fO2",
+    ) as exc:
+        evaluate_gas(
+            {"Na2O": 1.0},
+            1800.0,
+            -8.0,
+            gas_pack,
+            gas_species=("Na",),
+        )
+    assert exc.value.code == "imcc_gas_invalid_fO2"
 
 
 def test_full_workbook_grid_runs_for_in_domain_channels(
@@ -583,7 +714,10 @@ def test_nonfinite_temperature_refuses_before_table_access(temperature: float) -
 
 @pytest.mark.parametrize("fugacity", [float("nan"), float("inf"), float("-inf")])
 def test_nonfinite_fugacity_refuses_before_table_access(fugacity: float) -> None:
-    with pytest.raises(ValueError, match="finite and positive"):
+    with pytest.raises(
+        ImccGasInvalidFugacityError,
+        match=r"finite and positive p_O2/p°.*not log10 fO2",
+    ):
         evaluate_gas(
             {"Na2O": 1.0},
             2000.0,

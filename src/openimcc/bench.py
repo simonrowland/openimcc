@@ -483,7 +483,6 @@ def _prediction_for_point(
     gas_evaluate: Any = None,
     gas_species_provenance: Any = None,
     gas_reason: str = "",
-    gas_domain_error: Any = None,
     gas_extrapolation_labels: Mapping[str, str] | None = None,
     initial_domain_flag: str | None = None,
 ) -> tuple[float | None, str, str, str | None, str | None]:
@@ -551,45 +550,26 @@ def _prediction_for_point(
             )
 
         try:
-            gas_values = gas_evaluate(
+            gas_result = gas_evaluate(
                 activities,
                 float(point["temperature_K"]),
                 float(point["fO2_bar"]),
                 gas_datapack,
                 gas_species=(species,),
             )
-            value = gas_values.get(species)
-        except ImccRefusal as exc:
-            if gas_domain_error is not None and isinstance(exc, gas_domain_error):
-                try:
-                    gas_values = gas_evaluate(
-                        activities,
-                        float(point["temperature_K"]),
-                        float(point["fO2_bar"]),
-                        gas_datapack,
-                        gas_species=(species,),
-                        allow_extrapolation=True,
-                    )
-                    value = gas_values.get(species)
-                except (ImccRefusal, TypeError, ValueError) as retry_exc:
-                    return (
-                        None,
-                        _reason_line(retry_exc),
-                        "refused",
-                        provenance_class,
-                        None,
-                    )
-                gas_flag = _reason_line(exc)
+            value = gas_result.get(species)
+            gas_flag = gas_result.domain_flags.get(species)
+            if gas_flag is not None:
                 label = (gas_extrapolation_labels or {}).get(species)
                 if label:
                     gas_flag = f"{gas_flag}; {label}"
                 domain_flag = (
-                    gas_flag
+                    f"gas: {gas_flag}"
                     if domain_flag is None
                     else f"{domain_flag}; gas: {gas_flag}"
                 )
-            else:
-                return None, _reason_line(exc), "refused", provenance_class, None
+        except ImccRefusal as exc:
+            return None, _reason_line(exc), "refused", provenance_class, None
         except (TypeError, ValueError) as exc:
             return (
                 None,
@@ -739,13 +719,11 @@ def run_bench(
     gas_evaluate: Any = None
     gas_species_provenance: Any = None
     gas_reason = ""
-    gas_domain_error: Any = None
     gas_extrapolation_labels: Mapping[str, str] | None = None
     if any(str(point.get("observable")) == "partial_pressure" for point in selected):
         try:
             from openimcc.gas import (
                 IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS as _gas_extrapolation_labels,
-                ImccGasTemperatureOutsideDomainError as _gas_domain_error,
                 evaluate_gas as _evaluate_gas,
                 gas_species_provenance as _gas_species_provenance,
                 load_gas_datapack,
@@ -753,7 +731,6 @@ def run_bench(
 
             gas_evaluate = _evaluate_gas
             gas_species_provenance = _gas_species_provenance
-            gas_domain_error = _gas_domain_error
             gas_extrapolation_labels = _gas_extrapolation_labels
             gas_datapack = load_gas_datapack()
         except ImportError as exc:
@@ -806,7 +783,6 @@ def run_bench(
             gas_evaluate=gas_evaluate,
             gas_species_provenance=gas_species_provenance,
             gas_reason=gas_reason,
-            gas_domain_error=gas_domain_error,
             gas_extrapolation_labels=gas_extrapolation_labels,
             initial_domain_flag=engine_domain_flag,
         )
