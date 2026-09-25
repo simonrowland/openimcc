@@ -89,10 +89,18 @@ and 2500 K remain unavailable from the published paper.
 At the published Table 9 tholeiite anchor, K is **+0.14 dex** with
 `KCaAlSi2O7`; removing that complex moves K to **+2.31 dex**. It must stay:
 the **−2.3 dex K cliff** in the old MAGMA workbook baseline is not the paper's
-Table 9 result. The same anchor's Na is **−1.42 dex**, and removing the four
-`nu(Na2O) = 0.5` aluminosilicates moves it only to **−0.53 dex**. The
-published-reference and species-set tests record these as diagnostics; they do
-not tune the model.
+Table 9 result. The same anchor's Na is **−1.42 dex**. Removing the four
+`nu(Na2O) = 0.5` complexes moves that residual to **−0.53 dex**. That shift is
+not the family's share of the miss: the three `nu = 1` complexes remain and
+take up the released Na. Removing every Na-bearing complex in the pack (these
+seven) moves the residual to **+2.53 dex**, past the measured pressure, while
+the sum of the single-family shifts still predicts about **−0.52 dex**. The
+shifts do not add, because the complexes compete for one Na inventory; the
+**−0.53 dex** figure is the residual with the `nu = 1` sinks still binding,
+not a remainder that needs another cause. The published-pack **−1.42 dex**
+miss, with all seven present, stays a separate diagnostic. The
+published-reference and species-set tests record these as diagnostics; they
+do not tune the model.
 
 The K errors have opposite signs in different complex families. In Hastie case
 4, K is **−0.89 dex** and removing the `nu(K2O) = 0.5` K-aluminosilicates

@@ -204,6 +204,20 @@ def test_sf04_table9_species_set_sensitivities() -> None:
     # These are the three nu(Na2O)=1 sodium-family rows used by the evidence
     # comparison; their removal is the small-change control.
     no_na_one = _research_pack(remove=("Na2SiO3", "Na2Si2O5", "Na2TiO3"))
+    # Every Na-bearing complex in the pack, removed together.  Derived from
+    # the stoichiometry, so a pack change cannot silently shrink the set.
+    source = PUBLISHED_PACK.kernel_datapack
+    na_row = list(source.parent_oxides).index("Na2O")
+    na_complexes = tuple(
+        name
+        for index, name in enumerate(source.reactions)
+        if source.nu[na_row, index] != 0
+    )
+    assert set(na_complexes) == {
+        "NaAlSiO4", "NaAlSi3O8", "NaAlO2", "NaAlSi2O6",
+        "Na2SiO3", "Na2Si2O5", "Na2TiO3",
+    }
+    no_na_all = _research_pack(remove=na_complexes)
 
     base_k = _gas_residual(composition, 1900.0, fO2, pressures["K"], "K", base)
     no_kca_k = _gas_residual(composition, 1900.0, fO2, pressures["K"], "K", no_kca)
@@ -214,6 +228,9 @@ def test_sf04_table9_species_set_sensitivities() -> None:
     no_na_one_na = _gas_residual(
         composition, 1900.0, fO2, pressures["Na"], "Na", no_na_one
     )
+    no_na_all_na = _gas_residual(
+        composition, 1900.0, fO2, pressures["Na"], "Na", no_na_all
+    )
 
     # SF04 Table 9: measured log10(predicted/reference) is +0.1419 dex with
     # KCaAlSi2O7 and +2.3117 dex without it.  The latter is the species-set
@@ -222,16 +239,29 @@ def test_sf04_table9_species_set_sensitivities() -> None:
     assert no_kca_k == pytest.approx(2.3, abs=0.1)
     assert base_k > 0.0 < no_kca_k
 
-    # The four nu(Na2O)=0.5 aluminosilicates move Na from -1.4164 to -0.5285
-    # dex.  Removing the three nu=1 rows changes it by only 0.0091 dex.
+    # The four nu(Na2O)=0.5 complexes move Na from -1.4164 to -0.5285 dex.
+    # Removing the three nu=1 complexes changes it by only 0.0091 dex.
+    # These single-family shifts do NOT add: the families compete for one Na
+    # inventory, so with one family gone the other takes up the released Na
+    # (99 % of it at this anchor).  Removing all seven together gives
+    # +2.528 dex, past the measured pressure, while the sum of the single
+    # shifts (+0.888 + 0.009 = +0.897 dex) predicts -0.519 dex, still short
+    # of it.  So -0.53 dex is the residual with the nu=1 sinks still binding,
+    # not a remainder that needs another cause.
     assert base_na == pytest.approx(-1.42, abs=0.05)
     assert no_na_half_na == pytest.approx(-0.53, abs=0.05)
     assert abs(no_na_one_na - base_na) < 0.05
+    assert no_na_all_na == pytest.approx(2.528, abs=0.005)
+    # The claim itself, as a sign test: the additive prediction stays short
+    # of the measured pressure, and the joint deletion crosses it.
+    sum_of_singles = (no_na_half_na - base_na) + (no_na_one_na - base_na)
+    assert base_na + sum_of_singles < 0.0 < no_na_all_na
     print(
         "SF04 species sensitivity: "
         f"K {base_k:+.4f} -> {no_kca_k:+.4f}; "
         f"Na {base_na:+.4f} -> {no_na_half_na:+.4f}; "
-        f"nu=1 Na delta {no_na_one_na - base_na:+.4f} dex"
+        f"nu=1 Na delta {no_na_one_na - base_na:+.4f} dex; "
+        f"all seven Na rows {no_na_all_na:+.4f} dex"
     )
 
 
