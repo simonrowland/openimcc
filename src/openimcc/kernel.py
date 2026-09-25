@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from decimal import Decimal
 import hashlib
+import importlib
 import json
 import math
 from types import MappingProxyType
@@ -75,6 +76,18 @@ class ImccComponentOutsideDomainError(ImccRefusal):
     code = "imcc_component_outside_domain"
 
 
+class ImccSpeciesNotFoundError(ImccComponentOutsideDomainError):
+    """Raised when a result lookup names no parent oxide."""
+
+    code = "imcc_species_not_found"
+
+
+class ImccDataframeUnavailableError(ImccRefusal):
+    """Raised when the optional pandas dependency is not installed."""
+
+    code = "imcc_dataframe_unavailable"
+
+
 class ImccNonconvergenceError(ImccRefusal):
     code = "imcc_nonconvergence"
 
@@ -129,6 +142,9 @@ class ImccDatapack:
         log10 equilibrium constants, ``log10 K_j(T) = A_j + B_j / T_K``.
     domains:
         Per-complex demonstrated temperature domain as ``[(T_low, T_high), ...]``.
+    paper_domains:
+        Optional per-complex paper-demonstrated temperature windows. ``None``
+        means the row carries no paper window and cannot receive that flag.
     version:
         Review-gated data pack version string.
     parent_oxides:
@@ -153,6 +169,7 @@ class ImccDatapack:
             "K2O",
         )
     )
+    paper_domains: Sequence[tuple[float, float] | None] | None = None
     _identity: _ImccDatapackIdentity = field(
         default_factory=_untrusted_datapack_identity,
         init=False,
@@ -223,6 +240,30 @@ class ImccDatapack:
         object.__setattr__(self, "reactions", tuple(self.reactions))
         object.__setattr__(self, "domains", tuple(domains_out))
         object.__setattr__(self, "parent_oxides", tuple(self.parent_oxides))
+        if self.paper_domains is None:
+            paper_domains_out = [None] * n_complexes
+        else:
+            if len(self.paper_domains) != n_complexes:
+                raise ValueError("paper_domains length must match n_complexes")
+            paper_domains_out = []
+            for idx, window in enumerate(self.paper_domains):
+                if window is None:
+                    paper_domains_out.append(None)
+                    continue
+                try:
+                    low_raw, high_raw = window
+                except (TypeError, ValueError) as exc:
+                    raise ValueError(
+                        f"paper_domains[{idx}] must be a (T_low, T_high) pair"
+                    ) from exc
+                low = float(low_raw)
+                high = float(high_raw)
+                if not (math.isfinite(low) and math.isfinite(high)):
+                    raise ValueError(
+                        f"paper_domains[{idx}] endpoints must be finite Kelvin values"
+                    )
+                paper_domains_out.append((low, high))
+        object.__setattr__(self, "paper_domains", tuple(paper_domains_out))
         object.__setattr__(self, "nu", nu)
         object.__setattr__(self, "A", A)
         object.__setattr__(self, "B", B)
@@ -455,6 +496,7 @@ class ImccLabels:
     datapack_version: str = ""
     evidence_class: str = _UNTRUSTED_IDENTITY_TOKEN
     coverage: Mapping[str, str] = field(default_factory=dict)
+    flags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -474,6 +516,41 @@ class ImccResult:
     convergence: ImccConvergence
     labels: ImccLabels
     extrapolated: bool = False
+
+    def _parent_index(self, name: str) -> int:
+        try:
+            return self.parent_oxides.index(name)
+        except ValueError:
+            raise ImccSpeciesNotFoundError(
+                f"unknown parent oxide {name!r}; available names: "
+                f"{', '.join(self.parent_oxides)}"
+            ) from None
+
+    def activity(self, name: str) -> float:
+        """Return one parent-oxide activity by name."""
+        return float(self.parent_activity[self._parent_index(name)])
+
+    def gamma(self, name: str) -> float:
+        """Return one parent-oxide activity coefficient by name."""
+        return float(self.parent_gamma[self._parent_index(name)])
+
+    def to_dataframe(self) -> Any:
+        """Return parent-oxide activities and coefficients as a pandas frame."""
+        try:
+            pd = importlib.import_module("pandas")
+        except ImportError as exc:
+            raise ImccDataframeUnavailableError(
+                "to_dataframe() requires optional pandas; install openimcc[gas]"
+            ) from exc
+        return pd.DataFrame(
+            {
+                "species": self.parent_oxides,
+                "x": self.parent_x,
+                "x_star": self.parent_x_star,
+                "activity": self.parent_activity,
+                "gamma": self.parent_gamma,
+            }
+        ).set_index("species")
 
 
 # --------------------------------------------------------------------------- #
@@ -824,7 +901,7 @@ def solve_imcc_sf04(
     -------
     ImccResult
         Activities, gamma coefficients, full speciation, convergence
-        diagnostics, and identity/trust labels.
+        diagnostics, identity labels, and domain flags.
 
     Raises
     ------
@@ -970,6 +1047,7 @@ def solve_imcc_sf04(
     # declared T domains honored on this path. Domain endpoints are finite
     # by ImccDatapack construction.
     extrapolated = False
+    paper_window_rows: list[str] = []
     active_indices = np.flatnonzero(active_complex)
     for idx in active_indices:
         low, high = datapack.domains[idx]
@@ -980,6 +1058,21 @@ def solve_imcc_sf04(
                     f"[{low}, {high}] K for complex {datapack.reactions[idx]}"
                 )
             extrapolated = True
+        paper_domain = datapack.paper_domains[idx]
+        if (
+            paper_domain is not None
+            and low <= T <= high
+            and (T < paper_domain[0] or T > paper_domain[1])
+        ):
+            paper_window_rows.append(datapack.reactions[idx])
+
+    flags = ()
+    if paper_window_rows:
+        flags = (
+            "paper-demonstrated-window: "
+            f"T={T:g} K is outside the paper-demonstrated domain for rows: "
+            + ", ".join(paper_window_rows),
+        )
 
     # --- Complex equilibrium constants at T (active subset only) ------------
     log10_K_active = datapack.A[active_complex] + datapack.B[active_complex] / T
@@ -1047,6 +1140,7 @@ def solve_imcc_sf04(
             for name in species_names
         },
         evidence_class=datapack.evidence_class,
+        flags=flags,
     )
 
     return ImccResult(

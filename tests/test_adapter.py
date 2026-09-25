@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 from fractions import Fraction
 from pathlib import Path
@@ -10,29 +11,33 @@ import numpy as np
 import pytest
 
 import openimcc as imcc_sf04
+import openimcc.kernel as kernel
 # The simulator this engine was extracted from owns a "fidelity vocabulary"
 # deciding which label strings deny authority. That predicate is deny-by-default
 # -- it returns True for almost any string, including "inside" -- so porting it
 # would assert close to nothing. Every call site here sat next to an assertion
 # on the label's exact VALUE, which is strictly stronger, so the checks below
-# assert the value directly. The trust policy itself stays upstream; this
-# package has no view on which backends a host considers authoritative.
+# assert the value directly. This package has no view on which backends a host
+# considers authoritative.
 from openimcc import (
     ImccAdapterLabels,
     ImccComponentOutsideDomainError,
     ImccCompositionOutsideValidatedEnvelopeError,
     ImccCompositionIncompleteError,
+    ImccDataframeUnavailableError,
     ImccDatapack,
     ImccFerricInputUnsupportedError,
     ImccLoadedDatapack,
     ImccMalformedDatapackError,
     ImccNonconvergenceError,
+    ImccSpeciesNotFoundError,
     ImccTOutsideDatapackDomainError,
     ImccUnprovenDatapackError,
     evaluate,
     label_research_datapack,
     load_datapack,
 )
+from openimcc.bench import composition_wt_pct_for_point, load_bench_set
 from openimcc.kernel import (
     ImccRefusal,
     _label_loaded_datapack,
@@ -50,11 +55,11 @@ def _make_uniform_composition(pack: ImccLoadedDatapack) -> dict[str, float]:
 
 
 def _make_alkali_composition(
-    pack: ImccLoadedDatapack, x_me2o: float
+    pack: ImccLoadedDatapack, x_me2o: float, alkali_oxide: str = "Na2O"
 ) -> dict[str, float]:
     composition = {name: 0.0 for name in pack.parent_oxides}
     composition["SiO2"] = 1.0 - x_me2o
-    composition["Na2O"] = x_me2o
+    composition[alkali_oxide] = x_me2o
     return composition
 
 
@@ -120,6 +125,242 @@ def test_load_datapack_roundtrip() -> None:
     assert kernel.A[by_name["Mg2SiO4"]] == pytest.approx(-0.94)
     assert kernel.A[by_name["CaTiO3"]] == pytest.approx(-0.08)
     assert kernel.A[by_name["Na2Si2O5"]] == pytest.approx(-1.39)
+
+
+def test_pack_and_evaluate_default_to_the_shipped_resource() -> None:
+    default_pack = load_datapack()
+    explicit_pack = load_datapack(DATAPACK_PATH)
+    assert default_pack.version == explicit_pack.version == "1.0.2"
+
+    result = evaluate({"SiO2": 1.0}, 2500.0)
+    assert result.labels.identity["model_id"] == "IMCC-SF04"
+    assert result.labels.identity["datapack_version"] == "1.0.2"
+    assert result.labels.acid_sink_ratio == pytest.approx(1.0)
+
+
+def test_result_lookup_dataframe_and_typed_unknown_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("pandas")
+    result = evaluate({"SiO2": 0.5, "Na2O": 0.5}, 2500.0)
+    assert result.activity("SiO2") == pytest.approx(result.parent_activity[0])
+    assert result.gamma("Na2O") == pytest.approx(result.parent_gamma[6])
+    frame = result.to_dataframe()
+    assert frame.loc["Na2O", "activity"] == pytest.approx(result.activity("Na2O"))
+    with pytest.raises(ImccSpeciesNotFoundError):
+        result.activity("not-a-species")
+
+    real_import_module = kernel.importlib.import_module
+
+    def no_pandas(name: str):
+        if name == "pandas":
+            raise ImportError("pandas intentionally absent")
+        return real_import_module(name)
+
+    monkeypatch.setattr(kernel.importlib, "import_module", no_pandas)
+    with pytest.raises(ImccDataframeUnavailableError) as exc:
+        result.to_dataframe()
+    assert exc.value.code == "imcc_dataframe_unavailable"
+
+
+def test_wt_boundary_rounding_is_inside_the_envelope() -> None:
+    # The source's printed X_Na2O=.5 composition converts to .500003947...
+    # in moles because the published wt% values are rounded decimals.
+    result = evaluate(
+        {"SiO2": 49.223532, "Na2O": 50.776468},
+        1800.0,
+        basis_type="wt",
+    )
+    assert result.labels.envelope_status == "inside"
+
+
+@pytest.mark.parametrize(
+    ("alkali_oxide", "x_me2o", "expected_edge", "expected_ratio"),
+    [
+        ("Na2O", 0.45, False, 4.97315669808e-2),
+        ("Na2O", 0.498, True, 1.64430429930e-3),
+        ("Na2O", 0.499, True, 8.22561734683e-4),
+        ("Na2O", 0.50, True, 5.78368495446e-5),
+        ("Na2O", 0.55, True, 8.20052153231e-8),
+        ("K2O", 0.45, False, 1.92157652059e-2),
+        ("K2O", 0.48, False, 6.58844770625e-3),
+        ("K2O", 0.494, True, 1.86438232260e-3),
+        ("K2O", 0.498, True, 6.12264076035e-4),
+        ("K2O", 0.50, True, 1.35799396276e-5),
+        ("K2O", 0.55, True, 1.21444656780e-8),
+    ],
+)
+def test_species_coverage_edge_flag_is_predict_and_flag(
+    alkali_oxide: str,
+    x_me2o: float,
+    expected_edge: bool,
+    expected_ratio: float,
+) -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    result = evaluate(
+        _make_alkali_composition(pack, x_me2o, alkali_oxide),
+        1473.0,
+        pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    edge_flags = [
+        flag for flag in result.labels.flags if "species-coverage-edge" in flag
+    ]
+    assert bool(edge_flags) is expected_edge
+    assert result.labels.acid_sink_ratio == pytest.approx(expected_ratio, rel=1e-10)
+    if expected_edge:
+        family = alkali_oxide.removesuffix("2O")
+        assert f"the {family} silicate ladder has exhausted its acidic sink" in edge_flags[0]
+    assert result.labels.notices == (
+        "Na and K activities from IMCC-SF04 are biased low against published "
+        "anchors (SF04 Table 9 Na −1.4 dex; Hastie 1981 K −0.9 dex); see "
+        "docs/ROADMAP.md",
+    )
+
+
+def test_species_coverage_threshold_uses_published_binary_and_validated_rows() -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    fixture = load_bench_set(Path("benchmarks/sets/basalt-bench-set-v1.yaml"))
+
+    def result_for(point_id: str, *, strict: bool) -> object:
+        point = next(point for point in fixture["points"] if point["id"] == point_id)
+        composition = composition_wt_pct_for_point(point, fixture["compositions"])
+        return evaluate(
+            composition,
+            float(point["temperature_K"]),
+            pack,
+            basis_type="wt",
+            allow_extrapolation=not strict,
+            allow_out_of_envelope=not strict,
+        )
+
+    nearest_valid = result_for("kume2000_s145_a_al2o3_1823", strict=True)
+    assert nearest_valid.labels.acid_sink_ratio == pytest.approx(
+        1.95684635346e-3, rel=1e-10
+    )
+    assert not any(
+        "species-coverage-edge" in flag for flag in nearest_valid.labels.flags
+    )
+
+    published_edge = result_for(
+        "yamaguchi1983_a_na2o_x0500_1673", strict=False
+    )
+    assert published_edge.labels.acid_sink_ratio == pytest.approx(
+        2.36792688366e-4, rel=1e-10
+    )
+    assert any("species-coverage-edge" in flag for flag in published_edge.labels.flags)
+
+
+def test_species_coverage_threshold_spares_all_sf04_table5_rocks() -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    reference_path = Path("benchmarks/references/schaefer-fegley-2004/compositions.csv")
+    with reference_path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    assert len(rows) == 5
+    for row in rows:
+        composition = {
+            "SiO2": float(row["SiO2_wt_pct"]),
+            "MgO": float(row["MgO_wt_pct"]),
+            "FeO": float(row["FeO_wt_pct"])
+            + float(row["Fe2O3_wt_pct"]) * (2.0 * 71.844 / 159.688),
+            "CaO": float(row["CaO_wt_pct"]),
+            "Al2O3": float(row["Al2O3_wt_pct"]),
+            "TiO2": float(row["TiO2_wt_pct"]),
+            "Na2O": float(row["Na2O_wt_pct"]),
+            "K2O": float(row["K2O_wt_pct"]),
+        }
+        result = evaluate(
+            composition,
+            1900.0,
+            pack,
+            basis_type="wt",
+        )
+        assert not any(
+            "species-coverage-edge" in flag for flag in result.labels.flags
+        ), row["rock"]
+
+
+def test_equimolar_edge_names_solved_dominant_cation_family() -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    result = evaluate(
+        _make_uniform_composition(pack),
+        2500.0,
+        pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    assert result.labels.acid_sink_ratio == pytest.approx(
+        8.98861749854e-4, rel=1e-10
+    )
+    edge_flags = [
+        flag for flag in result.labels.flags if "species-coverage-edge" in flag
+    ]
+    assert len(edge_flags) == 1
+    assert "K–Ca–Al silicate" in edge_flags[0]
+    assert "mixed basic-oxide silicate" not in edge_flags[0]
+
+
+def test_sodium_edge_with_trace_mg_names_solved_sodium_family() -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    result = evaluate(
+        {"SiO2": 0.4999, "Na2O": 0.50, "MgO": 1.0e-4},
+        1473.0,
+        pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    edge_flags = [
+        flag for flag in result.labels.flags if "species-coverage-edge" in flag
+    ]
+    assert len(edge_flags) == 1
+    assert "the Na silicate ladder has exhausted its acidic sink" in edge_flags[0]
+    assert "mixed basic-oxide" not in edge_flags[0]
+
+
+def test_species_coverage_edge_uses_solution_family_not_trace_sodium() -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    pure_k = _make_alkali_composition(pack, 0.50, "K2O")
+    trace_na = dict(pure_k)
+    trace_na["SiO2"] -= 1.0e-8
+    trace_na["Na2O"] = 1.0e-8
+
+    pure_result = evaluate(
+        pure_k,
+        1473.0,
+        pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    trace_result = evaluate(
+        trace_na,
+        1473.0,
+        pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    pure_flags = [
+        flag for flag in pure_result.labels.flags if "species-coverage-edge" in flag
+    ]
+    trace_flags = [
+        flag for flag in trace_result.labels.flags if "species-coverage-edge" in flag
+    ]
+    assert len(pure_flags) == len(trace_flags) == 1
+    assert "the K silicate ladder has exhausted its acidic sink" in pure_flags[0]
+    assert "the K silicate ladder has exhausted its acidic sink" in trace_flags[0]
+    assert "the Na silicate ladder" not in trace_flags[0]
+
+
+def test_paper_demonstrated_window_flag_names_active_rows() -> None:
+    pack = load_datapack()
+    result = evaluate({name: 0.125 for name in pack.parent_oxides}, 1800.0, pack)
+    paper_flags = [
+        flag for flag in result.labels.flags if "paper-demonstrated-window" in flag
+    ]
+    assert len(paper_flags) == 1
+    assert "Mg2SiO4" in paper_flags[0]
+    assert "K2SiO3" not in paper_flags[0]
+    assert sum(domain is not None for domain in pack.kernel_datapack.paper_domains) == 34
 
 
 def test_wt_to_mol_known_value() -> None:
@@ -191,6 +432,11 @@ def test_in_envelope_composition_labels_result() -> None:
     pack = load_datapack(DATAPACK_PATH)
     result = evaluate(_make_uniform_composition(pack), 2500.0, pack)
     assert result.labels.envelope_status == "inside"
+
+
+def test_known_alkali_notice_only_applies_to_nonzero_alkali() -> None:
+    result = evaluate({"SiO2": 1.0}, 2500.0)
+    assert result.labels.notices == ()
 
 
 def test_refusal_ferric_input_in_composition() -> None:
@@ -428,7 +674,7 @@ def test_explicit_research_datapack_labels_survive_adapter() -> None:
     result = evaluate(_make_uniform_composition(loaded), 2500.0, labelled)
     assert result.labels.identity["model_id"] == "IMCC-SF04-RE"
     assert set(result.labels.coverage.values()) == {"RE-research"}
-    assert result.labels.trust == "internal-analytical"
+    assert not hasattr(result.labels, "trust")
 
 
 @pytest.mark.parametrize(
@@ -571,7 +817,7 @@ def test_label_block_fields_and_denylist() -> None:
     assert isinstance(labels, ImccAdapterLabels)
     assert labels.identity["model_id"] == "IMCC-SF04"
     assert labels.identity["datapack_version"] == "1.0.2"
-    assert labels.trust == "internal-analytical"
+    assert not hasattr(labels, "trust")
     for name in result.species_names:
         assert labels.coverage[name] == "A-published-imcc"
 
@@ -580,10 +826,20 @@ def test_package_exports_only_denied_adapter_solve_path() -> None:
     assert not any(name.startswith("solve_") for name in imcc_sf04.__all__)
     assert not any(name.startswith("solve_") for name in dir(imcc_sf04))
     assert not hasattr(imcc_sf04, "solve_imcc_sf04")
+    assert "ImccAdapterLabels" in imcc_sf04.__all__
+    assert "ImccLabels" not in imcc_sf04.__all__
+    for name in (
+        "IMCC_GAS_CHANNEL_SPECIES",
+        "IMCC_GAS_UNAVAILABLE_SPECIES",
+        "IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES",
+        "IMCC_PARENT_OXIDES",
+        "R_J_MOL_K",
+    ):
+        assert name not in imcc_sf04.__all__
 
     pack = load_datapack(DATAPACK_PATH)
     result = imcc_sf04.evaluate(_make_uniform_composition(pack), 2500.0, pack)
-    assert result.labels.trust == "internal-analytical"
+    assert not hasattr(result.labels, "trust")
 
 
 def test_extrapolation_flag() -> None:

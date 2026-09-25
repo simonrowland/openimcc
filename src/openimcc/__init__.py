@@ -35,6 +35,7 @@ from openimcc.model import (
     label_research_datapack,
     load_datapack,
 )
+from openimcc.kernel import ImccDataframeUnavailableError, ImccSpeciesNotFoundError
 
 
 def _resolve_version() -> str:
@@ -137,6 +138,8 @@ __all__ = [
     "ImccCompositionOutsideValidatedEnvelopeError",
     "ImccCompositionIncompleteError",
     "ImccComponentOutsideDomainError",
+    "ImccSpeciesNotFoundError",
+    "ImccDataframeUnavailableError",
     "ImccSPComponentRequiresExtensionError",
     "ImccFerricInputUnsupportedError",
     "ImccMalformedDatapackError",
@@ -149,14 +152,9 @@ __all__ = [
     "ImccGasDatapack",
     "ImccGasSpeciesNotFoundError",
     "ImccGasTemperatureOutsideDomainError",
-    "IMCC_GAS_CHANNEL_SPECIES",
-    "IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES",
-    "IMCC_GAS_UNAVAILABLE_SPECIES",
-    "IMCC_PARENT_OXIDES",
     # BAR is exported on purpose. evaluate_gas returns pressures in BAR while
     # the simulator's own vapour layer returns Pa -- exactly 5 dex apart. That
     # difference is invisible in a log-residual table, so the unit belongs at
     # the public surface where a caller trips over it.
     "BAR",
-    "R_J_MOL_K",
 ]

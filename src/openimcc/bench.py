@@ -72,6 +72,12 @@ _SUPPORTED_OBSERVABLES = frozenset(
 _ID_ENCODED_XTOKEN = re.compile(r"_x\d{3,}(?:_|$)")
 BAR_TO_PA = 1.0e5
 """Pressure conversion used at the bench boundary: 1 bar = 100,000 Pa."""
+_BINARY_POPULATIONS = frozenset(
+    {"tsaplin2000_kems_na2o_sio2", "yamaguchi1983_emf_na2o_sio2"}
+)
+_KUME_LIQUID_ACTIVITY_WARNING = (
+    "unconverted solid standard state; not an accuracy figure for liquid activities"
+)
 
 
 @dataclass(frozen=True)
@@ -92,8 +98,11 @@ class PointResult:
     reason: str
     convention: str
     units: str
+    standard_state: str
     score: bool
     domain_flag: str | None = None
+    extrapolation_flag: str | None = None
+    binary_subslice: str | None = None
     provenance_class: str | None = None
 
 
@@ -105,8 +114,11 @@ class Aggregate:
     n: int
     n_ok: int
     n_flagged: int
+    n_predicted: int
     rmse: float | None
     flagged_rmse: float | None
+    median_residual: float | None
+    mean_residual: float | None
     median_abs_residual: float | None
     status_counts: Mapping[str, int]
 
@@ -126,12 +138,19 @@ class BenchReport:
     flagged_rmse: float | None
     median_abs_residual: float | None
     status_counts: Mapping[str, int]
-    per_species: tuple[Aggregate, ...]
-    per_population: tuple[Aggregate, ...]
+    per_slice: tuple[Aggregate, ...]
+    binary_slices: tuple[Aggregate, ...]
+    out_of_domain_counts: Mapping[str, int]
     points: tuple[PointResult, ...]
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        payload = asdict(self)
+        # These totals combine incompatible standard states. Keep them for
+        # the explicitly labelled text arithmetic total, but never publish
+        # them as an unlabeled JSON accuracy headline.
+        for key in ("rmse", "flagged_rmse", "median_abs_residual"):
+            payload.pop(key, None)
+        return payload
 
 
 @dataclass(frozen=True)
@@ -159,6 +178,54 @@ def _resolve_path(value: str | Path) -> Path:
 
 def _reason_line(value: Any) -> str:
     return " ".join(str(value or "").split())[:800]
+
+
+def _standard_state_for_point(point: Mapping[str, Any]) -> str:
+    """Normalize the comparison reference named by a point's convention."""
+    convention = " ".join(str(point.get("convention") or "").lower().split())
+    if "pure-solid" in convention or "pure solid" in convention:
+        return "pure-solid"
+    if "pure-liquid" in convention or "pure liquid" in convention:
+        return "pure-liquid"
+    if point.get("observable") == "partial_pressure":
+        return "pure-liquid parent"
+    if "cmas basis" in convention:
+        return "CMAS basis"
+    return "unspecified"
+
+
+def _is_binary_point(point: Mapping[str, Any]) -> bool:
+    return str(point.get("population")) in _BINARY_POPULATIONS
+
+
+def _binary_subslice(point: Mapping[str, Any]) -> str | None:
+    if not _is_binary_point(point):
+        return None
+    mole_fraction = point.get("published_mole_fraction")
+    if not isinstance(mole_fraction, Mapping) or "Na2O" not in mole_fraction:
+        return "X unknown"
+    # Use the paper's published mole fraction, not the converted wt% vector;
+    # this keeps nominal X=0.5 rows out of the X>0.5 envelope sub-slice while
+    # the model's 0.500003947 fencepost is being fixed in model.py.
+    x_na2o = float(mole_fraction["Na2O"])
+    return "X>0.5" if x_na2o > 0.5 else "X<=0.5"
+
+
+def _slice_key(row: PointResult) -> str:
+    return f"{row.population} × {row.observable} × {row.standard_state}"
+
+
+def _domain_partition(domain_flag: str | None) -> str | None:
+    if not domain_flag:
+        return None
+    causes = frozenset(
+        re.findall(r"(?:^|;\s*)(temperature|envelope):", domain_flag)
+    )
+    return {
+        frozenset({"temperature"}): "temperature_only",
+        frozenset({"envelope"}): "envelope_only",
+        frozenset({"temperature", "envelope"}): "both",
+    }.get(causes)
 
 
 def _positive_finite(values: Mapping[str, Any]) -> dict[str, float]:
@@ -311,39 +378,98 @@ def _evaluate_imcc(
     engine: _PackedEngine,
     composition_wt_pct: Mapping[str, float],
     temperature_K: float,
-) -> tuple[str, dict[str, float], dict[str, float], str]:
-    """Return (status, activities, gammas, reason) with ImccEngine mapping."""
-    try:
-        result = evaluate(
+) -> tuple[str, dict[str, float], dict[str, float], str, str | None]:
+    """Return status, values, reason, and a visible physics-domain flag."""
+
+    def maps(result: Any) -> tuple[dict[str, float], dict[str, float]]:
+        activities = {
+            oxide: float(value)
+            for oxide, value in zip(result.parent_oxides, result.parent_activity)
+        }
+        gammas = {
+            oxide: float(value)
+            for oxide, value in zip(result.parent_oxides, result.parent_gamma)
+        }
+        return activities, gammas
+
+    def evaluate_with_overrides(
+        *, allow_extrapolation: bool, allow_out_of_envelope: bool
+    ) -> Any:
+        return evaluate(
             composition_wt_pct,
             float(temperature_K),
             engine.pack,
             basis_type="wt",
             enable_sp_extension=engine.enable_sp_extension,
-            allow_extrapolation=False,
-            allow_out_of_envelope=False,
+            allow_extrapolation=allow_extrapolation,
+            allow_out_of_envelope=allow_out_of_envelope,
+        )
+
+    try:
+        result = evaluate_with_overrides(
+            allow_extrapolation=False, allow_out_of_envelope=False
         )
     except (
         ImccCompositionOutsideValidatedEnvelopeError,
+        ImccTOutsideDatapackDomainError,
+    ) as exc:
+        temperature_refusal: ImccTOutsideDatapackDomainError | None = None
+        envelope_refusal: ImccCompositionOutsideValidatedEnvelopeError | None = None
+
+        # Probe the two opt-ins independently. The envelope-only call tells us
+        # whether temperature extrapolation is required; the temperature-only
+        # call tells us whether the validated-envelope override is required.
+        try:
+            evaluate_with_overrides(
+                allow_extrapolation=False, allow_out_of_envelope=True
+            )
+        except ImccTOutsideDatapackDomainError as probe_exc:
+            temperature_refusal = probe_exc
+        except ImccRefusal:
+            pass
+        try:
+            evaluate_with_overrides(
+                allow_extrapolation=True, allow_out_of_envelope=False
+            )
+        except ImccCompositionOutsideValidatedEnvelopeError as probe_exc:
+            envelope_refusal = probe_exc
+        except ImccRefusal:
+            pass
+
+        try:
+            result = evaluate_with_overrides(
+                allow_extrapolation=True, allow_out_of_envelope=True
+            )
+        except ImccNonconvergenceError as retry_exc:
+            return "not_converged", {}, {}, _reason_line(retry_exc), None
+        except ImccRefusal as retry_exc:
+            return "out_of_domain", {}, {}, _reason_line(retry_exc), None
+        activities, gammas = maps(result)
+        flags: list[str] = []
+        if temperature_refusal is not None:
+            flags.append(f"temperature: {_reason_line(temperature_refusal)}")
+        if envelope_refusal is not None:
+            flags.append(f"envelope: {_reason_line(envelope_refusal)}")
+        if not flags:
+            cause = (
+                "envelope"
+                if isinstance(exc, ImccCompositionOutsideValidatedEnvelopeError)
+                else "temperature"
+            )
+            flags.append(f"{cause}: {_reason_line(exc)}")
+        return "ok", activities, gammas, "", "; ".join(flags)
+    except (
         ImccComponentOutsideDomainError,
         ImccCompositionIncompleteError,
         ImccFerricInputUnsupportedError,
-        ImccTOutsideDatapackDomainError,
     ) as exc:
-        return "out_of_domain", {}, {}, _reason_line(exc)
+        return "out_of_domain", {}, {}, _reason_line(exc), None
     except ImccNonconvergenceError as exc:
-        return "not_converged", {}, {}, _reason_line(exc)
+        return "not_converged", {}, {}, _reason_line(exc), None
     except ImccRefusal as exc:
-        return "refused", {}, {}, _reason_line(exc)
-    activities = {
-        oxide: float(value)
-        for oxide, value in zip(result.parent_oxides, result.parent_activity)
-    }
-    gammas = {
-        oxide: float(value)
-        for oxide, value in zip(result.parent_oxides, result.parent_gamma)
-    }
-    return "ok", activities, gammas, ""
+        return "refused", {}, {}, _reason_line(exc), None
+    activities, gammas = maps(result)
+    return "ok", activities, gammas, "", None
 
 
 def _prediction_for_point(
@@ -359,6 +485,7 @@ def _prediction_for_point(
     gas_reason: str = "",
     gas_domain_error: Any = None,
     gas_extrapolation_labels: Mapping[str, str] | None = None,
+    initial_domain_flag: str | None = None,
 ) -> tuple[float | None, str, str, str | None, str | None]:
     """Return (predicted, reason, status, provenance class, domain flag).
 
@@ -379,7 +506,7 @@ def _prediction_for_point(
         )
     parent = str(point["parent_oxide"])
     provenance_class: str | None = None
-    domain_flag: str | None = None
+    domain_flag = initial_domain_flag
     if observable == "activity":
         value: float | None = activities.get(parent)
     elif observable == "activity_coefficient":
@@ -452,10 +579,15 @@ def _prediction_for_point(
                         provenance_class,
                         None,
                     )
-                domain_flag = _reason_line(exc)
+                gas_flag = _reason_line(exc)
                 label = (gas_extrapolation_labels or {}).get(species)
                 if label:
-                    domain_flag = f"{domain_flag}; {label}"
+                    gas_flag = f"{gas_flag}; {label}"
+                domain_flag = (
+                    gas_flag
+                    if domain_flag is None
+                    else f"{domain_flag}; gas: {gas_flag}"
+                )
             else:
                 return None, _reason_line(exc), "refused", provenance_class, None
         except (TypeError, ValueError) as exc:
@@ -512,18 +644,33 @@ def _median_abs(values: Iterable[float]) -> float | None:
     return float(statistics.median(materialized))
 
 
+def _median(values: Iterable[float]) -> float | None:
+    materialized = list(values)
+    if not materialized:
+        return None
+    return float(statistics.median(materialized))
+
+
+def _mean(values: Iterable[float]) -> float | None:
+    materialized = list(values)
+    if not materialized:
+        return None
+    return float(statistics.fmean(materialized))
+
+
 def _status_counts(rows: Sequence[PointResult]) -> dict[str, int]:
     counts = Counter(row.status for row in rows)
     return {status: int(counts[status]) for status in POINT_STATUSES}
 
 
 def _aggregate(key: str, rows: Sequence[PointResult]) -> Aggregate:
+    residuals = [row.residual for row in rows if row.residual is not None]
     flagged_residuals = [
         row.residual
         for row in rows
         if row.domain_flag is not None and row.residual is not None
     ]
-    residuals = [
+    unflagged_residuals = [
         row.residual
         for row in rows
         if row.domain_flag is None and row.residual is not None
@@ -533,12 +680,15 @@ def _aggregate(key: str, rows: Sequence[PointResult]) -> Aggregate:
         n=len(rows),
         n_ok=sum(row.status == "ok" for row in rows),
         n_flagged=sum(row.domain_flag is not None for row in rows),
+        n_predicted=sum(row.predicted is not None for row in rows),
         rmse=_rmse(value for value in residuals if value is not None),
         flagged_rmse=_rmse(
             value for value in flagged_residuals if value is not None
         ),
+        median_residual=_median(value for value in residuals if value is not None),
+        mean_residual=_mean(value for value in residuals if value is not None),
         median_abs_residual=_median_abs(
-            value for value in residuals if value is not None
+            value for value in unflagged_residuals if value is not None
         ),
         status_counts=_status_counts(rows),
     )
@@ -613,7 +763,10 @@ def run_bench(
             )
         except ImccRefusal as exc:
             gas_reason = f"partial_pressure refused: {_reason_line(exc)}"
-    cache: dict[tuple[str, float], tuple[str, dict[str, float], dict[str, float], str]] = {}
+    cache: dict[
+        tuple[str, float],
+        tuple[str, dict[str, float], dict[str, float], str, str | None],
+    ] = {}
     rows: list[PointResult] = []
     for point in selected:
         composition_id = str(point["composition_id"])
@@ -622,7 +775,13 @@ def run_bench(
         cache_key = (composition_id, temperature_K)
         if cache_key not in cache:
             cache[cache_key] = _evaluate_imcc(engine, composition, temperature_K)
-        status, activities, gammas, engine_reason = cache[cache_key]
+        (
+            status,
+            activities,
+            gammas,
+            engine_reason,
+            engine_domain_flag,
+        ) = cache[cache_key]
         if (
             not bool(point.get("score", True))
             and point.get("dropped_reason")
@@ -649,6 +808,7 @@ def run_bench(
             gas_reason=gas_reason,
             gas_domain_error=gas_domain_error,
             gas_extrapolation_labels=gas_extrapolation_labels,
+            initial_domain_flag=engine_domain_flag,
         )
         measured = float(point["measured"])
         score = bool(point.get("score", True))
@@ -669,17 +829,48 @@ def run_bench(
                 reason=prediction_reason or engine_reason,
                 convention=str(point.get("convention") or ""),
                 units=str(point.get("units") or ""),
+                standard_state=_standard_state_for_point(point),
                 score=score,
                 domain_flag=domain_flag,
+                extrapolation_flag=(
+                    str(point["extrapolation_flag"])
+                    if point.get("extrapolation_flag")
+                    else None
+                ),
+                binary_subslice=_binary_subslice(point),
                 provenance_class=provenance_class,
             )
         )
-    by_species: dict[str, list[PointResult]] = defaultdict(list)
-    by_population: dict[str, list[PointResult]] = defaultdict(list)
-    for row in rows:
-        by_species[row.species].append(row)
-        by_population[row.population].append(row)
     overall = _aggregate("", rows)
+    headline_rows = [
+        row
+        for row in rows
+        if row.binary_subslice is None
+        and row.domain_flag is None
+        and row.residual is not None
+    ]
+    headline_residuals = [row.residual for row in headline_rows]
+    flagged_residuals = [
+        row.residual
+        for row in rows
+        if row.domain_flag is not None and row.residual is not None
+    ]
+    by_slice: dict[str, list[PointResult]] = defaultdict(list)
+    by_binary_slice: dict[str, list[PointResult]] = defaultdict(list)
+    for row in rows:
+        key = _slice_key(row)
+        if row.binary_subslice is None:
+            by_slice[key].append(row)
+        else:
+            by_binary_slice[
+                f"{key} × {row.parent_oxide} × {row.binary_subslice}"
+            ].append(row)
+    out_of_domain_counts = Counter(
+        cause
+        for row in rows
+        for cause in [_domain_partition(row.domain_flag)]
+        if cause is not None
+    )
     return BenchReport(
         bench_set_path=str(bench_path),
         pack_path=str(resolved_pack),
@@ -688,16 +879,24 @@ def run_bench(
         n=overall.n,
         n_ok=overall.n_ok,
         n_flagged=overall.n_flagged,
-        rmse=overall.rmse,
-        flagged_rmse=overall.flagged_rmse,
-        median_abs_residual=overall.median_abs_residual,
+        rmse=_rmse(value for value in headline_residuals if value is not None),
+        flagged_rmse=_rmse(value for value in flagged_residuals if value is not None),
+        median_abs_residual=_median_abs(
+            value for value in headline_residuals if value is not None
+        ),
         status_counts=overall.status_counts,
-        per_species=tuple(
-            _aggregate(key, by_species[key]) for key in sorted(by_species)
+        per_slice=tuple(
+            _aggregate(key, by_slice[key]) for key in sorted(by_slice)
         ),
-        per_population=tuple(
-            _aggregate(key, by_population[key]) for key in sorted(by_population)
+        binary_slices=tuple(
+            _aggregate(key, by_binary_slice[key])
+            for key in sorted(by_binary_slice)
         ),
+        out_of_domain_counts={
+            key: int(out_of_domain_counts[key])
+            for key in ("temperature_only", "envelope_only", "both")
+            if out_of_domain_counts.get(key, 0)
+        },
         points=tuple(rows),
     )
 
@@ -715,16 +914,18 @@ def _fmt_status_counts(counts: Mapping[str, int]) -> str:
 def _render_aggregate_table(title: str, aggregates: Sequence[Aggregate]) -> list[str]:
     lines = [title, ""]
     header = (
-        f"{'key':<32} {'N':>5} {'N_ok':>5} {'RMSE':>10} {'med|r|':>10} "
-        f"{'flagged':>8} {'flagRMSE':>10} {'refused':>8} {'ood':>8}"
+        f"{'slice':<78} {'n':>5} {'pred':>6} {'flagged':>8} "
+        f"{'median(r)':>10} {'mean(r)':>10} {'RMSE':>10} {'flagRMSE':>10} "
+        f"{'refused':>8} {'ood':>8}"
     )
     lines.append(header)
     lines.append("-" * len(header))
     for row in aggregates:
         lines.append(
-            f"{row.key:<32} {row.n:>5} {row.n_ok:>5} "
-            f"{_fmt_float(row.rmse):>10} {_fmt_float(row.median_abs_residual):>10} "
-            f"{row.n_flagged:>8} {_fmt_float(row.flagged_rmse):>10} "
+            f"{row.key:<78} {row.n:>5} {row.n_predicted:>6} "
+            f"{row.n_flagged:>8} {_fmt_float(row.median_residual):>10} "
+            f"{_fmt_float(row.mean_residual):>10} {_fmt_float(row.rmse):>10} "
+            f"{_fmt_float(row.flagged_rmse):>10} "
             f"{row.status_counts.get('refused', 0):>8} "
             f"{row.status_counts.get('out_of_domain', 0):>8}"
         )
@@ -734,30 +935,72 @@ def _render_aggregate_table(title: str, aggregates: Sequence[Aggregate]) -> list
 
 def render_report(report: BenchReport) -> str:
     """Readable text table for stdout."""
+    headline_residuals = [
+        row.residual
+        for row in report.points
+        if row.binary_subslice is None
+        and row.domain_flag is None
+        and row.residual is not None
+    ]
+    predicted = sum(row.predicted is not None for row in report.points)
+    domain_total = sum(report.out_of_domain_counts.values())
     lines = [
         "IMCC empirical residual runner",
         f"  bench: {report.bench_set_path}",
         f"  pack:  {report.pack_path}",
         f"  model: {report.pack_model_id}  version={report.pack_version}",
+        "  Results split by dataset × observable × standard state; no single accuracy headline.",
         (
-            f"  N={report.n}  N_ok={report.n_ok}  "
-            f"scored={report.n_ok - report.n_flagged}  "
+            f"  N={report.n}  N_ok={report.n_ok}  predictions={predicted}  "
             f"flagged={report.n_flagged}  "
-            f"RMSE={_fmt_float(report.rmse)}  "
-            f"flagged_RMSE={_fmt_float(report.flagged_rmse)}  "
-            f"median|residual|={_fmt_float(report.median_abs_residual)}"
+            f"statuses: {_fmt_status_counts(report.status_counts)}"
         ),
-        f"  statuses: {_fmt_status_counts(report.status_counts)}",
+        (
+            "  arithmetic total across incompatible slices (not an accuracy figure): "
+            f"n={len(headline_residuals)} "
+            f"median={_fmt_float(_median(value for value in headline_residuals if value is not None))} "
+            f"mean={_fmt_float(_mean(value for value in headline_residuals if value is not None))} "
+            f"RMSE={_fmt_float(report.rmse)} "
+            f"flagged_RMSE={_fmt_float(report.flagged_rmse)}"
+        ),
+        (
+            f"  out_of_domain flags: temperature-only={report.out_of_domain_counts.get('temperature_only', 0)}  "
+            f"envelope-only={report.out_of_domain_counts.get('envelope_only', 0)}  "
+            f"both={report.out_of_domain_counts.get('both', 0)}  total={domain_total}"
+        ),
         "",
     ]
-    lines.extend(_render_aggregate_table("Per species", report.per_species))
-    lines.extend(_render_aggregate_table("Per population", report.per_population))
+    lines.extend(
+        _render_aggregate_table(
+            "Per dataset × observable × standard state", report.per_slice
+        )
+    )
+    if report.binary_slices:
+        lines.append(
+            "Sodium binary predict-and-flag (separate; never averaged into another slice)"
+        )
+        lines.append(
+            "  Na2O rows are verified pure-liquid parent-oxide activities; "
+            "temperature, envelope, and source extrapolation flags remain visible."
+        )
+        lines.append("")
+        lines.extend(_render_aggregate_table("Binary sub-slices", report.binary_slices))
+    if any(
+        row.population == "kume2000_slag_si_alloy"
+        and row.standard_state == "pure-solid"
+        for row in report.points
+    ):
+        lines.append(
+            f"Kume notice: {_KUME_LIQUID_ACTIVITY_WARNING}."
+        )
+        lines.append("")
     lines.append("Points")
     lines.append("")
     point_header = (
         f"{'id':<28} {'pop':<24} {'sp':<6} {'obs':<18} "
         f"{'meas':>10} {'pred':>10} {'resid':>10} {'ratio':>10} "
-        f"{'status':<22} {'domain_flag':<88} {'provenance_class':<44}"
+        f"{'status':<22} {'domain_flag':<88} {'source_xtrap':<34} "
+        f"{'standard_state':<18} {'provenance_class':<44}"
     )
     lines.append(point_header)
     lines.append("-" * len(point_header))
@@ -767,7 +1010,8 @@ def render_report(report: BenchReport) -> str:
             f"{row.observable:<18} {_fmt_float(row.measured):>10} "
             f"{_fmt_float(row.predicted):>10} {_fmt_float(row.residual):>10} "
             f"{_fmt_float(row.ratio):>10} {row.status:<22} "
-            f"{row.domain_flag or '—':<88} {row.provenance_class or '—':<44}"
+            f"{row.domain_flag or '—':<88} {row.extrapolation_flag or '—':<34} "
+            f"{row.standard_state:<18} {row.provenance_class or '—':<44}"
         )
     return "\n".join(lines) + "\n"
 

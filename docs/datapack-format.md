@@ -54,6 +54,11 @@ on a particular solve when any parent with positive nu_ij has zero analytical
 input; inactive complexes are assigned zero and do not impose a temperature
 domain check.
 
+The adapter also exposes `result.labels.acid_sink_ratio` as a typed
+`float | None`: it is the continuous ratio `x*(SiO2) / x(SiO2)` for the
+solved melt, or `None` when SiO2 is absent. It is diagnostic data, not a
+coefficient or a solver input.
+
 The JSON is not a generic thermodynamic database. In particular, the runtime
 model consumes parents, the active rows fields described below, and the
 identity/provenance information installed by the loader. The other fields are
@@ -69,23 +74,23 @@ when absent, although they are present in the shipped packs as noted.
 | Key | JSON type in shipped packs | Required? | Meaning |
 |---|---|---|---|
 | created | string | No | Pack creation date, represented as an ISO-like date such as 2026-08-11. The loader does not parse it. |
-| errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Ext-v1 through ext-v3 use strings; v1.0.2 and ext-v4 use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
-| extension_parent_datapack_version | string | No | Version of the parent/earlier extension pack used by the extension record. Present in ext-v3; the loader treats it as metadata. |
+| errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2 and ext-v4 use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
+| extension_parent_datapack_version | string | No | Version of the parent/earlier extension pack used by the extension record. Present in the retired ext-v3 record; the loader treats it as metadata. |
 | extension_wave | string | No | Label for the extension work wave, for example EXT3-JANAF-native-endmember-screen. Its exact release semantics are not established by the code. |
-| gas_only_inventory | array of objects | No | Species considered for the gas inventory but deliberately refused as melt components. In the shipped ext-v3 record each object has cation, species, table_id, T_range_K, melt_disposition, and certification. |
+| gas_only_inventory | array of objects | No | Species considered for the gas inventory but deliberately refused as melt components. In the retired ext-v3 record each object has cation, species, table_id, T_range_K, melt_disposition, and certification. |
 | imcc_sf04_datapack_version | non-empty string | Yes | Datapack version. load_datapack() stores it as the loaded version and uses it in the canonical published-identity projection. |
 | merge_semantics | object | No | Describes how an extension overlays or carries forward published rows: mode, row counts, replacement counts, and rationale. It is not interpreted by load_datapack(). |
-| model | string | No | Human-readable model description. Older extension files use IMCC-SF04-EXT; v1.0.2 and ext-v4 use a longer equation/species-count description. Runtime identity comes from model_id, not this field. |
+| model | string | No | Human-readable model description. Retired extension records use IMCC-SF04-EXT; v1.0.2 and ext-v4 use a longer equation/species-count description. Runtime identity comes from model_id, not this field. |
 | model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults it to IMCC-SF04. A present extension identity must be exactly IMCC-SF04-EXT and must have a valid sp_extension object. |
 | pack_arithmetic | string | No | Prose describing how the pack's rows and coefficient revisions were assembled. It does not alter arithmetic. |
 | parents | array of strings | Yes | Ordered parent-oxide basis. The current loader requires exactly ["SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"], in that order. sp_extension adds S and P2O5 only on its own extension path. |
-| provenance_split | object | No | Pack-level provenance summary. v1.0.2 and ext-v4 use numeric class counts plus a note; ext-v1 through ext-v3 use prose `published`/`extension` mappings. It is descriptive; row-level provenance_class remains the audit record. |
-| rows | array of objects | Yes | Active published-core reaction rows. The current loader requires exactly 38 object rows. Historical ext-v2 has 39 rows and is therefore a research record, not loadable by the current fixed production path. |
+| provenance_split | object | No | Pack-level provenance summary. v1.0.2 and ext-v4 use numeric class counts plus a note; retired ext-v1 through ext-v3 used prose `published`/`extension` mappings. It is descriptive; row-level provenance_class remains the audit record. |
+| rows | array of objects | Yes | Active published-core reaction rows. The current loader requires exactly 38 object rows. The retired ext-v2 record had 39 rows and was not loadable by the current fixed production path. |
 | screens | array of objects | No | Candidate components considered for a deliberately gated, non-active screen. The loader neither activates nor validates these candidates. |
-| sources | object | No | Bibliographic and table-source inventory. In the base and ext-v4 packs it includes FC87/SF04 citation metadata; older extensions use central/local inventory labels. |
+| sources | object | No | Bibliographic and table-source inventory. In the base and ext-v4 packs it includes FC87/SF04 citation metadata; retired extensions used central/local inventory labels. |
 | sp_extension | object | Conditional | Separate S/P extension declaration. If present, the loader validates its identity, certification, parents, and non-empty extension rows, then appends those rows to the published core. |
 | spec | string | No | Path and, in v1.0.2 and ext-v4, revision label for the model specification used by the pack. It is not opened by the loader. |
-| transcription | string or object | No | Record of how source values were transcribed and checked. Older packs use a string; v1.0.2/ext-v4 use an object with `method` and `diff_result` fields. |
+| transcription | string or object | No | Record of how source values were transcribed and checked. Retired packs use a string; v1.0.2/ext-v4 use an object with `method` and `diff_result` fields. |
 
 ### sp_extension structure
 
@@ -146,7 +151,7 @@ The S/P extension row provenance objects add these fields. `source` and
 | caveat | string | Not read | Caveat attached to the row's source evidence. |
 | correction_rows_applied | array | Not read | Source-correction row identifiers applied to the fit. |
 | fit_T_K | array of numbers | Not read | Temperatures used for row fit evidence, in kelvin. |
-| local_mirror_path | string | Not read | Local mirror or access-copy path for the source. |
+| local_mirror_path | string (retired only) | Not read | Private/local mirror path recorded only in retired working records; omitted from the shipped ext-v4 pack. |
 | max_abs_heldout_log10K_residual | number | Not read | Maximum held-out residual in log10 K units. |
 | parent_basis | string | Not read | Parent basis used by the row's evidence record. |
 | source_url | string | Not read | URL for the row's source or access copy. |
@@ -168,7 +173,7 @@ datapack.
 | B | number | Yes | Kelvin-scaled inverse-temperature coefficient in the same fit. |
 | T_domain_K | array of two numbers | Yes | Declared inclusive [low, high] Kelvin interval used by the solver for this active complex. |
 | T_domain_basis | string | Yes | Evidence or policy basis for the declared runtime interval, such as the SF04-exercised interval or a JANAF regression interval. The loader stores the string but does not interpret its wording. |
-| T_domain_paper_demonstrated_K | array of two numbers | No | Temperature interval demonstrated by the cited paper. It is audit metadata and is not the kernel's runtime gate. |
+| T_domain_paper_demonstrated_K | array of two numbers | No | Temperature interval demonstrated by the cited paper. The loader preserves it and the kernel adds a predict-and-flag label when T is outside it but inside T_domain_K. It is never a refusal gate. |
 | complex | string | Yes | Unique complex/species name. It becomes the kernel reaction name and must be unique across all published and extension rows. |
 | delta_H_fusion_kJ_mol | number | No | Fusion enthalpy used in a thermo construction, in kJ/mol, when the row was built from a liquid/metastable-liquid construction. |
 | derivation | string | No | Reaction, reference-state, and coefficient-derivation narrative. The loader does not parse it. |
@@ -209,19 +214,20 @@ The active rows use these five provenance_class values:
 | authority_by_publication | Coefficients retained from the published authority (the FC87/SF04 publication record), rather than recomputed from the local JANAF exercise. The base and ext-v4 packs contain 28 such rows. |
 | janaf_direct_liquid | Coefficients regressed directly from explicit JANAF liquid-standard-state tables. The base and ext-v4 packs contain 9 such rows: rows 1–6, 24, 25, and 31. |
 | partial_non_janaf_direct_liquid | The KAlO2 row (row 35): a direct liquid compilation through Glushko/Gurvich as cited by FC87, not a complete modern JANAF direct-liquid row. The pack records the limitation rather than silently upgrading the class. |
-| published-imcc | Coarse label used by ext-v1, ext-v2, and ext-v3 for the 30 carried-forward published rows. It intentionally collapses the finer authority/JANAF/partial distinction. |
-| extension-compound-thermo | Thermochemical coefficients added or overlaid by the extension work. Ext-v1/v2/v3 use it for their 8/9/8 extension rows; ext-v4 uses it in its nested S/P extension rows. |
+| published-imcc | Coarse label used by the retired ext-v1, ext-v2, and ext-v3 records for the 30 carried-forward published rows. It intentionally collapses the finer authority/JANAF/partial distinction. |
+| extension-compound-thermo | Thermochemical coefficients added or overlaid by the extension work. The retired ext-v1/v2/v3 records used it for their 8/9/8 extension rows; ext-v4 uses it in its nested S/P extension rows. |
 
 For v1.0.2 and ext-v4, provenance_split reports
 authority_by_publication: 28, janaf_direct_liquid: 9, and
 partial_non_janaf_direct_liquid: 1, with a note identifying the JANAF
-consistency-check rows and the KAlO2 limitation. For ext-v1 through ext-v3,
+consistency-check rows and the KAlO2 limitation. For the retired ext-v1 through
+ext-v3 records,
 `provenance_split` is two prose mappings: `published` describes the 30
 carried-forward rows as `published-imcc`, and `extension` describes the
 extension rows as `extension-compound-thermo`. The 30/8, 30/9, and 30/8
 counts are carried by the row arrays and `merge_semantics`, not by this
-object. The inconsistency is documented as shipped; it is not a reason to
-rewrite the packs.
+object. The inconsistency is documented as historical; the records are not
+shipped and are retained only in Git history.
 
 The loader does not compare provenance_split to row counts and does not
 normalize these labels. A consumer auditing provenance should read both the
@@ -230,38 +236,34 @@ row-level class and the pack-level split.
 ## 5. Base packs, overlays, screens, and gas-only inventory
 
 The base imcc-sf04-v1.0.2.json has eight parent oxides and 38 active
-published-core rows. Ext-v1 and ext-v3 describe an overlay in which 30
-published rows are carried forward and 8 same-name fits are replaced by
-extension rows; their merge_semantics.mode is
-replace-by-complex-name, with no novel active complex. Ext-v2 adds a
-research-only CoO parent and Co2SiO4 complex, giving 39 rows; its own
-metadata says that the research loader constructs it directly while the
+published-core rows. The retired ext-v1 and ext-v3 records described an overlay
+in which 30 published rows were carried forward and 8 same-name fits were
+replaced by extension rows; their merge_semantics.mode was
+replace-by-complex-name, with no novel active complex. The retired ext-v2 record
+added a research-only CoO parent and Co2SiO4 complex, giving 39 rows; its own
+metadata said that the research loader constructed it directly while the
 production load_datapack() remains fixed at eight parents and 38 rows.
 
-Ext-v3 adds 13 screens and a ten-entry gas_only_inventory without making
-those candidates active reaction rows. Each v3 screen is marked
-certification: denied, has an explicit opt-in activation_gate, and is
-no_complexes: true and one_at_a_time: true. The candidates include B, Ba,
-Co, Cr, Cu, Li, Mo, Nb, Pb, Sr, V, W, and Zr oxide scenarios. They are
-considered, recorded, and deliberately not activated by the current IMCC
-solver.
+The retired ext-v3 record added 13 screens and a ten-entry gas_only_inventory
+without making those candidates active reaction rows. Each v3 screen was marked
+certification: denied, had an explicit opt-in activation_gate, and was
+no_complexes: true and one_at_a_time: true. The candidates included B, Ba, Co,
+Cr, Cu, Li, Mo, Nb, Pb, Sr, V, W, and Zr oxide scenarios. The v3 gas inventory
+recorded P and S gas species such as P, PO, P4O6, PO2, P4O10, S, SO, S2O, SO2,
+and SO3; listing one did not add it to parents or make it acceptable to
+evaluate().
 
-The v3 gas_only_inventory records P and S gas species such as P, PO, P4O6,
-PO2, P4O10, S, SO, S2O, SO2, and SO3. Each is marked
-melt_disposition: hard-refused-by-spec; gas inventory only and
-certification: denied. Listing one in a pack does not add it to parents,
-does not add a complex row, and does not make it acceptable to evaluate().
+Ext-v4 is the current S/P extension shape, shipped as version 1.0.2-ext-sp-2.
+It retains the frozen published core and adds S and P2O5 through sp_extension.
+The loader accepts it only with the explicit extension identity and flag;
+evaluate() also requires enable_sp_extension=True. Its extension is explicitly
+uncertified (`certification: denied`) and records that redox and sulfur-
+solubility behavior remain out of scope.
 
-Ext-v4 is the current S/P extension shape. It retains the frozen published
-core and adds S and P2O5 through sp_extension. The loader accepts it only
-with the explicit extension identity and flag; evaluate() also requires
-enable_sp_extension=True. The extension is explicitly uncertified (denied)
-and records that redox and sulfur-solubility behavior remain out of scope.
-
-The older ext-v1–v3 JSON files are valuable research/overlay records, but they
-do not all satisfy the current production loader. On the shipped files,
-v1/v3 fail the frozen canonical hash and v2 fails the fixed parent-basis check;
-base v1.0.2 and ext-v4 load.
+The ext-v1, ext-v2, and ext-v3 records are retired and no longer shipped:
+ext-v1 and ext-v3 fail the frozen canonical hash, while ext-v2 fails the fixed
+parent-basis check because it includes CoO. Git history retains them as
+research records; the shipped loadable packs are v1.0.2 and ext-v4.
 
 The nested screen and gas-inventory fields are descriptive only; the loader
 does not read any of these fields or activate the candidates.
@@ -309,16 +311,16 @@ kernel path applies their merge instructions.
 
 | Key | JSON type in shipped packs | Runtime use | Meaning |
 |---|---|---|---|
-| extension | string | Not read | Prose `provenance_split` description of the extension rows in ext-v1 through ext-v3. |
+| extension | string | Not read | Prose `provenance_split` description of the extension rows in the retired ext-v1 through ext-v3 records. |
 | extension_rows_active | integer | Not read | Number of extension rows described as active by the overlay record. |
 | mode | string | Not read | Overlay mode, such as `replace-by-complex-name`. |
 | note | string | Not read | Note attached to the numeric `provenance_split` in v1.0.2 and ext-v4. |
 | novel_complexes_added | integer | Not read | Count of novel complexes added by an overlay. |
-| published | string | Not read | Prose `provenance_split` description of the carried-forward published rows in ext-v1 through ext-v3. |
+| published | string | Not read | Prose `provenance_split` description of the carried-forward published rows in the retired ext-v1 through ext-v3 records. |
 | published_fits_replaced | integer | Not read | Count of published fits replaced by an overlay. |
 | published_rows_carried_forward | integer | Not read | Count of published rows carried forward by an overlay. |
 | reason | string | Not read | Rationale for the overlay bookkeeping. |
-| research_loader | string | Not read | Loader or construction path named by the ext-v2 research record. |
+| research_loader | string | Not read | Loader or construction path named by the retired ext-v2 research record. |
 | runtime_pack_rows | integer | Not read | Runtime row count recorded by the overlay metadata. |
 
 ## 6. Domains and extrapolation
@@ -330,17 +332,18 @@ T_domain_K and T_domain_paper_demonstrated_K are intentionally different:
   such as [400, 1500] K.
 * T_domain_paper_demonstrated_K records the span demonstrated by the cited
   paper. For most base rows it is [2500, 3500] K; some rows do not carry the
-  field. It is not loaded into ImccDatapack.domains and is not a runtime
-  restriction.
+  field. The loader keeps it separately from ImccDatapack.domains. When T is
+  inside T_domain_K but outside this paper interval, the result carries a
+  `paper-demonstrated-window` flag naming the active rows; the number is kept.
 
 For each active complex, solve_imcc_sf04() compares T_K with its T_domain_K,
 inclusively. Outside that declared interval it raises
 ImccTOutsideDatapackDomainError unless allow_extrapolation=True; with the
 flag, it evaluates the same A + B/T_K fit and sets the result's extrapolated
 flag. A temperature outside the paper-demonstrated interval but inside the
-declared interval is not refused and is not marked extrapolated, because the
-solver has no runtime use for that metadata field. A row whose required parent
-is absent is inactive and does not impose its domain check.
+declared interval is not refused and is not marked `extrapolated`; it carries
+the separate paper-window flag. A row whose required parent is absent is
+inactive and does not impose either domain check.
 
 ## 7. What load_datapack() validates
 
@@ -444,7 +447,9 @@ checks happen when evaluate() delegates to the kernel:
 | Mapping contains Fe2O3 with a finite nonzero value | ImccFerricInputUnsupportedError; the caller must convert to FeO under its redox model. Non-finite mapping values are refused by the preceding row. |
 | Mapping or extra_mol contains another component outside the loaded parent basis | ImccComponentOutsideDomainError. |
 | Declared basis is non-positive, non-finite (nan or ±inf), or differs from the input sum by more than 1e-6 relative | ImccCompositionIncompleteError, with the message naming the basis. A non-finite basis is caught here explicitly: an ordered check such as `basis <= 0` admits nan and inf under IEEE 754. If no basis is supplied, the input sum is used; a finite vector whose implicit parent total is non-finite is refused as "parent mole total is not finite," not as a declared-basis error. Weight input is converted to moles before the kernel call. |
-| The canonical eight-oxide alkali fraction X_Me2O = (n_Na2O+n_K2O)/sum(n_canonical_oxide) exceeds 0.5 | ImccCompositionOutsideValidatedEnvelopeError, code imcc_composition_outside_validated_envelope, unless allow_out_of_envelope=True; then the result is marked outside_validated. |
+| The canonical eight-oxide alkali fraction X_Me2O = (n_Na2O+n_K2O)/sum(n_canonical_oxide) exceeds 0.5 beyond the boundary comparison slack | ImccCompositionOutsideValidatedEnvelopeError, code imcc_composition_outside_validated_envelope, unless allow_out_of_envelope=True; then the result is marked outside_validated. The boundary is inclusive within 1e-5 relative slack so rounded wt% input is not refused. |
+| The solved free x*(SiO2) is below 1.910055e-3 of nominal x(SiO2) | The number is kept and the result carries a `species-coverage-edge` flag naming the solved silica-sink family (the non-silica cations holding at least 20% of bound silica); this detects acid-sink exhaustion rather than refusing the solve. The continuous `acid_sink_ratio` remains visible. |
+| Na2O or K2O is nonzero | The result carries the static known-alkali-bias notice citing SF04 Table 9 and Hastie 1981; no coefficient correction is applied. |
 | T_K is not finite or is not positive | ImccTOutsideDatapackDomainError. |
 | An active row is outside its T_domain_K | ImccTOutsideDatapackDomainError, unless allow_extrapolation=True; then the result is marked extrapolated. |
 | extra_mol has a non-finite amount (nan or ±inf) | ImccCompositionIncompleteError naming the non-finite amount. Checked first, before the S/P extension gate, zero-skip, sign check, and ferric screen, so a non-finite `Fe2O3` or S/P amount is reported as non-finite rather than as another refusal. |
@@ -452,6 +457,41 @@ checks happen when evaluate() delegates to the kernel:
 | tol is not convertible to float | built-in TypeError, because `float(tol)` is called outside the guarded `max_iter` conversion. |
 | tol is non-positive or non-finite, or max_iter is non-finite/non-numeric (including an integer too large to convert to float) | built-in ValueError. A finite max_iter <= 0 reaches the solver and produces ImccNonconvergenceError. |
 | The parent-balance solve produces non-finite residuals, misses the tolerance within its evaluation budget, or cannot complete continuation | ImccNonconvergenceError with diagnostics. |
+
+The edge cut is the geometric mean of two measured bounds: the largest
+1473 K edge-shoulder ratio below the validated floor that must be flagged,
+`1.864382e-3` (K2O-SiO2 at X = 0.494, +1.40 dex against the linear bridge),
+and the smallest strict-path validated ratio, `1.956846e-3`
+(`kume2000_s145`, 1823 K). The scan used both overrides at X = 0.450 through
+0.500 in 0.001 steps. At 1473 K, K X = 0.493 is `2.183642e-3` and +1.33 dex
+but is above the floor; K X = 0.494, 0.495, and 0.496 are
+`1.864382e-3`, `1.547655e-3`, and `1.233415e-3` with +1.40, +1.47, and
++1.57 dex residuals. Na first falls below the floor at X = 0.498,
+`1.644304e-3`, +0.64 dex. The 1373/1573 K checks first fall below the floor
+at K X = 0.493/0.495 with ratios `1.762926e-3`/`1.863152e-3`, and at Na
+X = 0.498 with `1.410644e-3`/`1.879865e-3`; all remain below the selected
+cut. The geometric mean is `1.910055e-3`, inside
+(`1.864382e-3`, `1.956846e-3`).
+
+This is an irreducible limitation: above the validated floor, the alkali
+shoulder cannot be separated from a validated composition by this ratio alone.
+K2O-SiO2 at X = 0.493 has ratio `2.183642e-3` and misses by +1.33 dex; at
+X = 0.48 it is `6.588448e-3` and +0.87 dex; at X = 0.457 it is
+`1.587897e-2` and +0.52 dex. Therefore no edge flag does not mean accurate.
+The cut sits below the validated floor, so a narrow band remains between them: a
+50-step fill finds K2O-SiO2 at X = 0.49372 (1473 K) with ratio `1.953518e-3`, between
+the cut and the floor, missing by +1.38 dex with no edge flag. Closing that band would
+mean setting the cut exactly at the one validated composition that defines the floor,
+with zero margin, so it is left open and stated here instead. The ratio varies
+continuously along the alkali shoulder; no single cut separates it from the validated
+compositions, so treat any alkali-rich binary with `acid_sink_ratio` below about `2e-2`
+with caution whether or not it is flagged.
+Use `acid_sink_ratio` as an exhaustion indicator near the lower edge; use the
+activity or residual diagnostics, including `acid_sink_ratio` alongside them,
+for compositions above the validated floor. The equimolar eight-oxide melt at
+X_Me2O = 0.25 has ratio `8.988617e-4`; its solved bound silica is 72.5% in
+K–Ca–Al complexes, so its flag names the `K–Ca–Al silicate` family rather than
+the input's generic basic oxides.
 
 The composition envelope is therefore a validated model-use boundary, not a
 property of the JSON schema. T_domain_paper_demonstrated_K is likewise an

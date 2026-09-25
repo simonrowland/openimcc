@@ -111,6 +111,7 @@ r = evaluate({"SiO2": 0.45, "MgO": 0.10, "CaO": 0.15,
 r.D                 # degree of association, e.g. 1.9837
 r.parent_activity   # a_i on the parent-oxide formula-unit basis
 r.parent_gamma      # γ_i = a_i / x_i
+r.labels.acid_sink_ratio  # x*(SiO2) / x(SiO2), the continuous edge diagnostic
 ```
 
 ### Exit codes are part of the contract
@@ -166,49 +167,62 @@ residual computed across mismatched bases is wrong *and looks plausible*.
 
 Residual is **log10(predicted / measured)**, i.e. dex.
 
-```
-402 points   304 predictions   301 headline-scored   3 flagged
-94 out-of-domain   4 refused
-Headline RMSE 0.883 dex   flagged RMSE 0.305 dex   median |headline residual| 0.581 dex
-```
+The runner reports each dataset × observable × standard-state slice. `n` counts
+rows, signed median and mean are over residuals, and RMSE includes flagged
+predictions in that slice. Refusals have no residual.
 
-| species | n | headline scored | flagged | RMSE (dex) | flagged RMSE (dex) | median abs (dex) |
-|---|--:|--:|--:|--:|--:|--:|
-| SiO | 132 | 89 | 3 | **0.452** | 0.305 | 0.328 |
-| Ca | 99 | 99 | 0 | 0.834 | — | 0.615 |
-| Mg | 52 | 48 | 0 | 1.064 | — | 0.981 |
-| Al | 62 | 62 | 0 | **1.211** | — | 0.568 |
-| K | 3 | **3** | 0 | 0.931 | — | 0.948 |
-| Na | 54 | **0** | 0 | — | — | — |
+| dataset | observable | standard state | n | signed median | mean | RMSE |
+|---|---|---|--:|--:|--:|--:|
+| `hastie1981_kems` | `partial_pressure` | pure-liquid parent | 6 | −0.623 | −0.615 | 0.693 |
+| `kume2000_slag_si_alloy` | `activity` | pure-solid | 292 | −0.526 | −0.481 | 0.890 |
+| `richter_type_b_cai_digitized_flux` | `evaporation_flux` | unspecified | 4 | — | — | — |
+| `richter_type_b_cai_gamma` | `activity_coefficient` | pure-liquid | 3 | +0.050 | +0.053 | 0.110 |
+| `richter_type_b_cai_gamma` | `activity_coefficient` | CMAS basis | 3 | +0.543 | +0.554 | 0.577 |
 
-### Read this before quoting the number
+Kume's 292 rows carry the explicit warning: **unconverted solid standard
+state; not an accuracy figure for liquid activities**. No solid-to-liquid
+conversion is applied; `condensate.csv` cannot provide the CaO and MgO
+conversions.
 
-**101 of 402 points do not enter the headline RMSE, and that is the most
-informative part of the output.** Three are visible flagged predictions; the
-other 98 are refusals or out-of-domain points. Dropping them would improve
-nothing and would flatter the RMSE:
+#### Sodium binary: separate predict-and-flag block
 
-- **All 94 out-of-domain points are Na2O–SiO2 binaries.** The pack declares a
-  domain of 1700–3000 K for every row; Yamaguchi 1983 and Tsaplin 2000 sit at
-  1173–1673 K, entirely below the floor. So `Na` scores **0 of 54** — we hold
-  Na-silicate activity data and the published coefficients do not reach it. That
-  is a real coverage gap, not a rounding error.
-- **All 4 refused points** are the digitised flux set: *"OCR scatter
-  digitization and no independent experimental fO2 pin"* — a data-quality
-  refusal, not an engine failure. K now scores **3 of 3**. The three SiO
-  pressures are predictions below the SiO2(l) band, retained with flags and
-  excluded from the headline RMSE. See [Gas layer](#gas-layer).
+The 54 Na2O rows and 40 SiO2 rows in Yamaguchi and Tsaplin state pure-liquid
+parent-oxide activities in their own conventions. They are scored in this
+separate block, never averaged into the table above or into another slice.
+Flags remain visible: 94 predictions are out of the declared model domain,
+split into **74 temperature-only** and **20 both-temperature-and-envelope**
+flags; 12 Na2O rows also carry the source's per-composition extrapolation flag.
 
-**And the scored points are themselves an extrapolation.** 34 of the 38 rows
-carry a paper-demonstrated domain of **2500–3500 K** (Fegley & Cameron computed
-vaporization at 2500, 3000 and 3500 K). The whole bench sits 600–1300 K *below*
-that. So `headline RMSE 0.883 dex` is not "the model is off by a factor of 7.6" so much
-as "these coefficients, used several hundred kelvin below where their authors
-demonstrated them, hold to about half a dex in the median." Al is the worst
-(RMSE 1.211 with median 0.568 — heavy tails, a few points far out), SiO the
-best.
+| dataset | parent activity | standard state | nominal X(Na2O) | n | signed median | mean | RMSE |
+|---|---|---|---|--:|--:|--:|--:|
+| `tsaplin2000_kems_na2o_sio2` | Na2O | pure-liquid | X ≤ 0.5 | 7 | +0.062 | −0.024 | 0.171 |
+| `tsaplin2000_kems_na2o_sio2` | Na2O | pure-liquid | X > 0.5 | 5 | +4.196 | +4.216 | 4.230 |
+| `tsaplin2000_kems_na2o_sio2` | SiO2 | pure-liquid | X ≤ 0.5 | 7 | −0.164 | −0.156 | 0.162 |
+| `tsaplin2000_kems_na2o_sio2` | SiO2 | pure-liquid | X > 0.5 | 5 | −4.179 | −4.172 | 4.207 |
+| `yamaguchi1983_emf_na2o_sio2` | Na2O | pure-liquid | X ≤ 0.5 | 36 | −0.316 | +0.030 | 0.975 |
+| `yamaguchi1983_emf_na2o_sio2` | Na2O | pure-liquid | X > 0.5 | 6 | +3.801 | +3.877 | 3.940 |
+| `yamaguchi1983_emf_na2o_sio2` | SiO2 | pure-liquid | X ≤ 0.5 | 24 | +0.016 | −0.344 | 0.909 |
+| `yamaguchi1983_emf_na2o_sio2` | SiO2 | pure-liquid | X > 0.5 | 4 | −3.519 | −3.547 | 3.577 |
 
-We would rather publish that honestly than tune it.
+The nominal X = 0.5 Yamaguchi rows affected by the wt%-conversion fencepost
+are `yamaguchi1983_a_sio2_liquid_x0500_1373`,
+`yamaguchi1983_a_sio2_liquid_x0500_1473`,
+`yamaguchi1983_a_sio2_liquid_x0500_1573`,
+`yamaguchi1983_a_sio2_liquid_x0500_1673`,
+`yamaguchi1983_a_na2o_x0500_1173`,
+`yamaguchi1983_a_na2o_x0500_1273`,
+`yamaguchi1983_a_na2o_x0500_1373`,
+`yamaguchi1983_a_na2o_x0500_1473`,
+`yamaguchi1983_a_na2o_x0500_1573`, and
+`yamaguchi1983_a_na2o_x0500_1673`. Their converted X is 0.500003947168;
+the model tolerance fix moves these rows from the envelope count to the
+temperature-only count without changing their nominal X ≤ 0.5 sub-slice.
+
+The old **0.883 dex** may be reproduced only as an **arithmetic total across
+incompatible slices**, not as an accuracy claim: it is the 301 unflagged,
+non-binary residuals (signed median −0.521 dex, mean −0.470 dex). The four
+digitised flux rows remain typed refusals for *"OCR scatter digitization and no
+independent experimental fO2 pin"*. No coefficient was tuned.
 
 ## Datapacks and provenance
 
@@ -224,6 +238,9 @@ Extension packs add `extension-compound-thermo` rows (ours) and carry a
 `screens` block recording candidates that were **considered and deliberately not
 activated** — so a reader can see what was rejected, not just what was kept.
 
+The shipped `imcc-sf04-ext-v4.json` S/P extension declares
+`certification: denied`; it is screening-only and requires explicit opt-in.
+
 `tools/packmanifest.py` maintains a SHA-256 per pack. A consumer pins
 *(package version, manifest hash)*: a pack edited in place under an unchanged
 version string would silently move every activity the engine reports, and the
@@ -237,7 +254,15 @@ later.
   207–222 (1987). [doi:10.1016/0012-821X(87)90196-8](https://doi.org/10.1016/0012-821X(87)90196-8)
 - **SF04** — Schaefer L., Fegley B., *A thermodynamic model of high temperature
   lava vaporization on Io*, Icarus **169**, 216–241 (2004).
-  [doi:10.1016/j.icarus.2003.11.023](https://doi.org/10.1016/j.icarus.2003.11.023)
+  [doi:10.1016/j.icarus.2003.08.023](https://doi.org/10.1016/j.icarus.2003.08.023)
+
+The packs `imcc-sf04-v1.0.2.json` and `imcc-sf04-ext-v4.json` contain
+`10.1016/j.icarus.2003.11.023` in their `sources.SF04.citation`. That DOI is wrong and must
+not be cited; the correct DOI for Schaefer & Fegley (2004), Icarus 169, 216-241 is
+`10.1016/j.icarus.2003.08.023`. The citation sits inside the published SF04 core, which both
+packs carry byte-identically and the loader verifies by hash, so the core is deliberately left
+unchanged: correcting it would change the published digest and
+make every pin of the current identity unloadable.
 
 ## Author
 
@@ -245,5 +270,7 @@ Simon Rowland <simon@simonrowland.com>
 
 ## Licence
 
-Code Apache-2.0 (`LICENSE`); datapacks, benchmark sets and validation decks
-CC-BY-4.0 (`LICENSE-DATA`); attribution in `NOTICE`.
+Code is Apache-2.0 (`LICENSE`). The project's own arrangement, provenance text
+and derived tables are CC-BY-4.0 (`LICENSE-DATA`). NIST-JANAF records are NIST
+public data. Published coefficients and digitized values are cited facts, not a
+grant. Attribution is in `NOTICE`.

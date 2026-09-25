@@ -17,11 +17,9 @@ it. Callers must not treat exit 2 as a failed invocation.
 
 Examples
 --------
-    openimcc describe \\
-        --pack data/melt_activity/imcc/imcc-sf04-v1.0.2.json
+    openimcc describe
 
     openimcc solve \\
-        --pack data/melt_activity/imcc/imcc-sf04-v1.0.2.json \\
         --temperature 1800 \\
         --oxide SiO2=45.4 --oxide MgO=8.1 --oxide FeO=10.9 --oxide CaO=11.4 \\
         --oxide Al2O3=14.2 --oxide TiO2=3.2 --oxide Na2O=0.4 --oxide K2O=0.1 \\
@@ -175,6 +173,11 @@ def _render_solve_text(payload: Mapping[str, Any]) -> str:
     # text mode was printing a clean-looking result with no flag at all.
     if isinstance(labels, Mapping) and labels.get("envelope_status") == "outside_validated":
         lines.append("  ** OUTSIDE VALIDATED COMPOSITION ENVELOPE **")
+    if isinstance(labels, Mapping):
+        for flag in labels.get("flags") or ():
+            lines.append(f"  ** FLAG: {flag} **")
+        for notice in labels.get("notices") or ():
+            lines.append(f"  notice: {notice}")
     lines.append("")
     header = f"  {'parent':<8} {'x':>12} {'x*':>12} {'activity':>14} {'gamma':>12}"
     lines.append(header)
@@ -227,9 +230,10 @@ def _cmd_describe(args: argparse.Namespace) -> int:
 
 
 def _cmd_validate_pack(args: argparse.Namespace) -> int:
-    load_datapack(args.pack)
-    payload = {"status": "ok", "pack": str(args.pack)}
-    print(json.dumps(payload) if args.json else f"ok: {args.pack} loads and validates")
+    pack = load_datapack(args.pack)
+    pack_name = str(args.pack) if args.pack else f"packaged imcc-sf04-v{pack.version}"
+    payload = {"status": "ok", "pack": pack_name}
+    print(json.dumps(payload) if args.json else f"ok: {pack_name} loads and validates")
     return EXIT_OK
 
 
@@ -294,14 +298,14 @@ exit codes:
   answer; the answer is always flagged, never silently extrapolated.
 
 examples:
-  imcc describe --pack packs/imcc-sf04-v1.0.2.json
+  openimcc describe
 
-  imcc solve --pack packs/imcc-sf04-v1.0.2.json --temperature 1800 \\
+  openimcc solve --temperature 1800 \\
       --basis-type wt \\
       --oxide SiO2=45.4 --oxide MgO=8.1 --oxide FeO=10.9 --oxide CaO=11.4 \\
       --oxide Al2O3=14.2 --oxide TiO2=3.2 --oxide Na2O=0.4 --oxide K2O=0.1
 
-  imcc --json solve --pack packs/imcc-sf04-v1.0.2.json --temperature 2200 \\
+  openimcc --json solve --temperature 2200 \\
       --composition melt.json --allow-extrapolation
 """
 
@@ -343,19 +347,25 @@ def build_parser() -> argparse.ArgumentParser:
     describe = sub.add_parser(
         "describe", parents=[common], help="print datapack metadata"
     )
-    describe.add_argument("--pack", required=True, help="path to a datapack JSON")
+    describe.add_argument(
+        "--pack", default=None, help="path to a datapack JSON (default: packaged SF04)"
+    )
     describe.set_defaults(func=_cmd_describe)
 
     validate = sub.add_parser(
         "validate-pack", parents=[common], help="load and validate a datapack, then exit"
     )
-    validate.add_argument("--pack", required=True, help="path to a datapack JSON")
+    validate.add_argument(
+        "--pack", default=None, help="path to a datapack JSON (default: packaged SF04)"
+    )
     validate.set_defaults(func=_cmd_validate_pack)
 
     solve = sub.add_parser(
         "solve", parents=[common], help="solve melt activities at one T"
     )
-    solve.add_argument("--pack", required=True, help="path to a datapack JSON")
+    solve.add_argument(
+        "--pack", default=None, help="path to a datapack JSON (default: packaged SF04)"
+    )
     solve.add_argument(
         "--temperature", type=float, required=True, metavar="K", help="temperature in K"
     )

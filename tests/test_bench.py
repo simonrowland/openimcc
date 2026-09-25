@@ -15,6 +15,7 @@ import pytest
 
 from openimcc import evaluate, load_datapack
 from openimcc.bench import (
+    load_bench_set,
     main,
     render_report,
     run_bench,
@@ -117,10 +118,10 @@ def test_run_bench_ok_out_of_domain_and_refused(tmp_path: Path) -> None:
     assert ok.ratio == ok.predicted / ok.measured
 
     ood = by_id["ood_t500"]
-    assert ood.status == "out_of_domain"
+    assert ood.status == "not_converged"
     assert ood.predicted is None
     assert ood.residual is None
-    assert "outside the declared domain" in ood.reason
+    assert "did not converge" in ood.reason.lower()
 
     refused = by_id["refused_held"]
     assert refused.status == "refused"
@@ -135,9 +136,9 @@ def test_refused_point_is_counted_and_excluded_from_rmse(tmp_path: Path) -> None
     assert report.n == 3
     assert report.n_ok == 1
     assert report.status_counts["ok"] == 1
-    assert report.status_counts["out_of_domain"] == 1
+    assert report.status_counts["out_of_domain"] == 0
     assert report.status_counts["refused"] == 1
-    assert report.status_counts["not_converged"] == 0
+    assert report.status_counts["not_converged"] == 1
     assert report.status_counts["unsupported_observable"] == 0
 
     ok = next(row for row in report.points if row.status == "ok")
@@ -150,7 +151,7 @@ def test_refused_point_is_counted_and_excluded_from_rmse(tmp_path: Path) -> None
     # Flattening RMSE by dropping the refusal would require it not to appear
     # in N / status_counts; both stay visible.
     assert report.n == report.n_ok + report.status_counts["refused"] + report.status_counts[
-        "out_of_domain"
+        "not_converged"
     ]
 
 
@@ -382,7 +383,8 @@ def test_text_and_json_render(tmp_path: Path) -> None:
     assert "N=3" in text
     assert "N_ok=1" in text
     assert "refused=1" in text
-    assert "out_of_domain=1" in text
+    assert "out_of_domain=0" in text
+    assert "arithmetic total across incompatible slices" in text
     assert "ok_sio2_1800" in text
 
     stdout = io.StringIO()
@@ -397,6 +399,18 @@ def test_text_and_json_render(tmp_path: Path) -> None:
     assert payload["status_counts"]["refused"] == 1
     ids = {row["point_id"] for row in payload["points"]}
     assert ids == {"ok_sio2_1800", "ood_t500", "refused_held"}
+    # JSON must expose only standard-state-separated aggregates. The old
+    # per-species/per-population fields mixed incompatible slices silently.
+    assert "per_species" not in payload
+    assert "per_population" not in payload
+    assert "rmse" not in payload
+    assert "flagged_rmse" not in payload
+    assert "median_abs_residual" not in payload
+    assert all(" × " in row["key"] for row in payload["per_slice"])
+    assert all(
+        {"rmse", "flagged_rmse", "median_abs_residual"} <= row.keys()
+        for row in payload["per_slice"]
+    )
 
 
 def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
@@ -480,3 +494,128 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
     assert "flagged=1" in rendered
     assert "flagged_RMSE=" in rendered
     assert "SiO2(l) [1996, 3000] K" in rendered
+
+
+def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
+    fixture = load_bench_set(Path("benchmarks/sets/basalt-bench-set-v1.yaml"))
+    report = run_bench(
+        "benchmarks/sets/basalt-bench-set-v1.yaml",
+        DATAPACK_PATH,
+    )
+
+    kume = [
+        row for row in report.per_slice if row.key.startswith("kume2000_slag_si_alloy")
+    ]
+    assert len(kume) == 1
+    assert kume[0].key.endswith("× activity × pure-solid")
+    assert kume[0].n == 292
+    assert kume[0].median_residual is not None
+    assert kume[0].mean_residual is not None
+    assert not any(
+        row.key.startswith("kume2000_slag_si_alloy")
+        and "pure-liquid" in row.key
+        for row in report.per_slice
+    )
+
+    binary_points = [
+        row
+        for row in report.points
+        if row.population
+        in {"tsaplin2000_kems_na2o_sio2", "yamaguchi1983_emf_na2o_sio2"}
+    ]
+    binary_fixture = [
+        point
+        for point in fixture["points"]
+        if point["population"]
+        in {"tsaplin2000_kems_na2o_sio2", "yamaguchi1983_emf_na2o_sio2"}
+    ]
+    assert len(binary_points) == 94
+    assert all(point["score"] for point in binary_fixture)
+    assert all(
+        point["scoring_status"] == "SCORED-ELIGIBLE" for point in binary_fixture
+    )
+    assert all("HELD-NOT-SCORED" not in str(point) for point in binary_fixture)
+    assert all(
+        "no authoritative oxide-basis conversion" not in str(point)
+        for point in binary_fixture
+    )
+    assert sum(row.species == "Na" for row in binary_points) == 54
+    assert sum(row.species == "SiO" for row in binary_points) == 40
+    assert all(row.score for row in binary_points)
+    assert all(
+        "pure-liquid-Na2O" in row.convention
+        for row in binary_points
+        if row.species == "Na"
+    )
+    assert all(row.standard_state == "pure-liquid" for row in binary_points)
+    assert all(row.predicted is not None for row in binary_points)
+    assert all(row.residual is not None for row in binary_points)
+    assert all(row.domain_flag is not None for row in binary_points)
+    assert sum(row.extrapolation_flag is not None for row in binary_points) == 12
+
+    assert sum(row.n for row in report.binary_slices) == 94
+    assert sum(row.n for row in report.binary_slices if "× Na2O ×" in row.key) == 54
+    assert sum(row.n for row in report.binary_slices if "× SiO2 ×" in row.key) == 40
+    assert sum(row.n for row in report.binary_slices if "X>0.5" in row.key) == 20
+    assert sum(row.n for row in report.binary_slices if "X<=0.5" in row.key) == 74
+    assert all(row.n_flagged == row.n for row in report.binary_slices)
+
+    # W3's inclusive wt boundary keeps the ten nominal X=.5 rows inside the
+    # envelope. Independent probes therefore yield 74 temperature-only rows
+    # and 20 rows needing both overrides, rather than first-exception counts.
+    assert report.out_of_domain_counts == {"temperature_only": 74, "both": 20}
+    assert sum(report.out_of_domain_counts.values()) == 94
+
+    both = [
+        row
+        for row in binary_points
+        if row.domain_flag is not None
+        and "temperature:" in row.domain_flag
+        and "envelope:" in row.domain_flag
+    ]
+    temperature_only = [
+        row
+        for row in binary_points
+        if row.domain_flag is not None
+        and "temperature:" in row.domain_flag
+        and "envelope:" not in row.domain_flag
+    ]
+    assert len(temperature_only) == 74
+    assert len(both) == 20
+    representative = next(
+        row
+        for row in both
+        if row.point_id == "tsaplin2000_a_na2o_x0477_1373"
+    )
+    assert "temperature:" in representative.domain_flag
+    assert "envelope:" in representative.domain_flag
+    assert "1373.0 K" in representative.domain_flag
+    assert "X_Me2O=" in representative.domain_flag
+
+    affected = {
+        row.point_id
+        for row in report.points
+        if "yamaguchi1983" in row.point_id and "x0500" in row.point_id
+    }
+    assert affected == {
+        "yamaguchi1983_a_sio2_liquid_x0500_1373",
+        "yamaguchi1983_a_sio2_liquid_x0500_1473",
+        "yamaguchi1983_a_sio2_liquid_x0500_1573",
+        "yamaguchi1983_a_sio2_liquid_x0500_1673",
+        "yamaguchi1983_a_na2o_x0500_1173",
+        "yamaguchi1983_a_na2o_x0500_1273",
+        "yamaguchi1983_a_na2o_x0500_1373",
+        "yamaguchi1983_a_na2o_x0500_1473",
+        "yamaguchi1983_a_na2o_x0500_1573",
+        "yamaguchi1983_a_na2o_x0500_1673",
+    }
+
+    rendered = render_report(report)
+    assert "Per dataset × observable × standard state" in rendered
+    assert "Sodium binary predict-and-flag" in rendered
+    assert "unconverted solid standard state; not an accuracy figure for liquid activities" in rendered
+    assert "temperature-only=74" in rendered
+    assert "envelope-only=0" in rendered
+    assert "both=20" in rendered
+    assert "median(r)" in rendered
+    assert "mean(r)" in rendered

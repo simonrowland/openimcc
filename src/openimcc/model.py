@@ -1,8 +1,7 @@
 """IMCC-SF04 domain adapter: JSON datapack loader and caller-facing API.
 
-Chunk 3 of the upstream IMCC-SF04 lane. Wraps the kernel from
-``openimcc.kernel`` with a JSON datapack loader, a
-wt-to-mol basis converter, and a canonical trust-vocabulary label block.
+Wraps the kernel from ``openimcc.kernel`` with a JSON datapack loader, a
+wt-to-mol basis converter, and a caller-facing label block.
 
 This module is the MODEL half and is deliberately free of simulator policy:
 its only non-model dependency is ``openimcc.scalar_boundary`` (a stdlib-only
@@ -78,20 +77,63 @@ _SP_EXTENSION_PARENTS = ("S", "P2O5")
 _SP_EXTENSION_TIER = "EXT-SP"
 _SP_EXTENSION_FLAG = "enable_sp_extension"
 _SP_EXTENSION_PROVENANCE_CLASS = "extension-compound-thermo"
-
-# Datapacks ship INSIDE the package. The previous form walked
-# Path(__file__).parents[3] to a repository root, which is correct only in the
-# source tree it was written for: from src/openimcc/ that lands on the parent of
-# the repo, and from site-packages it lands in the Python installation. Neither
-# raises -- it yields a plausible Path that simply holds no data, so the failure
-# surfaces far from its cause. importlib.resources anchors on the package
-# itself and is correct under every install layout.
-_PACK_DIR = Path(str(resources.files("openimcc"))) / "data" / "packs"
-_PUBLISHED_DATAPACK_PATH = _PACK_DIR / "imcc-sf04-v1.0.2.json"
-_EXT_DATAPACK_PATH = _PACK_DIR / "imcc-sf04-ext-v4.json"
-_KELVIN_OFFSET = 273.15
-
-
+_ENVELOPE_RELATIVE_SLACK = 1.0e-5
+_SILICA_SINK_FAMILY_SHARE = 0.20
+_PARENT_CATION_SYMBOL = MappingProxyType(
+    {
+        "SiO2": "Si",
+        "MgO": "Mg",
+        "FeO": "Fe",
+        "CaO": "Ca",
+        "Al2O3": "Al",
+        "TiO2": "Ti",
+        "Na2O": "Na",
+        "K2O": "K",
+        "S": "S",
+        "P2O5": "P",
+    }
+)
+# Data derivation (2026-09-25; no solver retune):
+# (a) The smallest strict-path validated ratio is 1.95684635346e-3
+#     (kume2000_s145, 1823 K), and every SF04 Table 5 rock also remains
+#     unflagged.
+# (b) At 1473 K, evaluate both binaries with both overrides and scan
+#     X_Me2O=.450,.451,...,.500. For each point, residual is
+#     log10(a_model(Me2O)) minus the linear bridge between the published
+#     anchors. The relevant boundary rows are:
+#
+#       binary       X       ratio             bridge residual   below floor  flag
+#       K2O-SiO2     .493    2.183642e-3       +1.33              no           no
+#       K2O-SiO2     .494    1.864382e-3       +1.40              yes          yes
+#       K2O-SiO2     .495    1.547655e-3       +1.47              yes          yes
+#       K2O-SiO2     .496    1.233415e-3       +1.57              yes          yes
+#       Na2O-SiO2    .497    2.472783e-3       +0.47              no           no
+#       Na2O-SiO2    .498    1.644304e-3       +0.64              yes          yes
+#       Na2O-SiO2    .499    8.225617e-4       +0.93              yes          yes
+#       Na2O-SiO2    .500    5.783685e-5       +2.07              yes          yes
+#
+# The K bridge is -7.46 at X=.457 to -7.27 at X=.500; the Na bridge is
+# -6.220 at X=.450 to -5.622 at X=.500. The largest (b) ratio below the
+# floor is therefore 1.86438232260e-3 at K2O-SiO2 X=.494. The same 0.001
+# scan at the other temperatures gives this compact stability table (the
+# first sub-floor point is also the largest sub-floor point in each scan):
+#
+#       T (K)   K2O-SiO2 X / ratio       Na2O-SiO2 X / ratio
+#       1373    .493 / 1.762926e-3       .498 / 1.410644e-3
+#       1473    .494 / 1.864382e-3       .498 / 1.644304e-3
+#       1573    .495 / 1.863152e-3       .498 / 1.879865e-3
+#
+# Every stability-table ratio stays below the final cut; the 1473 K
+# published-anchor evidence sets the lower bound.
+# The admissible window is (1.86438232260e-3, 1.95684635346e-3), so use
+# their geometric mean, sqrt(product) = 1.91005490744e-3. This is a
+# predict-and-flag threshold, not a coefficient change.
+_SPECIES_COVERAGE_EDGE_RATIO = 1.9100549074388355e-3
+_ALKALI_BIAS_NOTICE = (
+    "Na and K activities from IMCC-SF04 are biased low against published "
+    "anchors (SF04 Table 9 Na −1.4 dex; Hastie 1981 K −0.9 dex); see "
+    "docs/ROADMAP.md"
+)
 
 class ImccMalformedDatapackError(ImccRefusal):
     """Raised when a datapack JSON file is malformed or schema-invalid."""
@@ -132,15 +174,21 @@ class ImccLoadedDatapack:
     def model_id(self) -> str:
         return self.kernel_datapack.model_id
 
+    @property
+    def paper_domains(self) -> Sequence[tuple[float, float] | None]:
+        return self.kernel_datapack.paper_domains
+
 
 @dataclass(frozen=True)
 class ImccAdapterLabels:
-    """Section 7 label block plus orthogonal composition-envelope status."""
+    """Caller-facing identity, coverage, edge metric, and flags."""
 
     identity: Mapping[str, str]
     coverage: Mapping[str, str]
-    trust: str
     envelope_status: str
+    flags: tuple[str, ...] = ()
+    notices: tuple[str, ...] = ()
+    acid_sink_ratio: float | None = None
 
 
 def _as_fraction(value: Any) -> Fraction:
@@ -229,24 +277,32 @@ def _wt_to_mol(vector: np.ndarray, parent_oxides: Sequence[str]) -> np.ndarray:
     return vector / molar_masses
 
 
-def load_datapack(path: str | Path) -> ImccLoadedDatapack:
+def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     """Load an IMCC-SF04 datapack JSON into the kernel datapack object.
 
     Validates the complete canonical published datapack hash. ``IMCC-SF04-EXT``
     packs may add the separately labelled ``sp_extension`` section; their base
-    datapack projects to the same frozen published identity.
+    datapack projects to the same frozen published identity. With no path, the
+    packaged ``imcc-sf04-v1.0.2`` resource is loaded.
     """
-    path = Path(path)
+    source = (
+        resources.files("openimcc")
+        / "data"
+        / "packs"
+        / "imcc-sf04-v1.0.2.json"
+        if path is None
+        else Path(path)
+    )
     try:
-        with path.open("r", encoding="utf-8") as fh:
+        with source.open("r", encoding="utf-8") as fh:
             data = json.load(fh)
     except json.JSONDecodeError as exc:
         raise ImccMalformedDatapackError(
-            f"datapack JSON at {path} is not valid JSON"
+            f"datapack JSON at {source} is not valid JSON"
         ) from exc
     except FileNotFoundError as exc:
         raise ImccMalformedDatapackError(
-            f"datapack file not found: {path}"
+            f"datapack file not found: {source}"
         ) from exc
 
     if not isinstance(data, dict):
@@ -368,6 +424,7 @@ def load_datapack(path: str | Path) -> ImccLoadedDatapack:
     A: list[float] = []
     B: list[float] = []
     domains: list[tuple[float, float]] = []
+    paper_domains: list[tuple[float, float] | None] = []
     domain_basis: list[str] = []
 
     for idx, row in enumerate(all_rows):
@@ -437,6 +494,28 @@ def load_datapack(path: str | Path) -> ImccLoadedDatapack:
             )
         domains.append(domain_values)
 
+        paper_domain = row.get("T_domain_paper_demonstrated_K")
+        if paper_domain is None:
+            paper_domains.append(None)
+        else:
+            if not isinstance(paper_domain, list) or len(paper_domain) != 2:
+                raise ImccMalformedDatapackError(
+                    f"row {idx} T_domain_paper_demonstrated_K must be a pair"
+                )
+            if not all(
+                is_declared_real_scalar(value, allow_numeric_str=True)
+                for value in paper_domain
+            ):
+                raise ImccMalformedDatapackError(
+                    f"row {idx} T_domain_paper_demonstrated_K values must be numeric"
+                )
+            paper_domain_values = (float(paper_domain[0]), float(paper_domain[1]))
+            if not all(np.isfinite(value) for value in paper_domain_values):
+                raise ImccMalformedDatapackError(
+                    f"row {idx} T_domain_paper_demonstrated_K values must be finite"
+                )
+            paper_domains.append(paper_domain_values)
+
         basis = row.get("T_domain_basis")
         if not isinstance(basis, str):
             raise ImccMalformedDatapackError(
@@ -456,6 +535,7 @@ def load_datapack(path: str | Path) -> ImccLoadedDatapack:
         A=np.array(A, dtype=float),
         B=np.array(B, dtype=float),
         domains=domains,
+        paper_domains=paper_domains,
         version=version,
         parent_oxides=parents,
     )
@@ -515,7 +595,7 @@ def _sp_extension_refusal(component_names: Sequence[str]) -> ImccSPComponentRequ
 def evaluate(
     composition: Mapping[str, float] | Sequence[float],
     T_K: float,
-    pack: ImccLoadedDatapack | ImccDatapack,
+    pack: ImccLoadedDatapack | ImccDatapack | None = None,
     *,
     basis: float | None = None,
     basis_type: str = "mol",
@@ -541,7 +621,8 @@ def evaluate(
         Temperature in Kelvin.
     pack:
         Loaded datapack, or a raw kernel datapack labelled by
-        ``label_research_datapack()``. Unlabelled raw packs are refused.
+        ``label_research_datapack()``. If omitted, the packaged
+        ``imcc-sf04-v1.0.2`` datapack is used. Unlabelled raw packs are refused.
     basis:
         Declared normalization basis in the same units as ``basis_type``. If
         ``None``, the composition sum is used.
@@ -568,8 +649,11 @@ def evaluate(
     Returns
     -------
     ImccResult
-        Kernel result with the adapter's three-field label block installed.
+        Kernel result with the adapter's label block installed.
     """
+    if pack is None:
+        pack = load_datapack()
+
     # Resolve the kernel datapack and metadata.
     if isinstance(pack, ImccLoadedDatapack):
         kernel_pack = pack.kernel_datapack
@@ -699,7 +783,11 @@ def evaluate(
         basis = float(vector.sum())
 
     # X_Me2O = (n_Na2O + n_K2O) / sum(n_oxide) over the canonical
-    # 8-oxide mol vector. The r2.2 Tier-A boundary is inclusive at 0.5.
+    # 8-oxide mol vector. Treat the boundary as inclusive within a 1e-5
+    # relative comparison slack; decimal wt% input for a printed X=0.5 can
+    # arrive a few ppm above the ideal ratio after conversion. The 1e-5
+    # cutoff accepts the measured 3.947e-6 rounding residual but still
+    # refuses a composition at X=0.50001.
     alkali_mol = sum(
         float(vector[parent_oxides.index(name)]) for name in ("Na2O", "K2O")
     )
@@ -712,17 +800,11 @@ def evaluate(
             "canonical 8-oxide composition total is zero"
         )
     x_me2o = alkali_mol / canonical_oxide_mol
-    outside_validated_envelope = x_me2o > 0.5
+    outside_validated_envelope = x_me2o > 0.5 * (1.0 + _ENVELOPE_RELATIVE_SLACK)
     if outside_validated_envelope and not allow_out_of_envelope:
         raise ImccCompositionOutsideValidatedEnvelopeError(
             f"X_Me2O={x_me2o:.12g} exceeds validated bound 0.5"
         )
-
-    # Cache / kernel registration point (NOT wired in chunk 3).
-    # Future integration: register this adapter as a shadow provider for
-    # ChemistryIntent.SILICATE_EQUILIBRIUM via
-    # a host application's provider registry.
-    # All wt-to-mol conversion and basis validation happens above this boundary.
 
     result = solve_imcc_sf04(
         vector,
@@ -735,23 +817,96 @@ def evaluate(
         max_iter=max_iter,
     )
 
-    # Build the spec section 7 label block with three separate typed fields.
+    # Build the caller-facing label block. The paper-window flag is computed
+    # by the kernel from row metadata; the edge flag is computed from the
+    # solved free-parent fraction, so neither condition is a hardcoded Na bound.
     identity: Mapping[str, str] = {
         "model_id": model_id,
         "datapack_version": pack_version,
     }
     coverage: Mapping[str, str] = result.labels.coverage
-    trust = result.labels.evidence_class
+    flags = list(result.labels.flags)
+    si_index = parent_oxides.index("SiO2") if "SiO2" in parent_oxides else None
+    acid_sink_ratio = (
+        float(result.parent_x_star[si_index] / result.parent_x[si_index])
+        if si_index is not None and result.parent_x[si_index] > 0.0
+        else None
+    )
+    if acid_sink_ratio is not None and acid_sink_ratio < _SPECIES_COVERAGE_EDGE_RATIO:
+        # The ratio is continuous and comes from the solved free-parent
+        # fraction, so it remains visible even when the flag is crossed.
+        # Partition bound silica from solved complexes, not input parents.
+        # A complex contributes nu(SiO2) * x(complex); only families holding
+        # at least 20% of that solved bound silica are named. Cations follow
+        # their order in the complex formula, so KCaAlSi2O7 is K–Ca–Al.
+        family_silica: dict[tuple[str, ...], float] = {}
+        bound_silica = 0.0
+        for complex_index, complex_name in enumerate(kernel_pack.reactions):
+            silica_amount = float(
+                kernel_pack.nu[si_index, complex_index]
+                * result.complex_x[complex_index]
+            )
+            if silica_amount <= 0.0:
+                continue
+            cations = tuple(
+                sorted(
+                    (
+                        _PARENT_CATION_SYMBOL.get(name, name)
+                        for name in parent_oxides
+                        if name != "SiO2"
+                        and kernel_pack.nu[
+                            parent_oxides.index(name), complex_index
+                        ]
+                        > 0.0
+                    ),
+                    key=complex_name.find,
+                )
+            )
+            family_silica[cations] = (
+                family_silica.get(cations, 0.0) + silica_amount
+            )
+            bound_silica += silica_amount
+        dominant_families = [
+            "–".join(cations)
+            for cations, silica_amount in sorted(
+                family_silica.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+            if bound_silica > 0.0
+            and silica_amount / bound_silica >= _SILICA_SINK_FAMILY_SHARE
+        ]
+        if dominant_families:
+            family = f"{' / '.join(dominant_families)} silicate"
+        else:
+            family = "solution silicate"
+        flags.append(
+            "species-coverage-edge: free x*(SiO2) is below "
+            f"{_SPECIES_COVERAGE_EDGE_RATIO:g} of nominal x(SiO2); "
+            f"the {family} ladder has exhausted its acidic sink"
+        )
+
+    notices = (
+        (_ALKALI_BIAS_NOTICE,)
+        if any(
+            vector[parent_oxides.index(name)] > 0.0
+            for name in ("Na2O", "K2O")
+            if name in parent_oxides
+        )
+        else ()
+    )
 
     adapter_labels = ImccAdapterLabels(
         identity=identity,
         coverage=coverage,
-        trust=trust,
         envelope_status=(
             "outside_validated"
             if outside_validated_envelope
             else "inside"
         ),
+        acid_sink_ratio=acid_sink_ratio,
+        flags=tuple(flags),
+        notices=notices,
     )
 
     return replace(result, labels=adapter_labels)

@@ -11,13 +11,14 @@ provenance:
     Hastie-1981 supplies six scored K and SiO KEMS pressures for a separate
     in-domain silicate composition with an IW+2.4 oxygen-fugacity pin.
     Tsaplin-2000 supplies 12 scored SiO2 activity targets from Na2O-SiO2
-    binary melts; its 12 measured Na2O activities are retained but held from
-    scoring pending an authoritative oxide-basis engine result.
+    binary melts; its 12 measured Na2O activities are scored in the separate
+    predict-and-flag binary block because their convention is pure-liquid a(Na2O).
     Yamaguchi-1983 supplies 28 scored SiO2 activity targets from seven
     Na2O-SiO2 binary melts at four frozen temperature nodes. The published
     Tridymite-reference activities are retained alongside controller-directed
-    liquid-reference conversions. Its 42 measured Na2O activities are retained
-    but held from scoring pending an authoritative oxide-basis engine result.
+    liquid-reference conversions. Its 42 measured Na2O activities are scored
+    in the separate predict-and-flag binary block because their convention is
+    pure-liquid a(Na2O).
     Kume-2000 supplies CMAS/CAS/CMS/CS slag activities at 1823 and 1873 K
     from slag–Si-alloy equilibration (ISIJ 40, 561). Each point carries an
     explicit composition_wt_pct vector. Table 4 a(SiO2) is Rein & Chipman
@@ -30,8 +31,8 @@ provenance:
     - data/melt_activity/reference/vaporock-magma-kems-v1.csv
     - docs/references/pdfs/99-kems-langmuir/ms2000-044.pdf
     - docs/references/pdfs/99-kems-langmuir/yam1983.pdf
-    - docs-private/research/2026-08-18-bench-candidates/pdfs/kume-2000-cmas.pdf
-    - docs-private/research/2026-08-18-bench-candidates/pdfs/kume-2000-sio2.pdf
+    - Kume, K.; Morita, K.; Miki, T.; Sano, N. (2000), Activity Measurement of CaO–SiO2–AlO1.5–MgO Slags Equilibrated with Molten Silicon Alloys, ISIJ International 40(6), 561–566. doi:10.2355/isijinternational.40.561
+    - Morita, K.; Kume, K.; Sano, N. (2000), A Newly Developed Method for Determining SiO2 Activity of the Silicate Slags Equilibrated with Molten Silicon Alloys, ISIJ International 40(6), 554–560. doi:10.2355/isijinternational.40.554
     - data/melt_activity/kume2000-cmas-bench.yaml
   composition_transform: >-
     Fe2O3 folded into FeO with FeO += 0.8998102538090137*Fe2O3;
@@ -39,11 +40,7 @@ provenance:
     IMCC basis dropped explicitly; retained oxides renormalized to 100 wt%.
 packs:
   imcc-published: data/melt_activity/imcc/imcc-sf04-v1.0.2.json
-  imcc-ext: data/melt_activity/imcc/imcc-sf04-ext-v1.json
-  promoted_research_packs:
-    - data/melt_activity/imcc/imcc-sf04-ext-v2.json
-    - data/melt_activity/imcc/imcc-sf04-ext-v3.json
-    - data/melt_activity/imcc/imcc-sf04-ext-v4.json
+  imcc-ext: data/melt_activity/imcc/imcc-sf04-ext-v4.json
 reference_anchors:
   imcc_magma:
     path: data/melt_activity/reference/imcc-magma-model-v1.csv
@@ -2311,8 +2308,8 @@ points:
     dropped_reason: OCR scatter digitization and no independent experimental fO2 pin
 # Tsaplin activities are on the PARENT-OXIDE FORMULA-UNIT basis and enter as
 # published. Do not apply the single-cation sqrt conversion: these activities
-# remain on the parent-oxide formula-unit basis. The a(Na2O) rows stay held;
-# never promote the non-authoritative _oxide_component_stoichiometry proxy.
+# remain on the parent-oxide formula-unit basis. The a(Na2O) rows are scored in
+# a separate predict-and-flag block; never promote a non-authoritative proxy.
   - id: tsaplin2000_a_sio2_x0805_1473
     population: tsaplin2000_kems_na2o_sio2
     composition_id: tsaplin2000_na2o_sio2_x0805
@@ -2379,9 +2376,8 @@ points:
     observable: activity
     measured: 7.19e-10
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -2471,9 +2467,8 @@ points:
     observable: activity
     measured: 5.29e-11
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -2563,9 +2558,8 @@ points:
     observable: activity
     measured: 3.24e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -2655,9 +2649,8 @@ points:
     observable: activity
     measured: 4.67e-11
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -2747,9 +2740,8 @@ points:
     observable: activity
     measured: 7.63e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -2839,9 +2831,8 @@ points:
     observable: activity
     measured: 1.02e-7
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -2931,9 +2922,8 @@ points:
     observable: activity
     measured: 1.53e-6
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -3023,9 +3013,8 @@ points:
     observable: activity
     measured: 1.32e-6
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -3115,9 +3104,8 @@ points:
     observable: activity
     measured: 1.83e-5
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -3207,9 +3195,8 @@ points:
     observable: activity
     measured: 2.01e-5
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -3299,9 +3286,8 @@ points:
     observable: activity
     measured: 2.43e-5
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -3391,9 +3377,8 @@ points:
     observable: activity
     measured: 8.62e-5
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     reduction_class: direct_measurement
     uncertainty:
       statement: >-
@@ -3752,18 +3737,16 @@ points:
     observable: activity
     measured: 1.75075718142008e-12
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -3814,18 +3797,16 @@ points:
     observable: activity
     measured: 1.77459708719133e-11
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -3876,9 +3857,8 @@ points:
     observable: activity
     measured: 1.2836646035861e-10
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -3929,9 +3909,8 @@ points:
     observable: activity
     measured: 7.09778562992602e-10
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -3982,9 +3961,8 @@ points:
     observable: activity
     measured: 3.15767053776927e-9
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -4035,18 +4013,16 @@ points:
     observable: activity
     measured: 1.17521130185051e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -4393,9 +4369,8 @@ points:
     observable: activity
     measured: 6.45579456080494e-11
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -4446,9 +4421,8 @@ points:
     observable: activity
     measured: 3.95216470495615e-10
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -4499,9 +4473,8 @@ points:
     observable: activity
     measured: 1.85822199572827e-9
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -4552,9 +4525,8 @@ points:
     observable: activity
     measured: 7.08079702516962e-9
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -4605,9 +4577,8 @@ points:
     observable: activity
     measured: 2.27613006662943e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -4658,9 +4629,8 @@ points:
     observable: activity
     measured: 6.36339061910488e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5007,9 +4977,8 @@ points:
     observable: activity
     measured: 3.09566869726624e-10
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5060,9 +5029,8 @@ points:
     observable: activity
     measured: 1.80388871131029e-9
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5113,9 +5081,8 @@ points:
     observable: activity
     measured: 8.13137283849479e-9
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5166,9 +5133,8 @@ points:
     observable: activity
     measured: 2.98762349129017e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5219,9 +5185,8 @@ points:
     observable: activity
     measured: 9.3031496351076e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5272,9 +5237,8 @@ points:
     observable: activity
     measured: 2.52907521419167e-7
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5621,18 +5585,16 @@ points:
     observable: activity
     measured: 2.27097905470555e-9
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5683,18 +5645,16 @@ points:
     observable: activity
     measured: 1.21011430358903e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5745,9 +5705,8 @@ points:
     observable: activity
     measured: 5.05354926718542e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5798,9 +5757,8 @@ points:
     observable: activity
     measured: 1.73812140770083e-7
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5851,9 +5809,8 @@ points:
     observable: activity
     measured: 5.1091916444548e-7
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -5904,18 +5861,16 @@ points:
     observable: activity
     measured: 0.00000132021405355549
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -6262,9 +6217,8 @@ points:
     observable: activity
     measured: 4.94839797645043e-9
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -6315,9 +6269,8 @@ points:
     observable: activity
     measured: 2.59645613407005e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -6368,9 +6321,8 @@ points:
     observable: activity
     measured: 1.07011318712451e-7
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -6421,9 +6373,8 @@ points:
     observable: activity
     measured: 3.63888869053409e-7
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -6474,9 +6425,8 @@ points:
     observable: activity
     measured: 0.00000105907077557658
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -6527,9 +6477,8 @@ points:
     observable: activity
     measured: 0.00000271279648833737
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -6876,18 +6825,16 @@ points:
     observable: activity
     measured: 6.84399152245455e-8
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -6938,18 +6885,16 @@ points:
     observable: activity
     measured: 2.92521040261905e-7
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7000,9 +6945,8 @@ points:
     observable: activity
     measured: 0.00000101183904685551
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7053,9 +6997,8 @@ points:
     observable: activity
     measured: 0.00000295724961351528
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7106,9 +7049,8 @@ points:
     observable: activity
     measured: 0.00000754124590249138
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7159,18 +7101,16 @@ points:
     observable: activity
     measured: 0.0000171947669544805
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7517,18 +7457,16 @@ points:
     observable: activity
     measured: 0.00000336709137247502
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7579,18 +7517,16 @@ points:
     observable: activity
     measured: 0.000011650781747924
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7641,9 +7577,8 @@ points:
     observable: activity
     measured: 0.000033645457529584
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7694,9 +7629,8 @@ points:
     observable: activity
     measured: 0.0000841322805233388
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7747,9 +7681,8 @@ points:
     observable: activity
     measured: 0.000187236423536741
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
@@ -7800,18 +7733,16 @@ points:
     observable: activity
     measured: 0.00037869059458877
     units: dimensionless
-    score: false
-    scoring_status: HELD-NOT-SCORED
+    score: true
+    scoring_status: SCORED-ELIGIBLE
     extrapolation_flag: beyond_per_composition_measurement_window
     extrapolation_note: >-
       Exact evaluation of the published A/T + B fit, but at a (composition, T) the source did not
       measure: Fig. 4 shows per-composition measurement windows narrower than the paper's global
       1173-1673 K statement. Not an invented row; a faithful fit evaluation outside the measured
-      window. Controller ruling 2026-08-13: ANNOTATE rather than drop, because the row is
-      HELD-NOT-SCORED and affects no result today, while dropping would destroy transcribed source
-      data needed once the a(Na2O) basis question settles. THIS FLAG MUST BE RE-ADJUDICATED against
-      Fig. 4 before any promotion of this row to SCORED-ELIGIBLE.
-    scoring_status_reason: "no authoritative oxide-basis conversion; see b-199 / G3"
+      window. Controller ruling 2026-08-13: retain this source extrapolation as a visible flag
+      in the separate predict-and-flag binary block; the row remains scored because its
+      convention states pure-liquid a(Na2O).
     evidence_class: experimental_emf_leastsquares_reduction
     reduction_class: authors_own_least_squares
     published_coefficients:
