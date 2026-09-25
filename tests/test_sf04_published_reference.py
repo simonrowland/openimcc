@@ -8,6 +8,7 @@ import math
 from collections import Counter, defaultdict
 from copy import deepcopy
 from pathlib import Path
+from statistics import median
 from typing import Any
 
 import pytest
@@ -53,6 +54,30 @@ SPECIES_MAX_ABS_RESIDUAL_DEX = {
     "SiO2": 1.057,
 }
 SPECIES_RESIDUAL_MARGIN_DEX = 0.300
+SIGNED_MEDIAN_EXPECTATIONS_DEX = {
+    "Na": -1.082006,
+    "NaO": -1.098408,
+    "Na2": -2.212,
+    "O": 0.014,
+    "SiO": 0.157,
+    "FeO": 0.214348,
+}
+SIGNED_MEDIAN_TOLERANCE_DEX = 0.005
+TABLE9_SIGNED_MEDIAN_EXPECTATIONS_DEX = {
+    "Na": -1.416,
+    "NaO": -1.615,
+    "O": -0.007,
+    "SiO": -0.009,
+    "FeO": 0.009,
+}
+FIG10_SIGNED_MEDIAN_EXPECTATIONS_DEX = {
+    "Na": -1.079,
+    "NaO": -1.096,
+    "Na2": -2.212,
+    "O": 0.014,
+    "SiO": 0.175421,
+    "FeO": 0.223,
+}
 
 
 def _sha256(path: Path) -> str:
@@ -163,7 +188,7 @@ def _summary(values: list[float]) -> dict[str, float]:
     return {
         "n": float(len(values)),
         "min": ordered[0],
-        "median": ordered[len(ordered) // 2],
+        "median": median(values),
         "p95": ordered[min(len(ordered) - 1, math.ceil(0.95 * len(ordered)) - 1)],
         "max": ordered[-1],
         "absmax": max(abs(value) for value in values),
@@ -271,60 +296,93 @@ def test_sf04_engine_residual_report_and_gate() -> None:
     residuals: list[tuple[str, str, str, float]] = []
     not_comparable: list[tuple[str, str, str]] = []
     grouped: defaultdict[tuple[str, str], list[float]] = defaultdict(list)
+    source_grouped: dict[str, defaultdict[str, list[float]]] = {
+        "Table 9 anchors": defaultdict(list),
+        "Fig. 10 digitized": defaultdict(list),
+    }
 
-    figure_groups: defaultdict[tuple[str, int], list[dict[str, str]]] = defaultdict(list)
-    for row in figure:
-        figure_groups[(row["rock"], int(row["T_K"]))].append(row)
+    source_rows = (
+        ("Table 9 anchors", anchors),
+        ("Fig. 10 digitized", figure),
+    )
+    for source_name, rows_from_source in source_rows:
+        source_groups: defaultdict[tuple[str, int], list[dict[str, str]]] = defaultdict(list)
+        for row in rows_from_source:
+            source_groups[(row["rock"], int(row["T_K"]))].append(row)
 
-    for (rock, T_K), rows in sorted(figure_groups.items()):
-        o2_row = next(row for row in rows if row["species"] == "O2")
-        fO2 = 10.0 ** float(o2_row["log10_p_bar"])
-        activities = _activities(compositions, imcc_pack, rock, T_K)
-        for row in rows:
-            species = row["species"]
-            method_class = row["pressure_method_class"]
-            if species not in IMCC_GAS_CHANNEL_SPECIES:
-                not_comparable.append((rock, species, method_class))
-                continue
-            predicted = evaluate_gas(
-                activities,
-                T_K,
-                fO2,
-                gas_pack,
-                allow_extrapolation=True,
-                gas_species=(species,),
-            )[species]
-            residual = math.log10(predicted) - float(row["log10_p_bar"])
-            residuals.append((rock, species, method_class, residual))
-            grouped[("rock", rock)].append(residual)
-            grouped[("species", species)].append(residual)
-            grouped[("method", method_class)].append(residual)
+        for (rock, T_K), rows in sorted(source_groups.items()):
+            o2_row = next(row for row in rows if row["species"] == "O2")
+            # O2 is the reference fO2 pin; its channel returns that pin by definition.
+            fO2 = (
+                10.0 ** float(o2_row["log10_p_bar"])
+                if "log10_p_bar" in o2_row
+                else float(o2_row["partial_pressure_bar"])
+            )
+            activities = _activities(compositions, imcc_pack, rock, T_K)
+            for row in rows:
+                species = row["species"]
+                method_class = row["pressure_method_class"]
+                if species not in IMCC_GAS_CHANNEL_SPECIES:
+                    not_comparable.append((rock, species, method_class))
+                    continue
+                predicted = evaluate_gas(
+                    activities,
+                    T_K,
+                    fO2,
+                    gas_pack,
+                    allow_extrapolation=True,
+                    gas_species=(species,),
+                )[species]
+                measured = (
+                    float(row["log10_p_bar"])
+                    if "log10_p_bar" in row
+                    else math.log10(float(row["partial_pressure_bar"]))
+                )
+                residual = math.log10(predicted) - measured
+                residuals.append((rock, species, method_class, residual))
+                if species == "O2":
+                    # O2 is a pin-identity tripwire, not agreement evidence.
+                    grouped[("species", species)].append(residual)
+                    continue
+                source_grouped[source_name][species].append(residual)
+                grouped[("rock", rock)].append(residual)
+                grouped[("species", species)].append(residual)
+                grouped[("method", method_class)].append(residual)
 
-    anchor_o2 = float(next(row["partial_pressure_bar"] for row in anchors if row["species"] == "O2"))
-    anchor_activities = _activities(compositions, imcc_pack, "tho", 1900)
-    for row in anchors:
-        species = row["species"]
-        method_class = row["pressure_method_class"]
-        if species not in IMCC_GAS_CHANNEL_SPECIES:
-            not_comparable.append(("tho", species, method_class))
-            continue
-        predicted = evaluate_gas(
-            anchor_activities,
-            1900,
-            anchor_o2,
-            gas_pack,
-            allow_extrapolation=True,
-            gas_species=(species,),
-        )[species]
-        residual = math.log10(predicted) - math.log10(float(row["partial_pressure_bar"]))
-        residuals.append(("tho", species, method_class, residual))
-        grouped[("rock", "tho")].append(residual)
-        grouped[("species", species)].append(residual)
-        grouped[("method", method_class)].append(residual)
-
-    values = [row[3] for row in residuals]
+    values = [row[3] for row in residuals if row[1] != "O2"]
     report = {"all": _summary(values)}
     report.update({f"{kind}:{name}": _summary(vals) for (kind, name), vals in grouped.items()})
+    source_reports = {
+        source_name: {
+            species: _summary(values)
+            for species, values in sorted(source_values.items())
+            if species != "O2"
+        }
+        for source_name, source_values in source_grouped.items()
+    }
+
+    # Signed medians are the accuracy contract; the abs-max values below are
+    # regression tripwires only. O2 is omitted because it is a pin identity.
+    for species, expected in SIGNED_MEDIAN_EXPECTATIONS_DEX.items():
+        assert report[f"species:{species}"]["median"] == pytest.approx(
+            expected, abs=SIGNED_MEDIAN_TOLERANCE_DEX
+        )
+    for species, expected in TABLE9_SIGNED_MEDIAN_EXPECTATIONS_DEX.items():
+        assert source_reports["Table 9 anchors"][species]["median"] == pytest.approx(
+            expected, abs=SIGNED_MEDIAN_TOLERANCE_DEX
+        )
+    for species in ("SiO", "FeO"):
+        # The old +/-0.020 dex gate accepted either sign for these near-zero
+        # anchors; the tightened gate must reject each sign flip.
+        flipped = -TABLE9_SIGNED_MEDIAN_EXPECTATIONS_DEX[species]
+        assert source_reports["Table 9 anchors"][species]["median"] != pytest.approx(
+            flipped, abs=SIGNED_MEDIAN_TOLERANCE_DEX
+        )
+    for species, expected in FIG10_SIGNED_MEDIAN_EXPECTATIONS_DEX.items():
+        assert source_reports["Fig. 10 digitized"][species]["median"] == pytest.approx(
+            expected, abs=SIGNED_MEDIAN_TOLERANCE_DEX
+        )
+
     measured_species = {
         key.removeprefix("species:"): value["absmax"]
         for key, value in report.items()
@@ -340,12 +398,15 @@ def test_sf04_engine_residual_report_and_gate() -> None:
 
     print(
         "SF04 residuals: "
-        f"comparable={len(residuals)} not_comparable={len(not_comparable)} "
+        f"comparable={len(residuals)} evidence={len(values)} "
+        f"not_comparable={len(not_comparable)} "
         f"all={report['all']} margin={SPECIES_RESIDUAL_MARGIN_DEX:.1f} dex"
     )
-    print(f"SF04 per-species gates: {species_gates}")
+    for source_name, source_report in source_reports.items():
+        print(f"SF04 {source_name} (O2 pin excluded): {source_report}")
+    print(f"SF04 per-species abs-max tripwires (O2 pin-only): {species_gates}")
     for key in sorted(report):
-        if key != "all" and (
+        if key != "all" and key != "species:O2" and (
             key.startswith("rock:")
             or key.startswith("method:")
             or key.startswith("species:")

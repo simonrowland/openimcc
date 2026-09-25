@@ -71,7 +71,7 @@ for V in "${VERSIONS[@]}"; do
         VPY="$VENV/bin/python"
         "$VPY" -m pip install -q -e ".[dev]" >/dev/null 2>&1 || { fail "install on $V"; continue; }
     fi
-    OUT="$("$VPY" -m pytest tests/ -q 2>&1)"
+    OUT="$("$VPY" -m pytest tests/ -q -W error 2>&1)"
     if printf '%s' "$OUT" | tail -1 | grep -qE '^[0-9]+ passed'; then
         pass "tests on $V  $DIM$(printf '%s' "$OUT" | tail -1)$OFF"
     else

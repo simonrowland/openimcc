@@ -757,7 +757,10 @@ def evaluate(
             "composition contains negative values"
         )
 
-    total = float(vector.sum())
+    # Finite composition entries can still overflow when summed; the next
+    # finiteness/zero check turns that expected condition into typed refusal.
+    with np.errstate(over="ignore"):
+        total = float(vector.sum())
     if total <= 0.0:
         raise ImccCompositionIncompleteError("composition total is zero")
 

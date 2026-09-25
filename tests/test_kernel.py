@@ -11,6 +11,8 @@ Rung-1 gates for the IMCC-SF04 melt-equilibrium kernel.
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -27,9 +29,11 @@ from openimcc import (
     ImccCompositionIncompleteError,
     ImccFerricInputUnsupportedError,
     ImccNonconvergenceError,
+    ImccRefusal,
     ImccTOutsideDatapackDomainError,
     evaluate,
     label_research_datapack,
+    load_datapack,
 )
 
 # The raw kernel entry point is deliberately NOT package-exported. Kernel tests
@@ -523,6 +527,28 @@ def test_p2_6_nonfinite_residual() -> None:
     with pytest.raises(ImccNonconvergenceError) as exc:
         solve_imcc_sf04(parent, 1000.0, pack)
     assert "non-finite" in str(exc.value).lower()
+
+
+def test_extreme_extrapolated_evaluate_has_no_runtime_warning() -> None:
+    pack = load_datapack("src/openimcc/data/packs/imcc-sf04-v1.0.2.json")
+    composition = {"SiO2": 50.0, "CaO": 20.0, "MgO": 15.0, "Al2O3": 15.0}
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", RuntimeWarning)
+        try:
+            result = evaluate(
+                composition,
+                500.0,
+                pack,
+                basis_type="wt",
+                allow_extrapolation=True,
+                allow_out_of_envelope=True,
+            )
+        except ImccRefusal:
+            result = None
+
+    assert result is None or result.extrapolated is True
+    assert not [warning for warning in caught if warning.category is RuntimeWarning]
 
 
 def test_p2_7_total_displacement() -> None:

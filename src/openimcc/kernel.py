@@ -18,6 +18,7 @@ import hashlib
 import importlib
 import json
 import math
+import warnings
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
@@ -723,17 +724,22 @@ def _solve_active(
             return J
 
         try:
-            sol = least_squares(
-                fun,
-                y_init,
-                jac=jac,
-                bounds=(lb, ub),
-                method="trf",
-                ftol=tol,
-                xtol=tol,
-                gtol=tol,
-                max_nfev=nfev_budget,
-            )
+            # SciPy can warn while exploring deliberately ill-conditioned
+            # extrapolated systems. The residual and convergence checks below
+            # decide whether the result is usable or becomes a typed refusal.
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                sol = least_squares(
+                    fun,
+                    y_init,
+                    jac=jac,
+                    bounds=(lb, ub),
+                    method="trf",
+                    ftol=tol,
+                    xtol=tol,
+                    gtol=tol,
+                    max_nfev=nfev_budget,
+                )
         except ValueError:
             # Non-finite residuals during this attempt (e.g. extreme K values).
             return None
@@ -948,7 +954,10 @@ def solve_imcc_sf04(
             "parent mol vector contains negative values"
         )
 
-    total = float(parent_mol.sum())
+    # Finite entries can still overflow when summed; the next finiteness check
+    # turns that expected condition into the typed refusal callers receive.
+    with np.errstate(over="ignore"):
+        total = float(parent_mol.sum())
     if not math.isfinite(total):
         raise ImccCompositionIncompleteError("parent mole total is not finite")
     if total <= 0.0:

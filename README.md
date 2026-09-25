@@ -167,6 +167,10 @@ residual computed across mismatched bases is wrong *and looks plausible*.
 
 Residual is **log10(predicted / measured)**, i.e. dex.
 
+The 402-point headline is a censored, mixed-standard-state number, not an
+accuracy figure. The slices below keep their conventions visible; they are not
+pooled into one claim.
+
 The runner reports each dataset × observable × standard-state slice. `n` counts
 rows, signed median and mean are over residuals, and RMSE includes flagged
 predictions in that slice. Refusals have no residual.
@@ -223,6 +227,57 @@ incompatible slices**, not as an accuracy claim: it is the 301 unflagged,
 non-binary residuals (signed median −0.521 dex, mean −0.470 dex). The four
 digitised flux rows remain typed refusals for *"OCR scatter digitization and no
 independent experimental fO2 pin"*. No coefficient was tuned.
+
+### Published SF04 pressure comparison
+
+The independent Schaefer & Fegley (2004) comparison is split into transcribed
+Table 9 anchors and digitized Fig. 10 points. Residuals are
+`log10(predicted / measured)`, in dex. O2 is the reference fO2 pin and is
+excluded from agreement claims because the O2 channel returns that pin by
+definition.
+
+#### Table 9 anchors (transcribed)
+
+| species | n | signed median | abs max |
+|---|--:|--:|--:|
+| Na | 1 | −1.416 | 1.416 |
+| NaO | 1 | −1.615 | 1.615 |
+| O | 1 | −0.007 | 0.007 |
+| SiO | 1 | −0.009 | 0.009 |
+| FeO | 1 | +0.009 | 0.009 |
+
+The printed Table 9 Na anchor is −1.42 dex. Na, NaO and Na2 are low at every
+comparable point: Na and NaO are about 1.1 dex low in aggregate, with medians
+of −1.082 dex (n = 36) and −1.098 dex (n = 28); Na2 is −2.212 dex at its one
+digitized point. O, SiO and FeO match the Table 9 anchor to about 0.02 dex, so
+this is not a unit or fO2-pin error. The Fig. 10 medians for SiO and FeO sit
+about +0.2 dex above the transcribed anchor; that is a figure-versus-table
+difference in the paper's digitized data, not a reconciled result.
+
+#### Fig. 10 points (digitized)
+
+| species | n | signed median | abs max |
+|---|--:|--:|--:|
+| Na | 35 | −1.079 | 1.364 |
+| NaO | 27 | −1.096 | 1.827 |
+| Na2 | 1 | −2.212 | 2.212 |
+| O | 34 | +0.014 | 0.028 |
+| SiO | 30 | +0.175 | 1.075 |
+| FeO | 31 | +0.223 | 0.830 |
+
+As a separate pressure-vs-pressure check, Plante 1979 KEMS K pressures agree
+to median +0.09 dex (RMSE 0.20). The low-temperature drift is about +0.27 dex
+at about 1250 K (n = 6), falling to about +0.02 dex at 1750 K; the K channel
+uses the flagged K2O(l) secondary transcription. This is independent evidence
+for the gas pressure path, not a replacement for the SF04 activity comparison.
+
+### Independently pinned behaviour
+
+The independently pinned contract is the analytic binary and limits in
+`tests/test_kernel.py`, pure-silica D = 1 in conformance, atom balance, and
+the JANAF gas-fit reproduction. Conformance goldens are a drift alarm at
+RTOL 1e-9, not an external reference. None of these pins is a coefficient
+retuning claim.
 
 ## Datapacks and provenance
 

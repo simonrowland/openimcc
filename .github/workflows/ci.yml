@@ -28,7 +28,7 @@ jobs:
         # below it meaningless, so fail on that first rather than reporting a
         # confusing test failure downstream.
         run: python tools/packmanifest.py --check
-      - run: pytest -q
+      - run: pytest -q -W error
 
   core-install-is-really-core:
     # Guards the dependency tiering claimed in the README: the core solve must
