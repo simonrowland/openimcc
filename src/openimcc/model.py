@@ -132,7 +132,7 @@ _SPECIES_COVERAGE_EDGE_RATIO = 1.9100549074388355e-3
 _ALKALI_BIAS_NOTICE = (
     "Na and K activities from IMCC-SF04 are biased low against published "
     "anchors (SF04 Table 9 Na −1.4 dex; Hastie 1981 K −0.9 dex); see "
-    "docs/ROADMAP.md"
+    "https://github.com/simonrowland/openimcc"
 )
 
 class ImccMalformedDatapackError(ImccRefusal):
@@ -757,8 +757,10 @@ def evaluate(
             "composition contains negative values"
         )
 
-    # Finite composition entries can still overflow when summed; the next
-    # finiteness/zero check turns that expected condition into typed refusal.
+    # Finite entries can overflow this preliminary sum; <= 0 below does not
+    # reject +inf. Mole-basis overflow is rejected later by
+    # kernel.solve_imcc_sf04's finite parent-mole-total check; wt input replaces
+    # this total with the converted mole sum below.
     with np.errstate(over="ignore"):
         total = float(vector.sum())
     if total <= 0.0:

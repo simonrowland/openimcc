@@ -156,13 +156,15 @@ def _refusal_payload(exc: ImccRefusal) -> dict[str, Any]:
     }
 
 
-def _render_solve_text(payload: Mapping[str, Any]) -> str:
+def _render_solve_text(payload: Mapping[str, Any], *, basis_type: str) -> str:
     lines: list[str] = []
     labels = payload.get("labels") or {}
     model = labels.get("model_id") if isinstance(labels, Mapping) else None
+    basis_label = "mole total (from wt%)" if basis_type == "wt" else "mole total"
     lines.append(
         f"IMCC solve  T = {payload['temperature_K']:.2f} K"
-        f"   basis = {payload['basis']:.6g}"
+        f"   basis type = {basis_type}"
+        f"   {basis_label} = {payload['basis']:.6g}"
         + (f"   model = {model}" if model else "")
     )
     if payload.get("extrapolated"):
@@ -257,7 +259,7 @@ def _cmd_solve(args: argparse.Namespace) -> int:
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
-        print(_render_solve_text(payload))
+        print(_render_solve_text(payload, basis_type=args.basis_type))
     return EXIT_OK
 
 

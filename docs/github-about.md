@@ -26,9 +26,9 @@ non-ideality of the oxide mixture is not fitted with interaction parameters, it
 emerges from speciation. Oxides associate into complexes and what stays unbound
 sets the activity.
 
-This is, as far as we can establish, the only open implementation; melt
-thermochemistry of this kind is otherwise the province of commercial software
-(FactSage, Thermo-Calc, MTDATA, HSC Chemistry). It ships auditable datapacks
+This is, as far as we can establish, the only open-source IMCC
+implementation; the open vapour tools in this space (VapoRock, LavAtmos) take
+their melt activities from MELTS instead. It ships auditable datapacks
 where every coefficient carries a provenance class. Its 402-point benchmark is
 a censored, mixed-standard-state number, not an accuracy figure: 304
 predictions are produced — 301 headline-scored and 3 flagged — while 94 fall
@@ -63,8 +63,9 @@ liquid, and pairs with MELTS-family codes rather than competing with them.
 Na, NaO and Na2 are low at every comparable point; Na and NaO are about 1.1
 dex low in aggregate, with medians of −1.082 dex (n = 36) and −1.098 dex
 (n = 28), while Na2 is −2.212 dex at its one digitized point. The
-printed Table 9 Na anchor is −1.42 dex. O, SiO and FeO match that anchor to
-about 0.02 dex, so this is not a unit or fO2-pin error. The Fig. 10 medians
+printed Table 9 Na anchor is −1.42 dex. O, SiO and FeO each match their own
+Table 9 anchor to about 0.01 dex (O −0.007, SiO −0.009, FeO +0.009), so this
+is not a unit or fO2-pin error. The Fig. 10 medians
 for SiO and FeO sit about +0.2 dex above the transcribed anchor; that is a
 figure-versus-table difference in the paper's digitized data, not a reconciled
 result. O2 is the fO2 pin identity, not agreement evidence.

@@ -215,7 +215,7 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
     assert result.labels.notices == (
         "Na and K activities from IMCC-SF04 are biased low against published "
         "anchors (SF04 Table 9 Na −1.4 dex; Hastie 1981 K −0.9 dex); see "
-        "docs/ROADMAP.md",
+        "https://github.com/simonrowland/openimcc",
     )
 
 

@@ -704,7 +704,7 @@ def test_sc130_zero_stoichiometry_column_refused() -> None:
 # --------------------------------------------------------------------------- #
 # Rung-3 regression: real workbook compositions that refused with the original
 # ideal-fraction start (31/70 sheet-T melt solves).  Each vector is the 8-oxide
-# wt% feed recorded in docs-private/.../rung3/workings.json, with Fe2O3 already
+# wt% feed recorded in the maintainers' rung-3 workings, with Fe2O3 already
 # folded into FeO per the rung-3 protocol.
 # --------------------------------------------------------------------------- #
 
@@ -721,7 +721,7 @@ _RUNG3_PARENTS = (
 
 # Exact 38-row v1.0.1 kernel fixture used by the rung-3 run. Keeping the
 # sparse stoichiometry and A+B/T coefficients here makes the regression run in
-# a fresh checkout; docs-private evidence is intentionally gitignored.
+# a fresh checkout; the rung-3 working files are not distributed.
 _RUNG3_COMPLEXES = [
     ("Mg2SiO4", {"SiO2": 1, "MgO": 2}, -0.94, 7434, (2500, 3500)),
     ("MgSiO3", {"SiO2": 1, "MgO": 1}, 0.42, 2329, (2500, 3500)),
@@ -788,7 +788,7 @@ def make_rung3_datapack() -> ImccDatapack:
 
 # 8-oxide wt% vectors (Fe2O3 already folded into FeO) for the 31 (sheet, T)
 # melt solves that refused imcc_nonconvergence in the rung-3 workbook
-# regression.  Transcribed from docs-private/.../rung3/workings.json.
+# regression.  Transcribed from the maintainers' rung-3 workings.
 _RUNG3_REGRESSION_CASES = [
     # (sheet, T_K, {oxide: wt%})
     ("tho", 1500.0, {"SiO2": 50.71, "MgO": 4.68, "FeO": 13.470072141126078, "CaO": 8.83, "Al2O3": 14.48, "TiO2": 1.7, "Na2O": 3.16, "K2O": 0.77}),

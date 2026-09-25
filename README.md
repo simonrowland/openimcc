@@ -9,11 +9,13 @@ a temperature.
 > not closed; see [Datapacks and provenance](#datapacks-and-provenance).
 
 There is, as far as we can establish, no other open-source IMCC implementation.
-Melt thermochemistry of this kind is otherwise the province of commercial
-software — FactSage, Thermo-Calc, MTDATA, HSC Chemistry. This package exists to
-fill that gap with something auditable: every coefficient carries a provenance
-class, every benchmark point carries its convention, and refusals are reported
-as data rather than quietly dropped.
+Open melt-thermodynamics tools do exist: the MELTS family (via
+ThermoEngine/alphaMELTS), VapoRock, and LavAtmos use different thermodynamic
+models; commercial CALPHAD suites — FactSage, Thermo-Calc, MTDATA, and HSC
+Chemistry — are another route. This package exists to fill that gap with
+something auditable: every coefficient carries a provenance class, every
+benchmark point carries its convention, and refusals are reported as data
+rather than quietly dropped.
 
 ## What it computes
 
@@ -52,67 +54,91 @@ model, a volatility calculation, or an evaporation-flux term.
 
 ## Install
 
+Python >= 3.11 is required. Until the first release is published, install from
+a source checkout:
+
 ```bash
-pip install openimcc                 # core solver
-pip install "openimcc[bench]"        # + the empirical benchmark runner
-pip install "openimcc[all]"          # + the vapour-species layer
+git clone https://github.com/simonrowland/openimcc
+cd openimcc
+python -m pip install -e ".[gas]"
+# To run the empirical bench, also install:
+python -m pip install -e ".[bench]"
 ```
 
-Core is `numpy` + `scipy` only. The vapour layer (`openimcc.gas`) is the sole
-consumer of `pandas` and nothing on the core path imports it, so the base
-install stays small.
+The core install is `openimcc`; the `[gas]` extra adds the vapour layer used by
+this quickstart. The optional `[bench]` extra adds the empirical benchmark
+runner, and `[all]` installs both extras. The PyPI install becomes available at
+release; until then, use the source-checkout commands above.
 
 ### Gas layer
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set.
 The default tables ship in `openimcc.data.gas` and are loaded through
-`importlib.resources`, so a fresh `pip install "openimcc[gas]"` works without a
+`importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
 NIST-JANAF 4th-edition records; the condensate rows retain their source-attributed
 Lamoreaux/Hildenbrand and JANAF coefficients. Row-level source hashes, methods,
 temperature ranges and fit residuals are in `PROVENANCE.yaml`.
 
-For comparison with an existing VapoRock installation, opt in explicitly:
-
-```bash
-export OPENIMCC_VAPOROCK_ROOT=/path/to/VapoRock
-```
-
-When set, that variable overrides both packaged tables. The packaged source
-records used to fit the gas rows are retained in `data-src/janaf/` and included
-in source distributions, not the runtime wheel. NIST SRD 13 is public data,
-and the publication attributions are recorded in `NOTICE`.
-
-The benchmark runner's `partial_pressure` observable is wired to
-`openimcc.gas`: it passes parent-oxide activities on the pure-liquid standard
-state, converts bar to Pa, and retains out-of-domain predictions with a domain
-flag. Missing or invalid inputs remain typed refusals.
+For comparison with an existing VapoRock installation, set
+`OPENIMCC_VAPOROCK_ROOT` explicitly; that variable overrides both packaged
+tables. The packaged source records used to fit the gas rows are retained in
+`data-src/janaf/` and included in source distributions, not the runtime wheel.
+NIST SRD 13 is public data, and the publication attributions are recorded in
+`NOTICE`.
 
 ## Use
 
-```bash
-# What is in a datapack?
-openimcc describe --pack packs/imcc-sf04-v1.0.2.json
+### 30-minute quickstart
 
-# Solve one composition (wt%), human-readable or JSON
-openimcc solve --pack packs/imcc-sf04-v1.0.2.json --temperature 1800 \
-    --basis-type wt \
-    --oxide SiO2=45.4 --oxide MgO=8.1  --oxide FeO=10.9 --oxide CaO=11.4 \
-    --oxide Al2O3=14.2 --oxide TiO2=3.2 --oxide Na2O=0.4 --oxide K2O=0.1
+The shipped IMCC-SF04 pack is the default; no pack path is needed. This example
+uses a basalt in weight percent at 1800 K. Parent-oxide activities are relative
+to pure-liquid oxide standard states; for this model, `melt.activity(name)` is
+the unbound `x*` fraction for that parent oxide, not a pressure.
+
+```bash
+openimcc describe
+openimcc solve --temperature 1800 --basis-type wt --oxide SiO2=51.85068 --oxide MgO=4.78527 --oxide FeO=13.77307 --oxide CaO=9.02862 --oxide Al2O3=14.80572 --oxide TiO2=1.73824 --oxide Na2O=3.23108 --oxide K2O=0.78732
 ```
 
 ```python
-from openimcc import load_datapack, evaluate
+from openimcc import evaluate, load_gas_datapack, evaluate_gas
 
-pack = load_datapack("packs/imcc-sf04-v1.0.2.json")
-r = evaluate({"SiO2": 0.45, "MgO": 0.10, "CaO": 0.15,
-              "Al2O3": 0.15, "FeO": 0.15}, 1800.0, pack)
+basalt = {"SiO2": 51.85068, "MgO": 4.78527, "FeO": 13.77307, "CaO": 9.02862,
+          "Al2O3": 14.80572, "TiO2": 1.73824, "Na2O": 3.23108, "K2O": 0.78732}
+melt = evaluate(basalt, 1800.0, basis_type="wt")
+activities = {name: melt.activity(name) for name in melt.parent_oxides}
+gas = evaluate_gas(activities, 1800.0, 1e-10, load_gas_datapack())
 
-r.D                 # degree of association, e.g. 1.9837
-r.parent_activity   # a_i on the parent-oxide formula-unit basis
-r.parent_gamma      # γ_i = a_i / x_i
-r.labels.acid_sink_ratio  # x*(SiO2) / x(SiO2), the continuous edge diagnostic
+print("activities:", {name: f"{value:.6g}" for name, value in activities.items()})
+print("melt flags:", melt.labels.flags)
+print("melt notices:", melt.labels.notices)
+print("gas:", gas.unit, {"Na": f"{gas['Na']:.6g}", "K": f"{gas['K']:.6g}"})
+print("Mg domain flag:", gas.domain_flags["Mg"])
 ```
+
+Output:
+
+```text
+activities: {'SiO2': '0.329959', 'MgO': '0.00468755', 'FeO': '0.106157', 'CaO': '5.58726e-05', 'Al2O3': '0.0165703', 'TiO2': '0.00299186', 'Na2O': '2.47359e-10', 'K2O': '2.29657e-19'}
+melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
+melt notices: ('Na and K activities from IMCC-SF04 are biased low against published anchors (SF04 Table 9 Na −1.4 dex; Hastie 1981 K −0.9 dex); see https://github.com/simonrowland/openimcc',)
+gas: bar {'Na': '1.0369e-05', 'K': '7.67598e-08'}
+Mg domain flag: T=1800.0 K outside declared G(T) interval for 'MgO(l)' [3100, 3500] K
+```
+
+The `paper-demonstrated-window` flag records that some complex rows are outside
+their paper-demonstrated temperature range. The notice is a known low Na/K
+activity bias against the cited anchors; it is part of the result, not a reason
+to hide those activities. The gas `Mg` flag records extrapolation below the
+declared MgO(l) thermodynamic row, so the pressure remains a prediction with a
+visible limitation.
+
+Here `fO2 = 1e-10` is bar-relative (`pO2 / 1 bar`), not `log10(fO2)` and not a
+buffer offset such as ΔIW.
+
+`evaluate_gas` predicts and flags out-of-domain temperatures by default; pass
+`allow_extrapolation=False` to refuse them.
 
 ### Exit codes are part of the contract
 
@@ -130,15 +156,16 @@ extrapolated.
 
 ## The empirical bench
 
-`openimcc bench` runs a tracked set of published measurements against a datapack
+From a **source checkout** (the bench set is not included in the wheel),
+`openimcc-bench` runs a tracked set of published measurements against a datapack
 and prints per-point residuals. This is the part we would most like other people
 to attack.
 
 ```bash
-openimcc-bench benchmarks/sets/basalt-bench-set-v1.yaml packs/imcc-sf04-v1.0.2.json
-openimcc-bench ... --json                 # machine-readable BenchReport
-openimcc-bench ... --species SiO,Ca       # filter
-openimcc-bench ... --populations kume2000_slag_si_alloy
+openimcc-bench benchmarks/sets/basalt-bench-set-v1.yaml src/openimcc/data/packs/imcc-sf04-v1.0.2.json
+openimcc-bench benchmarks/sets/basalt-bench-set-v1.yaml src/openimcc/data/packs/imcc-sf04-v1.0.2.json --json
+openimcc-bench benchmarks/sets/basalt-bench-set-v1.yaml src/openimcc/data/packs/imcc-sf04-v1.0.2.json --species SiO,Ca
+openimcc-bench benchmarks/sets/basalt-bench-set-v1.yaml src/openimcc/data/packs/imcc-sf04-v1.0.2.json --populations kume2000_slag_si_alloy
 ```
 
 (`openimcc-bench` is a separate command from `openimcc` because it is the only
@@ -249,8 +276,8 @@ definition.
 The printed Table 9 Na anchor is −1.42 dex. Na, NaO and Na2 are low at every
 comparable point: Na and NaO are about 1.1 dex low in aggregate, with medians
 of −1.082 dex (n = 36) and −1.098 dex (n = 28); Na2 is −2.212 dex at its one
-digitized point. O, SiO and FeO match the Table 9 anchor to about 0.02 dex, so
-this is not a unit or fO2-pin error. The Fig. 10 medians for SiO and FeO sit
+digitized point. O, SiO and FeO each match their own Table 9 anchor to about
+0.01 dex (−0.007, −0.009 and +0.009), so this is not a unit or fO2-pin error. The Fig. 10 medians for SiO and FeO sit
 about +0.2 dex above the transcribed anchor; that is a figure-versus-table
 difference in the paper's digitized data, not a reconciled result.
 
