@@ -26,7 +26,7 @@ BASE_DATAPACK = Path(
     "src/openimcc/data/packs/imcc-sf04-v1.0.2.json"
 )
 EXT4 = Path(
-    "docs-private/research/2026-08-09-upstream-mission/IMCC-impl/ext4"
+    "tests/fixtures/imcc_ext4"
 )
 _MISSING = object()
 NONFINITE = [
@@ -37,10 +37,10 @@ NONFINITE = [
 
 
 def _ext4() -> Path:
-    """EXT4 is gitignored research working set; skip rather than FileNotFoundError."""
+    """Skip optional local EXT4 working-set tests when fixtures are absent."""
     if not EXT4.is_dir():
         pytest.skip(
-            "gitignored IMCC ext4 working set is absent from this checkout"
+            "optional IMCC ext4 working set is absent from this checkout"
         )
     return EXT4
 

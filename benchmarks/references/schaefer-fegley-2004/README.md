@@ -3,8 +3,11 @@
 This is an independent, partial reference set transcribed or digitized only
 from Schaefer, L. & Fegley, B. (2004), “A thermodynamic model of high
 temperature lava vaporization on Io”, *Icarus* 169, 216–241,
-doi:10.1016/j.icarus.2003.08.023. The data files are covered by the package's
-CC-BY-4.0 data licence.
+doi:10.1016/j.icarus.2003.08.023. This directory's own arrangement, provenance
+text and derived tables are covered by the package's CC-BY-4.0 data licence.
+Published coefficients and values digitized from published figures are cited
+facts, not a grant of rights to the publisher's tables or figures. NIST-JANAF
+records are NIST public data, not CC-BY-4.0.
 
 It does not replace `tests/fixtures/imcc_sf04_magma_workbook.csv`. That fixture
 is a separately licensed, model-output comparison and remains an optional local

@@ -4,8 +4,12 @@ Copyright 2026 Simon Rowland <simon@simonrowland.com>
 This product includes software developed for the open implementation of the
 ideal-mixing-of-complex-components (IMCC) model for silicate melt speciation.
 
-Datapacks, benchmark sets and validation decks distributed with this software
-are licensed separately under CC-BY-4.0; see LICENSE-DATA.
+Code in this project is licensed under Apache-2.0. The project's own arrangement
+of data, provenance text and derived tables are licensed under CC-BY-4.0; see
+LICENSE-DATA. NIST-JANAF records are NIST public data, not CC-BY-4.0. Published
+coefficients from Lamoreaux & Hildenbrand, Fegley & Cameron (1987, FC87), and
+Schaefer & Fegley (2004, SF04), and values digitized from published figures, are
+cited facts, not a grant of rights to the publishers' tables or figures.
 
 The thermodynamic coefficients in those datapacks derive from published work by
 their respective authors, recorded per row with a provenance class. Principal
@@ -14,7 +18,14 @@ sources:
   Fegley B., Cameron A.G.W. (1987) Earth Planet. Sci. Lett. 82, 207-222.
     doi:10.1016/0012-821X(87)90196-8
   Schaefer L., Fegley B. (2004) Icarus 169, 216-241.
-    doi:10.1016/j.icarus.2003.11.023
+    doi:10.1016/j.icarus.2003.08.023
+The packs `imcc-sf04-v1.0.2.json` and `imcc-sf04-ext-v4.json` contain
+`10.1016/j.icarus.2003.11.023` in their `sources.SF04.citation`. That DOI is wrong and must
+not be cited; the correct DOI for Schaefer & Fegley (2004), Icarus 169, 216-241 is
+`10.1016/j.icarus.2003.08.023`. The citation sits inside the published SF04 core, which both
+packs carry byte-identically and the loader verifies by hash, so the core is deliberately left
+unchanged: correcting it would change the published digest and
+make every pin of the current identity unloadable.
   Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition,
     J. Phys. Chem. Ref. Data Monograph 9 (1998), NIST SRD 13.
     doi:10.18434/T42S31. NIST states that these data are public and may be
