@@ -298,6 +298,32 @@ at about 1250 K (n = 6), falling to about +0.02 dex at 1750 K; the K channel
 uses the flagged K2O(l) secondary transcription. This is independent evidence
 for the gas pressure path, not a replacement for the SF04 activity comparison.
 
+#### Known limit: potassium in Ca- and Al-bearing melts
+
+That Plante agreement does not cover basaltic melts. The Plante melts are
+K2O–SiO2 binaries, and in melts with CaO and Al2O3 almost all of the K sits
+in one SF04 complex, `KCaAlSi2O7` (SF04 Table 2, `log10 K = 4.30 + 17037/T`,
+cited there to Hastie & Bonnell 1985). Bonnell & Hastie (1990, High Temp.
+Sci. 26, 313–334) describe it as a model liquid with no known pure solid
+(p. 316), introduced as an empirical correction to K-pressure predictions
+across almost three decades of CaO/K2O in dolomitic limestones (p. 327).
+Outside that calibration domain it can over-bind K.
+
+A physical bound shows the size of the effect. Zhang et al. (2021, ACS Earth
+Space Chem.) measured the product of the evaporation coefficient (their `γ`)
+and the activity coefficient, `α·Γ(KO0.5)`, for a synthetic N-MORB-like
+basalt: `6.9e-8` at 1473 K
+and `1.11e-6` at 1673 K. Because `α ≤ 1`, `Γ(KO0.5)` cannot be lower than
+those values. On the same composition openimcc gives `3.5e-9` and `2.4e-8`,
+which is 1.3 and 1.7 dex below the floor. Both temperatures are below the
+pack domain, so these are extrapolated evaluations. Na passes the same test,
+with an implied `α` of about 0.05–0.10.
+
+Treat K activities in Ca- and Al-bearing melts as a known low bias. The pack
+is unchanged: the row is SF04's published value. The activity coefficients
+printed in Zhang et al.'s Table 4 are MELTS model inputs, not measurements,
+and are not used here.
+
 ### Independently pinned behaviour
 
 The independently pinned contract is the analytic binary and limits in
