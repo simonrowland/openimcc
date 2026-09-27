@@ -329,6 +329,41 @@ is unchanged: the row is SF04's published value. The activity coefficients
 printed in Zhang et al.'s Table 4 are MELTS model inputs, not measurements,
 and are not used here.
 
+#### Known limit: alkali silicate melts at and beyond the metasilicate
+
+The most basic alkali silicate complexes in `imcc-sf04-v1.0.2` are the
+metasilicates `Na2SiO3` and `K2SiO3`. There is no orthosilicate (`Na4SiO4`,
+`K4SiO4`) or pyrosilicate (`Na6Si2O7`, `K6Si2O7`). The +4 dex X > 0.5 rows in
+the sodium table above follow from that.
+
+In a Me2O–SiO2 binary with `x = X(Me2O) > 0.5`, the metasilicate takes all
+`1 − x` mol of SiO2 and the same amount of Me2O. That leaves `2x − 1` mol of
+free Me2O among `x` mol of associate species. The Raoultian activity becomes
+
+    a(Me2O) → (2x − 1) / x
+
+This value depends only on stoichiometry. It does not depend on temperature
+or on any coefficient. Evaluated with `allow_out_of_envelope=True`, the model
+returns 0.181818 at x = 0.55 and 0.333333 at x = 0.60, at 1373 K and 1573 K
+alike, for both Na2O and K2O. So a value beyond the metasilicate is a
+mass-balance artefact, not a thermodynamic prediction. That is why the
+validated envelope stops at X(Me2O) = 0.5.
+
+The same missing complexes probably also degrade the model at X = 0.5, which
+is still inside the envelope. There, free Me2O comes only from dissociation
+of the metasilicate, and no more basic complex takes up the excess. The model
+reads high by about 2 dex for Na2O against Tsukihashi & Sano (1985, Tetsu to
+Hagane 71, 815; 1373–1573 K) and by about 3.5 dex for K2O against Tsaplin et
+al. (2000). At X ≤ 0.45 both agree within 0.5 dex.
+
+The `species-coverage-edge` flag marks this regime. It fires when the free
+SiO2 fraction falls below 1.91e-3 of nominal, i.e. when the ladder has used
+up its acidic sink. In the binaries it first appears at X ≈ 0.495–0.5, and
+it does not fire for lunar basalts. Treat any Me2O activity carrying that
+flag as a structural limit of the complex set, not as a measured
+disagreement. The fix is to add the orthosilicate and pyrosilicate
+complexes. Nothing is retuned.
+
 ### Independently pinned behaviour
 
 The independently pinned contract is the analytic binary and limits in
