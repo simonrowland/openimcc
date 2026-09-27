@@ -645,6 +645,41 @@ def test_g3_new_tables_are_finite_against_current_vaporock() -> None:
     }
 
 
+@pytest.mark.skipif(
+    not (VAPOROCK_GAS.is_file() and VAPOROCK_OXIDE.is_file()),
+    reason="controller-supplied VapoRock checkout is unavailable",
+)
+def test_legacy_tables_default_call_returns_the_sf04_set_without_refusal() -> None:
+    from openimcc.gas import ImccGasSpeciesNotFoundError, evaluate_gas
+
+    old_pack = load_gas_datapack(gas_path=VAPOROCK_GAS, oxide_path=VAPOROCK_OXIDE)
+    assert "TiO2(l)" not in old_pack.oxide_df.index
+    sf04 = tuple(
+        species
+        for species in IMCC_GAS_CHANNEL_SPECIES
+        if _SF04_REACTIONS[species][0] != "TiO2"
+    )
+    activities = {
+        "SiO2": 0.45,
+        "MgO": 0.15,
+        "FeO": 0.08,
+        "CaO": 0.12,
+        "Al2O3": 0.12,
+        "TiO2": 0.01,
+        "Na2O": 0.06,
+        "K2O": 0.02,
+    }
+    for temperature in IMCC_SF04_WORKBOOK_GRID_K:
+        default = evaluate_gas(activities, temperature, 1.0e-8, old_pack)
+        explicit = evaluate_gas(
+            activities, temperature, 1.0e-8, old_pack, gas_species=sf04
+        )
+        assert tuple(default) == sf04
+        assert dict(default) == dict(explicit)
+    with pytest.raises(ImccGasSpeciesNotFoundError):
+        evaluate_gas(activities, 2000.0, 1.0e-8, old_pack, gas_species=("TiO",))
+
+
 def load_and_evaluate(pack, activities, temperature, fugacity, species):
     from openimcc.gas import evaluate_gas
 

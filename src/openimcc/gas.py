@@ -229,6 +229,41 @@ _SF04_REACTIONS: dict[str, tuple[str, int, float]] = {
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 
+# Channels that a default evaluate_gas call includes only when the active
+# datapack carries their gas row and their parent's condensate row.  The
+# legacy tables selected by OPENIMCC_VAPOROCK_ROOT have Ti gas rows but no
+# TiO2(l) row, so without this the default call there would refuse where it
+# used to return the SF04 set.  The SF04 channels are deliberately not in this
+# set: a table missing one of their rows is broken, and the default call keeps
+# refusing on it rather than silently returning fewer channels.
+_DATAPACK_OPTIONAL_CHANNELS = frozenset({"Ti", "TiO", "TiO2"})
+
+
+def _default_reactions(
+    parent_oxides: Sequence[str], datapack: ImccGasDatapack
+) -> tuple[tuple[str, tuple[str, int, float]], ...]:
+    """Return the channels a default ``evaluate_gas`` call evaluates.
+
+    A channel is included when its parent oxide is one of ``parent_oxides``
+    (O and O2 have no parent) and, for ``_DATAPACK_OPTIONAL_CHANNELS``, when
+    the datapack has both the gas row and the parent's condensate row.
+    Channel order is the ``_SF04_REACTIONS`` order.
+    """
+    parents = set(parent_oxides)
+    gas_rows = set(datapack.gas_df.index)
+    oxide_rows = set(datapack.oxide_df.index)
+    selected = []
+    for name, reaction in _SF04_REACTIONS.items():
+        oxide = reaction[0]
+        if oxide and oxide not in parents:
+            continue
+        if name in _DATAPACK_OPTIONAL_CHANNELS and not (
+            f"{name}(g)" in gas_rows and f"{oxide}(l)" in oxide_rows
+        ):
+            continue
+        selected.append((name, reaction))
+    return tuple(selected)
+
 # These authority labels mirror the row-level classes in PROVENANCE.yaml.  A
 # reaction is only as authoritative as its least-authoritative input row, so a
 # potassium channel inherits the K2O(l) secondary-transcription flag while the
@@ -670,8 +705,12 @@ def evaluate_gas(
         non-positive T raises ``ValueError`` before this flag is consulted.
     gas_species:
         Optional retained-species subset.  The default evaluates every
-        available channel.  A subset permits channel-specific diagnostics
-        and preserves the same typed domain refusal semantics.
+        available channel: each channel whose parent oxide is one of
+        ``parent_oxides`` (O and O2 need none), with the Ti, TiO and TiO2
+        channels included only when ``datapack`` also carries their gas rows
+        and the TiO2(l) row.  A named channel that cannot be served raises
+        ``ImccGasSpeciesNotFoundError``; a subset otherwise permits
+        channel-specific diagnostics with the same typed domain refusals.
 
     Returns
     -------
@@ -734,7 +773,9 @@ def evaluate_gas(
         parent_oxides = IMCC_PARENT_OXIDES
 
     if gas_species is None:
-        reactions = tuple(_SF04_REACTIONS.items())
+        # Resolved after the inputs are validated: the default set depends on
+        # parent_oxides and on which rows the datapack carries.
+        reactions = None
     else:
         requested = (
             (gas_species,) if isinstance(gas_species, str) else tuple(gas_species)
@@ -773,9 +814,17 @@ def evaluate_gas(
             )
         act = {name: float(arr[i]) for i, name in enumerate(parent_oxides)}
 
-    for _gas_name, (oxide, _n_gas, _n_O2) in reactions:
+    if reactions is None:
+        reactions = _default_reactions(parent_oxides, datapack)
+
+    for gas_name, (oxide, _n_gas, _n_O2) in reactions:
         if not oxide:
             continue
+        if oxide not in act:
+            raise ImccGasSpeciesNotFoundError(
+                f"gas channel {gas_name!r} needs parent oxide {oxide!r}, "
+                "which is not in parent_oxides"
+            )
         a_used = act[oxide]
         if not math.isfinite(a_used) or a_used < 0.0:
             raise ValueError(

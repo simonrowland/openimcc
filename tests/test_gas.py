@@ -698,6 +698,115 @@ def test_tio2_bearing_melt_returns_ti_pressures(
     ) == pytest.approx(100.0, rel=1e-9)
 
 
+_TI_CHANNELS = ("Ti", "TiO", "TiO2")
+_SF04_CHANNELS = tuple(
+    species for species in IMCC_GAS_CHANNEL_SPECIES if species not in _TI_CHANNELS
+)
+
+
+def _quickstart_activities(T: float) -> dict[str, float]:
+    from openimcc import evaluate as evaluate_imcc
+
+    basalt = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    melt = evaluate_imcc(basalt, T, basis_type="wt")
+    return {name: melt.activity(name) for name in melt.parent_oxides}
+
+
+def test_override_without_tio2_parent_keeps_the_sf04_default_set(
+    monkeypatch: pytest.MonkeyPatch,
+    gas_pack: ImccGasDatapack,
+    tmp_path: Path,
+) -> None:
+    """Legacy tables with Ti gas rows but no TiO2(l) row: no default refusal."""
+    root = tmp_path / "vaporock"
+    gas_target = root / "src" / "vaporock" / "data"
+    oxide_target = root / "data"
+    gas_target.mkdir(parents=True)
+    oxide_target.mkdir(parents=True)
+    shutil.copy2(gas_pack.gas_path, gas_target / "JANAF-vapor-data-full.csv")
+    condensate = gas_pack.oxide_path.read_text(encoding="utf-8").splitlines(True)
+    (oxide_target / "condensate-thermo-data.csv").write_text(
+        "".join(line for line in condensate if not line.startswith("TiO2(l),")),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
+    legacy = load_gas_datapack()
+    assert "TiO2(l)" not in legacy.oxide_df.index
+    assert {"Ti(g)", "TiO(g)", "TiO2(g)"} <= set(legacy.gas_df.index)
+
+    activities = _quickstart_activities(2200.0)
+    result = evaluate_gas(activities, 2200.0, 1.0e-10, legacy)
+    packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
+    assert len(_SF04_CHANNELS) == 22
+    assert tuple(result) == _SF04_CHANNELS
+    # Same gas rows and SF04 parent rows, so every value is bit-identical.
+    assert dict(result) == {species: packaged[species] for species in _SF04_CHANNELS}
+    assert dict(result.domain_flags) == {
+        species: packaged.domain_flags[species] for species in _SF04_CHANNELS
+    }
+
+    # Naming a Ti channel is an explicit request, so it still refuses, typed.
+    for species in _TI_CHANNELS:
+        with pytest.raises(ImccGasSpeciesNotFoundError) as exc:
+            evaluate_gas(
+                activities, 2200.0, 1.0e-10, legacy, gas_species=(species,)
+            )
+        assert exc.value.code == "imcc_gas_species_not_found"
+        assert "TiO2(l)" in str(exc.value)
+
+
+def test_default_set_follows_parent_oxides_without_key_errors(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = _quickstart_activities(2200.0)
+    packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
+    # The packaged default includes the Ti channels, after O2.
+    assert tuple(packaged) == IMCC_GAS_CHANNEL_SPECIES
+    assert tuple(packaged)[-3:] == _TI_CHANNELS
+
+    seven = tuple(name for name in activities if name != "TiO2")
+    for supplied in (
+        activities,
+        [activities[name] for name in seven],
+    ):
+        result = evaluate_gas(
+            supplied, 2200.0, 1.0e-10, gas_pack, parent_oxides=seven
+        )
+        assert tuple(result) == _SF04_CHANNELS
+        assert dict(result) == {
+            species: packaged[species] for species in _SF04_CHANNELS
+        }
+
+    # The same rule covers every parent: only channels it can serve.
+    silica_only = evaluate_gas(
+        {"SiO2": 0.5}, 2200.0, 1.0e-10, gas_pack, parent_oxides=("SiO2",)
+    )
+    assert tuple(silica_only) == ("SiO", "SiO2", "O", "Si", "O2")
+
+    # An explicit channel whose parent is not supplied refuses, typed.
+    for species, parents in (("Ti", seven), ("Na", ("SiO2",))):
+        with pytest.raises(ImccGasSpeciesNotFoundError) as exc:
+            evaluate_gas(
+                activities,
+                2200.0,
+                1.0e-10,
+                gas_pack,
+                parent_oxides=parents,
+                gas_species=(species,),
+            )
+        assert exc.value.code == "imcc_gas_species_not_found"
+        assert "not in parent_oxides" in str(exc.value)
+
+
 def test_ti_channels_against_janaf_printed_formation_gibbs(
     gas_pack: ImccGasDatapack,
 ) -> None:

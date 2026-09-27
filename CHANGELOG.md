@@ -47,25 +47,23 @@
   O-044 over the same interval (max residual 6.9 J/mol, 1.6e-4 dex; the
   1500-2130 K part of that interval is JANAF's supercooled liquid). The
   generator in `tools/build_gas_tables.py` builds both and leaves every
-  transcribed condensate row untouched. On the packaged tables every
-  pre-existing channel's pressures, flags and provenance are unchanged
-  bit for bit. The one
-  TiO2 point in the Schaefer & Fegley (2004) reference (Allende B1 CAI,
-  2375 K) is now comparable, at +0.382 dex.
+  transcribed condensate row untouched. The Ti channels appear in a
+  default `evaluate_gas` call when they are available: TiO2 is among
+  `parent_oxides` and the active tables carry the Ti gas rows and the
+  TiO2(l) row. Under `OPENIMCC_VAPOROCK_ROOT` (no TiO2(l) row) or with a
+  `parent_oxides` list without TiO2, a default call returns the same 22
+  channels as before; naming a Ti channel there refuses with
+  `ImccGasSpeciesNotFoundError`. `IMCC_GAS_UNAVAILABLE_SPECIES` no
+  longer lists Ti, TiO or TiO2. Every pre-existing channel's pressures,
+  flags and provenance are unchanged bit for bit. The one TiO2 point in
+  the Schaefer & Fegley (2004) reference (Allende B1 CAI, 2375 K) is now
+  comparable, at +0.382 dex.
+- A `parent_oxides` list that omits a parent no longer raises `KeyError`
+  in `evaluate_gas`: a default call skips that parent's channels, and an
+  explicitly requested one refuses with `ImccGasSpeciesNotFoundError`.
 
 ### Changes that can break callers
 
-- `evaluate_gas` evaluates 25 channels by default, not 22: Ti, TiO and
-  TiO2 follow O2. A caller that passes a `parent_oxides` list without
-  TiO2 and evaluates the default channel set now gets a `KeyError` for
-  TiO2; include TiO2 (its activity may be 0) or pass `gas_species`.
-  `IMCC_GAS_INCOMPLETE_PARENT_SPECIES` is now empty, and
-  `IMCC_GAS_UNAVAILABLE_SPECIES` no longer lists Ti, TiO or TiO2.
-- Under `OPENIMCC_VAPOROCK_ROOT` (or explicit legacy tables without a
-  TiO2(l) row), a default `evaluate_gas` call now refuses with
-  `ImccGasSpeciesNotFoundError` at the first Ti channel instead of
-  returning the other channels. Pass `gas_species` without Ti, TiO and
-  TiO2 on that comparison path.
 - Omitting the pack now loads the packaged SF04 pack: `--pack` is
   optional on the CLI, and `load_datapack()` and `evaluate(..., pack=None)`
   default to it. A command that used to exit with a usage error now

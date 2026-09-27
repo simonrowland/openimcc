@@ -85,9 +85,9 @@ methods, temperature ranges and fit residuals are in `PROVENANCE.yaml`.
 
 For comparison with an existing VapoRock installation, set
 `OPENIMCC_VAPOROCK_ROOT` explicitly; that variable overrides both packaged
-tables. VapoRock's condensate table has no TiO2(l) row, so under the override
-the Ti, TiO and TiO2 channels refuse with `ImccGasSpeciesNotFoundError`; pass
-`gas_species` without them to evaluate the rest. The packaged source records used to fit the gas rows are retained in
+tables. The Ti channels appear only when available: VapoRock's condensate
+table has no TiO2(l) row, so under the override a default call returns the
+other channels. The packaged source records used to fit the gas rows are retained in
 `data-src/janaf/` and included in source distributions, not the runtime wheel.
 NIST SRD 13 is public data, and the publication attributions are recorded in
 `NOTICE`.

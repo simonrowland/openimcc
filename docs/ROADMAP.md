@@ -15,7 +15,8 @@ maximum fit residual is **1.9231 J/mol** (**3.7465e-5 log10 K**), well below the
 published coefficient values exactly; the ninth, TiO2(l), is fitted from JANAF
 O-044 by the same generator (max residual 6.88 J/mol, 1.62e-4 log10 K).
 `OPENIMCC_VAPOROCK_ROOT` remains an explicit comparison override; its legacy
-condensate table has no TiO2(l) row, so the Ti channels refuse under it.
+condensate table has no TiO2(l) row, so a default call under it omits the Ti
+channels.
 
 ### 2. The bench's `partial_pressure` observable is wired (done)
 
