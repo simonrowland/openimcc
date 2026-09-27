@@ -22,6 +22,7 @@ from openimcc.gas import (
     IMCC_GAS_CHANNEL_SPECIES,
     IMCC_GAS_INCOMPLETE_PARENT_SPECIES,
     IMCC_GAS_NO_JANAF_ROWS,
+    IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES,
     IMCC_GAS_UNAVAILABLE_SPECIES,
     IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS,
     IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES,
@@ -219,9 +220,13 @@ def test_runtime_schemas_and_intervals_are_unchanged(gas_pack: ImccGasDatapack) 
         "dG_E",
         "Ref",
     )
+    public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES) - {
+        "MnO",
+        "NiO",
+        "CoO",
+    }
     assert set(gas_pack.gas_df.index) == {
-        f"{species}(g)"
-        for species in (*IMCC_GAS_CHANNEL_SPECIES, *IMCC_GAS_INCOMPLETE_PARENT_SPECIES)
+        f"{species}(g)" for species in public_gas_channels
     }
     assert (gas_pack.gas_df["T_min"] == 1500).all()
     expected_t_max = gas_pack.gas_df["Ref"].map(
@@ -237,8 +242,8 @@ def test_channel_coverage_ledger_is_closed() -> None:
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
-    assert len(implemented) == 40
-    assert len(unavailable) == 8
+    assert len(implemented) == 46
+    assert len(unavailable) == 5
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert in_domain | extrapolated == implemented
@@ -454,26 +459,31 @@ def test_negative_fugacity_refuses_with_bar_relative_hint(
 
 
 def test_full_workbook_grid_runs_for_in_domain_channels(
-    gas_pack: ImccGasDatapack, unit_activities: dict[str, float]
+    gas_pack: ImccGasDatapack,
+    synthetic_mnnico_pack: ImccGasDatapack,
+    unit_activities: dict[str, float],
 ) -> None:
     for species in IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES:
         for temperature in IMCC_SF04_WORKBOOK_GRID_K:
-            activities = (
-                (
-                    {**unit_activities, "Cr2O3": 1.0}
-                    if species in _CR_CHANNELS
-                    else (
-                        {**unit_activities, "V2O3": 1.0e-3, "NbO2": 1.0e-3}
-                        if species in _VNB_CHANNELS
-                        else unit_activities
-                    )
-                )
-            )
+            datapack = gas_pack
+            activities = unit_activities
+            if species in _CR_CHANNELS:
+                activities = {**unit_activities, "Cr2O3": 1.0}
+            elif species in _VNB_CHANNELS:
+                activities = {**unit_activities, "V2O3": 1.0e-3, "NbO2": 1.0e-3}
+            elif species in _MNNICO_CHANNELS:
+                datapack = synthetic_mnnico_pack
+                activities = {
+                    **unit_activities,
+                    "MnO": 1.0,
+                    "NiO": 1.0,
+                    "CoO": 1.0,
+                }
             result = evaluate_gas(
                 activities,
                 temperature,
                 1.0,
-                gas_pack,
+                datapack,
                 gas_species=(species,),
             )
             assert result[species] >= 0.0
@@ -494,7 +504,9 @@ def test_all_channels_compute_when_extrapolation_is_explicit(
         gas_pack,
         allow_extrapolation=True,
     )
-    assert set(result) == set(IMCC_GAS_CHANNEL_SPECIES)
+    assert set(result) == (
+        set(_PRE_GATED_CHANNELS) | set(_CR_CHANNELS) | set(_VNB_CHANNELS)
+    )
     assert all(value >= 0.0 for value in result.values())
     assert result["O2"] == 1.0e-10
 
@@ -684,10 +696,20 @@ def test_unavailable_species_ledger_names_the_closing_source(
         "Zn",
         "ZnO",
     }
-    assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {
-        "Mn": "Mn(g) exists; needs a source-rated MnO(l) standard-Gibbs row",
-        "Ni": "Ni(g) exists; needs a source-rated NiO(l) standard-Gibbs row",
-        "Co": "Co(g) exists; needs a source-rated CoO(l) standard-Gibbs row",
+    assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
+    assert IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES == {
+        "Mn": (
+            "public pack has Mn(g) but no MnO(g) or MnO(l); "
+            "external pack supplies both"
+        ),
+        "Ni": (
+            "public pack has Ni(g) but no NiO(g) or NiO(l); "
+            "external pack supplies both"
+        ),
+        "Co": (
+            "public pack has Co(g) but no CoO(g) or CoO(l); "
+            "external pack supplies both"
+        ),
     }
     assert all(
         source.startswith("needs") or "; needs" in source
@@ -698,9 +720,8 @@ def test_unavailable_species_ledger_names_the_closing_source(
         for species in IMCC_GAS_NO_JANAF_ROWS
     )
     assert {"Mn(g)", "Ni(g)", "Co(g)"} <= set(gas_pack.gas_df.index)
-    assert not set(IMCC_GAS_INCOMPLETE_PARENT_SPECIES) & set(
-        IMCC_GAS_CHANNEL_SPECIES
-    )
+    assert not {"MnO(g)", "NiO(g)", "CoO(g)"} & set(gas_pack.gas_df.index)
+    assert set(_MNNICO_CHANNELS) <= set(IMCC_GAS_CHANNEL_SPECIES)
     assert {"Ti(g)", "TiO(g)", "TiO2(g)"} <= set(gas_pack.gas_df.index)
     assert "TiO2(l)" in gas_pack.oxide_df.index
     assert {"Ti", "TiO", "TiO2"} <= set(IMCC_GAS_CHANNEL_SPECIES)
@@ -767,10 +788,14 @@ def test_tio2_bearing_melt_returns_ti_pressures(
 _TI_CHANNELS = ("Ti", "TiO", "TiO2")
 _CR_CHANNELS = ("Cr", "CrO", "CrO2", "CrO3")
 _VNB_CHANNELS = ("V", "VO", "VO2", "Nb", "NbO", "NbO2")
+_MNNICO_CHANNELS = ("Mn", "MnO", "Ni", "NiO", "Co", "CoO")
+_MNNICO_PARENT_PAIRS = (("Mn", "MnO"), ("Ni", "NiO"), ("Co", "CoO"))
 _PRE_GATED_CHANNELS = tuple(
     species
     for species in IMCC_GAS_CHANNEL_SPECIES
-    if species not in _CR_CHANNELS and species not in _VNB_CHANNELS
+    if species not in _CR_CHANNELS
+    and species not in _VNB_CHANNELS
+    and species not in _MNNICO_CHANNELS
 )
 _SF04_CHANNELS = tuple(
     species for species in _PRE_GATED_CHANNELS if species not in _TI_CHANNELS
@@ -792,6 +817,96 @@ def _quickstart_activities(T: float) -> dict[str, float]:
     }
     melt = evaluate_imcc(basalt, T, basis_type="wt")
     return {name: melt.activity(name) for name in melt.parent_oxides}
+
+
+@pytest.fixture
+def synthetic_mnnico_pack(
+    gas_pack: ImccGasDatapack, tmp_path: Path
+) -> ImccGasDatapack:
+    """Synthetic wiring fixture, not thermodynamic data.
+
+    It copies the public Fe(g), FeO(g), and FeO(l) rows under Mn/Ni/Co names so
+    the tests exercise path-loaded optional-channel wiring without TSIV values.
+    """
+    gas_df = pd.read_csv(gas_pack.gas_path)
+    oxide_df = pd.read_csv(gas_pack.oxide_path)
+    atomic_gas_template = gas_df.loc[gas_df["species_name"] == "Fe(g)"].iloc[[0]]
+    monoxide_gas_template = gas_df.loc[gas_df["species_name"] == "FeO(g)"].iloc[[0]]
+    oxide_template = oxide_df.loc[oxide_df["species_name"] == "FeO(l)"].iloc[[0]]
+    gas_rows = [
+        atomic_gas_template.assign(species_name=f"{gas}(g)")
+        for gas, _parent in _MNNICO_PARENT_PAIRS
+    ]
+    gas_rows.extend(
+        monoxide_gas_template.assign(species_name=f"{parent}(g)")
+        for _gas, parent in _MNNICO_PARENT_PAIRS
+    )
+    oxide_rows = [
+        oxide_template.assign(species_name=f"{parent}(l)")
+        for _gas, parent in _MNNICO_PARENT_PAIRS
+    ]
+    gas_path = tmp_path / "synthetic-gas.csv"
+    oxide_path = tmp_path / "synthetic-condensate.csv"
+    pd.concat([gas_df, *gas_rows], ignore_index=True).to_csv(gas_path, index=False)
+    pd.concat([oxide_df, *oxide_rows], ignore_index=True).to_csv(
+        oxide_path, index=False
+    )
+    return load_gas_datapack(gas_path=gas_path, oxide_path=oxide_path)
+
+
+def test_public_pack_skips_mnnico_channels_and_explicit_requests_refuse(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    parent_oxides = (*IMCC_PARENT_OXIDES, "MnO", "NiO", "CoO")
+    activities = {name: 1.0 for name in parent_oxides}
+    result = evaluate_gas(
+        activities,
+        2200.0,
+        1.0e-10,
+        gas_pack,
+        parent_oxides=parent_oxides,
+    )
+    assert not set(_MNNICO_CHANNELS) & set(result)
+
+    for gas, parent in _MNNICO_PARENT_PAIRS:
+        with pytest.raises(ImccGasSpeciesNotFoundError) as exc:
+            evaluate_gas(
+                {parent: 1.0},
+                2200.0,
+                1.0e-10,
+                gas_pack,
+                parent_oxides=(parent,),
+                gas_species=(gas,),
+            )
+        assert exc.value.code == "imcc_gas_species_not_found"
+        assert f"{parent}(l)" in str(exc.value)
+
+
+def test_external_pack_activates_mnnico_channels_with_data_free_scaling(
+    synthetic_mnnico_pack: ImccGasDatapack,
+) -> None:
+    activities = {parent: 1.0 for _gas, parent in _MNNICO_PARENT_PAIRS}
+    common = {
+        "activities": activities,
+        "T_K": 2200.0,
+        "datapack": synthetic_mnnico_pack,
+        "parent_oxides": tuple(activities),
+        "gas_species": _MNNICO_CHANNELS,
+        "allow_extrapolation": False,
+    }
+    low_fugacity = evaluate_gas(fO2=1.0e-10, **common)
+    high_fugacity = evaluate_gas(fO2=1.0e-6, **common)
+
+    assert tuple(low_fugacity) == _MNNICO_CHANNELS
+    assert all(
+        math.isfinite(low_fugacity[name]) and low_fugacity[name] > 0.0
+        for name in _MNNICO_CHANNELS
+    )
+    assert low_fugacity.provenance_class["MnO"] == "external_datapack"
+    # MnO(l) = Mn(g) + 1/2 O2: p(Mn) scales as fO2**(-1/2).
+    assert low_fugacity["Mn"] / high_fugacity["Mn"] == pytest.approx(100.0)
+    # MnO(l) = MnO(g): n_O2 = 0, so its pressure is fO2-independent.
+    assert low_fugacity["MnO"] == high_fugacity["MnO"]
 
 
 def test_override_without_tio2_parent_keeps_the_sf04_default_set(

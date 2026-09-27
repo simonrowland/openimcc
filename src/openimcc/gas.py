@@ -219,6 +219,10 @@ def default_condensate_database_path() -> Path:
 # For the caller-supplied V2O3 parent (a=2, b=3), V, VO and VO2 use
 # n_gas=2 and n_O2=3/2, 1/2 and -1/2. For the caller-supplied NbO2 parent
 # (a=1, b=2), Nb, NbO and NbO2 use n_gas=1 and n_O2=1, 1/2 and 0.
+# For caller-supplied MnO, NiO and CoO parents (a=1, b=1), the atomic and
+# monoxide channels use n_gas=1 and n_O2=1/2 and 0. These entries are data-free
+# wiring: the public pack has the gas rows but no parent rows, while an external
+# pack can provide both sides of each reaction.
 _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Na": ("Na2O", 2, 0.5),
     "K": ("K2O", 2, 0.5),
@@ -263,6 +267,12 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     # output position stays unchanged.
     "Na2O": ("Na2O", 1, 0.0),
     "K2O": ("K2O", 1, 0.0),
+    "Mn": ("MnO", 1, 0.5),
+    "MnO": ("MnO", 1, 0.0),
+    "Ni": ("NiO", 1, 0.5),
+    "NiO": ("NiO", 1, 0.0),
+    "Co": ("CoO", 1, 0.5),
+    "CoO": ("CoO", 1, 0.0),
 }
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
@@ -270,9 +280,11 @@ IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 # Channels that a default evaluate_gas call includes only when the active
 # datapack carries their gas row and their parent's condensate row. The legacy
 # tables selected by OPENIMCC_VAPOROCK_ROOT have Ti gas rows but no TiO2(l)
-# row, so the default call preserves the pre-Ti channel set there. Original
-# SF04 channels stay strict: a table missing one of their rows is broken and
-# the default call keeps refusing on it rather than silently omitting it.
+# row, while the public tables have Mn/Ni/Co gas rows but no MnO(l)/NiO(l)/CoO(l)
+# rows. Optional channels therefore stay absent from a default call until an
+# active pack supplies both sides. Original SF04 channels stay strict: a table
+# missing one of their rows is broken and the default call keeps refusing on it
+# rather than silently omitting it.
 _DATAPACK_OPTIONAL_CHANNELS = frozenset(
     {
         "Ti",
@@ -291,6 +303,12 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Nb",
         "NbO",
         "NbO2",
+        "Mn",
+        "MnO",
+        "Ni",
+        "NiO",
+        "Co",
+        "CoO",
     }
 )
 
@@ -331,10 +349,16 @@ def _default_reactions(
 # reaction is only as authoritative as its least-authoritative input row, so a
 # potassium channel inherits the K2O(l) secondary-transcription flag while the
 # other retained channels retain their JANAF/Lamoreaux classes. The Na2O/K2O
-# gas rows are NASA/Gurvich fits; pending Mn/Ni/Co gas rows remain included for
-# provenance parity until their parent rows are supplied.
+# gas rows are NASA/Gurvich fits. The Mn/Ni/Co atomic rows are public JANAF
+# fits; the monoxide rows are external-pack-only and carry no public row
+# provenance.
+_EXTERNAL_PACK_GAS_SPECIES = frozenset({"MnO", "NiO", "CoO"})
 _GAS_PROVENANCE_AUTHORITY = {
-    species: "janaf_fitted"
+    species: (
+        "external_datapack"
+        if species in _EXTERNAL_PACK_GAS_SPECIES
+        else "janaf_fitted"
+    )
     for species in (*IMCC_GAS_CHANNEL_SPECIES, "Mn", "Ni", "Co")
 }
 _GAS_PROVENANCE_AUTHORITY.update(
@@ -361,6 +385,7 @@ _PROVENANCE_AUTHORITY_RANK = {
     "janaf_transcribed": 2,
     "janaf_fitted": 3,
     "nasa_glenn_fitted": 3,
+    "external_datapack": 3,
 }
 
 
@@ -450,13 +475,20 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "Nb",
     "NbO",
     "NbO2",
+    "Mn",
+    "MnO",
+    "Ni",
+    "NiO",
+    "Co",
+    "CoO",
 )
 
 # Closure ledger for species outside the retained channel set. These entries
 # still lack a gas G(T) row in the vendored source set or require a model
 # convention not present in the layer. Na2O/K2O left this ledger when their
-# NASA/Gurvich gas rows joined the package; the remaining incomplete-parent
-# entries are source-backed Mn/Ni/Co rows waiting for liquid parents.
+# NASA/Gurvich gas rows joined the package. Mn/Ni/Co now have retained,
+# optional channels; the public-only load skips them because it has no parent
+# rows, while an external pack can activate them.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     "Na+": (
         "needs Na+(g) and electron standard-Gibbs rows plus a disclosed "
@@ -475,10 +507,24 @@ IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     ),
 }
 
-IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {
-    "Mn": "Mn(g) exists; needs a source-rated MnO(l) standard-Gibbs row",
-    "Ni": "Ni(g) exists; needs a source-rated NiO(l) standard-Gibbs row",
-    "Co": "Co(g) exists; needs a source-rated CoO(l) standard-Gibbs row",
+IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {}
+
+# These retained channels are wired but cannot run from the public pack: only
+# the atomic gas rows are public, while the monoxide gas and parent rows arrive
+# through an external datapack.
+IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES: dict[str, str] = {
+    "Mn": (
+        "public pack has Mn(g) but no MnO(g) or MnO(l); "
+        "external pack supplies both"
+    ),
+    "Ni": (
+        "public pack has Ni(g) but no NiO(g) or NiO(l); "
+        "external pack supplies both"
+    ),
+    "Co": (
+        "public pack has Co(g) but no CoO(g) or CoO(l); "
+        "external pack supplies both"
+    ),
 }
 
 IMCC_GAS_UNAVAILABLE_SPECIES = {

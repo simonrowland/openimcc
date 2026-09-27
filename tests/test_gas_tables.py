@@ -22,7 +22,6 @@ from openimcc.gas import (
     _GAS_PROVENANCE_AUTHORITY,
     _OXIDE_PROVENANCE_AUTHORITY,
     IMCC_GAS_CHANNEL_SPECIES,
-    IMCC_GAS_INCOMPLETE_PARENT_SPECIES,
     IMCC_SF04_WORKBOOK_GRID_K,
     R_J_MOL_K,
     _SF04_REACTIONS,
@@ -324,10 +323,12 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     oxide_rows = {
         row["species_name"]: row for row in rows if row["table"] == "condensate"
     }
-    assert set(gas_rows) == {
-        f"{name}(g)"
-        for name in (*IMCC_GAS_CHANNEL_SPECIES, *IMCC_GAS_INCOMPLETE_PARENT_SPECIES)
+    public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES) - {
+        "MnO",
+        "NiO",
+        "CoO",
     }
+    assert set(gas_rows) == {f"{name}(g)" for name in public_gas_channels}
     assert len(oxide_rows) == 12
 
     for species, table_id in GAS_TABLE_IDS.items():
@@ -460,7 +461,12 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
     # free of a YAML dependency, while this test compares every gas and oxide
     # provenance row against the checked-in YAML.  SiO2(cr) is retained in the
     # mirror for parity even though the SF04 reaction set consumes SiO2(l).
-    assert _GAS_PROVENANCE_AUTHORITY == expected_gas
+    public_runtime_gas = {
+        species: authority
+        for species, authority in _GAS_PROVENANCE_AUTHORITY.items()
+        if species not in {"MnO", "NiO", "CoO"}
+    }
+    assert public_runtime_gas == expected_gas
     assert _OXIDE_PROVENANCE_AUTHORITY == expected_oxide
 
 
@@ -1108,7 +1114,14 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
     checked = 0
     maxima: dict[str, float] = {}
     for species in _SF04_REACTIONS:
-        if species == "O2" or species in NASA_TABLE_IDS:
+        if species == "O2" or species in NASA_TABLE_IDS or species in {
+            "Mn",
+            "MnO",
+            "Ni",
+            "NiO",
+            "Co",
+            "CoO",
+        }:
             continue
         n_gas, n_o2, temperatures, independent, source_parent_app = (
             _reaction_source_series(species)
@@ -1174,7 +1187,14 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     missing: set[tuple[str, float]] = set()
     maxima: dict[str, float] = {}
     for species in _SF04_REACTIONS:
-        if species == "O2" or species in NASA_TABLE_IDS:
+        if species == "O2" or species in NASA_TABLE_IDS or species in {
+            "Mn",
+            "MnO",
+            "Ni",
+            "NiO",
+            "Co",
+            "CoO",
+        }:
             continue
         n_gas, n_o2, common_temperatures, independent_reactions, source_parent_app = (
             _reaction_source_series(species)
@@ -1234,6 +1254,12 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         "Nb",
         "NbO",
         "NbO2",
+        "Mn",
+        "MnO",
+        "Ni",
+        "NiO",
+        "Co",
+        "CoO",
     }
     assert max(maxima[species] for species in existing) < 300.0
     # The omitted O-063 and Nb-013 source nodes make the V/Nb interpolation
