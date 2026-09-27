@@ -91,6 +91,12 @@ GAS_SOURCES = (
     ("CrO(g)", "Cr-010", "Cr", 1, 1),
     ("CrO2(g)", "Cr-011", "Cr", 1, 2),
     ("CrO3(g)", "Cr-012", "Cr", 1, 3),
+    ("V(g)", "V-005", "V", 1, 0),
+    ("VO(g)", "O-026", "V", 1, 1),
+    ("VO2(g)", "O-076", "V", 1, 2),
+    ("Nb(g)", "Nb-005", "Nb", 1, 0),
+    ("NbO(g)", "Nb-011", "Nb", 1, 1),
+    ("NbO2(g)", "Nb-015", "Nb", 1, 2),
 )
 
 CONDENSATE_COLUMNS = (
@@ -117,6 +123,8 @@ CONDENSATE_COLUMNS = (
 CONDENSATE_SOURCES = (
     ("TiO2(l)", "O-044", "Ti", 1, 2),
     ("Cr2O3(l)", "Cr-015", "Cr", 2, 3),
+    ("V2O3(l)", "O-063", "V", 2, 3),
+    ("NbO2(l)", "Nb-013", "Nb", 1, 2),
 )
 
 REQUIRED_FIELDS = (
@@ -127,6 +135,8 @@ REQUIRED_FIELDS = (
     "formation_enthalpy",
     "formation_gibbs_energy",
 )
+
+_TRANSITION_SOURCE_TABLES = frozenset({"Cr-015", "O-063", "Nb-013"})
 
 
 def _load_record(path: Path) -> dict[str, Any]:
@@ -176,14 +186,17 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
         # Sanity: every selected record has complete rows spanning the declared
         # 1500--3000 K interval; an omitted normal-grid point is allowed only
         # when the source explicitly records that row as parse-ambiguous.
-        if temperature in ambiguous_temperatures and table_id != "Cr-015":
+        if (
+            temperature in ambiguous_temperatures
+            and table_id not in _TRANSITION_SOURCE_TABLES
+        ):
             raise ValueError(
                 f"{table_id} has a parse-ambiguous row at {temperature} K"
             )
         if temperature in ambiguous_temperatures:
-            # Cr-015 marks its glass/liquid and crystal/liquid transitions as
-            # non-data rows at temperatures inside the fit interval. Omit
-            # those markers; never choose a branch or reconstruct a value.
+            # These liquid tables mark glass/liquid or crystal/liquid
+            # transitions as non-data rows inside the fit interval. Omit those
+            # markers; never choose a branch or reconstruct a value.
             continue
         if any(value is None for value in values.values()):
             raise ValueError(
@@ -191,7 +204,7 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
             )
         rows.append({field: float(value) for field, value in values.items()})
     rows.sort(key=lambda row: row["temperature"])
-    minimum_rows = 14 if table_id == "Cr-015" else 15
+    minimum_rows = 14 if table_id in {"Cr-015", "O-063"} else 15
     if (
         len(rows) < minimum_rows
         or rows[0]["temperature"] != FIT_T_MIN

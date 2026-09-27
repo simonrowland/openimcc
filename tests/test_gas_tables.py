@@ -68,6 +68,12 @@ GAS_TABLE_IDS = {
     "CrO": "Cr-010",
     "CrO2": "Cr-011",
     "CrO3": "Cr-012",
+    "V": "V-005",
+    "VO": "O-026",
+    "VO2": "O-076",
+    "Nb": "Nb-005",
+    "NbO": "Nb-011",
+    "NbO2": "Nb-015",
 }
 
 PARENT_TABLE_IDS = {
@@ -80,12 +86,36 @@ PARENT_TABLE_IDS = {
     "FeO": "Fe-019",
     "TiO2": "O-044",
     "Cr2O3": "Cr-015",
+    "V2O3": "O-063",
+    "NbO2": "Nb-013",
 }
 
 # Fitted, not transcribed, condensate rows: species -> JANAF table ID.
 FITTED_CONDENSATE_TABLE_IDS = {
     "TiO2(l)": "O-044",
     "Cr2O3(l)": "Cr-015",
+    "V2O3(l)": "O-063",
+    "NbO2(l)": "Nb-013",
+}
+
+CANDIDATE_LIQUID_TABLE_IDS = {
+    "VO(l)": "O-024",
+    "V2O3(l)": "O-063",
+    "V2O4(l)": "O-074",
+    "V2O5(l)": "O-085",
+    "NbO(l)": "Nb-009",
+    "NbO2(l)": "Nb-013",
+    "Nb2O5(l)": "Nb-017",
+}
+
+CANDIDATE_LIQUID_TRANSITIONS_K = {
+    "VO(l)": 2063.0,
+    "V2O3(l)": 2340.0,
+    "V2O4(l)": 1818.0,
+    "V2O5(l)": 943.0,
+    "NbO(l)": 2210.0,
+    "NbO2(l)": 2175.0,
+    "Nb2O5(l)": 1785.0,
 }
 
 _SOURCE_FIELDS = (
@@ -264,7 +294,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         row["species_name"]: row for row in rows if row["table"] == "condensate"
     }
     assert set(gas_rows) == {f"{name}(g)" for name in IMCC_GAS_CHANNEL_SPECIES}
-    assert len(oxide_rows) == 10
+    assert len(oxide_rows) == 12
 
     for species, table_id in GAS_TABLE_IDS.items():
         source = _record(table_id)
@@ -290,7 +320,20 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert row["T_range_K"] == [1500, 3000]
         assert source["source"]["doi"] == "10.18434/T42S31"
 
-    for species in ("Ti", "TiO", "TiO2", "CrO", "CrO2", "CrO3"):
+    for species in (
+        "Ti",
+        "TiO",
+        "TiO2",
+        "CrO",
+        "CrO2",
+        "CrO3",
+        "V",
+        "VO",
+        "VO2",
+        "Nb",
+        "NbO",
+        "NbO2",
+    ):
         assert _record(GAS_TABLE_IDS[species])["table"]["index_entry"]["state"] == "g"
 
     k_row = oxide_rows["K2O(l)"]
@@ -298,6 +341,24 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     assert k_row["method"] == "transcribed_secondary_unverified_primary"
     assert k_row["source"]["primary_doi"] == "10.1063/1.555706"
     assert "VapoRock" in k_row["source"]["transcription"]
+
+
+def test_all_candidate_liquid_sources_cover_the_fit_interval() -> None:
+    for species, table_id in CANDIDATE_LIQUID_TABLE_IDS.items():
+        table = _record(table_id)["table"]
+        assert table["index_entry"]["state"] == "l"
+        temperatures = {
+            row["temperature"]
+            for row in _complete_rows(table_id)
+            if 1500.0 <= row["temperature"] <= 3000.0
+        }
+        assert min(temperatures) == 1500.0
+        assert max(temperatures) == 3000.0
+        assert CANDIDATE_LIQUID_TRANSITIONS_K[species] in {
+            float(str(ambiguity["raw_line"]).split("\t", 1)[0])
+            for ambiguity in table.get("parse_ambiguities", [])
+            if str(ambiguity.get("raw_line", "")).split("\t", 1)[0]
+        }
 
 
 def test_runtime_provenance_mirror_matches_yaml() -> None:
@@ -401,10 +462,25 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
                 residual / (R_J_MOL_K * temperature * math.log(10.0)),
             )
             nodes += 1
-        expected_nodes = {"TiO2(l)": 15, "Cr2O3(l)": 14}[species]
+        expected_nodes = {
+            "TiO2(l)": 15,
+            "Cr2O3(l)": 14,
+            "V2O3(l)": 14,
+            "NbO2(l)": 15,
+        }[species]
         assert nodes == expected_nodes
-        max_log10_limit = {"TiO2(l)": 0.001, "Cr2O3(l)": 0.0015}[species]
-        max_j_limit = {"TiO2(l)": 10.0, "Cr2O3(l)": 50.0}[species]
+        max_log10_limit = {
+            "TiO2(l)": 0.001,
+            "Cr2O3(l)": 0.0015,
+            "V2O3(l)": 0.001,
+            "NbO2(l)": 0.001,
+        }[species]
+        max_j_limit = {
+            "TiO2(l)": 10.0,
+            "Cr2O3(l)": 50.0,
+            "V2O3(l)": 10.0,
+            "NbO2(l)": 10.0,
+        }[species]
         assert maximum_log10 <= max_log10_limit
         assert maximum_j < max_j_limit
         assert maximum_j == pytest.approx(
@@ -600,6 +676,28 @@ _CONDENSATE_EXPECTED = {
         -0.105388931948509,
         "Cr-015",
     ),
+    "V2O3(l)": (
+        1500,
+        3000,
+        -131.464178771295,
+        12.7984408682205,
+        15.7012635413964,
+        -3.18957608585823,
+        0.420979101959005,
+        -0.0242973638300596,
+        "O-063",
+    ),
+    "NbO2(l)": (
+        1500,
+        3000,
+        -85.4982495755085,
+        7.184739151057,
+        9.85735655010328,
+        -2.11399649945409,
+        0.297926897960544,
+        -0.0186305252415757,
+        "Nb-013",
+    ),
 }
 
 
@@ -729,10 +827,9 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             checked += 1
         maxima[species] = row_max
 
-    # 289 nodes for the first 22 channels, 15 for each Ti channel, 15 for each
-    # dimer, and 13/14/14/14 for Cr/CrO/CrO2/CrO3 because Cr-005 has an
-    # ambiguous 3000 K source node.
-    assert checked == 421
+    # The pre-V/Nb channels contribute 421 nodes. V2O3 has 14 usable source
+    # nodes and NbO2 has 15, so the six new channels add 87 nodes.
+    assert checked == 508
     # The measured on-node maximum remains below 10 J/mol for every fitted gas
     # row; the separate condensate test records Cr-015's larger fit residual.
     assert max(maxima.values()) <= 10.0
@@ -814,8 +911,20 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         for species in ("K", "K2", "KO")
         for temperature in (2125.0, 2250.0, 2375.0, 2500.0)
     }
-    assert checked == 285
-    assert max(maxima.values()) < 300.0
+    assert checked == 345
+    existing = set(_SF04_REACTIONS) - {
+        "O2",
+        "V",
+        "VO",
+        "VO2",
+        "Nb",
+        "NbO",
+        "NbO2",
+    }
+    assert max(maxima[species] for species in existing) < 300.0
+    # V2O3's omitted transition node makes its interpolation comparison
+    # slightly looser than the established channels.
+    assert max(maxima[species] for species in set(maxima) - existing) < 350.0
 
 
 # The legacy VapoRock tables are not shipped; comparisons against them run only

@@ -8,15 +8,16 @@ measured against the code rather than estimated.
 ### 1. The gas layer is self-contained (done)
 
 The packaged gas tables now load by default through `importlib.resources`.
-Twenty-five Shomate rows are fitted deterministically from vendored NIST-JANAF
+Thirty-seven Shomate rows are fitted deterministically from vendored NIST-JANAF
 records, with the exact source hash and fit residual recorded per row. The
 maximum fit residual is **1.9231 J/mol** (**3.7465e-5 log10 K**), well below the
 0.01 log10 K gate. The eight transcribed condensate rows reproduce the current
-published coefficient values exactly; the ninth, TiO2(l), is fitted from JANAF
-O-044 by the same generator (max residual 6.88 J/mol, 1.62e-4 log10 K).
+published coefficient values exactly; TiO2(l), Cr2O3(l), V2O3(l) and NbO2(l)
+are fitted from JANAF by the same generator. The caller-supplied Cr/V/Nb
+parents remain outside the eight-oxide melt basis.
 `OPENIMCC_VAPOROCK_ROOT` remains an explicit comparison override; its legacy
-condensate table has no TiO2(l) row, so a default call under it omits the Ti
-channels.
+condensate table has none of these fitted parent rows, so a default call under
+it omits the Ti, Cr, V and Nb channels.
 
 ### 2. The bench's `partial_pressure` observable is wired (done)
 
@@ -52,7 +53,8 @@ rewire or silently corrected by changing K2O(l).
 Upstream this called the simulator's analytical vapour stack, which reads a
 large catalogue through two further subsystems. **That is not worth porting.**
 `openimcc.gas.evaluate_gas()` already covers every species the bench needs —
-all six of SiO, Ca, Al, Na, Mg, K are in `IMCC_GAS_CHANNEL_SPECIES` — and takes
+the six SF04 oxide families plus Ti, screened Al/Si dimers, CrO, and the
+caller-supplied V/Nb channels are in `IMCC_GAS_CHANNEL_SPECIES` — and takes
 parent-oxide activities, T and fO2, which is exactly what the bench holds. So
 this is a rewire, not a transplant.
 

@@ -10,6 +10,10 @@
   transition-marked Cr-015 nodes are omitted rather than assigned a phase
   branch. The Cr(g) source is held out because Cr-005 has no complete 3000 K
   source row, so the strict fitter refuses it.
+- Added JANAF-fitted V, VO, VO2, Nb, NbO and NbO2 gas channels with fitted
+  caller-supplied V2O3(l) and NbO2(l) parents. Transition-marked liquid nodes
+  are omitted rather than assigned a phase branch; candidate liquid records
+  remain vendored for source and transition coverage evidence.
 - Added JANAF-derived gas tables with tracked provenance and fit checks.
 - Scored the bench `partial_pressure` observable through the analytical gas
   layer, including the bar-to-Pa conversion.

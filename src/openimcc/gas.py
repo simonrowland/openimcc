@@ -219,6 +219,9 @@ def default_condensate_database_path() -> Path:
 # n_gas=2 and n_O2=1/2, -1/2 and -3/2. The parent activity remains an input
 # because Cr2O3 is outside the eight-parent melt basis; the same balance and
 # mass-action equation apply without an internal phase-selection rule.
+# For the caller-supplied V2O3 parent (a=2, b=3), V, VO and VO2 use
+# n_gas=2 and n_O2=3/2, 1/2 and -1/2. For the caller-supplied NbO2 parent
+# (a=1, b=2), Nb, NbO and NbO2 use n_gas=1 and n_O2=1, 1/2 and 0.
 _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Na": ("Na2O", 2, 0.5),
     "K": ("K2O", 2, 0.5),
@@ -252,6 +255,12 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "CrO": ("Cr2O3", 2, 0.5),
     "CrO2": ("Cr2O3", 2, -0.5),
     "CrO3": ("Cr2O3", 2, -1.5),
+    "V": ("V2O3", 2, 1.5),
+    "VO": ("V2O3", 2, 0.5),
+    "VO2": ("V2O3", 2, -0.5),
+    "Nb": ("NbO2", 1, 1.0),
+    "NbO": ("NbO2", 1, 0.5),
+    "NbO2": ("NbO2", 1, 0.0),
 }
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
@@ -273,6 +282,12 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "CrO",
         "CrO2",
         "CrO3",
+        "V",
+        "VO",
+        "VO2",
+        "Nb",
+        "NbO",
+        "NbO2",
     }
 )
 
@@ -327,6 +342,8 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "FeO": "janaf_transcribed",
     "TiO2": "janaf_fitted",
     "Cr2O3": "janaf_fitted",
+    "V2O3": "janaf_fitted",
+    "NbO2": "janaf_fitted",
 }
 _PROVENANCE_AUTHORITY_RANK = {
     "secondary_transcription_unverified_primary": 0,
@@ -414,6 +431,12 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "CrO",
     "CrO2",
     "CrO3",
+    "V",
+    "VO",
+    "VO2",
+    "Nb",
+    "NbO",
+    "NbO2",
 )
 
 # Closure ledger for species outside the retained channel set.  These entries

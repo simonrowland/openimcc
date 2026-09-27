@@ -115,6 +115,20 @@ _TI_AGAINST_JANAF_PRINTED_FORMATION_GIBBS = {
     }
 }
 
+# Independent JANAF formation-Gibbs checks at 2000 K. The parent activities
+# are caller-provided at 1e-3 and fO2 = 1; no generated coefficient appears in
+# these references.
+_VNB_AGAINST_JANAF_PRINTED_FORMATION_GIBBS = {
+    2000.0: {
+        "V": -16.456,
+        "VO": -9.518,
+        "VO2": -3.614,
+        "Nb": -25.871,
+        "NbO": -15.061,
+        "NbO2": -8.176,
+    }
+}
+
 
 @pytest.fixture(scope="module")
 def gas_pack() -> ImccGasDatapack:
@@ -145,8 +159,8 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 31
-    assert len(gas_pack.oxide_df) == 10
+    assert len(gas_pack.gas_df) == 37
+    assert len(gas_pack.oxide_df) == 12
 
 
 def test_explicit_vaporock_override_remains_supported(
@@ -216,7 +230,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
-    assert len(implemented) == 31
+    assert len(implemented) == 37
     assert len(unavailable) == 8
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
@@ -322,7 +336,7 @@ def test_sf04_basalt_at_1800_predicts_and_flags_source_rows(
     result = evaluate_gas(activities, 1800.0, 1.0e-10, gas_pack)
 
     assert isinstance(result, ImccGasResult)
-    assert set(result) == set(_PRE_CR_CHANNELS)
+    assert set(result) == set(_PRE_GATED_CHANNELS)
     assert all(math.isfinite(value) and value >= 0.0 for value in result.values())
     flagged = {
         "SiO",
@@ -429,9 +443,15 @@ def test_full_workbook_grid_runs_for_in_domain_channels(
     for species in IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES:
         for temperature in IMCC_SF04_WORKBOOK_GRID_K:
             activities = (
-                {**unit_activities, "Cr2O3": 1.0}
-                if species in _CR_CHANNELS
-                else unit_activities
+                (
+                    {**unit_activities, "Cr2O3": 1.0}
+                    if species in _CR_CHANNELS
+                    else (
+                        {**unit_activities, "V2O3": 1.0e-3, "NbO2": 1.0e-3}
+                        if species in _VNB_CHANNELS
+                        else unit_activities
+                    )
+                )
             )
             result = evaluate_gas(
                 activities,
@@ -447,7 +467,12 @@ def test_all_channels_compute_when_extrapolation_is_explicit(
     gas_pack: ImccGasDatapack, unit_activities: dict[str, float]
 ) -> None:
     result = evaluate_gas(
-        {**unit_activities, "Cr2O3": 1.0},
+        {
+            **unit_activities,
+            "Cr2O3": 1.0,
+            "V2O3": 1.0e-3,
+            "NbO2": 1.0e-3,
+        },
         2500.0,
         1.0e-10,
         gas_pack,
@@ -722,11 +747,14 @@ def test_tio2_bearing_melt_returns_ti_pressures(
 
 _TI_CHANNELS = ("Ti", "TiO", "TiO2")
 _CR_CHANNELS = ("CrO", "CrO2", "CrO3")
-_PRE_CR_CHANNELS = tuple(
-    species for species in IMCC_GAS_CHANNEL_SPECIES if species not in _CR_CHANNELS
+_VNB_CHANNELS = ("V", "VO", "VO2", "Nb", "NbO", "NbO2")
+_PRE_GATED_CHANNELS = tuple(
+    species
+    for species in IMCC_GAS_CHANNEL_SPECIES
+    if species not in _CR_CHANNELS and species not in _VNB_CHANNELS
 )
 _SF04_CHANNELS = tuple(
-    species for species in _PRE_CR_CHANNELS if species not in _TI_CHANNELS
+    species for species in _PRE_GATED_CHANNELS if species not in _TI_CHANNELS
 )
 
 
@@ -796,8 +824,9 @@ def test_default_set_follows_parent_oxides_without_key_errors(
     activities = _quickstart_activities(2200.0)
     packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
     # The packaged default appends Ti, then the screened association channels;
-    # Cr stays out until its caller-supplied parent activity is present.
-    assert tuple(packaged) == _PRE_CR_CHANNELS
+    # Cr, V and Nb stay out until their caller-supplied parent activities are
+    # present.
+    assert tuple(packaged) == _PRE_GATED_CHANNELS
     assert tuple(packaged)[-6:-3] == _TI_CHANNELS
     assert tuple(packaged)[-3:] == ("Al2", "Si2", "Si3")
 
@@ -908,7 +937,7 @@ def test_caller_supplied_cr2o3_activity_returns_positive_cr_pressures(
     activities = {name: melt.activity(name) for name in melt.parent_oxides}
     assert "Cr2O3" not in IMCC_PARENT_OXIDES
     assert set(evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)) == set(
-        _PRE_CR_CHANNELS
+        _PRE_GATED_CHANNELS
     )
 
     activities["Cr2O3"] = 1.0e-3
@@ -925,6 +954,48 @@ def test_caller_supplied_cr2o3_activity_returns_positive_cr_pressures(
         assert math.isfinite(result[species]) and result[species] > 0.0
         assert result.domain_flags[species] is None
         assert result.provenance_class[species] == "janaf_fitted"
+
+
+def test_caller_supplied_v2o3_and_nbo2_activities_return_positive_pressures(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    species = ("V", "VO", "VO2", "Nb", "NbO", "NbO2")
+    for temperature in (1800.0, 2200.0, 2600.0):
+        for fugacity in (1.0e-10, 1.0e-6):
+            result = evaluate_gas(
+                {"V2O3": 1.0e-3, "NbO2": 1.0e-3},
+                temperature,
+                fugacity,
+                gas_pack,
+                gas_species=species,
+                allow_extrapolation=False,
+            )
+            assert all(
+                math.isfinite(result[name]) and result[name] > 0.0
+                for name in species
+            )
+            assert all(result.domain_flags[name] is None for name in species)
+
+
+def test_vanadium_and_niobium_channels_match_printed_janaf_gibbs(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    T = 2000.0
+    refs = _VNB_AGAINST_JANAF_PRINTED_FORMATION_GIBBS[T]
+    pressures = evaluate_gas(
+        {"V2O3": 1.0e-3, "NbO2": 1.0e-3},
+        T,
+        fO2=1.0,
+        datapack=gas_pack,
+        gas_species=tuple(refs),
+        allow_extrapolation=False,
+    )
+    for species, expected_log10 in refs.items():
+        actual_log10 = math.log10(pressures[species])
+        assert abs(actual_log10 - expected_log10) <= 0.001, (
+            f"{species} at {T} K: |{actual_log10:.6f} - {expected_log10:.3f}| "
+            "> 0.001 dex"
+        )
 
 
 def test_ti_channels_against_janaf_printed_formation_gibbs(
@@ -993,7 +1064,7 @@ def test_imcc_adapter_activities_reach_all_channels(
         gas_pack,
         allow_extrapolation=True,
     )
-    assert set(result) == set(_PRE_CR_CHANNELS)
+    assert set(result) == set(_PRE_GATED_CHANNELS)
     assert all(value >= 0.0 for value in result.values())
     assert result["O2"] == 1.0e-10
     assert result["Na"] > 0.0

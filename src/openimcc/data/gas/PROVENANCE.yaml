@@ -318,6 +318,66 @@ rows:
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.48787635681219
     max_residual_log10_K: 3.23821535039709e-05
+  - table: gas
+    species_name: V(g)
+    table_id: V-005
+    source_path: data-src/janaf/V-005.yaml
+    source_sha256: 4d69eb5d7ccbad1c8c9bc836ae2c9cee09433ade3e659ee18e259bc5a9ac7f02
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.61136877257377
+    max_residual_log10_K: 3.36581908446004e-05
+  - table: gas
+    species_name: VO(g)
+    table_id: O-026
+    source_path: data-src/janaf/O-026.yaml
+    source_sha256: 88369ab3325b6ee6561fbda52124e48407645d6f77cbd75877e0c4597f73a552
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.87829659273848
+    max_residual_log10_K: 3.38311140347107e-05
+  - table: gas
+    species_name: VO2(g)
+    table_id: O-076
+    source_path: data-src/janaf/O-076.yaml
+    source_sha256: a96061b26b9d078924505ecdab54b980631bd5883ef6d3a814651ee4066ab121
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.14675195899326
+    max_residual_log10_K: 3.27422459035461e-05
+  - table: gas
+    species_name: Nb(g)
+    table_id: Nb-005
+    source_path: data-src/janaf/Nb-005.yaml
+    source_sha256: ad5b3f37539971a3a42f45983c5a1dd1057dad7dbfc25ecc48e078f941baaf7a
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.44468311883975
+    max_residual_log10_K: 3.04163156783426e-05
+  - table: gas
+    species_name: NbO(g)
+    table_id: Nb-011
+    source_path: data-src/janaf/Nb-011.yaml
+    source_sha256: b8f576ebb7f71bd422f0c8977ce7c559eb6270af045fca068fdc367f1e97f8c3
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 0.829298766329885
+    max_residual_log10_K: 1.73721564371904e-05
+  - table: gas
+    species_name: NbO2(g)
+    table_id: Nb-015
+    source_path: data-src/janaf/Nb-015.yaml
+    source_sha256: 3db85303490cbd8b7b353b45cdbce0041b97b4b7bdeb7c7a1d507b296e2f7565
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.26943438570015
+    max_residual_log10_K: 4.0143610084547e-05
   - table: condensate
     species_name: MgO(l)
     authority: lam1987_transcribed
@@ -427,3 +487,31 @@ rows:
       omitted rather than assigning a branch. Cr-014/Cr-016 identify 2603 K as
       the crystal-liquid melting transition, so 1500 <= T < 2603 K is the
       supercooled liquid interval represented by this row.
+  - table: condensate
+    species_name: V2O3(l)
+    table_id: O-063
+    source_path: data-src/janaf/O-063.yaml
+    source_sha256: 87b1a29e2a133510f8d1dd206f04bdbf7abd472a7ac66edb5c951ec0f780eab6
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 2.05054443771951
+    max_residual_log10_K: 6.30043289424422e-05
+    note: >-
+      Fitted by tools/build_gas_tables.py to the runtime condensate form.
+      O-063 is the caller-supplied V(III) liquid parent; transition-marked
+      nodes are omitted rather than assigning a crystal/liquid branch.
+  - table: condensate
+    species_name: NbO2(l)
+    table_id: Nb-013
+    source_path: data-src/janaf/Nb-013.yaml
+    source_sha256: 3b455d5adcdfc829fc9b7a8fc2b5162d18120c89c3db6259c438da87df8ac5df
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.40510422119405
+    max_residual_log10_K: 3.86282526952656e-05
+    note: >-
+      Fitted by tools/build_gas_tables.py to the runtime condensate form.
+      Nb-013 is the caller-supplied Nb(IV) liquid parent; transition-marked
+      nodes are omitted rather than assigning a crystal/liquid branch.
