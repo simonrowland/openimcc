@@ -488,9 +488,12 @@ class ImccConvergence:
     residual_inf: float
     residual_l2: float
     total_displacement: float
-    solver_path: str
-    continuation_stages: int
     status: str = "converged"
+    # Appended after ``status`` with defaults so existing positional and
+    # keyword constructions keep their meaning: "direct" / 0 is exactly what a
+    # converged solve reported before continuation was budgeted separately.
+    solver_path: str = "direct"
+    continuation_stages: int = 0
 
 
 @dataclass(frozen=True)
