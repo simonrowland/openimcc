@@ -262,6 +262,10 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Nb": ("NbO2", 1, 1.0),
     "NbO": ("NbO2", 1, 0.5),
     "NbO2": ("NbO2", 1, 0.0),
+    # Appended after the existing channels so every pre-existing mapping and
+    # output position stays unchanged.
+    "Na2O": ("Na2O", 1, 0.0),
+    "K2O": ("K2O", 1, 0.0),
 }
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
@@ -329,12 +333,16 @@ def _default_reactions(
 # These authority labels mirror the row-level classes in PROVENANCE.yaml. A
 # reaction is only as authoritative as its least-authoritative input row, so a
 # potassium channel inherits the K2O(l) secondary-transcription flag while the
-# other retained channels retain their JANAF/Lamoreaux classes. Pending gas
-# rows are included for provenance parity until their parent rows are supplied.
+# other retained channels retain their JANAF/Lamoreaux classes. The Na2O/K2O
+# gas rows are NASA/Gurvich fits; pending Mn/Ni/Co gas rows remain included for
+# provenance parity until their parent rows are supplied.
 _GAS_PROVENANCE_AUTHORITY = {
     species: "janaf_fitted"
     for species in (*IMCC_GAS_CHANNEL_SPECIES, "Mn", "Ni", "Co")
 }
+_GAS_PROVENANCE_AUTHORITY.update(
+    {"Na2O": "nasa_glenn_fitted", "K2O": "nasa_glenn_fitted"}
+)
 _OXIDE_PROVENANCE_AUTHORITY = {
     "MgO": "lam1987_transcribed",
     "CaO": "lam1987_transcribed",
@@ -355,6 +363,7 @@ _PROVENANCE_AUTHORITY_RANK = {
     "lam1987_transcribed": 1,
     "janaf_transcribed": 2,
     "janaf_fitted": 3,
+    "nasa_glenn_fitted": 3,
 }
 
 
@@ -428,6 +437,8 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "NaO",
     "K2",
     "KO",
+    "Na2O",
+    "K2O",
     "O2",
     "Ti",
     "TiO",
@@ -445,14 +456,12 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "NbO2",
 )
 
-# Closure ledger for species outside the retained channel set.  These entries
-# have no gas G(T) row in the vendored JANAF source set.  The titanium channels
-# (Ti, TiO, TiO2) left this ledger when the JANAF-fitted TiO2(l) parent row
-# (O-044) joined the gas rows; the remaining incomplete-parent entries are
-# source-backed Mn/Ni/Co gas rows waiting for their liquid parent records.
+# Closure ledger for species outside the retained channel set. These entries
+# still lack a gas G(T) row in the vendored source set or require a model
+# convention not present in the layer. Na2O/K2O left this ledger when their
+# NASA/Gurvich gas rows joined the package; the remaining incomplete-parent
+# entries are source-backed Mn/Ni/Co rows waiting for liquid parents.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
-    "Na2O": "needs a source-rated Na2O(g) standard-Gibbs row",
-    "K2O": "needs a source-rated K2O(g) standard-Gibbs row",
     "Na+": (
         "needs Na+(g) and electron standard-Gibbs rows plus a disclosed "
         "ionization/electroneutrality convention"

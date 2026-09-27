@@ -431,6 +431,50 @@ rows:
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.67559942801017
     max_residual_log10_K: 3.64677599993883e-05
+  - table: gas
+    species_name: Na2O(g)
+    table_id: NG-0905
+    source_path: data-src/nasa-glenn/NG-0905.json
+    source_sha256: 40234d2520719d8aa35edfcbbb0d21102c82193d043f57b637f56c44340f613b
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 4.87127108499408e-05
+    max_residual_log10_K: 1.27222061681281e-09
+    note: Gurvich-derived; single-source; provisional pending KEMS certification
+    source:
+      citation: >-
+        McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn
+        Coefficients for Calculating Thermodynamic Properties of Individual
+        Species, NASA/TP-2002-211556; NASA CEA thermo.inp.
+      card_citation: Gurvich,1982 pt1 p321 pt2 p361.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      nasa_dfH298_J_per_mol: -16559.83
+      lh84_dfH_over_R_kK: -3.82
+      lh84_S_over_R: 31.35
+      lh84_Hinc_over_R_kK: 1.64
+  - table: gas
+    species_name: K2O(g)
+    table_id: NG-0760
+    source_path: data-src/nasa-glenn/NG-0760.json
+    source_sha256: 8969f24a9ba32161e7990b3975c56e8fd92980294412ab366395cba47661edf2
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 2.56109051406384e-05
+    max_residual_log10_K: 6.68875145042288e-10
+    note: Gurvich-derived; single-source; provisional pending KEMS certification
+    source:
+      citation: >-
+        McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn
+        Coefficients for Calculating Thermodynamic Properties of Individual
+        Species, NASA/TP-2002-211556; NASA CEA thermo.inp.
+      card_citation: Gurvich,1982 pt1 p377 pt2 p407.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      nasa_dfH298_J_per_mol: -74086.902
+      lh84_dfH_over_R_kK: -7.05
+      lh84_S_over_R: 34.17
+      lh84_Hinc_over_R_kK: 1.64
   - table: condensate
     species_name: MgO(l)
     authority: lam1987_transcribed
@@ -568,3 +612,16 @@ rows:
       Fitted by tools/build_gas_tables.py to the runtime condensate form.
       Nb-013 is the caller-supplied Nb(IV) liquid parent; transition-marked
       nodes are omitted rather than assigning a crystal/liquid branch.
+certification_items:
+  - authority: lh84_evaluated_with_nasa_cp
+    species_name: Na2O(g)
+    issue: >-
+      LH84 Table 4 supplies the formation reference while NASA Glenn supplies
+      the Cp(T) shape; NASA's dfH298 is -16.559830 kJ/mol versus LH84's
+      -3.82 kK*R, a disagreement of about 15 kJ/mol.
+  - authority: lh84_evaluated_with_nasa_cp
+    species_name: K2O(g)
+    issue: >-
+      LH84 Table 4 supplies the formation reference while NASA Glenn supplies
+      the Cp(T) shape; NASA's dfH298 is -74.086902 kJ/mol versus LH84's
+      -7.05 kK*R, a disagreement of about 15 kJ/mol.

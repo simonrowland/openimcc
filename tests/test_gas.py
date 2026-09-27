@@ -160,7 +160,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 41
+    assert len(gas_pack.gas_df) == 43
     assert len(gas_pack.oxide_df) == 12
 
 
@@ -237,8 +237,8 @@ def test_channel_coverage_ledger_is_closed() -> None:
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
-    assert len(implemented) == 38
-    assert len(unavailable) == 10
+    assert len(implemented) == 40
+    assert len(unavailable) == 8
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert in_domain | extrapolated == implemented
@@ -669,8 +669,6 @@ def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
     assert set(IMCC_GAS_NO_JANAF_ROWS) == {
-        "Na2O",
-        "K2O",
         "Na+",
         "K+",
         "e-",
@@ -812,7 +810,7 @@ def test_override_without_tio2_parent_keeps_the_sf04_default_set(
     activities = _quickstart_activities(2200.0)
     result = evaluate_gas(activities, 2200.0, 1.0e-10, legacy)
     packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
-    assert len(_SF04_CHANNELS) == 25
+    assert len(_SF04_CHANNELS) == 27
     assert tuple(result) == _SF04_CHANNELS
     # Same gas rows and SF04 parent rows, so every value is bit-identical.
     assert dict(result) == {species: packaged[species] for species in _SF04_CHANNELS}
@@ -835,12 +833,18 @@ def test_default_set_follows_parent_oxides_without_key_errors(
 ) -> None:
     activities = _quickstart_activities(2200.0)
     packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
-    # The packaged default appends Ti, then the screened association channels;
-    # Cr, V and Nb stay out until their caller-supplied parent activities are
-    # present.
+    # The packaged default appends Ti, then the screened association channels
+    # and the Na2O/K2O identity channels; Cr, V and Nb stay out until their
+    # caller-supplied parent activities are present.
     assert tuple(packaged) == _PRE_GATED_CHANNELS
-    assert tuple(packaged)[-6:-3] == _TI_CHANNELS
-    assert tuple(packaged)[-3:] == ("Al2", "Si2", "Si3")
+    assert tuple(packaged)[-8:] == (
+        *_TI_CHANNELS,
+        "Al2",
+        "Si2",
+        "Si3",
+        "Na2O",
+        "K2O",
+    )
 
     seven = tuple(name for name in activities if name != "TiO2")
     for supplied in (

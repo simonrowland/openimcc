@@ -1,0 +1,39 @@
+schema_version: lh84_evaluation.v1
+source:
+  citation: >-
+    Lamoreaux, R. H.; Hildenbrand, D. L. (1984), High Temperature Vaporization
+    Behavior of Oxides. I. Alkali Metal Binary Oxides, J. Phys. Chem. Ref. Data
+    13, 151-173.
+  doi: 10.1063/1.555706
+  url: https://srd.nist.gov/JPCRD/jpcrd241.pdf
+  table: 4
+  page: 157
+  pdf_sha256: 3ecb3e3e9a5ee2487c92fdc185ef6b9e82d17c11bfe3e9969bb67abee943ba8a
+  verified_by: visual check of PDF page 7 (scanned; no text layer)
+  user_agent: neutral-source-vendor/1.0
+  tooling: neutral-web-source-record
+rows:
+  - species_name: Na2O(g)
+    dfH_over_R_kK:
+      value: -3.82
+      uncertainty: 1.00
+      as_published: "-3.82 ± 1.00"
+    S_over_R:
+      value: 31.35
+      uncertainty: 0.75
+      as_published: "31.35 ± 0.75"
+    Hinc_over_R_kK:
+      value: 1.64
+      as_published: "1.64"
+  - species_name: K2O(g)
+    dfH_over_R_kK:
+      value: -7.05
+      uncertainty: 0.26
+      as_published: "-7.05 ± 0.26"
+    S_over_R:
+      value: 34.17
+      uncertainty: 0.75
+      as_published: "34.17 ± 0.75"
+    Hinc_over_R_kK:
+      value: 1.64
+      as_published: "1.64"

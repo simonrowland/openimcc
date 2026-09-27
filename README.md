@@ -76,7 +76,8 @@ release; until then, use the source-checkout commands above.
 plus the titanium channels, screened Al/Si association channels, Cr channels,
 and caller-supplied V/Nb channels: Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
-Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, O and O2.
+Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, Na2O, K2O,
+O and O2.
 The packaged table also carries fitted Mn(g), Ni(g) and Co(g) rows for source
 closure; their channels remain unavailable until MnO(l), NiO(l) and CoO(l)
 parent rows are supplied.
@@ -101,6 +102,25 @@ The packaged source records used to fit the gas rows are retained in
 `data-src/janaf/` and included in source distributions, not the runtime wheel.
 NIST SRD 13 is public data, and the publication attributions are recorded in
 `NOTICE`.
+
+The Na2O(g) and K2O(g) rows are a provisional extension. Their temperature
+dependence uses the 1000–6000 K NASA Glenn/Gurvich cards; their formation
+enthalpy and entropy anchors use Table 4 of [Lamoreaux and Hildenbrand
+(1984)](https://srd.nist.gov/JPCRD/jpcrd241.pdf). The NASA and LH84 formation
+enthalpies differ by about 15 kJ/mol, so `PROVENANCE.yaml` records the
+`lh84_evaluated_with_nasa_cp` certification item and marks both rows as pending
+KEMS certification.
+
+For the README basalt above, the new-channel magnitude is:
+
+| T (K) | fO2 | p(Na2O)/p(Na) | p(K2O)/p(K) |
+|---:|---:|---:|---:|
+| 1800 | 1e-10 | 3.10041e-11 | 2.70081e-13 |
+| 1800 | 1e-6 | 3.10041e-10 | 2.70081e-12 |
+| 2200 | 1e-10 | 4.41418e-11 | 2.01182e-13 |
+| 2200 | 1e-6 | 4.41418e-10 | 2.01182e-12 |
+| 2600 | 1e-10 | 5.31024e-11 | 1.53256e-13 |
+| 2600 | 1e-6 | 5.31024e-10 | 1.53256e-12 |
 
 ## Use
 

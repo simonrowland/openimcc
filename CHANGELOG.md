@@ -19,6 +19,10 @@
   and provenance ledger. They remain outside the runtime reaction set and are
   listed as incomplete-parent species until MnO(l), NiO(l) and CoO(l) rows are
   available.
+- Added Na2O(g) and K2O(g) channels from the NIST evaluation using LH84
+  formation anchors and NASA/Gurvich heat-capacity shapes; the roughly
+  15 kJ/mol LH84-vs-NASA/Gurvich disagreement remains an open certification
+  item.
 - Added JANAF-derived gas tables with tracked provenance and fit checks.
 - Scored the bench `partial_pressure` observable through the analytical gas
   layer, including the bar-to-Pa conversion.

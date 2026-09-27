@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import re
@@ -27,6 +28,7 @@ from openimcc.gas import (
     _SF04_REACTIONS,
     evaluate_gas,
     _janaf_gibbs,
+    _lamor_gibbs,
     _nearest_interval_row,
     load_gas_datapack,
 )
@@ -35,6 +37,8 @@ from openimcc.gas import (
 ROOT = Path(__file__).resolve().parents[1]
 GAS_DATA = ROOT / "src" / "openimcc" / "data" / "gas"
 JANAF_DATA = ROOT / "data-src" / "janaf"
+NASA_DATA = ROOT / "data-src" / "nasa-glenn"
+LH84_DATA = ROOT / "data-src" / "lh84"
 PROVENANCE_PATH = GAS_DATA / "PROVENANCE.yaml"
 
 GAS_TABLE_IDS = {
@@ -80,6 +84,8 @@ GAS_TABLE_IDS = {
     "Ni": "Ni-005",
     "Co": "Co-005",
 }
+
+NASA_TABLE_IDS = {"Na2O": "NG-0905", "K2O": "NG-0760"}
 
 PARENT_TABLE_IDS = {
     "Na2O": "Na-013",
@@ -140,6 +146,11 @@ def _record(table_id: str) -> dict:
         return json.loads(text)
     except json.JSONDecodeError:
         return yaml.safe_load(text)
+
+
+@lru_cache(maxsize=None)
+def _nasa_record(table_id: str) -> dict:
+    return json.loads((NASA_DATA / f"{table_id}.json").read_text(encoding="utf-8"))
 
 
 def _value(row: dict, field: str):
@@ -277,13 +288,21 @@ def test_cr_atomic_source_uses_only_its_declared_fit_endpoint(
 def test_public_sources_contain_no_private_paths_or_tooling_names() -> None:
     # Vendored records carry harvesting metadata; only the neutral tool name
     # may ship, and no file may carry a local filesystem path.
-    neutral_agent = "openimcc-janaf-vendor/1.0"
     agents = {}
-    for path in sorted((ROOT / "data-src" / "janaf").glob("*.yaml")):
-        text = path.read_text(encoding="utf-8")
-        agents[path.name] = re.findall(r'"?user_agent"?:\s*"?([^",\n]+)"?', text)
+    expected_agents = {}
+    for source_root, neutral_agent, pattern in (
+        (ROOT / "data-src" / "janaf", "openimcc-janaf-vendor/1.0", "*.yaml"),
+        (NASA_DATA, "neutral-source-vendor/1.0", "PROVENANCE.yaml"),
+        (LH84_DATA, "neutral-source-vendor/1.0", "*.yaml"),
+    ):
+        for path in sorted(source_root.glob(pattern)):
+            text = path.read_text(encoding="utf-8")
+            agents[str(path.relative_to(ROOT))] = re.findall(
+                r'"?user_agent"?:\s*"?([^",\n]+)"?', text
+            )
+            expected_agents[str(path.relative_to(ROOT))] = [neutral_agent]
     assert agents
-    assert {name: found for name, found in agents.items() if found != [neutral_agent]} == {}
+    assert agents == expected_agents
 
     forbidden = (b"/users/", b"/private/", b"docs-private")
     offenders = {}
@@ -325,6 +344,45 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         )
         assert row["T_range_K"] == [1500, int(expected_t_max)]
         assert source["source"]["doi"] == "10.18434/T42S31"
+
+    for species, table_id in NASA_TABLE_IDS.items():
+        source_path = NASA_DATA / f"{table_id}.json"
+        source = _nasa_record(table_id)
+        row = gas_rows[f"{species}(g)"]
+        assert row["table_id"] == table_id
+        assert row["source_path"] == f"data-src/nasa-glenn/{table_id}.json"
+        assert row["source_sha256"] == hashlib.sha256(source_path.read_bytes()).hexdigest()
+        assert row["authority"] == "nasa_glenn_fitted"
+        assert row["method"] == "fitted"
+        assert row["T_range_K"] == [1500, 3000]
+        assert row["note"] == (
+            "Gurvich-derived; single-source; provisional pending KEMS certification"
+        )
+        assert row["source"]["upstream_source_sha256"] == (
+            "fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363"
+        )
+        assert source["record_id"] == table_id
+        assert source["phase"] == "gas"
+
+    lh84 = yaml.safe_load((LH84_DATA / "lh84.yaml").read_text(encoding="utf-8"))
+    assert re.fullmatch(r"[0-9a-f]{64}", lh84["source"]["pdf_sha256"])
+    assert lh84["source"]["doi"] == "10.1063/1.555706"
+    assert lh84["source"]["verified_by"] == (
+        "visual check of PDF page 7 (scanned; no text layer)"
+    )
+    expected_lh84 = {
+        "Na2O(g)": (-3.82, 1.00, 31.35, 0.75, 1.64),
+        "K2O(g)": (-7.05, 0.26, 34.17, 0.75, 1.64),
+    }
+    for row in lh84["rows"]:
+        expected = expected_lh84[row["species_name"]]
+        assert (
+            row["dfH_over_R_kK"]["value"],
+            row["dfH_over_R_kK"]["uncertainty"],
+            row["S_over_R"]["value"],
+            row["S_over_R"]["uncertainty"],
+            row["Hinc_over_R_kK"]["value"],
+        ) == expected
 
     for species, table_id in FITTED_CONDENSATE_TABLE_IDS.items():
         source = _record(table_id)
@@ -444,6 +502,149 @@ def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
 
     assert max(value[1] for value in maxima.values()) <= 0.01
     assert max(value[0] for value in maxima.values()) < 2.1
+
+
+def _hand_nasa7_properties(record: dict, temperature: float) -> tuple[float, float, float]:
+    interval = next(
+        (
+            item
+            for item in record["intervals"]
+            if item["T_min_K"]["value"] <= temperature <= item["T_max_K"]["value"]
+        ),
+        None,
+    )
+    if interval is None and temperature < record["intervals"][0]["T_min_K"]["value"]:
+        interval = record["intervals"][0]
+    assert interval is not None
+    a = [float(item["value"]) for item in interval["a_coefficients"]]
+    a1, a2, a3, a4, a5, a6, a7 = a
+    cp_R = (
+        a1 / temperature**2
+        + a2 / temperature
+        + a3
+        + a4 * temperature
+        + a5 * temperature**2
+        + a6 * temperature**3
+        + a7 * temperature**4
+    )
+    h_rt = (
+        -a1 / temperature**2
+        + a2 * math.log(temperature) / temperature
+        + a3
+        + a4 * temperature / 2.0
+        + a5 * temperature**2 / 3.0
+        + a6 * temperature**3 / 4.0
+        + a7 * temperature**4 / 5.0
+        + float(interval["b1"]["value"]) / temperature
+    )
+    s_R = (
+        -a1 / (2.0 * temperature**2)
+        - a2 / temperature
+        + a3 * math.log(temperature)
+        + a4 * temperature
+        + a5 * temperature**2 / 2.0
+        + a6 * temperature**3 / 3.0
+        + a7 * temperature**4 / 4.0
+        + float(interval["b2"]["value"])
+    )
+    return cp_R, h_rt, s_R
+
+
+def test_nasa_rows_match_anchored_card_evaluation_and_2000_k_hand_check() -> None:
+    pack = load_gas_datapack()
+    lh84 = yaml.safe_load((LH84_DATA / "lh84.yaml").read_text(encoding="utf-8"))
+    lh84_rows = {row["species_name"]: row for row in lh84["rows"]}
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    recorded = {
+        row["species_name"]: row
+        for row in provenance["rows"]
+        if row["species_name"] in {"Na2O(g)", "K2O(g)"}
+    }
+
+    for species, table_id in NASA_TABLE_IDS.items():
+        cation_table_id = "Na-005" if species == "Na2O" else "K-005"
+        rows, checks = build_gas_tables._nasa_source_rows(
+            _nasa_record(table_id),
+            lh84_rows[species + "(g)"],
+            {cation_table_id: _record(cation_table_id), "O-029": _record("O-029")},
+            cation_table_id,
+        )
+        assert [row["temperature"] for row in rows] == list(
+            np.arange(1500.0, 3000.1, 100.0)
+        )
+
+        fitted = pack.gas_df.loc[f"{species}(g)"]
+        residuals = [
+            abs(
+                _janaf_gibbs(row["temperature"], fitted)
+                - row["formation_gibbs_energy"] * 1000.0
+            )
+            for row in rows
+        ]
+        assert max(residuals) == pytest.approx(
+            float(recorded[species + "(g)"]["max_residual_J_per_mol"]),
+            abs=1e-9,
+        )
+        assert max(residuals) < 1e-3
+
+        card = _nasa_record(table_id)
+        cp_R, h_rt, s_R = _hand_nasa7_properties(card, 2000.0)
+        assert cp_R == pytest.approx(
+            build_gas_tables._nasa7_properties(card, 2000.0)["cp_R"]
+        )
+        hand_card_g = R_J_MOL_K * 2000.0 * (h_rt - s_R)
+        assert hand_card_g == pytest.approx(
+            checks["card_gibbs_2000_J_per_mol"], abs=1e-8
+        )
+
+        lh = lh84_rows[species + "(g)"]
+        dfh_over_R = float(lh["dfH_over_R_kK"]["value"]) * 1000.0
+        hinc_over_R = float(lh["Hinc_over_R_kK"]["value"]) * 1000.0
+        card_298 = _hand_nasa7_properties(card, 298.15)
+        h_over_R = (
+            dfh_over_R
+            - hinc_over_R
+            + hinc_over_R
+            + 2000.0 * h_rt
+            - 298.15 * card_298[1]
+        )
+        entropy = R_J_MOL_K * (
+            float(lh["S_over_R"]["value"]) + s_R - card_298[2]
+        )
+        hand_anchored_g = R_J_MOL_K * h_over_R - 2000.0 * entropy
+        assert hand_anchored_g == pytest.approx(
+            checks["anchored_card_gibbs_2000_J_per_mol"], abs=1e-8
+        )
+
+
+def test_na2o_liquid_to_gas_reaction_uses_new_gas_row_and_existing_condensate() -> None:
+    pack = load_gas_datapack()
+    gas_row = pack.gas_df.loc["Na2O(g)"]
+    oxide_row = pack.oxide_df.loc["Na2O(l)"]
+    temperature = 2000.0
+    tau = temperature / 1000.0
+    oxide_poly = sum(
+        float(oxide_row[column]) * tau**power
+        for power, column in enumerate(("dG_A", "dG_B", "dG_C", "dG_D", "dG_E"))
+    )
+    hand_liquid_g = (
+        -R_J_MOL_K * temperature * oxide_poly
+        + R_J_MOL_K * float(oxide_row["dH298_R"]) * 1000.0
+    )
+    assert hand_liquid_g == pytest.approx(_lamor_gibbs(temperature, oxide_row))
+
+    lh84 = yaml.safe_load((LH84_DATA / "lh84.yaml").read_text(encoding="utf-8"))
+    lh84_na = next(row for row in lh84["rows"] if row["species_name"] == "Na2O(g)")
+    source_rows, _ = build_gas_tables._nasa_source_rows(
+        _nasa_record("NG-0905"),
+        lh84_na,
+        {"Na-005": _record("Na-005"), "O-029": _record("O-029")},
+        "Na-005",
+    )
+    source_2000 = next(row for row in source_rows if row["temperature"] == temperature)
+    gas_g = _janaf_gibbs(temperature, gas_row)
+    hand_reaction_g = source_2000["formation_gibbs_energy"] * 1000.0 - hand_liquid_g
+    assert gas_g - hand_liquid_g == pytest.approx(hand_reaction_g, abs=1e-3)
 
 
 def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> None:
@@ -603,12 +804,16 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     # generated gas A-G and condensate dG_A-E coefficients was 1.82e-11
     # (Fe(g).D). A 10x margin is 1.82e-10; use 2e-10 to allow minor BLAS
     # rounding changes while keeping all non-fit values exact.
+    # NG-* rows come from smooth NASA-7 polynomials; their Shomate fit is
+    # ill-conditioned in coefficient directions that barely change G(T), so
+    # compare G(T) over the fit grid to 1e-6 J/mol instead of comparing bytes.
     fit_relative_tolerance = 2e-10
 
     def assert_table_matches(
         generated_path: Path,
         packaged_path: Path,
         fitted_columns: dict[str, tuple[str, ...]],
+        gibbs_species: frozenset[str] = frozenset(),
     ) -> None:
         generated_table = pd.read_csv(generated_path, dtype=str, keep_default_na=False)
         packaged_table = pd.read_csv(packaged_path, dtype=str, keep_default_na=False)
@@ -625,6 +830,8 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
             for column in packaged_table.columns:
                 generated_value = generated_table.iloc[row_index][column]
                 packaged_value = packaged_table.iloc[row_index][column]
+                if species in gibbs_species and column in "ABCDEFGH":
+                    continue
                 if column in fit_columns:
                     generated_number = float(generated_value)
                     packaged_number = float(packaged_value)
@@ -636,6 +843,15 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
                         )
                 else:
                     assert generated_value == packaged_value
+
+            if species in gibbs_species:
+                generated_row = generated_table.iloc[row_index].to_dict()
+                packaged_row = packaged_table.iloc[row_index].to_dict()
+                for temperature in np.arange(1500.0, 3001.0, 100.0):
+                    assert abs(
+                        _shomate_g(generated_row, temperature)
+                        - _shomate_g(packaged_row, temperature)
+                    ) < 1.0e-6
 
     # Start from the packaged table with fitted rows removed, so the generator
     # must recreate them while passing every transcribed row through exactly.
@@ -667,15 +883,30 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     assert condensate.read_bytes() == first_condensate_bytes
 
     gas_table = pd.read_csv(packaged_gas, dtype=str, keep_default_na=False)
+    gibbs_species = frozenset(
+        gas_table.loc[gas_table["Ref"].str.startswith("NG-"), "species_name"]
+    )
     gas_fit_columns = {
-        species: tuple("ABCDEFG") for species in gas_table["species_name"]
+        species: tuple("ABCDEFG")
+        for species in gas_table["species_name"]
+        if species not in gibbs_species
     }
     condensate_fit_columns = {
         species: tuple(f"dG_{coefficient}" for coefficient in "ABCDE")
         for species in FITTED_CONDENSATE_TABLE_IDS
     }
-    assert_table_matches(generated, packaged_gas, gas_fit_columns)
+    assert_table_matches(
+        generated, packaged_gas, gas_fit_columns, gibbs_species=gibbs_species
+    )
     assert_table_matches(condensate, packaged_condensate, condensate_fit_columns)
+
+
+def _shomate_g(row: dict[str, str], T: float) -> float:
+    A, B, C, D, E, F, G, H = (float(row[key]) for key in "ABCDEFGH")
+    t = T / 1000.0
+    enthalpy = A * t + B * t**2 / 2 + C * t**3 / 3 + D * t**4 / 4 - E / t + F - H
+    entropy = A * math.log(t) + B * t + C * t**2 / 2 + D * t**3 / 3 - E / (2 * t**2) + G
+    return enthalpy * 1000.0 - T * entropy
 
 
 _CONDENSATE_EXPECTED = {
@@ -855,7 +1086,7 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
     checked = 0
     maxima: dict[str, float] = {}
     for species in _SF04_REACTIONS:
-        if species == "O2":
+        if species == "O2" or species in NASA_TABLE_IDS:
             continue
         n_gas, n_o2, temperatures, independent, source_parent_app = (
             _reaction_source_series(species)
@@ -916,7 +1147,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     missing: set[tuple[str, float]] = set()
     maxima: dict[str, float] = {}
     for species in _SF04_REACTIONS:
-        if species == "O2":
+        if species == "O2" or species in NASA_TABLE_IDS:
             continue
         n_gas, n_o2, common_temperatures, independent_reactions, source_parent_app = (
             _reaction_source_series(species)
@@ -965,6 +1196,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     assert checked == 355
     existing = set(_SF04_REACTIONS) - {
         "O2",
+        *NASA_TABLE_IDS,
         "V",
         "VO",
         "VO2",
@@ -1047,6 +1279,7 @@ def test_g3_new_tables_are_finite_against_current_vaporock() -> None:
         species
         for species in IMCC_GAS_CHANNEL_SPECIES
         if _SF04_REACTIONS[species][0] != "TiO2"
+        and species not in NASA_TABLE_IDS
     )
     assert "TiO2(l)" not in old_pack.oxide_df.index
     max_by_species = {species: 0.0 for species in legacy_species}
@@ -1086,6 +1319,7 @@ def test_legacy_tables_default_call_returns_the_sf04_set_without_refusal() -> No
         species
         for species in IMCC_GAS_CHANNEL_SPECIES
         if _SF04_REACTIONS[species][0] != "TiO2"
+        and species not in NASA_TABLE_IDS
     )
     activities = {
         "SiO2": 0.45,

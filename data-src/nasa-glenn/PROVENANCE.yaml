@@ -1,0 +1,21 @@
+schema_version: nasa_glenn_vendor.v1
+source:
+  database: NASA Glenn / CEA thermo.inp
+  citation: >-
+    McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+    for Calculating Thermodynamic Properties of Individual Species,
+    NASA/TP-2002-211556.
+  official_url: https://www.grc.nasa.gov/www/CEAWeb/
+  upstream_source: NASA Glenn CEA thermo.inp dated 2021-09-08
+  upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+  user_agent: neutral-source-vendor/1.0
+  tooling: neutral-file-copy
+records:
+  - record_id: NG-0905
+    path: data-src/nasa-glenn/NG-0905.json
+    source_sha256: 40234d2520719d8aa35edfcbbb0d21102c82193d043f57b637f56c44340f613b
+    source_locator: thermo.inp lines 7717-7724
+  - record_id: NG-0760
+    path: data-src/nasa-glenn/NG-0760.json
+    source_sha256: 8969f24a9ba32161e7990b3975c56e8fd92980294412ab366395cba47661edf2
+    source_locator: thermo.inp lines 6461-6468
