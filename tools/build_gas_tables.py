@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Build the packaged JANAF gas table and JANAF-fitted condensate rows.
 
-The vendored ``*.yaml`` records are the NIST-JANAF rows copied from the
-regolith compilation.  Some records are JSON with a ``.yaml`` suffix and some
+The vendored ``*.yaml`` records are NIST-JANAF tables harvested from the
+official text files, with their upstream hashes.  Some records are JSON with a ``.yaml`` suffix and some
 are YAML, so the loader accepts both documented representations.
 
 The gas table is written whole.  ``condensate.csv`` also carries transcribed
@@ -17,6 +17,7 @@ import argparse
 import csv
 import io
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,7 @@ import numpy as np
 
 FIT_T_MIN = 1500.0
 FIT_T_MAX = 3000.0
+JANAF_GRID_STEP_K = 100.0
 # Same value as openimcc.gas.R_J_MOL_K; kept local so the tool does not import
 # the package it builds data for.
 R_J_MOL_K = 8.314462618
@@ -162,8 +164,9 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
         # parsed value.  Algebra: only complete rows may enter least squares;
         # no missing value is reconstructed from a neighbour.  Unit check:
         # these fields retain NIST's K, J/(mol K), kJ/mol, and kJ/mol units.
-        # Sanity: every selected gas record has at least 15 complete rows in
-        # the required 1500--3000 K interval.
+        # Sanity: every selected record has complete rows spanning the declared
+        # 1500--3000 K interval; an omitted normal-grid point is allowed only
+        # when the source explicitly records that row as parse-ambiguous.
         if temperature in ambiguous_temperatures:
             raise ValueError(
                 f"{table_id} has a parse-ambiguous row at {temperature} K"
@@ -174,12 +177,86 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
             )
         rows.append({field: float(value) for field, value in values.items()})
     rows.sort(key=lambda row: row["temperature"])
-    if len(rows) < 15 or rows[0]["temperature"] != FIT_T_MIN:
+    if (
+        len(rows) < 15
+        or rows[0]["temperature"] != FIT_T_MIN
+        or rows[-1]["temperature"] != FIT_T_MAX
+    ):
         raise ValueError(
             f"{table_id} does not cover the required fit interval: "
-            f"{len(rows)} rows from {rows[0]['temperature'] if rows else None} K"
+            f"{len(rows)} rows from {rows[0]['temperature'] if rows else None} "
+            f"to {rows[-1]['temperature'] if rows else None} K"
         )
+    for previous, current in zip(rows, rows[1:]):
+        previous_temperature = previous["temperature"]
+        current_temperature = current["temperature"]
+        gap = current_temperature - previous_temperature
+        if gap <= 0.0:
+            # A repeated temperature (a phase-transition node printed twice)
+            # would count twice toward the row minimum and weight that node
+            # double in the least squares.
+            raise ValueError(
+                f"{table_id} repeats the temperature {current_temperature} K"
+            )
+        if gap <= JANAF_GRID_STEP_K:
+            continue
+        intervals = round(gap / JANAF_GRID_STEP_K)
+        if not math.isclose(gap, intervals * JANAF_GRID_STEP_K):
+            raise ValueError(
+                f"{table_id} has an off-grid gap from "
+                f"{previous_temperature} K to {current_temperature} K"
+            )
+        if intervals > 2:
+            # The parse-ambiguity exemption covers one skipped grid point.
+            # Adjacent ambiguous rows would open a gap of 200 K or more, which
+            # is a coverage hole rather than one unreadable row.
+            raise ValueError(
+                f"{table_id} has a gap of {gap} K from {previous_temperature} K "
+                f"to {current_temperature} K; at most one skipped grid point is "
+                "allowed"
+            )
+        missing_temperatures = {
+            previous_temperature + JANAF_GRID_STEP_K * index
+            for index in range(1, intervals)
+        }
+        if not missing_temperatures <= ambiguous_temperatures:
+            raise ValueError(
+                f"{table_id} has an unaccounted gap from "
+                f"{previous_temperature} K to {current_temperature} K"
+            )
     return rows
+
+
+def _validate_record_identity(
+    record: dict[str, Any],
+    species_name: str,
+    table_id: str,
+    expected_phase: str,
+) -> None:
+    table = record["table"]
+    index_entry = table.get("index_entry", {})
+    expected_formula, separator, state_suffix = species_name.rpartition("(")
+    expected_state = state_suffix.removesuffix(")") if separator else ""
+    formula = index_entry.get("formula")
+    if formula != expected_formula:
+        raise ValueError(
+            f"{table_id}: record formula {formula!r} does not match "
+            f"species {species_name!r}"
+        )
+    phase = index_entry.get("state")
+    if isinstance(phase, str) and "," in phase:
+        raise ValueError(
+            f"{table_id}: mixed-phase record {phase!r} cannot emit "
+            f"{species_name!r}"
+        )
+    # JANAF labels the O2 reference record ``ref`` even though the runtime
+    # emits that standard gaseous reference row as O2(g).
+    source_phase = "g" if formula == "O2" and phase == "ref" else phase
+    if source_phase != expected_phase or expected_state != expected_phase:
+        raise ValueError(
+            f"{table_id}: record phase {phase!r} does not match emitted "
+            f"phase {expected_phase!r} for {species_name!r}"
+        )
 
 
 def _fit_row(source_dir: Path, species_name: str, table_id: str, cation: str, cat_num: int, oxy_num: int) -> dict[str, str]:
@@ -187,6 +264,7 @@ def _fit_row(source_dir: Path, species_name: str, table_id: str, cation: str, ca
     table = record["table"]
     if table["table_id"] != table_id:
         raise ValueError(f"{table_id}: record table_id does not match filename")
+    _validate_record_identity(record, species_name, table_id, "g")
     rows = _usable_rows(table, table_id)
 
     # Premise: NIST Shomate Cp uses t = T/1000 and
@@ -312,6 +390,7 @@ def _fit_condensate_row(
     table = record["table"]
     if table["table_id"] != table_id:
         raise ValueError(f"{table_id}: record table_id does not match filename")
+    _validate_record_identity(record, species_name, table_id, "l")
     rows = _usable_rows(table, table_id)
     reference = next(
         _value(row, "formation_enthalpy")

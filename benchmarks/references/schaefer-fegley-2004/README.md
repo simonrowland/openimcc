@@ -198,8 +198,8 @@ TiO2(l) parent and the Ti gas channels were added; its residual is
 | `digitized_figure` | 350 | 304 |
 | `derived_table7` | 350 | 304 |
 
-The all-comparable residual summary is min −2.211553, median 0.012960, p95
-0.792812, max 1.399972, and RMSE 0.622970 dex.
+The all-comparable residual summary is min −2.211553, median 0.019505, p95
+0.810211, max 1.399972, and RMSE 0.662079 dex.
 
 The residual gate is per species, not one 3.0-dex gate. Each gate is the
 measured maximum absolute residual from this run, rounded upward to 0.001 dex,

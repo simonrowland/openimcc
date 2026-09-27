@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 from functools import lru_cache
@@ -15,6 +16,7 @@ import pandas as pd
 import pytest
 import yaml
 
+from tools import build_gas_tables
 from openimcc.gas import (
     _GAS_PROVENANCE_AUTHORITY,
     _OXIDE_PROVENANCE_AUTHORITY,
@@ -118,6 +120,123 @@ def _ambiguous_temperatures(table_id: str) -> set[float]:
         except ValueError:
             continue
     return result
+
+
+def _synthetic_source_row(temperature: float) -> dict[str, dict[str, float]]:
+    return {
+        field: {"value": temperature if field == "temperature" else 1.0}
+        for field in build_gas_tables.REQUIRED_FIELDS
+    }
+
+
+def test_usable_rows_requires_exact_fit_interval_and_declared_gaps() -> None:
+    complete_temperatures = [
+        float(temperature)
+        for temperature in range(
+            int(build_gas_tables.FIT_T_MIN),
+            int(build_gas_tables.FIT_T_MAX) + 1,
+            int(build_gas_tables.JANAF_GRID_STEP_K),
+        )
+    ]
+    incomplete_tail = {
+        "values": [
+            _synthetic_source_row(temperature)
+            for temperature in complete_temperatures[:-1]
+        ],
+        "parse_ambiguities": [],
+    }
+    with pytest.raises(ValueError, match="tail") as tail_error:
+        build_gas_tables._usable_rows(incomplete_tail, "tail")
+    assert "tail" in str(tail_error.value)
+
+    unaccounted_gap = {
+        "values": [
+            _synthetic_source_row(temperature)
+            for temperature in complete_temperatures
+            if temperature != 2200.0
+        ],
+        "parse_ambiguities": [],
+    }
+    with pytest.raises(ValueError, match="gap") as gap_error:
+        build_gas_tables._usable_rows(unaccounted_gap, "gap")
+    assert "gap" in str(gap_error.value)
+
+    disclosed_gap = {
+        **unaccounted_gap,
+        "parse_ambiguities": [{"raw_line": "2200\tambiguous"}],
+    }
+    assert len(build_gas_tables._usable_rows(disclosed_gap, "disclosed")) == 15
+
+    # Two adjacent ambiguous rows open a 300 K hole: a coverage gap, not one
+    # unreadable row, even though both rows are declared.
+    wide_gap = {
+        "values": [
+            _synthetic_source_row(temperature)
+            for temperature in complete_temperatures
+            if temperature not in (2200.0, 2300.0)
+        ],
+        "parse_ambiguities": [
+            {"raw_line": "2200\tambiguous"},
+            {"raw_line": "2300\tambiguous"},
+        ],
+    }
+    # On the 1500-3000 K, 100 K grid the row minimum trips first; the
+    # one-skipped-point bound guards a wider fit interval.  Either refuses.
+    with pytest.raises(
+        ValueError, match="at most one skipped grid point|does not cover"
+    ):
+        build_gas_tables._usable_rows(wide_gap, "wide")
+
+    repeated_node = {
+        "values": [
+            _synthetic_source_row(temperature)
+            for temperature in [*complete_temperatures, 2000.0]
+        ],
+        "parse_ambiguities": [],
+    }
+    with pytest.raises(ValueError, match="repeats"):
+        build_gas_tables._usable_rows(repeated_node, "repeat")
+
+
+def test_fitter_validates_formula_and_emitted_phase() -> None:
+    with pytest.raises(ValueError, match="formula"):
+        build_gas_tables._fit_row(JANAF_DATA, "K(g)", "Na-005", "K", 1, 0)
+
+    mixed_phase = {
+        "table": {
+            "table_id": "Cr-016",
+            "index_entry": {"formula": "Cr2O3", "state": "cr,l"},
+        }
+    }
+    assert mixed_phase["table"]["index_entry"]["state"] == "cr,l"
+    with pytest.raises(ValueError, match="mixed-phase"):
+        build_gas_tables._validate_record_identity(
+            mixed_phase, "Cr2O3(l)", "Cr-016", "l"
+        )
+
+
+def test_public_sources_contain_no_private_paths_or_tooling_names() -> None:
+    # Vendored records carry harvesting metadata; only the neutral tool name
+    # may ship, and no file may carry a local filesystem path.
+    neutral_agent = "openimcc-janaf-vendor/1.0"
+    agents = {}
+    for path in sorted((ROOT / "data-src" / "janaf").glob("*.yaml")):
+        text = path.read_text(encoding="utf-8")
+        agents[path.name] = re.findall(r'"?user_agent"?:\s*"?([^",\n]+)"?', text)
+    assert agents
+    assert {name: found for name, found in agents.items() if found != [neutral_agent]} == {}
+
+    forbidden = (b"/users/", b"/private/", b"docs-private")
+    offenders = {}
+    for root in (ROOT / "data-src", ROOT / "src", ROOT / "tools"):
+        for path in sorted(root.rglob("*")):
+            if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
+                continue
+            contents = path.read_bytes().lower()
+            matches = [marker.decode() for marker in forbidden if marker in contents]
+            if matches:
+                offenders[str(path.relative_to(ROOT))] = matches
+    assert offenders == {}
 
 
 def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
