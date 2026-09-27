@@ -1027,3 +1027,19 @@ def test_unbracketed_oxygen_balance_is_typed_refusal(
         evaluate_gas_oxygen_balance(
             {"SiO2": 0.0}, 2000.0, gas_pack, parent_oxides=("SiO2",)
         )
+
+
+def test_oxygen_balance_refuses_root_above_molecular_flow_ceiling() -> None:
+    # Hot K2O-rich melt: oxygen demand exceeds supply even at pO2 = 1 bar, so the
+    # balancing root lies above the molecular-flow ceiling and must be refused
+    # (the effusion law is invalid there), never returned as a number.
+    from openimcc import evaluate_gas_oxygen_balance
+    from openimcc.gas import ImccGasOxygenBalanceError
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="molecular-flow regime"):
+        evaluate_gas_oxygen_balance(
+            {"K2O": 1.0, "SiO2": 0.5},
+            2600.0,
+            load_gas_datapack(),
+            parent_oxides=("K2O", "SiO2"),
+        )

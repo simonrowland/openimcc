@@ -920,6 +920,14 @@ _ATOMIC_MASS_G_MOL = {
     "Ti": 47.867,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
+# log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,
+# not a numerical convenience: the effusion law J ∝ p/√(M T) holds only in
+# molecular flow, where the mean free path λ ≫ orifice diameter d.
+# λ = k_B T / (√2 π σ² p); with σ ≈ 3.6e-10 m at 2000 K, λ ≈ 0.5 µm × (1 bar / p).
+# Knudsen orifices are ~0.1–1 mm, so molecular flow (λ/d ≳ 1) already requires a
+# total pressure ≲ 1e-3 bar. A root above 1 bar therefore lies far outside the
+# model's validity and is refused rather than returned. The lower edge (1e-30 bar)
+# is below any physically resolvable oxygen pressure.
 _OXYGEN_BALANCE_BRACKET = (-30.0, 0.0)
 
 
@@ -1013,6 +1021,14 @@ def evaluate_gas_oxygen_balance(
 
     low, high = _OXYGEN_BALANCE_BRACKET
     f_low, f_high = at(low)[0], at(high)[0]
+    if math.isfinite(f_low) and math.isfinite(f_high) and f_high < 0.0:
+        # Oxygen demand still exceeds supply at pO2 = 1 bar: the balancing root lies
+        # above the molecular-flow ceiling (see _OXYGEN_BALANCE_BRACKET).
+        raise ImccGasOxygenBalanceError(
+            "oxygen-balance root lies above pO2 = 1 bar, outside the Knudsen "
+            "molecular-flow regime where the effusion law holds; no value returned "
+            f"(F(1 bar)={f_high})"
+        )
     if not (math.isfinite(f_low) and math.isfinite(f_high) and f_low < 0.0 < f_high):
         raise ImccGasOxygenBalanceError(
             f"oxygen-balance root is not bracketed on {_OXYGEN_BALANCE_BRACKET}: "
