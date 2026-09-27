@@ -145,6 +145,24 @@ buffer offset such as ΔIW.
 `evaluate_gas` predicts and flags out-of-domain temperatures by default; pass
 `allow_extrapolation=False` to refuse them.
 
+### Oxygen-balance (Knudsen) effusion
+
+`evaluate_gas_oxygen_balance(activities, T, datapack)` solves the oxygen
+pressure that balances oxygen carried out by each gas species against oxygen
+released from its parent oxide. For Knudsen effusion,
+`J_i = p_i A W / sqrt(2 pi M_i R T)`; aperture area `A`, Clausing factor `W`,
+and temperature are common factors and cancel. The solved condition is
+
+```
+sum_i nO_i p_i / sqrt(M_i) =
+sum_i (nuO/nuM)_parent nM_i p_i / sqrt(M_i)
+```
+
+The function returns pO2 in bar, the same partial-pressure mapping as
+`evaluate_gas`, and residual/bracket/carrier diagnostics. Result mode is
+`oxygen_balance_effusion`. For a K2O–SiO2 melt where K and O2 dominate, this
+reduces to `pO2/pK = 0.25 sqrt(M_O2/M_K) = 0.2262`, the Plante 1979 anchor.
+
 ### Exit codes are part of the contract
 
 | code | meaning |

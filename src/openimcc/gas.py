@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import math
 import os
+import re
 from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass
 from importlib import resources
@@ -22,6 +23,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Mapping, Sequence
 
 import numpy as np
+from scipy.optimize import brentq
 
 from openimcc.kernel import ImccRefusal
 
@@ -67,6 +69,12 @@ class ImccGasInvalidFugacityError(ImccRefusal):
     """Raised when the caller's bar-relative oxygen fugacity is invalid."""
 
     code = "imcc_gas_invalid_fO2"
+
+
+class ImccGasOxygenBalanceError(ImccRefusal):
+    """Raised when the oxygen-balance root is not monotone or bracketed."""
+
+    code = "imcc_gas_oxygen_balance_failed"
 
 
 # --------------------------------------------------------------------------- #
@@ -904,3 +912,139 @@ def evaluate_gas(
         domain_flags=domain_flags,
         provenance_class=provenance_class,
     )
+
+
+_ATOMIC_MASS_G_MOL = {
+    "O": 15.999, "Na": 22.989769, "K": 39.0983, "Si": 28.085,
+    "Fe": 55.845, "Mg": 24.305, "Al": 26.9815385, "Ca": 40.078,
+    "Ti": 47.867,
+}
+_FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
+_OXYGEN_BALANCE_BRACKET = (-30.0, 0.0)
+
+
+def _formula_atoms(formula: str) -> dict[str, int]:
+    """Count atoms in a retained gas or parent-oxide formula."""
+    parts = _FORMULA_PART.findall(formula)
+    if not parts or "".join(element + count for element, count in parts) != formula:
+        raise ImccGasOxygenBalanceError(
+            f"cannot parse retained formula {formula!r} for oxygen balance"
+        )
+    return {element: int(count or 1) for element, count in parts}
+
+
+def evaluate_gas_oxygen_balance(
+    activities: Mapping[str, float] | Sequence[float] | np.ndarray,
+    T_K: float,
+    datapack: ImccGasDatapack,
+    parent_oxides: Sequence[str] | None = None,
+    allow_extrapolation: bool = True,
+) -> tuple[float, ImccGasResult, dict[str, object]]:
+    """Solve pO2 that balances oxygen in the Knudsen effusion flux.
+
+    Species flux is ``J_i = p_i A W / sqrt(2 pi M_i R T)``. The common
+    aperture, Clausing, and temperature factors cancel in the oxygen balance:
+
+        F = sum_i (nO_i - (nuO/nuM)_parent nM_i) p_i / sqrt(M_i) = 0.
+
+    Existing equilibria give ``p_i ∝ pO2**k_i``. For each balanced parent
+    reaction, the signed coefficient is ``-2 nO2/n_gas`` and ``k_i`` is
+    ``-nO2/n_gas``; their product is nonnegative, so
+    ``dF/dlog10(pO2) = ln(10) sum_i C_i k_i pO2**k_i >= 0``. Parentless O and
+    O2 terms have positive coefficients and exponents 1/2 and 1. F is
+    strictly increasing when an oxygen-bearing channel exists, so a
+    sign-changing bracket contains one root. Brent's ``xtol=1e-12`` dex is
+    well below source-table precision.
+
+    Returns ``(pO2_bar, partial_pressures, diagnostics)``. Partial pressures
+    match :func:`evaluate_gas`; diagnostics contain relative residual, the
+    log10(bar) bracket, iteration count, and the five strongest O and parent
+    oxygen carriers.
+    """
+    if parent_oxides is None:
+        parent_oxides = IMCC_PARENT_OXIDES
+    T = float(T_K)
+    if not math.isfinite(T) or T <= 0.0:
+        raise ValueError(f"temperature must be finite and positive, got {T_K}")
+
+    channels = _default_reactions(parent_oxides, datapack)
+    species_data: dict[str, tuple[float, float, float, float, float]] = {}
+    for species, (parent, n_gas, n_O2) in channels:
+        atoms = _formula_atoms(species)
+        mass = sum(_ATOMIC_MASS_G_MOL[element] * number for element, number in atoms.items())
+        oxygen_atoms = atoms.get("O", 0)
+        metal_atoms = sum(number for element, number in atoms.items() if element != "O")
+        if parent:
+            parent_atoms = _formula_atoms(parent)
+            parent_metals = sum(number for element, number in parent_atoms.items() if element != "O")
+            parent_ratio = parent_atoms.get("O", 0) / parent_metals
+            parent_oxygen = parent_ratio * metal_atoms
+            delta = oxygen_atoms - parent_oxygen
+            exponent = -n_O2 / n_gas
+            if not math.isclose(delta / 2.0, exponent, abs_tol=1e-12):
+                raise ImccGasOxygenBalanceError(
+                    f"gas reaction metadata for {species!r} violates oxygen balance"
+                )
+        else:
+            parent_oxygen = 0.0
+            delta = float(oxygen_atoms)
+            exponent = 1.0 if species == "O2" else 0.5
+        if delta * exponent < -1e-12:
+            raise ImccGasOxygenBalanceError(
+                f"oxygen flux is non-monotone for retained species {species!r}"
+            )
+        species_data[species] = (mass, oxygen_atoms, parent_oxygen, delta, exponent)
+
+    def at(logp: float) -> tuple[float, ImccGasResult, float, float]:
+        pressures = evaluate_gas(
+            activities, T, 10.0**logp, datapack,
+            parent_oxides=parent_oxides,
+            allow_extrapolation=allow_extrapolation,
+        )
+        oxygen_flux = math.fsum(
+            oxygen * pressures[name] / math.sqrt(mass)
+            for name, (mass, oxygen, _parent, _delta, _exp) in species_data.items()
+        )
+        parent_flux = math.fsum(
+            parent * pressures[name] / math.sqrt(mass)
+            for name, (mass, _oxygen, parent, _delta, _exp) in species_data.items()
+        )
+        return oxygen_flux - parent_flux, pressures, oxygen_flux, parent_flux
+
+    low, high = _OXYGEN_BALANCE_BRACKET
+    f_low, f_high = at(low)[0], at(high)[0]
+    if not (math.isfinite(f_low) and math.isfinite(f_high) and f_low < 0.0 < f_high):
+        raise ImccGasOxygenBalanceError(
+            f"oxygen-balance root is not bracketed on {_OXYGEN_BALANCE_BRACKET}: "
+            f"F(low)={f_low}, F(high)={f_high}"
+        )
+    try:
+        root, solver = brentq(
+            lambda value: at(value)[0], low, high, xtol=1e-12,
+            full_output=True, disp=False,
+        )
+    except (ValueError, RuntimeError) as exc:
+        raise ImccGasOxygenBalanceError(f"oxygen-balance solve failed: {exc}") from exc
+    if not solver.converged:
+        raise ImccGasOxygenBalanceError("oxygen-balance solve did not converge")
+
+    residual, pressures, oxygen_flux, parent_flux = at(root)
+    oxygen_carriers = sorted(
+        ((name, oxygen * pressures[name] / math.sqrt(mass))
+         for name, (mass, oxygen, _parent, _delta, _exp) in species_data.items()
+         if oxygen > 0), key=lambda item: item[1], reverse=True,
+    )[:5]
+    metal_carriers = sorted(
+        ((name, parent * pressures[name] / math.sqrt(mass))
+         for name, (mass, _oxygen, parent, _delta, _exp) in species_data.items()
+         if parent > 0), key=lambda item: item[1], reverse=True,
+    )[:5]
+    diagnostics: dict[str, object] = {
+        "mode": "oxygen_balance_effusion",
+        "residual": abs(residual) / max(oxygen_flux, parent_flux, 1e-300),
+        "bracket": _OXYGEN_BALANCE_BRACKET,
+        "iterations": solver.iterations,
+        "dominant_O_carriers": oxygen_carriers,
+        "dominant_metal_carriers": metal_carriers,
+    }
+    return 10.0**root, pressures, diagnostics

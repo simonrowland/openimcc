@@ -12,6 +12,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from openimcc import evaluate
 from openimcc.gas import (
     IMCC_GAS_CHANNEL_SPECIES,
     IMCC_GAS_INCOMPLETE_PARENT_SPECIES,
@@ -22,12 +23,14 @@ from openimcc.gas import (
     IMCC_SF04_WORKBOOK_GRID_K,
     ImccGasDatapack,
     ImccGasInvalidFugacityError,
+    ImccGasOxygenBalanceError,
     ImccGasResult,
     ImccGasSpeciesNotFoundError,
     ImccGasTemperatureOutsideDomainError,
     default_condensate_database_path,
     default_gas_database_path,
     evaluate_gas,
+    evaluate_gas_oxygen_balance,
     gas_species_provenance,
     load_gas_datapack,
 )
@@ -957,4 +960,70 @@ def test_nonfinite_activity_refuses(activity: float) -> None:
             1.0,
             _unread_gas_pack(),
             gas_species=("Na",),
+        )
+
+
+def test_pure_silica_oxygen_balance_matches_analytic_flux_limit(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    pressures_o2, gas, diagnostics = evaluate_gas_oxygen_balance(
+        {"SiO2": 1.0}, 2000.0, gas_pack, parent_oxides=("SiO2",)
+    )
+    # For SiO2(l) -> SiO + 1/2 O2, one O atom per SiO molecule leaves the
+    # melt. In the O/O2/SiO limit, 2 pO2/sqrt(MO2) + pO/sqrt(MO) equals
+    # pSiO/sqrt(MSiO); rearrange that relation to predict pO2. The Si term is
+    # retained as its small, explicit stoichiometric correction.
+    expected = (
+        gas["SiO"] / math.sqrt(44.084)
+        + 2.0 * gas["Si"] / math.sqrt(28.085)
+        - gas["O"] / math.sqrt(15.999)
+    ) * math.sqrt(31.998) / 2.0
+    assert pressures_o2 == pytest.approx(expected, rel=1e-10)
+    assert diagnostics["residual"] < 1e-10
+    assert diagnostics["mode"] == "oxygen_balance_effusion"
+
+
+def test_plante_k2o_silica_anchor(gas_pack: ImccGasDatapack) -> None:
+    # K2O(l) -> 2 K + 1/2 O2 gives nO = nK/2. With K and O2 dominating,
+    # flux balance gives pO2/pK = (1/4)*sqrt(MO2/MK) = 0.2262.
+    p_o2, gas, diagnostics = evaluate_gas_oxygen_balance(
+        {"K2O": 1.0, "SiO2": 0.5}, 1500.0, gas_pack,
+        parent_oxides=("K2O", "SiO2"),
+    )
+    anchor = 0.25 * math.sqrt(31.998 / 39.0983)
+    assert p_o2 / gas["K"] == pytest.approx(anchor, rel=0.03)
+    assert diagnostics["residual"] < 1e-10
+
+
+@pytest.mark.parametrize(
+    ("temperature", "commanded_log_fO2"),
+    [(1700.0, -7.46), (2000.0, -8.360952930984695), (2500.0, -9.862541149292522)],
+)
+def test_lunar_mare_basalt_oxygen_residual(
+    gas_pack: ImccGasDatapack, temperature: float, commanded_log_fO2: float
+) -> None:
+    # Low-Ti mare basalt, normalized by the kernel from its supported oxide
+    # subset. Commanded fO2 values follow the existing Kress91 IW line.
+    composition = {
+        "Al2O3": 14.214, "CaO": 11.637, "FeO": 16.353, "MgO": 9.463,
+        "Na2O": 0.182, "SiO2": 46.234, "TiO2": 1.587,
+    }
+    melt = evaluate(
+        composition, temperature, basis_type="wt", allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    activities = {name: melt.activity(name) for name in melt.parent_oxides}
+    p_o2, _gas, diagnostics = evaluate_gas_oxygen_balance(
+        activities, temperature, gas_pack
+    )
+    assert diagnostics["residual"] < 1e-10
+    assert math.log10(p_o2) != pytest.approx(commanded_log_fO2)
+
+
+def test_unbracketed_oxygen_balance_is_typed_refusal(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(ImccGasOxygenBalanceError, match="not bracketed"):
+        evaluate_gas_oxygen_balance(
+            {"SiO2": 0.0}, 2000.0, gas_pack, parent_oxides=("SiO2",)
         )
