@@ -156,6 +156,11 @@ REQUIRED_FIELDS = (
 
 _TRANSITION_SOURCE_TABLES = frozenset({"Cr-015", "O-063", "Nb-013"})
 
+# Sources whose liquid fit starts after FIT_T_MIN.  Cr-015 has glass Cp values
+# at 1500--1700 K, while its liquid branch is Cp = 156.9 J/(mol K) from
+# 1900 K through the fit range; start at the first liquid grid node.
+_FIT_T_MIN_BY_TABLE = {"Cr-015": 1900.0}
+
 # Sources whose tabulated rows stop short of FIT_T_MAX.  Cr(g), Cr-005: Cr
 # boils at 2952 K, where JANAF switches the element reference to the gas and
 # prints the 3000 K formation columns as "0. 0. 0.".  The harvest records that
@@ -190,6 +195,7 @@ def _value(row: dict[str, Any], field: str) -> float | None:
 
 
 def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]:
+    fit_t_min = _FIT_T_MIN_BY_TABLE.get(table_id, FIT_T_MIN)
     fit_t_max = _FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX)
     ambiguous_temperatures: set[float] = set()
     for ambiguity in table.get("parse_ambiguities", []):
@@ -203,7 +209,7 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
     rows: list[dict[str, float]] = []
     for raw in table["values"]:
         temperature = _value(raw, "temperature")
-        if temperature is None or not FIT_T_MIN <= temperature <= fit_t_max:
+        if temperature is None or not fit_t_min <= temperature <= fit_t_max:
             continue
         values = {field: _value(raw, field) for field in REQUIRED_FIELDS}
         # Premise: an ambiguous or refused source row has at least one missing
@@ -231,10 +237,15 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
             )
         rows.append({field: float(value) for field, value in values.items()})
     rows.sort(key=lambda row: row["temperature"])
-    minimum_rows = 14 if table_id in {"Cr-015", "O-063"} else 15
+    minimum_rows = 15
+    if table_id == "O-063":
+        minimum_rows = 14
+    elif table_id == "Cr-015":
+        # 1900--3000 K has 12 grid nodes; the omitted 2700 K row leaves 11.
+        minimum_rows = 11
     if (
         len(rows) < minimum_rows
-        or rows[0]["temperature"] != FIT_T_MIN
+        or rows[0]["temperature"] != fit_t_min
         or rows[-1]["temperature"] != fit_t_max
     ):
         raise ValueError(
@@ -601,7 +612,7 @@ def _fit_row(source_dir: Path, species_name: str, table_id: str, cation: str, ca
         "cation": cation,
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
-        "T_min": str(int(FIT_T_MIN)),
+        "T_min": str(int(_FIT_T_MIN_BY_TABLE.get(table_id, FIT_T_MIN))),
         "T_max": str(int(_FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX))),
         "A": number(fit["A"]),
         "B": number(fit["B"]),
@@ -712,9 +723,9 @@ def _fit_condensate_row(
     Unit check: Phi is J/(mol K) and R is J/(mol K), so P is dimensionless;
     dfH(298)/R is kJ/mol / (J/(mol K)) = 1000 K, matching the ``* 1000`` in
     the runtime.  Sanity: evaluating the row with this algebra reproduces
-    every complete source G_app row to the residual recorded below, and the
-    same tabulated Cp = 100.416 J/(mol K) makes Phi smooth, so a quartic is
-    ample over 1500--3000 K.
+    every complete source G_app row in the selected interval to the residual
+    recorded below; each source's declared fit interval supplies its own
+    liquid-branch coverage.
     """
     record = _load_record(source_dir / f"{table_id}.yaml")
     table = record["table"]
@@ -758,7 +769,7 @@ def _fit_condensate_row(
         "cation": cation,
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
-        "T_min": str(int(FIT_T_MIN)),
+        "T_min": str(int(_FIT_T_MIN_BY_TABLE.get(table_id, FIT_T_MIN))),
         "T_max": str(int(FIT_T_MAX)),
         "dH298_R": number(dH298_R),
         "dG_A": number(A),

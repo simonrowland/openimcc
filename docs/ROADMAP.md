@@ -8,12 +8,14 @@ measured against the code rather than estimated.
 ### 1. The gas layer is self-contained (done)
 
 The packaged gas tables now load by default through `importlib.resources`.
-Forty Shomate rows are fitted deterministically from vendored NIST-JANAF
+Forty-one Shomate rows are fitted deterministically from vendored NIST-JANAF
 records, with the exact source hash and fit residual recorded per row. The
-maximum fit residual is **1.9231 J/mol** (**3.7465e-5 log10 K**), well below the
+gas-row maximum fit residual is **1.9231 J/mol** (**3.7465e-5 log10 K**), well below the
 0.01 log10 K gate. The eight transcribed condensate rows reproduce the current
 published coefficient values exactly; TiO2(l), Cr2O3(l), V2O3(l) and NbO2(l)
-are fitted from JANAF by the same generator. The caller-supplied Cr/V/Nb
+are fitted from JANAF by the same generator, with maximum residuals of 6.88,
+1.55, 2.05 and 1.41 J/mol respectively (TiO2(l), Cr2O3(l), V2O3(l) and
+NbO2(l)); the Cr2O3(l) residual is 3.52e-5 log10 K. The caller-supplied Cr/V/Nb
 parents remain outside the eight-oxide melt basis.
 Mn(g), Ni(g) and Co(g) are also vendored and fitted, but remain explicitly
 incomplete-parent rows until their liquid parent records are available.

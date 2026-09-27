@@ -2,15 +2,16 @@
 
 ## Unreleased
 
-- Added JANAF-fitted Al2, Si2, and Si3 gas channels after the Tier A
-  association-magnitude screen; their parent-reaction stoichiometry and source
+- Added JANAF-fitted Al2, Si2, and Si3 gas channels after a magnitude screen at
+  melt temperature; their parent-reaction stoichiometry and source
   residuals are covered by the gas-layer tests and provenance ledger.
 - Added JANAF-fitted Cr, CrO, CrO2, and CrO3 gas channels with a fitted Cr2O3(l)
   parent. Cr2O3 is caller-supplied because it is outside the IMCC melt basis;
-  transition-marked Cr-015 nodes are omitted rather than assigned a phase
-  branch. Cr(g) is fitted over the complete Cr-005 rows from 1500-2900 K;
-  JANAF's 3000 K row is parse-ambiguous after the element reference switches
-  at the 2952 K boiling point.
+  the parent uses its liquid branch from 1900 K, with lower temperatures
+  flagged or refused; transition-marked Cr-015 nodes are omitted rather than
+  assigned a phase branch. Cr(g) is fitted over the complete Cr-005 rows from
+  1500-2900 K; JANAF's 3000 K row is parse-ambiguous after the element
+  reference switches at the 2952 K boiling point.
 - Added JANAF-fitted V, VO, VO2, Nb, NbO and NbO2 gas channels with fitted
   caller-supplied V2O3(l) and NbO2(l) parents. Transition-marked liquid nodes
   are omitted rather than assigned a phase branch; candidate liquid records

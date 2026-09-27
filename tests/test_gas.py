@@ -245,6 +245,10 @@ def test_channel_coverage_ledger_is_closed() -> None:
 
 
 _EXTRAPOLATION_REFUSAL_CASES = (
+    ("Cr", 1500.0, "Cr2O3(l)"),
+    ("CrO", 1500.0, "Cr2O3(l)"),
+    ("CrO2", 1500.0, "Cr2O3(l)"),
+    ("CrO3", 1500.0, "Cr2O3(l)"),
     ("SiO", 1900.0, "SiO2(l)"),
     ("Mg", 2500.0, "MgO(l)"),
     ("MgO", 2500.0, "MgO(l)"),
@@ -276,9 +280,14 @@ def test_parent_domain_gaps_refuse_with_typed_errors(
     assert set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS) == {
         case[0] for case in _EXTRAPOLATION_REFUSAL_CASES
     }
+    activities = (
+        {**unit_activities, "Cr2O3": 1.0}
+        if species in _CR_CHANNELS
+        else unit_activities
+    )
     with pytest.raises(ImccGasTemperatureOutsideDomainError) as exc:
         evaluate_gas(
-            unit_activities,
+            activities,
             temperature,
             1.0,
             gas_pack,
@@ -996,6 +1005,37 @@ def test_cr_atomic_row_flags_or_refuses_above_declared_endpoint(
     assert math.isfinite(result["Cr"]) and result["Cr"] > 0.0
     assert result.domain_flags["Cr"] == (
         "T=2950.0 K outside declared G(T) interval for 'Cr(g)' [1500, 2900] K"
+    )
+
+
+def test_cr_liquid_parent_flags_or_refuses_below_declared_start(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError, match="Cr2O3\\(l\\)"):
+        evaluate_gas(
+            {"Cr2O3": 1.0e-3},
+            1500.0,
+            1.0e-10,
+            gas_pack,
+            gas_species=_CR_CHANNELS,
+            allow_extrapolation=False,
+        )
+
+    result = evaluate_gas(
+        {"Cr2O3": 1.0e-3},
+        1500.0,
+        1.0e-10,
+        gas_pack,
+        gas_species=_CR_CHANNELS,
+        allow_extrapolation=True,
+    )
+    assert all(
+        math.isfinite(result[name]) and result[name] > 0.0 for name in _CR_CHANNELS
+    )
+    assert all(
+        result.domain_flags[name]
+        == "T=1500.0 K outside declared G(T) interval for 'Cr2O3(l)' [1900, 3000] K"
+        for name in _CR_CHANNELS
     )
 
 

@@ -85,8 +85,9 @@ The default tables ship in `openimcc.data.gas` and are loaded through
 `importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
 NIST-JANAF 4th-edition records; the condensate rows retain their source-attributed
-Lamoreaux/Hildenbrand and JANAF coefficients, except TiO2(l), which is fitted
-from the JANAF liquid table by the same generator. Row-level source hashes,
+Lamoreaux/Hildenbrand and JANAF coefficients, except TiO2(l), Cr2O3(l), V2O3(l)
+and NbO2(l), which are fitted from JANAF liquid tables by the same generator.
+Row-level source hashes,
 methods, temperature ranges and fit residuals are in `PROVENANCE.yaml`.
 
 For comparison with an existing VapoRock installation, set
@@ -97,7 +98,8 @@ override a default call returns the other channels. Caller-supplied Cr2O3,
 V2O3 or NbO2 activities opt into their corresponding channels.
 The Cr(g) fit uses complete JANAF Cr-005 rows through 2900 K; evaluation above
 that declared endpoint is flagged or refused according to the caller's
-extrapolation setting.
+extrapolation setting. The fitted Cr2O3(l) parent uses its liquid branch from
+1900 K; Cr channels below that temperature are likewise flagged or refused.
 The packaged source records used to fit the gas rows are retained in
 `data-src/janaf/` and included in source distributions, not the runtime wheel.
 NIST SRD 13 is public data, and the publication attributions are recorded in

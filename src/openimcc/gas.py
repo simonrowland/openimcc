@@ -207,14 +207,11 @@ def default_condensate_database_path() -> Path:
 # Ti (c=1, d=0) gives n_gas=1, n_O2=(2-0)/2=1; TiO gives n_gas=1,
 # n_O2=(2-1)/2=1/2; TiO2 gives n_gas=1, n_O2=0.
 # For the retained association channels, the same balance gives Al2 from Al2O3
-# as n_gas=2/2=1, n_O2=(3-1*0)/2=3/2; Si2 from SiO2 as
-# n_gas=1/2, n_O2=(2-(1/2)*0)/2=1; and Si3 from SiO2 as n_gas=1/3,
-# n_O2=(2-(1/3)*0)/2=1.  The fractional n_gas values are required because
-# the parent reaction produces one mole of oxide per gas molecule, while the
-# mass-action equation is solved for one molecule of the dimer or trimer.
-# Unit check: these are dimensionless stoichiometric coefficients.  Sanity:
-# multiplying the Si2 and Si3 equations by 2 and 3 respectively restores one
-# SiO2 formula unit and the corresponding integer Si count.
+# as n_gas=2/2=1, n_O2=(3-1*0)/2=3/2.  The Si2 and Si3 equations are written
+# per one SiO2 formula unit: Si2 uses n_gas=1/2 and n_O2=1, so multiplying by
+# 2 gives 2 SiO2 = Si2 + 2 O2; Si3 uses n_gas=1/3 and n_O2=1, so multiplying
+# by 3 gives 3 SiO2 = Si3 + 3 O2.  Unit check: these are dimensionless
+# stoichiometric coefficients.
 # For the caller-supplied Cr2O3 parent (a=2, b=3), Cr, CrO, CrO2 and CrO3 use
 # n_gas=2 and n_O2=3/2, 1/2, -1/2 and -3/2 (Cr2O3(l) = 2 Cr(g) + 3/2 O2). The parent activity remains an input
 # because Cr2O3 is outside the eight-parent melt basis; the same balance and
@@ -410,6 +407,10 @@ IMCC_SF04_WORKBOOK_GRID_K = (
 # these temperatures unless allow_extrapolation=True; labels disclose the reason
 # and never widen the executable domain.
 IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS: dict[str, str] = {
+    "Cr": "Cr2O3(l) [1900, 3000] K misses workbook T < 1900 K",
+    "CrO": "Cr2O3(l) [1900, 3000] K misses workbook T < 1900 K",
+    "CrO2": "Cr2O3(l) [1900, 3000] K misses workbook T < 1900 K",
+    "CrO3": "Cr2O3(l) [1900, 3000] K misses workbook T < 1900 K",
     "SiO": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
     "Mg": "MgO(l) [3100, 3500] K lies above the whole workbook grid",
     "MgO": "MgO(l) [3100, 3500] K lies above the whole workbook grid",
@@ -443,11 +444,6 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "Ti",
     "TiO",
     "TiO2",
-    # Cr(g) through 2900 K and Cr2O3(l) through 3000 K cover the grid.
-    "Cr",
-    "CrO",
-    "CrO2",
-    "CrO3",
     "V",
     "VO",
     "VO2",

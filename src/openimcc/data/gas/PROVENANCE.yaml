@@ -573,17 +573,18 @@ rows:
     source_sha256: 092b991dbbba68ebc27d24fed2799702823d974b3ab0bc182924c67544a25475
     authority: janaf_fitted
     method: fitted
-    T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 44.8951781992801
-    max_residual_log10_K: 0.00137943393138204
+    T_range_K: [1900, 3000]
+    max_residual_J_per_mol: 1.55117741390131
+    max_residual_log10_K: 3.52276572951367e-05
     note: >-
       Fitted by tools/build_gas_tables.py to the runtime condensate form
       (dH298_R = dfH(298)/R; dG_A..dG_E = quartic in T/1000 of the JANAF
-      Gibbs-energy function divided by R). Cr-015 supplies the required
-      1500-3000 K interval; transition-marked 1800 K and 2700 K nodes are
-      omitted rather than assigning a branch. Cr-014/Cr-016 identify 2603 K as
-      the crystal-liquid melting transition, so 1500 <= T < 2603 K is the
-      supercooled liquid interval represented by this row.
+      Gibbs-energy function divided by R). Cr-015 supplies the liquid branch
+      from 1900-3000 K; the glass/liquid markers at 1800 K are below the fit
+      start, the 2700 K row is an unparsed liquid grid point, and the 2603 K
+      crystal-liquid marker is omitted rather than assigning a new branch.
+      Cr-014/Cr-016 identify 2603 K as the crystal-liquid melting transition;
+      the fitted row uses the liquid Cp = 156.9 J/(mol K) branch.
   - table: condensate
     species_name: V2O3(l)
     table_id: O-063
