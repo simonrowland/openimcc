@@ -85,6 +85,9 @@ GAS_SOURCES = (
     ("Ti(g)", "Ti-006", "Ti", 1, 0),
     ("TiO(g)", "O-022", "Ti", 1, 1),
     ("TiO2(g)", "O-046", "Ti", 1, 2),
+    ("Al2(g)", "Al-080", "Al", 2, 0),
+    ("Si2(g)", "Si-008", "Si", 2, 0),
+    ("Si3(g)", "Si-009", "Si", 3, 0),
 )
 
 CONDENSATE_COLUMNS = (

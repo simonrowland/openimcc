@@ -206,7 +206,16 @@ def default_condensate_database_path() -> Path:
 # Na2O + 1/2 O2 -> 2 NaO balances Na2O2.  For the TiO2 parent (a=1, b=2):
 # Ti (c=1, d=0) gives n_gas=1, n_O2=(2-0)/2=1; TiO gives n_gas=1,
 # n_O2=(2-1)/2=1/2; TiO2 gives n_gas=1, n_O2=0.
-_SF04_REACTIONS: dict[str, tuple[str, int, float]] = {
+# For the retained association channels, the same balance gives Al2 from Al2O3
+# as n_gas=2/2=1, n_O2=(3-1*0)/2=3/2; Si2 from SiO2 as
+# n_gas=1/2, n_O2=(2-(1/2)*0)/2=1; and Si3 from SiO2 as n_gas=1/3,
+# n_O2=(2-(1/3)*0)/2=1.  The fractional n_gas values are required because
+# the parent reaction produces one mole of oxide per gas molecule, while the
+# mass-action equation is solved for one molecule of the dimer or trimer.
+# Unit check: these are dimensionless stoichiometric coefficients.  Sanity:
+# multiplying the Si2 and Si3 equations by 2 and 3 respectively restores one
+# SiO2 formula unit and the corresponding integer Si count.
+_SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Na": ("Na2O", 2, 0.5),
     "K": ("K2O", 2, 0.5),
     "SiO": ("SiO2", 1, 0.5),
@@ -233,31 +242,42 @@ _SF04_REACTIONS: dict[str, tuple[str, int, float]] = {
     "Ti": ("TiO2", 1, 1.0),
     "TiO": ("TiO2", 1, 0.5),
     "TiO2": ("TiO2", 1, 0.0),
+    "Al2": ("Al2O3", 1, 1.5),
+    "Si2": ("SiO2", 0.5, 1.0),
+    "Si3": ("SiO2", 1 / 3, 1.0),
 }
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 
 # Channels that a default evaluate_gas call includes only when the active
-# datapack carries their gas row and their parent's condensate row.  The
-# legacy tables selected by OPENIMCC_VAPOROCK_ROOT have Ti gas rows but no
-# TiO2(l) row, so without this the default call there would refuse where it
-# used to return the SF04 set.  The SF04 channels are deliberately not in this
-# set: a table missing one of their rows is broken, and the default call keeps
-# refusing on it rather than silently returning fewer channels.
-_DATAPACK_OPTIONAL_CHANNELS = frozenset({"Ti", "TiO", "TiO2"})
+# datapack carries their gas row and their parent's condensate row. The legacy
+# tables selected by OPENIMCC_VAPOROCK_ROOT have Ti gas rows but no TiO2(l)
+# row, so the default call preserves the pre-Ti channel set there. Original
+# SF04 channels stay strict: a table missing one of their rows is broken and
+# the default call keeps refusing on it rather than silently omitting it.
+_DATAPACK_OPTIONAL_CHANNELS = frozenset(
+    {"Ti", "TiO", "TiO2", "Al2", "Si2", "Si3"}
+)
+
+
+_REACTION_PARENT_OXIDES = frozenset(
+    reaction[0] for reaction in _SF04_REACTIONS.values() if reaction[0]
+)
 
 
 def _default_reactions(
-    parent_oxides: Sequence[str], datapack: ImccGasDatapack
-) -> tuple[tuple[str, tuple[str, int, float]], ...]:
+    available_parents: Sequence[str], datapack: ImccGasDatapack
+) -> tuple[tuple[str, tuple[str, float, float]], ...]:
     """Return the channels a default ``evaluate_gas`` call evaluates.
 
-    A channel is included when its parent oxide is one of ``parent_oxides``
-    (O and O2 have no parent) and, for ``_DATAPACK_OPTIONAL_CHANNELS``, when
-    the datapack has both the gas row and the parent's condensate row.
-    Channel order is the ``_SF04_REACTIONS`` order.
+    Unified availability rule: a channel is included only when its parent
+    activity is supplied (O and O2 have no parent); an optional channel also
+    requires both its gas row and parent standard-state condensate row in the
+    active datapack. Gas-only source rows stay outside the runtime channel set
+    until this same rule can be satisfied. Channel order is the
+    ``_SF04_REACTIONS`` order.
     """
-    parents = set(parent_oxides)
+    parents = set(available_parents)
     gas_rows = set(datapack.gas_df.index)
     oxide_rows = set(datapack.oxide_df.index)
     selected = []
@@ -350,7 +370,10 @@ IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS: dict[str, str] = {
     "AlO2": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
     "Al2O": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
     "Al2O2": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
+    "Al2": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
     "Si": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
+    "Si2": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
+    "Si3": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
     "Al": "Al2O3(l) [2327, 3000] K misses workbook T < 2327 K",
     "CaO": "CaO(l) [2900, 3800] K lies above the whole workbook grid",
     "Ca": "CaO(l) [2900, 3800] K lies above the whole workbook grid",
@@ -713,12 +736,11 @@ def evaluate_gas(
         non-positive T raises ``ValueError`` before this flag is consulted.
     gas_species:
         Optional retained-species subset.  The default evaluates every
-        available channel: each channel whose parent oxide is one of
-        ``parent_oxides`` (O and O2 need none), with the Ti, TiO and TiO2
-        channels included only when ``datapack`` also carries their gas rows
-        and the TiO2(l) row.  A named channel that cannot be served raises
-        ``ImccGasSpeciesNotFoundError``; a subset otherwise permits
-        channel-specific diagnostics with the same typed domain refusals.
+        channel whose parent activity is supplied, subject to the shared
+        datapack-row availability rule in ``_default_reactions``.  A named
+        channel that cannot be served raises ``ImccGasSpeciesNotFoundError``;
+        a subset otherwise permits channel-specific diagnostics with the same
+        typed domain refusals.
 
     Returns
     -------
@@ -813,6 +835,17 @@ def evaluate_gas(
 
     if isinstance(activities, Mapping):
         act = {name: float(activities.get(name, 0.0)) for name in parent_oxides}
+        act.update(
+            {
+                name: float(activities[name])
+                for name in activities
+                if (
+                    name in _REACTION_PARENT_OXIDES
+                    and name not in IMCC_PARENT_OXIDES
+                    and name not in act
+                )
+            }
+        )
     else:
         arr = np.asarray(activities, dtype=float)
         if arr.shape[0] != len(parent_oxides):
@@ -823,7 +856,7 @@ def evaluate_gas(
         act = {name: float(arr[i]) for i, name in enumerate(parent_oxides)}
 
     if reactions is None:
-        reactions = _default_reactions(parent_oxides, datapack)
+        reactions = _default_reactions(tuple(act), datapack)
 
     for gas_name, (oxide, _n_gas, _n_O2) in reactions:
         if not oxide:

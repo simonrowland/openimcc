@@ -144,7 +144,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 25
+    assert len(gas_pack.gas_df) == 28
     assert len(gas_pack.oxide_df) == 9
 
 
@@ -215,7 +215,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
-    assert len(implemented) == 25
+    assert len(implemented) == 28
     assert len(unavailable) == 7
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
@@ -231,7 +231,10 @@ _EXTRAPOLATION_REFUSAL_CASES = (
     ("AlO2", 2000.0, "Al2O3(l)"),
     ("Al2O", 2000.0, "Al2O3(l)"),
     ("Al2O2", 2000.0, "Al2O3(l)"),
+    ("Al2", 2000.0, "Al2O3(l)"),
     ("Si", 1900.0, "SiO2(l)"),
+    ("Si2", 1900.0, "SiO2(l)"),
+    ("Si3", 1900.0, "SiO2(l)"),
     ("Al", 2000.0, "Al2O3(l)"),
     ("CaO", 2500.0, "CaO(l)"),
     ("Ca", 2500.0, "CaO(l)"),
@@ -332,7 +335,10 @@ def test_sf04_basalt_at_1800_predicts_and_flags_source_rows(
         "AlO2",
         "Al2O",
         "Al2O2",
+        "Al2",
         "Al",
+        "Si2",
+        "Si3",
     }
     assert all(result.domain_flags[species] is not None for species in flagged)
     assert all(
@@ -755,7 +761,7 @@ def test_override_without_tio2_parent_keeps_the_sf04_default_set(
     activities = _quickstart_activities(2200.0)
     result = evaluate_gas(activities, 2200.0, 1.0e-10, legacy)
     packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
-    assert len(_SF04_CHANNELS) == 22
+    assert len(_SF04_CHANNELS) == 25
     assert tuple(result) == _SF04_CHANNELS
     # Same gas rows and SF04 parent rows, so every value is bit-identical.
     assert dict(result) == {species: packaged[species] for species in _SF04_CHANNELS}
@@ -778,9 +784,10 @@ def test_default_set_follows_parent_oxides_without_key_errors(
 ) -> None:
     activities = _quickstart_activities(2200.0)
     packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
-    # The packaged default includes the Ti channels, after O2.
+    # The packaged default appends Ti, then the screened association channels.
     assert tuple(packaged) == IMCC_GAS_CHANNEL_SPECIES
-    assert tuple(packaged)[-3:] == _TI_CHANNELS
+    assert tuple(packaged)[-6:-3] == _TI_CHANNELS
+    assert tuple(packaged)[-3:] == ("Al2", "Si2", "Si3")
 
     seven = tuple(name for name in activities if name != "TiO2")
     for supplied in (
@@ -799,7 +806,7 @@ def test_default_set_follows_parent_oxides_without_key_errors(
     silica_only = evaluate_gas(
         {"SiO2": 0.5}, 2200.0, 1.0e-10, gas_pack, parent_oxides=("SiO2",)
     )
-    assert tuple(silica_only) == ("SiO", "SiO2", "O", "Si", "O2")
+    assert tuple(silica_only) == ("SiO", "SiO2", "O", "Si", "O2", "Si2", "Si3")
 
     # An explicit channel whose parent is not supplied refuses, typed.
     for species, parents in (("Ti", seven), ("Na", ("SiO2",))):
@@ -814,6 +821,60 @@ def test_default_set_follows_parent_oxides_without_key_errors(
             )
         assert exc.value.code == "imcc_gas_species_not_found"
         assert "not in parent_oxides" in str(exc.value)
+
+
+def test_tier_a_screened_channels_return_positive_pressures(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    from openimcc import evaluate as evaluate_imcc
+
+    composition = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    melt = evaluate_imcc(composition, 2600.0, basis_type="wt")
+    activities = {name: melt.activity(name) for name in melt.parent_oxides}
+    species = ("Al2", "Si2", "Si3")
+    low_fugacity = evaluate_gas(
+        activities,
+        2600.0,
+        1.0e-10,
+        gas_pack,
+        gas_species=species,
+        allow_extrapolation=False,
+    )
+    high_fugacity = evaluate_gas(
+        activities,
+        2600.0,
+        1.0e-6,
+        gas_pack,
+        gas_species=species,
+        allow_extrapolation=False,
+    )
+    for name in species:
+        assert math.isfinite(low_fugacity[name]) and low_fugacity[name] > 0.0
+        assert math.isfinite(high_fugacity[name]) and high_fugacity[name] > 0.0
+
+    # Premise: (5) gives p_gas proportional to fO2^(-n_O2/n_gas) at fixed
+    # melt activity and temperature. Algebra: the Al2, Si2, and Si3 tuples
+    # have n_O2/n_gas = 3/2, 1/(1/2)=2, and 1/(1/3)=3, respectively. Unit
+    # check: the fugacity ratio and pressure ratio are dimensionless. Sanity:
+    # lowering fO2 by 1e4 raises these pressures by 1e6, 1e8, and 1e12.
+    assert low_fugacity["Al2"] / high_fugacity["Al2"] == pytest.approx(
+        1.0e6, rel=1e-12
+    )
+    assert low_fugacity["Si2"] / high_fugacity["Si2"] == pytest.approx(
+        1.0e8, rel=1e-12
+    )
+    assert low_fugacity["Si3"] / high_fugacity["Si3"] == pytest.approx(
+        1.0e12, rel=1e-12
+    )
 
 
 def test_ti_channels_against_janaf_printed_formation_gibbs(

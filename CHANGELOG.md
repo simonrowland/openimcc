@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added JANAF-fitted Al2, Si2, and Si3 gas channels after the Tier A
+  association-magnitude screen; their parent-reaction stoichiometry and source
+  residuals are covered by the gas-layer tests and provenance ledger.
 - Added JANAF-derived gas tables with tracked provenance and fit checks.
 - Scored the bench `partial_pressure` observable through the analytical gas
   layer, including the bar-to-Pa conversion.

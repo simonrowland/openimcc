@@ -61,6 +61,9 @@ GAS_TABLE_IDS = {
     "Ti": "Ti-006",
     "TiO": "O-022",
     "TiO2": "O-046",
+    "Al2": "Al-080",
+    "Si2": "Si-008",
+    "Si3": "Si-009",
 }
 
 PARENT_TABLE_IDS = {
@@ -634,9 +637,10 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             checked += 1
         maxima[species] = row_max
 
-    # 289 nodes for the first 22 channels plus 15 for each Ti channel (the
-    # O-044 parent has no complete 2200 K row).
-    assert checked == 334
+    # 289 nodes for the first 22 channels, 15 for each Ti channel, and 15 for
+    # each of the appended Al2, Si2, and Si3 channels (the O-044 parent has no
+    # complete 2200 K row).
+    assert checked == 379
     # The measured on-node maximum is 2.728 J/mol (Fe); 10 J/mol leaves a
     # stated margin while remaining far below the old workbook-grid gate.
     assert max(maxima.values()) <= 10.0
@@ -718,7 +722,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         for species in ("K", "K2", "KO")
         for temperature in (2125.0, 2250.0, 2375.0, 2500.0)
     }
-    assert checked == 225
+    assert checked == 255
     assert max(maxima.values()) < 300.0
 
 

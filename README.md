@@ -73,8 +73,9 @@ release; until then, use the source-checkout commands above.
 ### Gas layer
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
-plus the titanium channels: Na, Na2, NaO, K, K2, KO, Si, SiO, SiO2, Fe, FeO,
-Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2, O and O2.
+plus the titanium channels and the screened Al/Si association channels: Na,
+Na2, NaO, K, K2, KO, Si, SiO, SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O,
+Al2O2, Ca, CaO, Ti, TiO, TiO2, Al2, Si2, Si3, O and O2.
 The default tables ship in `openimcc.data.gas` and are loaded through
 `importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
