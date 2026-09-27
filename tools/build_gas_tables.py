@@ -88,6 +88,9 @@ GAS_SOURCES = (
     ("Al2(g)", "Al-080", "Al", 2, 0),
     ("Si2(g)", "Si-008", "Si", 2, 0),
     ("Si3(g)", "Si-009", "Si", 3, 0),
+    ("CrO(g)", "Cr-010", "Cr", 1, 1),
+    ("CrO2(g)", "Cr-011", "Cr", 1, 2),
+    ("CrO3(g)", "Cr-012", "Cr", 1, 3),
 )
 
 CONDENSATE_COLUMNS = (
@@ -111,7 +114,10 @@ CONDENSATE_COLUMNS = (
 # JANAF "O2Ti1(l)" record; over 1500--3000 K it is on its liquid branch
 # (glass transition 1400 K, Cp = 100.416 J/(mol K) throughout), supercooled
 # below the 2130 K melting point exactly as the JANAF liquid table states.
-CONDENSATE_SOURCES = (("TiO2(l)", "O-044", "Ti", 1, 2),)
+CONDENSATE_SOURCES = (
+    ("TiO2(l)", "O-044", "Ti", 1, 2),
+    ("Cr2O3(l)", "Cr-015", "Cr", 2, 3),
+)
 
 REQUIRED_FIELDS = (
     "temperature",
@@ -170,18 +176,24 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
         # Sanity: every selected record has complete rows spanning the declared
         # 1500--3000 K interval; an omitted normal-grid point is allowed only
         # when the source explicitly records that row as parse-ambiguous.
-        if temperature in ambiguous_temperatures:
+        if temperature in ambiguous_temperatures and table_id != "Cr-015":
             raise ValueError(
                 f"{table_id} has a parse-ambiguous row at {temperature} K"
             )
+        if temperature in ambiguous_temperatures:
+            # Cr-015 marks its glass/liquid and crystal/liquid transitions as
+            # non-data rows at temperatures inside the fit interval. Omit
+            # those markers; never choose a branch or reconstruct a value.
+            continue
         if any(value is None for value in values.values()):
             raise ValueError(
                 f"{table_id} has an incomplete/ambiguous row at {temperature} K"
             )
         rows.append({field: float(value) for field, value in values.items()})
     rows.sort(key=lambda row: row["temperature"])
+    minimum_rows = 14 if table_id == "Cr-015" else 15
     if (
-        len(rows) < 15
+        len(rows) < minimum_rows
         or rows[0]["temperature"] != FIT_T_MIN
         or rows[-1]["temperature"] != FIT_T_MAX
     ):

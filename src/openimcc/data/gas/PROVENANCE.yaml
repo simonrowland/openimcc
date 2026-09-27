@@ -288,6 +288,36 @@ rows:
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.32989658310544
     max_residual_log10_K: 2.43501302851123e-05
+  - table: gas
+    species_name: CrO(g)
+    table_id: Cr-010
+    source_path: data-src/janaf/Cr-010.yaml
+    source_sha256: d1f34c3a79f65af105ec9c94e2a27560d2813ee71603cea3dabd798e646a48aa
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.34767006896436
+    max_residual_log10_K: 3.41782647426031e-05
+  - table: gas
+    species_name: CrO2(g)
+    table_id: Cr-011
+    source_path: data-src/janaf/Cr-011.yaml
+    source_sha256: b3b1ed54bea8aae47f1f0e05cae9d9f8eb093157e693f806a73ae77c5bfcf281
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.10781534551643
+    max_residual_log10_K: 2.19706923807403e-05
+  - table: gas
+    species_name: CrO3(g)
+    table_id: Cr-012
+    source_path: data-src/janaf/Cr-012.yaml
+    source_sha256: 3218773a55c6a0fe35e61069c50ad9b3e41f8a3dcfe7cd4bd93de1135f0cddad
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.48787635681219
+    max_residual_log10_K: 3.23821535039709e-05
   - table: condensate
     species_name: MgO(l)
     authority: lam1987_transcribed
@@ -379,3 +409,21 @@ rows:
       over 1500-3000 K it is on the liquid branch (Cp = 100.416 J/(mol K)),
       supercooled below the 2130 K melting point as tabulated by JANAF. The
       2200 K source row is parse-ambiguous and is not used, leaving 15 fit rows.
+  - table: condensate
+    species_name: Cr2O3(l)
+    table_id: Cr-015
+    source_path: data-src/janaf/Cr-015.yaml
+    source_sha256: 092b991dbbba68ebc27d24fed2799702823d974b3ab0bc182924c67544a25475
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 44.8951781992801
+    max_residual_log10_K: 0.00137943393138204
+    note: >-
+      Fitted by tools/build_gas_tables.py to the runtime condensate form
+      (dH298_R = dfH(298)/R; dG_A..dG_E = quartic in T/1000 of the JANAF
+      Gibbs-energy function divided by R). Cr-015 supplies the required
+      1500-3000 K interval; transition-marked 1800 K and 2700 K nodes are
+      omitted rather than assigning a branch. Cr-014/Cr-016 identify 2603 K as
+      the crystal-liquid melting transition, so 1500 <= T < 2603 K is the
+      supercooled liquid interval represented by this row.

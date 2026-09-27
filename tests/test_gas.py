@@ -24,6 +24,7 @@ from openimcc.gas import (
     IMCC_GAS_UNAVAILABLE_SPECIES,
     IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS,
     IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES,
+    IMCC_PARENT_OXIDES,
     IMCC_SF04_WORKBOOK_GRID_K,
     ImccGasDatapack,
     ImccGasInvalidFugacityError,
@@ -144,8 +145,8 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 28
-    assert len(gas_pack.oxide_df) == 9
+    assert len(gas_pack.gas_df) == 31
+    assert len(gas_pack.oxide_df) == 10
 
 
 def test_explicit_vaporock_override_remains_supported(
@@ -215,8 +216,8 @@ def test_channel_coverage_ledger_is_closed() -> None:
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
-    assert len(implemented) == 28
-    assert len(unavailable) == 7
+    assert len(implemented) == 31
+    assert len(unavailable) == 8
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert in_domain | extrapolated == implemented
@@ -321,7 +322,7 @@ def test_sf04_basalt_at_1800_predicts_and_flags_source_rows(
     result = evaluate_gas(activities, 1800.0, 1.0e-10, gas_pack)
 
     assert isinstance(result, ImccGasResult)
-    assert set(result) == set(IMCC_GAS_CHANNEL_SPECIES)
+    assert set(result) == set(_PRE_CR_CHANNELS)
     assert all(math.isfinite(value) and value >= 0.0 for value in result.values())
     flagged = {
         "SiO",
@@ -427,8 +428,13 @@ def test_full_workbook_grid_runs_for_in_domain_channels(
 ) -> None:
     for species in IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES:
         for temperature in IMCC_SF04_WORKBOOK_GRID_K:
+            activities = (
+                {**unit_activities, "Cr2O3": 1.0}
+                if species in _CR_CHANNELS
+                else unit_activities
+            )
             result = evaluate_gas(
-                unit_activities,
+                activities,
                 temperature,
                 1.0,
                 gas_pack,
@@ -441,7 +447,7 @@ def test_all_channels_compute_when_extrapolation_is_explicit(
     gas_pack: ImccGasDatapack, unit_activities: dict[str, float]
 ) -> None:
     result = evaluate_gas(
-        unit_activities,
+        {**unit_activities, "Cr2O3": 1.0},
         2500.0,
         1.0e-10,
         gas_pack,
@@ -631,6 +637,7 @@ def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
     assert set(IMCC_GAS_NO_JANAF_ROWS) == {
+        "Cr",
         "Na2O",
         "K2O",
         "Na+",
@@ -714,8 +721,12 @@ def test_tio2_bearing_melt_returns_ti_pressures(
 
 
 _TI_CHANNELS = ("Ti", "TiO", "TiO2")
+_CR_CHANNELS = ("CrO", "CrO2", "CrO3")
+_PRE_CR_CHANNELS = tuple(
+    species for species in IMCC_GAS_CHANNEL_SPECIES if species not in _CR_CHANNELS
+)
 _SF04_CHANNELS = tuple(
-    species for species in IMCC_GAS_CHANNEL_SPECIES if species not in _TI_CHANNELS
+    species for species in _PRE_CR_CHANNELS if species not in _TI_CHANNELS
 )
 
 
@@ -784,8 +795,9 @@ def test_default_set_follows_parent_oxides_without_key_errors(
 ) -> None:
     activities = _quickstart_activities(2200.0)
     packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
-    # The packaged default appends Ti, then the screened association channels.
-    assert tuple(packaged) == IMCC_GAS_CHANNEL_SPECIES
+    # The packaged default appends Ti, then the screened association channels;
+    # Cr stays out until its caller-supplied parent activity is present.
+    assert tuple(packaged) == _PRE_CR_CHANNELS
     assert tuple(packaged)[-6:-3] == _TI_CHANNELS
     assert tuple(packaged)[-3:] == ("Al2", "Si2", "Si3")
 
@@ -877,6 +889,44 @@ def test_tier_a_screened_channels_return_positive_pressures(
     )
 
 
+def test_caller_supplied_cr2o3_activity_returns_positive_cr_pressures(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    from openimcc import evaluate as evaluate_imcc
+
+    composition = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    melt = evaluate_imcc(composition, 2200.0, basis_type="wt")
+    activities = {name: melt.activity(name) for name in melt.parent_oxides}
+    assert "Cr2O3" not in IMCC_PARENT_OXIDES
+    assert set(evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)) == set(
+        _PRE_CR_CHANNELS
+    )
+
+    activities["Cr2O3"] = 1.0e-3
+    result = evaluate_gas(
+        activities,
+        2200.0,
+        1.0e-10,
+        gas_pack,
+        gas_species=_CR_CHANNELS,
+        allow_extrapolation=False,
+    )
+    assert set(result) == set(_CR_CHANNELS)
+    for species in _CR_CHANNELS:
+        assert math.isfinite(result[species]) and result[species] > 0.0
+        assert result.domain_flags[species] is None
+        assert result.provenance_class[species] == "janaf_fitted"
+
+
 def test_ti_channels_against_janaf_printed_formation_gibbs(
     gas_pack: ImccGasDatapack,
 ) -> None:
@@ -943,7 +993,7 @@ def test_imcc_adapter_activities_reach_all_channels(
         gas_pack,
         allow_extrapolation=True,
     )
-    assert set(result) == set(IMCC_GAS_CHANNEL_SPECIES)
+    assert set(result) == set(_PRE_CR_CHANNELS)
     assert all(value >= 0.0 for value in result.values())
     assert result["O2"] == 1.0e-10
     assert result["Na"] > 0.0

@@ -73,9 +73,10 @@ release; until then, use the source-checkout commands above.
 ### Gas layer
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
-plus the titanium channels and the screened Al/Si association channels: Na,
+plus the titanium channels, screened Al/Si association channels, and CrO-family
+channels: Na,
 Na2, NaO, K, K2, KO, Si, SiO, SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O,
-Al2O2, Ca, CaO, Ti, TiO, TiO2, Al2, Si2, Si3, O and O2.
+Al2O2, Ca, CaO, Ti, TiO, TiO2, Al2, Si2, Si3, CrO, CrO2, CrO3, O and O2.
 The default tables ship in `openimcc.data.gas` and are loaded through
 `importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
@@ -86,9 +87,10 @@ methods, temperature ranges and fit residuals are in `PROVENANCE.yaml`.
 
 For comparison with an existing VapoRock installation, set
 `OPENIMCC_VAPOROCK_ROOT` explicitly; that variable overrides both packaged
-tables. The Ti channels appear only when available: VapoRock's condensate
+tables. The Ti and Cr channels appear only when available: VapoRock's condensate
 table has no TiO2(l) row, so under the override a default call returns the
-other channels. The packaged source records used to fit the gas rows are retained in
+other channels; caller-supplied Cr2O3 activity also opts into the Cr channels.
+The packaged source records used to fit the gas rows are retained in
 `data-src/janaf/` and included in source distributions, not the runtime wheel.
 NIST SRD 13 is public data, and the publication attributions are recorded in
 `NOTICE`.

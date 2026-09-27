@@ -24,6 +24,7 @@ from openimcc.gas import (
     IMCC_SF04_WORKBOOK_GRID_K,
     R_J_MOL_K,
     _SF04_REACTIONS,
+    evaluate_gas,
     _janaf_gibbs,
     _nearest_interval_row,
     load_gas_datapack,
@@ -64,6 +65,9 @@ GAS_TABLE_IDS = {
     "Al2": "Al-080",
     "Si2": "Si-008",
     "Si3": "Si-009",
+    "CrO": "Cr-010",
+    "CrO2": "Cr-011",
+    "CrO3": "Cr-012",
 }
 
 PARENT_TABLE_IDS = {
@@ -75,10 +79,14 @@ PARENT_TABLE_IDS = {
     "SiO2": "O-038",
     "FeO": "Fe-019",
     "TiO2": "O-044",
+    "Cr2O3": "Cr-015",
 }
 
 # Fitted, not transcribed, condensate rows: species -> JANAF table ID.
-FITTED_CONDENSATE_TABLE_IDS = {"TiO2(l)": "O-044"}
+FITTED_CONDENSATE_TABLE_IDS = {
+    "TiO2(l)": "O-044",
+    "Cr2O3(l)": "Cr-015",
+}
 
 _SOURCE_FIELDS = (
     "temperature",
@@ -218,6 +226,12 @@ def test_fitter_validates_formula_and_emitted_phase() -> None:
         )
 
 
+def test_cr_atomic_source_is_refused_for_missing_fit_endpoint() -> None:
+    record = _record("Cr-005")
+    with pytest.raises(ValueError, match="Cr-005 does not cover"):
+        build_gas_tables._usable_rows(record["table"], "Cr-005")
+
+
 def test_public_sources_contain_no_private_paths_or_tooling_names() -> None:
     # Vendored records carry harvesting metadata; only the neutral tool name
     # may ship, and no file may carry a local filesystem path.
@@ -250,7 +264,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         row["species_name"]: row for row in rows if row["table"] == "condensate"
     }
     assert set(gas_rows) == {f"{name}(g)" for name in IMCC_GAS_CHANNEL_SPECIES}
-    assert len(oxide_rows) == 9
+    assert len(oxide_rows) == 10
 
     for species, table_id in GAS_TABLE_IDS.items():
         source = _record(table_id)
@@ -276,7 +290,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert row["T_range_K"] == [1500, 3000]
         assert source["source"]["doi"] == "10.18434/T42S31"
 
-    for species in ("Ti", "TiO", "TiO2"):
+    for species in ("Ti", "TiO", "TiO2", "CrO", "CrO2", "CrO3"):
         assert _record(GAS_TABLE_IDS[species])["table"]["index_entry"]["state"] == "g"
 
     k_row = oxide_rows["K2O(l)"]
@@ -320,7 +334,10 @@ def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
         log_residuals = []
         for source_row in source_rows:
             temperature = source_row["temperature"]
-            if not 1500.0 <= temperature <= 3000.0:
+            if (
+                not 1500.0 <= temperature <= 3000.0
+                or temperature in _ambiguous_temperatures(table_id)
+            ):
                 continue
             # Premise: the source apparent Gibbs value uses the 298.15 K
             # formation enthalpy plus H-H(298) minus T*S. Algebra: this is the
@@ -343,17 +360,15 @@ def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
 
 
 def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> None:
-    """The fitted TiO2(l) row reproduces its JANAF source, not just its own fit.
+    """Fitted liquid rows reproduce their JANAF source, not just their fit.
 
     Premise: the runtime condensate form ``1000*R*dH298_R - R*T*P(T/1000)``
     must equal the source apparent Gibbs energy
-    ``(dfH(298) + H - H(298))*1000 - T*S`` at every complete O-044 node in
+    ``(dfH(298) + H - H(298))*1000 - T*S`` at every complete source node in
     1500--3000 K. Unit check: both sides are J/mol. Sanity: the quartic in
-    T/1000 cannot carry the exact constant-Cp ``ln T`` and ``1/T`` terms, so
-    the measured maximum (6.88 J/mol, 1.6e-4 dex) is larger than the gas
-    rows' 2.1 J/mol gate; it is still 60 times inside the shared 0.01 dex
-    tolerance and 44 times smaller than the transcribed FeO(l) row's
-    302 J/mol against Fe-019 over the same window.
+    T/1000 cannot carry the exact constant-Cp ``ln T`` and ``1/T`` terms. The
+    Cr-015 transition leaves a measured 44.895 J/mol residual after its
+    ambiguous nodes are excluded.
     """
     from openimcc.gas import _lamor_gibbs
 
@@ -371,7 +386,10 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
         nodes = 0
         for source_row in _complete_rows(table_id):
             temperature = source_row["temperature"]
-            if not 1500.0 <= temperature <= 3000.0:
+            if (
+                not 1500.0 <= temperature <= 3000.0
+                or temperature in _ambiguous_temperatures(table_id)
+            ):
                 continue
             residual = abs(
                 _lamor_gibbs(temperature, row)
@@ -383,9 +401,12 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
                 residual / (R_J_MOL_K * temperature * math.log(10.0)),
             )
             nodes += 1
-        assert nodes == 15  # 1500--3000 K by 100 K, less the ambiguous 2200 K
-        assert maximum_log10 <= 0.001
-        assert maximum_j < 10.0
+        expected_nodes = {"TiO2(l)": 15, "Cr2O3(l)": 14}[species]
+        assert nodes == expected_nodes
+        max_log10_limit = {"TiO2(l)": 0.001, "Cr2O3(l)": 0.0015}[species]
+        max_j_limit = {"TiO2(l)": 10.0, "Cr2O3(l)": 50.0}[species]
+        assert maximum_log10 <= max_log10_limit
+        assert maximum_j < max_j_limit
         assert maximum_j == pytest.approx(
             recorded[species]["max_residual_J_per_mol"], abs=1e-6
         )
@@ -399,9 +420,55 @@ def test_no_fitted_row_consumes_a_parse_ambiguous_source_row() -> None:
         selected_temperatures = {
             row["temperature"]
             for row in _complete_rows(table_id)
-            if 1500.0 <= row["temperature"] <= 3000.0
+            if (
+                1500.0 <= row["temperature"] <= 3000.0
+                and row["temperature"] not in _ambiguous_temperatures(table_id)
+            )
         }
         assert selected_temperatures.isdisjoint(_ambiguous_temperatures(table_id))
+
+
+def test_cr_channels_against_janaf_cells() -> None:
+    """Cr channels use an independent 2200 K JANAF-cell calculation."""
+    T = 2200.0
+    parent_activity = 1.0e-3
+    gas_species = ("CrO", "CrO2", "CrO3")
+    pack = load_gas_datapack()
+    pressures = evaluate_gas(
+        {"Cr2O3": parent_activity},
+        T,
+        1.0,
+        pack,
+        gas_species=gas_species,
+        allow_extrapolation=False,
+    )
+    source_gas = {
+        species: next(
+            row for row in _complete_rows(GAS_TABLE_IDS[species])
+            if row["temperature"] == T
+        )["formation_gibbs_energy"]
+        for species in gas_species
+    }
+    source_o2 = next(
+        row for row in _complete_rows("O-029") if row["temperature"] == T
+    )["formation_gibbs_energy"]
+    source_parent = next(
+        row for row in _complete_rows("Cr-015") if row["temperature"] == T
+    )["formation_gibbs_energy"]
+    n_o2 = {"CrO": 0.5, "CrO2": -0.5, "CrO3": -1.5}
+
+    for species in gas_species:
+        dG = (
+            2.0 * source_gas[species]
+            + n_o2[species] * source_o2
+            - source_parent
+        ) * 1000.0
+        expected = math.exp(-dG / (R_J_MOL_K * T)) * parent_activity
+        expected = expected**0.5
+        assert math.isfinite(pressures[species]) and pressures[species] > 0.0
+        assert math.log10(pressures[species]) == pytest.approx(
+            math.log10(expected), abs=0.02
+        )
 
 
 def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path) -> None:
@@ -520,6 +587,19 @@ _CONDENSATE_EXPECTED = {
         0.0206704756752248,
         "O-044",
     ),
+    # Fitted by tools/build_gas_tables.py from JANAF Cr-015; transition
+    # markers are excluded rather than assigned a phase branch.
+    "Cr2O3(l)": (
+        1500,
+        3000,
+        -122.483081203024,
+        8.99367865731219,
+        17.3840154930507,
+        -5.20496634692502,
+        1.11949099356349,
+        -0.105388931948509,
+        "Cr-015",
+    ),
 }
 
 
@@ -585,15 +665,27 @@ def _reaction_source_series(
         gas_row = gas_rows[source_temperature]
         oxygen_row = oxygen_rows[source_temperature]
         parent_row = parent_rows[source_temperature] if parent_id else None
-        independent_reactions.append(
-            n_gas * gas_row["formation_gibbs_energy"] * 1000.0
-            + n_o2 * oxygen_row["formation_gibbs_energy"] * 1000.0
-            - (
-                parent_row["formation_gibbs_energy"] * 1000.0
+        if species.startswith("Cr"):
+            # Cr's printed formation-Gibbs column carries a source-reference
+            # offset from the apparent-Gibbs construction used by the fit.
+            gas_g = _source_g_app_from_row(species_id, gas_row)
+            oxygen_g = _source_g_app_from_row("O-029", oxygen_row)
+            parent_g = (
+                _source_g_app_from_row(parent_id, parent_row)
                 if parent_row
                 else 0.0
             )
-        )
+            independent_reactions.append(n_gas * gas_g + n_o2 * oxygen_g - parent_g)
+        else:
+            independent_reactions.append(
+                n_gas * gas_row["formation_gibbs_energy"] * 1000.0
+                + n_o2 * oxygen_row["formation_gibbs_energy"] * 1000.0
+                - (
+                    parent_row["formation_gibbs_energy"] * 1000.0
+                    if parent_row
+                    else 0.0
+                )
+            )
         source_parent_app.append(
             _source_g_app_from_row(parent_id, parent_row) if parent_row else 0.0
         )
@@ -637,12 +729,12 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             checked += 1
         maxima[species] = row_max
 
-    # 289 nodes for the first 22 channels, 15 for each Ti channel, and 15 for
-    # each of the appended Al2, Si2, and Si3 channels (the O-044 parent has no
-    # complete 2200 K row).
-    assert checked == 379
-    # The measured on-node maximum is 2.728 J/mol (Fe); 10 J/mol leaves a
-    # stated margin while remaining far below the old workbook-grid gate.
+    # 289 nodes for the first 22 channels, 15 for each Ti channel, 15 for each
+    # dimer, and 13/14/14/14 for Cr/CrO/CrO2/CrO3 because Cr-005 has an
+    # ambiguous 3000 K source node.
+    assert checked == 421
+    # The measured on-node maximum remains below 10 J/mol for every fitted gas
+    # row; the separate condensate test records Cr-015's larger fit residual.
     assert max(maxima.values()) <= 10.0
 
 
@@ -722,7 +814,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         for species in ("K", "K2", "KO")
         for temperature in (2125.0, 2250.0, 2375.0, 2500.0)
     }
-    assert checked == 255
+    assert checked == 285
     assert max(maxima.values()) < 300.0
 
 

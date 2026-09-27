@@ -5,6 +5,11 @@
 - Added JANAF-fitted Al2, Si2, and Si3 gas channels after the Tier A
   association-magnitude screen; their parent-reaction stoichiometry and source
   residuals are covered by the gas-layer tests and provenance ledger.
+- Added JANAF-fitted CrO, CrO2, and CrO3 gas channels with a fitted Cr2O3(l)
+  parent. Cr2O3 is caller-supplied because it is outside the IMCC melt basis;
+  transition-marked Cr-015 nodes are omitted rather than assigned a phase
+  branch. The Cr(g) source is held out because Cr-005 has no complete 3000 K
+  source row, so the strict fitter refuses it.
 - Added JANAF-derived gas tables with tracked provenance and fit checks.
 - Scored the bench `partial_pressure` observable through the analytical gas
   layer, including the bar-to-Pa conversion.
