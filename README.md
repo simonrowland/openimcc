@@ -163,6 +163,10 @@ The function returns pO2 in bar, the same partial-pressure mapping as
 `oxygen_balance_effusion`. For a K2O–SiO2 melt where K and O2 dominate, this
 reduces to `pO2/pK = 0.25 sqrt(M_O2/M_K) = 0.2262`, the Plante 1979 anchor.
 
+This balance applies to inert cells such as Pt or Ir. It does not apply to
+reactive W or Mo cells: their effusing oxides contribute oxygen-bearing
+fluxes that this model does not include.
+
 ### Exit codes are part of the contract
 
 | code | meaning |
