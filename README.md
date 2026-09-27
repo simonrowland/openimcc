@@ -72,17 +72,22 @@ release; until then, use the source-checkout commands above.
 
 ### Gas layer
 
-`openimcc.gas` computes equilibrium partial pressures for the SF04 gas set.
+`openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
+plus the titanium channels: Na, Na2, NaO, K, K2, KO, Si, SiO, SiO2, Fe, FeO,
+Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2, O and O2.
 The default tables ship in `openimcc.data.gas` and are loaded through
 `importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
 NIST-JANAF 4th-edition records; the condensate rows retain their source-attributed
-Lamoreaux/Hildenbrand and JANAF coefficients. Row-level source hashes, methods,
-temperature ranges and fit residuals are in `PROVENANCE.yaml`.
+Lamoreaux/Hildenbrand and JANAF coefficients, except TiO2(l), which is fitted
+from the JANAF liquid table by the same generator. Row-level source hashes,
+methods, temperature ranges and fit residuals are in `PROVENANCE.yaml`.
 
 For comparison with an existing VapoRock installation, set
 `OPENIMCC_VAPOROCK_ROOT` explicitly; that variable overrides both packaged
-tables. The packaged source records used to fit the gas rows are retained in
+tables. VapoRock's condensate table has no TiO2(l) row, so under the override
+the Ti, TiO and TiO2 channels refuse with `ImccGasSpeciesNotFoundError`; pass
+`gas_species` without them to evaluate the rest. The packaged source records used to fit the gas rows are retained in
 `data-src/janaf/` and included in source distributions, not the runtime wheel.
 NIST SRD 13 is public data, and the publication attributions are recorded in
 `NOTICE`.

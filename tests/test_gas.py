@@ -84,6 +84,28 @@ _T625_AGAINST_JANAF_PRINTED_GAS_COLUMNS = {
 }
 
 
+# Titanium channels against the printed JANAF formation-Gibbs columns at
+# 2000 K: Ti-006 Ti(g) 191.423, O-022 TiO(g) -123.256, O-046 TiO2(g) -330.354
+# and O-044 TiO2(l) -581.532 kJ/mol (O2 is the reference, 0).  These columns
+# are independent of both the fitted gas rows and the fitted TiO2(l) row.
+#
+# Premise: TiO2(l) = TiO2(g), TiO2(l) = TiO(g) + 1/2 O2 and
+# TiO2(l) = Ti(g) + O2, each at unit parent activity and fO2 = 1.  Algebra:
+# log10 K = -dG_r/(R T ln 10) with R T ln 10 = 38289.515 J/mol at 2000 K;
+# dG_r = 251.178, 458.276 and 772.955 kJ/mol give -6.55997, -11.96871 and
+# -20.18712, rounded below to three decimals.  Unit check: kJ/mol * 1000 over
+# J/mol is dimensionless.  Sanity: TiO2(g) at -6.560 sits beside the SiO2(g)
+# reference of -6.669 above, and TiO overtakes TiO2 only below
+# log10 fO2 = 2*(-11.969 + 6.560) = -10.818.
+_TI_AGAINST_JANAF_PRINTED_FORMATION_GIBBS = {
+    2000.0: {
+        "Ti": -20.187,
+        "TiO": -11.969,
+        "TiO2": -6.560,
+    }
+}
+
+
 @pytest.fixture(scope="module")
 def gas_pack() -> ImccGasDatapack:
     return load_gas_datapack()
@@ -113,8 +135,8 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 22
-    assert len(gas_pack.oxide_df) == 8
+    assert len(gas_pack.gas_df) == 25
+    assert len(gas_pack.oxide_df) == 9
 
 
 def test_explicit_vaporock_override_remains_supported(
@@ -184,8 +206,8 @@ def test_channel_coverage_ledger_is_closed() -> None:
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
-    assert len(implemented) == 22
-    assert len(unavailable) == 10
+    assert len(implemented) == 25
+    assert len(unavailable) == 7
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert in_domain | extrapolated == implemented
@@ -602,7 +624,9 @@ def test_unavailable_species_ledger_names_the_closing_source(
         "Zn",
         "ZnO",
     }
-    assert set(IMCC_GAS_INCOMPLETE_PARENT_SPECIES) == {"Ti", "TiO", "TiO2"}
+    # The Ti channels left the incomplete-parent ledger when the JANAF-fitted
+    # TiO2(l) parent row shipped; the ledger stays as an empty public mapping.
+    assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
     assert all(
         source.startswith("needs") or "; needs" in source
         for source in IMCC_GAS_UNAVAILABLE_SPECIES.values()
@@ -611,13 +635,101 @@ def test_unavailable_species_ledger_names_the_closing_source(
         f"{species}(g)" not in gas_pack.gas_df.index
         for species in IMCC_GAS_NO_JANAF_ROWS
     )
-    # The fitted package contains the 22 retained channels only; the Ti rows
-    # are deliberately not shipped because their parent path is incomplete.
-    assert all(
-        f"{species}(g)" not in gas_pack.gas_df.index
-        for species in IMCC_GAS_INCOMPLETE_PARENT_SPECIES
+    assert {"Ti(g)", "TiO(g)", "TiO2(g)"} <= set(gas_pack.gas_df.index)
+    assert "TiO2(l)" in gas_pack.oxide_df.index
+    assert {"Ti", "TiO", "TiO2"} <= set(IMCC_GAS_CHANNEL_SPECIES)
+
+
+def test_tio2_bearing_melt_returns_ti_pressures(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    """The quickstart basalt carries TiO2, so every Ti channel is evaluated."""
+    from openimcc import evaluate as evaluate_imcc
+
+    composition = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    melt = evaluate_imcc(composition, 2200.0, basis_type="wt")
+    activities = {name: melt.activity(name) for name in melt.parent_oxides}
+    assert activities["TiO2"] > 0.0
+
+    # Strict mode: 2200 K lies inside every Ti input row, so nothing refuses.
+    result = evaluate_gas(
+        activities,
+        2200.0,
+        1.0e-10,
+        gas_pack,
+        gas_species=("Ti", "TiO", "TiO2"),
+        allow_extrapolation=False,
     )
-    assert "TiO2(l)" not in gas_pack.oxide_df.index
+    assert set(result) == {"Ti", "TiO", "TiO2"}
+    for species in ("Ti", "TiO", "TiO2"):
+        assert math.isfinite(result[species]) and result[species] > 0.0
+        assert result.domain_flags[species] is None
+        assert result.provenance_class[species] == "janaf_fitted"
+        assert gas_species_provenance(species)["condensate_authority"] == (
+            "janaf_fitted"
+        )
+
+    # Premise: all three channels share the TiO2(l) parent, so a_TiO2 cancels
+    # in the ratios. Algebra: p_TiO/p_TiO2 = K_TiO/K_TiO2 * fO2^(-1/2) and
+    # p_Ti/p_TiO = K_Ti/K_TiO * fO2^(-1/2). Unit check: every factor is
+    # dimensionless. Sanity: raising fO2 by 1e4 lowers both ratios by 1e2.
+    richer = evaluate_gas(
+        activities,
+        2200.0,
+        1.0e-6,
+        gas_pack,
+        gas_species=("Ti", "TiO", "TiO2"),
+    )
+    assert richer["TiO2"] == pytest.approx(result["TiO2"], rel=1e-12)
+    assert (result["TiO"] / result["TiO2"]) / (
+        richer["TiO"] / richer["TiO2"]
+    ) == pytest.approx(100.0, rel=1e-9)
+    assert (result["Ti"] / result["TiO"]) / (
+        richer["Ti"] / richer["TiO"]
+    ) == pytest.approx(100.0, rel=1e-9)
+
+
+def test_ti_channels_against_janaf_printed_formation_gibbs(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    """Ti channels agree with independently rounded JANAF formation Gibbs."""
+    T = 2000.0
+    refs = _TI_AGAINST_JANAF_PRINTED_FORMATION_GIBBS[T]
+    pressures = evaluate_gas(
+        {"TiO2": 1.0},
+        T,
+        fO2=1.0,
+        datapack=gas_pack,
+        gas_species=tuple(refs),
+        allow_extrapolation=False,
+    )
+    # Gate: 0.001 dex is 38.3 J/mol at 2000 K. The unrounded hand values sit
+    # 1.5e-4 dex from the model, mostly the TiO2(l) fit's +5.5 J/mol residual
+    # at this node; the three-decimal rounding adds at most 5e-4 dex.
+    for species, expected_log10 in refs.items():
+        actual_log10 = math.log10(pressures[species])
+        assert abs(actual_log10 - expected_log10) <= 0.001, (
+            f"{species} at {T} K: |{actual_log10:.6f} - {expected_log10:.3f}| "
+            "> 0.001 dex"
+        )
+
+    # The TiO/TiO2 balance at a vacuum-like fO2 = 1e-10: the hand value is
+    # 10**(-11.969 + 6.560 + 5) = 10**-0.409 = 0.390.
+    vacuum = evaluate_gas(
+        {"TiO2": 1.0}, T, 1.0e-10, gas_pack, gas_species=("TiO", "TiO2")
+    )
+    assert math.log10(vacuum["TiO"] / vacuum["TiO2"]) == pytest.approx(
+        -0.409, abs=0.001
+    )
 
 
 def test_imcc_adapter_activities_reach_all_channels(

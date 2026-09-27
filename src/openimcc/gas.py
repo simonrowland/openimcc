@@ -195,7 +195,9 @@ def default_condensate_database_path() -> Path:
 # cancel in Delta G degrees.  Unit check: stoichiometric coefficients multiply
 # J/mol values, hence -Delta G degrees/(R*T) is dimensionless.  Sanity checks:
 # Al2O3 -> 2 AlO + 1/2 O2 balances Al2O3, while
-# Na2O + 1/2 O2 -> 2 NaO balances Na2O2.
+# Na2O + 1/2 O2 -> 2 NaO balances Na2O2.  For the TiO2 parent (a=1, b=2):
+# Ti (c=1, d=0) gives n_gas=1, n_O2=(2-0)/2=1; TiO gives n_gas=1,
+# n_O2=(2-1)/2=1/2; TiO2 gives n_gas=1, n_O2=0.
 _SF04_REACTIONS: dict[str, tuple[str, int, float]] = {
     "Na": ("Na2O", 2, 0.5),
     "K": ("K2O", 2, 0.5),
@@ -219,6 +221,10 @@ _SF04_REACTIONS: dict[str, tuple[str, int, float]] = {
     "CaO": ("CaO", 1, 0.0),
     "Ca": ("CaO", 1, 0.5),
     "O2": ("", 1, 0.0),  # special: p_O2 = fO2
+    # Appended after O2 so every earlier channel keeps its position.
+    "Ti": ("TiO2", 1, 1.0),
+    "TiO": ("TiO2", 1, 0.5),
+    "TiO2": ("TiO2", 1, 0.0),
 }
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
@@ -239,6 +245,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Na2O": "lam1984_transcribed",
     "K2O": "secondary_transcription_unverified_primary",
     "FeO": "janaf_transcribed",
+    "TiO2": "janaf_fitted",
 }
 _PROVENANCE_AUTHORITY_RANK = {
     "secondary_transcription_unverified_primary": 0,
@@ -317,12 +324,15 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "K2",
     "KO",
     "O2",
+    "Ti",
+    "TiO",
+    "TiO2",
 )
 
-# Closure ledger for species outside the retained channel set.  The first seven
-# entries have no gas G(T) row in the vendored JANAF source set.  The titanium
-# gas rows exist, but no TiO2(l) parent row exists, so those reactions remain
-# incomplete.
+# Closure ledger for species outside the retained channel set.  These entries
+# have no gas G(T) row in the vendored JANAF source set.  The titanium channels
+# (Ti, TiO, TiO2) left this ledger when the JANAF-fitted TiO2(l) parent row
+# (O-044) joined the gas rows, so IMCC_GAS_INCOMPLETE_PARENT_SPECIES is empty.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     "Na2O": "needs a source-rated Na2O(g) standard-Gibbs row",
     "K2O": "needs a source-rated K2O(g) standard-Gibbs row",
@@ -343,11 +353,7 @@ IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     ),
 }
 
-IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {
-    "Ti": "Ti(g) exists; needs a source-rated TiO2(l) standard-Gibbs row",
-    "TiO": "TiO(g) exists; needs a source-rated TiO2(l) standard-Gibbs row",
-    "TiO2": "TiO2(g) exists; needs a source-rated TiO2(l) standard-Gibbs row",
-}
+IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {}
 
 IMCC_GAS_UNAVAILABLE_SPECIES = {
     **IMCC_GAS_NO_JANAF_ROWS,

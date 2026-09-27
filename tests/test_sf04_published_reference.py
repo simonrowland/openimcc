@@ -52,6 +52,9 @@ SPECIES_MAX_ABS_RESIDUAL_DEX = {
     "O2": 0.000,
     "SiO": 1.076,
     "SiO2": 1.057,
+    # One point (Allende B1 CAI, 2375 K), comparable since the TiO2(l)
+    # parent row shipped; measured +0.382382 dex.
+    "TiO2": 0.383,
 }
 SPECIES_RESIDUAL_MARGIN_DEX = 0.300
 SIGNED_MEDIAN_EXPECTATIONS_DEX = {

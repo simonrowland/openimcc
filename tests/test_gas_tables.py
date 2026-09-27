@@ -56,6 +56,9 @@ GAS_TABLE_IDS = {
     "CaO": "Ca-030",
     "Ca": "Ca-006",
     "O2": "O-029",
+    "Ti": "Ti-006",
+    "TiO": "O-022",
+    "TiO2": "O-046",
 }
 
 PARENT_TABLE_IDS = {
@@ -66,7 +69,11 @@ PARENT_TABLE_IDS = {
     "Al2O3": "Al-100",
     "SiO2": "O-038",
     "FeO": "Fe-019",
+    "TiO2": "O-044",
 }
+
+# Fitted, not transcribed, condensate rows: species -> JANAF table ID.
+FITTED_CONDENSATE_TABLE_IDS = {"TiO2(l)": "O-044"}
 
 _SOURCE_FIELDS = (
     "temperature",
@@ -121,7 +128,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         row["species_name"]: row for row in rows if row["table"] == "condensate"
     }
     assert set(gas_rows) == {f"{name}(g)" for name in IMCC_GAS_CHANNEL_SPECIES}
-    assert len(oxide_rows) == 8
+    assert len(oxide_rows) == 9
 
     for species, table_id in GAS_TABLE_IDS.items():
         source = _record(table_id)
@@ -134,6 +141,21 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert row["method"] == "fitted"
         assert row["T_range_K"] == [1500, 3000]
         assert source["source"]["doi"] == "10.18434/T42S31"
+
+    for species, table_id in FITTED_CONDENSATE_TABLE_IDS.items():
+        source = _record(table_id)
+        row = oxide_rows[species]
+        assert source["table"]["index_entry"]["state"] == "l"
+        assert row["table_id"] == table_id
+        assert row["source_path"] == f"data-src/janaf/{table_id}.yaml"
+        assert row["source_sha256"] == source["extraction"]["source_sha256"]
+        assert row["authority"] == "janaf_fitted"
+        assert row["method"] == "fitted"
+        assert row["T_range_K"] == [1500, 3000]
+        assert source["source"]["doi"] == "10.18434/T42S31"
+
+    for species in ("Ti", "TiO", "TiO2"):
+        assert _record(GAS_TABLE_IDS[species])["table"]["index_entry"]["state"] == "g"
 
     k_row = oxide_rows["K2O(l)"]
     assert k_row["authority"] == "secondary_transcription_unverified_primary"
@@ -198,8 +220,60 @@ def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
     assert max(value[0] for value in maxima.values()) < 2.1
 
 
+def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> None:
+    """The fitted TiO2(l) row reproduces its JANAF source, not just its own fit.
+
+    Premise: the runtime condensate form ``1000*R*dH298_R - R*T*P(T/1000)``
+    must equal the source apparent Gibbs energy
+    ``(dfH(298) + H - H(298))*1000 - T*S`` at every complete O-044 node in
+    1500--3000 K. Unit check: both sides are J/mol. Sanity: the quartic in
+    T/1000 cannot carry the exact constant-Cp ``ln T`` and ``1/T`` terms, so
+    the measured maximum (6.88 J/mol, 1.6e-4 dex) is larger than the gas
+    rows' 2.1 J/mol gate; it is still 60 times inside the shared 0.01 dex
+    tolerance and 44 times smaller than the transcribed FeO(l) row's
+    302 J/mol against Fe-019 over the same window.
+    """
+    from openimcc.gas import _lamor_gibbs
+
+    pack = load_gas_datapack()
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    recorded = {
+        row["species_name"]: row
+        for row in provenance["rows"]
+        if row["table"] == "condensate"
+    }
+    for species, table_id in FITTED_CONDENSATE_TABLE_IDS.items():
+        row = pack.oxide_df.loc[species]
+        maximum_j = 0.0
+        maximum_log10 = 0.0
+        nodes = 0
+        for source_row in _complete_rows(table_id):
+            temperature = source_row["temperature"]
+            if not 1500.0 <= temperature <= 3000.0:
+                continue
+            residual = abs(
+                _lamor_gibbs(temperature, row)
+                - _source_g_app_from_row(table_id, source_row)
+            )
+            maximum_j = max(maximum_j, residual)
+            maximum_log10 = max(
+                maximum_log10,
+                residual / (R_J_MOL_K * temperature * math.log(10.0)),
+            )
+            nodes += 1
+        assert nodes == 15  # 1500--3000 K by 100 K, less the ambiguous 2200 K
+        assert maximum_log10 <= 0.001
+        assert maximum_j < 10.0
+        assert maximum_j == pytest.approx(
+            recorded[species]["max_residual_J_per_mol"], abs=1e-6
+        )
+        assert maximum_log10 == pytest.approx(
+            recorded[species]["max_residual_log10_K"], abs=1e-9
+        )
+
+
 def test_no_fitted_row_consumes_a_parse_ambiguous_source_row() -> None:
-    for table_id in GAS_TABLE_IDS.values():
+    for table_id in (*GAS_TABLE_IDS.values(), *FITTED_CONDENSATE_TABLE_IDS.values()):
         selected_temperatures = {
             row["temperature"]
             for row in _complete_rows(table_id)
@@ -210,16 +284,34 @@ def test_no_fitted_row_consumes_a_parse_ambiguous_source_row() -> None:
 
 def test_generator_is_deterministic_and_matches_packaged_output(tmp_path: Path) -> None:
     generated = tmp_path / "gas-shomate.csv"
+    condensate = tmp_path / "condensate.csv"
+    packaged_condensate = (GAS_DATA / "condensate.csv").read_bytes()
+    # Start from the packaged table with the fitted rows removed, so the
+    # generator must re-create them; the transcribed rows must pass through.
+    fitted_prefixes = tuple(
+        f"{species},".encode() for species in FITTED_CONDENSATE_TABLE_IDS
+    )
+    condensate.write_bytes(
+        b"".join(
+            line
+            for line in packaged_condensate.splitlines(keepends=True)
+            if not line.startswith(fitted_prefixes)
+        )
+    )
     command = [
         sys.executable,
         str(ROOT / "tools" / "build_gas_tables.py"),
         "--output",
         str(generated),
+        "--condensate-output",
+        str(condensate),
     ]
     first = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
+    assert condensate.read_bytes() == packaged_condensate
     second = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
     assert first.stdout == second.stdout
     assert generated.read_bytes() == (GAS_DATA / "gas-shomate.csv").read_bytes()
+    assert condensate.read_bytes() == packaged_condensate
 
 
 _CONDENSATE_EXPECTED = {
@@ -241,6 +333,18 @@ _CONDENSATE_EXPECTED = {
     "Na2O(l)": (825, 3000, -50.17, 4.82, 19.292, -5.267, 0.623, 0.0, "LAM1984"),
     "K2O(l)": (1190, 3000, -43.58, 0.8, 18.889, -4.532, 0.467, 0.0, "LAM1984"),
     "FeO(l)": (1000, 5000, -30.01, 6.72, 6.588, -1.248, 0.150, -0.007697, "JANAF"),
+    # Fitted by tools/build_gas_tables.py from JANAF O-044, not transcribed.
+    "TiO2(l)": (
+        1500,
+        3000,
+        -107.530100389706,
+        6.93000608750468,
+        6.19040408780147,
+        -0.261882901980972,
+        -0.134854424412715,
+        0.0206704756752248,
+        "O-044",
+    ),
 }
 
 
@@ -358,7 +462,9 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             checked += 1
         maxima[species] = row_max
 
-    assert checked == 289
+    # 289 nodes for the first 22 channels plus 15 for each Ti channel (the
+    # O-044 parent has no complete 2200 K row).
+    assert checked == 334
     # The measured on-node maximum is 2.728 J/mol (Fe); 10 J/mol leaves a
     # stated margin while remaining far below the old workbook-grid gate.
     assert max(maxima.values()) <= 10.0
@@ -371,6 +477,7 @@ _G2_SOURCE_HOLES = (
     ("MgO", "Mg-009", 2100.001),
     ("CaO", "Ca-028", 2100.0),
     ("Al2O3", "Al-100", 2400.0),
+    ("TiO2", "O-044", 2200.0),
 )
 
 
@@ -381,8 +488,9 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     interpolation error across known source holes, not only convention error.
     The named holes are Na2O/Na-013 at 1500 K, FeO/Fe-019 at 1700 K,
     SiO2/O-038 at 1700 K, MgO/Mg-009 at 2100.001 K, CaO/Ca-028 at 2100 K, and
-    Al2O3/Al-100 at 2400 K. K2O's K-012 parent ends at 2000 K, so K, K2 and KO
-    have no independent parent reference at 2125, 2250, 2375 or 2500 K.
+    Al2O3/Al-100 at 2400 K, and TiO2/O-044 at 2200 K. K2O's K-012 parent
+    ends at 2000 K, so K, K2 and KO have no independent parent reference at
+    2125, 2250, 2375 or 2500 K.
     """
     for _oxide, table_id, temperature in _G2_SOURCE_HOLES:
         assert temperature in _ambiguous_temperatures(table_id)
@@ -438,7 +546,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         for species in ("K", "K2", "KO")
         for temperature in (2125.0, 2250.0, 2375.0, 2500.0)
     }
-    assert checked == 195
+    assert checked == 225
     assert max(maxima.values()) < 300.0
 
 
@@ -505,11 +613,19 @@ def test_g3_new_tables_are_finite_against_current_vaporock() -> None:
             "K2O": 0.02,
         },
     ]
-    max_by_species = {species: 0.0 for species in IMCC_GAS_CHANNEL_SPECIES}
+    # The legacy condensate table has no TiO2(l) row, so the Ti channels have
+    # no legacy counterpart to compare against.
+    legacy_species = tuple(
+        species
+        for species in IMCC_GAS_CHANNEL_SPECIES
+        if _SF04_REACTIONS[species][0] != "TiO2"
+    )
+    assert "TiO2(l)" not in old_pack.oxide_df.index
+    max_by_species = {species: 0.0 for species in legacy_species}
     for temperature in IMCC_SF04_WORKBOOK_GRID_K:
         for activities in compositions:
             for fugacity in (1.0, 1.0e-4, 1.0e-10):
-                for species in IMCC_GAS_CHANNEL_SPECIES:
+                for species in legacy_species:
                     new = load_and_evaluate(
                         new_pack, activities, temperature, fugacity, species
                     )

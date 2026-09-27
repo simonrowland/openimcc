@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
-"""Build the packaged JANAF Shomate table from the vendored records.
+"""Build the packaged JANAF gas table and JANAF-fitted condensate rows.
 
 The vendored ``*.yaml`` records are the NIST-JANAF rows copied from the
 regolith compilation.  Some records are JSON with a ``.yaml`` suffix and some
 are YAML, so the loader accepts both documented representations.
+
+The gas table is written whole.  ``condensate.csv`` also carries transcribed
+Lamoreaux/JANAF rows that this tool does not own, so only the rows named in
+``CONDENSATE_SOURCES`` are replaced (or appended) and every other line is
+kept byte-for-byte.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import io
 import json
 from pathlib import Path
 from typing import Any
@@ -19,6 +25,9 @@ import numpy as np
 
 FIT_T_MIN = 1500.0
 FIT_T_MAX = 3000.0
+# Same value as openimcc.gas.R_J_MOL_K; kept local so the tool does not import
+# the package it builds data for.
+R_J_MOL_K = 8.314462618
 RUNTIME_COLUMNS = (
     "species_name",
     "state",
@@ -67,7 +76,37 @@ GAS_SOURCES = (
     # O2 is the JANAF reference state, not a ``g`` row.  O-029 is the
     # explicitly labelled O2(ref) record in the verified corpus.
     ("O2(g)", "O-029", "", 0, 2),
+    # Titanium channels of the TiO2(l) parent.  Each record's own metadata
+    # names the gas phase: Ti-006 "Ti1(g)", O-022 "O1Ti1(g)", O-046
+    # "O2Ti1(g)".  They are appended after O2 so every earlier row keeps its
+    # position and bytes.
+    ("Ti(g)", "Ti-006", "Ti", 1, 0),
+    ("TiO(g)", "O-022", "Ti", 1, 1),
+    ("TiO2(g)", "O-046", "Ti", 1, 2),
 )
+
+CONDENSATE_COLUMNS = (
+    "species_name",
+    "state",
+    "cation",
+    "cat_num",
+    "oxy_num",
+    "T_min",
+    "T_max",
+    "dH298_R",
+    "dG_A",
+    "dG_B",
+    "dG_C",
+    "dG_D",
+    "dG_E",
+    "Ref",
+)
+
+# Parent-oxide liquids fitted here rather than transcribed.  O-044 is the
+# JANAF "O2Ti1(l)" record; over 1500--3000 K it is on its liquid branch
+# (glass transition 1400 K, Cp = 100.416 J/(mol K) throughout), supercooled
+# below the 2130 K melting point exactly as the JANAF liquid table states.
+CONDENSATE_SOURCES = (("TiO2(l)", "O-044", "Ti", 1, 2),)
 
 REQUIRED_FIELDS = (
     "temperature",
@@ -236,8 +275,100 @@ def _fit_row(source_dir: Path, species_name: str, table_id: str, cation: str, ca
     }
 
 
+def _fit_condensate_row(
+    source_dir: Path,
+    species_name: str,
+    table_id: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+) -> dict[str, str]:
+    """Fit one parent-oxide liquid to the runtime's condensate row form.
+
+    Premise: ``openimcc.gas._lamor_gibbs`` evaluates a condensate row as
+    ``G(T) = 1000*R*dH298_R - R*T*P(tau)`` with ``tau = T/1000`` and
+    ``P(tau) = dG_A + dG_B*tau + dG_C*tau**2 + dG_D*tau**3 + dG_E*tau**4``.
+    The JANAF apparent Gibbs energy used for every gas row is
+    ``G_app = dfH(298) + (H - H(298)) - T*S = dfH(298) - T*Phi`` with the
+    Gibbs-energy function ``Phi = S - (H - H(298))/T``.
+
+    Algebra: matching the two forms term by term gives
+    ``dH298_R = dfH(298)/R`` (dfH in kJ/mol, so 1000*R*dH298_R is J/mol) and
+    ``P(tau) = Phi/R``.  Phi is taken from the tabulated S and H - H(298)
+    columns, the same columns the gas residual uses, and ``P`` is the linear
+    least-squares fit of ``Phi/R`` on ``[1, tau, tau**2, tau**3, tau**4]``.
+    Because ``(G_fit - G_app)/(R*T*ln 10) = -(P - Phi/R)/ln 10``, this is
+    the least-squares fit of the log10 K error with every fit row weighted
+    equally.
+
+    Unit check: Phi is J/(mol K) and R is J/(mol K), so P is dimensionless;
+    dfH(298)/R is kJ/mol / (J/(mol K)) = 1000 K, matching the ``* 1000`` in
+    the runtime.  Sanity: evaluating the row with this algebra reproduces
+    every complete source G_app row to the residual recorded below, and the
+    same tabulated Cp = 100.416 J/(mol K) makes Phi smooth, so a quartic is
+    ample over 1500--3000 K.
+    """
+    record = _load_record(source_dir / f"{table_id}.yaml")
+    table = record["table"]
+    if table["table_id"] != table_id:
+        raise ValueError(f"{table_id}: record table_id does not match filename")
+    rows = _usable_rows(table, table_id)
+    reference = next(
+        _value(row, "formation_enthalpy")
+        for row in table["values"]
+        if _value(row, "temperature") == 298.15
+    )
+    if reference is None:
+        raise ValueError(f"{table_id} has no complete 298.15 K formation enthalpy")
+
+    temperatures = np.array([row["temperature"] for row in rows])
+    tau = temperatures / 1000.0
+    enthalpy_increment = np.array([row["enthalpy_increment"] for row in rows])
+    entropy = np.array([row["entropy"] for row in rows])
+    phi = entropy - enthalpy_increment * 1000.0 / temperatures
+    design = np.column_stack((np.ones_like(tau), tau, tau**2, tau**3, tau**4))
+    coefficients = np.linalg.lstsq(design, phi / R_J_MOL_K, rcond=None)[0]
+    dH298_R = float(reference) / R_J_MOL_K
+
+    model_g = 1000.0 * R_J_MOL_K * dH298_R - R_J_MOL_K * temperatures * (
+        design @ coefficients
+    )
+    source_g = (reference + enthalpy_increment) * 1000.0 - temperatures * entropy
+    residual_j = float(np.max(np.abs(model_g - source_g)))
+    residual_log10 = float(
+        np.max(np.abs((model_g - source_g) / (R_J_MOL_K * temperatures * np.log(10.0))))
+    )
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    A, B, C, D, E = coefficients
+    return {
+        "species_name": species_name,
+        "state": "l",
+        "cation": cation,
+        "cat_num": str(cat_num),
+        "oxy_num": str(oxy_num),
+        "T_min": str(int(FIT_T_MIN)),
+        "T_max": str(int(FIT_T_MAX)),
+        "dH298_R": number(dH298_R),
+        "dG_A": number(A),
+        "dG_B": number(B),
+        "dG_C": number(C),
+        "dG_D": number(D),
+        "dG_E": number(E),
+        "Ref": table_id,
+        "_max_residual_J_per_mol": number(residual_j),
+        "_max_residual_log10_K": number(residual_log10),
+    }
+
+
 def build_rows(source_dir: Path) -> list[dict[str, str]]:
     return [_fit_row(source_dir, *source) for source in GAS_SOURCES]
+
+
+def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
+    return [_fit_condensate_row(source_dir, *source) for source in CONDENSATE_SOURCES]
 
 
 def write_csv(rows: list[dict[str, str]], output: Path) -> None:
@@ -248,6 +379,31 @@ def write_csv(rows: list[dict[str, str]], output: Path) -> None:
         writer.writerows({column: row[column] for column in RUNTIME_COLUMNS} for row in rows)
 
 
+def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
+    """Replace or append the fitted rows; keep every other line unchanged."""
+    lines = output.read_text(encoding="utf-8").splitlines()
+    if not lines or tuple(lines[0].split(",")) != CONDENSATE_COLUMNS:
+        raise ValueError(f"{output} does not have the condensate header")
+    for row in rows:
+        buffer = io.StringIO()
+        csv.writer(buffer, lineterminator="\n").writerow(
+            [row[column] for column in CONDENSATE_COLUMNS]
+        )
+        line = buffer.getvalue().rstrip("\n")
+        matches = [
+            index
+            for index, existing in enumerate(lines)
+            if existing.split(",", 1)[0] == row["species_name"]
+        ]
+        if len(matches) > 1:
+            raise ValueError(f"{output} has duplicate {row['species_name']} rows")
+        if matches:
+            lines[matches[0]] = line
+        else:
+            lines.append(line)
+    output.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     repository = Path(__file__).resolve().parents[1]
@@ -256,15 +412,27 @@ def main() -> None:
         type=Path,
         default=repository / "data-src/janaf",
     )
+    packaged_gas = repository / "src/openimcc/data/gas/gas-shomate.csv"
+    parser.add_argument("--output", type=Path, default=packaged_gas)
     parser.add_argument(
-        "--output",
+        "--condensate-output",
         type=Path,
-        default=repository / "src/openimcc/data/gas/gas-shomate.csv",
+        default=None,
+        help=(
+            "existing condensate CSV to update in place (fitted rows only); "
+            "defaults to the packaged file only when --output is also the "
+            "packaged default, so a scratch --output never edits the package"
+        ),
     )
     args = parser.parse_args()
+    if args.condensate_output is None and args.output == packaged_gas:
+        args.condensate_output = repository / "src/openimcc/data/gas/condensate.csv"
     rows = build_rows(args.source_dir)
     write_csv(rows, args.output)
-    for row in rows:
+    condensate_rows = build_condensate_rows(args.source_dir)
+    if args.condensate_output is not None:
+        merge_condensate_csv(condensate_rows, args.condensate_output)
+    for row in [*rows, *condensate_rows]:
         print(
             f"{row['species_name']}: {row['_max_residual_J_per_mol']} J/mol, "
             f"{row['_max_residual_log10_K']} log10 K"

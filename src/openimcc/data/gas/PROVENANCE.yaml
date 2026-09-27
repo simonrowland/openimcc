@@ -228,6 +228,36 @@ rows:
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.75098398094997
     max_residual_log10_K: 3.65840928399281e-05
+  - table: gas
+    species_name: Ti(g)
+    table_id: Ti-006
+    source_path: data-src/janaf/Ti-006.yaml
+    source_sha256: 66f195c514cbc4378faf2d5d7978015c92230777fb77e0947d7204672879b69d
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.19732731208205
+    max_residual_log10_K: 2.40541307617013e-05
+  - table: gas
+    species_name: TiO(g)
+    table_id: O-022
+    source_path: data-src/janaf/O-022.yaml
+    source_sha256: 4ffccfd8bda5f4944e176562fb66c6281d3f7bdddc80a467fb5eb5b7399997a1
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 0.875986890634522
+    max_residual_log10_K: 1.83900724835047e-05
+  - table: gas
+    species_name: TiO2(g)
+    table_id: O-046
+    source_path: data-src/janaf/O-046.yaml
+    source_sha256: 7dd56850c1ce8f2b74327202af8db7a6f4e4f50ee8635ef5982cbdf4aa21c122
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.06962453073356
+    max_residual_log10_K: 2.66049340052399e-05
   - table: condensate
     species_name: MgO(l)
     authority: lam1987_transcribed
@@ -302,3 +332,20 @@ rows:
       source_sha256: 7da2f7429380ef0e77ea265acb8f9c7d9986b45828373f4f83a857f619dd0d8b
       doi: 10.18434/T42S31
       transcription: VapoRock data/condensate-thermo-data.csv
+  - table: condensate
+    species_name: TiO2(l)
+    table_id: O-044
+    source_path: data-src/janaf/O-044.yaml
+    source_sha256: 09aaf780268692090aa7fbc7e279f7949ea0d918144d2068ec65608f1510cb8d
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 6.87822891818359
+    max_residual_log10_K: 0.00016241434017251
+    note: >-
+      Fitted by tools/build_gas_tables.py to the runtime condensate form
+      (dH298_R = dfH(298)/R; dG_A..dG_E = quartic in T/1000 of the JANAF
+      Gibbs-energy function divided by R). O-044 is the JANAF O2Ti1(l) table;
+      over 1500-3000 K it is on the liquid branch (Cp = 100.416 J/(mol K)),
+      supercooled below the 2130 K melting point as tabulated by JANAF. The
+      2200 K source row is parse-ambiguous and is not used, leaving 15 fit rows.

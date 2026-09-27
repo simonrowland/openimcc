@@ -8,12 +8,14 @@ measured against the code rather than estimated.
 ### 1. The gas layer is self-contained (done)
 
 The packaged gas tables now load by default through `importlib.resources`.
-Twenty-two Shomate rows are fitted deterministically from vendored NIST-JANAF
+Twenty-five Shomate rows are fitted deterministically from vendored NIST-JANAF
 records, with the exact source hash and fit residual recorded per row. The
 maximum fit residual is **1.9231 J/mol** (**3.7465e-5 log10 K**), well below the
-0.01 log10 K gate. The eight condensate rows reproduce the current published
-coefficient values exactly. `OPENIMCC_VAPOROCK_ROOT` remains an explicit
-comparison override.
+0.01 log10 K gate. The eight transcribed condensate rows reproduce the current
+published coefficient values exactly; the ninth, TiO2(l), is fitted from JANAF
+O-044 by the same generator (max residual 6.88 J/mol, 1.62e-4 log10 K).
+`OPENIMCC_VAPOROCK_ROOT` remains an explicit comparison override; its legacy
+condensate table has no TiO2(l) row, so the Ti channels refuse under it.
 
 ### 2. The bench's `partial_pressure` observable is wired (done)
 
