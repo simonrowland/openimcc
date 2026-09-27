@@ -488,6 +488,8 @@ class ImccConvergence:
     residual_inf: float
     residual_l2: float
     total_displacement: float
+    solver_path: str
+    continuation_stages: int
     status: str = "converged"
 
 
@@ -642,7 +644,7 @@ def _solve_active(
     S: np.ndarray,
     tol: float,
     max_iter: int,
-) -> tuple[np.ndarray, np.ndarray, float, int, float, float, float]:
+) -> tuple[np.ndarray, np.ndarray, float, int, float, float, float, str, int]:
     """
     Solve the reduced log-space parent-balance system.
 
@@ -681,9 +683,10 @@ def _solve_active(
     that ideal solution is at most 1e-4, then increase log(lambda) by no more
     than two decades per stage until lambda = 1.  This follows the same
     equilibrium branch instead of guessing composition-specific starts.  All
-    residuals are dimensionless; lambda is dimensionless.  If continuation
-    cannot reach the requested tolerance inside the original evaluation
-    budget, the typed ``ImccNonconvergenceError`` remains the outcome.
+    residuals are dimensionless; lambda is dimensionless.  Direct and
+    continuation each receive the original evaluation allowance.  If
+    continuation cannot reach tolerance inside its allowance, the typed
+    ``ImccNonconvergenceError`` remains the outcome.
     """
     n = len(x_target)
     if n == 0:
@@ -772,13 +775,17 @@ def _solve_active(
                 "final_y": y0.tolist(),
                 "total_displacement": 0.0,
                 "continuation": [],
+                "solver_path": "failed",
+                "continuation_stages": 0,
             },
         )
 
     if first[4] <= tol:
-        return first[:7]
+        return (*first[:7], "direct", 0)
 
     total_nfev = first[3]
+    continuation_nfev = 0
+    continuation_stages = 0
     continuation = [
         {
             "log_lambda": 0.0,
@@ -800,10 +807,16 @@ def _solve_active(
     best = first
     y_stage = y0
     for log_lambda in log_lambdas:
-        remaining_nfev = max_nfev - total_nfev
+        # Keep the direct fast path's full allowance so every previously
+        # converged direct result stays bit-identical. A stalled direct solve
+        # gets no more than that same allowance for continuation, preventing
+        # its stagnated evaluations from starving the connected-root retry.
+        remaining_nfev = max_nfev - continuation_nfev
         attempt = _attempt(y_stage, lnK + log_lambda, remaining_nfev)
         if attempt is None:
             break
+        continuation_stages += 1
+        continuation_nfev += attempt[3]
         total_nfev += attempt[3]
         continuation.append(
             {
@@ -826,6 +839,8 @@ def _solve_active(
                 attempt[4],
                 attempt[5],
                 attempt[6],
+                "continuation",
+                continuation_stages,
             )
 
     # Continuation did not reach lambda=1 at tolerance. Diagnostics remain for
@@ -849,6 +864,8 @@ def _solve_active(
         "total_displacement": disp_best,
         "scipy_message": msg_best,
         "continuation": continuation,
+        "solver_path": "failed",
+        "continuation_stages": continuation_stages,
     }
     raise ImccNonconvergenceError(
         "IMCC-SF04 parent-balance solve did not converge",
@@ -1096,7 +1113,17 @@ def solve_imcc_sf04(
         raise ImccCompositionIncompleteError("no positive parent oxides")
 
     # Solve the reduced log-space system.
-    y_active, g_active, D, iterations, res_inf, res_l2, final_step = _solve_active(
+    (
+        y_active,
+        g_active,
+        D,
+        iterations,
+        res_inf,
+        res_l2,
+        final_step,
+        solver_path,
+        continuation_stages,
+    ) = _solve_active(
         x_active, nu_active, lnK_active, S_active, tol, max_iter
     )
 
@@ -1138,6 +1165,8 @@ def solve_imcc_sf04(
         residual_inf=res_inf,
         residual_l2=res_l2,
         total_displacement=final_step,
+        solver_path=solver_path,
+        continuation_stages=continuation_stages,
         status="converged",
     )
 

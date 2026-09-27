@@ -133,9 +133,42 @@ def test_pack_and_evaluate_default_to_the_shipped_resource() -> None:
     assert default_pack.version == explicit_pack.version == "1.0.2"
 
     result = evaluate({"SiO2": 1.0}, 2500.0)
+    assert result.convergence.solver_path == "direct"
+    assert result.convergence.continuation_stages == 0
     assert result.labels.identity["model_id"] == "IMCC-SF04"
     assert result.labels.identity["datapack_version"] == "1.0.2"
     assert result.labels.acid_sink_ratio == pytest.approx(1.0)
+
+
+def test_oprl2n_2200k_uses_continuation_without_root_jump() -> None:
+    composition = {
+        "SiO2": 46.2,
+        "TiO2": 5.5,
+        "Al2O3": 12.9,
+        "FeO": 12.9,
+        "MgO": 2.7,
+        "CaO": 3.2,
+        "Na2O": 3.0,
+    }
+    lower = evaluate(composition, 2175.0, basis_type="wt")
+    result = evaluate(composition, 2200.0, basis_type="wt")
+    upper = evaluate(composition, 2225.0, basis_type="wt")
+
+    assert result.convergence.residual_inf <= 1.0e-12
+    assert result.convergence.solver_path == "continuation"
+    assert result.convergence.continuation_stages > 0
+    # Use half of the neighbor-derived 50 K slope across the 25 K half-step;
+    # this allows only local interpolation-sized curvature around the midpoint.
+    for name in result.parent_oxides:
+        left = lower.activity(name)
+        center = result.activity(name)
+        right = upper.activity(name)
+        local_slope = abs(right - left) / 50.0
+        tolerance = local_slope * 12.5 + np.finfo(float).eps * max(
+            abs(left), abs(right), 1.0e-300
+        ) * 8.0
+        midpoint = (left + right) / 2.0
+        assert abs(center - midpoint) <= tolerance, name
 
 
 def test_result_lookup_dataframe_and_typed_unknown_name(
