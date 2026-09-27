@@ -342,10 +342,11 @@ free Me2O among `x` mol of associate species. The Raoultian activity becomes
 
     a(Me2O) → (2x − 1) / x
 
-This value depends only on stoichiometry. It does not depend on temperature
-or on any coefficient. Evaluated with `allow_out_of_envelope=True`, the model
-returns 0.181818 at x = 0.55 and 0.333333 at x = 0.60, at 1373 K and 1573 K
-alike, for both Na2O and K2O. So a value beyond the metasilicate is a
+That is the limit for a fully formed complex, and it depends only on
+stoichiometry, not on temperature or any coefficient. The model sits on it:
+with `allow_out_of_envelope=True` and `allow_extrapolation=True` it returns
+0.181818–0.181819 at x = 0.55 and 0.333333–0.333334 at x = 0.60, for both
+Na2O and K2O at 1373.15 K and 1573.15 K. So a value beyond the metasilicate is a
 mass-balance artefact, not a thermodynamic prediction. That is why the
 validated envelope stops at X(Me2O) = 0.5.
 
@@ -358,8 +359,9 @@ al. (2000). At X ≤ 0.45 both agree within 0.5 dex.
 
 The `species-coverage-edge` flag marks this regime. It fires when the free
 SiO2 fraction falls below 1.91e-3 of nominal, i.e. when the ladder has used
-up its acidic sink. In the binaries it first appears at X ≈ 0.495–0.5, and
-it does not fire for lunar basalts. Treat any Me2O activity carrying that
+up its acidic sink. In the binaries it first appears at X = 0.493–0.499
+(K2O: 0.493 at 1373 K, 0.497 at 1873 K; Na2O: 0.498 and 0.499), and it does
+not fire for lunar basalts. Treat any Me2O activity carrying that
 flag as a structural limit of the complex set, not as a measured
 disagreement. The fix is to add the orthosilicate and pyrosilicate
 complexes. Nothing is retuned.
