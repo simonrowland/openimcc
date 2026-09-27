@@ -21,6 +21,7 @@ from openimcc.gas import (
     _GAS_PROVENANCE_AUTHORITY,
     _OXIDE_PROVENANCE_AUTHORITY,
     IMCC_GAS_CHANNEL_SPECIES,
+    IMCC_GAS_INCOMPLETE_PARENT_SPECIES,
     IMCC_SF04_WORKBOOK_GRID_K,
     R_J_MOL_K,
     _SF04_REACTIONS,
@@ -74,6 +75,9 @@ GAS_TABLE_IDS = {
     "Nb": "Nb-005",
     "NbO": "Nb-011",
     "NbO2": "Nb-015",
+    "Mn": "Mn-005",
+    "Ni": "Ni-005",
+    "Co": "Co-005",
 }
 
 PARENT_TABLE_IDS = {
@@ -293,7 +297,10 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     oxide_rows = {
         row["species_name"]: row for row in rows if row["table"] == "condensate"
     }
-    assert set(gas_rows) == {f"{name}(g)" for name in IMCC_GAS_CHANNEL_SPECIES}
+    assert set(gas_rows) == {
+        f"{name}(g)"
+        for name in (*IMCC_GAS_CHANNEL_SPECIES, *IMCC_GAS_INCOMPLETE_PARENT_SPECIES)
+    }
     assert len(oxide_rows) == 12
 
     for species, table_id in GAS_TABLE_IDS.items():
@@ -333,6 +340,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         "Nb",
         "NbO",
         "NbO2",
+        "Mn",
+        "Ni",
+        "Co",
     ):
         assert _record(GAS_TABLE_IDS[species])["table"]["index_entry"]["state"] == "g"
 

@@ -324,12 +324,14 @@ def _default_reactions(
         selected.append((name, reaction))
     return tuple(selected)
 
-# These authority labels mirror the row-level classes in PROVENANCE.yaml.  A
+# These authority labels mirror the row-level classes in PROVENANCE.yaml. A
 # reaction is only as authoritative as its least-authoritative input row, so a
 # potassium channel inherits the K2O(l) secondary-transcription flag while the
-# other channels retain their JANAF/Lamoreaux classes.
+# other retained channels retain their JANAF/Lamoreaux classes. Pending gas
+# rows are included for provenance parity until their parent rows are supplied.
 _GAS_PROVENANCE_AUTHORITY = {
-    species: "janaf_fitted" for species in IMCC_GAS_CHANNEL_SPECIES
+    species: "janaf_fitted"
+    for species in (*IMCC_GAS_CHANNEL_SPECIES, "Mn", "Ni", "Co")
 }
 _OXIDE_PROVENANCE_AUTHORITY = {
     "MgO": "lam1987_transcribed",
@@ -442,7 +444,8 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # Closure ledger for species outside the retained channel set.  These entries
 # have no gas G(T) row in the vendored JANAF source set.  The titanium channels
 # (Ti, TiO, TiO2) left this ledger when the JANAF-fitted TiO2(l) parent row
-# (O-044) joined the gas rows, so IMCC_GAS_INCOMPLETE_PARENT_SPECIES is empty.
+# (O-044) joined the gas rows; the remaining incomplete-parent entries are
+# source-backed Mn/Ni/Co gas rows waiting for their liquid parent records.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     "Cr": "needs a complete 1500-3000 K source-backed Cr(g) row; Cr-005 ends at 2900 K",
     "Na2O": "needs a source-rated Na2O(g) standard-Gibbs row",
@@ -464,7 +467,11 @@ IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     ),
 }
 
-IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {}
+IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {
+    "Mn": "Mn(g) exists; needs a source-rated MnO(l) standard-Gibbs row",
+    "Ni": "Ni(g) exists; needs a source-rated NiO(l) standard-Gibbs row",
+    "Co": "Co(g) exists; needs a source-rated CoO(l) standard-Gibbs row",
+}
 
 IMCC_GAS_UNAVAILABLE_SPECIES = {
     **IMCC_GAS_NO_JANAF_ROWS,

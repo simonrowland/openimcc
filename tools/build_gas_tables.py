@@ -97,6 +97,9 @@ GAS_SOURCES = (
     ("Nb(g)", "Nb-005", "Nb", 1, 0),
     ("NbO(g)", "Nb-011", "Nb", 1, 1),
     ("NbO2(g)", "Nb-015", "Nb", 1, 2),
+    ("Mn(g)", "Mn-005", "Mn", 1, 0),
+    ("Ni(g)", "Ni-005", "Ni", 1, 0),
+    ("Co(g)", "Co-005", "Co", 1, 0),
 )
 
 CONDENSATE_COLUMNS = (

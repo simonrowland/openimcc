@@ -159,7 +159,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 37
+    assert len(gas_pack.gas_df) == 40
     assert len(gas_pack.oxide_df) == 12
 
 
@@ -219,7 +219,8 @@ def test_runtime_schemas_and_intervals_are_unchanged(gas_pack: ImccGasDatapack) 
         "Ref",
     )
     assert set(gas_pack.gas_df.index) == {
-        f"{species}(g)" for species in IMCC_GAS_CHANNEL_SPECIES
+        f"{species}(g)"
+        for species in (*IMCC_GAS_CHANNEL_SPECIES, *IMCC_GAS_INCOMPLETE_PARENT_SPECIES)
     }
     assert (gas_pack.gas_df["T_min"] == 1500).all()
     assert (gas_pack.gas_df["T_max"] == 3000).all()
@@ -231,7 +232,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == 37
-    assert len(unavailable) == 8
+    assert len(unavailable) == 11
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert in_domain | extrapolated == implemented
@@ -671,9 +672,11 @@ def test_unavailable_species_ledger_names_the_closing_source(
         "Zn",
         "ZnO",
     }
-    # The Ti channels left the incomplete-parent ledger when the JANAF-fitted
-    # TiO2(l) parent row shipped; the ledger stays as an empty public mapping.
-    assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
+    assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {
+        "Mn": "Mn(g) exists; needs a source-rated MnO(l) standard-Gibbs row",
+        "Ni": "Ni(g) exists; needs a source-rated NiO(l) standard-Gibbs row",
+        "Co": "Co(g) exists; needs a source-rated CoO(l) standard-Gibbs row",
+    }
     assert all(
         source.startswith("needs") or "; needs" in source
         for source in IMCC_GAS_UNAVAILABLE_SPECIES.values()
@@ -681,6 +684,10 @@ def test_unavailable_species_ledger_names_the_closing_source(
     assert all(
         f"{species}(g)" not in gas_pack.gas_df.index
         for species in IMCC_GAS_NO_JANAF_ROWS
+    )
+    assert {"Mn(g)", "Ni(g)", "Co(g)"} <= set(gas_pack.gas_df.index)
+    assert not set(IMCC_GAS_INCOMPLETE_PARENT_SPECIES) & set(
+        IMCC_GAS_CHANNEL_SPECIES
     )
     assert {"Ti(g)", "TiO(g)", "TiO2(g)"} <= set(gas_pack.gas_df.index)
     assert "TiO2(l)" in gas_pack.oxide_df.index

@@ -77,6 +77,9 @@ plus the titanium channels, screened Al/Si association channels, CrO-family
 channels, and caller-supplied V/Nb channels: Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, O and O2.
+The packaged table also carries fitted Mn(g), Ni(g) and Co(g) rows for source
+closure; their channels remain unavailable until MnO(l), NiO(l) and CoO(l)
+parent rows are supplied.
 The default tables ship in `openimcc.data.gas` and are loaded through
 `importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored

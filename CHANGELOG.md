@@ -14,6 +14,10 @@
   caller-supplied V2O3(l) and NbO2(l) parents. Transition-marked liquid nodes
   are omitted rather than assigned a phase branch; candidate liquid records
   remain vendored for source and transition coverage evidence.
+- Added JANAF-fitted Mn(g), Ni(g) and Co(g) source rows to the packaged table
+  and provenance ledger. They remain outside the runtime reaction set and are
+  listed as incomplete-parent species until MnO(l), NiO(l) and CoO(l) rows are
+  available.
 - Added JANAF-derived gas tables with tracked provenance and fit checks.
 - Scored the bench `partial_pressure` observable through the analytical gas
   layer, including the bar-to-Pa conversion.
