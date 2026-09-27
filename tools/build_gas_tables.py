@@ -88,6 +88,7 @@ GAS_SOURCES = (
     ("Al2(g)", "Al-080", "Al", 2, 0),
     ("Si2(g)", "Si-008", "Si", 2, 0),
     ("Si3(g)", "Si-009", "Si", 3, 0),
+    ("Cr(g)", "Cr-005", "Cr", 1, 0),
     ("CrO(g)", "Cr-010", "Cr", 1, 1),
     ("CrO2(g)", "Cr-011", "Cr", 1, 2),
     ("CrO3(g)", "Cr-012", "Cr", 1, 3),
@@ -141,6 +142,14 @@ REQUIRED_FIELDS = (
 
 _TRANSITION_SOURCE_TABLES = frozenset({"Cr-015", "O-063", "Nb-013"})
 
+# Sources whose tabulated rows stop short of FIT_T_MAX.  Cr(g), Cr-005: Cr
+# boils at 2952 K, where JANAF switches the element reference to the gas and
+# prints the 3000 K formation columns as "0. 0. 0.".  The harvest records that
+# line only as parse-ambiguous, so no complete 3000 K row exists.  Fit to the
+# last complete grid row and declare that as the row's T_max; the runtime then
+# flags or refuses T above it instead of silently extrapolating.
+_FIT_T_MAX_BY_TABLE = {"Cr-005": 2900.0}
+
 
 def _load_record(path: Path) -> dict[str, Any]:
     text = path.read_text(encoding="utf-8")
@@ -167,6 +176,7 @@ def _value(row: dict[str, Any], field: str) -> float | None:
 
 
 def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]:
+    fit_t_max = _FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX)
     ambiguous_temperatures: set[float] = set()
     for ambiguity in table.get("parse_ambiguities", []):
         raw_line = str(ambiguity.get("raw_line", "")).strip()
@@ -179,7 +189,7 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
     rows: list[dict[str, float]] = []
     for raw in table["values"]:
         temperature = _value(raw, "temperature")
-        if temperature is None or not FIT_T_MIN <= temperature <= FIT_T_MAX:
+        if temperature is None or not FIT_T_MIN <= temperature <= fit_t_max:
             continue
         values = {field: _value(raw, field) for field in REQUIRED_FIELDS}
         # Premise: an ambiguous or refused source row has at least one missing
@@ -187,7 +197,7 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
         # no missing value is reconstructed from a neighbour.  Unit check:
         # these fields retain NIST's K, J/(mol K), kJ/mol, and kJ/mol units.
         # Sanity: every selected record has complete rows spanning the declared
-        # 1500--3000 K interval; an omitted normal-grid point is allowed only
+        # fit interval; an omitted normal-grid point is allowed only
         # when the source explicitly records that row as parse-ambiguous.
         if (
             temperature in ambiguous_temperatures
@@ -211,7 +221,7 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
     if (
         len(rows) < minimum_rows
         or rows[0]["temperature"] != FIT_T_MIN
-        or rows[-1]["temperature"] != FIT_T_MAX
+        or rows[-1]["temperature"] != fit_t_max
     ):
         raise ValueError(
             f"{table_id} does not cover the required fit interval: "
@@ -302,7 +312,7 @@ def _fit_row(source_dir: Path, species_name: str, table_id: str, cation: str, ca
     # Cp = A + B*t + C*t² + D*t³ + E/t².  Algebra: solve the linear least
     # squares system X*[A,B,C,D,E] = Cp.  Unit check: every matrix column is
     # dimensionless, so the coefficients retain Cp's J/(mol K) unit.  Sanity:
-    # the fitted Cp is smooth across the 1500--3000 K runtime interval.
+    # the fitted Cp is smooth across the declared runtime fit interval.
     temperatures = np.array([row["temperature"] for row in rows])
     t = temperatures / 1000.0
     design = np.column_stack((np.ones_like(t), t, t**2, t**3, t**-2))
@@ -369,7 +379,7 @@ def _fit_row(source_dir: Path, species_name: str, table_id: str, cation: str, ca
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
         "T_min": str(int(FIT_T_MIN)),
-        "T_max": str(int(FIT_T_MAX)),
+        "T_max": str(int(_FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX))),
         "A": number(A),
         "B": number(B),
         "C": number(C),

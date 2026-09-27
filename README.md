@@ -73,10 +73,10 @@ release; until then, use the source-checkout commands above.
 ### Gas layer
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
-plus the titanium channels, screened Al/Si association channels, CrO-family
-channels, and caller-supplied V/Nb channels: Na, Na2, NaO, K, K2, KO, Si, SiO,
+plus the titanium channels, screened Al/Si association channels, Cr channels,
+and caller-supplied V/Nb channels: Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
-Al2, Si2, Si3, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, O and O2.
+Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, O and O2.
 The packaged table also carries fitted Mn(g), Ni(g) and Co(g) rows for source
 closure; their channels remain unavailable until MnO(l), NiO(l) and CoO(l)
 parent rows are supplied.
@@ -94,6 +94,9 @@ tables. The Ti, Cr, V and Nb channels appear only when available: VapoRock's
 condensate table has no TiO2(l), Cr2O3(l), V2O3(l) or NbO2(l) rows, so under the
 override a default call returns the other channels. Caller-supplied Cr2O3,
 V2O3 or NbO2 activities opt into their corresponding channels.
+The Cr(g) fit uses complete JANAF Cr-005 rows through 2900 K; evaluation above
+that declared endpoint is flagged or refused according to the caller's
+extrapolation setting.
 The packaged source records used to fit the gas rows are retained in
 `data-src/janaf/` and included in source distributions, not the runtime wheel.
 NIST SRD 13 is public data, and the publication attributions are recorded in

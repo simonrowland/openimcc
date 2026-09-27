@@ -215,8 +215,8 @@ def default_condensate_database_path() -> Path:
 # Unit check: these are dimensionless stoichiometric coefficients.  Sanity:
 # multiplying the Si2 and Si3 equations by 2 and 3 respectively restores one
 # SiO2 formula unit and the corresponding integer Si count.
-# For the caller-supplied Cr2O3 parent (a=2, b=3), CrO, CrO2 and CrO3 use
-# n_gas=2 and n_O2=1/2, -1/2 and -3/2. The parent activity remains an input
+# For the caller-supplied Cr2O3 parent (a=2, b=3), Cr, CrO, CrO2 and CrO3 use
+# n_gas=2 and n_O2=3/2, 1/2, -1/2 and -3/2 (Cr2O3(l) = 2 Cr(g) + 3/2 O2). The parent activity remains an input
 # because Cr2O3 is outside the eight-parent melt basis; the same balance and
 # mass-action equation apply without an internal phase-selection rule.
 # For the caller-supplied V2O3 parent (a=2, b=3), V, VO and VO2 use
@@ -252,6 +252,7 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Al2": ("Al2O3", 1, 1.5),
     "Si2": ("SiO2", 0.5, 1.0),
     "Si3": ("SiO2", 1 / 3, 1.0),
+    "Cr": ("Cr2O3", 2, 1.5),
     "CrO": ("Cr2O3", 2, 0.5),
     "CrO2": ("Cr2O3", 2, -0.5),
     "CrO3": ("Cr2O3", 2, -1.5),
@@ -279,6 +280,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Al2",
         "Si2",
         "Si3",
+        "Cr",
         "CrO",
         "CrO2",
         "CrO3",
@@ -394,10 +396,10 @@ IMCC_SF04_WORKBOOK_GRID_K = (
 
 # EXTRAPOLATED-INFORMATIONAL labels for every channel whose gas or parent-oxide
 # table does not cover the full Schaefer-2004 workbook grid above.  The fitted
-# gas rows cover 1500--3000 K; these labels therefore describe parent-oxide
-# gaps only.  Strict evaluation still refuses these temperatures unless
-# allow_extrapolation=True; labels disclose the reason and never widen the
-# executable domain.
+# gas rows cover the full workbook grid (Cr(g) through 2900 K); these labels
+# therefore describe parent-oxide gaps only.  Strict evaluation still refuses
+# these temperatures unless allow_extrapolation=True; labels disclose the reason
+# and never widen the executable domain.
 IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS: dict[str, str] = {
     "SiO": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
     "Mg": "MgO(l) [3100, 3500] K lies above the whole workbook grid",
@@ -430,6 +432,8 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "Ti",
     "TiO",
     "TiO2",
+    # Cr(g) through 2900 K and Cr2O3(l) through 3000 K cover the grid.
+    "Cr",
     "CrO",
     "CrO2",
     "CrO3",
@@ -447,7 +451,6 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # (O-044) joined the gas rows; the remaining incomplete-parent entries are
 # source-backed Mn/Ni/Co gas rows waiting for their liquid parent records.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
-    "Cr": "needs a complete 1500-3000 K source-backed Cr(g) row; Cr-005 ends at 2900 K",
     "Na2O": "needs a source-rated Na2O(g) standard-Gibbs row",
     "K2O": "needs a source-rated K2O(g) standard-Gibbs row",
     "Na+": (

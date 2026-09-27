@@ -17,6 +17,7 @@ import pandas as pd
 import pytest
 
 from openimcc import evaluate
+from tools import build_gas_tables
 from openimcc.gas import (
     IMCC_GAS_CHANNEL_SPECIES,
     IMCC_GAS_INCOMPLETE_PARENT_SPECIES,
@@ -159,7 +160,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 40
+    assert len(gas_pack.gas_df) == 41
     assert len(gas_pack.oxide_df) == 12
 
 
@@ -223,7 +224,12 @@ def test_runtime_schemas_and_intervals_are_unchanged(gas_pack: ImccGasDatapack) 
         for species in (*IMCC_GAS_CHANNEL_SPECIES, *IMCC_GAS_INCOMPLETE_PARENT_SPECIES)
     }
     assert (gas_pack.gas_df["T_min"] == 1500).all()
-    assert (gas_pack.gas_df["T_max"] == 3000).all()
+    expected_t_max = gas_pack.gas_df["Ref"].map(
+        lambda table_id: build_gas_tables._FIT_T_MAX_BY_TABLE.get(
+            table_id, build_gas_tables.FIT_T_MAX
+        )
+    )
+    assert (gas_pack.gas_df["T_max"].astype(float) == expected_t_max).all()
 
 
 def test_channel_coverage_ledger_is_closed() -> None:
@@ -231,8 +237,8 @@ def test_channel_coverage_ledger_is_closed() -> None:
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
-    assert len(implemented) == 37
-    assert len(unavailable) == 11
+    assert len(implemented) == 38
+    assert len(unavailable) == 10
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert in_domain | extrapolated == implemented
@@ -663,7 +669,6 @@ def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
     assert set(IMCC_GAS_NO_JANAF_ROWS) == {
-        "Cr",
         "Na2O",
         "K2O",
         "Na+",
@@ -753,7 +758,7 @@ def test_tio2_bearing_melt_returns_ti_pressures(
 
 
 _TI_CHANNELS = ("Ti", "TiO", "TiO2")
-_CR_CHANNELS = ("CrO", "CrO2", "CrO3")
+_CR_CHANNELS = ("Cr", "CrO", "CrO2", "CrO3")
 _VNB_CHANNELS = ("V", "VO", "VO2", "Nb", "NbO", "NbO2")
 _PRE_GATED_CHANNELS = tuple(
     species
@@ -961,6 +966,33 @@ def test_caller_supplied_cr2o3_activity_returns_positive_cr_pressures(
         assert math.isfinite(result[species]) and result[species] > 0.0
         assert result.domain_flags[species] is None
         assert result.provenance_class[species] == "janaf_fitted"
+
+
+def test_cr_atomic_row_flags_or_refuses_above_declared_endpoint(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError, match="Cr\\(g\\)"):
+        evaluate_gas(
+            {"Cr2O3": 1.0e-3},
+            2950.0,
+            1.0e-10,
+            gas_pack,
+            gas_species=("Cr",),
+            allow_extrapolation=False,
+        )
+
+    result = evaluate_gas(
+        {"Cr2O3": 1.0e-3},
+        2950.0,
+        1.0e-10,
+        gas_pack,
+        gas_species=("Cr",),
+        allow_extrapolation=True,
+    )
+    assert math.isfinite(result["Cr"]) and result["Cr"] > 0.0
+    assert result.domain_flags["Cr"] == (
+        "T=2950.0 K outside declared G(T) interval for 'Cr(g)' [1500, 2900] K"
+    )
 
 
 def test_caller_supplied_v2o3_and_nbo2_activities_return_positive_pressures(
@@ -1333,7 +1365,7 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels(
     metadata = oxygen_balance_species_metadata({
         name: parent for name, (parent, _n_gas, _n_O2) in channels
     })
-    assert len(channels) == 25
+    assert tuple(metadata) == tuple(name for name, _ in channels)
     for name, (parent, n_gas, n_o2) in channels:
         expected = -n_o2 / n_gas if parent else (1.0 if name == "O2" else 0.5)
         assert metadata[name].pO2_exponent == pytest.approx(expected, abs=1e-12)

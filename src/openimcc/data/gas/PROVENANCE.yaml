@@ -289,6 +289,29 @@ rows:
     max_residual_J_per_mol: 1.32989658310544
     max_residual_log10_K: 2.43501302851123e-05
   - table: gas
+    species_name: Cr(g)
+    table_id: Cr-005
+    source_path: data-src/janaf/Cr-005.yaml
+    source_sha256: c16958856a7aa86c1864644c0546a2d9a385edd890930fd3726981c3f44ffb83
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 2900]
+    max_residual_J_per_mol: 1.6318350135698
+    max_residual_log10_K: 3.04416607856472e-05
+    note: >-
+      Fitted by tools/build_gas_tables.py over the complete Cr-005 rows from
+      1500 K through 2900 K. Cr boils at 2952 K; JANAF switches the element
+      reference to the gas there and prints the 3000 K formation columns as
+      "0. 0. 0.", recorded as a parse-ambiguous row, so the fit range ends
+      at the last complete source row rather than extending to 3000 K.
+      Certification note: all Cr rows are fitted from each table's own
+      dfH(298), H-H(298) and S columns. The printed dfG columns of the
+      JANAF Cr-O tables (CrO(g), Cr2O3(l)) differ from those columns plus
+      the Cr(ref) table by about -0.28 J/(mol K) x T per Cr atom, while
+      Cr-005 agrees with Cr(ref) to within 1.5 J/mol. A check built from the
+      printed dfG columns therefore shows a spurious -0.015 dex offset on
+      Cr(g) alone; the fitted rows are internally consistent.
+  - table: gas
     species_name: CrO(g)
     table_id: Cr-010
     source_path: data-src/janaf/Cr-010.yaml
