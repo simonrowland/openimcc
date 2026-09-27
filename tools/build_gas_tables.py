@@ -33,6 +33,8 @@ NASA_STANDARD_T_K = 298.15
 # Same value as openimcc.gas.R_J_MOL_K; kept local so the tool does not import
 # the package it builds data for.
 R_J_MOL_K = 8.314462618
+# ln(1.01325): converts a 1 atm standard-state entropy (S/R) to 1 bar.
+LH84_ATM_TO_BAR_S_R = math.log(1.01325)
 RUNTIME_COLUMNS = (
     "species_name",
     "state",
@@ -525,7 +527,16 @@ def _nasa_source_rows(
     NASA card's disagreeing ``dfH298`` never enters the runtime anchor.
     """
     dfh_over_R = float(lh84["dfH_over_R_kK"]["value"]) * 1000.0
-    s298_R = float(lh84["S_over_R"]["value"])
+    # LH84 tabulates S° at a 1 atm standard state (LH84 p. 153; its O2(g)
+    # S/R = 24.66 matches JANAF's 1 atm value, not the 1 bar 24.674).
+    # openimcc rows are 1 bar.  For an ideal gas S(p) = S(p°) - R ln(p/p°),
+    # so S°(1 bar) = S°(1 atm) + R ln(1.01325 bar / 1 bar):
+    # S/R gains ln(1.01325) = 0.0131630, i.e. +0.109443 J/(mol K).
+    # Units: dimensionless S/R.  Sanity: G at 2000 K drops by
+    # 2000 * 0.109443 = 218.9 J/mol and each M2O(g) pressure rises by the
+    # factor 1.01325, exactly the atm/bar ratio, as a pure unit change must.
+    # H is pressure independent for an ideal gas, so dfH needs no change.
+    s298_R = float(lh84["S_over_R"]["value"]) + LH84_ATM_TO_BAR_S_R
     hinc_over_R = float(lh84["Hinc_over_R_kK"]["value"]) * 1000.0
     h0_over_R = dfh_over_R - hinc_over_R
     card_298 = _nasa7_properties(nasa_record, NASA_STANDARD_T_K)

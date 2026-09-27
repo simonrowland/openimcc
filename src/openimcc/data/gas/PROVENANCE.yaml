@@ -441,7 +441,12 @@ rows:
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 4.87127108499408e-05
     max_residual_log10_K: 1.27222061681281e-09
-    note: Gurvich-derived; single-source; provisional pending KEMS certification
+    note: >-
+      dfH298 and S298 from Lamoreaux & Hildenbrand (1984) Table 4 (NIST
+      critical evaluation), with S298 converted from its 1 atm standard state
+      to 1 bar (+R ln 1.01325 = +0.109443 J/(mol K)); only the Cp(T) shape
+      comes from the NASA Glenn card. Certification item: the card's
+      Gurvich-derived dfH298 differs from LH84 by about 15 kJ/mol.
     source:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn
@@ -461,9 +466,14 @@ rows:
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 2.56109051406384e-05
-    max_residual_log10_K: 6.68875145042288e-10
-    note: Gurvich-derived; single-source; provisional pending KEMS certification
+    max_residual_J_per_mol: 2.56107887253165e-05
+    max_residual_log10_K: 6.6887210464544e-10
+    note: >-
+      dfH298 and S298 from Lamoreaux & Hildenbrand (1984) Table 4 (NIST
+      critical evaluation), with S298 converted from its 1 atm standard state
+      to 1 bar (+R ln 1.01325 = +0.109443 J/(mol K)); only the Cp(T) shape
+      comes from the NASA Glenn card. Certification item: the card's
+      Gurvich-derived dfH298 differs from LH84 by about 15 kJ/mol.
     source:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn

@@ -21,7 +21,8 @@
   listed as incomplete-parent species until MnO(l), NiO(l) and CoO(l) rows are
   available.
 - Added Na2O(g) and K2O(g) channels from the NIST evaluation using LH84
-  formation anchors and NASA/Gurvich heat-capacity shapes; the roughly
+  formation anchors (entropy converted from LH84's 1 atm standard state to
+  1 bar) and NASA/Gurvich heat-capacity shapes; the roughly
   15 kJ/mol LH84-vs-NASA/Gurvich disagreement remains an open certification
   item.
 - Added JANAF-derived gas tables with tracked provenance and fit checks.

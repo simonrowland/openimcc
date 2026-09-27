@@ -355,9 +355,10 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert row["authority"] == "nasa_glenn_fitted"
         assert row["method"] == "fitted"
         assert row["T_range_K"] == [1500, 3000]
-        assert row["note"] == (
-            "Gurvich-derived; single-source; provisional pending KEMS certification"
-        )
+        # The note must name the primary anchor, the 1 atm -> 1 bar entropy
+        # conversion, and the open LH84-vs-card certification item.
+        for phrase in ("Lamoreaux & Hildenbrand (1984)", "1 atm", "R ln 1.01325", "15 kJ/mol"):
+            assert phrase in row["note"], phrase
         assert row["source"]["upstream_source_sha256"] == (
             "fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363"
         )
@@ -611,8 +612,9 @@ def test_nasa_rows_match_anchored_card_evaluation_and_2000_k_hand_check() -> Non
             + 2000.0 * h_rt
             - 298.15 * card_298[1]
         )
+        # LH84's 1 atm S° to the 1 bar runtime standard state: +ln(1.01325).
         entropy = R_J_MOL_K * (
-            float(lh["S_over_R"]["value"]) + s_R - card_298[2]
+            float(lh["S_over_R"]["value"]) + math.log(1.01325) + s_R - card_298[2]
         )
         hand_anchored_g = R_J_MOL_K * h_over_R - 2000.0 * entropy
         assert hand_anchored_g == pytest.approx(
