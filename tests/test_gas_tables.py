@@ -282,19 +282,60 @@ def test_no_fitted_row_consumes_a_parse_ambiguous_source_row() -> None:
         assert selected_temperatures.isdisjoint(_ambiguous_temperatures(table_id))
 
 
-def test_generator_is_deterministic_and_matches_packaged_output(tmp_path: Path) -> None:
+def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path) -> None:
     generated = tmp_path / "gas-shomate.csv"
     condensate = tmp_path / "condensate.csv"
-    packaged_condensate = (GAS_DATA / "condensate.csv").read_bytes()
-    # Start from the packaged table with the fitted rows removed, so the
-    # generator must re-create them; the transcribed rows must pass through.
+    packaged_condensate = GAS_DATA / "condensate.csv"
+    packaged_gas = GAS_DATA / "gas-shomate.csv"
+
+    # On this NumPy/LAPACK build, the largest relative difference across
+    # generated gas A-G and condensate dG_A-E coefficients was 1.82e-11
+    # (Fe(g).D). A 10x margin is 1.82e-10; use 2e-10 to allow minor BLAS
+    # rounding changes while keeping all non-fit values exact.
+    fit_relative_tolerance = 2e-10
+
+    def assert_table_matches(
+        generated_path: Path,
+        packaged_path: Path,
+        fitted_columns: dict[str, tuple[str, ...]],
+    ) -> None:
+        generated_table = pd.read_csv(generated_path, dtype=str, keep_default_na=False)
+        packaged_table = pd.read_csv(packaged_path, dtype=str, keep_default_na=False)
+        assert generated_table.columns.tolist() == packaged_table.columns.tolist()
+        generated_species = generated_table["species_name"].tolist()
+        packaged_species = packaged_table["species_name"].tolist()
+        assert generated_species == packaged_species
+        assert len(set(generated_species)) == len(generated_species)
+        assert len(set(packaged_species)) == len(packaged_species)
+
+        for row_index, species in enumerate(packaged_species):
+            fit_columns = fitted_columns.get(species, ())
+            assert set(fit_columns) <= set(packaged_table.columns)
+            for column in packaged_table.columns:
+                generated_value = generated_table.iloc[row_index][column]
+                packaged_value = packaged_table.iloc[row_index][column]
+                if column in fit_columns:
+                    generated_number = float(generated_value)
+                    packaged_number = float(packaged_value)
+                    if packaged_number == 0.0:
+                        assert generated_number == packaged_number
+                    else:
+                        assert abs(generated_number - packaged_number) <= (
+                            fit_relative_tolerance * abs(packaged_number)
+                        )
+                else:
+                    assert generated_value == packaged_value
+
+    # Start from the packaged table with fitted rows removed, so the generator
+    # must recreate them while passing every transcribed row through exactly.
+    packaged_condensate_bytes = packaged_condensate.read_bytes()
     fitted_prefixes = tuple(
         f"{species},".encode() for species in FITTED_CONDENSATE_TABLE_IDS
     )
     condensate.write_bytes(
         b"".join(
             line
-            for line in packaged_condensate.splitlines(keepends=True)
+            for line in packaged_condensate_bytes.splitlines(keepends=True)
             if not line.startswith(fitted_prefixes)
         )
     )
@@ -307,11 +348,23 @@ def test_generator_is_deterministic_and_matches_packaged_output(tmp_path: Path) 
         str(condensate),
     ]
     first = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
-    assert condensate.read_bytes() == packaged_condensate
+    first_gas_bytes = generated.read_bytes()
+    first_condensate_bytes = condensate.read_bytes()
     second = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
     assert first.stdout == second.stdout
-    assert generated.read_bytes() == (GAS_DATA / "gas-shomate.csv").read_bytes()
-    assert condensate.read_bytes() == packaged_condensate
+    assert generated.read_bytes() == first_gas_bytes
+    assert condensate.read_bytes() == first_condensate_bytes
+
+    gas_table = pd.read_csv(packaged_gas, dtype=str, keep_default_na=False)
+    gas_fit_columns = {
+        species: tuple("ABCDEFG") for species in gas_table["species_name"]
+    }
+    condensate_fit_columns = {
+        species: tuple(f"dG_{coefficient}" for coefficient in "ABCDE")
+        for species in FITTED_CONDENSATE_TABLE_IDS
+    }
+    assert_table_matches(generated, packaged_gas, gas_fit_columns)
+    assert_table_matches(condensate, packaged_condensate, condensate_fit_columns)
 
 
 _CONDENSATE_EXPECTED = {
