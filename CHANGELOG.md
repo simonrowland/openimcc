@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added opt-in research pack `gas-janaf-parent-liquids-research` with JANAF-fitted
+  SiO2(l), Al2O3(l), MgO(l) and CaO(l) rows; the SF04/Lamoreaux default
+  coefficient contract keeps it out of default loads and outputs.
 - Added JANAF-fitted Al2, Si2, and Si3 gas channels after a magnitude screen at
   melt temperature; their parent-reaction stoichiometry and source
   residuals are covered by the gas-layer tests and provenance ledger.

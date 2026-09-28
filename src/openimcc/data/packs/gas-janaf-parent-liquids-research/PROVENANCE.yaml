@@ -1,0 +1,79 @@
+pack_id: gas-janaf-parent-liquids-research
+pack_class: research
+base_pack: src/openimcc/data/gas
+gas_table: gas-shomate.csv
+gas_table_relation: byte-identical to the default packaged gas table
+condensate_table: condensate.csv
+default_pack_modified: false
+citation: Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition, NIST SRD 13 (1998)
+doi: 10.18434/T42S31
+fit_method: tools/build_gas_tables.py:_fit_condensate_row
+condensate_form: >-
+  G(T) = 1000*R*dH298_R - R*T*(dG_A + dG_B*tau + dG_C*tau^2 + dG_D*tau^3 + dG_E*tau^4),
+  tau = T/1000 K. dH298_R = dfH(298)/R and the quartic fits the JANAF apparent Gibbs-energy function divided by R.
+rows:
+  - table: condensate
+    species_name: SiO2(l)
+    authority: janaf_fitted
+    classification: research
+    table_id: O-038
+    source_sha256: f1233d320c6c49aa8055a95b7e0f2d6404b47d42079f42966c5f1331f94f3f2c
+    user_agent: openimcc-janaf-vendor/1.0
+    T_min: 1800
+    T_max: 3000
+    source_rows: 13
+    max_residual_J_per_mol: 1.41375544643961
+    max_residual_log10_K: 3.07689853891945e-05
+    branch_decision: >-
+      The 1696 K II <--> LIQUID marker follows glass Cp values (74.475 at 1500 K,
+      80.040 at 1600 K). Liquid Cp is 85.772 J/(mol K) from the first complete
+      post-marker node at 1800 K through 3000 K; the 1700 K row is parse-ambiguous.
+  - table: condensate
+    species_name: Al2O3(l)
+    authority: janaf_fitted
+    classification: research
+    table_id: Al-100
+    source_sha256: b27ae0ccebb7433b209b9dbd7f0b67448e49cf2b613625e22b05709e49c0dbe0
+    user_agent: openimcc-janaf-vendor/1.0
+    T_min: 2500
+    T_max: 3000
+    source_rows: 6
+    max_residual_J_per_mol: 0.274559039156884
+    max_residual_log10_K: 5.12186180951512e-06
+    branch_decision: >-
+      The 1350 K GLASS <--> LIQUID marker is below the fit. The 2327 K ALPHA <--> LIQUID
+      marker separates alpha-solid from liquid even though Cp is 192.464 J/(mol K)
+      on both sides. The 2400 K row is parse-ambiguous, so the fit starts at the
+      first complete post-marker liquid node at 2500 K.
+  - table: condensate
+    species_name: MgO(l)
+    authority: janaf_fitted
+    classification: research
+    table_id: Mg-009
+    source_sha256: f31771f1a45e7749f20bcdc70557a32e85dcb9d79a8b53f7c59c6a3cda482a41
+    user_agent: openimcc-janaf-vendor/1.0
+    T_min: 2200
+    T_max: 3000
+    source_rows: 9
+    max_residual_J_per_mol: 0.825310702668503
+    max_residual_log10_K: 1.59662836020064e-05
+    branch_decision: >-
+      Glass Cp rises from 53.693 J/(mol K) at 1500 K to 56.019 at 2100 K. After
+      the 2100.001 K GLASS <--> LIQUID marker, liquid Cp is 66.944 from the first
+      complete node at 2200 K through 3000 K. The crystal/liquid marker is at 3105 K.
+  - table: condensate
+    species_name: CaO(l)
+    authority: janaf_fitted
+    classification: research
+    table_id: Ca-028
+    source_sha256: 44546e962fd516f7e9cf035429593916440008b7f81c06b5915da86b1203d072
+    user_agent: openimcc-janaf-vendor/1.0
+    T_min: 2200
+    T_max: 3000
+    source_rows: 9
+    max_residual_J_per_mol: 0.841327306814492
+    max_residual_log10_K: 1.62761373859318e-05
+    branch_decision: >-
+      Glass Cp rises from 56.275 J/(mol K) at 1500 K to 58.894 at 2100 K. After
+      the 2100 K GLASS <--> LIQUID marker, liquid Cp is 62.760 from 2200 K through
+      3000 K. The crystal/liquid marker is at 3200 K.

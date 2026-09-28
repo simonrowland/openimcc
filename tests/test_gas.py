@@ -165,6 +165,49 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert len(gas_pack.oxide_df) == 12
 
 
+def test_janaf_parent_liquid_research_pack_loads_by_path_and_is_in_domain(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    pack_dir = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "openimcc"
+        / "data"
+        / "packs"
+        / "gas-janaf-parent-liquids-research"
+    )
+    research = load_gas_datapack(
+        gas_path=pack_dir / "gas-shomate.csv",
+        oxide_path=pack_dir / "condensate.csv",
+    )
+    assert research.gas_df.equals(gas_pack.gas_df)
+    assert research.gas_path.read_bytes() == gas_pack.gas_path.read_bytes()
+    assert research.gas_path == pack_dir / "gas-shomate.csv"
+    assert research.oxide_path == pack_dir / "condensate.csv"
+
+    parents = {
+        "SiO2": ("SiO2(l)", "Si", 1800.0),
+        "Al2O3": ("Al2O3(l)", "Al", 2500.0),
+        "MgO": ("MgO(l)", "Mg", 2200.0),
+        "CaO": ("CaO(l)", "Ca", 2200.0),
+    }
+    for oxide, (row_name, gas_species, expected_t_min) in parents.items():
+        research_row = research.oxide_df.loc[row_name]
+        assert float(research_row["T_min"]) == expected_t_min
+        pressures = evaluate_gas(
+            {oxide: 1.0},
+            expected_t_min,
+            1.0e-10,
+            research,
+            parent_oxides=(oxide,),
+            gas_species=(gas_species,),
+        )
+        assert pressures.domain_flags[gas_species] is None
+
+        default_row = gas_pack.oxide_df.loc[row_name]
+        assert default_row["Ref"] == "LAM1987"
+
+
 def test_explicit_vaporock_override_remains_supported(
     monkeypatch: pytest.MonkeyPatch,
     gas_pack: ImccGasDatapack,
@@ -1517,14 +1560,20 @@ def test_generic_oxygen_balance_refuses_custom_bracket_above_one_bar() -> None:
         )
 
 
-def test_oxygen_balance_metadata_exponents_match_all_gas_channels(
-    gas_pack: ImccGasDatapack,
-) -> None:
+def test_oxygen_balance_public_api_is_importable() -> None:
+    from openimcc import (
+        oxygen_balance_from_pressure_model,
+        oxygen_balance_species_metadata,
+    )
+
+    assert callable(oxygen_balance_from_pressure_model)
+    assert callable(oxygen_balance_species_metadata)
+
+
+def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
     import openimcc.gas as gas_module
 
-    channels = gas_module._default_reactions(
-        gas_module.IMCC_PARENT_OXIDES, gas_pack
-    )
+    channels = tuple(gas_module._SF04_REACTIONS.items())
     metadata = oxygen_balance_species_metadata({
         name: parent for name, (parent, _n_gas, _n_O2) in channels
     })
@@ -1559,56 +1608,56 @@ def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:
 # canonical JSON includes mapping order-insensitively. Cases cover catalogue-
 # like lunar compositions, oxide binaries, and CMAS over 1500–2400 K.
 _OXYGEN_BALANCE_BASELINE_HEX_SHA256 = (
-    "e99f26990c7a534f5d3a52e7371f0c78e8d74996b08309aafc08c196e30819f6",
-    "84e77e9cb57fc10388a51586b4d10b722717bb801b3ec0f4af82e1a021d1d35c",
-    "9c50b4193c559630421fa3aff955021992889404bd216b0735c1006741fbdb9a",
-    "7e17765ac940aa65fc80a8b266543478792438ae18b0b911fc82712fea47c901",
-    "73bde0c78d9dca58a26ff559cc3d31e30277ada159446b4b43cf12c89bbd641f",
-    "0ec38c6615d22ce90e2efc90a8ef65c39920580be0761983b776e29abbdbb2d7",
-    "d922414b64fd01849063320f34fc5652f0b2807381e3bf7ab55006550fade491",
-    "e29057ce7e1190afa46828b44f11bc82692a442ab7d1beda3b61af515dd22dbf",
-    "6fea14b0342037117805a5d3910092417e8c35a54d43b86ef084bc670f7263dd",
-    "f0fba51f9f0aa47f798f7fe0a77ab1d01d2ea843f8f9d01aa40b7ce5983a5fa9",
-    "d2f3cfad3c0e192d6985da5258ee4e18daf1cf893689ca5750811a4926b13116",
-    "ae8c9983217a9cd567f40a1daf8cb12a97fb0003d123dfbb068698ce2a322e22",
-    "91ec354d56c0d366b06ff3ba69a955808f8a64f36c613b7b1b43ead7a5232c07",
-    "d112b51650c7efb84dd4a7974753f2e3b97542bad5ea0ee8021e655c351e9616",
-    "52c3aa983dc86105ab6531d6f2cefb62414da411995f53c3ea9290a0f651d6b5",
-    "034153420d0d84ac3d441f624ad523c698e62b8b9a7eaf8faebc1846968cd7ca",
-    "5405f8a5f954b1b5ccd03ef7e80f05901632b8cba3110bb8b84d462efb4fb306",
-    "c07b95172f4561681b6af2065f10e61c01806a8169719cdae38491c87f4b080b",
-    "40af474b89c636e5638f64f02efb02ae0152cf3a55bed78a0a663c17f8020c84",
-    "821207f2584a1caf046a3b909d688133c77aff8469c051fb08842ef2af672694",
-    "b550f832db1c90dc05f15e09f2a6b928d30422fb4a739e53b871e5aae01060e9",
-    "96a591cf48ad262edc82a590844ca9f4b8489c0802901d700beb173e62212d2b",
-    "aa574ac9fbb201eb5be4815a0d07ef6b0c63d18128f08236f6138438f62b21d5",
-    "750a22de5a4fe1e2c9cf27242948a03c85d7878899cd9ad5c85241151f94d351",
-    "d52d123c724eaeabddcec640b572136b46494fccd9a6162ca8ff9b6a0df89d0f",
-    "87155a04bf3dff9c35a6bcf0aa6685abbc233a946d6230d9db1eb4a7880af322",
-    "e2e019cbe26ceb8dd81dcc13518e2d7852161a27e6f298c675143cfdb6b38d63",
-    "614443b0da62f55c81a8823503a169b62dbc5d851eb560baf70502b199657f87",
-    "c81e45b23bebc131365ffc2dae8a8730456f2c473f7f92752f9b5907cc9a50c2",
-    "ad3d18226b4a2b2668f0a4e5ba5fcf1b85d8325b4530a0a6458ccb1e43416342",
-    "803f235b7959182b8d5fef2745f32013baba984e94b029d843d207144e116c86",
-    "c0bc55527956b004cc38122ab82ff0a37f98b97ae0477062f1aa6711e463071f",
-    "5d18677f4c9752e729b0a48c5710de5d1e8ee3b7085ecf6152171f86c646f4e2",
-    "7f65c2361c9f9c86d02d55e6edc2b0f98e0dba434a8311482e1e9c3e566b47e8",
-    "624cbd37b0952a05da6cfc06a18815275913e3acfdd63af54b0ed34bec476f3d",
-    "2ba1377d491b65ee2ac798d98a907ca697b40be47ed098f319fd9b5e6b413a31",
-    "cc3d29548fa90e01f00e6bf464c7835365883082f791febb41d112a35fc984ef",
-    "f85eabfe3694296d6c142b69f328ec0d3de0c14b5c41141155dc054ecda37259",
-    "f7257de99216106d92875e96721e24f2ccc60e9508906fdf97c12605c72da6b4",
-    "a23289ca6bd7947b861975b1633229ca87e2d34d0fe7fe0091983bd15a3b283f",
-    "302bf3fb6a3517c5616dd0f4fbcdef36ca3fe28da9edbc07037d9e257f80624c",
-    "183d79f81ed9e44db768f58269168c2c00a17a103be30f703f9e1b606a2d8adf",
-    "7893e4f115920760b1f2b4c9317a0d8db00f9bf53aa634944cbb72efc0bd80dd",
-    "a3dc5e3080bc884d8537c3cb7c0096173237ace5a710bf5527b6643641dd0d60",
-    "9474822646bbf9f9c0d5a2ff47e24e4e20557597e252f25df0951259d53e71a0",
-    "a69dcd6a7a83699d84209d324ade8bcb882bd27b0b6e2e1b3fd5dd1b57233d35",
-    "4c6e1dc0014ebcad5a1f4ab4751dea7d8c21b8058f4e08bc34a13fc2a3b3401a",
-    "f1336c2ec221283d9a71ae16d75fb63008caef4ce44ab3ea48539605e38a1142",
-    "bc8fb1a219ac04502a35f180651c1498bbae386ffba1b348694cc8541c8a5d6c",
-    "f7fe2c5397027a03a326d9ded13fc84ce898bfee516bdbadcc0254bccfd7be30",
+    "4d261a81c0bd9e12f153fc1a08ba692bfa2b892573f64f6a0f2074d3877463e5",
+    "9881ff4f3cf73b2fd0200591e5ef744b00d428aa01be1c0fd3a793c231edb636",
+    "5836acf202077080f3316d557c3bebc2ff0217740c6d0a4234c16024bc75b57c",
+    "18af5ea40fc3e8b802bccd6eb69d2710470fb59e22bf9e2de7045ae07f6329f8",
+    "79f4f125308e32a9b6209b62e7bf4dfdac7da6dcca45314bf56f8821511a3a38",
+    "c4a5af153775d9ebc4a5436bfc82b3e758f7b11b853544c1ef92e1c41f784329",
+    "70f1600be054145a3876544596167dbb63df43bca687377e19c87a2c54d44a68",
+    "fae604c5cd5c7617fec8010f242fdfc07f35e125cfaefcfea374d56943d306a4",
+    "80e20413a7d439e7e1e34107bb9bbf621f2b7cd87aa8483cad8a1231df2cccad",
+    "2bf336b1791278f409a376747fd9400af0ec09a7161e85e7ee585dfcc28a3067",
+    "1e512733a87c1e6a80be1c39c1a0c58a0931433ba9afaf0fa80675b4e9bec146",
+    "a500f0a377f00ab4ebbd21eaa69a0f2c8aa0784c3dc125f52a9d504bfcc24e6e",
+    "a2dd8a1fd1065c186ea97812c75badc5d47591d7b2b00402ffd9f6f4391761b6",
+    "4a67ce14343418f61108e01390e25cccdf55860f2cc99c42ea3307cfa46b25aa",
+    "be2abdeb0115fb3c7318fbf6300cd61c1bbee14f1c5e9614ecb88edd5efad8b3",
+    "5f3fc0d837f84968f9d12e79ab106bdd57560f4e39e0df80b384b302ec40db34",
+    "fa890723d245fc12acef7669578b6e8b9937dedef663586a8156fbb951fe1e4e",
+    "a275d67c35d55d21caba85f77a0c973f16d02caadecb5890133fa565513e861e",
+    "3827a41ed9e4b1e7d81d8cbd40a6595210aff922afc56d2e4ff3dca70b26fbed",
+    "78dfdd12a77d4d2432c7e6cebc20f6464cd6bf7e096de93f0fb0fadb08062fc2",
+    "5fc5005f0e5d09b76e2a4dfa2006273fa38793372f996e4d050119b7fc3d6a3e",
+    "8340d056bf589e357ae26966df355f9dba5a2828ca22717ec9ee05bc5be88b9e",
+    "4042cab636e73451691c490d9df8de767ae58b86506e3221a8706f897e2d1615",
+    "3013a083553ff9384b8f53b83b68b809d2eb89a634412f76c2e09013d99a609a",
+    "2b2e041b33d06041bda2f062827397b9e3dae15547703ebb5d92d94c014d90e5",
+    "eaa05922aa6e63f46ecf5871734fe09b8507b7eabcafd98e53ab115408483ec7",
+    "15d9a3bebd1c1cd93c629b653778c7eac887c642e4ba7bcca302ab9226568276",
+    "88cb2b7a3d6115e4c9d1d4dec62e8ed6528b8be457f7f323aea038fea6bc5326",
+    "085a600388d82f816af7fa250305a45d0952eaeb38631f4a9dbeda98664d4816",
+    "e84bf32be9017b5392c789109a8c86f2677c6f52ff0421f85a087f838e197697",
+    "7590b4367ff2b0191f8e14bb4f39531fefdacd7f8d4821675318416b06f937c9",
+    "62d83d6634e6941e7ef5c116df9783120daf24bae208ac270a41d0356344577f",
+    "f74c9779b622b779744d251752ca88440f4e156e7d677ea3f1e52a6e7d41e07f",
+    "824ec5c65585f78dc85e0518f113ffb867336b9d2d2ffdb66ca209ad5e30e880",
+    "79abe2aae4508e3fb8d49dc3d2ab74655e6d899b1e00b42bad961fd1829f3396",
+    "fe0ad875f4b5ab7a95ecd243f736983dff4e973946ffbdf9c0b81fc435b67185",
+    "ae56276ffb9a6d8bf4e88f82893320697465e247f6f55c47221c7719871e1014",
+    "f1e99183e9753e0e57531c103f0792ed46361f000f4962fdaaf068cdedf36916",
+    "5b1d81bbe6f054161f9246752dc399f81fed51e345844a8fe35cf8cd64d17f75",
+    "5abaab557849464f3726375aa91a6ddb9e7cdc9d9e2656a959f20ff83f14c450",
+    "0f198777e2475d6949081264b43aa618b26405ce7b62c0a5c1d2b71ad7edfb7e",
+    "0be2496c7a39e5f6185cd63f460047b98449b561c7c0f0036a2ef6244adb99e0",
+    "4ff0203d7f1c9fef5c04d9db5e330779844d6aca14201ad6e2facb8eaba47974",
+    "2a82ca18745b6be1d9de93effb3631b965b1b8d81794ce35597eaac0ce1e57a9",
+    "609726c45270c673e18425f2c0659a001a371a353c85561d3dac085baa942ac8",
+    "3e7cddeff5529755c45553c6ec638609363178271b94178be734bf2f10f626c7",
+    "92575f12914d27eb276247bab3331baccc749a478e4dfb7ba9a4dcf88a03a5ea",
+    "2d13a21e22f9442c511d5a2c270a4ff176d2ae8a4fcb3dbcc40ce76f2fe97ea1",
+    "d76d62634ac7b8defd9e25f54b4496c802ff11c9ddae1677f9dcdb73ba75b7d4",
+    "7d78316eb51b6666eb7122bea5b29803ce4f81208c59e35446e147d0d089cd08",
 )
 
 

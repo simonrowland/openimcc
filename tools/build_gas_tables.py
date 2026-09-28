@@ -147,6 +147,30 @@ CONDENSATE_SOURCES = (
     ("NbO2(l)", "Nb-013", "Nb", 1, 2),
 )
 
+# ADR-004 research pack only; these do not enter the default condensate CSV.
+# SiO2(l), O-038: the 1696 K II <--> LIQUID marker follows glass Cp values
+# (74.475 at 1500 K, 80.040 at 1600 K); 85.772 J/(mol K) is constant from
+# the first complete post-marker node at 1800 K through 3000 K.  The 1700 K
+# row is parse-ambiguous, so the declared interval starts at 1800 K.
+# Al2O3(l), Al-100: the GLASS <--> LIQUID marker is at 1350 K, but the later
+# 2327 K ALPHA <--> LIQUID marker separates the alpha-solid branch from liquid.
+# Cp is 192.464 J/(mol K) on both sides, so Cp alone cannot assign phase. The
+# 2400 K row is parse-ambiguous; fit starts at the first complete post-marker
+# liquid node, 2500 K.
+# MgO(l), Mg-009: glass Cp rises from 53.693 at 1500 K to 56.019 at 2100 K;
+# after the 2100.001 K GLASS <--> LIQUID marker, liquid Cp is 66.944 from the
+# first complete node at 2200 K through 3000 K. The crystal/liquid marker is
+# at 3105 K, outside this fit.
+# CaO(l), Ca-028: glass Cp rises from 56.275 at 1500 K to 58.894 at 2100 K;
+# after the 2100 K GLASS <--> LIQUID marker, liquid Cp is 62.760 from 2200 K
+# through 3000 K. The crystal/liquid marker is at 3200 K, outside this fit.
+RESEARCH_CONDENSATE_SOURCES = (
+    ("SiO2(l)", "O-038", "Si", 1, 2),
+    ("Al2O3(l)", "Al-100", "Al", 2, 3),
+    ("MgO(l)", "Mg-009", "Mg", 1, 1),
+    ("CaO(l)", "Ca-028", "Ca", 1, 1),
+)
+
 REQUIRED_FIELDS = (
     "temperature",
     "heat_capacity",
@@ -158,10 +182,15 @@ REQUIRED_FIELDS = (
 
 _TRANSITION_SOURCE_TABLES = frozenset({"Cr-015", "O-063", "Nb-013"})
 
-# Sources whose liquid fit starts after FIT_T_MIN.  Cr-015 has glass Cp values
-# at 1500--1700 K, while its liquid branch is Cp = 156.9 J/(mol K) from
-# 1900 K through the fit range; start at the first liquid grid node.
-_FIT_T_MIN_BY_TABLE = {"Cr-015": 1900.0}
+# Sources whose liquid fit starts after FIT_T_MIN. These are the first complete
+# grid nodes on the liquid branch; phase-marker rows are never fitted.
+_FIT_T_MIN_BY_TABLE = {
+    "Cr-015": 1900.0,
+    "O-038": 1800.0,
+    "Al-100": 2500.0,
+    "Mg-009": 2200.0,
+    "Ca-028": 2200.0,
+}
 
 # Sources whose tabulated rows stop short of FIT_T_MAX.  Cr(g), Cr-005: Cr
 # boils at 2952 K, where JANAF switches the element reference to the gas and
@@ -245,6 +274,15 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
     elif table_id == "Cr-015":
         # 1900--3000 K has 12 grid nodes; the omitted 2700 K row leaves 11.
         minimum_rows = 11
+    elif table_id == "O-038":
+        # The liquid branch starts at 1800 K and has 13 complete grid nodes.
+        minimum_rows = 13
+    elif table_id == "Al-100":
+        # The alpha/liquid marker is at 2327 K; 2500--3000 K has six nodes.
+        minimum_rows = 6
+    elif table_id in {"Mg-009", "Ca-028"}:
+        # Each liquid branch starts at 2200 K and has 9 complete grid nodes.
+        minimum_rows = 9
     if (
         len(rows) < minimum_rows
         or rows[0]["temperature"] != fit_t_min
@@ -817,6 +855,14 @@ def build_rows(
 
 def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
     return [_fit_condensate_row(source_dir, *source) for source in CONDENSATE_SOURCES]
+
+
+def build_research_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
+    """Fit the ADR-004 parent-liquid research rows without changing defaults."""
+    return [
+        _fit_condensate_row(source_dir, *source)
+        for source in RESEARCH_CONDENSATE_SOURCES
+    ]
 
 
 def write_csv(rows: list[dict[str, str]], output: Path) -> None:

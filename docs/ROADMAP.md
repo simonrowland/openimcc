@@ -40,6 +40,13 @@ parent liquid rows are available only from an external private pack.
 | Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
 | Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
 
+The research pack `gas-janaf-parent-liquids-research` is opt-in by path; the
+SF04/Lamoreaux default coefficient contract keeps it out of default loads. Its
+branch-limited C4 check passes over each declared liquid range through 3000 K
+(Al from 2500 K, Si from 1800 K, Mg and Ca from 2200 K). The existing full-domain
+1500–3000 K default C4 statuses remain unchanged, and rows remain out of domain
+below their declared liquid branches.
+
 At 3000 K and fO2=1e-4, p(e-) is 9.84595e-5 bar. Its Saha source terms are
 Na 8.05285e-9 (83.07% of p(e-)²) and K 1.59434e-9 (16.45%); all other terms
 sum to 0.49%. The largest joint ion-fraction estimate is K at 1700 K and

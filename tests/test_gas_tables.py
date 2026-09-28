@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import hashlib
 import math
@@ -922,6 +924,49 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     )
     assert_table_matches(condensate, packaged_condensate, condensate_fit_columns)
 
+def test_research_condensate_rows_match_janaf_fits() -> None:
+    pack_dir = (
+        ROOT
+        / "src"
+        / "openimcc"
+        / "data"
+        / "packs"
+        / "gas-janaf-parent-liquids-research"
+    )
+    generated = {
+        row["species_name"]: row
+        for row in build_gas_tables.build_research_condensate_rows(JANAF_DATA)
+    }
+    packaged = {
+        row["species_name"]: row
+        for row in csv.DictReader(
+            io.StringIO((pack_dir / "condensate.csv").read_text(encoding="utf-8"))
+        )
+    }
+    assert set(generated) == {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"}
+    assert set(generated) <= set(packaged)
+    for species, fitted in generated.items():
+        assert {
+            column: fitted[column] for column in build_gas_tables.CONDENSATE_COLUMNS
+        } == {
+            column: packaged[species][column]
+            for column in build_gas_tables.CONDENSATE_COLUMNS
+        }
+    provenance = yaml.safe_load((pack_dir / "PROVENANCE.yaml").read_text())
+    assert provenance["pack_id"] == pack_dir.name
+    assert provenance["pack_class"] == "research"
+    records = {row["species_name"]: row for row in provenance["rows"]}
+    assert set(records) == set(generated)
+    for species, fitted in generated.items():
+        source = build_gas_tables._load_record(
+            JANAF_DATA / f"{fitted['Ref']}.yaml"
+        )
+        assert records[species]["authority"] == "janaf_fitted"
+        assert records[species]["classification"] == "research"
+        assert records[species]["table_id"] == fitted["Ref"]
+        assert records[species]["source_sha256"] == source["extraction"]["source_sha256"]
+        assert records[species]["user_agent"] == source["extraction"]["user_agent"]
+
 
 def _shomate_g(row: dict[str, str], T: float) -> float:
     A, B, C, D, E, F, G, H = (float(row[key]) for key in "ABCDEFGH")
@@ -1149,9 +1194,9 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             checked += 1
         maxima[species] = row_max
 
-    # The liquid-only Cr-015 start removes three source nodes from each of the
-    # four Cr channels, leaving 509 complete reaction nodes.
-    assert checked == 509
+    # Liquid-only starts for Al2O3, Cr2O3, SiO2, MgO and CaO omit source rows
+    # before their selected branches, leaving 420 complete reaction nodes.
+    assert checked == 420
     # The measured on-node maximum remains below 10 J/mol for every fitted gas
     # row; the separate condensate test records each parent-row fit residual.
     assert max(maxima.values()) <= 10.0
@@ -1181,9 +1226,10 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     The named holes are Na2O/Na-013 at 1500 K, FeO/Fe-019 at 1700 K,
     SiO2/O-038 at 1700 K, MgO/Mg-009 at 2100.001 K, CaO/Ca-028 at 2100 K, and
     Al2O3/Al-100 at 2400 K, TiO2/O-044 at 2200 K, V2O3/O-063 at 1600 and
-    2400 K, and NbO2/Nb-013 at 2175 and 2200 K. K2O's K-012 parent ends at
-    2000 K, so K, K2 and KO have no independent parent reference at 2125,
-    2250, 2375 or 2500 K.
+    2400 K, and NbO2/Nb-013 at 2175 and 2200 K. JANAF liquid-branch starts
+    also leave Al source comparisons below 2500 K, Si below 1800 K, and Mg/Ca
+    below 2200 K. K2O's K-012 parent ends at 2000 K, so K, K2 and KO have no
+    independent parent reference at 2125, 2250, 2375 or 2500 K.
     """
     for _oxide, table_id, temperature in _G2_SOURCE_HOLES:
         assert temperature in _ambiguous_temperatures(table_id)
@@ -1249,8 +1295,38 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         (species, temperature)
         for species in ("Cr", "CrO", "CrO2", "CrO3")
         for temperature in (1500.0, 1625.0, 1750.0, 1875.0)
+    } | {
+        (species, temperature)
+        for species in ("SiO", "SiO2", "Si", "Si2", "Si3")
+        for temperature in (1500.0, 1625.0, 1750.0)
+    } | {
+        (species, temperature)
+        for species in ("Al", "AlO", "AlO2", "Al2", "Al2O", "Al2O2")
+        for temperature in (
+            1500.0,
+            1625.0,
+            1750.0,
+            1875.0,
+            1900.0,
+            2000.0,
+            2125.0,
+            2250.0,
+            2375.0,
+        )
+    } | {
+        (species, temperature)
+        for species in ("Mg", "MgO", "Ca", "CaO")
+        for temperature in (
+            1500.0,
+            1625.0,
+            1750.0,
+            1875.0,
+            1900.0,
+            2000.0,
+            2125.0,
+        )
     }
-    assert checked == 339
+    assert checked == 242
     existing = set(_SF04_REACTIONS) - {
         "O2",
         *NASA_TABLE_IDS,

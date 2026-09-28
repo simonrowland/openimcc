@@ -546,6 +546,9 @@ IMCC_PARENT_OXIDES = (
     "K2O",
 )
 
+# ADR-004 research note: each new JANAF parent row passes its declared-range
+# C4 check through 3000 K (Al 2500 K, Si 1800 K, Mg/Ca 2200 K). The full-domain
+# 1500-3000 K ELEMENT_STATUS below remains the unchanged default-pack result.
 ELEMENT_STATUS: dict[str, dict[str, object]] = {
     "O": {
         "status": "input (fO2 pinned)",
@@ -1464,7 +1467,8 @@ def evaluate_gas(
 _ATOMIC_MASS_G_MOL = {
     "O": 15.999, "Na": 22.989769, "K": 39.0983, "Si": 28.085,
     "Fe": 55.845, "Mg": 24.305, "Al": 26.9815385, "Ca": 40.078,
-    "Ti": 47.867,
+    "Ti": 47.867, "Cr": 51.9961, "V": 50.9415, "Nb": 92.90637,
+    "Mn": 54.938044, "Ni": 58.6934, "Co": 58.933194,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,
