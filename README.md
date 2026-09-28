@@ -172,12 +172,15 @@ fluxes that this model does not include.
 `oxygen_balance_from_pressure_model(pressure_model, species)` accepts a
 callable from
 `log10(pO2 / bar)` to species partial pressures and metadata mapping each gas
-formula to `(molar mass in g/mol, oxygen atoms, parent oxygen demand)`. Build
-metadata with `oxygen_balance_species_metadata({"K": "K2O", "O2": None})`;
-`None` marks a parentless species. A caller can therefore supply pressures
-from a different gas table without routing them through `evaluate_gas`. The
-solver keeps the same 1 bar molecular-flow ceiling and requires a monotone,
-bracketed oxygen flux. The inert-cell caveat above still applies.
+formula to molar mass, oxygen atoms, parent oxygen demand, and its pO2 exponent.
+For a gas MxOy formed from parent oxide MaOb, the exponent is
+`(y - x*b/a) / 2`; parentless oxygen species use half their oxygen atom count.
+Build metadata with `oxygen_balance_species_metadata({"K": "K2O", "O2": None})`.
+Pass `pO2_exponents={"custom gas": exponent}` to override or declare exponents
+for a custom table. Each declared pressure must follow that power law in pO2.
+A caller can supply pressures from another gas table without routing them through
+`evaluate_gas`. The solver enforces the 1 bar molecular-flow ceiling and requires
+a monotone, bracketed oxygen flux. The inert-cell caveat above still applies.
 
 ### Exit codes are part of the contract
 

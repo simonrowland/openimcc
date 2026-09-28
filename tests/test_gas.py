@@ -1067,7 +1067,10 @@ def test_generic_oxygen_balance_analytic_limits(
     fixed_pressure: float,
     expected_ratio: float,
 ) -> None:
-    metadata = oxygen_balance_species_metadata({gas_species: parent, "O2": None})
+    metadata = oxygen_balance_species_metadata(
+        {gas_species: parent, "O2": None},
+        pO2_exponents={gas_species: 0.0},
+    )
 
     def pressure_model(logp: float) -> dict[str, float]:
         return {fixed_species: fixed_pressure, "O2": 10.0**logp}
@@ -1086,10 +1089,73 @@ def test_generic_oxygen_balance_rejects_nonmonotone_pressure_model() -> None:
     metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
 
     def pressure_model(logp: float) -> dict[str, float]:
-        return {"K": 1e-8, "O2": 1e-8 + 1e-7 * ((logp + 15.0) / 15.0) ** 2}
+        residual = 0.001 * (
+            logp + 1.0 + 0.1 * math.sin(32.0 * math.pi * (logp + 2.0))
+        )
+        return {
+            "O2": 10.0**logp,
+            "K": (
+                2.0 * 10.0**logp / math.sqrt(metadata["O2"].molar_mass)
+                - residual
+            ) * math.sqrt(metadata["K"].molar_mass) / 0.5,
+        }
 
-    with pytest.raises(ImccGasOxygenBalanceError, match="not monotone"):
-        oxygen_balance_from_pressure_model(pressure_model, metadata)
+    with pytest.raises(ImccGasOxygenBalanceError, match="not a power law"):
+        oxygen_balance_from_pressure_model(
+            pressure_model, metadata, bracket=(-2.0, 0.0)
+        )
+
+
+def test_generic_oxygen_balance_validates_model_pressures() -> None:
+    metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="negative pressure"):
+        oxygen_balance_from_pressure_model(
+            lambda logp: {"K": -1e-8, "O2": 10.0**logp}, metadata
+        )
+    with pytest.raises(ImccGasOxygenBalanceError, match="missing or has invalid pressure"):
+        oxygen_balance_from_pressure_model(
+            lambda logp: {"O2": 10.0**logp}, metadata
+        )
+    with pytest.raises(ImccGasOxygenBalanceError, match="non-finite"):
+        oxygen_balance_from_pressure_model(
+            lambda logp: {"K": float("nan"), "O2": 10.0**logp}, metadata
+        )
+
+
+def test_generic_oxygen_balance_refuses_custom_bracket_above_one_bar() -> None:
+    metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
+    with pytest.raises(ImccGasOxygenBalanceError, match="molecular-flow regime"):
+        oxygen_balance_from_pressure_model(
+            lambda logp: {"K": 1e-8, "O2": 10.0**logp},
+            metadata,
+            bracket=(-2.0, 0.1),
+        )
+
+
+def test_oxygen_balance_metadata_exponents_match_all_gas_channels(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    import openimcc.gas as gas_module
+
+    channels = gas_module._default_reactions(
+        gas_module.IMCC_PARENT_OXIDES, gas_pack
+    )
+    metadata = oxygen_balance_species_metadata({
+        name: parent for name, (parent, _n_gas, _n_O2) in channels
+    })
+    assert len(channels) == 25
+    for name, (parent, n_gas, n_o2) in channels:
+        expected = -n_o2 / n_gas if parent else (1.0 if name == "O2" else 0.5)
+        assert metadata[name].pO2_exponent == pytest.approx(expected, abs=1e-12)
+
+
+def test_oxygen_balance_metadata_accepts_explicit_exponent_override() -> None:
+    metadata = oxygen_balance_species_metadata(
+        {"K": "K2O", "O2": None},
+        pO2_exponents={"K": -0.3},
+    )
+    assert metadata["K"].pO2_exponent == -0.3
 
 
 def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:

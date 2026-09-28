@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Mapping, NamedTuple, Sequence
 
 import numpy as np
 from scipy.optimize import brentq
@@ -931,6 +931,15 @@ _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 _OXYGEN_BALANCE_BRACKET = (-30.0, 0.0)
 
 
+class OxygenBalanceSpeciesMetadata(NamedTuple):
+    """Formula and pO2 scaling data for one oxygen-balance gas species."""
+
+    molar_mass: float
+    oxygen_atoms: float
+    parent_oxygen_demand: float
+    pO2_exponent: float
+
+
 def _formula_atoms(formula: str) -> dict[str, int]:
     """Count atoms in a retained gas or parent-oxide formula."""
     parts = _FORMULA_PART.findall(formula)
@@ -943,14 +952,24 @@ def _formula_atoms(formula: str) -> dict[str, int]:
 
 def oxygen_balance_species_metadata(
     species_parent_oxides: Mapping[str, str | None],
-) -> dict[str, tuple[float, float, float]]:
-    """Return ``species: (molar mass, O atoms, parent O demand)`` metadata.
+    *,
+    pO2_exponents: Mapping[str, float] | None = None,
+) -> dict[str, OxygenBalanceSpeciesMetadata]:
+    """Return formula, parent-demand, and pO2 exponent metadata by species.
 
     Parent oxygen demand is the parent oxide's O/metal ratio multiplied by
-    the gas species' metal-atom count. Parentless species have zero demand.
-    Formula parsing and atomic masses are the same as the packaged gas model.
+    the gas species' metal-atom count. For M_x O_y from parent M_a O_b,
+    the pO2 exponent is (y - x*b/a) / 2. Parentless oxygen species use
+    y / 2. Supply pO2_exponents to override or define custom tables.
     """
-    metadata: dict[str, tuple[float, float, float]] = {}
+    overrides = pO2_exponents or {}
+    unknown_overrides = overrides.keys() - species_parent_oxides.keys()
+    if unknown_overrides:
+        raise ImccGasOxygenBalanceError(
+            "pO2 exponent override names are absent from species metadata: "
+            f"{sorted(unknown_overrides)}"
+        )
+    metadata: dict[str, OxygenBalanceSpeciesMetadata] = {}
     for species, parent in species_parent_oxides.items():
         atoms = _formula_atoms(species)
         mass = sum(_ATOMIC_MASS_G_MOL[element] * number for element, number in atoms.items())
@@ -959,59 +978,106 @@ def oxygen_balance_species_metadata(
         if parent:
             parent_atoms = _formula_atoms(parent)
             parent_metals = sum(number for element, number in parent_atoms.items() if element != "O")
+            if parent_metals <= 0:
+                raise ImccGasOxygenBalanceError(
+                    f"parent oxide {parent!r} has no metal atoms for oxygen balance"
+                )
             parent_ratio = parent_atoms.get("O", 0) / parent_metals
             parent_oxygen = parent_ratio * metal_atoms
+            exponent = (oxygen_atoms - parent_ratio * metal_atoms) / 2.0
         else:
             parent_oxygen = 0.0
-        metadata[species] = (mass, oxygen_atoms, parent_oxygen)
+            exponent = oxygen_atoms / 2.0
+        if species in overrides:
+            try:
+                exponent = float(overrides[species])
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ImccGasOxygenBalanceError(
+                    f"invalid pO2 exponent for {species!r}"
+                ) from exc
+        if not math.isfinite(exponent):
+            raise ImccGasOxygenBalanceError(
+                f"invalid pO2 exponent for {species!r}: {exponent}"
+            )
+        metadata[species] = OxygenBalanceSpeciesMetadata(
+            mass, oxygen_atoms, parent_oxygen, exponent
+        )
     return metadata
 
 
 def oxygen_balance_from_pressure_model(
     pressure_model: Callable[[float], Mapping[str, float]],
-    species: Mapping[str, tuple[float, float, float]],
+    species: Mapping[str, OxygenBalanceSpeciesMetadata],
     *,
     bracket: tuple[float, float] = _OXYGEN_BALANCE_BRACKET,
 ) -> tuple[float, Mapping[str, float], dict[str, object]]:
     """Solve the generic Knudsen oxygen-balance root for a pressure model.
 
-    Premise: each species effuses with ``J_i = p_i A W / sqrt(2 pi M_i R T)``.
-    Algebra: the common aperture, Clausing, and temperature factors cancel,
-    leaving ``F = sum_i (nO_i - parent_O_i) p_i / sqrt(M_i) = 0``. Pressures
-    are in bar, molar masses in g/mol, and both flux sums therefore share the
-    same arbitrary scale. Sanity: increasing pO2 must increase F; its unique
-    sign-changing root is within the supplied log10(bar) bracket.
-
-    ``pressure_model`` maps log10(pO2/bar) to species partial pressures.
-    ``species`` maps each name to ``(molar_mass_g_mol, oxygen_atoms,
-    parent_oxygen_demand)``; use :func:`oxygen_balance_species_metadata` to
-    derive these values from formulas. The default upper bound is 1 bar, the
-    molecular-flow ceiling. Returns ``(pO2_bar, partial_pressures,
-    diagnostics)`` with residual, bracket, iteration count, and the strongest
-    oxygen and parent-oxygen carriers.
+    Each pressure must follow its declared power law in pO2. If every signed
+    coefficient has the same sign as its exponent, F is monotone; a strictly
+    increasing term makes its sign-changing root unique.
     """
+    for name, data in species.items():
+        weight = (
+            data.oxygen_atoms - data.parent_oxygen_demand
+        ) / math.sqrt(data.molar_mass)
+        if weight * data.pO2_exponent < 0.0:
+            raise ImccGasOxygenBalanceError(
+                f"oxygen-balance flux is non-monotone for retained species {name!r} "
+                f"(weight={weight}, pO2 exponent={data.pO2_exponent})"
+            )
+    if not any(
+        (data.oxygen_atoms - data.parent_oxygen_demand) * data.pO2_exponent > 0.0
+        for data in species.values()
+    ):
+        raise ImccGasOxygenBalanceError(
+            "oxygen-balance flux is not strictly monotone for declared species"
+        )
+
     def at(logp: float) -> tuple[float, Mapping[str, float], float, float]:
         pressures = pressure_model(logp)
+        if not isinstance(pressures, MappingABC):
+            raise ImccGasOxygenBalanceError(
+                f"pressure model must return a mapping at log10(pO2/bar)={logp}"
+            )
+        validated: dict[str, float] = {}
+        for name in species:
+            try:
+                pressure = float(pressures[name])
+            except (KeyError, TypeError, ValueError, OverflowError) as exc:
+                raise ImccGasOxygenBalanceError(
+                    f"pressure model is missing or has invalid pressure for "
+                    f"species {name!r} at log10(pO2/bar)={logp}"
+                ) from exc
+            if not math.isfinite(pressure) or pressure < 0.0:
+                raise ImccGasOxygenBalanceError(
+                    f"pressure model returned non-finite or negative pressure for "
+                    f"species {name!r} at log10(pO2/bar)={logp}: {pressure!r}"
+                )
+            validated[name] = pressure
         oxygen_flux = math.fsum(
-            oxygen * pressures[name] / math.sqrt(mass)
-            for name, (mass, oxygen, _parent) in species.items()
+            data.oxygen_atoms * validated[name] / math.sqrt(data.molar_mass)
+            for name, data in species.items()
         )
         parent_flux = math.fsum(
-            parent * pressures[name] / math.sqrt(mass)
-            for name, (mass, _oxygen, parent) in species.items()
+            data.parent_oxygen_demand * validated[name] / math.sqrt(data.molar_mass)
+            for name, data in species.items()
         )
+        if not (math.isfinite(oxygen_flux) and math.isfinite(parent_flux)):
+            raise ImccGasOxygenBalanceError(
+                f"oxygen-balance flux is non-finite at log10(pO2/bar)={logp}"
+            )
         return oxygen_flux - parent_flux, pressures, oxygen_flux, parent_flux
 
     low, high = bracket
-    samples = [(value, at(value)[0]) for value in np.linspace(low, high, 33)]
-    if any(not math.isfinite(value) for _, value in samples) or any(
-        current[1] < previous[1]
-        for previous, current in zip(samples, samples[1:])
-    ):
+    if not (math.isfinite(low) and math.isfinite(high) and low < high):
+        raise ImccGasOxygenBalanceError(f"invalid oxygen-balance bracket {bracket}")
+    if high > 0.0:
         raise ImccGasOxygenBalanceError(
-            f"oxygen-balance flux is not monotone on {bracket}"
+            "oxygen-balance bracket exceeds pO2 = 1 bar, outside the Knudsen "
+            "molecular-flow regime where the effusion law holds"
         )
-    f_low, f_high = samples[0][1], samples[-1][1]
+    f_low, f_high = at(low)[0], at(high)[0]
     if high == 0.0 and f_high < 0.0:
         raise ImccGasOxygenBalanceError(
             "oxygen-balance root lies above pO2 = 1 bar, outside the Knudsen "
@@ -1034,15 +1100,55 @@ def oxygen_balance_from_pressure_model(
         raise ImccGasOxygenBalanceError("oxygen-balance solve did not converge")
 
     residual, pressures, oxygen_flux, parent_flux = at(root)
+    slope_low = at(root - 0.1)[1]
+    slope_high = at(root + 0.1)[1]
+    for name, data in species.items():
+        if float(pressures[name]) > 1e-300:
+            try:
+                if float(slope_low[name]) <= 0 or float(slope_high[name]) <= 0:
+                    raise ValueError("non-positive pressure around root")
+                observed_exponent = (
+                    math.log10(float(slope_high[name]))
+                    - math.log10(float(slope_low[name]))
+                ) / 0.2
+            except (KeyError, ValueError, TypeError) as exc:
+                raise ImccGasOxygenBalanceError(
+                    f"pressure model is not a power law in pO2 with the declared "
+                    f"exponent for species {name!r}"
+                ) from exc
+            # Power-law log ratios incur about 1e-12 dex of float round-off;
+            # 1e-6 leaves a generous margin while detecting real curvature.
+            if abs(observed_exponent - data.pO2_exponent) > 1e-6:
+                raise ImccGasOxygenBalanceError(
+                    f"pressure model is not a power law in pO2 with the declared "
+                    f"exponent for species {name!r} (declared="
+                    f"{data.pO2_exponent}, observed={observed_exponent})"
+                )
     oxygen_carriers = sorted(
-        ((name, oxygen * pressures[name] / math.sqrt(mass))
-         for name, (mass, oxygen, _parent) in species.items()
-         if oxygen > 0), key=lambda item: item[1], reverse=True,
+        (
+            (
+                name,
+                data.oxygen_atoms * float(pressures[name]) / math.sqrt(data.molar_mass),
+            )
+            for name, data in species.items()
+            if data.oxygen_atoms > 0
+        ),
+        key=lambda item: item[1],
+        reverse=True,
     )[:5]
     metal_carriers = sorted(
-        ((name, parent * pressures[name] / math.sqrt(mass))
-         for name, (mass, _oxygen, parent) in species.items()
-         if parent > 0), key=lambda item: item[1], reverse=True,
+        (
+            (
+                name,
+                data.parent_oxygen_demand
+                * float(pressures[name])
+                / math.sqrt(data.molar_mass),
+            )
+            for name, data in species.items()
+            if data.parent_oxygen_demand > 0
+        ),
+        key=lambda item: item[1],
+        reverse=True,
     )[:5]
     diagnostics: dict[str, object] = {
         "mode": "oxygen_balance_effusion",
@@ -1090,26 +1196,16 @@ def evaluate_gas_oxygen_balance(
         raise ValueError(f"temperature must be finite and positive, got {T_K}")
 
     channels = _default_reactions(parent_oxides, datapack)
-    species_data: dict[str, tuple[float, float, float]] = {}
-    formula_metadata = oxygen_balance_species_metadata({
+    species_data = oxygen_balance_species_metadata({
         species: parent for species, (parent, _n_gas, _n_O2) in channels
     })
     for species, (parent, n_gas, n_O2) in channels:
-        mass, oxygen_atoms, parent_oxygen = formula_metadata[species]
-        delta = oxygen_atoms - parent_oxygen
-        if parent:
-            exponent = -n_O2 / n_gas
-            if not math.isclose(delta / 2.0, exponent, abs_tol=1e-12):
-                raise ImccGasOxygenBalanceError(
-                    f"gas reaction metadata for {species!r} violates oxygen balance"
-                )
-        else:
-            exponent = 1.0 if species == "O2" else 0.5
-        if delta * exponent < -1e-12:
+        data = species_data[species]
+        exponent = -n_O2 / n_gas if parent else (1.0 if species == "O2" else 0.5)
+        if not math.isclose(data.pO2_exponent, exponent, abs_tol=1e-12):
             raise ImccGasOxygenBalanceError(
-                f"oxygen flux is non-monotone for retained species {species!r}"
+                f"gas reaction metadata for {species!r} violates oxygen balance"
             )
-        species_data[species] = (mass, oxygen_atoms, parent_oxygen)
 
     def pressure_model(logp: float) -> ImccGasResult:
         return evaluate_gas(
