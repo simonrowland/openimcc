@@ -17,6 +17,7 @@ from openimcc.gas import (
     ELEMENT_STATUS,
     IMCC_GAS_CHANNEL_SPECIES,
     R_J_MOL_K,
+    ImccGasSpeciesNotFoundError,
     evaluate_gas,
     load_gas_datapack,
 )
@@ -44,22 +45,37 @@ SCREEN_SPECIES = {
 }
 
 
-def _record(table_id: str) -> dict:
-    text = (JANAF_DATA / f"{table_id}.yaml").read_text(encoding="utf-8")
+def _record(table_id: str, source_dir: Path = JANAF_DATA) -> dict:
+    text = (source_dir / f"{table_id}.yaml").read_text(encoding="utf-8")
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         return yaml.safe_load(text)
 
 
-def _neutral_oxide_sources() -> dict[str, tuple[str, str]]:
+def _neutral_oxide_sources(
+    source_dir: Path = JANAF_DATA,
+) -> dict[str, tuple[str, str]]:
     """Return source-table candidates: table ID -> (element, neutral gas)."""
     result = {}
-    for path in JANAF_DATA.glob("*.yaml"):
-        record = _record(path.stem)
-        entry = record["table"]["index_entry"]
-        formula = entry.get("formula_normalised", entry.get("formula"))
-        if entry.get("state") != "g" or entry.get("charge", 0) != 0:
+    paths = sorted(source_dir.glob("*.yaml")) + sorted(source_dir.glob("*.txt"))
+    for path in paths:
+        if path.suffix == ".yaml":
+            entry = _record(path.stem, source_dir)["table"]["index_entry"]
+            formula = entry.get("formula_normalised", entry.get("formula"))
+            state = entry.get("state")
+            charge = entry.get("charge", 0)
+        else:
+            fields = path.read_text(encoding="utf-8").splitlines()[0].split("\t")
+            if len(fields) < 2:
+                continue
+            match = re.fullmatch(r"(?P<formula>.+)\((?P<state>[^()]*)\)", fields[1])
+            if match is None:
+                continue
+            formula = match["formula"]
+            state = match["state"]
+            charge = 1 if re.search(r"\d*[+-]$", formula) else 0
+        if state != "g" or charge != 0:
             continue
         if "O" not in formula:
             continue
@@ -72,21 +88,48 @@ def _neutral_oxide_sources() -> dict[str, tuple[str, str]]:
     return result
 
 
-def test_janaf_neutral_oxide_sources_are_included_or_measured_screens() -> None:
-    """Use data-src plus checked-in candidates; no JANAF manifest exists."""
-    source_candidates = _neutral_oxide_sources()
+def _evaluated_public_c2_species(
+    source_candidates: dict[str, tuple[str, str]],
+) -> set[str]:
+    pack = load_gas_datapack()
+    evaluated = set()
+    for element, species in source_candidates.values():
+        ion_bound = ELEMENT_STATUS[element].get("c3_ion_bound")
+        if ion_bound is None:
+            continue
+        parent_oxide = ion_bound.get("parent_oxide")
+        if parent_oxide is None:
+            continue
+        try:
+            pressures = evaluate_gas(
+                {parent_oxide: 1.0},
+                2200.0,
+                1.0e-10,
+                pack,
+                parent_oxides=(parent_oxide,),
+                gas_species=(species,),
+            )
+        except ImccGasSpeciesNotFoundError:
+            continue
+        if species in pressures:
+            evaluated.add(species)
+    return evaluated
+
+
+def _assert_c2_candidate_coverage(
+    source_candidates: dict[str, tuple[str, str]],
+    statuses: dict[str, dict],
+    evaluated_species: set[str],
+) -> None:
     recorded_candidates = {
         table_id: (element, species)
-        for element, status in ELEMENT_STATUS.items()
+        for element, status in statuses.items()
         for table_id, species in status["c2_candidates"]
     }
     assert source_candidates == recorded_candidates
-
-    channels = set(IMCC_GAS_CHANNEL_SPECIES)
-    for element, status in ELEMENT_STATUS.items():
-        assert isinstance(status["criteria"]["C2"], bool)
+    for element, status in statuses.items():
         for _table_id, species in status["c2_candidates"]:
-            if species in channels:
+            if species in evaluated_species:
                 continue
             screen = status.get("c2_screened_out", {}).get(species)
             assert screen is not None, (
@@ -96,6 +139,52 @@ def test_janaf_neutral_oxide_sources_are_included_or_measured_screens() -> None:
             assert screen["max_ratio"] < 1.0e-4
             assert screen["temperature_K"] in TEMPERATURES_K
             assert screen["fO2"] in FUGACITIES
+
+
+def test_janaf_neutral_oxide_sources_are_included_or_measured_screens() -> None:
+    """Use data-src plus checked-in candidates; no JANAF manifest exists."""
+    source_candidates = _neutral_oxide_sources()
+    assert all(
+        isinstance(status["criteria"]["C2"], bool)
+        for status in ELEMENT_STATUS.values()
+    )
+    _assert_c2_candidate_coverage(
+        source_candidates,
+        ELEMENT_STATUS,
+        _evaluated_public_c2_species(source_candidates),
+    )
+
+
+def test_text_neutral_oxide_source_is_scanned(tmp_path: Path) -> None:
+    (tmp_path / "SiO3.txt").write_text(
+        "Silicon trioxide\tSiO3(g)\n", encoding="utf-8"
+    )
+    assert _neutral_oxide_sources(tmp_path) == {"SiO3": ("Si", "SiO3")}
+
+
+def test_unscreened_fixture_candidate_is_rejected() -> None:
+    fixture_dir = ROOT / "tests" / "fixtures" / "janaf-c2"
+    source_candidates = _neutral_oxide_sources(fixture_dir)
+    statuses = {
+        "Mn": {"c2_candidates": (("MnO", "MnO"),), "c2_screened_out": {}}
+    }
+    assert source_candidates == {"MnO": ("Mn", "MnO")}
+    assert "MnO" in IMCC_GAS_CHANNEL_SPECIES
+    with pytest.raises(ImccGasSpeciesNotFoundError):
+        evaluate_gas(
+            {"MnO": 1.0},
+            2200.0,
+            1.0e-10,
+            load_gas_datapack(),
+            parent_oxides=("MnO",),
+            gas_species=("MnO",),
+        )
+    with pytest.raises(AssertionError, match="MnO is neither included nor screened"):
+        _assert_c2_candidate_coverage(
+            source_candidates,
+            statuses,
+            _evaluated_public_c2_species(source_candidates),
+        )
 
 
 def _caller_parent_activities() -> dict[str, float]:
@@ -282,11 +371,14 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
             # the total neutral-gas inventory, sum_channels n_E p(channel).
             # Units: pressures are reduced by p°=1 bar, so all pressures and
             # K_E p(E) terms in this calculation are dimensionless.
-            # Keeping neutrals undepleted overestimates both p(e-) and p(E+)
-            # relative to a depletion solve; fixed-neutral p(e-) is an upper
-            # estimate of equilibrium p(e-), while p_E,total stays at its
-            # neutral-model value. Since numerator and denominator both move,
-            # the fraction direction is unresolved, so report an estimate.
+            # Melt-buffered reading treats the fixed neutral pressures as the
+            # equilibrium. Relative to closed-parcel depletion, this model
+            # overestimates p(e-), so p(E+) is high for donor Na/K but low for
+            # trace Ca+. The neutral-model p_E,total stays fixed, making the
+            # reported ratio slightly high for K and low for Ca; Ca remains
+            # above 1e-4 and the largest passing value remains Cr at 9.7e-6.
+            # Adding p(E+) to the neutrals-plus-ion denominator multiplies the
+            # reported share by 1/(1+f), where f=p(E+)/p_E,total.
             # Sanity check: at 3000 K, K and Na dominate the summed source terms.
             electron_pressure = math.sqrt(sum(source_terms.values()))
             maxima_by_point[(temperature, fugacity)] = {

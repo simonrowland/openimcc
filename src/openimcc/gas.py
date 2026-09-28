@@ -365,6 +365,9 @@ _GAS_PROVENANCE_AUTHORITY.update(
     {"Na2O": "nasa_glenn_fitted", "K2O": "nasa_glenn_fitted"}
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
+    "MnO": "external_datapack",
+    "NiO": "external_datapack",
+    "CoO": "external_datapack",
     "MgO": "lam1987_transcribed",
     "CaO": "lam1987_transcribed",
     "Al2O3": "lam1987_transcribed",
@@ -385,7 +388,7 @@ _PROVENANCE_AUTHORITY_RANK = {
     "janaf_transcribed": 2,
     "janaf_fitted": 3,
     "nasa_glenn_fitted": 3,
-    "external_datapack": 3,
+    "external_datapack": 2,
 }
 
 
@@ -569,6 +572,8 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
             "K_ion": 4.225232768095914e-12,
             "parent_oxide": "SiO2",
             "source_tables": {"cation": "Si-006", "neutral": "Si-005", "electron": "D-020"},
+            # No JANAF manifest entry exists for D-020; this is the SHA-256 of
+            # the committed data-src/janaf/D-020.txt record.
             "upstream_sha256": {
                 "Si-006": "6d81642518890fb4c67840b3bb103582ad037e800e312cd2fb5cf227cb7ffd58",
                 "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
@@ -730,7 +735,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
             },
             "upstream_sha256": {
                 "Na-006": (
-                    "d33bd7f53aa6a68ae725ec804896cc4cbc607aab5202fb58651422a4e4448c5b"
+                    "1324311c226aaef128378768ce75d1f45c15949219359b3388efda2822db1159"
                 ),
                 "D-020": (
                     "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd"
@@ -763,7 +768,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
             },
             "upstream_sha256": {
                 "K-006": (
-                    "66ffb77658dd109902e8cdeb08d1719e0fc11ac1f9f4c8443574e452f89c530b"
+                    "27cd2083096e8faf6281a319dfb74e27c90ac472a965fb9366cdc43242e963b4"
                 ),
                 "D-020": (
                     "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd"

@@ -19,6 +19,7 @@ import yaml
 
 from tools import build_gas_tables
 from openimcc.gas import (
+    _EXTERNAL_PACK_GAS_SPECIES,
     _GAS_PROVENANCE_AUTHORITY,
     _OXIDE_PROVENANCE_AUTHORITY,
     IMCC_GAS_CHANNEL_SPECIES,
@@ -464,10 +465,15 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
     public_runtime_gas = {
         species: authority
         for species, authority in _GAS_PROVENANCE_AUTHORITY.items()
-        if species not in {"MnO", "NiO", "CoO"}
+        if species not in _EXTERNAL_PACK_GAS_SPECIES
+    }
+    public_runtime_oxide = {
+        species: authority
+        for species, authority in _OXIDE_PROVENANCE_AUTHORITY.items()
+        if species not in _EXTERNAL_PACK_GAS_SPECIES
     }
     assert public_runtime_gas == expected_gas
-    assert _OXIDE_PROVENANCE_AUTHORITY == expected_oxide
+    assert public_runtime_oxide == expected_oxide
 
 
 def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:

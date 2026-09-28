@@ -826,10 +826,12 @@ def synthetic_mnnico_pack(
     """Synthetic wiring fixture, not thermodynamic data.
 
     It copies the public Fe(g), FeO(g), and FeO(l) rows under Mn/Ni/Co names so
-    the tests exercise path-loaded optional-channel wiring without TSIV values.
+    the tests exercise optional-channel wiring with an external pack.
     """
     gas_df = pd.read_csv(gas_pack.gas_path)
     oxide_df = pd.read_csv(gas_pack.oxide_path)
+    atomic_species = {f"{gas}(g)" for gas, _parent in _MNNICO_PARENT_PAIRS}
+    gas_df = gas_df.loc[~gas_df["species_name"].isin(atomic_species)]
     atomic_gas_template = gas_df.loc[gas_df["species_name"] == "Fe(g)"].iloc[[0]]
     monoxide_gas_template = gas_df.loc[gas_df["species_name"] == "FeO(g)"].iloc[[0]]
     oxide_template = oxide_df.loc[oxide_df["species_name"] == "FeO(l)"].iloc[[0]]
@@ -902,11 +904,13 @@ def test_external_pack_activates_mnnico_channels_with_data_free_scaling(
         math.isfinite(low_fugacity[name]) and low_fugacity[name] > 0.0
         for name in _MNNICO_CHANNELS
     )
-    assert low_fugacity.provenance_class["MnO"] == "external_datapack"
-    # MnO(l) = Mn(g) + 1/2 O2: p(Mn) scales as fO2**(-1/2).
-    assert low_fugacity["Mn"] / high_fugacity["Mn"] == pytest.approx(100.0)
-    # MnO(l) = MnO(g): n_O2 = 0, so its pressure is fO2-independent.
-    assert low_fugacity["MnO"] == high_fugacity["MnO"]
+    for gas, monoxide in _MNNICO_PARENT_PAIRS:
+        assert low_fugacity.provenance_class[gas] == "external_datapack"
+        assert low_fugacity.provenance_class[monoxide] == "external_datapack"
+        # MO(l) = M(g) + 1/2 O2: p(M) scales as fO2**(-1/2).
+        assert low_fugacity[gas] / high_fugacity[gas] == pytest.approx(100.0)
+        # MO(l) = MO(g): n_O2 = 0, so its pressure is fO2-independent.
+        assert low_fugacity[monoxide] == high_fugacity[monoxide]
 
 
 def test_override_without_tio2_parent_keeps_the_sf04_default_set(
