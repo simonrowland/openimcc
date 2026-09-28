@@ -36,7 +36,7 @@ from openimcc.gas import (
     evaluate_gas,
     evaluate_gas_oxygen_balance,
     oxygen_balance_species_metadata,
-    solve_oxygen_balance,
+    oxygen_balance_from_pressure_model,
     gas_species_provenance,
     load_gas_datapack,
 )
@@ -1072,7 +1072,9 @@ def test_generic_oxygen_balance_analytic_limits(
     def pressure_model(logp: float) -> dict[str, float]:
         return {fixed_species: fixed_pressure, "O2": 10.0**logp}
 
-    p_o2, _pressures, diagnostics = solve_oxygen_balance(pressure_model, metadata)
+    p_o2, _pressures, diagnostics = oxygen_balance_from_pressure_model(
+        pressure_model, metadata
+    )
     # K2O -> 2 K + 1/2 O2 gives parent demand 1/2 O per K, so
     # (1/2)pK/sqrt(MK) = 2pO2/sqrt(MO2). For SiO2 -> SiO + 1/2 O2,
     # the deficit is 1 O per SiO, so pSiO/sqrt(MSiO) = 2pO2/sqrt(MO2).
@@ -1087,7 +1089,7 @@ def test_generic_oxygen_balance_rejects_nonmonotone_pressure_model() -> None:
         return {"K": 1e-8, "O2": 1e-8 + 1e-7 * ((logp + 15.0) / 15.0) ** 2}
 
     with pytest.raises(ImccGasOxygenBalanceError, match="not monotone"):
-        solve_oxygen_balance(pressure_model, metadata)
+        oxygen_balance_from_pressure_model(pressure_model, metadata)
 
 
 def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:
@@ -1097,7 +1099,9 @@ def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:
         return {"K": 1e-8, "O2": 10.0**logp}
 
     with pytest.raises(ImccGasOxygenBalanceError, match="not bracketed"):
-        solve_oxygen_balance(pressure_model, metadata, bracket=(-30.0, -20.0))
+        oxygen_balance_from_pressure_model(
+            pressure_model, metadata, bracket=(-30.0, -20.0)
+        )
 
 
 # SHA256 of the complete outputs from 23d7842. Before hashing, every float in

@@ -967,7 +967,7 @@ def oxygen_balance_species_metadata(
     return metadata
 
 
-def solve_oxygen_balance(
+def oxygen_balance_from_pressure_model(
     pressure_model: Callable[[float], Mapping[str, float]],
     species: Mapping[str, tuple[float, float, float]],
     *,
@@ -1118,4 +1118,4 @@ def evaluate_gas_oxygen_balance(
             allow_extrapolation=allow_extrapolation,
         )
 
-    return solve_oxygen_balance(pressure_model, species_data)
+    return oxygen_balance_from_pressure_model(pressure_model, species_data)

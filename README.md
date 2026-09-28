@@ -169,7 +169,8 @@ fluxes that this model does not include.
 
 #### Reusing the balance with another gas table
 
-`solve_oxygen_balance(pressure_model, species)` accepts a callable from
+`oxygen_balance_from_pressure_model(pressure_model, species)` accepts a
+callable from
 `log10(pO2 / bar)` to species partial pressures and metadata mapping each gas
 formula to `(molar mass in g/mol, oxygen atoms, parent oxygen demand)`. Build
 metadata with `oxygen_balance_species_metadata({"K": "K2O", "O2": None})`;
