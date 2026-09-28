@@ -1,0 +1,4728 @@
+schema_version: literature_compilation.v1
+source_id: nist-janaf-4th
+source:
+  citation: Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition, J. Phys. Chem. Ref. Data Monograph 9 (1998)
+  database: NIST Standard Reference Database 13
+  doi: 10.18434/T42S31
+  url: https://janaf.nist.gov/
+  last_data_update: 1998
+  licence: 'Quoted from NIST SRD 13 (https://data.nist.gov/od/id/ECBCC1C1301D2ED9E04306570681B10735): "These data are public."
+    Quoted from https://www.nist.gov/copyrights-disclaimers: "With the exception of material marked as copyrighted, information
+    presented on NIST sites are considered public information and may be distributed or copied."'
+compilation_role:
+  kind: assessed_thermodynamic_functions
+  engine_reference_input: true
+  validation_measurement: false
+  scoring_eligible: false
+  battery_refusal: gibbs_table_not_runtime_observable
+  circularity_warning: Do not validate an engine against a compilation it consumes.
+extraction:
+  method: machine parse of NIST tab-delimited table download; source bytes cached unchanged
+  date: '2026-09-06'
+  user_agent: openimcc-janaf-vendor/1.0
+  source_sha256: 28ba36fd244128e314eb794af7bf4aadcd3de6e87bfde3bc36ee43e6b033ee20
+  review_status: machine_transcribed_unreviewed
+table:
+  table_id: Co-006
+  url: https://janaf.nist.gov/tables/Co-006.html
+  download_url: https://janaf.nist.gov/tables/Co-006.txt
+  index_entry:
+    formula: Co+
+    formula_as_published: Co+
+    formula_normalised: Co
+    charge: 1
+    name: Cobalt, Ion
+    state: g
+  title_as_published: Cobalt, Ion (Co+)  |  Co1+(g)
+  standard_state_as_published: p° = 0.1 MPa (as published by JANAF)
+  units_as_published:
+    temperature: K
+    heat_capacity: J K^-1 mol^-1
+    entropy: J K^-1 mol^-1
+    negative_gibbs_enthalpy_function: J K^-1 mol^-1
+    enthalpy_increment: kJ mol^-1
+    formation_enthalpy: kJ mol^-1
+    formation_gibbs_energy: kJ mol^-1
+    log10_formation_equilibrium_constant: dimensionless
+  values:
+  - temperature:
+      value: 0.0
+      as_published: '0'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '0'
+        column: T(K)
+    heat_capacity:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '0'
+        column: Cp
+    entropy:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '0'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: null
+      as_published: INFINITE
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '0'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -6.291
+      as_published: '-6.291'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '0'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1183.879
+      as_published: '1183.879'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '0'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '0'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '0'
+        column: log Kf
+  - temperature:
+      value: 100.0
+      as_published: '100'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '100'
+        column: T(K)
+    heat_capacity:
+      value: 20.787
+      as_published: '20.787'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '100'
+        column: Cp
+    entropy:
+      value: 155.255
+      as_published: '155.255'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 197.384
+      as_published: '197.384'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -4.213
+      as_published: '-4.213'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '100'
+        column: log Kf
+  - temperature:
+      value: 200.0
+      as_published: '200'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '200'
+        column: T(K)
+    heat_capacity:
+      value: 21.116
+      as_published: '21.116'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '200'
+        column: Cp
+    entropy:
+      value: 169.718
+      as_published: '169.718'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 180.341
+      as_published: '180.341'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -2.125
+      as_published: '-2.125'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '200'
+        column: log Kf
+  - temperature:
+      value: 250.0
+      as_published: '250'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '250'
+        column: T(K)
+    heat_capacity:
+      value: 21.635
+      as_published: '21.635'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '250'
+        column: Cp
+    entropy:
+      value: 174.482
+      as_published: '174.482'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '250'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 178.709
+      as_published: '178.709'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '250'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -1.057
+      as_published: '-1.057'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '250'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '250'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '250'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '250'
+        column: log Kf
+  - temperature:
+      value: 298.15
+      as_published: '298.15'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '298.15'
+        column: T(K)
+    heat_capacity:
+      value: 22.272
+      as_published: '22.272'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '298.15'
+        column: Cp
+    entropy:
+      value: 178.346
+      as_published: '178.346'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '298.15'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 178.346
+      as_published: '178.346'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '298.15'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '298.15'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1191.597
+      as_published: '1191.597'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '298.15'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1141.133
+      as_published: '1141.133'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '298.15'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -199.922
+      as_published: '-199.922'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '298.15'
+        column: log Kf
+  - temperature:
+      value: 300.0
+      as_published: '300'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '300'
+        column: T(K)
+    heat_capacity:
+      value: 22.297
+      as_published: '22.297'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '300'
+        column: Cp
+    entropy:
+      value: 178.484
+      as_published: '178.484'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 178.346
+      as_published: '178.346'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 0.041
+      as_published: '0.041'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1191.63
+      as_published: '1191.630'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1140.819
+      as_published: '1140.819'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -198.634
+      as_published: '-198.634'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '300'
+        column: log Kf
+  - temperature:
+      value: 350.0
+      as_published: '350'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '350'
+        column: T(K)
+    heat_capacity:
+      value: 22.981
+      as_published: '22.981'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '350'
+        column: Cp
+    entropy:
+      value: 181.973
+      as_published: '181.973'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '350'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 178.62
+      as_published: '178.620'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '350'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 1.173
+      as_published: '1.173'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '350'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1192.539
+      as_published: '1192.539'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '350'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1132.279
+      as_published: '1132.279'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '350'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -168.983
+      as_published: '-168.983'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '350'
+        column: log Kf
+  - temperature:
+      value: 400.0
+      as_published: '400'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '400'
+        column: T(K)
+    heat_capacity:
+      value: 23.606
+      as_published: '23.606'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '400'
+        column: Cp
+    entropy:
+      value: 185.083
+      as_published: '185.083'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 179.237
+      as_published: '179.237'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 2.338
+      as_published: '2.338'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1193.438
+      as_published: '1193.438'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1123.609
+      as_published: '1123.609'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -146.728
+      as_published: '-146.728'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '400'
+        column: log Kf
+  - temperature:
+      value: 450.0
+      as_published: '450'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '450'
+        column: T(K)
+    heat_capacity:
+      value: 24.133
+      as_published: '24.133'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '450'
+        column: Cp
+    entropy:
+      value: 187.895
+      as_published: '187.895'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '450'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 180.045
+      as_published: '180.045'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '450'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 3.532
+      as_published: '3.532'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '450'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1194.323
+      as_published: '1194.323'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '450'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1114.827
+      as_published: '1114.827'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '450'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -129.406
+      as_published: '-129.406'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '450'
+        column: log Kf
+  - temperature:
+      value: 500.0
+      as_published: '500'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '500'
+        column: T(K)
+    heat_capacity:
+      value: 24.559
+      as_published: '24.559'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '500'
+        column: Cp
+    entropy:
+      value: 190.461
+      as_published: '190.461'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 180.961
+      as_published: '180.961'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 4.75
+      as_published: '4.750'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1195.19
+      as_published: '1195.190'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1105.947
+      as_published: '1105.947'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -115.538
+      as_published: '-115.538'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '500'
+        column: log Kf
+  - temperature:
+      value: 600.0
+      as_published: '600'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '600'
+        column: T(K)
+    heat_capacity:
+      value: 25.165
+      as_published: '25.165'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '600'
+        column: Cp
+    entropy:
+      value: 194.996
+      as_published: '194.996'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 182.932
+      as_published: '182.932'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 7.238
+      as_published: '7.238'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1196.863
+      as_published: '1196.863'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1087.94
+      as_published: '1087.940'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -94.714
+      as_published: '-94.714'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '600'
+        column: log Kf
+  - temperature:
+      value: 700.0
+      as_published: '700'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '700'
+        column: T(K)
+    heat_capacity:
+      value: 25.585
+      as_published: '25.585'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '700'
+        column: Cp
+    entropy:
+      value: 198.908
+      as_published: '198.908'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 184.941
+      as_published: '184.941'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 9.777
+      as_published: '9.777'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1198.444
+      as_published: '1198.444'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1069.66
+      as_published: '1069.660'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -79.819
+      as_published: '-79.819'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '700'
+        column: log Kf
+  - temperature:
+      value: 800.0
+      as_published: '800'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '800'
+        column: T(K)
+    heat_capacity:
+      value: 25.946
+      as_published: '25.946'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '800'
+        column: Cp
+    entropy:
+      value: 202.348
+      as_published: '202.348'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 186.906
+      as_published: '186.906'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 12.354
+      as_published: '12.354'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1199.499
+      as_published: '1199.499'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1051.222
+      as_published: '1051.222'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -68.638
+      as_published: '-68.638'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '800'
+        column: log Kf
+  - temperature:
+      value: 900.0
+      as_published: '900'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '900'
+        column: T(K)
+    heat_capacity:
+      value: 26.307
+      as_published: '26.307'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '900'
+        column: Cp
+    entropy:
+      value: 205.425
+      as_published: '205.425'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 188.796
+      as_published: '188.796'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 14.966
+      as_published: '14.966'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1200.846
+      as_published: '1200.846'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1032.605
+      as_published: '1032.605'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -59.931
+      as_published: '-59.931'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '900'
+        column: log Kf
+  - temperature:
+      value: 1000.0
+      as_published: '1000'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1000'
+        column: T(K)
+    heat_capacity:
+      value: 26.681
+      as_published: '26.681'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1000'
+        column: Cp
+    entropy:
+      value: 208.216
+      as_published: '208.216'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 190.601
+      as_published: '190.601'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 17.615
+      as_published: '17.615'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1202.002
+      as_published: '1202.002'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 1013.848
+      as_published: '1013.848'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -52.958
+      as_published: '-52.958'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1000'
+        column: log Kf
+  - temperature:
+      value: 1100.0
+      as_published: '1100'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1100'
+        column: T(K)
+    heat_capacity:
+      value: 27.067
+      as_published: '27.067'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1100'
+        column: Cp
+    entropy:
+      value: 210.777
+      as_published: '210.777'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 192.32
+      as_published: '192.320'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 20.303
+      as_published: '20.303'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1202.932
+      as_published: '1202.932'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 994.985
+      as_published: '994.985'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -47.248
+      as_published: '-47.248'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1100'
+        column: log Kf
+  - temperature:
+      value: 1200.0
+      as_published: '1200'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1200'
+        column: T(K)
+    heat_capacity:
+      value: 27.485
+      as_published: '27.485'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1200'
+        column: Cp
+    entropy:
+      value: 213.15
+      as_published: '213.150'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 193.958
+      as_published: '193.958'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 23.03
+      as_published: '23.030'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1203.602
+      as_published: '1203.602'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 976.049
+      as_published: '976.049'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -42.486
+      as_published: '-42.486'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1200'
+        column: log Kf
+  - temperature:
+      value: 1300.0
+      as_published: '1300'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1300'
+        column: T(K)
+    heat_capacity:
+      value: 28.002
+      as_published: '28.002'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1300'
+        column: Cp
+    entropy:
+      value: 215.369
+      as_published: '215.369'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 195.521
+      as_published: '195.521'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 25.803
+      as_published: '25.803'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1203.871
+      as_published: '1203.871'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 957.072
+      as_published: '957.072'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -38.456
+      as_published: '-38.456'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1300'
+        column: log Kf
+  - temperature:
+      value: 1400.0
+      as_published: '1400'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1400'
+        column: T(K)
+    heat_capacity:
+      value: 28.74
+      as_published: '28.740'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1400'
+        column: Cp
+    entropy:
+      value: 217.469
+      as_published: '217.469'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 197.014
+      as_published: '197.014'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 28.638
+      as_published: '28.638'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1203.626
+      as_published: '1203.626'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 938.094
+      as_published: '938.094'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -35.001
+      as_published: '-35.001'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1400'
+        column: log Kf
+  - temperature:
+      value: 1500.0
+      as_published: '1500'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1500'
+        column: T(K)
+    heat_capacity:
+      value: 29.883
+      as_published: '29.883'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1500'
+        column: Cp
+    entropy:
+      value: 219.488
+      as_published: '219.488'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 198.445
+      as_published: '198.445'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 31.564
+      as_published: '31.564'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1204.484
+      as_published: '1204.484'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 919.101
+      as_published: '919.101'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -32.006
+      as_published: '-32.006'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1500'
+        column: log Kf
+  - temperature:
+      value: 1600.0
+      as_published: '1600'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1600'
+        column: T(K)
+    heat_capacity:
+      value: 31.654
+      as_published: '31.654'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1600'
+        column: Cp
+    entropy:
+      value: 221.469
+      as_published: '221.469'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 199.822
+      as_published: '199.822'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 34.635
+      as_published: '34.635'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1205.74
+      as_published: '1205.740'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 900.036
+      as_published: '900.036'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -29.383
+      as_published: '-29.383'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1600'
+        column: log Kf
+  - temperature:
+      value: 1700.0
+      as_published: '1700'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1700'
+        column: T(K)
+    heat_capacity:
+      value: 34.287
+      as_published: '34.287'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1700'
+        column: Cp
+    entropy:
+      value: 223.462
+      as_published: '223.462'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 201.154
+      as_published: '201.154'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 37.924
+      as_published: '37.924'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1207.312
+      as_published: '1207.312'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 880.883
+      as_published: '880.883'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -27.066
+      as_published: '-27.066'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1700'
+        column: log Kf
+  - temperature:
+      value: 1800.0
+      as_published: '1800'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1800'
+        column: T(K)
+    heat_capacity:
+      value: 37.981
+      as_published: '37.981'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1800'
+        column: Cp
+    entropy:
+      value: 225.521
+      as_published: '225.521'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 202.45
+      as_published: '202.450'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 41.528
+      as_published: '41.528'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1192.933
+      as_published: '1192.933'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 861.922
+      as_published: '861.922'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -25.012
+      as_published: '-25.012'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1800'
+        column: log Kf
+  - temperature:
+      value: 1900.0
+      as_published: '1900'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1900'
+        column: T(K)
+    heat_capacity:
+      value: 42.853
+      as_published: '42.853'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1900'
+        column: Cp
+    entropy:
+      value: 227.7
+      as_published: '227.700'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 203.721
+      as_published: '203.721'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 45.56
+      as_published: '45.560'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1194.993
+      as_published: '1194.993'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 843.479
+      as_published: '843.479'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -23.189
+      as_published: '-23.189'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '1900'
+        column: log Kf
+  - temperature:
+      value: 2000.0
+      as_published: '2000'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2000'
+        column: T(K)
+    heat_capacity:
+      value: 48.89
+      as_published: '48.890'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2000'
+        column: Cp
+    entropy:
+      value: 230.047
+      as_published: '230.047'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 204.978
+      as_published: '204.978'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 50.138
+      as_published: '50.138'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1197.599
+      as_published: '1197.599'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 824.913
+      as_published: '824.913'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -21.545
+      as_published: '-21.545'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2000'
+        column: log Kf
+  - temperature:
+      value: 2100.0
+      as_published: '2100'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2100'
+        column: T(K)
+    heat_capacity:
+      value: 55.916
+      as_published: '55.916'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2100'
+        column: Cp
+    entropy:
+      value: 232.599
+      as_published: '232.599'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 206.232
+      as_published: '206.232'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 55.371
+      as_published: '55.371'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1200.861
+      as_published: '1200.861'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 806.202
+      as_published: '806.202'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -20.053
+      as_published: '-20.053'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2100'
+        column: log Kf
+  - temperature:
+      value: 2200.0
+      as_published: '2200'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2200'
+        column: T(K)
+    heat_capacity:
+      value: 63.578
+      as_published: '63.578'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2200'
+        column: Cp
+    entropy:
+      value: 235.375
+      as_published: '235.375'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 207.492
+      as_published: '207.492'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 61.342
+      as_published: '61.342'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1204.861
+      as_published: '1204.861'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 787.318
+      as_published: '787.318'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -18.693
+      as_published: '-18.693'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2200'
+        column: log Kf
+  - temperature:
+      value: 2300.0
+      as_published: '2300'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2300'
+        column: T(K)
+    heat_capacity:
+      value: 71.383
+      as_published: '71.383'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2300'
+        column: Cp
+    entropy:
+      value: 238.374
+      as_published: '238.374'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 208.769
+      as_published: '208.769'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 68.091
+      as_published: '68.091'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1209.639
+      as_published: '1209.639'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 768.234
+      as_published: '768.234'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -17.447
+      as_published: '-17.447'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2300'
+        column: log Kf
+  - temperature:
+      value: 2400.0
+      as_published: '2400'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2400'
+        column: T(K)
+    heat_capacity:
+      value: 78.752
+      as_published: '78.752'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2400'
+        column: Cp
+    entropy:
+      value: 241.57
+      as_published: '241.570'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 210.069
+      as_published: '210.069'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 75.604
+      as_published: '75.604'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1215.18
+      as_published: '1215.180'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 748.927
+      as_published: '748.927'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -16.3
+      as_published: '-16.300'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2400'
+        column: log Kf
+  - temperature:
+      value: 2500.0
+      as_published: '2500'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2500'
+        column: T(K)
+    heat_capacity:
+      value: 85.12
+      as_published: '85.120'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2500'
+        column: Cp
+    entropy:
+      value: 244.919
+      as_published: '244.919'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 211.395
+      as_published: '211.395'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 83.808
+      as_published: '83.808'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1221.413
+      as_published: '1221.413'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 729.374
+      as_published: '729.374'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -15.239
+      as_published: '-15.239'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2500'
+        column: log Kf
+  - temperature:
+      value: 2600.0
+      as_published: '2600'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2600'
+        column: T(K)
+    heat_capacity:
+      value: 90.025
+      as_published: '90.025'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2600'
+        column: Cp
+    entropy:
+      value: 248.358
+      as_published: '248.358'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 212.751
+      as_published: '212.751'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 92.579
+      as_published: '92.579'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1228.212
+      as_published: '1228.212'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 709.559
+      as_published: '709.559'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -14.255
+      as_published: '-14.255'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2600'
+        column: log Kf
+  - temperature:
+      value: 2700.0
+      as_published: '2700'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2700'
+        column: T(K)
+    heat_capacity:
+      value: 93.179
+      as_published: '93.179'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2700'
+        column: Cp
+    entropy:
+      value: 251.82
+      as_published: '251.820'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 214.134
+      as_published: '214.134'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 101.755
+      as_published: '101.755'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1235.416
+      as_published: '1235.416'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 689.476
+      as_published: '689.476'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -13.339
+      as_published: '-13.339'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2700'
+        column: log Kf
+  - temperature:
+      value: 2800.0
+      as_published: '2800'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2800'
+        column: T(K)
+    heat_capacity:
+      value: 94.494
+      as_published: '94.494'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2800'
+        column: Cp
+    entropy:
+      value: 255.238
+      as_published: '255.238'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 215.541
+      as_published: '215.541'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 111.153
+      as_published: '111.153'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1242.843
+      as_published: '1242.843'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 669.12
+      as_published: '669.120'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -12.483
+      as_published: '-12.483'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2800'
+        column: log Kf
+  - temperature:
+      value: 2900.0
+      as_published: '2900'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2900'
+        column: T(K)
+    heat_capacity:
+      value: 94.073
+      as_published: '94.073'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2900'
+        column: Cp
+    entropy:
+      value: 258.552
+      as_published: '258.552'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 216.967
+      as_published: '216.967'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 120.595
+      as_published: '120.595'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1250.314
+      as_published: '1250.314'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 648.498
+      as_published: '648.498'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -11.681
+      as_published: '-11.681'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '2900'
+        column: log Kf
+  - temperature:
+      value: 3000.0
+      as_published: '3000'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3000'
+        column: T(K)
+    heat_capacity:
+      value: 92.159
+      as_published: '92.159'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3000'
+        column: Cp
+    entropy:
+      value: 261.713
+      as_published: '261.713'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 218.406
+      as_published: '218.406'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 129.918
+      as_published: '129.918'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1257.665
+      as_published: '1257.665'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 627.62
+      as_published: '627.620'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -10.928
+      as_published: '-10.928'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3000'
+        column: log Kf
+  - temperature:
+      value: 3100.0
+      as_published: '3100'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3100'
+        column: T(K)
+    heat_capacity:
+      value: 89.071
+      as_published: '89.071'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3100'
+        column: Cp
+    entropy:
+      value: 264.687
+      as_published: '264.687'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 219.852
+      as_published: '219.852'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 138.988
+      as_published: '138.988'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 1264.763
+      as_published: '1264.763'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 606.5
+      as_published: '606.500'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -10.219
+      as_published: '-10.219'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3100'
+        column: log Kf
+  - temperature:
+      value: 3200.0
+      as_published: '3200'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3200'
+        column: T(K)
+    heat_capacity:
+      value: 85.153
+      as_published: '85.153'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3200'
+        column: Cp
+    entropy:
+      value: 267.455
+      as_published: '267.455'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 221.297
+      as_published: '221.297'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 147.705
+      as_published: '147.705'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 896.695
+      as_published: '896.695'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 586.93
+      as_published: '586.930'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -9.581
+      as_published: '-9.581'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3200'
+        column: log Kf
+  - temperature:
+      value: 3300.0
+      as_published: '3300'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3300'
+        column: T(K)
+    heat_capacity:
+      value: 80.724
+      as_published: '80.724'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3300'
+        column: Cp
+    entropy:
+      value: 270.008
+      as_published: '270.008'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 222.735
+      as_published: '222.735'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 156.002
+      as_published: '156.002'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 904.447
+      as_published: '904.447'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 577.129
+      as_published: '577.129'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -9.135
+      as_published: '-9.135'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3300'
+        column: log Kf
+  - temperature:
+      value: 3400.0
+      as_published: '3400'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3400'
+        column: T(K)
+    heat_capacity:
+      value: 76.057
+      as_published: '76.057'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3400'
+        column: Cp
+    entropy:
+      value: 272.349
+      as_published: '272.349'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 224.16
+      as_published: '224.160'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 163.842
+      as_published: '163.842'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 911.74
+      as_published: '911.740'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 567.1
+      as_published: '567.100'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -8.712
+      as_published: '-8.712'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3400'
+        column: log Kf
+  - temperature:
+      value: 3500.0
+      as_published: '3500'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3500'
+        column: T(K)
+    heat_capacity:
+      value: 71.364
+      as_published: '71.364'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3500'
+        column: Cp
+    entropy:
+      value: 274.486
+      as_published: '274.486'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 225.568
+      as_published: '225.568'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 171.212
+      as_published: '171.212'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 918.561
+      as_published: '918.561'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 556.863
+      as_published: '556.863'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -8.311
+      as_published: '-8.311'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3500'
+        column: log Kf
+  - temperature:
+      value: 3600.0
+      as_published: '3600'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3600'
+        column: T(K)
+    heat_capacity:
+      value: 66.801
+      as_published: '66.801'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3600'
+        column: Cp
+    entropy:
+      value: 276.432
+      as_published: '276.432'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 226.954
+      as_published: '226.954'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 178.119
+      as_published: '178.119'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 924.913
+      as_published: '924.913'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 546.438
+      as_published: '546.438'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -7.929
+      as_published: '-7.929'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3600'
+        column: log Kf
+  - temperature:
+      value: 3700.0
+      as_published: '3700'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3700'
+        column: T(K)
+    heat_capacity:
+      value: 62.471
+      as_published: '62.471'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3700'
+        column: Cp
+    entropy:
+      value: 278.202
+      as_published: '278.202'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 228.316
+      as_published: '228.316'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 184.58
+      as_published: '184.580'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 930.815
+      as_published: '930.815'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 535.842
+      as_published: '535.842'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -7.565
+      as_published: '-7.565'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3700'
+        column: log Kf
+  - temperature:
+      value: 3800.0
+      as_published: '3800'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3800'
+        column: T(K)
+    heat_capacity:
+      value: 58.437
+      as_published: '58.437'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3800'
+        column: Cp
+    entropy:
+      value: 279.814
+      as_published: '279.814'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 229.65
+      as_published: '229.650'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 190.623
+      as_published: '190.623'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 936.291
+      as_published: '936.291'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 525.093
+      as_published: '525.093'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -7.218
+      as_published: '-7.218'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3800'
+        column: log Kf
+  - temperature:
+      value: 3900.0
+      as_published: '3900'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3900'
+        column: T(K)
+    heat_capacity:
+      value: 54.728
+      as_published: '54.728'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3900'
+        column: Cp
+    entropy:
+      value: 281.283
+      as_published: '281.283'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 230.955
+      as_published: '230.955'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 196.279
+      as_published: '196.279'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 941.371
+      as_published: '941.371'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 514.205
+      as_published: '514.205'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -6.887
+      as_published: '-6.887'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '3900'
+        column: log Kf
+  - temperature:
+      value: 4000.0
+      as_published: '4000'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4000'
+        column: T(K)
+    heat_capacity:
+      value: 51.353
+      as_published: '51.353'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4000'
+        column: Cp
+    entropy:
+      value: 282.626
+      as_published: '282.626'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 232.231
+      as_published: '232.231'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 201.58
+      as_published: '201.580'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 946.088
+      as_published: '946.088'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 503.191
+      as_published: '503.191'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -6.571
+      as_published: '-6.571'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4000'
+        column: log Kf
+  - temperature:
+      value: 4100.0
+      as_published: '4100'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4100'
+        column: T(K)
+    heat_capacity:
+      value: 48.306
+      as_published: '48.306'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4100'
+        column: Cp
+    entropy:
+      value: 283.856
+      as_published: '283.856'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 233.475
+      as_published: '233.475'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 206.56
+      as_published: '206.560'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 950.474
+      as_published: '950.474'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 492.064
+      as_published: '492.064'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -6.269
+      as_published: '-6.269'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4100'
+        column: log Kf
+  - temperature:
+      value: 4200.0
+      as_published: '4200'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4200'
+        column: T(K)
+    heat_capacity:
+      value: 45.568
+      as_published: '45.568'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4200'
+        column: Cp
+    entropy:
+      value: 284.986
+      as_published: '284.986'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 234.688
+      as_published: '234.688'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 211.251
+      as_published: '211.251'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 954.558
+      as_published: '954.558'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 480.833
+      as_published: '480.833'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -5.98
+      as_published: '-5.980'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4200'
+        column: log Kf
+  - temperature:
+      value: 4300.0
+      as_published: '4300'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4300'
+        column: T(K)
+    heat_capacity:
+      value: 43.119
+      as_published: '43.119'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4300'
+        column: Cp
+    entropy:
+      value: 286.029
+      as_published: '286.029'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 235.87
+      as_published: '235.870'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 215.683
+      as_published: '215.683'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 958.37
+      as_published: '958.370'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 469.508
+      as_published: '469.508'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -5.703
+      as_published: '-5.703'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4300'
+        column: log Kf
+  - temperature:
+      value: 4400.0
+      as_published: '4400'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4400'
+        column: T(K)
+    heat_capacity:
+      value: 40.933
+      as_published: '40.933'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4400'
+        column: Cp
+    entropy:
+      value: 286.995
+      as_published: '286.995'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 237.021
+      as_published: '237.021'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 219.884
+      as_published: '219.884'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 961.936
+      as_published: '961.936'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 458.098
+      as_published: '458.098'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -5.438
+      as_published: '-5.438'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4400'
+        column: log Kf
+  - temperature:
+      value: 4500.0
+      as_published: '4500'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4500'
+        column: T(K)
+    heat_capacity:
+      value: 38.985
+      as_published: '38.985'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4500'
+        column: Cp
+    entropy:
+      value: 287.893
+      as_published: '287.893'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 238.142
+      as_published: '238.142'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 223.878
+      as_published: '223.878'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 965.28
+      as_published: '965.280'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 446.609
+      as_published: '446.609'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -5.184
+      as_published: '-5.184'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4500'
+        column: log Kf
+  - temperature:
+      value: 4600.0
+      as_published: '4600'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4600'
+        column: T(K)
+    heat_capacity:
+      value: 37.25
+      as_published: '37.250'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4600'
+        column: Cp
+    entropy:
+      value: 288.73
+      as_published: '288.730'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 239.233
+      as_published: '239.233'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 227.688
+      as_published: '227.688'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 968.422
+      as_published: '968.422'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 435.048
+      as_published: '435.048'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.94
+      as_published: '-4.940'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4600'
+        column: log Kf
+  - temperature:
+      value: 4700.0
+      as_published: '4700'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4700'
+        column: T(K)
+    heat_capacity:
+      value: 35.707
+      as_published: '35.707'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4700'
+        column: Cp
+    entropy:
+      value: 289.514
+      as_published: '289.514'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 240.294
+      as_published: '240.294'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 231.334
+      as_published: '231.334'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 971.384
+      as_published: '971.384'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 423.42
+      as_published: '423.420'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.706
+      as_published: '-4.706'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4700'
+        column: log Kf
+  - temperature:
+      value: 4800.0
+      as_published: '4800'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4800'
+        column: T(K)
+    heat_capacity:
+      value: 34.332
+      as_published: '34.332'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4800'
+        column: Cp
+    entropy:
+      value: 290.251
+      as_published: '290.251'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 241.327
+      as_published: '241.327'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 234.835
+      as_published: '234.835'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 974.18
+      as_published: '974.180'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 411.732
+      as_published: '411.732'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.481
+      as_published: '-4.481'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4800'
+        column: log Kf
+  - temperature:
+      value: 4900.0
+      as_published: '4900'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4900'
+        column: T(K)
+    heat_capacity:
+      value: 33.107
+      as_published: '33.107'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4900'
+        column: Cp
+    entropy:
+      value: 290.946
+      as_published: '290.946'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 242.333
+      as_published: '242.333'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 238.206
+      as_published: '238.206'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 976.826
+      as_published: '976.826'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 399.986
+      as_published: '399.986'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.264
+      as_published: '-4.264'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '4900'
+        column: log Kf
+  - temperature:
+      value: 5000.0
+      as_published: '5000'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5000'
+        column: T(K)
+    heat_capacity:
+      value: 32.015
+      as_published: '32.015'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5000'
+        column: Cp
+    entropy:
+      value: 291.604
+      as_published: '291.604'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 243.312
+      as_published: '243.312'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 241.461
+      as_published: '241.461'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 979.335
+      as_published: '979.335'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 388.189
+      as_published: '388.189'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.055
+      as_published: '-4.055'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5000'
+        column: log Kf
+  - temperature:
+      value: 5100.0
+      as_published: '5100'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5100'
+        column: T(K)
+    heat_capacity:
+      value: 31.04
+      as_published: '31.040'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5100'
+        column: Cp
+    entropy:
+      value: 292.228
+      as_published: '292.228'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 244.265
+      as_published: '244.265'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 244.613
+      as_published: '244.613'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 981.718
+      as_published: '981.718'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 376.342
+      as_published: '376.342'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.855
+      as_published: '-3.855'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5100'
+        column: log Kf
+  - temperature:
+      value: 5200.0
+      as_published: '5200'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5200'
+        column: T(K)
+    heat_capacity:
+      value: 30.168
+      as_published: '30.168'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5200'
+        column: Cp
+    entropy:
+      value: 292.822
+      as_published: '292.822'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 245.193
+      as_published: '245.193'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 247.672
+      as_published: '247.672'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 983.985
+      as_published: '983.985'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 364.449
+      as_published: '364.449'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.661
+      as_published: '-3.661'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5200'
+        column: log Kf
+  - temperature:
+      value: 5300.0
+      as_published: '5300'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5300'
+        column: T(K)
+    heat_capacity:
+      value: 29.386
+      as_published: '29.386'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5300'
+        column: Cp
+    entropy:
+      value: 293.39
+      as_published: '293.390'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 246.097
+      as_published: '246.097'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 250.649
+      as_published: '250.649'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 986.145
+      as_published: '986.145'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 352.514
+      as_published: '352.514'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.474
+      as_published: '-3.474'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5300'
+        column: log Kf
+  - temperature:
+      value: 5400.0
+      as_published: '5400'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5400'
+        column: T(K)
+    heat_capacity:
+      value: 28.686
+      as_published: '28.686'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5400'
+        column: Cp
+    entropy:
+      value: 293.932
+      as_published: '293.932'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 246.978
+      as_published: '246.978'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 253.552
+      as_published: '253.552'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 988.206
+      as_published: '988.206'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 340.54
+      as_published: '340.540'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.294
+      as_published: '-3.294'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5400'
+        column: log Kf
+  - temperature:
+      value: 5500.0
+      as_published: '5500'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5500'
+        column: T(K)
+    heat_capacity:
+      value: 28.056
+      as_published: '28.056'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5500'
+        column: Cp
+    entropy:
+      value: 294.453
+      as_published: '294.453'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 247.837
+      as_published: '247.837'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 256.389
+      as_published: '256.389'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 990.173
+      as_published: '990.173'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 328.528
+      as_published: '328.528'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.12
+      as_published: '-3.120'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5500'
+        column: log Kf
+  - temperature:
+      value: 5600.0
+      as_published: '5600'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5600'
+        column: T(K)
+    heat_capacity:
+      value: 27.489
+      as_published: '27.489'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5600'
+        column: Cp
+    entropy:
+      value: 294.953
+      as_published: '294.953'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 248.673
+      as_published: '248.673'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 259.166
+      as_published: '259.166'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 992.053
+      as_published: '992.053'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 316.481
+      as_published: '316.481'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.952
+      as_published: '-2.952'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5600'
+        column: log Kf
+  - temperature:
+      value: 5700.0
+      as_published: '5700'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5700'
+        column: T(K)
+    heat_capacity:
+      value: 26.978
+      as_published: '26.978'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5700'
+        column: Cp
+    entropy:
+      value: 295.435
+      as_published: '295.435'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 249.49
+      as_published: '249.490'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 261.889
+      as_published: '261.889'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 993.851
+      as_published: '993.851'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 304.401
+      as_published: '304.401'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.79
+      as_published: '-2.790'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5700'
+        column: log Kf
+  - temperature:
+      value: 5800.0
+      as_published: '5800'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5800'
+        column: T(K)
+    heat_capacity:
+      value: 26.517
+      as_published: '26.517'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5800'
+        column: Cp
+    entropy:
+      value: 295.9
+      as_published: '295.900'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 250.286
+      as_published: '250.286'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 264.563
+      as_published: '264.563'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 995.57
+      as_published: '995.570'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 292.29
+      as_published: '292.290'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.632
+      as_published: '-2.632'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5800'
+        column: log Kf
+  - temperature:
+      value: 5900.0
+      as_published: '5900'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5900'
+        column: T(K)
+    heat_capacity:
+      value: 26.099
+      as_published: '26.099'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5900'
+        column: Cp
+    entropy:
+      value: 296.35
+      as_published: '296.350'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 251.063
+      as_published: '251.063'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 267.193
+      as_published: '267.193'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 997.259
+      as_published: '997.259'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 280.147
+      as_published: '280.147'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.48
+      as_published: '-2.480'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '5900'
+        column: log Kf
+  - temperature:
+      value: 6000.0
+      as_published: '6000'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '6000'
+        column: T(K)
+    heat_capacity:
+      value: 25.721
+      as_published: '25.721'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '6000'
+        column: Cp
+    entropy:
+      value: 296.785
+      as_published: '296.785'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '6000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 251.821
+      as_published: '251.821'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '6000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 269.784
+      as_published: '269.784'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '6000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 998.843
+      as_published: '998.843'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '6000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 267.979
+      as_published: '267.979'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '6000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.333
+      as_published: '-2.333'
+      locator:
+        table_id: Co-006
+        url: https://janaf.nist.gov/tables/Co-006.html
+        download_url: https://janaf.nist.gov/tables/Co-006.txt
+        row_temperature_as_published: '6000'
+        column: log Kf
+  parse_ambiguities: []

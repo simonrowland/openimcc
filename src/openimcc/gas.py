@@ -545,64 +545,151 @@ IMCC_PARENT_OXIDES = (
 
 ELEMENT_STATUS: dict[str, dict[str, object]] = {
     "O": {
-        "status": "gas-partial",
+        "status": "input (fO2 pinned)",
         "criteria": {"C1": False, "C2": True, "C3": False, "C4": False},
         "validation": "unvalidated",
-        "reason": "O2 fugacity is caller-pinned; oxygen has no melt-parent liquid row.",
+        "reason": "O is input (fO2 pinned), so C1, C3 and C4 do not apply.",
         "c2_candidates": (),
     },
     "Si": {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
         "validation": "validated",
-        "reason": "SiO2 is in the melt basis, but its liquid row starts at 1996 K.",
+        "reason": "SiO2 liquid row starts at 1996 K; C3 bound max 3.566e+0 at 1500 K and fO2=1e-4.",
         "c2_candidates": (("O-012", "SiO"), ("O-040", "SiO2")),
+        "c3_ion_bound": {
+            "max_ratio": 3.566077849548843,
+            "temperature_K": 1500.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 1.2009769212409144e-27,
+            "bound_pressure_bar": 4.2827771966565905e-27,
+            "K_ion": 1.527271689554996e-26,
+            "parent_oxide": "SiO2",
+            "source_tables": {"cation": "Si-006", "neutral": "Si-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Si-006": "6d81642518890fb4c67840b3bb103582ad037e800e312cd2fb5cf227cb7ffd58",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
     },
     "Mg": {
         "status": "gas-partial",
-        "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
+        "criteria": {"C1": True, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "MgO is in the melt basis, but its liquid row starts at 3100 K.",
+        "reason": "MgO liquid row starts at 3100 K; C3 bound max 8.830e-5 at 3000 K and fO2=1e-4.",
         "c2_candidates": (("Mg-011", "MgO"),),
+        "c3_ion_bound": {
+            "max_ratio": 8.830370378010337e-5,
+            "temperature_K": 3000.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 0.012039193776794596,
+            "bound_pressure_bar": 1.063105401017334e-6,
+            "K_ion": 9.387614441846267e-11,
+            "parent_oxide": "MgO",
+            "source_tables": {"cation": "Mg-006", "neutral": "Mg-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Mg-006": "1525bdbc6926d9fab8c79ee002d1968c4d5597ca446049149886d79119787c3e",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
     },
     "Fe": {
-        "status": "gas-partial",
-        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
+        "status": "complete",
+        "criteria": {"C1": True, "C2": True, "C3": True, "C4": True},
         "validation": "unvalidated",
-        "reason": (
-            "FeO and neutral gas rows cover the domain, but "
-            "Fe ions lack a model or ion bound."
-        ),
+        "reason": "FeO and neutral gas rows cover the domain; C3 bound max 1.231e-5 at 3000 K and fO2=1e-4.",
         "c2_candidates": (("Fe-021", "FeO"),),
+        "c3_ion_bound": {
+            "max_ratio": 1.2308649807685958e-5,
+            "temperature_K": 3000.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 0.20340612881313103,
+            "bound_pressure_bar": 2.5036548082978903e-6,
+            "K_ion": 3.0816610274667854e-11,
+            "parent_oxide": "FeO",
+            "source_tables": {"cation": "Fe-009", "neutral": "Fe-008", "electron": "D-020"},
+            "upstream_sha256": {
+                "Fe-009": "d4979c41394748f0ffea48163a8a792e5e4f763989426f6cd4ba198ee3e532ab",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
     },
     "Ca": {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
         "validation": "unvalidated",
-        "reason": "CaO is in the melt basis, but its liquid row starts at 2900 K.",
+        "reason": "CaO liquid row starts at 2900 K; C3 bound max 4.383e+0 at 1500 K and fO2=1e-4.",
         "c2_candidates": (("Ca-030", "CaO"),),
+        "c3_ion_bound": {
+            "max_ratio": 4.382617387084302,
+            "temperature_K": 1500.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 1.7475984604347713e-20,
+            "bound_pressure_bar": 7.659055398343186e-20,
+            "K_ion": 3.3566709357420733e-19,
+            "parent_oxide": "CaO",
+            "source_tables": {"cation": "Ca-007", "neutral": "Ca-006", "electron": "D-020"},
+            "upstream_sha256": {
+                "Ca-007": "ddd7d08df4aaf34beeaead89af83e7281f850eb453e859483f16520d61e98724",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
     },
     "Al": {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
         "validation": "unvalidated",
-        "reason": "Al2O3 is in the melt basis, but its liquid row starts at 2327 K.",
+        "reason": "Al2O3 liquid row starts at 2327 K; C3 bound max 1.225e+2 at 1500 K and fO2=1e-4.",
         "c2_candidates": (
             ("Al-074", "AlO"),
             ("Al-077", "AlO2"),
             ("Al-092", "Al2O"),
             ("Al-094", "Al2O2"),
         ),
+        "c3_ion_bound": {
+            "max_ratio": 122.5358076454767,
+            "temperature_K": 1500.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 5.355653897658307e-24,
+            "bound_pressure_bar": 6.5625937581920585e-22,
+            "K_ion": 8.041527264092281e-20,
+            "parent_oxide": "Al2O3",
+            "source_tables": {"cation": "Al-006", "neutral": "Al-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Al-006": "7e4e45bc108863c4baed5ca1bffe6b931a78a050af86d50a2fcbbe7b9251c6dd",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
     },
     "Ti": {
-        "status": "gas-partial",
+        "status": "complete-except-ions",
         "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
         "validation": "unvalidated",
         "reason": (
-            "TiO2 and neutral gas rows cover the domain, but "
-            "Ti ions lack a model or ion bound."
+            "TiO2 and neutral gas rows cover the domain; C3 bound max "
+            "8.519e+4 at 1500 K and fO2=1e-4."
         ),
         "c2_candidates": (("O-022", "TiO"), ("O-046", "TiO2")),
+        "c3_ion_bound": {
+            "max_ratio": 85193.73597015902,
+            "temperature_K": 1500.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 1.8573490545818131e-31,
+            "bound_pressure_bar": 1.5823450496046747e-26,
+            "K_ion": 1.3480588636970885e-21,
+            "parent_oxide": "TiO2",
+            "source_tables": {"cation": "Ti-007", "neutral": "Ti-006", "electron": "D-020"},
+            "upstream_sha256": {
+                "Ti-007": "ea066f88e882e8f102f5499c5bc6b58ffdeb8a0d9f50295afe60af0236eb5c1e",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
     },
     "Na": {
         "status": "complete-except-ions",
@@ -676,9 +763,24 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "validation": "unvalidated",
         "reason": (
             "Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K "
-            "and Cr2O3(l) at 1900 K."
+            "and Cr2O3(l) at 1900 K; C3 bound max 7.776e-3 at 1500 K and fO2=1e-4."
         ),
         "c2_candidates": (("Cr-010", "CrO"), ("Cr-011", "CrO2"), ("Cr-012", "CrO3")),
+        "c3_ion_bound": {
+            "max_ratio": 0.007775573413629809,
+            "temperature_K": 1500.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 1.5231163252431478e-17,
+            "bound_pressure_bar": 1.1843102804426154e-19,
+            "K_ion": 9.208691530098064e-22,
+            "parent_oxide": "Cr2O3",
+            "source_tables": {"cation": "Cr-006", "neutral": "Cr-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Cr-006": "3767ef70fb010220ba12abb9131d157617d5466b8aac2c384734f2acbada8fa3",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
         "c2_screen_maxima": {
             "Cr": {
                 "max_ratio": 1.0, "temperature_K": 1500.0,
@@ -703,10 +805,25 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
         "validation": "unvalidated",
         "reason": (
-            "V2O3 activity is caller-supplied and V ions lack a model "
-            "or ion bound."
+            "V2O3 activity is caller-supplied; C3 bound max 6.045e+0 "
+            "at 1500 K and fO2=1e-4."
         ),
         "c2_candidates": (("O-026", "VO"), ("O-076", "VO2")),
+        "c3_ion_bound": {
+            "max_ratio": 6.0450003774539836,
+            "temperature_K": 1500.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 3.3738364284092314e-23,
+            "bound_pressure_bar": 2.0394842483201804e-22,
+            "K_ion": 1.2328683050906945e-21,
+            "parent_oxide": "V2O3",
+            "source_tables": {"cation": "V-006", "neutral": "V-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "V-006": "c37e63246365b3335b5c2efdabf501741249c50357b6514a1a94e96f14ca2e1c",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
         "c2_screen_maxima": {
             "V": {
                 "max_ratio": 1.0, "temperature_K": 2200.0,
@@ -726,8 +843,23 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
         "validation": "unvalidated",
-        "reason": "NbO2 activity is caller-supplied and Nb ions lack a model or ion bound.",
+        "reason": "NbO2 activity is caller-supplied; C3 bound max 2.103e+6 at 1500 K and fO2=1e-4.",
         "c2_candidates": (("Nb-011", "NbO"), ("Nb-015", "NbO2")),
+        "c3_ion_bound": {
+            "max_ratio": 2102618.226270338,
+            "temperature_K": 1500.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 7.051168501169058e-35,
+            "bound_pressure_bar": 1.4825915407061362e-28,
+            "K_ion": 3.117323995602944e-22,
+            "parent_oxide": "NbO2",
+            "source_tables": {"cation": "Nb-006", "neutral": "Nb-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Nb-006": "afc5e0d57e2be188eaae3d111ac71adb7df586121c51a0a1c1d67206d9473380",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
         "c2_screen_maxima": {
             "Nb": {"max_ratio": 0.9601449643935895, "temperature_K": 3000.0, "fO2": 1.0e-12, "dominant": "NbO"},
             "NbO": {"max_ratio": 1.0, "temperature_K": 2200.0, "fO2": 1.0e-12, "dominant": "NbO"},
@@ -740,6 +872,16 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "validation": "unvalidated",
         "reason": "Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent.",
         "c2_candidates": (),
+        "c3_ion_bound": {
+            "status": "not computed",
+            "reason": "not computed: p(E) needs a parent liquid row that is only available from an external private pack",
+            "source_tables": {"cation": "Mn-006", "neutral": "Mn-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Mn-006": "e90269050c0e94dae563a80fcb120b812af5382fada2c54aa6b951264fa56542",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
     },
     "Ni": {
         "status": "gas-partial",
@@ -747,6 +889,16 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "validation": "unvalidated",
         "reason": "Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent.",
         "c2_candidates": (),
+        "c3_ion_bound": {
+            "status": "not computed",
+            "reason": "not computed: p(E) needs a parent liquid row that is only available from an external private pack",
+            "source_tables": {"cation": "Ni-006", "neutral": "Ni-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Ni-006": "1719b0562921ca8e79bc0250e34812eb331440e00864853629c025eedf92fd16",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
     },
     "Co": {
         "status": "gas-partial",
@@ -754,6 +906,16 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "validation": "unvalidated",
         "reason": "Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent.",
         "c2_candidates": (),
+        "c3_ion_bound": {
+            "status": "not computed",
+            "reason": "not computed: p(E) needs a parent liquid row that is only available from an external private pack",
+            "source_tables": {"cation": "Co-006", "neutral": "Co-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Co-006": "28ba36fd244128e314eb794af7bf4aadcd3de6e87bfde3bc36ee43e6b033ee20",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
     },
 }
 

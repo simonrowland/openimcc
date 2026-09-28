@@ -14,25 +14,35 @@ ratio of 1e-4 (C2), modelled charged species or a JANAF thermal-ionisation bound
 below 1e-4 (C3), and one-bar fitted standard states with parent-liquid rows
 covering the domain (C4). Validation is recorded separately: it is `validated`
 only when a scoreable observation exists. No ion channels are currently
-modelled; Na and K bounds fail C3, while other elements lack bound data.
+modelled; C3 bounds pass for Mg and Fe and fail for the other computed elements.
+Mn, Ni and Co bounds are not computed because their parent liquid rows are
+available only from an external private pack.
 
 | Element | Status | C1 | C2 | C3 | C4 | Validation | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| O | gas-partial | no | yes | no | no | unvalidated | O2 fugacity is caller-pinned; oxygen has no melt-parent liquid row. |
-| Si | gas-partial | yes | yes | no | no | validated | SiO2 is in the melt basis, but its liquid row starts at 1996 K. |
-| Mg | gas-partial | yes | yes | no | no | unvalidated | MgO is in the melt basis, but its liquid row starts at 3100 K. |
-| Fe | gas-partial | yes | yes | no | yes | unvalidated | FeO and neutral gas rows cover the domain, but Fe ions lack a model or ion bound. |
-| Ca | gas-partial | yes | yes | no | no | unvalidated | CaO is in the melt basis, but its liquid row starts at 2900 K. |
-| Al | gas-partial | yes | yes | no | no | unvalidated | Al2O3 is in the melt basis, but its liquid row starts at 2327 K. |
-| Ti | gas-partial | yes | yes | no | yes | unvalidated | TiO2 and neutral gas rows cover the domain, but Ti ions lack a model or ion bound. |
+| O | input (fO2 pinned) | n/a | yes | n/a | n/a | unvalidated | O is input (fO2 pinned), so C1, C3 and C4 do not apply. |
+| Si | gas-partial | yes | yes | no | no | validated | SiO2 liquid row starts at 1996 K; C3 bound max 3.566e+0 at 1500 K and fO2=1e-4. |
+| Mg | gas-partial | yes | yes | yes | no | unvalidated | MgO liquid row starts at 3100 K; C3 bound max 8.830e-5 at 3000 K and fO2=1e-4. |
+| Fe | complete | yes | yes | yes | yes | unvalidated | FeO and neutral gas rows cover the domain; C3 bound max 1.231e-5 at 3000 K and fO2=1e-4. |
+| Ca | gas-partial | yes | yes | no | no | unvalidated | CaO liquid row starts at 2900 K; C3 bound max 4.383e+0 at 1500 K and fO2=1e-4. |
+| Al | gas-partial | yes | yes | no | no | unvalidated | Al2O3 liquid row starts at 2327 K; C3 bound max 1.225e+2 at 1500 K and fO2=1e-4. |
+| Ti | complete-except-ions | yes | yes | no | yes | unvalidated | TiO2 and neutral gas rows cover the domain; C3 bound max 8.519e+4 at 1500 K and fO2=1e-4. |
 | Na | complete-except-ions | yes | yes | no | yes | unvalidated | Na2O is in the melt basis; the ion bound is 4.282e-3 at 3000 K and fO2=1e-4. |
 | K | complete-except-ions | yes | yes | no | yes | validated | K2O is in the melt basis; the ion bound is 2.088e-1 at 3000 K and fO2=1e-4. |
-| Cr | gas-partial | no | yes | no | no | unvalidated | Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K and Cr2O3(l) at 1900 K. |
-| V | gas-partial | no | yes | no | yes | unvalidated | V2O3 activity is caller-supplied and V ions lack a model or ion bound. |
-| Nb | gas-partial | no | yes | no | yes | unvalidated | NbO2 activity is caller-supplied and Nb ions lack a model or ion bound. |
-| Mn | gas-partial | no | yes | no | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
-| Ni | gas-partial | no | yes | no | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
-| Co | gas-partial | no | yes | no | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
+| Cr | gas-partial | no | yes | no | no | unvalidated | Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K and Cr2O3(l) at 1900 K; C3 bound max 7.776e-3 at 1500 K and fO2=1e-4. |
+| V | gas-partial | no | yes | no | yes | unvalidated | V2O3 activity is caller-supplied; C3 bound max 6.045e+0 at 1500 K and fO2=1e-4. |
+| Nb | gas-partial | no | yes | no | yes | unvalidated | NbO2 activity is caller-supplied; C3 bound max 2.103e+6 at 1500 K and fO2=1e-4. |
+| Mn | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
+| Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
+| Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
+
+At 3000 K, computed C3 pressure-ratio bounds descend in this order: Nb, K,
+Ti, Ca, V, Na, Al, Cr, Si, Mg, Fe. The first ionisation energies derived from
+the JANAF 0 K formation enthalpies ascend in this order: K, Na, Al, Ca, V, Cr,
+Ti, Nb, Mg, Fe, Si. At a fixed neutral pressure, higher ionisation energy
+lowers the ionisation equilibrium constant and bound. The ordering differs
+because the ratio is `sqrt(K_ion / p(E))`, so modelled neutral pressures also
+vary by element.
 
 ### 1. The gas layer is self-contained (done)
 

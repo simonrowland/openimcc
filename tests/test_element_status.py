@@ -154,6 +154,31 @@ def _source_value(table_id: str, field: str, temperature: float) -> float:
     raise AssertionError(f"{table_id} has no JANAF row at {temperature} K")
 
 
+def _neutral_gibbs_value(table_id: str, temperature: float) -> float:
+    rows = _record(table_id)["table"]["values"]
+    points = [
+        (float(row["temperature"]["value"]), float(row["formation_gibbs_energy"]["value"]))
+        for row in rows
+        if row["formation_gibbs_energy"]["value"] is not None
+    ]
+    for source_temperature, value in points:
+        if source_temperature == temperature:
+            return value
+    below = [point for point in points if point[0] < temperature]
+    above = [point for point in points if point[0] > temperature]
+    # A few neutral JANAF tables omit an isolated point on the status grid.
+    # Use adjacent tabulated values only to evaluate that diagnostic grid point.
+    if below and above:
+        first, second = below[-1], above[0]
+    elif len(below) >= 2:
+        first, second = below[-2:]
+    elif len(above) >= 2:
+        first, second = above[:2]
+    else:
+        raise AssertionError(f"{table_id} cannot bracket {temperature} K")
+    return first[1] + (temperature - first[0]) * (second[1] - first[1]) / (second[0] - first[0])
+
+
 def _text_table_value(table_id: str, column: int, temperature: float) -> float:
     lines = (JANAF_DATA / f"{table_id}.txt").read_text(encoding="utf-8").splitlines()
     for line in lines[2:]:
@@ -170,46 +195,70 @@ def _text_table_value(table_id: str, column: int, temperature: float) -> float:
 def _ion_bound_maxima() -> dict[str, dict[str, float | str]]:
     pack = load_gas_datapack()
     maxima = {}
-    for element, cation_table in (("Na", "Na-006"), ("K", "K-006")):
-        source = ELEMENT_STATUS[element]["c3_ion_bound"]
-        assert source["user_agent"] == "openimcc-janaf-vendor/1.0"
-        assert source["source_tables"] == {
-            "cation": cation_table,
-            "neutral": f"{element}-005",
-            "electron": "D-020",
-        }
-        for table_id, sha256 in source["upstream_sha256"].items():
-            table_path = JANAF_DATA / f"{table_id}.txt"
-            assert hashlib.sha256(table_path.read_bytes()).hexdigest() == sha256
-        oxide = {"Na": "Na2O", "K": "K2O"}[element]
-        maximum = None
-        for temperature in TEMPERATURES_K:
-            # The status grid starts at 1500 K; the existing melt API marks
-            # temperatures below its 1700 K pack minimum when extrapolation is enabled.
-            melt = evaluate_imcc(
-                README_BASALT,
+    computed = {
+        element: status["c3_ion_bound"]
+        for element, status in ELEMENT_STATUS.items()
+        if status.get("c3_ion_bound", {}).get("status") != "not computed"
+        and "c3_ion_bound" in status
+    }
+    assert set(computed) == {"Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K"}
+    caller_parent_oxides = {"Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2"}
+    activities_by_temperature = {}
+    for temperature in TEMPERATURES_K:
+        melt = evaluate_imcc(
+            README_BASALT,
+            temperature,
+            basis_type="wt",
+            allow_extrapolation=True,
+        )
+        activities = {name: melt.activity(name) for name in melt.parent_oxides}
+        activities.update({oxide: 1.0e-3 for oxide in caller_parent_oxides.values()})
+        activities_by_temperature[temperature] = activities
+    neutral_pressures = {}
+    for temperature in TEMPERATURES_K:
+        for fugacity in FUGACITIES:
+            neutral_pressures[(temperature, fugacity)] = evaluate_gas(
+                activities_by_temperature[temperature],
                 temperature,
-                basis_type="wt",
+                fugacity,
+                pack,
+                gas_species=tuple(computed),
                 allow_extrapolation=True,
             )
-            activities = {name: melt.activity(name) for name in melt.parent_oxides}
-            for fugacity in FUGACITIES:
-                neutral = evaluate_gas(
-                    activities,
-                    temperature,
-                    fugacity,
-                    pack,
-                    gas_species=element,
-                    allow_extrapolation=False,
-                )[element]
-                delta_g_kj = (
+    for element, source in computed.items():
+        cation_table = source["source_tables"]["cation"]
+        assert source["user_agent"] == "openimcc-janaf-vendor/1.0"
+        assert set(source["source_tables"]) == {"cation", "neutral", "electron"}
+        assert source["source_tables"]["cation"] == cation_table
+        assert source["source_tables"]["electron"] == "D-020"
+        for table_id, sha256 in source["upstream_sha256"].items():
+            yaml_path = JANAF_DATA / f"{table_id}.yaml"
+            if yaml_path.exists():
+                assert _record(table_id)["extraction"]["source_sha256"] == sha256
+            else:
+                table_path = JANAF_DATA / f"{table_id}.txt"
+                assert hashlib.sha256(table_path.read_bytes()).hexdigest() == sha256
+        oxide = source["parent_oxide"]
+        ion_constants = {}
+        for temperature in TEMPERATURES_K:
+            delta_g_kj = (
+                (
                     _text_table_value(cation_table, 6, temperature)
-                    + _text_table_value("D-020", 6, temperature)
-                    - _source_value(
-                        f"{element}-005", "formation_gibbs_energy", temperature
-                    )
+                    if cation_table in {"Na-006", "K-006"}
+                    else _source_value(cation_table, "formation_gibbs_energy", temperature)
                 )
-                k_ion = math.exp(-delta_g_kj * 1000.0 / (R_J_MOL_K * temperature))
+                + _text_table_value("D-020", 6, temperature)
+                - _neutral_gibbs_value(source["source_tables"]["neutral"], temperature)
+            )
+            ion_constants[temperature] = math.exp(
+                -delta_g_kj * 1000.0 / (R_J_MOL_K * temperature)
+            )
+        maximum = None
+        ratio_at_3000 = None
+        for temperature in TEMPERATURES_K:
+            for fugacity in FUGACITIES:
+                neutral = neutral_pressures[(temperature, fugacity)][element]
+                k_ion = ion_constants[temperature]
                 # For E(g) ⇌ E+(g) + e−(g), Kion = (p(E+)/p°)(p(e−)/p°)/(p(E)/p°).
                 # With p° = 1 bar, the numerical pressure values obey
                 # p(E+)·p(e−) = Kion·p(E). Charge balance with E as the only
@@ -219,6 +268,10 @@ def _ion_bound_maxima() -> dict[str, dict[str, float | str]]:
                 # p(E+) < sqrt(Kion·p(E)): this is a conservative upper bound.
                 bound_pressure = math.sqrt(k_ion * neutral)
                 ratio = bound_pressure / neutral
+                if temperature == 3000.0 and (
+                    ratio_at_3000 is None or ratio > ratio_at_3000
+                ):
+                    ratio_at_3000 = ratio
                 if maximum is None or ratio > maximum["max_ratio"]:
                     maximum = {
                         "max_ratio": ratio,
@@ -230,15 +283,17 @@ def _ion_bound_maxima() -> dict[str, dict[str, float | str]]:
                         "parent_oxide": oxide,
                     }
         assert maximum is not None
+        maximum["ratio_at_3000K"] = ratio_at_3000
         maxima[element] = maximum
     return maxima
 
 
-def test_na_k_thermal_ionisation_bounds_match_the_status_source() -> None:
+def test_thermal_ionisation_bounds_match_the_status_source() -> None:
     measured = _ion_bound_maxima()
     assert {path.stem for path in JANAF_DATA.glob("*.txt")} == {
         "Na-006", "K-006", "D-020"
     }
+    assert set(measured) == {"Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K"}
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
         assert recorded["temperature_K"] == result["temperature_K"]
@@ -250,9 +305,58 @@ def test_na_k_thermal_ionisation_bounds_match_the_status_source() -> None:
             "K_ion",
         ):
             assert recorded[field] == pytest.approx(result[field], rel=1.0e-12)
-        assert result["max_ratio"] > 1.0e-4
-        assert ELEMENT_STATUS[element]["status"] == "complete-except-ions"
-        assert ELEMENT_STATUS[element]["criteria"]["C3"] is False
+        assert ELEMENT_STATUS[element]["criteria"]["C3"] is (
+            result["max_ratio"] < 1.0e-4
+        )
+    assert ELEMENT_STATUS["Mg"]["criteria"]["C3"] is True
+    assert ELEMENT_STATUS["Fe"]["status"] == "complete"
+    assert ELEMENT_STATUS["Ti"]["status"] == "complete-except-ions"
+    ratio_order = sorted(
+        measured,
+        key=lambda element: measured[element]["ratio_at_3000K"],
+        reverse=True,
+    )
+    first_ionisation_energies = {}
+    for element in measured:
+        sources = ELEMENT_STATUS[element]["c3_ion_bound"]["source_tables"]
+        cation = sources["cation"]
+        cation_enthalpy = (
+            _source_value(cation, "formation_enthalpy", 0.0)
+            if (JANAF_DATA / f"{cation}.yaml").exists()
+            else _text_table_value(cation, 5, 0.0)
+        )
+        neutral_enthalpy = _source_value(
+            sources["neutral"], "formation_enthalpy", 0.0
+        )
+        first_ionisation_energies[element] = (
+            cation_enthalpy - neutral_enthalpy
+        ) / 96.4853321233
+    ionisation_order = sorted(first_ionisation_energies, key=first_ionisation_energies.get)
+    assert ionisation_order == [
+        "K", "Na", "Al", "Ca", "V", "Cr", "Ti", "Nb", "Mg", "Fe", "Si"
+    ]
+    assert ratio_order == [
+        "Nb", "K", "Ti", "Ca", "V", "Na", "Al", "Cr", "Si", "Mg", "Fe"
+    ]
+    assert ratio_order != ionisation_order
+
+
+def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
+    for element, table_id in (
+        ("Si", "Si-006"), ("Mg", "Mg-006"), ("Fe", "Fe-009"),
+        ("Ca", "Ca-007"), ("Al", "Al-006"), ("Ti", "Ti-007"),
+        ("Cr", "Cr-006"), ("V", "V-006"), ("Nb", "Nb-006"),
+        ("Mn", "Mn-006"), ("Ni", "Ni-006"), ("Co", "Co-006"),
+    ):
+        record = _record(table_id)
+        extraction = record["extraction"]
+        c3 = ELEMENT_STATUS[element]["c3_ion_bound"]
+        assert record["table"]["table_id"] == table_id
+        assert record["table"]["index_entry"]["state"] == "g"
+        assert record["table"]["index_entry"]["charge"] == 1
+        assert extraction["user_agent"] == "openimcc-janaf-vendor/1.0"
+        assert "source_cache_path" not in extraction
+        assert extraction["source_sha256"] == c3["upstream_sha256"][table_id]
 
 
 def _status_is_complete(status: dict) -> str:
@@ -384,18 +488,32 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         assert status["criteria"]["C2"] is c2
         ion_bound = measured_ions.get(element)
         c3 = ion_bound is not None and ion_bound["max_ratio"] < 1.0e-4
-        assert status["criteria"]["C3"] is c3
+        if element in {"Mn", "Ni", "Co"}:
+            assert status["c3_ion_bound"]["status"] == "not computed"
+            assert status["c3_ion_bound"]["reason"] == (
+                "not computed: p(E) needs a parent liquid row that is only available "
+                "from an external private pack"
+            )
+        if element == "O":
+            assert status["status"] == "input (fO2 pinned)"
+            assert status["criteria"]["C1"] is False
+            assert status["criteria"]["C3"] is False
+            assert status["criteria"]["C4"] is False
+        else:
+            assert status["criteria"]["C3"] is c3
         c4 = _c4_rows_cover_domain(element, liquid_by_element, gas_pack)
         assert status["criteria"]["C4"] is c4
         assert status["validation"] in {"validated", "unvalidated"}
         assert status["status"] in {
+            "input (fO2 pinned)",
             "complete",
             "complete-except-ions",
             "gas-complete-melt-pending",
             "gas-partial",
         }
         assert status["reason"] and "\n" not in status["reason"]
-        assert status["status"] == _status_is_complete(status), element
+        if element != "O":
+            assert status["status"] == _status_is_complete(status), element
 
 
 def test_roadmap_status_table_matches_element_status() -> None:
@@ -417,9 +535,18 @@ def test_roadmap_status_table_matches_element_status() -> None:
     assert set(rows) == set(ELEMENT_STATUS)
     for element, status in ELEMENT_STATUS.items():
         values = rows[element]
+        c3 = status.get("c3_ion_bound", {})
+        criteria = [
+            "n/a" if element == "O" and criterion in {"C1", "C3", "C4"}
+            else "yes" if status["criteria"][criterion]
+            else "no"
+            for criterion in ("C1", "C2", "C3", "C4")
+        ]
+        if c3.get("status") == "not computed":
+            criteria[2] = c3["reason"]
         assert values == [
             status["status"],
-            *("yes" if status["criteria"][f"C{i}"] else "no" for i in range(1, 5)),
+            *criteria,
             status["validation"],
             status["reason"],
         ]
