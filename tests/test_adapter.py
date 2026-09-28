@@ -855,9 +855,17 @@ def test_label_block_fields_and_denylist() -> None:
         assert labels.coverage[name] == "A-published-imcc"
 
 
-def test_package_exports_only_denied_adapter_solve_path() -> None:
-    assert not any(name.startswith("solve_") for name in imcc_sf04.__all__)
-    assert not any(name.startswith("solve_") for name in dir(imcc_sf04))
+def test_package_exports_generic_gas_solve_but_not_adapter_solve_path() -> None:
+    assert "solve_oxygen_balance" in imcc_sf04.__all__
+    assert "solve_oxygen_balance" in dir(imcc_sf04)
+    assert not any(
+        name.startswith("solve_") and name != "solve_oxygen_balance"
+        for name in imcc_sf04.__all__
+    )
+    assert not any(
+        name.startswith("solve_") and name != "solve_oxygen_balance"
+        for name in dir(imcc_sf04)
+    )
     assert not hasattr(imcc_sf04, "solve_imcc_sf04")
     assert "ImccAdapterLabels" in imcc_sf04.__all__
     assert "ImccLabels" not in imcc_sf04.__all__

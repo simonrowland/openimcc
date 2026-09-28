@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import dataclasses
+import hashlib
+import json
 import math
 import os
 import shutil
 import subprocess
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 import pandas as pd
@@ -31,6 +35,8 @@ from openimcc.gas import (
     default_gas_database_path,
     evaluate_gas,
     evaluate_gas_oxygen_balance,
+    oxygen_balance_species_metadata,
+    solve_oxygen_balance,
     gas_species_provenance,
     load_gas_datapack,
 )
@@ -1045,3 +1051,178 @@ def test_oxygen_balance_refuses_root_above_molecular_flow_ceiling() -> None:
             gas_module.load_gas_datapack(),
             parent_oxides=("K2O", "SiO2"),
         )
+
+
+@pytest.mark.parametrize(
+    ("gas_species", "parent", "fixed_species", "fixed_pressure", "expected_ratio"),
+    [
+        ("K", "K2O", "K", 1e-8, 0.25 * math.sqrt(31.998 / 39.0983)),
+        ("SiO", "SiO2", "SiO", 1e-8, 0.5 * math.sqrt(31.998 / 44.084)),
+    ],
+)
+def test_generic_oxygen_balance_analytic_limits(
+    gas_species: str,
+    parent: str,
+    fixed_species: str,
+    fixed_pressure: float,
+    expected_ratio: float,
+) -> None:
+    metadata = oxygen_balance_species_metadata({gas_species: parent, "O2": None})
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        return {fixed_species: fixed_pressure, "O2": 10.0**logp}
+
+    p_o2, _pressures, diagnostics = solve_oxygen_balance(pressure_model, metadata)
+    # K2O -> 2 K + 1/2 O2 gives parent demand 1/2 O per K, so
+    # (1/2)pK/sqrt(MK) = 2pO2/sqrt(MO2). For SiO2 -> SiO + 1/2 O2,
+    # the deficit is 1 O per SiO, so pSiO/sqrt(MSiO) = 2pO2/sqrt(MO2).
+    assert p_o2 / fixed_pressure == pytest.approx(expected_ratio, rel=1e-12)
+    assert diagnostics["residual"] < 1e-12
+
+
+def test_generic_oxygen_balance_rejects_nonmonotone_pressure_model() -> None:
+    metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        return {"K": 1e-8, "O2": 1e-8 + 1e-7 * ((logp + 15.0) / 15.0) ** 2}
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="not monotone"):
+        solve_oxygen_balance(pressure_model, metadata)
+
+
+def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:
+    metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        return {"K": 1e-8, "O2": 10.0**logp}
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="not bracketed"):
+        solve_oxygen_balance(pressure_model, metadata, bracket=(-30.0, -20.0))
+
+
+# SHA256 of the complete outputs from 23d7842. Before hashing, every float in
+# pO2, partial pressures, and diagnostics is replaced with float.hex(); the
+# canonical JSON includes mapping order-insensitively. Cases cover catalogue-
+# like lunar compositions, oxide binaries, and CMAS over 1500–2400 K.
+_OXYGEN_BALANCE_BASELINE_HEX_SHA256 = (
+    "e99f26990c7a534f5d3a52e7371f0c78e8d74996b08309aafc08c196e30819f6",
+    "84e77e9cb57fc10388a51586b4d10b722717bb801b3ec0f4af82e1a021d1d35c",
+    "9c50b4193c559630421fa3aff955021992889404bd216b0735c1006741fbdb9a",
+    "7e17765ac940aa65fc80a8b266543478792438ae18b0b911fc82712fea47c901",
+    "73bde0c78d9dca58a26ff559cc3d31e30277ada159446b4b43cf12c89bbd641f",
+    "0ec38c6615d22ce90e2efc90a8ef65c39920580be0761983b776e29abbdbb2d7",
+    "d922414b64fd01849063320f34fc5652f0b2807381e3bf7ab55006550fade491",
+    "e29057ce7e1190afa46828b44f11bc82692a442ab7d1beda3b61af515dd22dbf",
+    "6fea14b0342037117805a5d3910092417e8c35a54d43b86ef084bc670f7263dd",
+    "f0fba51f9f0aa47f798f7fe0a77ab1d01d2ea843f8f9d01aa40b7ce5983a5fa9",
+    "d2f3cfad3c0e192d6985da5258ee4e18daf1cf893689ca5750811a4926b13116",
+    "ae8c9983217a9cd567f40a1daf8cb12a97fb0003d123dfbb068698ce2a322e22",
+    "91ec354d56c0d366b06ff3ba69a955808f8a64f36c613b7b1b43ead7a5232c07",
+    "d112b51650c7efb84dd4a7974753f2e3b97542bad5ea0ee8021e655c351e9616",
+    "52c3aa983dc86105ab6531d6f2cefb62414da411995f53c3ea9290a0f651d6b5",
+    "034153420d0d84ac3d441f624ad523c698e62b8b9a7eaf8faebc1846968cd7ca",
+    "5405f8a5f954b1b5ccd03ef7e80f05901632b8cba3110bb8b84d462efb4fb306",
+    "c07b95172f4561681b6af2065f10e61c01806a8169719cdae38491c87f4b080b",
+    "40af474b89c636e5638f64f02efb02ae0152cf3a55bed78a0a663c17f8020c84",
+    "821207f2584a1caf046a3b909d688133c77aff8469c051fb08842ef2af672694",
+    "b550f832db1c90dc05f15e09f2a6b928d30422fb4a739e53b871e5aae01060e9",
+    "96a591cf48ad262edc82a590844ca9f4b8489c0802901d700beb173e62212d2b",
+    "aa574ac9fbb201eb5be4815a0d07ef6b0c63d18128f08236f6138438f62b21d5",
+    "750a22de5a4fe1e2c9cf27242948a03c85d7878899cd9ad5c85241151f94d351",
+    "d52d123c724eaeabddcec640b572136b46494fccd9a6162ca8ff9b6a0df89d0f",
+    "87155a04bf3dff9c35a6bcf0aa6685abbc233a946d6230d9db1eb4a7880af322",
+    "e2e019cbe26ceb8dd81dcc13518e2d7852161a27e6f298c675143cfdb6b38d63",
+    "614443b0da62f55c81a8823503a169b62dbc5d851eb560baf70502b199657f87",
+    "c81e45b23bebc131365ffc2dae8a8730456f2c473f7f92752f9b5907cc9a50c2",
+    "ad3d18226b4a2b2668f0a4e5ba5fcf1b85d8325b4530a0a6458ccb1e43416342",
+    "803f235b7959182b8d5fef2745f32013baba984e94b029d843d207144e116c86",
+    "c0bc55527956b004cc38122ab82ff0a37f98b97ae0477062f1aa6711e463071f",
+    "5d18677f4c9752e729b0a48c5710de5d1e8ee3b7085ecf6152171f86c646f4e2",
+    "7f65c2361c9f9c86d02d55e6edc2b0f98e0dba434a8311482e1e9c3e566b47e8",
+    "624cbd37b0952a05da6cfc06a18815275913e3acfdd63af54b0ed34bec476f3d",
+    "2ba1377d491b65ee2ac798d98a907ca697b40be47ed098f319fd9b5e6b413a31",
+    "cc3d29548fa90e01f00e6bf464c7835365883082f791febb41d112a35fc984ef",
+    "f85eabfe3694296d6c142b69f328ec0d3de0c14b5c41141155dc054ecda37259",
+    "f7257de99216106d92875e96721e24f2ccc60e9508906fdf97c12605c72da6b4",
+    "a23289ca6bd7947b861975b1633229ca87e2d34d0fe7fe0091983bd15a3b283f",
+    "302bf3fb6a3517c5616dd0f4fbcdef36ca3fe28da9edbc07037d9e257f80624c",
+    "183d79f81ed9e44db768f58269168c2c00a17a103be30f703f9e1b606a2d8adf",
+    "7893e4f115920760b1f2b4c9317a0d8db00f9bf53aa634944cbb72efc0bd80dd",
+    "a3dc5e3080bc884d8537c3cb7c0096173237ace5a710bf5527b6643641dd0d60",
+    "9474822646bbf9f9c0d5a2ff47e24e4e20557597e252f25df0951259d53e71a0",
+    "a69dcd6a7a83699d84209d324ade8bcb882bd27b0b6e2e1b3fd5dd1b57233d35",
+    "4c6e1dc0014ebcad5a1f4ab4751dea7d8c21b8058f4e08bc34a13fc2a3b3401a",
+    "f1336c2ec221283d9a71ae16d75fb63008caef4ce44ab3ea48539605e38a1142",
+    "bc8fb1a219ac04502a35f180651c1498bbae386ffba1b348694cc8541c8a5d6c",
+    "f7fe2c5397027a03a326d9ded13fc84ce898bfee516bdbadcc0254bccfd7be30",
+)
+
+
+def test_oxygen_balance_wrapper_is_bit_identical_to_base(gas_pack: ImccGasDatapack) -> None:
+    compositions = [
+        {"SiO2":.45,"MgO":.12,"FeO":.15,"CaO":.11,"Al2O3":.07,"Na2O":.03,"K2O":.01},
+        {"SiO2":.47,"MgO":.05,"FeO":.08,"CaO":.14,"Al2O3":.24,"Na2O":.015,"K2O":.005},
+        {"SiO2":.50,"MgO":.19,"FeO":.18,"CaO":.08,"Al2O3":.04,"Na2O":.005,"K2O":.005},
+        {"SiO2":.43,"MgO":.24,"FeO":.19,"CaO":.08,"Al2O3":.05,"Na2O":.005,"K2O":.005},
+        {"SiO2":.45,"MgO":.02,"FeO":.03,"CaO":.18,"Al2O3":.31,"Na2O":.009,"K2O":.001},
+        {"SiO2":.49,"MgO":.08,"FeO":.12,"CaO":.10,"Al2O3":.16,"Na2O":.035,"K2O":.015},
+        {"SiO2":.48,"MgO":.04,"FeO":.09,"CaO":.10,"Al2O3":.18,"Na2O":.07,"K2O":.04},
+        {"SiO2":.40,"MgO":.31,"FeO":.17,"CaO":.07,"Al2O3":.04,"Na2O":.006,"K2O":.004},
+        {"SiO2":.65,"MgO":.02,"FeO":.03,"CaO":.04,"Al2O3":.20,"Na2O":.05,"K2O":.01},
+        {"SiO2":.55,"MgO":.10,"FeO":.18,"CaO":.10,"Al2O3":.05,"Na2O":.01,"K2O":.01},
+    ]
+    cases = [(c, t) for c in compositions for t in (1500., 2000., 2400.)]
+    for a, b in (("SiO2","MgO"),("SiO2","FeO"),("SiO2","CaO"),("SiO2","Al2O3"),("SiO2","K2O")):
+        cases.extend(({a:.6-.05*i,b:.4+.05*i}, t) for i, t in enumerate((1500., 1900., 2200.)))
+    cases.extend(({"SiO2":.45+.02*i,"MgO":.15-.01*i,"CaO":.2,"Al2O3":.2}, t)
+                 for i, t in enumerate((1500., 2000., 2400., 1800., 2200.)))
+
+    def hex_values(value: object) -> object:
+        if isinstance(value, float):
+            return {"float.hex": value.hex()}
+        if isinstance(value, Mapping):
+            return {str(k): hex_values(v) for k, v in value.items()}
+        if isinstance(value, (tuple, list)):
+            return [hex_values(v) for v in value]
+        if dataclasses.is_dataclass(value):
+            return {field.name: hex_values(getattr(value, field.name)) for field in dataclasses.fields(value)}
+        if hasattr(value, "__dict__"):
+            return {k: hex_values(v) for k, v in vars(value).items()}
+        return value
+
+    actual = []
+    for activities, temperature in cases:
+        result = evaluate_gas_oxygen_balance(
+            activities, temperature, gas_pack, parent_oxides=tuple(activities)
+        )
+        canonical = json.dumps(hex_values(result), sort_keys=True, separators=(",", ":"))
+        actual.append(hashlib.sha256(canonical.encode()).hexdigest())
+    assert len(actual) == 50
+    assert tuple(actual) == _OXYGEN_BALANCE_BASELINE_HEX_SHA256
+
+@pytest.mark.parametrize(
+    ("activities", "temperature", "parents", "message"),
+    [
+        (
+            {"SiO2": 0.0}, 2000.0, ("SiO2",),
+            "oxygen-balance root is not bracketed on (-30.0, 0.0): "
+            "F(low)=1.6726738105968946e-19, F(high)=0.35373170703571655",
+        ),
+        (
+            {"K2O": 1.0, "SiO2": 0.5}, 2600.0, ("K2O", "SiO2"),
+            "oxygen-balance root lies above pO2 = 1 bar, outside the Knudsen "
+            "molecular-flow regime where the effusion law holds; no value returned "
+            "(F(1 bar)=-2.6842062105831452)",
+        ),
+    ],
+)
+def test_oxygen_balance_refusal_messages_match_base(
+    gas_pack: ImccGasDatapack,
+    activities: dict[str, float],
+    temperature: float,
+    parents: tuple[str, ...],
+    message: str,
+) -> None:
+    with pytest.raises(ImccGasOxygenBalanceError) as error:
+        evaluate_gas_oxygen_balance(activities, temperature, gas_pack, parent_oxides=parents)
+    assert str(error.value) == message

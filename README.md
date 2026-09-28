@@ -167,6 +167,17 @@ This balance applies to inert cells such as Pt or Ir. It does not apply to
 reactive W or Mo cells: their effusing oxides contribute oxygen-bearing
 fluxes that this model does not include.
 
+#### Reusing the balance with another gas table
+
+`solve_oxygen_balance(pressure_model, species)` accepts a callable from
+`log10(pO2 / bar)` to species partial pressures and metadata mapping each gas
+formula to `(molar mass in g/mol, oxygen atoms, parent oxygen demand)`. Build
+metadata with `oxygen_balance_species_metadata({"K": "K2O", "O2": None})`;
+`None` marks a parentless species. A caller can therefore supply pressures
+from a different gas table without routing them through `evaluate_gas`. The
+solver keeps the same 1 bar molecular-flow ceiling and requires a monotone,
+bracketed oxygen flux. The inert-cell caveat above still applies.
+
 ### Exit codes are part of the contract
 
 | code | meaning |

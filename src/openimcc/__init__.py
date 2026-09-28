@@ -3,9 +3,10 @@
 Public surface. Three groups: the solve, the refusal hierarchy, and the gas
 layer.
 
-Raw ``solve_*`` kernel entry points are deliberately NOT exported. Every caller
-goes through ``evaluate``, which is where domain and envelope checking lives; a
-caller reaching past it gets numbers with no validity labelling attached.
+Raw ``solve_*`` kernel entry points are deliberately NOT exported. The gas
+layer exposes ``solve_oxygen_balance`` as a generic root core for callers that
+supply an independent pressure model; it does not bypass the IMCC adapter's
+domain and envelope checks, which remain in ``evaluate``.
 
 ``backend.py`` is not part of this package. The MeltBackend subclasses are glue
 for the simulator that spawned this code and stay upstream -- they import this
@@ -84,6 +85,8 @@ _GAS_EXPORTS = frozenset({
     "R_J_MOL_K",
     "evaluate_gas",
     "evaluate_gas_oxygen_balance",
+    "oxygen_balance_species_metadata",
+    "solve_oxygen_balance",
     "gas_species_provenance",
     "load_gas_datapack",
 })
@@ -104,6 +107,8 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         R_J_MOL_K,
         evaluate_gas,
         evaluate_gas_oxygen_balance,
+        oxygen_balance_species_metadata,
+        solve_oxygen_balance,
         gas_species_provenance,
         load_gas_datapack,
     )
@@ -157,6 +162,8 @@ __all__ = [
     "load_gas_datapack",
     "evaluate_gas",
     "evaluate_gas_oxygen_balance",
+    "oxygen_balance_species_metadata",
+    "solve_oxygen_balance",
     "gas_species_provenance",
     "ImccGasDatapack",
     "ImccGasInvalidFugacityError",
