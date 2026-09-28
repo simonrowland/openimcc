@@ -5,6 +5,35 @@ measured against the code rather than estimated.
 
 ## Completed
 
+## Element completeness
+
+On the README basalt over 1500–3000 K and fO2 = 1e-12, 1e-10, 1e-8, 1e-6,
+1e-4, `complete` requires an internally computed parent-oxide activity (C1),
+every source-listed neutral E–O gas included or screened below a maximum pressure
+ratio of 1e-4 (C2), modelled charged species or a JANAF thermal-ionisation bound
+below 1e-4 (C3), and one-bar fitted standard states with parent-liquid rows
+covering the domain (C4). Validation is recorded separately: it is `validated`
+only when a scoreable observation exists. No ion channels are currently
+modelled; Na and K bounds fail C3, while other elements lack bound data.
+
+| Element | Status | C1 | C2 | C3 | C4 | Validation | Reason |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| O | gas-partial | no | yes | no | no | unvalidated | O2 fugacity is caller-pinned; oxygen has no melt-parent liquid row. |
+| Si | gas-partial | yes | yes | no | no | validated | SiO2 is in the melt basis, but its liquid row starts at 1996 K. |
+| Mg | gas-partial | yes | yes | no | no | unvalidated | MgO is in the melt basis, but its liquid row starts at 3100 K. |
+| Fe | gas-partial | yes | yes | no | yes | unvalidated | FeO and neutral gas rows cover the domain, but Fe ions lack a model or ion bound. |
+| Ca | gas-partial | yes | yes | no | no | unvalidated | CaO is in the melt basis, but its liquid row starts at 2900 K. |
+| Al | gas-partial | yes | yes | no | no | unvalidated | Al2O3 is in the melt basis, but its liquid row starts at 2327 K. |
+| Ti | gas-partial | yes | yes | no | yes | unvalidated | TiO2 and neutral gas rows cover the domain, but Ti ions lack a model or ion bound. |
+| Na | complete-except-ions | yes | yes | no | yes | unvalidated | Na2O is in the melt basis; the ion bound is 4.282e-3 at 3000 K and fO2=1e-4. |
+| K | complete-except-ions | yes | yes | no | yes | validated | K2O is in the melt basis; the ion bound is 2.088e-1 at 3000 K and fO2=1e-4. |
+| Cr | gas-partial | no | yes | no | no | unvalidated | Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K and Cr2O3(l) at 1900 K. |
+| V | gas-partial | no | yes | no | yes | unvalidated | V2O3 activity is caller-supplied and V ions lack a model or ion bound. |
+| Nb | gas-partial | no | yes | no | yes | unvalidated | NbO2 activity is caller-supplied and Nb ions lack a model or ion bound. |
+| Mn | gas-partial | no | yes | no | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
+| Ni | gas-partial | no | yes | no | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
+| Co | gas-partial | no | yes | no | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
+
 ### 1. The gas layer is self-contained (done)
 
 The packaged gas tables now load by default through `importlib.resources`.

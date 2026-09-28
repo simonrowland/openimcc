@@ -543,6 +543,220 @@ IMCC_PARENT_OXIDES = (
     "K2O",
 )
 
+ELEMENT_STATUS: dict[str, dict[str, object]] = {
+    "O": {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": False},
+        "validation": "unvalidated",
+        "reason": "O2 fugacity is caller-pinned; oxygen has no melt-parent liquid row.",
+        "c2_candidates": (),
+    },
+    "Si": {
+        "status": "gas-partial",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
+        "validation": "validated",
+        "reason": "SiO2 is in the melt basis, but its liquid row starts at 1996 K.",
+        "c2_candidates": (("O-012", "SiO"), ("O-040", "SiO2")),
+    },
+    "Mg": {
+        "status": "gas-partial",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
+        "validation": "unvalidated",
+        "reason": "MgO is in the melt basis, but its liquid row starts at 3100 K.",
+        "c2_candidates": (("Mg-011", "MgO"),),
+    },
+    "Fe": {
+        "status": "gas-partial",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            "FeO and neutral gas rows cover the domain, but "
+            "Fe ions lack a model or ion bound."
+        ),
+        "c2_candidates": (("Fe-021", "FeO"),),
+    },
+    "Ca": {
+        "status": "gas-partial",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
+        "validation": "unvalidated",
+        "reason": "CaO is in the melt basis, but its liquid row starts at 2900 K.",
+        "c2_candidates": (("Ca-030", "CaO"),),
+    },
+    "Al": {
+        "status": "gas-partial",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
+        "validation": "unvalidated",
+        "reason": "Al2O3 is in the melt basis, but its liquid row starts at 2327 K.",
+        "c2_candidates": (
+            ("Al-074", "AlO"),
+            ("Al-077", "AlO2"),
+            ("Al-092", "Al2O"),
+            ("Al-094", "Al2O2"),
+        ),
+    },
+    "Ti": {
+        "status": "gas-partial",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            "TiO2 and neutral gas rows cover the domain, but "
+            "Ti ions lack a model or ion bound."
+        ),
+        "c2_candidates": (("O-022", "TiO"), ("O-046", "TiO2")),
+    },
+    "Na": {
+        "status": "complete-except-ions",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            "Na2O is in the melt basis; the ion bound is "
+            "4.282e-3 at 3000 K and fO2=1e-4."
+        ),
+        "c2_candidates": (("Na-008", "NaO"),),
+        "c3_ion_bound": {
+            "max_ratio": 0.004282445923582252,
+            "temperature_K": 3000.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 0.020954774971315,
+            "bound_pressure_bar": 8.973769065549132e-05,
+            "K_ion": 3.842968075392939e-07,
+            "parent_oxide": "Na2O",
+            "source_tables": {
+                "cation": "Na-006",
+                "neutral": "Na-005",
+                "electron": "D-020",
+            },
+            "upstream_sha256": {
+                "Na-006": (
+                    "d33bd7f53aa6a68ae725ec804896cc4cbc607aab5202fb58651422a4e4448c5b"
+                ),
+                "D-020": (
+                    "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd"
+                ),
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
+    },
+    "K": {
+        "status": "complete-except-ions",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
+        "validation": "validated",
+        "reason": (
+            "K2O is in the melt basis; the ion bound is "
+            "2.088e-1 at 3000 K and fO2=1e-4."
+        ),
+        "c2_candidates": (("K-008", "KO"),),
+        "c3_ion_bound": {
+            "max_ratio": 0.20883724119210614,
+            "temperature_K": 3000.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 0.00019119779308247024,
+            "bound_pressure_bar": 3.992921962936224e-05,
+            "K_ion": 8.3387080703497e-06,
+            "parent_oxide": "K2O",
+            "source_tables": {
+                "cation": "K-006",
+                "neutral": "K-005",
+                "electron": "D-020",
+            },
+            "upstream_sha256": {
+                "K-006": (
+                    "66ffb77658dd109902e8cdeb08d1719e0fc11ac1f9f4c8443574e452f89c530b"
+                ),
+                "D-020": (
+                    "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd"
+                ),
+            },
+            "user_agent": "openimcc-janaf-vendor/1.0",
+        },
+    },
+    "Cr": {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": False},
+        "validation": "unvalidated",
+        "reason": (
+            "Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K "
+            "and Cr2O3(l) at 1900 K."
+        ),
+        "c2_candidates": (("Cr-010", "CrO"), ("Cr-011", "CrO2"), ("Cr-012", "CrO3")),
+        "c2_screen_maxima": {
+            "Cr": {
+                "max_ratio": 1.0, "temperature_K": 1500.0,
+                "fO2": 1.0e-12, "dominant": "Cr",
+            },
+            "CrO": {
+                "max_ratio": 1.0, "temperature_K": 2100.0,
+                "fO2": 1.0e-6, "dominant": "CrO",
+            },
+            "CrO2": {
+                "max_ratio": 1.0, "temperature_K": 1500.0,
+                "fO2": 1.0e-10, "dominant": "CrO2",
+            },
+            "CrO3": {
+                "max_ratio": 1.0, "temperature_K": 1500.0,
+                "fO2": 1.0e-4, "dominant": "CrO3",
+            },
+        },
+    },
+    "V": {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            "V2O3 activity is caller-supplied and V ions lack a model "
+            "or ion bound."
+        ),
+        "c2_candidates": (("O-026", "VO"), ("O-076", "VO2")),
+        "c2_screen_maxima": {
+            "V": {
+                "max_ratio": 1.0, "temperature_K": 2200.0,
+                "fO2": 1.0e-12, "dominant": "V",
+            },
+            "VO": {
+                "max_ratio": 1.0, "temperature_K": 2000.0,
+                "fO2": 1.0e-12, "dominant": "VO",
+            },
+            "VO2": {
+                "max_ratio": 1.0, "temperature_K": 1500.0,
+                "fO2": 1.0e-12, "dominant": "VO2",
+            },
+        },
+    },
+    "Nb": {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": "NbO2 activity is caller-supplied and Nb ions lack a model or ion bound.",
+        "c2_candidates": (("Nb-011", "NbO"), ("Nb-015", "NbO2")),
+        "c2_screen_maxima": {
+            "Nb": {"max_ratio": 0.9601449643935895, "temperature_K": 3000.0, "fO2": 1.0e-12, "dominant": "NbO"},
+            "NbO": {"max_ratio": 1.0, "temperature_K": 2200.0, "fO2": 1.0e-12, "dominant": "NbO"},
+            "NbO2": {"max_ratio": 1.0, "temperature_K": 1500.0, "fO2": 1.0e-12, "dominant": "NbO2"},
+        },
+    },
+    "Mn": {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": False},
+        "validation": "unvalidated",
+        "reason": "Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent.",
+        "c2_candidates": (),
+    },
+    "Ni": {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": False},
+        "validation": "unvalidated",
+        "reason": "Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent.",
+        "c2_candidates": (),
+    },
+    "Co": {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": False},
+        "validation": "unvalidated",
+        "reason": "Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent.",
+        "c2_candidates": (),
+    },
+}
+
 
 # --------------------------------------------------------------------------- #
 # Data pack
