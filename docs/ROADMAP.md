@@ -10,39 +10,41 @@ measured against the code rather than estimated.
 On the README basalt over 1500–3000 K and fO2 = 1e-12, 1e-10, 1e-8, 1e-6,
 1e-4, `complete` requires an internally computed parent-oxide activity (C1),
 every source-listed neutral E–O gas included or screened below a maximum pressure
-ratio of 1e-4 (C2), modelled charged species or a JANAF thermal-ionisation bound
+ratio of 1e-4 (C2), modelled charged species or a joint Saha ionisation estimate
 below 1e-4 (C3), and one-bar fitted standard states with parent-liquid rows
 covering the domain (C4). Validation is recorded separately: it is `validated`
 only when a scoreable observation exists. No ion channels are currently
-modelled; C3 bounds pass for Mg and Fe and fail for the other computed elements.
-Mn, Ni and Co bounds are not computed because their parent liquid rows are
-available only from an external private pack.
+modelled. C3 uses one shared electron pressure from the neutral atomic pressures
+for the 11 elements with vendored E+ tables and modeled parents, then divides
+each p(E+) by the pressure of all neutral gas channels carrying E. Molecular
+ions (such as TiO+ and NaO+) and thermal electrons from walls or other sources
+are outside this estimate. C3 estimates pass for Si, Mg, Fe, Al, Ti, Cr, V and
+Nb, and fail for Ca, Na and K. Mn, Ni and Co are not computed because their
+parent liquid rows are available only from an external private pack.
 
 | Element | Status | C1 | C2 | C3 | C4 | Validation | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | O | input (fO2 pinned) | n/a | yes | n/a | n/a | unvalidated | O is input (fO2 pinned), so C1, C3 and C4 do not apply. |
-| Si | gas-partial | yes | yes | no | no | validated | SiO2 liquid row starts at 1996 K; C3 bound max 3.566e+0 at 1500 K and fO2=1e-4. |
-| Mg | gas-partial | yes | yes | yes | no | unvalidated | MgO liquid row starts at 3100 K; C3 bound max 8.830e-5 at 3000 K and fO2=1e-4. |
-| Fe | complete | yes | yes | yes | yes | unvalidated | FeO and neutral gas rows cover the domain; C3 bound max 1.231e-5 at 3000 K and fO2=1e-4. |
-| Ca | gas-partial | yes | yes | no | no | unvalidated | CaO liquid row starts at 2900 K; C3 bound max 4.383e+0 at 1500 K and fO2=1e-4. |
-| Al | gas-partial | yes | yes | no | no | unvalidated | Al2O3 liquid row starts at 2327 K; C3 bound max 1.225e+2 at 1500 K and fO2=1e-4. |
-| Ti | complete-except-ions | yes | yes | no | yes | unvalidated | TiO2 and neutral gas rows cover the domain; C3 bound max 8.519e+4 at 1500 K and fO2=1e-4. |
-| Na | complete-except-ions | yes | yes | no | yes | unvalidated | Na2O is in the melt basis; the ion bound is 4.282e-3 at 3000 K and fO2=1e-4. |
-| K | complete-except-ions | yes | yes | no | yes | validated | K2O is in the melt basis; the ion bound is 2.088e-1 at 3000 K and fO2=1e-4. |
-| Cr | gas-partial | no | yes | no | no | unvalidated | Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K and Cr2O3(l) at 1900 K; C3 bound max 7.776e-3 at 1500 K and fO2=1e-4. |
-| V | gas-partial | no | yes | no | yes | unvalidated | V2O3 activity is caller-supplied; C3 bound max 6.045e+0 at 1500 K and fO2=1e-4. |
-| Nb | gas-partial | no | yes | no | yes | unvalidated | NbO2 activity is caller-supplied; C3 bound max 2.103e+6 at 1500 K and fO2=1e-4. |
+| Si | gas-partial | yes | yes | yes | no | validated | SiO2 liquid row starts at 1996 K; joint C3 ionisation estimate max 6.809e-11 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Mg | gas-partial | yes | yes | yes | no | unvalidated | MgO liquid row starts at 3100 K; joint C3 ionisation estimate max 9.426e-7 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Fe | complete | yes | yes | yes | yes | unvalidated | FeO and neutral gas rows cover the domain; joint C3 ionisation estimate max 3.064e-7 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Ca | gas-partial | yes | yes | no | no | unvalidated | CaO liquid row starts at 2900 K; joint C3 ionisation estimate max 3.508e-4 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Al | gas-partial | yes | yes | yes | no | unvalidated | Al2O3 liquid row starts at 2327 K; joint C3 ionisation estimate max 1.902e-5 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Ti | complete | yes | yes | yes | yes | unvalidated | TiO2 and neutral gas rows cover the domain; joint C3 ionisation estimate max 1.538e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Na | complete-except-ions | yes | yes | no | yes | unvalidated | Na2O is in the melt basis; joint C3 ionisation estimate max 3.899e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| K | complete-except-ions | yes | yes | no | yes | validated | K2O is in the melt basis; joint C3 ionisation estimate max 8.595e-2 at 1700 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Cr | gas-partial | no | yes | yes | no | unvalidated | Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K and Cr2O3(l) at 1900 K; joint C3 ionisation estimate max 9.728e-6 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| V | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | V2O3 activity is caller-supplied; joint C3 ionisation estimate max 2.989e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Nb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | NbO2 activity is caller-supplied; joint C3 ionisation estimate max 5.418e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
 | Mn | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
 | Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
 | Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
 
-At 3000 K, computed C3 pressure-ratio bounds descend in this order: Nb, K,
-Ti, Ca, V, Na, Al, Cr, Si, Mg, Fe. The first ionisation energies derived from
-the JANAF 0 K formation enthalpies ascend in this order: K, Na, Al, Ca, V, Cr,
-Ti, Nb, Mg, Fe, Si. At a fixed neutral pressure, higher ionisation energy
-lowers the ionisation equilibrium constant and bound. The ordering differs
-because the ratio is `sqrt(K_ion / p(E))`, so modelled neutral pressures also
-vary by element.
+At 3000 K and fO2=1e-4, p(e-) is 9.84595e-5 bar. Its Saha source terms are
+Na 8.05285e-9 (83.07% of p(e-)²) and K 1.59434e-9 (16.45%); all other terms
+sum to 0.49%. The largest joint ion-fraction estimate is K at 1700 K and
+fO2=1e-4 (8.59508e-2). At that point p(e-)=6.24803e-11 bar; K contributes
+2.45106e-21 (62.79% of p(e-)²) and Na 1.45273e-21 (37.21%).
 
 ### 1. The gas layer is self-contained (done)
 

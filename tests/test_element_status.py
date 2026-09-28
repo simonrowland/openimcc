@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import re
+from functools import cache
 from pathlib import Path
 
 import pytest
@@ -192,7 +193,16 @@ def _text_table_value(table_id: str, column: int, temperature: float) -> float:
     raise AssertionError(f"{table_id} has no JANAF row at {temperature} K")
 
 
-def _ion_bound_maxima() -> dict[str, dict[str, float | str]]:
+def _gas_element_atom_count(species: str, element: str) -> int:
+    return sum(
+        int(count) if count else 1
+        for symbol, count in re.findall(r"([A-Z][a-z]?)(\d*)", species)
+        if symbol == element
+    )
+
+
+@cache
+def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     pack = load_gas_datapack()
     maxima = {}
     computed = {
@@ -214,17 +224,17 @@ def _ion_bound_maxima() -> dict[str, dict[str, float | str]]:
         activities = {name: melt.activity(name) for name in melt.parent_oxides}
         activities.update({oxide: 1.0e-3 for oxide in caller_parent_oxides.values()})
         activities_by_temperature[temperature] = activities
-    neutral_pressures = {}
+    gas_pressures = {}
     for temperature in TEMPERATURES_K:
         for fugacity in FUGACITIES:
-            neutral_pressures[(temperature, fugacity)] = evaluate_gas(
+            gas_pressures[(temperature, fugacity)] = evaluate_gas(
                 activities_by_temperature[temperature],
                 temperature,
                 fugacity,
                 pack,
-                gas_species=tuple(computed),
                 allow_extrapolation=True,
             )
+    ion_constants_by_element = {}
     for element, source in computed.items():
         cation_table = source["source_tables"]["cation"]
         assert source["user_agent"] == "openimcc-janaf-vendor/1.0"
@@ -253,21 +263,56 @@ def _ion_bound_maxima() -> dict[str, dict[str, float | str]]:
             ion_constants[temperature] = math.exp(
                 -delta_g_kj * 1000.0 / (R_J_MOL_K * temperature)
             )
+        ion_constants_by_element[element] = ion_constants
+
+    maxima_by_point = {}
+    for temperature in TEMPERATURES_K:
+        for fugacity in FUGACITIES:
+            pressures = gas_pressures[(temperature, fugacity)]
+            source_terms = {
+                element: ion_constants_by_element[element][temperature]
+                * pressures[element]
+                for element in computed
+            }
+            # Premise: each listed E(g) is a neutral reservoir at its modeled
+            # pressure, and every included E+ is singly charged.
+            # Algebra: Saha gives p(E+) p(e-) = K_E p(E). Electroneutrality
+            # gives p(e-) = sum_E p(E+), hence p(e-)^2 = sum_E K_E p(E) and
+            # p(E+) = K_E p(E) / p(e-). The reported fraction divides this by
+            # the total neutral-gas inventory, sum_channels n_E p(channel).
+            # Units: pressures are reduced by p°=1 bar, so all pressures and
+            # K_E p(E) terms in this calculation are dimensionless.
+            # Keeping neutrals undepleted overestimates both p(e-) and p(E+)
+            # relative to a depletion solve; fixed-neutral p(e-) is an upper
+            # estimate of equilibrium p(e-), while p_E,total stays at its
+            # neutral-model value. Since numerator and denominator both move,
+            # the fraction direction is unresolved, so report an estimate.
+            # Sanity check: at 3000 K, K and Na dominate the summed source terms.
+            electron_pressure = math.sqrt(sum(source_terms.values()))
+            maxima_by_point[(temperature, fugacity)] = {
+                "electron_pressure_bar": electron_pressure,
+                "electron_source_terms": source_terms,
+            }
+
+    for element, source in computed.items():
+        oxide = source["parent_oxide"]
+        ion_constants = ion_constants_by_element[element]
         maximum = None
+        isolated_bound = 0.0
         ratio_at_3000 = None
         for temperature in TEMPERATURES_K:
             for fugacity in FUGACITIES:
-                neutral = neutral_pressures[(temperature, fugacity)][element]
+                pressures = gas_pressures[(temperature, fugacity)]
+                neutral = pressures[element]
                 k_ion = ion_constants[temperature]
-                # For E(g) ⇌ E+(g) + e−(g), Kion = (p(E+)/p°)(p(e−)/p°)/(p(E)/p°).
-                # With p° = 1 bar, the numerical pressure values obey
-                # p(E+)·p(e−) = Kion·p(E). Charge balance with E as the only
-                # electron source sets p(E+) = p(e−), hence p(E+) =
-                # sqrt(Kion·p(E)) and p(E+)/p(E) = sqrt(Kion/p(E)). If other
-                # sources add electrons, p(e−) > p(E+), so equilibrium gives
-                # p(E+) < sqrt(Kion·p(E)): this is a conservative upper bound.
-                bound_pressure = math.sqrt(k_ion * neutral)
-                ratio = bound_pressure / neutral
+                point = maxima_by_point[(temperature, fugacity)]
+                ion_pressure = k_ion * neutral / point["electron_pressure_bar"]
+                element_total = sum(
+                    _gas_element_atom_count(species, element) * pressure
+                    for species, pressure in pressures.items()
+                )
+                ratio = ion_pressure / element_total
+                isolated_bound = max(isolated_bound, math.sqrt(k_ion / neutral))
                 if temperature == 3000.0 and (
                     ratio_at_3000 is None or ratio > ratio_at_3000
                 ):
@@ -278,17 +323,25 @@ def _ion_bound_maxima() -> dict[str, dict[str, float | str]]:
                         "temperature_K": temperature,
                         "fO2": fugacity,
                         "neutral_pressure_bar": neutral,
-                        "bound_pressure_bar": bound_pressure,
+                        "element_total_pressure_bar": element_total,
+                        "joint_ion_pressure_bar": ion_pressure,
+                        "electron_pressure_bar": point["electron_pressure_bar"],
+                        "electron_source_terms": point["electron_source_terms"],
                         "K_ion": k_ion,
                         "parent_oxide": oxide,
                     }
         assert maximum is not None
         maximum["ratio_at_3000K"] = ratio_at_3000
+        maximum["isolated_bound"] = isolated_bound
         maxima[element] = maximum
+
+    terms_at_3000 = maxima_by_point[(3000.0, 1.0e-4)]["electron_source_terms"]
+    for maximum in maxima.values():
+        maximum["electron_source_terms_3000K"] = terms_at_3000
     return maxima
 
 
-def test_thermal_ionisation_bounds_match_the_status_source() -> None:
+def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     measured = _ion_bound_maxima()
     assert {path.stem for path in JANAF_DATA.glob("*.txt")} == {
         "Na-006", "K-006", "D-020"
@@ -301,16 +354,28 @@ def test_thermal_ionisation_bounds_match_the_status_source() -> None:
         for field in (
             "max_ratio",
             "neutral_pressure_bar",
-            "bound_pressure_bar",
+            "element_total_pressure_bar",
+            "joint_ion_pressure_bar",
+            "electron_pressure_bar",
             "K_ion",
         ):
             assert recorded[field] == pytest.approx(result[field], rel=1.0e-12)
+        assert recorded["isolated_bound"] == pytest.approx(
+            result["isolated_bound"], rel=1.0e-12
+        )
         assert ELEMENT_STATUS[element]["criteria"]["C3"] is (
             result["max_ratio"] < 1.0e-4
         )
+    source_terms_3000 = measured["Si"]["electron_source_terms_3000K"]
+    assert set(
+        sorted(source_terms_3000, key=source_terms_3000.get, reverse=True)[:2]
+    ) == {"K", "Na"}
+    assert source_terms_3000["K"] + source_terms_3000["Na"] > sum(
+        source_terms_3000.values()
+    ) / 2
     assert ELEMENT_STATUS["Mg"]["criteria"]["C3"] is True
     assert ELEMENT_STATUS["Fe"]["status"] == "complete"
-    assert ELEMENT_STATUS["Ti"]["status"] == "complete-except-ions"
+    assert ELEMENT_STATUS["Ti"]["status"] == "complete"
     ratio_order = sorted(
         measured,
         key=lambda element: measured[element]["ratio_at_3000K"],
@@ -336,7 +401,7 @@ def test_thermal_ionisation_bounds_match_the_status_source() -> None:
         "K", "Na", "Al", "Ca", "V", "Cr", "Ti", "Nb", "Mg", "Fe", "Si"
     ]
     assert ratio_order == [
-        "Nb", "K", "Ti", "Ca", "V", "Na", "Al", "Cr", "Si", "Mg", "Fe"
+        "K", "Na", "Ca", "Al", "Cr", "V", "Ti", "Mg", "Fe", "Nb", "Si"
     ]
     assert ratio_order != ionisation_order
 
