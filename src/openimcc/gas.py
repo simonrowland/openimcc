@@ -16,7 +16,7 @@ import math
 import os
 import re
 from collections.abc import Mapping as MappingABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
 from types import MappingProxyType
@@ -98,12 +98,13 @@ class ImccGasDataUnavailableError(ImccRefusal):
 
 @dataclass(frozen=True)
 class ImccGasResult(MappingABC[str, float]):
-    """Immutable gas pressures plus the validity metadata for each channel."""
+    """Immutable gas pressures and channel metadata, including default omissions."""
 
     _values: Mapping[str, float]
     unit: str
     domain_flags: Mapping[str, str | None]
     provenance_class: Mapping[str, str]
+    omitted_channels: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "_values", MappingProxyType(dict(self._values)))
@@ -114,6 +115,11 @@ class ImccGasResult(MappingABC[str, float]):
             self,
             "provenance_class",
             MappingProxyType(dict(self.provenance_class)),
+        )
+        object.__setattr__(
+            self,
+            "omitted_channels",
+            MappingProxyType(dict(self.omitted_channels)),
         )
 
     def __getitem__(self, species: str) -> float:
@@ -285,8 +291,12 @@ IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 # active pack supplies both sides. Original SF04 channels stay strict: a table
 # missing one of their rows is broken and the default call keeps refusing on it
 # rather than silently omitting it.
+# The Na2O and K2O channels use the optional rule for alternate tables that
+# predate their gas rows.
 _DATAPACK_OPTIONAL_CHANNELS = frozenset(
     {
+        "Na2O",
+        "K2O",
         "Ti",
         "TiO",
         "TiO2",
@@ -320,30 +330,41 @@ _REACTION_PARENT_OXIDES = frozenset(
 
 def _default_reactions(
     available_parents: Sequence[str], datapack: ImccGasDatapack
-) -> tuple[tuple[str, tuple[str, float, float]], ...]:
-    """Return the channels a default ``evaluate_gas`` call evaluates.
+) -> tuple[tuple[tuple[str, tuple[str, float, float]], ...], Mapping[str, str]]:
+    """Return selected channels and optional channels skipped for missing rows.
 
     Unified availability rule: a channel is included only when its parent
     activity is supplied (O and O2 have no parent); an optional channel also
     requires both its gas row and parent standard-state condensate row in the
     active datapack. Gas-only source rows stay outside the runtime channel set
-    until this same rule can be satisfied. Channel order is the
-    ``_SF04_REACTIONS`` order.
+    until this same rule can be satisfied. Missing optional rows are returned
+    by channel name; channels whose parent activity was not supplied are not
+    reported. Channel order is the ``_SF04_REACTIONS`` order.
     """
     parents = set(available_parents)
     gas_rows = set(datapack.gas_df.index)
     oxide_rows = set(datapack.oxide_df.index)
     selected = []
+    omitted: dict[str, str] = {}
     for name, reaction in _SF04_REACTIONS.items():
         oxide = reaction[0]
         if oxide and oxide not in parents:
             continue
-        if name in _DATAPACK_OPTIONAL_CHANNELS and not (
-            f"{name}(g)" in gas_rows and f"{oxide}(l)" in oxide_rows
-        ):
-            continue
+        if name in _DATAPACK_OPTIONAL_CHANNELS:
+            missing_rows = []
+            gas_row = f"{name}(g)"
+            oxide_row = f"{oxide}(l)"
+            if gas_row not in gas_rows:
+                missing_rows.append(gas_row)
+            if oxide_row not in oxide_rows:
+                missing_rows.append(oxide_row)
+            if missing_rows:
+                omitted[name] = (
+                    "missing from active table: " + ", ".join(missing_rows)
+                )
+                continue
         selected.append((name, reaction))
-    return tuple(selected)
+    return tuple(selected), omitted
 
 # These authority labels mirror the row-level classes in PROVENANCE.yaml. A
 # reaction is only as authoritative as its least-authoritative input row, so a
@@ -1319,6 +1340,7 @@ def evaluate_gas(
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
 
+    omitted_channels: Mapping[str, str] = {}
     if gas_species is None:
         # Resolved after the inputs are validated: the default set depends on
         # parent_oxides and on which rows the datapack carries.
@@ -1373,7 +1395,7 @@ def evaluate_gas(
         act = {name: float(arr[i]) for i, name in enumerate(parent_oxides)}
 
     if reactions is None:
-        reactions = _default_reactions(tuple(act), datapack)
+        reactions, omitted_channels = _default_reactions(tuple(act), datapack)
 
     for gas_name, (oxide, _n_gas, _n_O2) in reactions:
         if not oxide:
@@ -1461,6 +1483,7 @@ def evaluate_gas(
         unit="bar",
         domain_flags=domain_flags,
         provenance_class=provenance_class,
+        omitted_channels=omitted_channels,
     )
 
 
@@ -1746,7 +1769,7 @@ def evaluate_gas_oxygen_balance(
     if not math.isfinite(T) or T <= 0.0:
         raise ValueError(f"temperature must be finite and positive, got {T_K}")
 
-    channels = _default_reactions(parent_oxides, datapack)
+    channels, _omitted_channels = _default_reactions(parent_oxides, datapack)
     species_data = oxygen_balance_species_metadata({
         species: parent for species, (parent, _n_gas, _n_O2) in channels
     })

@@ -759,6 +759,14 @@ def test_missing_gas_row_is_typed_refusal(gas_pack: ImccGasDatapack) -> None:
     assert exc.value.code == "imcc_gas_species_not_found"
 
 
+def test_gas_result_omitted_channels_default_is_empty_and_immutable() -> None:
+    result = ImccGasResult({}, "bar", {}, {})
+
+    assert result.omitted_channels == {}
+    with pytest.raises(TypeError):
+        result.omitted_channels["Na2O"] = "missing from active table: Na2O(g)"
+
+
 def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
@@ -1068,6 +1076,10 @@ def test_override_without_tio2_parent_keeps_the_sf04_default_set(
     assert dict(result.domain_flags) == {
         species: packaged.domain_flags[species] for species in _SF04_CHANNELS
     }
+    assert result.omitted_channels == {
+        species: "missing from active table: TiO2(l)"
+        for species in _TI_CHANNELS
+    }
 
     # Naming a Ti channel is an explicit request, so it still refuses, typed.
     for species in _TI_CHANNELS:
@@ -1079,11 +1091,154 @@ def test_override_without_tio2_parent_keeps_the_sf04_default_set(
         assert "TiO2(l)" in str(exc.value)
 
 
+def _gas_pack_without_gas_rows(
+    gas_pack: ImccGasDatapack, rows: set[str], tmp_path: Path
+) -> ImccGasDatapack:
+    source_lines = gas_pack.gas_path.read_text(encoding="utf-8").splitlines(True)
+    removed = {line.partition(",")[0] for line in source_lines} & rows
+    assert removed == rows
+    gas_path = tmp_path / "gas-without-optional-rows.csv"
+    gas_path.write_text(
+        "".join(line for line in source_lines if line.partition(",")[0] not in rows),
+        encoding="utf-8",
+    )
+    return load_gas_datapack(gas_path=gas_path, oxide_path=gas_pack.oxide_path)
+
+
+@pytest.mark.parametrize(
+    ("removed_rows", "omitted_channels"),
+    [
+        (("Na2O(g)", "K2O(g)"), ("Na2O", "K2O")),
+        (("Al2(g)", "Si3(g)"), ("Al2", "Si3")),
+    ],
+)
+def test_default_channels_report_missing_optional_gas_rows(
+    gas_pack: ImccGasDatapack,
+    tmp_path: Path,
+    removed_rows: tuple[str, ...],
+    omitted_channels: tuple[str, ...],
+) -> None:
+    alternate = _gas_pack_without_gas_rows(gas_pack, set(removed_rows), tmp_path)
+    activities = _quickstart_activities(2200.0)
+    packaged = evaluate_gas(activities, 2200.0, 1.0e-8, gas_pack)
+    result = evaluate_gas(activities, 2200.0, 1.0e-8, alternate)
+
+    expected_omissions = {
+        name: f"missing from active table: {name}(g)"
+        for name in omitted_channels
+    }
+    assert dict(result.omitted_channels) == expected_omissions
+    assert {
+        name: value.hex() for name, value in result.items()
+    } == {
+        name: value.hex()
+        for name, value in packaged.items()
+        if name not in expected_omissions
+    }
+    assert result.domain_flags == {
+        name: packaged.domain_flags[name]
+        for name in packaged
+        if name not in expected_omissions
+    }
+    assert result.provenance_class == {
+        name: packaged.provenance_class[name]
+        for name in packaged
+        if name not in expected_omissions
+    }
+
+    parents_without_missing_channels = tuple(
+        parent
+        for parent in activities
+        if parent not in {"Na2O", "K2O", "Al2O3", "SiO2"}
+    )
+    without_parent_activity = evaluate_gas(
+        activities,
+        2200.0,
+        1.0e-8,
+        alternate,
+        parent_oxides=parents_without_missing_channels,
+    )
+    assert without_parent_activity.omitted_channels == {}
+
+    if "Na2O" in omitted_channels:
+        with pytest.raises(ImccGasSpeciesNotFoundError) as exc:
+            evaluate_gas(
+                {"Na2O": 1.0}, 2200.0, 1.0e-8, alternate,
+                gas_species=("Na2O",),
+            )
+        assert exc.value.code == "imcc_gas_species_not_found"
+
+
+def test_oxygen_balance_models_omit_missing_alkali_gas_rows(
+    gas_pack: ImccGasDatapack, tmp_path: Path
+) -> None:
+    alternate = _gas_pack_without_gas_rows(
+        gas_pack, {"Na2O(g)", "K2O(g)"}, tmp_path
+    )
+    activities = _quickstart_activities(2200.0)
+    expected_omissions = {
+        "Na2O": "missing from active table: Na2O(g)",
+        "K2O": "missing from active table: K2O(g)",
+    }
+
+    p_o2, pressures, _diagnostics = evaluate_gas_oxygen_balance(
+        activities, 2200.0, alternate
+    )
+    assert p_o2 > 0.0
+    assert dict(pressures.omitted_channels) == expected_omissions
+
+    species = oxygen_balance_species_metadata(
+        {"O": None, "O2": None, "SiO": "SiO2"}
+    )
+    p_o2, pressures, _diagnostics = oxygen_balance_from_pressure_model(
+        lambda logp: evaluate_gas(
+            activities, 2200.0, 10.0**logp, alternate
+        ),
+        species,
+    )
+    assert p_o2 > 0.0
+    assert dict(pressures.omitted_channels) == expected_omissions
+
+
+@pytest.mark.skipif(
+    not os.environ.get("OPENIMCC_TEST_LEGACY_VAPOROCK_ROOT"),
+    reason="set OPENIMCC_VAPOROCK_ROOT to a local VapoRock checkout",
+)
+def test_vaporock_default_reports_missing_alkali_channels(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "OPENIMCC_VAPOROCK_ROOT",
+        os.environ["OPENIMCC_TEST_LEGACY_VAPOROCK_ROOT"],
+    )
+    datapack = load_gas_datapack()
+    activities = _quickstart_activities(2200.0)
+    missing_alkali = {}
+    for name in ("Na2O", "K2O"):
+        missing_rows = []
+        if f"{name}(g)" not in datapack.gas_df.index:
+            missing_rows.append(f"{name}(g)")
+        if f"{name}(l)" not in datapack.oxide_df.index:
+            missing_rows.append(f"{name}(l)")
+        if missing_rows:
+            missing_alkali[name] = (
+                "missing from active table: " + ", ".join(missing_rows)
+            )
+    if not missing_alkali:
+        pytest.skip("the selected VapoRock table provides both alkali channels")
+
+    result = evaluate_gas(activities, 2200.0, 1.0e-8, datapack)
+    assert {
+        name: result.omitted_channels[name] for name in missing_alkali
+    } == missing_alkali
+
+
 def test_default_set_follows_parent_oxides_without_key_errors(
     gas_pack: ImccGasDatapack,
 ) -> None:
     activities = _quickstart_activities(2200.0)
     packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
+    assert packaged.omitted_channels == {}
     # The packaged default appends Ti, then the screened association channels
     # and the Na2O/K2O identity channels; Cr, V and Nb stay out until their
     # caller-supplied parent activities are present.
@@ -1106,6 +1261,7 @@ def test_default_set_follows_parent_oxides_without_key_errors(
             supplied, 2200.0, 1.0e-10, gas_pack, parent_oxides=seven
         )
         assert tuple(result) == _SF04_CHANNELS
+        assert result.omitted_channels == {}
         assert dict(result) == {
             species: packaged[species] for species in _SF04_CHANNELS
         }
@@ -1683,11 +1839,10 @@ def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:
         )
 
 
-# SHA256 of the complete outputs from 23d7842. Before hashing, every float in
-# pO2, partial pressures, and diagnostics is replaced with float.hex(); the
-# canonical JSON includes mapping order-insensitively. Cases cover catalogue-
-# like lunar compositions, oxide binaries, and CMAS over 1500–2400 K.
-_OXYGEN_BALANCE_BASELINE_HEX_SHA256 = (
+# Numeric-output SHA256 pins from 23d7842: pO2, partial pressures, and
+# diagnostics. The full result is pinned separately below, including every
+# ImccGasResult dataclass field.
+_OXYGEN_BALANCE_NUMERIC_BASELINE_HEX_SHA256 = (
     "4d261a81c0bd9e12f153fc1a08ba692bfa2b892573f64f6a0f2074d3877463e5",
     "9881ff4f3cf73b2fd0200591e5ef744b00d428aa01be1c0fd3a793c231edb636",
     "5836acf202077080f3316d557c3bebc2ff0217740c6d0a4234c16024bc75b57c",
@@ -1740,6 +1895,61 @@ _OXYGEN_BALANCE_BASELINE_HEX_SHA256 = (
     "7d78316eb51b6666eb7122bea5b29803ce4f81208c59e35446e147d0d089cd08",
 )
 
+# Full dataclass-aware result pins from cb5117e with the new empty omission map.
+# The numeric projection above must continue to match its pre-change pins.
+_OXYGEN_BALANCE_RESULT_BASELINE_HEX_SHA256 = (
+    "cd9b342310202a1f456780078e81961d4a104adb5e08f7f06d9f295cb68a5918",
+    "e48e03ae7f78084ea777cb9caef2eacec79cf3141edf9b5f0afe40e456ed09f3",
+    "8b948b244a277890bc0047520d6b41f15edd248974e2cc42c763475cc7a5fcf7",
+    "a0236df635076dc07f7e21efad8024cc7aea6ea1875dd32211742c82a68a3b61",
+    "b6fe74e4f620e78e21e7f4f8144741ce103b62a735f0eb9852ef8824f09cd224",
+    "7d643462cb86aa686dcc8d2773d0d3b72f51d1f52225b181df5b8dee5f6b813d",
+    "b30ff620af23f80237f2a6aca2296d7885f556ee538ebc8d0e7bf47402e7214b",
+    "fc0115459142f520c8847d523d9884a2f5d7262f39cd469e4a419a98b1d1e7af",
+    "5f906d382c1e0a241d887ecfe14329ebbc54cd4c07e7650eb7461a0f7a1e52f3",
+    "7617f2c27a90375a8bd0ca16d3f2c1185c1312a025640dee27522d44a2fb05d2",
+    "b371590c4ec9c4f19fa8a56f0089b47c361495c2a0af67cc48f9411bcc0347fa",
+    "8df1a2d6beaa5c6c3acea46002aa2a00d11a751d9b471d9e40e89cf7921ffa5c",
+    "50440c29a57047eb2e3a7b24e44ab1e1f91e029a871539fca67bcd04831b2c75",
+    "aac42059e364f84fa3f0ab5e16e3e0b8e5eea2f7270ad14d740fc29e8d43546b",
+    "395675a4d0b97400dda6ab7765424ff4800e4104c83a0ac3e2b48493b96618ed",
+    "930831905e0353ee2120c668181ea744b62d0b81526fedcef7fee80faf56b29d",
+    "508ba2fd4c8899b58f9bc441d1db577cef4c734e12e5ae54bd505ede04975e76",
+    "b72bc8058384f75a1058e76e0e2a7d5c5c1339b08511dfa53cd33dbce8ce4e8f",
+    "09f5cedcaa1bbe3946900f8f15e3261bc0ab6b453cc5e63445555876994eedca",
+    "454e9bdc9c3849009f11075100006afd6e4f2d0261996b12030e08d3ada7f7c8",
+    "c929cfb9c71f0cc698b918017527bbda13d082126da93e68d9c0af718a792a52",
+    "b13994430629fa963172351acd5f672920acc3ad4398acfae0588ca46a3f95ad",
+    "bcef82e57d39f7ed280804557d2c2df14310ee0daf9319f4eeb0dc8609023eb8",
+    "a2ec75630194616a505a3294b0299b8cd87bed99def2940312b4e273589e24bc",
+    "d0f5b47aa24a8b2774e097eed5ca9be6398164ef9ab2a09b4d99a6a2c76ed7a3",
+    "121b1ddf755ea734a609ad6975a624ac7b58472493cad313e2ecd1a42c39605f",
+    "5291d46cc4a0feecd88516268c981d8555323f13c946a9999fbcde3170af6e51",
+    "2bc324e70b84010bac21a0f24d3f50e93667b7f710fcd139bd60ec10e616968e",
+    "34d62b0a0a7ed070785e45387cf937fafca3b58cc45dc11e7abe7654a281969f",
+    "fcdbed0769258de81ebceed493e84d9def2c7f4f8c353dd630ff6339a12dfe05",
+    "4696c1a869b30a74f5a290c31e43145a6ff349fa921266560b34f593a0c39b60",
+    "16b3a5f888d665baeb4dc223d6ecc970e9491f40e779977b6796b2b94f108a95",
+    "68f00bc13521717e0d4b7a8855593a7042fda21b634339e1f92b0b7f356ea294",
+    "d1a6bc49befa96aecffce31dd458a27b71706ccc0b8961bc410740eb9c498ab8",
+    "32fb365c5aad8946cc31b9e940473056b3eb142c9e06e865160dc7dde0e8f73d",
+    "6d23bab7810fef7a6736f1f92893023c2e674508de23a2105d3dc5f6f61c0c4b",
+    "8436af7f648df1918a30e3ad15eb6097008e2986e00bf09d499b2693ba2aeed0",
+    "32c9ab241d3ba052aed57c8e3fa8b5bfb9ae8a593d3b86baed853b6957eb898e",
+    "0182b132280bcb563e2e1aec65af5c53557e2971f0063fb49e7d24618fb2af87",
+    "6bf761e85b1febaab7a1ccdfdc0e75a7056f1f5b821586cb91725087e19ce664",
+    "bc0d11926fe3900adb1a5ed60fd8ad024007d31b22b543d438e4267ac4a99ba1",
+    "7f8a5406278817d60d07537cb03f398bfed740934ad7fd572810d09d36585819",
+    "893d4d5d91fb4469ab1a23ab8d2745555cb707dc765ce1951d07f980e04fe010",
+    "42820b60d55e6e3b3dd52e810a6b41774ce37408f1fbb8dcbf4a144326f6e134",
+    "7cf90a541077d82369a82fe15d48a7721079d5d78f4ff089891b4d69b84d208e",
+    "52ffd07d48e25e0d721489bbb10bc9184df0964a158edf059ceae9c9004a75b3",
+    "cf72f54736b532f70a6d2a5d58dda6689c9649116b242be530c8ca1255f90c41",
+    "6436c3dab7ea19e132a9a5b0e14cd5bba75a44530cd75b2dedbe3df151238040",
+    "b650d3a2dc129148cef31d3785f6fd92fe882755be752f1c855af8970a34f096",
+    "7e3168b62caae5a0c6de67a3a66974e1e4f6d852a8542bdf1f93d2fec77b7b93",
+)
+
 
 def test_oxygen_balance_wrapper_is_bit_identical_to_base(gas_pack: ImccGasDatapack) -> None:
     compositions = [
@@ -1763,25 +1973,37 @@ def test_oxygen_balance_wrapper_is_bit_identical_to_base(gas_pack: ImccGasDatapa
     def hex_values(value: object) -> object:
         if isinstance(value, float):
             return {"float.hex": value.hex()}
+        if dataclasses.is_dataclass(value):
+            return {field.name: hex_values(getattr(value, field.name)) for field in dataclasses.fields(value)}
         if isinstance(value, Mapping):
             return {str(k): hex_values(v) for k, v in value.items()}
         if isinstance(value, (tuple, list)):
             return [hex_values(v) for v in value]
-        if dataclasses.is_dataclass(value):
-            return {field.name: hex_values(getattr(value, field.name)) for field in dataclasses.fields(value)}
         if hasattr(value, "__dict__"):
             return {k: hex_values(v) for k, v in vars(value).items()}
         return value
 
     actual = []
+    numeric_actual = []
     for activities, temperature in cases:
-        result = evaluate_gas_oxygen_balance(
+        p_o2, pressures, diagnostics = evaluate_gas_oxygen_balance(
             activities, temperature, gas_pack, parent_oxides=tuple(activities)
         )
-        canonical = json.dumps(hex_values(result), sort_keys=True, separators=(",", ":"))
+        numeric_canonical = json.dumps(
+            hex_values((p_o2, dict(pressures), diagnostics)),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        numeric_actual.append(hashlib.sha256(numeric_canonical.encode()).hexdigest())
+        canonical = json.dumps(
+            hex_values((p_o2, pressures, diagnostics)),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
         actual.append(hashlib.sha256(canonical.encode()).hexdigest())
     assert len(actual) == 50
-    assert tuple(actual) == _OXYGEN_BALANCE_BASELINE_HEX_SHA256
+    assert tuple(numeric_actual) == _OXYGEN_BALANCE_NUMERIC_BASELINE_HEX_SHA256
+    assert tuple(actual) == _OXYGEN_BALANCE_RESULT_BASELINE_HEX_SHA256
 
 @pytest.mark.parametrize(
     ("activities", "temperature", "parents", "message"),
