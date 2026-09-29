@@ -13,9 +13,10 @@ import yaml
 
 import pytest
 
-from openimcc import evaluate, load_datapack
+from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
 from openimcc.bench import (
     load_bench_set,
+    load_pack,
     main,
     render_report,
     run_bench,
@@ -619,3 +620,51 @@ def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
     assert "both=20" in rendered
     assert "median(r)" in rendered
     assert "mean(r)" in rendered
+
+
+def test_load_bench_set_preserves_yaml_12_chemistry_identifiers(tmp_path: Path) -> None:
+    # YAML 1.1 would read bare `no`/`NO` as False; chemistry ids must stay strings.
+    path = tmp_path / "bench.yaml"
+    path.write_text(
+        """\
+schema_version: melt-activity-bench.v1
+compositions:
+  no:
+    composition_wt_pct:
+      SiO2: 100.0
+points:
+  - id: no
+    composition_id: no
+    species: NO
+    enabled: true
+""",
+        encoding="utf-8",
+    )
+
+    fixture = load_bench_set(path)
+    point = fixture["points"][0]
+
+    assert "no" in fixture["compositions"]
+    assert point["id"] == "no"
+    assert point["composition_id"] == "no"
+    assert point["species"] == "NO"
+    assert point["enabled"] is True
+
+
+def test_load_pack_resolves_bare_packaged_name(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    packaged = load_pack(Path("imcc-sf04-v1.0.2.json"))
+    direct = load_pack(Path(__file__).resolve().parents[1] / DATAPACK_PATH)
+    assert (packaged.model_id, packaged.version) == (direct.model_id, direct.version)
+
+    # An unknown bare name is not redirected; it fails as a missing file.
+    with pytest.raises(FileNotFoundError):
+        load_pack(Path("not-a-pack.json"))
+
+
+def test_load_pack_prefers_a_local_file_over_the_packaged_name(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "imcc-sf04-v1.0.2.json").write_text("[]", encoding="utf-8")
+    # The local file wins, so its malformed content is what gets loaded.
+    with pytest.raises(ImccMalformedDatapackError):
+        load_pack(Path("imcc-sf04-v1.0.2.json"))

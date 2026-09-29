@@ -31,12 +31,14 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
 import statistics
 import sys
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
+from importlib import resources
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -58,6 +60,39 @@ from openimcc import (
     label_research_datapack,
     load_datapack,
 )
+
+_YAML_BASE_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
+class _BenchYAML12SafeLoader(_YAML_BASE_LOADER):
+    """Safe loader with YAML 1.2 booleans only.
+
+    YAML 1.1 resolves bare ``NO``/``yes``/``on``/``off`` to booleans, which
+    would turn chemistry identifiers such as ``species: NO`` (nitric oxide)
+    or a composition id ``no`` into ``False``. Copy the resolver table so the
+    base loader is untouched, drop the bool resolver, then re-add it for the
+    YAML 1.2 spellings only (true/false in three cases).
+    """
+
+    yaml_implicit_resolvers = {
+        key: [
+            (tag, regexp)
+            for tag, regexp in resolvers
+            if tag != "tag:yaml.org,2002:bool"
+        ]
+        for key, resolvers in _YAML_BASE_LOADER.yaml_implicit_resolvers.items()
+    }
+
+
+_BenchYAML12SafeLoader.add_implicit_resolver(
+    "tag:yaml.org,2002:bool",
+    re.compile(r"^(?:true|True|TRUE|false|False|FALSE)$"),
+    list("tTfF"),
+)
+
+# Bare pack names that resolve to the packaged resource when no file of that
+# name exists relative to the working directory.
+_PACKAGED_PACK_NAMES = frozenset({"imcc-sf04-v1.0.2.json", "imcc-sf04-ext-v4.json"})
 
 POINT_STATUSES = (
     "ok",
@@ -303,7 +338,7 @@ def composition_wt_pct_for_point(
 
 
 def load_bench_set(path: Path) -> dict[str, Any]:
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data = yaml.load(path.read_text(encoding="utf-8"), Loader=_BenchYAML12SafeLoader)
     if not isinstance(data, dict) or data.get("schema_version") != "melt-activity-bench.v1":
         raise ValueError(f"unsupported melt activity bench set: {path}")
     if not data.get("compositions") or not data.get("points"):
@@ -349,7 +384,19 @@ def load_pack(pack_path: Path) -> _PackedEngine:
     Published and ``sp_extension`` packs go through ``load_datapack``.
     Research overlays that fail that gate (ext-v1/v2/v3) use the same
     ``label_research_datapack`` path as harness ``ImccEngine(published=False)``.
+
+    A bare packaged pack name (e.g. ``imcc-sf04-v1.0.2.json``) with no file of
+    that name in the working directory resolves to the packaged resource.
     """
+    pack_path = Path(pack_path)
+    if (
+        not os.path.lexists(pack_path)
+        and str(pack_path) == pack_path.name
+        and pack_path.name in _PACKAGED_PACK_NAMES
+    ):
+        resource = resources.files("openimcc").joinpath("data", "packs", pack_path.name)
+        with resources.as_file(resource) as packaged_path:
+            return load_pack(packaged_path)
     raw = json.loads(pack_path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ImccMalformedDatapackError("datapack JSON root must be an object")
