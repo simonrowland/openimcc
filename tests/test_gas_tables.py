@@ -42,6 +42,7 @@ JANAF_DATA = ROOT / "data-src" / "janaf"
 NASA_DATA = ROOT / "data-src" / "nasa-glenn"
 LH84_DATA = ROOT / "data-src" / "lh84"
 PROVENANCE_PATH = GAS_DATA / "PROVENANCE.yaml"
+_BASE_INTERVAL_1_SHA256 = "ea3a8db1419140329e36be433453fdc67969a7e3826d9af5a310d284a1526c0a"
 
 GAS_TABLE_IDS = {
     "Na": "Na-005",
@@ -181,6 +182,23 @@ def _ambiguous_temperatures(table_id: str) -> set[float]:
     return result
 
 
+def _gas_row_for_interval(pack, species: str, interval: int) -> pd.Series:
+    rows = pack.gas_df.loc[pack.gas_df.index == f"{species}(g)"]
+    return rows.loc[rows["T_interval"].astype(int) == interval].iloc[0]
+
+
+def _shomate_entropy(row: pd.Series, temperature: float) -> float:
+    t = temperature / 1000.0
+    return float(
+        row["A"] * math.log(t)
+        + row["B"] * t
+        + row["C"] * t**2 / 2.0
+        + row["D"] * t**3 / 3.0
+        - row["E"] / (2.0 * t**2)
+        + row["G"]
+    )
+
+
 def _synthetic_source_row(temperature: float) -> dict[str, dict[str, float]]:
     return {
         field: {"value": temperature if field == "temperature" else 1.0}
@@ -256,6 +274,58 @@ def test_usable_rows_requires_exact_fit_interval_and_declared_gaps() -> None:
     with pytest.raises(ValueError, match="repeats"):
         build_gas_tables._usable_rows(repeated_node, "repeat")
 
+    low_temperatures = list(
+        range(
+            int(build_gas_tables.LOW_FIT_T_MIN),
+            int(build_gas_tables.LOW_FIT_T_MAX) + 1,
+            int(build_gas_tables.JANAF_GRID_STEP_K),
+        )
+    )
+    assert len(low_temperatures) == 11
+    low_with_disclosed_gap = {
+        "values": [
+            _synthetic_source_row(temperature)
+            for temperature in low_temperatures
+            if temperature != 1100
+        ],
+        "parse_ambiguities": [{"raw_line": "1100\tambiguous"}],
+    }
+    assert len(
+        build_gas_tables._usable_rows(
+            low_with_disclosed_gap,
+            "low-disclosed",
+            fit_t_min=build_gas_tables.LOW_FIT_T_MIN,
+            fit_t_max=build_gas_tables.LOW_FIT_T_MAX,
+            minimum_rows=build_gas_tables.LOW_FIT_MINIMUM_ROWS,
+        )
+    ) == 10
+
+    low_unreported_gap = {
+        **low_with_disclosed_gap,
+        "parse_ambiguities": [],
+    }
+    with pytest.raises(ValueError, match="gap"):
+        build_gas_tables._usable_rows(
+            low_unreported_gap,
+            "low-unreported",
+            fit_t_min=build_gas_tables.LOW_FIT_T_MIN,
+            fit_t_max=build_gas_tables.LOW_FIT_T_MAX,
+            minimum_rows=build_gas_tables.LOW_FIT_MINIMUM_ROWS,
+        )
+
+    low_ambiguous_row = {
+        "values": [_synthetic_source_row(temperature) for temperature in low_temperatures],
+        "parse_ambiguities": [{"raw_line": "1100\tambiguous"}],
+    }
+    with pytest.raises(ValueError, match="parse-ambiguous row"):
+        build_gas_tables._usable_rows(
+            low_ambiguous_row,
+            "low-ambiguous",
+            fit_t_min=build_gas_tables.LOW_FIT_T_MIN,
+            fit_t_max=build_gas_tables.LOW_FIT_T_MAX,
+            minimum_rows=build_gas_tables.LOW_FIT_MINIMUM_ROWS,
+        )
+
 
 def test_fitter_validates_formula_and_emitted_phase() -> None:
     with pytest.raises(ValueError, match="formula"):
@@ -322,7 +392,17 @@ def test_public_sources_contain_no_private_paths_or_tooling_names() -> None:
 def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = provenance["rows"]
-    gas_rows = {row["species_name"]: row for row in rows if row["table"] == "gas"}
+    gas_records = [row for row in rows if row["table"] == "gas"]
+    gas_rows = {
+        row["species_name"]: row
+        for row in gas_records
+        if row["T_range_K"][0] == 1500
+    }
+    low_gas_rows = {
+        row["species_name"].removesuffix("(g)"): row
+        for row in gas_records
+        if row.get("T_interval") == 2
+    }
     oxide_rows = {
         row["species_name"]: row for row in rows if row["table"] == "condensate"
     }
@@ -332,6 +412,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         "CoO",
     }
     assert set(gas_rows) == {f"{name}(g)" for name in public_gas_channels}
+    assert set(low_gas_rows) == build_gas_tables.LOW_T_GAS_SPECIES
     assert len(oxide_rows) == 12
 
     for species, table_id in GAS_TABLE_IDS.items():
@@ -347,6 +428,23 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             table_id, build_gas_tables.FIT_T_MAX
         )
         assert row["T_range_K"] == [1500, int(expected_t_max)]
+        assert source["source"]["doi"] == "10.18434/T42S31"
+
+    for species in build_gas_tables.LOW_T_GAS_SPECIES:
+        table_id = GAS_TABLE_IDS[species]
+        source = _record(table_id)
+        row = low_gas_rows[species]
+        assert row["species_name"] == f"{species}(g)"
+        assert row["table_id"] == table_id
+        assert row["source_path"] == f"data-src/janaf/{table_id}.yaml"
+        assert (ROOT / row["source_path"]).is_file()
+        assert row["source_sha256"] == source["extraction"]["source_sha256"]
+        assert row["authority"] == "janaf_fitted"
+        assert row["method"] == "fitted"
+        assert row["T_range_K"] == [
+            int(build_gas_tables.LOW_FIT_T_MIN),
+            int(build_gas_tables.LOW_FIT_T_MAX),
+        ]
         assert source["source"]["doi"] == "10.18434/T42S31"
 
     for species, table_id in NASA_TABLE_IDS.items():
@@ -488,7 +586,7 @@ def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
             for row in source_rows
             if row["temperature"] == 298.15
         )
-        fitted_row = pack.gas_df.loc[f"{species}(g)"]
+        fitted_row = _gas_row_for_interval(pack, species, 1)
         residuals = []
         log_residuals = []
         for source_row in source_rows:
@@ -520,6 +618,146 @@ def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
 
     assert max(value[1] for value in maxima.values()) <= 0.01
     assert max(value[0] for value in maxima.values()) < 2.1
+
+
+def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None:
+    pack = load_gas_datapack()
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    low_provenance = {
+        row["species_name"]: row
+        for row in provenance["rows"]
+        if row["table"] == "gas" and row.get("T_interval") == 2
+    }
+    source_by_species = {
+        source[0].removesuffix("(g)"): source
+        for source in build_gas_tables.GAS_SOURCES
+    }
+    packaged_low_rows = {
+        row["species_name"]: row
+        for row in csv.DictReader(
+            io.StringIO(
+                (GAS_DATA / "gas-shomate.csv").read_text(encoding="utf-8")
+            )
+        )
+        if row["T_interval"] == "2"
+    }
+
+    assert set(low_provenance) == {
+        f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
+    }
+    for species in build_gas_tables.LOW_T_GAS_SPECIES:
+        table_id = GAS_TABLE_IDS[species]
+        row = _gas_row_for_interval(pack, species, 2)
+        expected = build_gas_tables._fit_row(
+            JANAF_DATA,
+            *source_by_species[species],
+            t_interval=2,
+            fit_t_min=build_gas_tables.LOW_FIT_T_MIN,
+            fit_t_max=build_gas_tables.LOW_FIT_T_MAX,
+            minimum_rows=build_gas_tables.LOW_FIT_MINIMUM_ROWS,
+        )
+        assert int(row["T_interval"]) == 2
+        assert float(row["T_min"]) == build_gas_tables.LOW_FIT_T_MIN
+        assert float(row["T_max"]) == build_gas_tables.LOW_FIT_T_MAX
+        assert row["Ref"] == table_id
+        for coefficient in "ABCDEFG":
+            assert packaged_low_rows[f"{species}(g)"][coefficient] == expected[
+                coefficient
+            ]
+
+        ambiguous = _ambiguous_temperatures(table_id)
+        fit_rows = [
+            source_row
+            for source_row in _complete_rows(table_id)
+            if (
+                build_gas_tables.LOW_FIT_T_MIN
+                <= source_row["temperature"]
+                <= build_gas_tables.LOW_FIT_T_MAX
+                and source_row["temperature"] not in ambiguous
+            )
+        ]
+        assert len(fit_rows) >= build_gas_tables.LOW_FIT_MINIMUM_ROWS
+        assert fit_rows[0]["temperature"] == build_gas_tables.LOW_FIT_T_MIN
+        assert fit_rows[-1]["temperature"] == build_gas_tables.LOW_FIT_T_MAX
+        residuals = []
+        log_residuals = []
+        for source_row in fit_rows:
+            temperature = source_row["temperature"]
+            residual = abs(
+                _janaf_gibbs(temperature, row)
+                - _janaf_apparent_gibbs(table_id, temperature)
+            )
+            residuals.append(residual)
+            log_residuals.append(
+                residual / (R_J_MOL_K * temperature * math.log(10.0))
+            )
+
+        recorded = low_provenance[f"{species}(g)"]
+        assert max(residuals) == pytest.approx(
+            float(recorded["max_residual_J_per_mol"]), abs=1.0e-9
+        )
+        assert max(log_residuals) == pytest.approx(
+            float(recorded["max_residual_log10_K"]), abs=1.0e-12
+        )
+        assert max(residuals) < 2.1
+        assert max(log_residuals) < 0.01
+
+
+def test_low_and_high_gas_fits_are_continuous_at_1500_k() -> None:
+    pack = load_gas_datapack()
+    jumps = {}
+    for species in build_gas_tables.LOW_T_GAS_SPECIES:
+        low = _gas_row_for_interval(pack, species, 2)
+        high = _gas_row_for_interval(pack, species, 1)
+        jumps[species] = (
+            abs(_janaf_gibbs(1500.0, low) - _janaf_gibbs(1500.0, high)),
+            abs(_shomate_entropy(low, 1500.0) - _shomate_entropy(high, 1500.0)),
+        )
+
+    # Measured maxima are 0.636 J/mol and 0.00601 J/(mol K); these limits leave
+    # 0.364 J/mol and 0.00399 J/(mol K) of margin, respectively.
+    assert max(g_jump for g_jump, _ in jumps.values()) < 1.0
+    assert max(s_jump for _, s_jump in jumps.values()) < 0.01
+
+
+def test_k_gas_apparent_gibbs_uses_its_298_k_anchor_across_1032_k() -> None:
+    table_id = "K-005"
+    source_rows = _complete_rows(table_id)
+    reference = next(row for row in source_rows if row["temperature"] == 298.15)
+    assert reference["formation_enthalpy"] == 89.0
+
+    at_1000 = next(row for row in source_rows if row["temperature"] == 1000.0)
+    at_1200 = next(row for row in source_rows if row["temperature"] == 1200.0)
+    assert at_1200["formation_enthalpy"] == 0.0
+    expected_1200 = (
+        reference["formation_enthalpy"] + at_1200["enthalpy_increment"]
+    ) * 1000.0 - 1200.0 * at_1200["entropy"]
+    assert _janaf_apparent_gibbs(table_id, 1200.0) == pytest.approx(
+        expected_1200, abs=1.0e-9
+    )
+
+    pack = load_gas_datapack()
+    low = _gas_row_for_interval(pack, "K", 2)
+    for source_row in (at_1000, at_1200):
+        temperature = source_row["temperature"]
+        assert _janaf_gibbs(temperature, low) == pytest.approx(
+            _janaf_apparent_gibbs(table_id, temperature), abs=2.1
+        )
+
+
+def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
+    lines = (GAS_DATA / "gas-shomate.csv").read_bytes().splitlines(keepends=True)
+    retained = [lines[0]]
+    intervals = []
+    for line in lines[1:]:
+        interval = next(csv.reader([line.decode("utf-8")]))[2]
+        intervals.append(interval)
+        if interval == "1":
+            retained.append(line)
+
+    assert intervals[: intervals.index("2")] == ["1"] * 43
+    assert all(interval == "2" for interval in intervals[intervals.index("2") :])
+    assert hashlib.sha256(b"".join(retained)).hexdigest() == _BASE_INTERVAL_1_SHA256
 
 
 def _hand_nasa7_properties(record: dict, temperature: float) -> tuple[float, float, float]:
@@ -845,8 +1083,6 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
         generated_species = generated_table["species_name"].tolist()
         packaged_species = packaged_table["species_name"].tolist()
         assert generated_species == packaged_species
-        assert len(set(generated_species)) == len(generated_species)
-        assert len(set(packaged_species)) == len(packaged_species)
 
         for row_index, species in enumerate(packaged_species):
             fit_columns = fitted_columns.get(species, ())
@@ -1182,11 +1418,17 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             temperatures, independent, source_parent_app
         ):
             fitted_reaction = (
-                n_gas * _janaf_gibbs(
-                    temperature, pack.gas_df.loc[f"{species}(g)"]
+                n_gas
+                * _janaf_gibbs(
+                    temperature,
+                    _nearest_interval_row(
+                        pack.gas_df, f"{species}(g)", temperature
+                    ),
                 )
-                + n_o2 * _janaf_gibbs(
-                    temperature, pack.gas_df.loc["O2(g)"]
+                + n_o2
+                * _janaf_gibbs(
+                    temperature,
+                    _nearest_interval_row(pack.gas_df, "O2(g)", temperature),
                 )
                 - independent_parent
             )
@@ -1272,11 +1514,17 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
                 np.interp(temperature, common_temperatures, source_parent_app)
             )
             fitted_reaction = (
-                n_gas * _janaf_gibbs(
-                    temperature, pack.gas_df.loc[f"{species}(g)"]
+                n_gas
+                * _janaf_gibbs(
+                    temperature,
+                    _nearest_interval_row(
+                        pack.gas_df, f"{species}(g)", temperature
+                    ),
                 )
-                + n_o2 * _janaf_gibbs(
-                    temperature, pack.gas_df.loc["O2(g)"]
+                + n_o2
+                * _janaf_gibbs(
+                    temperature,
+                    _nearest_interval_row(pack.gas_df, "O2(g)", temperature),
                 )
                 - independent_parent
             )

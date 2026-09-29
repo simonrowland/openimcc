@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a second JANAF-fitted Shomate interval for the battery gas species over
+  500–1500 K. It uses at least ten complete 100 K JANAF nodes per species,
+  preserves the existing interval 1 rows, and selects interval 1 at 1500 K.
 - Added opt-in research pack `gas-janaf-parent-liquids-research` with JANAF-fitted
   SiO2(l), Al2O3(l), MgO(l) and CaO(l) rows; the SF04/Lamoreaux default
   coefficient contract keeps it out of default loads and outputs.

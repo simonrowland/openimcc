@@ -47,6 +47,20 @@ branch-limited C4 check passes over each declared liquid range through 3000 K
 1500–3000 K default C4 statuses remain unchanged, and rows remain out of domain
 below their declared liquid branches.
 
+### Low-temperature gas interval (done)
+
+The 22 battery gas species now have a second JANAF-fitted Shomate interval from
+500–1500 K, with at least ten complete 100 K grid nodes per fit. The existing
+1500–3000 K interval 1 rows remain byte-identical to base `52db3a9`; at the
+shared 1500 K node, the runtime selects interval 1. The low-temperature KEMS
+impact calculation at 1300 K and 1400 K is domain-refused because the packaged
+K₂O–SiO₂ melt reactions begin at 1700 K.
+
+The SiO₂(l) parent remains domain-flagged below 1996 K by default (the research
+pack extends its liquid branch to 1800 K). JANAF O-038 has no lower liquid
+branch; below 1800 K it provides the II/crystal branch, which is not a liquid
+parent row.
+
 At 3000 K and fO2=1e-4, p(e-) is 9.84595e-5 bar. Its Saha source terms are
 Na 8.05285e-9 (83.07% of p(e-)²) and K 1.59434e-9 (16.45%); all other terms
 sum to 0.49%. The largest joint ion-fraction estimate is K at 1700 K and

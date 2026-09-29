@@ -27,9 +27,21 @@ import numpy as np
 
 FIT_T_MIN = 1500.0
 FIT_T_MAX = 3000.0
+LOW_FIT_T_MIN = 500.0
+LOW_FIT_T_MAX = 1500.0
 JANAF_GRID_STEP_K = 100.0
 NASA_GRID_STEP_K = 100.0
 NASA_STANDARD_T_K = 298.15
+# The 500–1500 K JANAF interval has eleven inclusive grid nodes. That leaves at
+# least ten complete nodes when a single parse-ambiguous row is skipped: five
+# Shomate Cp coefficients plus a five-node margin. It covers the Plante (1259 K)
+# and TS1985 (~1373 K) lower bench limits while retaining the shared 1500 K node.
+# G_app = dfH298 + [H-H298] - T*S uses the gas species' own JANAF row; elemental
+# reference-state transitions (including K boiling at 1032 K) do not enter it.
+# The K(g) test checks the fit against K-005 on both sides of 1032 K.
+SHOMATE_CP_PARAMETER_COUNT = 5
+LOW_FIT_NODE_MARGIN = 5
+LOW_FIT_MINIMUM_ROWS = SHOMATE_CP_PARAMETER_COUNT + LOW_FIT_NODE_MARGIN
 # Same value as openimcc.gas.R_J_MOL_K; kept local so the tool does not import
 # the package it builds data for.
 R_J_MOL_K = 8.314462618
@@ -106,6 +118,33 @@ GAS_SOURCES = (
     ("Mn(g)", "Mn-005", "Mn", 1, 0),
     ("Ni(g)", "Ni-005", "Ni", 1, 0),
     ("Co(g)", "Co-005", "Co", 1, 0),
+)
+
+LOW_T_GAS_SPECIES = frozenset(
+    {
+        "K",
+        "K2",
+        "KO",
+        "Na",
+        "NaO",
+        "Na2",
+        "SiO",
+        "Si",
+        "SiO2",
+        "O",
+        "O2",
+        "Fe",
+        "FeO",
+        "Mg",
+        "MgO",
+        "Ca",
+        "CaO",
+        "Al",
+        "AlO",
+        "AlO2",
+        "Al2O",
+        "Al2O2",
+    }
 )
 
 # The NASA cards supply the Cp(T) shape and internally consistent H/RT and S/R
@@ -225,9 +264,24 @@ def _value(row: dict[str, Any], field: str) -> float | None:
     return value.get("value")
 
 
-def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]:
-    fit_t_min = _FIT_T_MIN_BY_TABLE.get(table_id, FIT_T_MIN)
-    fit_t_max = _FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX)
+def _usable_rows(
+    table: dict[str, Any],
+    table_id: str,
+    *,
+    fit_t_min: float | None = None,
+    fit_t_max: float | None = None,
+    minimum_rows: int | None = None,
+) -> list[dict[str, float]]:
+    fit_t_min = (
+        _FIT_T_MIN_BY_TABLE.get(table_id, FIT_T_MIN)
+        if fit_t_min is None
+        else fit_t_min
+    )
+    fit_t_max = (
+        _FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX)
+        if fit_t_max is None
+        else fit_t_max
+    )
     ambiguous_temperatures: set[float] = set()
     for ambiguity in table.get("parse_ambiguities", []):
         raw_line = str(ambiguity.get("raw_line", "")).strip()
@@ -268,21 +322,22 @@ def _usable_rows(table: dict[str, Any], table_id: str) -> list[dict[str, float]]
             )
         rows.append({field: float(value) for field, value in values.items()})
     rows.sort(key=lambda row: row["temperature"])
-    minimum_rows = 15
-    if table_id == "O-063":
-        minimum_rows = 14
-    elif table_id == "Cr-015":
-        # 1900--3000 K has 12 grid nodes; the omitted 2700 K row leaves 11.
-        minimum_rows = 11
-    elif table_id == "O-038":
-        # The liquid branch starts at 1800 K and has 13 complete grid nodes.
-        minimum_rows = 13
-    elif table_id == "Al-100":
-        # The alpha/liquid marker is at 2327 K; 2500--3000 K has six nodes.
-        minimum_rows = 6
-    elif table_id in {"Mg-009", "Ca-028"}:
-        # Each liquid branch starts at 2200 K and has 9 complete grid nodes.
-        minimum_rows = 9
+    if minimum_rows is None:
+        minimum_rows = 15
+        if table_id == "O-063":
+            minimum_rows = 14
+        elif table_id == "Cr-015":
+            # 1900--3000 K has 12 grid nodes; the omitted 2700 K row leaves 11.
+            minimum_rows = 11
+        elif table_id == "O-038":
+            # The liquid branch starts at 1800 K and has 13 complete grid nodes.
+            minimum_rows = 13
+        elif table_id == "Al-100":
+            # The alpha/liquid marker is at 2327 K; 2500--3000 K has six nodes.
+            minimum_rows = 6
+        elif table_id in {"Mg-009", "Ca-028"}:
+            # Each liquid branch starts at 2200 K and has 9 complete grid nodes.
+            minimum_rows = 9
     if (
         len(rows) < minimum_rows
         or rows[0]["temperature"] != fit_t_min
@@ -633,13 +688,31 @@ def _nasa_source_rows(
     }
 
 
-def _fit_row(source_dir: Path, species_name: str, table_id: str, cation: str, cat_num: int, oxy_num: int) -> dict[str, str]:
+def _fit_row(
+    source_dir: Path,
+    species_name: str,
+    table_id: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    *,
+    t_interval: int = 1,
+    fit_t_min: float | None = None,
+    fit_t_max: float | None = None,
+    minimum_rows: int | None = None,
+) -> dict[str, str]:
     record = _load_record(source_dir / f"{table_id}.yaml")
     table = record["table"]
     if table["table_id"] != table_id:
         raise ValueError(f"{table_id}: record table_id does not match filename")
     _validate_record_identity(record, species_name, table_id, "g")
-    rows = _usable_rows(table, table_id)
+    rows = _usable_rows(
+        table,
+        table_id,
+        fit_t_min=fit_t_min,
+        fit_t_max=fit_t_max,
+        minimum_rows=minimum_rows,
+    )
 
     all_rows = table["values"]
     reference = next(
@@ -657,12 +730,24 @@ def _fit_row(source_dir: Path, species_name: str, table_id: str, cation: str, ca
     return {
         "species_name": species_name,
         "state": "g",
-        "T_interval": "1",
+        "T_interval": str(t_interval),
         "cation": cation,
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
-        "T_min": str(int(_FIT_T_MIN_BY_TABLE.get(table_id, FIT_T_MIN))),
-        "T_max": str(int(_FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX))),
+        "T_min": str(
+            int(
+                _FIT_T_MIN_BY_TABLE.get(table_id, FIT_T_MIN)
+                if fit_t_min is None
+                else fit_t_min
+            )
+        ),
+        "T_max": str(
+            int(
+                _FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX)
+                if fit_t_max is None
+                else fit_t_max
+            )
+        ),
         "A": number(fit["A"]),
         "B": number(fit["B"]),
         "C": number(fit["C"]),
@@ -849,6 +934,18 @@ def build_rows(
             *source,
         )
         for source in NASA_GAS_SOURCES
+    )
+    rows.extend(
+        _fit_row(
+            source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=LOW_FIT_T_MIN,
+            fit_t_max=LOW_FIT_T_MAX,
+            minimum_rows=LOW_FIT_MINIMUM_ROWS,
+        )
+        for source in GAS_SOURCES
+        if source[0].removesuffix("(g)") in LOW_T_GAS_SPECIES
     )
     return rows
 

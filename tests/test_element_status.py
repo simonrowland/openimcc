@@ -543,16 +543,31 @@ def _c4_rows_cover_domain(
 ) -> bool:
     provenance_rows = yaml.safe_load(GAS_PROVENANCE.read_text(encoding="utf-8"))["rows"]
     by_key = {
-        (entry["table"], entry["species_name"]): entry
+        (
+            entry["table"],
+            entry["species_name"],
+            tuple(entry.get("T_range_K", ())),
+        ): entry
         for entry in provenance_rows
     }
     gas_rows = pack.gas_df[pack.gas_df["cation"] == element]
     if gas_rows.empty:
         return False
-    for species_name, row in gas_rows.iterrows():
-        if row["T_min"] > 1500 or row["T_max"] < 3000:
+    for species_name in gas_rows.index.unique():
+        species_rows = gas_rows.loc[gas_rows.index == species_name]
+        covering_rows = species_rows.loc[
+            (species_rows["T_min"] <= 1500) & (species_rows["T_max"] >= 3000)
+        ]
+        if len(covering_rows) != 1:
             return False
-        source = by_key.get(("gas", species_name))
+        row = covering_rows.iloc[0]
+        source = by_key.get(
+            (
+                "gas",
+                species_name,
+                (int(row["T_min"]), int(row["T_max"])),
+            )
+        )
         if source is None or source["method"] != "fitted":
             return False
         if source["authority"] == "janaf_fitted":
@@ -570,7 +585,13 @@ def _c4_rows_cover_domain(
     liquid = pack.oxide_df.loc[f"{parent}(l)"]
     if liquid["T_min"] > 1500 or liquid["T_max"] < 3000:
         return False
-    source = by_key.get(("condensate", f"{parent}(l)"))
+    source = by_key.get(
+        (
+            "condensate",
+            f"{parent}(l)",
+            (int(liquid["T_min"]), int(liquid["T_max"])),
+        )
+    )
     if source is None or not (
         source["T_range_K"][0] <= 1500 and source["T_range_K"][1] >= 3000
     ):

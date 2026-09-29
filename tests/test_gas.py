@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Mapping
+from dataclasses import replace
 from pathlib import Path
 
 import pandas as pd
@@ -42,6 +43,7 @@ from openimcc.gas import (
     oxygen_balance_from_pressure_model,
     gas_species_provenance,
     load_gas_datapack,
+    _nearest_interval_row,
 )
 
 
@@ -161,7 +163,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 43
+    assert len(gas_pack.gas_df) == 43 + len(build_gas_tables.LOW_T_GAS_SPECIES)
     assert len(gas_pack.oxide_df) == 12
 
 
@@ -180,8 +182,10 @@ def test_janaf_parent_liquid_research_pack_loads_by_path_and_is_in_domain(
         gas_path=pack_dir / "gas-shomate.csv",
         oxide_path=pack_dir / "condensate.csv",
     )
-    assert research.gas_df.equals(gas_pack.gas_df)
-    assert research.gas_path.read_bytes() == gas_pack.gas_path.read_bytes()
+    interval_1 = gas_pack.gas_df.loc[
+        gas_pack.gas_df["T_interval"].astype(int) == 1
+    ]
+    assert research.gas_df.equals(interval_1)
     assert research.gas_path == pack_dir / "gas-shomate.csv"
     assert research.oxide_path == pack_dir / "condensate.csv"
 
@@ -229,7 +233,7 @@ def test_explicit_vaporock_override_remains_supported(
     assert overridden.oxide_df.equals(gas_pack.oxide_df)
 
 
-def test_runtime_schemas_and_intervals_are_unchanged(gas_pack: ImccGasDatapack) -> None:
+def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     assert tuple(gas_pack.gas_df.columns) == (
         "state",
         "T_interval",
@@ -271,13 +275,37 @@ def test_runtime_schemas_and_intervals_are_unchanged(gas_pack: ImccGasDatapack) 
     assert set(gas_pack.gas_df.index) == {
         f"{species}(g)" for species in public_gas_channels
     }
-    assert (gas_pack.gas_df["T_min"] == 1500).all()
-    expected_t_max = gas_pack.gas_df["Ref"].map(
+    high_rows = gas_pack.gas_df.loc[
+        gas_pack.gas_df["T_interval"].astype(int) == 1
+    ]
+    low_rows = gas_pack.gas_df.loc[
+        gas_pack.gas_df["T_interval"].astype(int) == 2
+    ]
+    assert len(low_rows) == len(build_gas_tables.LOW_T_GAS_SPECIES)
+    assert set(low_rows.index) == {
+        f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
+    }
+    assert (high_rows["T_min"] == 1500).all()
+    assert (low_rows["T_min"] == build_gas_tables.LOW_FIT_T_MIN).all()
+    assert (low_rows["T_max"] == build_gas_tables.LOW_FIT_T_MAX).all()
+    expected_t_max = high_rows["Ref"].map(
         lambda table_id: build_gas_tables._FIT_T_MAX_BY_TABLE.get(
             table_id, build_gas_tables.FIT_T_MAX
         )
     )
-    assert (gas_pack.gas_df["T_max"].astype(float) == expected_t_max).all()
+    assert (high_rows["T_max"].astype(float) == expected_t_max).all()
+
+
+def test_interval_selection_uses_high_row_at_shared_1500_k_node(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    for species in build_gas_tables.LOW_T_GAS_SPECIES:
+        high = _nearest_interval_row(gas_pack.gas_df, f"{species}(g)", 1500.0)
+        low = _nearest_interval_row(gas_pack.gas_df, f"{species}(g)", 1499.999)
+        assert int(high["T_interval"]) == 1
+        assert float(high["T_min"]) == 1500.0
+        assert int(low["T_interval"]) == 2
+        assert float(low["T_min"]) == build_gas_tables.LOW_FIT_T_MIN
 
 
 def test_channel_coverage_ledger_is_closed() -> None:
@@ -352,6 +380,8 @@ def test_gas_domain_refusal_is_typed(gas_pack: ImccGasDatapack) -> None:
     # Keep O2 available at the diagnostic temperature so the refusal names the
     # selected Fe(g) row rather than the caller-pinned reference row.
     gas_df.loc["O2(g)", "T_min"] = 1000.0
+    fe_low = (gas_df.index == "Fe(g)") & (gas_df["T_interval"].astype(int) == 2)
+    gas_df.loc[fe_low, "T_max"] = 1300.0
     diagnostic_pack = ImccGasDatapack(
         gas_df=gas_df,
         oxide_df=gas_pack.oxide_df,
@@ -845,7 +875,9 @@ _SF04_CHANNELS = tuple(
 )
 
 
-def _quickstart_activities(T: float) -> dict[str, float]:
+def _quickstart_activities(
+    T: float, *, allow_extrapolation: bool = False
+) -> dict[str, float]:
     from openimcc import evaluate as evaluate_imcc
 
     basalt = {
@@ -858,8 +890,56 @@ def _quickstart_activities(T: float) -> dict[str, float]:
         "Na2O": 3.23108,
         "K2O": 0.78732,
     }
-    melt = evaluate_imcc(basalt, T, basis_type="wt")
+    melt = evaluate_imcc(
+        basalt,
+        T,
+        basis_type="wt",
+        allow_extrapolation=allow_extrapolation,
+    )
     return {name: melt.activity(name) for name in melt.parent_oxides}
+
+
+def test_readme_basalt_outputs_match_interval_1_at_and_above_1500_k(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    high_only = replace(
+        gas_pack,
+        gas_df=gas_pack.gas_df.loc[
+            gas_pack.gas_df["T_interval"].astype(int) == 1
+        ].copy(),
+    )
+    for temperature in (1500.0, 1800.0, 2200.0, 2600.0):
+        activities = _quickstart_activities(
+            temperature,
+            allow_extrapolation=True,
+        )
+        for fO2 in (1.0e-10, 1.0e-6):
+            current = evaluate_gas(
+                activities,
+                temperature,
+                fO2,
+                gas_pack,
+                allow_extrapolation=True,
+            )
+            interval_1_only = evaluate_gas(
+                activities,
+                temperature,
+                fO2,
+                high_only,
+                allow_extrapolation=True,
+            )
+            assert current.unit == interval_1_only.unit
+            assert tuple(current) == tuple(interval_1_only)
+            assert {
+                species: float(current[species]).hex() for species in current
+            } == {
+                species: float(interval_1_only[species]).hex()
+                for species in interval_1_only
+            }
+            assert dict(current.domain_flags) == dict(interval_1_only.domain_flags)
+            assert dict(current.provenance_class) == dict(
+                interval_1_only.provenance_class
+            )
 
 
 @pytest.fixture
