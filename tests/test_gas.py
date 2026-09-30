@@ -308,6 +308,33 @@ def test_interval_selection_uses_high_row_at_shared_1500_k_node(
         assert float(low["T_min"]) == build_gas_tables.LOW_FIT_T_MIN
 
 
+def test_interval_selection_below_every_interval_uses_the_lowest(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    # The 500-1500 K rows are appended after the 1500-3000 K rows, so "first
+    # row in file order" would extrapolate from the far interval.  Below every
+    # T_min the nearest (lowest) interval must be the one extrapolated, and
+    # strict mode must still refuse.
+    for species in build_gas_tables.LOW_T_GAS_SPECIES:
+        row = _nearest_interval_row(
+            gas_pack.gas_df, f"{species}(g)", 400.0, allow_extrapolation=True
+        )
+        assert int(row["T_interval"]) == 2
+        with pytest.raises(ImccGasTemperatureOutsideDomainError):
+            _nearest_interval_row(gas_pack.gas_df, f"{species}(g)", 400.0)
+
+
+def test_interval_selection_keeps_a_valid_zero_t_min_row() -> None:
+    # An override table may declare T_min = 0.  At T = 1 K only that row is
+    # valid; the selector must not return the invalid T_min = 2 K row.
+    frame = pd.DataFrame(
+        {"T_min": [2.0, 0.0], "T_max": [5.0, 2.0], "T_interval": [2, 1]},
+        index=["X(g)", "X(g)"],
+    )
+    row = _nearest_interval_row(frame, "X(g)", 1.0)
+    assert float(row["T_min"]) == 0.0
+
+
 def test_channel_coverage_ledger_is_closed() -> None:
     implemented = set(IMCC_GAS_CHANNEL_SPECIES)
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)

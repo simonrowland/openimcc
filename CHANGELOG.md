@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Below every declared gas interval, extrapolate from the lowest interval rather than the first row in file order.
 - Made Na2O and K2O gas channels optional when alternate tables lack their rows, and report each skipped channel.
 - Added a second JANAF-fitted Shomate interval for the battery gas species over
   500–1500 K. It uses at least ten complete 100 K JANAF nodes per species,

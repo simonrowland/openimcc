@@ -1171,8 +1171,10 @@ def _nearest_interval_row(
     """Select one thermodynamic interval for ``species`` at temperature ``T``.
 
     Selection inside this function: among rows with ``T_min <= T``, take the
-    one with the largest ``T_min``. If every ``T_min`` is ``> T``, take
-    ``rows.iloc[0]`` (first row of that species in the loaded frame). Then,
+    one with the largest ``T_min``. If every ``T_min`` is ``> T``, take the
+    row with the smallest ``T_min``: the interval nearest to ``T``, because
+    low-temperature intervals are appended after the rows they extend. Ties on
+    ``T_min`` resolve to the first such row in file order. Then,
     unless ``allow_extrapolation=True``, raise
     ``ImccGasTemperatureOutsideDomainError`` when ``T`` is outside that
     selected row's ``[T_min, T_max]``. That strict-mode refusal is the V2
@@ -1192,13 +1194,14 @@ def _nearest_interval_row(
             f"no JANAF G(T) row for gas species {species!r}"
         )
     t_mins = rows["T_min"].astype(float).to_numpy()
-    # Largest T_min that is <= T; fallback to rows.iloc[0] if T is below every
-    # T_min in the loaded frame.
+    # Largest T_min that is <= T; below every T_min, the lowest interval.
+    # Masking with -inf rather than multiplying by the boolean mask keeps a
+    # valid row whose T_min is 0 from losing to an invalid row (0 * False == 0).
     valid = t_mins <= T
     if np.any(valid):
-        idx = int(np.argmax(t_mins * valid))  # argmax of masked mins gives largest <= T
+        idx = int(np.argmax(np.where(valid, t_mins, -np.inf)))
     else:
-        idx = 0
+        idx = int(np.argmin(t_mins))
     selected = rows.iloc[idx]
     if not allow_extrapolation and (T < selected["T_min"] or T > selected["T_max"]):
         raise ImccGasTemperatureOutsideDomainError(
