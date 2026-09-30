@@ -435,6 +435,29 @@ flag as a structural limit of the complex set, not as a measured
 disagreement. The fix is to add the orthosilicate and pyrosilicate
 complexes. Nothing is retuned.
 
+#### Known limit: complex rows below their demonstrated range
+
+The complex rows are evaluated from 1700 K, but several are Fegley & Cameron
+(1987) `A + B/T` fits that the paper demonstrated only over 2500–3500 K.
+Below 2500 K they are extrapolated. Against JANAF (4th ed.) reaction Gibbs
+energies (the complex minus its parent liquids), the packaged rows differ at
+1700–2500 K by up to 6.4 kJ/mol for MgAl2O4 (at 1700 K), 1.1 kJ/mol for
+Mg2SiO4, 0.7 kJ/mol for MgTi2O5, and 0.3–0.4 kJ/mol for MgTiO3, Mg2TiO4 and
+MgSiO3. MgAl2O4 also differs from JANAF by about 6 kJ/mol (0.11 dex) inside
+2500–3000 K, so that row is not JANAF-consistent anywhere in the domain.
+
+The alkali-silicate complexes cannot be rebuilt from crystal thermochemistry,
+fusion data and liquid heat capacities with the pack's own parent liquids:
+the reconstruction misses K2SiO3 (SF04 Table 2) by 56 kJ/mol (1.23 dex) and
+Na2SiO3 and Na2Si2O5 by about 100 kJ/mol. These rows are assessed or
+empirical fits, so they cannot be extended below 1700 K by that route, and
+evaluations below 1700 K are extrapolations (`evaluate(...,
+allow_extrapolation=True)` flags them). The silica parent adds a further
+caveat: SF04 places the SiO2 transition at 1996 K, while JANAF adopts about
+1696 K and tabulates no supercooled liquid branch below 1800 K.
+
+The pack is unchanged: every row is its source's published value.
+
 ### Independently pinned behaviour
 
 The independently pinned contract is the analytic binary and limits in

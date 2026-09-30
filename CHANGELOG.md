@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Documented a known limit: complex rows below their demonstrated range, and their consistency with JANAF.
 - Extended element completeness screening to 1200–3000 K, recomputed C2/C3
   maxima, and recorded C4 gaps in gas and parent-liquid coverage below 1500 K.
 - Below every declared gas interval, extrapolate from the lowest interval rather than the first row in file order.
