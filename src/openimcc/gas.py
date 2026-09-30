@@ -568,8 +568,8 @@ IMCC_PARENT_OXIDES = (
 )
 
 # ADR-004 research note: each new JANAF parent row passes its declared-range
-# C4 check through 3000 K (Al 2500 K, Si 1800 K, Mg/Ca 2200 K). The full-domain
-# 1500-3000 K ELEMENT_STATUS below remains the unchanged default-pack result.
+# C4 check through 3000 K (Al 2500 K, Si 1800 K, Mg/Ca 2200 K). ELEMENT_STATUS
+# evaluates C4 over 1200-3000 K; rows starting above 1200 K remain incomplete.
 ELEMENT_STATUS: dict[str, dict[str, object]] = {
     "O": {
         "status": "input (fO2 pinned)",
@@ -586,7 +586,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "c2_candidates": (("O-012", "SiO"), ("O-040", "SiO2")),
         "c3_ion_bound": {
             "max_ratio": 6.808906737782053e-11,
-            "isolated_bound": 3.566077849548843,
+            "isolated_bound": 714.5762689913709,
             "temperature_K": 3000.0,
             "fO2": 1.0e-8,
             "neutral_pressure_bar": 1.5763211560528259,
@@ -663,7 +663,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "c2_candidates": (("Ca-030", "CaO"),),
         "c3_ion_bound": {
             "max_ratio": 3.50807481048196e-4,
-            "isolated_bound": 4.382617387084302,
+            "isolated_bound": 70.1153778146038,
             "temperature_K": 3000.0,
             "fO2": 1.0e-4,
             "neutral_pressure_bar": 1.79018015475414e-5,
@@ -693,7 +693,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         ),
         "c3_ion_bound": {
             "max_ratio": 1.9018841724418827e-5,
-            "isolated_bound": 122.5358076454767,
+            "isolated_bound": 553185.2606115262,
             "temperature_K": 3000.0,
             "fO2": 1.0e-4,
             "neutral_pressure_bar": 0.0008953831189603608,
@@ -711,14 +711,14 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         },
     },
     "Ti": {
-        "status": "complete",
-        "criteria": {"C1": True, "C2": True, "C3": True, "C4": True},
+        "status": "gas-partial",
+        "criteria": {"C1": True, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "TiO2 and neutral gas rows cover the domain; joint C3 ionisation estimate max 1.538e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "TiO2(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; joint C3 ionisation estimate max 1.538e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("O-022", "TiO"), ("O-046", "TiO2")),
         "c3_ion_bound": {
             "max_ratio": 1.5380904145455499e-6,
-            "isolated_bound": 85193.73597015902,
+            "isolated_bound": 141271120.2829216,
             "temperature_K": 3000.0,
             "fO2": 1.0e-8,
             "neutral_pressure_bar": 0.001677081829708484,
@@ -736,10 +736,10 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         },
     },
     "Na": {
-        "status": "complete-except-ions",
-        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
+        "status": "gas-partial",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
         "validation": "unvalidated",
-        "reason": "Na2O is in the melt basis; joint C3 ionisation estimate max 3.899e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "Na2O(g) starts at 1500 K, so its gas row misses 1200-1500 K; joint C3 ionisation estimate max 3.899e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("Na-008", "NaO"),),
         "c3_ion_bound": {
             "max_ratio": 0.003899100974249993,
@@ -769,10 +769,10 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         },
     },
     "K": {
-        "status": "complete-except-ions",
-        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
+        "status": "gas-partial",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
         "validation": "validated",
-        "reason": "K2O is in the melt basis; joint C3 ionisation estimate max 8.595e-2 at 1700 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "K2O(g) starts at 1500 K, so its gas row misses 1200-1500 K; joint C3 ionisation estimate max 8.595e-2 at 1700 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("K-008", "KO"),),
         "c3_ion_bound": {
             "max_ratio": 0.08595084114328669,
@@ -814,7 +814,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "c2_candidates": (("Cr-010", "CrO"), ("Cr-011", "CrO2"), ("Cr-012", "CrO3")),
         "c3_ion_bound": {
             "max_ratio": 9.727534645001067e-6,
-            "isolated_bound": 0.007775573413629809,
+            "isolated_bound": 0.06627266614919108,
             "temperature_K": 3000.0,
             "fO2": 1.0e-4,
             "neutral_pressure_bar": 0.027214597705363396,
@@ -832,7 +832,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         },
         "c2_screen_maxima": {
             "Cr": {
-                "max_ratio": 1.0, "temperature_K": 1500.0,
+                "max_ratio": 1.0, "temperature_K": 1400.0,
                 "fO2": 1.0e-12, "dominant": "Cr",
             },
             "CrO": {
@@ -840,28 +840,29 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
                 "fO2": 1.0e-6, "dominant": "CrO",
             },
             "CrO2": {
-                "max_ratio": 1.0, "temperature_K": 1500.0,
-                "fO2": 1.0e-10, "dominant": "CrO2",
+                "max_ratio": 1.0, "temperature_K": 1200.0,
+                "fO2": 1.0e-12, "dominant": "CrO2",
             },
             "CrO3": {
-                "max_ratio": 1.0, "temperature_K": 1500.0,
-                "fO2": 1.0e-4, "dominant": "CrO3",
+                "max_ratio": 1.0, "temperature_K": 1200.0,
+                "fO2": 1.0e-8, "dominant": "CrO3",
             },
         },
     },
     "V": {
-        "status": "gas-complete-melt-pending",
-        "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
         "reason": (
-            "V2O3 activity is caller-supplied; joint C3 ionisation estimate "
+            "V2O3(l) starts at 1500 K, so its parent-liquid row misses "
+            "1200-1500 K; activity is caller-supplied; joint C3 ionisation estimate "
             "max 2.989e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, "
             "NaO+) and thermal electrons from walls or other sources are outside this estimate."
         ),
         "c2_candidates": (("O-026", "VO"), ("O-076", "VO2")),
         "c3_ion_bound": {
             "max_ratio": 2.988595777349745e-6,
-            "isolated_bound": 6.0450003774539836,
+            "isolated_bound": 243.36770791109146,
             "temperature_K": 3000.0,
             "fO2": 1.0e-8,
             "neutral_pressure_bar": 0.025413160104762487,
@@ -887,20 +888,20 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
                 "fO2": 1.0e-12, "dominant": "VO",
             },
             "VO2": {
-                "max_ratio": 1.0, "temperature_K": 1500.0,
+                "max_ratio": 1.0, "temperature_K": 1200.0,
                 "fO2": 1.0e-12, "dominant": "VO2",
             },
         },
     },
     "Nb": {
-        "status": "gas-complete-melt-pending",
-        "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "NbO2 activity is caller-supplied; joint C3 ionisation estimate max 5.418e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "NbO2(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; activity is caller-supplied; joint C3 ionisation estimate max 5.418e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("Nb-011", "NbO"), ("Nb-015", "NbO2")),
         "c3_ion_bound": {
             "max_ratio": 5.417802850424681e-8,
-            "isolated_bound": 2102618.226270338,
+            "isolated_bound": 3191171712.774323,
             "temperature_K": 3000.0,
             "fO2": 1.0e-12,
             "neutral_pressure_bar": 0.01666434293365431,
@@ -919,7 +920,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "c2_screen_maxima": {
             "Nb": {"max_ratio": 0.9601449643935895, "temperature_K": 3000.0, "fO2": 1.0e-12, "dominant": "NbO"},
             "NbO": {"max_ratio": 1.0, "temperature_K": 2200.0, "fO2": 1.0e-12, "dominant": "NbO"},
-            "NbO2": {"max_ratio": 1.0, "temperature_K": 1500.0, "fO2": 1.0e-12, "dominant": "NbO2"},
+            "NbO2": {"max_ratio": 1.0, "temperature_K": 1200.0, "fO2": 1.0e-12, "dominant": "NbO2"},
         },
     },
     "Mn": {

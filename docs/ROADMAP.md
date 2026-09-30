@@ -7,7 +7,7 @@ measured against the code rather than estimated.
 
 ## Element completeness
 
-On the README basalt over 1500–3000 K and fO2 = 1e-12, 1e-10, 1e-8, 1e-6,
+On the README basalt over 1200–3000 K and fO2 = 1e-12, 1e-10, 1e-8, 1e-6,
 1e-4, `complete` requires an internally computed parent-oxide activity (C1),
 every source-listed neutral E–O gas included or screened below a maximum pressure
 ratio of 1e-4 (C2), modelled charged species or a joint Saha ionisation estimate
@@ -30,12 +30,12 @@ parent liquid rows are available only from an external private pack.
 | Fe | complete | yes | yes | yes | yes | unvalidated | FeO and neutral gas rows cover the domain; joint C3 ionisation estimate max 3.064e-7 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
 | Ca | gas-partial | yes | yes | no | no | unvalidated | CaO liquid row starts at 2900 K; joint C3 ionisation estimate max 3.508e-4 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
 | Al | gas-partial | yes | yes | yes | no | unvalidated | Al2O3 liquid row starts at 2327 K; joint C3 ionisation estimate max 1.902e-5 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Ti | complete | yes | yes | yes | yes | unvalidated | TiO2 and neutral gas rows cover the domain; joint C3 ionisation estimate max 1.538e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Na | complete-except-ions | yes | yes | no | yes | unvalidated | Na2O is in the melt basis; joint C3 ionisation estimate max 3.899e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| K | complete-except-ions | yes | yes | no | yes | validated | K2O is in the melt basis; joint C3 ionisation estimate max 8.595e-2 at 1700 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Ti | gas-partial | yes | yes | yes | no | unvalidated | TiO2(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; joint C3 ionisation estimate max 1.538e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Na | gas-partial | yes | yes | no | no | unvalidated | Na2O(g) starts at 1500 K, so its gas row misses 1200-1500 K; joint C3 ionisation estimate max 3.899e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| K | gas-partial | yes | yes | no | no | validated | K2O(g) starts at 1500 K, so its gas row misses 1200-1500 K; joint C3 ionisation estimate max 8.595e-2 at 1700 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
 | Cr | gas-partial | no | yes | yes | no | unvalidated | Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K and Cr2O3(l) at 1900 K; joint C3 ionisation estimate max 9.728e-6 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| V | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | V2O3 activity is caller-supplied; joint C3 ionisation estimate max 2.989e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Nb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | NbO2 activity is caller-supplied; joint C3 ionisation estimate max 5.418e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| V | gas-partial | no | yes | yes | no | unvalidated | V2O3(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; activity is caller-supplied; joint C3 ionisation estimate max 2.989e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Nb | gas-partial | no | yes | yes | no | unvalidated | NbO2(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; activity is caller-supplied; joint C3 ionisation estimate max 5.418e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
 | Mn | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
 | Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
 | Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
@@ -43,9 +43,11 @@ parent liquid rows are available only from an external private pack.
 The research pack `gas-janaf-parent-liquids-research` is opt-in by path; the
 SF04/Lamoreaux default coefficient contract keeps it out of default loads. Its
 branch-limited C4 check passes over each declared liquid range through 3000 K
-(Al from 2500 K, Si from 1800 K, Mg and Ca from 2200 K). The existing full-domain
-1500–3000 K default C4 statuses remain unchanged, and rows remain out of domain
-below their declared liquid branches.
+(Al from 2500 K, Si from 1800 K, Mg and Ca from 2200 K). The 1200–3000 K
+default C4 criterion requires continuous one-bar gas-table and
+parent-liquid coverage. Na2O(g) and K2O(g) lack rows below 1500 K; TiO2(l),
+V2O3(l), and NbO2(l) also start at 1500 K and fail the expanded domain. Rows
+remain out of domain below their declared branches.
 
 ### Low-temperature gas interval (done)
 
