@@ -578,6 +578,9 @@ rows:
     authority: lam1987_transcribed
     method: transcribed
     T_range_K: [2327, 3000]
+    source_table: LH87 Table 2, printed p. 422; anchor from Table 3, printed p. 424
+    correction: The prior -188.14 kK anchor added the Table 1 fusion enthalpy (13.40 kK) to the Table 3 solid anchor (-201.54 kK), double-counting fusion already included in the Table 2 phase functions. Prior row was inherited verbatim from VapoRock data/condensate-thermo-data.csv.
+    corrected_dH298_R_kK: -201.54
     source:
       citation: Lamoreaux, R. H.; Hildenbrand, D. L.; Brewer, L. (1987), High Temperature Vaporization Behavior of Oxides. II, J. Phys. Chem. Ref. Data 16, 419-443.
       doi: 10.1063/1.555799
@@ -604,7 +607,10 @@ rows:
     species_name: Na2O(l)
     authority: lam1984_transcribed
     method: transcribed
-    T_range_K: [825, 3000]
+    T_range_K: [1405, 3000]
+    source_table: LH84 Table 2, printed p. 154; dH298_R anchor from Table 4, printed p. 157
+    correction: The prior coefficients and 825 K lower bound were copied from the NaO2(l) row in LH84 Table 2; retain the correct Na2O(s) Table 4 anchor. Prior row was inherited verbatim from VapoRock data/condensate-thermo-data.csv.
+    certification_note: Corrected LH84 Na2O(l) is less stable than the apparent Gibbs energy derived from JANAF Na-013 at every printed JANAF liquid node from 1600 to 3000 K, by +13.4 kJ/mol at 1600 K, rising to +29.6 kJ/mol at 2400 K and falling to +17.7 kJ/mol at 3000 K. This is a source difference; retain LH84 and do not substitute JANAF.
     source:
       citation: Lamoreaux, R. H.; Hildenbrand, D. L. (1984), High Temperature Vaporization Behavior of Oxides. I, J. Phys. Chem. Ref. Data 13, 151-173.
       doi: 10.1063/1.555706

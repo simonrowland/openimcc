@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Corrected the default Na2O(l) row to LH84 Table 2's Na2O liquid coefficients
+  and 1405 K lower bound; the prior coefficients came from NaO2(l). Corrected
+  Al2O3(l)'s anchor to the LH87 solid 298 K value, removing the fusion
+  enthalpy that had been counted twice. Updated gas comparison results and
+  recorded the Na2O(l)-versus-JANAF source difference.
 - Documented a known limit: complex rows below their demonstrated range, and their consistency with JANAF.
 - Extended element completeness screening to 1200–3000 K, recomputed C2/C3
   maxima, and recorded C4 gaps in gas and parent-liquid coverage below 1500 K.

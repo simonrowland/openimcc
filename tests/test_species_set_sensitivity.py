@@ -239,23 +239,22 @@ def test_sf04_table9_species_set_sensitivities() -> None:
     assert no_kca_k == pytest.approx(2.3, abs=0.1)
     assert base_k > 0.0 < no_kca_k
 
-    # The four nu(Na2O)=0.5 complexes move Na from -1.4164 to -0.5285 dex.
-    # Removing the three nu=1 complexes changes it by only 0.0091 dex.
+    # The corrected parent moves the baseline to +0.1682 dex. The four
+    # nu(Na2O)=0.5 complexes move Na to +1.0561 dex; removing the three nu=1
+    # complexes changes it by only 0.0091 dex.
     # These single-family shifts do NOT add: the families compete for one Na
     # inventory, so with one family gone the other takes up the released Na
     # (99 % of it at this anchor).  Removing all seven together gives
-    # +2.528 dex, past the measured pressure, while the sum of the single
-    # shifts (+0.888 + 0.009 = +0.897 dex) predicts -0.519 dex, still short
-    # of it.  So -0.53 dex is the residual with the nu=1 sinks still binding,
-    # not a remainder that needs another cause.
-    assert base_na == pytest.approx(-1.42, abs=0.05)
-    assert no_na_half_na == pytest.approx(-0.53, abs=0.05)
+    # +4.113 dex, while the sum of single-family shifts remains about +0.897
+    # dex and predicts +1.065 dex. The families compete for one Na inventory,
+    # so these shifts do not add to the joint deletion result.
+    assert base_na == pytest.approx(0.168, abs=0.05)
+    assert no_na_half_na == pytest.approx(1.056, abs=0.05)
     assert abs(no_na_one_na - base_na) < 0.05
-    assert no_na_all_na == pytest.approx(2.528, abs=0.005)
-    # The claim itself, as a sign test: the additive prediction stays short
-    # of the measured pressure, and the joint deletion crosses it.
+    assert no_na_all_na == pytest.approx(4.113, abs=0.005)
+    # The joint deletion rises well above the sum of single-family shifts.
     sum_of_singles = (no_na_half_na - base_na) + (no_na_one_na - base_na)
-    assert base_na + sum_of_singles < 0.0 < no_na_all_na
+    assert no_na_all_na > base_na + sum_of_singles > 0.0
     print(
         "SF04 species sensitivity: "
         f"K {base_k:+.4f} -> {no_kca_k:+.4f}; "

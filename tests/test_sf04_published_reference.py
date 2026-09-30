@@ -45,9 +45,9 @@ SPECIES_MAX_ABS_RESIDUAL_DEX = {
     "KO": 0.262,
     "Mg": 0.959,
     "MgO": 1.242,
-    "Na": 1.417,
-    "Na2": 2.212,
-    "NaO": 1.827,
+    "Na": 0.684,
+    "Na2": 0.784,
+    "NaO": 1.124,
     "O": 0.028,
     "O2": 0.000,
     "SiO": 1.076,
@@ -58,25 +58,25 @@ SPECIES_MAX_ABS_RESIDUAL_DEX = {
 }
 SPECIES_RESIDUAL_MARGIN_DEX = 0.300
 SIGNED_MEDIAN_EXPECTATIONS_DEX = {
-    "Na": -1.082006,
-    "NaO": -1.098408,
-    "Na2": -2.212,
+    "Na": 0.484862,
+    "NaO": 0.458842,
+    "Na2": 0.783760,
     "O": 0.014,
     "SiO": 0.157,
     "FeO": 0.214348,
 }
 SIGNED_MEDIAN_TOLERANCE_DEX = 0.005
 TABLE9_SIGNED_MEDIAN_EXPECTATIONS_DEX = {
-    "Na": -1.416,
-    "NaO": -1.615,
+    "Na": 0.168216,
+    "NaO": -0.030148,
     "O": -0.007,
     "SiO": -0.009,
     "FeO": 0.009,
 }
 FIG10_SIGNED_MEDIAN_EXPECTATIONS_DEX = {
-    "Na": -1.079,
-    "NaO": -1.096,
-    "Na2": -2.212,
+    "Na": 0.492202,
+    "NaO": 0.463188,
+    "Na2": 0.783760,
     "O": 0.014,
     "SiO": 0.175421,
     "FeO": 0.223,
@@ -363,7 +363,6 @@ def test_sf04_engine_residual_report_and_gate() -> None:
         }
         for source_name, source_values in source_grouped.items()
     }
-
     # Signed medians are the accuracy contract; the abs-max values below are
     # regression tripwires only. O2 is omitted because it is a pin identity.
     for species, expected in SIGNED_MEDIAN_EXPECTATIONS_DEX.items():

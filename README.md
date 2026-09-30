@@ -159,15 +159,15 @@ Output:
 ```text
 activities: {'SiO2': '0.329959', 'MgO': '0.00468755', 'FeO': '0.106157', 'CaO': '5.58726e-05', 'Al2O3': '0.0165703', 'TiO2': '0.00299186', 'Na2O': '2.47359e-10', 'K2O': '2.29657e-19'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
-melt notices: ('Na and K activities from IMCC-SF04 are biased low against published anchors (SF04 Table 9 Na −1.4 dex; Hastie 1981 K −0.9 dex); see https://github.com/simonrowland/openimcc',)
-gas: bar {'Na': '1.0369e-05', 'K': '7.67598e-08'}
+melt notices: ('K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS pressures (case 4: −0.89 dex); see https://github.com/simonrowland/openimcc',)
+gas: bar {'Na': '0.000398236', 'K': '7.67598e-08'}
 Mg domain flag: T=1800.0 K outside declared G(T) interval for 'MgO(l)' [3100, 3500] K
 ```
 
 The `paper-demonstrated-window` flag records that some complex rows are outside
-their paper-demonstrated temperature range. The notice is a known low Na/K
-activity bias against the cited anchors; it is part of the result, not a reason
-to hide those activities. The gas `Mg` flag records extrapolation below the
+their paper-demonstrated temperature range. The notice records the known low K
+prediction against Hastie 1981 KEMS pressures; it is part of the result, not a
+reason to hide those activities. The gas `Mg` flag records extrapolation below the
 declared MgO(l) thermodynamic row, so the pressure remains a prediction with a
 visible limitation.
 
@@ -341,27 +341,28 @@ definition.
 
 | species | n | signed median | abs max |
 |---|--:|--:|--:|
-| Na | 1 | −1.416 | 1.416 |
-| NaO | 1 | −1.615 | 1.615 |
+| Na | 1 | +0.168 | 0.168 |
+| NaO | 1 | −0.030 | 0.030 |
 | O | 1 | −0.007 | 0.007 |
 | SiO | 1 | −0.009 | 0.009 |
 | FeO | 1 | +0.009 | 0.009 |
 
-The printed Table 9 Na anchor is −1.42 dex. Na, NaO and Na2 are low at every
-comparable point: Na and NaO are about 1.1 dex low in aggregate, with medians
-of −1.082 dex (n = 36) and −1.098 dex (n = 28); Na2 is −2.212 dex at its one
-digitized point. O, SiO and FeO each match their own Table 9 anchor to about
-0.01 dex (−0.007, −0.009 and +0.009), so this is not a unit or fO2-pin error. The Fig. 10 medians for SiO and FeO sit
-about +0.2 dex above the transcribed anchor; that is a figure-versus-table
-difference in the paper's digitized data, not a reconciled result.
+The printed Table 9 Na anchor residual is now +0.168 dex (about +0.17). Across
+comparable Fig. 10 points, Na and NaO have positive medians of +0.492 dex
+(n = 35) and +0.463 dex (n = 27); Na2 is +0.784 dex at its one digitized point.
+NaO crosses zero at some points. O, SiO and FeO each match their own Table 9
+anchor to about 0.01 dex (−0.007, −0.009 and +0.009), so this is not a unit or
+fO2-pin error. The Fig. 10 medians for SiO and FeO sit about +0.2 dex above
+the transcribed anchor; that is a figure-versus-table difference in the
+paper's digitized data, not a reconciled result.
 
 #### Fig. 10 points (digitized)
 
 | species | n | signed median | abs max |
 |---|--:|--:|--:|
-| Na | 35 | −1.079 | 1.364 |
-| NaO | 27 | −1.096 | 1.827 |
-| Na2 | 1 | −2.212 | 2.212 |
+| Na | 35 | +0.492 | 0.684 |
+| NaO | 27 | +0.463 | 1.124 |
+| Na2 | 1 | +0.784 | 0.784 |
 | O | 34 | +0.014 | 0.028 |
 | SiO | 30 | +0.175 | 1.075 |
 | FeO | 31 | +0.223 | 0.830 |

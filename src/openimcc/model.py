@@ -130,8 +130,8 @@ _PARENT_CATION_SYMBOL = MappingProxyType(
 # predict-and-flag threshold, not a coefficient change.
 _SPECIES_COVERAGE_EDGE_RATIO = 1.9100549074388355e-3
 _ALKALI_BIAS_NOTICE = (
-    "Na and K activities from IMCC-SF04 are biased low against published "
-    "anchors (SF04 Table 9 Na −1.4 dex; Hastie 1981 K −0.9 dex); see "
+    "K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS "
+    "pressures (case 4: −0.89 dex); see "
     "https://github.com/simonrowland/openimcc"
 )
 

@@ -981,6 +981,34 @@ def test_na2o_liquid_to_gas_reaction_uses_new_gas_row_and_existing_condensate() 
     assert gas_g - hand_liquid_g == pytest.approx(hand_reaction_g, abs=1e-3)
 
 
+def test_na_parent_liquid_gap_flags_gas_but_does_not_limit_melt_activity() -> None:
+    from openimcc import evaluate as evaluate_imcc
+
+    composition = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    melt = evaluate_imcc(composition, 1800.0, basis_type="wt")
+    assert melt.activity("Na2O") > 0.0
+
+    gas = evaluate_gas(
+        {"Na2O": melt.activity("Na2O")},
+        1200.0,
+        1.0e-10,
+        load_gas_datapack(),
+        gas_species=("Na2O",),
+    )
+    assert gas["Na2O"] > 0.0
+    assert "Na2O(l)" in gas.domain_flags["Na2O"]
+    assert "[1405, 3000] K" in gas.domain_flags["Na2O"]
+
+
 def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> None:
     """Fitted liquid rows reproduce their JANAF source, not just their fit.
 
@@ -1304,7 +1332,7 @@ _CONDENSATE_EXPECTED = {
     "Al2O3(l)": (
         2327,
         3000,
-        -188.14,
+        -201.54,
         232.345,
         -336.622,
         193.672,
@@ -1314,7 +1342,7 @@ _CONDENSATE_EXPECTED = {
     ),
     "SiO2(l)": (1996, 3000, -109.53, 2.12, 7.6492, -1.2588, 0.0998, 0.0, "LAM1987"),
     "SiO2(cr)": (1000, 1996, -109.53, 1.937, 8.59, -1.935, 0.225, 0.0, "LAM1987"),
-    "Na2O(l)": (825, 3000, -50.17, 4.82, 19.292, -5.267, 0.623, 0.0, "LAM1984"),
+    "Na2O(l)": (1405, 3000, -50.17, 7.67, 6.193, 0.0, 0.0, 0.0, "LAM1984"),
     "K2O(l)": (1190, 3000, -43.58, 0.8, 18.889, -4.532, 0.467, 0.0, "LAM1984"),
     "FeO(l)": (1000, 5000, -30.01, 6.72, 6.588, -1.248, 0.150, -0.007697, "JANAF"),
     # Fitted by tools/build_gas_tables.py from JANAF O-044, not transcribed.
@@ -1381,6 +1409,61 @@ def test_condensate_rows_match_the_current_published_coefficients() -> None:
         ):
             assert actual[column] == value
         assert actual["Ref"] == expected[8]
+
+
+def test_lamoreaux_condensates_match_the_correct_source_cells() -> None:
+    """Pin liquid rows to their printed LAM table cells and phase anchors."""
+    rows = pd.read_csv(GAS_DATA / "condensate.csv").set_index("species_name")
+    na = rows.loc["Na2O(l)"]
+    assert tuple(
+        float(na[key])
+        for key in ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
+    ) == (
+        -50.17,
+        7.67,
+        6.193,
+        0.0,
+        0.0,
+        0.0,
+    )
+    assert (int(na["T_min"]), int(na["T_max"])) == (1405, 3000)
+    al = rows.loc["Al2O3(l)"]
+    assert tuple(
+        float(al[key])
+        for key in ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
+    ) == (
+        -201.54,
+        232.345,
+        -336.622,
+        193.672,
+        -48.1032,
+        4.4461,
+    )
+    assert (int(al["T_min"]), int(al["T_max"])) == (2327, 3000)
+
+
+def test_corrected_al2o3_liquid_matches_janaf_al100() -> None:
+    """Corrected LH87 liquid G_app agrees with independent JANAF Al-100."""
+    from openimcc.gas import _lamor_gibbs
+
+    row = load_gas_datapack().oxide_df.loc["Al2O3(l)"]
+    source_rows = [
+        source
+        for source in _complete_rows("Al-100")
+        if 2600.0 <= source["temperature"] <= 3000.0
+    ]
+    assert [source["temperature"] for source in source_rows] == [
+        2600.0,
+        2700.0,
+        2800.0,
+        2900.0,
+        3000.0,
+    ]
+    for source in source_rows:
+        assert abs(
+            _lamor_gibbs(source["temperature"], row)
+            - _source_g_app_from_row("Al-100", source)
+        ) / 1000.0 < 0.5
 
 
 def test_nb_low_condensate_interval_uses_liquid_rows_and_keeps_seam() -> None:

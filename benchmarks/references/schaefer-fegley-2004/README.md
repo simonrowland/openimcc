@@ -198,8 +198,8 @@ TiO2(l) parent and the Ti gas channels were added; its residual is
 | `digitized_figure` | 350 | 304 |
 | `derived_table7` | 350 | 304 |
 
-The all-comparable residual summary is min −2.211553, median 0.019505, p95
-0.810211, max 1.399972, and RMSE 0.662079 dex.
+The all-comparable residual summary is min −1.241290, median 0.217319, p95
+0.839166, max 1.399972, and RMSE 0.452991 dex.
 
 The residual gate is per species, not one 3.0-dex gate. Each gate is the
 measured maximum absolute residual from this run, rounded upward to 0.001 dex,
@@ -214,22 +214,20 @@ cannot raise its own threshold; these are failure gates, not fit targets.
 | KO | 2 | 0.261598 | 0.562 |
 | Mg | 25 | 0.958989 | 1.259 |
 | MgO | 8 | 1.241290 | 1.542 |
-| Na | 36 | 1.416392 | 1.717 |
-| Na2 | 1 | 2.211553 | 2.512 |
-| NaO | 28 | 1.826513 | 2.127 |
+| Na | 36 | 0.683596 | 0.984 |
+| Na2 | 1 | 0.783760 | 1.084 |
+| NaO | 28 | 1.123871 | 1.424 |
 | O | 35 | 0.027536 | 0.328 |
 | O2 | 36 | 0.000000 | 0.300 |
 | SiO | 31 | 1.075267 | 1.376 |
 | SiO2 | 25 | 1.056831 | 1.357 |
 | TiO2 | 1 | 0.382382 | 0.683 |
 
-Large residuals are findings in this comparison, not adjusted values. In
-particular, openimcc's Na, NaO, and Na2 are below the SF04 reference at every
-comparable point; Na has median residual −1.08 dex and is −1.42 dex at the
-printed Table 9 anchor. O, SiO, and FeO are close at that anchor (about the
-0.02-dex scale; this centroid run reports −0.058, −0.047, and −0.037 dex), so
-the sodium result is not a pin or unit error. It is a model-to-model
-difference to diagnose later; no model tuning is part of this reference set.
+Large residuals are findings in this comparison, not adjusted values. After
+correcting the LH84 Na2O(l) row, the Table 9 Na anchor residual is +0.168 dex;
+the comparable-point median residuals are +0.485 dex for Na, +0.459 dex for
+NaO, and +0.784 dex for Na2. O, SiO, and FeO remain close at their anchors;
+no model tuning is part of this reference set.
 The test prints the same per-species, per-rock, and per-method report so a
 channel-specific review can distinguish a printed anchor issue from a
 digitization issue.

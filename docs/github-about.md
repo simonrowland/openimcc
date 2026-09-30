@@ -43,8 +43,8 @@ liquid, and pairs with MELTS-family codes rather than competing with them.
 
 | species | n | signed median residual (dex) |
 |---|--:|--:|
-| Na | 1 | −1.416 |
-| NaO | 1 | −1.615 |
+| Na | 1 | +0.168 |
+| NaO | 1 | −0.030 |
 | O | 1 | −0.007 |
 | SiO | 1 | −0.009 |
 | FeO | 1 | +0.009 |
@@ -53,22 +53,21 @@ liquid, and pairs with MELTS-family codes rather than competing with them.
 
 | species | n | signed median residual (dex) |
 |---|--:|--:|
-| Na | 35 | −1.079 |
-| NaO | 27 | −1.096 |
-| Na2 | 1 | −2.212 |
+| Na | 35 | +0.492 |
+| NaO | 27 | +0.463 |
+| Na2 | 1 | +0.784 |
 | O | 34 | +0.014 |
 | SiO | 30 | +0.175 |
 | FeO | 31 | +0.223 |
 
-Na, NaO and Na2 are low at every comparable point; Na and NaO are about 1.1
-dex low in aggregate, with medians of −1.082 dex (n = 36) and −1.098 dex
-(n = 28), while Na2 is −2.212 dex at its one digitized point. The
-printed Table 9 Na anchor is −1.42 dex. O, SiO and FeO each match their own
-Table 9 anchor to about 0.01 dex (O −0.007, SiO −0.009, FeO +0.009), so this
-is not a unit or fO2-pin error. The Fig. 10 medians
-for SiO and FeO sit about +0.2 dex above the transcribed anchor; that is a
-figure-versus-table difference in the paper's digitized data, not a reconciled
-result. O2 is the fO2 pin identity, not agreement evidence.
+The printed Table 9 Na anchor residual is +0.168 dex (about +0.17). Across
+comparable Fig. 10 points, Na and NaO have positive medians of +0.492 dex
+(n = 35) and +0.463 dex (n = 27); Na2 is +0.784 dex at its one digitized point.
+NaO crosses zero at some points. O, SiO and FeO each match their own Table 9
+anchor to about 0.01 dex (O −0.007, SiO −0.009, FeO +0.009); O2 is the fO2 pin
+identity, not agreement evidence. The Fig. 10 medians for SiO and FeO sit
+about +0.2 dex above the transcribed anchor; that is a figure-versus-table
+difference in the paper's digitized data, not a reconciled result.
 
 Plante 1979 KEMS K pressures agree to median +0.09 dex (RMSE 0.20). The
 low-temperature drift is about +0.27 dex at about 1250 K (n = 6), falling to
