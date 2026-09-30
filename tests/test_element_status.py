@@ -590,34 +590,41 @@ def _c4_rows_cover_domain(
     parent = parent_by_element.get(element)
     if parent is None or f"{parent}(l)" not in pack.oxide_df.index:
         return False
-    liquid = pack.oxide_df.loc[f"{parent}(l)"]
-    if liquid["T_min"] > domain_start or liquid["T_max"] < domain_end:
-        return False
-    source = by_key.get(
-        (
-            "condensate",
-            f"{parent}(l)",
-            (int(liquid["T_min"]), int(liquid["T_max"])),
+    liquid_rows = pack.oxide_df.loc[pack.oxide_df.index == f"{parent}(l)"]
+    coverage_end = domain_start
+    for _, liquid in liquid_rows.sort_values("T_min").iterrows():
+        row_start = max(domain_start, int(liquid["T_min"]))
+        row_end = min(domain_end, int(liquid["T_max"]))
+        if row_end < row_start:
+            continue
+        if row_start > coverage_end:
+            return False
+        source = by_key.get(
+            (
+                "condensate",
+                f"{parent}(l)",
+                (int(liquid["T_min"]), int(liquid["T_max"])),
+            )
         )
-    )
-    if source is None or not (
-        source["T_range_K"][0] <= domain_start
-        and source["T_range_K"][1] >= domain_end
-    ):
-        return False
-    if source["authority"] == "janaf_fitted":
-        return source["method"] == "fitted" and _one_bar_janaf_source(
-            source["table_id"]
-        )
-    return source["authority"] in {
-        "janaf_transcribed",
-        "lam1984_transcribed",
-        "lam1987_transcribed",
-        "secondary_transcription_unverified_primary",
-    } and source["method"] in {
-        "transcribed",
-        "transcribed_secondary_unverified_primary",
-    }
+        if source is None:
+            return False
+        if source["authority"] == "janaf_fitted":
+            if source["method"] != "fitted" or not _one_bar_janaf_source(
+                source["table_id"]
+            ):
+                return False
+        elif source["authority"] not in {
+            "janaf_transcribed",
+            "lam1984_transcribed",
+            "lam1987_transcribed",
+            "secondary_transcription_unverified_primary",
+        } or source["method"] not in {
+            "transcribed",
+            "transcribed_secondary_unverified_primary",
+        }:
+            return False
+        coverage_end = max(coverage_end, row_end)
+    return coverage_end >= domain_end
 
 
 def test_status_criteria_and_melt_basis_are_consistent() -> None:

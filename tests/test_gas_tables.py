@@ -1420,6 +1420,16 @@ def test_nb_low_condensate_interval_uses_liquid_rows_and_keeps_seam() -> None:
         low_provenance["max_residual_J_per_mol"], abs=1.0e-6
     )
     assert max(residuals) < 1.0e-5
+    for temperature in (1100.0, 1199.9):
+        selected = _oxide_row_for_T(
+            pack.oxide_df, "NbO2(l)", temperature, allow_extrapolation=True
+        )
+        assert int(selected["T_min"]) == 1200
+        if temperature == 1100.0:
+            source = next(row for row in source_rows if row["temperature"] == 1100.0)
+            assert _lamor_gibbs(temperature, selected) == pytest.approx(
+                _source_g_app_from_row("Nb-013", source), abs=1.0e-8
+            )
     seam_log10 = (
         _lamor_gibbs(1500.0, low) - _lamor_gibbs(1500.0, high)
     ) / (R_J_MOL_K * 1500.0 * math.log(10.0))

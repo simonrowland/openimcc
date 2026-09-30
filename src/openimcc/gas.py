@@ -569,7 +569,8 @@ IMCC_PARENT_OXIDES = (
 
 # ADR-004 research note: each new JANAF parent row passes its declared-range
 # C4 check through 3000 K (Al 2500 K, Si 1800 K, Mg/Ca 2200 K). ELEMENT_STATUS
-# evaluates C4 over 1200-3000 K; branch gaps below 1200 K remain incomplete.
+# evaluates C4 over 1200-3000 K; TiO2(l) has a 1200-1500 K gap and V2O3(l)
+# has a 1200-1600 K gap.
 ELEMENT_STATUS: dict[str, dict[str, object]] = {
     "O": {
         "status": "input (fO2 pinned)",
@@ -1217,27 +1218,11 @@ def _oxide_row_for_T(
     df: pd.DataFrame, oxide: str, T: float, allow_extrapolation: bool = False
 ) -> pd.Series:
     """Select the condensate interval closest to T, refusing extrapolation by default."""
-    pd = _pandas()
-
     if oxide not in df.index:
         raise ImccGasSpeciesNotFoundError(
             f"no condensate G(T) row for oxide {oxide!r}"
         )
-    rows = df.loc[[oxide]] if df.index.name is None or not isinstance(df.loc[oxide], pd.DataFrame) else df.loc[oxide]
-    # A condensate oxide may have several intervals; wrap a unique row as a frame.
-    if isinstance(rows, pd.Series):
-        selected = rows
-    else:
-        t_mins = rows["T_min"].astype(float).to_numpy()
-        valid = t_mins <= T
-        idx = int(np.argmax(t_mins * valid)) if np.any(valid) else 0
-        selected = rows.iloc[idx]
-    if not allow_extrapolation and (T < selected["T_min"] or T > selected["T_max"]):
-        raise ImccGasTemperatureOutsideDomainError(
-            f"T={T} K outside declared G(T) interval for {oxide!r} "
-            f"[{selected['T_min']}, {selected['T_max']}] K"
-        )
-    return selected
+    return _nearest_interval_row(df, oxide, T, allow_extrapolation)
 
 
 # --------------------------------------------------------------------------- #
