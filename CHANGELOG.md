@@ -5,6 +5,11 @@
 - Documented a known limit: complex rows below their demonstrated range, and their consistency with JANAF.
 - Extended element completeness screening to 1200–3000 K, recomputed C2/C3
   maxima, and recorded C4 gaps in gas and parent-liquid coverage below 1500 K.
+- Added 500–1500 K interval 2 rows for Na2O(g) and K2O(g), using LH84
+  formation/entropy anchors with piecewise NASA Glenn heat-capacity functions;
+  added a 1200–1500 K NbO2(l) interval while preserving its existing row.
+- Recorded the JANAF glass-branch limits for TiO2(l) and V2O3(l); their C4
+  gaps remain because their liquid branches begin at 1400 K and 1600 K.
 - Below every declared gas interval, extrapolate from the lowest interval rather than the first row in file order.
 - Made Na2O and K2O gas channels optional when alternate tables lack their rows, and report each skipped channel.
 - Added a second JANAF-fitted Shomate interval for the battery gas species over

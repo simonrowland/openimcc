@@ -438,6 +438,7 @@ rows:
     source_sha256: 40234d2520719d8aa35edfcbbb0d21102c82193d043f57b637f56c44340f613b
     authority: nasa_glenn_fitted
     method: fitted
+    T_interval: 1
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 4.87127108499408e-05
     max_residual_log10_K: 1.27222061681281e-09
@@ -465,6 +466,7 @@ rows:
     source_sha256: 8969f24a9ba32161e7990b3975c56e8fd92980294412ab366395cba47661edf2
     authority: nasa_glenn_fitted
     method: fitted
+    T_interval: 1
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 2.56107887253165e-05
     max_residual_log10_K: 6.6887210464544e-10
@@ -474,6 +476,74 @@ rows:
       to 1 bar (+R ln 1.01325 = +0.109443 J/(mol K)); only the Cp(T) shape
       comes from the NASA Glenn card. Certification item: the card's
       Gurvich-derived dfH298 differs from LH84 by about 15 kJ/mol.
+    source:
+      citation: >-
+        McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn
+        Coefficients for Calculating Thermodynamic Properties of Individual
+        Species, NASA/TP-2002-211556; NASA CEA thermo.inp.
+      card_citation: Gurvich,1982 pt1 p377 pt2 p407.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      nasa_dfH298_J_per_mol: -74086.902
+      lh84_dfH_over_R_kK: -7.05
+      lh84_S_over_R: 34.17
+      lh84_Hinc_over_R_kK: 1.64
+  - table: gas
+    species_name: Na2O(g)
+    table_id: NG-0905
+    source_path: data-src/nasa-glenn/NG-0905.json
+    source_sha256: 40234d2520719d8aa35edfcbbb0d21102c82193d043f57b637f56c44340f613b
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.0159880846040323
+    max_residual_log10_K: 1.02435810891672e-06
+    breakpoint_checks:
+      - temperature_K: 1000
+        delta_H_J_per_mol: -5.633175168594711e-05
+        delta_S_J_per_mol_K: 9.920924842875084e-08
+    seam_to_interval_1_at_1500_K:
+      delta_G_J_per_mol: -0.013585992739535868
+      delta_S_J_per_mol_K: -2.632907143151897e-05
+    note: >-
+      LH84 Table 4 supplies dfH298 and S298 (with S298 converted from 1 atm
+      to 1 bar, +R ln 1.01325 = +0.109443 J/(mol K)); NASA Glenn NG-0905 supplies the piecewise Cp(T) shape. The
+      row uses the 300-1000 K card below 1000 K and the 1000-6000 K card above
+      it. NASA's own dfH298 remains a certification item, as for interval 1.
+    source:
+      citation: >-
+        McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn
+        Coefficients for Calculating Thermodynamic Properties of Individual
+        Species, NASA/TP-2002-211556; NASA CEA thermo.inp.
+      card_citation: Gurvich,1982 pt1 p321 pt2 p361.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      nasa_dfH298_J_per_mol: -16559.83
+      lh84_dfH_over_R_kK: -3.82
+      lh84_S_over_R: 31.35
+      lh84_Hinc_over_R_kK: 1.64
+  - table: gas
+    species_name: K2O(g)
+    table_id: NG-0760
+    source_path: data-src/nasa-glenn/NG-0760.json
+    source_sha256: 8969f24a9ba32161e7990b3975c56e8fd92980294412ab366395cba47661edf2
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.0136701830197126
+    max_residual_log10_K: 7.98922894546953e-07
+    breakpoint_checks:
+      - temperature_K: 1000
+        delta_H_J_per_mol: -3.910219944008746e-06
+        delta_S_J_per_mol_K: 5.5295176121423824e-08
+    seam_to_interval_1_at_1500_K:
+      delta_G_J_per_mol: -0.013404304627329111
+      delta_S_J_per_mol_K: -3.6058472119293583e-06
+    note: >-
+      LH84 Table 4 supplies dfH298 and S298 (with S298 converted from 1 atm
+      to 1 bar, +R ln 1.01325 = +0.109443 J/(mol K)); NASA Glenn NG-0760 supplies the piecewise Cp(T) shape. The
+      row uses the 300-1000 K card below 1000 K and the 1000-6000 K card above
+      it. NASA's own dfH298 remains a certification item, as for interval 1.
     source:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn
@@ -576,6 +646,9 @@ rows:
       over 1500-3000 K it is on the liquid branch (Cp = 100.416 J/(mol K)),
       supercooled below the 2130 K melting point as tabulated by JANAF. The
       2200 K source row is parse-ambiguous and is not used, leaving 15 fit rows.
+      Below that interval, 1200/1300 K Cp is glass (76.023/76.525 J/(mol K));
+      the 1400 K GLASS <--> LIQUID marker gives the true liquid-branch start.
+      No row is fitted through the glass branch, so the 1200-1400 K C4 gap stays.
   - table: condensate
     species_name: Cr2O3(l)
     table_id: Cr-015
@@ -608,7 +681,11 @@ rows:
     note: >-
       Fitted by tools/build_gas_tables.py to the runtime condensate form.
       O-063 is the caller-supplied V(III) liquid parent; transition-marked
-      nodes are omitted rather than assigning a crystal/liquid branch.
+      nodes are omitted rather than assigning a crystal/liquid branch. Cp
+      rises through the glass branch at 1200-1500 K (143.718, 146.741,
+      149.841, 152.464 J/(mol K)); the 1600 K GLASS <--> LIQUID marker sets
+      the true liquid-branch start and liquid Cp is 156.900 J/(mol K). The
+      glass branch is not fitted, leaving the 1200-1600 K C4 gap.
   - table: condensate
     species_name: NbO2(l)
     table_id: Nb-013
@@ -622,7 +699,30 @@ rows:
     note: >-
       Fitted by tools/build_gas_tables.py to the runtime condensate form.
       Nb-013 is the caller-supplied Nb(IV) liquid parent; transition-marked
-      nodes are omitted rather than assigning a crystal/liquid branch.
+      nodes are omitted rather than assigning a crystal/liquid branch. The
+      liquid branch starts at the 1000 K GLASS <--> LIQUID marker (liquid Cp
+      94.140 J/(mol K)); this existing 1500-3000 K interval is unchanged.
+  - table: condensate
+    species_name: NbO2(l)
+    table_id: Nb-013
+    source_path: data-src/janaf/Nb-013.yaml
+    source_sha256: 3b455d5adcdfc829fc9b7a8fc2b5162d18120c89c3db6259c438da87df8ac5df
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1100, 1500]
+    max_residual_J_per_mol: 2.3283064365387e-10
+    max_residual_log10_K: 8.68684813804781e-15
+    seam_to_interval_1_at_1500_K:
+      delta_G_J_per_mol: -0.7095854001818225
+      log10_p_low_over_high: -2.470947615791952e-05
+    note: >-
+      This second runtime interval is fitted to the five complete JANAF
+      liquid-branch rows at 1100-1500 K (liquid Cp = 94.140 J/(mol K)); the
+      1000 K transition marker
+      is omitted. The interval begins at 1200 K for C4 and ends at 1500 K, where
+      the existing interval has the higher T_min and remains selected. Nb
+      activity is caller-supplied.
   - table: gas
     species_name: Na(g)
     table_id: Na-005

@@ -163,8 +163,8 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 43 + len(build_gas_tables.LOW_T_GAS_SPECIES)
-    assert len(gas_pack.oxide_df) == 12
+    assert len(gas_pack.gas_df) == 43 + len(build_gas_tables.LOW_T_GAS_SPECIES) + 2
+    assert len(gas_pack.oxide_df) == 13
 
 
 def test_janaf_parent_liquid_research_pack_loads_by_path_and_is_in_domain(
@@ -185,7 +185,11 @@ def test_janaf_parent_liquid_research_pack_loads_by_path_and_is_in_domain(
     interval_1 = gas_pack.gas_df.loc[
         gas_pack.gas_df["T_interval"].astype(int) == 1
     ]
-    assert research.gas_df.equals(interval_1)
+    low_nasa = gas_pack.gas_df.loc[
+        (gas_pack.gas_df["T_interval"].astype(int) == 2)
+        & gas_pack.gas_df.index.isin(("Na2O(g)", "K2O(g)"))
+    ]
+    assert research.gas_df.equals(pd.concat((interval_1, low_nasa)))
     assert research.gas_path == pack_dir / "gas-shomate.csv"
     assert research.oxide_path == pack_dir / "condensate.csv"
 
@@ -281,10 +285,10 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     low_rows = gas_pack.gas_df.loc[
         gas_pack.gas_df["T_interval"].astype(int) == 2
     ]
-    assert len(low_rows) == len(build_gas_tables.LOW_T_GAS_SPECIES)
+    assert len(low_rows) == len(build_gas_tables.LOW_T_GAS_SPECIES) + 2
     assert set(low_rows.index) == {
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
-    }
+    } | {"Na2O(g)", "K2O(g)"}
     assert (high_rows["T_min"] == 1500).all()
     assert (low_rows["T_min"] == build_gas_tables.LOW_FIT_T_MIN).all()
     assert (low_rows["T_max"] == build_gas_tables.LOW_FIT_T_MAX).all()

@@ -420,7 +420,9 @@ def _validate_record_identity(
         )
 
 
-def _nasa7_properties(record: dict[str, Any], temperature: float) -> dict[str, float]:
+def _nasa7_properties(
+    record: dict[str, Any], temperature: float, *, interval_index: int | None = None
+) -> dict[str, float]:
     """Evaluate one NASA Glenn nine-constant interval.
 
     NASA's seven heat-capacity coefficients use the exponents ``-2`` through
@@ -433,14 +435,29 @@ def _nasa7_properties(record: dict[str, Any], temperature: float) -> dict[str, f
     ``H/(R*T)`` and ``S/R`` are dimensionless; multiplying the first by T
     gives H/R in kelvin and ``R*T*(H/(R*T) - S/R)`` gives G in J/mol.
     """
-    interval = next(
-        (
-            candidate
-            for candidate in record["intervals"]
-            if candidate["T_min_K"]["value"] <= temperature <= candidate["T_max_K"]["value"]
-        ),
-        None,
-    )
+    if interval_index is None:
+        interval = next(
+            (
+                candidate
+                for candidate in record["intervals"]
+                if candidate["T_min_K"]["value"]
+                <= temperature
+                <= candidate["T_max_K"]["value"]
+            ),
+            None,
+        )
+    else:
+        try:
+            interval = record["intervals"][interval_index]
+        except IndexError as exc:
+            raise ValueError(
+                f"{record['record_id']} has no NASA-7 interval {interval_index}"
+            ) from exc
+        if not interval["T_min_K"]["value"] <= temperature <= interval["T_max_K"]["value"]:
+            raise ValueError(
+                f"{record['record_id']} interval {interval_index} does not cover "
+                f"{temperature} K"
+            )
     if interval is None:
         # The cards start at 300 K while the thermodynamic reference is
         # 298.15 K.  NASA's polynomial is smooth over that 1.85 K gap, so use
@@ -589,6 +606,9 @@ def _nasa_source_rows(
     lh84: dict[str, Any],
     element_records: dict[str, dict[str, Any]],
     cation_table_id: str,
+    *,
+    fit_t_min: float = FIT_T_MIN,
+    fit_t_max: float = FIT_T_MAX,
 ) -> tuple[list[dict[str, float]], dict[str, float]]:
     """Make JANAF-shaped apparent-G rows from one NASA card.
 
@@ -635,32 +655,67 @@ def _nasa_source_rows(
     card_298 = _nasa7_properties(nasa_record, NASA_STANDARD_T_K)
     card_h298_over_R = NASA_STANDARD_T_K * card_298["h_rt"]
     card_s298_R = card_298["s_R"]
+    breakpoint_checks = []
+    for interval_index, interval in enumerate(nasa_record["intervals"][1:], start=1):
+        breakpoint = float(interval["T_min_K"]["value"])
+        if not fit_t_min <= breakpoint <= fit_t_max:
+            continue
+        left = _nasa7_properties(
+            nasa_record, breakpoint, interval_index=interval_index - 1
+        )
+        right = _nasa7_properties(
+            nasa_record, breakpoint, interval_index=interval_index
+        )
+        delta_h = R_J_MOL_K * breakpoint * (right["h_rt"] - left["h_rt"])
+        delta_s = R_J_MOL_K * (right["s_R"] - left["s_R"])
+        if abs(delta_h) >= 1.0e-3 or abs(delta_s) >= 1.0e-6:
+            raise ValueError(
+                f"{nasa_record['record_id']} NASA-7 intervals are discontinuous "
+                f"at {breakpoint} K: dH={delta_h} J/mol, dS={delta_s} J/(mol K)"
+            )
+        breakpoint_checks.append(
+            {
+                "temperature_K": breakpoint,
+                "delta_H_J_per_mol": delta_h,
+                "delta_S_J_per_mol_K": delta_s,
+            }
+        )
     rows: list[dict[str, float]] = []
-    card_g_2000 = None
-    target_g_2000 = None
+    check_temperature = 2000.0 if fit_t_min <= 2000.0 <= fit_t_max else fit_t_max
+    card_g_check = None
+    target_g_check = None
     for temperature in np.arange(
-        FIT_T_MIN, FIT_T_MAX + NASA_GRID_STEP_K / 2.0, NASA_GRID_STEP_K
+        fit_t_min, fit_t_max + NASA_GRID_STEP_K / 2.0, NASA_GRID_STEP_K
     ):
         temperature = float(temperature)
         card = _nasa7_properties(nasa_record, temperature)
-        cation_h_over_R, cation_s_R = _janaf_element_functions(
-            element_records, cation_table_id, temperature
-        )
-        oxygen_h_over_R, oxygen_s_R = _janaf_element_functions(
-            element_records, "O-029", temperature
-        )
-        element_h_over_R = 2.0 * cation_h_over_R + 0.5 * oxygen_h_over_R
-        element_s_R = 2.0 * cation_s_R + 0.5 * oxygen_s_R
         card_g = R_J_MOL_K * temperature * (card["h_rt"] - card["s_R"])
-        element_g = R_J_MOL_K * (
-            element_h_over_R - temperature * element_s_R
-        )
-        card_formation_g = card_g - element_g
-        # Add the same JANAF elemental baseline back. This explicit
-        # subtraction/addition proves that the fitted target remains the
-        # apparent G convention used by the existing rows, rather than the
-        # card's formation-Gibbs function or a second baseline-shifted value.
-        card_apparent_g = card_formation_g + element_g
+        try:
+            cation_h_over_R, cation_s_R = _janaf_element_functions(
+                element_records, cation_table_id, temperature
+            )
+            oxygen_h_over_R, oxygen_s_R = _janaf_element_functions(
+                element_records, "O-029", temperature
+            )
+        except ValueError as exc:
+            if "has no JANAF row at" not in str(exc):
+                raise
+            # The cation tables omit some nodes at reference-state transitions
+            # (Na at 1200 K, K at 1100 K). In G_card - G_elements + G_elements,
+            # the elemental baseline cancels exactly, so use G_card directly at
+            # those holes instead of refusing an otherwise complete NASA node.
+            card_apparent_g = card_g
+        else:
+            element_h_over_R = 2.0 * cation_h_over_R + 0.5 * oxygen_h_over_R
+            element_s_R = 2.0 * cation_s_R + 0.5 * oxygen_s_R
+            element_g = R_J_MOL_K * (
+                element_h_over_R - temperature * element_s_R
+            )
+            card_formation_g = card_g - element_g
+            # Add the same JANAF elemental baseline back. This explicit
+            # subtraction/addition proves that the fitted target remains the
+            # apparent G convention rather than a second baseline-shifted value.
+            card_apparent_g = card_formation_g + element_g
         h_over_R = h0_over_R + hinc_over_R + (
             temperature * card["h_rt"] - card_h298_over_R
         )
@@ -677,14 +732,19 @@ def _nasa_source_rows(
                 "_card_apparent_gibbs": card_apparent_g,
             }
         )
-        if temperature == 2000.0:
-            card_g_2000 = card_apparent_g
-            target_g_2000 = target_g
-    if card_g_2000 is None or target_g_2000 is None:
-        raise ValueError(f"{nasa_record['record_id']} did not produce a 2000 K check")
+        if temperature == check_temperature:
+            card_g_check = card_apparent_g
+            target_g_check = target_g
+    if card_g_check is None or target_g_check is None:
+        raise ValueError(
+            f"{nasa_record['record_id']} did not produce a "
+            f"{check_temperature:g} K check"
+        )
     return rows, {
-        "card_gibbs_2000_J_per_mol": card_g_2000,
-        "anchored_card_gibbs_2000_J_per_mol": target_g_2000,
+        "check_temperature_K": check_temperature,
+        "card_gibbs_check_J_per_mol": card_g_check,
+        "anchored_card_gibbs_check_J_per_mol": target_g_check,
+        "breakpoint_checks": breakpoint_checks,
     }
 
 
@@ -773,6 +833,10 @@ def _fit_nasa_row(
     cat_num: int,
     oxy_num: int,
     cation_table_id: str,
+    *,
+    t_interval: int = 1,
+    fit_t_min: float = FIT_T_MIN,
+    fit_t_max: float = FIT_T_MAX,
 ) -> dict[str, str]:
     nasa_record = _load_record(nasa_source_dir / f"{table_id}.json")
     if nasa_record.get("record_id") != table_id:
@@ -794,6 +858,8 @@ def _fit_nasa_row(
         lh84_rows[species_name],
         element_records,
         cation_table_id,
+        fit_t_min=fit_t_min,
+        fit_t_max=fit_t_max,
     )
     reference = float(lh84_rows[species_name]["dfH_over_R_kK"]["value"]) * R_J_MOL_K
     fit = _fit_shomate_values(rows, reference)
@@ -804,12 +870,12 @@ def _fit_nasa_row(
     return {
         "species_name": species_name,
         "state": "g",
-        "T_interval": "1",
+        "T_interval": str(t_interval),
         "cation": cation,
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
-        "T_min": str(int(FIT_T_MIN)),
-        "T_max": str(int(FIT_T_MAX)),
+        "T_min": str(int(fit_t_min)),
+        "T_max": str(int(fit_t_max)),
         "A": number(fit["A"]),
         "B": number(fit["B"]),
         "C": number(fit["C"]),
@@ -821,10 +887,14 @@ def _fit_nasa_row(
         "Ref": table_id,
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
-        "_card_gibbs_2000_J_per_mol": number(checks["card_gibbs_2000_J_per_mol"]),
-        "_anchored_card_gibbs_2000_J_per_mol": number(
-            checks["anchored_card_gibbs_2000_J_per_mol"]
+        "_card_gibbs_check_J_per_mol": number(
+            checks["card_gibbs_check_J_per_mol"]
         ),
+        "_anchored_card_gibbs_check_J_per_mol": number(
+            checks["anchored_card_gibbs_check_J_per_mol"]
+        ),
+        "_check_temperature_K": number(checks["check_temperature_K"]),
+        "_breakpoint_checks": json.dumps(checks["breakpoint_checks"], sort_keys=True),
     }
 
 
@@ -835,6 +905,12 @@ def _fit_condensate_row(
     cation: str,
     cat_num: int,
     oxy_num: int,
+    *,
+    fit_t_min: float | None = None,
+    fit_t_max: float | None = None,
+    minimum_rows: int | None = None,
+    runtime_t_min: float | None = None,
+    runtime_t_max: float | None = None,
 ) -> dict[str, str]:
     """Fit one parent-oxide liquid to the runtime's condensate row form.
 
@@ -866,7 +942,13 @@ def _fit_condensate_row(
     if table["table_id"] != table_id:
         raise ValueError(f"{table_id}: record table_id does not match filename")
     _validate_record_identity(record, species_name, table_id, "l")
-    rows = _usable_rows(table, table_id)
+    rows = _usable_rows(
+        table,
+        table_id,
+        fit_t_min=fit_t_min,
+        fit_t_max=fit_t_max,
+        minimum_rows=minimum_rows,
+    )
     reference = next(
         _value(row, "formation_enthalpy")
         for row in table["values"]
@@ -903,8 +985,14 @@ def _fit_condensate_row(
         "cation": cation,
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
-        "T_min": str(int(_FIT_T_MIN_BY_TABLE.get(table_id, FIT_T_MIN))),
-        "T_max": str(int(FIT_T_MAX)),
+        "T_min": str(
+            int(
+                _FIT_T_MIN_BY_TABLE.get(table_id, FIT_T_MIN)
+                if runtime_t_min is None
+                else runtime_t_min
+            )
+        ),
+        "T_max": str(int(FIT_T_MAX if runtime_t_max is None else runtime_t_max)),
         "dH298_R": number(dH298_R),
         "dG_A": number(A),
         "dG_B": number(B),
@@ -947,11 +1035,39 @@ def build_rows(
         for source in GAS_SOURCES
         if source[0].removesuffix("(g)") in LOW_T_GAS_SPECIES
     )
+    rows.extend(
+        _fit_nasa_row(
+            nasa_source_dir,
+            lh84_source_dir,
+            source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=LOW_FIT_T_MIN,
+            fit_t_max=LOW_FIT_T_MAX,
+        )
+        for source in NASA_GAS_SOURCES
+    )
     return rows
 
 
 def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
-    return [_fit_condensate_row(source_dir, *source) for source in CONDENSATE_SOURCES]
+    rows = [_fit_condensate_row(source_dir, *source) for source in CONDENSATE_SOURCES]
+    rows.append(
+        _fit_condensate_row(
+            source_dir,
+            "NbO2(l)",
+            "Nb-013",
+            "Nb",
+            1,
+            2,
+            fit_t_min=1100.0,
+            fit_t_max=1500.0,
+            minimum_rows=5,
+            runtime_t_min=1200.0,
+            runtime_t_max=1500.0,
+        )
+    )
+    return rows
 
 
 def build_research_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
@@ -975,23 +1091,29 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
     lines = output.read_text(encoding="utf-8").splitlines()
     if not lines or tuple(lines[0].split(",")) != CONDENSATE_COLUMNS:
         raise ValueError(f"{output} does not have the condensate header")
+    grouped_rows: dict[str, list[dict[str, str]]] = {}
     for row in rows:
-        buffer = io.StringIO()
-        csv.writer(buffer, lineterminator="\n").writerow(
-            [row[column] for column in CONDENSATE_COLUMNS]
-        )
-        line = buffer.getvalue().rstrip("\n")
+        grouped_rows.setdefault(row["species_name"], []).append(row)
+    for species_name, species_rows in grouped_rows.items():
+        serialized_rows = []
+        for row in species_rows:
+            buffer = io.StringIO()
+            csv.writer(buffer, lineterminator="\n").writerow(
+                [row[column] for column in CONDENSATE_COLUMNS]
+            )
+            serialized_rows.append(buffer.getvalue().rstrip("\n"))
         matches = [
             index
             for index, existing in enumerate(lines)
-            if existing.split(",", 1)[0] == row["species_name"]
+            if existing.split(",", 1)[0] == species_name
         ]
-        if len(matches) > 1:
-            raise ValueError(f"{output} has duplicate {row['species_name']} rows")
         if matches:
-            lines[matches[0]] = line
+            first = matches[0]
+            for index in reversed(matches[1:]):
+                del lines[index]
+            lines[first : first + 1] = serialized_rows
         else:
-            lines.append(line)
+            lines.extend(serialized_rows)
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

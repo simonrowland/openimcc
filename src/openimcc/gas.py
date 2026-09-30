@@ -569,7 +569,7 @@ IMCC_PARENT_OXIDES = (
 
 # ADR-004 research note: each new JANAF parent row passes its declared-range
 # C4 check through 3000 K (Al 2500 K, Si 1800 K, Mg/Ca 2200 K). ELEMENT_STATUS
-# evaluates C4 over 1200-3000 K; rows starting above 1200 K remain incomplete.
+# evaluates C4 over 1200-3000 K; branch gaps below 1200 K remain incomplete.
 ELEMENT_STATUS: dict[str, dict[str, object]] = {
     "O": {
         "status": "input (fO2 pinned)",
@@ -714,7 +714,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "TiO2(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; joint C3 ionisation estimate max 1.538e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "O-044 has a glass branch below its 1400 K glass-liquid transition, leaving a 1200-1400 K C4 gap; joint C3 ionisation estimate max 1.538e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("O-022", "TiO"), ("O-046", "TiO2")),
         "c3_ion_bound": {
             "max_ratio": 1.5380904145455499e-6,
@@ -736,10 +736,10 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         },
     },
     "Na": {
-        "status": "gas-partial",
-        "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
+        "status": "complete-except-ions",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
         "validation": "unvalidated",
-        "reason": "Na2O(g) starts at 1500 K, so its gas row misses 1200-1500 K; joint C3 ionisation estimate max 3.899e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "Na2O(g) intervals cover 500-3000 K and Na2O(l) covers the C4 domain; joint C3 ionisation estimate max 3.899e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("Na-008", "NaO"),),
         "c3_ion_bound": {
             "max_ratio": 0.003899100974249993,
@@ -769,10 +769,10 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         },
     },
     "K": {
-        "status": "gas-partial",
-        "criteria": {"C1": True, "C2": True, "C3": False, "C4": False},
+        "status": "complete-except-ions",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
         "validation": "validated",
-        "reason": "K2O(g) starts at 1500 K, so its gas row misses 1200-1500 K; joint C3 ionisation estimate max 8.595e-2 at 1700 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; joint C3 ionisation estimate max 8.595e-2 at 1700 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("K-008", "KO"),),
         "c3_ion_bound": {
             "max_ratio": 0.08595084114328669,
@@ -854,8 +854,9 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "criteria": {"C1": False, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
         "reason": (
-            "V2O3(l) starts at 1500 K, so its parent-liquid row misses "
-            "1200-1500 K; activity is caller-supplied; joint C3 ionisation estimate "
+            "O-063 remains on the glass branch through 1500 K and reaches the "
+            "liquid branch at 1600 K, leaving a 1200-1600 K C4 gap; activity is "
+            "caller-supplied; joint C3 ionisation estimate "
             "max 2.989e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, "
             "NaO+) and thermal electrons from walls or other sources are outside this estimate."
         ),
@@ -897,11 +898,11 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": False, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "NbO2(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; activity is caller-supplied; joint C3 ionisation estimate max 5.418e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 K; Nb(g), NbO(g), and NbO2(g) start at 1500 K, leaving a gas C4 gap; activity is caller-supplied; joint C3 ionisation estimate max 5.418e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("Nb-011", "NbO"), ("Nb-015", "NbO2")),
         "c3_ion_bound": {
             "max_ratio": 5.417802850424681e-8,
-            "isolated_bound": 3191171712.774323,
+            "isolated_bound": 3202840578.16235,
             "temperature_K": 3000.0,
             "fO2": 1.0e-12,
             "neutral_pressure_bar": 0.01666434293365431,
@@ -1223,7 +1224,7 @@ def _oxide_row_for_T(
             f"no condensate G(T) row for oxide {oxide!r}"
         )
     rows = df.loc[[oxide]] if df.index.name is None or not isinstance(df.loc[oxide], pd.DataFrame) else df.loc[oxide]
-    # The condensate table has one row per oxide; wrap it if a single row.
+    # A condensate oxide may have several intervals; wrap a unique row as a frame.
     if isinstance(rows, pd.Series):
         selected = rows
     else:

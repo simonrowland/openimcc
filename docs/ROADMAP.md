@@ -30,12 +30,12 @@ parent liquid rows are available only from an external private pack.
 | Fe | complete | yes | yes | yes | yes | unvalidated | FeO and neutral gas rows cover the domain; joint C3 ionisation estimate max 3.064e-7 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
 | Ca | gas-partial | yes | yes | no | no | unvalidated | CaO liquid row starts at 2900 K; joint C3 ionisation estimate max 3.508e-4 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
 | Al | gas-partial | yes | yes | yes | no | unvalidated | Al2O3 liquid row starts at 2327 K; joint C3 ionisation estimate max 1.902e-5 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Ti | gas-partial | yes | yes | yes | no | unvalidated | TiO2(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; joint C3 ionisation estimate max 1.538e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Na | gas-partial | yes | yes | no | no | unvalidated | Na2O(g) starts at 1500 K, so its gas row misses 1200-1500 K; joint C3 ionisation estimate max 3.899e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| K | gas-partial | yes | yes | no | no | validated | K2O(g) starts at 1500 K, so its gas row misses 1200-1500 K; joint C3 ionisation estimate max 8.595e-2 at 1700 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Ti | gas-partial | yes | yes | yes | no | unvalidated | O-044 has a glass branch below its 1400 K glass-liquid transition, leaving a 1200-1400 K C4 gap; joint C3 ionisation estimate max 1.538e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Na | complete-except-ions | yes | yes | no | yes | unvalidated | Na2O(g) intervals cover 500-3000 K and Na2O(l) covers the C4 domain; joint C3 ionisation estimate max 3.899e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| K | complete-except-ions | yes | yes | no | yes | validated | K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; joint C3 ionisation estimate max 8.595e-2 at 1700 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
 | Cr | gas-partial | no | yes | yes | no | unvalidated | Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K and Cr2O3(l) at 1900 K; joint C3 ionisation estimate max 9.728e-6 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| V | gas-partial | no | yes | yes | no | unvalidated | V2O3(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; activity is caller-supplied; joint C3 ionisation estimate max 2.989e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Nb | gas-partial | no | yes | yes | no | unvalidated | NbO2(l) starts at 1500 K, so its parent-liquid row misses 1200-1500 K; activity is caller-supplied; joint C3 ionisation estimate max 5.418e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| V | gas-partial | no | yes | yes | no | unvalidated | O-063 remains on the glass branch through 1500 K and reaches the liquid branch at 1600 K, leaving a 1200-1600 K C4 gap; activity is caller-supplied; joint C3 ionisation estimate max 2.989e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| Nb | gas-partial | no | yes | yes | no | unvalidated | Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 K; Nb(g), NbO(g), and NbO2(g) start at 1500 K, leaving a gas C4 gap; activity is caller-supplied; joint C3 ionisation estimate max 5.418e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
 | Mn | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
 | Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
 | Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
@@ -44,19 +44,22 @@ The research pack `gas-janaf-parent-liquids-research` is opt-in by path; the
 SF04/Lamoreaux default coefficient contract keeps it out of default loads. Its
 branch-limited C4 check passes over each declared liquid range through 3000 K
 (Al from 2500 K, Si from 1800 K, Mg and Ca from 2200 K). The 1200–3000 K
-default C4 criterion requires continuous one-bar gas-table and
-parent-liquid coverage. Na2O(g) and K2O(g) lack rows below 1500 K; TiO2(l),
-V2O3(l), and NbO2(l) also start at 1500 K and fail the expanded domain. Rows
-remain out of domain below their declared branches.
+default C4 criterion requires continuous one-bar gas-table and parent-liquid
+coverage. Na2O(g) and K2O(g) now cover the domain with NASA Glenn interval 2.
+NbO2(l) has a second interval over 1200–1500 K. TiO2(l) remains C4-incomplete
+because O-044 has a glass branch below its 1400 K liquid start; V2O3(l) remains
+incomplete because O-063 stays on the glass branch through 1500 K and reaches
+the liquid branch at 1600 K.
 
 ### Low-temperature gas interval (done)
 
-The 22 battery gas species now have a second JANAF-fitted Shomate interval from
-500–1500 K, with at least ten complete 100 K grid nodes per fit. The existing
-1500–3000 K interval 1 rows remain byte-identical to base `52db3a9`; at the
-shared 1500 K node, the runtime selects interval 1. The low-temperature KEMS
-impact calculation at 1300 K and 1400 K is domain-refused because the packaged
-K₂O–SiO₂ melt reactions begin at 1700 K.
+The 22 JANAF-fit battery gas species and Na₂O(g)/K₂O(g) have interval 2 from
+500–1500 K. The NASA rows use piecewise 300–1000 K and 1000–6000 K cards, with
+H and S continuity checked at 1000 K. Existing 1500–3000 K interval 1 rows
+remain byte-identical to base `52db3a9`; the runtime selects interval 1 at the
+shared 1500 K node. The low-temperature KEMS impact calculation at 1300 K and
+1400 K is domain-refused because the packaged K₂O–SiO₂ melt reactions begin at
+1700 K.
 
 The SiO₂(l) parent remains domain-flagged below 1996 K by default (the research
 pack extends its liquid branch to 1800 K). JANAF O-038 has no lower liquid
