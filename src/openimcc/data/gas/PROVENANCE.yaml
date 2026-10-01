@@ -1023,17 +1023,60 @@ rows:
       transcription: VapoRock data/condensate-thermo-data.csv
   - table: condensate
     species_name: Na2O(l)
-    source_table_id: LH84 Table 2 / Table 4
-    authority: lam1984_transcribed
-    method: transcribed
-    T_range_K: [1405, 3000]
-    source_table: LH84 Table 2, printed p. 154; dH298_R anchor from Table 4, printed p. 157
-    correction: The prior coefficients and 825 K lower bound were copied from the NaO2(l) row in LH84 Table 2; retain the correct Na2O(s) Table 4 anchor. Prior row was inherited verbatim from VapoRock data/condensate-thermo-data.csv.
-    certification_note: Corrected LH84 Na2O(l) is less stable than the apparent Gibbs energy derived from JANAF Na-013 at every printed JANAF liquid node from 1600 to 3000 K, by +13.4 kJ/mol at 1600 K, rising to +29.6 kJ/mol at 2400 K and falling to +17.7 kJ/mol at 3000 K. This is a source difference; retain LH84 and do not substitute JANAF.
-    source:
-      citation: Lamoreaux, R. H.; Hildenbrand, D. L. (1984), High Temperature Vaporization Behavior of Oxides. I, J. Phys. Chem. Ref. Data 13, 151-173.
-      doi: 10.1063/1.555706
-      transcription: VapoRock data/condensate-thermo-data.csv
+    table_id: Na-013
+    source_path: data-src/janaf/Na-013.yaml
+    source_sha256: 6d1a2122965e67cea023a9732122e6755049a651ab233273c66c9e756be91270
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1600, 3000]
+    max_residual_J_per_mol: 3.37649676622823
+    max_residual_log10_K: 7.52499730109028e-05
+    supersedes:
+      source_table_id: LH84 Table 2 / Table 4
+      authority: lam1984_transcribed
+      T_range_K: [1405, 3000]
+      dH298_R: -50.17
+      dG_coefficients: [7.67, 6.193, 0, 0, 0]
+      Ref: LAM1984
+      reason: >-
+        Replaces the LH84 Table 2 Na2O(l) condensate row with a fit to
+        NIST-JANAF 4th ed. Na-013. LH84's printed two-term row departs from its
+        own crystal, fusion and liquid heat-capacity inputs by up to 16 kJ/mol;
+        the printed, internally consistent JANAF table was chosen on source
+        grounds.
+      measured_LH84_minus_JANAF_G_kJ_mol:
+        definition: LH84 printed Table 2 row minus JANAF Na-013 apparent Gibbs energy
+        values: {1600: 13.44, 2000: 25.57, 2400: 29.64, 3000: 17.67}
+        LH84_input_rebuild_minus_JANAF_values: {1600: 6.83, 2000: 10.07, 2400: 13.31, 3000: 18.18}
+    note: >-
+      Fitted by tools/build_gas_tables.py to the runtime condensate form.
+      Na-013 is the liquid table; Cp is 104.600 J/(mol K) at every complete
+      liquid node. Its ALPHA <--> LIQUID marker is at 1405.2 K. The high
+      interval uses 15 complete nodes from 1600-3000 K; the 1500 K row is
+      parse-ambiguous and is not fitted. The low fit below uses the complete
+      1000-1400 K supercooled-liquid nodes. See supersedes for the measured
+      comparison with the replaced LH84 row.
+  - table: condensate
+    species_name: Na2O(l)
+    table_id: Na-013
+    source_path: data-src/janaf/Na-013.yaml
+    source_sha256: 6d1a2122965e67cea023a9732122e6755049a651ab233273c66c9e756be91270
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1000, 1400]
+    max_residual_J_per_mol: 4.65661287307739e-10
+    max_residual_log10_K: 1.73736962760956e-14
+    seam_to_interval_1_at_1500_K:
+      delta_G_J_per_mol: 0.5608443801756948
+      log10_p_low_over_high: 1.9529954867593807e-05
+    note: >-
+      This second runtime interval is fitted to the five complete 1000-1400 K
+      supercooled-liquid nodes (Cp = 104.600 J/(mol K)). The 1405.2 K
+      ALPHA <--> LIQUID marker and parse-ambiguous 1500 K row are omitted.
+      Its runtime upper bound meets the high interval at 1500 K; the high row
+      has the larger T_min and is selected there.
   - table: condensate
     species_name: K2O(l)
     authority: secondary_transcription_unverified_primary

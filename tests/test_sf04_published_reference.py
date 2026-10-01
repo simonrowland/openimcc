@@ -45,9 +45,9 @@ SPECIES_MAX_ABS_RESIDUAL_DEX = {
     "KO": 0.262,
     "Mg": 0.959,
     "MgO": 1.242,
-    "Na": 0.684,
-    "Na2": 0.784,
-    "NaO": 1.124,
+    "Na": 0.343,
+    "Na2": 0.132,
+    "NaO": 0.783,
     "O": 0.028,
     "O2": 0.000,
     "SiO": 1.076,
@@ -58,25 +58,25 @@ SPECIES_MAX_ABS_RESIDUAL_DEX = {
 }
 SPECIES_RESIDUAL_MARGIN_DEX = 0.300
 SIGNED_MEDIAN_EXPECTATIONS_DEX = {
-    "Na": 0.484862,
-    "NaO": 0.458842,
-    "Na2": 0.783760,
+    "Na": 0.158294,
+    "NaO": 0.147692,
+    "Na2": 0.131642,
     "O": 0.014,
     "SiO": 0.157,
     "FeO": 0.214348,
 }
 SIGNED_MEDIAN_TOLERANCE_DEX = 0.005
 TABLE9_SIGNED_MEDIAN_EXPECTATIONS_DEX = {
-    "Na": 0.168216,
-    "NaO": -0.030148,
+    "Na": -0.151014,
+    "NaO": -0.349377,
     "O": -0.007,
     "SiO": -0.009,
     "FeO": 0.009,
 }
 FIG10_SIGNED_MEDIAN_EXPECTATIONS_DEX = {
-    "Na": 0.492202,
-    "NaO": 0.463188,
-    "Na2": 0.783760,
+    "Na": 0.158296,
+    "NaO": 0.173691,
+    "Na2": 0.131642,
     "O": 0.014,
     "SiO": 0.175421,
     "FeO": 0.223,

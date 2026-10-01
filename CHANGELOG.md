@@ -2,19 +2,22 @@
 
 ## Unreleased
 
+- Replaced the corrected LH84 Na2O(l) parent with the JANAF Na-013 fit. Added its supercooled-liquid interval, moved Na into the
+  JANAF-fitted condensate and C4 gates, and re-pinned Na-sensitive SF04,
+  quickstart, species-set, and oxygen-balance results.
 - Added fitted optional JANAF phosphorus and sulfur gas rows. Sulfur channels
   accept caller-supplied S2 fugacity. No public evaluated P2O5(l) G(T) function
   was found; JANAF lists P4O10(cr) only, so P channels need an external,
   source-rated P2O5(l) standard state. Default outputs stay fixed.
 - Exported `species_thermo` for row-level Cp, S, apparent enthalpy and Gibbs
   energy, plus `default_gas_channels` for stable access to channel selection.
-  Added JANAF in-interval fidelity gates, pinned the LAM/JANAF parent-liquid
-  source differences, and proved the Na2O(l) and Al2O3(l) prior rows fail them.
-- Corrected the default Na2O(l) row to LH84 Table 2's Na2O liquid coefficients
-  and 1405 K lower bound; the prior coefficients came from NaO2(l). Corrected
+  Added JANAF in-interval fidelity gates, pinned the remaining LAM/JANAF
+  parent-liquid source differences, and proved the prior Na2O(l) and Al2O3(l)
+  rows fail their source gates.
+- The interim Na2O(l) correction replaced a prior NaO2(l) row copy with LH84;
+  the default now uses JANAF Na-013. Corrected
   Al2O3(l)'s anchor to the LH87 solid 298 K value, removing the fusion
-  enthalpy that had been counted twice. Updated gas comparison results and
-  recorded the Na2O(l)-versus-JANAF source difference.
+  enthalpy that had been counted twice. Updated gas comparison results.
 - Documented a known limit: complex rows below their demonstrated range, and their consistency with JANAF.
 - Extended element completeness screening to 1200–3000 K, recomputed C2/C3
   maxima, and recorded C4 gaps in gas and parent-liquid coverage below 1500 K.

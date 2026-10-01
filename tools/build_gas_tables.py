@@ -219,14 +219,19 @@ CONDENSATE_COLUMNS = (
 # JANAF "O2Ti1(l)" record; over 1500--3000 K it is on its liquid branch
 # (glass transition 1400 K, Cp = 100.416 J/(mol K) throughout), supercooled
 # below the 2130 K melting point exactly as the JANAF liquid table states.
+# Na-013 tabulates Cp = 104.600 J/(mol K) at every liquid node. The 1405.2 K
+# ALPHA <--> LIQUID marker identifies the branch; complete supercooled-liquid
+# nodes are 1000--1400 K, the 1500 K row is ambiguous, and complete post-marker
+# nodes are 1600--3000 K.
 CONDENSATE_SOURCES = (
     ("TiO2(l)", "O-044", "Ti", 1, 2),
     ("Cr2O3(l)", "Cr-015", "Cr", 2, 3),
     ("V2O3(l)", "O-063", "V", 2, 3),
     ("NbO2(l)", "Nb-013", "Nb", 1, 2),
+    ("Na2O(l)", "Na-013", "Na", 2, 1),
 )
 
-# ADR-004 research pack only; these do not enter the default condensate CSV.
+# Parent-liquid research pack only; these do not enter the default condensate CSV.
 # SiO2(l), O-038: the 1696 K II <--> LIQUID marker follows glass Cp values
 # (74.475 at 1500 K, 80.040 at 1600 K); 85.772 J/(mol K) is constant from
 # the first complete post-marker node at 1800 K through 3000 K.  The 1700 K
@@ -259,7 +264,7 @@ REQUIRED_FIELDS = (
     "formation_gibbs_energy",
 )
 
-_TRANSITION_SOURCE_TABLES = frozenset({"Cr-015", "O-063", "Nb-013"})
+_TRANSITION_SOURCE_TABLES = frozenset({"Cr-015", "O-063", "Nb-013", "Na-013"})
 
 # Sources whose liquid fit starts after FIT_T_MIN. These are the first complete
 # grid nodes on the liquid branch; phase-marker rows are never fitted.
@@ -269,6 +274,7 @@ _FIT_T_MIN_BY_TABLE = {
     "Al-100": 2500.0,
     "Mg-009": 2200.0,
     "Ca-028": 2200.0,
+    "Na-013": 1600.0,
 }
 
 # Sources whose tabulated rows stop short of FIT_T_MAX.  Cr(g), Cr-005: Cr
@@ -1096,7 +1102,37 @@ def build_rows(
 
 
 def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
-    rows = [_fit_condensate_row(source_dir, *source) for source in CONDENSATE_SOURCES]
+    rows = []
+    for source in CONDENSATE_SOURCES:
+        if source[1] == "Na-013":
+            rows.append(
+                _fit_condensate_row(
+                    source_dir,
+                    *source,
+                    runtime_t_min=1500.0,
+                )
+            )
+        else:
+            rows.append(_fit_condensate_row(source_dir, *source))
+    # Na-013 is a liquid table below its 1405.2 K ALPHA <--> LIQUID marker;
+    # its complete supercooled-liquid nodes at 1000--1400 K form the five-node
+    # low fit. The 1500 K row is parse-ambiguous, so the declared 1500--3000 K
+    # interval uses complete high-fit nodes from 1600 K onward.
+    rows.append(
+        _fit_condensate_row(
+            source_dir,
+            "Na2O(l)",
+            "Na-013",
+            "Na",
+            2,
+            1,
+            fit_t_min=1000.0,
+            fit_t_max=1400.0,
+            minimum_rows=5,
+            runtime_t_min=1200.0,
+            runtime_t_max=1500.0,
+        )
+    )
     rows.append(
         _fit_condensate_row(
             source_dir,
@@ -1116,7 +1152,7 @@ def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
 
 
 def build_research_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
-    """Fit the ADR-004 parent-liquid research rows without changing defaults."""
+    """Fit the parent-liquid research rows without changing defaults."""
     return [
         _fit_condensate_row(source_dir, *source)
         for source in RESEARCH_CONDENSATE_SOURCES

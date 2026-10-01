@@ -239,19 +239,18 @@ def test_sf04_table9_species_set_sensitivities() -> None:
     assert no_kca_k == pytest.approx(2.3, abs=0.1)
     assert base_k > 0.0 < no_kca_k
 
-    # The corrected parent moves the baseline to +0.1682 dex. The four
-    # nu(Na2O)=0.5 complexes move Na to +1.0561 dex; removing the three nu=1
+    # JANAF Na-013 moves the baseline to -0.1510 dex. The four
+    # nu(Na2O)=0.5 complexes move Na to +0.7369 dex; removing the three nu=1
     # complexes changes it by only 0.0091 dex.
     # These single-family shifts do NOT add: the families compete for one Na
     # inventory, so with one family gone the other takes up the released Na
-    # (99 % of it at this anchor).  Removing all seven together gives
-    # +4.113 dex, while the sum of single-family shifts remains about +0.897
-    # dex and predicts +1.065 dex. The families compete for one Na inventory,
-    # so these shifts do not add to the joint deletion result.
-    assert base_na == pytest.approx(0.168, abs=0.05)
-    assert no_na_half_na == pytest.approx(1.056, abs=0.05)
+    # (99 % of it at this anchor). Removing all seven together gives +3.794
+    # dex; the single-family shifts total about +0.897 dex and predict +0.746
+    # dex from the new baseline. They do not add to the joint deletion result.
+    assert base_na == pytest.approx(-0.151, abs=0.05)
+    assert no_na_half_na == pytest.approx(0.737, abs=0.05)
     assert abs(no_na_one_na - base_na) < 0.05
-    assert no_na_all_na == pytest.approx(4.113, abs=0.005)
+    assert no_na_all_na == pytest.approx(3.794, abs=0.005)
     # The joint deletion rises well above the sum of single-family shifts.
     sum_of_singles = (no_na_half_na - base_na) + (no_na_one_na - base_na)
     assert no_na_all_na > base_na + sum_of_singles > 0.0

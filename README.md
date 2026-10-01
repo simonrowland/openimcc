@@ -95,10 +95,10 @@ The default tables ship in `openimcc.data.gas` and are loaded through
 `importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
 NIST-JANAF 4th-edition records; the condensate rows retain their source-attributed
-Lamoreaux/Hildenbrand and JANAF coefficients, except TiO2(l), Cr2O3(l), V2O3(l)
-and NbO2(l), which are fitted from JANAF liquid tables by the same generator.
-Row-level source hashes,
-methods, temperature ranges and fit residuals are in `PROVENANCE.yaml`.
+Lamoreaux/Hildenbrand and JANAF coefficients, except TiO2(l), Cr2O3(l), V2O3(l),
+NbO2(l), and Na2O(l), which are fitted from JANAF liquid tables by the same
+generator. Row-level source hashes, methods, temperature ranges and fit
+residuals are in `PROVENANCE.yaml`.
 
 For comparison with an existing VapoRock installation, set
 `OPENIMCC_VAPOROCK_ROOT` explicitly; that variable overrides both packaged
@@ -170,7 +170,7 @@ Output:
 activities: {'SiO2': '0.329959', 'MgO': '0.00468755', 'FeO': '0.106157', 'CaO': '5.58726e-05', 'Al2O3': '0.0165703', 'TiO2': '0.00299186', 'Na2O': '2.47359e-10', 'K2O': '2.29657e-19'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
 melt notices: ('K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS pressures (case 4: −0.89 dex); see https://github.com/simonrowland/openimcc',)
-gas: bar {'Na': '0.000398236', 'K': '7.67598e-08'}
+gas: bar {'Na': '0.000201453', 'K': '7.67598e-08'}
 Mg domain flag: T=1800.0 K outside declared G(T) interval for 'MgO(l)' [3100, 3500] K
 ```
 
@@ -180,6 +180,16 @@ prediction against Hastie 1981 KEMS pressures; it is part of the result, not a
 reason to hide those activities. The gas `Mg` flag records extrapolation below the
 declared MgO(l) thermodynamic row, so the pressure remains a prediction with a
 visible limitation.
+
+With the basalt's activities evaluated at each temperature (extrapolated and
+flagged outside the melt pack's domain) and `fO2 = 1e-10`, the sodium gas
+pressures are:
+
+| T (K) | p(Na) (bar) | p(NaO) (bar) | p(Na2) (bar) | p(Na2O) (bar) |
+|---:|---:|---:|---:|---:|
+| 1800 | 2.01453e-4 | 3.79925e-10 | 3.36639e-10 | 1.22956e-13 |
+| 2200 | 2.77842e-2 | 3.91481e-8 | 2.43405e-6 | 1.23175e-10 |
+| 2600 | 7.94594e-1 | 9.12685e-7 | 9.86681e-4 | 1.31905e-8 |
 
 Here `fO2 = 1e-10` is bar-relative (`pO2 / 1 bar`), not `log10(fO2)` and not a
 buffer offset such as ΔIW.
@@ -279,6 +289,10 @@ condensates:
 
 NbO2(l)'s separate 1200–1500 K interval has its own measured maximum G_app
 residual, 3.49e-13 kJ/mol; it is not grouped with the 1500–3000 K interval.
+Na2O(l) has a separate 1200–1500 K runtime interval fitted from five complete
+1000–1400 K supercooled-liquid nodes; its measured maximum G_app residual at
+the three in-range complete nodes is 4.66e-13 kJ/mol. The 1500 K source row is
+parse-ambiguous, so the high interval uses complete nodes from 1600 K onward.
 
 For gas rows, `G_J_mol = 1000*H_app_kJ_mol - T*S_J_molK`; the factor of
 1000 converts enthalpy to J/mol. For LAM condensates, the following measured
@@ -286,11 +300,23 @@ model-minus-JANAF G residual ranges are retained as documented exceptions.
 
 | LAM row | Compared sources | Measured G_app residual range (kJ/mol) | Tolerance (kJ/mol) | Reason |
 |---|---|---:|---:|---|
-| Na2O(l) | LH84 Tables 2/4; JANAF Na-013 | 13.442370 to 29.642533 | 0.003 | Neither source explains the measured Gibbs-energy disagreement. |
 | Al2O3(l) | LH87 Tables 2/3; JANAF Al-100 | −0.130343 to 0.101552 | 0.002 | Both anchors refer to stable solid at 298 K; sources do not reconcile liquid Gibbs-energy fits. |
 | SiO2(l) | LH87 Table 2; JANAF O-038 | −2.972323 to −2.302783 | 0.002 | Sources report different liquid Gibbs thermochemistry without a reconciliation. |
 | MgO(l) | LH87 Table 2; JANAF Mg-009 | −0.998335 to −0.356769 (3100–3500 K) | 0.002 | Complete JANAF liquid nodes inside the packaged interval are included; sources do not reconcile their G fits. |
 | CaO(l) | LH87 Table 2; JANAF Ca-028 | −6.185 to −1.210793 (2900–3800 K) | 0.003 | Complete JANAF liquid nodes inside the packaged interval are included; sources do not reconcile their G fits. |
+
+The default Na2O(l) row is the JANAF Na-013 liquid fit, replacing the corrected
+LH84 Table 2 row. LH84's printed two-term row departs from LH84's own crystal,
+fusion and liquid heat-capacity inputs by up to 16 kJ/mol, so the printed,
+internally consistent JANAF table was chosen on source grounds; the
+measured old-row minus JANAF G_app differences are +13.44, +25.57, +29.64, and
++17.67 kJ/mol at 1600, 2000, 2400, and 3000 K. Rebuilding LH84 from its own
+Table 2/4 inputs instead gives +6.83, +10.07, +13.31, and +18.18 kJ/mol at
+those temperatures; the printed LH84 polynomial diverges from that rebuild.
+Na-013 tabulates liquid Cp = 104.600 J/(mol K). Its 1405.2 K
+ALPHA ↔ LIQUID marker and the parse-ambiguous 1500 K row are excluded from the
+fit; complete supercooled-liquid nodes support 1000–1400 K and complete
+post-marker nodes support 1600–3000 K.
 
 For gas rows, `H_app_kJ_mol` includes the formation-enthalpy anchor folded into
 Shomate F (the stored Shomate H is zero); callers needing H−H298 must subtract
@@ -415,28 +441,28 @@ definition.
 
 | species | n | signed median | abs max |
 |---|--:|--:|--:|
-| Na | 1 | +0.168 | 0.168 |
-| NaO | 1 | −0.030 | 0.030 |
+| Na | 1 | −0.151 | 0.151 |
+| NaO | 1 | −0.349 | 0.349 |
 | O | 1 | −0.007 | 0.007 |
 | SiO | 1 | −0.009 | 0.009 |
 | FeO | 1 | +0.009 | 0.009 |
 
-The printed Table 9 Na anchor residual is now +0.168 dex (about +0.17). Across
-comparable Fig. 10 points, Na and NaO have positive medians of +0.492 dex
-(n = 35) and +0.463 dex (n = 27); Na2 is +0.784 dex at its one digitized point.
-NaO crosses zero at some points. O, SiO and FeO each match their own Table 9
-anchor to about 0.01 dex (−0.007, −0.009 and +0.009), so this is not a unit or
-fO2-pin error. The Fig. 10 medians for SiO and FeO sit about +0.2 dex above
-the transcribed anchor; that is a figure-versus-table difference in the
-paper's digitized data, not a reconciled result.
+With the JANAF Na-013 parent, the Table 9 Na and NaO residual medians are
+−0.151 and −0.349 dex. Across comparable Fig. 10 points, Na and NaO have
+medians of +0.158 dex (n = 35) and +0.174 dex (n = 27); Na2 is +0.132 dex at
+its one digitized point. Na2 has no Table 9 anchor. O, SiO and FeO each match
+their own Table 9 anchor to about 0.01 dex (−0.007, −0.009 and +0.009), so this
+is not a unit or fO2-pin error. The Fig. 10 medians for SiO and FeO sit about
++0.2 dex above the transcribed anchor; that is a figure-versus-table
+difference in the paper's digitized data, not a reconciled result.
 
 #### Fig. 10 points (digitized)
 
 | species | n | signed median | abs max |
 |---|--:|--:|--:|
-| Na | 35 | +0.492 | 0.684 |
-| NaO | 27 | +0.463 | 1.124 |
-| Na2 | 1 | +0.784 | 0.784 |
+| Na | 35 | +0.158 | 0.342 |
+| NaO | 27 | +0.174 | 0.782 |
+| Na2 | 1 | +0.132 | 0.132 |
 | O | 34 | +0.014 | 0.028 |
 | SiO | 30 | +0.175 | 1.075 |
 | FeO | 31 | +0.223 | 0.830 |
