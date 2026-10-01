@@ -221,8 +221,8 @@ CONDENSATE_COLUMNS = (
 # below the 2130 K melting point exactly as the JANAF liquid table states.
 # Na-013 tabulates Cp = 104.600 J/(mol K) at every liquid node. The 1405.2 K
 # ALPHA <--> LIQUID marker identifies the branch; complete supercooled-liquid
-# nodes are 1000--1400 K, the 1500 K row is ambiguous, and complete post-marker
-# nodes are 1600--3000 K.
+# nodes are 1000--1400 K; the 1500 K thermal cells are recovered from its
+# formation-ambiguous row, and complete post-marker nodes are 1600--3000 K.
 CONDENSATE_SOURCES = (
     ("TiO2(l)", "O-044", "Ti", 1, 2),
     ("Cr2O3(l)", "Cr-015", "Cr", 2, 3),
@@ -275,17 +275,6 @@ _FIT_T_MIN_BY_TABLE = {
     "Mg-009": 2200.0,
     "Ca-028": 2200.0,
     "Na-013": 1500.0,
-}
-
-# Na-013's 1500 K row has six tab fields because JANAF prints its two
-# formation columns together. Its thermal cells remain recoverable; the fit
-# ignores its formation columns and uses dfH(298) from the complete 298.15 K row.
-_RECOVERED_THERMAL_CELLS = {
-    ("Na-013", 1500.0): {
-        "heat_capacity": 104.600,
-        "entropy": 260.601,
-        "enthalpy_increment": 125.714,
-    },
 }
 
 # Sources whose tabulated rows stop short of FIT_T_MAX.  Cr(g), Cr-005: Cr
@@ -378,18 +367,25 @@ def _usable_rows(
                 f"{table_id} has an incomplete/ambiguous row at {temperature} K"
             )
         rows.append({field: float(value) for field, value in values.items()})
-    for (recovery_table_id, temperature), thermal_cells in (
-        _RECOVERED_THERMAL_CELLS.items()
-    ):
-        if (
-            recovery_table_id == table_id
-            and fit_t_min <= temperature <= fit_t_max
-            and temperature in ambiguous_temperatures
-        ):
-            # This exact Na-013 row is ambiguous only in its formation cells;
-            # the fitter uses these thermal cells and the separate 298.15 K
-            # formation-enthalpy anchor.
-            rows.append({"temperature": temperature, **thermal_cells})
+    if table_id == "Na-013" and fit_t_min <= 1500.0 <= fit_t_max:
+        for ambiguity in table.get("parse_ambiguities", []):
+            cells = str(ambiguity.get("raw_line", "")).strip().split("\t")
+            try:
+                temperature = float(cells[0])
+            except (IndexError, ValueError):
+                continue
+            if temperature == 1500.0:
+                # This exact row is ambiguous only in its formation cells;
+                # parse the thermal fields and use dfH(298) from the complete
+                # 298.15 K row.
+                rows.append(
+                    {
+                        "temperature": temperature,
+                        "heat_capacity": float(cells[1]),
+                        "entropy": float(cells[2]),
+                        "enthalpy_increment": float(cells[4]),
+                    }
+                )
     rows.sort(key=lambda row: row["temperature"])
     if minimum_rows is None:
         minimum_rows = 15

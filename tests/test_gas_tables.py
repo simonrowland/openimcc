@@ -1244,23 +1244,15 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
 
 
 def test_no_fitted_row_consumes_a_parse_ambiguous_source_row() -> None:
+    consumed_ambiguous_rows = set()
     for table_id in (*GAS_TABLE_IDS.values(), *FITTED_CONDENSATE_TABLE_IDS.values()):
-        fit_t_min = build_gas_tables._FIT_T_MIN_BY_TABLE.get(
-            table_id, build_gas_tables.FIT_T_MIN
+        rows = build_gas_tables._usable_rows(_record(table_id)["table"], table_id)
+        consumed_ambiguous_rows.update(
+            (table_id, row["temperature"])
+            for row in rows
+            if row["temperature"] in _ambiguous_temperatures(table_id)
         )
-        selected_temperatures = {
-            row["temperature"]
-            for row in _complete_rows(table_id)
-            if (
-                fit_t_min
-                <= row["temperature"]
-                <= build_gas_tables._FIT_T_MAX_BY_TABLE.get(
-                    table_id, build_gas_tables.FIT_T_MAX
-                )
-                and row["temperature"] not in _ambiguous_temperatures(table_id)
-            )
-        }
-        assert selected_temperatures.isdisjoint(_ambiguous_temperatures(table_id))
+    assert consumed_ambiguous_rows == {("Na-013", 1500.0)}
 
 
 def test_na_condensate_recovers_1500_thermal_cells_for_both_intervals() -> None:
@@ -1284,10 +1276,19 @@ def test_na_condensate_recovers_1500_thermal_cells_for_both_intervals() -> None:
     assert [row["temperature"] for row in high] == list(
         np.arange(1500.0, 3000.1, 100.0)
     )
-    assert {row["heat_capacity"] for row in low + high} == {104.6}
     recovered = low[-1]
-    assert recovered["entropy"] == 260.601
-    assert recovered["enthalpy_increment"] == 125.714
+    raw_1500_line = next(
+        ambiguity["raw_line"]
+        for ambiguity in source["table"]["parse_ambiguities"]
+        if ambiguity["raw_line"].startswith("1500\t")
+    )
+    raw_1500_cells = raw_1500_line.split("\t")
+    assert recovered["heat_capacity"] == float(raw_1500_cells[1])
+    assert recovered["entropy"] == float(raw_1500_cells[2])
+    assert recovered["enthalpy_increment"] == float(raw_1500_cells[4])
+    assert {row["heat_capacity"] for row in low + high} == {
+        recovered["heat_capacity"]
+    }
     assert "formation_enthalpy" not in recovered
     assert "formation_gibbs_energy" not in recovered
 
@@ -1301,11 +1302,13 @@ def test_na_condensate_recovers_1500_thermal_cells_for_both_intervals() -> None:
     )
     node_1400 = next(row for row in complete if row["temperature"] == 1400.0)
     node_1600 = next(row for row in complete if row["temperature"] == 1600.0)
-    expected_g = (reference_h + 125.714) * 1000.0 - 1500.0 * 260.601
+    expected_g = (
+        reference_h + recovered["enthalpy_increment"]
+    ) * 1000.0 - 1500.0 * recovered["entropy"]
     for neighbor in (node_1400, node_1600):
         delta_t = 1500.0 - neighbor["temperature"]
-        continued_h = neighbor["enthalpy_increment"] + 104.6 * delta_t / 1000.0
-        continued_s = neighbor["entropy"] + 104.6 * np.log(
+        continued_h = neighbor["enthalpy_increment"] + recovered["heat_capacity"] * delta_t / 1000.0
+        continued_s = neighbor["entropy"] + recovered["heat_capacity"] * np.log(
             1500.0 / neighbor["temperature"]
         )
         continued_g = (reference_h + continued_h) * 1000.0 - 1500.0 * continued_s
@@ -1324,7 +1327,7 @@ def test_na_condensate_recovers_1500_thermal_cells_for_both_intervals() -> None:
     high_g = _lamor_gibbs(1500.0, high_row)
     assert abs(low_g - expected_g) < 10.0
     assert abs(high_g - expected_g) < 10.0
-    assert abs(low_g - high_g) < 10.0
+    assert abs(low_g - high_g) == pytest.approx(2.779451693408191, abs=1e-9)
 
 
 def _janaf_apparent_gibbs(table_id: str, T: float) -> float:
