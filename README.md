@@ -394,10 +394,13 @@ the constant-Cp continuation against those genuine liquid-branch nodes.
 
 For O-063 V2O3(l), the generated continuation anchors at the 1700 K liquid
 node (Cp = 156.900 J/mol K); its enthalpy and entropy reproduce the liquid
-branch at the 1600 K transition. The liquid-only 1700–3000 K fit omits the
-glass-side 1500 K node and both transition-marked 1600 K lines. The continuation
-covers 1200–1700 K, with the high row selected exactly at 1700 K. Strict gas
-calls below 1500 K still refuse because the V gas rows begin there.
+branch at the 1600 K transition. The liquid-only fit uses 13 complete nodes
+from 1700–2300 K and 2500–3000 K, omitting the glass-side 1500 K node, both
+transition-marked 1600 K lines, the 2340 K II ↔ LIQUID marker, and the
+parse-ambiguous 2400 K grid point. Both omitted lines sit on the Cp = 156.900
+J/(mol K) branch. The continuation covers 1200–1700 K, with the high row
+selected exactly at 1700 K. Strict gas calls below 1500 K still refuse because
+the V gas rows begin there.
 
 The continuation-minus-high-row Gibbs seams are −0.0031 kJ/mol (research MgO),
 −0.0016 (research CaO), −0.0295 (research Al2O3), −0.0005 (research SiO2),

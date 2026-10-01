@@ -649,8 +649,6 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         expected_t_min = build_gas_tables._FIT_T_MIN_BY_TABLE.get(
             table_id, build_gas_tables.FIT_T_MIN
         )
-        if species == "V2O3(l)":
-            expected_t_min = 1700.0
         runtime_t_min = 1500 if species == "Na2O(l)" else int(expected_t_min)
         assert row["T_range_K"] == [runtime_t_min, 3000]
         assert source["source"]["doi"] == "10.18434/T42S31"
@@ -1308,8 +1306,6 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
         fit_t_min = build_gas_tables._FIT_T_MIN_BY_TABLE.get(
             table_id, build_gas_tables.FIT_T_MIN
         )
-        if species == "V2O3(l)":
-            fit_t_min = 1700.0
         runtime_t_min = 1500.0 if species == "Na2O(l)" else fit_t_min
         row = pack.oxide_df.loc[[species]]
         row = row.loc[row["T_min"].astype(float) == runtime_t_min].iloc[0]
@@ -1794,7 +1790,7 @@ def test_research_condensate_rows_match_janaf_fits() -> None:
             io.StringIO((pack_dir / "condensate.csv").read_text(encoding="utf-8"))
         )
     }
-    assert len(generated) == 8
+    assert len(generated) == 16
     assert set(generated) <= set(packaged)
     for row_ref, fitted in generated.items():
         assert {
@@ -1811,8 +1807,17 @@ def test_research_condensate_rows_match_janaf_fits() -> None:
         for row in provenance["rows"]
         if row["table"] == "condensate"
     }
-    assert set(records) == set(generated)
-    for row_ref, fitted in generated.items():
+    research_refs = {
+        source[1] for source in build_gas_tables.RESEARCH_CONDENSATE_SOURCES
+    } | {
+        source[1] + build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX
+        for source in build_gas_tables.RESEARCH_SUPERCOOLED_LIQUID_SOURCES
+    }
+    research_generated = {
+        row_ref: row for row_ref, row in generated.items() if row_ref in research_refs
+    }
+    assert set(records) == set(research_generated)
+    for row_ref, fitted in research_generated.items():
         table_id = row_ref.removesuffix(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
         source = build_gas_tables._load_record(
             JANAF_DATA / f"{table_id}.yaml"
@@ -1826,6 +1831,25 @@ def test_research_condensate_rows_match_janaf_fits() -> None:
             assert records[row_ref]["source_data"] is False
         else:
             assert records[row_ref]["user_agent"] == source["extraction"]["user_agent"]
+
+
+def test_research_pack_non_major_condensate_rows_match_default_byte_for_byte() -> None:
+    research_path = (
+        ROOT
+        / "src/openimcc/data/packs/gas-janaf-parent-liquids-research/condensate.csv"
+    )
+    default_path = GAS_DATA / "condensate.csv"
+    research_only = {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"}
+
+    def non_major_rows(path: Path) -> list[str]:
+        lines = path.read_text(encoding="utf-8").splitlines()
+        return sorted(
+            line
+            for line in lines[1:]
+            if next(csv.reader([line]))[0] not in research_only
+        )
+
+    assert non_major_rows(research_path) == non_major_rows(default_path)
 
 
 def _shomate_g(row: dict[str, str], T: float) -> float:
@@ -2121,10 +2145,14 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
         for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
         if row["Ref"].endswith(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
     }
+    research_supercooled_species = {
+        source[0] for source in build_gas_tables.RESEARCH_SUPERCOOLED_LIQUID_SOURCES
+    }
     research_generated = {
         row["species_name"]: row
         for row in build_gas_tables.build_research_condensate_rows(JANAF_DATA)
         if row["Ref"].endswith(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
+        and row["species_name"] in research_supercooled_species
     }
     research_dir = (
         ROOT / "src/openimcc/data/packs/gas-janaf-parent-liquids-research"
@@ -2402,9 +2430,9 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             checked += 1
         maxima[species] = row_max
 
-    # Liquid-only starts for Al2O3, Cr2O3, SiO2, MgO and CaO omit source rows
-    # before their selected branches, leaving 420 complete reaction nodes.
-    assert checked == 420
+    # Liquid-only starts omit source rows before each selected branch; the
+    # V2O3 start at 1700 K leaves 417 complete reaction nodes overall.
+    assert checked == 417
     # The measured on-node maximum remains below 10 J/mol for every fitted gas
     # row; the separate condensate test records each parent-row fit residual.
     assert max(maxima.values()) <= 10.0
@@ -2435,9 +2463,10 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     SiO2/O-038 at 1700 K, MgO/Mg-009 at 2100.001 K, CaO/Ca-028 at 2100 K, and
     Al2O3/Al-100 at 2400 K, TiO2/O-044 at 2200 K, V2O3/O-063 at 1600 and
     2400 K, and NbO2/Nb-013 at 2175 and 2200 K. JANAF liquid-branch starts
-    also leave Al source comparisons below 2500 K, Si below 1800 K, and Mg/Ca
-    below 2200 K. K2O's K-012 parent ends at 2000 K, so K, K2 and KO have no
-    independent parent reference at 2125, 2250, 2375 or 2500 K.
+    also leave Al source comparisons below 2500 K, Si below 1800 K, Mg/Ca
+    below 2200 K, and V below 1700 K. K2O's K-012 parent ends at 2000 K, so K,
+    K2 and KO have no independent parent reference at 2125, 2250, 2375 or
+    2500 K.
     """
     for _oxide, table_id, temperature in _G2_SOURCE_HOLES:
         assert temperature in _ambiguous_temperatures(table_id)
@@ -2508,6 +2537,10 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         for species in ("Na", "Na2", "NaO")
     } | {
         (species, temperature)
+        for species in ("V", "VO", "VO2")
+        for temperature in (1500.0, 1625.0)
+    } | {
+        (species, temperature)
         for species in ("K", "K2", "KO")
         for temperature in (2125.0, 2250.0, 2375.0, 2500.0)
     } | {
@@ -2545,7 +2578,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
             2125.0,
         )
     }
-    assert checked == 242
+    assert checked == 236
     existing = set(_SF04_REACTIONS) - {
         "O2",
         *NASA_TABLE_IDS,

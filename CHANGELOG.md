@@ -14,10 +14,12 @@
   functions and coverage statuses remain unchanged. Continuation
   use is visible in gas domain flags; the README and per-pack provenance record
   residuals, illustrative Cp sensitivity, and interval seams.
-- Refit the default V2O3(l) high interval from the 1700–3000 K liquid nodes
-  only and extend its generated constant-Cp continuation through 1700 K. The
-  high interval is selected at the shared boundary; V gas results change over
-  1500–<1700 K and at fit-residual scale from 1700 K onward.
+- Refit the default V2O3(l) high interval from the 1700–2300 K and 2500–3000 K
+  liquid nodes only and extend its generated constant-Cp continuation through
+  1700 K. The high interval is selected at the shared boundary; V gas results
+  change over 1500–<1700 K and at fit-residual scale from 1700 K onward. The
+  research pack now uses these same generated V2O3(l) rows, so its V results
+  change too.
 - Added opt-in JANAF-fitted Na+, K+, Ca+, electron and negative-ion gas
   channels, including O2−, AlO2−, KO−, Cr−, V− and Nb−, with melt-buffered
   electroneutrality. Neutral defaults remain unchanged. The completeness screen

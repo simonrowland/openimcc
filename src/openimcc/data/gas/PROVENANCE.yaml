@@ -1480,8 +1480,11 @@ rows:
       O-063 is the caller-supplied V(III) liquid parent; transition-marked
       nodes are omitted rather than assigning a crystal/liquid branch. The
       glass-side 1500 K node and both transition-marked 1600 K lines are
-      omitted. The fit uses the 13 complete liquid nodes from 1700-3000 K
-      (Cp = 156.900 J/(mol K)); the row serves at the shared 1700 K boundary.
+      omitted. The fit uses the 13 complete liquid nodes from 1700-2300 K and
+      2500-3000 K (Cp = 156.900 J/(mol K)). The parse-ambiguous 2400 K grid
+      point and the 2340 K II <--> LIQUID marker are omitted; both sit on that
+      Cp = 156.900 J/(mol K) branch. The row serves at the shared 1700 K
+      boundary.
   - table: condensate
     species_name: NbO2(l)
     table_id: Nb-013

@@ -259,8 +259,10 @@ CONDENSATE_SOURCES = (
 )
 
 # O-063 V2O3(l): the 1500 K Cp cell is glass-side; both 1600 K lines are
-# transition-marked and omitted. The 13 complete nodes from 1700-3000 K are
-# genuine liquid (Cp = 156.900 J/(mol K)), so they alone define the high fit.
+# transition-marked and omitted. The 13 complete nodes from 1700-2300 K and
+# 2500-3000 K define the high fit. The parse-ambiguous 2400 K grid point and
+# 2340 K II <--> LIQUID marker are omitted; both sit on the Cp = 156.900
+# J/(mol K) branch.
 
 # Parent-liquid research pack only; these do not enter the default condensate CSV.
 # SiO2(l), O-038: the 1696 K II <--> LIQUID marker follows glass Cp values
@@ -323,6 +325,7 @@ _TRANSITION_SOURCE_TABLES = frozenset({"Cr-015", "O-063", "Nb-013", "Na-013"})
 # grid nodes on the liquid branch; phase-marker rows are never fitted.
 _FIT_T_MIN_BY_TABLE = {
     "Cr-015": 1900.0,
+    "O-063": 1700.0,
     "O-038": 1800.0,
     "Al-100": 2500.0,
     "Mg-009": 2200.0,
@@ -441,10 +444,8 @@ def _usable_rows(
                 )
     rows.sort(key=lambda row: row["temperature"])
     if minimum_rows is None:
-        minimum_rows = 15
-        if table_id == "O-063":
-            minimum_rows = 14
-        elif table_id == "Cr-015":
+        minimum_rows = 13
+        if table_id == "Cr-015":
             # 1900--3000 K has 12 grid nodes; the omitted 2700 K row leaves 11.
             minimum_rows = 11
         elif table_id == "O-038":
@@ -1405,17 +1406,6 @@ def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
                     runtime_t_min=1500.0,
                 )
             )
-        elif source[1] == "O-063":
-            rows.append(
-                _fit_condensate_row(
-                    source_dir,
-                    *source,
-                    fit_t_min=1700.0,
-                    fit_t_max=3000.0,
-                    minimum_rows=13,
-                    runtime_t_min=1700.0,
-                )
-            )
         else:
             rows.append(_fit_condensate_row(source_dir, *source))
     # Na-013 is a liquid table below its 1405.2 K ALPHA <--> LIQUID marker.
@@ -1459,11 +1449,12 @@ def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
 
 
 def build_research_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
-    """Fit the parent-liquid research rows without changing defaults."""
-    rows = [
+    """Fit research parents and include the generated default condensate rows."""
+    rows = build_condensate_rows(source_dir)
+    rows.extend(
         _fit_condensate_row(source_dir, *source)
         for source in RESEARCH_CONDENSATE_SOURCES
-    ]
+    )
     rows.extend(
         _fit_supercooled_liquid_row(source_dir, *source)
         for source in RESEARCH_SUPERCOOLED_LIQUID_SOURCES
@@ -1513,6 +1504,9 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
             )
             serialized_rows.append(buffer.getvalue().rstrip("\n"))
         generated_starts = {str(row["T_min"]) for row in species_rows}
+        generated_intervals = [
+            (float(row["T_min"]), float(row["T_max"])) for row in species_rows
+        ]
         generated_refs: dict[str, int] = {}
         for row in species_rows:
             generated_refs[row["Ref"]] = generated_refs.get(row["Ref"], 0) + 1
@@ -1522,6 +1516,14 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
             if fields[0] != species_name:
                 continue
             replaced_interval = fields[5] in generated_starts
+            existing_interval = (float(fields[5]), float(fields[6]))
+            # Generated fits supersede overlapping stale intervals even when
+            # their reference or lower bound changed.
+            replaced_interval |= any(
+                max(existing_interval[0], generated_min)
+                < min(existing_interval[1], generated_max)
+                for generated_min, generated_max in generated_intervals
+            )
             # A singleton generated reference owns one complete interval. Let
             # it replace a stale interval whose T_min changed, as for O-063.
             replaced_interval |= generated_refs.get(fields[-1]) == 1
