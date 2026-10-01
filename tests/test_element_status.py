@@ -634,7 +634,14 @@ def _c4_rows_cover_domain(
         )
         if source is None:
             return False
-        if source["authority"] == "janaf_fitted":
+        if source.get("extrapolation") is True:
+            if (
+                source["source_data"] is not False
+                or source["method"] != "generated_constant_cp_extrapolation_fit"
+                or not _one_bar_janaf_source(source["table_id"])
+            ):
+                return False
+        elif source["authority"] == "janaf_fitted":
             if source["method"] != "fitted" or not _one_bar_janaf_source(
                 source["table_id"]
             ):

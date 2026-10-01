@@ -215,10 +215,12 @@ CONDENSATE_COLUMNS = (
     "Ref",
 )
 
-# Parent-oxide liquids fitted here rather than transcribed.  O-044 is the
-# JANAF "O2Ti1(l)" record; over 1500--3000 K it is on its liquid branch
-# (glass transition 1400 K, Cp = 100.416 J/(mol K) throughout), supercooled
-# below the 2130 K melting point exactly as the JANAF liquid table states.
+# Parent-oxide liquids fitted here rather than transcribed. O-044 is the JANAF
+# "O2Ti1(l)" record. Its 1400 K row prints glass-side thermal cells followed
+# by the GLASS <--> LIQUID marker; the first complete, unambiguous liquid node
+# is 1500 K with Cp = 100.416 J/(mol K). Complete supercooled liquid nodes run
+# from 1500-2100 K and 2300-3000 K (2200 K is parse-ambiguous). The continuation
+# anchor is therefore a genuine liquid node, supercooled below 2130 K.
 # Na-013 tabulates Cp = 104.600 J/(mol K) at every liquid node. The 1405.2 K
 # ALPHA <--> LIQUID marker identifies the branch; complete supercooled-liquid
 # nodes are 1000--1400 K; the 1500 K thermal cells are recovered from its
@@ -254,6 +256,28 @@ RESEARCH_CONDENSATE_SOURCES = (
     ("MgO(l)", "Mg-009", "Mg", 1, 1),
     ("CaO(l)", "Ca-028", "Ca", 1, 1),
 )
+
+# Constant-Cp supercooled-liquid continuations for default JANAF-fitted rows.
+# T0 is the first complete liquid node; T_max meets the existing row's T_min.
+SUPERCOOLED_LIQUID_SOURCES = (
+    ("TiO2(l)", "O-044", "Ti", 1, 2, 1500.0, 1500.0),
+    ("Cr2O3(l)", "Cr-015", "Cr", 2, 3, 1900.0, 1900.0),
+    ("V2O3(l)", "O-063", "V", 2, 3, 1600.0, 1500.0),
+)
+# Major-oxide continuations belong only to the opt-in JANAF research pack.
+# Their upper bounds meet that pack's existing JANAF rows, whose starts are
+# 1800 K (SiO2), 2500 K (Al2O3), and 2200 K (MgO, CaO).
+RESEARCH_SUPERCOOLED_LIQUID_SOURCES = (
+    ("SiO2(l)", "O-038", "Si", 1, 2, 1800.0, 1800.0),
+    ("Al2O3(l)", "Al-100", "Al", 2, 3, 2500.0, 2500.0),
+    ("MgO(l)", "Mg-009", "Mg", 1, 1, 2200.0, 2200.0),
+    ("CaO(l)", "Ca-028", "Ca", 1, 1, 2200.0, 2200.0),
+)
+ALL_SUPERCOOLED_LIQUID_SPECIES = {
+    source[0]
+    for source in (*SUPERCOOLED_LIQUID_SOURCES, *RESEARCH_SUPERCOOLED_LIQUID_SOURCES)
+}
+SUPERCOOLED_LIQUID_REF_SUFFIX = "-SC-CP"
 
 REQUIRED_FIELDS = (
     "temperature",
@@ -1075,6 +1099,119 @@ def _fit_condensate_row(
     }
 
 
+def _fit_supercooled_liquid_row(
+    source_dir: Path,
+    species_name: str,
+    table_id: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    T0: float,
+    runtime_t_max: float,
+) -> dict[str, str]:
+    """Fit the generated constant-Cp continuation to the condensate form.
+
+    Premise: JANAF gives the first complete liquid-node enthalpy increment,
+    entropy, and liquid Cp at T0.  For the labelled continuation,
+    H(T)=H(T0)+Cp*(T-T0) and S(T)=S(T0)+Cp*ln(T/T0), then
+    G_app=dfH298+[H(T)-H298]-T*S(T).  The fitted polynomial represents this
+    generated function; it is not JANAF source data below the liquid branch.
+
+    Unit check: Cp*(T-T0) is J/mol and is divided by 1000 for JANAF's
+    kJ/mol enthalpy increment; Cp*ln(T/T0) is J/(mol K); both terms in G
+    are J/mol.  The condensate fit matches Phi/R with Phi=S-(H-H298)/T.
+    Sanity: the analytic continuation has the source H, S, G, and -dG/dT
+    exactly at T0.  At source nodes below a glass/liquid marker, differences
+    from JANAF's printed glass rows are expected because this deliberately
+    continues the liquid rather than the glass.  Any genuine supercooled
+    liquid nodes in the JANAF table are checked by the caller's regression
+    tests.
+    """
+    record = _load_record(source_dir / f"{table_id}.yaml")
+    table = record["table"]
+    if table["table_id"] != table_id:
+        raise ValueError(f"{table_id}: record table_id does not match filename")
+    _validate_record_identity(record, species_name, table_id, "l")
+    source_row = next(
+        (row for row in table["values"] if _value(row, "temperature") == T0),
+        None,
+    )
+    if source_row is None:
+        raise ValueError(f"{table_id}: no complete liquid anchor at {T0:g} K")
+    cp = float(_value(source_row, "heat_capacity"))
+    entropy_0 = float(_value(source_row, "entropy"))
+    enthalpy_0 = float(_value(source_row, "enthalpy_increment"))
+    reference = next(
+        _value(row, "formation_enthalpy")
+        for row in table["values"]
+        if _value(row, "temperature") == 298.15
+    )
+    if reference is None:
+        raise ValueError(f"{table_id} has no complete 298.15 K formation enthalpy")
+
+    # Fit on JANAF's 100 K grid plus both interval endpoints.  Evaluate the
+    # resulting polynomial every kelvin below to report the actual maximum.
+    fit_temperatures = sorted(
+        {1200.0, runtime_t_max}
+        | set(float(T) for T in range(1200, int(runtime_t_max) + 1, 100))
+    )
+
+    def phi(temperature: float) -> float:
+        enthalpy_increment = enthalpy_0 + cp * (temperature - T0) / 1000.0
+        entropy = entropy_0 + cp * math.log(temperature / T0)
+        return entropy - enthalpy_increment * 1000.0 / temperature
+
+    tau = np.asarray(fit_temperatures, dtype=float) / 1000.0
+    design = np.column_stack((np.ones_like(tau), tau, tau**2, tau**3, tau**4))
+    coefficients = np.linalg.lstsq(
+        design, np.asarray([phi(T) for T in fit_temperatures]) / R_J_MOL_K,
+        rcond=None,
+    )[0]
+    sample_temperatures = np.linspace(1200.0, runtime_t_max, int(runtime_t_max - 1200) + 1)
+    sample_tau = sample_temperatures / 1000.0
+    sample_design = np.column_stack(
+        (np.ones_like(sample_tau), sample_tau, sample_tau**2, sample_tau**3, sample_tau**4)
+    )
+    g_fit = 1000.0 * reference - R_J_MOL_K * sample_temperatures * (
+        sample_design @ coefficients
+    )
+    g_generated = np.asarray([
+        (reference + enthalpy_0 + cp * (T - T0) / 1000.0) * 1000.0
+        - T * (entropy_0 + cp * math.log(T / T0))
+        for T in sample_temperatures
+    ])
+    residual_j = float(np.max(np.abs(g_fit - g_generated)))
+    residual_log10 = float(
+        np.max(np.abs((g_fit - g_generated) /
+                      (R_J_MOL_K * sample_temperatures * math.log(10.0))))
+    )
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    A, B, C, D, E = coefficients
+    return {
+        "species_name": species_name,
+        "state": "l",
+        "cation": cation,
+        "cat_num": str(cat_num),
+        "oxy_num": str(oxy_num),
+        "T_min": "1200",
+        "T_max": number(runtime_t_max),
+        "dH298_R": number(float(reference) / R_J_MOL_K),
+        "dG_A": number(A),
+        "dG_B": number(B),
+        "dG_C": number(C),
+        "dG_D": number(D),
+        "dG_E": number(E),
+        "Ref": table_id + SUPERCOOLED_LIQUID_REF_SUFFIX,
+        "_max_residual_J_per_mol": number(residual_j),
+        "_max_residual_log10_K": number(residual_log10),
+        "_T0_K": number(T0),
+        "_Cp_l_J_molK": number(cp),
+    }
+
+
 def build_rows(
     source_dir: Path,
     nasa_source_dir: Path | None = None,
@@ -1166,15 +1303,24 @@ def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
             runtime_t_max=1500.0,
         )
     )
+    rows.extend(
+        _fit_supercooled_liquid_row(source_dir, *source)
+        for source in SUPERCOOLED_LIQUID_SOURCES
+    )
     return rows
 
 
 def build_research_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
     """Fit the parent-liquid research rows without changing defaults."""
-    return [
+    rows = [
         _fit_condensate_row(source_dir, *source)
         for source in RESEARCH_CONDENSATE_SOURCES
     ]
+    rows.extend(
+        _fit_supercooled_liquid_row(source_dir, *source)
+        for source in RESEARCH_SUPERCOOLED_LIQUID_SOURCES
+    )
+    return rows
 
 
 def write_csv(rows: list[dict[str, str]], output: Path) -> None:
@@ -1186,13 +1332,30 @@ def write_csv(rows: list[dict[str, str]], output: Path) -> None:
 
 
 def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
-    """Replace or append the fitted rows; keep every other line unchanged."""
+    """Replace generated intervals only; retain unrelated source intervals."""
     lines = output.read_text(encoding="utf-8").splitlines()
     if not lines or tuple(lines[0].split(",")) != CONDENSATE_COLUMNS:
         raise ValueError(f"{output} does not have the condensate header")
     grouped_rows: dict[str, list[dict[str, str]]] = {}
     for row in rows:
         grouped_rows.setdefault(row["species_name"], []).append(row)
+    generated_continuations = {
+        row["species_name"]
+        for row in rows
+        if row["Ref"].endswith(SUPERCOOLED_LIQUID_REF_SUFFIX)
+    }
+    lines = [
+        lines[0],
+        *(
+            line for line in lines[1:]
+            if not (
+                (fields := next(csv.reader([line])))[0]
+                in ALL_SUPERCOOLED_LIQUID_SPECIES
+                and fields[-1].endswith(SUPERCOOLED_LIQUID_REF_SUFFIX)
+                and fields[0] not in generated_continuations
+            )
+        ),
+    ]
     for species_name, species_rows in grouped_rows.items():
         serialized_rows = []
         for row in species_rows:
@@ -1201,16 +1364,17 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
                 [row[column] for column in CONDENSATE_COLUMNS]
             )
             serialized_rows.append(buffer.getvalue().rstrip("\n"))
-        matches = [
-            index
-            for index, existing in enumerate(lines)
-            if existing.split(",", 1)[0] == species_name
-        ]
-        if matches:
-            first = matches[0]
-            for index in reversed(matches[1:]):
+        generated_starts = {str(row["T_min"]) for row in species_rows}
+        matching_intervals = []
+        for index, existing in enumerate(lines):
+            fields = next(csv.reader([existing]))
+            if fields[0] == species_name and fields[5] in generated_starts:
+                matching_intervals.append(index)
+        if matching_intervals:
+            insert_at = matching_intervals[0]
+            for index in reversed(matching_intervals):
                 del lines[index]
-            lines[first : first + 1] = serialized_rows
+            lines[insert_at:insert_at] = serialized_rows
         else:
             lines.extend(serialized_rows)
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -1254,6 +1418,13 @@ def main() -> None:
     condensate_rows = build_condensate_rows(args.source_dir)
     if args.condensate_output is not None:
         merge_condensate_csv(condensate_rows, args.condensate_output)
+    if args.output == packaged_gas:
+        research_condensate = repository / (
+            "src/openimcc/data/packs/gas-janaf-parent-liquids-research/condensate.csv"
+        )
+        merge_condensate_csv(
+            build_research_condensate_rows(args.source_dir), research_condensate
+        )
     for row in [*rows, *condensate_rows]:
         print(
             f"{row['species_name']}: {row['_max_residual_J_per_mol']} J/mol, "

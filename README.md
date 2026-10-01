@@ -95,10 +95,17 @@ The default tables ship in `openimcc.data.gas` and are loaded through
 `importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
 NIST-JANAF 4th-edition records; the condensate rows retain their source-attributed
-Lamoreaux/Hildenbrand and JANAF coefficients, except TiO2(l), Cr2O3(l), V2O3(l),
-NbO2(l), and Na2O(l), which are fitted from JANAF liquid tables by the same
-generator. Row-level source hashes, methods, temperature ranges and fit
-residuals are in `PROVENANCE.yaml`.
+Lamoreaux/Hildenbrand and JANAF coefficients. TiO2(l), Cr2O3(l), V2O3(l),
+NbO2(l), and Na2O(l) are fitted from JANAF liquid tables by the same generator.
+The default table adds explicitly labelled constant-Cp continuations only for
+TiO2(l), Cr2O3(l), and V2O3(l), down to 1200 K. The JANAF-fitted major-oxide
+parents SiO2(l), Al2O3(l), MgO(l), and CaO(l) remain in the opt-in
+`gas-janaf-parent-liquids-research` pack; that pack has matching generated
+continuation intervals down to 1200 K. These rows are generated
+extrapolations, not source data. When selected they add a constant-Cp
+supercooled-liquid notice to each affected gas channel's `domain_flags`.
+Row-level source hashes, methods, temperature ranges and fit residuals are in
+the corresponding provenance files.
 
 For comparison with an existing VapoRock installation, set
 `OPENIMCC_VAPOROCK_ROOT` explicitly; that variable overrides both packaged
@@ -108,8 +115,10 @@ override a default call returns the other channels. Caller-supplied Cr2O3,
 V2O3 or NbO2 activities opt into their corresponding channels.
 The Cr(g) fit uses complete JANAF Cr-005 rows through 2900 K; evaluation above
 that declared endpoint is flagged or refused according to the caller's
-extrapolation setting. The fitted Cr2O3(l) parent uses its liquid branch from
-1900 K; Cr channels below that temperature are likewise flagged or refused.
+extrapolation setting. The fitted Cr2O3(l) source interval starts at 1900 K;
+the labelled constant-Cp continuation covers 1200–1900 K. Cr channels carry its
+continuation notice in that interval, and Cr(g) still limits complete C4
+coverage to 2900 K.
 The packaged source records used to fit the gas rows are retained in
 `data-src/janaf/` and included in source distributions, not the runtime wheel.
 NIST SRD 13 is public data, and the publication attributions are recorded in
@@ -177,9 +186,9 @@ Mg domain flag: T=1800.0 K outside declared G(T) interval for 'MgO(l)' [3100, 35
 The `paper-demonstrated-window` flag records that some complex rows are outside
 their paper-demonstrated temperature range. The notice records the known low K
 prediction against Hastie 1981 KEMS pressures; it is part of the result, not a
-reason to hide those activities. The gas `Mg` flag records extrapolation below the
-declared MgO(l) thermodynamic row, so the pressure remains a prediction with a
-visible limitation.
+reason to hide those activities. The gas `Mg` flag records extrapolation beyond
+the declared default MgO(l) interval, so callers can see that the prediction uses
+the existing Lamoreaux function outside its fitted domain.
 
 With the basalt's activities evaluated at each temperature (extrapolated and
 flagged outside the melt pack's domain) and `fO2 = 1e-10`, the sodium gas
@@ -299,6 +308,43 @@ G_app residuals across the four low-interval runtime nodes and 16 high-interval
 nodes are 0.000484 and 0.005218 kJ/mol, respectively. The low value now covers
 four nodes (including the recovered endpoint), rather than the prior five-node
 interpolant's 4.66e-13 kJ/mol at three in-range nodes.
+
+The low parent rows are polynomial fits to generated constant-Cp
+continuations, not source measurements. Their maximum fit residuals are
+measured against the generated continuation; liquid Cp is fixed at T0. JANAF
+uses constant liquid Cp for these branches, matching its analytic continuation
+for any printed supercooled-liquid nodes. Where a glass or lower-solid branch is
+printed, the extension deliberately continues the liquid. A ±10% Cp change is
+an illustrative sensitivity scenario, not a statistical uncertainty; ΔG and
+log10(K) are derived from `ΔG = ΔCp[(T−T0)−T ln(T/T0)]` and peak at 1200 K.
+
+| Pack | Parent interval (K) | T0 (K) | Cp_l (J/mol K) | Max fit residual (J/mol) | ±10% Cp at 1200 K (J/mol; dex) |
+|---|---|---:|---:|---:|---:|
+| Research | MgO(l), 1200–2200 | 2200 | 66.944 | 5.627 | 1825; 0.0794 |
+| Research | CaO(l), 1200–2200 | 2200 | 62.760 | 2.931 | 1711; 0.0745 |
+| Research | Al2O3(l), 1200–2500 | 2500 | 192.464 | 36.583 | 8069; 0.3512 |
+| Research | SiO2(l), 1200–1800 | 1800 | 85.772 | 0.800 | 973; 0.0424 |
+| Default | TiO2(l), 1200–1500 | 1500 | 100.416 | 1.007 | 324; 0.0141 |
+| Default | Cr2O3(l), 1200–1900 | 1900 | 156.900 | 2.626 | 2331; 0.1015 |
+| Default | V2O3(l), 1200–1500 | 1600 | 157.846 | 0.385 | 865; 0.0376 |
+
+For O-044 TiO2(l), the 1400 K source row contains glass-side thermal cells
+(Cp = 76.944 J/mol K) followed by the GLASS ↔ LIQUID marker. The first
+complete, unambiguous liquid node is 1500 K, Cp = 100.416 J/mol K, and is the
+continuation anchor. Genuine supercooled liquid nodes are complete from
+1500–2100 K and 2300–3000 K; the 2200 K row is parse-ambiguous. The fit checks
+the constant-Cp continuation against those genuine liquid-branch nodes.
+
+The continuation-minus-high-row Gibbs seams are −0.0031 kJ/mol (research MgO),
+−0.0016 (research CaO), −0.0295 (research Al2O3), −0.0005 (research SiO2),
+−0.0043 (default TiO2), −0.0010 (default Cr2O3), and −0.0075 (default V2O3).
+The major-oxide rows and default results remain the Lamoreaux functions; the
+JANAF major continuations are available only through the opt-in research pack.
+
+In default data, the three labelled rows close the TiO2, Cr2O3, and V2O3
+parent-liquid gaps. Ti, V and Cr still have gas-interval gaps, so their full
+standard-state C4 checks remain incomplete. Major-oxide default rows keep their
+existing out-of-interval behavior and domain flags.
 
 For gas rows, `G_J_mol = 1000*H_app_kJ_mol - T*S_J_molK`; the factor of
 1000 converts enthalpy to J/mol. For LAM condensates, the following measured

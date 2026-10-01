@@ -77,3 +77,133 @@ rows:
       Glass Cp rises from 56.275 J/(mol K) at 1500 K to 58.894 at 2100 K. After
       the 2100 K GLASS <--> LIQUID marker, liquid Cp is 62.760 from 2200 K through
       3000 K. The crystal/liquid marker is at 3200 K.
+  - table: condensate
+    species_name: SiO2(l)
+    table_id: O-038
+    source_path: data-src/janaf/O-038.yaml
+    source_sha256: f1233d320c6c49aa8055a95b7e0f2d6404b47d42079f42966c5f1331f94f3f2c
+    authority: janaf_fitted
+    classification: research
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: O-038-SC-CP
+    T_range_K: [1200, 1800]
+    T0_K: 1800
+    Cp_l_J_molK: 85.772
+    max_residual_J_per_mol: 0.799531310098246
+    max_residual_log10_K: 3.15944614201531e-05
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 8.5772
+      max_abs_delta_G_J_per_mol: 973.013609681583
+      max_abs_delta_log10_K: 0.0423533527176532
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -0.469
+    note: >-
+      O-038's 1696 K II <--> LIQUID marker precedes the first complete
+      post-marker liquid node at 1800 K. Cp is 85.772 J/(mol K) and constant
+      through the liquid table. This generated research-pack row deliberately
+      continues the liquid below the glass branch; it is not source data.
+  - table: condensate
+    species_name: Al2O3(l)
+    table_id: Al-100
+    source_path: data-src/janaf/Al-100.yaml
+    source_sha256: b27ae0ccebb7433b209b9dbd7f0b67448e49cf2b613625e22b05709e49c0dbe0
+    authority: janaf_fitted
+    classification: research
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: Al-100-SC-CP
+    T_range_K: [1200, 2500]
+    T0_K: 2500
+    Cp_l_J_molK: 192.464
+    max_residual_J_per_mol: 36.5830440185964
+    max_residual_log10_K: 0.00119580744291554
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 19.2464
+      max_abs_delta_G_J_per_mol: 8068.80280248372
+      max_abs_delta_log10_K: 0.351218983683708
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -29.538
+    note: >-
+      The 2327 K ALPHA <--> LIQUID marker separates alpha-solid from liquid;
+      the first complete liquid node is 2500 K with Cp = 192.464 J/(mol K).
+      The 2400 K node is parse-ambiguous. This continuation extends that liquid
+      branch downward only in the opt-in research pack; it is not source data.
+  - table: condensate
+    species_name: MgO(l)
+    table_id: Mg-009
+    source_path: data-src/janaf/Mg-009.yaml
+    source_sha256: f31771f1a45e7749f20bcdc70557a32e85dcb9d79a8b53f7c59c6a3cda482a41
+    authority: janaf_fitted
+    classification: research
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: Mg-009-SC-CP
+    T_range_K: [1200, 2200]
+    T0_K: 2200
+    Cp_l_J_molK: 66.944
+    max_residual_J_per_mol: 5.62680859537795
+    max_residual_log10_K: 0.000195164279003448
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 6.6944
+      max_abs_delta_G_J_per_mol: 1825.14137189466
+      max_abs_delta_log10_K: 0.0794447842396906
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -3.082
+    note: >-
+      After the 2100.001 K GLASS <--> LIQUID marker, the first complete liquid
+      node is 2200 K with Cp = 66.944 J/(mol K), constant through the liquid
+      branch. This generated continuation remains in the opt-in research pack.
+  - table: condensate
+    species_name: CaO(l)
+    table_id: Ca-028
+    source_path: data-src/janaf/Ca-028.yaml
+    source_sha256: 44546e962fd516f7e9cf035429593916440008b7f81c06b5915da86b1203d072
+    authority: janaf_fitted
+    classification: research
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: Ca-028-SC-CP
+    T_range_K: [1200, 2200]
+    T0_K: 2200
+    Cp_l_J_molK: 62.760
+    max_residual_J_per_mol: 2.93058269936591
+    max_residual_log10_K: 0.000104898029922716
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 6.276
+      max_abs_delta_G_J_per_mol: 1711.07003615124
+      max_abs_delta_log10_K: 0.0744794852247099
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -1.563
+    note: >-
+      After the 2100 K GLASS <--> LIQUID marker, the first complete liquid
+      node is 2200 K with Cp = 62.760 J/(mol K), constant through the liquid
+      branch. This generated continuation remains in the opt-in research pack.

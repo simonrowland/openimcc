@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 # --------------------------------------------------------------------------- #
 
 R_J_MOL_K = 8.314462618
+_SUPERCOOLED_EXTENSION_REF_SUFFIX = "-SC-CP"
 """Molar gas constant, J / (mol K)."""
 
 BAR = 1.0
@@ -564,17 +565,14 @@ IMCC_SF04_WORKBOOK_GRID_K = (
     2500.0,
 )
 
-# EXTRAPOLATED-INFORMATIONAL labels for every channel whose gas or parent-oxide
-# table does not cover the full Schaefer-2004 workbook grid above.  The fitted
-# gas rows cover the full workbook grid (Cr(g) through 2900 K); these labels
-# therefore describe parent-oxide gaps only.  Strict evaluation still refuses
-# these temperatures unless allow_extrapolation=True; labels disclose the reason
-# and never widen the executable domain.
+# EXTRAPOLATED-INFORMATIONAL labels for default channels whose gas or parent
+# table misses part of the workbook grid. Major-oxide channels retain their
+# Lamoreaux rows and therefore keep their established out-of-interval flags.
 IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS: dict[str, str] = {
-    "Cr": "Cr2O3(l) [1900, 3000] K misses workbook T < 1900 K",
-    "CrO": "Cr2O3(l) [1900, 3000] K misses workbook T < 1900 K",
-    "CrO2": "Cr2O3(l) [1900, 3000] K misses workbook T < 1900 K",
-    "CrO3": "Cr2O3(l) [1900, 3000] K misses workbook T < 1900 K",
+    "Cr": "Cr(g) [1500, 2900] K misses workbook T > 2900 K",
+    "CrO": "Cr(g) [1500, 2900] K misses workbook T > 2900 K",
+    "CrO2": "Cr(g) [1500, 2900] K misses workbook T > 2900 K",
+    "CrO3": "Cr(g) [1500, 2900] K misses workbook T > 2900 K",
     "SiO": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
     "Mg": "MgO(l) [3100, 3500] K lies above the whole workbook grid",
     "MgO": "MgO(l) [3100, 3500] K lies above the whole workbook grid",
@@ -694,10 +692,9 @@ IMCC_PARENT_OXIDES = (
     "K2O",
 )
 
-# Research-pack note: each new JANAF parent row passes its declared-range
-# C4 check through 3000 K (Al 2500 K, Si 1800 K, Mg/Ca 2200 K). ELEMENT_STATUS
-# evaluates C4 over 1200-3000 K; TiO2(l) has a 1200-1500 K gap and V2O3(l)
-# has a 1200-1600 K gap.
+# Research-pack note: each JANAF parent row passes its declared-range C4 check
+# through 3000 K (Al 2500 K, Si 1800 K, Mg/Ca 2200 K). The default TiO2, Cr2O3,
+# and V2O3 parents have labelled continuations below their fitted rows.
 ELEMENT_STATUS: dict[str, dict[str, object]] = {
     "O": {
         "status": "input (fO2 pinned)",
@@ -882,11 +879,11 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "O-044 has a glass branch below its 1400 K glass-liquid transition, leaving a 1200-1400 K C4 gap; joint C3 ionisation estimate max 8.661e-7 at 3000 K and fO2=1e-10; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "A labelled constant-Cp TiO2(l) continuation covers 1200-1500 K, deliberately continuing the liquid from the first complete liquid node at 1500 K below the glass branch; Ti(g), TiO(g), and TiO2(g) still start at 1500 K, leaving a lower C4 gap; joint C3 ionisation estimate max 8.661e-7 at 3000 K and fO2=1e-10; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("O-022", "TiO"), ("O-046", "TiO2")),
         "c3_ion_bound": {
             "max_ratio": 8.660905980682641e-7,
-            "isolated_bound": 141271120.2829216,
+            "isolated_bound": 143063233.9706761,
             "temperature_K": 3000.0,
             "fO2": 1.0e-10,
             "neutral_pressure_bar": 0.16770818297084839,
@@ -973,11 +970,11 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": False, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "Cr2O3 activity is caller-supplied; Cr(g) ends at 2900 K and Cr2O3(l) at 1900 K; joint C3 ionisation estimate max 2.918e-6 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "A labelled constant-Cp Cr2O3(l) continuation covers the parent interval below 1900 K; Cr(g) still ends at 2900 K, leaving the upper C4 gap; joint C3 ionisation estimate max 2.918e-6 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("Cr-010", "CrO"), ("Cr-011", "CrO2"), ("Cr-012", "CrO3")),
         "c3_ion_bound": {
             "max_ratio": 0.000002917840392048783,
-            "isolated_bound": 0.06627266614919108,
+            "isolated_bound": 0.0675715822588812,
             "temperature_K": 3000.0,
             "fO2": 1.0e-4,
             "neutral_pressure_bar": 0.027214597705363396,
@@ -1016,11 +1013,11 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": False, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "O-063 remains on the glass branch through 1500 K and reaches the liquid branch at 1600 K, leaving a 1200-1600 K C4 gap; activity is caller-supplied; joint C3 ionisation estimate max 1.046e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
+        "reason": "A labelled constant-Cp V2O3(l) continuation covers the parent interval from 1200-1500 K and deliberately continues the liquid below the glass branch; V(g), VO(g), and VO2(g) still start at 1500 K, leaving a lower C4 gap; activity is caller-supplied; joint C3 ionisation estimate max 1.046e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate.",
         "c2_candidates": (("O-026", "VO"), ("O-076", "VO2")),
         "c3_ion_bound": {
             "max_ratio": 0.0000010459911351905233,
-            "isolated_bound": 243.36770791109146,
+            "isolated_bound": 244.6583164788193,
             "temperature_K": 3000.0,
             "fO2": 1.0e-8,
             "neutral_pressure_bar": 0.025413160104762487,
@@ -1478,7 +1475,12 @@ def species_thermo(
         source_table_id=(
             str(row["Ref"])
             if phase == "g" and str(row["Ref"])
-            else _OXIDE_SOURCE_TABLE_IDS.get(species)
+            else (
+                str(row["Ref"]).removesuffix(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
+                if phase != "g"
+                and str(row["Ref"]).endswith(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
+                else _OXIDE_SOURCE_TABLE_IDS.get(species)
+            )
         ),
         T_interval=interval,
         T_min=float(row["T_min"]),
@@ -1716,6 +1718,7 @@ def evaluate_gas(
                 flags.append(flag)
 
         if oxide:
+            oxide_row = None
             gas_parent_row = _GAS_PHASE_PARENT_ROWS.get(oxide)
             if gas_parent_row:
                 if gas_parent_row == gas_species:
@@ -1746,6 +1749,19 @@ def evaluate_gas(
             a_oxide = act[oxide]
             if flag is not None:
                 flags.append(flag)
+            if (
+                oxide_row is not None
+                and str(oxide_row["Ref"]).endswith(
+                    _SUPERCOOLED_EXTENSION_REF_SUFFIX
+                )
+            ):
+                source_table = str(oxide_row["Ref"]).removesuffix(
+                    _SUPERCOOLED_EXTENSION_REF_SUFFIX
+                )
+                flags.append(
+                    f"{oxide_name} uses a labelled constant-Cp supercooled-liquid "
+                    f"continuation from JANAF {source_table}"
+                )
         else:
             G_oxide = 0.0
             a_oxide = 1.0

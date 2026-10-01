@@ -1109,12 +1109,13 @@ rows:
       Fitted by tools/build_gas_tables.py to the runtime condensate form
       (dH298_R = dfH(298)/R; dG_A..dG_E = quartic in T/1000 of the JANAF
       Gibbs-energy function divided by R). O-044 is the JANAF O2Ti1(l) table;
-      over 1500-3000 K it is on the liquid branch (Cp = 100.416 J/(mol K)),
-      supercooled below the 2130 K melting point as tabulated by JANAF. The
-      2200 K source row is parse-ambiguous and is not used, leaving 15 fit rows.
-      Below that interval, 1200/1300 K Cp is glass (76.023/76.525 J/(mol K));
-      the 1400 K GLASS <--> LIQUID marker gives the true liquid-branch start.
-      No row is fitted through the glass branch, so the 1200-1400 K C4 gap stays.
+      The 1400 K row prints glass-side thermal cells (Cp = 76.944 J/(mol K))
+      followed by the GLASS <--> LIQUID marker. The first complete, unambiguous
+      liquid node is 1500 K (Cp = 100.416 J/(mol K)); this is also the low
+      continuation anchor. The genuine supercooled liquid nodes used by the fit
+      are 1500-2100 K and 2300-3000 K (Cp = 100.416 J/(mol K)), below the
+      2130 K melting point. The 2200 K source row is parse-ambiguous and omitted,
+      leaving 15 fit rows.
   - table: condensate
     species_name: Cr2O3(l)
     table_id: Cr-015
@@ -1431,6 +1432,106 @@ rows:
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.818146828387398
     max_residual_log10_K: 3.99541759953446e-05
+  - table: condensate
+    species_name: TiO2(l)
+    table_id: O-044
+    source_path: data-src/janaf/O-044.yaml
+    source_sha256: 09aaf780268692090aa7fbc7e279f7949ea0d918144d2068ec65608f1510cb8d
+    authority: janaf_fitted
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: O-044-SC-CP
+    T_range_K: [1200, 1500]
+    T0_K: 1500
+    Cp_l_J_molK: 100.416
+    max_residual_J_per_mol: 1.00699646014255
+    max_residual_log10_K: 4.24940394897166e-05
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 10.0416
+      max_abs_delta_G_J_per_mol: 323.618058147878
+      max_abs_delta_log10_K: 0.0140864522614688
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -4.322
+    note: >-
+      The 1400 K row contains glass-side thermal cells (Cp = 76.944 J/(mol K))
+      followed by the GLASS <--> LIQUID marker. The anchor at 1500 K is the first
+      complete, unambiguous liquid node, with Cp = 100.416 J/(mol K), constant
+      through the genuine liquid nodes at 1600-2100 K and 2300-3000 K; the 2200 K
+      row is parse-ambiguous. The continuation deliberately carries that liquid
+      branch below the marker, not the glass branch, and meets the existing high
+      interval within the recorded fit residual.
+  - table: condensate
+    species_name: Cr2O3(l)
+    table_id: Cr-015
+    source_path: data-src/janaf/Cr-015.yaml
+    source_sha256: 092b991dbbba68ebc27d24fed2799702823d974b3ab0bc182924c67544a25475
+    authority: janaf_fitted
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: Cr-015-SC-CP
+    T_range_K: [1200, 1900]
+    T0_K: 1900
+    Cp_l_J_molK: 156.900
+    max_residual_J_per_mol: 2.62554622325115
+    max_residual_log10_K: 0.000100089691195719
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 15.69
+      max_abs_delta_G_J_per_mol: 2330.92530246273
+      max_abs_delta_log10_K: 0.101460555650413
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -1.041
+    note: >-
+      The first complete liquid node at 1900 K has Cp = 156.9 J/(mol K).
+      JANAF shows a glass-liquid marker at 1800 K; this row deliberately
+      continues the liquid below the glass branch. Its generated continuation
+      joins the unchanged JANAF-fitted interval within the polynomial residual.
+  - table: condensate
+    species_name: V2O3(l)
+    table_id: O-063
+    source_path: data-src/janaf/O-063.yaml
+    source_sha256: 87b1a29e2a133510f8d1dd206f04bdbf7abd472a7ac66edb5c951ec0f780eab6
+    authority: janaf_fitted
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: O-063-SC-CP
+    T_range_K: [1200, 1500]
+    T0_K: 1600
+    Cp_l_J_molK: 157.846
+    max_residual_J_per_mol: 0.385447464184836
+    max_residual_log10_K: 1.62831004291508e-05
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 15.7846
+      max_abs_delta_G_J_per_mol: 864.704271013143
+      max_abs_delta_log10_K: 0.037638862007969
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -7.547
+    note: >-
+      The 1600 K GLASS <--> LIQUID marker is the first genuine liquid node;
+      Cp is 157.846 J/(mol K) there and 156.9 J/(mol K) at subsequent liquid
+      nodes. The generated interval ends at the pre-existing row's 1500 K
+      lower bound, where JANAF still prints glass data; it continues the liquid
+      across that glass branch and meets the old row within 8 J/mol.
 certification_items:
   - authority: lh84_evaluated_with_nasa_cp
     species_name: Na2O(g)

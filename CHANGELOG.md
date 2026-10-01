@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added generated, labelled constant-Cp supercooled-liquid intervals for the
+  default JANAF-fitted TiO2(l), Cr2O3(l), and V2O3(l) rows. Added matching
+  intervals for the JANAF-fitted MgO(l), CaO(l), Al2O3(l), and SiO2(l) rows
+  only in the opt-in research pack. The default SF04/Lamoreaux major-oxide
+  functions, coverage statuses, and result pins remain unchanged. Continuation
+  use is visible in gas domain flags; the README and per-pack provenance record
+  residuals, illustrative Cp sensitivity, and interval seams.
 - Replaced the corrected LH84 Na2O(l) parent with the JANAF Na-013 fit. Added its supercooled-liquid interval, moved Na into the
   JANAF-fitted condensate and C4 gates, and re-pinned Na-sensitive SF04,
   quickstart, species-set, and oxygen-balance results. Recovered the intact
@@ -26,8 +33,9 @@
 - Added 500–1500 K interval 2 rows for Na2O(g) and K2O(g), using LH84
   formation/entropy anchors with piecewise NASA Glenn heat-capacity functions;
   added a 1200–1500 K NbO2(l) interval while preserving its existing row.
-- Recorded the JANAF glass-branch limits for TiO2(l) and V2O3(l); their C4
-  gaps remain because their liquid branches begin at 1400 K and 1600 K.
+- Recorded the JANAF glass-branch limits for TiO2(l) and V2O3(l). Their parent
+  liquid intervals now include labelled constant-Cp continuations; Ti and V
+  retain C4 gaps because their gas rows begin at 1500 K.
 - Below every declared gas interval, extrapolate from the lowest interval rather than the first row in file order.
 - Made Na2O and K2O gas channels optional when alternate tables lack their rows, and report each skipped channel.
 - Added a second JANAF-fitted Shomate interval for the battery gas species over
