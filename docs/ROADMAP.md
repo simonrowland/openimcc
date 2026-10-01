@@ -10,41 +10,55 @@ measured against the code rather than estimated.
 On the README basalt over 1200–3000 K and fO2 = 1e-12, 1e-10, 1e-8, 1e-6,
 1e-4, `complete` requires an internally computed parent-oxide activity (C1),
 every source-listed neutral E–O gas included or screened below a maximum pressure
-ratio of 1e-4 (C2), modelled charged species or a joint Saha ionisation estimate
-below 1e-4 (C3), and one-bar fitted gas and parent standard states covering the
-domain (C4). Default TiO2(l), Cr2O3(l), and V2O3(l) constant-Cp continuation
-rows count as parent coverage but retain a runtime domain flag. The four major
-oxide continuations are in the opt-in research pack and do not change default
-coverage status. Validation is recorded separately: it is `validated`
-only when a scoreable observation exists. No ion channels are currently
-modelled. C3 uses one shared electron pressure from the neutral atomic pressures
-for the 11 elements with vendored E+ tables and modeled parents, then divides
-each p(E+) by the pressure of all neutral gas channels carrying E. Molecular
-ions (such as TiO+ and NaO+) and thermal electrons from walls or other sources
-are outside this estimate. C3 estimates pass for Si, Mg, Fe, Al, Ti, Cr, V and
-Nb, and fail for Ca, Na and K. Mn, Ni and Co are not computed because their
-parent liquid rows are available only from an external private pack. P channels
-also require a source-rated P2O5(l) row from an external pack.
+ratio of 1e-4 (C2), charged species modeled when their source-screened share
+exceeds 1e-4 (C3), and one-bar fitted standard states with parent-liquid rows
+covering the domain (C4). Validation is recorded separately: it is `validated`
+only when a scoreable observation exists.
+
+Default TiO2(l), Cr2O3(l), and V2O3(l) constant-Cp continuation rows count as
+parent coverage but retain a runtime domain flag. The four major-oxide
+continuations are in the opt-in research pack and do not change default
+coverage status.
+
+`evaluate_gas(..., include_ions=True)` adds the fitted Na+, K+, Ca+ and e−
+channels, plus the JANAF negative ions that affect the charge balance above the
+1e-4 screen. The default result remains neutral-only. C3 now passes for these
+three modeled cations; the largest remaining screened positive-ion share is Ti
+at 5.547e-5. Cr−, V− and Nb− enter the closure when their neutral gas channels
+are active. Positive molecular ions and nonthermal electrons remain outside
+this calculation. Mn, Ni and Co are not computed because their parent-liquid
+rows are available only from an external pack. P channels also require an
+external source-rated P2O5(l) row.
 
 | Element | Status | C1 | C2 | C3 | C4 | Validation | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | O | input (fO2 pinned) | n/a | yes | n/a | n/a | unvalidated | O is input (fO2 pinned), so C1, C3 and C4 do not apply. |
-| Si | gas-partial | yes | yes | yes | no | validated | SiO2 liquid row starts at 1996 K; joint C3 ionisation estimate max 2.383e-11 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Mg | gas-partial | yes | yes | yes | no | unvalidated | MgO liquid row starts at 3100 K; joint C3 ionisation estimate max 2.828e-7 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Fe | complete | yes | yes | yes | yes | unvalidated | FeO and neutral gas rows cover the domain; joint C3 ionisation estimate max 9.191e-8 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Ca | gas-partial | yes | yes | no | no | unvalidated | CaO liquid row starts at 2900 K; joint C3 ionisation estimate max 1.052e-4 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Al | gas-partial | yes | yes | yes | no | unvalidated | Al2O3 liquid row starts at 2327 K; joint C3 ionisation estimate max 7.817e-6 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Ti | gas-partial | yes | yes | yes | no | unvalidated | A labelled constant-Cp TiO2(l) continuation covers 1200-1500 K, deliberately continuing the liquid from the first complete liquid node at 1500 K below the glass branch; Ti(g), TiO(g), and TiO2(g) still start at 1500 K, leaving a lower C4 gap; joint C3 ionisation estimate max 8.661e-7 at 3000 K and fO2=1e-10; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Na | complete-except-ions | yes | yes | no | yes | unvalidated | Na2O(g) intervals cover 500-3000 K and JANAF Na-013 Na2O(l) intervals cover 1200-3000 K, including its supercooled-liquid branch; joint C3 ionisation estimate max 1.169e-3 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| K | complete-except-ions | yes | yes | no | yes | validated | K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; joint C3 ionisation estimate max 3.979e-2 at 1300 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Cr | gas-partial | no | yes | yes | no | unvalidated | A labelled constant-Cp Cr2O3(l) continuation covers the parent interval below 1900 K; Cr(g) still ends at 2900 K, leaving the upper C4 gap; joint C3 ionisation estimate max 2.918e-6 at 3000 K and fO2=1e-4; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| V | gas-partial | no | yes | yes | no | unvalidated | A labelled constant-Cp V2O3(l) continuation covers the parent interval from 1200-1500 K and deliberately continues the liquid below the glass branch; V(g), VO(g), and VO2(g) still start at 1500 K, leaving a lower C4 gap; activity is caller-supplied; joint C3 ionisation estimate max 1.046e-6 at 3000 K and fO2=1e-8; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
-| Nb | gas-partial | no | yes | yes | no | unvalidated | Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 K; Nb(g), NbO(g), and NbO2(g) start at 1500 K, leaving a gas C4 gap; activity is caller-supplied; joint C3 ionisation estimate max 5.064e-8 at 3000 K and fO2=1e-12; molecular ions (e.g. TiO+, NaO+) and thermal electrons from walls or other sources are outside this estimate. |
+| P | gas-partial | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | no | unvalidated | JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) function was found and JANAF lists P4O10(cr) only. Channels need an external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); OpenIMCC provides no pyrolysis-temperature melt activity model. |
+| S | gas-complete-melt-pending | no | yes | not computed: ionized sulfur channels are outside this neutral gas-only change | yes | unvalidated | JANAF sulfur gas rows and the S2(g) parent cover 500-3000 K; callers supply a(S2)=f(S2)/p° on the 1-bar gas reference. OpenIMCC provides no pyrolysis-temperature sulfur melt activity model. |
+| Si | gas-partial | yes | yes | yes | no | validated | SiO2 liquid row starts at 1996 K; joint C3 closure-screen maximum 4.280e-11 at 3000 K and fO2=1e-08 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Mg | gas-partial | yes | yes | yes | no | unvalidated | MgO liquid row starts at 3100 K; joint C3 closure-screen maximum 2.204e-06 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Fe | complete | yes | yes | yes | yes | unvalidated | FeO and neutral gas rows cover the domain; joint C3 closure-screen maximum 7.236e-07 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Ca | gas-partial | yes | yes | yes | no | unvalidated | CaO liquid row starts at 2900 K; fitted Ca+ channel maximum p(Ca+)/neutral Ca gas 8.296e-04 at 3000 K and fO2=1e-12; the opt-in JANAF-fitted ion rows satisfy C3; positive molecular ions and thermal electrons from walls or other sources remain outside the model. |
+| Al | gas-partial | yes | yes | yes | no | unvalidated | Al2O3 liquid row starts at 2327 K; joint C3 closure-screen maximum 1.062e-05 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Ti | gas-partial | yes | yes | yes | no | unvalidated | A labelled constant-Cp TiO2(l) continuation covers 1200-1500 K below the glass branch; Ti(g), TiO(g), and TiO2(g) still start at 1500 K, leaving a lower C4 gap; joint C3 closure-screen maximum 5.547e-05 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Na | complete | yes | yes | yes | yes | unvalidated | Na2O(g) intervals cover 500-3000 K and JANAF Na-013 Na2O(l) intervals cover 1200-3000 K, including its supercooled-liquid branch; fitted Na+ channel maximum p(Na+)/neutral Na gas 8.591e-03 at 3000 K and fO2=1e-12; the opt-in JANAF-fitted ion rows satisfy C3; positive molecular ions and thermal electrons from walls or other sources remain outside the model. |
+| K | complete | yes | yes | yes | yes | validated | K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; fitted K+ channel maximum p(K+)/neutral K gas 1.958e-01 at 3000 K and fO2=1e-12; the opt-in JANAF-fitted ion rows satisfy C3; positive molecular ions and thermal electrons from walls or other sources remain outside the model. |
+| Cr | gas-partial | no | yes | yes | no | unvalidated | A labelled constant-Cp Cr2O3(l) continuation covers the parent interval below 1900 K; Cr2O3 activity is caller-supplied and Cr(g) ends at 2900 K, leaving the upper C4 gap; joint C3 closure-screen maximum 2.979e-05 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| V | gas-partial | no | yes | yes | no | unvalidated | A labelled constant-Cp V2O3(l) continuation covers 1200-1500 K below the glass branch; V(g), VO(g), and VO2(g) still start at 1500 K, leaving a lower C4 gap; activity is caller-supplied; joint C3 closure-screen maximum 3.351e-05 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Nb | gas-partial | no | yes | yes | no | unvalidated | Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 K; Nb(g), NbO(g), and NbO2(g) start at 1500 K, leaving a gas C4 gap; activity is caller-supplied; joint C3 closure-screen maximum 8.065e-06 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Mn | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
 | Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
 | Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
-| P | gas-partial | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | no | unvalidated | JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) function was found and JANAF lists P4O10(cr) only. Channels need an external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); OpenIMCC provides no pyrolysis-temperature melt activity model. |
-| S | gas-complete-melt-pending | no | yes | not computed: ionized sulfur channels are outside this neutral gas-only change | yes | unvalidated | JANAF sulfur gas rows and the S2(g) parent cover 500-3000 K; callers supply a(S2)=f(S2)/p° on the 1-bar gas reference. OpenIMCC provides no pyrolysis-temperature sulfur melt activity model. |
+
+The C3 maximum share is the fitted or estimated E+ pressure divided by the
+total neutral gas pressure carrying that element. For the newly modeled
+elements, the prior positive-only estimate and fitted closure screen give:
+
+| Element | Prior max share (T, fO2) | Fitted max share (T, fO2) |
+| --- | --- | --- |
+| Na | 1.169e-3 (3000 K, 1e-4) | 8.591e-3 (3000 K, 1e-12) |
+| K | 3.979e-2 (1300 K, 1e-4) | 1.958e-1 (3000 K, 1e-12) |
+| Ca | 1.052e-4 (3000 K, 1e-4) | 8.296e-4 (3000 K, 1e-12) |
 
 The P/S channels are optional and stay out of default gas results unless their
 caller-supplied parent activity is present. Sulfur uses the JANAF `S2(g)` gas
@@ -89,11 +103,12 @@ pack extends its liquid branch to 1800 K). JANAF O-038 has no lower liquid
 branch; below 1800 K it provides the II/crystal branch, which is not a liquid
 parent row.
 
-At 3000 K and fO2=1e-4, p(e-) is 9.84595e-5 bar. Its Saha source terms are
-Na 8.05285e-9 (83.07% of p(e-)²) and K 1.59434e-9 (16.45%); all other terms
-sum to 0.49%. The largest joint ion-fraction estimate is K at 1700 K and
-fO2=1e-4 (8.59508e-2). At that point p(e-)=6.24803e-11 bar; K contributes
-2.45106e-21 (62.79% of p(e-)²) and Na 1.45273e-21 (37.21%).
+The fitted negative-ion rows include Na−, K−, O−, O2−, Al−, AlO2−, Fe−, Si−,
+Ti−, KO−, AlO− and NaO−. Across the README-basalt temperature and fO2 grid,
+O2− reaches `K_A p(O2) = 4.14e-4`, AlO2− reaches a 6.46 pressure ratio to its
+neutral, and KO− reaches a 1.48e-3 pressure ratio to KO; each is included in
+the charge closure. JANAF labels KO− formation enthalpy estimated, so that
+channel carries greater source uncertainty.
 
 ### 1. The gas layer is self-contained (done)
 

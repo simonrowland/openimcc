@@ -5,6 +5,93 @@ source_notes:
     citation: Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition, J. Phys. Chem. Ref. Data Monograph 9 (1998)
     doi: 10.18434/T42S31
     licence: NIST SRD 13 data are public and may be distributed or copied.
+    ion_reference_convention: >-
+      Gas species, including ions and electrons, use p° = 0.1 MPa (1 bar).
+      D-020 treats e-(g) with the monatomic ideal-gas convention and tabulates
+      H°(T)-H°(0). Ion formation quantities use JANAF's elemental reference
+      states. The fitted ion rows use JANAF's printed functions with that
+      electron row; no +6.197 kJ/mol shift is applied.
+      Some ion-table notes specify that adjustment only for conversion to the
+      alternate convention that excludes the electron.
+    ion_convention_reference: https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-1Vol1-Intro.pdf
+  negative_ion_screen:
+    retrieval_date: '2026-10-01'
+    source_grid_K: [1200, 3000]
+    fO2_grid_bar: [1.0e-12, 1.0e-10, 1.0e-8, 1.0e-6, 1.0e-4]
+    sources:
+      O2-: https://janaf.nist.gov/tables/O-031.txt
+      AlO2-: https://janaf.nist.gov/tables/Al-078.txt
+      KO-: https://janaf.nist.gov/tables/K-009.txt
+      Cr-: https://janaf.nist.gov/tables/Cr-007.txt
+      V-: https://janaf.nist.gov/tables/V-007.txt
+      Nb-: https://janaf.nist.gov/tables/Nb-007.txt
+    screened_table_note: >-
+      O-031, Al-078, K-009, Cr-007, V-007 and Nb-007 were retrieved as complete
+      tab-delimited NIST tables, including the 0-6000 K rows. Their fitted G
+      rows reproduce JANAF reaction log Kf values; the published +6.197 kJ/mol
+      adjustment in some ion-table notes applies only when converting to the
+      convention that excludes the electron.
+    maximum_attachment_terms:
+      O2-:
+        value: 0.00041423730148684056
+        temperature_K: 1200
+        fO2_bar: 1.0e-4
+        disposition: fitted_and_included_in_charge_balance
+      AlO2-:
+        value: 0.0005661156475308063
+        temperature_K: 3000
+        fO2_bar: 1.0e-4
+        disposition: fitted_and_included_in_charge_balance
+      KO-:
+        value: 5.228761473230903e-07
+        temperature_K: 3000
+        fO2_bar: 1.0e-4
+        disposition: fitted_and_included_in_charge_balance
+      Cr-:
+        value: 853.3478467792476
+        temperature_K: 3000
+        fO2_bar: 1.0e-12
+        disposition: fitted_and_included_in_charge_balance
+      V-:
+        value: 0.38499227782866857
+        temperature_K: 3000
+        fO2_bar: 1.0e-12
+        disposition: fitted_and_included_in_charge_balance
+      Nb-:
+        value: 0.0008908644542926766
+        temperature_K: 3000
+        fO2_bar: 1.0e-12
+        disposition: fitted_and_included_in_charge_balance
+    maximum_ion_to_neutral_pressure_ratios:
+      O2-:
+        value: 2.168525991632953e-05
+        temperature_K: 3000
+        fO2_bar: 1.0e-8
+      AlO2-:
+        value: 6.4563347605466594
+        temperature_K: 2300
+        fO2_bar: 1.0e-12
+      KO-:
+        value: 0.0014819688021643867
+        temperature_K: 3000
+        fO2_bar: 1.0e-8
+      Cr-:
+        value: 1.841755845294084e-05
+        temperature_K: 3000
+        fO2_bar: 1.0e-8
+      V-:
+        value: 8.89818077650172e-06
+        temperature_K: 3000
+        fO2_bar: 1.0e-8
+      Nb-:
+        value: 3.140012053630751e-05
+        temperature_K: 3000
+        fO2_bar: 1.0e-8
+    ko_note: >-
+      JANAF estimates the KO- formation enthalpy from reaction comparisons.
+      The fitted row is model-derived from that table value; its uncertainty
+      is not independently quantified.
+    ko_reference: https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-Potassium.pdf
   condensate_rows_are_cc_by_4:
     note: Published Lamoreaux coefficients and the K2O secondary transcription retain their source attribution below.
 rows:
@@ -968,6 +1055,249 @@ rows:
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.788946783752181
     max_residual_log10_K: 0.0000321397194295554
+  - table: gas
+    species_name: Ca+(g)
+    table_id: Ca-007
+    source_path: data-src/janaf/Ca-007.yaml
+    source_sha256: 8fb5cf9d5872754d61e5d44088bbc725905e36682990e439cae2e4deffa3fc5d
+    source_url: https://janaf.nist.gov/tables/Ca-007.html
+    download_url: https://janaf.nist.gov/tables/Ca-007.txt
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.55168832628988
+    max_residual_log10_K: 3.11731917624746e-05
+  - table: gas
+    species_name: Na+(g)
+    table_id: Na-006
+    source_path: data-src/janaf/Na-006.txt
+    source_sha256: 1324311c226aaef128378768ce75d1f45c15949219359b3388efda2822db1159
+    source_url: https://janaf.nist.gov/tables/Na-006.html
+    download_url: https://janaf.nist.gov/tables/Na-006.txt
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 2.11753923341166
+    max_residual_log10_K: 3.95024071108768e-05
+  - table: gas
+    species_name: K+(g)
+    table_id: K-006
+    source_path: data-src/janaf/K-006.txt
+    source_sha256: 27cd2083096e8faf6281a319dfb74e27c90ac472a965fb9366cdc43242e963b4
+    source_url: https://janaf.nist.gov/tables/K-006.html
+    download_url: https://janaf.nist.gov/tables/K-006.txt
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.65639652503887
+    max_residual_log10_K: 3.76172116780428e-05
+  - table: gas
+    species_name: e-(g)
+    table_id: D-020
+    source_path: data-src/janaf/D-020.txt
+    source_sha256: c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd
+    source_url: https://janaf.nist.gov/tables/D-020.html
+    download_url: https://janaf.nist.gov/tables/D-020.txt
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 0.964081040467136
+    max_residual_log10_K: 3.35107635405985e-05
+  - table: gas
+    species_name: Na-(g)
+    table_id: Na-007
+    source_path: data-src/janaf/Na-007.txt
+    source_sha256: 9273f359ce1b53b96e1e631d8a5167b6b7e1201b2020e02dec7cf96753ad1329
+    source_url: https://janaf.nist.gov/tables/Na-007.html
+    download_url: https://janaf.nist.gov/tables/Na-007.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.49907685420476
+    max_residual_log10_K: 3.07616256377515e-05
+  - table: gas
+    species_name: K-(g)
+    table_id: K-007
+    source_path: data-src/janaf/K-007.txt
+    source_sha256: 6efb32d3b9dafc58fc024df52ca53e61e166e12811379e9f162791d2f7823bc2
+    source_url: https://janaf.nist.gov/tables/K-007.html
+    download_url: https://janaf.nist.gov/tables/K-007.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 0.964081040525343
+    max_residual_log10_K: 3.35107635385521e-05
+  - table: gas
+    species_name: O-(g)
+    table_id: O-003
+    source_path: data-src/janaf/O-003.txt
+    source_sha256: 62c09caf189f6f47afed6d370d706ba42f1182ade6efe3b67f842b5394dd1ff8
+    source_url: https://janaf.nist.gov/tables/O-003.html
+    download_url: https://janaf.nist.gov/tables/O-003.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.16525899551925
+    max_residual_log10_K: 3.04328478575726e-05
+  - table: gas
+    species_name: O2-(g)
+    table_id: O-031
+    source_path: data-src/janaf/O-031.txt
+    source_sha256: 4c93fbc40f7f9cc02521e946541b12ba6ecbc6e030b4cf09cc19ad13cf27c0f0
+    source_url: https://janaf.nist.gov/tables/O-031.html
+    download_url: https://janaf.nist.gov/tables/O-031.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.01804196962621
+    max_residual_log10_K: 3.12800102995453e-05
+  - table: gas
+    species_name: AlO2-(g)
+    table_id: Al-078
+    source_path: data-src/janaf/Al-078.txt
+    source_sha256: 2cd8cfb567d620d063cd95f318760947d67a92b46dced942296301d73977e921
+    source_url: https://janaf.nist.gov/tables/Al-078.html
+    download_url: https://janaf.nist.gov/tables/Al-078.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.13928814092651
+    max_residual_log10_K: 3.9672762641411e-05
+  - table: gas
+    species_name: KO-(g)
+    table_id: K-009
+    source_path: data-src/janaf/K-009.txt
+    source_sha256: a93e8d7ecd5efed4326083a38a3a78c2a7bf64e1f309b79e283f7ceac9982915
+    source_url: https://janaf.nist.gov/tables/K-009.html
+    download_url: https://janaf.nist.gov/tables/K-009.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.22617202578112
+    max_residual_log10_K: 3.53952040472113e-05
+  - table: gas
+    species_name: Al-(g)
+    table_id: Al-007
+    source_path: data-src/janaf/Al-007.txt
+    source_sha256: 1e12e5efc1c2964e6f34f304d13b09d86dd4d7d48e92182fa93a218c6ab44119
+    source_url: https://janaf.nist.gov/tables/Al-007.html
+    download_url: https://janaf.nist.gov/tables/Al-007.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.26384471193887
+    max_residual_log10_K: 3.96589972487341e-05
+  - table: gas
+    species_name: Fe-(g)
+    table_id: Fe-010
+    source_path: data-src/janaf/Fe-010.txt
+    source_sha256: eb48c82eff023e63be5113e6cfc2e2c97f950f3d5907a229ddfe5d2d2d659f14
+    source_url: https://janaf.nist.gov/tables/Fe-010.html
+    download_url: https://janaf.nist.gov/tables/Fe-010.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.52210094698239
+    max_residual_log10_K: 3.45673228918675e-05
+  - table: gas
+    species_name: Si-(g)
+    table_id: Si-007
+    source_path: data-src/janaf/Si-007.txt
+    source_sha256: d252da17ecf4936336740b69ad5b7aafbb0bf72c7ada4f8f472bd8ca555d1a69
+    source_url: https://janaf.nist.gov/tables/Si-007.html
+    download_url: https://janaf.nist.gov/tables/Si-007.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.7877861118177
+    max_residual_log10_K: 3.34865567726091e-05
+  - table: gas
+    species_name: Ti-(g)
+    table_id: Ti-008
+    source_path: data-src/janaf/Ti-008.txt
+    source_sha256: 2b03649c33a64e290d866eb5b7dc77e67c7d1c2efc72764b7697e343df476192
+    source_url: https://janaf.nist.gov/tables/Ti-008.html
+    download_url: https://janaf.nist.gov/tables/Ti-008.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.45629988191649
+    max_residual_log10_K: 2.92568518519428e-05
+  - table: gas
+    species_name: AlO-(g)
+    table_id: Al-076
+    source_path: data-src/janaf/Al-076.txt
+    source_sha256: ef9edc0d71dbae8af11eeb2ca4dd0a528e91ea43e6136fbbd7121dcac432a335
+    source_url: https://janaf.nist.gov/tables/Al-076.html
+    download_url: https://janaf.nist.gov/tables/Al-076.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.70923051028512
+    max_residual_log10_K: 3.73560347752619e-05
+  - table: gas
+    species_name: NaO-(g)
+    table_id: Na-009
+    source_path: data-src/janaf/Na-009.txt
+    source_sha256: 23d1e06d413dcb1a9da349b04041730564d8c53c524090a02c3eff99a9285747
+    source_url: https://janaf.nist.gov/tables/Na-009.html
+    download_url: https://janaf.nist.gov/tables/Na-009.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.72949093009811
+    max_residual_log10_K: 3.47452200947583e-05
+  - table: gas
+    species_name: Cr-(g)
+    table_id: Cr-007
+    source_path: data-src/janaf/Cr-007.txt
+    source_sha256: a506757934ae98fbd7fb0eb1f2b6486ea563d02f11865ea95c7be1b6080377fe
+    source_url: https://janaf.nist.gov/tables/Cr-007.html
+    download_url: https://janaf.nist.gov/tables/Cr-007.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.24819859192939
+    max_residual_log10_K: 2.71658046196106e-05
+  - table: gas
+    species_name: V-(g)
+    table_id: V-007
+    source_path: data-src/janaf/V-007.txt
+    source_sha256: 7995dcf2ec1c6f257056d714abd44b9d4407c3f2a6732aab2028f12e6031a941
+    source_url: https://janaf.nist.gov/tables/V-007.html
+    download_url: https://janaf.nist.gov/tables/V-007.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.35761701175943
+    max_residual_log10_K: 2.83653005051061e-05
+  - table: gas
+    species_name: Nb-(g)
+    table_id: Nb-007
+    source_path: data-src/janaf/Nb-007.txt
+    source_sha256: 9e0d3bffb53b5f817ccf87c4f64633c8bb8d0b02d1e26a81641ba10d14de8c12
+    source_url: https://janaf.nist.gov/tables/Nb-007.html
+    download_url: https://janaf.nist.gov/tables/Nb-007.txt
+    retrieval_date: '2026-10-01'
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.16885697213002
+    max_residual_log10_K: 2.19648735557438e-05
   - table: condensate
     species_name: MgO(l)
     source_table_id: LH87 Table 2

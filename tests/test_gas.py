@@ -102,6 +102,13 @@ _T625_AGAINST_JANAF_PRINTED_GAS_COLUMNS = {
     }
 }
 
+# Packaged for the opt-in charge closure, not as default neutral channels.
+_ION_GAS_SPECIES = {
+    "Na+", "K+", "Ca+", "e-",
+    "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
+    "Cr-", "V-", "Nb-",
+}
+
 
 # Titanium channels against the printed JANAF formation-Gibbs columns at
 # 2000 K: Ti-006 Ti(g) 191.423, O-022 TiO(g) -123.256, O-046 TiO2(g) -330.354
@@ -168,7 +175,9 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 62 + len(build_gas_tables.LOW_T_GAS_SPECIES) + 2
+    assert len(gas_pack.gas_df) == (
+        62 + len(build_gas_tables.LOW_T_GAS_SPECIES) + 2 + len(_ION_GAS_SPECIES)
+    )
     assert len(gas_pack.oxide_df) == 17
 
 
@@ -191,7 +200,12 @@ def test_janaf_parent_liquid_research_pack_loads_by_path_and_is_in_domain(
         gas_pack.gas_df["T_interval"].astype(int) == 1
     ]
     interval_1 = interval_1.loc[
-        ~interval_1.index.isin(tuple(f"{species}(g)" for species in _PS_CHANNELS))
+        ~interval_1.index.isin(
+            tuple(
+                f"{species}(g)"
+                for species in (*_PS_CHANNELS, *_ION_GAS_SPECIES)
+            )
+        )
     ]
     low_nasa = gas_pack.gas_df.loc[
         (gas_pack.gas_df["T_interval"].astype(int) == 2)
@@ -303,7 +317,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     }
     assert set(gas_pack.gas_df.index) == {
         f"{species}(g)" for species in public_gas_channels
-    }
+    } | {f"{species}(g)" for species in _ION_GAS_SPECIES}
     high_rows = gas_pack.gas_df.loc[
         gas_pack.gas_df["T_interval"].astype(int) == 1
     ]
@@ -314,7 +328,15 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     assert set(low_rows.index) == {
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
     } | {"Na2O(g)", "K2O(g)"}
-    assert (high_rows["T_min"] == 1500).all()
+    neutral_high_rows = high_rows.loc[
+        ~high_rows.index.isin(tuple(f"{species}(g)" for species in _ION_GAS_SPECIES))
+    ]
+    ion_rows = gas_pack.gas_df.loc[
+        gas_pack.gas_df.index.isin(tuple(f"{species}(g)" for species in _ION_GAS_SPECIES))
+    ]
+    assert (neutral_high_rows["T_min"] == 1500).all()
+    assert (ion_rows["T_min"] == 1200).all()
+    assert (ion_rows["T_max"] == 3000).all()
     assert (low_rows["T_min"] == build_gas_tables.LOW_FIT_T_MIN).all()
     assert (low_rows["T_max"] == build_gas_tables.LOW_FIT_T_MAX).all()
     expected_t_max = high_rows["Ref"].map(
@@ -370,7 +392,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == 65
-    assert len(unavailable) == 5
+    assert len(unavailable) == 2
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert not set(_P_CHANNELS) & (in_domain | extrapolated)
@@ -631,6 +653,83 @@ def test_gas_result_is_frozen_bar_mapping_and_preserves_numbers(
         result.domain_flags["Na"] = "mutated"  # type: ignore[index]
     with pytest.raises((AttributeError, TypeError)):
         result.unit = "Pa"  # type: ignore[misc]
+
+
+def test_opt_in_ions_preserve_neutral_outputs_and_close_charge(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    composition = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    outputs = {}
+    for temperature in (1200.0, 3000.0):
+        melt = evaluate(
+            composition,
+            T_K=temperature,
+            basis_type="wt",
+            allow_extrapolation=True,
+        )
+        activities = dict(zip(melt.parent_oxides, melt.parent_activity))
+        activities.update({"Cr2O3": 1.0e-3, "V2O3": 1.0e-3, "NbO2": 1.0e-3})
+        default = evaluate_gas(
+            activities, temperature, 1.0e-10, gas_pack
+        )
+        explicit_default = evaluate_gas(
+            activities,
+            temperature,
+            1.0e-10,
+            gas_pack,
+            include_ions=False,
+        )
+        with_ions = evaluate_gas(
+            activities,
+            temperature,
+            1.0e-10,
+            gas_pack,
+            include_ions=True,
+        )
+        neutral_only = {
+            species: pressure
+            for species, pressure in with_ions.items()
+            if not species.endswith(("+", "-"))
+        }
+        assert dict(default) == dict(explicit_default) == neutral_only
+        outputs[temperature] = with_ions
+
+        positive = sum(with_ions[species] for species in ("Na+", "K+", "Ca+"))
+        negative = sum(
+            with_ions[species]
+            for species in (
+                "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-",
+                "AlO2-", "KO-", "NaO-", "Cr-", "V-", "Nb-",
+            )
+        )
+        residual = with_ions["e-"] + negative - positive
+        scale = max(with_ions["e-"] + negative, positive)
+        assert abs(residual) <= 1.0e-12 * scale
+        assert with_ions.provenance_class["Na+"] == "janaf_fitted_ionisation"
+        assert gas_species_provenance("Na+")["authority"] == (
+            "janaf_fitted_ionisation"
+        )
+        assert with_ions.domain_flags["Na+"] is None
+
+    for element in ("Na", "K", "Ca"):
+        low = outputs[1200.0]
+        high = outputs[3000.0]
+        assert low[element + "+"] < high[element + "+"]
+        assert low[element + "+"] / low[element] < high[element + "+"] / high[element]
+    low = outputs[1200.0]
+    high = outputs[3000.0]
+    for species in ("e-", *(name for name in _ION_GAS_SPECIES if name != "e-")):
+        if species in low and species in high:
+            assert low[species] < high[species], species
 
 
 def test_non_na_gas_channels_match_the_base_na2o_row_bit_for_bit(
@@ -958,9 +1057,6 @@ def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
     assert set(IMCC_GAS_NO_JANAF_ROWS) == {
-        "Na+",
-        "K+",
-        "e-",
         "Zn",
         "ZnO",
     }

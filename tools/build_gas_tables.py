@@ -141,6 +141,31 @@ GAS_SOURCES = (
     ("SSO(g)", "O-011", "S", 2, 1),
 )
 
+# Charge-balance rows are appended after every neutral row so the established
+# neutral coefficient rows and their ordering remain unchanged. The text
+# tables are the NIST downloads; Ca+ already has a normalized JANAF record.
+ION_GAS_TEXT_SOURCES = (
+    ("Na+(g)", "Na-006", "Na", 1, 0),
+    ("K+(g)", "K-006", "K", 1, 0),
+    ("e-(g)", "D-020", "", 0, 0),
+    ("Na-(g)", "Na-007", "Na", 1, 0),
+    ("K-(g)", "K-007", "K", 1, 0),
+    ("O-(g)", "O-003", "", 0, 1),
+    ("Al-(g)", "Al-007", "Al", 1, 0),
+    ("Fe-(g)", "Fe-010", "Fe", 1, 0),
+    ("Si-(g)", "Si-007", "Si", 1, 0),
+    ("Ti-(g)", "Ti-008", "Ti", 1, 0),
+    ("O2-(g)", "O-031", "", 0, 2),
+    ("AlO-(g)", "Al-076", "Al", 1, 1),
+    ("AlO2-(g)", "Al-078", "Al", 1, 2),
+    ("KO-(g)", "K-009", "K", 1, 1),
+    ("NaO-(g)", "Na-009", "Na", 1, 1),
+    ("Cr-(g)", "Cr-007", "Cr", 1, 0),
+    ("V-(g)", "V-007", "V", 1, 0),
+    ("Nb-(g)", "Nb-007", "Nb", 1, 0),
+)
+ION_GAS_YAML_SOURCES = (("Ca+(g)", "Ca-007", "Ca", 1, 0),)
+
 LOW_T_GAS_SPECIES = frozenset(
     {
         "K",
@@ -916,6 +941,90 @@ def _fit_row(
     }
 
 
+def _fit_janaf_text_row(
+    source_dir: Path,
+    species_name: str,
+    table_id: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    *,
+    fit_t_min: float = 1200.0,
+    fit_t_max: float = 3000.0,
+) -> dict[str, str]:
+    """Fit an extracted NIST tab-delimited ion table with the gas Shomate fit.
+
+    JANAF gives each charged species and the electron an ideal-gas standard
+    state at 0.1 MPa, with formation quantities on its elemental reference
+    convention. The table's Hf(298.15 K), H-H(298.15 K), and S° define the same
+    apparent Gibbs target used by _fit_row: G_app = Hf(298.15) + ΔH - T*S.
+    The extraction retains the 298.15 K anchor and all 100 K fit nodes from
+    1200 to 3000 K. H is kJ/mol and S is J/(mol K), so the fit helper converts
+    the enthalpy term to J/mol before subtracting T*S. Sanity is checked by
+    recording the maximum source-G residual and by the ion-equilibrium tests
+    against JANAF's tabulated log Kf values.
+    """
+    path = source_dir / f"{table_id}.txt"
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if len(lines) < 3 or not lines[0] or lines[1].split("\t")[0] != "T(K)":
+        raise ValueError(f"{table_id}: expected a NIST tab-delimited table")
+
+    parsed: dict[float, dict[str, float]] = {}
+    for line in lines[2:]:
+        cells = line.split("\t")
+        if len(cells) < 8:
+            continue
+        try:
+            temperature, cp, entropy, _minus_g_over_t, h_increment, h_form, g_form, _log_kf = (
+                float(value) for value in cells[:8]
+            )
+        except ValueError:
+            continue
+        parsed[temperature] = {
+            "temperature": temperature,
+            "heat_capacity": cp,
+            "entropy": entropy,
+            "enthalpy_increment": h_increment,
+            "formation_enthalpy": h_form,
+            "formation_gibbs_energy": g_form,
+        }
+
+    reference = parsed.get(298.15, {}).get("formation_enthalpy")
+    if reference is None:
+        raise ValueError(f"{table_id}: no complete 298.15 K formation enthalpy")
+    required_nodes = np.arange(fit_t_min, fit_t_max + 50.0, 100.0)
+    rows = [
+        parsed[float(temperature)]
+        for temperature in required_nodes
+        if float(temperature) in parsed
+    ]
+    if len(rows) != len(required_nodes):
+        missing = sorted(
+            set(float(value) for value in required_nodes) - set(parsed)
+        )
+        raise ValueError(f"{table_id}: missing 100 K fit nodes {missing!r}")
+    fit = _fit_shomate_values(rows, float(reference))
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    return {
+        "species_name": species_name,
+        "state": "g",
+        "T_interval": "1",
+        "cation": cation,
+        "cat_num": str(cat_num),
+        "oxy_num": str(oxy_num),
+        "T_min": number(fit_t_min),
+        "T_max": number(fit_t_max),
+        **{key: number(fit[key]) for key in "ABCDEFG"},
+        "H": "0",
+        "Ref": table_id,
+        "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
+        "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+    }
+
+
 def _fit_nasa_row(
     nasa_source_dir: Path,
     lh84_source_dir: Path,
@@ -1263,6 +1372,20 @@ def build_rows(
             fit_t_max=LOW_FIT_T_MAX,
         )
         for source in NASA_GAS_SOURCES
+    )
+    rows.extend(
+        _fit_row(
+            source_dir,
+            *source,
+            fit_t_min=1200.0,
+            fit_t_max=3000.0,
+            minimum_rows=19,
+        )
+        for source in ION_GAS_YAML_SOURCES
+    )
+    rows.extend(
+        _fit_janaf_text_row(source_dir, *source)
+        for source in ION_GAS_TEXT_SOURCES
     )
     return rows
 

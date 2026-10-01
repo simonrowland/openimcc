@@ -9,6 +9,11 @@
   functions, coverage statuses, and result pins remain unchanged. Continuation
   use is visible in gas domain flags; the README and per-pack provenance record
   residuals, illustrative Cp sensitivity, and interval seams.
+- Added opt-in JANAF-fitted Na+, K+, Ca+, electron and negative-ion gas
+  channels, including O2−, AlO2−, KO−, Cr−, V− and Nb−, with melt-buffered
+  electroneutrality. Neutral defaults remain unchanged. The completeness screen
+  now uses fitted channels for Na, K and Ca; Na and K move to complete, while
+  Ca remains gas-partial because its parent-liquid row starts at 2900 K.
 - Replaced the corrected LH84 Na2O(l) parent with the JANAF Na-013 fit. Added its supercooled-liquid interval, moved Na into the
   JANAF-fitted condensate and C4 gates, and re-pinned Na-sensitive SF04,
   quickstart, species-set, and oxygen-balance results. Recovered the intact

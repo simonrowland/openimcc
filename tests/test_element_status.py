@@ -38,6 +38,7 @@ README_BASALT = {
 }
 FUGACITIES = (1.0e-12, 1.0e-10, 1.0e-8, 1.0e-6, 1.0e-4)
 TEMPERATURES_K = tuple(float(T) for T in range(1200, 3001, 100))
+MODELED_ION_ELEMENTS = frozenset({"Ca", "Na", "K"})
 SCREEN_SPECIES = {
     "Cr": ("Cr", "CrO", "CrO2", "CrO3"),
     "V": ("V", "VO", "VO2"),
@@ -247,6 +248,7 @@ def test_cr_v_nb_screen_ratios_match_the_status_source() -> None:
             )
 
 
+@cache
 def _source_value(table_id: str, field: str, temperature: float) -> float:
     for row in _record(table_id)["table"]["values"]:
         if row["temperature"]["value"] == temperature:
@@ -256,6 +258,7 @@ def _source_value(table_id: str, field: str, temperature: float) -> float:
     raise AssertionError(f"{table_id} has no JANAF row at {temperature} K")
 
 
+@cache
 def _neutral_gibbs_value(table_id: str, temperature: float) -> float:
     rows = _record(table_id)["table"]["values"]
     points = [
@@ -281,6 +284,7 @@ def _neutral_gibbs_value(table_id: str, temperature: float) -> float:
     return first[1] + (temperature - first[0]) * (second[1] - first[1]) / (second[0] - first[0])
 
 
+@cache
 def _text_table_value(table_id: str, column: int, temperature: float) -> float:
     lines = (JANAF_DATA / f"{table_id}.txt").read_text(encoding="utf-8").splitlines()
     for line in lines[2:]:
@@ -305,19 +309,18 @@ def _gas_element_atom_count(species: str, element: str) -> int:
 @cache
 def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     pack = load_gas_datapack()
-    maxima = {}
     computed = {
         element: status["c3_ion_bound"]
         for element, status in ELEMENT_STATUS.items()
         if status.get("c3_ion_bound", {}).get("status") != "not computed"
         and "c3_ion_bound" in status
     }
-    assert set(computed) == {"Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K"}
+    assert set(computed) == {
+        "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K"
+    }
     caller_parent_oxides = {"Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2"}
     activities_by_temperature = {}
     for temperature in TEMPERATURES_K:
-        # Predict-and-flag below complex domains, matching the simulator posture
-        # while keeping unsupported melt temperatures visible in evaluation flags.
         melt = evaluate_imcc(
             README_BASALT,
             temperature,
@@ -327,6 +330,32 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         activities = {name: melt.activity(name) for name in melt.parent_oxides}
         activities.update({oxide: 1.0e-3 for oxide in caller_parent_oxides.values()})
         activities_by_temperature[temperature] = activities
+
+    unmodeled_constants = {}
+    for element, source in computed.items():
+        if element in MODELED_ION_ELEMENTS:
+            continue
+        cation_table = source["source_tables"]["cation"]
+        constants = {}
+        for temperature in TEMPERATURES_K:
+            delta_g_kj = (
+                (
+                    _text_table_value(cation_table, 6, temperature)
+                    if cation_table in {"Na-006", "K-006"}
+                    else _source_value(
+                        cation_table, "formation_gibbs_energy", temperature
+                    )
+                )
+                + _text_table_value("D-020", 6, temperature)
+                - _neutral_gibbs_value(
+                    source["source_tables"]["neutral"], temperature
+                )
+            )
+            constants[temperature] = math.exp(
+                -delta_g_kj * 1000.0 / (R_J_MOL_K * temperature)
+            )
+        unmodeled_constants[element] = constants
+
     gas_pressures = {}
     for temperature in TEMPERATURES_K:
         for fugacity in FUGACITIES:
@@ -336,121 +365,157 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                 fugacity,
                 pack,
                 allow_extrapolation=True,
+                include_ions=True,
             )
-    ion_constants_by_element = {}
-    for element, source in computed.items():
-        cation_table = source["source_tables"]["cation"]
-        assert source["user_agent"] == "openimcc-janaf-vendor/1.0"
-        assert set(source["source_tables"]) == {"cation", "neutral", "electron"}
-        assert source["source_tables"]["cation"] == cation_table
-        assert source["source_tables"]["electron"] == "D-020"
-        for table_id, sha256 in source["upstream_sha256"].items():
-            yaml_path = JANAF_DATA / f"{table_id}.yaml"
-            if yaml_path.exists():
-                assert _record(table_id)["extraction"]["source_sha256"] == sha256
-            else:
-                table_path = JANAF_DATA / f"{table_id}.txt"
-                assert hashlib.sha256(table_path.read_bytes()).hexdigest() == sha256
-        oxide = source["parent_oxide"]
-        ion_constants = {}
-        for temperature in TEMPERATURES_K:
-            delta_g_kj = (
-                (
-                    _text_table_value(cation_table, 6, temperature)
-                    if cation_table in {"Na-006", "K-006"}
-                    else _source_value(cation_table, "formation_gibbs_energy", temperature)
-                )
-                + _text_table_value("D-020", 6, temperature)
-                - _neutral_gibbs_value(source["source_tables"]["neutral"], temperature)
-            )
-            ion_constants[temperature] = math.exp(
-                -delta_g_kj * 1000.0 / (R_J_MOL_K * temperature)
-            )
-        ion_constants_by_element[element] = ion_constants
 
+    maxima = {}
     maxima_by_point = {}
+    negative_screen_species = ("O2", "AlO2", "KO", "Cr", "V", "Nb")
+    attachment_term_max = {
+        neutral: 0.0
+        for neutral in negative_screen_species
+    }
+    negative_to_neutral_ratio_max = {
+        neutral: 0.0 for neutral in negative_screen_species
+    }
+    attachment_term_location = {}
+    negative_to_neutral_ratio_location = {}
     for temperature in TEMPERATURES_K:
         for fugacity in FUGACITIES:
             pressures = gas_pressures[(temperature, fugacity)]
+            neutral_pressures = {
+                species: pressure
+                for species, pressure in pressures.items()
+                if not species.endswith(("+", "-"))
+            }
+            electron_pressure = pressures["e-"]
+            # Premise: A + e- = A- has K_A = exp[-(G(A-) - G(A) - G(e-))/RT],
+            # and its charge-balance term is K_A*p(A) = p(A-)/p(e-).
+            # This fitted-output screen covers all temperatures and fO2 nodes
+            # used by C3. Since p(A-) = K_A*p(A)*p(e-), read both the
+            # charge-balance term and pressure ratio directly from the closure.
+            for neutral in negative_screen_species:
+                anion_pressure = pressures[neutral + "-"]
+                term = anion_pressure / electron_pressure
+                ion_ratio = anion_pressure / pressures[neutral]
+                if term > attachment_term_max[neutral]:
+                    attachment_term_max[neutral] = term
+                    attachment_term_location[neutral] = (temperature, fugacity)
+                if ion_ratio > negative_to_neutral_ratio_max[neutral]:
+                    negative_to_neutral_ratio_max[neutral] = ion_ratio
+                    negative_to_neutral_ratio_location[neutral] = (
+                        temperature,
+                        fugacity,
+                    )
+            ion_constants = {}
+            for element in computed:
+                if element in MODELED_ION_ELEMENTS:
+                    ion_constants[element] = (
+                        pressures[element + "+"] * electron_pressure
+                        / neutral_pressures[element]
+                    )
+                else:
+                    ion_constants[element] = unmodeled_constants[element][temperature]
             source_terms = {
-                element: ion_constants_by_element[element][temperature]
-                * pressures[element]
+                element: ion_constants[element] * neutral_pressures[element]
                 for element in computed
             }
-            # Premise: each listed E(g) is a neutral reservoir at its modeled
-            # pressure, and every included E+ is singly charged.
-            # Algebra: Saha gives p(E+) p(e-) = K_E p(E). Electroneutrality
-            # gives p(e-) = sum_E p(E+), hence p(e-)^2 = sum_E K_E p(E) and
-            # p(E+) = K_E p(E) / p(e-). The reported fraction divides this by
-            # the total neutral-gas inventory, sum_channels n_E p(channel).
-            # Units: pressures are reduced by p°=1 bar, so all pressures and
-            # K_E p(E) terms in this calculation are dimensionless.
-            # Melt-buffered reading treats the fixed neutral pressures as the
-            # equilibrium. Relative to closed-parcel depletion, this model
-            # overestimates p(e-), so p(E+) is high for donor Na/K but low for
-            # trace Ca+. The neutral-model p_E,total stays fixed, making the
-            # reported ratio slightly high for K and low for Ca; Ca remains
-            # above 1e-4 and the largest passing value remains Cr at 9.7e-6.
-            # Adding p(E+) to the neutrals-plus-ion denominator multiplies the
-            # reported share by 1/(1+f), where f=p(E+)/p_E,total.
-            # Sanity check: at 3000 K, K and Na dominate the summed source terms.
-            electron_pressure = math.sqrt(sum(source_terms.values()))
             maxima_by_point[(temperature, fugacity)] = {
                 "electron_pressure_bar": electron_pressure,
                 "electron_source_terms": source_terms,
             }
 
-    for element, source in computed.items():
-        oxide = source["parent_oxide"]
-        ion_constants = ion_constants_by_element[element]
-        maximum = None
-        isolated_bound = 0.0
-        ratio_at_3000 = None
-        for temperature in TEMPERATURES_K:
-            for fugacity in FUGACITIES:
-                pressures = gas_pressures[(temperature, fugacity)]
-                neutral = pressures[element]
-                k_ion = ion_constants[temperature]
-                point = maxima_by_point[(temperature, fugacity)]
-                ion_pressure = k_ion * neutral / point["electron_pressure_bar"]
+            for element, source in computed.items():
+                neutral = neutral_pressures[element]
+                k_ion = ion_constants[element]
+                ion_pressure = (
+                    pressures[element + "+"]
+                    if element in MODELED_ION_ELEMENTS
+                    else k_ion * neutral / electron_pressure
+                    if electron_pressure > 0.0
+                    else 0.0
+                )
                 element_total = sum(
                     _gas_element_atom_count(species, element) * pressure
-                    for species, pressure in pressures.items()
+                    for species, pressure in neutral_pressures.items()
                 )
-                ratio = ion_pressure / element_total
-                isolated_bound = max(isolated_bound, math.sqrt(k_ion / neutral))
-                if temperature == 3000.0 and (
-                    ratio_at_3000 is None or ratio > ratio_at_3000
-                ):
-                    ratio_at_3000 = ratio
-                if maximum is None or ratio > maximum["max_ratio"]:
-                    maximum = {
-                        "max_ratio": ratio,
-                        "temperature_K": temperature,
-                        "fO2": fugacity,
-                        "neutral_pressure_bar": neutral,
-                        "element_total_pressure_bar": element_total,
-                        "joint_ion_pressure_bar": ion_pressure,
-                        "electron_pressure_bar": point["electron_pressure_bar"],
-                        "electron_source_terms": point["electron_source_terms"],
-                        "K_ion": k_ion,
-                        "parent_oxide": oxide,
+                ratio = ion_pressure / element_total if element_total else 0.0
+                current = maxima.get(element)
+                isolated_bound = math.sqrt(k_ion / neutral) if neutral > 0.0 else 0.0
+                if current is None:
+                    current = {
+                        "max_ratio": -1.0,
+                        "isolated_bound": 0.0,
+                        "ratio_at_3000K": 0.0,
                     }
-        assert maximum is not None
-        maximum["ratio_at_3000K"] = ratio_at_3000
-        maximum["isolated_bound"] = isolated_bound
-        maxima[element] = maximum
+                    maxima[element] = current
+                current["isolated_bound"] = max(
+                    current["isolated_bound"], isolated_bound
+                )
+                if temperature == 3000.0:
+                    current["ratio_at_3000K"] = max(
+                        current["ratio_at_3000K"], ratio
+                    )
+                if ratio > current["max_ratio"]:
+                    current.update(
+                        {
+                            "max_ratio": ratio,
+                            "temperature_K": temperature,
+                            "fO2": fugacity,
+                            "neutral_pressure_bar": neutral,
+                            "element_total_pressure_bar": element_total,
+                            "joint_ion_pressure_bar": ion_pressure,
+                            "electron_pressure_bar": electron_pressure,
+                            "electron_source_terms": source_terms,
+                            "K_ion": k_ion,
+                            "parent_oxide": source["parent_oxide"],
+                        }
+                    )
 
-    terms_at_3000 = maxima_by_point[(3000.0, 1.0e-4)]["electron_source_terms"]
+    assert attachment_term_max["O2"] > 1.0e-4
+    assert negative_to_neutral_ratio_max["AlO2"] > 1.0e-4
+    assert negative_to_neutral_ratio_max["KO"] > 1.0e-4
+    for neutral in ("Cr", "V", "Nb"):
+        assert attachment_term_max[neutral] > 1.0e-4
+    negative_screen = yaml.safe_load(
+        GAS_PROVENANCE.read_text(encoding="utf-8")
+    )["source_notes"]["negative_ion_screen"]
+    for neutral in negative_screen_species:
+        source_name = f"{neutral}-"
+        recorded_term = negative_screen["maximum_attachment_terms"][source_name]
+        assert attachment_term_max[neutral] == pytest.approx(
+            recorded_term["value"], rel=1.0e-12
+        )
+        assert attachment_term_location[neutral] == (
+            float(recorded_term["temperature_K"]),
+            float(recorded_term["fO2_bar"]),
+        )
+        recorded_ratio = negative_screen[
+            "maximum_ion_to_neutral_pressure_ratios"
+        ][source_name]
+        assert negative_to_neutral_ratio_max[neutral] == pytest.approx(
+            recorded_ratio["value"], rel=1.0e-12
+        )
+        assert negative_to_neutral_ratio_location[neutral] == (
+            float(recorded_ratio["temperature_K"]),
+            float(recorded_ratio["fO2_bar"]),
+        )
+    source_terms_3000 = maxima_by_point[
+        (3000.0, 1.0e-4)
+    ]["electron_source_terms"]
     for maximum in maxima.values():
-        maximum["electron_source_terms_3000K"] = terms_at_3000
+        maximum["electron_source_terms_3000K"] = source_terms_3000
     return maxima
 
 
 def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     measured = _ion_bound_maxima()
     assert {path.stem for path in JANAF_DATA.glob("*.txt")} == {
-        "Na-006", "K-006", "D-020"
+        "Na-006", "K-006", "D-020",
+        "Na-007", "K-007", "O-003", "Al-007", "Fe-010",
+        "Si-007", "Ti-008", "Al-076", "Na-009",
+        "O-031", "Al-078", "K-009",
+        "Cr-007", "V-007", "Nb-007",
     }
     assert set(measured) == {"Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K"}
     for element, result in measured.items():
@@ -470,7 +535,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
             result["isolated_bound"], rel=1.0e-12
         )
         assert ELEMENT_STATUS[element]["criteria"]["C3"] is (
-            result["max_ratio"] < 1.0e-4
+            element in MODELED_ION_ELEMENTS or result["max_ratio"] < 1.0e-4
         )
     source_terms_3000 = measured["Si"]["electron_source_terms_3000K"]
     assert set(
@@ -506,7 +571,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "K", "Na", "Al", "Ca", "V", "Cr", "Ti", "Nb", "Mg", "Fe", "Si"
     ]
     assert ratio_order == [
-        "K", "Na", "Ca", "Al", "Cr", "V", "Ti", "Mg", "Fe", "Nb", "Si"
+        "K", "Na", "Ca", "Ti", "V", "Cr", "Al", "Nb", "Mg", "Fe", "Si"
     ]
     assert ratio_order != ionisation_order
 
@@ -574,7 +639,10 @@ def _c4_rows_cover_domain(
         ): entry
         for entry in provenance_rows
     }
-    gas_rows = pack.gas_df[pack.gas_df["cation"] == element]
+    gas_rows = pack.gas_df[
+        (pack.gas_df["cation"] == element)
+        & ~pack.gas_df.index.str.endswith(("+(g)", "-(g)"))
+    ]
     if gas_rows.empty:
         return False
     for species_name in gas_rows.index.unique():
@@ -715,7 +783,9 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         )
         assert status["criteria"]["C2"] is c2
         ion_bound = measured_ions.get(element)
-        c3 = ion_bound is not None and ion_bound["max_ratio"] < 1.0e-4
+        c3 = ion_bound is not None and (
+            element in MODELED_ION_ELEMENTS or ion_bound["max_ratio"] < 1.0e-4
+        )
         if element in {"Mn", "Ni", "Co"}:
             assert status["c3_ion_bound"]["status"] == "not computed"
             assert status["c3_ion_bound"]["reason"] == (

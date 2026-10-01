@@ -49,6 +49,10 @@ NASA_DATA = ROOT / "data-src" / "nasa-glenn"
 LH84_DATA = ROOT / "data-src" / "lh84"
 PROVENANCE_PATH = GAS_DATA / "PROVENANCE.yaml"
 _BASE_INTERVAL_1_SHA256 = "ea3a8db1419140329e36be433453fdc67969a7e3826d9af5a310d284a1526c0a"
+_ION_GAS_PROVENANCE_SPECIES = tuple(
+    source[0]
+    for source in (*build_gas_tables.ION_GAS_TEXT_SOURCES, *build_gas_tables.ION_GAS_YAML_SOURCES)
+)
 
 GAS_TABLE_IDS = {
     "Na": "Na-005",
@@ -518,6 +522,36 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     assert set(low_gas_rows) == build_gas_tables.LOW_T_GAS_SPECIES | {"Na2O", "K2O"}
     assert len(oxide_rows) == 12
 
+    ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
+    ion_records = {
+        row["species_name"]: row
+        for row in gas_records
+        if row["species_name"] in ion_species
+    }
+    assert set(ion_records) == ion_species
+    convention = provenance["source_notes"]["janaf"]["ion_reference_convention"]
+    assert "0.1 MPa (1 bar)" in convention
+    assert "monatomic ideal-gas" in convention
+    assert "elemental reference states" in convention
+    for species, row in ion_records.items():
+        source_path = ROOT / row["source_path"]
+        assert source_path.is_file()
+        assert row["source_sha256"] == hashlib.sha256(source_path.read_bytes()).hexdigest()
+        assert row["authority"] == "janaf_fitted_ionisation"
+        assert row["method"] == "fitted"
+        assert row["T_range_K"] == [1200, 3000]
+        assert row["source_url"] == (
+            f"https://janaf.nist.gov/tables/{row['table_id']}.html"
+        )
+        assert row["download_url"] == (
+            f"https://janaf.nist.gov/tables/{row['table_id']}.txt"
+        )
+        if row["table_id"] in {
+            "Na-007", "K-007", "O-003", "Al-007", "Fe-010",
+            "Si-007", "Ti-008", "Al-076", "Na-009",
+        }:
+            assert row["retrieval_date"] == "2026-10-01"
+
     for species, table_id in GAS_TABLE_IDS.items():
         source = _record(table_id)
         row = gas_rows[f"{species}(g)"]
@@ -918,6 +952,7 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
     lines = (GAS_DATA / "gas-shomate.csv").read_bytes().splitlines(keepends=True)
     retained = [lines[0]]
     intervals = []
+    ion_species = {name.removesuffix("(g)") for name in _ION_GAS_PROVENANCE_SPECIES}
     ps_table_ids = {GAS_TABLE_IDS[species] for species in (
         "P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10",
         "S", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
@@ -925,6 +960,8 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
     )}
     for line in lines[1:]:
         values = next(csv.reader([line.decode("utf-8")]))
+        if values[0].removesuffix("(g)") in ion_species:
+            continue
         interval = values[2]
         intervals.append(interval)
         if interval == "1" and values[-1] not in ps_table_ids:
@@ -933,6 +970,47 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
     assert intervals[: intervals.index("2")] == ["1"] * 62
     assert all(interval == "2" for interval in intervals[intervals.index("2") :])
     assert hashlib.sha256(b"".join(retained)).hexdigest() == _BASE_INTERVAL_1_SHA256
+
+
+def test_existing_gas_coefficient_rows_are_text_identical_to_base() -> None:
+    baseline = subprocess.run(
+        [
+            "git",
+            "show",
+            "e724b6b:src/openimcc/data/gas/gas-shomate.csv",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    baseline_rows = list(csv.DictReader(io.StringIO(baseline)))
+    current_rows = list(
+        csv.DictReader(
+            io.StringIO(
+                (GAS_DATA / "gas-shomate.csv").read_text(encoding="utf-8")
+            )
+        )
+    )
+    current_by_key = {
+        (
+            row["species_name"],
+            row["state"],
+            row["T_min"],
+            row["T_max"],
+            row["T_interval"],
+        ): row
+        for row in current_rows
+    }
+    for row in baseline_rows:
+        key = (
+            row["species_name"],
+            row["state"],
+            row["T_min"],
+            row["T_max"],
+            row["T_interval"],
+        )
+        assert current_by_key[key] == row
 
 
 def _hand_nasa7_properties(record: dict, temperature: float) -> tuple[float, float, float]:
@@ -1346,6 +1424,134 @@ def _janaf_apparent_gibbs(table_id: str, T: float) -> float:
     return (
         reference["formation_enthalpy"] + row["enthalpy_increment"]
     ) * 1000.0 - T * row["entropy"]
+
+
+def _janaf_log10_kf(table_id: str, temperature: float) -> float:
+    text_path = JANAF_DATA / f"{table_id}.txt"
+    if text_path.is_file():
+        for line in text_path.read_text(encoding="utf-8").splitlines()[2:]:
+            columns = line.split("\t")
+            if columns and float(columns[0]) == temperature:
+                assert len(columns) >= 8 and columns[7].strip()
+                return float(columns[7])
+        raise AssertionError(f"{table_id} has no log Kf at {temperature} K")
+    for row in _record(table_id)["table"]["values"]:
+        if float(row["temperature"]["value"]) == temperature:
+            value = row["log10_formation_equilibrium_constant"]["value"]
+            assert value is not None
+            return float(value)
+    raise AssertionError(f"{table_id} has no JANAF row at {temperature} K")
+
+
+def _janaf_log10_kf_nodes(table_id: str) -> set[float]:
+    text_path = JANAF_DATA / f"{table_id}.txt"
+    if text_path.is_file():
+        nodes = set()
+        for line in text_path.read_text(encoding="utf-8").splitlines()[2:]:
+            columns = line.split("\t")
+            if len(columns) >= 8 and columns[7].strip():
+                nodes.add(float(columns[0]))
+        return nodes
+    return {
+        float(row["temperature"]["value"])
+        for row in _record(table_id)["table"]["values"]
+        if row.get("log10_formation_equilibrium_constant", {}).get("value")
+        is not None
+    }
+
+
+def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
+    pack = load_gas_datapack()
+    ion_table_ids = {
+        species.removesuffix("(g)"): table_id
+        for species, table_id, *_ in (
+            *build_gas_tables.ION_GAS_TEXT_SOURCES,
+            *build_gas_tables.ION_GAS_YAML_SOURCES,
+        )
+    }
+    reactions = [
+        ("Na", "Na+", 1),
+        ("K", "K+", 1),
+        ("Ca", "Ca+", 1),
+        ("Na", "Na-", -1),
+        ("K", "K-", -1),
+        ("O", "O-", -1),
+        ("Al", "Al-", -1),
+        ("Fe", "Fe-", -1),
+        ("Si", "Si-", -1),
+        ("Ti", "Ti-", -1),
+        ("O2", "O2-", -1),
+        ("AlO", "AlO-", -1),
+        ("AlO2", "AlO2-", -1),
+        ("KO", "KO-", -1),
+        ("NaO", "NaO-", -1),
+        ("Cr", "Cr-", -1),
+        ("V", "V-", -1),
+        ("Nb", "Nb-", -1),
+    ]
+    source_ids = set(ion_table_ids.values())
+    source_ids.update(
+        str(
+            _nearest_interval_row(
+                pack.gas_df,
+                f"{neutral}(g)",
+                1500.0,
+                allow_extrapolation=False,
+            )["Ref"]
+        )
+        for neutral, _charged, _charge in reactions
+    )
+    source_nodes = set.intersection(
+        *(_janaf_log10_kf_nodes(table_id) for table_id in source_ids)
+    )
+    temperatures = [
+        temperature
+        for temperature in np.arange(1500.0, 3001.0, 100.0)
+        if temperature in source_nodes
+    ]
+    assert len(temperatures) >= 10
+    for temperature in temperatures:
+        electron_row = _nearest_interval_row(
+            pack.gas_df, "e-(g)", temperature, allow_extrapolation=False
+        )
+        electron_g = _janaf_gibbs(temperature, electron_row)
+        electron_table = ion_table_ids["e-"]
+        electron_log_kf = _janaf_log10_kf(electron_table, temperature)
+        for neutral, charged, charge_sign in reactions:
+            neutral_row = _nearest_interval_row(
+                pack.gas_df,
+                f"{neutral}(g)",
+                temperature,
+                allow_extrapolation=False,
+            )
+            charged_row = _nearest_interval_row(
+                pack.gas_df,
+                f"{charged}(g)",
+                temperature,
+                allow_extrapolation=False,
+            )
+            neutral_g = _janaf_gibbs(temperature, neutral_row)
+            charged_g = _janaf_gibbs(temperature, charged_row)
+            if charge_sign > 0:
+                delta_g = charged_g + electron_g - neutral_g
+                expected_log_k = (
+                    _janaf_log10_kf(ion_table_ids[charged], temperature)
+                    + electron_log_kf
+                    - _janaf_log10_kf(str(neutral_row["Ref"]), temperature)
+                )
+            else:
+                delta_g = charged_g - neutral_g - electron_g
+                expected_log_k = (
+                    _janaf_log10_kf(ion_table_ids[charged], temperature)
+                    - _janaf_log10_kf(str(neutral_row["Ref"]), temperature)
+                    - electron_log_kf
+                )
+            fitted_log_k = -delta_g / (
+                R_J_MOL_K * temperature * math.log(10.0)
+            )
+            assert fitted_log_k == pytest.approx(
+                expected_log_k, abs=0.002
+            ), (neutral, charged, temperature)
 
 
 def test_cr_channels_against_janaf_cells() -> None:
@@ -2511,9 +2717,11 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
         checked_nodes += row_nodes
         per_row_max[(species_name, interval)] = maxima
 
-    assert checked_rows == 101
-    assert checked_nodes == 1402
-    assert checked_nodes * 3 == 4206
+    # D-020 was already vendored, but its electron gas row is newly included in
+    # the packaged fit and therefore joins the source-node residual audit.
+    assert checked_rows == 102
+    assert checked_nodes == 1421
+    assert checked_nodes * 3 == 4263
     assert overall_max["Cp_J_molK"] == pytest.approx(0.1287393152, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0136965061, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0088595244, abs=1e-9)
