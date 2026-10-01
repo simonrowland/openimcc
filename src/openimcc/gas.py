@@ -774,18 +774,18 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": True, "C4": False},
         "validation": "validated",
-        "reason": "SiO2 liquid row starts at 1996 K; joint C3 closure-screen maximum 4.280e-11 at 3000 K and fO2=1e-08 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "reason": "SiO2 liquid row starts at 1996 K; joint C3 closure-screen maximum 5.545e-14 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
         "c2_candidates": (("O-012", "SiO"), ("O-040", "SiO2")),
         "c3_ion_bound": {
-            "max_ratio": 4.280104542364335e-11,
+            "max_ratio": 5.544921857331724e-14,
             "isolated_bound": 714.576268991371,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-08,
-            "neutral_pressure_bar": 1.57632115605283,
-            "element_total_pressure_bar": 264.931188628507,
-            "joint_ion_pressure_bar": 1.1339331838628544e-08,
-            "electron_pressure_bar": 0.000587364749209313,
-            "K_ion": 4.22523276809591e-12,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 3.659448750056158e-06,
+            "element_total_pressure_bar": 0.29379142444188944,
+            "joint_ion_pressure_bar": 1.6290504908844544e-14,
+            "electron_pressure_bar": 8.434764281794561e-05,
+            "K_ion": 3.754843374576903e-13,
             "parent_oxide": "SiO2",
             "source_tables": {"cation": "Si-006", "neutral": "Si-005", "electron": "D-020"},
             # No JANAF manifest entry exists for D-020; this is the SHA-256 of
@@ -801,18 +801,18 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "MgO liquid row starts at 3100 K; joint C3 closure-screen maximum 2.204e-06 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "reason": "MgO liquid row starts at 3100 K; joint C3 closure-screen maximum 1.117e-07 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
         "c2_candidates": (("Mg-011", "MgO"),),
         "c3_ion_bound": {
-            "max_ratio": 2.204213563226687e-06,
-            "isolated_bound": 8.83037037801034e-05,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 120.391937767946,
-            "element_total_pressure_bar": 120.39207581410915,
-            "joint_ion_pressure_bar": 0.00026536984641447497,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 9.38761444184627e-11,
+            "max_ratio": 1.1170685493345971e-07,
+            "isolated_bound": 7.348653080974237e-05,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 0.001769224939073943,
+            "element_total_pressure_bar": 0.0017940263652892997,
+            "joint_ion_pressure_bar": 2.004050429341738e-10,
+            "electron_pressure_bar": 8.434764281794561e-05,
+            "K_ion": 9.55429273406838e-12,
             "parent_oxide": "MgO",
             "source_tables": {"cation": "Mg-006", "neutral": "Mg-005", "electron": "D-020"},
             "upstream_sha256": {
@@ -826,18 +826,18 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "complete",
         "criteria": {"C1": True, "C2": True, "C3": True, "C4": True},
         "validation": "unvalidated",
-        "reason": "FeO and neutral gas rows cover the domain; joint C3 closure-screen maximum 7.236e-07 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "reason": "FeO and neutral gas rows cover the domain; joint C3 closure-screen maximum 3.342e-08 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
         "c2_candidates": (("Fe-021", "FeO"),),
         "c3_ion_bound": {
-            "max_ratio": 7.235738427226171e-07,
-            "isolated_bound": 1.2308649807686e-05,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 2034.06128813131,
-            "element_total_pressure_bar": 2034.0656502456225,
-            "joint_ion_pressure_bar": 0.0014717966988983039,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 3.08166102746679e-11,
+            "max_ratio": 3.342322955453911e-08,
+            "isolated_bound": 9.17341452911598e-06,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 0.034690158619771164,
+            "element_total_pressure_bar": 0.035921399382343955,
+            "joint_ion_pressure_bar": 1.2006091774763614e-09,
+            "electron_pressure_bar": 8.434764281794561e-05,
+            "K_ion": 2.9192300668238232e-12,
             "parent_oxide": "FeO",
             "source_tables": {"cation": "Fe-009", "neutral": "Fe-008", "electron": "D-020"},
             "upstream_sha256": {
@@ -851,18 +851,18 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "CaO liquid row starts at 2900 K; fitted Ca+ channel maximum p(Ca+)/neutral Ca gas 8.296e-04 at 3000 K and fO2=1e-12; the opt-in JANAF-fitted ion rows satisfy C3; positive molecular ions and thermal electrons from walls or other sources remain outside the model.",
+        "reason": "CaO liquid row starts at 2900 K; fitted Ca+ channel maximum p(Ca+)/neutral Ca gas 6.310e-05 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain, below the 1e-4 C3 threshold.",
         "c2_candidates": (("Ca-030", "CaO"),),
         "c3_ion_bound": {
-            "max_ratio": 0.0008295693094561026,
+            "max_ratio": 6.310119343347233e-05,
             "isolated_bound": 70.1162365014019,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 0.179018015475414,
-            "element_total_pressure_bar": 0.1790184247245575,
-            "joint_ion_pressure_bar": 0.00014850819097867045,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 3.53309036540456e-08,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 1.6709964790838675e-06,
+            "element_total_pressure_bar": 1.724639262456349e-06,
+            "joint_ion_pressure_bar": 1.0882679570321912e-10,
+            "electron_pressure_bar": 8.434764281794561e-05,
+            "K_ion": 5.493299242634703e-09,
             "parent_oxide": "CaO",
             "source_tables": {"cation": "Ca-007", "neutral": "Ca-006", "electron": "D-020"},
             "upstream_sha256": {
@@ -876,7 +876,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "Al2O3 liquid row starts at 2327 K; joint C3 closure-screen maximum 1.062e-05 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "reason": "Al2O3 liquid row starts at 2327 K; joint C3 closure-screen maximum 4.135e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
         "c2_candidates": (
             ("Al-074", "AlO"),
             ("Al-077", "AlO2"),
@@ -884,15 +884,15 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
             ("Al-094", "Al2O2"),
         ),
         "c3_ion_bound": {
-            "max_ratio": 1.0623536383233776e-05,
+            "max_ratio": 4.135469655015644e-06,
             "isolated_bound": 9021443.39824646,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 95.9587449716894,
-            "element_total_pressure_bar": 1059.0177743776076,
-            "joint_ion_pressure_bar": 0.011250513856591772,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 4.9933139828939e-09,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 4.787348402255381e-06,
+            "element_total_pressure_bar": 1.3589244539678473e-05,
+            "joint_ion_pressure_bar": 5.619790842842736e-11,
+            "electron_pressure_bar": 8.434764281794561e-05,
+            "K_ion": 9.90143333834541e-10,
             "parent_oxide": "Al2O3",
             "source_tables": {"cation": "Al-006", "neutral": "Al-005", "electron": "D-020"},
             "upstream_sha256": {
@@ -906,18 +906,19 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": True, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "A labelled constant-Cp TiO2(l) continuation covers 1200-1500 K below the glass branch; Ti(g), TiO(g), and TiO2(g) still start at 1500 K, leaving a lower C4 gap; joint C3 closure-screen maximum 5.547e-05 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "reason": "A labelled constant-Cp TiO2(l) continuation covers 1200-1500 K below the glass branch; Ti(g), TiO(g), and TiO2(g) still start at 1500 K, leaving a lower C4 gap; joint C3 closure-screen maximum 2.468e-09 at 2500 K and fO2=1e-8 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
         "c2_candidates": (("O-022", "TiO"), ("O-046", "TiO2")),
         "c3_ion_bound": {
-            "max_ratio": 5.546559740602179e-05,
+            "max_ratio": 2.468021079468733e-09,
             "isolated_bound": 143063233.9706761,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 16.7708182970848,
-            "element_total_pressure_bar": 17.313131477544704,
-            "joint_ion_pressure_bar": 0.0009602831803710177,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 2.43863130472064e-09,
+            "temperature_K": 2500.0,
+            "fO2": 1.0e-08,
+            "neutral_pressure_bar": 3.718576242708182e-08,
+            "element_total_pressure_bar": 5.027603220057954e-06,
+            "joint_ion_pressure_bar": 1.2408230726307911e-14,
+            "electron_pressure_bar": 2.342325071257254e-05,
+            "K_ion": 7.815924166451596e-12,
+            "isolated_bound": 143063233.9706761,
             "parent_oxide": "TiO2",
             "source_tables": {"cation": "Ti-007", "neutral": "Ti-006", "electron": "D-020"},
             "upstream_sha256": {
@@ -928,21 +929,21 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         },
     },
     "Na": {
-        "status": "complete",
-        "criteria": {"C1": True, "C2": True, "C3": True, "C4": True},
+        "status": "complete-except-ions",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
         "validation": "unvalidated",
-        "reason": "Na2O(g) intervals cover 500-3000 K and JANAF Na-013 Na2O(l) intervals cover 1200-3000 K, including its supercooled-liquid branch; fitted Na+ channel maximum p(Na+)/neutral Na gas 8.591e-03 at 3000 K and fO2=1e-12; the opt-in JANAF-fitted ion rows satisfy C3; positive molecular ions and thermal electrons from walls or other sources remain outside the model.",
+        "reason": "Na2O(g) intervals cover 500-3000 K and JANAF Na-013 Na2O(l) intervals cover 1200-3000 K, including its supercooled-liquid branch; fitted Na+ channel maximum p(Na+)/neutral Na gas 9.261e-04 at 2800 K and fO2=1e-4 remains above 1e-4; ions are opt-in and omitted from default results.",
         "c2_candidates": (("Na-008", "NaO"),),
         "c3_ion_bound": {
-            "max_ratio": 0.00859132987864981,
-            "isolated_bound": 0.00117979064122115,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 27.610858601243,
-            "element_total_pressure_bar": 29.000684356926087,
-            "joint_ion_pressure_bar": 0.2491544460169512,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 3.8431718568075e-07,
+            "max_ratio": 0.0009261148973454778,
+            "isolated_bound": 0.0009246793240051798,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 0.09147641574868166,
+            "element_total_pressure_bar": 0.09159309879517875,
+            "joint_ion_pressure_bar": 8.482573328825118e-05,
+            "electron_pressure_bar": 8.434764281794561e-05,
+            "K_ion": 7.82152491941164e-08,
             "parent_oxide": "Na2O",
             "source_tables": {
                 "cation": "Na-006",
@@ -961,21 +962,21 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         },
     },
     "K": {
-        "status": "complete",
-        "criteria": {"C1": True, "C2": True, "C3": True, "C4": True},
+        "status": "complete-except-ions",
+        "criteria": {"C1": True, "C2": True, "C3": False, "C4": True},
         "validation": "validated",
-        "reason": "K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; fitted K+ channel maximum p(K+)/neutral K gas 1.958e-01 at 3000 K and fO2=1e-12; the opt-in JANAF-fitted ion rows satisfy C3; positive molecular ions and thermal electrons from walls or other sources remain outside the model.",
+        "reason": "K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; fitted K+ channel maximum p(K+)/neutral K gas 4.325e-02 at 1200 K and fO2=1e-4 remains above 1e-4; ions are opt-in and omitted from default results.",
         "c2_candidates": (("K-008", "KO"),),
         "c3_ion_bound": {
-            "max_ratio": 0.19579432512783548,
-            "isolated_bound": 0.208840478991192,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 0.019119779308247,
-            "element_total_pressure_bar": 0.019120266238718868,
-            "joint_ion_pressure_bar": 0.003743639624474498,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 8.33896663793574e-06,
+            "max_ratio": 0.04324736798988459,
+            "isolated_bound": 0.18968918064603676,
+            "temperature_K": 1200.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 1.7487620205734108e-15,
+            "element_total_pressure_bar": 1.7543022029391172e-15,
+            "joint_ion_pressure_bar": 7.58689529359732e-17,
+            "electron_pressure_bar": 2.257363747459153e-16,
+            "K_ion": 9.793432262395198e-18,
             "parent_oxide": "K2O",
             "source_tables": {
                 "cation": "K-006",
@@ -997,18 +998,19 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": False, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "A labelled constant-Cp Cr2O3(l) continuation covers the parent interval below 1900 K; Cr2O3 activity is caller-supplied and Cr(g) ends at 2900 K, leaving the upper C4 gap; joint C3 closure-screen maximum 2.979e-05 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "reason": "A labelled constant-Cp Cr2O3(l) continuation covers the parent interval below 1900 K; Cr2O3 activity is caller-supplied and Cr(g) ends at 2900 K, leaving the upper C4 gap; joint C3 closure-screen maximum 1.064e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
         "c2_candidates": (("Cr-010", "CrO"), ("Cr-011", "CrO2"), ("Cr-012", "CrO3")),
         "c3_ion_bound": {
-            "max_ratio": 2.979074695251715e-05,
+            "max_ratio": 1.0635080893815698e-06,
             "isolated_bound": 0.0675715822588812,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 27214.5977053634,
-            "element_total_pressure_bar": 27215.427405189515,
-            "joint_ion_pressure_bar": 0.8107679110326013,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 1.26880741735438e-09,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 0.0023340760987797158,
+            "element_total_pressure_bar": 0.0038602274477255102,
+            "joint_ion_pressure_bar": 4.105383117508851e-09,
+            "electron_pressure_bar": 8.434764281794561e-05,
+            "K_ion": 1.4835822576971673e-10,
+            "isolated_bound": 0.0675715822588812,
             "parent_oxide": "Cr2O3",
             "source_tables": {"cation": "Cr-006", "neutral": "Cr-005", "electron": "D-020"},
             "upstream_sha256": {
@@ -1040,18 +1042,19 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": False, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "A labelled constant-Cp V2O3(l) continuation covers 1200-1500 K below the glass branch; V(g), VO(g), and VO2(g) still start at 1500 K, leaving a lower C4 gap; activity is caller-supplied; joint C3 closure-screen maximum 3.351e-05 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "reason": "A labelled constant-Cp V2O3(l) continuation covers 1200-1500 K below the glass branch; V(g), VO(g), and VO2(g) still start at 1500 K, leaving a lower C4 gap; activity is caller-supplied; joint C3 closure-screen maximum 1.335e-08 at 2500 K and fO2=1e-8 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
         "c2_candidates": (("O-026", "VO"), ("O-076", "VO2")),
         "c3_ion_bound": {
-            "max_ratio": 3.351339926956387e-05,
+            "max_ratio": 1.3348601433686416e-08,
             "isolated_bound": 244.34080490083159,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 25.4131601047625,
-            "element_total_pressure_bar": 25.484311922071452,
-            "joint_ion_pressure_bar": 0.0008540659205544872,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 1.43131029879678e-09,
+            "temperature_K": 2500.0,
+            "fO2": 1.0e-08,
+            "neutral_pressure_bar": 7.700127466601133e-06,
+            "element_total_pressure_bar": 0.00012134647130830025,
+            "joint_ion_pressure_bar": 1.6198056808787642e-12,
+            "electron_pressure_bar": 2.3423250712572525e-05,
+            "K_ion": 4.9273359088456654e-12,
+            "isolated_bound": 244.34080490083159,
             "parent_oxide": "V2O3",
             "source_tables": {"cation": "V-006", "neutral": "V-005", "electron": "D-020"},
             "upstream_sha256": {
@@ -1079,18 +1082,18 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "status": "gas-partial",
         "criteria": {"C1": False, "C2": True, "C3": True, "C4": False},
         "validation": "unvalidated",
-        "reason": "Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 K; Nb(g), NbO(g), and NbO2(g) start at 1500 K, leaving a gas C4 gap; activity is caller-supplied; joint C3 closure-screen maximum 8.065e-06 at 3000 K and fO2=1e-12 after including fitted Na+, K+, Ca+ and source-supported negative ions; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "reason": "Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 K; Nb(g), NbO(g), and NbO2(g) start at 1500 K, leaving a gas C4 gap; activity is caller-supplied; joint C3 closure-screen maximum 1.356e-12 at 2500 K and fO2=1e-8 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
         "c2_candidates": (("Nb-011", "NbO"), ("Nb-015", "NbO2")),
         "c3_ion_bound": {
-            "max_ratio": 8.064561122154691e-06,
+            "max_ratio": 1.3558676547446381e-12,
             "isolated_bound": 3202840578.16235,
-            "temperature_K": 3000.0,
-            "fO2": 1.0e-12,
-            "neutral_pressure_bar": 0.0166643429336543,
-            "element_total_pressure_bar": 0.034068067632176256,
-            "joint_ion_pressure_bar": 2.7474401373338525e-07,
-            "electron_pressure_bar": 4.2589356286810535e-05,
-            "K_ion": 7.02168140390854e-10,
+            "temperature_K": 2500.0,
+            "fO2": 1.0e-08,
+            "neutral_pressure_bar": 2.6011334891258776e-11,
+            "element_total_pressure_bar": 1.722830561352621e-06,
+            "joint_ion_pressure_bar": 2.3359302327435667e-18,
+            "electron_pressure_bar": 2.3423250712572525e-05,
+            "K_ion": 2.1035090939149642e-12,
             "parent_oxide": "NbO2",
             "source_tables": {"cation": "Nb-006", "neutral": "Nb-005", "electron": "D-020"},
             "upstream_sha256": {
@@ -1464,9 +1467,12 @@ def _add_ion_channels(
         # Kp = 2*(2*pi*m_e*k_B*T/h**2)**(3/2)*(k_B*T/p°)
         #      *(U_Na+/U_Na)*exp(-chi/(k_B*T)).
         # With U_Na+/U_Na = 1/2 for the ground states and chi = 5.13907696 eV
-        # (NIST Atomic Spectra Database), Kp = 1.57265e-16; fitted JANAF
-        # G(Na+), G(e-), and G(Na) give 1.57266e-16. The k_B*T/p° factor
-        # converts Saha's number-density equilibrium to dimensionless pressure.
+        # (NIST Atomic Spectra Database), Kp = 1.57265e-16. The fitted value
+        # is 1.58211e-16 (JANAF log Kf = -15.801); its 0.60% offset is in
+        # JANAF's tabulated thermochemical equilibrium, not our fit residual.
+        # The k_B*T/p° factor converts Saha number density to dimensionless
+        # pressure. Excited-state partition functions are not the explanation:
+        # their correction at 1500 K is below this difference.
         dG = G_ion + G_electron - G_neutral
         equilibrium = math.exp(-dG / (R_J_MOL_K * T))
         positive_sum += equilibrium * values[neutral]
@@ -1683,10 +1689,10 @@ def evaluate_gas(
         a subset otherwise permits channel-specific diagnostics with the same
         typed domain refusals.
     include_ions:
-        If True, append JANAF-fitted Na+, K+, and Ca+ (when their neutral
-        channels are present), electrons, and fitted negative ions that
-        contribute at the screened 1e-4 charge-balance threshold. The default
-        keeps the established neutral-only mapping.
+        If True, solve charge balance using the default neutral gas set, then
+        append available fitted cations and every JANAF-supported anion whose
+        neutral channel is present. The default keeps the established
+        neutral-only mapping. Ion names in ``gas_species`` require this option.
 
     Returns
     -------
@@ -1758,20 +1764,40 @@ def evaluate_gas(
         parent_oxides = IMCC_PARENT_OXIDES
 
     omitted_channels: Mapping[str, str] = {}
+    requested_channels: tuple[str, ...] | None = None
+    requested_ions: set[str] = set()
     if gas_species is None:
         # Resolved after the inputs are validated: the default set depends on
         # parent_oxides and on which rows the datapack carries.
         reactions = None
     else:
-        requested = (
+        requested_channels = (
             (gas_species,) if isinstance(gas_species, str) else tuple(gas_species)
         )
-        missing = [name for name in requested if name not in _SF04_REACTIONS]
+        ion_names = {
+            ion
+            for _neutral, ion in (
+                *_GAS_IONIZATION_PAIRS,
+                *_GAS_ELECTRON_ATTACHMENTS,
+            )
+        } | {"e-"}
+        requested_ions = set(requested_channels) & ion_names
+        if requested_ions and not include_ions:
+            raise ImccGasSpeciesNotFoundError(
+                "ion channels require include_ions=True; pass include_ions=True "
+                f"to request {sorted(requested_ions)!r}"
+            )
+        neutral_requests = tuple(
+            name for name in requested_channels if name not in requested_ions
+        )
+        missing = [name for name in neutral_requests if name not in _SF04_REACTIONS]
         if missing:
             raise ImccGasSpeciesNotFoundError(
                 f"no IMCC-SF04 gas channel for species {missing!r}"
             )
-        reactions = tuple((name, _SF04_REACTIONS[name]) for name in requested)
+        reactions = tuple(
+            (name, _SF04_REACTIONS[name]) for name in neutral_requests
+        )
 
     T = float(T_K)
     try:
@@ -1811,7 +1837,7 @@ def evaluate_gas(
             )
         act = {name: float(arr[i]) for i, name in enumerate(parent_oxides)}
 
-    if reactions is None:
+    if reactions is None or (include_ions and requested_channels is not None):
         reactions, omitted_channels = _default_reactions(tuple(act), datapack)
 
     for gas_name, (oxide, _n_gas, _n_O2) in reactions:
@@ -1944,6 +1970,66 @@ def evaluate_gas(
             T,
             allow_extrapolation,
         )
+        closure_neutral_pressure = sum(
+            value
+            for name, value in result.items()
+            if not name.endswith(("+", "-"))
+        )
+
+        # Charge balance belongs to the full default gas. Retain requested
+        # neutrals and their charge channels only after that closure is solved.
+        neutral_names = {
+            name for name in result if not name.endswith(("+", "-"))
+        }
+        neutral_ions = {
+            ion
+            for neutral, ion in (
+                *_GAS_IONIZATION_PAIRS,
+                *_GAS_ELECTRON_ATTACHMENTS,
+            )
+            if neutral in neutral_names
+        }
+        if requested_channels is not None:
+            requested_neutrals = set(requested_channels) - requested_ions
+            unavailable_neutrals = requested_neutrals - result.keys()
+            if unavailable_neutrals:
+                raise ImccGasSpeciesNotFoundError(
+                    f"requested gas channels are unavailable for this gas: "
+                    f"{sorted(unavailable_neutrals)!r}"
+                )
+            requested_ions |= neutral_ions & {
+                ion
+                for neutral, ion in (
+                    *_GAS_IONIZATION_PAIRS,
+                    *_GAS_ELECTRON_ATTACHMENTS,
+                )
+                if neutral in requested_neutrals
+            }
+            unavailable_ions = requested_ions - result.keys()
+            if unavailable_ions:
+                raise ImccGasSpeciesNotFoundError(
+                    f"requested ion channels are unavailable for this gas: "
+                    f"{sorted(unavailable_ions)!r}"
+                )
+            keep = requested_neutrals | requested_ions | {"e-"}
+            result = {name: value for name, value in result.items() if name in keep}
+            domain_flags = {
+                name: value for name, value in domain_flags.items() if name in keep
+            }
+            provenance_class = {
+                name: value for name, value in provenance_class.items() if name in keep
+            }
+
+        if closure_neutral_pressure > 1.0:
+            notice = (
+                f"summed neutral pressure {closure_neutral_pressure:.6g} bar "
+                "exceeds 1 bar; "
+                "ideal-gas ion closure is not credible at this pressure"
+            )
+            domain_flags = {
+                name: "; ".join(filter(None, (flag, notice)))
+                for name, flag in domain_flags.items()
+            }
 
     return ImccGasResult(
         result,
@@ -2231,7 +2317,7 @@ def evaluate_gas_oxygen_balance(
     molecular-flow ceiling.
 
     Returns ``(pO2_bar, partial_pressures, diagnostics)``. Partial pressures
-    match :func:`evaluate_gas`; diagnostics contain relative residual, the
+    match the neutral-only :func:`evaluate_gas` result; diagnostics contain relative residual, the
     log10(bar) bracket, iteration count, and the five strongest O and parent
     oxygen carriers.
     """

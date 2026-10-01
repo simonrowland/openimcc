@@ -107,12 +107,15 @@ supercooled-liquid notice to each affected gas channel's `domain_flags`.
 Row-level source hashes, methods, temperature ranges and fit residuals are in
 the corresponding provenance files.
 
-Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` appends
-`Na+`, `K+`, `Ca+`, `e-`, and the JANAF-supported negative ions needed
-by the charge-balance screen. The default call remains neutral-only and returns
-the same mapping as before. Ion entries use provenance class
+Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
+balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
+and every available JANAF-supported negative ion whose neutral is present. The
+default call remains neutral-only and returns the same mapping as before. Ion entries use provenance class
 `janaf_fitted_ionisation`; their source rows cover 1200–3000 K and their
 domain flags include the neutral and charge-species source rows.
+`gas_species` requests use the full default neutral set for the charge closure,
+then retain the requested neutral and charge channels. Requesting an ion name
+requires `include_ions=True`. `evaluate_gas_oxygen_balance` remains neutral-only.
 
 JANAF gives neutral gases, ions and electrons the same ideal-gas standard
 state, `p° = 0.1 MPa = 1 bar`. Its electron table uses a monatomic ideal-gas
@@ -122,13 +125,19 @@ electron row; they do not apply the +6.197 kJ/mol adjustment some ion-table
 notes specify when converting to a convention that excludes the electron. For
 `M(g) = M+(g) + e-(g)`,
 `K_M = exp[-(G(M+) + G(e-) - G(M))/(R T)]`. At 1500 K, the fitted Na
-equilibrium constant is 1.57266e-16, matching a Saha calculation using the
-NIST Na first-ionization energy to 5 significant figures. The derivation and
-unit check are in `openimcc.gas`; the JANAF convention is described in the
+equilibrium constant is 1.58211e-16 and matches JANAF log Kf = -15.801.
+Ground-state Saha, with g(Na+)/g(Na) = 1/2 and chi = 5.13907696 eV, gives
+1.57265e-16. The 0.60% difference comes from the JANAF tabulated
+thermochemistry, not our fit residual; Na's first excited level at 2.10 eV
+contributes less than 3e-7 to its partition function at 1500 K, using the
+[NIST Atomic Spectra Database](https://physics.nist.gov/PhysRefData/Handbook/Tables/sodiumtable5_a.htm).
+The derivation and unit check are in `openimcc.gas`; the JANAF convention is
+described in the
 [NIST-JANAF introduction](https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-1Vol1-Intro.pdf).
 
 The charge closure keeps the melt-buffered neutral pressures fixed. For each
-included negative ion `A-`, `K_A = p(A-)/(p(A) p(e-))`; electroneutrality
+available JANAF-supported negative ion `A-` whose neutral is present,
+`K_A = p(A-)/(p(A) p(e-))`; electroneutrality
 then gives `p(e-) = sqrt(sum(K_M p(M)) / (1 + sum(K_A p(A))))`. The included
 negative species include Na−, K−, O−, O2−, Al−, AlO−, AlO2−, Fe−, Si−,
 Ti−, KO−, NaO−, Cr−, V− and Nb−. On the C3 screen (README basalt plus
@@ -137,10 +146,10 @@ fO2 = 1e-12–1e-4), O2− has a maximum attachment term `K_A p(O2)` of
 4.14e-4 at 1200 K and fO2 = 1e-4; AlO2− reaches p(AlO2−)/p(AlO2) = 6.46,
 and KO− reaches p(KO−)/p(KO) = 1.48e-3. Cr−, V− and Nb− have maximum
 charge-balance terms `K_A p(A)` of 8.53e2, 0.385 and 8.91e-4, respectively.
-All these species are included in the fitted charge balance. JANAF marks
-KO− formation enthalpy as estimated; its
-[table](https://janaf.nist.gov/tables/K-009.html) contributes model-derived
-thermochemistry, a residual uncertainty for this low-pressure channel.
+All these species are included in the fitted charge balance regardless of
+their individual attachment-term size. The KO− source is
+[JANAF table K-009](https://janaf.nist.gov/tables/K-009.html); its supplied
+thermochemistry is used as published.
 
 For the README basalt at fO2 = 1e-10, the fitted atomic-ion ratios and electron
 pressure are:
@@ -150,7 +159,11 @@ pressure are:
 | 1500 | 1.26401e-5 | 6.04931e-3 | 2.68168e-8 | 1.25166e-11 |
 | 2000 | 4.60159e-5 | 4.70024e-3 | 6.42409e-7 | 1.46320e-7 |
 | 2500 | 1.13875e-4 | 4.59937e-3 | 4.92535e-6 | 4.01760e-5 |
-| 3000 | 1.54356e-3 | 3.34923e-2 | 1.41902e-4 | 2.48981e-4 |
+
+Rows at 2500 K and 3000 K are omitted because their summed neutral pressures
+are 7.65 bar and 2.50e6 bar, above the 1-bar ideal-gas validity ceiling.
+Opt-in ion results above that ceiling carry a domain flag; they are returned
+for inspection, but the ideal-gas charge closure is not credible there.
 
 For comparison with an existing VapoRock installation, set
 `OPENIMCC_VAPOROCK_ROOT` explicitly; that variable overrides both packaged

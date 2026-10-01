@@ -718,7 +718,12 @@ def test_opt_in_ions_preserve_neutral_outputs_and_close_charge(
         assert gas_species_provenance("Na+")["authority"] == (
             "janaf_fitted_ionisation"
         )
-        assert with_ions.domain_flags["Na+"] is None
+        if temperature == 3000.0:
+            assert "summed neutral pressure" in with_ions.domain_flags["Na+"]
+            assert "exceeds 1 bar" in with_ions.domain_flags["Na+"]
+            assert "not credible" in with_ions.domain_flags["Na+"]
+        else:
+            assert with_ions.domain_flags["Na+"] is None
 
     for element in ("Na", "K", "Ca"):
         low = outputs[1200.0]
@@ -730,6 +735,41 @@ def test_opt_in_ions_preserve_neutral_outputs_and_close_charge(
     for species in ("e-", *(name for name in _ION_GAS_SPECIES if name != "e-")):
         if species in low and species in high:
             assert low[species] < high[species], species
+
+
+def test_ion_subsets_use_full_gas_charge_closure(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = _quickstart_activities(3000.0)
+    full = evaluate_gas(
+        activities, 3000.0, 1.0e-12, gas_pack, include_ions=True
+    )
+    potassium = evaluate_gas(
+        activities, 3000.0, 1.0e-12, gas_pack,
+        gas_species=("K",), include_ions=True,
+    )
+    silica = evaluate_gas(
+        activities, 3000.0, 1.0e-12, gas_pack,
+        gas_species=("SiO",), include_ions=True,
+    )
+    sodium_ion = evaluate_gas(
+        activities, 3000.0, 1.0e-12, gas_pack,
+        gas_species=("Na+",), include_ions=True,
+    )
+
+    assert potassium["K+"] / potassium["K"] == pytest.approx(
+        full["K+"] / full["K"], rel=1.0e-12
+    )
+    assert potassium["e-"] == pytest.approx(full["e-"], rel=1.0e-12)
+    assert silica["e-"] == pytest.approx(full["e-"], rel=1.0e-12)
+    assert silica["e-"] > 0.0
+    assert sodium_ion["Na+"] == full["Na+"]
+    assert sodium_ion["e-"] == pytest.approx(full["e-"], rel=1.0e-12)
+
+    with pytest.raises(ImccGasSpeciesNotFoundError, match="include_ions=True"):
+        evaluate_gas(
+            activities, 3000.0, 1.0e-12, gas_pack, gas_species=("Na+",)
+        )
 
 
 def test_non_na_gas_channels_match_the_base_na2o_row_bit_for_bit(

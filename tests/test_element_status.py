@@ -425,6 +425,11 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                 "electron_source_terms": source_terms,
             }
 
+            # C3 compares channel shares only in the documented <=1-bar
+            # neutral-pressure validity domain.
+            if sum(neutral_pressures.values()) > 1.0:
+                continue
+
             for element, source in computed.items():
                 neutral = neutral_pressures[element]
                 k_ion = ion_constants[element]
@@ -446,16 +451,11 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                     current = {
                         "max_ratio": -1.0,
                         "isolated_bound": 0.0,
-                        "ratio_at_3000K": 0.0,
                     }
                     maxima[element] = current
                 current["isolated_bound"] = max(
                     current["isolated_bound"], isolated_bound
                 )
-                if temperature == 3000.0:
-                    current["ratio_at_3000K"] = max(
-                        current["ratio_at_3000K"], ratio
-                    )
                 if ratio > current["max_ratio"]:
                     current.update(
                         {
@@ -535,7 +535,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
             result["isolated_bound"], rel=1.0e-12
         )
         assert ELEMENT_STATUS[element]["criteria"]["C3"] is (
-            element in MODELED_ION_ELEMENTS or result["max_ratio"] < 1.0e-4
+            result["max_ratio"] < 1.0e-4
         )
     source_terms_3000 = measured["Si"]["electron_source_terms_3000K"]
     assert set(
@@ -548,7 +548,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     assert ELEMENT_STATUS["Fe"]["status"] == "complete"
     ratio_order = sorted(
         measured,
-        key=lambda element: measured[element]["ratio_at_3000K"],
+        key=lambda element: measured[element]["max_ratio"],
         reverse=True,
     )
     first_ionisation_energies = {}
@@ -571,7 +571,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "K", "Na", "Al", "Ca", "V", "Cr", "Ti", "Nb", "Mg", "Fe", "Si"
     ]
     assert ratio_order == [
-        "K", "Na", "Ca", "Ti", "V", "Cr", "Al", "Nb", "Mg", "Fe", "Si"
+        "K", "Na", "Ca", "Al", "Cr", "Mg", "Fe", "V", "Ti", "Nb", "Si"
     ]
     assert ratio_order != ionisation_order
 
@@ -783,9 +783,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         )
         assert status["criteria"]["C2"] is c2
         ion_bound = measured_ions.get(element)
-        c3 = ion_bound is not None and (
-            element in MODELED_ION_ELEMENTS or ion_bound["max_ratio"] < 1.0e-4
-        )
+        c3 = ion_bound is not None and ion_bound["max_ratio"] < 1.0e-4
         if element in {"Mn", "Ni", "Co"}:
             assert status["c3_ion_bound"]["status"] == "not computed"
             assert status["c3_ion_bound"]["reason"] == (
