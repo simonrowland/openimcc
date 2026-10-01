@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+from dataclasses import FrozenInstanceError, replace
 from functools import lru_cache
 from pathlib import Path
 
@@ -20,14 +21,18 @@ import pytest
 import yaml
 
 from tools import build_gas_tables
+from openimcc import default_gas_channels, species_thermo
 from openimcc.gas import (
     _EXTERNAL_PACK_GAS_SPECIES,
     _GAS_PROVENANCE_AUTHORITY,
     _OXIDE_PROVENANCE_AUTHORITY,
+    ImccGasTemperatureOutsideDomainError,
     IMCC_GAS_CHANNEL_SPECIES,
     IMCC_SF04_WORKBOOK_GRID_K,
     R_J_MOL_K,
     _SF04_REACTIONS,
+    SpeciesThermo,
+    _default_reactions,
     evaluate_gas,
     _janaf_gibbs,
     _lamor_gibbs,
@@ -110,6 +115,81 @@ FITTED_CONDENSATE_TABLE_IDS = {
     "Cr2O3(l)": "Cr-015",
     "V2O3(l)": "O-063",
     "NbO2(l)": "Nb-013",
+}
+
+JANAF_CONDENSATE_TABLE_IDS = {
+    "FeO(l)": "Fe-019",
+    **FITTED_CONDENSATE_TABLE_IDS,
+}
+
+# Rounded just above the measured worst residual across all 63 packaged
+# JANAF-backed gas interval rows and 891 in-interval source nodes.
+GAS_PROPERTY_RESIDUAL_LIMITS = {
+    "Cp_J_molK": 0.129,
+    "S_J_molK": 0.009,
+    "H_app_kJ_mol": 0.009,
+    "G_kJ_mol": 0.0021,
+}
+
+# Per-species limits are rounded just above each JANAF-sourced condensate
+# row's measured maximum residual over its declared interval.
+JANAF_CONDENSATE_RESIDUAL_LIMITS = {
+    "FeO(l)": {"Cp_J_molK": 6.2, "S_J_molK": 1.6, "H_app_kJ_mol": 5.5, "G_kJ_mol": 2.3},
+    "TiO2(l)": {"Cp_J_molK": 6.0, "S_J_molK": 0.21, "H_app_kJ_mol": 0.62, "G_kJ_mol": 0.007},
+    "Cr2O3(l)": {"Cp_J_molK": 1.32, "S_J_molK": 0.036, "H_app_kJ_mol": 0.106, "G_kJ_mol": 0.0016},
+    "V2O3(l)": {"Cp_J_molK": 2.5, "S_J_molK": 0.047, "H_app_kJ_mol": 0.138, "G_kJ_mol": 0.0021},
+    "NbO2(l)": {"Cp_J_molK": 0.92, "S_J_molK": 0.047, "H_app_kJ_mol": 0.070, "G_kJ_mol": 0.0015},
+}
+
+# G source disagreements are model-minus-JANAF, measured over complete liquid
+# branch nodes in each row's overlap. Derivative residuals of LAM G fits are
+# fit-implied and are not source-quantity gate pins.
+LAM_PARENT_SOURCE_EXCEPTIONS = {
+    "Na2O(l)": {
+        "table_id": "Na-013",
+        "liquid_from_K": 1405.2,
+        "sources": "LH84 Tables 2/4 vs NIST-JANAF 4th-edition Na-013",
+        "reason": "The G_app disagreement is measured between the LH84 fit and JANAF Na-013; neither source explains its cause.",
+        "ranges": {
+            "G_kJ_mol": (13.442370, 29.642533, 0.003),
+        },
+    },
+    "Al2O3(l)": {
+        "table_id": "Al-100",
+        "liquid_from_K": 2327.0,
+        "sources": "LH87 Tables 2/3 vs NIST-JANAF 4th-edition Al-100",
+        "reason": "Both anchors refer to the stable 298 K solid; the LH87 and JANAF Al-100 liquid G fits differ without a source-stated reconciliation.",
+        "ranges": {
+            "G_kJ_mol": (-0.130343, 0.101552, 0.002),
+        },
+    },
+    "SiO2(l)": {
+        "table_id": "O-038",
+        "liquid_from_K": 1696.0,
+        "sources": "LH87 Table 2 vs NIST-JANAF 4th-edition O-038",
+        "reason": "LH87 Table 2 and JANAF O-038 give different liquid G thermochemistry with no source-stated reconciliation.",
+        "ranges": {
+            "G_kJ_mol": (-2.972323, -2.302783, 0.002),
+        },
+    },
+    "MgO(l)": {
+        "table_id": "Mg-009",
+        "liquid_from_K": 3105.0,
+        "sources": "LH87 Table 2 vs NIST-JANAF 4th-edition Mg-009",
+        "reason": "LH87 Table 2 and JANAF Mg-009 identify the liquid branch above 3105 K but do not reconcile their G difference.",
+        "ranges": {
+            "G_kJ_mol": (-0.998335, -0.575922, 0.002),
+        },
+    },
+    "CaO(l)": {
+        "table_id": "Ca-028",
+        "liquid_from_K": 3200.0,
+        "sources": "LH87 Table 2 vs NIST-JANAF 4th-edition Ca-028",
+        "reason": "LH87 Table 2 and JANAF Ca-028 identify the liquid branch from 3200 K but do not reconcile their G difference.",
+        "ranges": {
+            "G_kJ_mol": (-2.786601, -1.210793, 0.003),
+        },
+    },
 }
 
 CANDIDATE_LIQUID_TABLE_IDS = {
@@ -1966,3 +2046,279 @@ def load_and_evaluate(pack, activities, temperature, fugacity, species):
         allow_extrapolation=True,
         gas_species=(species,),
     )[species]
+
+
+def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation() -> None:
+    pack = load_gas_datapack()
+    assert isinstance(species_thermo("O2", "g", 1500.0, pack), SpeciesThermo)
+    low = species_thermo("O2", "g", 1499.999, pack)
+    high = species_thermo("O2", "g", 1500.0, pack)
+    assert low.T_interval == 2
+    assert high.T_interval == 1
+    assert high.source_row_id == "O-029"
+    assert high.T_min == 1500.0
+    assert high.G_J_mol == pytest.approx(
+        high.H_app_kJ_mol * 1000.0 - 1500.0 * high.S_J_molK
+    )
+    with pytest.raises(FrozenInstanceError):
+        high.T_min = 0.0
+
+    assert species_thermo("O2", "g", 2000.0) == species_thermo(
+        "O2", "g", 2000.0, pack
+    )
+
+    liquid = species_thermo("SiO2", "l", 2000.0, pack)
+    crystal = species_thermo("SiO2", "cr", 1500.0, pack)
+    janaf_liquid = species_thermo("FeO", "l", 2200.0, pack)
+    assert liquid.source_row_id == "LAM1987"
+    assert crystal.source_row_id == "LAM1987"
+    assert liquid.derivatives_fit_implied is True
+    assert crystal.derivatives_fit_implied is True
+    assert janaf_liquid.derivatives_fit_implied is False
+    assert high.derivatives_fit_implied is False
+    assert liquid.T_interval is None
+    assert crystal.T_max == 1996.0
+    assert liquid.G_J_mol == pytest.approx(
+        liquid.H_app_kJ_mol * 1000.0 - 2000.0 * liquid.S_J_molK
+    )
+
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("O2", "g", 499.0, pack)
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("SiO2", "l", 1995.0, pack)
+
+
+def test_default_gas_channels_is_the_public_wrapper_for_private_selector() -> None:
+    pack = load_gas_datapack()
+    parents = ("Na2O", "TiO2")
+    assert default_gas_channels(parents, pack) == _default_reactions(parents, pack)
+    assert default_gas_channels(parents) == _default_reactions(parents, pack)
+    assert default_gas_channels((), pack) == _default_reactions((), pack)
+
+
+def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> None:
+    """Gate every packaged JANAF gas row at each complete in-range JANAF node.
+
+    H_app is dfH298 + H−H298, exactly the enthalpy represented by the stored
+    Shomate row. Residual limits are rounded just above measured worst fits.
+    """
+    pack = load_gas_datapack()
+    checked_rows = 0
+    checked_nodes = 0
+    overall_max = {key: 0.0 for key in GAS_PROPERTY_RESIDUAL_LIMITS}
+    per_row_max = {}
+
+    for species_name, row in pack.gas_df.iterrows():
+        table_id = str(row["Ref"])
+        if not (JANAF_DATA / f"{table_id}.yaml").is_file():
+            # Na2O(g) and K2O(g) use NASA/LH84 source rows, not JANAF tables.
+            continue
+        species = species_name.removesuffix("(g)")
+        interval = int(row["T_interval"])
+        low, high = float(row["T_min"]), float(row["T_max"])
+        source_rows = _complete_rows(table_id)
+        reference_h = next(
+            item["formation_enthalpy"]
+            for item in source_rows
+            if item["temperature"] == 298.15
+        )
+        ambiguous = _ambiguous_temperatures(table_id)
+        row_data = pack.gas_df.loc[[species_name]]
+        row_data = row_data.loc[row_data["T_interval"].astype(int) == interval]
+        row_pack = replace(pack, gas_df=row_data)
+        maxima = {key: 0.0 for key in GAS_PROPERTY_RESIDUAL_LIMITS}
+        row_nodes = 0
+
+        for source in source_rows:
+            temperature = source["temperature"]
+            if not low <= temperature <= high or temperature in ambiguous:
+                continue
+            actual = species_thermo(species, "g", temperature, row_pack)
+            source_h_app = reference_h + source["enthalpy_increment"]
+            source_g = source_h_app * 1000.0 - temperature * source["entropy"]
+            residuals = {
+                "Cp_J_molK": abs(actual.Cp_J_molK - source["heat_capacity"]),
+                "S_J_molK": abs(actual.S_J_molK - source["entropy"]),
+                "H_app_kJ_mol": abs(actual.H_app_kJ_mol - source_h_app),
+                "G_kJ_mol": abs(actual.G_J_mol - source_g) / 1000.0,
+            }
+            assert actual.source_row_id == table_id
+            assert actual.T_interval == interval
+            for key, residual in residuals.items():
+                maxima[key] = max(maxima[key], residual)
+                overall_max[key] = max(overall_max[key], residual)
+            row_nodes += 1
+
+        assert row_nodes > 0, (species_name, interval)
+        for key, residual in maxima.items():
+            assert residual <= GAS_PROPERTY_RESIDUAL_LIMITS[key], (
+                species_name,
+                interval,
+                key,
+                residual,
+                GAS_PROPERTY_RESIDUAL_LIMITS[key],
+            )
+        checked_rows += 1
+        checked_nodes += row_nodes
+        per_row_max[(species_name, interval)] = maxima
+
+    assert checked_rows == 63
+    assert checked_nodes == 891
+    assert checked_nodes * 3 == 2673
+    assert overall_max["Cp_J_molK"] == pytest.approx(0.1287393152, abs=1e-9)
+    assert overall_max["S_J_molK"] == pytest.approx(0.0089716511, abs=1e-9)
+    assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0088595244, abs=1e-9)
+    assert overall_max["G_kJ_mol"] == pytest.approx(0.0019231033, abs=1e-9)
+    assert len(per_row_max) == checked_rows
+
+
+def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None:
+    pack = load_gas_datapack()
+    expected_nodes = {
+        ("FeO(l)", 1000.0): 39,
+        ("TiO2(l)", 1500.0): 15,
+        ("Cr2O3(l)", 1900.0): 11,
+        ("V2O3(l)", 1500.0): 14,
+        ("NbO2(l)", 1200.0): 4,
+        ("NbO2(l)", 1500.0): 15,
+    }
+    checked = {}
+
+    for species_name, table_id in JANAF_CONDENSATE_TABLE_IDS.items():
+        source_rows = _complete_rows(table_id)
+        reference_h = next(
+            item["formation_enthalpy"]
+            for item in source_rows
+            if item["temperature"] == 298.15
+        )
+        ambiguous = _ambiguous_temperatures(table_id)
+        rows = pack.oxide_df.loc[[species_name]]
+        for _, row in rows.iterrows():
+            low, high = float(row["T_min"]), float(row["T_max"])
+            row_pack = replace(
+                pack,
+                oxide_df=rows.loc[rows["T_min"].astype(float) == low],
+            )
+            maxima = {
+                "Cp_J_molK": 0.0,
+                "S_J_molK": 0.0,
+                "H_app_kJ_mol": 0.0,
+                "G_kJ_mol": 0.0,
+            }
+            count = 0
+            for source in source_rows:
+                temperature = source["temperature"]
+                if not low <= temperature <= high or temperature in ambiguous:
+                    continue
+                actual = species_thermo(species_name[:-3], "l", temperature, row_pack)
+                source_h_app = reference_h + source["enthalpy_increment"]
+                source_g = source_h_app * 1000.0 - temperature * source["entropy"]
+                residuals = {
+                    "Cp_J_molK": abs(actual.Cp_J_molK - source["heat_capacity"]),
+                    "S_J_molK": abs(actual.S_J_molK - source["entropy"]),
+                    "H_app_kJ_mol": abs(actual.H_app_kJ_mol - source_h_app),
+                    "G_kJ_mol": abs(actual.G_J_mol - source_g) / 1000.0,
+                }
+                assert actual.source_row_id == str(row["Ref"])
+                for key, value in residuals.items():
+                    maxima[key] = max(maxima[key], value)
+                count += 1
+
+            checked[(species_name, low)] = count
+            assert count == expected_nodes[(species_name, low)]
+            for key, residual in maxima.items():
+                assert residual <= JANAF_CONDENSATE_RESIDUAL_LIMITS[species_name][key], (
+                    species_name,
+                    low,
+                    key,
+                    residual,
+                )
+
+    assert checked == expected_nodes
+
+
+def _lam_parent_source_deltas(species_name: str, datapack):
+    exception = LAM_PARENT_SOURCE_EXCEPTIONS[species_name]
+    row = datapack.oxide_df.loc[[species_name]]
+    assert len(row) == 1
+    row = row.iloc[0]
+    table_id = exception["table_id"]
+    source_rows = _complete_rows(table_id)
+    reference_h = next(
+        item["formation_enthalpy"]
+        for item in source_rows
+        if item["temperature"] == 298.15
+    )
+    ambiguous = _ambiguous_temperatures(table_id)
+    row_pack = replace(datapack, oxide_df=datapack.oxide_df.loc[[species_name]])
+    deltas = {key: [] for key in exception["ranges"]}
+
+    for source in source_rows:
+        temperature = source["temperature"]
+        if (
+            temperature < max(float(row["T_min"]), exception["liquid_from_K"])
+            or temperature > float(row["T_max"])
+            or temperature in ambiguous
+        ):
+            continue
+        actual = species_thermo(species_name[:-3], "l", temperature, row_pack)
+        source_h_app = reference_h + source["enthalpy_increment"]
+        source_g = source_h_app * 1000.0 - temperature * source["entropy"]
+        deltas["G_kJ_mol"].append((actual.G_J_mol - source_g) / 1000.0)
+        assert actual.derivatives_fit_implied
+        assert actual.source_row_id == str(row["Ref"])
+    return deltas
+
+
+def _assert_lam_parent_source_exception(species_name: str, datapack) -> None:
+    exception = LAM_PARENT_SOURCE_EXCEPTIONS[species_name]
+    assert exception["sources"]
+    assert exception["reason"]
+    deltas = _lam_parent_source_deltas(species_name, datapack)
+    for property_name, (expected_min, expected_max, tolerance) in exception[
+        "ranges"
+    ].items():
+        values = deltas[property_name]
+        assert values
+        assert min(values) == pytest.approx(expected_min, abs=tolerance), species_name
+        assert max(values) == pytest.approx(expected_max, abs=tolerance), species_name
+
+
+def test_lam_parent_liquids_pin_janaf_source_disagreements() -> None:
+    pack = load_gas_datapack()
+    expected_nodes = {
+        "Na2O(l)": 15,
+        "Al2O3(l)": 6,
+        "SiO2(l)": 11,
+        "MgO(l)": 3,
+        "CaO(l)": 5,
+    }
+    assert set(LAM_PARENT_SOURCE_EXCEPTIONS) == set(expected_nodes)
+    for species_name, count in expected_nodes.items():
+        deltas = _lam_parent_source_deltas(species_name, pack)
+        assert all(len(values) == count for values in deltas.values())
+        _assert_lam_parent_source_exception(species_name, pack)
+
+
+def test_janaf_gate_rejects_both_previously_incorrect_parent_liquid_rows() -> None:
+    pack = load_gas_datapack()
+
+    na_mutated = pack.oxide_df.copy(deep=True)
+    na_mask = na_mutated.index == "Na2O(l)"
+    na_mutated.loc[na_mask, "T_min"] = 825.0
+    for key, value in zip(
+        ("dG_A", "dG_B", "dG_C", "dG_D", "dG_E"),
+        (4.82, 19.292, -5.267, 0.623, 0.0),
+    ):
+        na_mutated.loc[na_mask, key] = value
+    with pytest.raises(AssertionError):
+        _assert_lam_parent_source_exception(
+            "Na2O(l)", replace(pack, oxide_df=na_mutated)
+        )
+
+    al_mutated = pack.oxide_df.copy(deep=True)
+    al_mutated.loc[al_mutated.index == "Al2O3(l)", "dH298_R"] = -188.14
+    with pytest.raises(AssertionError):
+        _assert_lam_parent_source_exception(
+            "Al2O3(l)", replace(pack, oxide_df=al_mutated)
+        )

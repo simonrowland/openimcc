@@ -84,12 +84,15 @@ _GAS_EXPORTS = frozenset({
     "ImccGasSpeciesNotFoundError",
     "ImccGasTemperatureOutsideDomainError",
     "R_J_MOL_K",
+    "SpeciesThermo",
+    "default_gas_channels",
     "evaluate_gas",
     "evaluate_gas_oxygen_balance",
     "oxygen_balance_species_metadata",
     "oxygen_balance_from_pressure_model",
     "gas_species_provenance",
     "load_gas_datapack",
+    "species_thermo",
 })
 
 if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
@@ -106,12 +109,15 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         ImccGasSpeciesNotFoundError,
         ImccGasTemperatureOutsideDomainError,
         R_J_MOL_K,
+        SpeciesThermo,
+        default_gas_channels,
         evaluate_gas,
         evaluate_gas_oxygen_balance,
         oxygen_balance_species_metadata,
         oxygen_balance_from_pressure_model,
         gas_species_provenance,
         load_gas_datapack,
+        species_thermo,
     )
 
 
@@ -172,6 +178,9 @@ __all__ = [
     "ImccGasResult",
     "ImccGasSpeciesNotFoundError",
     "ImccGasTemperatureOutsideDomainError",
+    "SpeciesThermo",
+    "species_thermo",
+    "default_gas_channels",
     # BAR is exported on purpose. evaluate_gas returns pressures in BAR while
     # the simulator's own vapour layer returns Pa -- exactly 5 dex apart. That
     # difference is invisible in a log-residual table, so the unit belongs at

@@ -228,6 +228,51 @@ code on exit 2. Pass `--allow-extrapolation` or `--allow-out-of-envelope` to
 turn a refusal into an answer, and the answer is **flagged** — never silently
 extrapolated.
 
+## API
+
+The `[gas]` extra exports per-row thermochemistry and the default channel
+selection:
+
+```python
+from openimcc import default_gas_channels, species_thermo
+
+props = species_thermo("FeO", "g", 2000.0)
+# props.Cp_J_molK, props.S_J_molK, props.H_app_kJ_mol, props.G_J_mol
+# props.source_row_id, props.T_interval, props.T_min, props.T_max
+
+channels, omitted = default_gas_channels(("SiO2", "MgO"))
+```
+
+`species_thermo(species, phase, T_K, datapack=None)` selects the same row the
+runtime selector uses and raises `ImccGasTemperatureOutsideDomainError` outside
+that row's declared interval. `species` is the bare formula; `phase` is `"g"`,
+`"l"`, or `"cr"`. The frozen `SpeciesThermo` result reports Cp and S in
+J/(mol K), apparent enthalpy in kJ/mol, and apparent Gibbs energy in J/mol.
+`derivatives_fit_implied` marks the quantity basis: it is true for LAM
+condensate rows, whose Cp, S, and H_app follow by differentiating a fitted
+Gibbs-energy polynomial. It is false for JANAF-fitted gas and condensate rows,
+where the Shomate fit targets source Cp, H, and S directly. For LAM rows the
+source-comparison gate therefore checks G_app only; the following measured
+model-minus-JANAF residual ranges are retained as documented exceptions.
+
+| LAM row | Compared sources | Measured G_app residual range (kJ/mol) | Tolerance (kJ/mol) | Reason |
+|---|---|---:|---:|---|
+| Na2O(l) | LH84 Tables 2/4; JANAF Na-013 | 13.442370 to 29.642533 | 0.003 | Neither source explains the measured Gibbs-energy disagreement. |
+| Al2O3(l) | LH87 Tables 2/3; JANAF Al-100 | −0.130343 to 0.101552 | 0.002 | Both anchors refer to stable solid at 298 K; sources do not reconcile liquid Gibbs-energy fits. |
+| SiO2(l) | LH87 Table 2; JANAF O-038 | −2.972323 to −2.302783 | 0.002 | Sources report different liquid Gibbs thermochemistry without a reconciliation. |
+| MgO(l) | LH87 Table 2; JANAF Mg-009 | −0.998335 to −0.575922 | 0.002 | Both identify liquid above 3105 K but do not reconcile Gibbs-energy fits. |
+| CaO(l) | LH87 Table 2; JANAF Ca-028 | −2.786601 to −1.210793 | 0.003 | Both identify liquid from 3200 K but do not reconcile Gibbs-energy fits. |
+
+For gas rows, `H_app_kJ_mol` includes the formation-enthalpy anchor folded into
+Shomate F (the stored Shomate H is zero); callers needing H−H298 must subtract
+the source record's `dfH298`. Condensate H_app includes the stable-phase
+298.15 K anchor and the analytic temperature-dependent increment.
+
+`default_gas_channels(parent_oxides, datapack=None)` returns the ordered
+`(channels, omitted)` pair used by the gas evaluator. Both functions use the
+packaged tables by default and accept a loaded `ImccGasDatapack` for explicit
+table selection.
+
 ## The empirical bench
 
 From a **source checkout** (the bench set is not included in the wheel),

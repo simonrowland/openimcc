@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Exported `species_thermo` for row-level Cp, S, apparent enthalpy and Gibbs
+  energy, plus `default_gas_channels` for stable access to channel selection.
+  Added JANAF in-interval fidelity gates, pinned the LAM/JANAF parent-liquid
+  source differences, and proved the Na2O(l) and Al2O3(l) prior rows fail them.
 - Corrected the default Na2O(l) row to LH84 Table 2's Na2O liquid coefficients
   and 1405 K lower bound; the prior coefficients came from NaO2(l). Corrected
   Al2O3(l)'s anchor to the LH87 solid 298 K value, removing the fusion

@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Callable, Mapping, NamedTuple, Sequence
+from typing import TYPE_CHECKING, Callable, Literal, Mapping, NamedTuple, Sequence
 
 import numpy as np
 from scipy.optimize import brentq
@@ -130,6 +130,27 @@ class ImccGasResult(MappingABC[str, float]):
 
     def __len__(self) -> int:
         return len(self._values)
+
+
+@dataclass(frozen=True)
+class SpeciesThermo:
+    """Thermodynamic properties returned by :func:`species_thermo`.
+
+    ``derivatives_fit_implied`` is true when Cp, S, and H_app are derivatives
+    of a fitted Gibbs-energy polynomial rather than source-tabulated-equivalent
+    quantities. LAM condensate rows use this fit-implied basis. JANAF-fitted
+    gas and condensate rows fit Cp, H, and S directly and are source-equivalent.
+    """
+
+    Cp_J_molK: float
+    S_J_molK: float
+    H_app_kJ_mol: float
+    G_J_mol: float
+    source_row_id: str
+    T_interval: int | None
+    T_min: float
+    T_max: float
+    derivatives_fit_implied: bool = False
 
 
 def _pandas():
@@ -365,6 +386,20 @@ def _default_reactions(
                 continue
         selected.append((name, reaction))
     return tuple(selected), omitted
+
+
+def default_gas_channels(
+    parent_oxides: Sequence[str], datapack: ImccGasDatapack | None = None
+) -> tuple[tuple[tuple[str, tuple[str, float, float]], ...], Mapping[str, str]]:
+    """Return default gas channels and optional channels omitted for missing rows.
+
+    The returned channels retain the reaction order and shape used by
+    :func:`evaluate_gas`; ``omitted`` maps optional channel names to the
+    missing rows that prevented their inclusion. When ``datapack`` is omitted,
+    the packaged tables (or the explicit VapoRock override) are loaded.
+    """
+    active_pack = load_gas_datapack() if datapack is None else datapack
+    return _default_reactions(tuple(parent_oxides), active_pack)
 
 # These authority labels mirror the row-level classes in PROVENANCE.yaml. A
 # reaction is only as authoritative as its least-authoritative input row, so a
@@ -1212,6 +1247,106 @@ def _oxide_row_for_T(
             f"no condensate G(T) row for oxide {oxide!r}"
         )
     return _nearest_interval_row(df, oxide, T, allow_extrapolation)
+
+
+def species_thermo(
+    species: str,
+    phase: Literal["g", "l", "cr"],
+    T_K: float,
+    datapack: ImccGasDatapack | None = None,
+) -> SpeciesThermo:
+    """Return row-level Cp, S, apparent enthalpy, and runtime apparent G.
+
+    ``species`` is the bare formula (for example ``"FeO"``); ``phase`` is
+    ``"g"``, ``"l"`` or ``"cr"``. The active row follows the runtime interval
+    selector and temperatures outside its closed interval are refused.
+
+    For gas rows, let ``t = T/1000``. Shomate gives
+    ``Cp = A + B*t + C*t² + D*t³ + E/t²`` (J mol⁻¹ K⁻¹), with enthalpy
+    primitive ``I_H = A*t + B*t²/2 + C*t³/3 + D*t⁴/4 − E/t`` (kJ mol⁻¹)
+    and ``S = A*ln(t) + B*t + C*t²/2 + D*t³/3 − E/(2*t²) + G``
+    (J mol⁻¹ K⁻¹). The packaged convention has Shomate H=0 and folds
+    ``dfH298`` into F, so ``H_app = I_H + F − H`` includes the formation
+    enthalpy anchor. ``G_J_mol`` is the existing runtime ``H_app − T*S``.
+    A caller needing only H(T)−H(298.15) must subtract the source row's
+    ``dfH298`` from ``H_app``; that anchor is in the JANAF source record and
+    provenance, not separately encoded in the runtime row.
+
+    For condensate rows, ``phi(t) = dG_A + dG_B*t + dG_C*t² + dG_D*t³
+    + dG_E*t⁴ = −(G − H298)/(R*T)``. Gibbs–Helmholtz at fixed H298 gives
+    ``H−H298 = R*T²*dphi/dT`` and ``S = R*phi + R*T*dphi/dT``; differentiating
+    enthalpy gives Cp. The returned apparent enthalpy is
+    ``H_app = R*1000*dH298_R + R*T²*dphi/dT`` in J/mol, converted to kJ/mol
+    for this field; equivalently its anchor term is ``R*dH298_R`` kJ/mol.
+    Here H298 is the source's 298.15 K enthalpy anchored to its stable phase,
+    also for a liquid row. In ``t`` form the H−H298, S, and Cp polynomial terms
+    are ``R*t²*(B+2*C*t+3*D*t²+4*E*t³)`` kJ/mol,
+    ``R*(A+2*B*t+3*C*t²+4*D*t³+5*E*t⁴)`` J/(mol K), and
+    ``R*(2*B*t+6*C*t²+12*D*t³+20*E*t⁴)`` J/(mol K). The factors of 1000
+    convert the kK anchor and Shomate enthalpy units. A zero polynomial has
+    zero Cp, S and H−H298 while G equals H298, a sign/unit sanity check.
+    The returned ``derivatives_fit_implied`` flag is true for LAM condensate
+    rows: their Cp, S and H_app are implied by differentiating the fitted G
+    polynomial. JANAF gas and condensate fits target Cp, H and S directly, so
+    those rows are source-tabulated-equivalent and the flag is false.
+    The regression gate checks FeO(l) against JANAF Fe-019 and Al2O3(l)
+    against Al-100.
+    """
+    if phase not in {"g", "l", "cr"}:
+        raise ValueError("phase must be 'g', 'l', or 'cr'")
+    if not math.isfinite(T_K) or T_K <= 0.0:
+        raise ValueError(f"temperature must be finite and positive, got {T_K}")
+
+    active_pack = load_gas_datapack() if datapack is None else datapack
+    row_name = f"{species}({phase})"
+    if phase == "g":
+        row = _nearest_interval_row(active_pack.gas_df, row_name, T_K)
+        t = T_K / 1000.0
+        A, B, C, D, E = (float(row[key]) for key in "ABCDE")
+        enthalpy_primitive = (
+            A * t + B * t**2 / 2.0 + C * t**3 / 3.0
+            + D * t**4 / 4.0 - E / t
+        )
+        cp = A + B * t + C * t**2 + D * t**3 + E / t**2
+        entropy = (
+            A * math.log(t) + B * t + C * t**2 / 2.0
+            + D * t**3 / 3.0 - E / (2.0 * t**2) + float(row["G"])
+        )
+        h_app = enthalpy_primitive + float(row["F"]) - float(row["H"])
+        apparent_g = _janaf_gibbs(T_K, row)
+        interval = int(row["T_interval"])
+    else:
+        row = _oxide_row_for_T(active_pack.oxide_df, row_name, T_K)
+        t = T_K / 1000.0
+        A, B, C, D, E = (
+            float(row[key]) for key in ("dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
+        )
+        h_increment = R_J_MOL_K * t**2 * (
+            B + 2.0 * C * t + 3.0 * D * t**2 + 4.0 * E * t**3
+        )
+        h_app = R_J_MOL_K * float(row["dH298_R"]) + h_increment
+        entropy = R_J_MOL_K * (
+            A + 2.0 * B * t + 3.0 * C * t**2 + 4.0 * D * t**3 + 5.0 * E * t**4
+        )
+        cp = R_J_MOL_K * (
+            2.0 * B * t + 6.0 * C * t**2 + 12.0 * D * t**3 + 20.0 * E * t**4
+        )
+        apparent_g = _lamor_gibbs(T_K, row)
+        interval = None
+
+    return SpeciesThermo(
+        Cp_J_molK=float(cp),
+        S_J_molK=float(entropy),
+        H_app_kJ_mol=float(h_app),
+        G_J_mol=float(apparent_g),
+        source_row_id=str(row["Ref"]),
+        T_interval=interval,
+        T_min=float(row["T_min"]),
+        T_max=float(row["T_max"]),
+        derivatives_fit_implied=(
+            phase != "g" and str(row["Ref"]).startswith("LAM")
+        ),
+    )
 
 
 # --------------------------------------------------------------------------- #
