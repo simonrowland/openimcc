@@ -196,22 +196,8 @@ def test_janaf_parent_liquid_research_pack_loads_by_path_and_is_in_domain(
         gas_path=pack_dir / "gas-shomate.csv",
         oxide_path=pack_dir / "condensate.csv",
     )
-    interval_1 = gas_pack.gas_df.loc[
-        gas_pack.gas_df["T_interval"].astype(int) == 1
-    ]
-    interval_1 = interval_1.loc[
-        ~interval_1.index.isin(
-            tuple(
-                f"{species}(g)"
-                for species in (*_PS_CHANNELS, *_ION_GAS_SPECIES)
-            )
-        )
-    ]
-    low_nasa = gas_pack.gas_df.loc[
-        (gas_pack.gas_df["T_interval"].astype(int) == 2)
-        & gas_pack.gas_df.index.isin(("Na2O(g)", "K2O(g)"))
-    ]
-    assert research.gas_df.equals(pd.concat((interval_1, low_nasa)))
+    assert research.gas_path.read_bytes() == gas_pack.gas_path.read_bytes()
+    assert research.gas_df.equals(gas_pack.gas_df)
     assert research.gas_path == pack_dir / "gas-shomate.csv"
     assert research.oxide_path == pack_dir / "condensate.csv"
 
@@ -253,6 +239,25 @@ def test_janaf_parent_liquid_research_pack_loads_by_path_and_is_in_domain(
         assert "constant-Cp supercooled-liquid continuation" in (
             low_result.domain_flags[gas_species]
         )
+
+    ion_result = evaluate_gas(
+        {
+            "SiO2": 1.0,
+            "MgO": 1.0,
+            "FeO": 1.0,
+            "CaO": 1.0,
+            "Al2O3": 1.0,
+            "TiO2": 1.0,
+            "Na2O": 1.0,
+            "K2O": 1.0,
+        },
+        2000.0,
+        1.0e-10,
+        research,
+        include_ions=True,
+    )
+    assert "e-" in ion_result
+    assert "Na+" in ion_result
 
 
 def test_explicit_vaporock_override_remains_supported(
@@ -722,6 +727,10 @@ def test_opt_in_ions_preserve_neutral_outputs_and_close_charge(
             assert "summed neutral pressure" in with_ions.domain_flags["Na+"]
             assert "exceeds 1 bar" in with_ions.domain_flags["Na+"]
             assert "not credible" in with_ions.domain_flags["Na+"]
+            assert "summed neutral pressure" in with_ions.domain_flags["e-"]
+            assert "summed neutral pressure" not in (
+                with_ions.domain_flags.get("Na") or ""
+            )
         else:
             assert with_ions.domain_flags["Na+"] is None
 

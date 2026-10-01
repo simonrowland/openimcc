@@ -918,7 +918,6 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
             "joint_ion_pressure_bar": 1.2408230726307911e-14,
             "electron_pressure_bar": 2.342325071257254e-05,
             "K_ion": 7.815924166451596e-12,
-            "isolated_bound": 143063233.9706761,
             "parent_oxide": "TiO2",
             "source_tables": {"cation": "Ti-007", "neutral": "Ti-006", "electron": "D-020"},
             "upstream_sha256": {
@@ -1010,7 +1009,6 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
             "joint_ion_pressure_bar": 4.105383117508851e-09,
             "electron_pressure_bar": 8.434764281794561e-05,
             "K_ion": 1.4835822576971673e-10,
-            "isolated_bound": 0.0675715822588812,
             "parent_oxide": "Cr2O3",
             "source_tables": {"cation": "Cr-006", "neutral": "Cr-005", "electron": "D-020"},
             "upstream_sha256": {
@@ -1054,7 +1052,6 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
             "joint_ion_pressure_bar": 1.6198056808787642e-12,
             "electron_pressure_bar": 2.3423250712572525e-05,
             "K_ion": 4.9273359088456654e-12,
-            "isolated_bound": 244.34080490083159,
             "parent_oxide": "V2O3",
             "source_tables": {"cation": "V-006", "neutral": "V-005", "electron": "D-020"},
             "upstream_sha256": {
@@ -2029,6 +2026,7 @@ def evaluate_gas(
             domain_flags = {
                 name: "; ".join(filter(None, (flag, notice)))
                 for name, flag in domain_flags.items()
+                if name.endswith(("+", "-"))
             }
 
     return ImccGasResult(

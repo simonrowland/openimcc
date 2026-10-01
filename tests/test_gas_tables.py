@@ -2049,7 +2049,14 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
                 & (packaged["Ref"] == fitted["Ref"])
             ].iloc[0]
             for column in build_gas_tables.CONDENSATE_COLUMNS:
-                assert str(packaged_row[column]) == fitted[column]
+                if column in tuple(f"dG_{coefficient}" for coefficient in "ABCDE"):
+                    # lstsq can shift these coefficients by ~1e-11 across BLAS
+                    # builds; 1e-9 covers that spread while keeping the fit pinned.
+                    assert float(packaged_row[column]) == pytest.approx(
+                        float(fitted[column]), rel=1e-9
+                    )
+                else:
+                    assert str(packaged_row[column]) == fitted[column]
             entry = provenance_rows[species]
             source = _record(entry["table_id"])
             table_config = next(item for item in sources if item[0] == species)

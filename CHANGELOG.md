@@ -12,8 +12,10 @@
 - Added opt-in JANAF-fitted Na+, K+, Ca+, electron and negative-ion gas
   channels, including O2−, AlO2−, KO−, Cr−, V− and Nb−, with melt-buffered
   electroneutrality. Neutral defaults remain unchanged. The completeness screen
-  now uses fitted channels for Na, K and Ca; Na and K move to complete, while
-  Ca remains gas-partial because its parent-liquid row starts at 2900 K.
+  now uses fitted channels for Na, K and Ca; Na and K move to
+  `complete-except-ions`, while Ca remains gas-partial because its parent-liquid
+  row starts at 2900 K. The research pack now includes the default gas table
+  and supports ion evaluation.
 - Replaced the corrected LH84 Na2O(l) parent with the JANAF Na-013 fit. Added its supercooled-liquid interval, moved Na into the
   JANAF-fitted condensate and C4 gates, and re-pinned Na-sensitive SF04,
   quickstart, species-set, and oxygen-balance results. Recovered the intact

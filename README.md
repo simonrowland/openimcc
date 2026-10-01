@@ -158,7 +158,6 @@ pressure are:
 |---:|---:|---:|---:|---:|
 | 1500 | 1.26401e-5 | 6.04931e-3 | 2.68168e-8 | 1.25166e-11 |
 | 2000 | 4.60159e-5 | 4.70024e-3 | 6.42409e-7 | 1.46320e-7 |
-| 2500 | 1.13875e-4 | 4.59937e-3 | 4.92535e-6 | 4.01760e-5 |
 
 Rows at 2500 K and 3000 K are omitted because their summed neutral pressures
 are 7.65 bar and 2.50e6 bar, above the 1-bar ideal-gas validity ceiling.
