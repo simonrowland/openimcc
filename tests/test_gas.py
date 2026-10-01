@@ -2644,7 +2644,7 @@ def test_oxygen_balance_refusal_messages_match_base(
     assert str(error.value) == message
 
 
-def test_constant_cp_parent_extensions_are_flagged_and_preserve_old_domains() -> None:
+def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> None:
     pack = load_gas_datapack()
     extension_rows = pack.oxide_df.loc[
         pack.oxide_df["Ref"].astype(str).str.endswith("-SC-CP")
@@ -2672,7 +2672,14 @@ def test_constant_cp_parent_extensions_are_flagged_and_preserve_old_domains() ->
         {"V2O3": 1.0}, 1500.0, 1.0e-10, pack,
         gas_species=("V",), allow_extrapolation=False,
     )
-    assert at_1500_v.domain_flags["V"] is None
+    assert "constant-Cp supercooled-liquid continuation" in (
+        at_1500_v.domain_flags["V"]
+    )
+    at_1700_v = evaluate_gas(
+        {"V2O3": 1.0}, 1700.0, 1.0e-10, pack,
+        gas_species=("V",), allow_extrapolation=False,
+    )
+    assert at_1700_v.domain_flags["V"] is None
 
     without_extensions = replace(
         pack,

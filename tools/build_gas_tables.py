@@ -258,6 +258,10 @@ CONDENSATE_SOURCES = (
     ("Na2O(l)", "Na-013", "Na", 2, 1),
 )
 
+# O-063 V2O3(l): the 1500 K Cp cell is glass-side; both 1600 K lines are
+# transition-marked and omitted. The 13 complete nodes from 1700-3000 K are
+# genuine liquid (Cp = 156.900 J/(mol K)), so they alone define the high fit.
+
 # Parent-liquid research pack only; these do not enter the default condensate CSV.
 # SiO2(l), O-038: the 1696 K II <--> LIQUID marker follows glass Cp values
 # (74.475 at 1500 K, 80.040 at 1600 K); 85.772 J/(mol K) is constant from
@@ -287,7 +291,7 @@ RESEARCH_CONDENSATE_SOURCES = (
 SUPERCOOLED_LIQUID_SOURCES = (
     ("TiO2(l)", "O-044", "Ti", 1, 2, 1500.0, 1500.0),
     ("Cr2O3(l)", "Cr-015", "Cr", 2, 3, 1900.0, 1900.0),
-    ("V2O3(l)", "O-063", "V", 2, 3, 1700.0, 1500.0),
+    ("V2O3(l)", "O-063", "V", 2, 3, 1700.0, 1700.0),
 )
 # Major-oxide continuations belong only to the opt-in JANAF research pack.
 # Their upper bounds meet that pack's existing JANAF rows, whose starts are
@@ -1401,6 +1405,17 @@ def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
                     runtime_t_min=1500.0,
                 )
             )
+        elif source[1] == "O-063":
+            rows.append(
+                _fit_condensate_row(
+                    source_dir,
+                    *source,
+                    fit_t_min=1700.0,
+                    fit_t_max=3000.0,
+                    minimum_rows=13,
+                    runtime_t_min=1700.0,
+                )
+            )
         else:
             rows.append(_fit_condensate_row(source_dir, *source))
     # Na-013 is a liquid table below its 1405.2 K ALPHA <--> LIQUID marker.
@@ -1498,10 +1513,19 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
             )
             serialized_rows.append(buffer.getvalue().rstrip("\n"))
         generated_starts = {str(row["T_min"]) for row in species_rows}
+        generated_refs: dict[str, int] = {}
+        for row in species_rows:
+            generated_refs[row["Ref"]] = generated_refs.get(row["Ref"], 0) + 1
         matching_intervals = []
         for index, existing in enumerate(lines):
             fields = next(csv.reader([existing]))
-            if fields[0] == species_name and fields[5] in generated_starts:
+            if fields[0] != species_name:
+                continue
+            replaced_interval = fields[5] in generated_starts
+            # A singleton generated reference owns one complete interval. Let
+            # it replace a stale interval whose T_min changed, as for O-063.
+            replaced_interval |= generated_refs.get(fields[-1]) == 1
+            if replaced_interval:
                 matching_intervals.append(index)
         if matching_intervals:
             insert_at = matching_intervals[0]

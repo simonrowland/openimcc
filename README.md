@@ -350,7 +350,7 @@ condensates:
 | FeO(l), 1000–5000 K | 6.111 | 1.536 | 5.393 | 2.273854 |
 | TiO2(l), 1500–3000 K | 5.960 | 0.210 | 0.608 | 0.006878 |
 | Cr2O3(l), 1900–3000 K | 1.315 | 0.036 | 0.105 | 0.001551 |
-| V2O3(l), 1500–3000 K | 2.468 | 0.047 | 0.137 | 0.002051 |
+| V2O3(l), 1700–3000 K | 0.626 | 0.026 | 0.044 | 0.001300 |
 | NbO2(l), 1500–3000 K | 0.911 | 0.047 | 0.070 | 0.001405 |
 | Na2O(l), 1200–1500 K | 0.408 | 0.008 | 0.011 | 0.000484 |
 | Na2O(l), 1500–3000 K | 5.401 | 0.167 | 0.497 | 0.005218 |
@@ -383,7 +383,7 @@ log10(K) are derived from `ΔG = ΔCp[(T−T0)−T ln(T/T0)]` and peak at 1200 K
 | Research | SiO2(l), 1200–1800 | 1800 | 85.772 | 0.800 | 973; 0.0424 |
 | Default | TiO2(l), 1200–1500 | 1500 | 100.416 | 1.007 | 324; 0.0141 |
 | Default | Cr2O3(l), 1200–1900 | 1900 | 156.900 | 2.626 | 2331; 0.1015 |
-| Default | V2O3(l), 1200–1500 | 1700 | 156.900 | 0.322 | 1287; 0.0560 |
+| Default | V2O3(l), 1200–1700 | 1700 | 156.900 | 0.457 | 1287; 0.0560 |
 
 For O-044 TiO2(l), the 1400 K source row contains glass-side thermal cells
 (Cp = 76.944 J/mol K) followed by the GLASS ↔ LIQUID marker. The first
@@ -394,17 +394,14 @@ the constant-Cp continuation against those genuine liquid-branch nodes.
 
 For O-063 V2O3(l), the generated continuation anchors at the 1700 K liquid
 node (Cp = 156.900 J/mol K); its enthalpy and entropy reproduce the liquid
-branch at the 1600 K transition. The existing 1500–3000 K high-fit row remains
-unchanged, including its 1500 K glass-side fit node; both 1600 K transition
-lines are omitted from fitting. The continuation ends at 1500 K, and strict
-gas calls below 1500 K still refuse because the V gas rows begin there. At
-1500 K the selector uses the existing O-063 row without a continuation flag;
-the existing polynomial remains selected through the 1700 K node, and its
-1500 K fit node is glass-side.
+branch at the 1600 K transition. The liquid-only 1700–3000 K fit omits the
+glass-side 1500 K node and both transition-marked 1600 K lines. The continuation
+covers 1200–1700 K, with the high row selected exactly at 1700 K. Strict gas
+calls below 1500 K still refuse because the V gas rows begin there.
 
 The continuation-minus-high-row Gibbs seams are −0.0031 kJ/mol (research MgO),
 −0.0016 (research CaO), −0.0295 (research Al2O3), −0.0005 (research SiO2),
-−0.0043 (default TiO2), −0.0010 (default Cr2O3), and −0.0045 (default V2O3).
+−0.0043 (default TiO2), −0.0010 (default Cr2O3), and −0.0005 (default V2O3).
 The major-oxide rows and default results remain the Lamoreaux functions; the
 JANAF major continuations are available only through the opt-in research pack.
 

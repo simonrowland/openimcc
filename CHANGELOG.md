@@ -11,9 +11,13 @@
   default JANAF-fitted TiO2(l), Cr2O3(l), and V2O3(l) rows. Added matching
   intervals for the JANAF-fitted MgO(l), CaO(l), Al2O3(l), and SiO2(l) rows
   only in the opt-in research pack. The default SF04/Lamoreaux major-oxide
-  functions, coverage statuses, and result pins remain unchanged. Continuation
+  functions and coverage statuses remain unchanged. Continuation
   use is visible in gas domain flags; the README and per-pack provenance record
   residuals, illustrative Cp sensitivity, and interval seams.
+- Refit the default V2O3(l) high interval from the 1700–3000 K liquid nodes
+  only and extend its generated constant-Cp continuation through 1700 K. The
+  high interval is selected at the shared boundary; V gas results change over
+  1500–<1700 K and at fit-residual scale from 1700 K onward.
 - Added opt-in JANAF-fitted Na+, K+, Ca+, electron and negative-ion gas
   channels, including O2−, AlO2−, KO−, Cr−, V− and Nb−, with melt-buffered
   electroneutrality. Neutral defaults remain unchanged. The completeness screen

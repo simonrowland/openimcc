@@ -53,7 +53,7 @@ source_notes:
         fO2_bar: 1.0e-12
         disposition: fitted_and_included_in_charge_balance
       V-:
-        value: 0.38499227782866857
+        value: 0.3850021479929351
         temperature_K: 3000
         fO2_bar: 1.0e-12
         disposition: fitted_and_included_in_charge_balance
@@ -64,27 +64,27 @@ source_notes:
         disposition: fitted_and_included_in_charge_balance
     maximum_ion_to_neutral_pressure_ratios:
       O2-:
-        value: 2.168525991632953e-05
+        value: 2.1685259882052544e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       AlO2-:
-        value: 6.4563347605466594
+        value: 6.456334760015208
         temperature_K: 2300
         fO2_bar: 1.0e-12
       KO-:
-        value: 0.0014819688021643867
+        value: 0.0014819687998219003
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Cr-:
-        value: 1.841755845294084e-05
+        value: 1.8417558423828968e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       V-:
-        value: 8.89818077650172e-06
+        value: 8.898180762436737e-06
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Nb-:
-        value: 3.140012053630751e-05
+        value: 3.140012048667464e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
     ko_note: >-
@@ -1472,17 +1472,16 @@ rows:
     source_sha256: 87b1a29e2a133510f8d1dd206f04bdbf7abd472a7ac66edb5c951ec0f780eab6
     authority: janaf_fitted
     method: fitted
-    T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 2.05054443771951
-    max_residual_log10_K: 6.30043289424422e-05
+    T_range_K: [1700, 3000]
+    max_residual_J_per_mol: 1.29979831143282
+    max_residual_log10_K: 3.00064984977297e-05
     note: >-
       Fitted by tools/build_gas_tables.py to the runtime condensate form.
       O-063 is the caller-supplied V(III) liquid parent; transition-marked
-      nodes are omitted rather than assigning a crystal/liquid branch. Cp
-      rises through the glass branch at 1200-1500 K (143.718, 146.741,
-      149.841, 152.464 J/(mol K)); the high fit's 1500 K node is glass-side.
-      Both 1600 K transition lines are omitted. The fit uses liquid Cp =
-      156.900 J/(mol K) from 1700 K onward; the parent gap now ends at 1500 K.
+      nodes are omitted rather than assigning a crystal/liquid branch. The
+      glass-side 1500 K node and both transition-marked 1600 K lines are
+      omitted. The fit uses the 13 complete liquid nodes from 1700-3000 K
+      (Cp = 156.900 J/(mol K)); the row serves at the shared 1700 K boundary.
   - table: condensate
     species_name: NbO2(l)
     table_id: Nb-013
@@ -1839,11 +1838,11 @@ rows:
     extrapolation: true
     source_data: false
     runtime_ref: O-063-SC-CP
-    T_range_K: [1200, 1500]
+    T_range_K: [1200, 1700]
     T0_K: 1700
     Cp_l_J_molK: 156.900
-    max_residual_J_per_mol: 0.322409535292536
-    max_residual_log10_K: 1.36245659816767e-05
+    max_residual_J_per_mol: 0.457122317515314
+    max_residual_log10_K: 1.92353875677357e-05
     uncertainty:
       description: >-
         Illustrative stress test only, not a statistical source uncertainty.
@@ -1855,14 +1854,14 @@ rows:
       max_abs_delta_log10_K: 0.0560241077392291
       at_temperature_K: 1200
       scenario_only: true
-    seam_to_existing_interval_delta_G_J_per_mol: -4.522
+    seam_to_existing_interval_delta_G_J_per_mol: -0.474247148260474
     note: >-
       Both 1600 K transition lines are ambiguous in parsing and are not
       anchors. The complete 1700 K liquid node has Cp =
       156.900 J/(mol K); its H and S reproduce the liquid branch at 1600 K.
-      The continuation ends at the pre-existing row's 1500 K lower bound,
-      where JANAF prints glass data. The unchanged high fit also includes that
-      1500 K glass-side node before the 1700-3000 K liquid nodes.
+      The continuation extends through 1700 K and is selected below that
+      boundary; the high fit owns exactly 1700 K. At the shared boundary the
+      continuation-minus-high Gibbs seam is -0.474 J/mol.
 certification_items:
   - authority: lh84_evaluated_with_nasa_cp
     species_name: Na2O(g)

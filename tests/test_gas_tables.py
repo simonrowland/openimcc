@@ -164,7 +164,7 @@ JANAF_CONDENSATE_G_RESIDUALS = {
     ("FeO(l)", 1000.0): 2.273853686498944,
     ("TiO2(l)", 1500.0): 0.00687822891632095,
     ("Cr2O3(l)", 1900.0): 0.001551177412737161,
-    ("V2O3(l)", 1500.0): 0.0020505444393493235,
+    ("V2O3(l)", 1700.0): 0.00129979831143282,
     ("NbO2(l)", 1200.0): 3.4924596548080445e-13,
     ("NbO2(l)", 1500.0): 0.001405104221543297,
     ("Na2O(l)", 1200.0): 0.0004841441633179784,
@@ -649,6 +649,8 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         expected_t_min = build_gas_tables._FIT_T_MIN_BY_TABLE.get(
             table_id, build_gas_tables.FIT_T_MIN
         )
+        if species == "V2O3(l)":
+            expected_t_min = 1700.0
         runtime_t_min = 1500 if species == "Na2O(l)" else int(expected_t_min)
         assert row["T_range_K"] == [runtime_t_min, 3000]
         assert source["source"]["doi"] == "10.18434/T42S31"
@@ -1306,6 +1308,8 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
         fit_t_min = build_gas_tables._FIT_T_MIN_BY_TABLE.get(
             table_id, build_gas_tables.FIT_T_MIN
         )
+        if species == "V2O3(l)":
+            fit_t_min = 1700.0
         runtime_t_min = 1500.0 if species == "Na2O(l)" else fit_t_min
         row = pack.oxide_df.loc[[species]]
         row = row.loc[row["T_min"].astype(float) == runtime_t_min].iloc[0]
@@ -1346,7 +1350,7 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
         expected_nodes = {
             "TiO2(l)": 15,
             "Cr2O3(l)": 11,
-            "V2O3(l)": 14,
+            "V2O3(l)": 13,
             "NbO2(l)": 15,
             "Na2O(l)": 16,
         }[species]
@@ -1887,14 +1891,14 @@ _CONDENSATE_EXPECTED = {
         "Cr-015",
     ),
     "V2O3(l)": (
-        1500,
+        1700,
         3000,
         -131.464178771295,
-        12.7984408682205,
-        15.7012635413964,
-        -3.18957608585823,
-        0.420979101959005,
-        -0.0242973638300596,
+        12.6885774332175,
+        15.8920275807616,
+        -3.31219814257183,
+        0.45557724894072,
+        -0.027915035621767,
         "O-063",
     ),
     "NbO2(l)": (
@@ -1941,6 +1945,75 @@ def test_condensate_rows_match_the_current_published_coefficients() -> None:
         -0.0269424627020659,
     )
     assert na_low["Ref"] == "Na-013"
+
+
+def test_v2o3_refit_changes_only_its_outputs_and_uses_liquid_boundary() -> None:
+    from openimcc.gas import _oxide_row_for_T, evaluate_gas
+
+    pack = load_gas_datapack(
+        gas_path=GAS_DATA / "gas-shomate.csv",
+        oxide_path=GAS_DATA / "condensate.csv",
+    )
+    v_rows = pack.oxide_df.loc["V2O3(l)"]
+    high = v_rows.loc[v_rows["T_min"].astype(int) == 1700].iloc[0].copy()
+    continuation = v_rows.loc[v_rows["T_min"].astype(int) == 1200].iloc[0].copy()
+    for column, value in zip(
+        ("T_min", "T_max", "dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E"),
+        (
+            1500,
+            3000,
+            -131.464178771295,
+            12.7984408682205,
+            15.7012635413964,
+            -3.18957608585823,
+            0.420979101959005,
+            -0.0242973638300596,
+        ),
+    ):
+        high[column] = value
+    for column, value in zip(
+        ("dG_A", "dG_B", "dG_C", "dG_D", "dG_E"),
+        (
+            15.4402114184811,
+            9.2801679295331,
+            2.67493200070515,
+            -1.96286143257697,
+            0.339268872704154,
+        ),
+    ):
+        continuation[column] = value
+    continuation["T_max"] = 1500
+    old_rows = pd.DataFrame(
+        [high, continuation], index=["V2O3(l)", "V2O3(l)"]
+    )
+    old_pack = replace(
+        pack,
+        oxide_df=pd.concat(
+            [pack.oxide_df.drop(index="V2O3(l)"), old_rows]
+        ),
+    )
+
+    assert _oxide_row_for_T(pack.oxide_df, "V2O3(l)", 1699.9)["T_min"] == 1200
+    assert _oxide_row_for_T(pack.oxide_df, "V2O3(l)", 1700.0)["T_min"] == 1700
+    activities = {
+        str(name).removesuffix("(l)"): 1.0e-3
+        for name in pack.oxide_df.index.unique()
+    }
+    v_channels = {"V", "VO", "VO2"}
+    changed_v_temperatures = (1500.0, 1600.0, 1699.0, 1700.0, 2000.0, 3000.0)
+    for temperature in range(1500, 3001):
+        old = evaluate_gas(activities, temperature, 1.0e-8, old_pack)
+        new = evaluate_gas(activities, temperature, 1.0e-8, pack)
+        assert set(old) == set(new)
+        unchanged = set(old) - v_channels
+        assert all(old[name] == new[name] for name in unchanged)
+        assert {
+            name: old.domain_flags[name] for name in unchanged
+        } == {
+            name: new.domain_flags[name] for name in unchanged
+        }
+        if temperature in changed_v_temperatures:
+            assert any(old[name] != new[name] for name in v_channels)
 
 
 def test_lamoreaux_al2o3_condensate_matches_its_source_cells() -> None:
@@ -2078,6 +2151,12 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
         build_gas_tables.build_research_condensate_rows(JANAF_DATA), research_copy
     )
     assert research_copy.read_bytes() == (research_dir / "condensate.csv").read_bytes()
+    default_copy = tmp_path / "default-condensate.csv"
+    default_copy.write_bytes((GAS_DATA / "condensate.csv").read_bytes())
+    build_gas_tables.merge_condensate_csv(
+        build_gas_tables.build_condensate_rows(JANAF_DATA), default_copy
+    )
+    assert default_copy.read_bytes() == (GAS_DATA / "condensate.csv").read_bytes()
     for generated, packaged, provenance, sources, expected_species in datasets:
         provenance_rows = {
             row["species_name"]: row
@@ -2792,7 +2871,7 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
         ("FeO(l)", 1000.0): 39,
         ("TiO2(l)", 1500.0): 15,
         ("Cr2O3(l)", 1900.0): 11,
-        ("V2O3(l)", 1500.0): 14,
+        ("V2O3(l)", 1700.0): 13,
         ("NbO2(l)", 1200.0): 4,
         ("NbO2(l)", 1500.0): 15,
         ("Na2O(l)", 1200.0): 4,
