@@ -1029,9 +1029,9 @@ rows:
     authority: janaf_fitted
     method: fitted
     T_range_K: [1500, 3000]
-    source_fit_range_K: [1600, 3000]
-    max_residual_J_per_mol: 3.37649676622823
-    max_residual_log10_K: 7.52499730109028e-05
+    source_fit_range_K: [1500, 3000]
+    max_residual_J_per_mol: 5.21823957213201
+    max_residual_log10_K: 0.000109564521554246
     supersedes:
       source_table_id: LH84 Table 2 / Table 4
       authority: lam1984_transcribed
@@ -1041,22 +1041,20 @@ rows:
       Ref: LAM1984
       reason: >-
         Replaces the LH84 Table 2 Na2O(l) condensate row with a fit to
-        NIST-JANAF 4th ed. Na-013. LH84's printed two-term row departs from its
-        own crystal, fusion and liquid heat-capacity inputs by up to 16 kJ/mol;
-        the printed, internally consistent JANAF table was chosen on source
-        grounds.
+        NIST-JANAF 4th ed. Na-013. The printed JANAF table is the selected
+        source for this row.
       measured_LH84_minus_JANAF_G_kJ_mol:
-        definition: LH84 printed Table 2 row minus JANAF Na-013 apparent Gibbs energy
-        values: {1600: 13.44, 2000: 25.57, 2400: 29.64, 3000: 17.67}
-        LH84_input_rebuild_minus_JANAF_values: {1600: 6.83, 2000: 10.07, 2400: 13.31, 3000: 18.18}
+        definition: LH84 printed Table 2 row minus the fitted JANAF Na-013 Gibbs energy
+        values: {1600: 13.44, 2000: 25.57, 2400: 29.64, 3000: 17.66}
     note: >-
       Fitted by tools/build_gas_tables.py to the runtime condensate form.
       Na-013 is the liquid table; Cp is 104.600 J/(mol K) at every complete
       liquid node. Its ALPHA <--> LIQUID marker is at 1405.2 K. The high
-      interval uses 15 complete nodes from 1600-3000 K; the 1500 K row is
-      parse-ambiguous and is not fitted. The low fit below uses the complete
-      1000-1400 K supercooled-liquid nodes. See supersedes for the measured
-      comparison with the replaced LH84 row.
+      interval uses 16 nodes from 1500-3000 K; the parse-ambiguous 1500 K row's
+      thermal cells are recovered for fitting, while its formation columns
+      remain unused. The low fit below shares the recovered node and uses the
+      1000-1500 K supercooled-liquid interval. See supersedes for the printed
+      LH84 row comparison.
   - table: condensate
     species_name: Na2O(l)
     table_id: Na-013
@@ -1065,18 +1063,18 @@ rows:
     authority: janaf_fitted
     method: fitted
     T_range_K: [1200, 1500]
-    source_fit_range_K: [1000, 1400]
-    max_residual_J_per_mol: 4.65661287307739e-10
-    max_residual_log10_K: 1.73736962760956e-14
+    source_fit_range_K: [1000, 1500]
+    max_residual_J_per_mol: 0.484144162619486
+    max_residual_log10_K: 1.94527709802471e-05
     seam_to_interval_1_at_1500_K:
-      delta_G_J_per_mol: 0.5608443801756948
-      log10_p_low_over_high: 1.9529954867593807e-05
+      delta_G_J_per_mol: 2.779451693408191
+      log10_p_low_over_high: 9.688583467023e-05
     note: >-
-      This second runtime interval is fitted to the five complete 1000-1400 K
-      supercooled-liquid nodes (Cp = 104.600 J/(mol K)). The 1405.2 K
-      ALPHA <--> LIQUID marker and parse-ambiguous 1500 K row are omitted.
-      Its runtime upper bound meets the high interval at 1500 K; the high row
-      has the larger T_min and is selected there.
+      This second runtime interval uses six 1000-1500 K supercooled-liquid
+      nodes (Cp = 104.600 J/(mol K)), including the recovered 1500 K thermal
+      cells. The 1405.2 K ALPHA <--> LIQUID marker is omitted. Both intervals
+      include 1500 K, and the high row has the larger T_min and is selected
+      there.
   - table: condensate
     species_name: K2O(l)
     authority: secondary_transcription_unverified_primary

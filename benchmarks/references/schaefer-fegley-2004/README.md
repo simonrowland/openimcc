@@ -198,8 +198,8 @@ TiO2(l) parent and the Ti gas channels were added; its residual is
 | `digitized_figure` | 350 | 304 |
 | `derived_table7` | 350 | 304 |
 
-The all-comparable residual summary is min −1.241290, median 0.217319, p95
-0.839166, max 1.399972, and RMSE 0.452991 dex.
+The all-comparable residual summary is min −1.241290, median 0.147170, p95
+0.810211, max 1.399972, and RMSE 0.394215 dex.
 
 The residual gate is per species, not one 3.0-dex gate. Each gate is the
 measured maximum absolute residual from this run, rounded upward to 0.001 dex,
@@ -223,11 +223,12 @@ cannot raise its own threshold; these are failure gates, not fit targets.
 | SiO2 | 25 | 1.056831 | 1.357 |
 | TiO2 | 1 | 0.382382 | 0.683 |
 
-Large residuals are findings in this comparison, not adjusted values. After
-correcting the LH84 Na2O(l) row, the Table 9 Na anchor residual is +0.168 dex;
-the comparable-point median residuals are +0.485 dex for Na, +0.459 dex for
-NaO, and +0.784 dex for Na2. O, SiO, and FeO remain close at their anchors;
-no model tuning is part of this reference set.
+Large residuals are findings in this comparison, not adjusted values. With the
+JANAF Na-013 Na2O(l) parent, the fresh Table 9 anchor comparison gives signed
+median residuals of −0.151 dex for Na and −0.349 dex for NaO. Across all
+comparable points, median residuals are +0.158 dex for Na, +0.148 dex for NaO,
+and +0.132 dex for Na2. O, SiO, and FeO remain close at their anchors; no
+model tuning is part of this reference set.
 The test prints the same per-species, per-rock, and per-method report so a
 channel-specific review can distinguish a printed anchor issue from a
 digitization issue.

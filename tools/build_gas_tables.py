@@ -274,7 +274,18 @@ _FIT_T_MIN_BY_TABLE = {
     "Al-100": 2500.0,
     "Mg-009": 2200.0,
     "Ca-028": 2200.0,
-    "Na-013": 1600.0,
+    "Na-013": 1500.0,
+}
+
+# Na-013's 1500 K row has six tab fields because JANAF prints its two
+# formation columns together. Its thermal cells remain recoverable; the fit
+# ignores its formation columns and uses dfH(298) from the complete 298.15 K row.
+_RECOVERED_THERMAL_CELLS = {
+    ("Na-013", 1500.0): {
+        "heat_capacity": 104.600,
+        "entropy": 260.601,
+        "enthalpy_increment": 125.714,
+    },
 }
 
 # Sources whose tabulated rows stop short of FIT_T_MAX.  Cr(g), Cr-005: Cr
@@ -367,6 +378,18 @@ def _usable_rows(
                 f"{table_id} has an incomplete/ambiguous row at {temperature} K"
             )
         rows.append({field: float(value) for field, value in values.items()})
+    for (recovery_table_id, temperature), thermal_cells in (
+        _RECOVERED_THERMAL_CELLS.items()
+    ):
+        if (
+            recovery_table_id == table_id
+            and fit_t_min <= temperature <= fit_t_max
+            and temperature in ambiguous_temperatures
+        ):
+            # This exact Na-013 row is ambiguous only in its formation cells;
+            # the fitter uses these thermal cells and the separate 298.15 K
+            # formation-enthalpy anchor.
+            rows.append({"temperature": temperature, **thermal_cells})
     rows.sort(key=lambda row: row["temperature"])
     if minimum_rows is None:
         minimum_rows = 15
@@ -1114,10 +1137,9 @@ def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
             )
         else:
             rows.append(_fit_condensate_row(source_dir, *source))
-    # Na-013 is a liquid table below its 1405.2 K ALPHA <--> LIQUID marker;
-    # its complete supercooled-liquid nodes at 1000--1400 K form the five-node
-    # low fit. The 1500 K row is parse-ambiguous, so the declared 1500--3000 K
-    # interval uses complete high-fit nodes from 1600 K onward.
+    # Na-013 is a liquid table below its 1405.2 K ALPHA <--> LIQUID marker.
+    # Both fits share the recovered 1500 K thermal row so the runtime seam is
+    # constrained by the declared endpoint on each side.
     rows.append(
         _fit_condensate_row(
             source_dir,
@@ -1127,8 +1149,8 @@ def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
             2,
             1,
             fit_t_min=1000.0,
-            fit_t_max=1400.0,
-            minimum_rows=5,
+            fit_t_max=1500.0,
+            minimum_rows=6,
             runtime_t_min=1200.0,
             runtime_t_max=1500.0,
         )

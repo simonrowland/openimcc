@@ -4,7 +4,9 @@
 
 - Replaced the corrected LH84 Na2O(l) parent with the JANAF Na-013 fit. Added its supercooled-liquid interval, moved Na into the
   JANAF-fitted condensate and C4 gates, and re-pinned Na-sensitive SF04,
-  quickstart, species-set, and oxygen-balance results.
+  quickstart, species-set, and oxygen-balance results. Recovered the intact
+  1500 K JANAF thermal cells for both Na2O(l) fits and re-pinned Na-bearing
+  outputs to the resulting node-anchored fit.
 - Added fitted optional JANAF phosphorus and sulfur gas rows. Sulfur channels
   accept caller-supplied S2 fugacity. No public evaluated P2O5(l) G(T) function
   was found; JANAF lists P4O10(cr) only, so P channels need an external,

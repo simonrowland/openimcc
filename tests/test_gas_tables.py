@@ -163,8 +163,8 @@ JANAF_CONDENSATE_G_RESIDUALS = {
     ("V2O3(l)", 1500.0): 0.0020505444393493235,
     ("NbO2(l)", 1200.0): 3.4924596548080445e-13,
     ("NbO2(l)", 1500.0): 0.001405104221543297,
-    ("Na2O(l)", 1200.0): 4.656612873077393e-13,
-    ("Na2O(l)", 1500.0): 0.003376496766228231,
+    ("Na2O(l)", 1200.0): 0.0004841441633179784,
+    ("Na2O(l)", 1500.0): 0.005218239571899176,
 }
 
 # G source disagreements are model-minus-JANAF, measured over complete liquid
@@ -614,14 +614,14 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert source["source"]["doi"] == "10.18434/T42S31"
 
     na_high = oxide_rows["Na2O(l)"]
-    assert na_high["source_fit_range_K"] == [1600, 3000]
+    assert na_high["source_fit_range_K"] == [1500, 3000]
     assert na_high["supersedes"]["T_range_K"] == [1405, 3000]
     assert na_high["supersedes"]["dH298_R"] == -50.17
     assert na_high["supersedes"]["dG_coefficients"] == [7.67, 6.193, 0, 0, 0]
     assert na_high["supersedes"]["reason"].startswith("Replaces the LH84 Table 2 Na2O(l)")
     assert na_high["supersedes"]["measured_LH84_minus_JANAF_G_kJ_mol"][
         "values"
-    ] == {1600: 13.44, 2000: 25.57, 2400: 29.64, 3000: 17.67}
+    ] == {1600: 13.44, 2000: 25.57, 2400: 29.64, 3000: 17.66}
 
     nb_low = next(
         row
@@ -647,7 +647,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     na_source = _record("Na-013")
     assert na_low["source_path"] == "data-src/janaf/Na-013.yaml"
     assert na_low["source_sha256"] == na_source["extraction"]["source_sha256"]
-    assert na_low["source_fit_range_K"] == [1000, 1400]
+    assert na_low["source_fit_range_K"] == [1000, 1500]
     assert na_low["authority"] == "janaf_fitted"
     assert "Cp = 104.600" in na_low["note"]
 
@@ -1176,11 +1176,25 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
         maximum_j = 0.0
         maximum_log10 = 0.0
         nodes = 0
-        for source_row in _complete_rows(table_id):
+        source_rows = _complete_rows(table_id)
+        if species == "Na2O(l)":
+            source_rows = [
+                row for row in source_rows if row["temperature"] != 1500.0
+            ]
+            source_rows.append({
+                "temperature": 1500.0,
+                "heat_capacity": 104.600,
+                "entropy": 260.601,
+                "enthalpy_increment": 125.714,
+            })
+        for source_row in source_rows:
             temperature = source_row["temperature"]
             if (
                 not fit_t_min <= temperature <= 3000.0
-                or temperature in _ambiguous_temperatures(table_id)
+                or (
+                    temperature in _ambiguous_temperatures(table_id)
+                    and not (species == "Na2O(l)" and temperature == 1500.0)
+                )
             ):
                 continue
             residual = abs(
@@ -1198,7 +1212,7 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
             "Cr2O3(l)": 11,
             "V2O3(l)": 14,
             "NbO2(l)": 15,
-            "Na2O(l)": 15,
+            "Na2O(l)": 16,
         }[species]
         assert nodes == expected_nodes
         max_log10_limit = {
@@ -1249,7 +1263,7 @@ def test_no_fitted_row_consumes_a_parse_ambiguous_source_row() -> None:
         assert selected_temperatures.isdisjoint(_ambiguous_temperatures(table_id))
 
 
-def test_na_condensate_uses_only_complete_liquid_branch_nodes() -> None:
+def test_na_condensate_recovers_1500_thermal_cells_for_both_intervals() -> None:
     from openimcc.gas import _lamor_gibbs, _oxide_row_for_T
 
     source = _record("Na-013")
@@ -1257,20 +1271,45 @@ def test_na_condensate_uses_only_complete_liquid_branch_nodes() -> None:
     ambiguous = _ambiguous_temperatures("Na-013")
     assert ambiguous == {1405.2, 1500.0}
     low = build_gas_tables._usable_rows(
-        source["table"], "Na-013", fit_t_min=1000.0, fit_t_max=1400.0,
-        minimum_rows=5,
+        source["table"], "Na-013", fit_t_min=1000.0, fit_t_max=1500.0,
+        minimum_rows=6,
     )
     high = build_gas_tables._usable_rows(
-        source["table"], "Na-013", fit_t_min=1600.0, fit_t_max=3000.0,
-        minimum_rows=15,
+        source["table"], "Na-013", fit_t_min=1500.0, fit_t_max=3000.0,
+        minimum_rows=16,
     )
     assert [row["temperature"] for row in low] == [
-        1000.0, 1100.0, 1200.0, 1300.0, 1400.0
+        1000.0, 1100.0, 1200.0, 1300.0, 1400.0, 1500.0
     ]
     assert [row["temperature"] for row in high] == list(
-        np.arange(1600.0, 3000.1, 100.0)
+        np.arange(1500.0, 3000.1, 100.0)
     )
     assert {row["heat_capacity"] for row in low + high} == {104.6}
+    recovered = low[-1]
+    assert recovered["entropy"] == 260.601
+    assert recovered["enthalpy_increment"] == 125.714
+    assert "formation_enthalpy" not in recovered
+    assert "formation_gibbs_energy" not in recovered
+
+    # With constant Cp, S(T2)=S(T1)+Cp*ln(T2/T1) and
+    # Hinc(T2)=Hinc(T1)+Cp*(T2-T1)/1000. Continue from each adjacent node,
+    # then compare apparent G in J/mol to the recovered source row.
+    complete = _complete_rows("Na-013")
+    reference_h = next(
+        row["formation_enthalpy"] for row in complete
+        if row["temperature"] == 298.15
+    )
+    node_1400 = next(row for row in complete if row["temperature"] == 1400.0)
+    node_1600 = next(row for row in complete if row["temperature"] == 1600.0)
+    expected_g = (reference_h + 125.714) * 1000.0 - 1500.0 * 260.601
+    for neighbor in (node_1400, node_1600):
+        delta_t = 1500.0 - neighbor["temperature"]
+        continued_h = neighbor["enthalpy_increment"] + 104.6 * delta_t / 1000.0
+        continued_s = neighbor["entropy"] + 104.6 * np.log(
+            1500.0 / neighbor["temperature"]
+        )
+        continued_g = (reference_h + continued_h) * 1000.0 - 1500.0 * continued_s
+        assert abs(continued_g - expected_g) < 1.0
 
     pack = load_gas_datapack()
     na_rows = pack.oxide_df.loc[["Na2O(l)"]]
@@ -1278,7 +1317,14 @@ def test_na_condensate_uses_only_complete_liquid_branch_nodes() -> None:
     high_row = na_rows.loc[na_rows["T_min"].astype(float) == 1500.0].iloc[0]
     selected = _oxide_row_for_T(pack.oxide_df, "Na2O(l)", 1500.0)
     assert float(selected["T_min"]) == 1500.0
-    assert abs(_lamor_gibbs(1500.0, low_row) - _lamor_gibbs(1500.0, high_row)) < 1.0
+    assert species_thermo("Na2O", "l", 1500.0, pack).G_J_mol == pytest.approx(
+        expected_g, abs=10.0
+    )
+    low_g = _lamor_gibbs(1500.0, low_row)
+    high_g = _lamor_gibbs(1500.0, high_row)
+    assert abs(low_g - expected_g) < 10.0
+    assert abs(high_g - expected_g) < 10.0
+    assert abs(low_g - high_g) < 10.0
 
 
 def _janaf_apparent_gibbs(table_id: str, T: float) -> float:
@@ -1530,11 +1576,11 @@ _CONDENSATE_EXPECTED = {
         1500,
         3000,
         -44.8427056720216,
-        5.92184733833135,
-        15.031676409507,
-        -4.18220915438105,
-        0.737886238111019,
-        -0.0563819431726165,
+        5.80795016652333,
+        15.2327690696853,
+        -4.31343306861092,
+        0.775422945866502,
+        -0.0603564181113987,
         "Na-013",
     ),
     "K2O(l)": (1190, 3000, -43.58, 0.8, 18.889, -4.532, 0.467, 0.0, "LAM1984"),
@@ -1612,11 +1658,11 @@ def test_condensate_rows_match_the_current_published_coefficients() -> None:
         for column in ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
     ) == (
         -44.8427056720216,
-        5.84044810956676,
-        14.3359709958578,
-        -2.57472903875526,
-        -0.397353347535765,
-        0.208213754853124,
+        5.37629004861128,
+        15.9145037641667,
+        -4.57747615825875,
+        0.726170803003458,
+        -0.0269424627020659,
     )
     assert na_low["Ref"] == "Na-013"
 
@@ -2337,14 +2383,24 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
         ("V2O3(l)", 1500.0): 14,
         ("NbO2(l)", 1200.0): 4,
         ("NbO2(l)", 1500.0): 15,
-        ("Na2O(l)", 1200.0): 3,
-        ("Na2O(l)", 1500.0): 15,
+        ("Na2O(l)", 1200.0): 4,
+        ("Na2O(l)", 1500.0): 16,
     }
     checked = {}
     measured_g_maxima = {}
 
     for species_name, table_id in JANAF_CONDENSATE_TABLE_IDS.items():
         source_rows = _complete_rows(table_id)
+        if species_name == "Na2O(l)":
+            source_rows = [
+                row for row in source_rows if row["temperature"] != 1500.0
+            ]
+            source_rows.append({
+                "temperature": 1500.0,
+                "heat_capacity": 104.600,
+                "entropy": 260.601,
+                "enthalpy_increment": 125.714,
+            })
         reference_h = next(
             item["formation_enthalpy"]
             for item in source_rows
@@ -2362,7 +2418,10 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
             count = 0
             for source in source_rows:
                 temperature = source["temperature"]
-                if not low <= temperature <= high or temperature in ambiguous:
+                if not low <= temperature <= high or (
+                    temperature in ambiguous
+                    and not (species_name == "Na2O(l)" and temperature == 1500.0)
+                ):
                     continue
                 actual = species_thermo(species_name[:-3], "l", temperature, row_pack)
                 source_h_app = reference_h + source["enthalpy_increment"]

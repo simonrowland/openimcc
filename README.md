@@ -170,7 +170,7 @@ Output:
 activities: {'SiO2': '0.329959', 'MgO': '0.00468755', 'FeO': '0.106157', 'CaO': '5.58726e-05', 'Al2O3': '0.0165703', 'TiO2': '0.00299186', 'Na2O': '2.47359e-10', 'K2O': '2.29657e-19'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
 melt notices: ('K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS pressures (case 4: −0.89 dex); see https://github.com/simonrowland/openimcc',)
-gas: bar {'Na': '0.000201453', 'K': '7.67598e-08'}
+gas: bar {'Na': '0.000201444', 'K': '7.67598e-08'}
 Mg domain flag: T=1800.0 K outside declared G(T) interval for 'MgO(l)' [3100, 3500] K
 ```
 
@@ -286,13 +286,19 @@ condensates:
 | Cr2O3(l), 1900–3000 K | 1.315 | 0.036 | 0.105 | 0.001551 |
 | V2O3(l), 1500–3000 K | 2.468 | 0.047 | 0.137 | 0.002051 |
 | NbO2(l), 1500–3000 K | 0.911 | 0.047 | 0.070 | 0.001405 |
+| Na2O(l), 1200–1500 K | 0.408 | 0.008 | 0.011 | 0.000484 |
+| Na2O(l), 1500–3000 K | 5.401 | 0.167 | 0.497 | 0.005218 |
 
 NbO2(l)'s separate 1200–1500 K interval has its own measured maximum G_app
 residual, 3.49e-13 kJ/mol; it is not grouped with the 1500–3000 K interval.
-Na2O(l) has a separate 1200–1500 K runtime interval fitted from five complete
-1000–1400 K supercooled-liquid nodes; its measured maximum G_app residual at
-the three in-range complete nodes is 4.66e-13 kJ/mol. The 1500 K source row is
-parse-ambiguous, so the high interval uses complete nodes from 1600 K onward.
+Na2O(l) has separate 1200–1500 K and 1500–3000 K runtime intervals. Both fits
+include the recovered 1500 K thermal cells; the low fit uses six nodes from
+1000–1500 K, and the high fit uses 16 nodes from 1500–3000 K. The 1500 K
+source line has ambiguous formation columns, which remain unused. Maximum
+G_app residuals across the four low-interval runtime nodes and 16 high-interval
+nodes are 0.000484 and 0.005218 kJ/mol, respectively. The low value now covers
+four nodes (including the recovered endpoint), rather than the prior five-node
+interpolant's 4.66e-13 kJ/mol at three in-range nodes.
 
 For gas rows, `G_J_mol = 1000*H_app_kJ_mol - T*S_J_molK`; the factor of
 1000 converts enthalpy to J/mol. For LAM condensates, the following measured
@@ -306,17 +312,13 @@ model-minus-JANAF G residual ranges are retained as documented exceptions.
 | CaO(l) | LH87 Table 2; JANAF Ca-028 | −6.185 to −1.210793 (2900–3800 K) | 0.003 | Complete JANAF liquid nodes inside the packaged interval are included; sources do not reconcile their G fits. |
 
 The default Na2O(l) row is the JANAF Na-013 liquid fit, replacing the corrected
-LH84 Table 2 row. LH84's printed two-term row departs from LH84's own crystal,
-fusion and liquid heat-capacity inputs by up to 16 kJ/mol, so the printed,
-internally consistent JANAF table was chosen on source grounds; the
-measured old-row minus JANAF G_app differences are +13.44, +25.57, +29.64, and
-+17.67 kJ/mol at 1600, 2000, 2400, and 3000 K. Rebuilding LH84 from its own
-Table 2/4 inputs instead gives +6.83, +10.07, +13.31, and +18.18 kJ/mol at
-those temperatures; the printed LH84 polynomial diverges from that rebuild.
+LH84 Table 2 row. The printed LH84 row minus the new JANAF Na-013 fit is
++13.44, +25.57, +29.64, and +17.66 kJ/mol at 1600, 2000, 2400, and 3000 K.
 Na-013 tabulates liquid Cp = 104.600 J/(mol K). Its 1405.2 K
-ALPHA ↔ LIQUID marker and the parse-ambiguous 1500 K row are excluded from the
-fit; complete supercooled-liquid nodes support 1000–1400 K and complete
-post-marker nodes support 1600–3000 K.
+ALPHA ↔ LIQUID marker is excluded from fitting. At 1500 K, only the intact
+thermal cells are recovered from the parse-ambiguous line; its formation
+columns remain unused. The supercooled-liquid fit uses 1000–1500 K nodes and
+the high fit uses 1500–3000 K nodes.
 
 For gas rows, `H_app_kJ_mol` includes the formation-enthalpy anchor folded into
 Shomate F (the stored Shomate H is zero); callers needing H−H298 must subtract
