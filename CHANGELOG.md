@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Vendored the NIST-JANAF crystal tables Al-096 (corundum), Ca-027 (CaO) and
+  O-035 (high cristobalite) as reference solids for converting oxide
+  activities between solid and liquid standard states. They are not runtime
+  inputs; a test checks the fusion Gibbs energies they give against the
+  vendored liquid tables.
 - Added generated, labelled constant-Cp supercooled-liquid intervals for the
   default JANAF-fitted TiO2(l), Cr2O3(l), and V2O3(l) rows. Added matching
   intervals for the JANAF-fitted MgO(l), CaO(l), Al2O3(l), and SiO2(l) rows

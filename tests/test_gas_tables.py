@@ -736,6 +736,56 @@ def test_all_candidate_liquid_sources_cover_the_fit_interval() -> None:
         }
 
 
+# Reference solids vendored for solid-to-liquid standard-state conversion of
+# oxide activities. They are not runtime inputs.
+REFERENCE_SOLID_TABLE_IDS = {
+    "Al2O3": ("Al-096", "Al-100"),
+    "CaO": ("Ca-027", "Ca-028"),
+    "SiO2": ("O-035", "O-038"),
+}
+
+
+def _printed_formation_gibbs_kj(table_id: str, temperature: float) -> float:
+    for raw in _record(table_id)["table"]["values"]:
+        if _value(raw, "temperature") == temperature:
+            return float(_value(raw, "formation_gibbs_energy"))
+    raise AssertionError(f"{table_id} has no complete {temperature} K row")
+
+
+@pytest.mark.parametrize(
+    ("oxide", "temperature", "expected_kj"),
+    (
+        ("Al2O3", 1900.0, 18.101),
+        ("Al2O3", 2000.0, 14.299),
+        ("CaO", 1900.0, 31.948),
+        ("CaO", 2000.0, 29.537),
+        ("CaO", 3200.0, 0.0),
+        ("SiO2", 1900.0, 0.427),
+        ("SiO2", 2000.0, -0.025),
+    ),
+)
+def test_reference_solid_tables_give_printed_fusion_gibbs(
+    oxide: str, temperature: float, expected_kj: float
+) -> None:
+    # Premise: the crystal and liquid tables of one oxide print formation
+    # Gibbs energies from the same reference elements at the same T, so the
+    # element terms cancel in the difference:
+    #   dG_fus(T) = DfG(l, T) - DfG(cr, T)        [kJ/mol - kJ/mol = kJ/mol]
+    # An activity on the solid standard state then follows from one on the
+    # liquid standard state as
+    #   log10 a(cr ref) = log10 a(l ref) + dG_fus(T) / (R T ln 10).
+    # Sanity: dG_fus is positive below the melting point, zero at it (CaO,
+    # 3200 K, where both tables print the same value) and negative above it
+    # (SiO2 at 2000 K, above 1996 K).
+    solid_id, liquid_id = REFERENCE_SOLID_TABLE_IDS[oxide]
+    assert _record(solid_id)["table"]["index_entry"]["state"] == "cr"
+    assert _record(liquid_id)["table"]["index_entry"]["state"] == "l"
+    fusion = _printed_formation_gibbs_kj(
+        liquid_id, temperature
+    ) - _printed_formation_gibbs_kj(solid_id, temperature)
+    assert fusion == pytest.approx(expected_kj, abs=5.0e-4)
+
+
 def test_runtime_provenance_mirror_matches_yaml() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     expected_gas = {}
