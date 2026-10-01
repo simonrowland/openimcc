@@ -262,7 +262,7 @@ RESEARCH_CONDENSATE_SOURCES = (
 SUPERCOOLED_LIQUID_SOURCES = (
     ("TiO2(l)", "O-044", "Ti", 1, 2, 1500.0, 1500.0),
     ("Cr2O3(l)", "Cr-015", "Cr", 2, 3, 1900.0, 1900.0),
-    ("V2O3(l)", "O-063", "V", 2, 3, 1600.0, 1500.0),
+    ("V2O3(l)", "O-063", "V", 2, 3, 1700.0, 1500.0),
 )
 # Major-oxide continuations belong only to the opt-in JANAF research pack.
 # Their upper bounds meet that pack's existing JANAF rows, whose starts are
@@ -1138,6 +1138,16 @@ def _fit_supercooled_liquid_row(
     )
     if source_row is None:
         raise ValueError(f"{table_id}: no complete liquid anchor at {T0:g} K")
+    ambiguous_temperatures = set()
+    for ambiguity in table.get("parse_ambiguities", []):
+        try:
+            ambiguous_temperatures.add(
+                float(ambiguity["raw_line"].split("\t", 1)[0])
+            )
+        except ValueError:
+            continue
+    if T0 in ambiguous_temperatures:
+        raise ValueError(f"{table_id}: liquid anchor at {T0:g} K is parse-ambiguous")
     cp = float(_value(source_row, "heat_capacity"))
     entropy_0 = float(_value(source_row, "entropy"))
     enthalpy_0 = float(_value(source_row, "enthalpy_increment"))

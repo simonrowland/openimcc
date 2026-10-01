@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import json
 import math
 import os
@@ -376,11 +377,10 @@ def test_channel_coverage_ledger_is_closed() -> None:
     assert in_domain | extrapolated | set(_P_CHANNELS) == implemented
 
 
-_NEWLY_COVERED_PARENT_CASES = (
-    ("Cr", 1500.0, "Cr2O3(l)"),
-    ("CrO", 1500.0, "Cr2O3(l)"),
-    ("CrO2", 1500.0, "Cr2O3(l)"),
-    ("CrO3", 1500.0, "Cr2O3(l)"),
+_NEWLY_COVERED_PARENT_CASES = tuple(
+    (species, temperature, "Cr2O3(l)")
+    for species in ("Cr", "CrO", "CrO2", "CrO3")
+    for temperature in (1500.0, 1600.0, 1700.0, 1800.0, 1900.0)
 )
 
 
@@ -395,7 +395,6 @@ def test_parent_domain_gaps_use_labelled_extensions(
     source_species: str,
 ) -> None:
     assert set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS) == {
-        "Cr", "CrO", "CrO2", "CrO3",
         "SiO", "Mg", "MgO", "SiO2", "AlO", "AlO2", "Al2O", "Al2O2",
         "Al2", "Si", "Si2", "Si3", "Al", "CaO", "Ca",
     }
@@ -413,8 +412,85 @@ def test_parent_domain_gaps_use_labelled_extensions(
         allow_extrapolation=False,
     )
     assert math.isfinite(result[species])
-    assert "constant-Cp supercooled-liquid continuation" in result.domain_flags[species]
-    assert source_species in result.domain_flags[species]
+    flag = result.domain_flags[species] or ""
+    if temperature == 1900.0:
+        assert "constant-Cp supercooled-liquid continuation" not in flag
+    else:
+        assert "constant-Cp supercooled-liquid continuation" in flag
+        assert source_species in flag
+
+
+_REMAINING_PARENT_DOMAIN_REFUSALS = (
+    ("SiO", 1900.0, "SiO2(l)"),
+    ("Mg", 2500.0, "MgO(l)"),
+    ("MgO", 2500.0, "MgO(l)"),
+    ("SiO2", 1900.0, "SiO2(l)"),
+    ("AlO", 2000.0, "Al2O3(l)"),
+    ("AlO2", 2000.0, "Al2O3(l)"),
+    ("Al2O", 2000.0, "Al2O3(l)"),
+    ("Al2O2", 2000.0, "Al2O3(l)"),
+    ("Al2", 2000.0, "Al2O3(l)"),
+    ("Si", 1900.0, "SiO2(l)"),
+    ("Si2", 1900.0, "SiO2(l)"),
+    ("Si3", 1900.0, "SiO2(l)"),
+    ("Al", 2000.0, "Al2O3(l)"),
+    ("CaO", 2500.0, "CaO(l)"),
+    ("Ca", 2500.0, "CaO(l)"),
+)
+
+
+@pytest.mark.parametrize(
+    ("species", "temperature", "source_species"),
+    _REMAINING_PARENT_DOMAIN_REFUSALS,
+)
+def test_parent_domain_gaps_still_refuse(
+    gas_pack: ImccGasDatapack,
+    unit_activities: dict[str, float],
+    species: str,
+    temperature: float,
+    source_species: str,
+) -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError) as error:
+        evaluate_gas(
+            unit_activities,
+            temperature,
+            1.0,
+            gas_pack,
+            gas_species=(species,),
+            allow_extrapolation=False,
+        )
+    assert error.value.code == "imcc_gas_T_outside_domain"
+    assert source_species in str(error.value)
+
+
+@pytest.mark.parametrize("oxide", ("MgO", "SiO2"))
+def test_major_parent_rows_still_refuse_at_1800_k(
+    gas_pack: ImccGasDatapack, oxide: str
+) -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        evaluate_gas(
+            {oxide: 1.0},
+            1800.0,
+            1.0e-10,
+            gas_pack,
+            gas_species=(oxide,),
+            allow_extrapolation=False,
+        )
+
+
+@pytest.mark.parametrize(("oxide", "species"), (("TiO2", "Ti"), ("V2O3", "V")))
+def test_ti_and_v_gas_rows_still_refuse_below_1500_k(
+    gas_pack: ImccGasDatapack, oxide: str, species: str
+) -> None:
+    with pytest.raises(ImccGasTemperatureOutsideDomainError, match=rf"{species}\(g\)"):
+        evaluate_gas(
+            {oxide: 1.0},
+            1200.0,
+            1.0e-10,
+            gas_pack,
+            gas_species=(species,),
+            allow_extrapolation=False,
+        )
 
 
 def test_gas_domain_refusal_is_typed(gas_pack: ImccGasDatapack) -> None:
@@ -2218,52 +2294,181 @@ def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:
         )
 
 
-def test_oxygen_balance_default_outputs_match_base_rows(gas_pack: ImccGasDatapack) -> None:
+# Numeric-output SHA256 pins for the JANAF Na-013 and Al2O3(l) rows: pO2,
+# partial pressures, and diagnostics. The full result is pinned separately
+# below, including every ImccGasResult dataclass field.
+_OXYGEN_BALANCE_NUMERIC_BASELINE_HEX_SHA256 = (
+    "490788de29fddf8e1b567b2ae802743cb70d352107c6094cac6e19e1dac62150",
+    "5a11127d8a5707e294e007b97440b15d53eb04cbed16d46aa3800e2bb39a3a91",
+    "a01c562e13e903c6d23ef33caef71a911375969c75e3ba0885ae4de21f00e2a1",
+    "35dd36c3359c5bc3e7b319be23a225cc05ca9c783e8500eafd65d3abb2793a6b",
+    "b609e28617362d126480d0fcaf68c37f6e12086d8305f2e7d8d281b59c36c32d",
+    "6f6188435c673d9b566d56b69a4228e9a7ebc0df1fd79713b9699485c15c274f",
+    "404a6d5d26660f1c6310385aa681af5b9f9b6dd82d0154e37bc523d826804984",
+    "e958063bc882993cdaee7f6608e2d6819809b604bed02d38761f8e0f0bbaba95",
+    "12a36b6ba8534904753f6f4c559c846c74ad80689a9aa202cecc1c94277a2f85",
+    "58139d3f6b280f546b4c39dc64e80bc0352e024e62d8e7335dc593bf5e5a5112",
+    "90527c5001119a9f5ed3ac4d39b8561897dbe515ef83367625f7ac07568dc747",
+    "edeeeb192068a2e39c2330f0587b0c5498c7ea9a593432b6a1fbb853a5321c49",
+    "b9b6298e6c8533a62fadf1f7c58002a928bbac981169a8705a69000635758951",
+    "35c2fea82db7db4879ae89af82cb95d30f56ce3d03cbc21bfd6390ebd445feea",
+    "b3bab3e99d78e2352f6e224d6628064fe447ae9177be682a045c830ad1c74645",
+    "ea9b76bb38ce7a7332ccc471014e0f94474b19a0b98529733e5b67eb19515053",
+    "5a57d4fee949aa23a5d7c888b776c01c0738005ec26cdefc4e54059da948e637",
+    "2690ba526d2a08c745449ec8acb459352a6922ddd60918857f285db304f0ea95",
+    "f494bec2b07925b041cf2cfe7140a91d8f323b482b18ae8c72a8493d017e35cc",
+    "59a88cd3b33a57f85688b82d56aa2497830e5d86e0cd228aa481545a9da4dc5d",
+    "c9c3ba7bd39a7d00ce962b8daa26361ccf4b2969ba82621f2711fd8d04b0f4b1",
+    "13b7a6ddeeef7c846c7e8b862a19ca60e6d10b0e031be6b8b18e4fe07a3f3b5f",
+    "434db6d7deea6653c40d7108608d948d20db6d01ce462ed41b33f950929a3b00",
+    "3ce2ec58ad58b9666b710b309eb4b3a389215429c40d09bc5f068c2bf7bc9c58",
+    "040d1e1f37526699020a9ebb3de0bbd1a5c21a7d99f2ec74d233263754898235",
+    "2eccff8dbc12e9c62dd5537915e4a6bf50ca18eb254bf1776ce8a08685176e3d",
+    "8d2abec33f0d7ece586fee5eb0b242be42f97f9eaa8a39c8a7bed3cc2cbb374a",
+    "731ba63475a53f0896bcb489b584dbd4ab25f814c6813733d976ffc1421261d4",
+    "5c262d714cdf0e4f721ca4add1bacbf46e87d4364a1baf7f5fd0e09474fbf2bc",
+    "c39538e917a754b70b55ed0d4a70b1ac91445ed9c97e7762dbfbf3229d969e44",
+    "7590b4367ff2b0191f8e14bb4f39531fefdacd7f8d4821675318416b06f937c9",
+    "62d83d6634e6941e7ef5c116df9783120daf24bae208ac270a41d0356344577f",
+    "f74c9779b622b779744d251752ca88440f4e156e7d677ea3f1e52a6e7d41e07f",
+    "824ec5c65585f78dc85e0518f113ffb867336b9d2d2ffdb66ca209ad5e30e880",
+    "79abe2aae4508e3fb8d49dc3d2ab74655e6d899b1e00b42bad961fd1829f3396",
+    "fe0ad875f4b5ab7a95ecd243f736983dff4e973946ffbdf9c0b81fc435b67185",
+    "ae56276ffb9a6d8bf4e88f82893320697465e247f6f55c47221c7719871e1014",
+    "f1e99183e9753e0e57531c103f0792ed46361f000f4962fdaaf068cdedf36916",
+    "5b1d81bbe6f054161f9246752dc399f81fed51e345844a8fe35cf8cd64d17f75",
+    "fdb339a56ad2111878b0caf8eef49294d9f37e9f63aa0f7d7bd8605c612ca9a9",
+    "654b7d5454a19e3d39c8752e6308d72e143a3d0dca71960f1aefa15f5d0edd49",
+    "9c301cf457eec1bdf7a299f20f6b85355a955eaa94055960eab3ff6d234b6312",
+    "4ff0203d7f1c9fef5c04d9db5e330779844d6aca14201ad6e2facb8eaba47974",
+    "2a82ca18745b6be1d9de93effb3631b965b1b8d81794ce35597eaac0ce1e57a9",
+    "609726c45270c673e18425f2c0659a001a371a353c85561d3dac085baa942ac8",
+    "44c3beeef8c6e5c50251dc658b89c7cd3df8d9621ab462eadf5fafd568962005",
+    "be9d57e3de23e3dd4640b26c258f4dda67b70170419e0b5cf76b0431f728bed5",
+    "7673f66041abd726a3f82323bc1863416d13abf859c158707c6bf289e5c883a9",
+    "7c98b26a8681c30546de6cb2aba87dc4f7e7c205322d42bc48b56d48c605e7e4",
+    "26d198becc1cb87badbf17605e96d228da16f6a1d3cd67187b8b8c8816c10984",
+)
+
+# Full dataclass-aware result pins for the JANAF parent-liquid rows. The
+# numeric projection above pins the same pressures and oxygen-balance outputs.
+_OXYGEN_BALANCE_RESULT_BASELINE_HEX_SHA256 = (
+    "f3e528a702d090538669d7ae1586a2990073ce9493e71aa3ee19029815738217",
+    "9d8dea4f8fe25e7cee544df45a85ae737090c7e481c588dca9ebdfc9eb965917",
+    "2c15e8eb142bb0687f2f1dd71cda3060728fc606f179b6a0cdad4e757d112278",
+    "8ca5ffedb38c56eb796074e7885d298de964c4612af13d851347caf6c98396ba",
+    "4327620f3c6e53911db25a8067eee0bd566b81b2286d76f1d59380f65853dc4c",
+    "f68f64c979d24b892aa2de9f2be5f7c18662667d8cdd04aa079db25d2e2155b0",
+    "91968b2186a903e7cc7c8c1971bb62533181035b301b667531e6a4c8cf4107c8",
+    "1a2cd92c96954fb375d9601d02a898aa76b2c38a6648cdde923c4eff3d770152",
+    "888bdaaac97bef24ed1931a5722a2786f8ea82cef9f98df51893395ab8f2e414",
+    "05f05ffc2288acc8176635615089536b01986476004c7a699f1a18eb6f870fda",
+    "a9b2ac930ad83c64f0153e66a55d4961c445267bae6fea61dc2ca43e870657c5",
+    "8a6a5e82384558c743f5eb78c01e4045a2b3ca157056d75065792aea2ee7cbef",
+    "62bad3f12b9b0c9ebe80b7afd79f2ebfcb1fa126c33eec2fe80ea09e27260688",
+    "208d9ee9afe6607085d1caa7f8db1665a861f96e7c0a90287a5b5ec86c7de853",
+    "5c5c923671ae4e9ae896b8632026e159fc9605f207154e4ef04f05b3efda4920",
+    "f6d2507d1328f91a8e812460e3bd666bbd8bef18c812e0808c5701c871ed2d02",
+    "f1b7495f42361633d99975a6293fabc34c409162a90b52bc7955c0a9e59b0223",
+    "9bb2d05218bf7198c653633674e9b13c13d071344f9e39189cb0d85b18089ee2",
+    "4b2e224d2b61c887ebbdfba2ba86ca5f49605078cef7b3d50bbb9c6a61bc811b",
+    "e569fcd1484e7bf23d192f2d8de122711831e290bf8c7e775502bddec9cddcbd",
+    "a95b925db2ce353bd674dc885f238d2ce0502d4afe7648403687fcdc67a8d814",
+    "3baa5ce8d276f5f4083f196415a3d1b988507b428e7812391b88b829855113e9",
+    "12c5b9411a62179db59391b69ea857da41dd93935df7fe838c2c77c04691cfdc",
+    "765464119519e59be6649706fdb11dbba75eb79350f0f477638d0364788921f7",
+    "1b6b90f2fd6db50a9f43ace7c54159e26fe3eaa0bdaefcb94d96169805063d31",
+    "793b3d7bbd367f1772c8f0ada0d23faf19fdfd4885beeea1699e212dba6bc10b",
+    "ec02f606efb851b2bbe3f687a3418d6de2bc67aa988b7c27e5ce77a61ad385cd",
+    "0b6226afdb07726bd18c59a7a0d13eaf6f2a85f4f847ff979212f268dae76962",
+    "c6abd56d2660ada8ac11f05481977165ca3a4134fa71730f573b4138aa4ea0d8",
+    "346afbd887802352b09861a62e02e1b80184ded07e7c96b0e938df6b18458e11",
+    "4696c1a869b30a74f5a290c31e43145a6ff349fa921266560b34f593a0c39b60",
+    "16b3a5f888d665baeb4dc223d6ecc970e9491f40e779977b6796b2b94f108a95",
+    "68f00bc13521717e0d4b7a8855593a7042fda21b634339e1f92b0b7f356ea294",
+    "d1a6bc49befa96aecffce31dd458a27b71706ccc0b8961bc410740eb9c498ab8",
+    "32fb365c5aad8946cc31b9e940473056b3eb142c9e06e865160dc7dde0e8f73d",
+    "6d23bab7810fef7a6736f1f92893023c2e674508de23a2105d3dc5f6f61c0c4b",
+    "8436af7f648df1918a30e3ad15eb6097008e2986e00bf09d499b2693ba2aeed0",
+    "32c9ab241d3ba052aed57c8e3fa8b5bfb9ae8a593d3b86baed853b6957eb898e",
+    "0182b132280bcb563e2e1aec65af5c53557e2971f0063fb49e7d24618fb2af87",
+    "2fee4df820262dd304ae8b3f7f746d14b8f1e4326bd2a558514818c6e170e854",
+    "cfceea0248cd40c69800dc30224507a5ced4009cbc63b2d8807b8220b457dcb6",
+    "39be1577cab0bf36a79aaf6a422646e3549cc81425af3dbd6ebeb5a9b902d195",
+    "893d4d5d91fb4469ab1a23ab8d2745555cb707dc765ce1951d07f980e04fe010",
+    "42820b60d55e6e3b3dd52e810a6b41774ce37408f1fbb8dcbf4a144326f6e134",
+    "7cf90a541077d82369a82fe15d48a7721079d5d78f4ff089891b4d69b84d208e",
+    "9ad52deaa8847584a2448d41190b754d823eb68fe7d3939ec9af25dc89cf5650",
+    "a2e4593ede269e34cf19710ce22a0a7495f0ff99e67392092e875c0b5b557e05",
+    "738e5917f3bb290ea1bffa798e31d1e1ebdd13207728e76eef126c757b07b682",
+    "78cfa8c4671e908ac23138dcba3408bdf1dc28dfa9857a19eb7558ac4a18cf08",
+    "6a750c7bf0b55f529231622b8c3e3238024dc41b7e93c978cdeefc326080dcf9",
+)
+
+
+def test_oxygen_balance_wrapper_matches_janaf_hash_pins(gas_pack: ImccGasDatapack) -> None:
     compositions = [
-        {"SiO2": .45, "MgO": .12, "FeO": .15, "CaO": .11, "Al2O3": .07, "Na2O": .03, "K2O": .01},
-        {"SiO2": .47, "MgO": .05, "FeO": .08, "CaO": .14, "Al2O3": .24, "Na2O": .015, "K2O": .005},
-        {"SiO2": .50, "MgO": .19, "FeO": .18, "CaO": .08, "Al2O3": .04, "Na2O": .005, "K2O": .005},
-        {"SiO2": .43, "MgO": .24, "FeO": .19, "CaO": .08, "Al2O3": .05, "Na2O": .005, "K2O": .005},
-        {"SiO2": .45, "MgO": .02, "FeO": .03, "CaO": .18, "Al2O3": .31, "Na2O": .009, "K2O": .001},
-        {"SiO2": .49, "MgO": .08, "FeO": .12, "CaO": .10, "Al2O3": .16, "Na2O": .035, "K2O": .015},
-        {"SiO2": .48, "MgO": .04, "FeO": .09, "CaO": .10, "Al2O3": .18, "Na2O": .07, "K2O": .04},
-        {"SiO2": .40, "MgO": .31, "FeO": .17, "CaO": .07, "Al2O3": .04, "Na2O": .006, "K2O": .004},
-        {"SiO2": .65, "MgO": .02, "FeO": .03, "CaO": .04, "Al2O3": .20, "Na2O": .05, "K2O": .01},
-        {"SiO2": .55, "MgO": .10, "FeO": .18, "CaO": .10, "Al2O3": .05, "Na2O": .01, "K2O": .01},
+        {"SiO2":.45,"MgO":.12,"FeO":.15,"CaO":.11,"Al2O3":.07,"Na2O":.03,"K2O":.01},
+        {"SiO2":.47,"MgO":.05,"FeO":.08,"CaO":.14,"Al2O3":.24,"Na2O":.015,"K2O":.005},
+        {"SiO2":.50,"MgO":.19,"FeO":.18,"CaO":.08,"Al2O3":.04,"Na2O":.005,"K2O":.005},
+        {"SiO2":.43,"MgO":.24,"FeO":.19,"CaO":.08,"Al2O3":.05,"Na2O":.005,"K2O":.005},
+        {"SiO2":.45,"MgO":.02,"FeO":.03,"CaO":.18,"Al2O3":.31,"Na2O":.009,"K2O":.001},
+        {"SiO2":.49,"MgO":.08,"FeO":.12,"CaO":.10,"Al2O3":.16,"Na2O":.035,"K2O":.015},
+        {"SiO2":.48,"MgO":.04,"FeO":.09,"CaO":.10,"Al2O3":.18,"Na2O":.07,"K2O":.04},
+        {"SiO2":.40,"MgO":.31,"FeO":.17,"CaO":.07,"Al2O3":.04,"Na2O":.006,"K2O":.004},
+        {"SiO2":.65,"MgO":.02,"FeO":.03,"CaO":.04,"Al2O3":.20,"Na2O":.05,"K2O":.01},
+        {"SiO2":.55,"MgO":.10,"FeO":.18,"CaO":.10,"Al2O3":.05,"Na2O":.01,"K2O":.01},
     ]
-    cases = [(composition, temperature) for composition in compositions for temperature in (1500., 2000., 2400.)]
-    cases.extend(
-        ({first: .6 - .05 * i, second: .4 + .05 * i}, temperature)
-        for first, second in (("SiO2", "MgO"), ("SiO2", "FeO"), ("SiO2", "CaO"), ("SiO2", "Al2O3"), ("SiO2", "K2O"))
-        for i, temperature in enumerate((1500., 1900., 2200.))
-    )
-    cases.extend(
-        ({"SiO2": .45 + .02 * i, "MgO": .15 - .01 * i, "CaO": .2, "Al2O3": .2}, temperature)
-        for i, temperature in enumerate((1500., 2000., 2400., 1800., 2200.))
-    )
-    assert len(cases) == 50
-    base_pack = replace(
-        gas_pack,
-        oxide_df=gas_pack.oxide_df.loc[
-            ~gas_pack.oxide_df["Ref"].astype(str).str.endswith("-SC-CP")
-        ],
-    )
-    for activities, temperature in cases:
-        p_o2, pressures, diagnostics = evaluate_gas_oxygen_balance(
-            activities, temperature, gas_pack, parent_oxides=tuple(activities)
+    cases = [(c, t) for c in compositions for t in (1500., 2000., 2400.)]
+    for a, b in (("SiO2","MgO"),("SiO2","FeO"),("SiO2","CaO"),("SiO2","Al2O3"),("SiO2","K2O")):
+        cases.extend(({a:.6-.05*i,b:.4+.05*i}, t) for i, t in enumerate((1500., 1900., 2200.)))
+    cases.extend(({"SiO2":.45+.02*i,"MgO":.15-.01*i,"CaO":.2,"Al2O3":.2}, t)
+                 for i, t in enumerate((1500., 2000., 2400., 1800., 2200.)))
+
+    def hex_values(value: object) -> object:
+        if isinstance(value, float):
+            return {"float.hex": value.hex()}
+        if dataclasses.is_dataclass(value):
+            return {field.name: hex_values(getattr(value, field.name)) for field in dataclasses.fields(value)}
+        if isinstance(value, Mapping):
+            return {str(k): hex_values(v) for k, v in value.items()}
+        if isinstance(value, (tuple, list)):
+            return [hex_values(v) for v in value]
+        if hasattr(value, "__dict__"):
+            return {k: hex_values(v) for k, v in vars(value).items()}
+        return value
+
+    actual = []
+    numeric_actual = []
+    refusals = []
+    for index, (activities, temperature) in enumerate(cases):
+        try:
+            p_o2, pressures, diagnostics = evaluate_gas_oxygen_balance(
+                activities, temperature, gas_pack, parent_oxides=tuple(activities)
+            )
+        except ImccGasOxygenBalanceError as exc:
+            refusals.append((index, temperature, str(exc)))
+            canonical = json.dumps({"refusal": str(exc)}, sort_keys=True)
+            digest = hashlib.sha256(canonical.encode()).hexdigest()
+            numeric_actual.append(digest)
+            actual.append(digest)
+            continue
+        numeric_canonical = json.dumps(
+            hex_values((p_o2, dict(pressures), diagnostics)),
+            sort_keys=True,
+            separators=(",", ":"),
         )
-        base_p_o2, base_pressures, base_diagnostics = evaluate_gas_oxygen_balance(
-            activities, temperature, base_pack, parent_oxides=tuple(activities)
+        numeric_actual.append(hashlib.sha256(numeric_canonical.encode()).hexdigest())
+        canonical = json.dumps(
+            hex_values((p_o2, pressures, diagnostics)),
+            sort_keys=True,
+            separators=(",", ":"),
         )
-        assert p_o2 == base_p_o2
-        assert dict(pressures) == dict(base_pressures)
-        assert diagnostics == base_diagnostics
-        assert math.isfinite(p_o2) and 0.0 < p_o2 <= 1.0
-        assert pressures
-        assert all(math.isfinite(value) and value >= 0.0 for value in pressures.values())
-        assert math.isfinite(float(diagnostics["residual"]))
-        bracket = diagnostics["bracket"]
-        assert bracket[0] < bracket[1]
+        actual.append(hashlib.sha256(canonical.encode()).hexdigest())
+    assert len(actual) == 50
+    assert refusals == []
+    assert tuple(numeric_actual) == _OXYGEN_BALANCE_NUMERIC_BASELINE_HEX_SHA256
+    assert tuple(actual) == _OXYGEN_BALANCE_RESULT_BASELINE_HEX_SHA256
 
 
 @pytest.mark.parametrize(
@@ -2318,6 +2523,11 @@ def test_constant_cp_parent_extensions_are_flagged_and_preserve_old_domains() ->
         gas_species=("V",), allow_extrapolation=True,
     )
     assert "constant-Cp supercooled-liquid continuation" in low_v.domain_flags["V"]
+    at_1500_v = evaluate_gas(
+        {"V2O3": 1.0}, 1500.0, 1.0e-10, pack,
+        gas_species=("V",), allow_extrapolation=False,
+    )
+    assert at_1500_v.domain_flags["V"] is None
 
     without_extensions = replace(
         pack,

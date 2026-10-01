@@ -569,10 +569,6 @@ IMCC_SF04_WORKBOOK_GRID_K = (
 # table misses part of the workbook grid. Major-oxide channels retain their
 # Lamoreaux rows and therefore keep their established out-of-interval flags.
 IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS: dict[str, str] = {
-    "Cr": "Cr(g) [1500, 2900] K misses workbook T > 2900 K",
-    "CrO": "Cr(g) [1500, 2900] K misses workbook T > 2900 K",
-    "CrO2": "Cr(g) [1500, 2900] K misses workbook T > 2900 K",
-    "CrO3": "Cr(g) [1500, 2900] K misses workbook T > 2900 K",
     "SiO": "SiO2(l) [1996, 3000] K misses workbook T < 1996 K",
     "Mg": "MgO(l) [3100, 3500] K lies above the whole workbook grid",
     "MgO": "MgO(l) [3100, 3500] K lies above the whole workbook grid",
@@ -603,6 +599,10 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "Na2O",
     "K2O",
     "O2",
+    "Cr",
+    "CrO",
+    "CrO2",
+    "CrO3",
     "Ti",
     "TiO",
     "TiO2",
@@ -1017,7 +1017,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "c2_candidates": (("O-026", "VO"), ("O-076", "VO2")),
         "c3_ion_bound": {
             "max_ratio": 0.0000010459911351905233,
-            "isolated_bound": 244.6583164788193,
+            "isolated_bound": 244.34080490083159,
             "temperature_K": 3000.0,
             "fO2": 1.0e-8,
             "neutral_pressure_bar": 0.025413160104762487,

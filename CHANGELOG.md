@@ -128,6 +128,13 @@
 
 ### Changes that can break callers
 
+- With `allow_extrapolation=False`, Cr, CrO, CrO2 and CrO3 now return at
+  1500-1900 K using the labelled Cr2O3(l) continuation instead of raising
+  `ImccGasTemperatureOutsideDomainError`. Ti and V strict calls below 1500 K
+  still raise because their gas rows start there. With the default
+  `allow_extrapolation=True`, temperatures below 1200 K now follow the new
+  parent polynomials; at 1100 K, ΔG changes by -466 J/mol for TiO2, -1216
+  J/mol for Cr2O3, and -393 J/mol for V2O3.
 - Omitting the pack now loads the packaged SF04 pack: `--pack` is
   optional on the CLI, and `load_datapack()` and `evaluate(..., pack=None)`
   default to it. A command that used to exit with a usage error now

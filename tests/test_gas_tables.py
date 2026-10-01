@@ -423,7 +423,6 @@ def test_usable_rows_requires_exact_fit_interval_and_declared_gaps() -> None:
 def test_fitter_validates_formula_and_emitted_phase() -> None:
     with pytest.raises(ValueError, match="formula"):
         build_gas_tables._fit_row(JANAF_DATA, "K(g)", "Na-005", "K", 1, 0)
-
     mixed_phase = {
         "table": {
             "table_id": "Cr-016",
@@ -434,6 +433,13 @@ def test_fitter_validates_formula_and_emitted_phase() -> None:
     with pytest.raises(ValueError, match="mixed-phase"):
         build_gas_tables._validate_record_identity(
             mixed_phase, "Cr2O3(l)", "Cr-016", "l"
+        )
+
+
+def test_supercooled_liquid_fitter_rejects_parse_ambiguous_anchor() -> None:
+    with pytest.raises(ValueError, match="anchor at 1600 K is parse-ambiguous"):
+        build_gas_tables._fit_supercooled_liquid_row(
+            JANAF_DATA, "V2O3(l)", "O-063", "V", 2, 3, 1600.0, 1500.0
         )
 
 
@@ -1888,7 +1894,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             liquid_nodes = [
                 row
                 for row in _complete_rows(entry["table_id"])
-                if table_config[-2] <= row["temperature"] <= table_config[-1]
+                if table_config[-2] <= row["temperature"] <= 3000.0
             ]
             for node in liquid_nodes:
                 temperature = node["temperature"]

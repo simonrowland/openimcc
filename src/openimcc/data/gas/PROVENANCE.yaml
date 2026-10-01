@@ -1150,9 +1150,9 @@ rows:
       O-063 is the caller-supplied V(III) liquid parent; transition-marked
       nodes are omitted rather than assigning a crystal/liquid branch. Cp
       rises through the glass branch at 1200-1500 K (143.718, 146.741,
-      149.841, 152.464 J/(mol K)); the 1600 K GLASS <--> LIQUID marker sets
-      the true liquid-branch start and liquid Cp is 156.900 J/(mol K). The
-      glass branch is not fitted, leaving the 1200-1600 K C4 gap.
+      149.841, 152.464 J/(mol K)); the high fit's 1500 K node is glass-side.
+      Both 1600 K transition lines are omitted. The fit uses liquid Cp =
+      156.900 J/(mol K) from 1700 K onward; the parent gap now ends at 1500 K.
   - table: condensate
     species_name: NbO2(l)
     table_id: Nb-013
@@ -1510,28 +1510,29 @@ rows:
     source_data: false
     runtime_ref: O-063-SC-CP
     T_range_K: [1200, 1500]
-    T0_K: 1600
-    Cp_l_J_molK: 157.846
-    max_residual_J_per_mol: 0.385447464184836
-    max_residual_log10_K: 1.62831004291508e-05
+    T0_K: 1700
+    Cp_l_J_molK: 156.900
+    max_residual_J_per_mol: 0.322409535292536
+    max_residual_log10_K: 1.36245659816767e-05
     uncertainty:
       description: >-
         Illustrative stress test only, not a statistical source uncertainty.
         For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
         the maximum absolute change is at 1200 K.
       delta_Cp_fraction: 0.1
-      delta_Cp_J_molK: 15.7846
-      max_abs_delta_G_J_per_mol: 864.704271013143
-      max_abs_delta_log10_K: 0.037638862007969
+      delta_Cp_J_molK: 15.69
+      max_abs_delta_G_J_per_mol: 1287.08156031803
+      max_abs_delta_log10_K: 0.0560241077392291
       at_temperature_K: 1200
       scenario_only: true
-    seam_to_existing_interval_delta_G_J_per_mol: -7.547
+    seam_to_existing_interval_delta_G_J_per_mol: -4.522
     note: >-
-      The 1600 K GLASS <--> LIQUID marker is the first genuine liquid node;
-      Cp is 157.846 J/(mol K) there and 156.9 J/(mol K) at subsequent liquid
-      nodes. The generated interval ends at the pre-existing row's 1500 K
-      lower bound, where JANAF still prints glass data; it continues the liquid
-      across that glass branch and meets the old row within 8 J/mol.
+      Both 1600 K transition lines are ambiguous in parsing and are not
+      anchors. The complete 1700 K liquid node has Cp =
+      156.900 J/(mol K); its H and S reproduce the liquid branch at 1600 K.
+      The continuation ends at the pre-existing row's 1500 K lower bound,
+      where JANAF prints glass data. The unchanged high fit also includes that
+      1500 K glass-side node before the 1700-3000 K liquid nodes.
 certification_items:
   - authority: lh84_evaluated_with_nasa_cp
     species_name: Na2O(g)
