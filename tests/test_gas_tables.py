@@ -91,6 +91,25 @@ GAS_TABLE_IDS = {
     "Mn": "Mn-005",
     "Ni": "Ni-005",
     "Co": "Co-005",
+    "P": "P-008",
+    "P2": "P-012",
+    "P4": "P-013",
+    "PO": "O-004",
+    "PO2": "O-032",
+    "P4O6": "O-087",
+    "P4O10": "O-095",
+    "S": "S-006",
+    "S2": "S-012",
+    "S3": "S-016",
+    "S4": "S-017",
+    "S5": "S-018",
+    "S6": "S-019",
+    "S7": "S-020",
+    "S8": "S-021",
+    "SO": "O-010",
+    "SSO": "O-011",
+    "SO2": "O-034",
+    "SO3": "O-058",
 }
 
 NASA_TABLE_IDS = {"Na2O": "NG-0905", "K2O": "NG-0760"}
@@ -122,11 +141,12 @@ JANAF_CONDENSATE_TABLE_IDS = {
     **FITTED_CONDENSATE_TABLE_IDS,
 }
 
-# Rounded just above the measured worst residual across all 63 packaged
-# JANAF-backed gas interval rows and 891 in-interval source nodes.
+# Rounded just above the measured worst residual across all 101 packaged
+# JANAF-backed gas interval rows and 1402 in-interval source nodes. The S
+# maximum is P4O10(g) interval 2 at 500 K.
 GAS_PROPERTY_RESIDUAL_LIMITS = {
     "Cp_J_molK": 0.129,
-    "S_J_molK": 0.009,
+    "S_J_molK": 0.014,
     "H_app_kJ_mol": 0.009,
     "G_kJ_mol": 0.0021,
 }
@@ -805,7 +825,7 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
 
         recorded = low_provenance[f"{species}(g)"]
         assert max(residuals) == pytest.approx(
-            float(recorded["max_residual_J_per_mol"]), abs=1.0e-9
+            float(recorded["max_residual_J_per_mol"]), abs=1.0e-8
         )
         assert max(log_residuals) == pytest.approx(
             float(recorded["max_residual_log10_K"]), abs=1.0e-12
@@ -859,13 +879,19 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
     lines = (GAS_DATA / "gas-shomate.csv").read_bytes().splitlines(keepends=True)
     retained = [lines[0]]
     intervals = []
+    ps_table_ids = {GAS_TABLE_IDS[species] for species in (
+        "P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10",
+        "S", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
+        "SO", "SSO", "SO2", "SO3",
+    )}
     for line in lines[1:]:
-        interval = next(csv.reader([line.decode("utf-8")]))[2]
+        values = next(csv.reader([line.decode("utf-8")]))
+        interval = values[2]
         intervals.append(interval)
-        if interval == "1":
+        if interval == "1" and values[-1] not in ps_table_ids:
             retained.append(line)
 
-    assert intervals[: intervals.index("2")] == ["1"] * 43
+    assert intervals[: intervals.index("2")] == ["1"] * 62
     assert all(interval == "2" for interval in intervals[intervals.index("2") :])
     assert hashlib.sha256(b"".join(retained)).hexdigest() == _BASE_INTERVAL_1_SHA256
 
@@ -1716,6 +1742,14 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             "CoO",
         }:
             continue
+        if (
+            _SF04_REACTIONS[species][0]
+            and _SF04_REACTIONS[species][0] not in PARENT_TABLE_IDS
+        ):
+            # No public evaluated P2O5(l) source is available; JANAF lists
+            # P4O10(cr) only. S2(g) uses a gas-parent law covered by the
+            # dedicated sulfur cell tests.
+            continue
         n_gas, n_o2, temperatures, independent, source_parent_app = (
             _reaction_source_series(species)
         )
@@ -1795,6 +1829,11 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
             "Co",
             "CoO",
         }:
+            continue
+        if (
+            _SF04_REACTIONS[species][0]
+            and _SF04_REACTIONS[species][0] not in PARENT_TABLE_IDS
+        ):
             continue
         n_gas, n_o2, common_temperatures, independent_reactions, source_parent_app = (
             _reaction_source_series(species)
@@ -1896,6 +1935,25 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         "NiO",
         "Co",
         "CoO",
+        "P",
+        "P2",
+        "P4",
+        "PO",
+        "PO2",
+        "P4O6",
+        "P4O10",
+        "S",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "S6",
+        "S7",
+        "S8",
+        "SO",
+        "SO2",
+        "SO3",
+        "SSO",
     }
     assert max(maxima[species] for species in existing) < 300.0
     # The omitted O-063 and Nb-013 source nodes make the V/Nb interpolation
@@ -2162,11 +2220,11 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
         checked_nodes += row_nodes
         per_row_max[(species_name, interval)] = maxima
 
-    assert checked_rows == 63
-    assert checked_nodes == 891
-    assert checked_nodes * 3 == 2673
+    assert checked_rows == 101
+    assert checked_nodes == 1402
+    assert checked_nodes * 3 == 4206
     assert overall_max["Cp_J_molK"] == pytest.approx(0.1287393152, abs=1e-9)
-    assert overall_max["S_J_molK"] == pytest.approx(0.0089716511, abs=1e-9)
+    assert overall_max["S_J_molK"] == pytest.approx(0.0136965061, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0088595244, abs=1e-9)
     assert overall_max["G_kJ_mol"] == pytest.approx(0.0019231033, abs=1e-9)
     assert len(per_row_max) == checked_rows

@@ -219,8 +219,9 @@ def default_condensate_database_path() -> Path:
 # SF04 vaporization reaction set
 # --------------------------------------------------------------------------- #
 
-# Map retained gas species to the vaporization reaction
+# Map retained gas species to a vaporization reaction. Condensed-parent rows use
 #     parent_oxide(l) -> n_gas * gas(g) + n_O2 * O2(g).
+# Sulfur rows use n_S2*S2(g) + n_O2*O2(g) -> gas(g), as documented below.
 #
 # Derivation: for a parent E_a O_b and target gas E_c O_d, element balance gives
 # n_gas = a/c and n_O2 = (b - n_gas*d)/2.  A negative n_O2 puts O2 on the
@@ -250,6 +251,16 @@ def default_condensate_database_path() -> Path:
 # monoxide channels use n_gas=1 and n_O2=1/2 and 0. These entries are data-free
 # wiring: the public pack has the gas rows but no parent rows, while an external
 # pack can provide both sides of each reaction.
+# For caller-supplied P2O5(l) (a=2, b=5), n_gas=2/n_P and
+# n_O2=(5-n_gas*n_O)/2: P, P2, P4, PO, PO2, P4O6 and P4O10 use
+# (2, 5/2), (1, 5/2), (1/2, 5/2), (2, 3/2), (2, 1/2),
+# (1/2, 1) and (1/2, 0), respectively. Each tuple balances one P2O5(l).
+# Sulfur tuples use the caller's gas parent directly: n_S2 S2(g) + n_O2 O2(g)
+# = species(g), with n_S2=n_S/2 and n_O2=n_O/2. Thus S, S2, S3, S4, S5,
+# S6, S7, S8, SO, SO2, SO3 and SSO use (1/2, 0), (1, 0), (3/2, 0),
+# (2, 0), (5/2, 0), (3, 0), (7/2, 0), (4, 0), (1/2, 1/2),
+# (1/2, 1), (1/2, 3/2) and (1, 1/2), respectively. Each equation balances
+# sulfur and oxygen; positive n_O2 is consumed on the reactant side.
 _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Na": ("Na2O", 2, 0.5),
     "K": ("K2O", 2, 0.5),
@@ -300,12 +311,36 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "NiO": ("NiO", 1, 0.0),
     "Co": ("CoO", 1, 0.5),
     "CoO": ("CoO", 1, 0.0),
+    # Appended after every existing channel to preserve legacy output order.
+    "P": ("P2O5", 2, 2.5),
+    "P2": ("P2O5", 1, 2.5),
+    "P4": ("P2O5", 0.5, 2.5),
+    "PO": ("P2O5", 2, 1.5),
+    "PO2": ("P2O5", 2, 0.5),
+    "P4O6": ("P2O5", 0.5, 1.0),
+    "P4O10": ("P2O5", 0.5, 0.0),
+    "S": ("S2", 0.5, 0.0),
+    "S2": ("S2", 1, 0.0),
+    "S3": ("S2", 1.5, 0.0),
+    "S4": ("S2", 2.0, 0.0),
+    "S5": ("S2", 2.5, 0.0),
+    "S6": ("S2", 3.0, 0.0),
+    "S7": ("S2", 3.5, 0.0),
+    "S8": ("S2", 4.0, 0.0),
+    "SO": ("S2", 0.5, 0.5),
+    "SO2": ("S2", 0.5, 1.0),
+    "SO3": ("S2", 0.5, 1.5),
+    "SSO": ("S2", 1.0, 0.5),
 }
+
+# Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
+# from the JANAF gas table; all other parent keys keep the liquid lookup.
+_GAS_PHASE_PARENT_ROWS = {"S2": "S2(g)"}
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 
 # Channels that a default evaluate_gas call includes only when the active
-# datapack carries their gas row and their parent's condensate row. The legacy
+# datapack carries their gas row and their parent's standard-state row. The legacy
 # tables selected by OPENIMCC_VAPOROCK_ROOT have Ti gas rows but no TiO2(l)
 # row, while the public tables have Mn/Ni/Co gas rows but no MnO(l)/NiO(l)/CoO(l)
 # rows. Optional channels therefore stay absent from a default call until an
@@ -340,6 +375,25 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "NiO",
         "Co",
         "CoO",
+        "P",
+        "P2",
+        "P4",
+        "PO",
+        "PO2",
+        "P4O6",
+        "P4O10",
+        "S",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "S6",
+        "S7",
+        "S8",
+        "SO",
+        "SO2",
+        "SO3",
+        "SSO",
     }
 )
 
@@ -356,7 +410,7 @@ def _default_reactions(
 
     Unified availability rule: a channel is included only when its parent
     activity is supplied (O and O2 have no parent); an optional channel also
-    requires both its gas row and parent standard-state condensate row in the
+    requires both its gas row and parent standard-state row in the
     active datapack. Gas-only source rows stay outside the runtime channel set
     until this same rule can be satisfied. Missing optional rows are returned
     by channel name; channels whose parent activity was not supplied are not
@@ -374,10 +428,12 @@ def _default_reactions(
         if name in _DATAPACK_OPTIONAL_CHANNELS:
             missing_rows = []
             gas_row = f"{name}(g)"
-            oxide_row = f"{oxide}(l)"
+            gas_parent_row = _GAS_PHASE_PARENT_ROWS.get(oxide)
+            oxide_row = gas_parent_row or f"{oxide}(l)"
             if gas_row not in gas_rows:
                 missing_rows.append(gas_row)
-            if oxide_row not in oxide_rows:
+            parent_rows = gas_rows if gas_parent_row else oxide_rows
+            if oxide_row != gas_row and oxide_row not in parent_rows:
                 missing_rows.append(oxide_row)
             if missing_rows:
                 omitted[name] = (
@@ -459,7 +515,11 @@ def gas_species_provenance(species: str) -> dict[str, str | None]:
         )
     oxide, _, _ = _SF04_REACTIONS[species]
     gas_authority = _GAS_PROVENANCE_AUTHORITY[species]
-    oxide_authority = _OXIDE_PROVENANCE_AUTHORITY.get(oxide)
+    oxide_authority = (
+        None
+        if oxide in _GAS_PHASE_PARENT_ROWS
+        else _OXIDE_PROVENANCE_AUTHORITY.get(oxide)
+    )
     authorities = [gas_authority]
     if oxide_authority is not None:
         authorities.append(oxide_authority)
@@ -540,6 +600,18 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "NiO",
     "Co",
     "CoO",
+    "S",
+    "S2",
+    "S3",
+    "S4",
+    "S5",
+    "S6",
+    "S7",
+    "S8",
+    "SO",
+    "SO2",
+    "SO3",
+    "SSO",
 )
 
 # Closure ledger for species outside the retained channel set. These entries
@@ -613,6 +685,46 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
         "validation": "unvalidated",
         "reason": "O is input (fO2 pinned), so C1, C3 and C4 do not apply.",
         "c2_candidates": (),
+    },
+    "P": {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": False},
+        "validation": "unvalidated",
+        "reason": (
+            "JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) "
+            "G(T) function was found and JANAF lists P4O10(cr) only. Channels "
+            "need an external, source-rated P2O5(l) standard state and "
+            "caller-supplied a(P2O5); OpenIMCC provides no "
+            "pyrolysis-temperature melt "
+            "activity model."
+        ),
+        "c3_ion_bound": {
+            "status": "not computed",
+            "reason": "not computed: ionized phosphorus channels are outside this neutral gas-only change",
+        },
+        "c2_candidates": (
+            ("O-004", "PO"), ("O-032", "PO2"),
+            ("O-087", "P4O6"), ("O-095", "P4O10"),
+        ),
+    },
+    "S": {
+        "status": "gas-complete-melt-pending",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            "JANAF sulfur gas rows and the S2(g) parent cover 500-3000 K; "
+            "callers supply a(S2)=f(S2)/p° on the 1-bar gas reference. "
+            "OpenIMCC provides no pyrolysis-temperature sulfur melt "
+            "activity model."
+        ),
+        "c3_ion_bound": {
+            "status": "not computed",
+            "reason": "not computed: ionized sulfur channels are outside this neutral gas-only change",
+        },
+        "c2_candidates": (
+            ("O-010", "SO"), ("O-034", "SO2"),
+            ("O-058", "SO3"), ("O-011", "SSO"),
+        ),
     },
     "Si": {
         "status": "gas-partial",
@@ -1368,9 +1480,10 @@ def evaluate_gas(
     Parameters
     ----------
     activities:
-        Parent-oxide activities.  Either a dict keyed by parent-oxide name, or a
-        vector aligned with ``parent_oxides`` (default IMCC order).  Activities
-        are relative to the pure liquid oxide standard state.
+        Parent activities. Either a dict keyed by parent name, or a vector
+        aligned with ``parent_oxides`` (default IMCC order). Condensed parents
+        use their pure-liquid standard state; sulfur channels use caller-supplied
+        ``S2`` fugacity relative to JANAF's 1-bar gas standard.
     T_K:
         Temperature in Kelvin. Must be finite and positive on this path.
     fO2:
@@ -1380,7 +1493,8 @@ def evaluate_gas(
     datapack:
         Loaded JANAF + condensate thermodynamic tables.
     parent_oxides:
-        Ordered parent-oxide names.  Defaults to the IMCC-SF04 8-oxide basis.
+        Ordered parent names. Defaults to the IMCC-SF04 8-oxide basis; callers
+        may add ``P2O5`` or ``S2`` when supplying those parent activities.
     allow_extrapolation:
         If True (default), evaluate finite temperatures outside the selected
         row and return a per-species ``domain_flags`` entry.  If False, refuse
@@ -1410,8 +1524,8 @@ def evaluate_gas(
 
         oxide(l)  =  n_gas * gas(g)  +  n_O2 * O2(g)                (1)
 
-    The standard Gibbs free energy change for (1) is assembled from the JANAF
-    gas-species G°(T) rows and the condensate oxide G°(T) rows:
+    For condensed parents, the standard Gibbs free energy change for (1) is
+    assembled from JANAF gas product rows and the condensate parent G°(T) row:
 
         ΔG°(T) = n_gas * G°(gas, T) + n_O2 * G°(O2, T) - G°(oxide, T)   (2)
 
@@ -1437,7 +1551,15 @@ def evaluate_gas(
     without dividing by the ``BAR`` constant.  Solving for p̃_gas at the
     caller-pinned p̃_O2 = fO2:
 
-        p̃_gas = (K° * a_oxide / fO2^n_O2)^(1 / n_gas)               (5)
+    p̃_gas = (K° * a_oxide / fO2^n_O2)^(1 / n_gas)               (5)
+
+    Sulfur uses the gas parent directly, with tuple coefficients n_S2,n_O2:
+
+        n_S2 * S2(g) + n_O2 * O2(g) = species(g)
+
+    Here ΔG° = G°(species) - n_S2*G°(S2) - n_O2*G°(O2), and
+    p̃_gas = K° * a(S2)^n_S2 * fO2^n_O2. The caller supplies
+    a(S2)=f(S2)/p° on the JANAF 1-bar gas reference.
 
     The returned mapping reports those p̃_gas values as bar.  For the special
     retained species O2, p̃_O2 = fO2 by definition.  For n_O2 = 0, (5)
@@ -1516,7 +1638,7 @@ def evaluate_gas(
             continue
         if oxide not in act:
             raise ImccGasSpeciesNotFoundError(
-                f"gas channel {gas_name!r} needs parent oxide {oxide!r}, "
+                f"gas channel {gas_name!r} needs parent activity {oxide!r}, "
                 "which is not in parent_oxides"
             )
         a_used = act[oxide]
@@ -1565,27 +1687,53 @@ def evaluate_gas(
                 flags.append(flag)
 
         if oxide:
-            oxide_name = f"{oxide}(l)"
-            oxide_row = _oxide_row_for_T(
-                datapack.oxide_df,
-                oxide_name,
-                T,
-                allow_extrapolation=allow_extrapolation,
-            )
-            G_oxide = _lamor_gibbs(T, oxide_row)
+            gas_parent_row = _GAS_PHASE_PARENT_ROWS.get(oxide)
+            if gas_parent_row:
+                if gas_parent_row == gas_species:
+                    parent_row = gas_row
+                else:
+                    parent_row = _nearest_interval_row(
+                        datapack.gas_df,
+                        gas_parent_row,
+                        T,
+                        allow_extrapolation=allow_extrapolation,
+                    )
+                G_oxide = _janaf_gibbs(T, parent_row)
+                flag = (
+                    None
+                    if gas_parent_row == gas_species
+                    else _outside_interval_flag(gas_parent_row, T, parent_row)
+                )
+            else:
+                oxide_name = f"{oxide}(l)"
+                oxide_row = _oxide_row_for_T(
+                    datapack.oxide_df,
+                    oxide_name,
+                    T,
+                    allow_extrapolation=allow_extrapolation,
+                )
+                G_oxide = _lamor_gibbs(T, oxide_row)
+                flag = _outside_interval_flag(oxide_name, T, oxide_row)
             a_oxide = act[oxide]
-            flag = _outside_interval_flag(oxide_name, T, oxide_row)
             if flag is not None:
                 flags.append(flag)
         else:
             G_oxide = 0.0
             a_oxide = 1.0
 
-        # Reaction (1): oxide(l) -> n_gas * gas(g) + n_O2 * O2(g)
-        dG = n_gas * G_gas + n_O2 * G_O2 - G_oxide
-        Kp = np.exp(-dG / (R_J_MOL_K * T))
-
-        p_gas = (Kp * a_oxide / (p_O2**n_O2)) ** (1.0 / n_gas)
+        if oxide in _GAS_PHASE_PARENT_ROWS:
+            # Sulfur tuple: n_S2 S2(g) + n_O2 O2(g) = gas(g).
+            # Kp = p_gas / (a_S2**n_S2 * fO2**n_O2), with ΔG° formed from
+            # the same balanced reaction; a_S2 is caller-supplied f(S2)/p°.
+            dG = G_gas - n_gas * G_oxide - n_O2 * G_O2
+            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            p_gas = Kp * (a_oxide**n_gas) * (p_O2**n_O2)
+        else:
+            # Condensed-parent reaction (1): oxide(l) = n_gas*gas(g) +
+            # n_O2*O2(g). Keep its established arithmetic path unchanged.
+            dG = n_gas * G_gas + n_O2 * G_O2 - G_oxide
+            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            p_gas = (Kp * a_oxide / (p_O2**n_O2)) ** (1.0 / n_gas)
         result[gas_name] = float(p_gas)
         domain_flags[gas_name] = "; ".join(flags) or None
         provenance_class[gas_name] = str(
@@ -1606,6 +1754,7 @@ _ATOMIC_MASS_G_MOL = {
     "Fe": 55.845, "Mg": 24.305, "Al": 26.9815385, "Ca": 40.078,
     "Ti": 47.867, "Cr": 51.9961, "V": 50.9415, "Nb": 92.90637,
     "Mn": 54.938044, "Ni": 58.6934, "Co": 58.933194,
+    "P": 30.973761998, "S": 32.06,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,
@@ -1861,9 +2010,10 @@ def evaluate_gas_oxygen_balance(
     Species flux is ``J_i = p_i A W / sqrt(2 pi M_i R T)``. The common
     aperture, Clausing, and temperature factors cancel, leaving
     ``F = sum_i (nO_i - (nuO/nuM)_parent nM_i) p_i / sqrt(M_i) = 0``.
-    Existing equilibria give ``p_i ∝ pO2**k_i``. For each balanced parent
-    reaction, the signed coefficient is ``-2 nO2/n_gas`` and ``k_i`` is
-    ``-nO2/n_gas``; their product is nonnegative, so
+    Existing equilibria give ``p_i ∝ pO2**k_i``. For condensed-parent
+    reactions, the signed oxygen coefficient is ``-2 nO2/n_gas`` and
+    ``k_i = -nO2/n_gas``. For the S2(g)-parent reactions, they are ``2 nO2``
+    and ``k_i = nO2``. In both cases their product is nonnegative, so
     ``dF/dlog10(pO2) = ln(10) sum_i C_i k_i pO2**k_i >= 0``. Parentless O and
     O2 terms have positive coefficients and exponents 1/2 and 1. F is strictly
     increasing when an oxygen-bearing channel exists, so a sign-changing
@@ -1889,7 +2039,14 @@ def evaluate_gas_oxygen_balance(
     })
     for species, (parent, n_gas, n_O2) in channels:
         data = species_data[species]
-        exponent = -n_O2 / n_gas if parent else (1.0 if species == "O2" else 0.5)
+        if parent in _GAS_PHASE_PARENT_ROWS:
+            exponent = n_O2
+        else:
+            exponent = (
+                -n_O2 / n_gas
+                if parent
+                else (1.0 if species == "O2" else 0.5)
+            )
         if not math.isclose(data.pO2_exponent, exponent, abs_tol=1e-12):
             raise ImccGasOxygenBalanceError(
                 f"gas reaction metadata for {species!r} violates oxygen balance"

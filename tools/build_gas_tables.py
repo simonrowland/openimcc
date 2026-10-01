@@ -118,6 +118,27 @@ GAS_SOURCES = (
     ("Mn(g)", "Mn-005", "Mn", 1, 0),
     ("Ni(g)", "Ni-005", "Ni", 1, 0),
     ("Co(g)", "Co-005", "Co", 1, 0),
+    # Public phosphorus and sulfur rows from JANAF 4th ed.; these are gas-only
+    # inputs, with caller-supplied P2O5(l) and S2(g) parent standards.
+    ("P(g)", "P-008", "P", 1, 0),
+    ("P2(g)", "P-012", "P", 2, 0),
+    ("P4(g)", "P-013", "P", 4, 0),
+    ("PO(g)", "O-004", "P", 1, 1),
+    ("PO2(g)", "O-032", "P", 1, 2),
+    ("P4O6(g)", "O-087", "P", 4, 6),
+    ("P4O10(g)", "O-095", "P", 4, 10),
+    ("S(g)", "S-006", "S", 1, 0),
+    ("S2(g)", "S-012", "S", 2, 0),
+    ("S3(g)", "S-016", "S", 3, 0),
+    ("S4(g)", "S-017", "S", 4, 0),
+    ("S5(g)", "S-018", "S", 5, 0),
+    ("S6(g)", "S-019", "S", 6, 0),
+    ("S7(g)", "S-020", "S", 7, 0),
+    ("S8(g)", "S-021", "S", 8, 0),
+    ("SO(g)", "O-010", "S", 1, 1),
+    ("SO2(g)", "O-034", "S", 1, 2),
+    ("SO3(g)", "O-058", "S", 1, 3),
+    ("SSO(g)", "O-011", "S", 2, 1),
 )
 
 LOW_T_GAS_SPECIES = frozenset(
@@ -144,6 +165,25 @@ LOW_T_GAS_SPECIES = frozenset(
         "AlO2",
         "Al2O",
         "Al2O2",
+        "P",
+        "P2",
+        "P4",
+        "PO",
+        "PO2",
+        "P4O6",
+        "P4O10",
+        "S",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "S6",
+        "S7",
+        "S8",
+        "SO",
+        "SO2",
+        "SO3",
+        "SSO",
     }
 )
 
@@ -399,6 +439,9 @@ def _validate_record_identity(
     expected_formula, separator, state_suffix = species_name.rpartition("(")
     expected_state = state_suffix.removesuffix(")") if separator else ""
     formula = index_entry.get("formula")
+    # JANAF prints the oxide members O6P4 and O10P4 in oxygen-first canonical
+    # order; preserve the established P4O6/P4O10 runtime names.
+    formula = {"O6P4": "P4O6", "O10P4": "P4O10"}.get(formula, formula)
     if formula != expected_formula:
         raise ValueError(
             f"{table_id}: record formula {formula!r} does not match "

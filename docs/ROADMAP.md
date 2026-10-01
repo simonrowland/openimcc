@@ -39,6 +39,14 @@ parent liquid rows are available only from an external private pack.
 | Mn | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
 | Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
 | Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
+| P | gas-partial | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | no | unvalidated | JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) function was found and JANAF lists P4O10(cr) only. Channels need an external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); OpenIMCC provides no pyrolysis-temperature melt activity model. |
+| S | gas-complete-melt-pending | no | yes | not computed: ionized sulfur channels are outside this neutral gas-only change | yes | unvalidated | JANAF sulfur gas rows and the S2(g) parent cover 500-3000 K; callers supply a(S2)=f(S2)/p° on the 1-bar gas reference. OpenIMCC provides no pyrolysis-temperature sulfur melt activity model. |
+
+The P/S channels are optional and stay out of default gas results unless their
+caller-supplied parent activity is present. Sulfur uses the JANAF `S2(g)` gas
+standard. Phosphorus uses `P2O5(l)`, but no public evaluated liquid G(T) function
+was found (JANAF lists `P4O10(cr)` only); an external pack must supply a
+source-rated `P2O5(l)` standard state before callers can use `a(P2O5)`.
 
 The research pack `gas-janaf-parent-liquids-research` is opt-in by path; the
 SF04/Lamoreaux default coefficient contract keeps it out of default loads. Its

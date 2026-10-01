@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added fitted optional JANAF phosphorus and sulfur gas rows. Sulfur channels
+  accept caller-supplied S2 fugacity. No public evaluated P2O5(l) G(T) function
+  was found; JANAF lists P4O10(cr) only, so P channels need an external,
+  source-rated P2O5(l) standard state. Default outputs stay fixed.
 - Exported `species_thermo` for row-level Cp, S, apparent enthalpy and Gibbs
   energy, plus `default_gas_channels` for stable access to channel selection.
   Added JANAF in-interval fidelity gates, pinned the LAM/JANAF parent-liquid

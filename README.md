@@ -74,13 +74,23 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied V/Nb channels: Na, Na2, NaO, K, K2, KO, Si, SiO,
+and caller-supplied V/Nb/P/S channels: Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
-Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, Na2O, K2O,
-O and O2.
+Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
+PO, PO2, P4O6, P4O10, S, S2, S3, S4, S5, S6, S7, S8, SO, SO2, SO3, SSO,
+Na2O, K2O, O and O2.
 The Mn/Ni/Co channels activate only when an external pack provides their gas
 and MnO(l)/NiO(l)/CoO(l) parent rows; the public pack carries only the atomic
 gas rows.
+The sulfur channels activate only when the caller supplies `S2` fugacity as
+`a(S2) = f(S2)/p°` on JANAF's 1-bar `S2(g)` reference. OpenIMCC does not
+provide a sulfur melt-side activity model for pyrolysis temperatures.
+
+The P gas tables are fitted, but no public evaluated `P2O5(l)` G(T) function
+was found; JANAF lists `P4O10(cr)` only. P channels therefore remain unavailable
+until an external pack supplies a source-rated `P2O5(l)` standard state and the
+caller supplies `a(P2O5)` on that reference. OpenIMCC does not provide a
+melt-side P2O5 activity model for pyrolysis temperatures.
 The default tables ship in `openimcc.data.gas` and are loaded through
 `importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored

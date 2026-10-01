@@ -1,0 +1,980 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "source_id": "nist-janaf-4th",
+  "source": {
+    "citation": "Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition, J. Phys. Chem. Ref. Data Monograph 9 (1998)",
+    "database": "NIST Standard Reference Database 13",
+    "doi": "10.18434/T42S31",
+    "url": "https://janaf.nist.gov/",
+    "last_data_update": 1998,
+    "licence": "Quoted from NIST SRD 13 (https://data.nist.gov/od/id/ECBCC1C1301D2ED9E04306570681B10735): \"These data are public.\" Quoted from https://www.nist.gov/copyrights-disclaimers: \"With the exception of material marked as copyrighted, information presented on NIST sites are considered public information and may be distributed or copied.\""
+  },
+  "compilation_role": {
+    "kind": "assessed_thermodynamic_functions",
+    "engine_reference_input": true,
+    "validation_measurement": false,
+    "scoring_eligible": false,
+    "battery_refusal": "gibbs_table_not_runtime_observable",
+    "circularity_warning": "Do not validate an engine against a compilation it consumes."
+  },
+  "extraction": {
+    "method": "machine parse of NIST tab-delimited table download; source bytes cached unchanged",
+    "date": "2026-09-06",
+    "user_agent": "openimcc-janaf-vendor/1.0",
+    "source_sha256": "be68622abbe0b1b5bec8ecfb6cc2f81b9fd95c1dbe6bf23886364e5a7b626bc8",
+    "review_status": "machine_transcribed_unreviewed",
+    "note": "Replaces HTML-derived loadable record from c4aebdeb64d978b66df64cf09cae97b041042fc0; original HTML bytes remain unverified.",
+    "prior_extraction": {
+      "method": "machine parse of official NIST JANAF HTML table via indexed web retrieval; numeric tokens preserved as published",
+      "date": "2026-08-27",
+      "review_status": "machine_transcribed_unreviewed",
+      "network_note": "Direct worker networking unavailable; official NIST page retrieved through indexed web surface."
+    }
+  },
+  "table": {
+    "table_id": "S-020",
+    "url": "https://janaf.nist.gov/tables/S-020.html",
+    "download_url": "https://janaf.nist.gov/tables/S-020.txt",
+    "index_entry": {
+      "formula": "S7",
+      "formula_as_published": "S7",
+      "formula_normalised": "S7",
+      "charge": 0,
+      "name": "Sulfur",
+      "state": "g"
+    },
+    "title_as_published": "Sulfur (S7)  |  S7(g)",
+    "standard_state_as_published": "p° = 0.1 MPa (as published by JANAF)",
+    "units_as_published": {
+      "temperature": "K",
+      "heat_capacity": "J K^-1 mol^-1",
+      "entropy": "J K^-1 mol^-1",
+      "negative_gibbs_enthalpy_function": "J K^-1 mol^-1",
+      "enthalpy_increment": "kJ mol^-1",
+      "formation_enthalpy": "kJ mol^-1",
+      "formation_gibbs_energy": "kJ mol^-1",
+      "log10_formation_equilibrium_constant": "dimensionless"
+    },
+    "values": [
+      {
+        "temperature": {
+          "value": 298.15,
+          "as_published": "298.15"
+        },
+        "heat_capacity": {
+          "value": 133.502,
+          "as_published": "133.502"
+        },
+        "entropy": {
+          "value": 407.673,
+          "as_published": "407.673"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 617.165,
+          "as_published": "617.165"
+        },
+        "enthalpy_increment": {
+          "value": 0,
+          "as_published": "0."
+        },
+        "formation_enthalpy": {
+          "value": 113.679,
+          "as_published": "113.679"
+        },
+        "formation_gibbs_energy": {
+          "value": 59.034,
+          "as_published": "59.034"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -10.342,
+          "as_published": "-10.342"
+        }
+      },
+      {
+        "temperature": {
+          "value": 500,
+          "as_published": "500"
+        },
+        "heat_capacity": {
+          "value": 148.345,
+          "as_published": "148.345"
+        },
+        "entropy": {
+          "value": 481.147,
+          "as_published": "481.147"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 423.525,
+          "as_published": "423.525"
+        },
+        "enthalpy_increment": {
+          "value": 28.811,
+          "as_published": "28.811"
+        },
+        "formation_enthalpy": {
+          "value": 82.52,
+          "as_published": "82.520"
+        },
+        "formation_gibbs_energy": {
+          "value": 29.31,
+          "as_published": "29.310"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -3.062,
+          "as_published": "-3.062"
+        }
+      },
+      {
+        "temperature": {
+          "value": 600,
+          "as_published": "600"
+        },
+        "heat_capacity": {
+          "value": 151.017,
+          "as_published": "151.017"
+        },
+        "entropy": {
+          "value": 508.45,
+          "as_published": "508.450"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 435.467,
+          "as_published": "435.467"
+        },
+        "enthalpy_increment": {
+          "value": 43.79,
+          "as_published": "43.790"
+        },
+        "formation_enthalpy": {
+          "value": 72.406,
+          "as_published": "72.406"
+        },
+        "formation_gibbs_energy": {
+          "value": 19.665,
+          "as_published": "19.665"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -1.712,
+          "as_published": "-1.712"
+        }
+      },
+      {
+        "temperature": {
+          "value": 700,
+          "as_published": "700"
+        },
+        "heat_capacity": {
+          "value": 152.729,
+          "as_published": "152.729"
+        },
+        "entropy": {
+          "value": 531.867,
+          "as_published": "531.867"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 447.605,
+          "as_published": "447.605"
+        },
+        "enthalpy_increment": {
+          "value": 58.983,
+          "as_published": "58.983"
+        },
+        "formation_enthalpy": {
+          "value": 64.171,
+          "as_published": "64.171"
+        },
+        "formation_gibbs_energy": {
+          "value": 11.543,
+          "as_published": "11.543"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -0.861,
+          "as_published": "-.861"
+        }
+      },
+      {
+        "temperature": {
+          "value": 800,
+          "as_published": "800"
+        },
+        "heat_capacity": {
+          "value": 153.931,
+          "as_published": "153.931"
+        },
+        "entropy": {
+          "value": 552.344,
+          "as_published": "552.344"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 459.445,
+          "as_published": "459.445"
+        },
+        "enthalpy_increment": {
+          "value": 74.319,
+          "as_published": "74.319"
+        },
+        "formation_enthalpy": {
+          "value": 57.029,
+          "as_published": "57.029"
+        },
+        "formation_gibbs_energy": {
+          "value": 4.522,
+          "as_published": "4.522"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -0.295,
+          "as_published": "-.295"
+        }
+      },
+      {
+        "temperature": {
+          "value": 900,
+          "as_published": "900"
+        },
+        "heat_capacity": {
+          "value": 154.836,
+          "as_published": "154.836"
+        },
+        "entropy": {
+          "value": 570.529,
+          "as_published": "570.529"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 470.796,
+          "as_published": "470.796"
+        },
+        "enthalpy_increment": {
+          "value": 89.759,
+          "as_published": "89.759"
+        },
+        "formation_enthalpy": {
+          "value": -321.328,
+          "as_published": "-321.328"
+        },
+        "formation_gibbs_energy": {
+          "value": 5.919,
+          "as_published": "5.919"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -0.344,
+          "as_published": "-.344"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1000,
+          "as_published": "1000"
+        },
+        "heat_capacity": {
+          "value": 155.556,
+          "as_published": "155.556"
+        },
+        "entropy": {
+          "value": 586.881,
+          "as_published": "586.881"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 481.6,
+          "as_published": "481.600"
+        },
+        "enthalpy_increment": {
+          "value": 105.28,
+          "as_published": "105.280"
+        },
+        "formation_enthalpy": {
+          "value": -318.8,
+          "as_published": "-318.800"
+        },
+        "formation_gibbs_energy": {
+          "value": 42.144,
+          "as_published": "42.144"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -2.201,
+          "as_published": "-2.201"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1100,
+          "as_published": "1100"
+        },
+        "heat_capacity": {
+          "value": 156.155,
+          "as_published": "156.155"
+        },
+        "entropy": {
+          "value": 601.736,
+          "as_published": "601.736"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 491.857,
+          "as_published": "491.857"
+        },
+        "enthalpy_increment": {
+          "value": 120.867,
+          "as_published": "120.867"
+        },
+        "formation_enthalpy": {
+          "value": -316.314,
+          "as_published": "-316.314"
+        },
+        "formation_gibbs_energy": {
+          "value": 78.117,
+          "as_published": "78.117"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -3.709,
+          "as_published": "-3.709"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1200,
+          "as_published": "1200"
+        },
+        "heat_capacity": {
+          "value": 156.672,
+          "as_published": "156.672"
+        },
+        "entropy": {
+          "value": 615.346,
+          "as_published": "615.346"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 501.588,
+          "as_published": "501.588"
+        },
+        "enthalpy_increment": {
+          "value": 136.508,
+          "as_published": "136.508"
+        },
+        "formation_enthalpy": {
+          "value": -313.881,
+          "as_published": "-313.881"
+        },
+        "formation_gibbs_energy": {
+          "value": 113.867,
+          "as_published": "113.867"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -4.956,
+          "as_published": "-4.956"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1300,
+          "as_published": "1300"
+        },
+        "heat_capacity": {
+          "value": 157.132,
+          "as_published": "157.132"
+        },
+        "entropy": {
+          "value": 627.904,
+          "as_published": "627.904"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 510.828,
+          "as_published": "510.828"
+        },
+        "enthalpy_increment": {
+          "value": 152.199,
+          "as_published": "152.199"
+        },
+        "formation_enthalpy": {
+          "value": -311.508,
+          "as_published": "-311.508"
+        },
+        "formation_gibbs_energy": {
+          "value": 149.416,
+          "as_published": "149.416"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -6.004,
+          "as_published": "-6.004"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1400,
+          "as_published": "1400"
+        },
+        "heat_capacity": {
+          "value": 157.549,
+          "as_published": "157.549"
+        },
+        "entropy": {
+          "value": 639.565,
+          "as_published": "639.565"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 519.612,
+          "as_published": "519.612"
+        },
+        "enthalpy_increment": {
+          "value": 167.934,
+          "as_published": "167.934"
+        },
+        "formation_enthalpy": {
+          "value": -309.2,
+          "as_published": "-309.200"
+        },
+        "formation_gibbs_energy": {
+          "value": 184.784,
+          "as_published": "184.784"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -6.894,
+          "as_published": "-6.894"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1500,
+          "as_published": "1500"
+        },
+        "heat_capacity": {
+          "value": 157.936,
+          "as_published": "157.936"
+        },
+        "entropy": {
+          "value": 650.448,
+          "as_published": "650.448"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 527.976,
+          "as_published": "527.976"
+        },
+        "enthalpy_increment": {
+          "value": 183.708,
+          "as_published": "183.708"
+        },
+        "formation_enthalpy": {
+          "value": -306.958,
+          "as_published": "-306.958"
+        },
+        "formation_gibbs_energy": {
+          "value": 219.99,
+          "as_published": "219.990"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -7.661,
+          "as_published": "-7.661"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1600,
+          "as_published": "1600"
+        },
+        "heat_capacity": {
+          "value": 158.299,
+          "as_published": "158.299"
+        },
+        "entropy": {
+          "value": 660.652,
+          "as_published": "660.652"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 535.953,
+          "as_published": "535.953"
+        },
+        "enthalpy_increment": {
+          "value": 199.52,
+          "as_published": "199.520"
+        },
+        "formation_enthalpy": {
+          "value": -304.785,
+          "as_published": "-304.785"
+        },
+        "formation_gibbs_energy": {
+          "value": 255.049,
+          "as_published": "255.049"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -8.326,
+          "as_published": "-8.326"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1700,
+          "as_published": "1700"
+        },
+        "heat_capacity": {
+          "value": 158.643,
+          "as_published": "158.643"
+        },
+        "entropy": {
+          "value": 670.26,
+          "as_published": "670.260"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 543.573,
+          "as_published": "543.573"
+        },
+        "enthalpy_increment": {
+          "value": 215.367,
+          "as_published": "215.367"
+        },
+        "formation_enthalpy": {
+          "value": -302.676,
+          "as_published": "-302.676"
+        },
+        "formation_gibbs_energy": {
+          "value": 289.974,
+          "as_published": "289.974"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -8.91,
+          "as_published": "-8.910"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1800,
+          "as_published": "1800"
+        },
+        "heat_capacity": {
+          "value": 158.974,
+          "as_published": "158.974"
+        },
+        "entropy": {
+          "value": 679.337,
+          "as_published": "679.337"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 550.866,
+          "as_published": "550.866"
+        },
+        "enthalpy_increment": {
+          "value": 231.248,
+          "as_published": "231.248"
+        },
+        "formation_enthalpy": {
+          "value": -300.63,
+          "as_published": "-300.630"
+        },
+        "formation_gibbs_energy": {
+          "value": 324.776,
+          "as_published": "324.776"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -9.425,
+          "as_published": "-9.425"
+        }
+      },
+      {
+        "temperature": {
+          "value": 1900,
+          "as_published": "1900"
+        },
+        "heat_capacity": {
+          "value": 159.293,
+          "as_published": "159.293"
+        },
+        "entropy": {
+          "value": 687.941,
+          "as_published": "687.941"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 557.856,
+          "as_published": "557.856"
+        },
+        "enthalpy_increment": {
+          "value": 247.161,
+          "as_published": "247.161"
+        },
+        "formation_enthalpy": {
+          "value": -298.642,
+          "as_published": "-298.642"
+        },
+        "formation_gibbs_energy": {
+          "value": 359.466,
+          "as_published": "359.466"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -9.882,
+          "as_published": "-9.882"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2000,
+          "as_published": "2000"
+        },
+        "heat_capacity": {
+          "value": 159.603,
+          "as_published": "159.603"
+        },
+        "entropy": {
+          "value": 696.119,
+          "as_published": "696.119"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 564.566,
+          "as_published": "564.566"
+        },
+        "enthalpy_increment": {
+          "value": 263.106,
+          "as_published": "263.106"
+        },
+        "formation_enthalpy": {
+          "value": -296.708,
+          "as_published": "-296.708"
+        },
+        "formation_gibbs_energy": {
+          "value": 394.053,
+          "as_published": "394.053"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -10.292,
+          "as_published": "-10.292"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2100,
+          "as_published": "2100"
+        },
+        "heat_capacity": {
+          "value": 159.905,
+          "as_published": "159.905"
+        },
+        "entropy": {
+          "value": 703.914,
+          "as_published": "703.914"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 571.018,
+          "as_published": "571.018"
+        },
+        "enthalpy_increment": {
+          "value": 279.082,
+          "as_published": "279.082"
+        },
+        "formation_enthalpy": {
+          "value": -294.82,
+          "as_published": "-294.820"
+        },
+        "formation_gibbs_energy": {
+          "value": 428.545,
+          "as_published": "428.545"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -10.659,
+          "as_published": "-10.659"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2200,
+          "as_published": "2200"
+        },
+        "heat_capacity": {
+          "value": 160.201,
+          "as_published": "160.201"
+        },
+        "entropy": {
+          "value": 711.359,
+          "as_published": "711.359"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 577.229,
+          "as_published": "577.229"
+        },
+        "enthalpy_increment": {
+          "value": 295.087,
+          "as_published": "295.087"
+        },
+        "formation_enthalpy": {
+          "value": -292.972,
+          "as_published": "-292.972"
+        },
+        "formation_gibbs_energy": {
+          "value": 462.947,
+          "as_published": "462.947"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -10.992,
+          "as_published": "-10.992"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2300,
+          "as_published": "2300"
+        },
+        "heat_capacity": {
+          "value": 160.492,
+          "as_published": "160.492"
+        },
+        "entropy": {
+          "value": 718.487,
+          "as_published": "718.487"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 583.217,
+          "as_published": "583.217"
+        },
+        "enthalpy_increment": {
+          "value": 311.122,
+          "as_published": "311.122"
+        },
+        "formation_enthalpy": {
+          "value": -291.161,
+          "as_published": "-291.161"
+        },
+        "formation_gibbs_energy": {
+          "value": 497.267,
+          "as_published": "497.267"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -11.293,
+          "as_published": "-11.293"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2400,
+          "as_published": "2400"
+        },
+        "heat_capacity": {
+          "value": 160.779,
+          "as_published": "160.779"
+        },
+        "entropy": {
+          "value": 725.324,
+          "as_published": "725.324"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 588.996,
+          "as_published": "588.996"
+        },
+        "enthalpy_increment": {
+          "value": 327.185,
+          "as_published": "327.185"
+        },
+        "formation_enthalpy": {
+          "value": -289.382,
+          "as_published": "-289.382"
+        },
+        "formation_gibbs_energy": {
+          "value": 531.508,
+          "as_published": "531.508"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -11.568,
+          "as_published": "-11.568"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2500,
+          "as_published": "2500"
+        },
+        "heat_capacity": {
+          "value": 161.063,
+          "as_published": "161.063"
+        },
+        "entropy": {
+          "value": 731.893,
+          "as_published": "731.893"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 594.582,
+          "as_published": "594.582"
+        },
+        "enthalpy_increment": {
+          "value": 343.278,
+          "as_published": "343.278"
+        },
+        "formation_enthalpy": {
+          "value": -287.632,
+          "as_published": "-287.632"
+        },
+        "formation_gibbs_energy": {
+          "value": 565.675,
+          "as_published": "565.675"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -11.819,
+          "as_published": "-11.819"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2600,
+          "as_published": "2600"
+        },
+        "heat_capacity": {
+          "value": 161.343,
+          "as_published": "161.343"
+        },
+        "entropy": {
+          "value": 738.215,
+          "as_published": "738.215"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 599.985,
+          "as_published": "599.985"
+        },
+        "enthalpy_increment": {
+          "value": 359.398,
+          "as_published": "359.398"
+        },
+        "formation_enthalpy": {
+          "value": -285.902,
+          "as_published": "-285.902"
+        },
+        "formation_gibbs_energy": {
+          "value": 599.774,
+          "as_published": "599.774"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -12.05,
+          "as_published": "-12.050"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2700,
+          "as_published": "2700"
+        },
+        "heat_capacity": {
+          "value": 161.621,
+          "as_published": "161.621"
+        },
+        "entropy": {
+          "value": 744.31,
+          "as_published": "744.310"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 605.218,
+          "as_published": "605.218"
+        },
+        "enthalpy_increment": {
+          "value": 375.546,
+          "as_published": "375.546"
+        },
+        "formation_enthalpy": {
+          "value": -284.187,
+          "as_published": "-284.187"
+        },
+        "formation_gibbs_energy": {
+          "value": 633.805,
+          "as_published": "633.805"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -12.262,
+          "as_published": "-12.262"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2800,
+          "as_published": "2800"
+        },
+        "heat_capacity": {
+          "value": 161.896,
+          "as_published": "161.896"
+        },
+        "entropy": {
+          "value": 750.192,
+          "as_published": "750.192"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 610.292,
+          "as_published": "610.292"
+        },
+        "enthalpy_increment": {
+          "value": 391.722,
+          "as_published": "391.722"
+        },
+        "formation_enthalpy": {
+          "value": -282.487,
+          "as_published": "-282.487"
+        },
+        "formation_gibbs_energy": {
+          "value": 667.774,
+          "as_published": "667.774"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -12.457,
+          "as_published": "-12.457"
+        }
+      },
+      {
+        "temperature": {
+          "value": 2900,
+          "as_published": "2900"
+        },
+        "heat_capacity": {
+          "value": 162.17,
+          "as_published": "162.170"
+        },
+        "entropy": {
+          "value": 755.878,
+          "as_published": "755.878"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 615.214,
+          "as_published": "615.214"
+        },
+        "enthalpy_increment": {
+          "value": 407.925,
+          "as_published": "407.925"
+        },
+        "formation_enthalpy": {
+          "value": -280.798,
+          "as_published": "-280.798"
+        },
+        "formation_gibbs_energy": {
+          "value": 701.682,
+          "as_published": "701.682"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -12.639,
+          "as_published": "-12.639"
+        }
+      },
+      {
+        "temperature": {
+          "value": 3000,
+          "as_published": "3000"
+        },
+        "heat_capacity": {
+          "value": 162.442,
+          "as_published": "162.442"
+        },
+        "entropy": {
+          "value": 761.381,
+          "as_published": "761.381"
+        },
+        "negative_gibbs_enthalpy_function": {
+          "value": 619.995,
+          "as_published": "619.995"
+        },
+        "enthalpy_increment": {
+          "value": 424.156,
+          "as_published": "424.156"
+        },
+        "formation_enthalpy": {
+          "value": -279.118,
+          "as_published": "-279.118"
+        },
+        "formation_gibbs_energy": {
+          "value": 735.532,
+          "as_published": "735.532"
+        },
+        "log10_formation_equilibrium_constant": {
+          "value": -12.807,
+          "as_published": "-12.807"
+        }
+      }
+    ],
+    "parse_ambiguities": []
+  }
+}

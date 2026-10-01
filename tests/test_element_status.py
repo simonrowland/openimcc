@@ -63,6 +63,9 @@ def _neutral_oxide_sources(
         if path.suffix == ".yaml":
             entry = _record(path.stem, source_dir)["table"]["index_entry"]
             formula = entry.get("formula_normalised", entry.get("formula"))
+            formula = {"O6P4": "P4O6", "O10P4": "P4O10"}.get(
+                formula, formula
+            )
             state = entry.get("state")
             charge = entry.get("charge", 0)
         else:
@@ -79,7 +82,7 @@ def _neutral_oxide_sources(
             continue
         if "O" not in formula:
             continue
-        for element in ELEMENT_STATUS:
+        for element in sorted(ELEMENT_STATUS, key=len, reverse=True):
             if element == "O":
                 continue
             if re.search(rf"(?<![A-Za-z]){element}(?:[0-9]*)", formula):
@@ -94,6 +97,11 @@ def _evaluated_public_c2_species(
     pack = load_gas_datapack()
     evaluated = set()
     for element, species in source_candidates.values():
+        if element in {"P", "S"} and f"{species}(g)" in pack.gas_df.index:
+            # Their C2 evidence is the public gas row; callers supply P2O5/S2
+            # activities, and the P2O5 parent standard is tracked separately.
+            evaluated.add(species)
+            continue
         ion_bound = ELEMENT_STATUS[element].get("c3_ion_bound")
         if ion_bound is None:
             continue
@@ -519,9 +527,15 @@ def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
 
 def _status_is_complete(status: dict) -> str:
     criteria = status["criteria"]
+    c3_not_computed = status.get("c3_ion_bound", {}).get("status") == "not computed"
     if all(criteria.values()):
         return "complete"
-    if not criteria["C1"] and all(criteria[key] for key in ("C2", "C3", "C4")):
+    if (
+        not criteria["C1"]
+        and criteria["C2"]
+        and criteria["C4"]
+        and (criteria["C3"] or c3_not_computed)
+    ):
         return "gas-complete-melt-pending"
     if (
         criteria["C1"]
@@ -540,7 +554,10 @@ def _one_bar_janaf_source(table_id: str) -> bool:
 
 
 def _c4_rows_cover_domain(
-    element: str, parent_by_element: dict[str, str], pack
+    element: str,
+    parent_by_element: dict[str, str],
+    pack,
+    gas_parent_by_element: dict[str, str] | None = None,
 ) -> bool:
     domain_start = 1200
     domain_end = 3000
@@ -588,7 +605,12 @@ def _c4_rows_cover_domain(
             return False
 
     parent = parent_by_element.get(element)
-    if parent is None or f"{parent}(l)" not in pack.oxide_df.index:
+    gas_parent = (gas_parent_by_element or {}).get(element)
+    if parent is None:
+        # Gas-parent rows share the gas coverage checks above; S2(g) is both
+        # the caller reference and an exposed sulfur product channel.
+        return gas_parent is not None and f"{gas_parent}(g)" in pack.gas_df.index
+    if f"{parent}(l)" not in pack.oxide_df.index:
         return False
     liquid_rows = pack.oxide_df.loc[pack.oxide_df.index == f"{parent}(l)"]
     coverage_end = domain_start
@@ -630,7 +652,7 @@ def _c4_rows_cover_domain(
 def test_status_criteria_and_melt_basis_are_consistent() -> None:
     expected_elements = {
         "O", "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K",
-        "Cr", "V", "Nb", "Mn", "Ni", "Co",
+        "Cr", "V", "Nb", "Mn", "Ni", "Co", "P", "S",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -649,6 +671,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "V": "V2O3",
         "Nb": "NbO2",
     }
+    gas_parent_by_element = {"S": "S2"}
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")
     parent_oxides = set(melt.parent_oxides)
     gas_pack = load_gas_datapack()
@@ -695,7 +718,9 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
             assert status["criteria"]["C4"] is False
         else:
             assert status["criteria"]["C3"] is c3
-        c4 = _c4_rows_cover_domain(element, liquid_by_element, gas_pack)
+        c4 = _c4_rows_cover_domain(
+            element, liquid_by_element, gas_pack, gas_parent_by_element
+        )
         assert status["criteria"]["C4"] is c4
         assert status["validation"] in {"validated", "unvalidated"}
         assert status["status"] in {

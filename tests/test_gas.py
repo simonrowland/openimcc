@@ -29,6 +29,7 @@ from openimcc.gas import (
     IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES,
     IMCC_PARENT_OXIDES,
     IMCC_SF04_WORKBOOK_GRID_K,
+    R_J_MOL_K,
     ImccGasDatapack,
     ImccGasInvalidFugacityError,
     ImccGasOxygenBalanceError,
@@ -46,6 +47,7 @@ from openimcc.gas import (
     _REACTION_PARENT_OXIDES,
     _SF04_REACTIONS,
     _nearest_interval_row,
+    _SF04_REACTIONS,
 )
 
 
@@ -165,7 +167,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert oxide_path.name == "condensate.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
-    assert len(gas_pack.gas_df) == 43 + len(build_gas_tables.LOW_T_GAS_SPECIES) + 2
+    assert len(gas_pack.gas_df) == 62 + len(build_gas_tables.LOW_T_GAS_SPECIES) + 2
     assert len(gas_pack.oxide_df) == 13
 
 
@@ -186,6 +188,9 @@ def test_janaf_parent_liquid_research_pack_loads_by_path_and_is_in_domain(
     )
     interval_1 = gas_pack.gas_df.loc[
         gas_pack.gas_df["T_interval"].astype(int) == 1
+    ]
+    interval_1 = interval_1.loc[
+        ~interval_1.index.isin(tuple(f"{species}(g)" for species in _PS_CHANNELS))
     ]
     low_nasa = gas_pack.gas_df.loc[
         (gas_pack.gas_df["T_interval"].astype(int) == 2)
@@ -346,11 +351,12 @@ def test_channel_coverage_ledger_is_closed() -> None:
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
-    assert len(implemented) == 46
+    assert len(implemented) == 65
     assert len(unavailable) == 5
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
-    assert in_domain | extrapolated == implemented
+    assert not set(_P_CHANNELS) & (in_domain | extrapolated)
+    assert in_domain | extrapolated | set(_P_CHANNELS) == implemented
 
 
 _EXTRAPOLATION_REFUSAL_CASES = (
@@ -630,6 +636,8 @@ def test_full_workbook_grid_runs_for_in_domain_channels(
                     "NiO": 1.0,
                     "CoO": 1.0,
                 }
+            elif species in _S_CHANNELS:
+                activities = {**unit_activities, "S2": 1.0e-3}
             result = evaluate_gas(
                 activities,
                 temperature,
@@ -948,6 +956,12 @@ _TI_CHANNELS = ("Ti", "TiO", "TiO2")
 _CR_CHANNELS = ("Cr", "CrO", "CrO2", "CrO3")
 _VNB_CHANNELS = ("V", "VO", "VO2", "Nb", "NbO", "NbO2")
 _MNNICO_CHANNELS = ("Mn", "MnO", "Ni", "NiO", "Co", "CoO")
+_P_CHANNELS = ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10")
+_S_CHANNELS = (
+    "S", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
+    "SO", "SO2", "SO3", "SSO",
+)
+_PS_CHANNELS = _P_CHANNELS + _S_CHANNELS
 _MNNICO_PARENT_PAIRS = (("Mn", "MnO"), ("Ni", "NiO"), ("Co", "CoO"))
 _PRE_GATED_CHANNELS = tuple(
     species
@@ -955,6 +969,7 @@ _PRE_GATED_CHANNELS = tuple(
     if species not in _CR_CHANNELS
     and species not in _VNB_CHANNELS
     and species not in _MNNICO_CHANNELS
+    and species not in _PS_CHANNELS
 )
 _SF04_CHANNELS = tuple(
     species for species in _PRE_GATED_CHANNELS if species not in _TI_CHANNELS
@@ -1025,6 +1040,156 @@ def test_readme_basalt_outputs_match_interval_1_at_and_above_1500_k(
             assert dict(current.domain_flags) == dict(interval_1_only.domain_flags)
             assert dict(current.provenance_class) == dict(
                 interval_1_only.provenance_class
+            )
+
+
+_OPTIONAL_PS_GAS_SPECIES = (
+    "S", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "SO", "SO2", "SO3", "SSO",
+    "P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10",
+)
+
+
+def test_optional_ps_rows_do_not_change_default_outputs(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    """Default outputs are identical with and without the optional P/S rows.
+
+    Compared within one environment, so the check is exact without pinning
+    platform-dependent bit patterns.
+    """
+    drop = [f"{name}(g)" for name in _OPTIONAL_PS_GAS_SPECIES]
+    assert set(drop) <= set(gas_pack.gas_df.index)
+    without_ps = replace(
+        gas_pack, gas_df=gas_pack.gas_df.drop(index=drop)
+    )
+    for temperature in (1500.0, 1800.0, 2200.0, 2600.0):
+        activities = _quickstart_activities(
+            temperature, allow_extrapolation=True
+        )
+        for fO2 in (1.0e-10, 1.0e-6):
+            full = evaluate_gas(
+                activities, temperature, fO2, gas_pack, allow_extrapolation=True
+            )
+            base = evaluate_gas(
+                activities, temperature, fO2, without_ps, allow_extrapolation=True
+            )
+            assert dict(full.items()) == dict(base.items())
+            assert dict(full.domain_flags) == dict(base.domain_flags)
+            assert dict(full.provenance_class) == dict(base.provenance_class)
+            assert dict(full.omitted_channels) == dict(base.omitted_channels)
+            assert not set(_OPTIONAL_PS_GAS_SPECIES) & set(full)
+
+
+def _janaf_formation_gibbs(table_id: str, temperature: float) -> float:
+    source = build_gas_tables._load_record(
+        Path(__file__).resolve().parents[1] / "data-src" / "janaf" / f"{table_id}.yaml"
+    )
+    row = next(
+        row
+        for row in source["table"]["values"]
+        if float(row["temperature"]["value"]) == temperature
+    )
+    return float(row["formation_gibbs_energy"]["value"]) * 1000.0
+
+
+def test_sulfur_pressures_match_hand_calculated_janaf_cells(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    """Use JANAF G° cells and nS2*S2 + nO2*O2 = gas, without fitted rows."""
+    product_tables = {"S": "S-006", "S2": "S-012", "SO": "O-010", "SO2": "O-034"}
+    parent_activity = 1.0e-3
+    species = tuple(product_tables)
+    for temperature in (1800.0, 2200.0):
+        G_S2 = _janaf_formation_gibbs("S-012", temperature)
+        G_O2 = _janaf_formation_gibbs("O-029", temperature)
+        for fO2 in (1.0e-10, 1.0e-6):
+            result = evaluate_gas(
+                {"S2": parent_activity},
+                temperature,
+                fO2,
+                gas_pack,
+                parent_oxides=(*IMCC_PARENT_OXIDES, "S2"),
+                gas_species=species,
+                allow_extrapolation=False,
+            )
+            for gas in species:
+                _parent, n_S2, n_O2 = _SF04_REACTIONS[gas]
+                dG = (
+                    _janaf_formation_gibbs(product_tables[gas], temperature)
+                    - n_S2 * G_S2
+                    - n_O2 * G_O2
+                )
+                Kp = math.exp(-dG / (R_J_MOL_K * temperature))
+                hand_pressure = (
+                    Kp * parent_activity**n_S2 * fO2**n_O2
+                )
+                assert result[gas] == pytest.approx(hand_pressure, rel=1.5e-3)
+
+
+def test_sulfur_channels_have_the_declared_fugacity_exponents(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    common = {
+        "activities": {"S2": 1.0e-3},
+        "T_K": 2200.0,
+        "datapack": gas_pack,
+        "parent_oxides": (*IMCC_PARENT_OXIDES, "S2"),
+        "gas_species": _S_CHANNELS,
+    }
+    low = evaluate_gas(fO2=1.0e-10, **common)
+    high = evaluate_gas(fO2=1.0e-6, **common)
+    for gas in _S_CHANNELS:
+        _parent, _n_S2, n_O2 = _SF04_REACTIONS[gas]
+        assert high[gas] / low[gas] == pytest.approx(1.0e4**n_O2, rel=1e-11)
+
+
+def test_phosphorus_and_sulfur_channels_are_optional_and_refuse_without_parent(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = _quickstart_activities(2200.0, allow_extrapolation=True)
+    default = evaluate_gas(
+        activities, 2200.0, 1.0e-10, gas_pack, allow_extrapolation=True
+    )
+    assert tuple(default) == _PRE_GATED_CHANNELS
+    assert not set(_PS_CHANNELS) & set(default)
+    assert not set(_PS_CHANNELS) & set(default.omitted_channels)
+
+    p_parent_only = evaluate_gas(
+        {**activities, "P2O5": 1.0e-3},
+        2200.0,
+        1.0e-10,
+        gas_pack,
+        allow_extrapolation=True,
+    )
+    assert not set(_P_CHANNELS) & set(p_parent_only)
+    assert set(_P_CHANNELS) <= set(p_parent_only.omitted_channels)
+    assert all(
+        "P2O5(l)" in p_parent_only.omitted_channels[species]
+        for species in _P_CHANNELS
+    )
+
+    with pytest.raises(ImccGasSpeciesNotFoundError) as p_error:
+        evaluate_gas(
+            {**activities, "P2O5": 1.0e-3},
+            2200.0,
+            1.0e-10,
+            gas_pack,
+            parent_oxides=(*IMCC_PARENT_OXIDES, "P2O5"),
+            gas_species=("PO",),
+            allow_extrapolation=True,
+        )
+    assert p_error.value.code == "imcc_gas_species_not_found"
+    assert "P2O5(l)" in str(p_error.value)
+
+    for species in ("PO", "P2", "S", "S2"):
+        with pytest.raises(ImccGasSpeciesNotFoundError):
+            evaluate_gas(
+                activities,
+                2200.0,
+                1.0e-10,
+                gas_pack,
+                gas_species=(species,),
+                allow_extrapolation=True,
             )
 
 
@@ -1893,8 +2058,36 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
     })
     assert tuple(metadata) == tuple(name for name, _ in channels)
     for name, (parent, n_gas, n_o2) in channels:
-        expected = -n_o2 / n_gas if parent else (1.0 if name == "O2" else 0.5)
+        expected = (
+            n_o2
+            if parent == "S2"
+            else -n_o2 / n_gas
+            if parent
+            else (1.0 if name == "O2" else 0.5)
+        )
         assert metadata[name].pO2_exponent == pytest.approx(expected, abs=1e-12)
+
+
+def test_oxygen_balance_accepts_caller_supplied_s2_gas_parent(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    import openimcc.gas as gas_module
+
+    activities = {
+        **_quickstart_activities(1800.0, allow_extrapolation=True),
+        "S2": 1e-3,
+    }
+    p_o2, pressures, diagnostics = gas_module.evaluate_gas_oxygen_balance(
+        activities,
+        1800.0,
+        gas_pack,
+        parent_oxides=(*IMCC_PARENT_OXIDES, "S2"),
+    )
+
+    assert math.isfinite(p_o2) and p_o2 > 0.0
+    assert pressures["S2"] == pytest.approx(1e-3, rel=1e-12)
+    assert pressures["SO"] > 0.0
+    assert diagnostics["residual"] < 1e-10
 
 
 def test_oxygen_balance_metadata_accepts_explicit_exponent_override() -> None:
