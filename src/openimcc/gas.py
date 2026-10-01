@@ -136,10 +136,12 @@ class ImccGasResult(MappingABC[str, float]):
 class SpeciesThermo:
     """Thermodynamic properties returned by :func:`species_thermo`.
 
-    ``derivatives_fit_implied`` is true when Cp, S, and H_app are derivatives
-    of a fitted Gibbs-energy polynomial rather than source-tabulated-equivalent
-    quantities. LAM condensate rows use this fit-implied basis. JANAF-fitted
-    gas and condensate rows fit Cp, H, and S directly and are source-equivalent.
+    ``source_row_id`` is the table row's Ref value; ``source_table_id`` names
+    the source table when provenance records one. ``derivatives_fit_implied``
+    is true for every condensate row because its Cp, S, and H_app are
+    derivatives of a fitted Gibbs-energy polynomial. JANAF-fitted condensates
+    fit Phi (the Gibbs polynomial) only. Gas Shomate rows fit Cp, H, and S,
+    so their derivatives are not fit-implied.
     """
 
     Cp_J_molK: float
@@ -147,6 +149,7 @@ class SpeciesThermo:
     H_app_kJ_mol: float
     G_J_mol: float
     source_row_id: str
+    source_table_id: str | None
     T_interval: int | None
     T_min: float
     T_max: float
@@ -492,6 +495,22 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Cr2O3": "janaf_fitted",
     "V2O3": "janaf_fitted",
     "NbO2": "janaf_fitted",
+}
+# Mirrors the source table identifiers recorded for packaged rows in
+# data/gas/PROVENANCE.yaml. Rows without a table identifier there return None.
+_OXIDE_SOURCE_TABLE_IDS = {
+    "Na2O": "LH84 Table 2 / Table 4",
+    "K2O": None,
+    "MgO": "LH87 Table 2",
+    "CaO": "LH87 Table 2",
+    "Al2O3": "LH87 Table 2 / Table 3",
+    "SiO2": "LH87 Table 2",
+    "SiO2(cr)": "LH87 Table 2",
+    "FeO": "Fe-019",
+    "TiO2": "O-044",
+    "Cr2O3": "Cr-015",
+    "V2O3": "O-063",
+    "NbO2": "Nb-013",
 }
 _PROVENANCE_AUTHORITY_RANK = {
     "secondary_transcription_unverified_primary": 0,
@@ -1379,7 +1398,8 @@ def species_thermo(
     and ``S = A*ln(t) + B*t + C*t²/2 + D*t³/3 − E/(2*t²) + G``
     (J mol⁻¹ K⁻¹). The packaged convention has Shomate H=0 and folds
     ``dfH298`` into F, so ``H_app = I_H + F − H`` includes the formation
-    enthalpy anchor. ``G_J_mol`` is the existing runtime ``H_app − T*S``.
+    enthalpy anchor. ``G_J_mol`` is the existing runtime
+    ``1000*H_app − T*S``; the factor converts H_app from kJ/mol to J/mol.
     A caller needing only H(T)−H(298.15) must subtract the source row's
     ``dfH298`` from ``H_app``; that anchor is in the JANAF source record and
     provenance, not separately encoded in the runtime row.
@@ -1397,10 +1417,12 @@ def species_thermo(
     ``R*(2*B*t+6*C*t²+12*D*t³+20*E*t⁴)`` J/(mol K). The factors of 1000
     convert the kK anchor and Shomate enthalpy units. A zero polynomial has
     zero Cp, S and H−H298 while G equals H298, a sign/unit sanity check.
-    The returned ``derivatives_fit_implied`` flag is true for LAM condensate
-    rows: their Cp, S and H_app are implied by differentiating the fitted G
-    polynomial. JANAF gas and condensate fits target Cp, H and S directly, so
-    those rows are source-tabulated-equivalent and the flag is false.
+    The returned ``derivatives_fit_implied`` flag is true for every condensate
+    row: their Cp, S and H_app are implied by differentiating the fitted G
+    polynomial. JANAF-fitted condensates fit Phi only. Gas Shomate fits target
+    Cp, H and S directly, so their flag is false. For condensate rows the
+    source-comparison gate therefore checks G_app only; derivative residuals
+    are fit-implied information, not source-quantity gates.
     The regression gate checks FeO(l) against JANAF Fe-019 and Al2O3(l)
     against Al-100.
     """
@@ -1452,11 +1474,16 @@ def species_thermo(
         H_app_kJ_mol=float(h_app),
         G_J_mol=float(apparent_g),
         source_row_id=str(row["Ref"]),
+        source_table_id=(
+            str(row["Ref"])
+            if phase == "g" and str(row["Ref"])
+            else _OXIDE_SOURCE_TABLE_IDS.get(species)
+        ),
         T_interval=interval,
         T_min=float(row["T_min"]),
         T_max=float(row["T_max"]),
         derivatives_fit_implied=(
-            phase != "g" and str(row["Ref"]).startswith("LAM")
+            phase != "g"
         ),
     )
 

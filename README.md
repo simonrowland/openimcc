@@ -248,7 +248,7 @@ from openimcc import default_gas_channels, species_thermo
 
 props = species_thermo("FeO", "g", 2000.0)
 # props.Cp_J_molK, props.S_J_molK, props.H_app_kJ_mol, props.G_J_mol
-# props.source_row_id, props.T_interval, props.T_min, props.T_max
+# props.source_row_id, props.source_table_id, props.T_interval, props.T_min, props.T_max
 
 channels, omitted = default_gas_channels(("SiO2", "MgO"))
 ```
@@ -258,20 +258,39 @@ runtime selector uses and raises `ImccGasTemperatureOutsideDomainError` outside
 that row's declared interval. `species` is the bare formula; `phase` is `"g"`,
 `"l"`, or `"cr"`. The frozen `SpeciesThermo` result reports Cp and S in
 J/(mol K), apparent enthalpy in kJ/mol, and apparent Gibbs energy in J/mol.
-`derivatives_fit_implied` marks the quantity basis: it is true for LAM
-condensate rows, whose Cp, S, and H_app follow by differentiating a fitted
-Gibbs-energy polynomial. It is false for JANAF-fitted gas and condensate rows,
-where the Shomate fit targets source Cp, H, and S directly. For LAM rows the
-source-comparison gate therefore checks G_app only; the following measured
-model-minus-JANAF residual ranges are retained as documented exceptions.
+`source_row_id` preserves the row's `Ref` value; `source_table_id` gives the
+source table identifier recorded in `PROVENANCE.yaml`. `derivatives_fit_implied`
+is true for every condensate row because each row's Cp, S, and H_app follow by
+differentiating its fitted Gibbs-energy polynomial. This includes JANAF-fitted
+condensates, whose fits target Phi (the Gibbs polynomial) only. It is false for
+gas rows, whose Shomate fits target source Cp, H, and S directly. Condensate
+source gates therefore compare G_app only. Cp, S, and H_app residuals against
+JANAF are fit-implied information, not source-quantity gates. The measured
+maximum absolute derivative residuals are reported here for the JANAF-backed
+condensates:
+
+| Condensate interval | Cp (J/mol K) | S (J/mol K) | H_app (kJ/mol) | G_app (kJ/mol) |
+|---|---:|---:|---:|---:|
+| FeO(l), 1000–5000 K | 6.111 | 1.536 | 5.393 | 2.273854 |
+| TiO2(l), 1500–3000 K | 5.960 | 0.210 | 0.608 | 0.006878 |
+| Cr2O3(l), 1900–3000 K | 1.315 | 0.036 | 0.105 | 0.001551 |
+| V2O3(l), 1500–3000 K | 2.468 | 0.047 | 0.137 | 0.002051 |
+| NbO2(l), 1500–3000 K | 0.911 | 0.047 | 0.070 | 0.001405 |
+
+NbO2(l)'s separate 1200–1500 K interval has its own measured maximum G_app
+residual, 3.49e-13 kJ/mol; it is not grouped with the 1500–3000 K interval.
+
+For gas rows, `G_J_mol = 1000*H_app_kJ_mol - T*S_J_molK`; the factor of
+1000 converts enthalpy to J/mol. For LAM condensates, the following measured
+model-minus-JANAF G residual ranges are retained as documented exceptions.
 
 | LAM row | Compared sources | Measured G_app residual range (kJ/mol) | Tolerance (kJ/mol) | Reason |
 |---|---|---:|---:|---|
 | Na2O(l) | LH84 Tables 2/4; JANAF Na-013 | 13.442370 to 29.642533 | 0.003 | Neither source explains the measured Gibbs-energy disagreement. |
 | Al2O3(l) | LH87 Tables 2/3; JANAF Al-100 | −0.130343 to 0.101552 | 0.002 | Both anchors refer to stable solid at 298 K; sources do not reconcile liquid Gibbs-energy fits. |
 | SiO2(l) | LH87 Table 2; JANAF O-038 | −2.972323 to −2.302783 | 0.002 | Sources report different liquid Gibbs thermochemistry without a reconciliation. |
-| MgO(l) | LH87 Table 2; JANAF Mg-009 | −0.998335 to −0.575922 | 0.002 | Both identify liquid above 3105 K but do not reconcile Gibbs-energy fits. |
-| CaO(l) | LH87 Table 2; JANAF Ca-028 | −2.786601 to −1.210793 | 0.003 | Both identify liquid from 3200 K but do not reconcile Gibbs-energy fits. |
+| MgO(l) | LH87 Table 2; JANAF Mg-009 | −0.998335 to −0.356769 (3100–3500 K) | 0.002 | Complete JANAF liquid nodes inside the packaged interval are included; sources do not reconcile their G fits. |
+| CaO(l) | LH87 Table 2; JANAF Ca-028 | −6.185 to −1.210793 (2900–3800 K) | 0.003 | Complete JANAF liquid nodes inside the packaged interval are included; sources do not reconcile their G fits. |
 
 For gas rows, `H_app_kJ_mol` includes the formation-enthalpy anchor folded into
 Shomate F (the stored Shomate H is zero); callers needing H−H298 must subtract

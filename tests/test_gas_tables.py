@@ -26,6 +26,7 @@ from openimcc.gas import (
     _EXTERNAL_PACK_GAS_SPECIES,
     _GAS_PROVENANCE_AUTHORITY,
     _OXIDE_PROVENANCE_AUTHORITY,
+    _OXIDE_SOURCE_TABLE_IDS,
     ImccGasTemperatureOutsideDomainError,
     IMCC_GAS_CHANNEL_SPECIES,
     IMCC_SF04_WORKBOOK_GRID_K,
@@ -151,14 +152,15 @@ GAS_PROPERTY_RESIDUAL_LIMITS = {
     "G_kJ_mol": 0.0021,
 }
 
-# Per-species limits are rounded just above each JANAF-sourced condensate
-# row's measured maximum residual over its declared interval.
-JANAF_CONDENSATE_RESIDUAL_LIMITS = {
-    "FeO(l)": {"Cp_J_molK": 6.2, "S_J_molK": 1.6, "H_app_kJ_mol": 5.5, "G_kJ_mol": 2.3},
-    "TiO2(l)": {"Cp_J_molK": 6.0, "S_J_molK": 0.21, "H_app_kJ_mol": 0.62, "G_kJ_mol": 0.007},
-    "Cr2O3(l)": {"Cp_J_molK": 1.32, "S_J_molK": 0.036, "H_app_kJ_mol": 0.106, "G_kJ_mol": 0.0016},
-    "V2O3(l)": {"Cp_J_molK": 2.5, "S_J_molK": 0.047, "H_app_kJ_mol": 0.138, "G_kJ_mol": 0.0021},
-    "NbO2(l)": {"Cp_J_molK": 0.92, "S_J_molK": 0.047, "H_app_kJ_mol": 0.070, "G_kJ_mol": 0.0015},
+# Measured maximum absolute Gibbs residuals at complete source nodes, in
+# kJ/mol. Cp/S/H residuals are derivative-fit information and are not gates.
+JANAF_CONDENSATE_G_RESIDUALS = {
+    ("FeO(l)", 1000.0): 2.273853686498944,
+    ("TiO2(l)", 1500.0): 0.00687822891632095,
+    ("Cr2O3(l)", 1900.0): 0.001551177412737161,
+    ("V2O3(l)", 1500.0): 0.0020505444393493235,
+    ("NbO2(l)", 1200.0): 3.4924596548080445e-13,
+    ("NbO2(l)", 1500.0): 0.001405104221543297,
 }
 
 # G source disagreements are model-minus-JANAF, measured over complete liquid
@@ -167,7 +169,6 @@ JANAF_CONDENSATE_RESIDUAL_LIMITS = {
 LAM_PARENT_SOURCE_EXCEPTIONS = {
     "Na2O(l)": {
         "table_id": "Na-013",
-        "liquid_from_K": 1405.2,
         "sources": "LH84 Tables 2/4 vs NIST-JANAF 4th-edition Na-013",
         "reason": "The G_app disagreement is measured between the LH84 fit and JANAF Na-013; neither source explains its cause.",
         "ranges": {
@@ -176,7 +177,6 @@ LAM_PARENT_SOURCE_EXCEPTIONS = {
     },
     "Al2O3(l)": {
         "table_id": "Al-100",
-        "liquid_from_K": 2327.0,
         "sources": "LH87 Tables 2/3 vs NIST-JANAF 4th-edition Al-100",
         "reason": "Both anchors refer to the stable 298 K solid; the LH87 and JANAF Al-100 liquid G fits differ without a source-stated reconciliation.",
         "ranges": {
@@ -185,7 +185,6 @@ LAM_PARENT_SOURCE_EXCEPTIONS = {
     },
     "SiO2(l)": {
         "table_id": "O-038",
-        "liquid_from_K": 1696.0,
         "sources": "LH87 Table 2 vs NIST-JANAF 4th-edition O-038",
         "reason": "LH87 Table 2 and JANAF O-038 give different liquid G thermochemistry with no source-stated reconciliation.",
         "ranges": {
@@ -194,20 +193,18 @@ LAM_PARENT_SOURCE_EXCEPTIONS = {
     },
     "MgO(l)": {
         "table_id": "Mg-009",
-        "liquid_from_K": 3105.0,
         "sources": "LH87 Table 2 vs NIST-JANAF 4th-edition Mg-009",
-        "reason": "LH87 Table 2 and JANAF Mg-009 identify the liquid branch above 3105 K but do not reconcile their G difference.",
+        "reason": "The complete JANAF nodes inside the packaged LH87 liquid interval are included; the sources do not reconcile their G difference.",
         "ranges": {
-            "G_kJ_mol": (-0.998335, -0.575922, 0.002),
+            "G_kJ_mol": (-0.998335, -0.356769, 0.000001),
         },
     },
     "CaO(l)": {
         "table_id": "Ca-028",
-        "liquid_from_K": 3200.0,
         "sources": "LH87 Table 2 vs NIST-JANAF 4th-edition Ca-028",
-        "reason": "LH87 Table 2 and JANAF Ca-028 identify the liquid branch from 3200 K but do not reconcile their G difference.",
+        "reason": "The complete JANAF nodes inside the packaged LH87 liquid interval are included; the sources do not reconcile their G difference.",
         "ranges": {
-            "G_kJ_mol": (-2.786601, -1.210793, 0.003),
+            "G_kJ_mol": (-6.185, -1.210793, 0.000001),
         },
     },
 }
@@ -682,12 +679,17 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     expected_gas = {}
     expected_oxide = {}
+    expected_table_ids = {}
     for row in provenance["rows"]:
         if row["table"] == "gas":
             expected_gas[row["species_name"].removesuffix("(g)")] = row["authority"]
         else:
             name = row["species_name"]
             expected_oxide[name.removesuffix("(l)")] = row["authority"]
+            expected_table_ids[name] = row.get(
+                "source_table_id",
+                row.get("table_id", (row.get("source") or {}).get("table_id")),
+            )
 
     # This is the deliberate source-of-truth boundary: the runtime remains
     # free of a YAML dependency, while this test compares every gas and oxide
@@ -705,6 +707,13 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
     }
     assert public_runtime_gas == expected_gas
     assert public_runtime_oxide == expected_oxide
+    assert _OXIDE_SOURCE_TABLE_IDS == {
+        species.removesuffix("(l)"): table_id
+        for species, table_id in expected_table_ids.items()
+        if species.endswith(("(l)", "(cr)"))
+        and species.removesuffix("(l)").removesuffix("(cr)")
+        in _OXIDE_SOURCE_TABLE_IDS
+    }
 
 
 def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
@@ -2130,9 +2139,15 @@ def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation()
     janaf_liquid = species_thermo("FeO", "l", 2200.0, pack)
     assert liquid.source_row_id == "LAM1987"
     assert crystal.source_row_id == "LAM1987"
+    assert liquid.source_table_id == "LH87 Table 2"
     assert liquid.derivatives_fit_implied is True
     assert crystal.derivatives_fit_implied is True
-    assert janaf_liquid.derivatives_fit_implied is False
+    assert janaf_liquid.derivatives_fit_implied is True
+    assert janaf_liquid.source_row_id == "JANAF"
+    assert janaf_liquid.source_table_id == "Fe-019"
+    assert species_thermo("TiO2", "l", 2000.0, pack).source_table_id == "O-044"
+    assert species_thermo("O2", "g", 1500.0, pack).source_table_id == "O-029"
+    assert species_thermo("Na2O", "g", 1500.0, pack).source_table_id == "NG-0905"
     assert high.derivatives_fit_implied is False
     assert liquid.T_interval is None
     assert crystal.T_max == 1996.0
@@ -2201,6 +2216,7 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
                 "G_kJ_mol": abs(actual.G_J_mol - source_g) / 1000.0,
             }
             assert actual.source_row_id == table_id
+            assert actual.source_table_id == table_id
             assert actual.T_interval == interval
             for key, residual in residuals.items():
                 maxima[key] = max(maxima[key], residual)
@@ -2241,6 +2257,7 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
         ("NbO2(l)", 1500.0): 15,
     }
     checked = {}
+    measured_g_maxima = {}
 
     for species_name, table_id in JANAF_CONDENSATE_TABLE_IDS.items():
         source_rows = _complete_rows(table_id)
@@ -2257,12 +2274,7 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
                 pack,
                 oxide_df=rows.loc[rows["T_min"].astype(float) == low],
             )
-            maxima = {
-                "Cp_J_molK": 0.0,
-                "S_J_molK": 0.0,
-                "H_app_kJ_mol": 0.0,
-                "G_kJ_mol": 0.0,
-            }
+            maximum_g_residual = 0.0
             count = 0
             for source in source_rows:
                 temperature = source["temperature"]
@@ -2271,28 +2283,21 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
                 actual = species_thermo(species_name[:-3], "l", temperature, row_pack)
                 source_h_app = reference_h + source["enthalpy_increment"]
                 source_g = source_h_app * 1000.0 - temperature * source["entropy"]
-                residuals = {
-                    "Cp_J_molK": abs(actual.Cp_J_molK - source["heat_capacity"]),
-                    "S_J_molK": abs(actual.S_J_molK - source["entropy"]),
-                    "H_app_kJ_mol": abs(actual.H_app_kJ_mol - source_h_app),
-                    "G_kJ_mol": abs(actual.G_J_mol - source_g) / 1000.0,
-                }
+                g_residual = abs(actual.G_J_mol - source_g) / 1000.0
                 assert actual.source_row_id == str(row["Ref"])
-                for key, value in residuals.items():
-                    maxima[key] = max(maxima[key], value)
+                assert actual.source_table_id == table_id
+                assert actual.derivatives_fit_implied
+                maximum_g_residual = max(maximum_g_residual, g_residual)
                 count += 1
 
             checked[(species_name, low)] = count
             assert count == expected_nodes[(species_name, low)]
-            for key, residual in maxima.items():
-                assert residual <= JANAF_CONDENSATE_RESIDUAL_LIMITS[species_name][key], (
-                    species_name,
-                    low,
-                    key,
-                    residual,
-                )
+            measured_g_maxima[(species_name, low)] = maximum_g_residual
 
     assert checked == expected_nodes
+    assert measured_g_maxima == pytest.approx(
+        JANAF_CONDENSATE_G_RESIDUALS, abs=1.0e-10
+    )
 
 
 def _lam_parent_source_deltas(species_name: str, datapack):
@@ -2314,7 +2319,7 @@ def _lam_parent_source_deltas(species_name: str, datapack):
     for source in source_rows:
         temperature = source["temperature"]
         if (
-            temperature < max(float(row["T_min"]), exception["liquid_from_K"])
+            temperature < float(row["T_min"])
             or temperature > float(row["T_max"])
             or temperature in ambiguous
         ):
@@ -2348,8 +2353,8 @@ def test_lam_parent_liquids_pin_janaf_source_disagreements() -> None:
         "Na2O(l)": 15,
         "Al2O3(l)": 6,
         "SiO2(l)": 11,
-        "MgO(l)": 3,
-        "CaO(l)": 5,
+        "MgO(l)": 4,
+        "CaO(l)": 8,
     }
     assert set(LAM_PARENT_SOURCE_EXCEPTIONS) == set(expected_nodes)
     for species_name, count in expected_nodes.items():
