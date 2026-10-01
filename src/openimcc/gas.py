@@ -483,6 +483,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "MnO": "external_datapack",
     "NiO": "external_datapack",
     "CoO": "external_datapack",
+    "P2O5": "external_datapack",
     "MgO": "lam1987_transcribed",
     "CaO": "lam1987_transcribed",
     "Al2O3": "lam1987_transcribed",
@@ -1596,9 +1597,10 @@ def evaluate_gas(
     p̃_i is dimensionless; the bar label on the return value is the p° = 1
     bar identification, not a leftover unit on K°.
     Sanity on this path: ΔG° → +∞ gives K° → 0 and p̃_gas → 0; a_oxide → 0
-    gives p̃_gas → 0. For n_O2 > 0, decreasing a finite positive fO2 raises
-    p̃_gas as fO2^(-n_O2/n_gas). fO2 = 0 is refused (non-positive), so
-    that limit is not a returned result.
+    gives p̃_gas → 0. For condensed-parent channels, n_O2 > 0 makes decreasing
+    a finite positive fO2 raise p̃_gas as fO2^(-n_O2/n_gas). Sulfur channels
+    consume O2, so p̃_gas scales as fO2^n_O2 and decreases as fO2 is lowered
+    when n_O2 > 0. fO2 = 0 is refused (non-positive), so that limit is not returned.
     """
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
@@ -1811,7 +1813,10 @@ def _formula_atoms(formula: str) -> dict[str, int]:
         raise ImccGasOxygenBalanceError(
             f"cannot parse retained formula {formula!r} for oxygen balance"
         )
-    return {element: int(count or 1) for element, count in parts}
+    atoms: dict[str, int] = {}
+    for element, count in parts:
+        atoms[element] = atoms.get(element, 0) + int(count or 1)
+    return atoms
 
 
 def oxygen_balance_species_metadata(

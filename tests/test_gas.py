@@ -1092,16 +1092,36 @@ def _janaf_formation_gibbs(table_id: str, temperature: float) -> float:
     return float(row["formation_gibbs_energy"]["value"]) * 1000.0
 
 
+def _janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
+    source = build_gas_tables._load_record(
+        Path(__file__).resolve().parents[1] / "data-src" / "janaf" / f"{table_id}.yaml"
+    )
+    rows = source["table"]["values"]
+    reference = next(
+        row for row in rows if float(row["temperature"]["value"]) == 298.15
+    )
+    row = next(
+        row for row in rows if float(row["temperature"]["value"]) == temperature
+    )
+    h298 = float(reference["formation_enthalpy"]["value"])
+    h_increment = float(row["enthalpy_increment"]["value"])
+    entropy = float(row["entropy"]["value"])
+    return (h298 + h_increment) * 1000.0 - temperature * entropy
+
+
 def test_sulfur_pressures_match_hand_calculated_janaf_cells(
     gas_pack: ImccGasDatapack,
 ) -> None:
     """Use JANAF G° cells and nS2*S2 + nO2*O2 = gas, without fitted rows."""
-    product_tables = {"S": "S-006", "S2": "S-012", "SO": "O-010", "SO2": "O-034"}
+    product_tables = {
+        "S": "S-006", "S2": "S-012", "SO": "O-010", "SO2": "O-034",
+        "SSO": "O-011",
+    }
     parent_activity = 1.0e-3
     species = tuple(product_tables)
     for temperature in (1800.0, 2200.0):
-        G_S2 = _janaf_formation_gibbs("S-012", temperature)
-        G_O2 = _janaf_formation_gibbs("O-029", temperature)
+        G_S2 = _janaf_apparent_gibbs("S-012", temperature)
+        G_O2 = _janaf_apparent_gibbs("O-029", temperature)
         for fO2 in (1.0e-10, 1.0e-6):
             result = evaluate_gas(
                 {"S2": parent_activity},
@@ -1114,16 +1134,41 @@ def test_sulfur_pressures_match_hand_calculated_janaf_cells(
             )
             for gas in species:
                 _parent, n_S2, n_O2 = _SF04_REACTIONS[gas]
-                dG = (
-                    _janaf_formation_gibbs(product_tables[gas], temperature)
+                G_product = _janaf_apparent_gibbs(
+                    product_tables[gas], temperature
+                )
+                dG_apparent = (
+                    G_product
                     - n_S2 * G_S2
                     - n_O2 * G_O2
                 )
-                Kp = math.exp(-dG / (R_J_MOL_K * temperature))
+                Kp = math.exp(-dG_apparent / (R_J_MOL_K * temperature))
                 hand_pressure = (
                     Kp * parent_activity**n_S2 * fO2**n_O2
                 )
                 assert result[gas] == pytest.approx(hand_pressure, rel=1.5e-3)
+                if gas == "SSO":
+                    dG_printed = (
+                        _janaf_formation_gibbs("O-011", temperature)
+                        - n_S2 * _janaf_formation_gibbs("S-012", temperature)
+                        - n_O2 * _janaf_formation_gibbs("O-029", temperature)
+                    )
+                    if temperature == 2200.0:
+                        assert dG_printed - dG_apparent == pytest.approx(
+                            -231308.9, abs=0.1
+                        )
+
+    gap_298 = (
+        _janaf_formation_gibbs("O-011", 298.15)
+        - _janaf_formation_gibbs("S-012", 298.15)
+        - 0.5 * _janaf_formation_gibbs("O-029", 298.15)
+        - (
+            _janaf_apparent_gibbs("O-011", 298.15)
+            - _janaf_apparent_gibbs("S-012", 298.15)
+            - 0.5 * _janaf_apparent_gibbs("O-029", 298.15)
+        )
+    )
+    assert gap_298 == pytest.approx(-9556.67, abs=0.1)
 
 
 def test_sulfur_channels_have_the_declared_fugacity_exponents(
@@ -1285,6 +1330,34 @@ def test_external_pack_activates_mnnico_channels_with_data_free_scaling(
         assert low_fugacity[gas] / high_fugacity[gas] == pytest.approx(100.0)
         # MO(l) = MO(g): n_O2 = 0, so its pressure is fO2-independent.
         assert low_fugacity[monoxide] == high_fugacity[monoxide]
+
+
+def test_external_p2o5_row_sets_phosphorus_provenance(
+    gas_pack: ImccGasDatapack, tmp_path: Path
+) -> None:
+    oxide_df = pd.read_csv(gas_pack.oxide_path)
+    p2o5_row = oxide_df.loc[oxide_df["species_name"] == "FeO(l)"].iloc[[0]]
+    oxide_path = tmp_path / "external-condensate.csv"
+    pd.concat(
+        [oxide_df, p2o5_row.assign(species_name="P2O5(l)")], ignore_index=True
+    ).to_csv(oxide_path, index=False)
+    external_pack = load_gas_datapack(
+        gas_path=gas_pack.gas_path, oxide_path=oxide_path
+    )
+
+    result = evaluate_gas(
+        {"P2O5": 1.0e-3},
+        2200.0,
+        1.0e-6,
+        external_pack,
+        parent_oxides=(*IMCC_PARENT_OXIDES, "P2O5"),
+        gas_species=_P_CHANNELS,
+    )
+    assert tuple(result) == _P_CHANNELS
+    assert all(
+        result.provenance_class[species] == "external_datapack"
+        for species in _P_CHANNELS
+    )
 
 
 def test_override_without_tio2_parent_keeps_the_sf04_default_set(
@@ -2066,6 +2139,26 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
             else (1.0 if name == "O2" else 0.5)
         )
         assert metadata[name].pO2_exponent == pytest.approx(expected, abs=1e-12)
+
+
+def test_oxygen_balance_molar_masses_sum_repeated_formula_tokens() -> None:
+    import openimcc.gas as gas_module
+
+    metadata = oxygen_balance_species_metadata(
+        {species: None for species in gas_module._SF04_REACTIONS}
+    )
+    changed = set()
+    for species, entry in metadata.items():
+        parts = gas_module._FORMULA_PART.findall(species)
+        prior_atoms = {element: int(count or 1) for element, count in parts}
+        prior_mass = sum(
+            gas_module._ATOMIC_MASS_G_MOL[element] * count
+            for element, count in prior_atoms.items()
+        )
+        if entry.molar_mass != prior_mass:
+            changed.add(species)
+    assert changed == {"SSO"}
+    assert metadata["SSO"].molar_mass == pytest.approx(80.119)
 
 
 def test_oxygen_balance_accepts_caller_supplied_s2_gas_parent(

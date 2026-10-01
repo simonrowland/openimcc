@@ -63,7 +63,11 @@ def _neutral_oxide_sources(
         if path.suffix == ".yaml":
             entry = _record(path.stem, source_dir)["table"]["index_entry"]
             formula = entry.get("formula_normalised", entry.get("formula"))
-            formula = {"O6P4": "P4O6", "O10P4": "P4O10"}.get(
+            formula = {
+                "O6P4": "P4O6",
+                "O10P4": "P4O10",
+                "O1S2": "SSO",
+            }.get(
                 formula, formula
             )
             state = entry.get("state")

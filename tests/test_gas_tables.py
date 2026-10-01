@@ -704,6 +704,7 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
         species: authority
         for species, authority in _OXIDE_PROVENANCE_AUTHORITY.items()
         if species not in _EXTERNAL_PACK_GAS_SPECIES
+        and authority != "external_datapack"
     }
     assert public_runtime_gas == expected_gas
     assert public_runtime_oxide == expected_oxide

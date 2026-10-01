@@ -439,9 +439,11 @@ def _validate_record_identity(
     expected_formula, separator, state_suffix = species_name.rpartition("(")
     expected_state = state_suffix.removesuffix(")") if separator else ""
     formula = index_entry.get("formula")
-    # JANAF prints the oxide members O6P4 and O10P4 in oxygen-first canonical
-    # order; preserve the established P4O6/P4O10 runtime names.
-    formula = {"O6P4": "P4O6", "O10P4": "P4O10"}.get(formula, formula)
+    # JANAF prints some oxygen-first canonical formulas; preserve established
+    # runtime names for the phosphorus oxides and sulfur oxide.
+    formula = {"O6P4": "P4O6", "O10P4": "P4O10", "O1S2": "SSO"}.get(
+        formula, formula
+    )
     if formula != expected_formula:
         raise ValueError(
             f"{table_id}: record formula {formula!r} does not match "

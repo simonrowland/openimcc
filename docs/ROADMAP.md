@@ -20,7 +20,8 @@ each p(E+) by the pressure of all neutral gas channels carrying E. Molecular
 ions (such as TiO+ and NaO+) and thermal electrons from walls or other sources
 are outside this estimate. C3 estimates pass for Si, Mg, Fe, Al, Ti, Cr, V and
 Nb and Ca, and fail for Na and K. Mn, Ni and Co are not computed because their
-parent liquid rows are available only from an external private pack.
+parent liquid rows are available only from an external private pack. P channels
+also require a source-rated P2O5(l) row from an external pack.
 
 | Element | Status | C1 | C2 | C3 | C4 | Validation | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -51,9 +52,10 @@ source-rated `P2O5(l)` standard state before callers can use `a(P2O5)`.
 The research pack `gas-janaf-parent-liquids-research` is opt-in by path; the
 SF04/Lamoreaux default coefficient contract keeps it out of default loads. Its
 branch-limited C4 check passes over each declared liquid range through 3000 K
-(Al from 2500 K, Si from 1800 K, Mg and Ca from 2200 K). The 1200–3000 K
-default C4 criterion requires continuous one-bar gas-table and parent-liquid
-coverage. Na2O(g) and K2O(g) now cover the gas domain with NASA Glenn interval 2,
+(Al from 2500 K, Si from 1800 K, Mg and Ca from 2200 K). Sulfur has C4=yes via
+its S2(g) parent. The 1200–3000 K default C4 criterion requires continuous
+one-bar gas-table and parent-liquid coverage for oxide-parent channels. Na2O(g)
+and K2O(g) now cover the gas domain with NASA Glenn interval 2,
 but the corrected LH84 Na2O(l) row starts at 1405 K, leaving Na without a parent
 liquid standard state from 1200–1404 K. Default extrapolation flags Na gas
 pressures there and strict evaluation refuses them. The melt kernel computes
