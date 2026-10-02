@@ -106,7 +106,8 @@ _T625_AGAINST_JANAF_PRINTED_GAS_COLUMNS = {
 _ION_GAS_SPECIES = {
     "Na+", "K+", "Ca+", "e-",
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
-    "Cr-", "V-", "Nb-", "Li+", "Rb+", "Pb+",
+    "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-",
+    "Li+", "Rb+", "Pb+",
 }
 
 
@@ -182,7 +183,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + len(_ION_GAS_SPECIES)
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 23
+    assert len(gas_pack.oxide_df) == 25
 
 
 def test_janaf_parent_liquid_research_pack_loads_by_path_and_is_in_domain(
@@ -2064,6 +2065,7 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_TEXT_SOURCES
     }
+    trace_gas |= {"Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)"}
     trace_parents = {"Li2O(l)", "Rb2O(l)", "PbO(l)"}
     return replace(
         pack,
@@ -2123,8 +2125,8 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         include_ions=True,
         allow_extrapolation=False,
     )
-    assert {"Li+", "Rb+", "Pb+"} <= set(trace_ions)
-    for species in ("Li+", "Rb+", "Pb+"):
+    assert {"Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-"} <= set(trace_ions)
+    for species in ("Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-"):
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == "janaf_fitted_ionisation"
 
@@ -2169,13 +2171,14 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
     gas_pack: ImccGasDatapack,
 ) -> None:
     """Compare serialized old rows to the task base, without hash pins."""
-    base = "e1470f3c53718eec0fd7a3d535b0079906432464"
+    base = "afcb5d80abb16d931174a5a587e4ffaee6cbcadc"
     root = Path(__file__).resolve().parents[1]
     trace_gas = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_TEXT_SOURCES
     }
+    trace_gas |= {"Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)"}
     trace_oxides = {"Li2O(l)", "Rb2O(l)", "PbO(l)"}
 
     def old_rows(payload: str, excluded: set[str]) -> tuple[str, list[str]]:
@@ -2894,7 +2897,7 @@ def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> N
         pack.oxide_df["Ref"].astype(str).str.endswith("-SC-CP")
     ]
     assert set(extension_rows.index) == {
-        "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "Li2O(l)"
+        "TiO2(l)", "Cr2O3(l)", "V2O3(l)"
     }
     for row_name, row in extension_rows.iterrows():
         species = row_name.removesuffix("(l)")
@@ -2913,8 +2916,8 @@ def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> N
         {"Li2O": 1.0}, 1200.0, 1.0e-10, pack,
         gas_species=("Li",), allow_extrapolation=True,
     )
-    assert "constant-Cp supercooled-liquid continuation" in (
-        low_li.domain_flags["Li"]
+    assert "constant-Cp supercooled-liquid continuation" not in (
+        low_li.domain_flags["Li"] or ""
     )
     low_v = evaluate_gas(
         {"V2O3": 1.0}, 1200.0, 1.0e-10, pack,
@@ -2944,7 +2947,6 @@ def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> N
         "TiO2(l)": ("TiO2", "Ti"),
         "Cr2O3(l)": ("Cr2O3", "Cr"),
         "V2O3(l)": ("V2O3", "V"),
-        "Li2O(l)": ("Li2O", "Li"),
     }
     for row_name, (oxide, channel) in parent_channels.items():
         high = pack.oxide_df.loc[row_name]

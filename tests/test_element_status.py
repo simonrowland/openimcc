@@ -624,7 +624,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "Na-006", "K-006", "D-020",
         "Na-007", "K-007", "O-003", "Al-007", "Fe-010",
         "Si-007", "Ti-008", "Al-076", "Na-009",
-        "O-031", "Al-078", "K-009",
+        "O-031", "Al-078", "K-009", "Li-007", "Li-012", "Rb-007", "Pb-007",
         "Cr-007", "V-007", "Nb-007",
         "Li-005", "Li-006", "Li-011", "Li-015", "Li-017", "Li-019",
         "O-007", "O-009", "Pb-005", "Pb-006", "Rb-005", "Rb-006",

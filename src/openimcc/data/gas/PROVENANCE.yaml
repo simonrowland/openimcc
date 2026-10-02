@@ -42,14 +42,23 @@ source_notes:
         no standalone Gurvich/IVTAN table cells were transcribed.
     material_disagreements:
       Li2O(l): >-
-        JANAF Li-015 has delta-f H(298.15 K) = -553.247 kJ/mol; NASA card
-        NG-1643 has -597.880 kJ/mol. The NASA-minus-JANAF difference is
-        -44.633 kJ/mol. The NIST-JANAF anchor and liquid cells are selected.
+        The NASA polynomial minus JANAF dfH298+(H-H298)-T*S gives liquid ΔG
+        differences (kJ/mol) of -4.098, -3.462, -2.171, and -1.242 at 1800,
+        2000, 2500, and 3000 K. NG-1643 begins at 1726 K, so its printed
+        formation enthalpy is the crystal anchor, not a liquid formation
+        enthalpy. Li2O Cp is 103.999 versus JANAF 100.416 J/(mol K), and ΔS
+        ranges from -3.37 to -1.54 J/(mol K). JANAF remains selected; these
+        liquid-property differences remain a certification item.
       PbO(l): >-
-        JANAF O-007 has delta-f H(298.15 K) = -202.249 kJ/mol; NASA card
-        NG-1801 has -218.600 kJ/mol. The NASA-minus-JANAF difference is
-        -16.351 kJ/mol. The NIST-JANAF anchor and cells through 2500 K are
-        selected; NASA H and S increments supply the tail above 2500 K.
+        The NASA polynomial minus JANAF dfH298+(H-H298)-T*S gives liquid ΔG
+        differences (kJ/mol) of -0.002, -0.016, -0.048, and -0.079 at 1800,
+        2000, 2500, and 3000 K. NG-1801 begins at 1160 K, so its printed
+        formation enthalpy is the crystal anchor. Extrapolated NASA liquid
+        H(298.15 K) is -202.139 kJ/mol versus JANAF -202.249; overlap ΔH is
+        about 0.11 kJ/mol and ΔS about 0.063 J/(mol K). JANAF remains selected.
+        O-007 ends at 2500 K; the NASA H/S tail is anchored there with zero
+        ΔH, ΔS, and ΔG. Against continuing JANAF Cp=65 J/(mol K), ΔG at
+        3000 K is 0.017 J/mol.
       Rb2O(l): >-
         No NIST-JANAF liquid or gas oxide table was found. NASA card NG-1841
         supplies the liquid function; its own liquid standard state is retained.
@@ -71,9 +80,13 @@ source_notes:
       Cr-: https://janaf.nist.gov/tables/Cr-007.txt
       V-: https://janaf.nist.gov/tables/V-007.txt
       Nb-: https://janaf.nist.gov/tables/Nb-007.txt
+      Li-: https://janaf.nist.gov/tables/Li-007.txt
+      LiO-: https://janaf.nist.gov/tables/Li-012.txt
+      Rb-: https://janaf.nist.gov/tables/Rb-007.txt
+      Pb-: https://janaf.nist.gov/tables/Pb-007.txt
     screened_table_note: >-
-      O-031, Al-078, K-009, Cr-007, V-007 and Nb-007 were retrieved as complete
-      tab-delimited NIST tables, including the 0-6000 K rows. Their fitted G
+      O-031, Al-078, K-009, Cr-007, V-007, Nb-007, Li-007, Li-012, Rb-007,
+      and Pb-007 provide the source cells for the fit and screening grid. Their fitted G
       rows reproduce JANAF reaction log Kf values; the published +6.197 kJ/mol
       adjustment in some ion-table notes applies only when converting to the
       convention that excludes the electron.
@@ -2020,7 +2033,7 @@ rows:
     species_name: RbO(g)
     table_id: NG-1329
     source_path: data-src/nasa-glenn/NG-1329.json
-    source_sha256: 8b4bf2ef44db5ca443da18bebbae50146142342c1e63b486c939b82a7c4858ac
+    source_sha256: fee8f869d414f8ee064bb8b8daaec3c82552c1b35fb2206ac8bd97fe50c1bd49
     authority: nasa_glenn_fitted
     method: fitted
     T_interval: 1
@@ -2035,12 +2048,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1329
       card_citation: Gurvich,1982 pt1 p429 pt2 p452.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 8787-8794
+      source_locator: thermo.inp lines 8788-8795
   - table: gas
     species_name: Rb2O(g)
     table_id: NG-1352
     source_path: data-src/nasa-glenn/NG-1352.json
-    source_sha256: cc137d23bccb55e003cb7a4dce4585a6419df7df76554e2294151e53611dec75
+    source_sha256: e49c12d7de0f49574163f40e542d5045949f21b23502d5a6ef6f1575661d86d7
     authority: nasa_glenn_fitted
     method: fitted
     T_interval: 1
@@ -2055,12 +2068,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1352
       card_citation: Gurvich,1982 pt1 p431 pt2 p455.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 8835-8842
+      source_locator: thermo.inp lines 8836-8843
   - table: gas
     species_name: PbO2(g)
     table_id: NG-1276
     source_path: data-src/nasa-glenn/NG-1276.json
-    source_sha256: 9df4a0ec8e313fa754684048eba0772d81c3caaf9098720c1a977e29109ee765
+    source_sha256: 387b7e2f8db6cf27d0f336f9c4e0621fd5cc27324bd924aca8abc492962de056
     authority: nasa_glenn_fitted
     method: fitted
     T_interval: 1
@@ -2075,7 +2088,7 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1276
       card_citation: Gurvich,1991 pt1 p416 pt2 p347.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 8642-8649
+      source_locator: thermo.inp lines 8643-8650
   - table: gas
     species_name: Li(g)
     table_id: Li-005
@@ -2192,7 +2205,7 @@ rows:
     species_name: RbO(g)
     table_id: NG-1329
     source_path: data-src/nasa-glenn/NG-1329.json
-    source_sha256: 8b4bf2ef44db5ca443da18bebbae50146142342c1e63b486c939b82a7c4858ac
+    source_sha256: fee8f869d414f8ee064bb8b8daaec3c82552c1b35fb2206ac8bd97fe50c1bd49
     authority: nasa_glenn_fitted
     method: fitted
     T_interval: 2
@@ -2208,12 +2221,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1329
       card_citation: Gurvich,1982 pt1 p429 pt2 p452.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 8787-8794
+      source_locator: thermo.inp lines 8788-8795
   - table: gas
     species_name: Rb2O(g)
     table_id: NG-1352
     source_path: data-src/nasa-glenn/NG-1352.json
-    source_sha256: cc137d23bccb55e003cb7a4dce4585a6419df7df76554e2294151e53611dec75
+    source_sha256: e49c12d7de0f49574163f40e542d5045949f21b23502d5a6ef6f1575661d86d7
     authority: nasa_glenn_fitted
     method: fitted
     T_interval: 2
@@ -2229,12 +2242,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1352
       card_citation: Gurvich,1982 pt1 p431 pt2 p455.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 8835-8842
+      source_locator: thermo.inp lines 8836-8843
   - table: gas
     species_name: PbO2(g)
     table_id: NG-1276
     source_path: data-src/nasa-glenn/NG-1276.json
-    source_sha256: 9df4a0ec8e313fa754684048eba0772d81c3caaf9098720c1a977e29109ee765
+    source_sha256: 387b7e2f8db6cf27d0f336f9c4e0621fd5cc27324bd924aca8abc492962de056
     authority: nasa_glenn_fitted
     method: fitted
     T_interval: 2
@@ -2250,7 +2263,7 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1276
       card_citation: Gurvich,1991 pt1 p416 pt2 p347.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 8642-8649
+      source_locator: thermo.inp lines 8643-8650
   - table: gas
     species_name: Li+(g)
     table_id: Li-006
@@ -2263,6 +2276,62 @@ rows:
     max_residual_log10_K: 3.35107635385521e-05
     source_url: https://janaf.nist.gov/tables/Li-006.html
     download_url: https://janaf.nist.gov/tables/Li-006.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Li-(g)
+    table_id: Li-007
+    source_path: data-src/janaf/Li-007.txt
+    source_sha256: cb9770e11348ccf8085b63fe6ee08bb141ebfdc1f5c16b147d47bca12b9c70f1
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 0.964081040525343
+    max_residual_log10_K: 3.35107635391368e-05
+    source_url: https://janaf.nist.gov/tables/Li-007.html
+    download_url: https://janaf.nist.gov/tables/Li-007.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: LiO-(g)
+    table_id: Li-012
+    source_path: data-src/janaf/Li-012.txt
+    source_sha256: 767d231625a191cb1103e6faf59ec6fe6976f76b9584f666c71c2d04d98748f2
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.25909801194211
+    max_residual_log10_K: 3.4614340658713e-05
+    source_url: https://janaf.nist.gov/tables/Li-012.html
+    download_url: https://janaf.nist.gov/tables/Li-012.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Rb-(g)
+    table_id: Rb-007
+    source_path: data-src/janaf/Rb-007.txt
+    source_sha256: 9f80efdcc06dd538677d348bab7e31f54c8b4bdfdc23ddac231a620e6a342564
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.51598807680421
+    max_residual_log10_K: 2.73053604526054e-05
+    source_url: https://janaf.nist.gov/tables/Rb-007.html
+    download_url: https://janaf.nist.gov/tables/Rb-007.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Pb-(g)
+    table_id: Pb-007
+    source_path: data-src/janaf/Pb-007.txt
+    source_sha256: c04322c369121fd88359f38abdcca05f9768e347888cc3f6f1ad0ab44fb0f9e1
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 1.12188280245755
+    max_residual_log10_K: 2.83225993377049e-05
+    source_url: https://janaf.nist.gov/tables/Pb-007.html
+    download_url: https://janaf.nist.gov/tables/Pb-007.txt
     retrieval_date: '2026-10-01'
     user_agent: neutral-source-vendor/1.0
   - table: gas
@@ -2300,52 +2369,51 @@ rows:
     source_sha256: bc3070e521aa0bcdcee02ff1ea6674039bb83032e47d3cf0ebec27a24bb3770f
     authority: janaf_fitted
     method: fitted
-    T_range_K: [1800, 3000]
-    max_residual_J_per_mol: 1.85801517171785
-    max_residual_log10_K: 4.20320788938602e-05
+    T_range_K: [1200, 1400]
+    source_fit_range_K: [700, 1400]
+    max_residual_J_per_mol: 7.23382854519878
+    max_residual_log10_K: 0.000356468933218253
     source_url: https://janaf.nist.gov/tables/Li-015.html
     download_url: https://janaf.nist.gov/tables/Li-015.txt
     retrieval_date: '2026-10-01'
     note: >-
-      JANAF Li-015 marks melting at 1726 K; the first complete tabulated liquid
-      node is 1800 K. This is the caller-supplied Li2O parent standard state.
+      JANAF Li-015 marks melting at 1843 K. Its complete liquid-branch cells
+      are fitted directly from 700 K through 3000 K (Cp = 100.416 J/(mol K))
+      on three intervals; the runtime rows begin at 1200 K. This is the
+      caller-supplied Li2O parent standard state.
   - table: condensate
     species_name: Li2O(l)
     table_id: Li-015
     source_path: data-src/janaf/Li-015.txt
     source_sha256: bc3070e521aa0bcdcee02ff1ea6674039bb83032e47d3cf0ebec27a24bb3770f
     authority: janaf_fitted
-    method: generated_constant_cp_extrapolation_fit
-    extrapolation: true
-    source_data: false
-    runtime_ref: Li-015-SC-CP
-    T_range_K: [1200, 1800]
-    T0_K: 1800
-    Cp_l_J_molK: 100.416
-    max_residual_J_per_mol: 0.337879748316482
-    max_residual_log10_K: 1.41372181361396e-05
-    uncertainty:
-      description: >-
-        Illustrative stress test only, not a statistical source uncertainty.
-        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
-        the maximum absolute change is at 1200 K.
-      delta_Cp_fraction: 0.1
-      delta_Cp_J_molK: 10.0416
-      max_abs_delta_G_J_per_mol: 1139.13788450527
-      max_abs_delta_log10_K: 0.0495844129377404
-      at_temperature_K: 1200
-      scenario_only: true
-    seam_to_existing_interval_delta_G_J_per_mol: 0.608
-    note: >-
-      Below its 1726 K melting point the parent is continued as a labelled
-      constant-Cp supercooled liquid from the 1800 K JANAF thermal cells.
-      H(T)=H(T0)+Cp(T-T0) and S(T)=S(T0)+Cp ln(T/T0); its use is reported in
-      gas domain_flags.
+    method: fitted
+    T_range_K: [1400, 2000]
+    source_fit_range_K: [1400, 2000]
+    max_residual_J_per_mol: 1.21851072960999
+    max_residual_log10_K: 3.53595703135852e-05
+    source_url: https://janaf.nist.gov/tables/Li-015.html
+    download_url: https://janaf.nist.gov/tables/Li-015.txt
+    retrieval_date: '2026-10-01'
+  - table: condensate
+    species_name: Li2O(l)
+    table_id: Li-015
+    source_path: data-src/janaf/Li-015.txt
+    source_sha256: bc3070e521aa0bcdcee02ff1ea6674039bb83032e47d3cf0ebec27a24bb3770f
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [2000, 3000]
+    source_fit_range_K: [2000, 3000]
+    max_residual_J_per_mol: 1.41428508516401
+    max_residual_log10_K: 2.54735275455169e-05
+    source_url: https://janaf.nist.gov/tables/Li-015.html
+    download_url: https://janaf.nist.gov/tables/Li-015.txt
+    retrieval_date: '2026-10-01'
   - table: condensate
     species_name: Rb2O(l)
     table_id: NG-1841
     source_path: data-src/nasa-glenn/NG-1841.json
-    source_sha256: d200f701e253be65835d921f93268b9b43c0b86a364063ab5bd2070cb545931d
+    source_sha256: 7ebcfa48a890c051c697aa2b0423e6dd4272953c4c638706fb75982cabe1956f
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K: [1200, 1500]
@@ -2359,7 +2427,7 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1841
       card_citation: Gurvich,1982 pt1 p431 pt2 p454.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 14322-14326
+      source_locator: thermo.inp lines 14323-14327
     note: >-
       The parent activity uses the NASA pure-liquid standard state at 1 atm.
       Fit uses the card's integrated liquid H(T) and S(T) directly; the card
@@ -2368,12 +2436,12 @@ rows:
     species_name: Rb2O(l)
     table_id: NG-1841
     source_path: data-src/nasa-glenn/NG-1841.json
-    source_sha256: d200f701e253be65835d921f93268b9b43c0b86a364063ab5bd2070cb545931d
+    source_sha256: 7ebcfa48a890c051c697aa2b0423e6dd4272953c4c638706fb75982cabe1956f
     authority: nasa_glenn_fitted
     method: fitted
-    T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 12.2413345139939
-    max_residual_log10_K: 0.000281826673063327
+    T_range_K: [1500, 2000]
+    max_residual_J_per_mol: 0.0783144951565191
+    max_residual_log10_K: 2.27258314431394e-06
     source:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
@@ -2382,7 +2450,30 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1841
       card_citation: Gurvich,1982 pt1 p431 pt2 p454.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 14322-14326
+      source_locator: thermo.inp lines 14323-14327
+    note: >-
+      The parent activity uses the NASA pure-liquid standard state at 1 atm.
+      Fit uses the card's integrated liquid H(T) and S(T) directly; the card
+      does not tabulate a 298 K liquid interval.
+  - table: condensate
+    species_name: Rb2O(l)
+    table_id: NG-1841
+    source_path: data-src/nasa-glenn/NG-1841.json
+    source_sha256: 7ebcfa48a890c051c697aa2b0423e6dd4272953c4c638706fb75982cabe1956f
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_range_K: [2000, 3000]
+    max_residual_J_per_mol: 1.13579566706903
+    max_residual_log10_K: 2.35280460649267e-05
+    source:
+      citation: >-
+        McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species,
+        NASA/TP-2002-211556; NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1841
+      card_citation: Gurvich,1982 pt1 p431 pt2 p454.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 14323-14327
     note: >-
       The parent activity uses the NASA pure-liquid standard state at 1 atm.
       Fit uses the card's integrated liquid H(T) and S(T) directly; the card
@@ -2402,8 +2493,8 @@ rows:
     retrieval_date: '2026-10-01'
     note: >-
       This Pb(II) parent interval uses NIST-JANAF O-007's complete liquid
-      thermal cells. NASA NG-1801 is not used for its formation anchor because
-      its delta-f H(298.15 K) differs by 16.351 kJ/mol.
+      thermal cells. NASA NG-1801 is not used as its formation reference; the
+      printed liquid-card enthalpy is the crystal anchor.
   - table: condensate
     species_name: PbO(l)
     table_id: O-007
@@ -2415,8 +2506,8 @@ rows:
     max_residual_J_per_mol: 3.0980719452491
     max_residual_log10_K: 7.12132456418226e-05
     tail_source_path: data-src/nasa-glenn/NG-1801.json
-    tail_source_sha256: efe019f129cbe0acb06565e62265aa8c1e08ea6e5bf18477c1231eae59512218
-    tail_source_locator: thermo.inp lines 14107-14111
+    tail_source_sha256: d1184f1ffff2f312f8465dd6519d71f8f9e6b7992c1da72e262736c9f4c22018
+    tail_source_locator: thermo.inp lines 14108-14112
     source_url: https://janaf.nist.gov/tables/O-007.html
     download_url: https://janaf.nist.gov/tables/O-007.txt
     retrieval_date: '2026-10-01'
@@ -2431,8 +2522,8 @@ rows:
     note: >-
       The JANAF O-007 298.15 K formation anchor is retained. NIST thermal
       cells are used through 2500 K; NASA H and S differences above 2500 K
-      are anchored at the 2500 K JANAF row. NASA NG-1801's own formation
-      enthalpy is lower by 16.351 kJ/mol and is not substituted.
+      are anchored at the 2500 K JANAF row. There ΔH=ΔS=ΔG=0; at 3000 K ΔG
+      is 0.017 J/mol versus continuing JANAF Cp=65 J/(mol K).
 certification_items:
   - authority: lh84_evaluated_with_nasa_cp
     species_name: Na2O(g)

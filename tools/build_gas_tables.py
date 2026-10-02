@@ -185,6 +185,10 @@ ION_GAS_TEXT_SOURCES = (
     ("Cr-(g)", "Cr-007", "Cr", 1, 0),
     ("V-(g)", "V-007", "V", 1, 0),
     ("Nb-(g)", "Nb-007", "Nb", 1, 0),
+    ("Li-(g)", "Li-007", "Li", 1, 0),
+    ("LiO-(g)", "Li-012", "Li", 1, 1),
+    ("Rb-(g)", "Rb-007", "Rb", 1, 0),
+    ("Pb-(g)", "Pb-007", "Pb", 1, 0),
 )
 # Positive monatomic ion rows are opt-in and are admitted by the same C3
 # source screen as the existing cations.
@@ -1431,13 +1435,14 @@ def _fit_janaf_condensate_with_nasa_tail(
     """Keep JANAF's anchor and cells, using the NASA card only above its tail.
 
     Premise: JANAF O-007 supplies complete PbO(l) thermal cells through
-    2500 K, while the published CEA liquid card continues past 3000 K. Its
-    Hf(298) differs from JANAF by 16.351 kJ/mol, so the card contributes only
-    temperature increments above the last shared node. Algebra: anchor the
-    CEA H(T)-H(T0) and S(T)-S(T0) differences at JANAF's T0 cells, then use
+    2500 K, while the published CEA liquid card continues past 3000 K.
+    Algebra: anchor the CEA H(T)-H(T0) and S(T)-S(T0) differences at JANAF's
+    T0 cells, then use
     G_app=Hf_JANAF(298)+Hinc-T*S. Unit check: the enthalpy difference is
     converted from J/mol to kJ/mol before adding to JANAF's increment; entropy
-    remains J/(mol K). NASA's condensed standard pressure is 1 atm while the
+    remains J/(mol K). At 2500 K the splice has zero ΔH, ΔS, and ΔG; by 3000 K
+    its ΔG is 0.017 J/mol relative to continuing JANAF Cp=65 J/(mol K). NASA's
+    condensed standard pressure is 1 atm while the
     JANAF anchor is 1 bar; the source-row activity convention is documented
     and no pressure correction is claimed without a sourced liquid molar
     volume. Sanity: Cp, Hinc, and S remain continuous at T0.
@@ -1887,23 +1892,34 @@ def build_condensate_rows(
         _fit_supercooled_liquid_row(source_dir, *source)
         for source in SUPERCOOLED_LIQUID_SOURCES
     )
-    rows.append(
-        _fit_janaf_text_condensate_row(
-            source_dir,
-            "Li2O(l)",
-            "Li-015",
-            "Li",
-            2,
-            1,
-            fit_t_min=1800.0,
-            fit_t_max=3000.0,
-            runtime_t_min=1800.0,
-            runtime_t_max=3000.0,
+    # JANAF's Li2O liquid cells begin at 700 K, before the 1843 K melting
+    # marker. Fit the printed liquid H/S/Cp nodes directly on each interval.
+    for fit_t_min, fit_t_max, runtime_t_min in (
+        (700.0, 1400.0, 1200.0),
+        (1400.0, 2000.0, 1400.0),
+        (2000.0, 3000.0, 2000.0),
+    ):
+        rows.append(
+            _fit_janaf_text_condensate_row(
+                source_dir,
+                "Li2O(l)",
+                "Li-015",
+                "Li",
+                2,
+                1,
+                fit_t_min=fit_t_min,
+                fit_t_max=fit_t_max,
+                runtime_t_min=runtime_t_min,
+                runtime_t_max=fit_t_max,
+            )
         )
-    )
-    # Keep the established 1500 K low/high condensate interval seam. Separate
-    # fits reduce curvature error in the exact NASA constant-Cp liquid cards.
-    for fit_t_min, fit_t_max in ((1200.0, 1500.0), (1500.0, 3000.0)):
+    # NASA's constant-Cp liquid card has ln(T) entropy curvature. The 2000 K
+    # breakpoint keeps all three Rb2O fits below the 10 J/mol source-residual gate.
+    for fit_t_min, fit_t_max in (
+        (1200.0, 1500.0),
+        (1500.0, 2000.0),
+        (2000.0, 3000.0),
+    ):
         rows.append(
             _fit_nasa_card_condensate_row(
                 nasa_source_dir,
@@ -1917,6 +1933,7 @@ def build_condensate_rows(
                 fit_t_max=fit_t_max,
             )
         )
+    for fit_t_min, fit_t_max in ((1200.0, 1500.0), (1500.0, 3000.0)):
         rows.append(
             _fit_janaf_condensate_with_nasa_tail(
                 source_dir,
@@ -1932,11 +1949,6 @@ def build_condensate_rows(
                 fit_t_max=fit_t_max,
             )
         )
-    rows.append(
-        _fit_supercooled_liquid_row(
-            source_dir, "Li2O(l)", "Li-015", "Li", 2, 1, 1800.0, 1800.0
-        )
-    )
     return rows
 
 

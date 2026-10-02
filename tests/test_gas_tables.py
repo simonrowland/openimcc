@@ -934,17 +934,21 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
             provenance_row["max_residual_J_per_mol"], abs=1.0e-6
         )
 
-    li_nodes = [
-        (temperature, source_janaf_g("Li-015", temperature))
-        for temperature in build_gas_tables._janaf_text_source_rows(
-            JANAF_DATA, "Li-015"
-        )
-        if 1800.0 <= temperature <= 3000.0
-    ]
-    assert_residuals("Li2O(l)", fitted_row("Li2O(l)", 1800.0), li_nodes)
+    li_source = build_gas_tables._janaf_text_source_rows(JANAF_DATA, "Li-015")
+    for t_min, t_max in ((1200.0, 1400.0), (1400.0, 2000.0), (2000.0, 3000.0)):
+        li_nodes = [
+            (temperature, source_janaf_g("Li-015", temperature))
+            for temperature in li_source
+            if max(700.0, t_min) <= temperature <= t_max
+        ]
+        assert_residuals("Li2O(l)", fitted_row("Li2O(l)", t_min), li_nodes)
 
     rb_record = _nasa_record("NG-1841")
-    for t_min, t_max in ((1200.0, 1500.0), (1500.0, 3000.0)):
+    for t_min, t_max in (
+        (1200.0, 1500.0),
+        (1500.0, 2000.0),
+        (2000.0, 3000.0),
+    ):
         card_nodes = []
         for temperature in np.arange(t_min, t_max + 50.0, 100.0):
             properties = build_gas_tables._nasa7_properties(
@@ -1000,6 +1004,17 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         )
         pb_high_nodes.append((float(temperature), source_g))
     assert_residuals("PbO(l)", fitted_row("PbO(l)", 1500.0), pb_high_nodes)
+
+
+def test_new_parent_condensate_rows_pass_the_10_j_mol_node_gate() -> None:
+    rows = build_gas_tables.build_condensate_rows(JANAF_DATA)
+    selected = [
+        row
+        for row in rows
+        if row["species_name"] in {"Li2O(l)", "Rb2O(l)", "PbO(l)"}
+    ]
+    assert selected
+    assert all(float(row["_max_residual_J_per_mol"]) < 10.0 for row in selected)
 
 
 def test_trace_parent_reactions_balance_every_element() -> None:
@@ -1864,6 +1879,10 @@ def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
         ("Cr", "Cr-", -1),
         ("V", "V-", -1),
         ("Nb", "Nb-", -1),
+        ("Li", "Li-", -1),
+        ("LiO", "LiO-", -1),
+        ("Rb", "Rb-", -1),
+        ("Pb", "Pb-", -1),
     ]
     source_ids = set(ion_table_ids.values())
     source_ids.update(
@@ -2116,7 +2135,7 @@ def test_research_condensate_rows_match_janaf_fits() -> None:
             io.StringIO((pack_dir / "condensate.csv").read_text(encoding="utf-8"))
         )
     }
-    assert len(generated) == 16
+    assert len(generated) == 19
     assert set(generated) <= set(packaged)
     for row_ref, fitted in generated.items():
         assert {
@@ -2490,7 +2509,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             pd.read_csv(GAS_DATA / "condensate.csv"),
             yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8")),
             build_gas_tables.SUPERCOOLED_LIQUID_SOURCES,
-            {"TiO2(l)", "Cr2O3(l)", "V2O3(l)", "Li2O(l)"},
+            {"TiO2(l)", "Cr2O3(l)", "V2O3(l)"},
         ),
         (
             research_generated,
@@ -2542,45 +2561,26 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
                 else:
                     assert str(packaged_row[column]) == fitted[column]
             entry = provenance_rows[species]
-            if species == "Li2O(l)":
-                table_config = ("Li2O(l)", "Li-015", "Li", 2, 1, 1800.0, 1800.0)
-                source_path = JANAF_DATA / f"{entry['table_id']}.txt"
-                source_rows = build_gas_tables._janaf_text_source_rows(
-                    JANAF_DATA, entry["table_id"]
-                )
-                anchor = source_rows[table_config[-2]]
-                anchor_row = anchor
-                liquid_nodes = [
-                    row
-                    for temperature, row in source_rows.items()
-                    if table_config[-2] <= temperature <= 3000.0
-                ]
-                expected_source_path = f"data-src/janaf/{entry['table_id']}.txt"
-                expected_source_sha256 = hashlib.sha256(
-                    source_path.read_bytes()
-                ).hexdigest()
-                cp = anchor["heat_capacity"]
-            else:
-                source = _record(entry["table_id"])
-                table_config = next(item for item in sources if item[0] == species)
-                anchor = next(
-                    row
-                    for row in source["table"]["values"]
-                    if float(row["temperature"]["value"]) == table_config[-2]
-                )
-                anchor_row = next(
-                    row
-                    for row in _complete_rows(entry["table_id"])
-                    if row["temperature"] == table_config[-2]
-                )
-                liquid_nodes = [
-                    row
-                    for row in _complete_rows(entry["table_id"])
-                    if table_config[-2] <= row["temperature"] <= 3000.0
-                ]
-                expected_source_path = f"data-src/janaf/{entry['table_id']}.yaml"
-                expected_source_sha256 = source["extraction"]["source_sha256"]
-                cp = float(anchor["heat_capacity"]["value"])
+            source = _record(entry["table_id"])
+            table_config = next(item for item in sources if item[0] == species)
+            anchor = next(
+                row
+                for row in source["table"]["values"]
+                if float(row["temperature"]["value"]) == table_config[-2]
+            )
+            anchor_row = next(
+                row
+                for row in _complete_rows(entry["table_id"])
+                if row["temperature"] == table_config[-2]
+            )
+            liquid_nodes = [
+                row
+                for row in _complete_rows(entry["table_id"])
+                if table_config[-2] <= row["temperature"] <= 3000.0
+            ]
+            expected_source_path = f"data-src/janaf/{entry['table_id']}.yaml"
+            expected_source_sha256 = source["extraction"]["source_sha256"]
+            cp = float(anchor["heat_capacity"]["value"])
             assert entry["source_path"] == expected_source_path
             assert entry["source_sha256"] == expected_source_sha256
             assert entry["method"] == "generated_constant_cp_extrapolation_fit"

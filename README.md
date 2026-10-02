@@ -100,8 +100,25 @@ use NIST-JANAF rows; Rb2O(l) uses a NASA Glenn CEA coefficient card, whose
 published pure-liquid reference is 1 atm. PbO(l) is the Pb(II) parent because
 it has a source-rated liquid row; PbO2 remains a gas channel because no
 evaluated PbO2(l) parent row was found. NASA CEA gas cards use the same 1 bar
-standard pressure as JANAF. The source ledger records the Li2O and PbO
-JANAF-vs-NASA formation-enthalpy differences and the PbO tail anchor.
+standard pressure as JANAF. The printed NASA liquid-card formation enthalpies
+are crystal anchors because NG-1643 and NG-1801 start at 1726 K and 1160 K.
+The source comparison therefore uses liquid Gibbs energy, computed as NASA
+polynomial minus JANAF `dfH298 + (H-H298) - T·S`:
+
+| T (K) | Li2O ΔG (kJ/mol) | PbO ΔG (kJ/mol) |
+|---:|---:|---:|
+| 1800 | −4.098 | −0.002 |
+| 2000 | −3.462 | −0.016 |
+| 2500 | −2.171 | −0.048 |
+| 3000 | −1.242 | −0.079 |
+
+Li2O also differs in liquid Cp (103.999 versus 100.416 J/(mol·K)) and entropy
+(ΔS −3.37 to −1.54 J/(mol·K)); JANAF remains selected. PbO extrapolated NASA
+liquid H(298.15 K) is −202.139 kJ/mol versus JANAF −202.249 kJ/mol, while ΔH
+over the overlap is about 0.11 kJ/mol and ΔS about 0.063 J/(mol·K). JANAF
+remains selected. O-007 ends at 2500 K, so the required PbO tail anchors
+ΔH = ΔS = ΔG = 0 there; against continuing JANAF Cp = 65 J/(mol·K), its
+ΔG at 3000 K is 0.017 J/mol.
 
 Published composition-specific activity-coefficient work is relevant context:
 [Borisov (2009)](https://doi.org/10.1134/S0869591109060058) reports alkali
@@ -118,8 +135,9 @@ condensate rows retain their source-attributed Lamoreaux/Hildenbrand, JANAF,
 and NASA coefficients. TiO2(l), Cr2O3(l), V2O3(l), NbO2(l), Na2O(l),
 Li2O(l), and PbO(l) are fitted from JANAF liquid tables by the same generator;
 Rb2O(l) uses its NASA CEA liquid card. The default table adds explicitly
-labelled constant-Cp continuations for TiO2(l), Cr2O3(l), V2O3(l), and Li2O(l),
-down to 1200 K. The JANAF-fitted major-oxide
+labelled constant-Cp continuations for TiO2(l), Cr2O3(l), and V2O3(l),
+down to 1200 K. Li2O(l) uses JANAF's complete liquid-branch cells from
+700–3000 K directly; its runtime fit intervals begin at 1200 K. The JANAF-fitted major-oxide
 parents SiO2(l), Al2O3(l), MgO(l), and CaO(l) remain in the opt-in
 `gas-janaf-parent-liquids-research` pack; that pack has matching generated
 continuation intervals down to 1200 K. These rows are generated
