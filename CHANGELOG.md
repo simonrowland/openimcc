@@ -9,8 +9,8 @@
   that pack. Retired `gas-janaf-parent-liquids-research` because it would
   duplicate the new default. The melt activities and FC87/SF04 complex log K
   coefficients are unchanged; the gas reaction code computes K from the
-  active parent Gibbs row. No parent-basis-dependent fit or oxygen-balance
-  constant was found.
+  active parent Gibbs row. The unchanged melt constants have not been jointly
+  assessed against this particular JANAF parent dataset.
 - Measured default SF04 comparison values and per-metal vapor-pressure shifts
   are recorded below under “Changes that can break callers.” They are report
   values and do not tighten the existing test gates.

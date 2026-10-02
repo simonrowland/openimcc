@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import dataclasses
+import hashlib
+import json
 import math
 import os
 import shutil
 import subprocess
 import sys
+from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
 
@@ -2594,6 +2598,306 @@ def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:
         oxygen_balance_from_pressure_model(
             pressure_model, metadata, bracket=(-30.0, -20.0)
         )
+
+
+# Numeric-output SHA256 pins for the JANAF Na-013 and Al2O3(l) rows: pO2,
+# partial pressures, and diagnostics. The full result is pinned separately
+# below, including every ImccGasResult dataclass field.
+_OXYGEN_BALANCE_SF04_NUMERIC_HEX_SHA256 = (
+    "490788de29fddf8e1b567b2ae802743cb70d352107c6094cac6e19e1dac62150",
+    "5a11127d8a5707e294e007b97440b15d53eb04cbed16d46aa3800e2bb39a3a91",
+    "a01c562e13e903c6d23ef33caef71a911375969c75e3ba0885ae4de21f00e2a1",
+    "35dd36c3359c5bc3e7b319be23a225cc05ca9c783e8500eafd65d3abb2793a6b",
+    "b609e28617362d126480d0fcaf68c37f6e12086d8305f2e7d8d281b59c36c32d",
+    "6f6188435c673d9b566d56b69a4228e9a7ebc0df1fd79713b9699485c15c274f",
+    "404a6d5d26660f1c6310385aa681af5b9f9b6dd82d0154e37bc523d826804984",
+    "e958063bc882993cdaee7f6608e2d6819809b604bed02d38761f8e0f0bbaba95",
+    "12a36b6ba8534904753f6f4c559c846c74ad80689a9aa202cecc1c94277a2f85",
+    "58139d3f6b280f546b4c39dc64e80bc0352e024e62d8e7335dc593bf5e5a5112",
+    "90527c5001119a9f5ed3ac4d39b8561897dbe515ef83367625f7ac07568dc747",
+    "edeeeb192068a2e39c2330f0587b0c5498c7ea9a593432b6a1fbb853a5321c49",
+    "b9b6298e6c8533a62fadf1f7c58002a928bbac981169a8705a69000635758951",
+    "35c2fea82db7db4879ae89af82cb95d30f56ce3d03cbc21bfd6390ebd445feea",
+    "b3bab3e99d78e2352f6e224d6628064fe447ae9177be682a045c830ad1c74645",
+    "ea9b76bb38ce7a7332ccc471014e0f94474b19a0b98529733e5b67eb19515053",
+    "5a57d4fee949aa23a5d7c888b776c01c0738005ec26cdefc4e54059da948e637",
+    "2690ba526d2a08c745449ec8acb459352a6922ddd60918857f285db304f0ea95",
+    "f494bec2b07925b041cf2cfe7140a91d8f323b482b18ae8c72a8493d017e35cc",
+    "59a88cd3b33a57f85688b82d56aa2497830e5d86e0cd228aa481545a9da4dc5d",
+    "c9c3ba7bd39a7d00ce962b8daa26361ccf4b2969ba82621f2711fd8d04b0f4b1",
+    "13b7a6ddeeef7c846c7e8b862a19ca60e6d10b0e031be6b8b18e4fe07a3f3b5f",
+    "434db6d7deea6653c40d7108608d948d20db6d01ce462ed41b33f950929a3b00",
+    "3ce2ec58ad58b9666b710b309eb4b3a389215429c40d09bc5f068c2bf7bc9c58",
+    "040d1e1f37526699020a9ebb3de0bbd1a5c21a7d99f2ec74d233263754898235",
+    "2eccff8dbc12e9c62dd5537915e4a6bf50ca18eb254bf1776ce8a08685176e3d",
+    "8d2abec33f0d7ece586fee5eb0b242be42f97f9eaa8a39c8a7bed3cc2cbb374a",
+    "731ba63475a53f0896bcb489b584dbd4ab25f814c6813733d976ffc1421261d4",
+    "5c262d714cdf0e4f721ca4add1bacbf46e87d4364a1baf7f5fd0e09474fbf2bc",
+    "c39538e917a754b70b55ed0d4a70b1ac91445ed9c97e7762dbfbf3229d969e44",
+    "7590b4367ff2b0191f8e14bb4f39531fefdacd7f8d4821675318416b06f937c9",
+    "62d83d6634e6941e7ef5c116df9783120daf24bae208ac270a41d0356344577f",
+    "f74c9779b622b779744d251752ca88440f4e156e7d677ea3f1e52a6e7d41e07f",
+    "824ec5c65585f78dc85e0518f113ffb867336b9d2d2ffdb66ca209ad5e30e880",
+    "79abe2aae4508e3fb8d49dc3d2ab74655e6d899b1e00b42bad961fd1829f3396",
+    "fe0ad875f4b5ab7a95ecd243f736983dff4e973946ffbdf9c0b81fc435b67185",
+    "ae56276ffb9a6d8bf4e88f82893320697465e247f6f55c47221c7719871e1014",
+    "f1e99183e9753e0e57531c103f0792ed46361f000f4962fdaaf068cdedf36916",
+    "5b1d81bbe6f054161f9246752dc399f81fed51e345844a8fe35cf8cd64d17f75",
+    "fdb339a56ad2111878b0caf8eef49294d9f37e9f63aa0f7d7bd8605c612ca9a9",
+    "654b7d5454a19e3d39c8752e6308d72e143a3d0dca71960f1aefa15f5d0edd49",
+    "9c301cf457eec1bdf7a299f20f6b85355a955eaa94055960eab3ff6d234b6312",
+    "4ff0203d7f1c9fef5c04d9db5e330779844d6aca14201ad6e2facb8eaba47974",
+    "2a82ca18745b6be1d9de93effb3631b965b1b8d81794ce35597eaac0ce1e57a9",
+    "609726c45270c673e18425f2c0659a001a371a353c85561d3dac085baa942ac8",
+    "44c3beeef8c6e5c50251dc658b89c7cd3df8d9621ab462eadf5fafd568962005",
+    "be9d57e3de23e3dd4640b26c258f4dda67b70170419e0b5cf76b0431f728bed5",
+    "7673f66041abd726a3f82323bc1863416d13abf859c158707c6bf289e5c883a9",
+    "7c98b26a8681c30546de6cb2aba87dc4f7e7c205322d42bc48b56d48c605e7e4",
+    "26d198becc1cb87badbf17605e96d228da16f6a1d3cd67187b8b8c8816c10984",
+)
+
+# Full dataclass-aware result pins for the JANAF parent-liquid rows. The
+# numeric projection above pins the same pressures and oxygen-balance outputs.
+_OXYGEN_BALANCE_SF04_RESULT_HEX_SHA256 = (
+    "f3e528a702d090538669d7ae1586a2990073ce9493e71aa3ee19029815738217",
+    "9d8dea4f8fe25e7cee544df45a85ae737090c7e481c588dca9ebdfc9eb965917",
+    "2c15e8eb142bb0687f2f1dd71cda3060728fc606f179b6a0cdad4e757d112278",
+    "8ca5ffedb38c56eb796074e7885d298de964c4612af13d851347caf6c98396ba",
+    "4327620f3c6e53911db25a8067eee0bd566b81b2286d76f1d59380f65853dc4c",
+    "f68f64c979d24b892aa2de9f2be5f7c18662667d8cdd04aa079db25d2e2155b0",
+    "91968b2186a903e7cc7c8c1971bb62533181035b301b667531e6a4c8cf4107c8",
+    "1a2cd92c96954fb375d9601d02a898aa76b2c38a6648cdde923c4eff3d770152",
+    "888bdaaac97bef24ed1931a5722a2786f8ea82cef9f98df51893395ab8f2e414",
+    "05f05ffc2288acc8176635615089536b01986476004c7a699f1a18eb6f870fda",
+    "a9b2ac930ad83c64f0153e66a55d4961c445267bae6fea61dc2ca43e870657c5",
+    "8a6a5e82384558c743f5eb78c01e4045a2b3ca157056d75065792aea2ee7cbef",
+    "62bad3f12b9b0c9ebe80b7afd79f2ebfcb1fa126c33eec2fe80ea09e27260688",
+    "208d9ee9afe6607085d1caa7f8db1665a861f96e7c0a90287a5b5ec86c7de853",
+    "5c5c923671ae4e9ae896b8632026e159fc9605f207154e4ef04f05b3efda4920",
+    "f6d2507d1328f91a8e812460e3bd666bbd8bef18c812e0808c5701c871ed2d02",
+    "f1b7495f42361633d99975a6293fabc34c409162a90b52bc7955c0a9e59b0223",
+    "9bb2d05218bf7198c653633674e9b13c13d071344f9e39189cb0d85b18089ee2",
+    "4b2e224d2b61c887ebbdfba2ba86ca5f49605078cef7b3d50bbb9c6a61bc811b",
+    "e569fcd1484e7bf23d192f2d8de122711831e290bf8c7e775502bddec9cddcbd",
+    "a95b925db2ce353bd674dc885f238d2ce0502d4afe7648403687fcdc67a8d814",
+    "3baa5ce8d276f5f4083f196415a3d1b988507b428e7812391b88b829855113e9",
+    "12c5b9411a62179db59391b69ea857da41dd93935df7fe838c2c77c04691cfdc",
+    "765464119519e59be6649706fdb11dbba75eb79350f0f477638d0364788921f7",
+    "1b6b90f2fd6db50a9f43ace7c54159e26fe3eaa0bdaefcb94d96169805063d31",
+    "793b3d7bbd367f1772c8f0ada0d23faf19fdfd4885beeea1699e212dba6bc10b",
+    "ec02f606efb851b2bbe3f687a3418d6de2bc67aa988b7c27e5ce77a61ad385cd",
+    "0b6226afdb07726bd18c59a7a0d13eaf6f2a85f4f847ff979212f268dae76962",
+    "c6abd56d2660ada8ac11f05481977165ca3a4134fa71730f573b4138aa4ea0d8",
+    "346afbd887802352b09861a62e02e1b80184ded07e7c96b0e938df6b18458e11",
+    "4696c1a869b30a74f5a290c31e43145a6ff349fa921266560b34f593a0c39b60",
+    "16b3a5f888d665baeb4dc223d6ecc970e9491f40e779977b6796b2b94f108a95",
+    "68f00bc13521717e0d4b7a8855593a7042fda21b634339e1f92b0b7f356ea294",
+    "d1a6bc49befa96aecffce31dd458a27b71706ccc0b8961bc410740eb9c498ab8",
+    "32fb365c5aad8946cc31b9e940473056b3eb142c9e06e865160dc7dde0e8f73d",
+    "6d23bab7810fef7a6736f1f92893023c2e674508de23a2105d3dc5f6f61c0c4b",
+    "8436af7f648df1918a30e3ad15eb6097008e2986e00bf09d499b2693ba2aeed0",
+    "32c9ab241d3ba052aed57c8e3fa8b5bfb9ae8a593d3b86baed853b6957eb898e",
+    "0182b132280bcb563e2e1aec65af5c53557e2971f0063fb49e7d24618fb2af87",
+    "2fee4df820262dd304ae8b3f7f746d14b8f1e4326bd2a558514818c6e170e854",
+    "cfceea0248cd40c69800dc30224507a5ced4009cbc63b2d8807b8220b457dcb6",
+    "39be1577cab0bf36a79aaf6a422646e3549cc81425af3dbd6ebeb5a9b902d195",
+    "893d4d5d91fb4469ab1a23ab8d2745555cb707dc765ce1951d07f980e04fe010",
+    "42820b60d55e6e3b3dd52e810a6b41774ce37408f1fbb8dcbf4a144326f6e134",
+    "7cf90a541077d82369a82fe15d48a7721079d5d78f4ff089891b4d69b84d208e",
+    "9ad52deaa8847584a2448d41190b754d823eb68fe7d3939ec9af25dc89cf5650",
+    "a2e4593ede269e34cf19710ce22a0a7495f0ff99e67392092e875c0b5b557e05",
+    "738e5917f3bb290ea1bffa798e31d1e1ebdd13207728e76eef126c757b07b682",
+    "78cfa8c4671e908ac23138dcba3408bdf1dc28dfa9857a19eb7558ac4a18cf08",
+    "6a750c7bf0b55f529231622b8c3e3238024dc41b7e93c978cdeefc326080dcf9",
+)
+_OXYGEN_BALANCE_DEFAULT_NUMERIC_HEX_SHA256 = (
+    "42941785a4da4e5442a99db67c73df87ff8fa09f012dd5d70e72af4b319390f7",
+    "3434b256193d79412d7fb0746048809ffdda8ce44c631cadeaef12d45cc37b99",
+    "515849221398a232c343fd1d84f8abbe507fa5cfa7d6bbec247a2e4c4a251344",
+    "aff2b48bae98316e3232a8818f4a49f49bbef60ef822cd8696251b6daf079e54",
+    "c535cbb8f21a4d56f67ff2f76e6925724cae64c30d5cfe9b852ffbd23c937d1c",
+    "5c02f3521ab8e17198bec0908d15de231c53c166fb906a61f0488d62f3f0706c",
+    "05fe2a2be4861fabc7b950577693b39e8eed88e9afa76cdba21e51f297133f97",
+    "95674c02077b7b5fa219c08a61781a973d87befd1ae5777b1942b79959d1ea20",
+    "bb6013a03033842d804fbf5d9267921c29c0e8df5c214af6253b33d955767078",
+    "633ab7bfe322d832e49c405631325a2942b47f599ea92a5fa683c4fe7622ca47",
+    "fedf5b4fc1f47c14612e7cdaafed185703289b69c16f44b17025dfe7f5a0c04c",
+    "e62d8ffde71b09fd949f6fa987c996bd97fcfb0a976099d5e823ce0a03ad3528",
+    "8fe1c837977c78e7157901c388006b24d46699ea431d83b7daef29a7735f5650",
+    "0c98fa1ef539611b40a5b6f245a4d613f330ccc46d841a251f75a6ad647b63af",
+    "421ac4ebb016515c32de5035f24a86511b1aa7de97d75f371a928db3b5b0131f",
+    "3b797ccbe61046c37ddf1603974a76862bb9428bd10a564538ad69eacef38bfb",
+    "90f92e5ef0e91b6236879b2b392928783f4d93c35599843c59e1e56ceda4d23d",
+    "f3d1d64b8582e7fd5e919b4c78b75e73388aa3b09d8351ecb1db6ef36478c17f",
+    "2303e0437c65a9b4f375970a688e1d5a536f3ac206a36b3f09cfb0b229f2e6b2",
+    "c2da386cf19f35f8ce44462317b35b8c80ace3e285ec0d270d3d2a9ed0230111",
+    "fef8226a5134941cd609f99bb1418ed0f88fb8258fe7d82cacd717667acb4743",
+    "597f881115e90e5cef18b1032f1f06bfadbe80e3f9b114eedc42d1216bef5de1",
+    "972caff81bddf2579e2d721f1f5868e45484867bacef4cf5e4f7038df0a78fd6",
+    "3ab21645431643580f7b236bd05b3c7822e1d357bb559ee40ecedaf054097787",
+    "637a363298ab0f2d0acf0775baa7fe5d90d0458671500a38888285de33879dd1",
+    "2c00ad00120797146b0da82045255890071ccc2b9a199e9734e20f76b513c628",
+    "73bd6ac507261399b70a907740071674fe38ecf41817edc0fa0dbd6ac944b6f1",
+    "067968dd49b8a8cd6c09e7aecd5515d52cf161191b14bc7a7dc9a4b92db0e6d1",
+    "3e94bbfee3fe39dbb20ea81cfa5650247554577593fc97917c5e2fe7c909bbca",
+    "ee13d65a11d6962029d05460fe7c294b9599a6d5d8fc5d9914ed975ff6a20e83",
+    "5c85aa187103c71f6fb42db925e01faa97f8db87832d73800bda609f0b5733ef",
+    "4b58e711db9a0311701e37b09273ebe51cf876c0f1b4d18c0602715097cce6af",
+    "b3ab07d2de9c109905e665a23c1276631d64768261410714b166645d3bd4dfc7",
+    "17dd9e4a108a5b5acbcdf36e96c4c321251a42ce23404e6e56594b1db983ce18",
+    "72e0f81e5881c79d19ec4a29046e6395a10e565d0b9f3191b6328fde6e2976d0",
+    "ae08d6c709aaf67f25a7d4c410ed82f3a24cfeddcafdfc5e7c8646fb82eba469",
+    "a30bea238a69b78bedd642fd357b65022b7ef0f65eb79f8ac22c76e0e6fd5e4b",
+    "7474067e331de9cc651f3b694a734cab12779cdb42e8f7d36f954d68a526aab4",
+    "c4d772ececfeecca0e5294b1ff8ee237ac9a56d200b40ac7f0602203142108e0",
+    "5194314431fdfcacb6711c0c67497ac0523f5ec9a05621bdcc917d1e5a63da09",
+    "f713f41e9d45deef4fe99bc55d24a097c971a60296161cf079ba1c49d2cde3e8",
+    "8f3651c4171549f86bd6731e059680385dc996cf34780591203b79782d5d7dbb",
+    "f17df4d29c210d47fb4b823fa94dde248245b916f0724b838d7b370e58765a51",
+    "74dcfe13a2745bec56cfe7443d902af2b059e32fe64ce55fad75abf5eb25e543",
+    "9841122c5f6616341594f4caa520ca96640098a2c49e485c97437ff2264165bc",
+    "f34d62fdf8d57ee19389a87256939535735339a0da3bbcfeea157f362e50b2b0",
+    "a4e5d221de2419f13f43c19bcac2b787afe78d61dd5c568644366fb398fe331a",
+    "91e96fe864deefcd558f9859430548b4ce10f9d54f81f0b46549600ae241e53c",
+    "155280fdf1f1085b0a0e9308e55301e6aae80eff267a45553b8a9766d2de0ca7",
+    "700f1d791a78d2abad8e10bcfcf38f476b756ff827b7382558ec9c75e743f508",
+)
+
+_OXYGEN_BALANCE_DEFAULT_RESULT_HEX_SHA256 = (
+    "097d704f1784250db8b439d840007d5c1c85c3a182461a9a3d83638c4d00c5d2",
+    "72cff1fc145506ddda9f22139801e54e5eb7c0ff640b41eccd2748a051f6b6ea",
+    "c102cc93ee6d0dca322fc314d81bbd680ef79d4f2697087908b44bf4ec044abd",
+    "d66cfe37a270ea57d7de7da49766524c2817a9f1efcd092e2c31781e4f583466",
+    "66dd80679b46da516a7d80f194167f4d4b197f9573213e0b86dacaa696642d73",
+    "357d7359fd7216fec7563b10b6b8f19f78c56b3a0462fc6ac2783cac5690149f",
+    "2bca7b0473c4c7f7020b05b00a78e15e9f7f8f901715973dce2ba5ca7cf04443",
+    "460cfc7f89aea6c74b778ea05b71d8ed7e70b487d302517553518006c541930f",
+    "4582733d9c0545555f9e13f18f0299b4790c27e9eb91f5713c11ed7a9651f578",
+    "3db3e1ab2db973514cc835b228045e0f4ec6291fa1d9257d96c4a466c2a3f0b2",
+    "7fb112fe9b416b732f158eb504118c5f39b75b273f9776b559e66b9a27f469a1",
+    "0c4caf39317d9faca636ca7528ebb092e08b07413d075ec665e59294f57f1fbc",
+    "de4087a914aecf12522a2a5c59d409ab724848efeab1be3e16cab48be9a75342",
+    "f789dcb7ecc6a6ffdac3daeafdbb58ea8eea3e31322ff8c163ce881b60677a18",
+    "06f180908f597f66c96240384f0254112d83f0770676202b864e1df97abadb30",
+    "509a3d80d729ebd5d7f7705e10f4e87fc006949958fffaa55f85155a53e8c1a0",
+    "9be9c5459158eada912b08068209cbf994d17e157aaf7443827aad978b22b1eb",
+    "b1f64f62ff8ce91bf1a639cd54b8557049624f67e749c0a1afdec66a5768d34d",
+    "67ffc558540cf8314a2392fad6a173f910bfd4535523e22383a307c61b883f6d",
+    "87f66ba1fbfcc300fb4c4e3d1ebea8bcc3ec97b08402cc17e215a5f4d14f4da3",
+    "9e35a198ce9888fabf9b44e2ecdb4318726e5315264c2c3e3c3d6b5f211193f7",
+    "feec2590e52f92c4d954632cd44e93d3a475931a1385730f3531ec6cd4fbef1f",
+    "667593f573e812e19124f82e60dd69cb88770457040c8689397d9ed3179b9f42",
+    "3b452001375bd70f6532b76c3f6e0b8788930c4b9bef53c3452639caa6667853",
+    "723ccf90bceee82e1a47c71a432ebb4d8728fcd93a415d24e4d15b0e0f454341",
+    "4868169b2e08b4941740851e4f307eca9f9c06847b7f9ab35e6ebd8e4023621a",
+    "ec725cc8467163f49204647c752242c5d0cc292058e103097ab91d8b8c5f6a23",
+    "116f4783dd85b2c05ceb5a6895cf13cfc0f1d277f930796ace26a17dd40df730",
+    "e9968ddf22122da678c76e68ccc1aba634535c399d0ca818f6b9f6928acf305d",
+    "fc30379e5a8f8e17fbfd6c1f4338384870d8ce39c613fe806b74fec68e4dc645",
+    "8d2abc2f0c1f797948cf3fd32e181be3cbc123f10a5910da8aad502936a9c20a",
+    "10e453d22506ed34039e4c43c84073682784d13c71ba828db6d1206d16be0043",
+    "378a1e6fe81482f7aaf8f6dc39af8cf5c34565dc9d2d54e6b2f62b52dd025f21",
+    "16e729f6c2c81f403728c6b384f4a1c61c6ea0e93fd2503ea4c1393b2e8620ef",
+    "7a07fed3dc6c6250b26f00c17a6c11ccbec99677a682425c599ca15ca944b7a4",
+    "18d562189c35e7a0e3a68cca36190c06519d750ac21df1b9c45b9e1db7bf8670",
+    "f167f4a5451772275a0133f6c24020c2837e55970d622d25fa07b4a353ac999d",
+    "f918b840b49e9ce8f34d43ad2b314d5bddd2fe1c9a07b226b00d4c145c672a05",
+    "e11906d9debd38c0cfe1cab962b05d23d381acfdf3cb83d5268d0012e3ff7fb1",
+    "3fc838de7ba8e6d879224b1afa74c87fa24c4c597eed116e83720f5829d1f201",
+    "c17d545097024871f140b84fa25f488c0d938c35fccb5b26d2d70f8fbeb7b1cb",
+    "892f9d32f12624531ac0845b6d51d3d95ab9ed088cca7b61b71420aa4a112278",
+    "1e4040f10a179cc876085ffebf44422ea69b150aaa91cc0bce8697b8744db9e7",
+    "4b8d555f25ac64bc0851a1a1933b49d97339ddb1a2e0c9c5056f177c51bb2c93",
+    "258211042ceb99a73fc6b6c14638549f46de9b721792f74186b2169d55d957e0",
+    "789feafc3ce074d5468241beac4b7c5b6b59f4109f78f35b3514f40e8b504520",
+    "c0dbaef3df6f119e9661fce30dbc8338170d2d6e19a88baa6d2caf8c9d9995f1",
+    "85cb64d6fb0cf08ab0ccc9317102caea123d144d9c86d8e8129f532e724a66e5",
+    "e7221b2281edd2aad9025138e0bbe82bef6f35c89816b708f91e49fa9fd9718f",
+    "e0cbbe2a9df1a4384475ac4703737aa2eeb8cec1177f57c648fc8528ae1d1a9d",
+)
+
+
+def _oxygen_balance_hashes(
+    gas_pack: ImccGasDatapack,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    compositions = [
+        {"SiO2":.45,"MgO":.12,"FeO":.15,"CaO":.11,"Al2O3":.07,"Na2O":.03,"K2O":.01},
+        {"SiO2":.47,"MgO":.05,"FeO":.08,"CaO":.14,"Al2O3":.24,"Na2O":.015,"K2O":.005},
+        {"SiO2":.50,"MgO":.19,"FeO":.18,"CaO":.08,"Al2O3":.04,"Na2O":.005,"K2O":.005},
+        {"SiO2":.43,"MgO":.24,"FeO":.19,"CaO":.08,"Al2O3":.05,"Na2O":.005,"K2O":.005},
+        {"SiO2":.45,"MgO":.02,"FeO":.03,"CaO":.18,"Al2O3":.31,"Na2O":.009,"K2O":.001},
+        {"SiO2":.49,"MgO":.08,"FeO":.12,"CaO":.10,"Al2O3":.16,"Na2O":.035,"K2O":.015},
+        {"SiO2":.48,"MgO":.04,"FeO":.09,"CaO":.10,"Al2O3":.18,"Na2O":.07,"K2O":.04},
+        {"SiO2":.40,"MgO":.31,"FeO":.17,"CaO":.07,"Al2O3":.04,"Na2O":.006,"K2O":.004},
+        {"SiO2":.65,"MgO":.02,"FeO":.03,"CaO":.04,"Al2O3":.20,"Na2O":.05,"K2O":.01},
+        {"SiO2":.55,"MgO":.10,"FeO":.18,"CaO":.10,"Al2O3":.05,"Na2O":.01,"K2O":.01},
+    ]
+    cases = [(c, t) for c in compositions for t in (1500., 2000., 2400.)]
+    for a, b in (("SiO2","MgO"),("SiO2","FeO"),("SiO2","CaO"),("SiO2","Al2O3"),("SiO2","K2O")):
+        cases.extend(({a:.6-.05*i,b:.4+.05*i}, t) for i, t in enumerate((1500., 1900., 2200.)))
+    cases.extend(({"SiO2":.45+.02*i,"MgO":.15-.01*i,"CaO":.2,"Al2O3":.2}, t)
+                 for i, t in enumerate((1500., 2000., 2400., 1800., 2200.)))
+
+    def hex_values(value: object) -> object:
+        if isinstance(value, float):
+            return {"float.hex": value.hex()}
+        if dataclasses.is_dataclass(value):
+            return {field.name: hex_values(getattr(value, field.name)) for field in dataclasses.fields(value)}
+        if isinstance(value, Mapping):
+            return {str(k): hex_values(v) for k, v in value.items()}
+        if isinstance(value, (tuple, list)):
+            return [hex_values(v) for v in value]
+        if hasattr(value, "__dict__"):
+            return {k: hex_values(v) for k, v in vars(value).items()}
+        return value
+
+    actual = []
+    numeric_actual = []
+    refusals = []
+    for index, (activities, temperature) in enumerate(cases):
+        try:
+            p_o2, pressures, diagnostics = evaluate_gas_oxygen_balance(
+                activities, temperature, gas_pack, parent_oxides=tuple(activities)
+            )
+        except ImccGasOxygenBalanceError as exc:
+            refusals.append((index, temperature, str(exc)))
+            canonical = json.dumps({"refusal": str(exc)}, sort_keys=True)
+            digest = hashlib.sha256(canonical.encode()).hexdigest()
+            numeric_actual.append(digest)
+            actual.append(digest)
+            continue
+        numeric_canonical = json.dumps(
+            hex_values((p_o2, dict(pressures), diagnostics)),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        numeric_actual.append(hashlib.sha256(numeric_canonical.encode()).hexdigest())
+        canonical = json.dumps(
+            hex_values((p_o2, pressures, diagnostics)),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        actual.append(hashlib.sha256(canonical.encode()).hexdigest())
+    assert len(actual) == 50
+    assert refusals == []
+    return tuple(numeric_actual), tuple(actual)
+
+
+
+def test_oxygen_balance_sf04_pack_matches_hash_pins(
+    sf04_gas_pack: ImccGasDatapack,
+) -> None:
+    numeric_actual, result_actual = _oxygen_balance_hashes(sf04_gas_pack)
+    assert numeric_actual == _OXYGEN_BALANCE_SF04_NUMERIC_HEX_SHA256
+    assert result_actual == _OXYGEN_BALANCE_SF04_RESULT_HEX_SHA256
+
+
+def test_oxygen_balance_default_pack_matches_hash_pins(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    numeric_actual, result_actual = _oxygen_balance_hashes(gas_pack)
+    assert numeric_actual == _OXYGEN_BALANCE_DEFAULT_NUMERIC_HEX_SHA256
+    assert result_actual == _OXYGEN_BALANCE_DEFAULT_RESULT_HEX_SHA256
 
 
 def test_oxygen_balance_published_pack_matches_base_in_same_environment(

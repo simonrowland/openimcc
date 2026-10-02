@@ -145,6 +145,17 @@ affected gas channel's `domain_flags`. Row-level source hashes, methods,
 temperature ranges and fit residuals are in
 `src/openimcc/data/gas/PROVENANCE.yaml`.
 
+Melt activities use the published FC87/SF04 complex-formation constants
+relative to pure liquid oxide parents. The default gas conversion uses JANAF
+4th-edition parent Gibbs functions and labelled liquid continuations; the melt
+constants have not been re-derived or jointly assessed against this particular
+parent dataset. FC87 itself used JANAF parent thermochemistry (Appendix 1,
+p. 218), but historical estimates and later source revisions can leave a
+thermodynamic consistency limitation. This default is not an exact reproduction
+of published SF04 gas pressures. Use `sf04-published` to reproduce the prior
+packaged gas behavior. Continuation flags describe the parent rows and do not
+certify the historical melt constants below their demonstrated ranges.
+
 The old LAM1987 parent rows are available in the opt-in `sf04-published` pack
 for reproduction of the prior SF04 comparison. Load its `condensate.csv` with
 the shared default `gas-shomate.csv`. The former
@@ -446,6 +457,17 @@ log10(K) are derived from `ΔG = ΔCp[(T−T0)−T ln(T/T0)]` and peak at 1200 K
 | Default | TiO2(l), 1200–1500 | 1500 | 100.416 | 1.007 | 324; 0.0141 |
 | Default | Cr2O3(l), 1200–1900 | 1900 | 156.900 | 2.626 | 2331; 0.1015 |
 | Default | V2O3(l), 1200–1700 | 1700 | 156.900 | 0.457 | 1287; 0.0560 |
+
+The analytic-fit residuals above compare each fit with its generated
+continuation. A separate source comparison measures the continuation against
+the printed JANAF lower-branch node at the same temperature. Across each full
+continuation interval, the maximum absolute Gibbs differences are 648.65
+J/mol for SiO2(l), 526.06 J/mol for Al2O3(l), 2780.78 J/mol for MgO(l), and
+1205.41 J/mol for CaO(l). Over 1400–2200 K, those maxima are 154.67, 26.80,
+1570.26, and 651.67 J/mol, respectively. At 1400 K the largest per-metal
+pressure discrepancy is 0.0586 dex for Mg; the ≤0.06 dex comparison applies
+from 1400 K, not from 1200 K. The printed lower branches include glass or solid
+behavior that the liquid continuation deliberately does not follow.
 
 For O-044 TiO2(l), the 1400 K source row contains glass-side thermal cells
 (Cp = 76.944 J/mol K) followed by the GLASS ↔ LIQUID marker. The first
