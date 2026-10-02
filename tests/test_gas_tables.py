@@ -2043,16 +2043,22 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     # Start from the packaged table with fitted rows removed, so the generator
     # must recreate them while passing every transcribed row through exactly.
     packaged_condensate_bytes = packaged_condensate.read_bytes()
+    # Every condensate species the generator emits is fitted, including the
+    # labelled constant-Cp continuation rows, so all of them are removed here
+    # and compared below by evaluated G(T) rather than by coefficient text.
+    fitted_condensate_species = frozenset(
+        row["species_name"]
+        for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
+    )
     fitted_prefixes = tuple(
-        f"{species},".encode() for species in FITTED_CONDENSATE_TABLE_IDS
+        f"{species},".encode() for species in sorted(fitted_condensate_species)
     )
-    condensate.write_bytes(
-        b"".join(
-            line
-            for line in packaged_condensate_bytes.splitlines(keepends=True)
-            if not line.startswith(fitted_prefixes)
-        )
+    stripped_condensate_bytes = b"".join(
+        line
+        for line in packaged_condensate_bytes.splitlines(keepends=True)
+        if not line.startswith(fitted_prefixes)
     )
+    condensate.write_bytes(stripped_condensate_bytes)
     command = [
         sys.executable,
         str(ROOT / "tools" / "build_gas_tables.py"),
@@ -2064,6 +2070,9 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     first = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
     first_gas_bytes = generated.read_bytes()
     first_condensate_bytes = condensate.read_bytes()
+    # Rerun from the same stripped input: determinism means identical bytes
+    # from identical inputs in this environment.
+    condensate.write_bytes(stripped_condensate_bytes)
     second = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
     assert first.stdout == second.stdout
     assert generated.read_bytes() == first_gas_bytes
@@ -2075,7 +2084,7 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     }
     condensate_fit_columns = {
         species: tuple(f"dG_{coefficient}" for coefficient in "ABCDE")
-        for species in FITTED_CONDENSATE_TABLE_IDS
+        for species in fitted_condensate_species
     }
     assert_table_matches(
         generated, packaged_gas, gas_fit_columns
