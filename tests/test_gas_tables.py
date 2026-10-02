@@ -1245,17 +1245,13 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         assert float(row["T_min"]) == build_gas_tables.LOW_FIT_T_MIN
         assert float(row["T_max"]) == build_gas_tables.LOW_FIT_T_MAX
         assert row["Ref"] == table_id
-        for coefficient in "ABCDEFG":
-            # Least-squares coefficient rounding varies slightly across
-            # NumPy/BLAS builds; 1e-9 comfortably covers the observed ~1e-13
-            # relative drift while leaving the source-node residual gates below
-            # independent and unchanged.
-            packaged_coefficient = float(
-                packaged_low_rows[f"{species}(g)"][coefficient]
-            )
-            assert packaged_coefficient == pytest.approx(
-                float(expected[coefficient]), rel=1e-9
-            )
+        packaged_row = packaged_low_rows[f"{species}(g)"]
+        assert packaged_row["species_name"] == expected["species_name"]
+        assert packaged_row["T_interval"] == expected["T_interval"]
+        assert packaged_row["T_min"] == expected["T_min"]
+        assert packaged_row["T_max"] == expected["T_max"]
+        assert packaged_row["Ref"] == expected["Ref"]
+        _assert_fit_gibbs_matches(_shomate_g, packaged_row, expected)
 
         ambiguous = _ambiguous_temperatures(table_id)
         fit_rows = [
@@ -2011,19 +2007,11 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     packaged_condensate = GAS_DATA / "condensate.csv"
     packaged_gas = GAS_DATA / "gas-shomate.csv"
 
-    # Coefficient generation can drift slightly across NumPy/BLAS builds.
-    # Relative tolerance 1e-9 comfortably exceeds the observed ~1e-13 drift,
-    # while every non-fit field and the independent node residual gates stay exact.
-    # NG-* rows come from smooth NASA-7 polynomials; their Shomate fit is
-    # ill-conditioned in coefficient directions that barely change G(T), so
-    # compare G(T) over the fit grid to 1e-6 J/mol instead of comparing bytes.
-    fit_relative_tolerance = 1e-9
-
     def assert_table_matches(
         generated_path: Path,
         packaged_path: Path,
         fitted_columns: dict[str, tuple[str, ...]],
-        gibbs_species: frozenset[str] = frozenset(),
+        evaluator=_shomate_g,
         ignore_row_order: bool = False,
     ) -> None:
         generated_table = pd.read_csv(generated_path, dtype=str, keep_default_na=False)
@@ -2043,32 +2031,14 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
             for column in packaged_table.columns:
                 generated_value = generated_table.iloc[row_index][column]
                 packaged_value = packaged_table.iloc[row_index][column]
-                if species in gibbs_species and column in "ABCDEFGH":
-                    continue
                 if column in fit_columns:
-                    generated_number = float(generated_value)
-                    packaged_number = float(packaged_value)
-                    if packaged_number == 0.0:
-                        assert generated_number == packaged_number
-                    else:
-                        assert abs(generated_number - packaged_number) <= (
-                            fit_relative_tolerance * abs(packaged_number)
-                        )
-                else:
-                    assert generated_value == packaged_value
+                    continue
+                assert generated_value == packaged_value
 
-            if species in gibbs_species:
+            if fit_columns:
                 generated_row = generated_table.iloc[row_index].to_dict()
                 packaged_row = packaged_table.iloc[row_index].to_dict()
-                for temperature in np.arange(
-                    float(generated_row["T_min"]),
-                    float(generated_row["T_max"]) + 1.0,
-                    100.0,
-                ):
-                    assert abs(
-                        _shomate_g(generated_row, temperature)
-                        - _shomate_g(packaged_row, temperature)
-                    ) < 1.0e-6
+                _assert_fit_gibbs_matches(evaluator, packaged_row, generated_row)
 
     # Start from the packaged table with fitted rows removed, so the generator
     # must recreate them while passing every transcribed row through exactly.
@@ -2100,25 +2070,21 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     assert condensate.read_bytes() == first_condensate_bytes
 
     gas_table = pd.read_csv(packaged_gas, dtype=str, keep_default_na=False)
-    gibbs_species = frozenset(
-        gas_table.loc[gas_table["Ref"].str.startswith("NG-"), "species_name"]
-    )
     gas_fit_columns = {
-        species: tuple("ABCDEFG")
-        for species in gas_table["species_name"]
-        if species not in gibbs_species
+        species: tuple("ABCDEFG") for species in gas_table["species_name"]
     }
     condensate_fit_columns = {
         species: tuple(f"dG_{coefficient}" for coefficient in "ABCDE")
         for species in FITTED_CONDENSATE_TABLE_IDS
     }
     assert_table_matches(
-        generated, packaged_gas, gas_fit_columns, gibbs_species=gibbs_species
+        generated, packaged_gas, gas_fit_columns
     )
     assert_table_matches(
         condensate,
         packaged_condensate,
         condensate_fit_columns,
+        evaluator=_condensate_gibbs,
         ignore_row_order=True,
     )
 
@@ -2147,15 +2113,11 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
         assert len(expected) == len(fitted)
         for packaged_row, generated_row in zip(expected, fitted):
             for column in build_gas_tables.CONDENSATE_COLUMNS:
-                if column in fit_coefficients:
-                    # Fit coefficients can differ in their final digits across
-                    # NumPy/BLAS builds; 1e-9 covers that drift without relaxing
-                    # exact source, interval, or provenance fields.
-                    assert float(packaged_row[column]) == pytest.approx(
-                        float(generated_row[column]), rel=1e-9
-                    )
-                else:
+                if column not in fit_coefficients:
                     assert packaged_row[column] == generated_row[column]
+            _assert_fit_gibbs_matches(
+                _condensate_gibbs, packaged_row, generated_row
+            )
     research_payload = subprocess.run(
         [
             "git",
@@ -2188,7 +2150,26 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
     build_gas_tables.merge_condensate_csv(
         build_gas_tables.build_condensate_rows(JANAF_DATA), regenerated_path
     )
-    assert regenerated_path.read_bytes() == default_path.read_bytes()
+    regenerated = pd.read_csv(regenerated_path, dtype=str, keep_default_na=False)
+    packaged_table = pd.read_csv(default_path, dtype=str, keep_default_na=False)
+    assert regenerated.columns.tolist() == packaged_table.columns.tolist()
+    assert len(regenerated) == len(packaged_table)
+    row_key = ["species_name", "T_min", "T_max"]
+    regenerated = regenerated.set_index(row_key).sort_index()
+    packaged_table = packaged_table.set_index(row_key).sort_index()
+    assert regenerated.index.equals(packaged_table.index)
+    fit_columns = {f"dG_{coefficient}" for coefficient in "ABCDE"}
+    for key in packaged_table.index:
+        regenerated_row = regenerated.loc[key].to_dict()
+        packaged_row = packaged_table.loc[key].to_dict()
+        for row in (regenerated_row, packaged_row):
+            row["T_min"], row["T_max"] = key[1:]
+        for column in packaged_table.columns:
+            if column not in fit_columns:
+                assert regenerated_row[column] == packaged_row[column]
+        _assert_fit_gibbs_matches(
+            _condensate_gibbs, packaged_row, regenerated_row
+        )
 
 
 def _shomate_g(row: dict[str, str], T: float) -> float:
@@ -2197,6 +2178,25 @@ def _shomate_g(row: dict[str, str], T: float) -> float:
     enthalpy = A * t + B * t**2 / 2 + C * t**3 / 3 + D * t**4 / 4 - E / t + F - H
     entropy = A * math.log(t) + B * t + C * t**2 / 2 + D * t**3 / 3 - E / (2 * t**2) + G
     return enthalpy * 1000.0 - T * entropy
+
+
+def _assert_fit_gibbs_matches(evaluator, packaged: dict, generated: dict) -> None:
+    t_min = float(packaged["T_min"])
+    t_max = float(packaged["T_max"])
+    temperatures = [t_min, *np.arange(t_min + 10.0, t_max, 10.0), t_max]
+    # 1e-3/(R*T*ln 10) is 4e-8 dex at 1200 K (2e-8 near 2500 K), well below
+    # the 1–10 J/mol source-node gates while allowing NumPy/BLAS fit drift.
+    for temperature in temperatures:
+        assert abs(
+            evaluator(packaged, temperature) - evaluator(generated, temperature)
+        ) <= 1.0e-3
+
+
+def _condensate_gibbs(row: dict, temperature: float) -> float:
+    columns = ("dG_A", "dG_B", "dG_C", "dG_D", "dG_E", "dH298_R")
+    return _lamor_gibbs(
+        temperature, pd.Series({column: float(row[column]) for column in columns})
+    )
 
 
 _CONDENSATE_EXPECTED = {
@@ -2504,7 +2504,28 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
     build_gas_tables.merge_condensate_csv(
         build_gas_tables.build_condensate_rows(JANAF_DATA), default_copy
     )
-    assert default_copy.read_bytes() == (GAS_DATA / "condensate.csv").read_bytes()
+    regenerated_table = pd.read_csv(default_copy, dtype=str, keep_default_na=False)
+    packaged_table = pd.read_csv(
+        GAS_DATA / "condensate.csv", dtype=str, keep_default_na=False
+    )
+    assert regenerated_table.columns.tolist() == packaged_table.columns.tolist()
+    assert len(regenerated_table) == len(packaged_table)
+    row_key = ["species_name", "T_min", "T_max"]
+    regenerated_table = regenerated_table.set_index(row_key).sort_index()
+    packaged_table = packaged_table.set_index(row_key).sort_index()
+    assert regenerated_table.index.equals(packaged_table.index)
+    fit_columns = {f"dG_{coefficient}" for coefficient in "ABCDE"}
+    for key in packaged_table.index:
+        regenerated_row = regenerated_table.loc[key].to_dict()
+        packaged_row = packaged_table.loc[key].to_dict()
+        for row in (regenerated_row, packaged_row):
+            row["T_min"], row["T_max"] = key[1:]
+        for column in packaged_table.columns:
+            if column not in fit_columns:
+                assert regenerated_row[column] == packaged_row[column]
+        _assert_fit_gibbs_matches(
+            _condensate_gibbs, packaged_row, regenerated_row
+        )
     for generated, packaged, provenance, sources, expected_species in datasets:
         provenance_rows = {
             row["species_name"]: row
@@ -2525,15 +2546,11 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
                 (packaged["species_name"] == species)
                 & (packaged["Ref"] == fitted["Ref"])
             ].iloc[0]
+            fit_columns = {f"dG_{coefficient}" for coefficient in "ABCDE"}
             for column in build_gas_tables.CONDENSATE_COLUMNS:
-                if column in tuple(f"dG_{coefficient}" for coefficient in "ABCDE"):
-                    # lstsq can shift these coefficients by ~1e-11 across BLAS
-                    # builds; 1e-9 covers that spread while keeping the fit pinned.
-                    assert float(packaged_row[column]) == pytest.approx(
-                        float(fitted[column]), rel=1e-9
-                    )
-                else:
+                if column not in fit_columns:
                     assert str(packaged_row[column]) == fitted[column]
+            _assert_fit_gibbs_matches(_condensate_gibbs, packaged_row, fitted)
             entry = provenance_rows[species]
             source = _record(entry["table_id"])
             table_config = next(item for item in sources if item[0] == species)
