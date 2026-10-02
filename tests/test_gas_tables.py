@@ -1134,9 +1134,9 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
             )
 
     # This is the deliberate source-of-truth boundary: the runtime remains
-    # free of a YAML dependency, while this test compares every gas and oxide
-    # provenance row against the checked-in YAML.  SiO2(cr) is retained in the
-    # mirror for parity even though the SF04 reaction set consumes SiO2(l).
+    # free of a YAML dependency, while this test compares every default gas
+    # and oxide provenance row against the checked-in YAML. SiO2(cr) remains
+    # available for explicit solid-phase thermochemistry queries.
     public_runtime_gas = {
         species: authority
         for species, authority in _GAS_PROVENANCE_AUTHORITY.items()
@@ -1151,7 +1151,7 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
     assert public_runtime_gas == expected_gas
     assert public_runtime_oxide == expected_oxide
     assert _OXIDE_SOURCE_TABLE_IDS == {
-        species.removesuffix("(l)"): table_id
+        species.removesuffix("(l)").removesuffix("(cr)"): table_id
         for species, table_id in expected_table_ids.items()
         if species.endswith(("(l)", "(cr)"))
         and species.removesuffix("(l)").removesuffix("(cr)")
@@ -2116,85 +2116,67 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
         ignore_row_order=True,
     )
 
-def test_research_condensate_rows_match_janaf_fits() -> None:
-    pack_dir = (
-        ROOT
-        / "src"
-        / "openimcc"
-        / "data"
-        / "packs"
-        / "gas-janaf-parent-liquids-research"
-    )
-    generated = {
-        row["Ref"]: row
-        for row in build_gas_tables.build_research_condensate_rows(JANAF_DATA)
-    }
-    packaged = {
-        row["Ref"]: row
-        for row in csv.DictReader(
-            io.StringIO((pack_dir / "condensate.csv").read_text(encoding="utf-8"))
-        )
-    }
-    assert len(generated) == 19
-    assert set(generated) <= set(packaged)
-    for row_ref, fitted in generated.items():
-        assert {
-            column: fitted[column] for column in build_gas_tables.CONDENSATE_COLUMNS
-        } == {
-            column: packaged[row_ref][column]
-            for column in build_gas_tables.CONDENSATE_COLUMNS
-        }
-    provenance = yaml.safe_load((pack_dir / "PROVENANCE.yaml").read_text())
-    assert provenance["pack_id"] == pack_dir.name
-    assert provenance["pack_class"] == "research"
-    records = {
-        row.get("runtime_ref", row.get("table_id")): row
-        for row in provenance["rows"]
-        if row["table"] == "condensate"
-    }
-    research_refs = {
-        source[1] for source in build_gas_tables.RESEARCH_CONDENSATE_SOURCES
-    } | {
-        source[1] + build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX
-        for source in build_gas_tables.RESEARCH_SUPERCOOLED_LIQUID_SOURCES
-    }
-    research_generated = {
-        row_ref: row for row_ref, row in generated.items() if row_ref in research_refs
-    }
-    assert set(records) == set(research_generated)
-    for row_ref, fitted in research_generated.items():
-        table_id = row_ref.removesuffix(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
-        source = build_gas_tables._load_record(
-            JANAF_DATA / f"{table_id}.yaml"
-        )
-        assert records[row_ref]["authority"] == "janaf_fitted"
-        assert records[row_ref]["classification"] == "research"
-        assert records[row_ref]["table_id"] == table_id
-        assert records[row_ref]["source_sha256"] == source["extraction"]["source_sha256"]
-        if row_ref.endswith(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX):
-            assert records[row_ref]["extrapolation"] is True
-            assert records[row_ref]["source_data"] is False
-        else:
-            assert records[row_ref]["user_agent"] == source["extraction"]["user_agent"]
-
-
-def test_research_pack_non_major_condensate_rows_match_default_byte_for_byte() -> None:
-    research_path = (
-        ROOT
-        / "src/openimcc/data/packs/gas-janaf-parent-liquids-research/condensate.csv"
-    )
+def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
+    major_species = {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"}
+    generated = [
+        row
+        for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
+        if row["species_name"] in major_species
+    ]
     default_path = GAS_DATA / "condensate.csv"
-    research_only = {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"}
-
-    def non_major_rows(path: Path) -> list[str]:
-        lines = path.read_text(encoding="utf-8").splitlines()
-        return sorted(
-            line
-            for line in lines[1:]
-            if next(csv.reader([line]))[0] not in research_only
+    with default_path.open(encoding="utf-8", newline="") as handle:
+        packaged = list(csv.DictReader(handle))
+    expected_rows = [row for row in packaged if row["species_name"] in major_species]
+    assert len(expected_rows) == len(generated) == 8
+    for species in major_species:
+        expected = sorted(
+            (row for row in expected_rows if row["species_name"] == species),
+            key=lambda row: float(row["T_min"]),
         )
+        fitted = sorted(
+            (row for row in generated if row["species_name"] == species),
+            key=lambda row: float(row["T_min"]),
+        )
+        assert [
+            {column: row[column] for column in build_gas_tables.CONDENSATE_COLUMNS}
+            for row in expected
+        ] == [
+            {column: row[column] for column in build_gas_tables.CONDENSATE_COLUMNS}
+            for row in fitted
+        ]
+    research_payload = subprocess.run(
+        [
+            "git",
+            "show",
+            "5380e46:src/openimcc/data/packs/gas-janaf-parent-liquids-research/condensate.csv",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    research_rows = [
+        row
+        for row in csv.DictReader(io.StringIO(research_payload))
+        if row["species_name"] in major_species
+    ]
+    assert sorted(
+        tuple(row[column] for column in build_gas_tables.CONDENSATE_COLUMNS)
+        for row in expected_rows
+    ) == sorted(
+        tuple(row[column] for column in build_gas_tables.CONDENSATE_COLUMNS)
+        for row in research_rows
+    )
+    crystal_rows = [row for row in packaged if row["species_name"] == "SiO2(cr)"]
+    assert len(crystal_rows) == 1
+    assert crystal_rows[0]["Ref"] == "LAM1987"
 
-    assert non_major_rows(research_path) == non_major_rows(default_path)
+    regenerated_path = tmp_path / "condensate.csv"
+    regenerated_path.write_bytes(default_path.read_bytes())
+    build_gas_tables.merge_condensate_csv(
+        build_gas_tables.build_condensate_rows(JANAF_DATA), regenerated_path
+    )
+    assert regenerated_path.read_bytes() == default_path.read_bytes()
 
 
 def _shomate_g(row: dict[str, str], T: float) -> float:
@@ -2284,8 +2266,10 @@ _CONDENSATE_EXPECTED = {
 }
 
 
-def test_condensate_rows_match_the_current_published_coefficients() -> None:
-    table = pd.read_csv(GAS_DATA / "condensate.csv").set_index("species_name")
+def test_sf04_condensate_rows_match_the_current_published_coefficients(
+    sf04_gas_pack,
+) -> None:
+    table = sf04_gas_pack.oxide_df
     original_rows = set(table.index) - {"Li2O(l)", "Rb2O(l)", "PbO(l)"}
     assert original_rows == set(_CONDENSATE_EXPECTED)
     for species, expected in _CONDENSATE_EXPECTED.items():
@@ -2386,9 +2370,9 @@ def test_v2o3_refit_changes_only_its_outputs_and_uses_liquid_boundary() -> None:
             assert any(old[name] != new[name] for name in v_channels)
 
 
-def test_lamoreaux_al2o3_condensate_matches_its_source_cells() -> None:
+def test_lamoreaux_al2o3_condensate_matches_its_source_cells(sf04_gas_pack) -> None:
     """Pin the remaining corrected LH87 liquid row to its source cells."""
-    rows = pd.read_csv(GAS_DATA / "condensate.csv").set_index("species_name")
+    rows = sf04_gas_pack.oxide_df
     al = rows.loc["Al2O3(l)"]
     assert tuple(
         float(al[key])
@@ -2404,11 +2388,11 @@ def test_lamoreaux_al2o3_condensate_matches_its_source_cells() -> None:
     assert (int(al["T_min"]), int(al["T_max"])) == (2327, 3000)
 
 
-def test_corrected_al2o3_liquid_matches_janaf_al100() -> None:
+def test_corrected_al2o3_liquid_matches_janaf_al100(sf04_gas_pack) -> None:
     """Corrected LH87 liquid G_app agrees with independent JANAF Al-100."""
     from openimcc.gas import _lamor_gibbs
 
-    row = load_gas_datapack().oxide_df.loc["Al2O3(l)"]
+    row = sf04_gas_pack.oxide_df.loc["Al2O3(l)"]
     source_rows = [
         source
         for source in _complete_rows("Al-100")
@@ -2491,40 +2475,18 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
         for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
         if row["Ref"].endswith(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
     }
-    research_supercooled_species = {
-        source[0] for source in build_gas_tables.RESEARCH_SUPERCOOLED_LIQUID_SOURCES
-    }
-    research_generated = {
-        row["species_name"]: row
-        for row in build_gas_tables.build_research_condensate_rows(JANAF_DATA)
-        if row["Ref"].endswith(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
-        and row["species_name"] in research_supercooled_species
-    }
-    research_dir = (
-        ROOT / "src/openimcc/data/packs/gas-janaf-parent-liquids-research"
-    )
     datasets = (
         (
             default_generated,
             pd.read_csv(GAS_DATA / "condensate.csv"),
             yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8")),
             build_gas_tables.SUPERCOOLED_LIQUID_SOURCES,
-            {"TiO2(l)", "Cr2O3(l)", "V2O3(l)"},
-        ),
-        (
-            research_generated,
-            pd.read_csv(research_dir / "condensate.csv"),
-            yaml.safe_load((research_dir / "PROVENANCE.yaml").read_text(encoding="utf-8")),
-            build_gas_tables.RESEARCH_SUPERCOOLED_LIQUID_SOURCES,
-            {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"},
+            {
+                "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "SiO2(l)",
+                "Al2O3(l)", "MgO(l)", "CaO(l)",
+            },
         ),
     )
-    research_copy = tmp_path / "research-condensate.csv"
-    research_copy.write_bytes((research_dir / "condensate.csv").read_bytes())
-    build_gas_tables.merge_condensate_csv(
-        build_gas_tables.build_research_condensate_rows(JANAF_DATA), research_copy
-    )
-    assert research_copy.read_bytes() == (research_dir / "condensate.csv").read_bytes()
     default_copy = tmp_path / "default-condensate.csv"
     default_copy.write_bytes((GAS_DATA / "condensate.csv").read_bytes())
     build_gas_tables.merge_condensate_csv(
@@ -3113,8 +3075,10 @@ def load_and_evaluate(pack, activities, temperature, fugacity, species):
     )[species]
 
 
-def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation() -> None:
-    pack = load_gas_datapack()
+def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation(
+    sf04_gas_pack,
+) -> None:
+    pack = sf04_gas_pack
     assert isinstance(species_thermo("O2", "g", 1500.0, pack), SpeciesThermo)
     low = species_thermo("O2", "g", 1499.999, pack)
     high = species_thermo("O2", "g", 1500.0, pack)
@@ -3134,10 +3098,15 @@ def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation()
 
     liquid = species_thermo("SiO2", "l", 2000.0, pack)
     crystal = species_thermo("SiO2", "cr", 1500.0, pack)
+    default_crystal = species_thermo(
+        "SiO2", "cr", 1500.0, load_gas_datapack()
+    )
     janaf_liquid = species_thermo("FeO", "l", 2200.0, pack)
     assert liquid.source_row_id == "LAM1987"
     assert crystal.source_row_id == "LAM1987"
+    assert default_crystal == crystal
     assert liquid.source_table_id == "LH87 Table 2"
+    assert default_crystal.source_table_id == "LH87 Table 2"
     assert liquid.derivatives_fit_implied is True
     assert crystal.derivatives_fit_implied is True
     assert janaf_liquid.derivatives_fit_implied is True
@@ -3365,8 +3334,8 @@ def _assert_lam_parent_source_exception(species_name: str, datapack) -> None:
         assert max(values) == pytest.approx(expected_max, abs=tolerance), species_name
 
 
-def test_lam_parent_liquids_pin_janaf_source_disagreements() -> None:
-    pack = load_gas_datapack()
+def test_lam_parent_liquids_pin_janaf_source_disagreements(sf04_gas_pack) -> None:
+    pack = sf04_gas_pack
     expected_nodes = {
         "Al2O3(l)": 6,
         "SiO2(l)": 11,
@@ -3380,8 +3349,10 @@ def test_lam_parent_liquids_pin_janaf_source_disagreements() -> None:
         _assert_lam_parent_source_exception(species_name, pack)
 
 
-def test_janaf_gate_rejects_both_previously_incorrect_parent_liquid_rows() -> None:
-    pack = load_gas_datapack()
+def test_janaf_gate_rejects_both_previously_incorrect_parent_liquid_rows(
+    sf04_gas_pack,
+) -> None:
+    pack = sf04_gas_pack
 
     na_mutated = pack.oxide_df.copy(deep=True)
     na_mask = na_mutated.index == "Na2O(l)"

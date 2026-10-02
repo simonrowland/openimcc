@@ -20,7 +20,6 @@ from openimcc import (
     evaluate,
     evaluate_gas,
     load_datapack,
-    load_gas_datapack,
 )
 
 
@@ -290,10 +289,10 @@ def test_sf04_shifted_seeds_reject_non_curve_ink(tmp_path: Path) -> None:
     print("SF04 shifted-seed checks: " + "; ".join(results))
 
 
-def test_sf04_engine_residual_report_and_gate() -> None:
+def test_sf04_engine_residual_report_and_gate(sf04_gas_pack) -> None:
     compositions = _compositions()
     imcc_pack = load_datapack(PACK_PATH)
-    gas_pack = load_gas_datapack()
+    gas_pack = sf04_gas_pack
     figure = _rows("fig10_digitized.csv")
     anchors = _rows("table9_anchors.csv")
     residuals: list[tuple[str, str, str, float]] = []

@@ -135,16 +135,38 @@ condensate rows retain their source-attributed Lamoreaux/Hildenbrand, JANAF,
 and NASA coefficients. TiO2(l), Cr2O3(l), V2O3(l), NbO2(l), Na2O(l),
 Li2O(l), and PbO(l) are fitted from JANAF liquid tables by the same generator;
 Rb2O(l) uses its NASA CEA liquid card. The default table adds explicitly
-labelled constant-Cp continuations for TiO2(l), Cr2O3(l), and V2O3(l),
-down to 1200 K. Li2O(l) uses JANAF's complete liquid-branch cells from
-700–3000 K directly; its runtime fit intervals begin at 1200 K. The JANAF-fitted major-oxide
-parents SiO2(l), Al2O3(l), MgO(l), and CaO(l) remain in the opt-in
-`gas-janaf-parent-liquids-research` pack; that pack has matching generated
-continuation intervals down to 1200 K. These rows are generated
-extrapolations, not source data. When selected they add a constant-Cp
-supercooled-liquid notice to each affected gas channel's `domain_flags`.
-Row-level source hashes, methods, temperature ranges and fit residuals are in
-the corresponding provenance files.
+labelled constant-Cp continuations for TiO2(l), Cr2O3(l), V2O3(l), SiO2(l),
+Al2O3(l), MgO(l), and CaO(l), down to 1200 K. Li2O(l) uses JANAF's complete
+liquid-branch cells from 700–3000 K directly; its runtime fit intervals begin
+at 1200 K. The four major-oxide rows are generated JANAF fits and their lower
+continuations are generated extrapolations, not source data. When selected,
+the continuations add a distinct constant-Cp supercooled-liquid notice to each
+affected gas channel's `domain_flags`. Row-level source hashes, methods,
+temperature ranges and fit residuals are in
+`src/openimcc/data/gas/PROVENANCE.yaml`.
+
+The old LAM1987 parent rows are available in the opt-in `sf04-published` pack
+for reproduction of the prior SF04 comparison. Load its `condensate.csv` with
+the shared default `gas-shomate.csv`. The former
+`gas-janaf-parent-liquids-research` pack is retired because its rows now match
+the default; no alias is needed. `SiO2(cr)` stays in both condensate tables
+because the public `species_thermo(..., phase="cr")` query reads it. No gas
+reaction consumes the crystal row: SF04 uses `SiO2(l)`, matching the liquid
+standard state of the melt activities.
+
+K2O(l) remains on its flagged LAM1984 row. The [NIST-JANAF potassium
+index](https://janaf.nist.gov/tables/K-index.html) lists K2O(cr), not K2O(l).
+A future switch needs public liquid Gibbs thermochemistry, a fitted and
+provenanced liquid row, and remeasured K/K2/KO comparisons; the crystal row
+cannot supply the required liquid standard state.
+
+The gas reaction definitions contain stoichiometry, not stored equilibrium
+constants: `evaluate_gas` recalculates each K from the active parent Gibbs
+row. Oxygen balance is computed from the evaluated gas pressures. The
+FC87/SF04 complex log K values live in the separate melt pack and were not
+derived from these parent rows. The parent Gibbs differences and resulting
+pressure shifts are recorded in the roadmap and changelog; no constant was
+re-fitted.
 
 Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
@@ -244,7 +266,7 @@ For the README basalt above, the new-channel magnitude is:
 
 ### 30-minute quickstart
 
-The shipped IMCC-SF04 pack is the default; no pack path is needed. This example
+The packaged IMCC-SF04 melt model is the default; no pack path is needed. This example
 uses a basalt in weight percent at 1800 K. Parent-oxide activities are relative
 to pure-liquid oxide standard states; for this model, `melt.activity(name)` is
 the unbound `x*` fraction for that parent oxide, not a pressure.
@@ -277,15 +299,15 @@ activities: {'SiO2': '0.329959', 'MgO': '0.00468755', 'FeO': '0.106157', 'CaO': 
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
 melt notices: ('K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS pressures (case 4: −0.89 dex); see https://github.com/simonrowland/openimcc',)
 gas: bar {'Na': '0.000201444', 'K': '7.67598e-08'}
-Mg domain flag: T=1800.0 K outside declared G(T) interval for 'MgO(l)' [3100, 3500] K
+Mg domain flag: MgO(l) uses a labelled constant-Cp supercooled-liquid continuation from JANAF Mg-009
 ```
 
 The `paper-demonstrated-window` flag records that some complex rows are outside
 their paper-demonstrated temperature range. The notice records the known low K
 prediction against Hastie 1981 KEMS pressures; it is part of the result, not a
-reason to hide those activities. The gas `Mg` flag records extrapolation beyond
-the declared default MgO(l) interval, so callers can see that the prediction uses
-the existing Lamoreaux function outside its fitted domain.
+reason to hide those activities. The gas `Mg` flag reports use of the labelled
+supercooled-liquid continuation below the default JANAF MgO(l) fit start at
+2200 K.
 
 With the basalt's activities evaluated at each temperature (extrapolated and
 flagged outside the melt pack's domain) and `fO2 = 1e-10`, the sodium gas
@@ -417,10 +439,10 @@ log10(K) are derived from `ΔG = ΔCp[(T−T0)−T ln(T/T0)]` and peak at 1200 K
 
 | Pack | Parent interval (K) | T0 (K) | Cp_l (J/mol K) | Max fit residual (J/mol) | ±10% Cp at 1200 K (J/mol; dex) |
 |---|---|---:|---:|---:|---:|
-| Research | MgO(l), 1200–2200 | 2200 | 66.944 | 5.627 | 1825; 0.0794 |
-| Research | CaO(l), 1200–2200 | 2200 | 62.760 | 2.931 | 1711; 0.0745 |
-| Research | Al2O3(l), 1200–2500 | 2500 | 192.464 | 36.583 | 8069; 0.3512 |
-| Research | SiO2(l), 1200–1800 | 1800 | 85.772 | 0.800 | 973; 0.0424 |
+| Default | MgO(l), 1200–2200 | 2200 | 66.944 | 5.627 | 1825; 0.0794 |
+| Default | CaO(l), 1200–2200 | 2200 | 62.760 | 2.931 | 1711; 0.0745 |
+| Default | Al2O3(l), 1200–2500 | 2500 | 192.464 | 36.583 | 8069; 0.3512 |
+| Default | SiO2(l), 1200–1800 | 1800 | 85.772 | 0.800 | 973; 0.0424 |
 | Default | TiO2(l), 1200–1500 | 1500 | 100.416 | 1.007 | 324; 0.0141 |
 | Default | Cr2O3(l), 1200–1900 | 1900 | 156.900 | 2.626 | 2331; 0.1015 |
 | Default | V2O3(l), 1200–1700 | 1700 | 156.900 | 0.457 | 1287; 0.0560 |
@@ -442,20 +464,22 @@ J/(mol K) branch. The continuation covers 1200–1700 K, with the high row
 selected exactly at 1700 K. Strict gas calls below 1500 K still refuse because
 the V gas rows begin there.
 
-The continuation-minus-high-row Gibbs seams are −0.0031 kJ/mol (research MgO),
-−0.0016 (research CaO), −0.0295 (research Al2O3), −0.0005 (research SiO2),
+The continuation-minus-high-row Gibbs seams are −0.0031 kJ/mol (default MgO),
+−0.0016 (default CaO), −0.0295 (default Al2O3), −0.0005 (default SiO2),
 −0.0043 (default TiO2), −0.0010 (default Cr2O3), and −0.0005 (default V2O3).
-The major-oxide rows and default results remain the Lamoreaux functions; the
-JANAF major continuations are available only through the opt-in research pack.
+The default major-oxide rows use the JANAF fits above those continuation
+intervals. The historical LAM1987 rows remain available through
+`sf04-published`.
 
-In default data, the three labelled rows close the TiO2, Cr2O3, and V2O3
-parent-liquid gaps. Ti, V and Cr still have gas-interval gaps, so their full
-standard-state C4 checks remain incomplete. Major-oxide default rows keep their
-existing out-of-interval behavior and domain flags.
+The TiO2, Cr2O3, and V2O3 continuations close their parent-liquid gaps; Ti, V
+and Cr still have gas-interval gaps, so their full standard-state C4 checks
+remain incomplete. The major-oxide parents now cover 1200–3000 K, and each
+selected supercooled-liquid continuation is identified in the result flags.
 
 For gas rows, `G_J_mol = 1000*H_app_kJ_mol - T*S_J_molK`; the factor of
-1000 converts enthalpy to J/mol. For LAM condensates, the following measured
-model-minus-JANAF G residual ranges are retained as documented exceptions.
+1000 converts enthalpy to J/mol. For the LAM condensates in `sf04-published`,
+the following measured model-minus-JANAF G residual ranges are comparison
+context.
 
 | LAM row | Compared sources | Measured G_app residual range (kJ/mol) | Tolerance (kJ/mol) | Reason |
 |---|---|---:|---:|---|
@@ -584,9 +608,32 @@ non-binary residuals (signed median −0.521 dex, mean −0.470 dex). The four
 digitised flux rows remain typed refusals for *"OCR scatter digitization and no
 independent experimental fO2 pin"*. No coefficient was tuned.
 
-### Published SF04 pressure comparison
+### Default JANAF comparison with SF04 measurements (reported)
 
-The independent Schaefer & Fegley (2004) comparison is split into transcribed
+The following figures remeasure the same independent anchors and digitized
+points using the default JANAF major-oxide parents. They are descriptive
+comparison values, not acceptance gates. Residuals are
+`log10(predicted / measured)`, in dex; O2 is excluded because it supplies the
+reference fO2 pin.
+
+| source | species | n | signed median | abs max |
+|---|---|--:|--:|--:|
+| Table 9 | Mg | 1 | +0.115 | 0.115 |
+| Table 9 | SiO | 1 | +0.072 | 0.072 |
+| Table 9 | SiO2 | 1 | +0.060 | 0.060 |
+| Fig. 10 | Mg | 24 | +0.192 | 0.867 |
+| Fig. 10 | MgO | 8 | +0.063 | 1.012 |
+| Fig. 10 | SiO | 30 | +0.244 | 1.139 |
+| Fig. 10 | SiO2 | 24 | +0.184 | 1.121 |
+
+The unchanged rows retain their existing comparisons. The separate
+`sf04-published` pack below preserves the former LAM parents and remains the
+target for bit-identical SF04 reproduction tests.
+
+### Published SF04 pressure comparison (`sf04-published`)
+
+The opt-in `sf04-published` pack preserves the prior LAM1987 liquid parents and
+the independent Schaefer & Fegley (2004) comparison is split into transcribed
 Table 9 anchors and digitized Fig. 10 points. Residuals are
 `log10(predicted / measured)`, in dex. O2 is the reference fO2 pin and is
 excluded from agreement claims because the O2 channel returns that pin by
@@ -706,8 +753,10 @@ The alkali-silicate rows are assessed or empirical fits, so they cannot be
 extended below 1700 K from crystal data, and
 evaluations below 1700 K are extrapolations (`evaluate(...,
 allow_extrapolation=True)` flags them). The silica parent adds a further
-caveat: SF04 places the SiO2 transition at 1996 K, while JANAF adopts about
-1696 K and tabulates no supercooled liquid branch below 1800 K.
+caveat: the published comparison pack preserves SF04's SiO2 transition at
+1996 K. The default JANAF O-038 branch changes at about 1696 K and has no
+source liquid nodes below 1800 K; its 1200–1800 K parent row is therefore an
+explicit constant-Cp continuation, which every affected gas result flags.
 
 The pack is unchanged: every row is its source's published value.
 

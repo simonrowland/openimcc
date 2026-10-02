@@ -33,7 +33,18 @@ SF04_REFERENCE_DIR = ROOT / "benchmarks" / "references" / "schaefer-fegley-2004"
 BENCH_PATH = ROOT / "benchmarks" / "sets" / "basalt-bench-set-v1.yaml"
 
 PUBLISHED_PACK = load_datapack(PACK_PATH)
-GAS_PACK = load_gas_datapack()
+GAS_PACK = load_gas_datapack(
+    gas_path=ROOT / "src" / "openimcc" / "data" / "gas" / "gas-shomate.csv",
+    oxide_path=(
+        ROOT
+        / "src"
+        / "openimcc"
+        / "data"
+        / "packs"
+        / "sf04-published"
+        / "condensate.csv"
+    ),
+)
 
 PARENT_MOLAR_MASS = {
     "SiO2": 60.083,

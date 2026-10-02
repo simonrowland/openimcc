@@ -289,6 +289,10 @@ CONDENSATE_SOURCES = (
     ("V2O3(l)", "O-063", "V", 2, 3),
     ("NbO2(l)", "Nb-013", "Nb", 1, 2),
     ("Na2O(l)", "Na-013", "Na", 2, 1),
+    ("SiO2(l)", "O-038", "Si", 1, 2),
+    ("Al2O3(l)", "Al-100", "Al", 2, 3),
+    ("MgO(l)", "Mg-009", "Mg", 1, 1),
+    ("CaO(l)", "Ca-028", "Ca", 1, 1),
 )
 
 # O-063 V2O3(l): the 1500 K Cp cell is glass-side; both 1600 K lines are
@@ -297,7 +301,7 @@ CONDENSATE_SOURCES = (
 # 2340 K II <--> LIQUID marker are omitted; both sit on the Cp = 156.900
 # J/(mol K) branch.
 
-# Parent-liquid research pack only; these do not enter the default condensate CSV.
+# Major-oxide parent liquids are fitted from these JANAF records.
 # SiO2(l), O-038: the 1696 K II <--> LIQUID marker follows glass Cp values
 # (74.475 at 1500 K, 80.040 at 1600 K); 85.772 J/(mol K) is constant from
 # the first complete post-marker node at 1800 K through 3000 K.  The 1700 K
@@ -314,34 +318,26 @@ CONDENSATE_SOURCES = (
 # CaO(l), Ca-028: glass Cp rises from 56.275 at 1500 K to 58.894 at 2100 K;
 # after the 2100 K GLASS <--> LIQUID marker, liquid Cp is 62.760 from 2200 K
 # through 3000 K. The crystal/liquid marker is at 3200 K, outside this fit.
-RESEARCH_CONDENSATE_SOURCES = (
-    ("SiO2(l)", "O-038", "Si", 1, 2),
-    ("Al2O3(l)", "Al-100", "Al", 2, 3),
-    ("MgO(l)", "Mg-009", "Mg", 1, 1),
-    ("CaO(l)", "Ca-028", "Ca", 1, 1),
-)
-
 # Constant-Cp supercooled-liquid continuations for default JANAF-fitted rows.
 # T0 is the first complete liquid node; T_max meets the existing row's T_min.
 SUPERCOOLED_LIQUID_SOURCES = (
     ("TiO2(l)", "O-044", "Ti", 1, 2, 1500.0, 1500.0),
     ("Cr2O3(l)", "Cr-015", "Cr", 2, 3, 1900.0, 1900.0),
     ("V2O3(l)", "O-063", "V", 2, 3, 1700.0, 1700.0),
-)
-# Major-oxide continuations belong only to the opt-in JANAF research pack.
-# Their upper bounds meet that pack's existing JANAF rows, whose starts are
-# 1800 K (SiO2), 2500 K (Al2O3), and 2200 K (MgO, CaO).
-RESEARCH_SUPERCOOLED_LIQUID_SOURCES = (
     ("SiO2(l)", "O-038", "Si", 1, 2, 1800.0, 1800.0),
     ("Al2O3(l)", "Al-100", "Al", 2, 3, 2500.0, 2500.0),
     ("MgO(l)", "Mg-009", "Mg", 1, 1, 2200.0, 2200.0),
     ("CaO(l)", "Ca-028", "Ca", 1, 1, 2200.0, 2200.0),
 )
 ALL_SUPERCOOLED_LIQUID_SPECIES = {
-    source[0]
-    for source in (*SUPERCOOLED_LIQUID_SOURCES, *RESEARCH_SUPERCOOLED_LIQUID_SOURCES)
+    source[0] for source in SUPERCOOLED_LIQUID_SOURCES
 }
 SUPERCOOLED_LIQUID_REF_SUFFIX = "-SC-CP"
+# These default rows now come only from their generated JANAF fits. Remove every
+# prior source interval, including disjoint LAM ranges above the new fit domain.
+REPLACED_DEFAULT_CONDENSATE_SPECIES = {
+    "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"
+}
 
 REQUIRED_FIELDS = (
     "temperature",
@@ -1952,20 +1948,6 @@ def build_condensate_rows(
     return rows
 
 
-def build_research_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
-    """Fit research parents and include the generated default condensate rows."""
-    rows = build_condensate_rows(source_dir)
-    rows.extend(
-        _fit_condensate_row(source_dir, *source)
-        for source in RESEARCH_CONDENSATE_SOURCES
-    )
-    rows.extend(
-        _fit_supercooled_liquid_row(source_dir, *source)
-        for source in RESEARCH_SUPERCOOLED_LIQUID_SOURCES
-    )
-    return rows
-
-
 def write_csv(rows: list[dict[str, str]], output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8", newline="") as handle:
@@ -1991,9 +1973,10 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
         lines[0],
         *(
             line for line in lines[1:]
-            if not (
-                (fields := next(csv.reader([line])))[0]
-                in ALL_SUPERCOOLED_LIQUID_SPECIES
+            if (fields := next(csv.reader([line])))[0]
+            not in REPLACED_DEFAULT_CONDENSATE_SPECIES
+            and not (
+                fields[0] in ALL_SUPERCOOLED_LIQUID_SPECIES
                 and fields[-1].endswith(SUPERCOOLED_LIQUID_REF_SUFFIX)
                 and fields[0] not in generated_continuations
             )
@@ -2081,17 +2064,6 @@ def main() -> None:
     condensate_rows = build_condensate_rows(args.source_dir, args.nasa_source_dir)
     if args.condensate_output is not None:
         merge_condensate_csv(condensate_rows, args.condensate_output)
-    if args.output == packaged_gas:
-        research_pack = repository / (
-            "src/openimcc/data/packs/gas-janaf-parent-liquids-research"
-        )
-        (research_pack / "gas-shomate.csv").write_bytes(args.output.read_bytes())
-        research_condensate = repository / (
-            "src/openimcc/data/packs/gas-janaf-parent-liquids-research/condensate.csv"
-        )
-        merge_condensate_csv(
-            build_research_condensate_rows(args.source_dir), research_condensate
-        )
     for row in [*rows, *condensate_rows]:
         print(
             f"{row['species_name']}: {row['_max_residual_J_per_mol']} J/mol, "

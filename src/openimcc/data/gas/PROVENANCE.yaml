@@ -97,7 +97,7 @@ source_notes:
         fO2_bar: 1.0e-4
         disposition: fitted_and_included_in_charge_balance
       AlO2-:
-        value: 0.0005661156475308063
+        value: 0.0005671814580486066
         temperature_K: 3000
         fO2_bar: 1.0e-4
         disposition: fitted_and_included_in_charge_balance
@@ -123,27 +123,27 @@ source_notes:
         disposition: fitted_and_included_in_charge_balance
     maximum_ion_to_neutral_pressure_ratios:
       O2-:
-        value: 2.1685259882052544e-05
+        value: 2.151337948770686e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       AlO2-:
-        value: 6.456334760015208
+        value: 6.450282066404919
         temperature_K: 2300
         fO2_bar: 1.0e-12
       KO-:
-        value: 0.0014819687998219003
+        value: 0.0014702225084190382
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Cr-:
-        value: 1.8417558423828968e-05
+        value: 1.8271578286999143e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       V-:
-        value: 8.898180762436737e-06
+        value: 8.827652540652657e-06
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Nb-:
-        value: 3.140012048667464e-05
+        value: 3.1151238752210466e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
     ko_note: >-
@@ -1358,49 +1358,6 @@ rows:
     max_residual_J_per_mol: 1.16885697213002
     max_residual_log10_K: 2.19648735557438e-05
   - table: condensate
-    species_name: MgO(l)
-    source_table_id: LH87 Table 2
-    authority: lam1987_transcribed
-    method: transcribed
-    T_range_K: [3100, 3500]
-    source:
-      citation: Lamoreaux, R. H.; Hildenbrand, D. L.; Brewer, L. (1987), High Temperature Vaporization Behavior of Oxides. II, J. Phys. Chem. Ref. Data 16, 419-443.
-      doi: 10.1063/1.555799
-      transcription: VapoRock data/condensate-thermo-data.csv
-  - table: condensate
-    species_name: CaO(l)
-    source_table_id: LH87 Table 2
-    authority: lam1987_transcribed
-    method: transcribed
-    T_range_K: [2900, 3800]
-    source:
-      citation: Lamoreaux, R. H.; Hildenbrand, D. L.; Brewer, L. (1987), High Temperature Vaporization Behavior of Oxides. II, J. Phys. Chem. Ref. Data 16, 419-443.
-      doi: 10.1063/1.555799
-      transcription: VapoRock data/condensate-thermo-data.csv
-  - table: condensate
-    species_name: Al2O3(l)
-    source_table_id: LH87 Table 2 / Table 3
-    authority: lam1987_transcribed
-    method: transcribed
-    T_range_K: [2327, 3000]
-    source_table: LH87 Table 2, printed p. 422; anchor from Table 3, printed p. 424
-    correction: The prior -188.14 kK anchor added the Table 1 fusion enthalpy (13.40 kK) to the Table 3 solid anchor (-201.54 kK), double-counting fusion already included in the Table 2 phase functions. Prior row was inherited verbatim from VapoRock data/condensate-thermo-data.csv.
-    corrected_dH298_R_kK: -201.54
-    source:
-      citation: Lamoreaux, R. H.; Hildenbrand, D. L.; Brewer, L. (1987), High Temperature Vaporization Behavior of Oxides. II, J. Phys. Chem. Ref. Data 16, 419-443.
-      doi: 10.1063/1.555799
-      transcription: VapoRock data/condensate-thermo-data.csv
-  - table: condensate
-    species_name: SiO2(l)
-    source_table_id: LH87 Table 2
-    authority: lam1987_transcribed
-    method: transcribed
-    T_range_K: [1996, 3000]
-    source:
-      citation: Lamoreaux, R. H.; Hildenbrand, D. L.; Brewer, L. (1987), High Temperature Vaporization Behavior of Oxides. II, J. Phys. Chem. Ref. Data 16, 419-443.
-      doi: 10.1063/1.555799
-      transcription: VapoRock data/condensate-thermo-data.csv
-  - table: condensate
     species_name: SiO2(cr)
     source_table_id: LH87 Table 2
     authority: lam1987_transcribed
@@ -1410,6 +1367,195 @@ rows:
       citation: Lamoreaux, R. H.; Hildenbrand, D. L.; Brewer, L. (1987), High Temperature Vaporization Behavior of Oxides. II, J. Phys. Chem. Ref. Data 16, 419-443.
       doi: 10.1063/1.555799
       transcription: VapoRock data/condensate-thermo-data.csv
+  - table: condensate
+    species_name: SiO2(l)
+    table_id: O-038
+    source_path: data-src/janaf/O-038.yaml
+    source_sha256: f1233d320c6c49aa8055a95b7e0f2d6404b47d42079f42966c5f1331f94f3f2c
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [1800, 3000]
+    source_rows: 13
+    max_residual_J_per_mol: 1.41375544643961
+    max_residual_log10_K: 3.07689853891945e-05
+    branch_decision: >-
+      The 1696 K II <--> LIQUID marker follows glass Cp values (74.475 at 1500 K,
+      80.040 at 1600 K). Liquid Cp is 85.772 J/(mol K) from the first complete
+      post-marker node at 1800 K through 3000 K; the 1700 K row is parse-ambiguous.
+  - table: condensate
+    species_name: Al2O3(l)
+    table_id: Al-100
+    source_path: data-src/janaf/Al-100.yaml
+    source_sha256: b27ae0ccebb7433b209b9dbd7f0b67448e49cf2b613625e22b05709e49c0dbe0
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [2500, 3000]
+    source_rows: 6
+    max_residual_J_per_mol: 0.274559039156884
+    max_residual_log10_K: 5.12186180951512e-06
+    branch_decision: >-
+      The 1350 K GLASS <--> LIQUID marker is below the fit. The 2327 K ALPHA
+      <--> LIQUID marker separates alpha-solid from liquid even though Cp is
+      192.464 J/(mol K) on both sides. The 2400 K row is parse-ambiguous, so
+      the fit starts at the first complete post-marker liquid node at 2500 K.
+  - table: condensate
+    species_name: MgO(l)
+    table_id: Mg-009
+    source_path: data-src/janaf/Mg-009.yaml
+    source_sha256: f31771f1a45e7749f20bcdc70557a32e85dcb9d79a8b53f7c59c6a3cda482a41
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [2200, 3000]
+    source_rows: 9
+    max_residual_J_per_mol: 0.825310702668503
+    max_residual_log10_K: 1.59662836020064e-05
+    branch_decision: >-
+      Glass Cp rises from 53.693 J/(mol K) at 1500 K to 56.019 at 2100 K. After
+      the 2100.001 K GLASS <--> LIQUID marker, liquid Cp is 66.944 from the first
+      complete node at 2200 K through 3000 K. The crystal/liquid marker is at 3105 K.
+  - table: condensate
+    species_name: CaO(l)
+    table_id: Ca-028
+    source_path: data-src/janaf/Ca-028.yaml
+    source_sha256: 44546e962fd516f7e9cf035429593916440008b7f81c06b5915da86b1203d072
+    authority: janaf_fitted
+    method: fitted
+    T_range_K: [2200, 3000]
+    source_rows: 9
+    max_residual_J_per_mol: 0.841327306814492
+    max_residual_log10_K: 1.62761373859318e-05
+    branch_decision: >-
+      Glass Cp rises from 56.275 J/(mol K) at 1500 K to 58.894 at 2100 K. After
+      the 2100 K GLASS <--> LIQUID marker, liquid Cp is 62.760 J/(mol K) from
+      2200 K through 3000 K. The crystal/liquid marker is at 3200 K.
+  - table: condensate
+    species_name: SiO2(l)
+    table_id: O-038
+    source_path: data-src/janaf/O-038.yaml
+    source_sha256: f1233d320c6c49aa8055a95b7e0f2d6404b47d42079f42966c5f1331f94f3f2c
+    authority: janaf_fitted
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: O-038-SC-CP
+    T_range_K: [1200, 1800]
+    T0_K: 1800
+    Cp_l_J_molK: 85.772
+    max_residual_J_per_mol: 0.799531310098246
+    max_residual_log10_K: 3.15944614201531e-05
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 8.5772
+      max_abs_delta_G_J_per_mol: 973.013609681583
+      max_abs_delta_log10_K: 0.0423533527176532
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -0.469
+    note: >-
+      O-038's 1696 K II <--> LIQUID marker precedes the first complete
+      post-marker liquid node at 1800 K. Cp is 85.772 J/(mol K) and constant
+      through the liquid table. This generated continuation extends the liquid
+      below the glass branch; it is not source data.
+  - table: condensate
+    species_name: Al2O3(l)
+    table_id: Al-100
+    source_path: data-src/janaf/Al-100.yaml
+    source_sha256: b27ae0ccebb7433b209b9dbd7f0b67448e49cf2b613625e22b05709e49c0dbe0
+    authority: janaf_fitted
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: Al-100-SC-CP
+    T_range_K: [1200, 2500]
+    T0_K: 2500
+    Cp_l_J_molK: 192.464
+    max_residual_J_per_mol: 36.5830440185964
+    max_residual_log10_K: 0.00119580744291554
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 19.2464
+      max_abs_delta_G_J_per_mol: 8068.80280248372
+      max_abs_delta_log10_K: 0.351218983683708
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -29.538
+    note: >-
+      The 2327 K ALPHA <--> LIQUID marker separates alpha-solid from liquid;
+      the first complete liquid node is 2500 K with Cp = 192.464 J/(mol K).
+      The 2400 K node is parse-ambiguous. This continuation extends that liquid
+      branch downward; it is not source data.
+  - table: condensate
+    species_name: MgO(l)
+    table_id: Mg-009
+    source_path: data-src/janaf/Mg-009.yaml
+    source_sha256: f31771f1a45e7749f20bcdc70557a32e85dcb9d79a8b53f7c59c6a3cda482a41
+    authority: janaf_fitted
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: Mg-009-SC-CP
+    T_range_K: [1200, 2200]
+    T0_K: 2200
+    Cp_l_J_molK: 66.944
+    max_residual_J_per_mol: 5.62680859537795
+    max_residual_log10_K: 0.000195164279003448
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 6.6944
+      max_abs_delta_G_J_per_mol: 1825.14137189466
+      max_abs_delta_log10_K: 0.0794447842396906
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -3.082
+    note: >-
+      After the 2100.001 K GLASS <--> LIQUID marker, the first complete liquid
+      node is 2200 K with Cp = 66.944 J/(mol K), constant through the liquid
+      branch. This generated continuation extends below the glass branch; it is
+      not source data.
+  - table: condensate
+    species_name: CaO(l)
+    table_id: Ca-028
+    source_path: data-src/janaf/Ca-028.yaml
+    source_sha256: 44546e962fd516f7e9cf035429593916440008b7f81c06b5915da86b1203d072
+    authority: janaf_fitted
+    method: generated_constant_cp_extrapolation_fit
+    extrapolation: true
+    source_data: false
+    runtime_ref: Ca-028-SC-CP
+    T_range_K: [1200, 2200]
+    T0_K: 2200
+    Cp_l_J_molK: 62.760
+    max_residual_J_per_mol: 2.93058269936591
+    max_residual_log10_K: 0.000104898029922716
+    uncertainty:
+      description: >-
+        Illustrative stress test only, not a statistical source uncertainty.
+        For delta_Cp = 0.1*Cp_l, delta_G = delta_Cp*((T-T0)-T*ln(T/T0));
+        the maximum absolute change is at 1200 K.
+      delta_Cp_fraction: 0.1
+      delta_Cp_J_molK: 6.276
+      max_abs_delta_G_J_per_mol: 1711.07003615124
+      max_abs_delta_log10_K: 0.0744794852247099
+      at_temperature_K: 1200
+      scenario_only: true
+    seam_to_existing_interval_delta_G_J_per_mol: -1.563
+    note: >-
+      After the 2100 K GLASS <--> LIQUID marker, the first complete liquid
+      node is 2200 K with Cp = 62.760 J/(mol K), constant through the liquid
+      branch. This generated continuation extends below the glass branch; it is
+      not source data.
   - table: condensate
     species_name: Na2O(l)
     table_id: Na-013

@@ -1,0 +1,57 @@
+schema_version: openimcc.gas_provenance.v1
+pack_id: sf04-published
+purpose: >-
+  Opt-in compatibility pack for the published SF04 vapor-pressure comparison.
+  It preserves the liquid parent rows used by the previous packaged default.
+  Load this condensate table with the shared default JANAF gas table. The
+  default pack now uses JANAF-fitted SiO2(l), Al2O3(l), MgO(l), and CaO(l).
+source_notes:
+  lamoreaux_1987:
+    citation: >-
+      Lamoreaux, R. H.; Hildenbrand, D. L.; Brewer, L. (1987), High Temperature
+      Vaporization Behavior of Oxides. II, J. Phys. Chem. Ref. Data 16, 419-443.
+    doi: 10.1063/1.555799
+    purpose: Historical parent Gibbs functions retained for SF04 comparison reproduction.
+rows:
+  - table: condensate
+    species_name: MgO(l)
+    source_table_id: LH87 Table 2
+    authority: lam1987_transcribed
+    method: transcribed
+    T_range_K: [3100, 3500]
+    note: Historical LAM1987 liquid parent row retained for SF04 comparison reproduction.
+  - table: condensate
+    species_name: CaO(l)
+    source_table_id: LH87 Table 2
+    authority: lam1987_transcribed
+    method: transcribed
+    T_range_K: [2900, 3800]
+    note: Historical LAM1987 liquid parent row retained for SF04 comparison reproduction.
+  - table: condensate
+    species_name: Al2O3(l)
+    source_table_id: LH87 Table 2 / Table 3
+    authority: lam1987_transcribed
+    method: transcribed
+    T_range_K: [2327, 3000]
+    corrected_dH298_R_kK: -201.54
+    source_table: LH87 Table 2, printed p. 422; anchor from Table 3, printed p. 424
+    note: >-
+      The 298 K anchor uses the stable-solid value. The former -188.14 kK
+      anchor double-counted the fusion enthalpy already included in the Table 2
+      phase functions; -201.54 kK is retained here for historical comparison.
+  - table: condensate
+    species_name: SiO2(l)
+    source_table_id: LH87 Table 2
+    authority: lam1987_transcribed
+    method: transcribed
+    T_range_K: [1996, 3000]
+    note: Historical LAM1987 liquid parent row retained for SF04 comparison reproduction.
+  - table: condensate
+    species_name: SiO2(cr)
+    source_table_id: LH87 Table 2
+    authority: lam1987_transcribed
+    method: transcribed
+    T_range_K: [1000, 1996]
+    note: >-
+      Retained as a historical solid-phase diagnostic. Gas reactions use the
+      liquid SiO2(l) standard state and do not select this row.

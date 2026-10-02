@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- Switched default SiO2(l), Al2O3(l), MgO(l), and CaO(l) parent rows to the
+  generated JANAF fits and labelled constant-Cp liquid continuations through
+  1200 K. The former LAM1987 default rows, including SiO2(cr), are preserved
+  in the opt-in `sf04-published` pack. Published-SF04 reference tests now use
+  that pack. Retired `gas-janaf-parent-liquids-research` because it would
+  duplicate the new default. The melt activities and FC87/SF04 complex log K
+  coefficients are unchanged; the gas reaction code computes K from the
+  active parent Gibbs row. No parent-basis-dependent fit or oxygen-balance
+  constant was found.
+- Measured default SF04 comparison values and per-metal vapor-pressure shifts
+  are recorded below under “Changes that can break callers.” They are report
+  values and do not tighten the existing test gates.
+
+- The default SiO2(l) parent now covers 1200–3000 K, but Si2(g) and Si3(g)
+  still begin at 1500 K; Al2(g) also begins at 1500 K. Si and Al therefore
+  remain C4 gas-partial. Mg and Ca now have C4 coverage and move to `complete`.
+  SiO2(cr) has no gas-reaction consumer, but the public `species_thermo` solid
+  phase query uses the row, so it remains in both default and compatibility
+  tables. Gas reactions continue to use liquid SiO2. JANAF has K2O(cr) but no
+  K2O(l) table, so the secondary LAM1984 K2O(l) row is unchanged.
 - Added optional Li, Rb and Pb gas channels with caller-supplied Li2O(l),
   Rb2O(l) and PbO(l) activities. NIST-JANAF rows are preferred, with NASA
   Glenn cards used for Rb oxides and the PbO high-temperature tail. Li2O(l)
@@ -18,23 +38,23 @@
 - Added generated, labelled constant-Cp supercooled-liquid intervals for the
   default JANAF-fitted TiO2(l), Cr2O3(l), and V2O3(l) rows. Added matching
   intervals for the JANAF-fitted MgO(l), CaO(l), Al2O3(l), and SiO2(l) rows
-  only in the opt-in research pack. The default SF04/Lamoreaux major-oxide
-  functions and coverage statuses remain unchanged. Continuation
-  use is visible in gas domain flags; the README and per-pack provenance record
-  residuals, illustrative Cp sensitivity, and interval seams.
+  initially in the opt-in research pack. The latest entry above moves those
+  four parent rows into the default. Continuation use is visible in gas domain
+  flags; the README and provenance record residuals, illustrative Cp
+  sensitivity, and interval seams.
 - Refit the default V2O3(l) high interval from the 1700–2300 K and 2500–3000 K
   liquid nodes only and extend its generated constant-Cp continuation through
   1700 K. The high interval is selected at the shared boundary; V gas results
   change over 1500–<1700 K and at fit-residual scale from 1700 K onward. The
-  research pack now uses these same generated V2O3(l) rows, so its V results
-  change too.
+  then-current research pack used these same generated V2O3(l) rows, so its V
+  results changed too.
 - Added opt-in JANAF-fitted Na+, K+, Ca+, electron and negative-ion gas
   channels, including O2−, AlO2−, KO−, Cr−, V− and Nb−, with melt-buffered
   electroneutrality. Neutral defaults remain unchanged. The completeness screen
   now uses fitted channels for Na, K and Ca; Na and K move to
-  `complete-except-ions`, while Ca remains gas-partial because its parent-liquid
-  row starts at 2900 K. The research pack now includes the default gas table
-  and supports ion evaluation.
+  `complete-except-ions`, while Ca was then gas-partial because its parent row
+  started at 2900 K. The former research pack included the default gas table
+  and supported ion evaluation before it was retired above.
 - Replaced the corrected LH84 Na2O(l) parent with the JANAF Na-013 fit. Added its supercooled-liquid interval, moved Na into the
   JANAF-fitted condensate and C4 gates, and re-pinned Na-sensitive SF04,
   quickstart, species-set, and oxygen-balance results. Recovered the intact
@@ -68,8 +88,9 @@
   500–1500 K. It uses at least ten complete 100 K JANAF nodes per species,
   preserves the existing interval 1 rows, and selects interval 1 at 1500 K.
 - Added opt-in research pack `gas-janaf-parent-liquids-research` with JANAF-fitted
-  SiO2(l), Al2O3(l), MgO(l) and CaO(l) rows; the SF04/Lamoreaux default
-  coefficient contract keeps it out of default loads and outputs.
+  SiO2(l), Al2O3(l), MgO(l) and CaO(l) rows. At that time the LAM1987 rows
+  remained the default; the first entry above records the later default switch
+  and retirement of this pack.
 - Added JANAF-fitted Al2, Si2, and Si3 gas channels after a magnitude screen at
   melt temperature; their parent-reaction stoichiometry and source
   residuals are covered by the gas-layer tests and provenance ledger.
@@ -154,6 +175,23 @@
 
 ### Changes that can break callers
 
+- Default parent changes raise vapor pressures relative to the previous
+  LAM1987 rows by these measured amounts. Values are log10 pressure shifts per
+  metal atom; Si covers Si, SiO, SiO2, Si2, Si3; Al covers Al, AlO, AlO2, Al2O,
+  Al2O2, Al2; Ca covers Ca/CaO; Mg covers Mg/MgO. A multi-metal molecule's
+  total pressure shift is its per-atom value multiplied by its metal-atom
+  count. These are comparison values, not regression gates.
+
+  | T (K) | Si | Al | Ca | Mg |
+  | ---: | ---: | ---: | ---: | ---: |
+  | 1400 | +0.097374 | +2.772603 | +1.115757 | +0.635302 |
+  | 1600 | +0.090826 | +1.403291 | +0.825530 | +0.422368 |
+  | 1933 | +0.079586 | +0.312060 | +0.504033 | +0.199772 |
+  | 2200 | +0.070464 | +0.045960 | +0.338890 | +0.099171 |
+  | 2600 | +0.055522 | +0.000113 | +0.183019 | +0.025963 |
+
+- Parent Gibbs differences and the remeasured default SF04 comparison are in
+  the README and roadmap; published-reference tests gate only `sf04-published`.
 - With `allow_extrapolation=False`, Cr, CrO, CrO2 and CrO3 now return at
   1500-1900 K using the labelled Cr2O3(l) continuation instead of raising
   `ImccGasTemperatureOutsideDomainError`. Ti and V strict calls below 1500 K

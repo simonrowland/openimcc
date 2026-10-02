@@ -17,10 +17,9 @@ card's pure-liquid standard state; the caller activity is relative to that
 standard. Validation is recorded separately: it is `validated` only when a
 scoreable observation exists.
 
-Default TiO2(l), Cr2O3(l), and V2O3(l) have labelled constant-Cp continuation
-rows that count as parent coverage while preserving runtime domain flags. The
-four major-oxide continuations remain in the opt-in research pack and do not
-change default coverage status.
+Default TiO2(l), Cr2O3(l), V2O3(l), SiO2(l), Al2O3(l), MgO(l), and CaO(l)
+have labelled constant-Cp continuation rows that count as parent coverage
+while preserving runtime domain flags.
 
 The C3 ion-share grid includes only nodes where summed neutral partial pressure
 is at most 1 bar, the validity ceiling used by the gas layer. Of 95 nodes, 69
@@ -41,11 +40,11 @@ channels also require an external source-rated P2O5(l) row.
 | O | input (fO2 pinned) | n/a | yes | n/a | n/a | unvalidated | O is input (fO2 pinned), so C1, C3 and C4 do not apply. |
 | P | gas-partial | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | no | unvalidated | JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) function was found and JANAF lists P4O10(cr) only. Channels need an external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); OpenIMCC provides no pyrolysis-temperature melt activity model. |
 | S | gas-complete-melt-pending | no | yes | not computed: ionized sulfur channels are outside this neutral gas-only change | yes | unvalidated | JANAF sulfur gas rows and the S2(g) parent cover 500-3000 K; callers supply a(S2)=f(S2)/p° on the 1-bar gas reference. OpenIMCC provides no pyrolysis-temperature sulfur melt activity model. |
-| Si | gas-partial | yes | yes | yes | no | validated | SiO2 liquid row starts at 1996 K; joint C3 closure-screen maximum 5.545e-14 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
-| Mg | gas-partial | yes | yes | yes | no | unvalidated | MgO liquid row starts at 3100 K; joint C3 closure-screen maximum 1.117e-07 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Si | gas-partial | yes | yes | yes | no | validated | The JANAF SiO2(l) parent covers 1200-3000 K with a labelled continuation below 1800 K, but Si2(g) and Si3(g) start at 1500 K, leaving a gas C4 gap; joint C3 closure-screen maximum 5.545e-14 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Mg | complete | yes | yes | yes | yes | unvalidated | The JANAF MgO(l) row and Mg gas rows cover 1200-3000 K, including a labelled parent continuation below 2200 K; joint C3 closure-screen maximum 1.117e-07 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Fe | complete | yes | yes | yes | yes | unvalidated | FeO and neutral gas rows cover the domain; joint C3 closure-screen maximum 3.342e-08 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
-| Ca | gas-partial | yes | yes | yes | no | unvalidated | CaO liquid row starts at 2900 K; fitted Ca+ channel maximum p(Ca+)/neutral Ca gas 6.310e-05 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain, below the 1e-4 C3 threshold. |
-| Al | gas-partial | yes | yes | yes | no | unvalidated | Al2O3 liquid row starts at 2327 K; joint C3 closure-screen maximum 4.135e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Ca | complete | yes | yes | yes | yes | unvalidated | The JANAF CaO(l) row and Ca gas rows cover 1200-3000 K, including a labelled parent continuation below 2200 K; fitted Ca+ channel maximum p(Ca+)/neutral Ca gas 6.310e-05 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain, below the 1e-4 C3 threshold. |
+| Al | gas-partial | yes | yes | yes | no | unvalidated | The JANAF Al2O3(l) parent covers 1200-3000 K with a labelled continuation below 2500 K, but Al2(g) starts at 1500 K, leaving a gas C4 gap; joint C3 closure-screen maximum 4.135e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Ti | gas-partial | yes | yes | yes | no | unvalidated | A labelled constant-Cp TiO2(l) continuation covers 1200-1500 K below the glass branch; Ti(g), TiO(g), and TiO2(g) still start at 1500 K, leaving a lower C4 gap; joint C3 closure-screen maximum 2.468e-09 at 2500 K and fO2=1e-8 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Na | complete-except-ions | yes | yes | no | yes | unvalidated | Na2O(g) intervals cover 500-3000 K and JANAF Na-013 Na2O(l) intervals cover 1200-3000 K, including its supercooled-liquid branch; fitted Na+ channel maximum p(Na+)/neutral Na gas 9.261e-04 at 2800 K and fO2=1e-4 remains above 1e-4; ions are opt-in and omitted from default results. |
 | K | complete-except-ions | yes | yes | no | yes | validated | K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; fitted K+ channel maximum p(K+)/neutral K gas 4.325e-02 at 1200 K and fO2=1e-4 remains above 1e-4; ions are opt-in and omitted from default results. |
@@ -69,9 +68,9 @@ positive-only estimate and bounded fitted closure screen give:
 | Na | 1.169e-3 (3000 K, 1e-4) | 9.261e-4 (2800 K, 1e-4) |
 | K | 3.979e-2 (1300 K, 1e-4) | 4.325e-2 (1200 K, 1e-4) |
 | Ca | 1.052e-4 (3000 K, 1e-4) | 6.310e-5 (2800 K, 1e-4) |
-| Li | — | 4.238e-8 (2000 K, 1e-4) |
-| Rb | — | 5.350e-5 (2000 K, 1e-4) |
-| Pb | — | 1.271e-12 (2000 K, 1e-4) |
+| Li | — | 4.330e-8 (2000 K, 1e-4) |
+| Rb | — | 5.466e-5 (2000 K, 1e-4) |
+| Pb | — | 1.299e-12 (2000 K, 1e-4) |
 
 The P/S channels are optional and stay out of default gas results unless their
 caller-supplied parent activity is present. Sulfur uses the JANAF `S2(g)` gas
@@ -79,11 +78,10 @@ standard. Phosphorus uses `P2O5(l)`, but no public evaluated liquid G(T) functio
 was found (JANAF lists `P4O10(cr)` only); an external pack must supply a
 source-rated `P2O5(l)` standard state before callers can use `a(P2O5)`.
 
-The research pack `gas-janaf-parent-liquids-research` is opt-in by path; the
-SF04/Lamoreaux default coefficient contract keeps it out of default loads. Its
-branch-limited C4 check passes over each declared liquid range through 3000 K
-(Al from 2500 K, Si from 1800 K, Mg and Ca from 2200 K). Sulfur has C4=yes via
-its S2(g) parent. The 1200–3000 K default C4 criterion requires continuous
+The default uses the JANAF major-oxide fits. The opt-in `sf04-published` pack
+preserves the previous LAM1987 parent rows for comparison reproduction. The
+former research pack is retired because it duplicated the new default. Sulfur
+has C4=yes via its S2(g) parent. The 1200–3000 K default C4 criterion requires continuous
 one-bar gas-table and parent-liquid coverage for oxide-parent channels. Na2O(g)
 and K2O(g) cover the gas domain with NASA Glenn interval 2. The Na2O(l) row is
 a JANAF Na-013 fit, replacing the corrected LH84 row. Its low runtime interval
@@ -93,11 +91,10 @@ ALPHA ↔ LIQUID marker and parse-ambiguous 1500 K row are omitted from fitting.
 Na therefore has C4=yes at 1200 K. The melt kernel computes the Na2O activity
 from its unchanged published melt pack and does not read the gas-side
 condensate row.
-NbO2(l), TiO2(l), Cr2O3(l), and V2O3(l) have generated low-temperature
-continuation intervals. The TiO2(l), Cr2O3(l), and V2O3(l) intervals extend
-default parent coverage; Ti and V still have lower gas C4 gaps because their
-gas channels start at 1500 K. The four major-oxide continuation intervals are
-in the opt-in research pack and do not change default coverage status.
+NbO2(l), TiO2(l), Cr2O3(l), V2O3(l), SiO2(l), Al2O3(l), MgO(l), and CaO(l)
+have generated low-temperature continuation intervals. The major-oxide
+continuations extend default parent coverage; Si and Al retain gas C4 gaps
+because their Si2/Si3 and Al2 rows start at 1500 K.
 
 ### Low-temperature gas interval (done)
 
@@ -109,10 +106,44 @@ shared 1500 K node. The low-temperature KEMS impact calculation at 1300 K and
 1400 K is domain-refused because the packaged K₂O–SiO₂ melt reactions begin at
 1700 K.
 
-The SiO₂(l) parent remains domain-flagged below 1996 K by default (the research
-pack extends its liquid branch to 1800 K). JANAF O-038 has no lower liquid
-branch; below 1800 K it provides the II/crystal branch, which is not a liquid
-parent row.
+The default SiO2(l) fit starts at 1800 K; below it, the labelled 1200–1800 K
+constant-Cp liquid continuation is selected and reported in gas result flags.
+JANAF O-038 has no source liquid branch below 1800 K; its lower source rows are
+not used as liquid data. SiO2(cr) remains in the default and `sf04-published`
+tables because the public `species_thermo(..., phase="cr")` query reads that
+row. No gas reaction consumes it: the SF04 silica parent is SiO2(l), matching
+the liquid melt-activity standard state.
+
+### Major-oxide parent basis (done)
+
+The gas reaction table stores stoichiometry only; `evaluate_gas` calculates
+each reaction Gibbs energy and pressure from the active gas and parent rows.
+Oxygen balance is computed from those pressures and reaction stoichiometry.
+The FC87/SF04 complex-species log K coefficients are in the separate melt
+datapack and are not derived from these gas parent rows. No other default row,
+fitted gas constant, or oxygen-balance constant tied to the old LAM parents
+was found, so nothing was re-fit.
+
+The table reports `G_JANAF - G_LAM` for each replaced liquid row. With other
+gas Gibbs terms and fO2 fixed, the oxide-to-vapor reaction gives
+`x log10(p_M) = constant + G_parent/(R T ln(10))`; subtracting the old-parent
+equation from the new gives a per-metal-atom pressure shift of
+`(G_JANAF - G_LAM)/(x R T ln(10))`. Here `x` is the oxide's metal count
+(`SiO2`, `MgO`, `CaO`: 1; `Al2O3`: 2). The units are J/mol divided by J/mol,
+so the result is dex; a positive parent Gibbs difference must raise vapor
+pressure, matching every value below. No constant is fitted.
+
+| T (K) | SiO2(l) | Al2O3(l) | MgO(l) | CaO(l) |
+| ---: | ---: | ---: | ---: | ---: |
+| 1400 | +2609.883 | +148626.283 | +17027.777 | +29905.243 |
+| 1600 | +2782.161 | +85970.108 | +12937.805 | +25287.310 |
+| 1933 | +2945.207 | +23096.714 | +7392.937 | +18652.675 |
+| 2200 | +2967.851 | +3871.566 | +4176.937 | +14273.533 |
+| 2600 | +2763.704 | +11.241 | +1292.342 | +9110.007 |
+
+All Gibbs differences are J/mol. Every value is positive, so the new parent
+rows raise the corresponding equilibrium vapor pressure. These are direct
+row comparisons; published-SF04 pressure pins remain on `sf04-published`.
 
 The fitted negative-ion rows include Na−, K−, O−, O2−, Al−, AlO2−, Fe−, Si−,
 Ti−, KO−, AlO−, NaO−, Cr−, V− and Nb−. Every available listed anion whose
@@ -154,16 +185,16 @@ into each result row. The datapack loads once per run. The tracked set with
 | `hastie_k_1917_186` | 1917.186331 | 5.694375450e-6 | 2.820005790 | 0.361935171 | −0.891619212 | — | `secondary_transcription_unverified_primary` |
 | `hastie_k_1917_282` | 1917.281980 | 5.703622101e-6 | 3.210036717 | 0.362238799 | −0.947515035 | — | `secondary_transcription_unverified_primary` |
 | `hastie_k_1955_825` | 1955.824724 | 1.082207471e-5 | 4.530018754 | 0.504424868 | −0.953303511 | — | `secondary_transcription_unverified_primary` |
-| `hastie_sio_1907_796` | 1907.795668 | 4.851884054e-6 | 0.082727519 | 0.049889861 | −0.219637706 | `SiO2(l) [1996, 3000] K` | `lam1987_transcribed` |
-| `hastie_sio_1909_739` | 1909.739189 | 5.016024124e-6 | 0.116737396 | 0.051569589 | −0.354816329 | `SiO2(l) [1996, 3000] K` | `lam1987_transcribed` |
-| `hastie_sio_1948_149` | 1948.149056 | 9.545997137e-6 | 0.206709293 | 0.097839724 | −0.324844781 | `SiO2(l) [1996, 3000] K` | `lam1987_transcribed` |
+| `hastie_sio_1907_796` | 1907.795668 | 4.851884054e-6 | 0.082727519 | 0.060040280 | −0.139207291 | — | `janaf_fitted` |
+| `hastie_sio_1909_739` | 1909.739189 | 5.016024124e-6 | 0.116737396 | 0.062052444 | −0.274451105 | — | `janaf_fitted` |
+| `hastie_sio_1948_149` | 1948.149056 | 9.545997137e-6 | 0.206709293 | 0.117379741 | −0.245766853 | — | `janaf_fitted` |
 
-The three SiO points are predicted with the bench's per-point extrapolation
-opt-in and carry the SiO2(l) certified band in `domain_flag`. The fresh full-set
-summary is 304 predictions, 301 headline-scored, 3 flagged, 94 out-of-domain
-and 4 refused. The text report's arithmetic total across incompatible slices is
-RMSE **0.883362 dex** and flagged RMSE **0.305319 dex**, explicitly not an
-accuracy figure; `per_slice` and `binary_slices` are the machine-readable
+The three SiO points are inside the default JANAF SiO2(l) fit interval, so they
+have no gas domain flag. The current full-set report has 402 rows, 398
+predictions, 94 flagged, 94 out-of-domain and 4 refused. Its arithmetic total
+across incompatible slices uses 304 residuals (median −0.5094 dex, mean
+−0.4678 dex, RMSE **0.8793 dex**, flagged RMSE **2.002 dex**); it is not an
+accuracy figure. `per_slice` and `binary_slices` are the machine-readable
 standard-state-separated aggregates. The 396 non-gas rows retain their
 pre-rewire predictions, residuals, statuses and reasons exactly.
 
@@ -209,9 +240,25 @@ An independent, public partial reference now ships at
 (`transcribed`), 13 Table 9 flux rows (`transcribed`) with 13 Eq. 11 pressures
 (`derived_eq11`), and 350 Fig. 10 points (`digitized_figure`) with 350 Table 7
 pressure derivations (`derived_table7`). It is covered by
-`tests/test_sf04_published_reference.py` and does **not** replace the workbook
+`tests/test_sf04_published_reference.py` against `sf04-published` for the
+published-parent reproduction checks and does **not** replace the workbook
 fixture. Bishop Tuff, Type B CAI, the Al/Ca/Ti/K2/Zn channels, and 1500, 1625,
 and 2500 K remain unavailable from the published paper.
+
+The default JANAF-parent comparison was remeasured against the same anchors and
+digitized points. These are reported figures, not default acceptance gates;
+the pack above owns the published-parent regression pins. Residuals are
+`log10(predicted / measured)` in dex, with O2 excluded as the fO2 pin.
+
+| Source | Species | n | Signed median | Abs max |
+| --- | --- | ---: | ---: | ---: |
+| Table 9 | Mg | 1 | +0.115 | 0.115 |
+| Table 9 | SiO | 1 | +0.072 | 0.072 |
+| Table 9 | SiO2 | 1 | +0.060 | 0.060 |
+| Fig. 10 | Mg | 24 | +0.192 | 0.867 |
+| Fig. 10 | MgO | 8 | +0.063 | 1.012 |
+| Fig. 10 | SiO | 30 | +0.244 | 1.139 |
+| Fig. 10 | SiO2 | 24 | +0.184 | 1.121 |
 
 At the published Table 9 tholeiite anchor, K is **+0.14 dex** with
 `KCaAlSi2O7`; removing that complex moves K to **+2.31 dex**. It must stay:
@@ -288,6 +335,14 @@ condensate CSV, cited to Lamoreaux & Hildenbrand 1984, and are flagged
 `secondary_transcription_unverified_primary`. The K, K2 and KO channel authority
 therefore carries that flag. Once the LH84 primary coefficient table is
 available, re-certify the row and remove the flag.
+
+The NIST-JANAF potassium index lists K2O(cr) but no K2O(l) table
+([K tables](https://janaf.nist.gov/tables/K-index.html)); the vendored K-012
+record is the crystalline phase. A future liquid-row switch would need a
+public liquid Gibbs-energy function or other source-rated thermochemistry,
+then a fitted row with source provenance and updated K/K2/KO comparisons.
+K2O(cr) cannot be substituted because the gas reaction and melt activity use
+the liquid standard state. This switch leaves the existing LH84 row untouched.
 
 ### 7. Provenance vocabulary is shared across the shipped core
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -20,3 +21,16 @@ def pytest_configure(config: pytest.Config) -> None:
     selected = os.environ.pop("OPENIMCC_VAPOROCK_ROOT", None)
     if selected and LEGACY_ENV not in os.environ:
         os.environ[LEGACY_ENV] = selected
+
+
+@pytest.fixture(scope="session")
+def sf04_gas_pack():
+    """Load the preserved LAM parent rows with the shared JANAF gas table."""
+    from openimcc.gas import load_gas_datapack
+
+    root = Path(__file__).resolve().parents[1]
+    data = root / "src/openimcc/data"
+    return load_gas_datapack(
+        gas_path=data / "gas/gas-shomate.csv",
+        oxide_path=data / "packs/sf04-published/condensate.csv",
+    )

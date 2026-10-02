@@ -442,10 +442,10 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
                 temperature_K=2000.0,
             ),
             _partial_pressure_point(
-                "pp_sio_1900",
+                "pp_sio_1700",
                 species="SiO",
                 parent_oxide="SiO2",
-                temperature_K=1900.0,
+                temperature_K=1700.0,
                 measured=1.0e-3,
             ),
         ],
@@ -471,15 +471,14 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
     assert in_domain.status == "ok", in_domain.reason
     assert in_domain.predicted is not None
     assert in_domain.domain_flag is None
-    assert in_domain.provenance_class == "lam1987_transcribed"
+    assert in_domain.provenance_class == "janaf_fitted"
 
-    flagged = by_id["pp_sio_1900"]
+    flagged = by_id["pp_sio_1700"]
     assert flagged.status == "ok", flagged.reason
     assert flagged.predicted is not None
     assert flagged.residual is not None
-    assert "outside declared G(T) interval" in flagged.domain_flag
-    assert "SiO2(l) [1996, 3000] K" in flagged.domain_flag
-    assert flagged.provenance_class == "lam1987_transcribed"
+    assert "constant-Cp supercooled-liquid continuation" in flagged.domain_flag
+    assert flagged.provenance_class == "janaf_fitted"
 
     headline_residuals = [activity.residual, in_domain.residual]
     expected_headline_rmse = math.sqrt(
@@ -494,7 +493,7 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
     rendered = render_report(report)
     assert "flagged=1" in rendered
     assert "flagged_RMSE=" in rendered
-    assert "SiO2(l) [1996, 3000] K" in rendered
+    assert "constant-Cp supercooled-liquid continuation" in rendered
 
 
 def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
