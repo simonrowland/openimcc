@@ -1,0 +1,123 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "source_id": "nasa-glenn",
+  "source": {
+    "database": "NASA Glenn / CEA thermo.inp",
+    "citation": "McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.",
+    "version": "thermo.inp dated 9/8/2021",
+    "official_url": "https://raw.githubusercontent.com/nasa/cea/main/data/thermo.inp",
+    "licence": "U.S. Government work; public domain."
+  },
+  "record_id": "NG-1841",
+  "name_as_published": "Rb2O(L)",
+  "citation_as_published": "Liquid. Gurvich,1982 pt1 p431 pt2 p454.",
+  "formula": "Rb2O",
+  "phase": "liquid",
+  "phase_as_published": "4",
+  "phase_flag": 4,
+  "source_ref_code": "tpis82",
+  "molecular_weight": {
+    "as_published": "186.9350000",
+    "value": 186.935
+  },
+  "delta_f_H_298_15": {
+    "as_published": "-338000.000",
+    "value": -338000,
+    "units_as_published": "J/mol"
+  },
+  "intervals": [
+    {
+      "T_min_K": {
+        "as_published": "778.000",
+        "value": 778
+      },
+      "T_max_K": {
+        "as_published": "6000.000",
+        "value": 6000
+      },
+      "n_poly_terms": {
+        "as_published": "7",
+        "value": 7
+      },
+      "exponents": [
+        {
+          "as_published": "-2.0",
+          "value": -2
+        },
+        {
+          "as_published": "-1.0",
+          "value": -1
+        },
+        {
+          "as_published": "0.0",
+          "value": 0
+        },
+        {
+          "as_published": "1.0",
+          "value": 1
+        },
+        {
+          "as_published": "2.0",
+          "value": 2
+        },
+        {
+          "as_published": "3.0",
+          "value": 3
+        },
+        {
+          "as_published": "4.0",
+          "value": 4
+        }
+      ],
+      "H298_minus_H0": {
+        "as_published": "15600.000",
+        "value": 15600
+      },
+      "a_coefficients": [
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "1.202716696D+01",
+          "value": 12.02716696
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        }
+      ],
+      "b1": {
+        "as_published": "-4.176027770D+04",
+        "value": -41760.2777
+      },
+      "b2": {
+        "as_published": "-5.073431535D+01",
+        "value": -50.73431535
+      }
+    }
+  ],
+  "source_card_lines": [
+    "Rb2O(L)           Liquid. Gurvich,1982 pt1 p431 pt2 p454.",
+    " 1 tpis82 RB  2.00O   1.00    0.00    0.00    0.00 4  186.9350000    -338000.000",
+    "    778.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0        15600.000",
+    " 0.000000000D+00 0.000000000D+00 1.202716696D+01 0.000000000D+00 0.000000000D+00",
+    " 0.000000000D+00 0.000000000D+00                -4.176027770D+04-5.073431535D+01"
+  ]
+}

@@ -265,6 +265,17 @@ def default_condensate_database_path() -> Path:
 # (2, 0), (5/2, 0), (3, 0), (7/2, 0), (4, 0), (1/2, 1/2),
 # (1/2, 1), (1/2, 3/2) and (1, 1/2), respectively. Each equation balances
 # sulfur and oxygen; positive n_O2 is consumed on the reactant side.
+# Premise: one mole of E_aO_b(l) is the reactant. For
+# E_aO_b(l) -> n_g E_cO_d(g) + n_O2 O2(g), element balance gives n_g=a/c;
+# oxygen balance gives n_O2=(b-n_g*d)/2. Unit check: these are dimensionless
+# stoichiometric coefficients, and O2 contributes two O atoms per mole.
+# This yields Li2O(l) -> 2Li(g)+1/2O2, 2LiO(g)-1/2O2, Li2O(g), and
+# Li2O2(g)-1/2O2; Rb2O(l) -> 2Rb(g)+1/2O2, 2RbO(g)-1/2O2, and Rb2O(g);
+# PbO(l) -> Pb(g)+1/2O2, PbO(g), and PbO2(g)-1/2O2. Sanity: the balance
+# test checks every trace atom count against these tuples.
+# PbO(l) is the caller-supplied Pb(II) parent because it has a source-rated
+# liquid standard state; PbO2 is retained as a gas product, with no evaluated
+# PbO2(l) parent row in the source set used here.
 _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Na": ("Na2O", 2, 0.5),
     "K": ("K2O", 2, 0.5),
@@ -335,6 +346,16 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "SO2": ("S2", 0.5, 1.0),
     "SO3": ("S2", 0.5, 1.5),
     "SSO": ("S2", 1.0, 0.5),
+    "Li": ("Li2O", 2, 0.5),
+    "LiO": ("Li2O", 2, -0.5),
+    "Li2O": ("Li2O", 1, 0.0),
+    "Li2O2": ("Li2O", 1, -0.5),
+    "Rb": ("Rb2O", 2, 0.5),
+    "RbO": ("Rb2O", 2, -0.5),
+    "Rb2O": ("Rb2O", 1, 0.0),
+    "Pb": ("PbO", 1, 0.5),
+    "PbO": ("PbO", 1, 0.0),
+    "PbO2": ("PbO", 1, -0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -398,6 +419,16 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "SO2",
         "SO3",
         "SSO",
+        "Li",
+        "LiO",
+        "Li2O",
+        "Li2O2",
+        "Rb",
+        "RbO",
+        "Rb2O",
+        "Pb",
+        "PbO",
+        "PbO2",
     }
 )
 
@@ -478,12 +509,18 @@ _GAS_PROVENANCE_AUTHORITY = {
     for species in (*IMCC_GAS_CHANNEL_SPECIES, "Mn", "Ni", "Co")
 }
 _GAS_PROVENANCE_AUTHORITY.update(
-    {"Na2O": "nasa_glenn_fitted", "K2O": "nasa_glenn_fitted"}
+    {
+        "Na2O": "nasa_glenn_fitted",
+        "K2O": "nasa_glenn_fitted",
+        "RbO": "nasa_glenn_fitted",
+        "Rb2O": "nasa_glenn_fitted",
+        "PbO2": "nasa_glenn_fitted",
+    }
 )
 _ION_GAS_SPECIES = (
     "Na+", "K+", "Ca+", "e-",
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
-    "Cr-", "V-", "Nb-",
+    "Cr-", "V-", "Nb-", "Li+", "Rb+", "Pb+",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {species: "janaf_fitted_ionisation" for species in _ION_GAS_SPECIES}
@@ -505,6 +542,9 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Cr2O3": "janaf_fitted",
     "V2O3": "janaf_fitted",
     "NbO2": "janaf_fitted",
+    "Li2O": "janaf_fitted",
+    "Rb2O": "nasa_glenn_fitted",
+    "PbO": "janaf_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. Rows without a table identifier there return None.
@@ -521,6 +561,9 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Cr2O3": "Cr-015",
     "V2O3": "O-063",
     "NbO2": "Nb-013",
+    "Li2O": "Li-015",
+    "Rb2O": "NG-1841",
+    "PbO": "O-007",
 }
 _PROVENANCE_AUTHORITY_RANK = {
     "secondary_transcription_unverified_primary": 0,
@@ -663,7 +706,14 @@ IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     ),
 }
 
-_GAS_IONIZATION_PAIRS = (("Na", "Na+"), ("K", "K+"), ("Ca", "Ca+"))
+_GAS_IONIZATION_PAIRS = (
+    ("Na", "Na+"),
+    ("K", "K+"),
+    ("Ca", "Ca+"),
+    ("Li", "Li+"),
+    ("Rb", "Rb+"),
+    ("Pb", "Pb+"),
+)
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
     ("K", "K-"),
@@ -1103,6 +1153,84 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
             "Nb": {"max_ratio": 0.9601449643935895, "temperature_K": 3000.0, "fO2": 1.0e-12, "dominant": "NbO"},
             "NbO": {"max_ratio": 1.0, "temperature_K": 2200.0, "fO2": 1.0e-12, "dominant": "NbO"},
             "NbO2": {"max_ratio": 1.0, "temperature_K": 1200.0, "fO2": 1.0e-12, "dominant": "NbO2"},
+        },
+    },
+    "Li": {
+        "status": "gas-complete-melt-pending",
+        "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+        "validation": "unvalidated",
+        "reason": "Li2O(l) and neutral Li gas rows cover 1200-3000 K, including a labelled constant-Cp continuation below the first liquid node; a(Li2O) is caller-supplied; the joint C3 screen used a(Li2O)=1e-3 and reached 4.238e-08 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "c2_candidates": (("Li-011", "LiO"), ("Li-017", "Li2O"), ("Li-019", "Li2O2")),
+        "c3_ion_bound": {
+            "max_ratio": 4.2382621043512934e-08,
+            "isolated_bound": 1.3108005709743532e-06,
+            "temperature_K": 2000.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 8.79945288410621e-05,
+            "element_total_pressure_bar": 9.79733188721165e-05,
+            "joint_ion_pressure_bar": 4.152366046132168e-12,
+            "electron_pressure_bar": 3.273988981189399e-05,
+            "K_ion": 9.070786665087108e-17,
+            "parent_oxide": "Li2O",
+            "parent_activity": 1.0e-3,
+            "source_tables": {"cation": "Li-006", "neutral": "Li-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Li-006": "aa03b9472bee061c1d19234bd345ccecd8d9c46e6266f036ed3791b6984f955c",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "neutral-source-vendor/1.0",
+        },
+    },
+    "Rb": {
+        "status": "gas-complete-melt-pending",
+        "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+        "validation": "unvalidated",
+        "reason": "Rb2O(l) and neutral Rb gas rows cover 1200-3000 K; a(Rb2O) is caller-supplied; the joint C3 screen used a(Rb2O)=1e-3 and reached 5.350e-05 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "c2_candidates": (("NG-1329", "RbO"), ("NG-1352", "Rb2O")),
+        "c3_ion_bound": {
+            "max_ratio": 5.3499574569379925e-05,
+            "isolated_bound": 5.985222614236269e-09,
+            "temperature_K": 2000.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 0.6036807829260378,
+            "element_total_pressure_bar": 0.6121337049541095,
+            "joint_ion_pressure_bar": 3.274889279462319e-05,
+            "electron_pressure_bar": 3.273988981189399e-05,
+            "K_ion": 2.1625590126102705e-17,
+            "parent_oxide": "Rb2O",
+            "parent_activity": 1.0e-3,
+            "source_tables": {"cation": "Rb-006", "neutral": "Rb-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Rb-006": "8a106cf972c8c553591083d28d9371b71e6d12451d69afcc6e7a2e565b31cf0f",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "neutral-source-vendor/1.0",
+        },
+    },
+    "Pb": {
+        "status": "gas-complete-melt-pending",
+        "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+        "validation": "unvalidated",
+        "reason": "PbO(l) and neutral Pb gas rows cover 1200-3000 K; a(PbO) is caller-supplied; PbO(l) is the Pb(II) parent because no evaluated PbO2(l) parent row was found; the joint C3 screen used a(PbO)=1e-3 and reached 1.271e-12 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate.",
+        "c2_candidates": (("O-009", "PbO"), ("NG-1276", "PbO2")),
+        "c3_ion_bound": {
+            "max_ratio": 1.2714793371748198e-12,
+            "isolated_bound": 2.1364268975758982e-10,
+            "temperature_K": 2000.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 0.005873842806589901,
+            "element_total_pressure_bar": 0.006796768656190416,
+            "joint_ion_pressure_bar": 8.641950905903582e-15,
+            "electron_pressure_bar": 3.273988981189399e-05,
+            "K_ion": 2.6810097545132173e-22,
+            "parent_oxide": "PbO",
+            "parent_activity": 1.0e-3,
+            "source_tables": {"cation": "Pb-006", "neutral": "Pb-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Pb-006": "74f62dbb997ac98d8822dab2082d7076f483e0d0b411d221a431907e518043f9",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "neutral-source-vendor/1.0",
         },
     },
     "Mn": {
@@ -2044,6 +2172,7 @@ _ATOMIC_MASS_G_MOL = {
     "Ti": 47.867, "Cr": 51.9961, "V": 50.9415, "Nb": 92.90637,
     "Mn": 54.938044, "Ni": 58.6934, "Co": 58.933194,
     "P": 30.973761998, "S": 32.06,
+    "Li": 6.94, "Rb": 85.4678, "Pb": 207.2,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,

@@ -74,11 +74,12 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied V/Nb/P/S channels: Na, Na2, NaO, K, K2, KO, Si, SiO,
+and caller-supplied V/Nb/P/S/Li/Rb/Pb channels:
+Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
 PO, PO2, P4O6, P4O10, S, S2, S3, S4, S5, S6, S7, S8, SO, SO2, SO3, SSO,
-Na2O, K2O, O and O2.
+Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Na2O, K2O, O and O2.
 The Mn/Ni/Co channels activate only when an external pack provides their gas
 and MnO(l)/NiO(l)/CoO(l) parent rows; the public pack carries only the atomic
 gas rows.
@@ -91,14 +92,34 @@ was found; JANAF lists `P4O10(cr)` only. P channels therefore remain unavailable
 until an external pack supplies a source-rated `P2O5(l)` standard state and the
 caller supplies `a(P2O5)` on that reference. OpenIMCC does not provide a
 melt-side P2O5 activity model for pyrolysis temperatures.
+
+Li, Rb, and Pb channels activate when the caller supplies `Li2O`, `Rb2O`, or
+`PbO` activity in the `evaluate_gas` mapping. Activities are caller-supplied;
+openimcc has no trace-element activity model. The Li2O(l) and PbO(l) parents
+use NIST-JANAF rows; Rb2O(l) uses a NASA Glenn CEA coefficient card, whose
+published pure-liquid reference is 1 atm. PbO(l) is the Pb(II) parent because
+it has a source-rated liquid row; PbO2 remains a gas channel because no
+evaluated PbO2(l) parent row was found. NASA CEA gas cards use the same 1 bar
+standard pressure as JANAF. The source ledger records the Li2O and PbO
+JANAF-vs-NASA formation-enthalpy differences and the PbO tail anchor.
+
+Published composition-specific activity-coefficient work is relevant context:
+[Borisov (2009)](https://doi.org/10.1134/S0869591109060058) reports alkali
+oxide behavior in silicate melts, with Li estimates extrapolated from the
+experiments, and [Wood and Wade (2013)](https://doi.org/10.1007/s00410-013-0896-z)
+infer PbO activity from metal-silicate partitioning. Those studies' coefficients
+are not runtime inputs.
+
 The default tables ship in `openimcc.data.gas` and are loaded through
 `importlib.resources`, so a release `pip install "openimcc[gas]"` works without a
 neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
-NIST-JANAF 4th-edition records; the condensate rows retain their source-attributed
-Lamoreaux/Hildenbrand and JANAF coefficients. TiO2(l), Cr2O3(l), V2O3(l),
-NbO2(l), and Na2O(l) are fitted from JANAF liquid tables by the same generator.
-The default table adds explicitly labelled constant-Cp continuations only for
-TiO2(l), Cr2O3(l), and V2O3(l), down to 1200 K. The JANAF-fitted major-oxide
+NIST-JANAF 4th-edition records and NASA Glenn CEA coefficient cards; the
+condensate rows retain their source-attributed Lamoreaux/Hildenbrand, JANAF,
+and NASA coefficients. TiO2(l), Cr2O3(l), V2O3(l), NbO2(l), Na2O(l),
+Li2O(l), and PbO(l) are fitted from JANAF liquid tables by the same generator;
+Rb2O(l) uses its NASA CEA liquid card. The default table adds explicitly
+labelled constant-Cp continuations for TiO2(l), Cr2O3(l), V2O3(l), and Li2O(l),
+down to 1200 K. The JANAF-fitted major-oxide
 parents SiO2(l), Al2O3(l), MgO(l), and CaO(l) remain in the opt-in
 `gas-janaf-parent-liquids-research` pack; that pack has matching generated
 continuation intervals down to 1200 K. These rows are generated
@@ -109,8 +130,9 @@ the corresponding provenance files.
 
 Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
-and every available JANAF-supported negative ion whose neutral is present. The
-default call remains neutral-only and returns the same mapping as before. Ion entries use provenance class
+`Li+`, `Rb+`, `Pb+`, and every available JANAF-supported negative ion whose
+neutral is present. The default call remains neutral-only and returns the same
+mapping as before. Ion entries use provenance class
 `janaf_fitted_ionisation`; their source rows cover 1200–3000 K and their
 domain flags include the neutral and charge-species source rows.
 `gas_species` requests use the full default neutral set for the charge closure,

@@ -1,0 +1,212 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "source_id": "nasa-glenn",
+  "source": {
+    "database": "NASA Glenn / CEA thermo.inp",
+    "citation": "McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.",
+    "version": "thermo.inp dated 9/8/2021",
+    "official_url": "https://raw.githubusercontent.com/nasa/cea/main/data/thermo.inp",
+    "licence": "U.S. Government work; public domain."
+  },
+  "record_id": "NG-1276",
+  "name_as_published": "PbO2",
+  "citation_as_published": "Gurvich,1991 pt1 p416 pt2 p347.",
+  "formula": "PbO2",
+  "phase": "gas",
+  "phase_as_published": "0",
+  "phase_flag": 0,
+  "source_ref_code": "tpis91",
+  "molecular_weight": {
+    "as_published": "239.1988000",
+    "value": 239.1988
+  },
+  "delta_f_H_298_15": {
+    "as_published": "136152.734",
+    "value": 136152.734,
+    "units_as_published": "J/mol"
+  },
+  "intervals": [
+    {
+      "T_min_K": {
+        "as_published": "300.000",
+        "value": 300
+      },
+      "T_max_K": {
+        "as_published": "1000.000",
+        "value": 1000
+      },
+      "n_poly_terms": {
+        "as_published": "7",
+        "value": 7
+      },
+      "exponents": [
+        {
+          "as_published": "-2.0",
+          "value": -2
+        },
+        {
+          "as_published": "-1.0",
+          "value": -1
+        },
+        {
+          "as_published": "0.0",
+          "value": 0
+        },
+        {
+          "as_published": "1.0",
+          "value": 1
+        },
+        {
+          "as_published": "2.0",
+          "value": 2
+        },
+        {
+          "as_published": "3.0",
+          "value": 3
+        },
+        {
+          "as_published": "4.0",
+          "value": 4
+        }
+      ],
+      "H298_minus_H0": {
+        "as_published": "12250.934",
+        "value": 12250.934
+      },
+      "a_coefficients": [
+        {
+          "as_published": "7.071058290D+04",
+          "value": 70710.5829
+        },
+        {
+          "as_published": "-1.076757462D+03",
+          "value": -1076.757462
+        },
+        {
+          "as_published": "9.401711730D+00",
+          "value": 9.40171173
+        },
+        {
+          "as_published": "-1.003861584D-03",
+          "value": -0.001003861584
+        },
+        {
+          "as_published": "-1.233815617D-06",
+          "value": -0.000001233815617
+        },
+        {
+          "as_published": "1.858386979D-09",
+          "value": 1.858386979e-9
+        },
+        {
+          "as_published": "-6.834621210D-13",
+          "value": -6.83462121e-13
+        }
+      ],
+      "b1": {
+        "as_published": "1.999645981D+04",
+        "value": 19996.45981
+      },
+      "b2": {
+        "as_published": "-2.503976748D+01",
+        "value": -25.03976748
+      }
+    },
+    {
+      "T_min_K": {
+        "as_published": "1000.000",
+        "value": 1000
+      },
+      "T_max_K": {
+        "as_published": "6000.000",
+        "value": 6000
+      },
+      "n_poly_terms": {
+        "as_published": "7",
+        "value": 7
+      },
+      "exponents": [
+        {
+          "as_published": "-2.0",
+          "value": -2
+        },
+        {
+          "as_published": "-1.0",
+          "value": -1
+        },
+        {
+          "as_published": "0.0",
+          "value": 0
+        },
+        {
+          "as_published": "1.0",
+          "value": 1
+        },
+        {
+          "as_published": "2.0",
+          "value": 2
+        },
+        {
+          "as_published": "3.0",
+          "value": 3
+        },
+        {
+          "as_published": "4.0",
+          "value": 4
+        }
+      ],
+      "H298_minus_H0": {
+        "as_published": "12250.934",
+        "value": 12250.934
+      },
+      "a_coefficients": [
+        {
+          "as_published": "-1.307796670D+05",
+          "value": -130779.667
+        },
+        {
+          "as_published": "-7.314361450D+01",
+          "value": -73.1436145
+        },
+        {
+          "as_published": "7.554083410D+00",
+          "value": 7.55408341
+        },
+        {
+          "as_published": "-2.143421561D-05",
+          "value": -0.00002143421561
+        },
+        {
+          "as_published": "4.696464000D-09",
+          "value": 4.696464e-9
+        },
+        {
+          "as_published": "-5.344972180D-13",
+          "value": -5.34497218e-13
+        },
+        {
+          "as_published": "2.460760535D-17",
+          "value": 2.460760535e-17
+        }
+      ],
+      "b1": {
+        "as_published": "1.413386101D+04",
+        "value": 14133.86101
+      },
+      "b2": {
+        "as_published": "-1.252684909D+01",
+        "value": -12.52684909
+      }
+    }
+  ],
+  "source_card_lines": [
+    "PbO2              Gurvich,1991 pt1 p416 pt2 p347.",
+    " 2 tpis91 PB  1.00O   2.00    0.00    0.00    0.00 0  239.1988000     136152.734",
+    "    300.000   1000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0        12250.934",
+    " 7.071058290D+04-1.076757462D+03 9.401711730D+00-1.003861584D-03-1.233815617D-06",
+    " 1.858386979D-09-6.834621210D-13                 1.999645981D+04-2.503976748D+01",
+    "   1000.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0        12250.934",
+    "-1.307796670D+05-7.314361450D+01 7.554083410D+00-2.143421561D-05 4.696464000D-09",
+    "-5.344972180D-13 2.460760535D-17                 1.413386101D+04-1.252684909D+01"
+  ]
+}

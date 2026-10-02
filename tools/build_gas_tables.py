@@ -141,6 +141,28 @@ GAS_SOURCES = (
     ("SSO(g)", "O-011", "S", 2, 1),
 )
 
+# First public caller-supplied trace parents. JANAF text rows take priority;
+# NASA CEA cards supply only rows JANAF does not list, plus PbO(l)'s missing
+# high-temperature tail.
+TRACE_JANAF_GAS_SOURCES = (
+    ("Li(g)", "Li-005", "Li", 1, 0),
+    ("LiO(g)", "Li-011", "Li", 1, 1),
+    ("Li2O(g)", "Li-017", "Li", 2, 1),
+    ("Li2O2(g)", "Li-019", "Li", 2, 2),
+    ("Rb(g)", "Rb-005", "Rb", 1, 0),
+    ("Pb(g)", "Pb-005", "Pb", 1, 0),
+    ("PbO(g)", "O-009", "Pb", 1, 1),
+)
+TRACE_NASA_GAS_SOURCES = (
+    ("RbO(g)", "NG-1329", "RbO", "Rb", 1, 1),
+    ("Rb2O(g)", "NG-1352", "Rb2O", "Rb", 2, 1),
+    ("PbO2(g)", "NG-1276", "PbO2", "Pb", 1, 2),
+)
+TRACE_GAS_SPECIES = frozenset(
+    {source[0].removesuffix("(g)") for source in TRACE_JANAF_GAS_SOURCES}
+    | {source[0].removesuffix("(g)") for source in TRACE_NASA_GAS_SOURCES}
+)
+
 # Charge-balance rows are appended after every neutral row so the established
 # neutral coefficient rows and their ordering remain unchanged. The text
 # tables are the NIST downloads; Ca+ already has a normalized JANAF record.
@@ -163,6 +185,13 @@ ION_GAS_TEXT_SOURCES = (
     ("Cr-(g)", "Cr-007", "Cr", 1, 0),
     ("V-(g)", "V-007", "V", 1, 0),
     ("Nb-(g)", "Nb-007", "Nb", 1, 0),
+)
+# Positive monatomic ion rows are opt-in and are admitted by the same C3
+# source screen as the existing cations.
+TRACE_ION_GAS_TEXT_SOURCES = (
+    ("Li+(g)", "Li-006", "Li", 1, 0),
+    ("Rb+(g)", "Rb-006", "Rb", 1, 0),
+    ("Pb+(g)", "Pb-006", "Pb", 1, 0),
 )
 ION_GAS_YAML_SOURCES = (("Ca+(g)", "Ca-007", "Ca", 1, 0),)
 
@@ -872,6 +901,97 @@ def _nasa_source_rows(
     }
 
 
+def _nasa_card_thermal_rows(
+    record: dict[str, Any], temperatures: list[float]
+) -> list[dict[str, float]]:
+    """Return source-grid Cp, H-H(298), and S cells from one CEA card.
+
+    Premise: NASA Glenn publishes ΔfH°(298.15 K) plus a NASA-7 H/RT and S/R
+    function. Algebra: Hinc(T)=R*[T*(H/RT)(T)-Tref*(H/RT)(Tref)], then
+    G_app(T)=ΔfH°(298.15 K)+Hinc(T)-T*S(T). Unit check: R*T and ΔfH are
+    J/mol and S is J/(mol K). Sanity: Hinc(298.15 K)=0, so the function
+    reproduces the published formation-enthalpy anchor there.
+
+    NASA/TP-2002-211556 uses the
+    thermodynamically stable elemental reference at 298.15 K; Li, Rb, and Pb
+    therefore need no elemental reference-phase conversion from JANAF. Gas
+    cards use 1 bar, matching JANAF. Condensed cards use a pure-liquid
+    standard at 1 atm, as specified on report page 2; the caller-supplied
+    parent activity is relative to that source-row standard state.
+    """
+    reference_h = float(record["delta_f_H_298_15"]["value"])
+    h298 = _nasa7_properties(record, NASA_STANDARD_T_K)
+    h298_j = R_J_MOL_K * NASA_STANDARD_T_K * h298["h_rt"]
+    if abs(h298_j - reference_h) > 1.0:
+        raise ValueError(
+            f"{record['record_id']} H(298.15) differs from its formation anchor "
+            f"by {h298_j - reference_h:g} J/mol"
+        )
+    rows = []
+    for temperature in temperatures:
+        properties = _nasa7_properties(record, temperature)
+        rows.append(
+            {
+                "temperature": temperature,
+                "heat_capacity": R_J_MOL_K * properties["cp_R"],
+                "entropy": R_J_MOL_K * properties["s_R"],
+                "enthalpy_increment": (
+                    R_J_MOL_K
+                    * (temperature * properties["h_rt"] - NASA_STANDARD_T_K * h298["h_rt"])
+                    / 1000.0
+                ),
+                "formation_enthalpy": reference_h / 1000.0,
+            }
+        )
+    return rows
+
+
+def _fit_nasa_card_gas_row(
+    nasa_source_dir: Path,
+    species_name: str,
+    table_id: str,
+    formula: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    *,
+    t_interval: int = 1,
+    fit_t_min: float = FIT_T_MIN,
+    fit_t_max: float = FIT_T_MAX,
+    runtime_t_min: float | None = None,
+    runtime_t_max: float | None = None,
+) -> dict[str, str]:
+    """Fit a published NASA-CEA gas card without a second formation anchor."""
+    record = _load_record(nasa_source_dir / f"{table_id}.json")
+    if record.get("record_id") != table_id:
+        raise ValueError(f"{table_id}: NASA record record_id does not match filename")
+    if record.get("formula") != formula or record.get("phase") != "gas":
+        raise ValueError(f"{table_id}: NASA record identity does not match {species_name}")
+    temperatures = [float(T) for T in np.arange(fit_t_min, fit_t_max + 50.0, 100.0)]
+    rows = _nasa_card_thermal_rows(record, temperatures)
+    reference = float(record["delta_f_H_298_15"]["value"]) / 1000.0
+    fit = _fit_shomate_values(rows, reference)
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    return {
+        "species_name": species_name,
+        "state": "g",
+        "T_interval": str(t_interval),
+        "cation": cation,
+        "cat_num": str(cat_num),
+        "oxy_num": str(oxy_num),
+        "T_min": number(fit_t_min if runtime_t_min is None else runtime_t_min),
+        "T_max": number(fit_t_max if runtime_t_max is None else runtime_t_max),
+        **{key: number(fit[key]) for key in "ABCDEFG"},
+        "H": "0",
+        "Ref": table_id,
+        "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
+        "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+    }
+
+
 def _fit_row(
     source_dir: Path,
     species_name: str,
@@ -946,6 +1066,47 @@ def _fit_row(
     }
 
 
+def _janaf_text_source_rows(
+    source_dir: Path, table_id: str
+) -> dict[float, dict[str, float]]:
+    """Read the thermal JANAF cells needed by gas and condensate fits.
+
+    A source row is useful when Cp, S, and H-H(298) are intact, even if its
+    printed formation columns are blank after an elemental reference-state
+    transition. The 298.15 K row separately supplies the formation-enthalpy
+    anchor. Rows with malformed thermal cells are skipped; no field is
+    reconstructed from neighboring temperatures.
+    """
+    path = source_dir / f"{table_id}.txt"
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if len(lines) < 3 or lines[1].split("\t")[0] != "T(K)":
+        raise ValueError(f"{table_id}: expected a NIST tab-delimited table")
+    parsed: dict[float, dict[str, float]] = {}
+    for line in lines[2:]:
+        cells = line.split("\t")
+        if len(cells) < 5:
+            continue
+        try:
+            temperature, cp, entropy, _minus_g_over_t, h_increment = (
+                float(value) for value in cells[:5]
+            )
+        except ValueError:
+            continue
+        row = {
+            "temperature": temperature,
+            "heat_capacity": cp,
+            "entropy": entropy,
+            "enthalpy_increment": h_increment,
+        }
+        for field, index in (("formation_enthalpy", 5), ("formation_gibbs_energy", 6)):
+            try:
+                row[field] = float(cells[index])
+            except (IndexError, ValueError):
+                pass
+        parsed[temperature] = row
+    return parsed
+
+
 def _fit_janaf_text_row(
     source_dir: Path,
     species_name: str,
@@ -954,60 +1115,31 @@ def _fit_janaf_text_row(
     cat_num: int,
     oxy_num: int,
     *,
+    t_interval: int = 1,
     fit_t_min: float = 1200.0,
     fit_t_max: float = 3000.0,
+    runtime_t_min: float | None = None,
+    runtime_t_max: float | None = None,
 ) -> dict[str, str]:
-    """Fit an extracted NIST tab-delimited ion table with the gas Shomate fit.
+    """Fit NIST gas cells to the Shomate form used by the runtime.
 
-    JANAF gives each charged species and the electron an ideal-gas standard
-    state at 0.1 MPa, with formation quantities on its elemental reference
-    convention. The table's Hf(298.15 K), H-H(298.15 K), and S° define the same
-    apparent Gibbs target used by _fit_row: G_app = Hf(298.15) + ΔH - T*S.
-    The extraction retains the 298.15 K anchor and all 100 K fit nodes from
-    1200 to 3000 K. H is kJ/mol and S is J/(mol K), so the fit helper converts
-    the enthalpy term to J/mol before subtracting T*S. Sanity is checked by
-    recording the maximum source-G residual and by the ion-equilibrium tests
-    against JANAF's tabulated log Kf values.
+    JANAF's ideal-gas standard state is 0.1 MPa (1 bar). The fitted target is
+    G_app = Hf(298.15) + [H-H(298.15)] - T*S, using the source's own 298 K
+    elemental reference convention. Hf is kJ/mol, H-H(298) is kJ/mol, and S
+    is J/(mol K); _fit_shomate_values converts enthalpy to J/mol before
+    subtracting T*S. If the low interval is fitted over 500-1500 K but exposed
+    only from 1200 K, that lower declaration is a runtime domain boundary,
+    not an extrapolated fit.
     """
-    path = source_dir / f"{table_id}.txt"
-    lines = path.read_text(encoding="utf-8").splitlines()
-    if len(lines) < 3 or not lines[0] or lines[1].split("\t")[0] != "T(K)":
-        raise ValueError(f"{table_id}: expected a NIST tab-delimited table")
-
-    parsed: dict[float, dict[str, float]] = {}
-    for line in lines[2:]:
-        cells = line.split("\t")
-        if len(cells) < 8:
-            continue
-        try:
-            temperature, cp, entropy, _minus_g_over_t, h_increment, h_form, g_form, _log_kf = (
-                float(value) for value in cells[:8]
-            )
-        except ValueError:
-            continue
-        parsed[temperature] = {
-            "temperature": temperature,
-            "heat_capacity": cp,
-            "entropy": entropy,
-            "enthalpy_increment": h_increment,
-            "formation_enthalpy": h_form,
-            "formation_gibbs_energy": g_form,
-        }
-
+    parsed = _janaf_text_source_rows(source_dir, table_id)
     reference = parsed.get(298.15, {}).get("formation_enthalpy")
     if reference is None:
         raise ValueError(f"{table_id}: no complete 298.15 K formation enthalpy")
     required_nodes = np.arange(fit_t_min, fit_t_max + 50.0, 100.0)
-    rows = [
-        parsed[float(temperature)]
-        for temperature in required_nodes
-        if float(temperature) in parsed
-    ]
-    if len(rows) != len(required_nodes):
-        missing = sorted(
-            set(float(value) for value in required_nodes) - set(parsed)
-        )
+    missing = [float(T) for T in required_nodes if float(T) not in parsed]
+    if missing:
         raise ValueError(f"{table_id}: missing 100 K fit nodes {missing!r}")
+    rows = [parsed[float(T)] for T in required_nodes]
     fit = _fit_shomate_values(rows, float(reference))
 
     def number(value: float) -> str:
@@ -1016,12 +1148,12 @@ def _fit_janaf_text_row(
     return {
         "species_name": species_name,
         "state": "g",
-        "T_interval": "1",
+        "T_interval": str(t_interval),
         "cation": cation,
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
-        "T_min": number(fit_t_min),
-        "T_max": number(fit_t_max),
+        "T_min": number(fit_t_min if runtime_t_min is None else runtime_t_min),
+        "T_max": number(fit_t_max if runtime_t_max is None else runtime_t_max),
         **{key: number(fit[key]) for key in "ABCDEFG"},
         "H": "0",
         "Ref": table_id,
@@ -1104,6 +1236,250 @@ def _fit_nasa_row(
         "_check_temperature_K": number(checks["check_temperature_K"]),
         "_breakpoint_checks": json.dumps(checks["breakpoint_checks"], sort_keys=True),
     }
+
+
+def _fit_condensate_values(
+    species_name: str,
+    table_id: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    source_rows: dict[float, dict[str, float]],
+    reference_kJ_mol: float,
+    *,
+    fit_t_min: float,
+    fit_t_max: float,
+    runtime_t_min: float,
+    runtime_t_max: float,
+    ref: str | None = None,
+) -> dict[str, str]:
+    """Fit source Cp/S/H increments to the existing condensate row form.
+
+    Premise: the runtime stores G_app = 1000*R*dH298_R - R*T*P(tau), where
+    tau=T/1000 and P is a quartic. Algebra: source cells give
+    G_app=dH298*1000 + Hinc*1000 - T*S, so P(tau) fits
+    (S-Hinc*1000/T)/R. Unit check: the fitted polynomial is dimensionless,
+    dH298_R is kelvin, and both Gibbs expressions are J/mol. Sanity: the
+    independently reconstructed source G values set the recorded fit
+    residual in J/mol and log10(K).
+    """
+    temperatures = [
+        float(T)
+        for T in np.arange(fit_t_min, fit_t_max + 50.0, JANAF_GRID_STEP_K)
+    ]
+    missing = [T for T in temperatures if T not in source_rows]
+    if missing:
+        raise ValueError(f"{table_id}: missing condensate source nodes {missing!r}")
+    rows = [source_rows[T] for T in temperatures]
+    tau = np.asarray(temperatures, dtype=float) / 1000.0
+    enthalpy_increment = np.asarray([row["enthalpy_increment"] for row in rows])
+    entropy = np.asarray([row["entropy"] for row in rows])
+    phi = entropy - enthalpy_increment * 1000.0 / np.asarray(temperatures)
+    design = np.column_stack((np.ones_like(tau), tau, tau**2, tau**3, tau**4))
+    coefficients = np.linalg.lstsq(design, phi / R_J_MOL_K, rcond=None)[0]
+    dH298_R = reference_kJ_mol / R_J_MOL_K
+    model_g = 1000.0 * R_J_MOL_K * dH298_R - R_J_MOL_K * np.asarray(temperatures) * (
+        design @ coefficients
+    )
+    source_g = (
+        reference_kJ_mol + enthalpy_increment
+    ) * 1000.0 - np.asarray(temperatures) * entropy
+    residual_j = float(np.max(np.abs(model_g - source_g)))
+    residual_log10 = float(
+        np.max(
+            np.abs(
+                (model_g - source_g)
+                / (R_J_MOL_K * np.asarray(temperatures) * np.log(10.0))
+            )
+        )
+    )
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    A, B, C, D, E = coefficients
+    return {
+        "species_name": species_name,
+        "state": "l",
+        "cation": cation,
+        "cat_num": str(cat_num),
+        "oxy_num": str(oxy_num),
+        "T_min": number(runtime_t_min),
+        "T_max": number(runtime_t_max),
+        "dH298_R": number(dH298_R),
+        "dG_A": number(A),
+        "dG_B": number(B),
+        "dG_C": number(C),
+        "dG_D": number(D),
+        "dG_E": number(E),
+        "Ref": table_id if ref is None else ref,
+        "_max_residual_J_per_mol": number(residual_j),
+        "_max_residual_log10_K": number(residual_log10),
+    }
+
+
+def _fit_janaf_text_condensate_row(
+    source_dir: Path,
+    species_name: str,
+    table_id: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    *,
+    fit_t_min: float,
+    fit_t_max: float,
+    runtime_t_min: float,
+    runtime_t_max: float,
+) -> dict[str, str]:
+    parsed = _janaf_text_source_rows(source_dir, table_id)
+    reference = parsed.get(298.15, {}).get("formation_enthalpy")
+    if reference is None:
+        raise ValueError(f"{table_id}: no complete 298.15 K formation enthalpy")
+    return _fit_condensate_values(
+        species_name,
+        table_id,
+        cation,
+        cat_num,
+        oxy_num,
+        parsed,
+        float(reference),
+        fit_t_min=fit_t_min,
+        fit_t_max=fit_t_max,
+        runtime_t_min=runtime_t_min,
+        runtime_t_max=runtime_t_max,
+    )
+
+
+def _fit_nasa_card_condensate_row(
+    nasa_source_dir: Path,
+    species_name: str,
+    table_id: str,
+    formula: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    *,
+    fit_t_min: float = 1200.0,
+    fit_t_max: float = 3000.0,
+    runtime_t_min: float | None = None,
+    runtime_t_max: float | None = None,
+) -> dict[str, str]:
+    record = _load_record(nasa_source_dir / f"{table_id}.json")
+    if (
+        record.get("record_id") != table_id
+        or record.get("formula") != formula
+        or record.get("phase") != "liquid"
+    ):
+        raise ValueError(f"{table_id}: NASA record identity does not match {species_name}")
+    temperatures = [
+        float(T)
+        for T in np.arange(fit_t_min, fit_t_max + 50.0, NASA_GRID_STEP_K)
+    ]
+    # This CEA liquid card starts above its 298 K condensed reference state.
+    # Preserve its integrated H(T) and S(T) functions directly instead of
+    # extrapolating the liquid polynomial to 298 K and treating that value as
+    # the formation anchor. Writing Hinc(T) = [H_card(T)-Hf_card(298)]/1000
+    # makes Hf+Hinc-T*S exactly the card's G(T) at every fitted liquid node.
+    # Unit check: Hinc is converted from J/mol to kJ/mol for the source-row
+    # fitter; Hf and T*S use the same kJ/mol scale there. Sanity: the equation
+    # simplifies to R*T*h_rt - T*R*s_R, the card's G(T), at each source node.
+    reference_j = float(record["delta_f_H_298_15"]["value"])
+    source_rows = {
+        temperature: {
+            "temperature": temperature,
+            "heat_capacity": R_J_MOL_K * properties["cp_R"],
+            "entropy": R_J_MOL_K * properties["s_R"],
+            "enthalpy_increment": (
+                R_J_MOL_K * temperature * properties["h_rt"] - reference_j
+            )
+            / 1000.0,
+        }
+        for temperature in temperatures
+        for properties in [_nasa7_properties(record, temperature)]
+    }
+    return _fit_condensate_values(
+        species_name,
+        table_id,
+        cation,
+        cat_num,
+        oxy_num,
+        source_rows,
+        reference_j / 1000.0,
+        fit_t_min=fit_t_min,
+        fit_t_max=fit_t_max,
+        runtime_t_min=fit_t_min if runtime_t_min is None else runtime_t_min,
+        runtime_t_max=fit_t_max if runtime_t_max is None else runtime_t_max,
+    )
+
+
+def _fit_janaf_condensate_with_nasa_tail(
+    janaf_source_dir: Path,
+    nasa_source_dir: Path,
+    species_name: str,
+    janaf_table_id: str,
+    nasa_table_id: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    *,
+    anchor_temperature: float,
+    fit_t_min: float = 1200.0,
+    fit_t_max: float = 3000.0,
+    runtime_t_min: float | None = None,
+    runtime_t_max: float | None = None,
+) -> dict[str, str]:
+    """Keep JANAF's anchor and cells, using the NASA card only above its tail.
+
+    Premise: JANAF O-007 supplies complete PbO(l) thermal cells through
+    2500 K, while the published CEA liquid card continues past 3000 K. Its
+    Hf(298) differs from JANAF by 16.351 kJ/mol, so the card contributes only
+    temperature increments above the last shared node. Algebra: anchor the
+    CEA H(T)-H(T0) and S(T)-S(T0) differences at JANAF's T0 cells, then use
+    G_app=Hf_JANAF(298)+Hinc-T*S. Unit check: the enthalpy difference is
+    converted from J/mol to kJ/mol before adding to JANAF's increment; entropy
+    remains J/(mol K). NASA's condensed standard pressure is 1 atm while the
+    JANAF anchor is 1 bar; the source-row activity convention is documented
+    and no pressure correction is claimed without a sourced liquid molar
+    volume. Sanity: Cp, Hinc, and S remain continuous at T0.
+    """
+    janaf_rows = _janaf_text_source_rows(janaf_source_dir, janaf_table_id)
+    reference = janaf_rows.get(298.15, {}).get("formation_enthalpy")
+    anchor = janaf_rows.get(anchor_temperature)
+    if reference is None or anchor is None:
+        raise ValueError(f"{janaf_table_id}: missing JANAF anchor data")
+    record = _load_record(nasa_source_dir / f"{nasa_table_id}.json")
+    if record.get("phase") != "liquid" or record.get("formula") != "PbO":
+        raise ValueError(f"{nasa_table_id}: expected a PbO liquid NASA card")
+    nasa_anchor = _nasa7_properties(record, anchor_temperature)
+    for temperature in np.arange(anchor_temperature + 100.0, fit_t_max + 50.0, 100.0):
+        temperature = float(temperature)
+        properties = _nasa7_properties(record, temperature)
+        janaf_rows[temperature] = {
+            "temperature": temperature,
+            "heat_capacity": R_J_MOL_K * properties["cp_R"],
+            "enthalpy_increment": anchor["enthalpy_increment"]
+            + R_J_MOL_K
+            * (
+                temperature * properties["h_rt"]
+                - anchor_temperature * nasa_anchor["h_rt"]
+            )
+            / 1000.0,
+            "entropy": anchor["entropy"]
+            + R_J_MOL_K * (properties["s_R"] - nasa_anchor["s_R"]),
+        }
+    return _fit_condensate_values(
+        species_name,
+        janaf_table_id,
+        cation,
+        cat_num,
+        oxy_num,
+        janaf_rows,
+        float(reference),
+        fit_t_min=fit_t_min,
+        fit_t_max=fit_t_max,
+        runtime_t_min=fit_t_min if runtime_t_min is None else runtime_t_min,
+        runtime_t_max=fit_t_max if runtime_t_max is None else runtime_t_max,
+    )
 
 
 def _fit_condensate_row(
@@ -1241,35 +1617,48 @@ def _fit_supercooled_liquid_row(
     liquid nodes in the JANAF table are checked by the caller's regression
     tests.
     """
-    record = _load_record(source_dir / f"{table_id}.yaml")
-    table = record["table"]
-    if table["table_id"] != table_id:
-        raise ValueError(f"{table_id}: record table_id does not match filename")
-    _validate_record_identity(record, species_name, table_id, "l")
-    source_row = next(
-        (row for row in table["values"] if _value(row, "temperature") == T0),
-        None,
-    )
-    if source_row is None:
-        raise ValueError(f"{table_id}: no complete liquid anchor at {T0:g} K")
-    ambiguous_temperatures = set()
-    for ambiguity in table.get("parse_ambiguities", []):
-        try:
-            ambiguous_temperatures.add(
-                float(ambiguity["raw_line"].split("\t", 1)[0])
+    yaml_path = source_dir / f"{table_id}.yaml"
+    if yaml_path.is_file():
+        record = _load_record(yaml_path)
+        table = record["table"]
+        if table["table_id"] != table_id:
+            raise ValueError(f"{table_id}: record table_id does not match filename")
+        _validate_record_identity(record, species_name, table_id, "l")
+        source_row = next(
+            (row for row in table["values"] if _value(row, "temperature") == T0),
+            None,
+        )
+        if source_row is None:
+            raise ValueError(f"{table_id}: no complete liquid anchor at {T0:g} K")
+        ambiguous_temperatures = set()
+        for ambiguity in table.get("parse_ambiguities", []):
+            try:
+                ambiguous_temperatures.add(
+                    float(ambiguity["raw_line"].split("\t", 1)[0])
+                )
+            except ValueError:
+                continue
+        if T0 in ambiguous_temperatures:
+            raise ValueError(
+                f"{table_id}: liquid anchor at {T0:g} K is parse-ambiguous"
             )
-        except ValueError:
-            continue
-    if T0 in ambiguous_temperatures:
-        raise ValueError(f"{table_id}: liquid anchor at {T0:g} K is parse-ambiguous")
-    cp = float(_value(source_row, "heat_capacity"))
-    entropy_0 = float(_value(source_row, "entropy"))
-    enthalpy_0 = float(_value(source_row, "enthalpy_increment"))
-    reference = next(
-        _value(row, "formation_enthalpy")
-        for row in table["values"]
-        if _value(row, "temperature") == 298.15
-    )
+        cp = float(_value(source_row, "heat_capacity"))
+        entropy_0 = float(_value(source_row, "entropy"))
+        enthalpy_0 = float(_value(source_row, "enthalpy_increment"))
+        reference = next(
+            _value(row, "formation_enthalpy")
+            for row in table["values"]
+            if _value(row, "temperature") == 298.15
+        )
+    else:
+        parsed = _janaf_text_source_rows(source_dir, table_id)
+        source_row = parsed.get(T0)
+        if source_row is None:
+            raise ValueError(f"{table_id}: no complete liquid anchor at {T0:g} K")
+        cp = source_row["heat_capacity"]
+        entropy_0 = source_row["entropy"]
+        enthalpy_0 = source_row["enthalpy_increment"]
+        reference = parsed.get(298.15, {}).get("formation_enthalpy")
     if reference is None:
         raise ValueError(f"{table_id} has no complete 298.15 K formation enthalpy")
 
@@ -1392,10 +1781,63 @@ def build_rows(
         _fit_janaf_text_row(source_dir, *source)
         for source in ION_GAS_TEXT_SOURCES
     )
+    # These optional trace rows are appended after the established gas and ion
+    # rows so each existing coefficient row remains byte-for-byte unchanged.
+    rows.extend(
+        _fit_janaf_text_row(
+            source_dir,
+            *source,
+            t_interval=1,
+            fit_t_min=FIT_T_MIN,
+            fit_t_max=FIT_T_MAX,
+        )
+        for source in TRACE_JANAF_GAS_SOURCES
+    )
+    rows.extend(
+        _fit_nasa_card_gas_row(
+            nasa_source_dir,
+            *source,
+            t_interval=1,
+            fit_t_min=FIT_T_MIN,
+            fit_t_max=FIT_T_MAX,
+        )
+        for source in TRACE_NASA_GAS_SOURCES
+    )
+    rows.extend(
+        _fit_janaf_text_row(
+            source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=LOW_FIT_T_MIN,
+            fit_t_max=LOW_FIT_T_MAX,
+            runtime_t_min=1200.0,
+        )
+        for source in TRACE_JANAF_GAS_SOURCES
+    )
+    rows.extend(
+        _fit_nasa_card_gas_row(
+            nasa_source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=LOW_FIT_T_MIN,
+            fit_t_max=LOW_FIT_T_MAX,
+            runtime_t_min=1200.0,
+        )
+        for source in TRACE_NASA_GAS_SOURCES
+    )
+    rows.extend(
+        _fit_janaf_text_row(source_dir, *source)
+        for source in TRACE_ION_GAS_TEXT_SOURCES
+    )
     return rows
 
 
-def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
+def build_condensate_rows(
+    source_dir: Path, nasa_source_dir: Path | None = None
+) -> list[dict[str, str]]:
+    nasa_source_dir = nasa_source_dir or (
+        Path(__file__).resolve().parents[1] / "data-src/nasa-glenn"
+    )
     rows = []
     for source in CONDENSATE_SOURCES:
         if source[1] == "Na-013":
@@ -1444,6 +1886,56 @@ def build_condensate_rows(source_dir: Path) -> list[dict[str, str]]:
     rows.extend(
         _fit_supercooled_liquid_row(source_dir, *source)
         for source in SUPERCOOLED_LIQUID_SOURCES
+    )
+    rows.append(
+        _fit_janaf_text_condensate_row(
+            source_dir,
+            "Li2O(l)",
+            "Li-015",
+            "Li",
+            2,
+            1,
+            fit_t_min=1800.0,
+            fit_t_max=3000.0,
+            runtime_t_min=1800.0,
+            runtime_t_max=3000.0,
+        )
+    )
+    # Keep the established 1500 K low/high condensate interval seam. Separate
+    # fits reduce curvature error in the exact NASA constant-Cp liquid cards.
+    for fit_t_min, fit_t_max in ((1200.0, 1500.0), (1500.0, 3000.0)):
+        rows.append(
+            _fit_nasa_card_condensate_row(
+                nasa_source_dir,
+                "Rb2O(l)",
+                "NG-1841",
+                "Rb2O",
+                "Rb",
+                2,
+                1,
+                fit_t_min=fit_t_min,
+                fit_t_max=fit_t_max,
+            )
+        )
+        rows.append(
+            _fit_janaf_condensate_with_nasa_tail(
+                source_dir,
+                nasa_source_dir,
+                "PbO(l)",
+                "O-007",
+                "NG-1801",
+                "Pb",
+                1,
+                1,
+                anchor_temperature=2500.0,
+                fit_t_min=fit_t_min,
+                fit_t_max=fit_t_max,
+            )
+        )
+    rows.append(
+        _fit_supercooled_liquid_row(
+            source_dir, "Li2O(l)", "Li-015", "Li", 2, 1, 1800.0, 1800.0
+        )
     )
     return rows
 
@@ -1574,10 +2066,14 @@ def main() -> None:
         args.condensate_output = repository / "src/openimcc/data/gas/condensate.csv"
     rows = build_rows(args.source_dir, args.nasa_source_dir, args.lh84_source_dir)
     write_csv(rows, args.output)
-    condensate_rows = build_condensate_rows(args.source_dir)
+    condensate_rows = build_condensate_rows(args.source_dir, args.nasa_source_dir)
     if args.condensate_output is not None:
         merge_condensate_csv(condensate_rows, args.condensate_output)
     if args.output == packaged_gas:
+        research_pack = repository / (
+            "src/openimcc/data/packs/gas-janaf-parent-liquids-research"
+        )
+        (research_pack / "gas-shomate.csv").write_bytes(args.output.read_bytes())
         research_condensate = repository / (
             "src/openimcc/data/packs/gas-janaf-parent-liquids-research/condensate.csv"
         )

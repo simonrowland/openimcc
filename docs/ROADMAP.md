@@ -11,9 +11,11 @@ On the README basalt over 1200–3000 K and fO2 = 1e-12, 1e-10, 1e-8, 1e-6,
 1e-4, `complete` requires an internally computed parent-oxide activity (C1),
 every source-listed neutral E–O gas included or screened below a maximum pressure
 ratio of 1e-4 (C2), charged species modeled when their source-screened share
-exceeds 1e-4 (C3), and one-bar fitted standard states with parent-liquid rows
-covering the domain (C4). Validation is recorded separately: it is `validated`
-only when a scoreable observation exists.
+exceeds 1e-4 (C3), and 1-bar gas rows with source-defined parent-liquid rows
+covering the domain (C4). A NASA condensed-phase parent retains its source
+card's pure-liquid standard state; the caller activity is relative to that
+standard. Validation is recorded separately: it is `validated` only when a
+scoreable observation exists.
 
 Default TiO2(l), Cr2O3(l), and V2O3(l) have labelled constant-Cp continuation
 rows that count as parent coverage while preserving runtime domain flags. The
@@ -24,10 +26,12 @@ The C3 ion-share grid includes only nodes where summed neutral partial pressure
 is at most 1 bar, the validity ceiling used by the gas layer. Of 95 nodes, 69
 meet that bound. `evaluate_gas(..., include_ions=True)` solves charge balance
 on the full default neutral set, adds fitted Na+, K+, Ca+ and e−, and includes
-every available JANAF-supported anion whose neutral is present. The default
-result remains neutral-only. Na and K remain `complete-except-ions` because
-their bounded shares exceed 1e-4 while ions are opt-in; Ca's bounded share is
-6.310e-5, below the C3 threshold. Positive molecular ions and nonthermal
+every available JANAF-supported anion whose neutral is present. Li+, Rb+ and
+Pb+ are also available when the caller supplies their trace-parent activities.
+The default result remains neutral-only. Na and K remain
+`complete-except-ions` because their bounded shares exceed 1e-4 while ions are
+opt-in; Ca, Li, Rb and Pb remain below the C3 threshold on their recorded
+caller-supplied activity screens. Positive molecular ions and nonthermal
 electrons remain outside this calculation. Mn, Ni and Co are not computed
 because their parent-liquid rows are available only from an external pack. P
 channels also require an external source-rated P2O5(l) row.
@@ -48,6 +52,9 @@ channels also require an external source-rated P2O5(l) row.
 | Cr | gas-partial | no | yes | yes | no | unvalidated | A labelled constant-Cp Cr2O3(l) continuation covers the parent interval below 1900 K; Cr2O3 activity is caller-supplied and Cr(g) ends at 2900 K, leaving the upper C4 gap; joint C3 closure-screen maximum 1.064e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | V | gas-partial | no | yes | yes | no | unvalidated | A labelled constant-Cp V2O3(l) continuation covers 1200-1700 K; V(g), VO(g), and VO2(g) still start at 1500 K, leaving a lower C4 gap; activity is caller-supplied; joint C3 closure-screen maximum 1.335e-08 at 2500 K and fO2=1e-8 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Nb | gas-partial | no | yes | yes | no | unvalidated | Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 K; Nb(g), NbO(g), and NbO2(g) start at 1500 K, leaving a gas C4 gap; activity is caller-supplied; joint C3 closure-screen maximum 1.356e-12 at 2500 K and fO2=1e-8 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Li | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Li2O(l) and neutral Li gas rows cover 1200-3000 K, including a labelled constant-Cp continuation below the first liquid node; a(Li2O) is caller-supplied; the joint C3 screen used a(Li2O)=1e-3 and reached 4.238e-08 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Rb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Rb2O(l) and neutral Rb gas rows cover 1200-3000 K; a(Rb2O) is caller-supplied; the joint C3 screen used a(Rb2O)=1e-3 and reached 5.350e-05 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Pb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | PbO(l) and neutral Pb gas rows cover 1200-3000 K; a(PbO) is caller-supplied; PbO(l) is the Pb(II) parent because no evaluated PbO2(l) parent row was found; the joint C3 screen used a(PbO)=1e-3 and reached 1.271e-12 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Mn | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
 | Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
 | Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
@@ -62,6 +69,9 @@ positive-only estimate and bounded fitted closure screen give:
 | Na | 1.169e-3 (3000 K, 1e-4) | 9.261e-4 (2800 K, 1e-4) |
 | K | 3.979e-2 (1300 K, 1e-4) | 4.325e-2 (1200 K, 1e-4) |
 | Ca | 1.052e-4 (3000 K, 1e-4) | 6.310e-5 (2800 K, 1e-4) |
+| Li | — | 4.238e-8 (2000 K, 1e-4) |
+| Rb | — | 5.350e-5 (2000 K, 1e-4) |
+| Pb | — | 1.271e-12 (2000 K, 1e-4) |
 
 The P/S channels are optional and stay out of default gas results unless their
 caller-supplied parent activity is present. Sulfur uses the JANAF `S2(g)` gas

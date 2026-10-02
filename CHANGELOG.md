@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added optional Li, Rb and Pb gas channels with caller-supplied Li2O(l),
+  Rb2O(l) and PbO(l) activities. NIST-JANAF rows are preferred, with NASA
+  Glenn cards used for Rb oxides and the PbO high-temperature tail. Li2O(l)
+  has a labelled constant-Cp continuation to 1200 K. Added Li+, Rb+ and Pb+
+  to opt-in ion closure. Activities remain caller-supplied; openimcc has no
+  trace-element activity model. Source disagreements, fits and coverage screens
+  are recorded in provenance and the roadmap.
 - Vendored the NIST-JANAF crystal tables Al-096 (corundum), Ca-027 (CaO) and
   O-035 (high cristobalite) as reference solids for converting oxide
   activities between solid and liquid standard states. They are not runtime
