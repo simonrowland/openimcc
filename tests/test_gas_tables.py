@@ -2777,6 +2777,182 @@ def test_snol_constant_cp_continuation_uses_the_nasa_liquid_anchor() -> None:
     )
 
 
+def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
+    """Generated quartics stay within 40 J/(mol K) of anchor Cp.
+
+    The Shomate Gibbs polynomial implies Cp/R = 2*B*tau + 6*C*tau^2 +
+    12*D*tau^3 + 20*E*tau^4. Its entropy is R*(P + tau*P'). The fit fixes
+    Gibbs and entropy at the source anchor; comparison with the adjacent fit
+    also bounds its published seam error to 30 J/mol and 1.3 J/(mol K).
+    """
+    from openimcc.gas import _lamor_gibbs
+
+    pack = load_gas_datapack()
+    generated_rows = [
+        row
+        for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
+        if row["Ref"].endswith(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
+    ]
+
+    def entropy(row, temperature: float) -> float:
+        tau = temperature / 1000.0
+        coefficients = [float(row[f"dG_{key}"]) for key in "ABCDE"]
+        polynomial = sum(value * tau**power for power, value in enumerate(coefficients))
+        derivative = sum(
+            power * coefficients[power] * tau ** (power - 1)
+            for power in range(1, 5)
+        )
+        return R_J_MOL_K * (polynomial + tau * derivative)
+
+    for generated in generated_rows:
+        species = generated["species_name"]
+        rows = pack.oxide_df.loc[species]
+        continuation = rows.loc[rows["Ref"] == generated["Ref"]].iloc[0]
+        anchor_cp = float(generated["_Cp_l_J_molK"])
+        temperatures = np.linspace(
+            float(continuation["T_min"]), float(continuation["T_max"]), 101
+        )
+        for temperature in temperatures:
+            tau = float(temperature) / 1000.0
+            b, c, d, e = (
+                float(continuation[f"dG_{key}"]) for key in "BCDE"
+            )
+            implied_cp = R_J_MOL_K * (
+                2.0 * b * tau + 6.0 * c * tau**2
+                + 12.0 * d * tau**3 + 20.0 * e * tau**4
+            )
+            assert abs(implied_cp - anchor_cp) <= 40.0
+
+        seam = float(continuation["T_max"])
+        adjacent = rows.loc[rows["T_min"].astype(float) == seam].iloc[0]
+        assert abs(_lamor_gibbs(seam, continuation) - _lamor_gibbs(seam, adjacent)) <= 30.0
+        assert abs(entropy(continuation, seam) - entropy(adjacent, seam)) <= 1.3
+        if species == "SnO(l)":
+            assert abs(_lamor_gibbs(seam, continuation) - _lamor_gibbs(seam, adjacent)) <= 0.2
+            assert abs(entropy(continuation, seam) - entropy(adjacent, seam)) <= 0.05
+            for temperature in temperatures:
+                tau = float(temperature) / 1000.0
+                b, c, d, e = (
+                    float(continuation[f"dG_{key}"]) for key in "BCDE"
+                )
+                implied_cp = R_J_MOL_K * (
+                    2.0 * b * tau + 6.0 * c * tau**2
+                    + 12.0 * d * tau**3 + 20.0 * e * tau**4
+                )
+                assert abs(implied_cp - anchor_cp) <= 0.01
+
+
+def test_cu020_malformed_1600_row_is_excluded_from_the_fit() -> None:
+    parsed = build_gas_tables._janaf_text_source_rows(JANAF_DATA, "Cu-020")
+    assert 1600.0 not in parsed
+    fit_nodes = [
+        float(temperature)
+        for temperature in np.arange(1500.0, 2000.1, 100.0)
+    ]
+    assert [temperature for temperature in fit_nodes if temperature in parsed] == [
+        1500.0, 1700.0, 1800.0, 1900.0, 2000.0
+    ]
+
+
+def test_nasa_card_fits_reproduce_direct_card_gibbs_values() -> None:
+    """NASA-anchored rows match direct card G; all other NASA sources are listed."""
+    from openimcc.gas import _lamor_gibbs
+
+    pack = load_gas_datapack()
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    def row_key(record):
+        return (
+            record["table"], record["species_name"], tuple(record["T_range_K"])
+        )
+
+    # Independent formation/entropy anchors intentionally override the NASA
+    # card's absolute G while retaining its thermal shape.
+    nasa_card_exclusions = {
+        ("gas", "Na2O(g)", (1500, 3000)): "LH84 provides the anchors; NASA supplies Cp(T).",
+        ("gas", "Na2O(g)", (500, 1500)): "LH84 provides the anchors; NASA supplies Cp(T).",
+        ("gas", "K2O(g)", (1500, 3000)): "LH84 provides the anchors; NASA supplies Cp(T).",
+        ("gas", "K2O(g)", (500, 1500)): "LH84 provides the anchors; NASA supplies Cp(T).",
+        ("condensate", "PbO(l)", (1500, 3000)): "JANAF anchors the NASA tail at 2500 K.",
+        ("condensate", "Cu2O(l)", (2000, 2500)): "JANAF anchors the NASA tail at 2000 K.",
+        ("condensate", "Cu2O(l)", (2500, 3000)): "JANAF anchors the NASA tail at 2000 K.",
+    }
+    nasa_sourced = {
+        row_key(record): record
+        for record in provenance["rows"]
+        if record.get("authority") == "nasa_glenn_fitted"
+        or "tail_source_path" in record
+        or str(record.get("source_path", "")).startswith("data-src/nasa-glenn/")
+    }
+    checked = {
+        key
+        for key, record in nasa_sourced.items()
+        if record.get("authority") == "nasa_glenn_fitted"
+        and "nasa_dfH298_J_per_mol" not in record.get("source", {})
+    }
+    assert set(nasa_sourced) == checked | set(nasa_card_exclusions)
+    assert checked.isdisjoint(nasa_card_exclusions)
+
+    for record in provenance["rows"]:
+        if row_key(record) not in checked:
+            continue
+        card_path = NASA_DATA / f"{record['table_id']}.json"
+        card = build_gas_tables._load_record(card_path)
+        lower, upper = map(float, record["T_range_K"])
+        temperatures = (lower, (lower + upper) / 2.0, upper)
+        if record["table"] == "gas":
+            row = _gas_row_for_interval(
+                pack, record["species_name"].removesuffix("(g)"),
+                int(record["T_interval"]),
+            )
+            fitted_g = lambda T: _janaf_gibbs(T, row)
+        else:
+            candidates = pack.oxide_df.loc[record["species_name"]]
+            row = candidates.loc[candidates["T_min"].astype(float) == lower].iloc[0]
+            fitted_g = lambda T: _lamor_gibbs(T, row)
+
+        allowed = float(record["max_residual_J_per_mol"]) + 10.0
+        for temperature in temperatures:
+            properties = build_gas_tables._nasa7_properties(card, temperature)
+            direct_g = R_J_MOL_K * temperature * (
+                properties["h_rt"] - properties["s_R"]
+            )
+            assert abs(fitted_g(temperature) - direct_g) <= allowed
+
+    # The JANAF-anchored tails preserve NASA's H/S increments from their splice.
+    for species, janaf_id, nasa_id, formula, splice in (
+        ("PbO(l)", "O-007", "NG-1801", "PbO", 2500.0),
+        ("Cu2O(l)", "Cu-020", "NG-1844", "Cu2O", 2000.0),
+    ):
+        source_rows, _reference = build_gas_tables._janaf_condensate_nasa_tail_rows(
+            JANAF_DATA,
+            NASA_DATA,
+            janaf_id,
+            nasa_id,
+            nasa_formula=formula,
+            anchor_temperature=splice,
+        )
+        card = _nasa_record(nasa_id)
+        anchor = source_rows[splice]
+        anchor_card = build_gas_tables._nasa7_properties(card, splice)
+        for temperature, source in source_rows.items():
+            if temperature < splice:
+                continue
+            card_values = build_gas_tables._nasa7_properties(card, temperature)
+            expected_h_increment = R_J_MOL_K * (
+                temperature * card_values["h_rt"]
+                - splice * anchor_card["h_rt"]
+            ) / 1000.0
+            expected_s_increment = R_J_MOL_K * (
+                card_values["s_R"] - anchor_card["s_R"]
+            )
+            assert source["enthalpy_increment"] - anchor["enthalpy_increment"] == pytest.approx(
+                expected_h_increment, abs=1e-12
+            )
+            assert source["entropy"] - anchor["entropy"] == pytest.approx(
+                expected_s_increment, abs=1e-12
+            )
+
+
 def _source_g_app_from_row(table_id: str, row: dict[str, float]) -> float:
     rows = _complete_rows(table_id)
     reference = next(

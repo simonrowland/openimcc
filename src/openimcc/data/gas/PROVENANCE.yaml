@@ -3250,6 +3250,10 @@ rows:
     download_url: https://janaf.nist.gov/tables/Cu-020.txt
     retrieval_date: '2026-10-01'
     note: >-
+      The 1500-2000 K row interpolates five coefficients from five complete
+      100 K nodes after excluding the malformed 1600 K line; its near-zero
+      on-node residual is an interpolation result, not an accuracy statement.
+    note: >-
       Cu-020 marks GLASS <--> LIQUID at 1000 K and CRYSTAL <--> LIQUID at
       1516.700 K. This row fits the printed liquid-branch cells directly.
   - table: condensate
@@ -3260,8 +3264,8 @@ rows:
     authority: janaf_fitted
     method: fitted
     T_range_K: [1500, 2000]
-    max_residual_J_per_mol: 0.213643790862989
-    max_residual_log10_K: 6.19966034070021e-6
+    max_residual_J_per_mol: 2.3283064365387e-10
+    max_residual_log10_K: 6.40083547014049e-15
     source_url: https://janaf.nist.gov/tables/Cu-020.html
     download_url: https://janaf.nist.gov/tables/Cu-020.txt
     retrieval_date: '2026-10-01'
@@ -3373,8 +3377,8 @@ rows:
     authority: nasa_glenn_fitted
     method: generated_constant_cp_extrapolation_fit
     T_range_K: [1200, 1250]
-    max_residual_J_per_mol: 3.32506307732547
-    max_residual_log10_K: 0.000141433291254996
+    max_residual_J_per_mol: 3.16401128657162e-05
+    max_residual_log10_K: 1.36247125806271e-09
     source_locator: thermo.inp lines 14618-14622
     source:
       citation: >-

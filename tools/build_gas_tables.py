@@ -1121,6 +1121,10 @@ def _janaf_text_source_rows(
             "entropy": entropy,
             "enthalpy_increment": h_increment,
         }
+        if table_id == "Cu-020" and temperature == 1600.0:
+            # This source line concatenates three formation columns into one
+            # malformed cell; exclude the entire ambiguous row from every fit.
+            continue
         for field, index in (("formation_enthalpy", 5), ("formation_gibbs_energy", 6)):
             try:
                 row[field] = float(cells[index])
@@ -1275,6 +1279,7 @@ def _fit_condensate_values(
     runtime_t_min: float,
     runtime_t_max: float,
     ref: str | None = None,
+    allow_missing_nodes: bool = False,
 ) -> dict[str, str]:
     """Fit source Cp/S/H increments to the existing condensate row form.
 
@@ -1292,7 +1297,16 @@ def _fit_condensate_values(
     ]
     missing = [T for T in temperatures if T not in source_rows]
     if missing:
-        raise ValueError(f"{table_id}: missing condensate source nodes {missing!r}")
+        if not allow_missing_nodes:
+            raise ValueError(f"{table_id}: missing condensate source nodes {missing!r}")
+        temperatures = [T for T in temperatures if T in source_rows]
+    minimum_nodes = min(
+        5, round((fit_t_max - fit_t_min) / JANAF_GRID_STEP_K) + 1
+    )
+    if allow_missing_nodes and len(temperatures) < minimum_nodes:
+        raise ValueError(
+            f"{table_id}: condensate fit needs at least {minimum_nodes} source nodes"
+        )
     rows = [source_rows[T] for T in temperatures]
     tau = np.asarray(temperatures, dtype=float) / 1000.0
     enthalpy_increment = np.asarray([row["enthalpy_increment"] for row in rows])
@@ -1435,24 +1449,17 @@ def _fit_nasa_card_condensate_row(
     )
 
 
-def _fit_janaf_condensate_with_nasa_tail(
+def _janaf_condensate_nasa_tail_rows(
     janaf_source_dir: Path,
     nasa_source_dir: Path,
-    species_name: str,
     janaf_table_id: str,
     nasa_table_id: str,
-    cation: str,
-    cat_num: int,
-    oxy_num: int,
     *,
     nasa_formula: str = "PbO",
     anchor_temperature: float,
-    fit_t_min: float = 1200.0,
     fit_t_max: float = 3000.0,
-    runtime_t_min: float | None = None,
-    runtime_t_max: float | None = None,
-) -> dict[str, str]:
-    """Keep JANAF's anchor and cells, using the NASA card only above its tail.
+) -> tuple[dict[float, dict[str, float]], float]:
+    """Build the splice-anchored JANAF/NASA H/S rows used by the fit.
 
     Premise: the JANAF liquid table supplies complete thermal cells through
     ``anchor_temperature``, while the published CEA liquid card continues
@@ -1492,6 +1499,35 @@ def _fit_janaf_condensate_with_nasa_tail(
             "entropy": anchor["entropy"]
             + R_J_MOL_K * (properties["s_R"] - nasa_anchor["s_R"]),
         }
+    return janaf_rows, float(reference)
+
+
+def _fit_janaf_condensate_with_nasa_tail(
+    janaf_source_dir: Path,
+    nasa_source_dir: Path,
+    species_name: str,
+    janaf_table_id: str,
+    nasa_table_id: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    *,
+    nasa_formula: str = "PbO",
+    anchor_temperature: float,
+    fit_t_min: float = 1200.0,
+    fit_t_max: float = 3000.0,
+    runtime_t_min: float | None = None,
+    runtime_t_max: float | None = None,
+) -> dict[str, str]:
+    janaf_rows, reference = _janaf_condensate_nasa_tail_rows(
+        janaf_source_dir,
+        nasa_source_dir,
+        janaf_table_id,
+        nasa_table_id,
+        nasa_formula=nasa_formula,
+        anchor_temperature=anchor_temperature,
+        fit_t_max=fit_t_max,
+    )
     return _fit_condensate_values(
         species_name,
         janaf_table_id,
@@ -1499,11 +1535,12 @@ def _fit_janaf_condensate_with_nasa_tail(
         cat_num,
         oxy_num,
         janaf_rows,
-        float(reference),
+        reference,
         fit_t_min=fit_t_min,
         fit_t_max=fit_t_max,
         runtime_t_min=fit_t_min if runtime_t_min is None else runtime_t_min,
         runtime_t_max=fit_t_max if runtime_t_max is None else runtime_t_max,
+        allow_missing_nodes=janaf_table_id == "Cu-020",
     )
 
 
@@ -1706,12 +1743,20 @@ def _fit_supercooled_liquid_row(
     if reference is None:
         raise ValueError(f"{table_id} has no complete 298.15 K formation enthalpy")
 
-    # Fit on JANAF's 100 K grid plus both interval endpoints.  Evaluate the
-    # resulting polynomial every kelvin below to report the actual maximum.
-    fit_temperatures = sorted(
-        {1200.0, runtime_t_max}
-        | set(float(T) for T in range(1200, int(runtime_t_max) + 1, 100))
-    )
+    use_cp_constrained_fit = species_name == "SnO(l)"
+    if use_cp_constrained_fit:
+        # Fit the implied Cp directly and constrain G and S at T0. The quartic
+        # basis has four thermodynamic coefficients: direct Cp fitting preserves
+        # the constant-Cp continuation shape across the short SnO seam.
+        fit_temperatures = np.linspace(
+            1200.0, runtime_t_max, max(5, int(runtime_t_max - 1200.0) + 1)
+        ).tolist()
+    else:
+        # Keep the established fit nodes for other continuation rows.
+        fit_temperatures = sorted(
+            {1200.0, runtime_t_max}
+            | set(float(T) for T in range(1200, int(runtime_t_max) + 1, 100))
+        )
 
     def phi(temperature: float) -> float:
         enthalpy_increment = enthalpy_0 + cp * (temperature - T0) / 1000.0
@@ -1720,10 +1765,42 @@ def _fit_supercooled_liquid_row(
 
     tau = np.asarray(fit_temperatures, dtype=float) / 1000.0
     design = np.column_stack((np.ones_like(tau), tau, tau**2, tau**3, tau**4))
-    coefficients = np.linalg.lstsq(
-        design, np.asarray([phi(T) for T in fit_temperatures]) / R_J_MOL_K,
-        rcond=None,
-    )[0]
+    if use_cp_constrained_fit:
+        heat_capacity_design = np.column_stack(
+            (2.0 * tau, 6.0 * tau**2, 12.0 * tau**3, 20.0 * tau**4)
+        )
+        anchor_tau = T0 / 1000.0
+        anchor_design = np.asarray(
+            [
+                [1.0, anchor_tau, anchor_tau**2, anchor_tau**3, anchor_tau**4],
+                [1.0, 2.0 * anchor_tau, 3.0 * anchor_tau**2,
+                 4.0 * anchor_tau**3, 5.0 * anchor_tau**4],
+            ]
+        )
+        anchor_phi = phi(T0) / R_J_MOL_K
+        constraints = anchor_design[1, 1:] - anchor_design[0, 1:]
+        constraint_value = entropy_0 / R_J_MOL_K - anchor_phi
+        # G=-RT*P gives S/R=P+tau*P' and Cp/R=2*tau*P'+tau^2*P''.
+        # These dimensionless constraints fix G and S at the NASA anchor.
+        normal = heat_capacity_design.T @ heat_capacity_design
+        target = heat_capacity_design.T @ np.full(len(tau), cp / R_J_MOL_K)
+        kkt = np.block(
+            [[normal, constraints[:, None]], [constraints[None, :], np.zeros((1, 1))]]
+        )
+        coefficients_tail = np.linalg.solve(
+            kkt, np.concatenate((target, [constraint_value]))
+        )[:4]
+        coefficients = np.concatenate(
+            ([anchor_phi - anchor_tau * coefficients_tail[0]
+              - anchor_tau**2 * coefficients_tail[1]
+              - anchor_tau**3 * coefficients_tail[2]
+              - anchor_tau**4 * coefficients_tail[3]], coefficients_tail)
+        )
+    else:
+        coefficients = np.linalg.lstsq(
+            design, np.asarray([phi(T) for T in fit_temperatures]) / R_J_MOL_K,
+            rcond=None,
+        )[0]
     sample_temperatures = np.linspace(1200.0, runtime_t_max, int(runtime_t_max - 1200) + 1)
     sample_tau = sample_temperatures / 1000.0
     sample_design = np.column_stack(
