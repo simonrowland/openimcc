@@ -1,0 +1,196 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "source_id": "nasa-glenn",
+  "source": {
+    "database": "NASA Glenn / CEA thermo.inp",
+    "citation": "McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556; NASA CEA thermo.inp.",
+    "version": "thermo.inp dated 9/8/2021 (Snyder CEA standalone updates)",
+    "official_url": "https://www.grc.nasa.gov/www/CEAWeb/",
+    "licence": "US government work; 17 U.S.C. § 105 (no U.S. copyright). Public-domain basis."
+  },
+  "compilation_role": {
+    "kind": "assessed_thermodynamic_functions",
+    "engine_reference_input": true,
+    "validation_measurement": false,
+    "scoring_eligible": false,
+    "battery_refusal": "gibbs_table_not_runtime_observable",
+    "circularity_warning": "Do not validate an engine against a compilation it consumes."
+  },
+  "record_id": "NG-11154",
+  "name_as_published": "B2O3(L)",
+  "citation_as_published": "Liquid. Gurvich,1996a pt1 p21 pt2 p16.",
+  "cea_section": "products",
+  "formula": "B2O3",
+  "phase": "liquid",
+  "phase_as_published": "6",
+  "phase_flag": 6,
+  "phase_flag_as_published": " 6",
+  "phase_normalization_rule": "G or CEA flag 0 maps to gas. Otherwise a recognized terminal state suffix keeps its published label; without one, NASA-7 S/L/C maps to cr/L/condensed and a positive CEA flag maps to condensed. Unrecognized suffixes stay verbatim in phase_as_published and are listed as ambiguities; card/suffix conflicts retain both published tokens. phase_ordinal is present only when same-formula non-gas records would otherwise share a phase label.",
+  "n_intervals_declared": 1,
+  "source_ref_code": "tpis96",
+  "composition": [
+    {
+      "element_as_published": " B",
+      "count_as_published": "   2.00",
+      "element": "B",
+      "count": 2,
+      "filler": false
+    },
+    {
+      "element_as_published": "O ",
+      "count_as_published": "  3.00 ",
+      "element": "O",
+      "count": 3,
+      "filler": false
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": " 0.00  ",
+      "element": null,
+      "count": 0,
+      "filler": true
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": "0.00   ",
+      "element": null,
+      "count": 0,
+      "filler": true
+    },
+    {
+      "element_as_published": " 0",
+      "count_as_published": ".00 2  ",
+      "element": "0",
+      "count": null,
+      "filler": false
+    }
+  ],
+  "molecular_weight": {
+    "as_published": "9.6202000",
+    "value": 9.6202
+  },
+  "delta_f_H_298_15": {
+    "as_published": "-1273500.000",
+    "value": -1273500,
+    "units_as_published": "J/mol"
+  },
+  "intervals": [
+    {
+      "T_min_K": {
+        "as_published": "723.000",
+        "value": 723
+      },
+      "T_max_K": {
+        "as_published": "6000.000",
+        "value": 6000
+      },
+      "n_poly_terms": {
+        "as_published": "7",
+        "value": 7
+      },
+      "exponents": [
+        {
+          "as_published": "-2.0",
+          "value": -2
+        },
+        {
+          "as_published": "-1.0",
+          "value": -1
+        },
+        {
+          "as_published": "0.0",
+          "value": 0
+        },
+        {
+          "as_published": "1.0",
+          "value": 1
+        },
+        {
+          "as_published": "2.0",
+          "value": 2
+        },
+        {
+          "as_published": "3.0",
+          "value": 3
+        },
+        {
+          "as_published": "4.0",
+          "value": 4
+        },
+        {
+          "as_published": "0.0",
+          "value": 0
+        }
+      ],
+      "H298_minus_H0": {
+        "as_published": "9301.499",
+        "value": 9301.499
+      },
+      "a_coefficients": [
+        {
+          "as_published": " 3.774124994D+05",
+          "value": 377412.4994
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": " 1.528015481D+01",
+          "value": 15.28015481
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        }
+      ],
+      "a8_as_published": "                ",
+      "b1": {
+        "as_published": "-1.562115789D+05",
+        "value": -156211.5789
+      },
+      "b2": {
+        "as_published": "-8.056094941D+01",
+        "value": -80.56094941
+      },
+      "coefficient_count": 9,
+      "raw_t_line": "    723.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         9301.499",
+      "raw_coeff_lines": [
+        " 3.774124994D+05 0.000000000D+00 1.528015481D+01 0.000000000D+00 0.000000000D+00",
+        " 0.000000000D+00 0.000000000D+00                -1.562115789D+05-8.056094941D+01"
+      ],
+      "ambiguities": []
+    }
+  ],
+  "coefficient_count": 9,
+  "interval_count": 1,
+  "ambiguity_count": 0,
+  "ambiguities": [],
+  "source_locator": {
+    "path": "data/literature/compilations/nasa-glenn/source/thermo.inp",
+    "name_line": 11154,
+    "header_line": 11155,
+    "end_line": 11158
+  },
+  "source_text": {
+    "name_line": "B2O3(L)           Liquid. Gurvich,1996a pt1 p21 pt2 p16.",
+    "header_line": " 1 tpis96 B   2.00O   3.00    0.00    0.00    0.00 2   69.6202000   -1273500.000",
+    "interval_lines": [
+      "    723.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         9301.499",
+      " 3.774124994D+05 0.000000000D+00 1.528015481D+01 0.000000000D+00 0.000000000D+00",
+      " 0.000000000D+00 0.000000000D+00                -1.562115789D+05-8.056094941D+01"
+    ]
+  }
+}

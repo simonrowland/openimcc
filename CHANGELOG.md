@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added optional Ga, Ge, B and In gas channels with caller-supplied Ga2O3,
+  GeO2, B2O3 and In2O3 parent activities. JANAF remains selected where it has
+  tables, including the directly fitted B2O3 liquid branch; NASA CEA supplies
+  the remaining gas and liquid functions. Labelled constant-Cp continuations
+  extend the Ga2O3, GeO2 and In2O3 parents to 1200 K. Added Ga+, Ge+, B+, In+,
+  Ga−, B−, BO− and BO2− to opt-in charge closure. Source Gibbs comparisons,
+  row hashes, locators and fit residuals are recorded in the provenance
+  ledger. All new parent-liquid intervals pass the 10 J/mol source-node gate.
+  Activities remain caller-supplied, and default gas outputs are unchanged.
+  The source-based ion screen passes for Ga and Ge; B exceeds the C3 threshold.
+  The published NASA In+ card gives an anomalously low formation enthalpy and
+  fails C3 unchanged; its source function is retained without adjustment.
 - Added optional Cs, Cu and Sn gas channels with caller-supplied Cs2O(l),
   Cu2O(l) and SnO(l) activities, source-fitted 1200–3000 K rows, and opt-in
   Cs+, Cu+, Sn+, Cs2O+, Cs− and Cu− channels. JANAF liquid cells are used for

@@ -1,0 +1,196 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "source_id": "nasa-glenn",
+  "source": {
+    "database": "NASA Glenn / CEA thermo.inp",
+    "citation": "McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556; NASA CEA thermo.inp.",
+    "version": "thermo.inp dated 9/8/2021 (Snyder CEA standalone updates)",
+    "official_url": "https://www.grc.nasa.gov/www/CEAWeb/",
+    "licence": "US government work; 17 U.S.C. § 105 (no U.S. copyright). Public-domain basis."
+  },
+  "compilation_role": {
+    "kind": "assessed_thermodynamic_functions",
+    "engine_reference_input": true,
+    "validation_measurement": false,
+    "scoring_eligible": false,
+    "battery_refusal": "gibbs_table_not_runtime_observable",
+    "circularity_warning": "Do not validate an engine against a compilation it consumes."
+  },
+  "record_id": "NG-12434",
+  "name_as_published": "GeO2(L)",
+  "citation_as_published": "Tetragonal liquid,Gurvich,1991 pt1 p319 pt2 p275.",
+  "cea_section": "products",
+  "formula": "GeO2",
+  "phase": "liquid",
+  "phase_as_published": "10",
+  "phase_flag": 10,
+  "phase_flag_as_published": "10",
+  "phase_normalization_rule": "G or CEA flag 0 maps to gas. Otherwise a recognized terminal state suffix keeps its published label; without one, NASA-7 S/L/C maps to cr/L/condensed and a positive CEA flag maps to condensed. Unrecognized suffixes stay verbatim in phase_as_published and are listed as ambiguities; card/suffix conflicts retain both published tokens. phase_ordinal is present only when same-formula non-gas records would otherwise share a phase label.",
+  "n_intervals_declared": 1,
+  "source_ref_code": "tpis91",
+  "composition": [
+    {
+      "element_as_published": " G",
+      "count_as_published": "E  1.00",
+      "element": "G",
+      "count": null,
+      "filler": false
+    },
+    {
+      "element_as_published": "O ",
+      "count_as_published": "  2.00 ",
+      "element": "O",
+      "count": 2,
+      "filler": false
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": " 0.00  ",
+      "element": null,
+      "count": 0,
+      "filler": true
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": "0.00   ",
+      "element": null,
+      "count": 0,
+      "filler": true
+    },
+    {
+      "element_as_published": " 0",
+      "count_as_published": ".00 4  ",
+      "element": "0",
+      "count": null,
+      "filler": false
+    }
+  ],
+  "molecular_weight": {
+    "as_published": "4.6388000",
+    "value": 4.6388
+  },
+  "delta_f_H_298_15": {
+    "as_published": "-580200.000",
+    "value": -580200,
+    "units_as_published": "J/mol"
+  },
+  "intervals": [
+    {
+      "T_min_K": {
+        "as_published": "1388.000",
+        "value": 1388
+      },
+      "T_max_K": {
+        "as_published": "6000.000",
+        "value": 6000
+      },
+      "n_poly_terms": {
+        "as_published": "7",
+        "value": 7
+      },
+      "exponents": [
+        {
+          "as_published": "-2.0",
+          "value": -2
+        },
+        {
+          "as_published": "-1.0",
+          "value": -1
+        },
+        {
+          "as_published": "0.0",
+          "value": 0
+        },
+        {
+          "as_published": "1.0",
+          "value": 1
+        },
+        {
+          "as_published": "2.0",
+          "value": 2
+        },
+        {
+          "as_published": "3.0",
+          "value": 3
+        },
+        {
+          "as_published": "4.0",
+          "value": 4
+        },
+        {
+          "as_published": "0.0",
+          "value": 0
+        }
+      ],
+      "H298_minus_H0": {
+        "as_published": "7230.400",
+        "value": 7230.4
+      },
+      "a_coefficients": [
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": " 9.441326067D+00",
+          "value": 9.441326067
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": " 0.000000000D+00",
+          "value": 0
+        }
+      ],
+      "a8_as_published": "                ",
+      "b1": {
+        "as_published": "-6.883837870D+04",
+        "value": -68838.3787
+      },
+      "b2": {
+        "as_published": "-4.738551165D+01",
+        "value": -47.38551165
+      },
+      "coefficient_count": 9,
+      "raw_t_line": "   1388.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         7230.400",
+      "raw_coeff_lines": [
+        " 0.000000000D+00 0.000000000D+00 9.441326067D+00 0.000000000D+00 0.000000000D+00",
+        " 0.000000000D+00 0.000000000D+00                -6.883837870D+04-4.738551165D+01"
+      ],
+      "ambiguities": []
+    }
+  ],
+  "coefficient_count": 9,
+  "interval_count": 1,
+  "ambiguity_count": 0,
+  "ambiguities": [],
+  "source_locator": {
+    "path": "data/literature/compilations/nasa-glenn/source/thermo.inp",
+    "name_line": 12434,
+    "header_line": 12435,
+    "end_line": 12438
+  },
+  "source_text": {
+    "name_line": "GeO2(L)           Tetragonal liquid,Gurvich,1991 pt1 p319 pt2 p275.",
+    "header_line": " 1 tpis91 GE  1.00O   2.00    0.00    0.00    0.00 4  104.6388000    -580200.000",
+    "interval_lines": [
+      "   1388.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         7230.400",
+      " 0.000000000D+00 0.000000000D+00 9.441326067D+00 0.000000000D+00 0.000000000D+00",
+      " 0.000000000D+00 0.000000000D+00                -6.883837870D+04-4.738551165D+01"
+    ]
+  }
+}

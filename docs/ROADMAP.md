@@ -26,6 +26,18 @@ is at most 1 bar, the validity ceiling used by the gas layer. Of 95 nodes, 69
 meet that bound. `evaluate_gas(..., include_ions=True)` solves charge balance
 on the full default neutral set, adds fitted Na+, K+, Ca+ and e−, and includes
 every available JANAF-supported anion whose neutral is present. Li+, Rb+, Pb+,
+Ga+, Ge+, B+ and In+ are also available when the caller supplies their
+trace-parent activities, along with Ga−, B−, BO− and BO2−. BO− uses a NASA CEA
+card because JANAF has no BO− table. The default result remains neutral-only.
+Na and K remain
+`complete-except-ions` because their bounded shares exceed 1e-4 while ions are
+opt-in; Ca, Li, Rb, Pb, Ga and Ge remain below the C3 threshold on their
+recorded caller-supplied activity screens. B exceeds the threshold when its
+cation and available anions are combined. The NASA In+ card publishes
+dfH298=6996.425 J/mol while neutral In publishes 240700 J/mol; the unchanged
+source functions yield a C3 ratio of 9.601e12 at 1200 K. That discrepancy is
+reported without adjusting coefficients. Positive molecular ions and
+nonthermal electrons remain outside this calculation. Mn, Ni and Co are not computed
 Cs+, Cu+, Sn+, and the sourced Cs2O+ are also available when their trace-parent
 activities are supplied. The default result remains neutral-only. Na and K remain
 `complete-except-ions` because their bounded shares exceed 1e-4 while ions are
@@ -54,6 +66,10 @@ channels also require an external source-rated P2O5(l) row.
 | Li | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Li2O(l) and neutral Li gas rows cover 1200-3000 K using the printed JANAF liquid-branch cells; a(Li2O) is caller-supplied; the joint C3 screen used a(Li2O)=1e-3 and reached 4.330e-08 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Rb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Rb2O(l) and neutral Rb gas rows cover 1200-3000 K; a(Rb2O) is caller-supplied; the joint C3 screen used a(Rb2O)=1e-3 and reached 5.466e-05 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Pb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | PbO(l) and neutral Pb gas rows cover 1200-3000 K; a(PbO) is caller-supplied; PbO(l) is the Pb(II) parent because no evaluated PbO2(l) parent row was found; the joint C3 screen used a(PbO)=1e-3 and reached 1.299e-12 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Ga | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Ga2O3(l) uses its NASA liquid card from 2080 K with a labelled constant-Cp continuation to 1200 K; GaO(g) and Ga2O(g) are included; a(Ga2O3) is caller-supplied; the joint C3 screen used a(Ga2O3)=1e-3 and reached 1.562e-06 at 2700 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
+| Ge | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | GeO2(l) uses its NASA liquid card from 1388 K with a labelled constant-Cp continuation to 1200 K; GeO(g) and GeO2(g) are included; a(GeO2) is caller-supplied; the joint C3 screen used a(GeO2)=1e-3 and reached 1.807e-13 at 2400 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
+| B | gas-partial | no | yes | no | yes | unvalidated | JANAF B2O3(l) is fitted from its printed liquid branch after the 723 K marker; BO(g), BO2(g), B2O(g), B2O2(g), and B2O3(g) are included; a(B2O3) is caller-supplied; the joint B-ion screen used a(B2O3)=1e-3 and reached 1.252e-02 at 2800 K and fO2=1e-4, above the 1e-4 C3 threshold. |
+| In | gas-partial | no | yes | no | yes | unvalidated | In2O3(l) uses its NASA liquid card from 2186 K with a labelled constant-Cp continuation to 1200 K; InO(g) and In2O(g) are included; a(In2O3) is caller-supplied. The NASA In+ card's published dfH298 is 6996.425 J/mol against 240700 J/mol for neutral In, so the source-based joint screen reaches 9.601e12 at 1200 K and fO2=1e-4; no coefficient was adjusted. |
 | Cs | gas-partial | no | yes | no | yes | unvalidated | Cs2O(l) and neutral Cs gas rows cover 1200-3000 K; a(Cs2O) is caller-supplied; the C3 screen at a(Cs2O)=1e-3 reached 1.342e-04 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain, above the 1e-4 limit. |
 | Cu | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Cu2O(l) is the Cu(I) parent because JANAF provides its liquid row; neutral Cu gas rows and the parent cover 1200-3000 K; a(Cu2O) is caller-supplied; the C3 screen at a(Cu2O)=1e-3 reached 3.257e-05 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
 | Sn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | SnO(l) is selected over the later-starting SnO2(l) card as the tin parent; neutral Sn gas rows and the parent cover 1200-3000 K; a(SnO) is caller-supplied; the C3 screen at a(SnO)=1e-3 reached 3.402e-08 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
@@ -61,10 +77,11 @@ channels also require an external source-rated P2O5(l) row.
 | Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
 | Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
 
-The C3 maximum share is the fitted or estimated E+ pressure divided by the
-total neutral gas pressure carrying that element, evaluated only at nodes with
-summed neutral pressure <=1 bar. For the newly modeled elements, the prior
-positive-only estimate and bounded fitted closure screen give:
+The C3 maximum share is the fitted or estimated pressure in the modeled
+charge states divided by total neutral gas pressure carrying that element,
+evaluated only at nodes with summed neutral pressure <=1 bar. For B the
+numerator includes B+, B−, BO− and BO2−. For the newly modeled elements, the
+prior positive-only estimate and bounded fitted closure screen give:
 
 | Element | Prior max share (T, fO2) | Fitted max share (T, fO2) |
 | --- | --- | --- |
@@ -74,6 +91,10 @@ positive-only estimate and bounded fitted closure screen give:
 | Li | — | 4.330e-8 (2000 K, 1e-4) |
 | Rb | — | 5.466e-5 (2000 K, 1e-4) |
 | Pb | — | 1.299e-12 (2000 K, 1e-4) |
+| Ga | — | 1.562e-6 (2700 K, 1e-4) |
+| Ge | — | 1.807e-13 (2400 K, 1e-4) |
+| B | — | 1.252e-2 (2800 K, 1e-4) |
+| In | — | 9.601e12 (1200 K, 1e-4) |
 | Cs | — | 1.342e-4 (2000 K, 1e-4) |
 | Cu | — | 3.257e-5 (2800 K, 1e-4) |
 | Sn | — | 3.402e-8 (2800 K, 1e-4) |

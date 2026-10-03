@@ -74,11 +74,15 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
+and caller-supplied V/Nb/P/S/Li/Rb/Pb/Ga/Ge/B/In channels:
 and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
 PO, PO2, P4O6, P4O10, S, S2, S3, S4, S5, S6, S7, S8, SO, SO2, SO3, SSO,
+Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Ga, GaO, Ga2O,
+Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
+Na2O, K2O, O and O2.
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
 CuO, Cu2, Sn, SnO, SnO2, Na2O, K2O, O and O2.
 The Mn/Ni/Co channels activate only when an external pack provides their gas
@@ -132,6 +136,58 @@ remains selected. O-007 ends at 2500 K, so the required PbO tail anchors
 NASA H/S increments there and does not apply a pressure correction because no
 liquid molar volume is included.
 
+Ga, Ge, B and In channels use caller-supplied Ga2O3, GeO2, B2O3 and
+In2O3 activities. No activity model or activity-coefficient values are
+provided. These are the available source-rated liquid parent rows for their
+gas reactions; lower-oxidation-state gases remain channels balanced against
+O2. JANAF has no liquid parent row for Ga2O3, GeO2 or In2O3, so their NASA CEA
+liquid cards are used. Their first liquid-card nodes (2080, 1388 and 2186 K)
+are not interpreted as melting markers. These caller activities are relative
+to the cards' published pure-liquid standard states at 1 atm. Labelled
+constant-Cp continuations extend those rows to 1200 K. The B2O3(l) parent uses
+JANAF table B-096: its
+text marks crystal-to-liquid at 723 K, and the first complete liquid thermal
+node is 800 K. Its printed liquid cells are fitted directly. No other parent
+oxidation state is offered for these four elements because no other evaluated
+liquid row was identified in the checked sources.
+
+Where JANAF and NASA cards both provide a function, the selection uses JANAF.
+The comparison below is NASA G_app(T) minus JANAF G_app(T), in J/mol, at
+1800, 2000, 2500 and 3000 K, calculated from each source's formation anchor,
+enthalpy increment and entropy. The full source Gibbs values and identifiers
+are in the provenance ledger. Gas standard states are 1 bar; for B2O3(l),
+JANAF is 1 bar and the NASA CEA card is its published 1 atm liquid reference,
+with no pressure correction.
+
+| Species | JANAF / NASA | ΔG at 1800 / 2000 / 2500 / 3000 K (J/mol) |
+| --- | --- | --- |
+| Ga(g) | Ga-005 / NG-4940 | +31.811 / +29.799 / +27.863 / +26.697 |
+| Ga+(g) | Ga-006 / NG-4951 | +37.241 / +35.958 / +36.702 / +33.773 |
+| BO(g) | B-078 / NG-1063 | +20410.049 / +20410.596 / +20404.021 / +20395.307 |
+| BO2(g) | B-079 / NG-1122 | −25139.606 / −25204.912 / −25391.518 / −25609.504 |
+| BO2−(g) | B-080 / NG-1130 | −20522.718 / −20683.813 / −21109.513 / −21558.183 |
+| B2O(g) | B-093 / NG-1266 | +84633.634 / +82057.491 / +75195.657 / +67851.428 |
+| B2O2(g) | B-094 / NG-1274 | −16495.698 / −18238.082 / −22601.945 / −26969.962 |
+| B2O3(g) | B-098 / NG-1282 | −1180.877 / −1265.604 / −1467.793 / −1660.838 |
+| B2O3(l) | B-096 / NG-11154 | −4968.607 / −5130.645 / −5379.176 / −5410.716 |
+
+The new parent-liquid fit residual maxima are 5.362 and 2.356 J/mol for the
+B2O3 runtime intervals 1200–1500 K (fit to 800–1500 K source nodes) and
+1500–3000 K; 0.502 and 0.499 J/mol for the
+Ga2O3 continuation and direct interval; 7.787, 0.702 and 0.019 J/mol for the
+GeO2 continuation and two direct intervals; and 1.047 and 0.244 J/mol for the
+In2O3 continuation and direct interval. Each is below the 10 J/mol on-node
+gate. The lower branches are generated continuations, not source data.
+
+Opt-in trace ions add Ga+, Ge+, B+, In+, Ga−, B−, BO− and BO2−; BO− uses a
+NASA CEA card because no JANAF BO− table is available. The source-based C3
+screen passes for Ga and Ge. B's combined cation and anion share reaches
+1.252e-2 at 2800 K and exceeds the 1e-4 criterion. The NASA In+ card publishes
+dfH298 = 6996.425 J/mol, while neutral In publishes 240700 J/mol; using both
+unchanged gives an In ion-share ratio of 9.601e12 at 1200 K. That source
+inconsistency is retained and recorded in ELEMENT_STATUS; no coefficients
+were adjusted.
+
 Published composition-specific activity-coefficient work is relevant context:
 [Borisov (2009)](https://doi.org/10.1134/S0869591109060058) reports alkali
 oxide behavior in silicate melts, with Li estimates extrapolated from the
@@ -145,6 +201,11 @@ neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
 NIST-JANAF 4th-edition records and NASA Glenn CEA coefficient cards; the
 condensate rows retain their source-attributed Lamoreaux/Hildenbrand, JANAF,
 and NASA coefficients. TiO2(l), Cr2O3(l), V2O3(l), NbO2(l), Na2O(l),
+Li2O(l), PbO(l), and B2O3(l) are fitted from JANAF liquid tables by the same
+generator; Rb2O(l), Ga2O3(l), GeO2(l), and In2O3(l) use NASA CEA liquid cards.
+The default table adds explicitly labelled constant-Cp continuations for
+TiO2(l), Cr2O3(l), V2O3(l), SiO2(l), Al2O3(l), MgO(l), CaO(l), Ga2O3(l),
+GeO2(l), and In2O3(l), down to 1200 K. Li2O(l) uses JANAF's complete
 Li2O(l), PbO(l), and Cu2O(l) are fitted from JANAF liquid tables by the same
 generator; Rb2O(l), Cs2O(l), and SnO(l) use NASA CEA liquid cards. The Cu2O(l)
 fit uses the JANAF table through 2000 K and a NASA H/S-increment tail above it.
@@ -195,6 +256,10 @@ re-fitted.
 
 Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
+`Li+`, `Rb+`, `Pb+`, `Ga+`, `Ge+`, `B+`, `In+`, `Ga-`, `B-`,
+`BO-`, `BO2-`, and every available JANAF-supported negative ion whose neutral
+is present. BO- uses its NASA CEA card because JANAF has no BO- table. The
+default call remains neutral-only and returns the same
 `Li+`, `Rb+`, `Pb+`, `Cs+`, `Cu+`, `Sn+`, the sourced `Cs2O+`, and every
 available JANAF-supported negative ion whose neutral is present. The default
 call remains neutral-only and returns the same

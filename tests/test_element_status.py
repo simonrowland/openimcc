@@ -89,6 +89,9 @@ def _neutral_oxide_sources(
             "Li1O1": "LiO",
             "Li2O1": "Li2O",
             "O1Pb1": "PbO",
+            "B1O1": "BO",
+            "B1O2": "BO2",
+            "B2O1": "B2O",
             "Cs1O1": "CsO",
             "Cs2O1": "Cs2O",
             "Cu1O1": "CuO",
@@ -109,6 +112,8 @@ def _neutral_oxide_sources(
         for species_name, table_id, formula, cation, *_ in (
             build_gas_tables.TRACE_NASA_GAS_SOURCES
         ):
+            if "O" in formula:
+                result[table_id] = (cation, species_name.removesuffix("(g)"))
             if "O" not in species_name.removesuffix("(g)"):
                 continue
             result[table_id] = (cation, species_name.removesuffix("(g)"))
@@ -373,12 +378,18 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     }
     assert set(computed) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
+        "Li", "Rb", "Pb", "Ga", "Ge", "B", "In",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn",
     }
     caller_parent_oxides = {
         "Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2",
         "Li": "Li2O", "Rb": "Rb2O", "Pb": "PbO",
         "Cs": "Cs2O", "Cu": "Cu2O", "Sn": "SnO",
+    }
+    trace_elements = {"Li", "Rb", "Pb"}
+    new_trace_elements = {"Ga", "Ge", "B", "In"}
+    new_trace_parents = {
+        "Ga": "Ga2O3", "Ge": "GeO2", "B": "B2O3", "In": "In2O3",
     }
     trace_elements = {"Li", "Rb", "Pb", "Cs", "Cu", "Sn"}
     existing_caller_parent_oxides = {
@@ -420,7 +431,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
 
     unmodeled_constants = {}
     for element, source in computed.items():
-        if element in MODELED_ION_ELEMENTS:
+        if element in MODELED_ION_ELEMENTS | new_trace_elements:
             continue
         cation_table = source["source_tables"]["cation"]
         constants = {}
@@ -508,7 +519,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                     )
             ion_constants = {}
             for element in computed:
-                if element in trace_elements:
+                if element in trace_elements | new_trace_elements:
                     continue
                 if element in MODELED_ION_ELEMENTS:
                     ion_constants[element] = (
@@ -532,7 +543,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                 continue
 
             for element in computed:
-                if element in trace_elements:
+                if element in trace_elements | new_trace_elements:
                     continue
                 source = computed[element]
                 neutral = neutral_pressures[element]
@@ -630,6 +641,74 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                         }
                     )
 
+    new_trace_ions = {
+        "Ga": ("Ga+", "Ga-"),
+        "Ge": ("Ge+",),
+        "B": ("B+", "B-", "BO-", "BO2-"),
+        "In": ("In+",),
+    }
+    for element in new_trace_elements:
+        current = {"max_ratio": -1.0, "isolated_bound": 0.0}
+        for temperature in TEMPERATURES_K:
+            activities = dict(activities_by_temperature[temperature])
+            activities[new_trace_parents[element]] = 1.0e-3
+            for fugacity in FUGACITIES:
+                pressures = evaluate_gas(
+                    activities,
+                    temperature,
+                    fugacity,
+                    pack,
+                    allow_extrapolation=True,
+                    include_ions=True,
+                )
+                neutral_pressures = {
+                    species: pressure
+                    for species, pressure in pressures.items()
+                    if not species.endswith(("+", "-"))
+                }
+                if sum(neutral_pressures.values()) > 1.0:
+                    continue
+                neutral = neutral_pressures.get(element, 0.0)
+                element_total = sum(
+                    _gas_element_atom_count(species, element) * pressure
+                    for species, pressure in neutral_pressures.items()
+                )
+                ion_pressure = sum(
+                    _gas_element_atom_count(ion.rstrip("+-"), element)
+                    * pressures.get(ion, 0.0)
+                    for ion in new_trace_ions[element]
+                )
+                electron_pressure = pressures["e-"]
+                cation_pressure = pressures.get(element + "+", 0.0)
+                k_ion = (
+                    cation_pressure * electron_pressure / neutral
+                    if neutral > 0.0
+                    else 0.0
+                )
+                isolated_bound = (
+                    math.sqrt(k_ion / neutral) if neutral > 0.0 else 0.0
+                )
+                current["isolated_bound"] = max(
+                    current["isolated_bound"], isolated_bound
+                )
+                ratio = ion_pressure / element_total if element_total else 0.0
+                if ratio > current["max_ratio"]:
+                    current.update(
+                        {
+                            "max_ratio": ratio,
+                            "temperature_K": temperature,
+                            "fO2": fugacity,
+                            "neutral_pressure_bar": neutral,
+                            "element_total_pressure_bar": element_total,
+                            "joint_ion_pressure_bar": ion_pressure,
+                            "electron_pressure_bar": electron_pressure,
+                            "electron_source_terms": {},
+                            "K_ion": k_ion,
+                            "parent_oxide": new_trace_parents[element],
+                        }
+                    )
+        maxima[element] = current
+
     assert attachment_term_max["O2"] > 1.0e-4
     assert negative_to_neutral_ratio_max["AlO2"] > 1.0e-4
     assert negative_to_neutral_ratio_max["KO"] > 1.0e-4
@@ -674,19 +753,21 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "Si-007", "Ti-008", "Al-076", "Na-009",
         "O-031", "Al-078", "K-009", "Li-007", "Li-012", "Rb-007", "Pb-007",
         "Cs-007", "Cu-007",
+        "Cs-005", "Cs-006", "Cs-017", "Cs-021",
+        "Cu-005", "Cu-006", "Cu-016", "Cu-018", "Cu-020",
         "Cr-007", "V-007", "Nb-007",
         "Li-005", "Li-006", "Li-011", "Li-015", "Li-017", "Li-019",
         "O-007", "O-009", "Pb-005", "Pb-006", "Rb-005", "Rb-006",
-        "Cs-005", "Cs-006", "Cs-017", "Cs-021",
-        "Cu-005", "Cu-006", "Cu-016", "Cu-018", "Cu-020",
+        "B-005", "B-006", "B-007", "B-078", "B-079", "B-080",
+        "B-093", "B-094", "B-096", "B-098", "Ga-005", "Ga-006", "Ga-007",
     }
     assert set(measured) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
-        "Li", "Rb", "Pb", "Cs", "Cu", "Sn",
+        "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In",
     }
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
-        if element in {"Li", "Rb", "Pb", "Cs", "Cu", "Sn"}:
+        if element in {"Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In"}:
             assert recorded["parent_activity"] == 1.0e-3
         assert recorded["temperature_K"] == result["temperature_K"]
         assert recorded["fO2"] == result["fO2"]
@@ -714,13 +795,18 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     ) / 2
     assert ELEMENT_STATUS["Mg"]["criteria"]["C3"] is True
     assert ELEMENT_STATUS["Fe"]["status"] == "complete"
+    legacy_measured = {
+        element: result
+        for element, result in measured.items()
+        if element not in {"Ga", "Ge", "B", "In"}
+    }
     ratio_order = sorted(
-        measured,
-        key=lambda element: measured[element]["max_ratio"],
+        legacy_measured,
+        key=lambda element: legacy_measured[element]["max_ratio"],
         reverse=True,
     )
     first_ionisation_energies = {}
-    for element in measured:
+    for element in legacy_measured:
         sources = ELEMENT_STATUS[element]["c3_ion_bound"]["source_tables"]
         cation = sources["cation"]
         cation_enthalpy = _source_value(cation, "formation_enthalpy", 0.0)
@@ -749,6 +835,8 @@ def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
         ("Cr", "Cr-006"), ("V", "V-006"), ("Nb", "Nb-006"),
         ("Mn", "Mn-006"), ("Ni", "Ni-006"), ("Co", "Co-006"),
         ("Li", "Li-006"), ("Rb", "Rb-006"), ("Pb", "Pb-006"),
+        ("Ga", "Ga-006"), ("Ge", "NG-5197"), ("B", "B-006"),
+        ("In", "NG-6016"),
         ("Cs", "Cs-006"), ("Cu", "Cu-006"),
     ):
         c3 = ELEMENT_STATUS[element]["c3_ion_bound"]
@@ -764,6 +852,14 @@ def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
             )
             assert provenance["source_sha256"] == digest
             assert provenance["user_agent"] == "neutral-source-vendor/1.0"
+        elif (NASA_DATA / f"{table_id}.json").is_file():
+            source_path = NASA_DATA / f"{table_id}.json"
+            record = json.loads(source_path.read_text(encoding="utf-8"))
+            assert record["record_id"] == table_id
+            assert record["phase"] == "gas"
+            assert record["formula"] == element
+            assert record["name_as_published"] == f"{element}+"
+            digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
         else:
             record = _record(table_id)
             extraction = record["extraction"]
@@ -774,6 +870,15 @@ def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
             assert "source_cache_path" not in extraction
             digest = extraction["source_sha256"]
         assert digest == c3["upstream_sha256"][table_id]
+        if element in {"Ga", "Ge", "B", "In"}:
+            for source_id, expected_sha in c3["upstream_sha256"].items():
+                source_path = NASA_DATA / f"{source_id}.json"
+                if not source_path.is_file():
+                    source_path = JANAF_DATA / f"{source_id}.txt"
+                assert source_path.is_file()
+                assert hashlib.sha256(source_path.read_bytes()).hexdigest() == (
+                    expected_sha
+                )
 
 
 def _status_is_complete(status: dict) -> str:
@@ -909,6 +1014,19 @@ def _c4_rows_cover_domain(
                 source["table_id"]
             ):
                 return False
+            if source["authority"] == "janaf_fitted":
+                if not _one_bar_janaf_source(source["table_id"]):
+                    return False
+            elif source["authority"] == "nasa_glenn_fitted":
+                if (
+                    "NASA/TP-2002-211556"
+                    not in source["source"].get("citation", "")
+                    or "NASA pure-liquid standard state at 1 atm"
+                    not in source.get("note", "")
+                ):
+                    return False
+            else:
+                return False
         elif source["authority"] == "janaf_fitted":
             if source["method"] not in {
                 "fitted",
@@ -946,6 +1064,7 @@ def _c4_rows_cover_domain(
 def test_status_criteria_and_melt_basis_are_consistent() -> None:
     expected_elements = {
         "O", "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K",
+        "Cr", "V", "Nb", "Li", "Rb", "Pb", "Ga", "Ge", "B", "In",
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Cs", "Cu", "Sn",
         "Mn", "Ni", "Co", "P", "S",
     }
@@ -959,6 +1078,10 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Ti": "TiO2",
         "Na": "Na2O",
         "K": "K2O",
+        "Ga": "Ga2O3",
+        "Ge": "GeO2",
+        "B": "B2O3",
+        "In": "In2O3",
     }
     liquid_by_element = {
         **parent_by_element,
@@ -968,6 +1091,10 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Li": "Li2O",
         "Rb": "Rb2O",
         "Pb": "PbO",
+        "Ga": "Ga2O3",
+        "Ge": "GeO2",
+        "B": "B2O3",
+        "In": "In2O3",
         "Cs": "Cs2O",
         "Cu": "Cu2O",
         "Sn": "SnO",
