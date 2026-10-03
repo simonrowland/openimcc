@@ -682,19 +682,12 @@ def evaluate(
             name for name in _SP_EXTENSION_PARENTS if name in parent_oxides
         )
 
-    if not kernel_pack.identity_is_proven:
+    binding_digest = kernel_pack.binding_digest
+    if binding_digest is None:
         raise ImccUnprovenDatapackError(
             "raw ImccDatapack has no proven identity; load a frozen JSON pack "
             "with load_datapack() or apply explicit non-published provenance "
             "with label_research_datapack()"
-        )
-
-    binding_digest = kernel_pack.binding_digest
-    if binding_digest is None:
-        raise ImccUnprovenDatapackError(
-            "raw ImccDatapack has no binding identity; load a frozen JSON pack "
-            "or apply explicit non-published provenance with "
-            "label_research_datapack()"
         )
 
     pack_version = kernel_pack.version

@@ -386,6 +386,9 @@ ordered parent and complex names, `nu`, `A`, `B`, declared and paper domains,
 and coverage. Array values are converted in index order to Python binary64
 values; the encoder's shortest round-trip decimal representation preserves
 each exact coefficient while remaining independent of array byte order.
+`identity_is_proven` reports that the published-core integrity gate was
+passed. A research-labelled pack has a binding digest and can be evaluated,
+but does not claim that published proof.
 
 ### S/P extension checks
 
@@ -449,7 +452,7 @@ checks happen when evaluate() delegates to the kernel:
 
 | Condition | Refusal or result |
 |---|---|
-| A raw ImccDatapack has no proven identity | ImccUnprovenDatapackError; use load_datapack() or explicitly label a research pack. |
+| An unlabelled raw ImccDatapack has no binding identity | ImccUnprovenDatapackError; use load_datapack() or explicitly label a research pack. |
 | A composition mapping or extra_mol value is not a number (for example a string or None) | ImccCompositionIncompleteError, code imcc_composition_incomplete, with "<entry> is not a number: <value>" naming the key (an integer beyond float range gives "<entry> is too large to represent as a float"). Checked first, with the finiteness check, so it precedes every other composition screen. |
 | A composition mapping contains a non-finite value (nan or ±inf) | ImccCompositionIncompleteError, code imcc_composition_incomplete, with "composition contains non-finite values". Checked before the ferric, S/P extension, and outside-domain screens, including for non-parent keys such as Fe2O3, S, and P2O5. |
 | Finite nonzero S/P names are supplied without an ext pack and explicit enablement, or an ext pack is used without enable_sp_extension=True | ImccSPComponentRequiresExtensionError, code imcc_sp_extension_required. Only finite nonzero S/P values count as supplied; on a plain pack, a zero-valued S/P mapping key remains an unknown component and raises ImccComponentOutsideDomainError. The flag does not widen a plain pack. |

@@ -458,7 +458,10 @@ def _datapack_with_identity(
             evidence_class=_UNTRUSTED_IDENTITY_TOKEN,
             coverage=MappingProxyType(coverage_by_species),
             binding_digest=binding_digest,
-            proven=True,
+            proven=(
+                claims_published
+                and published_manifest_sha256 == _PUBLISHED_DATAPACK_SHA256
+            ),
         ),
     )
     return labelled
