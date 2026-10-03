@@ -2311,49 +2311,73 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
         )
 
 
-@pytest.mark.parametrize(
-    ("element", "ionisation_eV", "g_neutral", "g_ion", "nist_asd"),
-    [
-        ("Na", 5.13907696, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Na&units=1&e_out=0"),
-        ("K", 4.3406637, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=K&units=1&e_out=0"),
-        ("Ca", 6.1131553, 1, 2, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Ca&units=1&e_out=0"),
-        ("Li", 5.3917148, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Li&units=1&e_out=0"),
-        ("Rb", 4.177128, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Rb&units=1&e_out=0"),
-        ("Pb", 7.4166798, 9, 6, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Pb&units=1&e_out=0"),
-        ("Cs", 3.89390572743, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Cs&units=1&e_out=0"),
-        ("Sn", 7.343917, 9, 6, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Sn&units=1&e_out=0"),
-        ("B", 8.29802, 6, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=B&units=1&e_out=0"),
-        ("Ga", 5.999301, 6, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Ga&units=1&e_out=0"),
-        ("Ge", 7.89943, 9, 6, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Ge&units=1&e_out=0"),
-    ],
-)
-def test_every_m_plus_matches_ground_term_saha_within_factor_three(
-    element: str,
-    ionisation_eV: float,
-    g_neutral: int,
-    g_ion: int,
-    nist_asd: str,
-) -> None:
-    """Check every packaged atomic cation against the NIST ground-term limit.
+# Ground-term fine-structure levels (statistical weight 2J+1, energy in cm^-1)
+# from the NIST Atomic Spectra Database, for the neutral atom and its cation.
+# Sn and Ge also list the low 1D2 level. Higher levels contribute below the
+# test tolerance at 2500 K.
+_SAHA_LEVELS = {
+    "Na": (5.13907696, ((2, 0.0),), ((1, 0.0),)),
+    "K": (4.3406637, ((2, 0.0),), ((1, 0.0),)),
+    "Ca": (6.1131553, ((1, 0.0),), ((2, 0.0),)),
+    "Li": (5.3917148, ((2, 0.0),), ((1, 0.0),)),
+    "Rb": (4.177128, ((2, 0.0),), ((1, 0.0),)),
+    "Cs": (3.89390572743, ((2, 0.0),), ((1, 0.0),)),
+    "Pb": (
+        7.4166798,
+        ((1, 0.0), (3, 7819.263), (5, 10650.327)),
+        ((2, 0.0), (4, 14081.074)),
+    ),
+    "Sn": (
+        7.343917,
+        ((1, 0.0), (3, 1691.806), (5, 3427.673), (5, 8612.955)),
+        ((2, 0.0), (4, 4251.494)),
+    ),
+    "Ge": (
+        7.89943,
+        ((1, 0.0), (3, 557.134), (5, 1409.961), (5, 7125.299)),
+        ((2, 0.0), (4, 1767.357)),
+    ),
+    "Ga": (5.999301, ((2, 0.0), (4, 826.19)), ((1, 0.0),)),
+    "B": (8.29802, ((2, 0.0), (4, 15.287)), ((1, 0.0),)),
+}
 
-    For M + e- = M+, Kp=(kBT/p°)*(2*g+/g0)*(2*pi*me*kBT/h²)^(3/2)
-    * exp(-IE/kBT). kBT/p° is m³, the electron translational term is m⁻³,
-    and the product is dimensionless at p°=1 bar. The eV conversion uses
-    1 eV = 1.602176634e-19 J; electron mass is in kg and h in J s. Each IE
-    entry cites its element-specific NIST ASD ionization-energy output.
-    Ground-term weights omit excited fine-structure populations, hence the
-    factor-three tolerance accommodates level populations while rejecting
-    source consistency errors.
+
+@pytest.mark.parametrize("element", tuple(_SAHA_LEVELS))
+def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
+    """Check every packaged atomic cation against the Saha equation.
+
+    For M = M+ + e-,
+      Kp = (kB T / p0) * (2 Z+ / Z0) * (2 pi me kB T / h^2)^(3/2) * exp(-IE / kB T),
+    with Z = sum_i g_i exp(-E_i / kB T) over the listed levels and the factor 2
+    the electron spin weight. Units: kB T / p0 is m^3 and the translational
+    term is m^-3, so Kp is dimensionless at p0 = 1 bar; level energies convert
+    from cm^-1 with h c = 1.986445857e-23 J cm. Sanity: with single-level
+    partition functions this is the ground-level Saha equation, which the
+    alkali rows reproduce to better than 1%. Heavy p-block atoms need their
+    fine-structure populations: a ground-term degeneracy (9 for 3P) would be
+    wrong by a factor of 3 for Pb, whose 3P1 level lies 7819 cm^-1 up.
+    The 2% tolerance covers the omitted higher levels and fit residuals;
+    a source-consistency error such as the declined Cu+ and In+ tables is off
+    by orders of magnitude.
     """
-    assert nist_asd.startswith("https://physics.nist.gov/cgi-bin/ASD/ie.pl?")
+    ionisation_eV, neutral_levels, ion_levels = _SAHA_LEVELS[element]
     pack = load_gas_datapack()
     atomic_pairs = {
-        neutral for neutral, ion in _GAS_IONIZATION_PAIRS
-        if ion != "Cs2O+"
+        neutral for neutral, ion in _GAS_IONIZATION_PAIRS if ion != "Cs2O+"
     }
-    assert atomic_pairs == {
-        "Na", "K", "Ca", "Li", "Rb", "Pb", "Cs", "Sn", "B", "Ga", "Ge"
-    }
+    assert atomic_pairs == set(_SAHA_LEVELS)
+    k_b = 1.380649e-23
+    h = 6.62607015e-34
+    m_e = 9.1093837139e-31
+    e_v = 1.602176634e-19
+    h_c = 1.986445857e-23
+
+    def partition(levels: tuple[tuple[int, float], ...], temperature: float) -> float:
+        return sum(
+            weight * math.exp(-h_c * energy / (k_b * temperature))
+            for weight, energy in levels
+        )
+
     for temperature in (1500.0, 2500.0):
         ion_row = _nearest_interval_row(
             pack.gas_df, f"{element}+(g)", temperature, allow_extrapolation=False
@@ -2370,17 +2394,14 @@ def test_every_m_plus_matches_ground_term_saha_within_factor_three(
             - _janaf_gibbs(temperature, neutral_row)
         )
         fitted_k = math.exp(-delta_g / (R_J_MOL_K * temperature))
-        k_b = 1.380649e-23
-        h = 6.62607015e-34
-        m_e = 9.1093837139e-31
-        e_v = 1.602176634e-19
         saha_k = (
             k_b * temperature / 1.0e5
-            * (2.0 * g_ion / g_neutral)
+            * 2.0 * partition(ion_levels, temperature)
+            / partition(neutral_levels, temperature)
             * (2.0 * math.pi * m_e * k_b * temperature / h**2) ** 1.5
             * math.exp(-ionisation_eV * e_v / (k_b * temperature))
         )
-        assert 1.0 / 3.0 <= fitted_k / saha_k <= 3.0, element
+        assert fitted_k / saha_k == pytest.approx(1.0, rel=0.02), element
 
 
 def test_copper_negative_ion_is_declined_by_electron_affinity_check() -> None:
