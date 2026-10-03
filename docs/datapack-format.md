@@ -385,7 +385,9 @@ encoder over the kernel content that determines results: model and version,
 ordered parent and complex names, `nu`, `A`, `B`, declared and paper domains,
 and coverage. Array values are converted in index order to Python binary64
 values; the encoder's shortest round-trip decimal representation preserves
-each exact coefficient while remaining independent of array byte order.
+each nonzero coefficient while remaining independent of array byte order.
+It normalizes both `-0.0` and `+0.0` to `0`, so packs differing only in the
+sign of a zero have the same binding digest.
 `identity_is_proven` reports that the published-core integrity gate was
 passed. A research-labelled pack has a binding digest and can be evaluated,
 but does not claim that published proof.

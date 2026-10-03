@@ -31,11 +31,12 @@ def _research_pack(
     datapack: ImccDatapack,
     *,
     model_id: str = RESEARCH_MODEL_ID,
+    coverage: str | dict[str, str] = "RE-research",
 ) -> ImccDatapack:
     return label_research_datapack(
         datapack,
         model_id=model_id,
-        coverage="RE-research",
+        coverage=coverage,
     )
 
 
@@ -58,47 +59,119 @@ def test_published_packs_have_distinct_binding_and_same_core_hash() -> None:
     assert core_hashes == [kernel._PUBLISHED_DATAPACK_SHA256] * 2
 
 
-@pytest.mark.parametrize(
-    "changed_field",
-    ("A", "B", "nu", "domain", "model_id", "version", "parent_order"),
-)
-def test_research_binding_digest_changes_for_each_result_field(
-    changed_field: str,
-) -> None:
+def _research_sensitivity_variants(
+    source: ImccDatapack,
+) -> dict[str, tuple[ImccDatapack, str, str | dict[str, str]]]:
+    changed_nu = np.array(source.nu, copy=True)
+    changed_nu.flat[0] += 0.5
+    changed_a = np.array(source.A, copy=True)
+    changed_a.flat[0] += 0.5
+    changed_b = np.array(source.B, copy=True)
+    changed_b.flat[0] += 0.5
+    changed_domains = list(source.domains)
+    changed_domains[0] = (changed_domains[0][0] + 0.5, changed_domains[0][1])
+
+    variants: dict[str, tuple[ImccDatapack, str, str | dict[str, str]]] = {
+        "model_id": (source, f"{RESEARCH_MODEL_ID}-changed", "RE-research"),
+        "version": (
+            replace(source, version=f"{source.version}-changed"),
+            RESEARCH_MODEL_ID,
+            "RE-research",
+        ),
+        # Keep every coefficient array fixed: this isolates parent names/order.
+        "parent_oxides": (
+            replace(source, parent_oxides=tuple(reversed(source.parent_oxides))),
+            RESEARCH_MODEL_ID,
+            "RE-research",
+        ),
+        "complex_names": (
+            replace(
+                source,
+                reactions=(f"{source.reactions[0]}-changed", *source.reactions[1:]),
+            ),
+            RESEARCH_MODEL_ID,
+            "RE-research",
+        ),
+        "nu": (
+            replace(source, nu=changed_nu),
+            RESEARCH_MODEL_ID,
+            "RE-research",
+        ),
+        "A": (
+            replace(source, A=changed_a),
+            RESEARCH_MODEL_ID,
+            "RE-research",
+        ),
+        "B": (
+            replace(source, B=changed_b),
+            RESEARCH_MODEL_ID,
+            "RE-research",
+        ),
+        "domains": (
+            replace(
+                source,
+                domains=changed_domains,
+            ),
+            RESEARCH_MODEL_ID,
+            "RE-research",
+        ),
+        "paper_domains": (
+            replace(
+                source,
+                paper_domains=(
+                    (source.paper_domains[0][0] + 0.5, source.paper_domains[0][1]),
+                    *source.paper_domains[1:],
+                ),
+            ),
+            RESEARCH_MODEL_ID,
+            "RE-research",
+        ),
+        "coverage": (
+            source,
+            RESEARCH_MODEL_ID,
+            "RE-research-changed",
+        ),
+    }
+    # Build the comparison set independently of the mutation list, so adding
+    # a payload key requires adding a sensitivity case here.
+    payload_keys = set(
+        kernel._kernel_datapack_binding_payload(
+            source,
+            model_id=RESEARCH_MODEL_ID,
+            coverage={
+                name: "RE-research"
+                for name in (*source.parent_oxides, *source.reactions)
+            },
+        )
+    )
+    assert set(variants) == payload_keys
+    return variants
+
+
+def test_research_binding_digest_changes_for_every_payload_field() -> None:
     source = load_datapack(BASE_PACK).kernel_datapack
     original = _research_pack(source)
-
-    if changed_field in {"A", "B", "nu"}:
-        values = np.array(getattr(source, changed_field), copy=True)
-        values.flat[0] += 0.5
-        variant = replace(source, **{changed_field: values})
-    elif changed_field == "domain":
-        domains = list(source.domains)
-        domains[0] = (domains[0][0] + 0.5, domains[0][1])
-        variant = replace(source, domains=domains)
-    elif changed_field == "version":
-        variant = replace(source, version=f"{source.version}-changed")
-    elif changed_field == "parent_order":
-        order = list(reversed(range(source.n_parents)))
-        variant = replace(
-            source,
-            parent_oxides=tuple(source.parent_oxides[index] for index in order),
-            nu=source.nu[order, :],
-        )
-    else:
-        variant = source
-
-    labelled = _research_pack(
-        variant,
-        model_id=(
-            f"{RESEARCH_MODEL_ID}-changed"
-            if changed_field == "model_id"
-            else RESEARCH_MODEL_ID
-        ),
-    )
     assert original.binding_digest
-    assert labelled.binding_digest
-    assert labelled.binding_digest != original.binding_digest
+    for key, (variant, model_id, coverage) in _research_sensitivity_variants(
+        source
+    ).items():
+        labelled = _research_pack(variant, model_id=model_id, coverage=coverage)
+        assert labelled.binding_digest, key
+        assert labelled.binding_digest != original.binding_digest, key
+
+
+def test_research_binding_digest_normalizes_signed_zero() -> None:
+    source = load_datapack(BASE_PACK).kernel_datapack
+    positive = np.array(source.A, copy=True)
+    negative = np.array(source.A, copy=True)
+    positive[0] = 0.0
+    negative[0] = -0.0
+
+    positive_digest = _research_pack(replace(source, A=positive)).binding_digest
+    negative_digest = _research_pack(replace(source, A=negative)).binding_digest
+
+    assert positive_digest
+    assert negative_digest == positive_digest
 
 
 def test_extension_manifest_content_changes_binding_digest(
@@ -112,6 +185,32 @@ def test_extension_manifest_content_changes_binding_digest(
     original = load_datapack(EXT_PACK)
     altered = load_datapack(altered_path)
     assert altered.binding_digest != original.binding_digest
+
+
+def test_json_binding_digest_includes_effective_model_id_and_version_suffix(
+    tmp_path: Path,
+) -> None:
+    manifest = _manifest(EXT_PACK)
+    expected = model._published_datapack_manifest_hash(
+        {
+            **manifest,
+            "model_id": "IMCC-SF04-EXT",
+            "imcc_sf04_datapack_version": manifest["imcc_sf04_datapack_version"],
+        }
+    )
+    loaded = load_datapack(EXT_PACK)
+    assert loaded.binding_digest == expected
+
+    changed_id = {**manifest, "model_id": "IMCC-SF04-EXT-OTHER"}
+    assert model._published_datapack_manifest_hash(changed_id) != expected
+
+    changed_version = dict(manifest)
+    changed_version["imcc_sf04_datapack_version"] = (
+        f"{manifest['imcc_sf04_datapack_version']}-changed"
+    )
+    changed_path = tmp_path / "changed-extension-version.json"
+    changed_path.write_text(json.dumps(changed_version), encoding="utf-8")
+    assert load_datapack(changed_path).binding_digest != loaded.binding_digest
 
 
 def _reverse_mapping_keys(value: object) -> object:

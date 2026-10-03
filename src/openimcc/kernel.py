@@ -358,7 +358,9 @@ def _kernel_datapack_binding_payload(
     # ImccDatapack stores coefficients as float64 arrays. tolist() walks them
     # in index order and yields Python binary64 floats; their shortest
     # round-trip decimal representation, consumed by the canonical encoder's
-    # Decimal(str(value)) rule, denotes the exact same value across platforms.
+    # Decimal(str(value)) rule, preserves each nonzero coefficient across
+    # platforms. The encoder normalizes both zero signs to `0`, so packs that
+    # differ only by a zero's sign have the same binding digest.
     return {
         "model_id": model_id,
         "version": datapack.version,
