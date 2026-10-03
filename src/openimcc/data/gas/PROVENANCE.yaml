@@ -3328,9 +3328,9 @@ rows:
     source_sha256: d2c1683b6ebacc80835c0ce55e8e74c01c1eecdcb32673290c9a8050a4d21b73
     authority: nasa_glenn_fitted
     method: fitted
-    T_range_K: [1500, 2000]
-    max_residual_J_per_mol: 0.0689384712022729
-    max_residual_log10_K: 0.00000200050328845616
+    T_range_K: [1250, 2000]
+    max_residual_J_per_mol: 0.761759796645492
+    max_residual_log10_K: 0.0000234725760114653
     source_locator: thermo.inp lines 14618-14622
     source:
       citation: >-
@@ -3372,9 +3372,9 @@ rows:
     source_sha256: d2c1683b6ebacc80835c0ce55e8e74c01c1eecdcb32673290c9a8050a4d21b73
     authority: nasa_glenn_fitted
     method: generated_constant_cp_extrapolation_fit
-    T_range_K: [1200, 1500]
-    max_residual_J_per_mol: 1.87003529246431
-    max_residual_log10_K: 0.0000702621056712157
+    T_range_K: [1200, 1250]
+    max_residual_J_per_mol: 3.32506307732547
+    max_residual_log10_K: 0.000141433291254996
     source_locator: thermo.inp lines 14618-14622
     source:
       citation: >-
@@ -3390,7 +3390,7 @@ rows:
     T0_K: 1250
     Cp_l_J_molK: 62.999640982906
     note: >-
-      The labelled constant-Cp continuation is anchored to NASA NG-1848's first liquid node at 1250 K. It extends the SnO(l) function only to 1200 K and retains the NASA pure-liquid standard state at 1 atm.
+      The labelled constant-Cp continuation is anchored to NASA NG-1848's first liquid node at 1250 K. It extends SnO(l) downward to 1200 K only below that card boundary and retains the NASA pure-liquid standard state at 1 atm.
 certification_items:
   - authority: lh84_evaluated_with_nasa_cp
     species_name: Na2O(g)

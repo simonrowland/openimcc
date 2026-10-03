@@ -1029,6 +1029,18 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         pb_high_nodes.append((float(temperature), source_g))
     assert_residuals("PbO(l)", fitted_row("PbO(l)", 1500.0), pb_high_nodes)
 
+    sn_record = _nasa_record("NG-1848")
+    sn_nodes = []
+    for temperature in np.arange(1250.0, 2000.0, 100.0):
+        properties = build_gas_tables._nasa7_properties(
+            sn_record, float(temperature)
+        )
+        source_g = R_J_MOL_K * float(temperature) * (
+            properties["h_rt"] - properties["s_R"]
+        )
+        sn_nodes.append((float(temperature), source_g))
+    assert_residuals("SnO(l)", fitted_row("SnO(l)", 1250.0), sn_nodes)
+
 
 def test_new_parent_condensate_rows_pass_the_10_j_mol_node_gate() -> None:
     rows = build_gas_tables.build_condensate_rows(JANAF_DATA)
@@ -2752,9 +2764,9 @@ def test_snol_constant_cp_continuation_uses_the_nasa_liquid_anchor() -> None:
     assert row["method"] == "generated_constant_cp_extrapolation_fit"
     assert row["T0_K"] == anchor_temperature
     assert row["Cp_l_J_molK"] == pytest.approx(cp)
-    assert row["T_range_K"] == [1200, 1500]
+    assert row["T_range_K"] == [1200, 1250]
     residuals = []
-    for temperature in np.arange(1200.0, 1500.1, 100.0):
+    for temperature in (1200.0, 1250.0):
         enthalpy_increment = anchor_h + cp * (temperature - anchor_temperature) / 1000.0
         entropy = anchor_s + cp * math.log(temperature / anchor_temperature)
         source_g = reference + enthalpy_increment * 1000.0 - temperature * entropy

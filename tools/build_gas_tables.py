@@ -347,7 +347,7 @@ SUPERCOOLED_LIQUID_SOURCES = (
     ("CaO(l)", "Ca-028", "Ca", 1, 1, 2200.0, 2200.0),
 )
 NASA_SUPERCOOLED_LIQUID_SOURCES = (
-    ("SnO(l)", "NG-1848", "Sn", 1, 1, 1250.0, 1500.0),
+    ("SnO(l)", "NG-1848", "Sn", 1, 1, 1250.0, 1250.0),
 )
 ALL_SUPERCOOLED_LIQUID_SPECIES = {
     source[0] for source in SUPERCOOLED_LIQUID_SOURCES
@@ -2060,7 +2060,10 @@ def build_condensate_rows(
         )
     # SnO(l) is the offered parent; its 1250 K NASA liquid start requires the
     # labelled constant-Cp continuation only between 1200 and that source row.
-    for fit_t_min, fit_t_max in ((1500.0, 2000.0), (2000.0, 3000.0)):
+    for fit_t_min, fit_t_max in (
+        (1250.0, 2000.0),
+        (2000.0, 3000.0),
+    ):
         rows.append(
             _fit_nasa_card_condensate_row(
                 nasa_source_dir,
