@@ -230,6 +230,7 @@ TRACE_ION_GAS_TEXT_SOURCES = (
     ("Cu+(g)", "Cu-006", "Cu", 1, 0),
     ("Cu-(g)", "Cu-007", "Cu", 1, 0),
 )
+DECLINED_ION_GAS_SPECIES = frozenset({"Cu+(g)", "Cu-(g)"})
 TRACE_ION_GAS_NASA_SOURCES = (
     ("BO-(g)", "NG-1074", "BO", "B", 1, 1),
     ("Ge+(g)", "NG-5197", "Ge", "Ge", 1, 0),
@@ -1374,7 +1375,6 @@ def _fit_condensate_values(
             )
         )
     )
-
     def number(value: float) -> str:
         return format(float(value), ".15g")
 
@@ -1818,7 +1818,9 @@ def _fit_supercooled_liquid_row(
     if reference is None:
         raise ValueError(f"{table_id} has no complete 298.15 K formation enthalpy")
 
-    use_cp_constrained_fit = species_name == "SnO(l)"
+    use_cp_constrained_fit = species_name in {
+        "SnO(l)", "GeO2(l)", "Ga2O3(l)", "In2O3(l)"
+    }
     if use_cp_constrained_fit:
         # Fit the implied Cp directly and constrain G and S at T0. The quartic
         # basis has four thermodynamic coefficients: direct Cp fitting preserves
@@ -1894,6 +1896,15 @@ def _fit_supercooled_liquid_row(
         np.max(np.abs((g_fit - g_generated) /
                       (R_J_MOL_K * sample_temperatures * math.log(10.0))))
     )
+    implied_cp = R_J_MOL_K * (
+        2.0 * coefficients[1] * sample_tau
+        + 6.0 * coefficients[2] * sample_tau**2
+        + 12.0 * coefficients[3] * sample_tau**3
+        + 20.0 * coefficients[4] * sample_tau**4
+    )
+    max_abs_cp_deviation = float(np.max(np.abs(implied_cp - cp)))
+    anchor_h = (reference + enthalpy_0) * 1000.0
+    anchor_g = anchor_h - T0 * entropy_0
 
     def number(value: float) -> str:
         return format(float(value), ".15g")
@@ -1918,6 +1929,10 @@ def _fit_supercooled_liquid_row(
         "_max_residual_log10_K": number(residual_log10),
         "_T0_K": number(T0),
         "_Cp_l_J_molK": number(cp),
+        "_max_abs_Cp_deviation_J_molK": number(max_abs_cp_deviation),
+        "_anchor_H_J_per_mol": number(anchor_h),
+        "_anchor_S_J_molK": number(entropy_0),
+        "_anchor_G_J_per_mol": number(anchor_g),
     }
 
 
@@ -2024,6 +2039,7 @@ def build_rows(
     rows.extend(
         _fit_janaf_text_row(source_dir, *source)
         for source in TRACE_ION_GAS_TEXT_SOURCES
+        if source[0] not in DECLINED_ION_GAS_SPECIES
     )
     rows.extend(
         _fit_nasa_card_gas_row(

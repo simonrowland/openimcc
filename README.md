@@ -79,7 +79,7 @@ Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
 PO, PO2, P4O6, P4O10, S, S2, S3, S4, S5, S6, S7, S8, SO, SO2, SO3, SSO,
-Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Ga, GaO, Ga2O,
+Ga, GaO, Ga2O,
 Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
 CuO, Cu2, Sn, SnO, SnO2, Na2O, K2O, O and O2.
@@ -211,23 +211,24 @@ neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
 NIST-JANAF 4th-edition records and NASA Glenn CEA coefficient cards; the
 condensate rows retain their source-attributed Lamoreaux/Hildenbrand, JANAF,
 and NASA coefficients. TiO2(l), Cr2O3(l), V2O3(l), NbO2(l), Na2O(l),
-Li2O(l), PbO(l), and B2O3(l) are fitted from JANAF liquid tables by the same
-generator; Rb2O(l), Ga2O3(l), GeO2(l), and In2O3(l) use NASA CEA liquid cards.
-The default table adds explicitly labelled constant-Cp continuations for
-TiO2(l), Cr2O3(l), V2O3(l), SiO2(l), Al2O3(l), MgO(l), CaO(l), Ga2O3(l),
-GeO2(l), and In2O3(l), down to 1200 K. Li2O(l) uses JANAF's complete
-Li2O(l), PbO(l), and Cu2O(l) are fitted from JANAF liquid tables by the same
-generator; Rb2O(l), Cs2O(l), and SnO(l) use NASA CEA liquid cards. The Cu2O(l)
-fit uses the JANAF table through 2000 K and a NASA H/S-increment tail above it.
-The default table adds explicitly
-labelled constant-Cp continuations for TiO2(l), Cr2O3(l), V2O3(l), SiO2(l),
-Al2O3(l), MgO(l), CaO(l), and SnO(l), down to 1200 K. Li2O(l) uses JANAF's complete
-liquid-branch cells from 700–3000 K directly; its runtime fit intervals begin
-at 1200 K. The four major-oxide rows are generated JANAF fits and their lower
-continuations are generated extrapolations, not source data. When selected,
-the continuations add a distinct constant-Cp supercooled-liquid notice to each
-affected gas channel's `domain_flags`. Row-level source hashes, methods,
-temperature ranges and fit residuals are in
+Li2O(l), PbO(l), Cu2O(l), and B2O3(l) are fitted from JANAF liquid tables by
+the same generator. Rb2O(l), Cs2O(l), SnO(l), Ga2O3(l), GeO2(l), and In2O3(l)
+use NASA CEA liquid cards. The default table adds explicitly labelled
+constant-Cp continuations for TiO2(l), Cr2O3(l), V2O3(l), SiO2(l), Al2O3(l),
+MgO(l), CaO(l), Ga2O3(l), GeO2(l), In2O3(l), and SnO(l), down to 1200 K.
+Li2O(l) uses JANAF's complete liquid-branch cells from 700–3000 K directly;
+its runtime fit intervals begin at 1200 K. The Cu2O(l) fit uses JANAF through
+2000 K and a NASA H/S-increment tail above it. These continuations are
+generated extrapolations, not source data. The seven continuations already
+present at 726b7cc fit Gibbs energy and preserve their source anchors; their
+implied Cp can differ from the anchor by up to 3.29 (TiO2), 5.52 (Cr2O3),
+1.49 (V2O3), 2.07 (SiO2), 34.82 (Al2O3), 7.49 (MgO), and 3.85 J/(mol K)
+(CaO). The four new continuations use a Cp-constrained fit; maximum Cp errors
+are 5.01 (Ga2O3), 0.069 (GeO2), 7.26 (In2O3), and 0.001 J/(mol K) (SnO),
+with source anchor H/S/G checked. When selected,
+continuations add a distinct supercooled-liquid notice to each affected gas
+channel's `domain_flags`. Row-level source hashes, methods, temperature
+ranges and fit residuals are in
 `src/openimcc/data/gas/PROVENANCE.yaml`.
 
 Melt activities use the published FC87/SF04 complex-formation constants
@@ -266,18 +267,22 @@ re-fitted.
 
 Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
-`Li+`, `Rb+`, `Pb+`, `Cs+`, `Cu+`, `Sn+`, `Cs2O+`, `Ga+`, `Ge+`, `B+`,
+`Li+`, `Rb+`, `Pb+`, `Cs+`, `Sn+`, `Cs2O+`, `Ga+`, `Ge+`, `B+`,
 `Ga-`, `B-`, `BO-`, `BO2-`, and every available JANAF-supported negative ion
 whose neutral is present. In+ is retained in the source ledger but declined
-after its NASA card failed the NIST Saha check. BO- uses its NASA CEA card
-because JANAF has no BO- table. The default call remains neutral-only and
+after its NASA card failed the NIST Saha check. Cu+ is declined because its
+JANAF Cu-006 entropy yields fitted/Saha ratios 1666.15 and 1656.61 at 1500 and
+2500 K; the anomalous entropy is present in the published Cu-006 table. Cu-
+is also declined: with NIST EA(Cu)=1.23578 eV and Cu:Cu− ground weights 2:1,
+its fitted/attachment ratios are 2.79e-4 and 2.21e-5. Both source records
+remain in the ledger unchanged. BO- uses its NASA CEA card because JANAF has
+no BO- table. The default call remains neutral-only and
 returns the same
 mapping as before. Ion entries use provenance class
 `janaf_fitted_ionisation` for JANAF rows and `nasa_glenn_fitted` for NASA
 cards; their source rows cover 1200–3000 K and their domain flags include the
-neutral and charge-species source rows. JANAF sources include Cs− and Cu−;
-their element indexes list no anions for the other selected neutral channels.
-No JANAF Sn− row was found.
+neutral and charge-species source rows. The Cs− row is emitted; the Cu− source
+is retained in provenance but declined with Cu+. No JANAF Sn− row was found.
 `gas_species` requests use the full default neutral set for the charge closure,
 then retain the requested neutral and charge channels. Requesting an ion name
 requires `include_ions=True`. `evaluate_gas_oxygen_balance` remains neutral-only.

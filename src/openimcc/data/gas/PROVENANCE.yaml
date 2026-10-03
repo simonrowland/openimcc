@@ -61,6 +61,35 @@ source_notes:
           saha_K_ion: 7.514218545e-11
           fitted_to_saha_ratio: 9.142899187e+16
         disposition: "Declined; source retained without coefficient changes; In+ omitted from runtime."
+      Cu+:
+        source_record: Cu-006
+        source_path: data-src/janaf/Cu-006.txt
+        source_sha256: 7699877b974780f89a88b8328d50996e4ab227c0f61c567daabe185fa8a8f9bf
+        NIST_ionisation_energy_eV: 7.72638
+        NIST_ASD: https://physics.nist.gov/PhysRefData/Handbook/Tables/coppertable1.htm
+        ground_term_weights_Cu_to_Cu_plus: [2, 1]
+        fitted_to_ground_term_saha_ratio:
+          1500_K: 1666.15
+          2000_K: 1664.34
+          2500_K: 1656.61
+        disposition: >-
+          Declined; source retained without coefficient changes and Cu+ omitted
+          from runtime. The anomalous entropy is present in the published
+          JANAF Cu-006 table, so this is a source-consistency failure.
+      Cu-:
+        source_record: Cu-007
+        source_path: data-src/janaf/Cu-007.txt
+        source_sha256: 2e45a80821a53dcd1f581910e0d2e109c3fb7be0f6026498e45a1460755b2cd6
+        NIST_electron_affinity_eV: 1.23578
+        NIST_ASD: https://physics.nist.gov/PhysRefData/Handbook/Tables/coppertable1.htm
+        ground_term_weights_Cu_to_Cu_minus: [2, 1]
+        fitted_to_attachment_saha_ratio:
+          1500_K: 2.78857e-4
+          2500_K: 2.20885e-5
+        disposition: >-
+          Declined; source retained without coefficient changes and Cu- omitted
+          from runtime because both fitted-to-attachment ratios fail by more
+          than a factor of three.
     material_disagreements:
       Li2O(l): >-
         The NASA polynomial minus JANAF dfH298+(H-H298)-T*S gives liquid ΔG
@@ -1462,6 +1491,7 @@ rows:
     T_range_K: [1200, 1800]
     T0_K: 1800
     Cp_l_J_molK: 85.772
+    max_abs_Cp_deviation_J_molK: 2.060
     max_residual_J_per_mol: 0.799531310098246
     max_residual_log10_K: 3.15944614201531e-05
     uncertainty:
@@ -1501,6 +1531,7 @@ rows:
     T_range_K: [1200, 2500]
     T0_K: 2500
     Cp_l_J_molK: 192.464
+    max_abs_Cp_deviation_J_molK: 34.805
     max_residual_J_per_mol: 36.5830440185964
     max_residual_log10_K: 0.00119580744291554
     uncertainty:
@@ -1540,6 +1571,7 @@ rows:
     T_range_K: [1200, 2200]
     T0_K: 2200
     Cp_l_J_molK: 66.944
+    max_abs_Cp_deviation_J_molK: 7.476
     max_residual_J_per_mol: 5.62680859537795
     max_residual_log10_K: 0.000195164279003448
     uncertainty:
@@ -1579,6 +1611,7 @@ rows:
     T_range_K: [1200, 2200]
     T0_K: 2200
     Cp_l_J_molK: 62.760
+    max_abs_Cp_deviation_J_molK: 3.837
     max_residual_J_per_mol: 2.93058269936591
     max_residual_log10_K: 0.000104898029922716
     uncertainty:
@@ -2031,6 +2064,7 @@ rows:
     T_range_K: [1200, 1500]
     T0_K: 1500
     Cp_l_J_molK: 100.416
+    max_abs_Cp_deviation_J_molK: 3.286
     max_residual_J_per_mol: 1.00699646014255
     max_residual_log10_K: 4.24940394897166e-05
     uncertainty:
@@ -2066,6 +2100,7 @@ rows:
     T_range_K: [1200, 1900]
     T0_K: 1900
     Cp_l_J_molK: 156.900
+    max_abs_Cp_deviation_J_molK: 5.513
     max_residual_J_per_mol: 2.62554622325115
     max_residual_log10_K: 0.000100089691195719
     uncertainty:
@@ -2098,6 +2133,7 @@ rows:
     T_range_K: [1200, 1700]
     T0_K: 1700
     Cp_l_J_molK: 156.900
+    max_abs_Cp_deviation_J_molK: 1.484
     max_residual_J_per_mol: 0.457122317515314
     max_residual_log10_K: 1.92353875677357e-05
     uncertainty:
@@ -3249,11 +3285,12 @@ rows:
     runtime_ref: NG-12403-SC-CP
     T0_K: 2080.0
     Cp_l_J_molK: 159.999088176241
+    max_abs_Cp_deviation_J_molK: 5.00130536366
     T_range_K:
     - 1200
     - 2080
-    max_residual_J_per_mol: 6.05848193983547
-    max_residual_log10_K: 0.000213532846676255
+    max_residual_J_per_mol: 24.9638604843
+    max_residual_log10_K: 0.000863131356204
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -3306,11 +3343,12 @@ rows:
     runtime_ref: NG-12434-SC-CP
     T0_K: 1388.0
     Cp_l_J_molK: 78.4995526484205
+    max_abs_Cp_deviation_J_molK: 0.068131379223
     T_range_K:
     - 1200
     - 1388
-    max_residual_J_per_mol: 25.1452858862467
-    max_residual_log10_K: 0.00105741032316014
+    max_residual_J_per_mol: 0.0223974802066
+    max_residual_log10_K: 9.32070124078e-07
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -3389,11 +3427,12 @@ rows:
     runtime_ref: NG-12662-SC-CP
     T0_K: 2186.0
     Cp_l_J_molK: 159.999088176241
+    max_abs_Cp_deviation_J_molK: 7.25817214747
     T_range_K:
     - 1200
     - 2186
-    max_residual_J_per_mol: 10.7934030294418
-    max_residual_log10_K: 0.000357747900814876
+    max_residual_J_per_mol: 45.0238448279
+    max_residual_log10_K: 0.00151822530351
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -4440,8 +4479,8 @@ rows:
     T_range_K:
     - 1200
     - 1250
-    max_residual_J_per_mol: 3.16401128657162e-05
-    max_residual_log10_K: 1.36247125806271e-09
+    max_residual_J_per_mol: 3.1640578527e-05
+    max_residual_log10_K: 1.36249131014e-09
     source_locator: thermo.inp lines 14618-14622
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
@@ -4455,6 +4494,7 @@ rows:
     source_data: false
     T0_K: 1250
     Cp_l_J_molK: 62.999640982906
+    max_abs_Cp_deviation_J_molK: 0.000845900095186
     note: The labelled constant-Cp continuation is anchored to NASA NG-1848's first
       liquid node at 1250 K. It extends SnO(l) downward to 1200 K only below that card
       boundary and retains the NASA pure-liquid standard state at 1 atm.

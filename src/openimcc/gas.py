@@ -591,7 +591,7 @@ _ION_GAS_SPECIES = (
     "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-",
     "Li+", "Rb+", "Pb+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
-    "Cs-", "Cu-", "Cs+", "Cu+", "Sn+", "Cs2O+",
+    "Cs-", "Cs+", "Sn+", "Cs2O+",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -836,7 +836,6 @@ _GAS_IONIZATION_PAIRS = (
     ("Ge", "Ge+"),
     ("B", "B+"),
     ("Cs", "Cs+"),
-    ("Cu", "Cu+"),
     ("Sn", "Sn+"),
     ("Cs2O", "Cs2O+"),
 )
@@ -865,7 +864,6 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("BO", "BO-"),
     ("BO2", "BO2-"),
     ("Cs", "Cs-"),
-    ("Cu", "Cu-"),
 )
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
@@ -1073,20 +1071,20 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
               'validation': 'unvalidated',
               'reason': 'A labelled constant-Cp TiO2(l) continuation covers 1200-1500 K below the '
                         'glass branch; Ti(g), TiO(g), and TiO2(g) still start at 1500 K, leaving a '
-                        'lower C4 gap; joint C3 closure-screen maximum 2.468e-09 at 2500 K and '
-                        'fO2=1e-8 within the <=1-bar neutral-pressure domain; unmodeled positive '
+                        'lower C4 gap; joint C3 closure-screen maximum 9.883e-10 at 2300 K and '
+                        'fO2=1e-10 within the <=1-bar neutral-pressure domain; unmodeled positive '
                         'molecular ions and thermal electrons from walls or other sources remain '
                         'outside the estimate.',
               'c2_candidates': (('O-022', 'TiO'), ('O-046', 'TiO2')),
-              'c3_ion_bound': {   'max_ratio': 2.4679599999339846e-09,
+              'c3_ion_bound': {   'max_ratio': 9.883377436721606e-10,
                                   'isolated_bound': 143063233.9706761,
-                                  'temperature_K': 2500.0,
-                                  'fO2': 1e-08,
-                                  'neutral_pressure_bar': 3.7185762427081784e-08,
-                                  'element_total_pressure_bar': 5.027603220057954e-06,
-                                  'joint_ion_pressure_bar': 1.240792364264233e-14,
-                                  'electron_pressure_bar': 2.3423830414535237e-05,
-                                  'K_ion': 7.815924166451596e-12,
+                                  'temperature_K': 2300.0,
+                                  'fO2': 1e-10,
+                                  'neutral_pressure_bar': 1.2935270323764889e-08,
+                                  'element_total_pressure_bar': 8.992765922553097e-07,
+                                  'joint_ion_pressure_bar': 8.887889981268024e-16,
+                                  'electron_pressure_bar': 5.826941454204429e-06,
+                                  'K_ion': 4.0037210878469924e-13,
                                   'parent_oxide': 'TiO2',
                                   'source_tables': {   'cation': 'Ti-007',
                                                        'neutral': 'Ti-006',
@@ -1132,7 +1130,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                  'neutral_pressure_bar': 1.7487620205734108e-15,
                                  'element_total_pressure_bar': 1.7543022029391172e-15,
                                  'joint_ion_pressure_bar': 7.586895293731377e-17,
-                                 'electron_pressure_bar': 2.257363747459153e-16,
+                                 'electron_pressure_bar': 2.2573637474192663e-16,
                                  'K_ion': 9.793432262395198e-18,
                                  'parent_oxide': 'K2O',
                                  'source_tables': {   'cation': 'K-006',
@@ -1188,20 +1186,20 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
              'validation': 'unvalidated',
              'reason': 'A labelled constant-Cp V2O3(l) continuation covers 1200-1700 K; V(g), '
                        'VO(g), and VO2(g) still start at 1500 K, leaving a lower C4 gap; activity '
-                       'is caller-supplied; joint C3 closure-screen maximum 1.335e-08 at 2500 K '
-                       'and fO2=1e-8 within the <=1-bar neutral-pressure domain; unmodeled '
+                       'is caller-supplied; joint C3 closure-screen maximum 6.841e-09 at 2300 K '
+                       'and fO2=1e-10 within the <=1-bar neutral-pressure domain; unmodeled '
                        'positive molecular ions and thermal electrons from walls or other sources '
                        'remain outside the estimate.',
              'c2_candidates': (('O-026', 'VO'), ('O-076', 'VO2')),
-             'c3_ion_bound': {   'max_ratio': 1.3348271077364972e-08,
+             'c3_ion_bound': {   'max_ratio': 6.841382590470138e-09,
                                  'isolated_bound': 244.3406917318666,
-                                 'temperature_K': 2500.0,
-                                 'fO2': 1e-08,
-                                 'neutral_pressure_bar': 7.700360201944309e-06,
-                                 'element_total_pressure_bar': 0.0001213501389894866,
-                                 'joint_ion_pressure_bar': 1.6198145505075833e-12,
-                                 'electron_pressure_bar': 2.3423830414535237e-05,
-                                 'K_ion': 4.9273359088456654e-12,
+                                 'temperature_K': 2300.0,
+                                 'fO2': 1e-10,
+                                 'neutral_pressure_bar': 3.435228834140807e-06,
+                                 'element_total_pressure_bar': 2.271257370331679e-05,
+                                 'joint_ion_pressure_bar': 1.5538540631864136e-13,
+                                 'electron_pressure_bar': 5.826941454204429e-06,
+                                 'K_ion': 2.635695347157119e-13,
                                  'parent_oxide': 'V2O3',
                                  'source_tables': {   'cation': 'V-006',
                                                       'neutral': 'V-005',
@@ -1226,20 +1224,20 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
               'validation': 'unvalidated',
               'reason': 'Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 '
                         'K; Nb(g), NbO(g), and NbO2(g) start at 1500 K, leaving a gas C4 gap; '
-                        'activity is caller-supplied; joint C3 closure-screen maximum 1.356e-12 at '
-                        '2500 K and fO2=1e-8 within the <=1-bar neutral-pressure domain; unmodeled '
+                        'activity is caller-supplied; joint C3 closure-screen maximum 4.636e-13 at '
+                        '2300 K and fO2=1e-10 within the <=1-bar neutral-pressure domain; unmodeled '
                         'positive molecular ions and thermal electrons from walls or other sources '
                         'remain outside the estimate.',
               'c2_candidates': (('Nb-011', 'NbO'), ('Nb-015', 'NbO2')),
-              'c3_ion_bound': {   'max_ratio': 1.3558340992105206e-12,
+              'c3_ion_bound': {   'max_ratio': 4.63575902197488e-13,
                                   'isolated_bound': 3202840578.16235,
-                                  'temperature_K': 2500.0,
-                                  'fO2': 1e-08,
-                                  'neutral_pressure_bar': 2.6011334891258776e-11,
-                                  'element_total_pressure_bar': 1.722830561352621e-06,
-                                  'joint_ion_pressure_bar': 2.3358724222438864e-18,
-                                  'electron_pressure_bar': 2.3423830414535237e-05,
-                                  'K_ion': 2.1035090939149642e-12,
+                                  'temperature_K': 2300.0,
+                                  'fO2': 1e-10,
+                                  'neutral_pressure_bar': 7.762835489882393e-12,
+                                  'element_total_pressure_bar': 3.0118668665341213e-07,
+                                  'joint_ion_pressure_bar': 1.3962288999522763e-19,
+                                  'electron_pressure_bar': 5.826941454204429e-06,
+                                  'K_ion': 1.048037674802435e-13,
                                   'parent_oxide': 'NbO2',
                                   'source_tables': {   'cation': 'Nb-006',
                                                        'neutral': 'Nb-005',
@@ -1349,7 +1347,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                         'neutral-pressure domain.',
               'c2_candidates': (('NG-5066', 'GaO'), ('NG-5178', 'Ga2O')),
               'c3_ion_bound': {   'max_ratio': 5.3569603502469e-07,
-                                  'isolated_bound': 0.001955965463263835,
+                                  'isolated_bound': 0.0019556139830335627,
                                   'temperature_K': 2600.0,
                                   'fO2': 0.0001,
                                   'neutral_pressure_bar': 0.06901684913530377,
@@ -1378,7 +1376,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                         'domain.',
               'c2_candidates': (('NG-5331', 'GeO'), ('NG-5339', 'GeO2')),
               'c3_ion_bound': {   'max_ratio': 3.4740630559770743e-14,
-                                  'isolated_bound': 3.117563700312131e-05,
+                                  'isolated_bound': 3.1175640352052395e-05,
                                   'temperature_K': 2300.0,
                                   'fO2': 0.0001,
                                   'neutral_pressure_bar': 6.299975812190224e-05,
@@ -1536,15 +1534,25 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                                          'NG-1843': 'b6bc19299621afada6708b0c109c4215c91ab7521b8ec5c6b48250e24e133948',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'neutral-source-vendor/1.0'}},
-    'Cu': {   'status': 'gas-complete-melt-pending',
-              'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
+    'Cu': {   'status': 'gas-partial',
+              'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
               'validation': 'unvalidated',
               'reason': 'Cu2O(l) is the Cu(I) parent because JANAF provides its liquid row; '
                         'neutral Cu gas rows and the parent cover 1200-3000 K; a(Cu2O) is '
-                        'caller-supplied; the C3 screen at a(Cu2O)=1e-3 reached 3.257e-05 at 2800 '
-                        'K and fO2=1e-4 within the <=1-bar neutral-pressure domain.',
+                        'caller-supplied; Cu+ and Cu- are declined by independent NIST ionisation '
+                        'energy and electron-affinity consistency checks.',
               'c2_candidates': (('Cu-016', 'CuO'),),
               'c3_ion_bound': {   'max_ratio': 3.256730101673907e-05,
+                                  'status': 'declined',
+                                  'declined_ions': ('Cu+', 'Cu-'),
+                                  'saha_consistency': {   'Cu+': {   1500: 1666.15,
+                                                                    2000: 1664.34,
+                                                                    2500: 1656.61},
+                                                          'Cu-': {   1500: 2.78857e-4,
+                                                                    2500: 2.20885e-5}},
+                                  'reason': 'JANAF Cu-006 has the same anomalous entropy in its published table; '
+                                            'Cu+ fails the NIST 7.72638 eV ground-term Saha check, and Cu- '
+                                            'fails the NIST 1.23578 eV electron-affinity check. Neither ion is emitted.',
                                   'isolated_bound': 1.1594028406233195e-06,
                                   'temperature_K': 2800.0,
                                   'fO2': 0.0001,

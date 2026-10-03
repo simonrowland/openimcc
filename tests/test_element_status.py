@@ -379,7 +379,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     }
     assert set(computed) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
-        "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
+        "Li", "Rb", "Pb", "Cs", "Sn", "Ga", "Ge", "B",
     }
     caller_parent_oxides = {
         "Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2",
@@ -391,7 +391,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     new_trace_parents = {
         "Ga": "Ga2O3", "Ge": "GeO2", "B": "B2O3", "In": "In2O3",
     }
-    trace_elements = {"Li", "Rb", "Pb", "Cs", "Cu", "Sn"}
+    trace_elements = {"Li", "Rb", "Pb", "Cs", "Sn"}
     existing_caller_parent_oxides = {
         element: oxide
         for element, oxide in caller_parent_oxides.items()
@@ -762,14 +762,14 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     }
     assert set(measured) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
-        "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
+        "Li", "Rb", "Pb", "Cs", "Sn", "Ga", "Ge", "B",
     }
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
         if element in {"Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In"}:
             assert recorded["parent_activity"] == 1.0e-3
-        assert recorded["temperature_K"] == result["temperature_K"]
-        assert recorded["fO2"] == result["fO2"]
+        assert recorded["temperature_K"] == result["temperature_K"], element
+        assert recorded["fO2"] == result["fO2"], element
         for field in (
             "max_ratio",
             "neutral_pressure_bar",
@@ -789,6 +789,8 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     assert declined_in["status"] == "declined"
     assert ELEMENT_STATUS["In"]["criteria"]["C3"] is False
     assert declined_in["source_tables"]["cation"] == "NG-6016"
+    assert ELEMENT_STATUS["Cu"]["c3_ion_bound"]["status"] == "declined"
+    assert ELEMENT_STATUS["Cu"]["criteria"]["C3"] is False
     source_terms_3000 = measured["Si"]["electron_source_terms_3000K"]
     assert set(
         sorted(source_terms_3000, key=source_terms_3000.get, reverse=True)[:2]
@@ -822,11 +824,11 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     ionisation_order = sorted(first_ionisation_energies, key=first_ionisation_energies.get)
     assert ionisation_order == [
         "Cs", "Rb", "K", "Na", "Li", "Al", "Ca", "V", "Cr", "Ti",
-        "Nb", "Sn", "Pb", "Mg", "Cu", "Fe", "Si",
+        "Nb", "Sn", "Pb", "Mg", "Fe", "Si",
     ]
     assert ratio_order == [
-        "K", "Na", "Cs", "Ca", "Rb", "Cu", "Al", "Cr", "Mg", "Li",
-        "Sn", "Fe", "V", "Ti", "Nb", "Pb", "Si",
+        "K", "Na", "Cs", "Ca", "Rb", "Al", "Cr", "Mg", "Li",
+        "Sn", "Fe", "V", "Ti", "Pb", "Nb", "Si",
     ]
     assert ratio_order != ionisation_order
 

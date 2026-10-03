@@ -24,6 +24,7 @@ from tools import build_gas_tables
 from openimcc import default_gas_channels, species_thermo
 from openimcc.gas import (
     _EXTERNAL_PACK_GAS_SPECIES,
+    _GAS_IONIZATION_PAIRS,
     _GAS_PROVENANCE_AUTHORITY,
     _OXIDE_PROVENANCE_AUTHORITY,
     _OXIDE_SOURCE_TABLE_IDS,
@@ -1252,6 +1253,8 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
     expected_table_ids = {}
     for row in provenance["rows"]:
         if row["table"] == "gas":
+            if row["species_name"] in build_gas_tables.DECLINED_ION_GAS_SPECIES:
+                continue
             expected_gas[row["species_name"].removesuffix("(g)")] = row["authority"]
         else:
             if row.get("extrapolation") is True:
@@ -2047,7 +2050,6 @@ def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
         ("Ga", "Ga+", 1),
         ("B", "B+", 1),
         ("Cs", "Cs+", 1),
-        ("Cu", "Cu+", 1),
         ("Na", "Na-", -1),
         ("K", "K-", -1),
         ("O", "O-", -1),
@@ -2071,7 +2073,6 @@ def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
         ("B", "B-", -1),
         ("BO2", "BO2-", -1),
         ("Cs", "Cs-", -1),
-        ("Cu", "Cu-", -1),
     ]
     source_ids = set(ion_table_ids.values())
     source_ids.update(
@@ -2311,62 +2312,54 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
 
 
 @pytest.mark.parametrize(
-    ("element", "cation", "ion_id", "neutral_id", "ionisation_eV", "g_neutral", "g_ion"),
+    ("element", "ionisation_eV", "g_neutral", "g_ion", "nist_asd"),
     [
-        ("B", "B+(g)", "B-006", "B-005", 8.29802, 6, 1),
-        ("Ga", "Ga+(g)", "Ga-006", "Ga-005", 5.999301, 6, 1),
-        ("Ge", "Ge+(g)", "NG-5197", "NG-5186", 7.89943, 9, 6),
-        ("In", "In+(g)", "NG-6016", "NG-6005", 5.78636, 6, 1),
+        ("Na", 5.13907696, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Na&units=1&e_out=0"),
+        ("K", 4.3406637, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=K&units=1&e_out=0"),
+        ("Ca", 6.1131553, 1, 2, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Ca&units=1&e_out=0"),
+        ("Li", 5.3917148, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Li&units=1&e_out=0"),
+        ("Rb", 4.177128, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Rb&units=1&e_out=0"),
+        ("Pb", 7.4166798, 9, 6, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Pb&units=1&e_out=0"),
+        ("Cs", 3.89390572743, 2, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Cs&units=1&e_out=0"),
+        ("Sn", 7.343917, 9, 6, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Sn&units=1&e_out=0"),
+        ("B", 8.29802, 6, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=B&units=1&e_out=0"),
+        ("Ga", 5.999301, 6, 1, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Ga&units=1&e_out=0"),
+        ("Ge", 7.89943, 9, 6, "https://physics.nist.gov/cgi-bin/ASD/ie.pl?spectra=Ge&units=1&e_out=0"),
     ],
 )
-def test_m_plus_fits_match_ground_term_saha_constants(
+def test_every_m_plus_matches_ground_term_saha_within_factor_three(
     element: str,
-    cation: str,
-    ion_id: str,
-    neutral_id: str,
     ionisation_eV: float,
     g_neutral: int,
     g_ion: int,
+    nist_asd: str,
 ) -> None:
-    """Compare fitted Kion to the NIST IE ground-term Saha value.
+    """Check every packaged atomic cation against the NIST ground-term limit.
 
-    For M + e- = M+, Kp=(kT/p°)*(2*g+/g0)*(2*pi*me*kT/h²)^(3/2)
-    * exp(-IE/kT). The first factor converts the translational partition
-    function to the dimensionless 1-bar equilibrium constant.
-    Ionisation energies are NIST Atomic Spectra Database values; term weights
-    are B/Ga/In 6:1 and Ge 9:6. Ga's fine-structure splitting is large enough
-    that its term-weight comparison is allowed a factor below two.
+    For M + e- = M+, Kp=(kBT/p°)*(2*g+/g0)*(2*pi*me*kBT/h²)^(3/2)
+    * exp(-IE/kBT). kBT/p° is m³, the electron translational term is m⁻³,
+    and the product is dimensionless at p°=1 bar. The eV conversion uses
+    1 eV = 1.602176634e-19 J; electron mass is in kg and h in J s. Each IE
+    entry cites its element-specific NIST ASD ionization-energy output.
+    Ground-term weights omit excited fine-structure populations, hence the
+    factor-three tolerance accommodates level populations while rejecting
+    source consistency errors.
     """
+    assert nist_asd.startswith("https://physics.nist.gov/cgi-bin/ASD/ie.pl?")
     pack = load_gas_datapack()
-    if element == "In":
-        # This correctly parsed source card is declined from runtime rows, but
-        # fit it without edits to record why its published anchor is unusable.
-        row = build_gas_tables._fit_nasa_card_gas_row(
-            NASA_DATA,
-            cation,
-            ion_id,
-            "In",
-            "In",
-            1,
-            0,
-            fit_t_min=1200.0,
-            fit_t_max=3000.0,
-        )
-        ion_row = pd.Series(
-            {key: float(value) for key, value in row.items() if key in "ABCDEFG"}
-        )
-    else:
-        ion_row = None
+    atomic_pairs = {
+        neutral for neutral, ion in _GAS_IONIZATION_PAIRS
+        if ion != "Cs2O+"
+    }
+    assert atomic_pairs == {
+        "Na", "K", "Ca", "Li", "Rb", "Pb", "Cs", "Sn", "B", "Ga", "Ge"
+    }
     for temperature in (1500.0, 2500.0):
-        if element != "In":
-            ion_row = _nearest_interval_row(
-                pack.gas_df, cation, temperature, allow_extrapolation=False
-            )
+        ion_row = _nearest_interval_row(
+            pack.gas_df, f"{element}+(g)", temperature, allow_extrapolation=False
+        )
         neutral_row = _nearest_interval_row(
-            pack.gas_df,
-            f"{element}(g)",
-            temperature,
-            allow_extrapolation=False,
+            pack.gas_df, f"{element}(g)", temperature, allow_extrapolation=False
         )
         electron_row = _nearest_interval_row(
             pack.gas_df, "e-(g)", temperature, allow_extrapolation=False
@@ -2387,22 +2380,52 @@ def test_m_plus_fits_match_ground_term_saha_constants(
             * (2.0 * math.pi * m_e * k_b * temperature / h**2) ** 1.5
             * math.exp(-ionisation_eV * e_v / (k_b * temperature))
         )
-        ratio = fitted_k / saha_k
-        if element == "In":
-            assert ratio > 1.0e16
-        elif element == "Ga":
-            assert 1.0 < ratio < 1.7
-        elif element == "Ge":
-            # The NIST-ground-term estimate omits excited fine-structure
-            # populations, which widen Ge's high-temperature comparison.
-            assert ratio == pytest.approx(1.0, rel=0.10)
-        else:
-            assert ratio == pytest.approx(1.0, rel=0.02)
-        if element == "In":
-            neutral = _nasa_record(neutral_id)
-            ion = _nasa_record(ion_id)
-            assert float(ion["delta_f_H_298_15"]["value"]) == 6996.425
-            assert float(neutral["delta_f_H_298_15"]["value"]) == 240700.0
+        assert 1.0 / 3.0 <= fitted_k / saha_k <= 3.0, element
+
+
+def test_copper_negative_ion_is_declined_by_electron_affinity_check() -> None:
+    """Cu- source affinity fails the analogous NIST ground-state check.
+
+    For M + e- = M-, Kp=(kBT/p°)*(2*g-/g0)*(2*pi*me*kBT/h²)^(3/2)
+    * exp(EA/kBT), dimensionless at p°=1 bar after the m³ and m⁻³ factors
+    cancel. NIST Cu EA is 1.23578 eV; ground-state weights are Cu:Cu-=2:1.
+    """
+    pack = load_gas_datapack()
+    assert "Cu-(g)" not in pack.gas_df.index
+    source = next(
+        source for source in build_gas_tables.TRACE_ION_GAS_TEXT_SOURCES
+        if source[0] == "Cu-(g)"
+    )
+    row = build_gas_tables._fit_janaf_text_row(JANAF_DATA, *source)
+    cu_minus_row = pd.Series(
+        {key: float(value) for key, value in row.items() if key in "ABCDEFG"}
+    )
+    k_b = 1.380649e-23
+    h = 6.62607015e-34
+    m_e = 9.1093837139e-31
+    e_v = 1.602176634e-19
+    ratios = []
+    for temperature in (1500.0, 2500.0):
+        neutral = _nearest_interval_row(
+            pack.gas_df, "Cu(g)", temperature, allow_extrapolation=False
+        )
+        electron = _nearest_interval_row(
+            pack.gas_df, "e-(g)", temperature, allow_extrapolation=False
+        )
+        delta_g = (
+            _janaf_gibbs(temperature, cu_minus_row)
+            - _janaf_gibbs(temperature, neutral)
+            - _janaf_gibbs(temperature, electron)
+        )
+        fitted_k = math.exp(-delta_g / (R_J_MOL_K * temperature))
+        affinity_k = (
+            k_b * temperature / 1.0e5
+            * (2.0 * 1 / 2)
+            * (2.0 * math.pi * m_e * k_b * temperature / h**2) ** 1.5
+            * math.exp(1.23578 * e_v / (k_b * temperature))
+        )
+        ratios.append(fitted_k / affinity_k)
+    assert ratios == pytest.approx((2.78857e-4, 2.20885e-5), rel=5.0e-4)
 
 
 def test_cr_channels_against_janaf_cells() -> None:
@@ -3172,12 +3195,12 @@ def _assert_snol_constant_cp_continuation_uses_the_nasa_liquid_anchor() -> None:
 
 
 def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
-    """Generated quartics stay close to their source Cp and preserve seams.
+    """Continuation fits preserve their source Cp, H/S/G anchors, and seams.
 
     The Shomate Gibbs polynomial implies Cp/R = 2*B*tau + 6*C*tau^2 +
     12*D*tau^3 + 20*E*tau^4. Its entropy is R*(P + tau*P'). The fit fixes
-    Gibbs and entropy at the source anchor; comparison with the adjacent fit
-    also bounds its published seam error to 30 J/mol and 1.3 J/(mol K).
+    Gibbs, entropy, and enthalpy at the source anchor; comparison with the
+    adjacent fit also bounds its published seam error.
     """
     from openimcc.gas import _lamor_gibbs
 
@@ -3198,14 +3221,31 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
         )
         return R_J_MOL_K * (polynomial + tau * derivative)
 
+    known_cp_error_limits = {
+        "TiO2(l)": 3.29,
+        "Cr2O3(l)": 5.52,
+        "V2O3(l)": 1.49,
+        "SiO2(l)": 2.07,
+        "Al2O3(l)": 34.82,
+        "MgO(l)": 7.49,
+        "CaO(l)": 3.85,
+    }
+    constrained_cp_error_limits = {
+        "GeO2(l)": 0.07,
+        "Ga2O3(l)": 5.01,
+        "In2O3(l)": 7.27,
+        "SnO(l)": 0.001,
+    }
+
     for generated in generated_rows:
         species = generated["species_name"]
         rows = pack.oxide_df.loc[species]
         continuation = rows.loc[rows["Ref"] == generated["Ref"]].iloc[0]
         anchor_cp = float(generated["_Cp_l_J_molK"])
         temperatures = np.linspace(
-            float(continuation["T_min"]), float(continuation["T_max"]), 101
+            float(continuation["T_min"]), float(continuation["T_max"]), 1001
         )
+        max_cp_error = 0.0
         for temperature in temperatures:
             tau = float(temperature) / 1000.0
             b, c, d, e = (
@@ -3215,28 +3255,30 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
                 2.0 * b * tau + 6.0 * c * tau**2
                 + 12.0 * d * tau**3 + 20.0 * e * tau**4
             )
-            # NASA's corrected Ge card gives a 63.72 J/(mol K) maximum on its
-            # 1200-1388 K continuation; every other continuation stays below 40.
-            cp_tolerance = 70.0 if species == "GeO2(l)" else 40.0
-            assert abs(implied_cp - anchor_cp) <= cp_tolerance, species
+            max_cp_error = max(max_cp_error, abs(implied_cp - anchor_cp))
+        cp_tolerance = (
+            constrained_cp_error_limits[species]
+            if species in constrained_cp_error_limits
+            else known_cp_error_limits[species]
+        )
+        assert max_cp_error <= cp_tolerance, (species, max_cp_error)
+
+        anchor_temperature = float(generated["_T0_K"])
+        anchor_g = float(generated["_anchor_G_J_per_mol"])
+        anchor_s = float(generated["_anchor_S_J_molK"])
+        anchor_h = float(generated["_anchor_H_J_per_mol"])
+        fitted_g = _lamor_gibbs(anchor_temperature, continuation)
+        fitted_s = entropy(continuation, anchor_temperature)
+        fitted_h = fitted_g + anchor_temperature * fitted_s
+        if species in constrained_cp_error_limits:
+            assert fitted_g == pytest.approx(anchor_g, abs=0.02), species
+            assert fitted_s == pytest.approx(anchor_s, abs=2e-5), species
+            assert fitted_h == pytest.approx(anchor_h, abs=0.03), species
 
         seam = float(continuation["T_max"])
         adjacent = rows.loc[rows["T_min"].astype(float) == seam].iloc[0]
         assert abs(_lamor_gibbs(seam, continuation) - _lamor_gibbs(seam, adjacent)) <= 30.0
         assert abs(entropy(continuation, seam) - entropy(adjacent, seam)) <= 1.3
-        if species == "SnO(l)":
-            assert abs(_lamor_gibbs(seam, continuation) - _lamor_gibbs(seam, adjacent)) <= 0.2
-            assert abs(entropy(continuation, seam) - entropy(adjacent, seam)) <= 0.05
-            for temperature in temperatures:
-                tau = float(temperature) / 1000.0
-                b, c, d, e = (
-                    float(continuation[f"dG_{key}"]) for key in "BCDE"
-                )
-                implied_cp = R_J_MOL_K * (
-                    2.0 * b * tau + 6.0 * c * tau**2
-                    + 12.0 * d * tau**3 + 20.0 * e * tau**4
-                )
-                assert abs(implied_cp - anchor_cp) <= 0.01
     _assert_snol_constant_cp_continuation_uses_the_nasa_liquid_anchor()
 
 

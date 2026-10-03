@@ -107,10 +107,10 @@ _T625_AGAINST_JANAF_PRINTED_GAS_COLUMNS = {
 _ION_GAS_SPECIES = {
     "Na+", "K+", "Ca+", "e-",
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
-    "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-",
+    "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-", "Cs-",
     "Li+", "Rb+", "Pb+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
-    "Li+", "Rb+", "Pb+", "Cs+", "Cu+", "Sn+", "Cs2O+", "Cs-", "Cu-",
+    "Li+", "Rb+", "Pb+", "Cs+", "Sn+", "Cs2O+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
 }
 
@@ -2128,7 +2128,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
             )
     expected_trace_ions = {
         "Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-",
-        "Cs+", "Cs-", "Cu+", "Cu-", "Sn+", "Cs2O+",
+        "Cs+", "Sn+", "Cs2O+",
     }
     assert expected_trace_ions <= set(trace_ions)
     for species in expected_trace_ions - {"Sn+", "Cs2O+"}:
