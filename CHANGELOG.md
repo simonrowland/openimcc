@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added optional Cs, Cu and Sn gas channels with caller-supplied Cs2O(l),
+  Cu2O(l) and SnO(l) activities, source-fitted 1200–3000 K rows, and opt-in
+  Cs+, Cu+, Sn+, Cs2O+, Cs− and Cu− channels. JANAF liquid cells are used for
+  Cu2O(l) through 2000 K, with a NASA H/S-increment tail; NASA liquid cards
+  supply Cs2O(l) and SnO(l), with a labelled SnO constant-Cp continuation from
+  1250 K to 1200 K. SnO is selected over the later-starting SnO2(l) card.
+  Cs exceeds the recorded C3 ion-share limit at the caller activity screen;
+  Cu and Sn remain below it. Default neutral results and existing coefficient
+  rows are unchanged.
 - Switched default SiO2(l), Al2O3(l), MgO(l), and CaO(l) parent rows to the
   generated JANAF fits and labelled constant-Cp liquid continuations through
   1200 K. The former LAM1987 default rows, including SiO2(cr), are preserved

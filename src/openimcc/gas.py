@@ -276,6 +276,11 @@ def default_condensate_database_path() -> Path:
 # PbO(l) is the caller-supplied Pb(II) parent because it has a source-rated
 # liquid standard state; PbO2 is retained as a gas product, with no evaluated
 # PbO2(l) parent row in the source set used here.
+# For these parent oxides, E_aO_b(l) balances with n_g=a/c and
+# n_O2=(b-n_g*d)/2 for E_cO_d(g). Cs2O(l) and Cu2O(l) therefore give (2,1/2)
+# for E, (2,-1/2) for EO, and (1,0) for E2 or E2O; SnO(l) gives (1,1/2),
+# (1,0), and (1,-1/2) for Sn, SnO, and SnO2. Coefficients are dimensionless;
+# the O2 term contributes two O atoms. Sanity: the tuples balance parent atoms.
 _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Na": ("Na2O", 2, 0.5),
     "K": ("K2O", 2, 0.5),
@@ -356,6 +361,15 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Pb": ("PbO", 1, 0.5),
     "PbO": ("PbO", 1, 0.0),
     "PbO2": ("PbO", 1, -0.5),
+    "Cs": ("Cs2O", 2, 0.5),
+    "CsO": ("Cs2O", 2, -0.5),
+    "Cs2O": ("Cs2O", 1, 0.0),
+    "Cu": ("Cu2O", 2, 0.5),
+    "CuO": ("Cu2O", 2, -0.5),
+    "Cu2": ("Cu2O", 1, 0.5),
+    "Sn": ("SnO", 1, 0.5),
+    "SnO": ("SnO", 1, 0.0),
+    "SnO2": ("SnO", 1, -0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -429,6 +443,15 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Pb",
         "PbO",
         "PbO2",
+        "Cs",
+        "CsO",
+        "Cs2O",
+        "Cu",
+        "CuO",
+        "Cu2",
+        "Sn",
+        "SnO",
+        "SnO2",
     }
 )
 
@@ -515,6 +538,9 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "RbO": "nasa_glenn_fitted",
         "Rb2O": "nasa_glenn_fitted",
         "PbO2": "nasa_glenn_fitted",
+        "Sn": "nasa_glenn_fitted",
+        "SnO": "nasa_glenn_fitted",
+        "SnO2": "nasa_glenn_fitted",
     }
 )
 _ION_GAS_SPECIES = (
@@ -522,9 +548,17 @@ _ION_GAS_SPECIES = (
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
     "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-",
     "Li+", "Rb+", "Pb+",
+    "Cs-", "Cu-", "Cs+", "Cu+", "Sn+", "Cs2O+",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
-    {species: "janaf_fitted_ionisation" for species in _ION_GAS_SPECIES}
+    {
+        species: (
+            "nasa_glenn_fitted"
+            if species in {"Sn+", "Cs2O+"}
+            else "janaf_fitted_ionisation"
+        )
+        for species in _ION_GAS_SPECIES
+    }
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
     "MnO": "external_datapack",
@@ -546,6 +580,9 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Li2O": "janaf_fitted",
     "Rb2O": "nasa_glenn_fitted",
     "PbO": "janaf_fitted",
+    "Cs2O": "nasa_glenn_fitted",
+    "Cu2O": "janaf_fitted",
+    "SnO": "nasa_glenn_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. Rows without a table identifier there return None.
@@ -564,6 +601,9 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Li2O": "Li-015",
     "Rb2O": "NG-1841",
     "PbO": "O-007",
+    "Cs2O": "NG-1842",
+    "Cu2O": "Cu-020",
+    "SnO": "NG-1848",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
     "MgO": "LH87 Table 2",
@@ -589,10 +629,11 @@ def gas_species_provenance(species: str) -> dict[str, str | None]:
     The overall authority is the least-authoritative row in that reaction.
     """
     if species in _ION_GAS_SPECIES:
+        authority = _GAS_PROVENANCE_AUTHORITY[species]
         return {
             "species_name": species,
-            "authority": "janaf_fitted_ionisation",
-            "gas_authority": "janaf_fitted_ionisation",
+            "authority": authority,
+            "gas_authority": authority,
             "condensate_authority": None,
         }
     if species not in _SF04_REACTIONS:
@@ -730,6 +771,10 @@ _GAS_IONIZATION_PAIRS = (
     ("Li", "Li+"),
     ("Rb", "Rb+"),
     ("Pb", "Pb+"),
+    ("Cs", "Cs+"),
+    ("Cu", "Cu+"),
+    ("Sn", "Sn+"),
+    ("Cs2O", "Cs2O+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -751,6 +796,8 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("LiO", "LiO-"),
     ("Rb", "Rb-"),
     ("Pb", "Pb-"),
+    ("Cs", "Cs-"),
+    ("Cu", "Cu-"),
 )
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
@@ -1254,6 +1301,93 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {
             "user_agent": "neutral-source-vendor/1.0",
         },
     },
+    "Cs": {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": "Cs2O(l) and neutral Cs gas rows cover 1200-3000 K; a(Cs2O) is caller-supplied; the C3 screen at a(Cs2O)=1e-3 reached 1.342e-04 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain, above the 1e-4 limit.",
+        "c2_candidates": (("Cs-017", "CsO"), ("Cs-021", "Cs2O")),
+        "c3_ion_bound": {
+            "max_ratio": 0.00013419666276342232,
+            "isolated_bound": 8.94135201604957e-09,
+            "temperature_K": 2000.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 0.5532219297945025,
+            "element_total_pressure_bar": 0.5552861930691437,
+            "joint_ion_pressure_bar": 7.45175539884845e-05,
+            "electron_pressure_bar": 7.065679339517891e-05,
+            "K_ion": 4.422886285229813e-17,
+            "parent_oxide": "Cs2O",
+            "parent_activity": 1.0e-3,
+            "source_tables": {
+                "cation": "Cs-006",
+                "neutral": "Cs-005",
+                "molecular_cation": "NG-1843",
+                "electron": "D-020",
+            },
+            "upstream_sha256": {
+                "Cs-006": "b2705d424836ca9fd585303e923b54ad1fca54d81f4db8c4e37c7a198595da3c",
+                "Cs-005": "5872ade6306f453d12dc6380c58a693117f5020ba1bcaad6f3c016a5211412a5",
+                "NG-1843": "b6bc19299621afada6708b0c109c4215c91ab7521b8ec5c6b48250e24e133948",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "neutral-source-vendor/1.0",
+        },
+    },
+    "Cu": {
+        "status": "gas-complete-melt-pending",
+        "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+        "validation": "unvalidated",
+        "reason": "Cu2O(l) is the Cu(I) parent because JANAF provides its liquid row; neutral Cu gas rows and the parent cover 1200-3000 K; a(Cu2O) is caller-supplied; the C3 screen at a(Cu2O)=1e-3 reached 3.257e-05 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain.",
+        "c2_candidates": (("Cu-016", "CuO"),),
+        "c3_ion_bound": {
+            "max_ratio": 3.256730101673907e-05,
+            "isolated_bound": 1.1594028406233195e-06,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 0.23790232420841811,
+            "element_total_pressure_bar": 0.24164133355057577,
+            "joint_ion_pressure_bar": 7.86960604782785e-06,
+            "electron_pressure_bar": 8.532103845675328e-05,
+            "K_ion": 3.1979186009022124e-13,
+            "parent_oxide": "Cu2O",
+            "parent_activity": 1.0e-3,
+            "source_tables": {"cation": "Cu-006", "neutral": "Cu-005", "electron": "D-020"},
+            "upstream_sha256": {
+                "Cu-006": "7699877b974780f89a88b8328d50996e4ab227c0f61c567daabe185fa8a8f9bf",
+                "Cu-005": "f7a575e44a41d314cc6532ca84b063e05201f7f7076e77d1e2dd80ad817e817d",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "neutral-source-vendor/1.0",
+        },
+    },
+    "Sn": {
+        "status": "gas-complete-melt-pending",
+        "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+        "validation": "unvalidated",
+        "reason": "SnO(l) is selected over the later-starting SnO2(l) card as the tin parent; neutral Sn gas rows and the parent cover 1200-3000 K; a(SnO) is caller-supplied; the C3 screen at a(SnO)=1e-3 reached 3.402e-08 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain.",
+        "c2_candidates": (("NG-1847", "SnO"), ("NG-1849", "SnO2")),
+        "c3_ion_bound": {
+            "max_ratio": 3.402016065092712e-08,
+            "isolated_bound": 1.9366616224859834e-06,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-04,
+            "neutral_pressure_bar": 0.009527622799418886,
+            "element_total_pressure_bar": 0.04282233357243156,
+            "joint_ion_pressure_bar": 1.4568226675817115e-09,
+            "electron_pressure_bar": 8.434672506881455e-05,
+            "K_ion": 3.573485696034799e-14,
+            "parent_oxide": "SnO",
+            "parent_activity": 1.0e-3,
+            "source_tables": {"cation": "NG-1846", "neutral": "NG-1845", "electron": "D-020"},
+            "upstream_sha256": {
+                "NG-1846": "56d079d5c12c4c0f120a6eb2ca1637d6df683417a12676ecbfaf2b6792cca312",
+                "NG-1845": "676fcb71f4498c9c8c0c1e7d82c1022d1f25091ce078a2517825feb4026f11a2",
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+            },
+            "user_agent": "neutral-source-vendor/1.0",
+        },
+    },
     "Mn": {
         "status": "gas-partial",
         "criteria": {"C1": False, "C2": True, "C3": False, "C4": False},
@@ -1564,9 +1698,10 @@ def _add_ion_channels(
 ) -> None:
     """Append fitted charge channels and close electroneutrality.
 
-    JANAF gives all gas species, ions and electrons the same 1-bar ideal-gas
-    standard state. Ion formation functions use JANAF's elemental reference
-    states. D-020 treats e-(g) as a monatomic ideal gas and tabulates
+    JANAF and NASA CEA gas cards use the same 1-bar ideal-gas standard state.
+    JANAF ion formation functions use JANAF's elemental reference states;
+    NASA ion cards retain their published functions. D-020 treats e-(g) as a
+    monatomic ideal gas and tabulates
     H°(T)-H°(0). Use the printed ion rows with that electron row; do not apply
     the +6.197 kJ/mol conversion some ion-table notes specify for the alternate
     convention that excludes the electron. For M(g) = M+(g) + e-(g),
@@ -1666,12 +1801,12 @@ def _add_ion_channels(
             else 0.0
         )
         domain_flags[ion] = "; ".join(flag for flag in flags if flag) or None
-        provenance_class[ion] = _ION_PROVENANCE_CLASS
+        provenance_class[ion] = _GAS_PROVENANCE_AUTHORITY[ion]
 
     for neutral, ion, equilibrium, flags in negative:
         values[ion] = equilibrium * values[neutral] * electron_pressure
         domain_flags[ion] = "; ".join(flag for flag in flags if flag) or None
-        provenance_class[ion] = _ION_PROVENANCE_CLASS
+        provenance_class[ion] = _GAS_PROVENANCE_AUTHORITY[ion]
 
 
 def species_thermo(
@@ -2081,9 +2216,14 @@ def evaluate_gas(
                 source_table = str(oxide_row["Ref"]).removesuffix(
                     _SUPERCOOLED_EXTENSION_REF_SUFFIX
                 )
+                source_name = (
+                    "NASA Glenn card"
+                    if source_table.startswith("NG-")
+                    else "JANAF"
+                )
                 flags.append(
                     f"{oxide_name} uses a labelled constant-Cp supercooled-liquid "
-                    f"continuation from JANAF {source_table}"
+                    f"continuation from {source_name} {source_table}"
                 )
         else:
             G_oxide = 0.0
@@ -2195,6 +2335,7 @@ _ATOMIC_MASS_G_MOL = {
     "Mn": 54.938044, "Ni": 58.6934, "Co": 58.933194,
     "P": 30.973761998, "S": 32.06,
     "Li": 6.94, "Rb": 85.4678, "Pb": 207.2,
+    "Cs": 132.90545196, "Cu": 63.546, "Sn": 118.710,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,

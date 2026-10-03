@@ -1,0 +1,203 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "source_id": "nasa-glenn",
+  "source": {
+    "database": "NASA Glenn / CEA thermo.inp",
+    "citation": "McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556; NASA CEA thermo.inp.",
+    "version": "thermo.inp dated 9/8/2021 (Snyder CEA standalone updates)",
+    "official_url": "https://www.grc.nasa.gov/www/CEAWeb/",
+    "licence": "US government work; 17 U.S.C. § 105 (no U.S. copyright). Public-domain basis."
+  },
+  "compilation_role": {
+    "kind": "assessed_thermodynamic_functions",
+    "engine_reference_input": true,
+    "validation_measurement": false,
+    "scoring_eligible": false,
+    "battery_refusal": "gibbs_table_not_runtime_observable",
+    "circularity_warning": "Do not validate an engine against a compilation it consumes."
+  },
+  "record_id": "NG-1850",
+  "name_as_published": "SnO2(L)",
+  "citation_as_published": "Liquid. Gurvich,1991 pt1 p361 pt2 p308.",
+  "cea_section": "products",
+  "formula": "SnO2",
+  "phase": "liquid",
+  "phase_as_published": "L",
+  "phase_flag": 2,
+  "phase_flag_as_published": "2",
+  "phase_normalization_rule": "G or CEA flag 0 maps to gas. Otherwise a recognized terminal state suffix keeps its published label; without one, NASA-7 S/L/C maps to cr/L/condensed and a positive CEA flag maps to condensed. Unrecognized suffixes stay verbatim in phase_as_published and are listed as ambiguities; card/suffix conflicts retain both published tokens. phase_ordinal is present only when same-formula non-gas records would otherwise share a phase label.",
+  "n_intervals_declared": 1,
+  "source_ref_code": "tpis91",
+  "composition": [
+    {
+      "element_as_published": "SN",
+      "count_as_published": "  1.00",
+      "element": "Sn",
+      "count": 1,
+      "filler": false
+    },
+    {
+      "element_as_published": "O ",
+      "count_as_published": "  2.00",
+      "element": "O",
+      "count": 2,
+      "filler": false
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0,
+      "filler": true
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0,
+      "filler": true
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0,
+      "filler": true
+    }
+  ],
+  "molecular_weight": {
+    "as_published": "150.7088000",
+    "value": 150.7088
+  },
+  "delta_f_H_298_15": {
+    "as_published": "-577630.000",
+    "value": -577630,
+    "units_as_published": "J/mol"
+  },
+  "intervals": [
+    {
+      "T_min_K": {
+        "as_published": "1903.000",
+        "value": 1903
+      },
+      "T_max_K": {
+        "as_published": "6000.000",
+        "value": 6000
+      },
+      "n_poly_terms": {
+        "as_published": "7",
+        "value": 7
+      },
+      "exponents": [
+        {
+          "as_published": "-2.0",
+          "value": -2
+        },
+        {
+          "as_published": "-1.0",
+          "value": -1
+        },
+        {
+          "as_published": "0.0",
+          "value": 0
+        },
+        {
+          "as_published": "1.0",
+          "value": 1
+        },
+        {
+          "as_published": "2.0",
+          "value": 2
+        },
+        {
+          "as_published": "3.0",
+          "value": 3
+        },
+        {
+          "as_published": "4.0",
+          "value": 4
+        },
+        {
+          "as_published": "0.0",
+          "value": 0
+        }
+      ],
+      "H298_minus_H0": {
+        "as_published": "8384.000",
+        "value": 8384
+      },
+      "a_coefficients": [
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "1.106499361D+01",
+          "value": 11.06499361
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        },
+        {
+          "as_published": "0.000000000D+00",
+          "value": 0
+        }
+      ],
+      "a8_as_published": "                ",
+      "b1": {
+        "as_published": "-7.222994130D+04",
+        "value": -72229.9413
+      },
+      "b2": {
+        "as_published": "-5.927455845D+01",
+        "value": -59.27455845
+      },
+      "coefficient_count": 9,
+      "raw_t_line": "   1903.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         8384.000",
+      "raw_coeff_lines": [
+        " 0.000000000D+00 0.000000000D+00 1.106499361D+01 0.000000000D+00 0.000000000D+00",
+        " 0.000000000D+00 0.000000000D+00                -7.222994130D+04-5.927455845D+01"
+      ],
+      "ambiguities": []
+    }
+  ],
+  "coefficient_count": 9,
+  "interval_count": 1,
+  "ambiguity_count": 0,
+  "ambiguities": [],
+  "source_locator": {
+    "path": "data/literature/compilations/nasa-glenn/source/thermo.inp",
+    "name_line": 14631,
+    "header_line": 14632,
+    "end_line": 14635
+  },
+  "source_text": {
+    "name_line": "SnO2(L)           Liquid. Gurvich,1991 pt1 p361 pt2 p308.",
+    "header_line": " 1 tpis91 SN  1.00O   2.00    0.00    0.00    0.00 2  150.7088000    -577630.000",
+    "interval_lines": [
+      "   1903.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         8384.000",
+      " 0.000000000D+00 0.000000000D+00 1.106499361D+01 0.000000000D+00 0.000000000D+00",
+      " 0.000000000D+00 0.000000000D+00                -7.222994130D+04-5.927455845D+01"
+    ]
+  },
+  "source_card_lines": [
+    "SnO2(L)           Liquid. Gurvich,1991 pt1 p361 pt2 p308.",
+    " 1 tpis91 SN  1.00O   2.00    0.00    0.00    0.00 2  150.7088000    -577630.000",
+    "   1903.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         8384.000",
+    " 0.000000000D+00 0.000000000D+00 1.106499361D+01 0.000000000D+00 0.000000000D+00",
+    " 0.000000000D+00 0.000000000D+00                -7.222994130D+04-5.927455845D+01"
+  ]
+}

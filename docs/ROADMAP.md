@@ -25,13 +25,13 @@ The C3 ion-share grid includes only nodes where summed neutral partial pressure
 is at most 1 bar, the validity ceiling used by the gas layer. Of 95 nodes, 69
 meet that bound. `evaluate_gas(..., include_ions=True)` solves charge balance
 on the full default neutral set, adds fitted Na+, K+, Ca+ and e−, and includes
-every available JANAF-supported anion whose neutral is present. Li+, Rb+ and
-Pb+ are also available when the caller supplies their trace-parent activities.
-The default result remains neutral-only. Na and K remain
+every available JANAF-supported anion whose neutral is present. Li+, Rb+, Pb+,
+Cs+, Cu+, Sn+, and the sourced Cs2O+ are also available when their trace-parent
+activities are supplied. The default result remains neutral-only. Na and K remain
 `complete-except-ions` because their bounded shares exceed 1e-4 while ions are
-opt-in; Ca, Li, Rb and Pb remain below the C3 threshold on their recorded
-caller-supplied activity screens. Positive molecular ions and nonthermal
-electrons remain outside this calculation. Mn, Ni and Co are not computed
+opt-in; Ca, Li, Rb, Cu and Sn remain below the C3 threshold on their recorded
+caller-supplied activity screens, while Cs is above it. Other positive
+molecular ions and nonthermal electrons remain outside this calculation. Mn, Ni and Co are not computed
 because their parent-liquid rows are available only from an external pack. P
 channels also require an external source-rated P2O5(l) row.
 
@@ -54,6 +54,9 @@ channels also require an external source-rated P2O5(l) row.
 | Li | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Li2O(l) and neutral Li gas rows cover 1200-3000 K using the printed JANAF liquid-branch cells; a(Li2O) is caller-supplied; the joint C3 screen used a(Li2O)=1e-3 and reached 4.330e-08 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Rb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Rb2O(l) and neutral Rb gas rows cover 1200-3000 K; a(Rb2O) is caller-supplied; the joint C3 screen used a(Rb2O)=1e-3 and reached 5.466e-05 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Pb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | PbO(l) and neutral Pb gas rows cover 1200-3000 K; a(PbO) is caller-supplied; PbO(l) is the Pb(II) parent because no evaluated PbO2(l) parent row was found; the joint C3 screen used a(PbO)=1e-3 and reached 1.299e-12 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
+| Cs | gas-partial | no | yes | no | yes | unvalidated | Cs2O(l) and neutral Cs gas rows cover 1200-3000 K; a(Cs2O) is caller-supplied; the C3 screen at a(Cs2O)=1e-3 reached 1.342e-04 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain, above the 1e-4 limit. |
+| Cu | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Cu2O(l) is the Cu(I) parent because JANAF provides its liquid row; neutral Cu gas rows and the parent cover 1200-3000 K; a(Cu2O) is caller-supplied; the C3 screen at a(Cu2O)=1e-3 reached 3.257e-05 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
+| Sn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | SnO(l) is selected over the later-starting SnO2(l) card as the tin parent; neutral Sn gas rows and the parent cover 1200-3000 K; a(SnO) is caller-supplied; the C3 screen at a(SnO)=1e-3 reached 3.402e-08 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
 | Mn | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Mn(g) has a public row; the MnO gas and MnO liquid parents are absent. |
 | Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
 | Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
@@ -71,6 +74,9 @@ positive-only estimate and bounded fitted closure screen give:
 | Li | — | 4.330e-8 (2000 K, 1e-4) |
 | Rb | — | 5.466e-5 (2000 K, 1e-4) |
 | Pb | — | 1.299e-12 (2000 K, 1e-4) |
+| Cs | — | 1.342e-4 (2000 K, 1e-4) |
+| Cu | — | 3.257e-5 (2800 K, 1e-4) |
+| Sn | — | 3.402e-8 (2800 K, 1e-4) |
 
 The P/S channels are optional and stay out of default gas results unless their
 caller-supplied parent activity is present. Sulfur uses the JANAF `S2(g)` gas
@@ -146,7 +152,7 @@ rows raise the corresponding equilibrium vapor pressure. These are direct
 row comparisons; published-SF04 pressure pins remain on `sf04-published`.
 
 The fitted negative-ion rows include Na−, K−, O−, O2−, Al−, AlO2−, Fe−, Si−,
-Ti−, KO−, AlO−, NaO−, Cr−, V− and Nb−. Every available listed anion whose
+Ti−, KO−, AlO−, NaO−, Cr−, V−, Nb−, Cs− and Cu−. Every available listed anion whose
 neutral channel is present enters charge balance, regardless of its individual
 attachment term. Across the README-basalt temperature and fO2 grid,
 O2− reaches `K_A p(O2) = 4.14e-4`, AlO2− reaches a 6.46 pressure ratio to its

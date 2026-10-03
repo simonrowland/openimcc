@@ -152,11 +152,20 @@ TRACE_JANAF_GAS_SOURCES = (
     ("Rb(g)", "Rb-005", "Rb", 1, 0),
     ("Pb(g)", "Pb-005", "Pb", 1, 0),
     ("PbO(g)", "O-009", "Pb", 1, 1),
+    ("Cs(g)", "Cs-005", "Cs", 1, 0),
+    ("CsO(g)", "Cs-017", "Cs", 1, 1),
+    ("Cs2O(g)", "Cs-021", "Cs", 2, 1),
+    ("Cu(g)", "Cu-005", "Cu", 1, 0),
+    ("CuO(g)", "Cu-016", "Cu", 1, 1),
+    ("Cu2(g)", "Cu-018", "Cu", 2, 0),
 )
 TRACE_NASA_GAS_SOURCES = (
     ("RbO(g)", "NG-1329", "RbO", "Rb", 1, 1),
     ("Rb2O(g)", "NG-1352", "Rb2O", "Rb", 2, 1),
     ("PbO2(g)", "NG-1276", "PbO2", "Pb", 1, 2),
+    ("Sn(g)", "NG-1845", "Sn", "Sn", 1, 0),
+    ("SnO(g)", "NG-1847", "SnO", "Sn", 1, 1),
+    ("SnO2(g)", "NG-1849", "SnO2", "Sn", 1, 2),
 )
 TRACE_GAS_SPECIES = frozenset(
     {source[0].removesuffix("(g)") for source in TRACE_JANAF_GAS_SOURCES}
@@ -196,6 +205,14 @@ TRACE_ION_GAS_TEXT_SOURCES = (
     ("Li+(g)", "Li-006", "Li", 1, 0),
     ("Rb+(g)", "Rb-006", "Rb", 1, 0),
     ("Pb+(g)", "Pb-006", "Pb", 1, 0),
+    ("Cs+(g)", "Cs-006", "Cs", 1, 0),
+    ("Cs-(g)", "Cs-007", "Cs", 1, 0),
+    ("Cu+(g)", "Cu-006", "Cu", 1, 0),
+    ("Cu-(g)", "Cu-007", "Cu", 1, 0),
+)
+TRACE_ION_NASA_SOURCES = (
+    ("Sn+(g)", "NG-1846", "Sn+", "Sn", 1, 0),
+    ("Cs2O+(g)", "NG-1843", "Cs2O+", "Cs", 2, 1),
 )
 ION_GAS_YAML_SOURCES = (("Ca+(g)", "Ca-007", "Ca", 1, 0),)
 
@@ -329,9 +346,12 @@ SUPERCOOLED_LIQUID_SOURCES = (
     ("MgO(l)", "Mg-009", "Mg", 1, 1, 2200.0, 2200.0),
     ("CaO(l)", "Ca-028", "Ca", 1, 1, 2200.0, 2200.0),
 )
+NASA_SUPERCOOLED_LIQUID_SOURCES = (
+    ("SnO(l)", "NG-1848", "Sn", 1, 1, 1250.0, 1500.0),
+)
 ALL_SUPERCOOLED_LIQUID_SPECIES = {
     source[0] for source in SUPERCOOLED_LIQUID_SOURCES
-}
+} | {source[0] for source in NASA_SUPERCOOLED_LIQUID_SOURCES}
 SUPERCOOLED_LIQUID_REF_SUFFIX = "-SC-CP"
 # These default rows now come only from their generated JANAF fits. Remove every
 # prior source interval, including disjoint LAM ranges above the new fit domain.
@@ -922,7 +942,10 @@ def _nasa_card_thermal_rows(
     reference_h = float(record["delta_f_H_298_15"]["value"])
     h298 = _nasa7_properties(record, NASA_STANDARD_T_K)
     h298_j = R_J_MOL_K * NASA_STANDARD_T_K * h298["h_rt"]
-    if abs(h298_j - reference_h) > 1.0:
+    # NASA-7 coefficients are printed to finite precision. Retain the exact
+    # published formation anchor and subtract the polynomial's own H(298),
+    # while allowing the small coefficient-rounding residual found in cards.
+    if abs(h298_j - reference_h) > 10.0:
         raise ValueError(
             f"{record['record_id']} H(298.15) differs from its formation anchor "
             f"by {h298_j - reference_h:g} J/mol"
@@ -1422,6 +1445,7 @@ def _fit_janaf_condensate_with_nasa_tail(
     cat_num: int,
     oxy_num: int,
     *,
+    nasa_formula: str = "PbO",
     anchor_temperature: float,
     fit_t_min: float = 1200.0,
     fit_t_max: float = 3000.0,
@@ -1430,18 +1454,16 @@ def _fit_janaf_condensate_with_nasa_tail(
 ) -> dict[str, str]:
     """Keep JANAF's anchor and cells, using the NASA card only above its tail.
 
-    Premise: JANAF O-007 supplies complete PbO(l) thermal cells through
-    2500 K, while the published CEA liquid card continues past 3000 K.
-    Algebra: anchor the CEA H(T)-H(T0) and S(T)-S(T0) differences at JANAF's
-    T0 cells, then use
-    G_app=Hf_JANAF(298)+Hinc-T*S. Unit check: the enthalpy difference is
-    converted from J/mol to kJ/mol before adding to JANAF's increment; entropy
-    remains J/(mol K). At 2500 K the splice has zero ΔH, ΔS, and ΔG; by 3000 K
-    its ΔG is 0.017 J/mol relative to continuing JANAF Cp=65 J/(mol K). NASA's
-    condensed standard pressure is 1 atm while the
-    JANAF anchor is 1 bar; the source-row activity convention is documented
-    and no pressure correction is claimed without a sourced liquid molar
-    volume. Sanity: Cp, Hinc, and S remain continuous at T0.
+    Premise: the JANAF liquid table supplies complete thermal cells through
+    ``anchor_temperature``, while the published CEA liquid card continues
+    through ``fit_t_max``.
+    Algebra: anchor the CEA H(T)-H(T0) and S(T)-S(T0) differences at the JANAF
+    T0 cell, then use G_app=Hf_JANAF(298)+Hinc-T*S. Unit check: the enthalpy
+    difference is converted from J/mol to kJ/mol before adding to JANAF's
+    increment; entropy remains J/(mol K). NASA's condensed standard pressure
+    is 1 atm while the JANAF anchor is 1 bar; no pressure correction is
+    claimed without a sourced liquid molar volume. Sanity: Hinc, S, and G
+    match the JANAF cell at T0 and are continuous there.
     """
     janaf_rows = _janaf_text_source_rows(janaf_source_dir, janaf_table_id)
     reference = janaf_rows.get(298.15, {}).get("formation_enthalpy")
@@ -1449,8 +1471,10 @@ def _fit_janaf_condensate_with_nasa_tail(
     if reference is None or anchor is None:
         raise ValueError(f"{janaf_table_id}: missing JANAF anchor data")
     record = _load_record(nasa_source_dir / f"{nasa_table_id}.json")
-    if record.get("phase") != "liquid" or record.get("formula") != "PbO":
-        raise ValueError(f"{nasa_table_id}: expected a PbO liquid NASA card")
+    if record.get("phase") != "liquid" or record.get("formula") != nasa_formula:
+        raise ValueError(
+            f"{nasa_table_id}: expected a {nasa_formula} liquid NASA card"
+        )
     nasa_anchor = _nasa7_properties(record, anchor_temperature)
     for temperature in np.arange(anchor_temperature + 100.0, fit_t_max + 50.0, 100.0):
         temperature = float(temperature)
@@ -1599,27 +1623,46 @@ def _fit_supercooled_liquid_row(
     oxy_num: int,
     T0: float,
     runtime_t_max: float,
+    *,
+    nasa_source_dir: Path | None = None,
 ) -> dict[str, str]:
     """Fit the generated constant-Cp continuation to the condensate form.
 
-    Premise: JANAF gives the first complete liquid-node enthalpy increment,
-    entropy, and liquid Cp at T0.  For the labelled continuation,
+    Premise: the selected source table or NASA card gives the liquid enthalpy
+    increment, entropy, and Cp at T0. For the labelled continuation,
     H(T)=H(T0)+Cp*(T-T0) and S(T)=S(T0)+Cp*ln(T/T0), then
     G_app=dfH298+[H(T)-H298]-T*S(T).  The fitted polynomial represents this
-    generated function; it is not JANAF source data below the liquid branch.
+    generated function; it is not source data below the liquid branch.
 
     Unit check: Cp*(T-T0) is J/mol and is divided by 1000 for JANAF's
     kJ/mol enthalpy increment; Cp*ln(T/T0) is J/(mol K); both terms in G
     are J/mol.  The condensate fit matches Phi/R with Phi=S-(H-H298)/T.
     Sanity: the analytic continuation has the source H, S, G, and -dG/dT
     exactly at T0.  At source nodes below a glass/liquid marker, differences
-    from JANAF's printed glass rows are expected because this deliberately
+    from the source's printed glass rows are expected because this deliberately
     continues the liquid rather than the glass.  Any genuine supercooled
     liquid nodes in the JANAF table are checked by the caller's regression
     tests.
     """
     yaml_path = source_dir / f"{table_id}.yaml"
-    if yaml_path.is_file():
+    if nasa_source_dir is not None:
+        record = _load_record(nasa_source_dir / f"{table_id}.json")
+        formula = species_name.removesuffix("(l)")
+        if (
+            record.get("record_id") != table_id
+            or record.get("formula") != formula
+            or record.get("phase") != "liquid"
+        ):
+            raise ValueError(f"{table_id}: NASA liquid record does not match {formula}")
+        properties = _nasa7_properties(record, T0)
+        reference_j = float(record["delta_f_H_298_15"]["value"])
+        cp = R_J_MOL_K * properties["cp_R"]
+        entropy_0 = R_J_MOL_K * properties["s_R"]
+        enthalpy_0 = (
+            R_J_MOL_K * T0 * properties["h_rt"] - reference_j
+        ) / 1000.0
+        reference = reference_j / 1000.0
+    elif yaml_path.is_file():
         record = _load_record(yaml_path)
         table = record["table"]
         if table["table_id"] != table_id:
@@ -1830,6 +1873,27 @@ def build_rows(
         _fit_janaf_text_row(source_dir, *source)
         for source in TRACE_ION_GAS_TEXT_SOURCES
     )
+    rows.extend(
+        _fit_nasa_card_gas_row(
+            nasa_source_dir,
+            *source,
+            t_interval=1,
+            fit_t_min=FIT_T_MIN,
+            fit_t_max=FIT_T_MAX,
+        )
+        for source in TRACE_ION_NASA_SOURCES
+    )
+    rows.extend(
+        _fit_nasa_card_gas_row(
+            nasa_source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=LOW_FIT_T_MIN,
+            fit_t_max=LOW_FIT_T_MAX,
+            runtime_t_min=1200.0,
+        )
+        for source in TRACE_ION_NASA_SOURCES
+    )
     return rows
 
 
@@ -1888,6 +1952,12 @@ def build_condensate_rows(
         _fit_supercooled_liquid_row(source_dir, *source)
         for source in SUPERCOOLED_LIQUID_SOURCES
     )
+    rows.extend(
+        _fit_supercooled_liquid_row(
+            source_dir, *source, nasa_source_dir=nasa_source_dir
+        )
+        for source in NASA_SUPERCOOLED_LIQUID_SOURCES
+    )
     # JANAF's Li2O liquid cells begin at 700 K, before the 1843 K melting
     # marker. Fit the printed liquid H/S/Cp nodes directly on each interval.
     for fit_t_min, fit_t_max, runtime_t_min in (
@@ -1941,6 +2011,65 @@ def build_condensate_rows(
                 1,
                 1,
                 anchor_temperature=2500.0,
+                fit_t_min=fit_t_min,
+                fit_t_max=fit_t_max,
+            )
+        )
+    # Cs2O(l) has no JANAF liquid table; retain the NASA pure-liquid card.
+    for fit_t_min, fit_t_max in (
+        (1200.0, 1500.0),
+        (1500.0, 2000.0),
+        (2000.0, 3000.0),
+    ):
+        rows.append(
+            _fit_nasa_card_condensate_row(
+                nasa_source_dir,
+                "Cs2O(l)",
+                "NG-1842",
+                "Cs2O",
+                "Cs",
+                2,
+                1,
+                fit_t_min=fit_t_min,
+                fit_t_max=fit_t_max,
+            )
+        )
+    # Cu2O(l) is selected from JANAF through its final 2000 K liquid cell;
+    # NASA supplies only the H/S-increment tail above that node.
+    for fit_t_min, fit_t_max in (
+        (1200.0, 1500.0),
+        (1500.0, 2000.0),
+        (2000.0, 2500.0),
+        (2500.0, 3000.0),
+    ):
+        rows.append(
+            _fit_janaf_condensate_with_nasa_tail(
+                source_dir,
+                nasa_source_dir,
+                "Cu2O(l)",
+                "Cu-020",
+                "NG-1844",
+                "Cu",
+                2,
+                1,
+                nasa_formula="Cu2O",
+                anchor_temperature=2000.0,
+                fit_t_min=fit_t_min,
+                fit_t_max=fit_t_max,
+            )
+        )
+    # SnO(l) is the offered parent; its 1250 K NASA liquid start requires the
+    # labelled constant-Cp continuation only between 1200 and that source row.
+    for fit_t_min, fit_t_max in ((1500.0, 2000.0), (2000.0, 3000.0)):
+        rows.append(
+            _fit_nasa_card_condensate_row(
+                nasa_source_dir,
+                "SnO(l)",
+                "NG-1848",
+                "SnO",
+                "Sn",
+                1,
+                1,
                 fit_t_min=fit_t_min,
                 fit_t_max=fit_t_max,
             )

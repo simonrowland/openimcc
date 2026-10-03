@@ -74,12 +74,13 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied V/Nb/P/S/Li/Rb/Pb channels:
+and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
 PO, PO2, P4O6, P4O10, S, S2, S3, S4, S5, S6, S7, S8, SO, SO2, SO3, SSO,
-Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Na2O, K2O, O and O2.
+Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
+CuO, Cu2, Sn, SnO, SnO2, Na2O, K2O, O and O2.
 The Mn/Ni/Co channels activate only when an external pack provides their gas
 and MnO(l)/NiO(l)/CoO(l) parent rows; the public pack carries only the atomic
 gas rows.
@@ -93,24 +94,33 @@ until an external pack supplies a source-rated `P2O5(l)` standard state and the
 caller supplies `a(P2O5)` on that reference. OpenIMCC does not provide a
 melt-side P2O5 activity model for pyrolysis temperatures.
 
-Li, Rb, and Pb channels activate when the caller supplies `Li2O`, `Rb2O`, or
-`PbO` activity in the `evaluate_gas` mapping. Activities are caller-supplied;
-openimcc has no trace-element activity model. The Li2O(l) and PbO(l) parents
-use NIST-JANAF rows; Rb2O(l) uses a NASA Glenn CEA coefficient card, whose
-published pure-liquid reference is 1 atm. PbO(l) is the Pb(II) parent because
-it has a source-rated liquid row; PbO2 remains a gas channel because no
-evaluated PbO2(l) parent row was found. NASA CEA gas cards use the same 1 bar
-standard pressure as JANAF. The printed NASA liquid-card formation enthalpies
-are crystal anchors because NG-1643 and NG-1801 start at 1726 K and 1160 K.
-The source comparison therefore uses liquid Gibbs energy, computed as NASA
-polynomial minus JANAF `dfH298 + (H-H298) - T·S`:
+Li, Rb, Pb, Cs, Cu, and Sn channels activate when the caller supplies their
+parent activity (`Li2O`, `Rb2O`, `PbO`, `Cs2O`, `Cu2O`, or `SnO`) in the
+`evaluate_gas` mapping. Activities are caller-supplied; openimcc has no
+trace-element activity model and applies no activity coefficients. Li2O(l),
+Cu2O(l), and PbO(l) use JANAF liquid rows. Rb2O(l) and Cs2O(l) use NASA Glenn
+CEA liquid cards. SnO(l) uses a NASA liquid card; a constant-Cp continuation
+covers 1200–1250 K. SnO is the selected tin parent because its liquid card
+starts at 1250 K; the SnO2(l) card starts at 1903 K and is retained as a source
+record but is not offered as a second parent. Cu2O(l) is the Cu(I) parent
+because JANAF provides its liquid row. No CuO(l) source was found in JANAF or
+NASA CEA, and no Cu2O(g) or Sn2O2(g) source was found. NASA CEA gas cards use
+the same 1 bar standard pressure as JANAF. The printed NASA liquid-card
+formation enthalpies are crystal anchors for NG-1643, NG-1801, NG-1842,
+NG-1844, NG-1848, and NG-1850; the liquid functions start above the crystal
+reference state.
 
-| T (K) | Li2O ΔG (kJ/mol) | PbO ΔG (kJ/mol) |
-|---:|---:|---:|
-| 1800 | −4.098 | −0.002 |
-| 2000 | −3.462 | −0.016 |
-| 2500 | −2.171 | −0.048 |
-| 3000 | −1.242 | −0.079 |
+Where the JANAF and NASA Cu2O(l) functions overlap, compare
+`G_app = dfH298 + (H-H298) - T·S`, using the crystal anchor for the NASA card.
+The values below are NASA minus JANAF; JANAF remains selected through its last
+printed liquid node at 2000 K. The NASA H/S tail is anchored to that JANAF node.
+
+| T (K) | Li2O ΔG (kJ/mol) | PbO ΔG (kJ/mol) | Cu2O ΔG (kJ/mol) |
+|---:|---:|---:|---:|
+| 1800 | −4.098 | −0.002 | −0.013 |
+| 2000 | −3.462 | −0.016 | −0.007 |
+| 2500 | −2.171 | −0.048 | — |
+| 3000 | −1.242 | −0.079 | — |
 
 Li2O also differs in liquid Cp (103.999 versus 100.416 J/(mol·K)) and entropy
 (ΔS −3.37 to −1.54 J/(mol·K)); JANAF remains selected. PbO extrapolated NASA
@@ -118,7 +128,9 @@ liquid H(298.15 K) is −202.139 kJ/mol versus JANAF −202.249 kJ/mol, while Δ
 over the overlap is about 0.11 kJ/mol and ΔS about 0.063 J/(mol·K). JANAF
 remains selected. O-007 ends at 2500 K, so the required PbO tail anchors
 ΔH = ΔS = ΔG = 0 there; against continuing JANAF Cp = 65 J/(mol·K), its
-ΔG at 3000 K is 0.017 J/mol.
+ΔG at 3000 K is 0.017 J/mol. Cu-020 ends at 2000 K; the Cu2O tail anchors its
+NASA H/S increments there and does not apply a pressure correction because no
+liquid molar volume is included.
 
 Published composition-specific activity-coefficient work is relevant context:
 [Borisov (2009)](https://doi.org/10.1134/S0869591109060058) reports alkali
@@ -133,10 +145,12 @@ neighbouring checkout. The gas Shomate rows are deterministic fits to vendored
 NIST-JANAF 4th-edition records and NASA Glenn CEA coefficient cards; the
 condensate rows retain their source-attributed Lamoreaux/Hildenbrand, JANAF,
 and NASA coefficients. TiO2(l), Cr2O3(l), V2O3(l), NbO2(l), Na2O(l),
-Li2O(l), and PbO(l) are fitted from JANAF liquid tables by the same generator;
-Rb2O(l) uses its NASA CEA liquid card. The default table adds explicitly
+Li2O(l), PbO(l), and Cu2O(l) are fitted from JANAF liquid tables by the same
+generator; Rb2O(l), Cs2O(l), and SnO(l) use NASA CEA liquid cards. The Cu2O(l)
+fit uses the JANAF table through 2000 K and a NASA H/S-increment tail above it.
+The default table adds explicitly
 labelled constant-Cp continuations for TiO2(l), Cr2O3(l), V2O3(l), SiO2(l),
-Al2O3(l), MgO(l), and CaO(l), down to 1200 K. Li2O(l) uses JANAF's complete
+Al2O3(l), MgO(l), CaO(l), and SnO(l), down to 1200 K. Li2O(l) uses JANAF's complete
 liquid-branch cells from 700–3000 K directly; its runtime fit intervals begin
 at 1200 K. The four major-oxide rows are generated JANAF fits and their lower
 continuations are generated extrapolations, not source data. When selected,
@@ -181,11 +195,15 @@ re-fitted.
 
 Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
-`Li+`, `Rb+`, `Pb+`, and every available JANAF-supported negative ion whose
-neutral is present. The default call remains neutral-only and returns the same
+`Li+`, `Rb+`, `Pb+`, `Cs+`, `Cu+`, `Sn+`, the sourced `Cs2O+`, and every
+available JANAF-supported negative ion whose neutral is present. The default
+call remains neutral-only and returns the same
 mapping as before. Ion entries use provenance class
-`janaf_fitted_ionisation`; their source rows cover 1200–3000 K and their
-domain flags include the neutral and charge-species source rows.
+`janaf_fitted_ionisation` for JANAF rows and `nasa_glenn_fitted` for NASA
+cards; their source rows cover 1200–3000 K and their domain flags include the
+neutral and charge-species source rows. JANAF sources include Cs− and Cu−;
+their element indexes list no anions for the other selected neutral channels.
+No JANAF Sn− row was found.
 `gas_species` requests use the full default neutral set for the charge closure,
 then retain the requested neutral and charge channels. Requesting an ion name
 requires `include_ions=True`. `evaluate_gas_oxygen_balance` remains neutral-only.
@@ -213,7 +231,7 @@ available JANAF-supported negative ion `A-` whose neutral is present,
 `K_A = p(A-)/(p(A) p(e-))`; electroneutrality
 then gives `p(e-) = sqrt(sum(K_M p(M)) / (1 + sum(K_A p(A))))`. The included
 negative species include Na−, K−, O−, O2−, Al−, AlO−, AlO2−, Fe−, Si−,
-Ti−, KO−, NaO−, Cr−, V− and Nb−. On the C3 screen (README basalt plus
+Ti−, KO−, NaO−, Cr−, V−, Nb−, Cs− and Cu−. On the C3 screen (README basalt plus
 caller-supplied Cr2O3, V2O3 and NbO2 activities of 1e-3; 1200–3000 K,
 fO2 = 1e-12–1e-4), O2− has a maximum attachment term `K_A p(O2)` of
 4.14e-4 at 1200 K and fO2 = 1e-4; AlO2− reaches p(AlO2−)/p(AlO2) = 6.46,
@@ -223,6 +241,13 @@ All these species are included in the fitted charge balance regardless of
 their individual attachment-term size. The KO− source is
 [JANAF table K-009](https://janaf.nist.gov/tables/K-009.html); its supplied
 thermochemistry is used as published.
+
+For the Cs2O, Cu2O and SnO parents at caller activity 1e-3, the largest
+charge-balanced positive-ion shares are 1.342e-4 for Cs at 2000 K, 3.257e-5
+for Cu at 2800 K, and 3.402e-8 for Sn at 2800 K (all at fO2=1e-4 and within
+the 1-bar neutral-pressure domain). The Cs value is above the 1e-4 C3 screen
+limit; the Cu and Sn values are below it. The Cs2O+ source row participates in
+the Cs charge balance.
 
 For the README basalt at fO2 = 1e-10, the fitted atomic-ion ratios and electron
 pressure are:
