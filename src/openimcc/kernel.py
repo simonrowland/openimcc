@@ -44,6 +44,7 @@ _PUBLISHED_PARENT_OXIDES = (
     "K2O",
 )
 _PUBLISHED_CORE_ROWS = 38
+# Integrity proof for the normalized published core, not a per-pack identity.
 # Complete canonical v1.0.2 published FC87/SF04 datapack, including every
 # field of every row and the top-level identity/version. Changing this digest
 # is deliberate published-datapack re-versioning, never a silent row edit.
@@ -107,6 +108,7 @@ class _ImccDatapackIdentity:
     model_id: str
     evidence_class: str
     coverage: Mapping[str, str]
+    binding_digest: str | None
     proven: bool
 
 
@@ -115,6 +117,7 @@ def _untrusted_datapack_identity() -> _ImccDatapackIdentity:
         model_id=_UNTRUSTED_IDENTITY_TOKEN,
         evidence_class=_UNTRUSTED_IDENTITY_TOKEN,
         coverage=MappingProxyType({}),
+        binding_digest=None,
         proven=False,
     )
 
@@ -297,6 +300,11 @@ class ImccDatapack:
     def identity_is_proven(self) -> bool:
         return self._identity.proven
 
+    @property
+    def binding_digest(self) -> str | None:
+        """Canonical identity of this explicitly labelled datapack, if any."""
+        return self._identity.binding_digest
+
 
 def _canonical_published_serialization(value: Any) -> bytes:
     """Serialize JSON data with sorted keys and value-normalized numbers."""
@@ -341,12 +349,40 @@ def _published_datapack_manifest_hash(value: Mapping[str, Any]) -> str:
     return hashlib.sha256(_canonical_published_serialization(value)).hexdigest()
 
 
+def _kernel_datapack_binding_payload(
+    datapack: ImccDatapack,
+    *,
+    model_id: str,
+    coverage: Mapping[str, str],
+) -> dict[str, Any]:
+    # ImccDatapack stores coefficients as float64 arrays. tolist() walks them
+    # in index order and yields Python binary64 floats; their shortest
+    # round-trip decimal representation, consumed by the canonical encoder's
+    # Decimal(str(value)) rule, denotes the exact same value across platforms.
+    return {
+        "model_id": model_id,
+        "version": datapack.version,
+        "parent_oxides": list(datapack.parent_oxides),
+        "complex_names": list(datapack.reactions),
+        "nu": datapack.nu.tolist(),
+        "A": datapack.A.tolist(),
+        "B": datapack.B.tolist(),
+        "domains": [list(window) for window in datapack.domains],
+        "paper_domains": [
+            None if window is None else list(window)
+            for window in datapack.paper_domains
+        ],
+        "coverage": dict(coverage),
+    }
+
+
 def _datapack_with_identity(
     datapack: ImccDatapack,
     *,
     model_id: str,
     coverage: str | Mapping[str, str],
     published_manifest_sha256: str | None = None,
+    binding_digest: str | None = None,
 ) -> ImccDatapack:
     species_names = tuple(datapack.parent_oxides) + tuple(datapack.reactions)
     if len(set(species_names)) != len(species_names):
@@ -369,6 +405,14 @@ def _datapack_with_identity(
         isinstance(label, str) and label for label in coverage_by_species.values()
     ):
         raise ValueError("datapack coverage labels must be non-empty strings")
+    if binding_digest is None:
+        binding_digest = _published_datapack_manifest_hash(
+            _kernel_datapack_binding_payload(
+                datapack,
+                model_id=model_id,
+                coverage=coverage_by_species,
+            )
+        )
     published_species = {
         name
         for name, label in coverage_by_species.items()
@@ -413,6 +457,7 @@ def _datapack_with_identity(
             model_id=model_id,
             evidence_class=_UNTRUSTED_IDENTITY_TOKEN,
             coverage=MappingProxyType(coverage_by_species),
+            binding_digest=binding_digest,
             proven=True,
         ),
     )
@@ -428,8 +473,9 @@ def label_research_datapack(
     """Return a non-published raw pack with explicit research provenance.
 
     This function refuses ``model_id == IMCC-SF04`` and any coverage
-    value equal to ``A-published-imcc``. It does not hash arrays or read a
-    manifest. Published labels are attached by ``_label_loaded_datapack``
+    value equal to ``A-published-imcc``. It hashes the labelled kernel content
+    to produce a binding digest; it does not read a manifest. Published labels
+    are attached by ``_label_loaded_datapack``
     when the caller supplies ``published_manifest_sha256`` equal to
     ``_PUBLISHED_DATAPACK_SHA256`` and the species/coverage/shape checks
     in ``_datapack_with_identity`` pass; adapter ``load_datapack()`` hashes
@@ -456,24 +502,25 @@ def _label_loaded_datapack(
     model_id: str,
     coverage: Mapping[str, str],
     published_manifest_sha256: str | None = None,
+    binding_digest: str | None = None,
 ) -> ImccDatapack:
     """Attach caller-supplied identity to an in-memory datapack.
 
     When the caller claims published IMCC identity or coverage,
     ``_datapack_with_identity`` checks that the supplied
     ``published_manifest_sha256`` string equals ``_PUBLISHED_DATAPACK_SHA256``
-    and that species, coverage, and shape constraints match. This helper
-    does not hash the in-memory ``nu``/``A``/``B`` arrays or re-read a
-    manifest file; a matching digest string is sufficient to pass the
-    published-identity gate on the paths in this function. Adapter
-    ``load_datapack()`` hashes the JSON manifest and then calls this
-    helper.
+    and that species, coverage, and shape constraints match. A matching
+    ``published_manifest_sha256`` is sufficient to pass the published-core
+    integrity gate on the paths in this function. The separate
+    ``binding_digest`` comes from the complete JSON manifest on the adapter
+    load path; if omitted, the kernel content payload is hashed here.
     """
     return _datapack_with_identity(
         datapack,
         model_id=model_id,
         coverage=coverage,
         published_manifest_sha256=published_manifest_sha256,
+        binding_digest=binding_digest,
     )
 
 

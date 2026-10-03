@@ -178,6 +178,11 @@ class ImccLoadedDatapack:
     def paper_domains(self) -> Sequence[tuple[float, float] | None]:
         return self.kernel_datapack.paper_domains
 
+    @property
+    def binding_digest(self) -> str | None:
+        """Canonical identity of the complete manifest used to load this pack."""
+        return self.kernel_datapack.binding_digest
+
 
 @dataclass(frozen=True)
 class ImccAdapterLabels:
@@ -526,6 +531,16 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     if len(set(reactions)) != len(reactions):
         raise ImccMalformedDatapackError("datapack complex names must be unique")
 
+    binding_manifest = dict(data)
+    binding_manifest["model_id"] = model_id
+    binding_manifest["imcc_sf04_datapack_version"] = version
+    try:
+        binding_digest = _published_datapack_manifest_hash(binding_manifest)
+    except (TypeError, ValueError) as exc:
+        raise ImccMalformedDatapackError(
+            "datapack cannot be canonically serialized for binding identity"
+        ) from exc
+
     # nu_cols is (n_complexes, n_parents); transpose to kernel shape.
     nu_array = np.array(nu_cols, dtype=float).T
 
@@ -550,6 +565,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         model_id=model_id,
         coverage=coverage,
         published_manifest_sha256=published_manifest_sha256,
+        binding_digest=binding_digest,
     )
 
     return ImccLoadedDatapack(
@@ -671,6 +687,14 @@ def evaluate(
             "raw ImccDatapack has no proven identity; load a frozen JSON pack "
             "with load_datapack() or apply explicit non-published provenance "
             "with label_research_datapack()"
+        )
+
+    binding_digest = kernel_pack.binding_digest
+    if binding_digest is None:
+        raise ImccUnprovenDatapackError(
+            "raw ImccDatapack has no binding identity; load a frozen JSON pack "
+            "or apply explicit non-published provenance with "
+            "label_research_datapack()"
         )
 
     pack_version = kernel_pack.version
@@ -828,6 +852,7 @@ def evaluate(
     identity: Mapping[str, str] = {
         "model_id": model_id,
         "datapack_version": pack_version,
+        "binding_digest": binding_digest,
     }
     coverage: Mapping[str, str] = result.labels.coverage
     flags = list(result.labels.flags)

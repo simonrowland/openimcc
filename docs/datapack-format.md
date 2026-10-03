@@ -373,8 +373,19 @@ f2b479cd54e3c82704a5863fcc06836f72045375d9a8c7f8d2fad19e98f75d05
 ~~~
 
 Canonicalization failure or a mismatch is a malformed-datapack refusal.
-This is a semantic identity gate; it is distinct from the raw-byte hashes
-in MANIFEST.json described below.
+This is a core-integrity proof; it is distinct from a per-pack binding
+identity and from the raw-byte hashes in MANIFEST.json described below.
+
+The loaded pack also exposes `binding_digest` on `ImccLoadedDatapack` and its
+kernel `ImccDatapack`; adapter result labels include the same value in their
+identity mapping. For JSON-loaded packs, it is SHA-256 over the complete parsed
+manifest with the effective `model_id` and original version, including
+`sp_extension` when present. Explicit research labels use the same canonical
+encoder over the kernel content that determines results: model and version,
+ordered parent and complex names, `nu`, `A`, `B`, declared and paper domains,
+and coverage. Array values are converted in index order to Python binary64
+values; the encoder's shortest round-trip decimal representation preserves
+each exact coefficient while remaining independent of array byte order.
 
 ### S/P extension checks
 
