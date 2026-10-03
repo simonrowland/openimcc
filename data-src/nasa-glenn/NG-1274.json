@@ -22,52 +22,52 @@
   "cea_section": "products",
   "formula": "B2O2",
   "phase": "gas",
-  "phase_as_published": "5",
-  "phase_flag": 5,
-  "phase_flag_as_published": " 5",
+  "phase_as_published": "0",
+  "phase_flag": 0,
+  "phase_flag_as_published": " 0",
   "phase_normalization_rule": "G or CEA flag 0 maps to gas. Otherwise a recognized terminal state suffix keeps its published label; without one, NASA-7 S/L/C maps to cr/L/condensed and a positive CEA flag maps to condensed. Unrecognized suffixes stay verbatim in phase_as_published and are listed as ambiguities; card/suffix conflicts retain both published tokens. phase_ordinal is present only when same-formula non-gas records would otherwise share a phase label.",
   "n_intervals_declared": 2,
   "source_ref_code": "tpis96",
   "composition": [
     {
-      "element_as_published": " B",
-      "count_as_published": "   2.00",
+      "element_as_published": "B ",
+      "count_as_published": "  2.00",
       "element": "B",
       "count": 2,
       "filler": false
     },
     {
       "element_as_published": "O ",
-      "count_as_published": "  2.00 ",
+      "count_as_published": "  2.00",
       "element": "O",
       "count": 2,
       "filler": false
     },
     {
       "element_as_published": "  ",
-      "count_as_published": " 0.00  ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
       "element_as_published": "  ",
-      "count_as_published": "0.00   ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
-      "element_as_published": " 0",
-      "count_as_published": ".00 0  ",
-      "element": "0",
-      "count": null,
-      "filler": false
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0,
+      "filler": true
     }
   ],
   "molecular_weight": {
-    "as_published": "3.6208000",
-    "value": 3.6208
+    "as_published": "53.6208000",
+    "value": 53.6208
   },
   "delta_f_H_298_15": {
     "as_published": "-457711.486",
@@ -145,11 +145,11 @@
         },
         {
           "as_published": " 3.566854570D-05",
-          "value": 0.0000356685457
+          "value": 3.56685457e-05
         },
         {
           "as_published": "-2.660198794D-08",
-          "value": -2.660198794e-8
+          "value": -2.660198794e-08
         },
         {
           "as_published": " 7.531833240D-12",
@@ -243,7 +243,7 @@
         },
         {
           "as_published": " 1.672537624D-07",
-          "value": 1.672537624e-7
+          "value": 1.672537624e-07
         },
         {
           "as_published": "-1.867694780D-11",
@@ -278,9 +278,9 @@
   "ambiguities": [],
   "source_locator": {
     "path": "data/literature/compilations/nasa-glenn/source/thermo.inp",
-    "name_line": 1274,
-    "header_line": 1275,
-    "end_line": 1281
+    "name_line": 1275,
+    "header_line": 1276,
+    "end_line": 1282
   },
   "source_text": {
     "name_line": "B2O2              Gurvich,1996a pt1 p19 pt2 p15.",

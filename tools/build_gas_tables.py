@@ -225,15 +225,14 @@ TRACE_ION_GAS_TEXT_SOURCES = (
     ("Ga-(g)", "Ga-007", "Ga", 1, 0),
     ("B-(g)", "B-007", "B", 1, 0),
     ("BO2-(g)", "B-080", "B", 1, 2),
-)
-TRACE_ION_GAS_NASA_SOURCES = (
-    ("BO-(g)", "NG-1074", "BO", "B", 1, 1),
-    ("Ge+(g)", "NG-5197", "Ge", "Ge", 1, 0),
-    ("In+(g)", "NG-6016", "In", "In", 1, 0),
     ("Cs+(g)", "Cs-006", "Cs", 1, 0),
     ("Cs-(g)", "Cs-007", "Cs", 1, 0),
     ("Cu+(g)", "Cu-006", "Cu", 1, 0),
     ("Cu-(g)", "Cu-007", "Cu", 1, 0),
+)
+TRACE_ION_GAS_NASA_SOURCES = (
+    ("BO-(g)", "NG-1074", "BO", "B", 1, 1),
+    ("Ge+(g)", "NG-5197", "Ge", "Ge", 1, 0),
 )
 TRACE_ION_NASA_SOURCES = (
     ("Sn+(g)", "NG-1846", "Sn+", "Sn", 1, 0),
@@ -1445,7 +1444,6 @@ def _fit_nasa_card_condensate_row(
     fit_t_max: float = 3000.0,
     runtime_t_min: float | None = None,
     runtime_t_max: float | None = None,
-    crystal_anchor: bool = False,
 ) -> dict[str, str]:
     record = _load_record(nasa_source_dir / f"{table_id}.json")
     if (
@@ -1458,29 +1456,22 @@ def _fit_nasa_card_condensate_row(
         float(T)
         for T in np.arange(fit_t_min, fit_t_max + 50.0, NASA_GRID_STEP_K)
     ]
-    # The established Rb2O fit keeps its published convention unchanged.
-    # New source cards marked ``crystal_anchor`` use the card's dfH298 as the
-    # crystal reference and its own polynomial H(T)-H(298) as the increment.
-    # Premise: liquid-card dfH298 is the crystal anchor, not a liquid Gibbs
-    # value. Algebra: G_app=dfH298+[H(T)-H(298)]-T*S. Unit check: H and dfH
-    # are J/mol before the fitted increment is converted to kJ/mol. Sanity:
-    # this agrees with the card G(T) only when the card's H(298) matches dfH298.
+    # The NASA-9 H(T)/(R*T) polynomial, including b1, gives the card's
+    # assigned element-reference enthalpy H_card(T) directly. Thus
+    # G_app(T)=H_card(T)-T*S_card(T); equivalently choose the source-row
+    # increment H_card(T)-dfH298 so dfH298+increment reconstructs H_card(T).
+    # Unit check: both enthalpies are J/mol before the increment is converted
+    # to kJ/mol for the fitter. Sanity: evaluating source G from these rows
+    # must match an independent evaluation of the published NASA card.
     reference_j = float(record["delta_f_H_298_15"]["value"])
-    card_h298_j = (
-        R_J_MOL_K
-        * NASA_STANDARD_T_K
-        * _nasa7_properties(record, NASA_STANDARD_T_K)["h_rt"]
-    )
     source_rows = {
         temperature: {
             "temperature": temperature,
             "heat_capacity": R_J_MOL_K * properties["cp_R"],
             "entropy": R_J_MOL_K * properties["s_R"],
             "enthalpy_increment": (
-                R_J_MOL_K * temperature * properties["h_rt"]
-                - (card_h298_j if crystal_anchor else reference_j)
-            )
-            / 1000.0,
+                R_J_MOL_K * temperature * properties["h_rt"] - reference_j
+            ) / 1000.0,
         }
         for temperature in temperatures
         for properties in [_nasa7_properties(record, temperature)]
@@ -1732,6 +1723,18 @@ def _fit_supercooled_liquid_row(
     continues the liquid rather than the glass.  Any genuine supercooled
     liquid nodes in the JANAF table are checked by the caller's regression
     tests.
+    Premise: a JANAF row supplies the first complete liquid H/S/Cp node; for a
+    NASA card, T0 is its first supported liquid node and Hinc is H_card(T0)
+    minus the card's dfH298. NASA's H(T)/(R*T) polynomial already includes
+    b1 and returns the assigned element-reference H_card(T), so the card's
+    apparent Gibbs energy is H_card(T)-T*S_card(T), without extrapolating a
+    liquid H(298) anchor. Algebra below T0 is
+    H(T)=H(T0)+Cp*(T-T0), S(T)=S(T0)+Cp*ln(T/T0), and
+    G_app=dfH298+Hinc-T*S. Unit check: Cp*(T-T0) is J/mol and becomes kJ/mol
+    in the source-row fitter; Cp*ln(T/T0) is J/(mol K); G remains J/mol.
+    Sanity: the continuation matches the supported liquid's H, S, G, and
+    -dG/dT exactly at T0; it makes no claim about a melting point below that
+    source node.
     """
     yaml_path = source_dir / f"{table_id}.yaml"
     if nasa_source_dir is not None:
@@ -1804,17 +1807,14 @@ def _fit_supercooled_liquid_row(
         ):
             raise ValueError(f"{table_id}: expected a matching NASA liquid card")
         properties = _nasa7_properties(record, T0)
-        card_h298_j = (
-            R_J_MOL_K
-            * NASA_STANDARD_T_K
-            * _nasa7_properties(record, NASA_STANDARD_T_K)["h_rt"]
-        )
         cp = R_J_MOL_K * properties["cp_R"]
         entropy_0 = R_J_MOL_K * properties["s_R"]
-        enthalpy_0 = (
-            R_J_MOL_K * T0 * properties["h_rt"] - card_h298_j
-        ) / 1000.0
         reference = float(record["delta_f_H_298_15"]["value"]) / 1000.0
+        # Store Hinc relative to dfH298: dfH298+Hinc=H_card(T0), the
+        # element-reference enthalpy returned by the NASA-9 H/RT polynomial.
+        enthalpy_0 = (
+            R_J_MOL_K * T0 * properties["h_rt"] / 1000.0 - reference
+        )
     if reference is None:
         raise ValueError(f"{table_id} has no complete 298.15 K formation enthalpy")
 
@@ -2033,8 +2033,7 @@ def build_rows(
             fit_t_min=FIT_T_MIN,
             fit_t_max=FIT_T_MAX,
         )
-        for source in TRACE_ION_GAS_NASA_SOURCES
-        for source in TRACE_ION_NASA_SOURCES
+        for source in TRACE_ION_GAS_NASA_SOURCES + TRACE_ION_NASA_SOURCES
     )
     rows.extend(
         _fit_nasa_card_gas_row(
@@ -2045,8 +2044,7 @@ def build_rows(
             fit_t_max=LOW_FIT_T_MAX,
             runtime_t_min=1200.0,
         )
-        for source in TRACE_ION_GAS_NASA_SOURCES
-        for source in TRACE_ION_NASA_SOURCES
+        for source in TRACE_ION_GAS_NASA_SOURCES + TRACE_ION_NASA_SOURCES
     )
     return rows
 
@@ -2226,7 +2224,6 @@ def build_condensate_rows(
                     oxy_num,
                     fit_t_min=fit_t_min,
                     fit_t_max=fit_t_max,
-                    crystal_anchor=True,
                 )
             )
     # Cs2O(l) has no JANAF liquid table; retain the NASA pure-liquid card.

@@ -109,8 +109,9 @@ _ION_GAS_SPECIES = {
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
     "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-",
     "Li+", "Rb+", "Pb+",
-    "Ga+", "Ge+", "B+", "In+", "Ga-", "B-", "BO-", "BO2-",
+    "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Li+", "Rb+", "Pb+", "Cs+", "Cu+", "Sn+", "Cs2O+", "Cs-", "Cu-",
+    "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
 }
 
 
@@ -185,13 +186,10 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 2
         + len(_ION_GAS_SPECIES)
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
-        + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
-    )
-    assert len(gas_pack.oxide_df) == (
-        38
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
+    assert len(gas_pack.oxide_df) == 48
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -355,6 +353,8 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     ]
     split_ion_names = {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
+    } | {
+        source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES
     }
     split_ion_rows = ion_rows.loc[ion_rows.index.isin(split_ion_names)]
     single_interval_ion_rows = ion_rows.loc[
@@ -369,7 +369,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     assert (split_ion_rows.loc[split_ion_rows["T_interval"] == 2, "T_max"] == 1500).all()
     trace_low_species = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
-    } | trace_nasa_ion_species
+    } | split_ion_names
     legacy_low_rows = low_rows.loc[~low_rows.index.isin(trace_low_species)]
     trace_low_rows = low_rows.loc[low_rows.index.isin(trace_low_species)]
     assert (legacy_low_rows["T_min"] == build_gas_tables.LOW_FIT_T_MIN).all()
@@ -2108,10 +2108,11 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     )
     expected_ions = {
         "Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-",
-        "Ga+", "Ge+", "B+", "In+", "Ga-", "B-", "BO-", "BO2-",
+        "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     }
     assert expected_ions <= set(trace_ions)
-    nasa_ions = {"Ge+", "In+", "BO-"}
+    assert "In+" not in trace_ions
+    nasa_ions = {"Ge+", "BO-"}
     for species in expected_ions:
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == (
@@ -2255,14 +2256,10 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
         / "nasa-glenn"
         / f"{table_id}.json"
     )
-    reference_h = float(record["delta_f_H_298_15"]["value"])
-    card_h298 = R_J_MOL_K * 298.15 * build_gas_tables._nasa7_properties(
-        record, 298.15
-    )["h_rt"]
     properties = build_gas_tables._nasa7_properties(record, temperature)
-    enthalpy = reference_h + (
-        R_J_MOL_K * temperature * properties["h_rt"] - card_h298
-    )
+    # NASA-9 H(T)/(R*T), including b1, is already on the assigned elemental
+    # reference, so evaluate G directly as H_card(T)-T*S_card(T).
+    enthalpy = R_J_MOL_K * temperature * properties["h_rt"]
     entropy = R_J_MOL_K * properties["s_R"]
     return enthalpy - temperature * entropy
 

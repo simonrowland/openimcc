@@ -18,11 +18,11 @@ source_notes:
   trace_parent_channels:
     retrieval_date: '2026-10-01'
     activity_policy: >-
-      Li2O, Rb2O, PbO, Ga2O3, GeO2, B2O3, and In2O3 activities are supplied
-      by the caller. OpenIMCC has no trace-element activity model; no activity
-      coefficients are applied.
-      Published silicate-melt activity-coefficient work is cited in README.md
-      as context only and does not enter these runtime rows.
+      Li2O, Rb2O, PbO, Cs2O, Cu2O, SnO, Ga2O3, GeO2, B2O3, and In2O3
+      activities are supplied by the caller. OpenIMCC has no trace-element
+      activity model; no activity coefficients are applied. Published silicate-
+      melt activity-coefficient work is cited in README.md as context only and
+      does not enter these runtime rows.
     reference_states: >-
       The NIST-JANAF and NASA Glenn records use the stable elemental reference
       states at 298.15 K for Li, Rb, Pb, Ga, Ge, B, and In. NASA/TP-2002-211556 specifies
@@ -42,6 +42,25 @@ source_notes:
       records_are: >-
         Published model-derived NASA Glenn/CEA seven-coefficient functions;
         no standalone Gurvich/IVTAN table cells were transcribed.
+    declined_ions:
+      In+:
+        source_record: NG-6016
+        source_locator: "thermo.inp lines 6017-6027"
+        source_sha256: 2ca1ace033413d51c8f2bcb88d3c05c37bf39d107b46442b671e5896ca237784
+        card_dfH298_J_per_mol: 6996.425
+        neutral_source_record: NG-6005
+        neutral_dfH298_J_per_mol: 240700.0
+        NIST_ionisation_energy_eV: 5.78636
+        fitted_vs_saha:
+        - temperature_K: 1500
+          fitted_K_ion: 5293385888.0
+          saha_K_ion: 3.505390251e-19
+          fitted_to_saha_ratio: 1.510070351e+28
+        - temperature_K: 2500
+          fitted_K_ion: 6870174.263
+          saha_K_ion: 7.514218545e-11
+          fitted_to_saha_ratio: 9.142899187e+16
+        disposition: "Declined; source retained without coefficient changes; In+ omitted from runtime."
     material_disagreements:
       Li2O(l): >-
         The NASA polynomial minus JANAF dfH298+(H-H298)-T*S gives liquid ΔG
@@ -712,7 +731,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 0.910127904906403
-    max_residual_log10_K: 0.0000235156086718425
+    max_residual_log10_K: 2.35156086718425e-05
   - table: gas
     species_name: P2(g)
     table_id: P-012
@@ -722,7 +741,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.37914393888786
-    max_residual_log10_K: 0.0000268744702452084
+    max_residual_log10_K: 2.68744702452084e-05
   - table: gas
     species_name: P4(g)
     table_id: P-013
@@ -732,7 +751,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.36296945170034
-    max_residual_log10_K: 0.0000318278782304297
+    max_residual_log10_K: 3.18278782304297e-05
   - table: gas
     species_name: PO(g)
     table_id: O-004
@@ -742,7 +761,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.3903899070574
-    max_residual_log10_K: 0.0000290500392904167
+    max_residual_log10_K: 2.90500392904167e-05
   - table: gas
     species_name: PO2(g)
     table_id: O-032
@@ -752,7 +771,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.19933514436707
-    max_residual_log10_K: 0.0000292745997676527
+    max_residual_log10_K: 2.92745997676527e-05
   - table: gas
     species_name: P4O6(g)
     table_id: O-087
@@ -762,7 +781,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.58126659691334
-    max_residual_log10_K: 0.0000378032634336683
+    max_residual_log10_K: 3.78032634336683e-05
   - table: gas
     species_name: P4O10(g)
     table_id: O-095
@@ -772,7 +791,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.54256510641426
-    max_residual_log10_K: 0.0000338511113001509
+    max_residual_log10_K: 3.38511113001509e-05
   - table: gas
     species_name: S(g)
     table_id: S-006
@@ -782,7 +801,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.67452905431855
-    max_residual_log10_K: 0.0000301609360364606
+    max_residual_log10_K: 3.01609360364606e-05
   - table: gas
     species_name: S2(g)
     table_id: S-012
@@ -792,7 +811,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.07704177149571
-    max_residual_log10_K: 0.0000278940323637276
+    max_residual_log10_K: 2.78940323637276e-05
   - table: gas
     species_name: S3(g)
     table_id: S-016
@@ -802,7 +821,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.23292100476101
-    max_residual_log10_K: 0.0000222068715181167
+    max_residual_log10_K: 2.22068715181167e-05
   - table: gas
     species_name: S4(g)
     table_id: S-017
@@ -812,7 +831,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 0.948631034349091
-    max_residual_log10_K: 0.0000256373579126045
+    max_residual_log10_K: 2.56373579126045e-05
   - table: gas
     species_name: S5(g)
     table_id: S-018
@@ -822,7 +841,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.39441700058524
-    max_residual_log10_K: 0.00003428116612305
+    max_residual_log10_K: 3.428116612305e-05
   - table: gas
     species_name: S6(g)
     table_id: S-019
@@ -832,7 +851,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.19877813872881
-    max_residual_log10_K: 0.0000260902174618135
+    max_residual_log10_K: 2.60902174618135e-05
   - table: gas
     species_name: S7(g)
     table_id: S-020
@@ -842,7 +861,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.23676053667441
-    max_residual_log10_K: 0.0000331954929519743
+    max_residual_log10_K: 3.31954929519743e-05
   - table: gas
     species_name: S8(g)
     table_id: S-021
@@ -852,7 +871,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.35977847920731
-    max_residual_log10_K: 0.0000301531092475047
+    max_residual_log10_K: 3.01531092475047e-05
   - table: gas
     species_name: SO(g)
     table_id: O-010
@@ -862,7 +881,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.64843133289833
-    max_residual_log10_K: 0.000030868271938366
+    max_residual_log10_K: 3.0868271938366e-05
   - table: gas
     species_name: SSO(g)
     table_id: O-011
@@ -872,7 +891,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.60316886100918
-    max_residual_log10_K: 0.0000323872526060654
+    max_residual_log10_K: 3.23872526060654e-05
     note: >-
       The printed dfG/log Kf columns use an element-reference entropy one
       rhombic-sulfur atom short of the published O1S2 formula and dfH(298)
@@ -889,7 +908,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.35136405483354
-    max_residual_log10_K: 0.000035293318343031
+    max_residual_log10_K: 3.5293318343031e-05
   - table: gas
     species_name: SO3(g)
     table_id: O-058
@@ -899,7 +918,7 @@ rows:
     method: fitted
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.28878152207471
-    max_residual_log10_K: 0.0000302351660758043
+    max_residual_log10_K: 3.02351660758043e-05
   - table: gas
     species_name: P(g)
     table_id: P-008
@@ -910,7 +929,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.917595598235494
-    max_residual_log10_K: 0.000046413290341331
+    max_residual_log10_K: 4.6413290341331e-05
   - table: gas
     species_name: P2(g)
     table_id: P-012
@@ -921,7 +940,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.504391399648739
-    max_residual_log10_K: 0.0000437779449341226
+    max_residual_log10_K: 4.37779449341226e-05
   - table: gas
     species_name: P4(g)
     table_id: P-013
@@ -932,7 +951,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.713500027195551
-    max_residual_log10_K: 0.0000491687048971283
+    max_residual_log10_K: 4.91687048971283e-05
   - table: gas
     species_name: PO(g)
     table_id: O-004
@@ -943,7 +962,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.488493868819205
-    max_residual_log10_K: 0.000031894753969497
+    max_residual_log10_K: 3.1894753969497e-05
   - table: gas
     species_name: PO2(g)
     table_id: O-032
@@ -954,7 +973,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.647554488969035
-    max_residual_log10_K: 0.0000229889864382954
+    max_residual_log10_K: 2.29889864382954e-05
   - table: gas
     species_name: P4O6(g)
     table_id: O-087
@@ -965,7 +984,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.965777293778956
-    max_residual_log10_K: 0.0000423585653184764
+    max_residual_log10_K: 4.23585653184764e-05
   - table: gas
     species_name: P4O10(g)
     table_id: O-095
@@ -976,7 +995,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.951549261808395
-    max_residual_log10_K: 0.0000710040895260279
+    max_residual_log10_K: 7.10040895260279e-05
   - table: gas
     species_name: S(g)
     table_id: S-006
@@ -987,7 +1006,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.543930535903201
-    max_residual_log10_K: 0.0000193211148412225
+    max_residual_log10_K: 1.93211148412225e-05
   - table: gas
     species_name: S2(g)
     table_id: S-012
@@ -998,7 +1017,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 1.25824316954822
-    max_residual_log10_K: 0.0000438150638257923
+    max_residual_log10_K: 4.38150638257923e-05
   - table: gas
     species_name: S3(g)
     table_id: S-016
@@ -1009,7 +1028,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.585487160191406
-    max_residual_log10_K: 0.000050885501782258
+    max_residual_log10_K: 5.0885501782258e-05
   - table: gas
     species_name: S4(g)
     table_id: S-017
@@ -1020,7 +1039,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.61328851088183
-    max_residual_log10_K: 0.0000309789180834419
+    max_residual_log10_K: 3.09789180834419e-05
   - table: gas
     species_name: S5(g)
     table_id: S-018
@@ -1031,7 +1050,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.593010168056935
-    max_residual_log10_K: 0.0000355756788348756
+    max_residual_log10_K: 3.55756788348756e-05
   - table: gas
     species_name: S6(g)
     table_id: S-019
@@ -1042,7 +1061,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.760831963794772
-    max_residual_log10_K: 0.0000487725571455326
+    max_residual_log10_K: 4.87725571455326e-05
   - table: gas
     species_name: S7(g)
     table_id: S-020
@@ -1053,7 +1072,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.838236773852259
-    max_residual_log10_K: 0.0000377962922529982
+    max_residual_log10_K: 3.77962922529982e-05
   - table: gas
     species_name: S8(g)
     table_id: S-021
@@ -1064,7 +1083,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.639913010876626
-    max_residual_log10_K: 0.0000222833154139683
+    max_residual_log10_K: 2.22833154139683e-05
   - table: gas
     species_name: SO(g)
     table_id: O-010
@@ -1075,7 +1094,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.73638023523381
-    max_residual_log10_K: 0.0000629597945984521
+    max_residual_log10_K: 6.29597945984521e-05
   - table: gas
     species_name: SSO(g)
     table_id: O-011
@@ -1086,7 +1105,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.943942202196922
-    max_residual_log10_K: 0.0000547839093402578
+    max_residual_log10_K: 5.47839093402578e-05
     note: >-
       The printed dfG/log Kf columns use an element-reference entropy one
       rhombic-sulfur atom short of the published O1S2 formula and dfH(298)
@@ -1104,7 +1123,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.681195894372649
-    max_residual_log10_K: 0.0000472877663925666
+    max_residual_log10_K: 4.72877663925666e-05
   - table: gas
     species_name: SO3(g)
     table_id: O-058
@@ -1115,7 +1134,7 @@ rows:
     T_interval: 2
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.788946783752181
-    max_residual_log10_K: 0.0000321397194295554
+    max_residual_log10_K: 3.21397194295554e-05
   - table: gas
     species_name: Ca+(g)
     table_id: Ca-007
@@ -2823,7 +2842,7 @@ rows:
     species_name: GaO(g)
     table_id: NG-5066
     source_path: data-src/nasa-glenn/NG-5066.json
-    source_sha256: 98f150aa88e9bb4f477c9075651ced0cf9e9cc6405dff64e1e42e6084a6b1ce8
+    source_sha256: dd3002fa3350cd25227bb34d3bbbd1f674a706079f92ead668751ed5d37d72af
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -2839,12 +2858,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5066
       card_citation: Gurvich,1996a pt1 p214 pt2 p174
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5066-5073
+      source_locator: thermo.inp lines 5067-5074
   - table: gas
     species_name: Ga2O(g)
     table_id: NG-5178
     source_path: data-src/nasa-glenn/NG-5178.json
-    source_sha256: 3c37e97eb86fb63652e28b21c5585bb5c98ca70cfa2294a7708f85344d5cd1d8
+    source_sha256: b39c6d3f124ffe0c125d3fb3e7b40ebc0c03db1c75e4927425484be13e8fcba5
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -2860,12 +2879,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5178
       card_citation: Gurvich,1996a pt1 p216 pt2 p175.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5178-5185
+      source_locator: thermo.inp lines 5179-5186
   - table: gas
     species_name: Ge(g)
     table_id: NG-5186
     source_path: data-src/nasa-glenn/NG-5186.json
-    source_sha256: 5c416b8434fa1bffaf5ee3a455f602f3faf2d2429b7d365e4192994b121c5071
+    source_sha256: 8999ac1a39bbf761a895d5b383dbb3d6145af8f07ca06d5fe574e3d78a2130eb
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -2881,12 +2900,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5186
       card_citation: Hf:Gurvich,1991 pt1 p311. Sugar,1993. Gordon,1999.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5186-5196
+      source_locator: thermo.inp lines 5187-5197
   - table: gas
     species_name: GeO(g)
     table_id: NG-5331
     source_path: data-src/nasa-glenn/NG-5331.json
-    source_sha256: e75576de0604aecbeb3b3795d6fbae51cb991fdad0fedfb5eb4edf78ee83e47c
+    source_sha256: 9a22feccc77ec0269097848880ed740d53a6843d21d0ad512e2f0d57e43c7970
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -2902,12 +2921,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5331
       card_citation: Gurvich,1991 pt1 p315 pt2 p274.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5331-5338
+      source_locator: thermo.inp lines 5332-5339
   - table: gas
     species_name: GeO2(g)
     table_id: NG-5339
     source_path: data-src/nasa-glenn/NG-5339.json
-    source_sha256: b686b502f67ddc12a99b6c0443872c150d639221cf2165d2513da4cf315c7ca9
+    source_sha256: c1104e4f58ea3705b178b41460d5647e779f54f46d46f7f2d8887e002151f04f
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -2923,12 +2942,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5339
       card_citation: Gurvich,1991 pt1 p323 pt2 p278.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5339-5346
+      source_locator: thermo.inp lines 5340-5347
   - table: gas
     species_name: In(g)
     table_id: NG-6005
     source_path: data-src/nasa-glenn/NG-6005.json
-    source_sha256: 36e1bbcc3da9278235960d8891d7aa3ee14bd3988690b4ba2d52fc96bb93d0b5
+    source_sha256: a826485a5b317bc65da051086db82c8b15798ceb1ce68bf65319b2abdc08312a
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -2944,12 +2963,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-6005
       card_citation: Hf:Gurvich,1996a. Johansson,1967. Moore,1971. Gordon,1999.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 6005-6015
+      source_locator: thermo.inp lines 6006-6016
   - table: gas
     species_name: InO(g)
     table_id: NG-6131
     source_path: data-src/nasa-glenn/NG-6131.json
-    source_sha256: eb6b37d420868eedc2b445a9409aa52032daec9fddb7ca30d893374417ccffaf
+    source_sha256: 5eedee05686dd982a8dedf039cc7c12469a0eb1fe88579b92e2e7f20c449e5db
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -2965,12 +2984,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-6131
       card_citation: Gurvich,1996a pt1 p261 pt2 p212
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 6131-6138
+      source_locator: thermo.inp lines 6132-6139
   - table: gas
     species_name: In2O(g)
     table_id: NG-6243
     source_path: data-src/nasa-glenn/NG-6243.json
-    source_sha256: e6399f63cd21438b64fe5e4b466b2aac7dc7781b3e4c0ab8e50a657674c10b12
+    source_sha256: 3500ea6d8470f9f06ed117db4722bd1f0ec92402a731f370da8770772486fe70
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -2986,7 +3005,7 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-6243
       card_citation: Gurvich,1996a pt1 p264 pt2 p213.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 6243-6250
+      source_locator: thermo.inp lines 6244-6251
   - table: gas
     species_name: Ga(g)
     table_id: Ga-005
@@ -3131,7 +3150,7 @@ rows:
     species_name: GaO(g)
     table_id: NG-5066
     source_path: data-src/nasa-glenn/NG-5066.json
-    source_sha256: 98f150aa88e9bb4f477c9075651ced0cf9e9cc6405dff64e1e42e6084a6b1ce8
+    source_sha256: dd3002fa3350cd25227bb34d3bbbd1f674a706079f92ead668751ed5d37d72af
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -3150,12 +3169,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5066
       card_citation: Gurvich,1996a pt1 p214 pt2 p174
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5066-5073
+      source_locator: thermo.inp lines 5067-5074
   - table: gas
     species_name: Ga2O(g)
     table_id: NG-5178
     source_path: data-src/nasa-glenn/NG-5178.json
-    source_sha256: 3c37e97eb86fb63652e28b21c5585bb5c98ca70cfa2294a7708f85344d5cd1d8
+    source_sha256: b39c6d3f124ffe0c125d3fb3e7b40ebc0c03db1c75e4927425484be13e8fcba5
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
@@ -3222,7 +3241,7 @@ rows:
     species_name: Ga2O3(l)
     table_id: NG-12403
     source_path: data-src/nasa-glenn/NG-12403.json
-    source_sha256: f24d957b2a002c61d23deaef8856471d3d8ec70c139f455842d152107d1508bf
+    source_sha256: 814ead407d3785caed3cae9b54b12661ce8b70ff5cea370d18df3f190414fcb9
     authority: nasa_glenn_fitted
     method: generated_constant_cp_extrapolation_fit
     extrapolation: true
@@ -3233,8 +3252,8 @@ rows:
     T_range_K:
     - 1200
     - 2080
-    max_residual_J_per_mol: 0.501557848183438
-    max_residual_log10_K: 1.30642254319365e-05
+    max_residual_J_per_mol: 6.05848193983547
+    max_residual_log10_K: 0.000213532846676255
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -3242,25 +3261,25 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-12403
       card_citation: Liquid. Gurvich,1996a pt1 p219 pt2 p176.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 12403-12407
-    note: No JANAF liquid row is available. The NASA CEA lower interval endpoint is
-      the first source-supported liquid node, not a melting marker. The NASA pure-liquid
-      standard state at 1 atm is retained. The 1200 K continuation
-      is generated with constant Cp and flagged at runtime; it is not source data. The
-      card dfH298 is the crystal anchor and direct fits use G_app = dfH298 + [H(T)-H(298)]
-      - T*S.
+      source_locator: thermo.inp lines 12404-12408
+    note: >-
+      NASA-9 H/(R*T), including b1, gives the assigned element-reference
+      enthalpy H_card(T), so direct source fits use G_app=H_card(T)-T*S_card(T).
+      The NASA pure-liquid standard state at 1 atm is retained. The lower
+      branch is a generated constant-Cp continuation from the first supported
+      liquid node and is not NASA source data.
   - table: condensate
     species_name: Ga2O3(l)
     table_id: NG-12403
     source_path: data-src/nasa-glenn/NG-12403.json
-    source_sha256: f24d957b2a002c61d23deaef8856471d3d8ec70c139f455842d152107d1508bf
+    source_sha256: 814ead407d3785caed3cae9b54b12661ce8b70ff5cea370d18df3f190414fcb9
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
     - 2080
     - 3000
-    max_residual_J_per_mol: 0.499317607376724
-    max_residual_log10_K: 9.80859232866222e-06
+    max_residual_J_per_mol: 1.16164961690083
+    max_residual_log10_K: 2.35733543472859e-05
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -3268,18 +3287,18 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-12403
       card_citation: Liquid. Gurvich,1996a pt1 p219 pt2 p176.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 12403-12407
-    note: No JANAF liquid row is available. The NASA CEA lower interval endpoint is
-      the first source-supported liquid node, not a melting marker. The NASA pure-liquid
-      standard state at 1 atm is retained. The 1200 K continuation
-      is generated with constant Cp and flagged at runtime; it is not source data. The
-      card dfH298 is the crystal anchor and direct fits use G_app = dfH298 + [H(T)-H(298)]
-      - T*S.
+      source_locator: thermo.inp lines 12404-12408
+    note: >-
+      NASA-9 H/(R*T), including b1, gives the assigned element-reference
+      enthalpy H_card(T), so direct source fits use G_app=H_card(T)-T*S_card(T).
+      The NASA pure-liquid standard state at 1 atm is retained. The lower
+      branch is a generated constant-Cp continuation from the first supported
+      liquid node and is not NASA source data.
   - table: condensate
     species_name: GeO2(l)
     table_id: NG-12434
     source_path: data-src/nasa-glenn/NG-12434.json
-    source_sha256: 5022000f853981777cb9a0794e58e5893a89ad11897edf7431b1d3a644bbae72
+    source_sha256: dde36530ea25812f003021c6cf2ed6ad42e1179a6a564e9d92f3771a000dd375
     authority: nasa_glenn_fitted
     method: generated_constant_cp_extrapolation_fit
     extrapolation: true
@@ -3290,8 +3309,8 @@ rows:
     T_range_K:
     - 1200
     - 1388
-    max_residual_J_per_mol: 7.7869114613859
-    max_residual_log10_K: 0.000327421789973466
+    max_residual_J_per_mol: 25.1452858862467
+    max_residual_log10_K: 0.00105741032316014
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -3299,25 +3318,25 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-12434
       card_citation: Tetragonal liquid,Gurvich,1991 pt1 p319 pt2 p275.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 12434-12438
-    note: No JANAF liquid row is available. The NASA CEA lower interval endpoint is
-      the first source-supported liquid node, not a melting marker. The NASA pure-liquid
-      standard state at 1 atm is retained. The 1200 K continuation
-      is generated with constant Cp and flagged at runtime; it is not source data. The
-      card dfH298 is the crystal anchor and direct fits use G_app = dfH298 + [H(T)-H(298)]
-      - T*S.
+      source_locator: thermo.inp lines 12435-12439
+    note: >-
+      NASA-9 H/(R*T), including b1, gives the assigned element-reference
+      enthalpy H_card(T), so direct source fits use G_app=H_card(T)-T*S_card(T).
+      The NASA pure-liquid standard state at 1 atm is retained. The lower
+      branch is a generated constant-Cp continuation from the first supported
+      liquid node and is not NASA source data.
   - table: condensate
     species_name: GeO2(l)
     table_id: NG-12434
     source_path: data-src/nasa-glenn/NG-12434.json
-    source_sha256: 5022000f853981777cb9a0794e58e5893a89ad11897edf7431b1d3a644bbae72
+    source_sha256: dde36530ea25812f003021c6cf2ed6ad42e1179a6a564e9d92f3771a000dd375
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
     - 1388
     - 2400
-    max_residual_J_per_mol: 0.702428552787751
-    max_residual_log10_K: 1.63524250155348e-05
+    max_residual_J_per_mol: 4.530491284444
+    max_residual_log10_K: 0.000126789723755245
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -3325,25 +3344,25 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-12434
       card_citation: Tetragonal liquid,Gurvich,1991 pt1 p319 pt2 p275.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 12434-12438
-    note: No JANAF liquid row is available. The NASA CEA lower interval endpoint is
-      the first source-supported liquid node, not a melting marker. The NASA pure-liquid
-      standard state at 1 atm is retained. The 1200 K continuation
-      is generated with constant Cp and flagged at runtime; it is not source data. The
-      card dfH298 is the crystal anchor and direct fits use G_app = dfH298 + [H(T)-H(298)]
-      - T*S.
+      source_locator: thermo.inp lines 12435-12439
+    note: >-
+      NASA-9 H/(R*T), including b1, gives the assigned element-reference
+      enthalpy H_card(T), so direct source fits use G_app=H_card(T)-T*S_card(T).
+      The NASA pure-liquid standard state at 1 atm is retained. The lower
+      branch is a generated constant-Cp continuation from the first supported
+      liquid node and is not NASA source data.
   - table: condensate
     species_name: GeO2(l)
     table_id: NG-12434
     source_path: data-src/nasa-glenn/NG-12434.json
-    source_sha256: 5022000f853981777cb9a0794e58e5893a89ad11897edf7431b1d3a644bbae72
+    source_sha256: dde36530ea25812f003021c6cf2ed6ad42e1179a6a564e9d92f3771a000dd375
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
     - 2400
     - 3000
-    max_residual_J_per_mol: 0.0193631182191893
-    max_residual_log10_K: 3.75198678594537e-07
+    max_residual_J_per_mol: 0.0512602233793586
+    max_residual_log10_K: 1.00742474203997e-06
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -3351,18 +3370,18 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-12434
       card_citation: Tetragonal liquid,Gurvich,1991 pt1 p319 pt2 p275.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 12434-12438
-    note: No JANAF liquid row is available. The NASA CEA lower interval endpoint is
-      the first source-supported liquid node, not a melting marker. The NASA pure-liquid
-      standard state at 1 atm is retained. The 1200 K continuation
-      is generated with constant Cp and flagged at runtime; it is not source data. The
-      card dfH298 is the crystal anchor and direct fits use G_app = dfH298 + [H(T)-H(298)]
-      - T*S.
+      source_locator: thermo.inp lines 12435-12439
+    note: >-
+      NASA-9 H/(R*T), including b1, gives the assigned element-reference
+      enthalpy H_card(T), so direct source fits use G_app=H_card(T)-T*S_card(T).
+      The NASA pure-liquid standard state at 1 atm is retained. The lower
+      branch is a generated constant-Cp continuation from the first supported
+      liquid node and is not NASA source data.
   - table: condensate
     species_name: In2O3(l)
     table_id: NG-12662
     source_path: data-src/nasa-glenn/NG-12662.json
-    source_sha256: d9b510a4d91ac29b53fbcd473ef05f1b4b714c7b407ed2a79fc4a0eef05f25e1
+    source_sha256: d3bc03dd2c98f3ceed32a8d5fe72061dc4d1a65eed4f25847e48f6c1e9638292
     authority: nasa_glenn_fitted
     method: generated_constant_cp_extrapolation_fit
     extrapolation: true
@@ -3373,8 +3392,8 @@ rows:
     T_range_K:
     - 1200
     - 2186
-    max_residual_J_per_mol: 1.04720557713881
-    max_residual_log10_K: 2.60595685092772e-05
+    max_residual_J_per_mol: 10.7934030294418
+    max_residual_log10_K: 0.000357747900814876
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -3382,25 +3401,25 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-12662
       card_citation: Liquid.  Gurvich,1996a pt1 p267 pt2 p214.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 12662-12666
-    note: No JANAF liquid row is available. The NASA CEA lower interval endpoint is
-      the first source-supported liquid node, not a melting marker. The NASA pure-liquid
-      standard state at 1 atm is retained. The 1200 K continuation
-      is generated with constant Cp and flagged at runtime; it is not source data. The
-      card dfH298 is the crystal anchor and direct fits use G_app = dfH298 + [H(T)-H(298)]
-      - T*S.
+      source_locator: thermo.inp lines 12663-12667
+    note: >-
+      NASA-9 H/(R*T), including b1, gives the assigned element-reference
+      enthalpy H_card(T), so direct source fits use G_app=H_card(T)-T*S_card(T).
+      The NASA pure-liquid standard state at 1 atm is retained. The lower
+      branch is a generated constant-Cp continuation from the first supported
+      liquid node and is not NASA source data.
   - table: condensate
     species_name: In2O3(l)
     table_id: NG-12662
     source_path: data-src/nasa-glenn/NG-12662.json
-    source_sha256: d9b510a4d91ac29b53fbcd473ef05f1b4b714c7b407ed2a79fc4a0eef05f25e1
+    source_sha256: d3bc03dd2c98f3ceed32a8d5fe72061dc4d1a65eed4f25847e48f6c1e9638292
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K:
     - 2186
     - 3000
-    max_residual_J_per_mol: 0.24395503452979
-    max_residual_log10_K: 4.68365409268383e-06
+    max_residual_J_per_mol: 0.590614111861214
+    max_residual_log10_K: 1.16042815550444e-05
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -3408,18 +3427,18 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-12662
       card_citation: Liquid.  Gurvich,1996a pt1 p267 pt2 p214.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 12662-12666
-    note: No JANAF liquid row is available. The NASA CEA lower interval endpoint is
-      the first source-supported liquid node, not a melting marker. The NASA pure-liquid
-      standard state at 1 atm is retained. The 1200 K continuation
-      is generated with constant Cp and flagged at runtime; it is not source data. The
-      card dfH298 is the crystal anchor and direct fits use G_app = dfH298 + [H(T)-H(298)]
-      - T*S.
+      source_locator: thermo.inp lines 12663-12667
+    note: >-
+      NASA-9 H/(R*T), including b1, gives the assigned element-reference
+      enthalpy H_card(T), so direct source fits use G_app=H_card(T)-T*S_card(T).
+      The NASA pure-liquid standard state at 1 atm is retained. The lower
+      branch is a generated constant-Cp continuation from the first supported
+      liquid node and is not NASA source data.
   - table: gas
     species_name: Ge(g)
     table_id: NG-5186
     source_path: data-src/nasa-glenn/NG-5186.json
-    source_sha256: 5c416b8434fa1bffaf5ee3a455f602f3faf2d2429b7d365e4192994b121c5071
+    source_sha256: 8999ac1a39bbf761a895d5b383dbb3d6145af8f07ca06d5fe574e3d78a2130eb
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K: [1200, 1500]
@@ -3434,12 +3453,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5186
       card_citation: Hf:Gurvich,1991 pt1 p311. Sugar,1993. Gordon,1999.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5186-5196
+      source_locator: thermo.inp lines 5187-5197
   - table: gas
     species_name: GeO(g)
     table_id: NG-5331
     source_path: data-src/nasa-glenn/NG-5331.json
-    source_sha256: e75576de0604aecbeb3b3795d6fbae51cb991fdad0fedfb5eb4edf78ee83e47c
+    source_sha256: 9a22feccc77ec0269097848880ed740d53a6843d21d0ad512e2f0d57e43c7970
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K: [1200, 1500]
@@ -3454,12 +3473,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5331
       card_citation: Gurvich,1991 pt1 p315 pt2 p274.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5331-5338
+      source_locator: thermo.inp lines 5332-5339
   - table: gas
     species_name: GeO2(g)
     table_id: NG-5339
     source_path: data-src/nasa-glenn/NG-5339.json
-    source_sha256: b686b502f67ddc12a99b6c0443872c150d639221cf2165d2513da4cf315c7ca9
+    source_sha256: c1104e4f58ea3705b178b41460d5647e779f54f46d46f7f2d8887e002151f04f
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K: [1200, 1500]
@@ -3474,12 +3493,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5339
       card_citation: Gurvich,1991 pt1 p323 pt2 p278.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5339-5346
+      source_locator: thermo.inp lines 5340-5347
   - table: gas
     species_name: In(g)
     table_id: NG-6005
     source_path: data-src/nasa-glenn/NG-6005.json
-    source_sha256: 36e1bbcc3da9278235960d8891d7aa3ee14bd3988690b4ba2d52fc96bb93d0b5
+    source_sha256: a826485a5b317bc65da051086db82c8b15798ceb1ce68bf65319b2abdc08312a
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K: [1200, 1500]
@@ -3494,12 +3513,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-6005
       card_citation: Hf:Gurvich,1996a. Johansson,1967. Moore,1971. Gordon,1999.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 6005-6015
+      source_locator: thermo.inp lines 6006-6016
   - table: gas
     species_name: InO(g)
     table_id: NG-6131
     source_path: data-src/nasa-glenn/NG-6131.json
-    source_sha256: eb6b37d420868eedc2b445a9409aa52032daec9fddb7ca30d893374417ccffaf
+    source_sha256: 5eedee05686dd982a8dedf039cc7c12469a0eb1fe88579b92e2e7f20c449e5db
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K: [1200, 1500]
@@ -3514,12 +3533,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-6131
       card_citation: Gurvich,1996a pt1 p261 pt2 p212
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 6131-6138
+      source_locator: thermo.inp lines 6132-6139
   - table: gas
     species_name: In2O(g)
     table_id: NG-6243
     source_path: data-src/nasa-glenn/NG-6243.json
-    source_sha256: e6399f63cd21438b64fe5e4b466b2aac7dc7781b3e4c0ab8e50a657674c10b12
+    source_sha256: 3500ea6d8470f9f06ed117db4722bd1f0ec92402a731f370da8770772486fe70
     authority: nasa_glenn_fitted
     method: fitted
     T_range_K: [1200, 1500]
@@ -3534,7 +3553,7 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-6243
       card_citation: Gurvich,1996a pt1 p264 pt2 p213.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 6243-6250
+      source_locator: thermo.inp lines 6244-6251
   - table: gas
     species_name: Ga+(g)
     table_id: Ga-006
@@ -3609,7 +3628,7 @@ rows:
     species_name: BO-(g)
     table_id: NG-1074
     source_path: data-src/nasa-glenn/NG-1074.json
-    source_sha256: 225e2356a509b63a9579ffefbb52024ce84cf75b1e548ce15e468df39797cc27
+    source_sha256: 373f73ffc5c9a5b5778e608d3037f71a8866f02fe7b40789afa24a56cebe6b94
     authority: nasa_glenn_fitted_ionisation
     method: fitted
     T_range_K: [1500, 3000]
@@ -3623,12 +3642,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1074
       card_citation: Gurvich,1996a pt1 p13 pt2 p10.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 1074-1081
+      source_locator: thermo.inp lines 1075-1082
   - table: gas
     species_name: BO-(g)
     table_id: NG-1074
     source_path: data-src/nasa-glenn/NG-1074.json
-    source_sha256: 225e2356a509b63a9579ffefbb52024ce84cf75b1e548ce15e468df39797cc27
+    source_sha256: 373f73ffc5c9a5b5778e608d3037f71a8866f02fe7b40789afa24a56cebe6b94
     authority: nasa_glenn_fitted_ionisation
     method: fitted
     T_range_K: [1200, 1500]
@@ -3643,12 +3662,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-1074
       card_citation: Gurvich,1996a pt1 p13 pt2 p10.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 1074-1081
+      source_locator: thermo.inp lines 1075-1082
   - table: gas
     species_name: Ge+(g)
     table_id: NG-5197
     source_path: data-src/nasa-glenn/NG-5197.json
-    source_sha256: a34f8643314edf4f9127865c978aa98c4f569406ceef42257990c6b7d8b2c55f
+    source_sha256: a93d69f7eb19303878437467b22d46a986ac80723b79d1bd041aa9e312b1f24f
     authority: nasa_glenn_fitted_ionisation
     method: fitted
     T_range_K: [1500, 3000]
@@ -3662,12 +3681,12 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5197
       card_citation: Sugar,1993. Gordon,1999.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5197-5207
+      source_locator: thermo.inp lines 5198-5208
   - table: gas
     species_name: Ge+(g)
     table_id: NG-5197
     source_path: data-src/nasa-glenn/NG-5197.json
-    source_sha256: a34f8643314edf4f9127865c978aa98c4f569406ceef42257990c6b7d8b2c55f
+    source_sha256: a93d69f7eb19303878437467b22d46a986ac80723b79d1bd041aa9e312b1f24f
     authority: nasa_glenn_fitted_ionisation
     method: fitted
     T_range_K: [1200, 1500]
@@ -3682,48 +3701,768 @@ rows:
       source_record: NASA Glenn PAC coefficient card NG-5197
       card_citation: Sugar,1993. Gordon,1999.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 5197-5207
+      source_locator: thermo.inp lines 5198-5208
   - table: gas
-    species_name: In+(g)
-    table_id: NG-6016
-    source_path: data-src/nasa-glenn/NG-6016.json
-    source_sha256: 7a8be9e0e7e6f59f0e30a2f1b6fc5636454193240ea3cdbef5ce67b5945694fd
-    authority: nasa_glenn_fitted_ionisation
+    species_name: Cs(g)
+    table_id: Cs-005
+    source_path: data-src/janaf/Cs-005.txt
+    source_sha256: 5872ade6306f453d12dc6380c58a693117f5020ba1bcaad6f3c016a5211412a5
+    authority: janaf_fitted
     method: fitted
-    T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 4.16833208873868e-05
-    max_residual_log10_K: 1.14593197296605e-09
     T_interval: 1
-    source:
-      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
-        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
-        NASA CEA thermo.inp.
-      source_record: NASA Glenn PAC coefficient card NG-6016
-      card_citation: IP:Johansson,1967. Moore,1971. Gordon,1999.
-      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 6016-6026
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.17137837735936
+    max_residual_log10_K: 3.05926665907805e-05
+    source_url: https://janaf.nist.gov/tables/Cs-005.html
+    download_url: https://janaf.nist.gov/tables/Cs-005.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
   - table: gas
-    species_name: In+(g)
-    table_id: NG-6016
-    source_path: data-src/nasa-glenn/NG-6016.json
-    source_sha256: 7a8be9e0e7e6f59f0e30a2f1b6fc5636454193240ea3cdbef5ce67b5945694fd
-    authority: nasa_glenn_fitted_ionisation
+    species_name: CsO(g)
+    table_id: Cs-017
+    source_path: data-src/janaf/Cs-017.txt
+    source_sha256: 2e64b8bbec2eb536119e495ced13d3820833295c4c08015f8098ccf5f5a0db78
+    authority: janaf_fitted
     method: fitted
-    T_range_K: [1200, 1500]
-    source_fit_range_K: [500, 1500]
-    max_residual_J_per_mol: 0.00307408504886553
-    max_residual_log10_K: 2.76509052511198e-07
-    T_interval: 2
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 2.07157165999524
+    max_residual_log10_K: 3.60685623809044e-05
+    source_url: https://janaf.nist.gov/tables/Cs-017.html
+    download_url: https://janaf.nist.gov/tables/Cs-017.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Cs2O(g)
+    table_id: Cs-021
+    source_path: data-src/janaf/Cs-021.txt
+    source_sha256: 0a0f36f702ebb37e50b11a8f14fd92f63905667169c16bed8ad4d9147129720c
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.34016522835009
+    max_residual_log10_K: 3.14158593349386e-05
+    source_url: https://janaf.nist.gov/tables/Cs-021.html
+    download_url: https://janaf.nist.gov/tables/Cs-021.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Cu(g)
+    table_id: Cu-005
+    source_path: data-src/janaf/Cu-005.txt
+    source_sha256: f7a575e44a41d314cc6532ca84b063e05201f7f7076e77d1e2dd80ad817e817d
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.24270156904822
+    max_residual_log10_K: 2.31824291721753e-05
+    source_url: https://janaf.nist.gov/tables/Cu-005.html
+    download_url: https://janaf.nist.gov/tables/Cu-005.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: CuO(g)
+    table_id: Cu-016
+    source_path: data-src/janaf/Cu-016.txt
+    source_sha256: 15637438933ffa986db21e3d865b3d13232c92505ff99be00f6b418cef1d6081
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.00190986477537
+    max_residual_log10_K: 1.93827330639584e-05
+    source_url: https://janaf.nist.gov/tables/Cu-016.html
+    download_url: https://janaf.nist.gov/tables/Cu-016.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Cu2(g)
+    table_id: Cu-018
+    source_path: data-src/janaf/Cu-018.txt
+    source_sha256: 197b846efd949d57cba468ee95cdcb60540efc830d6767fb4103796c3e0ba40a
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.7726430608891
+    max_residual_log10_K: 3.08638547511808e-05
+    source_url: https://janaf.nist.gov/tables/Cu-018.html
+    download_url: https://janaf.nist.gov/tables/Cu-018.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Sn(g)
+    table_id: NG-1845
+    source_path: data-src/nasa-glenn/NG-1845.json
+    source_sha256: 676fcb71f4498c9c8c0c1e7d82c1022d1f25091ce078a2517825feb4026f11a2
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 0.0238643722841516
+    max_residual_log10_K: 6.23261278164541e-07
+    source_locator: thermo.inp lines 9782-9792
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
         NASA CEA thermo.inp.
-      source_record: NASA Glenn PAC coefficient card NG-6016
-      card_citation: IP:Johansson,1967. Moore,1971. Gordon,1999.
+      source_record: NASA Glenn PAC coefficient card NG-1845
+      card_citation: Hf:Cox,1989. Moore,1971. Gordon,1999.
       upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-      source_locator: thermo.inp lines 6016-6026
+      source_locator: thermo.inp lines 9782-9792
+  - table: gas
+    species_name: SnO(g)
+    table_id: NG-1847
+    source_path: data-src/nasa-glenn/NG-1847.json
+    source_sha256: 999c3ae29c7ef1cd52996dfd620af4a8f0976be1dc77fd3eed1623ad09bd9f92
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 0.00604074349394068
+    max_residual_log10_K: 1.6606836890215e-07
+    source_locator: thermo.inp lines 9943-9950
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1847
+      card_citation: Gurvich,1991 pt1 p359 pt2 p307.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 9943-9950
+  - table: gas
+    species_name: SnO2(g)
+    table_id: NG-1849
+    source_path: data-src/nasa-glenn/NG-1849.json
+    source_sha256: 317e2b15de8b63c59deee970f6f500e04df35ba8027977de90ec1bedee47d87f
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 0.000272422679699957
+    max_residual_log10_K: 7.11481138196805e-09
+    source_locator: thermo.inp lines 9951-9958
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1849
+      card_citation: Gurvich,1991 pt1 p364 pt2 p309.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 9951-9958
+  - table: gas
+    species_name: Cs(g)
+    table_id: Cs-005
+    source_path: data-src/janaf/Cs-005.txt
+    source_sha256: 5872ade6306f453d12dc6380c58a693117f5020ba1bcaad6f3c016a5211412a5
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.717547340493184
+    max_residual_log10_K: 4.08753325925521e-05
+    source_url: https://janaf.nist.gov/tables/Cs-005.html
+    download_url: https://janaf.nist.gov/tables/Cs-005.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: CsO(g)
+    table_id: Cs-017
+    source_path: data-src/janaf/Cs-017.txt
+    source_sha256: 2e64b8bbec2eb536119e495ced13d3820833295c4c08015f8098ccf5f5a0db78
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.969446858973242
+    max_residual_log10_K: 5.17114528990016e-05
+    source_url: https://janaf.nist.gov/tables/Cs-017.html
+    download_url: https://janaf.nist.gov/tables/Cs-017.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Cs2O(g)
+    table_id: Cs-021
+    source_path: data-src/janaf/Cs-021.txt
+    source_sha256: 0a0f36f702ebb37e50b11a8f14fd92f63905667169c16bed8ad4d9147129720c
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.911271324614063
+    max_residual_log10_K: 7.28906845951079e-05
+    source_url: https://janaf.nist.gov/tables/Cs-021.html
+    download_url: https://janaf.nist.gov/tables/Cs-021.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Cu(g)
+    table_id: Cu-005
+    source_path: data-src/janaf/Cu-005.txt
+    source_sha256: f7a575e44a41d314cc6532ca84b063e05201f7f7076e77d1e2dd80ad817e817d
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.872423943947069
+    max_residual_log10_K: 4.47593376586895e-05
+    source_url: https://janaf.nist.gov/tables/Cu-005.html
+    download_url: https://janaf.nist.gov/tables/Cu-005.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: CuO(g)
+    table_id: Cu-016
+    source_path: data-src/janaf/Cu-016.txt
+    source_sha256: 15637438933ffa986db21e3d865b3d13232c92505ff99be00f6b418cef1d6081
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.872917323780712
+    max_residual_log10_K: 5.57386149621362e-05
+    source_url: https://janaf.nist.gov/tables/Cu-016.html
+    download_url: https://janaf.nist.gov/tables/Cu-016.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Cu2(g)
+    table_id: Cu-018
+    source_path: data-src/janaf/Cu-018.txt
+    source_sha256: 197b846efd949d57cba468ee95cdcb60540efc830d6767fb4103796c3e0ba40a
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.838675241044257
+    max_residual_log10_K: 4.47022731632889e-05
+    source_url: https://janaf.nist.gov/tables/Cu-018.html
+    download_url: https://janaf.nist.gov/tables/Cu-018.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Sn(g)
+    table_id: NG-1845
+    source_path: data-src/nasa-glenn/NG-1845.json
+    source_sha256: 676fcb71f4498c9c8c0c1e7d82c1022d1f25091ce078a2517825feb4026f11a2
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.334564985940233
+    max_residual_log10_K: 3.13115467475349e-05
+    source_locator: thermo.inp lines 9782-9792
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1845
+      card_citation: Hf:Cox,1989. Moore,1971. Gordon,1999.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 9782-9792
+  - table: gas
+    species_name: SnO(g)
+    table_id: NG-1847
+    source_path: data-src/nasa-glenn/NG-1847.json
+    source_sha256: 999c3ae29c7ef1cd52996dfd620af4a8f0976be1dc77fd3eed1623ad09bd9f92
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.166098397879978
+    max_residual_log10_K: 1.73518412353141e-05
+    source_locator: thermo.inp lines 9943-9950
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1847
+      card_citation: Gurvich,1991 pt1 p359 pt2 p307.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 9943-9950
+  - table: gas
+    species_name: SnO2(g)
+    table_id: NG-1849
+    source_path: data-src/nasa-glenn/NG-1849.json
+    source_sha256: 317e2b15de8b63c59deee970f6f500e04df35ba8027977de90ec1bedee47d87f
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.0722922548593488
+    max_residual_log10_K: 6.29347696341977e-06
+    source_locator: thermo.inp lines 9951-9958
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1849
+      card_citation: Gurvich,1991 pt1 p364 pt2 p309.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 9951-9958
+  - table: gas
+    species_name: Cs+(g)
+    table_id: Cs-006
+    source_path: data-src/janaf/Cs-006.txt
+    source_sha256: b2705d424836ca9fd585303e923b54ad1fca54d81f4db8c4e37c7a198595da3c
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.44639102282235
+    max_residual_log10_K: 3.59763043968049e-05
+    source_url: https://janaf.nist.gov/tables/Cs-006.html
+    download_url: https://janaf.nist.gov/tables/Cs-006.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Cs-(g)
+    table_id: Cs-007
+    source_path: data-src/janaf/Cs-007.txt
+    source_sha256: 6c574457a4addcc5518d4c42cb0cdfdac61da9c998afd7b52c4b934f8c7afd4a
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.65639652521349
+    max_residual_log10_K: 3.76172116820085e-05
+    source_url: https://janaf.nist.gov/tables/Cs-007.html
+    download_url: https://janaf.nist.gov/tables/Cs-007.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Cu+(g)
+    table_id: Cu-006
+    source_path: data-src/janaf/Cu-006.txt
+    source_sha256: 7699877b974780f89a88b8328d50996e4ab227c0f61c567daabe185fa8a8f9bf
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.13438054639846
+    max_residual_log10_K: 3.48545897257811e-05
+    source_url: https://janaf.nist.gov/tables/Cu-006.html
+    download_url: https://janaf.nist.gov/tables/Cu-006.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Cu-(g)
+    table_id: Cu-007
+    source_path: data-src/janaf/Cu-007.txt
+    source_sha256: 2e45a80821a53dcd1f581910e0d2e109c3fb7be0f6026498e45a1460755b2cd6
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.49907685420476
+    max_residual_log10_K: 3.07616256389208e-05
+    source_url: https://janaf.nist.gov/tables/Cu-007.html
+    download_url: https://janaf.nist.gov/tables/Cu-007.txt
+    retrieval_date: '2026-10-01'
+    user_agent: neutral-source-vendor/1.0
+  - table: gas
+    species_name: Sn+(g)
+    table_id: NG-1846
+    source_path: data-src/nasa-glenn/NG-1846.json
+    source_sha256: 56d079d5c12c4c0f120a6eb2ca1637d6df683417a12676ecbfaf2b6792cca312
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 0.0254993573762476
+    max_residual_log10_K: 6.65961873266993e-07
+    source_locator: thermo.inp lines 9793-9803
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1846
+      card_citation: Moore,1971. Gordon,1999.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 9793-9803
+  - table: gas
+    species_name: Cs2O+(g)
+    table_id: NG-1843
+    source_path: data-src/nasa-glenn/NG-1843.json
+    source_sha256: b6bc19299621afada6708b0c109c4215c91ab7521b8ec5c6b48250e24e133948
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.08200474642217e-05
+    max_residual_log10_K: 2.82585124471526e-10
+    source_locator: thermo.inp lines 4483-4490
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1843
+      card_citation: Gurvich,1982 pt1 p474 pt2 p497.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 4483-4490
+  - table: gas
+    species_name: Sn+(g)
+    table_id: NG-1846
+    source_path: data-src/nasa-glenn/NG-1846.json
+    source_sha256: 56d079d5c12c4c0f120a6eb2ca1637d6df683417a12676ecbfaf2b6792cca312
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.416106709977612
+    max_residual_log10_K: 3.70716675690867e-05
+    source_locator: thermo.inp lines 9793-9803
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1846
+      card_citation: Moore,1971. Gordon,1999.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 9793-9803
+  - table: gas
+    species_name: Cs2O+(g)
+    table_id: NG-1843
+    source_path: data-src/nasa-glenn/NG-1843.json
+    source_sha256: b6bc19299621afada6708b0c109c4215c91ab7521b8ec5c6b48250e24e133948
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.0046819195849821
+    max_residual_log10_K: 2.70223311743813e-07
+    source_locator: thermo.inp lines 4483-4490
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1843
+      card_citation: Gurvich,1982 pt1 p474 pt2 p497.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 4483-4490
+  - table: condensate
+    species_name: Cs2O(l)
+    table_id: NG-1842
+    source_path: data-src/nasa-glenn/NG-1842.json
+    source_sha256: eec36d1b2ba5d6a572b21f2aecfda0fa88cf0d6e8d86267952ff704503bc9b1a
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 2.3283064365387e-10
+    max_residual_log10_K: 9.35506722558994e-15
+    source_locator: thermo.inp lines 11988-11992
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1842
+      card_citation: Liquid. Gurvich,1982 pt1 p472 pt2 p495.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 11988-11992
+    note: The Cs JANAF index has no Cs2O(l) row. NASA NG-1842 supplies the liquid function
+      from 768 K; its printed 298 K formation enthalpy is the crystal anchor. Use the
+      integrated liquid H/S function and retain the NASA pure-liquid standard state
+      at 1 atm.
+  - table: condensate
+    species_name: Cs2O(l)
+    table_id: NG-1842
+    source_path: data-src/nasa-glenn/NG-1842.json
+    source_sha256: eec36d1b2ba5d6a572b21f2aecfda0fa88cf0d6e8d86267952ff704503bc9b1a
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_range_K:
+    - 1500
+    - 2000
+    max_residual_J_per_mol: 0.0531860247720033
+    max_residual_log10_K: 1.54338813899985e-06
+    source_locator: thermo.inp lines 11988-11992
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1842
+      card_citation: Liquid. Gurvich,1982 pt1 p472 pt2 p495.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 11988-11992
+    note: NASA NG-1842 liquid H/S functions are fitted directly, retaining the NASA
+      pure-liquid standard state at 1 atm.
+  - table: condensate
+    species_name: Cs2O(l)
+    table_id: NG-1842
+    source_path: data-src/nasa-glenn/NG-1842.json
+    source_sha256: eec36d1b2ba5d6a572b21f2aecfda0fa88cf0d6e8d86267952ff704503bc9b1a
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_range_K:
+    - 2000
+    - 3000
+    max_residual_J_per_mol: 0.906307993456721
+    max_residual_log10_K: 1.86002128656682e-05
+    source_locator: thermo.inp lines 11988-11992
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1842
+      card_citation: Liquid. Gurvich,1982 pt1 p472 pt2 p495.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 11988-11992
+    note: NASA NG-1842 liquid H/S functions are fitted directly, retaining the NASA
+      pure-liquid standard state at 1 atm.
+  - table: condensate
+    species_name: Cu2O(l)
+    table_id: Cu-020
+    source_path: data-src/janaf/Cu-020.txt
+    source_sha256: eb25c27d47bccc6bb22a4a4e41bcf9ec0380d87189f98e457b5afd414fb0415d
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 1.74622982740402e-10
+    max_residual_log10_K: 7.01630041919246e-15
+    source_url: https://janaf.nist.gov/tables/Cu-020.html
+    download_url: https://janaf.nist.gov/tables/Cu-020.txt
+    retrieval_date: '2026-10-01'
+    note: Cu-020 marks GLASS <--> LIQUID at 1000 K and CRYSTAL <--> LIQUID at 1516.700
+      K. This row fits the printed liquid-branch cells directly.
+  - table: condensate
+    species_name: Cu2O(l)
+    table_id: Cu-020
+    source_path: data-src/janaf/Cu-020.txt
+    source_sha256: eb25c27d47bccc6bb22a4a4e41bcf9ec0380d87189f98e457b5afd414fb0415d
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 1500
+    - 2000
+    max_residual_J_per_mol: 2.3283064365387e-10
+    max_residual_log10_K: 6.40083547014049e-15
+    source_url: https://janaf.nist.gov/tables/Cu-020.html
+    download_url: https://janaf.nist.gov/tables/Cu-020.txt
+    retrieval_date: '2026-10-01'
+  - table: condensate
+    species_name: Cu2O(l)
+    table_id: Cu-020
+    source_path: data-src/janaf/Cu-020.txt
+    source_sha256: eb25c27d47bccc6bb22a4a4e41bcf9ec0380d87189f98e457b5afd414fb0415d
+    authority: janaf_fitted
+    method: janaf_anchored_nasa_tail_fit
+    T_range_K:
+    - 2000
+    - 2500
+    max_residual_J_per_mol: 0.0026603655423969
+    max_residual_log10_K: 6.04176187504178e-08
+    tail_source_path: data-src/nasa-glenn/NG-1844.json
+    tail_source_sha256: 0d398489051c8e9fd12895c5f0897c5ba43ea7fd21a5237040eed445c6ddf960
+    tail_source_locator: thermo.inp lines 12155-12159
+    source_url: https://janaf.nist.gov/tables/Cu-020.html
+    download_url: https://janaf.nist.gov/tables/Cu-020.txt
+    retrieval_date: '2026-10-01'
+    source:
+      nasa_citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      nasa_record: NG-1844
+      nasa_card_citation: Liquid. King,1973 p60.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    note: The NASA H/S increments are anchored at the last complete Cu-020 liquid node,
+      2000 K. No 1 atm-to-1 bar pressure correction is made because no source liquid
+      molar volume is available.
+  - table: condensate
+    species_name: Cu2O(l)
+    table_id: Cu-020
+    source_path: data-src/janaf/Cu-020.txt
+    source_sha256: eb25c27d47bccc6bb22a4a4e41bcf9ec0380d87189f98e457b5afd414fb0415d
+    authority: janaf_fitted
+    method: janaf_anchored_nasa_tail_fit
+    T_range_K:
+    - 2500
+    - 3000
+    max_residual_J_per_mol: 0.00215796427801251
+    max_residual_log10_K: 4.02565308334042e-08
+    tail_source_path: data-src/nasa-glenn/NG-1844.json
+    tail_source_sha256: 0d398489051c8e9fd12895c5f0897c5ba43ea7fd21a5237040eed445c6ddf960
+    tail_source_locator: thermo.inp lines 12155-12159
+    source_url: https://janaf.nist.gov/tables/Cu-020.html
+    download_url: https://janaf.nist.gov/tables/Cu-020.txt
+    retrieval_date: '2026-10-01'
+    source:
+      nasa_citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      nasa_record: NG-1844
+      nasa_card_citation: Liquid. King,1973 p60.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    note: The NASA H/S increments are anchored at the last complete Cu-020 liquid node,
+      2000 K. No 1 atm-to-1 bar pressure correction is made because no source liquid
+      molar volume is available.
+  - table: condensate
+    species_name: SnO(l)
+    table_id: NG-1848
+    source_path: data-src/nasa-glenn/NG-1848.json
+    source_sha256: d2c1683b6ebacc80835c0ce55e8e74c01c1eecdcb32673290c9a8050a4d21b73
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_range_K:
+    - 1250
+    - 2000
+    max_residual_J_per_mol: 0.761759796645492
+    max_residual_log10_K: 2.34725760114653e-05
+    source_locator: thermo.inp lines 14618-14622
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1848
+      card_citation: Liquid. Gurvich,1991 pt1 p356 pt2 p306.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 14618-14622
+    note: NASA NG-1848 supplies the SnO(l) function from 1250 K and has the earlier
+      liquid start than NG-1850 SnO2(l). The caller activity uses the NASA pure-liquid
+      standard state at 1 atm.
+  - table: condensate
+    species_name: SnO(l)
+    table_id: NG-1848
+    source_path: data-src/nasa-glenn/NG-1848.json
+    source_sha256: d2c1683b6ebacc80835c0ce55e8e74c01c1eecdcb32673290c9a8050a4d21b73
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_range_K:
+    - 2000
+    - 3000
+    max_residual_J_per_mol: 0.894552850862965
+    max_residual_log10_K: 1.86664047576428e-05
+    source_locator: thermo.inp lines 14618-14622
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1848
+      card_citation: Liquid. Gurvich,1991 pt1 p356 pt2 p306.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 14618-14622
+    note: NASA NG-1848 supplies the SnO(l) function from 1250 K and has the earlier
+      liquid start than NG-1850 SnO2(l). The caller activity uses the NASA pure-liquid
+      standard state at 1 atm.
+  - table: condensate
+    species_name: SnO(l)
+    table_id: NG-1848
+    source_path: data-src/nasa-glenn/NG-1848.json
+    source_sha256: d2c1683b6ebacc80835c0ce55e8e74c01c1eecdcb32673290c9a8050a4d21b73
+    authority: nasa_glenn_fitted
+    method: generated_constant_cp_extrapolation_fit
+    T_range_K:
+    - 1200
+    - 1250
+    max_residual_J_per_mol: 3.16401128657162e-05
+    max_residual_log10_K: 1.36247125806271e-09
+    source_locator: thermo.inp lines 14618-14622
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
+        for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
+        NASA CEA thermo.inp.
+      source_record: NASA Glenn PAC coefficient card NG-1848
+      card_citation: Liquid. Gurvich,1991 pt1 p356 pt2 p306.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 14618-14622
+    extrapolation: true
+    source_data: false
+    T0_K: 1250
+    Cp_l_J_molK: 62.999640982906
+    note: The labelled constant-Cp continuation is anchored to NASA NG-1848's first
+      liquid node at 1250 K. It extends SnO(l) downward to 1200 K only below that card
+      boundary and retains the NASA pure-liquid standard state at 1 atm.
+
 source_comparisons:
-  basis: G_app(T) = dfH298 + [H(T)-H(298.15 K)] - T*S(T), in J/mol.
+  basis: >-
+    NASA cards use G_app(T)=H_card(T)-T*S_card(T), where H_card includes the
+    assigned elemental reference in b1. JANAF uses dfH298+[H(T)-H(298.15 K)]-T*S(T).
   temperatures_K:
   - 1800
   - 2000

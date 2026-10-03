@@ -22,52 +22,52 @@
   "cea_section": "products",
   "formula": "In",
   "phase": "gas",
-  "phase_as_published": "11",
-  "phase_flag": 11,
-  "phase_flag_as_published": "11",
+  "phase_as_published": "0",
+  "phase_flag": 0,
+  "phase_flag_as_published": " 0",
   "phase_normalization_rule": "G or CEA flag 0 maps to gas. Otherwise a recognized terminal state suffix keeps its published label; without one, NASA-7 S/L/C maps to cr/L/condensed and a positive CEA flag maps to condensed. Unrecognized suffixes stay verbatim in phase_as_published and are listed as ambiguities; card/suffix conflicts retain both published tokens. phase_ordinal is present only when same-formula non-gas records would otherwise share a phase label.",
   "n_intervals_declared": 3,
   "source_ref_code": "g 4/99",
   "composition": [
     {
-      "element_as_published": " I",
-      "count_as_published": "N  1.00",
-      "element": "I",
-      "count": null,
+      "element_as_published": "IN",
+      "count_as_published": "  1.00",
+      "element": "In",
+      "count": 1,
       "filler": false
     },
     {
       "element_as_published": "E ",
-      "count_as_published": " -1.00 ",
+      "count_as_published": " -1.00",
       "element": "E",
       "count": -1,
       "filler": false
     },
     {
       "element_as_published": "  ",
-      "count_as_published": " 0.00  ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
       "element_as_published": "  ",
-      "count_as_published": "0.00   ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
-      "element_as_published": " 0",
-      "count_as_published": ".00 0  ",
-      "element": "0",
-      "count": null,
-      "filler": false
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0,
+      "filler": true
     }
   ],
   "molecular_weight": {
-    "as_published": "4.8174514",
-    "value": 4.8174514
+    "as_published": "114.8174514",
+    "value": 114.8174514
   },
   "delta_f_H_298_15": {
     "as_published": "6996.425",
@@ -141,7 +141,7 @@
         },
         {
           "as_published": "-2.869063919D-08",
-          "value": -2.869063919e-8
+          "value": -2.869063919e-08
         },
         {
           "as_published": " 3.753870400D-11",
@@ -243,7 +243,7 @@
         },
         {
           "as_published": " 3.947714810D-08",
-          "value": 3.94771481e-8
+          "value": 3.94771481e-08
         },
         {
           "as_published": "-6.879243620D-12",
@@ -341,7 +341,7 @@
         },
         {
           "as_published": " 2.114636410D-07",
-          "value": 2.11463641e-7
+          "value": 2.11463641e-07
         },
         {
           "as_published": "-8.432019810D-12",
@@ -376,9 +376,9 @@
   "ambiguities": [],
   "source_locator": {
     "path": "data/literature/compilations/nasa-glenn/source/thermo.inp",
-    "name_line": 6016,
-    "header_line": 6017,
-    "end_line": 6026
+    "name_line": 6017,
+    "header_line": 6018,
+    "end_line": 6027
   },
   "source_text": {
     "name_line": "In+               IP:Johansson,1967. Moore,1971. Gordon,1999.",

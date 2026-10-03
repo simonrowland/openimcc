@@ -22,56 +22,56 @@
   "cea_section": "products",
   "formula": "Ge",
   "phase": "gas",
-  "phase_as_published": "7",
-  "phase_flag": 7,
-  "phase_flag_as_published": " 7",
+  "phase_as_published": "0",
+  "phase_flag": 0,
+  "phase_flag_as_published": " 0",
   "phase_normalization_rule": "G or CEA flag 0 maps to gas. Otherwise a recognized terminal state suffix keeps its published label; without one, NASA-7 S/L/C maps to cr/L/condensed and a positive CEA flag maps to condensed. Unrecognized suffixes stay verbatim in phase_as_published and are listed as ambiguities; card/suffix conflicts retain both published tokens. phase_ordinal is present only when same-formula non-gas records would otherwise share a phase label.",
   "n_intervals_declared": 3,
   "source_ref_code": "g 3/99",
   "composition": [
     {
-      "element_as_published": " G",
-      "count_as_published": "E  1.00",
-      "element": "G",
-      "count": null,
+      "element_as_published": "GE",
+      "count_as_published": "  1.00",
+      "element": "Ge",
+      "count": 1,
       "filler": false
     },
     {
       "element_as_published": "  ",
-      "count_as_published": "  0.00 ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
       "element_as_published": "  ",
-      "count_as_published": " 0.00  ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
       "element_as_published": "  ",
-      "count_as_published": "0.00   ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
-      "element_as_published": " 0",
-      "count_as_published": ".00 0  ",
-      "element": "0",
-      "count": null,
-      "filler": false
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0,
+      "filler": true
     }
   ],
   "molecular_weight": {
-    "as_published": "2.6400000",
-    "value": 2.64
+    "as_published": "72.6400000",
+    "value": 72.64
   },
   "delta_f_H_298_15": {
     "as_published": "367800.000",
-    "value": 367800,
+    "value": 367800.0,
     "units_as_published": "J/mol"
   },
   "intervals": [
@@ -145,11 +145,11 @@
         },
         {
           "as_published": "-8.518296550D-06",
-          "value": -0.00000851829655
+          "value": -8.51829655e-06
         },
         {
           "as_published": " 8.243824460D-09",
-          "value": 8.24382446e-9
+          "value": 8.24382446e-09
         },
         {
           "as_published": "-2.566167305D-12",
@@ -243,7 +243,7 @@
         },
         {
           "as_published": "-5.365627550D-07",
-          "value": -5.36562755e-7
+          "value": -5.36562755e-07
         },
         {
           "as_published": " 5.984958090D-11",
@@ -341,7 +341,7 @@
         },
         {
           "as_published": " 2.658628502D-07",
-          "value": 2.658628502e-7
+          "value": 2.658628502e-07
         },
         {
           "as_published": "-1.122785077D-11",
@@ -376,9 +376,9 @@
   "ambiguities": [],
   "source_locator": {
     "path": "data/literature/compilations/nasa-glenn/source/thermo.inp",
-    "name_line": 5186,
-    "header_line": 5187,
-    "end_line": 5196
+    "name_line": 5187,
+    "header_line": 5188,
+    "end_line": 5197
   },
   "source_text": {
     "name_line": "Ge                Hf:Gurvich,1991 pt1 p311. Sugar,1993. Gordon,1999.",

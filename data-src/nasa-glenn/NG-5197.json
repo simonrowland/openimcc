@@ -22,52 +22,52 @@
   "cea_section": "products",
   "formula": "Ge",
   "phase": "gas",
-  "phase_as_published": "7",
-  "phase_flag": 7,
-  "phase_flag_as_published": " 7",
+  "phase_as_published": "0",
+  "phase_flag": 0,
+  "phase_flag_as_published": " 0",
   "phase_normalization_rule": "G or CEA flag 0 maps to gas. Otherwise a recognized terminal state suffix keeps its published label; without one, NASA-7 S/L/C maps to cr/L/condensed and a positive CEA flag maps to condensed. Unrecognized suffixes stay verbatim in phase_as_published and are listed as ambiguities; card/suffix conflicts retain both published tokens. phase_ordinal is present only when same-formula non-gas records would otherwise share a phase label.",
   "n_intervals_declared": 3,
   "source_ref_code": "g 3/99",
   "composition": [
     {
-      "element_as_published": " G",
-      "count_as_published": "E  1.00",
-      "element": "G",
-      "count": null,
+      "element_as_published": "GE",
+      "count_as_published": "  1.00",
+      "element": "Ge",
+      "count": 1,
       "filler": false
     },
     {
       "element_as_published": "E ",
-      "count_as_published": " -1.00 ",
+      "count_as_published": " -1.00",
       "element": "E",
       "count": -1,
       "filler": false
     },
     {
       "element_as_published": "  ",
-      "count_as_published": " 0.00  ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
       "element_as_published": "  ",
-      "count_as_published": "0.00   ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
-      "element_as_published": " 0",
-      "count_as_published": ".00 0  ",
-      "element": "0",
-      "count": null,
-      "filler": false
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0,
+      "filler": true
     }
   ],
   "molecular_weight": {
-    "as_published": "2.6394514",
-    "value": 2.6394514
+    "as_published": "72.6394514",
+    "value": 72.6394514
   },
   "delta_f_H_298_15": {
     "as_published": "1134984.385",
@@ -145,11 +145,11 @@
         },
         {
           "as_published": "-3.351367260D-05",
-          "value": -0.0000335136726
+          "value": -3.35136726e-05
         },
         {
           "as_published": " 1.431059219D-08",
-          "value": 1.431059219e-8
+          "value": 1.431059219e-08
         },
         {
           "as_published": "-2.236976459D-12",
@@ -243,7 +243,7 @@
         },
         {
           "as_published": "-1.386040003D-07",
-          "value": -1.386040003e-7
+          "value": -1.386040003e-07
         },
         {
           "as_published": " 1.155945775D-11",
@@ -376,9 +376,9 @@
   "ambiguities": [],
   "source_locator": {
     "path": "data/literature/compilations/nasa-glenn/source/thermo.inp",
-    "name_line": 5197,
-    "header_line": 5198,
-    "end_line": 5207
+    "name_line": 5198,
+    "header_line": 5199,
+    "end_line": 5208
   },
   "source_text": {
     "name_line": "Ge+               Sugar,1993. Gordon,1999.",

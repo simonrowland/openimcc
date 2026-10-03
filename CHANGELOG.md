@@ -6,10 +6,11 @@
   GeO2, B2O3 and In2O3 parent activities. JANAF remains selected where it has
   tables, including the directly fitted B2O3 liquid branch; NASA CEA supplies
   the remaining gas and liquid functions. Labelled constant-Cp continuations
-  extend the Ga2O3, GeO2 and In2O3 parents to 1200 K. Added Ga+, Ge+, B+, In+,
+  extend the Ga2O3, GeO2 and In2O3 parents to 1200 K. Added Ga+, Ge+ and B+,
   Ga−, B−, BO− and BO2− to opt-in charge closure. Source Gibbs comparisons,
   row hashes, locators and fit residuals are recorded in the provenance
-  ledger. All new parent-liquid intervals pass the 10 J/mol source-node gate.
+  ledger. Direct NASA parent-liquid fits pass the 10 J/mol source-node gate;
+  continuation fit residuals are recorded separately.
   Activities remain caller-supplied, and default gas outputs are unchanged.
   The source-based ion screen passes for Ga and Ge; B exceeds the C3 threshold.
   The published NASA In+ card gives an anomalously low formation enthalpy and
@@ -23,6 +24,9 @@
   Cs exceeds the recorded C3 ion-share limit at the caller activity screen;
   Cu and Sn remain below it. Default neutral results and existing coefficient
   rows are unchanged.
+  The published NASA In+ card is declined after its fitted Kion/Saha ratios
+  are 1.510e28 at 1500 K and 9.143e16 at 2500 K. The source card is retained
+  without adjustment, and neutral In channels remain available.
 - Switched default SiO2(l), Al2O3(l), MgO(l), and CaO(l) parent rows to the
   generated JANAF fits and labelled constant-Cp liquid continuations through
   1200 K. The former LAM1987 default rows, including SiO2(cr), are preserved

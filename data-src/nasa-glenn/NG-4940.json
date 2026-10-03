@@ -22,56 +22,56 @@
   "cea_section": "products",
   "formula": "Ga",
   "phase": "gas",
-  "phase_as_published": "6",
-  "phase_flag": 6,
-  "phase_flag_as_published": " 6",
+  "phase_as_published": "0",
+  "phase_flag": 0,
+  "phase_flag_as_published": " 0",
   "phase_normalization_rule": "G or CEA flag 0 maps to gas. Otherwise a recognized terminal state suffix keeps its published label; without one, NASA-7 S/L/C maps to cr/L/condensed and a positive CEA flag maps to condensed. Unrecognized suffixes stay verbatim in phase_as_published and are listed as ambiguities; card/suffix conflicts retain both published tokens. phase_ordinal is present only when same-formula non-gas records would otherwise share a phase label.",
   "n_intervals_declared": 3,
   "source_ref_code": "g12/98",
   "composition": [
     {
-      "element_as_published": " G",
-      "count_as_published": "A  1.00",
-      "element": "G",
-      "count": null,
+      "element_as_published": "GA",
+      "count_as_published": "  1.00",
+      "element": "Ga",
+      "count": 1,
       "filler": false
     },
     {
       "element_as_published": "  ",
-      "count_as_published": "  0.00 ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
       "element_as_published": "  ",
-      "count_as_published": " 0.00  ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
       "element_as_published": "  ",
-      "count_as_published": "0.00   ",
+      "count_as_published": "  0.00",
       "element": null,
       "count": 0,
       "filler": true
     },
     {
-      "element_as_published": " 0",
-      "count_as_published": ".00 0  ",
-      "element": "0",
-      "count": null,
-      "filler": false
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0,
+      "filler": true
     }
   ],
   "molecular_weight": {
-    "as_published": "9.7230000",
-    "value": 9.723
+    "as_published": "69.7230000",
+    "value": 69.723
   },
   "delta_f_H_298_15": {
     "as_published": "272000.000",
-    "value": 272000,
+    "value": 272000.0,
     "units_as_published": "J/mol"
   },
   "intervals": [
@@ -145,11 +145,11 @@
         },
         {
           "as_published": " 1.932327565D-05",
-          "value": 0.00001932327565
+          "value": 1.932327565e-05
         },
         {
           "as_published": "-7.316311870D-09",
-          "value": -7.31631187e-9
+          "value": -7.31631187e-09
         },
         {
           "as_published": " 8.857387735D-13",
@@ -243,7 +243,7 @@
         },
         {
           "as_published": "-5.610827310D-08",
-          "value": -5.61082731e-8
+          "value": -5.61082731e-08
         },
         {
           "as_published": " 2.682832239D-12",
@@ -341,7 +341,7 @@
         },
         {
           "as_published": "-1.250892936D-07",
-          "value": -1.250892936e-7
+          "value": -1.250892936e-07
         },
         {
           "as_published": " 3.820116110D-12",
@@ -376,9 +376,9 @@
   "ambiguities": [],
   "source_locator": {
     "path": "data/literature/compilations/nasa-glenn/source/thermo.inp",
-    "name_line": 4940,
-    "header_line": 4941,
-    "end_line": 4950
+    "name_line": 4941,
+    "header_line": 4942,
+    "end_line": 4951
   },
   "source_text": {
     "name_line": "Ga                Hf:Gurvich,1996a. Moore,1971. Johansson,1967. Gordon,1999.",

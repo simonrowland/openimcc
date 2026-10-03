@@ -373,13 +373,13 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     computed = {
         element: status["c3_ion_bound"]
         for element, status in ELEMENT_STATUS.items()
-        if status.get("c3_ion_bound", {}).get("status") != "not computed"
+        if status.get("c3_ion_bound", {}).get("status")
+        not in {"not computed", "declined"}
         and "c3_ion_bound" in status
     }
     assert set(computed) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
-        "Li", "Rb", "Pb", "Ga", "Ge", "B", "In",
-        "Li", "Rb", "Pb", "Cs", "Cu", "Sn",
+        "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
     }
     caller_parent_oxides = {
         "Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2",
@@ -645,9 +645,8 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Ga": ("Ga+", "Ga-"),
         "Ge": ("Ge+",),
         "B": ("B+", "B-", "BO-", "BO2-"),
-        "In": ("In+",),
     }
-    for element in new_trace_elements:
+    for element in ("Ga", "Ge", "B"):
         current = {"max_ratio": -1.0, "isolated_bound": 0.0}
         for temperature in TEMPERATURES_K:
             activities = dict(activities_by_temperature[temperature])
@@ -763,7 +762,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     }
     assert set(measured) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
-        "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In",
+        "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
     }
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
@@ -786,6 +785,10 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         assert ELEMENT_STATUS[element]["criteria"]["C3"] is (
             result["max_ratio"] < 1.0e-4
         )
+    declined_in = ELEMENT_STATUS["In"]["c3_ion_bound"]
+    assert declined_in["status"] == "declined"
+    assert ELEMENT_STATUS["In"]["criteria"]["C3"] is False
+    assert declined_in["source_tables"]["cation"] == "NG-6016"
     source_terms_3000 = measured["Si"]["electron_source_terms_3000K"]
     assert set(
         sorted(source_terms_3000, key=source_terms_3000.get, reverse=True)[:2]
@@ -1191,6 +1194,8 @@ def test_roadmap_status_table_matches_element_status() -> None:
         ]
         if c3.get("status") == "not computed":
             criteria[2] = c3["reason"]
+        elif c3.get("status") == "declined":
+            criteria[2] = "declined"
         assert values == [
             status["status"],
             *criteria,
