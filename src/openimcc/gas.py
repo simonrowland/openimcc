@@ -1656,59 +1656,120 @@ def _normalise_interval_bounds(
 
 
 def _validate_interval_arrays(
-    t_mins: np.ndarray,
-    t_maxs: np.ndarray,
+    rows: "pd.DataFrame",
     species: str,
     table_name: str,
     table_path: Path,
+    *,
+    validate_intervals: bool = True,
+    validate_coefficients: bool = True,
+    evaluated_row: "pd.Series | None" = None,
 ) -> None:
-    """Validate float64 interval arrays for one species."""
-    if t_mins.dtype != np.dtype("float64"):
-        raise ImccGasInvalidIntervalError(
-            f"{table_name} database {table_path} requires float64 T_min values"
+    """Validate interval bounds and evaluated numeric values for one species."""
+    if validate_intervals:
+        t_mins = rows["T_min"].to_numpy(copy=False)
+        t_maxs = rows["T_max"].to_numpy(copy=False)
+        if t_mins.dtype != np.dtype("float64"):
+            raise ImccGasInvalidIntervalError(
+                f"{table_name} database {table_path} requires float64 T_min values"
+            )
+        if t_maxs.dtype != np.dtype("float64"):
+            raise ImccGasInvalidIntervalError(
+                f"{table_name} database {table_path} requires float64 T_max values"
+            )
+        if not np.isfinite(t_mins).all():
+            row_index = int(np.flatnonzero(~np.isfinite(t_mins))[0])
+            raise ImccGasInvalidIntervalError(
+                f"{table_name} database {table_path} has non-finite or non-numeric "
+                f"T_min for {species!r}: {t_mins[row_index]!r}"
+            )
+        if not np.isfinite(t_maxs).all():
+            row_index = int(np.flatnonzero(~np.isfinite(t_maxs))[0])
+            raise ImccGasInvalidIntervalError(
+                f"{table_name} database {table_path} has non-finite or non-numeric "
+                f"T_max for {species!r}: {t_maxs[row_index]!r}"
+            )
+        if not np.all(t_mins <= t_maxs):
+            row_index = int(np.flatnonzero(t_mins > t_maxs)[0])
+            raise ImccGasInvalidIntervalError(
+                f"{table_name} database {table_path} has T_min greater than T_max "
+                f"for {species!r}: [{t_mins[row_index]}, {t_maxs[row_index]}] K"
+            )
+        if t_mins.size > 1:
+            unique_starts, start_counts = np.unique(t_mins, return_counts=True)
+            if start_counts.size != t_mins.size:
+                start = unique_starts[np.flatnonzero(start_counts > 1)[0]]
+                raise ImccGasDuplicateIntervalError(
+                    f"{table_name} database {table_path} has duplicate interval start "
+                    f"for {species!r} at T_min={start!r} K"
+                )
+    if validate_coefficients:
+        evaluated_columns = (
+            tuple("ABCDEFGH")
+            if "A" in rows.columns
+            else ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
         )
-    if t_maxs.dtype != np.dtype("float64"):
-        raise ImccGasInvalidIntervalError(
-            f"{table_name} database {table_path} requires float64 T_max values"
+        coefficient_columns = tuple(
+            column for column in evaluated_columns if column in rows.columns
         )
-    if not np.isfinite(t_mins).all():
-        row_index = int(np.flatnonzero(~np.isfinite(t_mins))[0])
-        raise ImccGasInvalidIntervalError(
-            f"{table_name} database {table_path} has non-finite or non-numeric "
-            f"T_min for {species!r}: {t_mins[row_index]!r}"
+        # The source's Shomate H column is an integer zero in the packaged
+        # table; species_thermo explicitly converts it to float before use.
+        integer_h = (
+            "H" in rows.columns
+            and rows["H"].dtype == np.dtype("int64")
         )
-    if not np.isfinite(t_maxs).all():
-        row_index = int(np.flatnonzero(~np.isfinite(t_maxs))[0])
-        raise ImccGasInvalidIntervalError(
-            f"{table_name} database {table_path} has non-finite or non-numeric "
-            f"T_max for {species!r}: {t_maxs[row_index]!r}"
-        )
-    if not np.all(t_mins <= t_maxs):
-        row_index = int(np.flatnonzero(t_mins > t_maxs)[0])
-        raise ImccGasInvalidIntervalError(
-            f"{table_name} database {table_path} has T_min greater than T_max "
-            f"for {species!r}: [{t_mins[row_index]}, {t_maxs[row_index]}] K"
-        )
-    if t_mins.size > 1:
-        unique_starts, start_counts = np.unique(t_mins, return_counts=True)
-    else:
-        return
-    if start_counts.size != t_mins.size:
-        start = unique_starts[np.flatnonzero(start_counts > 1)[0]]
-        raise ImccGasDuplicateIntervalError(
-            f"{table_name} database {table_path} has duplicate interval start "
-            f"for {species!r} at T_min={start!r} K"
-        )
+        if evaluated_row is not None:
+            for column in coefficient_columns:
+                value = evaluated_row[column]
+                scalar_dtype = type(value)
+                if scalar_dtype is not np.float64 and not (
+                    column == "H" and integer_h and scalar_dtype is np.int64
+                ):
+                    raise ImccGasInvalidIntervalError(
+                        f"{table_name} database {table_path} requires float64 "
+                        f"{column} values"
+                    )
+                if not math.isfinite(float(value)):
+                    raise ImccGasInvalidIntervalError(
+                        f"{table_name} database {table_path} has non-finite "
+                        f"{column} for {species!r}: {value!r}"
+                    )
+        else:
+            coefficient_dtypes = rows.dtypes
+            for column in coefficient_columns:
+                dtype = coefficient_dtypes[column]
+                if dtype != np.dtype("float64") and not (
+                    column == "H" and integer_h
+                ):
+                    raise ImccGasInvalidIntervalError(
+                        f"{table_name} database {table_path} requires float64 "
+                        f"{column} values"
+                    )
+            for column in coefficient_columns:
+                if column == "H" and integer_h:
+                    continue
+                values = rows[column].to_numpy(copy=False)
+                if not np.isfinite(values).all():
+                    row_index = int(np.flatnonzero(~np.isfinite(values))[0])
+                    raise ImccGasInvalidIntervalError(
+                        f"{table_name} database {table_path} has non-finite "
+                        f"{column} for {species!r}: {values[row_index]!r}"
+                    )
 
 
 def _validate_interval_table(
     table: "pd.DataFrame", table_name: str, table_path: Path
 ) -> None:
     """Apply array validation to each species in a parsed interval table."""
+    labels = table.index.to_numpy(dtype=object, copy=False)
+    if any(not isinstance(label, str) or not label.strip() for label in labels):
+        raise ImccGasInvalidIntervalError(
+            f"{table_name} database {table_path} has a missing, empty, or "
+            "non-string species label"
+        )
     for species, rows in table.groupby(level=0, sort=False):
         _validate_interval_arrays(
-            rows["T_min"].to_numpy(copy=False),
-            rows["T_max"].to_numpy(copy=False),
+            rows,
             species,
             table_name,
             table_path,
@@ -1945,11 +2006,15 @@ def _nearest_interval_row(
         raise ImccGasSpeciesNotFoundError(
             f"no JANAF G(T) row for gas species {species!r}"
         )
+    _validate_interval_arrays(
+        rows,
+        species,
+        "gas/condensate",
+        Path("<in-memory>"),
+        validate_coefficients=False,
+    )
     t_mins = rows["T_min"].to_numpy(copy=False)
     t_maxs = rows["T_max"].to_numpy(copy=False)
-    _validate_interval_arrays(
-        t_mins, t_maxs, species, "gas/condensate", Path("<in-memory>")
-    )
     # Largest T_min that is <= T; below every T_min, the lowest interval.
     # Masking with -inf rather than multiplying by the boolean mask keeps a
     # valid row whose T_min is 0 from losing to an invalid row (0 * False == 0).
@@ -1964,6 +2029,14 @@ def _nearest_interval_row(
             f"T={T} K outside declared G(T) interval for {species!r} "
             f"[{selected['T_min']}, {selected['T_max']}] K"
         )
+    _validate_interval_arrays(
+        rows,
+        species,
+        "gas/condensate",
+        Path("<in-memory>"),
+        validate_intervals=False,
+        evaluated_row=selected,
+    )
     return selected
 
 
