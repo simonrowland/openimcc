@@ -374,15 +374,36 @@ TRACE_NASA_CONDENSATE_SOURCES = (
 # after the 2100 K GLASS <--> LIQUID marker, liquid Cp is 62.760 from 2200 K
 # through 3000 K. The crystal/liquid marker is at 3200 K, outside this fit.
 # Constant-Cp supercooled-liquid continuations for default JANAF-fitted rows.
-# T0 is the first complete liquid node; T_max meets the existing row's T_min.
+# T0 is the first complete liquid node; the last segment meets the high row.
 SUPERCOOLED_LIQUID_SOURCES = (
-    ("TiO2(l)", "O-044", "Ti", 1, 2, 1500.0, 1500.0),
-    ("Cr2O3(l)", "Cr-015", "Cr", 2, 3, 1900.0, 1900.0),
-    ("V2O3(l)", "O-063", "V", 2, 3, 1700.0, 1700.0),
-    ("SiO2(l)", "O-038", "Si", 1, 2, 1800.0, 1800.0),
-    ("Al2O3(l)", "Al-100", "Al", 2, 3, 2500.0, 2500.0),
-    ("MgO(l)", "Mg-009", "Mg", 1, 1, 2200.0, 2200.0),
-    ("CaO(l)", "Ca-028", "Ca", 1, 1, 2200.0, 2200.0),
+    (
+        "TiO2(l)", "O-044", "Ti", 1, 2, 1500.0,
+        ((1200.0, 1500.0),),
+    ),
+    (
+        "Cr2O3(l)", "Cr-015", "Cr", 2, 3, 1900.0,
+        ((1200.0, 1500.0), (1500.0, 1900.0)),
+    ),
+    (
+        "V2O3(l)", "O-063", "V", 2, 3, 1700.0,
+        ((1200.0, 1700.0),),
+    ),
+    (
+        "SiO2(l)", "O-038", "Si", 1, 2, 1800.0,
+        ((1200.0, 1500.0), (1500.0, 1800.0)),
+    ),
+    (
+        "Al2O3(l)", "Al-100", "Al", 2, 3, 2500.0,
+        ((1200.0, 1500.0), (1500.0, 2000.0), (2000.0, 2500.0)),
+    ),
+    (
+        "MgO(l)", "Mg-009", "Mg", 1, 1, 2200.0,
+        ((1200.0, 1500.0), (1500.0, 1800.0), (1800.0, 2200.0)),
+    ),
+    (
+        "CaO(l)", "Ca-028", "Ca", 1, 1, 2200.0,
+        ((1200.0, 1500.0), (1500.0, 1800.0), (1800.0, 2200.0)),
+    ),
 )
 NASA_SUPERCOOLED_LIQUID_SOURCES = (
     ("SnO(l)", "NG-1848", "Sn", 1, 1, 1250.0, 1250.0),
@@ -1703,6 +1724,7 @@ def _fit_supercooled_liquid_row(
     T0: float,
     runtime_t_max: float,
     *,
+    runtime_t_min: float = 1200.0,
     nasa_source_dir: Path | None = None,
 ) -> dict[str, str]:
     """Fit the generated constant-Cp continuation to the condensate form.
@@ -1819,20 +1841,38 @@ def _fit_supercooled_liquid_row(
         raise ValueError(f"{table_id} has no complete 298.15 K formation enthalpy")
 
     use_cp_constrained_fit = species_name in {
-        "SnO(l)", "GeO2(l)", "Ga2O3(l)", "In2O3(l)"
+        "TiO2(l)",
+        "Cr2O3(l)",
+        "V2O3(l)",
+        "SiO2(l)",
+        "Al2O3(l)",
+        "MgO(l)",
+        "CaO(l)",
+        "SnO(l)",
+        "GeO2(l)",
+        "Ga2O3(l)",
+        "In2O3(l)",
     }
     if use_cp_constrained_fit:
-        # Fit the implied Cp directly and constrain G and S at T0. The quartic
-        # basis has four thermodynamic coefficients: direct Cp fitting preserves
-        # the constant-Cp continuation shape across the short SnO seam.
+        # Premise: each runtime interval follows the same analytic constant-Cp
+        # continuation, and the shared upper-temperature seam must reproduce
+        # its G and S. Algebra: set P(tau)=phi/R and P+tau*P'=S/R there while
+        # least-squares fitting Cp/R = 2*tau*P' + tau**2*P''. Unit check: P,
+        # Cp/R and both constraints are dimensionless. Sanity: G and S meet
+        # the analytic continuation at the interval's upper endpoint.
         fit_temperatures = np.linspace(
-            1200.0, runtime_t_max, max(5, int(runtime_t_max - 1200.0) + 1)
+            runtime_t_min,
+            runtime_t_max,
+            max(5, int(runtime_t_max - runtime_t_min) + 1),
         ).tolist()
     else:
         # Keep the established fit nodes for other continuation rows.
         fit_temperatures = sorted(
-            {1200.0, runtime_t_max}
-            | set(float(T) for T in range(1200, int(runtime_t_max) + 1, 100))
+            {runtime_t_min, runtime_t_max}
+            | set(
+                float(T)
+                for T in range(int(runtime_t_min), int(runtime_t_max) + 1, 100)
+            )
         )
 
     def phi(temperature: float) -> float:
@@ -1846,23 +1886,33 @@ def _fit_supercooled_liquid_row(
         heat_capacity_design = np.column_stack(
             (2.0 * tau, 6.0 * tau**2, 12.0 * tau**3, 20.0 * tau**4)
         )
-        anchor_tau = T0 / 1000.0
+        anchor_temperature = runtime_t_max
+        anchor_tau = anchor_temperature / 1000.0
+        anchor_entropy = entropy_0 + cp * math.log(anchor_temperature / T0)
         anchor_design = np.asarray(
             [
                 [1.0, anchor_tau, anchor_tau**2, anchor_tau**3, anchor_tau**4],
-                [1.0, 2.0 * anchor_tau, 3.0 * anchor_tau**2,
-                 4.0 * anchor_tau**3, 5.0 * anchor_tau**4],
+                [
+                    1.0,
+                    2.0 * anchor_tau,
+                    3.0 * anchor_tau**2,
+                    4.0 * anchor_tau**3,
+                    5.0 * anchor_tau**4,
+                ],
             ]
         )
-        anchor_phi = phi(T0) / R_J_MOL_K
+        anchor_phi = phi(anchor_temperature) / R_J_MOL_K
         constraints = anchor_design[1, 1:] - anchor_design[0, 1:]
-        constraint_value = entropy_0 / R_J_MOL_K - anchor_phi
+        constraint_value = anchor_entropy / R_J_MOL_K - anchor_phi
         # G=-RT*P gives S/R=P+tau*P' and Cp/R=2*tau*P'+tau^2*P''.
-        # These dimensionless constraints fix G and S at the NASA anchor.
+        # The constraints match Gibbs energy and entropy at this interval seam.
         normal = heat_capacity_design.T @ heat_capacity_design
         target = heat_capacity_design.T @ np.full(len(tau), cp / R_J_MOL_K)
         kkt = np.block(
-            [[normal, constraints[:, None]], [constraints[None, :], np.zeros((1, 1))]]
+            [
+                [normal, constraints[:, None]],
+                [constraints[None, :], np.zeros((1, 1))],
+            ]
         )
         coefficients_tail = np.linalg.solve(
             kkt, np.concatenate((target, [constraint_value]))
@@ -1878,7 +1928,11 @@ def _fit_supercooled_liquid_row(
             design, np.asarray([phi(T) for T in fit_temperatures]) / R_J_MOL_K,
             rcond=None,
         )[0]
-    sample_temperatures = np.linspace(1200.0, runtime_t_max, int(runtime_t_max - 1200) + 1)
+    sample_temperatures = np.linspace(
+        runtime_t_min,
+        runtime_t_max,
+        max(2, int(runtime_t_max - runtime_t_min) + 1),
+    )
     sample_tau = sample_temperatures / 1000.0
     sample_design = np.column_stack(
         (np.ones_like(sample_tau), sample_tau, sample_tau**2, sample_tau**3, sample_tau**4)
@@ -1916,7 +1970,7 @@ def _fit_supercooled_liquid_row(
         "cation": cation,
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
-        "T_min": "1200",
+        "T_min": number(runtime_t_min),
         "T_max": number(runtime_t_max),
         "dH298_R": number(float(reference) / R_J_MOL_K),
         "dG_A": number(A),
@@ -2116,10 +2170,29 @@ def build_condensate_rows(
             runtime_t_max=1500.0,
         )
     )
-    rows.extend(
-        _fit_supercooled_liquid_row(source_dir, *source)
-        for source in SUPERCOOLED_LIQUID_SOURCES
-    )
+    for (
+        species_name,
+        table_id,
+        cation,
+        cat_num,
+        oxy_num,
+        T0,
+        intervals,
+    ) in SUPERCOOLED_LIQUID_SOURCES:
+        for runtime_t_min, runtime_t_max in intervals:
+            rows.append(
+                _fit_supercooled_liquid_row(
+                    source_dir,
+                    species_name,
+                    table_id,
+                    cation,
+                    cat_num,
+                    oxy_num,
+                    T0,
+                    runtime_t_max,
+                    runtime_t_min=runtime_t_min,
+                )
+            )
     rows.extend(
         _fit_supercooled_liquid_row(
             source_dir, *source, nasa_source_dir=nasa_source_dir

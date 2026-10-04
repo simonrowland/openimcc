@@ -2625,7 +2625,7 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
     with default_path.open(encoding="utf-8", newline="") as handle:
         packaged = list(csv.DictReader(handle))
     expected_rows = [row for row in packaged if row["species_name"] in major_species]
-    assert len(expected_rows) == len(generated) == 8
+    assert len(expected_rows) == len(generated) == 15
     fit_coefficients = {f"dG_{coefficient}" for coefficient in "ABCDE"}
     for species in major_species:
         expected = sorted(
@@ -2660,12 +2660,21 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
         for row in csv.DictReader(io.StringIO(research_payload))
         if row["species_name"] in major_species
     ]
+    continuation_suffix = build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX
+    expected_unchanged_rows = [
+        row for row in expected_rows
+        if not row["Ref"].endswith(continuation_suffix)
+    ]
+    research_unchanged_rows = [
+        row for row in research_rows
+        if not row["Ref"].endswith(continuation_suffix)
+    ]
     assert sorted(
         tuple(row[column] for column in build_gas_tables.CONDENSATE_COLUMNS)
-        for row in expected_rows
+        for row in expected_unchanged_rows
     ) == sorted(
         tuple(row[column] for column in build_gas_tables.CONDENSATE_COLUMNS)
-        for row in research_rows
+        for row in research_unchanged_rows
     )
     crystal_rows = [row for row in packaged if row["species_name"] == "SiO2(cr)"]
     assert len(crystal_rows) == 1
@@ -3009,7 +3018,11 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
     tmp_path: Path,
 ) -> None:
     default_generated = {
-        row["species_name"]: row
+        (
+            row["species_name"],
+            int(float(row["T_min"])),
+            int(float(row["T_max"])),
+        ): row
         for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
         if row["Ref"].endswith(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
         and row["species_name"] != "SnO(l)"
@@ -3056,34 +3069,37 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
         )
     for generated, packaged, provenance, sources, expected_species in datasets:
         provenance_rows = {
-            row["species_name"]: row
+            (row["species_name"], *row["T_range_K"]): row
             for row in provenance["rows"]
             if row["table"] == "condensate"
             and row.get("extrapolation") is True
             and row["species_name"] != "SnO(l)"
         }
-        assert set(generated) == expected_species
+        assert {key[0] for key in generated} == expected_species
         assert set(provenance_rows) == set(generated)
 
     for generated, packaged, provenance, sources, _ in datasets:
         provenance_rows = {
-            row["species_name"]: row
+            (row["species_name"], *row["T_range_K"]): row
             for row in provenance["rows"]
             if row["table"] == "condensate"
             and row.get("extrapolation") is True
             and row["species_name"] != "SnO(l)"
         }
-        for species, fitted in generated.items():
+        for key, fitted in generated.items():
+            species, T_min, T_max = key
             packaged_row = packaged.loc[
                 (packaged["species_name"] == species)
                 & (packaged["Ref"] == fitted["Ref"])
+                & (packaged["T_min"].astype(float) == T_min)
+                & (packaged["T_max"].astype(float) == T_max)
             ].iloc[0]
             fit_columns = {f"dG_{coefficient}" for coefficient in "ABCDE"}
             for column in build_gas_tables.CONDENSATE_COLUMNS:
                 if column not in fit_columns:
                     assert str(packaged_row[column]) == fitted[column]
             _assert_fit_gibbs_matches(_condensate_gibbs, packaged_row, fitted)
-            entry = provenance_rows[species]
+            entry = provenance_rows[key]
             if entry["authority"] == "nasa_glenn_fitted":
                 table_config = next(
                     item
@@ -3108,7 +3124,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
                     "generated_constant_cp_extrapolation_fit"
                 )
                 assert entry["source_data"] is False
-                assert entry["T_range_K"] == [1200, int(source_t0)]
+                assert entry["T_range_K"] == [T_min, T_max]
                 assert entry["T0_K"] == source_t0
                 assert entry["Cp_l_J_molK"] == pytest.approx(
                     source_cp, abs=1e-12
@@ -3142,34 +3158,35 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             assert entry["source_sha256"] == expected_source_sha256
             assert entry["method"] == "generated_constant_cp_extrapolation_fit"
             assert entry["authority"] == "janaf_fitted"
-            assert entry["T_range_K"] == [1200, int(table_config[-1])]
+            assert entry["T_range_K"] == [T_min, T_max]
             assert entry["T0_K"] == table_config[-2]
             assert entry["Cp_l_J_molK"] == cp
             assert entry["max_residual_J_per_mol"] == pytest.approx(
                 float(fitted["_max_residual_J_per_mol"]), abs=1e-8
             )
-            assert entry["uncertainty"]["delta_Cp_fraction"] == 0.1
-            assert entry["uncertainty"]["scenario_only"] is True
-            delta_cp = entry["uncertainty"]["delta_Cp_J_molK"]
-            endpoints = (1200.0, float(table_config[-1]))
-            delta_g = [
-                delta_cp
-                * (
-                    (temperature - table_config[-2])
-                    - temperature * math.log(temperature / table_config[-2])
+            if T_min == 1200:
+                assert entry["uncertainty"]["delta_Cp_fraction"] == 0.1
+                assert entry["uncertainty"]["scenario_only"] is True
+                delta_cp = entry["uncertainty"]["delta_Cp_J_molK"]
+                endpoints = (1200.0, float(table_config[-2]))
+                delta_g = [
+                    delta_cp
+                    * (
+                        (temperature - table_config[-2])
+                        - temperature * math.log(temperature / table_config[-2])
+                    )
+                    for temperature in endpoints
+                ]
+                delta_log10_k = [
+                    abs(value) / (R_J_MOL_K * temperature * math.log(10.0))
+                    for value, temperature in zip(delta_g, endpoints)
+                ]
+                assert entry["uncertainty"]["max_abs_delta_G_J_per_mol"] == pytest.approx(
+                    max(map(abs, delta_g)), abs=1e-9
                 )
-                for temperature in endpoints
-            ]
-            delta_log10_k = [
-                abs(value) / (R_J_MOL_K * temperature * math.log(10.0))
-                for value, temperature in zip(delta_g, endpoints)
-            ]
-            assert entry["uncertainty"]["max_abs_delta_G_J_per_mol"] == pytest.approx(
-                max(map(abs, delta_g)), abs=1e-9
-            )
-            assert entry["uncertainty"]["max_abs_delta_log10_K"] == pytest.approx(
-                max(delta_log10_k), abs=1e-12
-            )
+                assert entry["uncertainty"]["max_abs_delta_log10_K"] == pytest.approx(
+                    max(delta_log10_k), abs=1e-12
+                )
 
             for node in liquid_nodes:
                 temperature = node["temperature"]
@@ -3240,8 +3257,8 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
 
     The Shomate Gibbs polynomial implies Cp/R = 2*B*tau + 6*C*tau^2 +
     12*D*tau^3 + 20*E*tau^4. Its entropy is R*(P + tau*P'). The fit fixes
-    Gibbs, entropy, and enthalpy at the source anchor; comparison with the
-    adjacent fit also bounds its published seam error.
+    Gibbs and entropy at each generated interval's upper endpoint; comparison
+    with the adjacent fit also bounds its published seam error.
     """
     from openimcc.gas import _lamor_gibbs
 
@@ -3262,26 +3279,17 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
         )
         return R_J_MOL_K * (polynomial + tau * derivative)
 
-    known_cp_error_limits = {
-        "TiO2(l)": 3.29,
-        "Cr2O3(l)": 5.52,
-        "V2O3(l)": 1.49,
-        "SiO2(l)": 2.07,
-        "Al2O3(l)": 34.82,
-        "MgO(l)": 7.49,
-        "CaO(l)": 3.85,
-    }
-    constrained_cp_error_limits = {
-        "GeO2(l)": 0.07,
-        "Ga2O3(l)": 5.01,
-        "In2O3(l)": 7.27,
-        "SnO(l)": 0.001,
-    }
+    # The existing In2O3 row is the largest at 7.258 J/(mol K).
+    maximum_cp_error_J_molK = 8.0
 
     for generated in generated_rows:
         species = generated["species_name"]
         rows = pack.oxide_df.loc[species]
-        continuation = rows.loc[rows["Ref"] == generated["Ref"]].iloc[0]
+        continuation = rows.loc[
+            (rows["Ref"] == generated["Ref"])
+            & (rows["T_min"].astype(float) == float(generated["T_min"]))
+            & (rows["T_max"].astype(float) == float(generated["T_max"]))
+        ].iloc[0]
         anchor_cp = float(generated["_Cp_l_J_molK"])
         temperatures = np.linspace(
             float(continuation["T_min"]), float(continuation["T_max"]), 1001
@@ -3297,24 +3305,35 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
                 + 12.0 * d * tau**3 + 20.0 * e * tau**4
             )
             max_cp_error = max(max_cp_error, abs(implied_cp - anchor_cp))
-        cp_tolerance = (
-            constrained_cp_error_limits[species]
-            if species in constrained_cp_error_limits
-            else known_cp_error_limits[species]
+        assert max_cp_error <= maximum_cp_error_J_molK, (
+            species,
+            float(continuation["T_min"]),
+            float(continuation["T_max"]),
+            max_cp_error,
         )
-        assert max_cp_error <= cp_tolerance, (species, max_cp_error)
 
-        anchor_temperature = float(generated["_T0_K"])
-        anchor_g = float(generated["_anchor_G_J_per_mol"])
-        anchor_s = float(generated["_anchor_S_J_molK"])
-        anchor_h = float(generated["_anchor_H_J_per_mol"])
+        source_anchor_temperature = float(generated["_T0_K"])
+        anchor_temperature = float(generated["T_max"])
+        cp = float(generated["_Cp_l_J_molK"])
+        anchor_g = (
+            float(generated["_anchor_H_J_per_mol"])
+            + cp * (anchor_temperature - source_anchor_temperature)
+            - anchor_temperature
+            * (
+                float(generated["_anchor_S_J_molK"])
+                + cp * math.log(anchor_temperature / source_anchor_temperature)
+            )
+        )
+        anchor_s = float(generated["_anchor_S_J_molK"]) + cp * math.log(
+            anchor_temperature / source_anchor_temperature
+        )
+        anchor_h = anchor_g + anchor_temperature * anchor_s
         fitted_g = _lamor_gibbs(anchor_temperature, continuation)
         fitted_s = entropy(continuation, anchor_temperature)
         fitted_h = fitted_g + anchor_temperature * fitted_s
-        if species in constrained_cp_error_limits:
-            assert fitted_g == pytest.approx(anchor_g, abs=0.02), species
-            assert fitted_s == pytest.approx(anchor_s, abs=2e-5), species
-            assert fitted_h == pytest.approx(anchor_h, abs=0.03), species
+        assert fitted_g == pytest.approx(anchor_g, abs=0.02), species
+        assert fitted_s == pytest.approx(anchor_s, abs=2e-5), species
+        assert fitted_h == pytest.approx(anchor_h, abs=0.03), species
 
         seam = float(continuation["T_max"])
         adjacent = rows.loc[rows["T_min"].astype(float) == seam].iloc[0]

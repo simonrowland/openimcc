@@ -219,17 +219,17 @@ MgO(l), CaO(l), Ga2O3(l), GeO2(l), In2O3(l), and SnO(l), down to 1200 K.
 Li2O(l) uses JANAF's complete liquid-branch cells from 700–3000 K directly;
 its runtime fit intervals begin at 1200 K. The Cu2O(l) fit uses JANAF through
 2000 K and a NASA H/S-increment tail above it. These continuations are
-generated extrapolations, not source data. The seven continuations already
-present at 726b7cc fit Gibbs energy and preserve their source anchors; their
-implied Cp can differ from the anchor by up to 3.29 (TiO2), 5.52 (Cr2O3),
-1.49 (V2O3), 2.07 (SiO2), 34.82 (Al2O3), 7.49 (MgO), and 3.85 J/(mol K)
-(CaO). The four new continuations use a Cp-constrained fit; maximum Cp errors
-are 5.01 (Ga2O3), 0.069 (GeO2), 7.26 (In2O3), and 0.001 J/(mol K) (SnO),
-with source anchor H/S/G checked. When selected,
-continuations add a distinct supercooled-liquid notice to each affected gas
-channel's `domain_flags`. Row-level source hashes, methods, temperature
-ranges and fit residuals are in
-`src/openimcc/data/gas/PROVENANCE.yaml`.
+generated extrapolations, not source data. The seven older continuations now
+fit Cp directly while constraining Gibbs energy and entropy at each segment's
+upper endpoint. Their maximum Cp error is 1.043 J/(mol K), and their maximum
+Gibbs residual is 1.618 J/mol. The four other continuations retain their
+Cp-constrained fits; maximum Cp errors are 5.01 (Ga2O3), 0.069 (GeO2), 7.26
+(In2O3), and 0.001 J/(mol K) (SnO). The generic continuation test applies one
+8.0 J/(mol K) ceiling to every row; the largest measured error is 7.258
+J/(mol K) for In2O3. When selected, continuations add a distinct
+supercooled-liquid notice to each affected gas channel's `domain_flags`.
+Row-level source hashes, methods, temperature ranges, fit residuals, Cp errors,
+and Gibbs/entropy seams are in `src/openimcc/data/gas/PROVENANCE.yaml`.
 
 Melt activities use the published FC87/SF04 complex-formation constants
 relative to pure liquid oxide parents. The default gas conversion uses JANAF
@@ -561,15 +561,37 @@ printed, the extension deliberately continues the liquid. A ±10% Cp change is
 an illustrative sensitivity scenario, not a statistical uncertainty; ΔG and
 log10(K) are derived from `ΔG = ΔCp[(T−T0)−T ln(T/T0)]` and peak at 1200 K.
 
-| Pack | Parent interval (K) | T0 (K) | Cp_l (J/mol K) | Max fit residual (J/mol) | ±10% Cp at 1200 K (J/mol; dex) |
-|---|---|---:|---:|---:|---:|
-| Default | MgO(l), 1200–2200 | 2200 | 66.944 | 5.627 | 1825; 0.0794 |
-| Default | CaO(l), 1200–2200 | 2200 | 62.760 | 2.931 | 1711; 0.0745 |
-| Default | Al2O3(l), 1200–2500 | 2500 | 192.464 | 36.583 | 8069; 0.3512 |
-| Default | SiO2(l), 1200–1800 | 1800 | 85.772 | 0.800 | 973; 0.0424 |
-| Default | TiO2(l), 1200–1500 | 1500 | 100.416 | 1.007 | 324; 0.0141 |
-| Default | Cr2O3(l), 1200–1900 | 1900 | 156.900 | 2.626 | 2331; 0.1015 |
-| Default | V2O3(l), 1200–1700 | 1700 | 156.900 | 0.457 | 1287; 0.0560 |
+| Parent | Continuation segment (K) | T0 (K) | Cp_l (J/mol K) | Max absolute ΔG (J/mol) | Max absolute ΔCp (J/mol K) | Seam ΔG / ΔS (J/mol; J/mol K) |
+|---|---:|---:|---:|---:|---:|---:|
+| TiO2(l) | 1200–1500 | 1500 | 100.416 | 0.221 | 0.303 | −4.322 / −0.194 |
+| Cr2O3(l) | 1200–1500 | 1900 | 156.900 | 0.326 | 0.447 | +0.046 / −0.000157 |
+| Cr2O3(l) | 1500–1900 | 1900 | 156.900 | 0.334 | 0.337 | −0.386 / −0.031735 |
+| V2O3(l) | 1200–1700 | 1700 | 156.900 | 1.618 | 0.946 | −0.448 / −0.025636 |
+| SiO2(l) | 1200–1500 | 1800 | 85.772 | 0.174 | 0.238 | +0.001 / −0.000010 |
+| SiO2(l) | 1500–1800 | 1800 | 85.772 | 0.051 | 0.085 | −0.352 / −0.026378 |
+| Al2O3(l) | 1200–1500 | 2500 | 192.464 | 0.546 | 0.745 | +0.347 / −0.001188 |
+| Al2O3(l) | 1500–2000 | 2500 | 192.464 | 1.530 | 1.043 | +0.043 / −0.000102 |
+| Al2O3(l) | 2000–2500 | 2500 | 192.464 | 0.314 | 0.273 | −0.025 / +0.019091 |
+| MgO(l) | 1200–1500 | 2200 | 66.944 | 0.194 | 0.265 | +0.002 / −0.000012 |
+| MgO(l) | 1500–1800 | 2200 | 66.944 | 0.061 | 0.102 | +0.007 / −0.000021 |
+| MgO(l) | 1800–2200 | 2200 | 66.944 | 0.080 | 0.093 | +0.022 / +0.021617 |
+| CaO(l) | 1200–1500 | 2200 | 62.760 | 0.113 | 0.155 | +0.001 / −0.000006 |
+| CaO(l) | 1500–1800 | 2200 | 62.760 | 0.032 | 0.054 | +0.003 / −0.000009 |
+| CaO(l) | 1800–2200 | 2200 | 62.760 | 0.035 | 0.042 | +0.063 / −0.001708 |
+
+Each seam is the lower-temperature segment minus the adjacent higher-temperature
+row at the shared endpoint. The ±10% Cp values below cover the full parent
+continuation and remain an illustrative scenario, not a statistical uncertainty.
+
+| Parent continuation (K) | ±10% Cp at 1200 K (J/mol; dex) |
+|---|---:|
+| MgO(l), 1200–2200 | 1825; 0.0794 |
+| CaO(l), 1200–2200 | 1711; 0.0745 |
+| Al2O3(l), 1200–2500 | 8069; 0.3512 |
+| SiO2(l), 1200–1800 | 973; 0.0424 |
+| TiO2(l), 1200–1500 | 324; 0.0141 |
+| Cr2O3(l), 1200–1900 | 2331; 0.1015 |
+| V2O3(l), 1200–1700 | 1287; 0.0560 |
 
 The analytic-fit residuals above compare each fit with its generated
 continuation. A separate source comparison measures the continuation against

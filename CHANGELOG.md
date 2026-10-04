@@ -2,6 +2,61 @@
 
 ## Unreleased
 
+- Refit the seven JANAF constant-Cp liquid continuations with Cp-constrained
+  polynomials. Cr2O3 and SiO2 use two continuation segments; Al2O3, MgO and CaO
+  use three. Across all segments, the largest Gibbs residual is 1.618 J/mol,
+  the largest Cp deviation is 1.043 J/(mol K), and the largest seam mismatch is
+  4.322 J/mol in G and 0.194 J/(mol K) in S. The high-temperature source fits
+  and all other condensate rows are unchanged.
+  The maximum old-to-new parent Gibbs differences and their largest
+  per-metal-atom pressure equivalents are:
+
+  | Parent | Max absolute ΔG (J/mol) | Max absolute Δlog10 p per metal atom |
+  |---|---:|---:|
+  | TiO2(l) | 1.102 | 0.0000464 |
+  | Cr2O3(l) | 2.757 | 0.0000551 |
+  | V2O3(l) | 1.376 | 0.0000266 |
+  | SiO2(l) | 0.868 | 0.0000361 |
+  | Al2O3(l) | 36.748 | 0.0006082 |
+  | MgO(l) | 5.670 | 0.0002029 |
+  | CaO(l) | 2.949 | 0.0001094 |
+
+  At fixed caller activities and oxygen fugacity, each gas channel using a
+  parent has `Δlog10(p) / n_metal = (G_new − G_old) / (n_parent_metal R T ln 10)`.
+  Values below are signed `log10(p_new/p_old)` per metal atom; they apply to
+  Ti/TiO/TiO2, Cr/CrO/CrO2/CrO3, V/VO/VO2, Si/SiO/SiO2/Si2/Si3,
+  Al/AlO/AlO2/Al2O/Al2O2/Al2, Mg/MgO, and Ca/CaO, grouped by parent. A zero
+  means the continuation is no longer selected at that temperature.
+
+  | Parent | 1200 K | 1400 K | 1600 K | 1933 K |
+  |---|---:|---:|---:|---:|
+  | TiO2(l) | −0.00000083 | −0.00000302 | 0 | 0 |
+  | Cr2O3(l) | −0.00001039 | −0.00002865 | +0.00002679 | 0 |
+  | V2O3(l) | −0.00001083 | +0.00002319 | −0.00001298 | 0 |
+  | SiO2(l) | −0.00000421 | −0.00002088 | +0.00001794 | 0 |
+  | Al2O3(l) | −0.00040938 | +0.00031001 | −0.00038286 | +0.00026990 |
+  | MgO(l) | −0.00008941 | +0.00000598 | −0.00009668 | +0.00005784 |
+  | CaO(l) | −0.00004768 | +0.00000201 | −0.00005056 | +0.00002944 |
+
+  Default oxygen-balance numeric and result digests were re-pinned for cases
+  0–31, 33, 36–37, 39–42 and 45–49 because those cases select a changed parent
+  continuation. Cases 32, 34–35, 38 and 43–44 retain their pins because they
+  select unchanged high-temperature rows. The published-pack digests are
+  unchanged. The derived AlO2−/AlO pressure-ratio pin at 2100 K and
+  fO2 = 1e-12 was updated from 5.051482184349738 to 5.051477362451509 as the
+  Al2O3 continuation changes the default parent Gibbs energy. The derived C3
+  status pins that moved are:
+
+  | Status value | Old | New |
+  |---|---:|---:|
+  | Si isolated bound | 635.770885325284 | 635.773963217761 |
+  | Ca isolated bound | 12.157887783887084 | 12.158555162056784 |
+  | Al isolated bound | 30240.015809492263 | 30254.271715108043 |
+  | Ti isolated bound | 143063233.9706761 | 143063370.34002876 |
+  | Cr isolated bound | 0.0675715822588812 | 0.0675723903092475 |
+  | V isolated bound | 244.3406917318666 | 244.34373945658453 |
+  | Ti, V, Nb electron pressure | 4.969104777497582e-06 | 4.96912101530768e-06 |
+
 - Added optional Ga, Ge, B and In gas channels with caller-supplied Ga2O3,
   GeO2, B2O3 and In2O3 parent activities. JANAF remains selected where it has
   tables, including the directly fitted B2O3 liquid branch; NASA CEA supplies

@@ -189,7 +189,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 48
+    assert len(gas_pack.oxide_df) == 56
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -2194,7 +2194,7 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
     gas_pack: ImccGasDatapack,
 ) -> None:
     """Compare serialized old rows to the task base, without hash pins."""
-    base = "5380e46"
+    base = "88d9aa9"
     root = Path(__file__).resolve().parents[1]
     trace_gas = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
@@ -2211,26 +2211,39 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         "Li2O(l)", "Rb2O(l)", "PbO(l)",
         "B2O3(l)", "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
         "Cs2O(l)", "Cu2O(l)", "SnO(l)",
-        "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)",
+    }
+    changed_continuations = {
+        "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "SiO2(l)",
+        "Al2O3(l)", "MgO(l)", "CaO(l)",
     }
 
-    def old_rows(payload: str, excluded: set[str]) -> tuple[str, list[str]]:
+    def old_rows(
+        payload: str,
+        excluded: set[str],
+        changed: set[str],
+    ) -> tuple[str, list[str]]:
         lines = payload.splitlines()
         return lines[0], [
             line for line in lines[1:]
             if line.split(",", 1)[0] not in excluded
+            and not (
+                line.split(",", 1)[0] in changed
+                and line.rsplit(",", 1)[-1].endswith("-SC-CP")
+            )
         ]
 
-    for relpath, current_path, excluded in (
+    for relpath, current_path, excluded, changed in (
         (
             "src/openimcc/data/gas/gas-shomate.csv",
             gas_pack.gas_path,
             trace_gas,
+            set(),
         ),
         (
             "src/openimcc/data/gas/condensate.csv",
             gas_pack.oxide_path,
             trace_oxides,
+            changed_continuations,
         ),
     ):
         original = subprocess.run(
@@ -2240,9 +2253,9 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
             text=True,
             capture_output=True,
         ).stdout
-        assert old_rows(current_path.read_text(encoding="utf-8"), excluded) == (
-            old_rows(original, excluded)
-        )
+        assert old_rows(
+            current_path.read_text(encoding="utf-8"), excluded, changed
+        ) == old_rows(original, excluded, changed)
 
 
 def _trace_janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
@@ -2844,109 +2857,109 @@ _OXYGEN_BALANCE_SF04_RESULT_HEX_SHA256 = (
     "6a750c7bf0b55f529231622b8c3e3238024dc41b7e93c978cdeefc326080dcf9",
 )
 _OXYGEN_BALANCE_DEFAULT_NUMERIC_HEX_SHA256 = (
-    "42941785a4da4e5442a99db67c73df87ff8fa09f012dd5d70e72af4b319390f7",
-    "3434b256193d79412d7fb0746048809ffdda8ce44c631cadeaef12d45cc37b99",
-    "515849221398a232c343fd1d84f8abbe507fa5cfa7d6bbec247a2e4c4a251344",
-    "aff2b48bae98316e3232a8818f4a49f49bbef60ef822cd8696251b6daf079e54",
-    "c535cbb8f21a4d56f67ff2f76e6925724cae64c30d5cfe9b852ffbd23c937d1c",
-    "5c02f3521ab8e17198bec0908d15de231c53c166fb906a61f0488d62f3f0706c",
-    "05fe2a2be4861fabc7b950577693b39e8eed88e9afa76cdba21e51f297133f97",
-    "95674c02077b7b5fa219c08a61781a973d87befd1ae5777b1942b79959d1ea20",
-    "bb6013a03033842d804fbf5d9267921c29c0e8df5c214af6253b33d955767078",
-    "633ab7bfe322d832e49c405631325a2942b47f599ea92a5fa683c4fe7622ca47",
-    "fedf5b4fc1f47c14612e7cdaafed185703289b69c16f44b17025dfe7f5a0c04c",
-    "e62d8ffde71b09fd949f6fa987c996bd97fcfb0a976099d5e823ce0a03ad3528",
-    "8fe1c837977c78e7157901c388006b24d46699ea431d83b7daef29a7735f5650",
-    "0c98fa1ef539611b40a5b6f245a4d613f330ccc46d841a251f75a6ad647b63af",
-    "421ac4ebb016515c32de5035f24a86511b1aa7de97d75f371a928db3b5b0131f",
-    "3b797ccbe61046c37ddf1603974a76862bb9428bd10a564538ad69eacef38bfb",
-    "90f92e5ef0e91b6236879b2b392928783f4d93c35599843c59e1e56ceda4d23d",
-    "f3d1d64b8582e7fd5e919b4c78b75e73388aa3b09d8351ecb1db6ef36478c17f",
-    "2303e0437c65a9b4f375970a688e1d5a536f3ac206a36b3f09cfb0b229f2e6b2",
-    "c2da386cf19f35f8ce44462317b35b8c80ace3e285ec0d270d3d2a9ed0230111",
-    "fef8226a5134941cd609f99bb1418ed0f88fb8258fe7d82cacd717667acb4743",
-    "597f881115e90e5cef18b1032f1f06bfadbe80e3f9b114eedc42d1216bef5de1",
-    "972caff81bddf2579e2d721f1f5868e45484867bacef4cf5e4f7038df0a78fd6",
-    "3ab21645431643580f7b236bd05b3c7822e1d357bb559ee40ecedaf054097787",
-    "637a363298ab0f2d0acf0775baa7fe5d90d0458671500a38888285de33879dd1",
-    "2c00ad00120797146b0da82045255890071ccc2b9a199e9734e20f76b513c628",
-    "73bd6ac507261399b70a907740071674fe38ecf41817edc0fa0dbd6ac944b6f1",
-    "067968dd49b8a8cd6c09e7aecd5515d52cf161191b14bc7a7dc9a4b92db0e6d1",
-    "3e94bbfee3fe39dbb20ea81cfa5650247554577593fc97917c5e2fe7c909bbca",
-    "ee13d65a11d6962029d05460fe7c294b9599a6d5d8fc5d9914ed975ff6a20e83",
-    "5c85aa187103c71f6fb42db925e01faa97f8db87832d73800bda609f0b5733ef",
-    "4b58e711db9a0311701e37b09273ebe51cf876c0f1b4d18c0602715097cce6af",
+    "b1e828b26b31329efe6bd6ced7182ed7001209a97072d6b9ac0870ef5fd367c2",
+    "e4d4e32af40c5407bd4049872e3bf0f1b970553304e596de7a3f942238e3c9ac",
+    "9ef5ca3c3cfcb5a235204f07405fe378c9cd67eb424513cce00386ac1229a523",
+    "2dc06c01159438652347ac6993ed93505adc1f2d674fdb0d94a9dcd359758200",
+    "1772952a1632b7c6cc56b97d5ec618c8f71dcd1d7c7b77bf8249bc1b904e0c9d",
+    "cb6ec4dfa4aed28eafd625ecf8a1d14e55e1aa87deca2e55813cf372b1dfe3d3",
+    "870278dcbd7efdb0fa0e14f1b9fc9cd74b92f3455dfb8b4feb1aeab01be1dca8",
+    "55b346036c3e7afdbedd1059fa3a22edc8fa5cc30e19e57a845c8af50c295283",
+    "abc24031a574c27bc843fbf59119328a408616bad48a5399ccac48567172775a",
+    "b739feb528357c855eef210df01218ffce022fcd050ec39ab01d123e815e7c03",
+    "0e68f18fa8f2862076cc5c8b6d2e3f89df749dd67b52c584cc755e9df22ee1b8",
+    "05c7fa93915febd16e3a2bc65d7ee063c383db9d4b5076453f5bd10d97b47bb3",
+    "98b6ef6eb881f4ee21f7968b08a3a53d4a38cca00ba7d483d83806308cd935c9",
+    "4dfef40174e5c7a078daac1927b7378631f971ba1a1bc28aaa9ecc4985b67f60",
+    "fe6f4ef45bfad2540353c65a0e0e93e330a4b8bb3ae41d85a10d29da9bdaabc6",
+    "39a548cb872170723c06dafa5540cb9736b5900b59fcde3f9da59809f5dbc53b",
+    "2c2b5c06bc3d9701646ab620265bd0d8e6d5a52e1eafa263cd7fc5b13656d1cf",
+    "994cc23caaf8e8bafe4b8fb00e39eab9dc4c30c83846ed89c89e48fab4f60c13",
+    "01c9f1a15ed3b9c654816da5a7e71109074180b919bd648836c91840fbbf6c99",
+    "17c827f16b1b90331cbe1c3bb57e6b07bf775102eeda356b90608d663e0189a6",
+    "effec011942d6622462dd149fda9520f4695bcbd7e76afc18f1087fe7dbceb7a",
+    "05bfe0f1faa1374eb77d17dbdfbce285bc9d15f1500ed28c69e9aa47a1be1128",
+    "1071732671f3e4f20dc28a36139fbe770d5a20247ba7c0770f6c038a89526275",
+    "792b0d05f060c26ff246f1a0e93421c7cb17c50ea62d51b90210b22968f58b6d",
+    "81776077c217a4d518df961d21f27604ddc247565ff649bc637a9e81031daf18",
+    "5140866b1b7c69518e041b9cfeef215f74e074f5498447672c6f211fd1c2fa29",
+    "03ce4e5ba58cee4126cdfacd219f07a034e911510bbb5d4b1256bea3c6055e46",
+    "1323c1a2e5fe8e1373fb69b4c84a49c04a658f6269820237c6de5ab07ed75529",
+    "c4940054cdf129abe7691bab8e2611006f1c2aec3a61e722e48e8444d1fa6646",
+    "13e93e76fcd9bd556d32fd83a4a00d4b7bad6dfe5b618fa6a57ad97f37a21447",
+    "42f187fde5210d1ae5e39594ba766591188df5b5f48e4c6d80245b91582b177d",
+    "677233e96078d3f2fcc97bfd2f9b3423f8e697996e8cef8784a2e0b28a31f31a",
     "b3ab07d2de9c109905e665a23c1276631d64768261410714b166645d3bd4dfc7",
-    "17dd9e4a108a5b5acbcdf36e96c4c321251a42ce23404e6e56594b1db983ce18",
+    "e740037884d0daa1cbbe5560b975e3848dcc3d258b4614eaf051db60244b6c1b",
     "72e0f81e5881c79d19ec4a29046e6395a10e565d0b9f3191b6328fde6e2976d0",
     "ae08d6c709aaf67f25a7d4c410ed82f3a24cfeddcafdfc5e7c8646fb82eba469",
-    "a30bea238a69b78bedd642fd357b65022b7ef0f65eb79f8ac22c76e0e6fd5e4b",
-    "7474067e331de9cc651f3b694a734cab12779cdb42e8f7d36f954d68a526aab4",
+    "d659052c64f4b6897579f6b737657af2f0c5bd24861212bce9391948ca62738b",
+    "da2eb8b5085b094b89ded3938610b3841d670a0a81296425d5062a59d804bf76",
     "c4d772ececfeecca0e5294b1ff8ee237ac9a56d200b40ac7f0602203142108e0",
-    "5194314431fdfcacb6711c0c67497ac0523f5ec9a05621bdcc917d1e5a63da09",
-    "f713f41e9d45deef4fe99bc55d24a097c971a60296161cf079ba1c49d2cde3e8",
-    "8f3651c4171549f86bd6731e059680385dc996cf34780591203b79782d5d7dbb",
-    "f17df4d29c210d47fb4b823fa94dde248245b916f0724b838d7b370e58765a51",
+    "477c3d9a2f5d42ddbaac48071d1b5acbea2c756de861ebf9aa4305a927bf0afe",
+    "d6218cd167cd86670ec67874427cb44708bf536234ab519d68c8db2404b481b1",
+    "b5349ac39349da704416b7d76f3f44ca1d0d064d60985eaac64bef008f20435e",
+    "cd03c2a4d66bdce91bb85820c4842a2e93419b46cca827c991382f652831952c",
     "74dcfe13a2745bec56cfe7443d902af2b059e32fe64ce55fad75abf5eb25e543",
     "9841122c5f6616341594f4caa520ca96640098a2c49e485c97437ff2264165bc",
-    "f34d62fdf8d57ee19389a87256939535735339a0da3bbcfeea157f362e50b2b0",
-    "a4e5d221de2419f13f43c19bcac2b787afe78d61dd5c568644366fb398fe331a",
-    "91e96fe864deefcd558f9859430548b4ce10f9d54f81f0b46549600ae241e53c",
-    "155280fdf1f1085b0a0e9308e55301e6aae80eff267a45553b8a9766d2de0ca7",
-    "700f1d791a78d2abad8e10bcfcf38f476b756ff827b7382558ec9c75e743f508",
+    "0da18af9f9780433338d51d261392e1544f20adcd02f2871d43048e5679ee3b2",
+    "2744340b06adbacf5a5f1cc87cbce616d1b543c9fa790cb4f62ac42023ef4793",
+    "5ee7a522ac1d1fcb3a90a9b25aa5646b6cb38c3c10eee99eb90e7526c5bbf31b",
+    "b9dbf2ef73dd815365dee74b893dcdb0414c372d68530fedadc2ac093af735bf",
+    "e72a549b8d9adfd179a87d77d47d11a0eff172c633bf671664becd7ff40099aa",
 )
 
 _OXYGEN_BALANCE_DEFAULT_RESULT_HEX_SHA256 = (
-    "097d704f1784250db8b439d840007d5c1c85c3a182461a9a3d83638c4d00c5d2",
-    "72cff1fc145506ddda9f22139801e54e5eb7c0ff640b41eccd2748a051f6b6ea",
-    "c102cc93ee6d0dca322fc314d81bbd680ef79d4f2697087908b44bf4ec044abd",
-    "d66cfe37a270ea57d7de7da49766524c2817a9f1efcd092e2c31781e4f583466",
-    "66dd80679b46da516a7d80f194167f4d4b197f9573213e0b86dacaa696642d73",
-    "357d7359fd7216fec7563b10b6b8f19f78c56b3a0462fc6ac2783cac5690149f",
-    "2bca7b0473c4c7f7020b05b00a78e15e9f7f8f901715973dce2ba5ca7cf04443",
-    "460cfc7f89aea6c74b778ea05b71d8ed7e70b487d302517553518006c541930f",
-    "4582733d9c0545555f9e13f18f0299b4790c27e9eb91f5713c11ed7a9651f578",
-    "3db3e1ab2db973514cc835b228045e0f4ec6291fa1d9257d96c4a466c2a3f0b2",
-    "7fb112fe9b416b732f158eb504118c5f39b75b273f9776b559e66b9a27f469a1",
-    "0c4caf39317d9faca636ca7528ebb092e08b07413d075ec665e59294f57f1fbc",
-    "de4087a914aecf12522a2a5c59d409ab724848efeab1be3e16cab48be9a75342",
-    "f789dcb7ecc6a6ffdac3daeafdbb58ea8eea3e31322ff8c163ce881b60677a18",
-    "06f180908f597f66c96240384f0254112d83f0770676202b864e1df97abadb30",
-    "509a3d80d729ebd5d7f7705e10f4e87fc006949958fffaa55f85155a53e8c1a0",
-    "9be9c5459158eada912b08068209cbf994d17e157aaf7443827aad978b22b1eb",
-    "b1f64f62ff8ce91bf1a639cd54b8557049624f67e749c0a1afdec66a5768d34d",
-    "67ffc558540cf8314a2392fad6a173f910bfd4535523e22383a307c61b883f6d",
-    "87f66ba1fbfcc300fb4c4e3d1ebea8bcc3ec97b08402cc17e215a5f4d14f4da3",
-    "9e35a198ce9888fabf9b44e2ecdb4318726e5315264c2c3e3c3d6b5f211193f7",
-    "feec2590e52f92c4d954632cd44e93d3a475931a1385730f3531ec6cd4fbef1f",
-    "667593f573e812e19124f82e60dd69cb88770457040c8689397d9ed3179b9f42",
-    "3b452001375bd70f6532b76c3f6e0b8788930c4b9bef53c3452639caa6667853",
-    "723ccf90bceee82e1a47c71a432ebb4d8728fcd93a415d24e4d15b0e0f454341",
-    "4868169b2e08b4941740851e4f307eca9f9c06847b7f9ab35e6ebd8e4023621a",
-    "ec725cc8467163f49204647c752242c5d0cc292058e103097ab91d8b8c5f6a23",
-    "116f4783dd85b2c05ceb5a6895cf13cfc0f1d277f930796ace26a17dd40df730",
-    "e9968ddf22122da678c76e68ccc1aba634535c399d0ca818f6b9f6928acf305d",
-    "fc30379e5a8f8e17fbfd6c1f4338384870d8ce39c613fe806b74fec68e4dc645",
-    "8d2abc2f0c1f797948cf3fd32e181be3cbc123f10a5910da8aad502936a9c20a",
-    "10e453d22506ed34039e4c43c84073682784d13c71ba828db6d1206d16be0043",
+    "8afe27c8e5e71f17ab894e9eed48f9918258bad4cc131de8fa593177631f028d",
+    "546fa16a84ba23704005fdb9261ad323e3786622202012ef84bb8a35d7c276e8",
+    "e653eda96c4542113da9588d1bc23199b5668568d5d01d7e25a3209db7157c88",
+    "fb7eac85e29b98656708936e5ea07c70ca53889c3982596ba58bbb1650364cc8",
+    "d72c9fff88e0522586e60a5ee22f17bc0df6455515deaa437a46aca28c05c05f",
+    "da7ac1da99e1b03891cf8f70915eb9a83fea513d0b64eb2d8e9bf8ea41ea9218",
+    "618efa81a7a28515df4b8262aa8c7311564f1eb4cbebcf62521745d82d9d1b7c",
+    "cb1c98ecdf47c39293331e0f5503719ab80915ce96fa6a5e1faa2c5b7468e3c6",
+    "d6638a7298397d8152ae85d36d51dac1d17f5806f23a88db3e1605db943c9b4c",
+    "9331a842bfe6f55f94a96ac21e531d88053544ab5c8955dc9d09218857c4ec92",
+    "eefa028b9af4ce9fb69f57ed5833d8dcc1b13ca0b11bf366287bd470edb23efe",
+    "35d2d5499459af44af9c981a002d92239d9e894924f331d1e6a44af59ea664ff",
+    "3e46f7cac927da0df6abff7b7af4e63b8ecae862a7a121239415e8b54e27bce3",
+    "402a7b6558b2ca210cdeecdba4b7851a3a29a59d127ba9f7eb9d4b1d4067e783",
+    "4546c520a375587fb87f35b774f74e09ccd0b2af41096ec6b9e863e18d5f14af",
+    "7dcab96a19d110252d4ef8f0f134d8d82c19b06f461ac6c3e6f357f848a933e0",
+    "afde614fef73010d979ec647d2cb4186d2c2aa6bcf614d6b4ddbc37e0caabf4e",
+    "5116d99ebfd879a6d830b83cc9f7e5b55f26858938dd5930b33319ac96a18d2d",
+    "0fdcdb3c1441080a7b60d2ff4506280beac889c393e8b6aa5872306875c9cc71",
+    "bc2820b54ce33cafe801c190d38871504d7cf13248baaa4417ce3a201956f59f",
+    "5d57c889de149a9cc057a152660dcdf1bb91341321415b1128c0509f2c5155bd",
+    "fa1e4354820cce3416db6dfd0a0a20d10bb2b8a28e017bbd1714c9336a54482f",
+    "89103ec2474a06e410c04ebefa51c45520f63d1b9ae3a596bb8f8df9301bfce5",
+    "f3773af475e57189ef25e232242181e9eac781d3a8b9d8be6d390d6111eaf6c1",
+    "bd0b3be743f3f906ac5069e4efbc0948c691cf0bd43746ffb7acdef9e0371377",
+    "142866135102c5a8e92fa32c543cf8a0719840605454b396c640765b6805d25c",
+    "e8a460ac2bf14feebed09116690a28fe19eb0a3b889856ec812c4e8a5831b378",
+    "bc8089e227cda131bcac99f231cc676e6b662c7d01b3b1502e2d32af129f2266",
+    "bc4f78d89ef64fca5db328951e7e1c3eed2983d07e5a20c6355fd895dfe83c89",
+    "11f21de506a0adb6c1fa92d9d15d7b3a0196ab02aec5ef76df1ce6d4dd7c996e",
+    "4f372382461374c6fc0b09776bb7a090011aacb32a4e830f2e7aa1f0c8e6ae2b",
+    "82d4f986fdacf01854241466711df1ed9e89fab178b188243bd350b0c1864ce7",
     "378a1e6fe81482f7aaf8f6dc39af8cf5c34565dc9d2d54e6b2f62b52dd025f21",
-    "16e729f6c2c81f403728c6b384f4a1c61c6ea0e93fd2503ea4c1393b2e8620ef",
+    "d3468aa73397ed6908b5e444106a7867135326a1130920b2d034785b8148ee62",
     "7a07fed3dc6c6250b26f00c17a6c11ccbec99677a682425c599ca15ca944b7a4",
     "18d562189c35e7a0e3a68cca36190c06519d750ac21df1b9c45b9e1db7bf8670",
-    "f167f4a5451772275a0133f6c24020c2837e55970d622d25fa07b4a353ac999d",
-    "f918b840b49e9ce8f34d43ad2b314d5bddd2fe1c9a07b226b00d4c145c672a05",
+    "04787b57293492ef8967e8ca0ff59ff4bf9c49686387acfebf9ca570af5ad6ac",
+    "8822246789e53d1f6ec177611f8283cf566b5fccd4079807c412310ad8e72cc3",
     "e11906d9debd38c0cfe1cab962b05d23d381acfdf3cb83d5268d0012e3ff7fb1",
-    "3fc838de7ba8e6d879224b1afa74c87fa24c4c597eed116e83720f5829d1f201",
-    "c17d545097024871f140b84fa25f488c0d938c35fccb5b26d2d70f8fbeb7b1cb",
-    "892f9d32f12624531ac0845b6d51d3d95ab9ed088cca7b61b71420aa4a112278",
-    "1e4040f10a179cc876085ffebf44422ea69b150aaa91cc0bce8697b8744db9e7",
+    "dbbbd78c424372cb4daedea56816f454659650845440ba9f8c9247b2bd6351c5",
+    "d37d13c1fe6093f65061559fbea78a9fa655c59d0ef531d600353b45cbfd3f29",
+    "4cc08cb3f03e1fe07fbd76b371ff9c4236abe72eef7ecdda90b0d359c85ccdd4",
+    "4a08ac0e133e9c01416bcb61f3a026ed37b4d2974d5f17c13457b2f56caaf50b",
     "4b8d555f25ac64bc0851a1a1933b49d97339ddb1a2e0c9c5056f177c51bb2c93",
     "258211042ceb99a73fc6b6c14638549f46de9b721792f74186b2169d55d957e0",
-    "789feafc3ce074d5468241beac4b7c5b6b59f4109f78f35b3514f40e8b504520",
-    "c0dbaef3df6f119e9661fce30dbc8338170d2d6e19a88baa6d2caf8c9d9995f1",
-    "85cb64d6fb0cf08ab0ccc9317102caea123d144d9c86d8e8129f532e724a66e5",
-    "e7221b2281edd2aad9025138e0bbe82bef6f35c89816b708f91e49fa9fd9718f",
-    "e0cbbe2a9df1a4384475ac4703737aa2eeb8cec1177f57c648fc8528ae1d1a9d",
+    "e4efe715693880b86a0d3e58490205e66be06595b282fa5981ee690736965c1f",
+    "d6970c87b3888a6d67add36fb675ded612da755e86cc858aabb40f405ef1733f",
+    "ecfc17b1967e837460db7c6c9cdcdb14d431f9e46cd8fc731a997548348eb649",
+    "993bdd71676b3351cab991455deff4bf09fdc2d8e89ba2e783f4417525a2b252",
+    "9ea364ddd0ab1d0fd8fd3612067e16012a6b51be3742059f6b394c12bd144cae",
 )
 
 
@@ -3112,11 +3125,14 @@ def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> N
     }
     for row_name, row in extension_rows.iterrows():
         species = row_name.removesuffix("(l)")
-        thermo = species_thermo(species, "l", 1200.0, pack)
+        row_t_min = float(row["T_min"])
+        thermo = species_thermo(species, "l", row_t_min, pack)
         source_table = str(row["Ref"]).removesuffix("-SC-CP")
         assert thermo.source_table_id == source_table
         assert thermo.source_row_id == str(row["Ref"])
-        assert (thermo.T_min, thermo.T_max) == (1200.0, float(row["T_max"]))
+        assert (thermo.T_min, thermo.T_max) == (
+            row_t_min, float(row["T_max"])
+        )
 
     low = evaluate_gas(
         {"TiO2": 1.0}, 1200.0, 1.0e-10, pack, gas_species=("Ti",)
@@ -3226,10 +3242,13 @@ def test_sf04_pack_reproduces_base_default_and_default_keeps_other_channels(
     activities = {parent: 1.0 for parent in parents}
     selected, _omitted = _default_reactions(parents, base_pack)
     channels = collection_type(name for name, _reaction in selected)
+    switched_parent_oxides = {
+        "TiO2", "Cr2O3", "V2O3", "SiO2",
+        "Al2O3", "MgO", "CaO",
+    }
     switched_channels = {
-        "Si", "SiO", "SiO2", "Si2", "Si3",
-        "Al", "AlO", "AlO2", "Al2O", "Al2O2", "Al2",
-        "Ca", "CaO", "Mg", "MgO",
+        name for name, reaction in selected
+        if reaction[0] in switched_parent_oxides
     }
 
     for temperature in range(1200, 3001):
