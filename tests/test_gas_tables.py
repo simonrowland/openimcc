@@ -2407,22 +2407,116 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
 
 
 _ATTACHMENT_LEVELS = {
-    # NIST WebBook gives Cu EA determinations from 1.226 to 1.235792 eV;
-    # Cu-007's fitted EA is about 1.229 eV, consistent with an older JANAF
-    # evaluation. The resulting ~6% vintage offset justifies a 10% tolerance.
-    "Cu": (1.23578, ((2, 0.0),), ((1, 0.0),)),
+    # EAs are from NIST Chemistry WebBook SRD 69 records; Li, K, and O use
+    # Andersen et al., JPCRD 28 (1999), Table 3. Neutral fine-structure levels
+    # are NIST ASD records (https://physics.nist.gov/asd). Anion bound levels
+    # and splittings are from Andersen et al., Tables 3-4,
+    # https://srd.nist.gov/jpcrdreprint/1.556047.pdf. The test admits 10% for
+    # source vintage and omitted higher levels; larger misses remain as strict
+    # xfails below.
+    "Al": (0.433816, ((2, 0.0), (4, 112.061)), ((1, 0.0), (3, 22.7), (5, 68.4))),  # WebBook C7429905
+    "B": (0.279743, ((2, 0.0), (4, 15.287)), ((1, 0.0), (3, 3.23), (5, 8.41))),  # WebBook C7440428
+    "Cr": (0.67583, ((7, 0.0),), ((6, 0.0),)),  # WebBook C7440473
+    "Cs": (0.471630, ((2, 0.0),), ((1, 0.0),)),  # WebBook C7440462
+    "Cu": (1.23578, ((2, 0.0),), ((1, 0.0),)),  # WebBook C7440508
+    "Fe": (
+        0.1510,
+        ((9, 0.0), (7, 415.933), (5, 704.007), (3, 888.132), (1, 978.074)),
+        ((10, 0.0), (8, 540.0), (6, 930.0), (4, 1200.0)),
+    ),  # WebBook C7439896
+    "Ga": (0.430, ((2, 0.0), (4, 826.19)), ((1, 0.0), (3, 220.0), (5, 580.0))),  # WebBook C7440553
+    "K": (0.501459, ((2, 0.0),), ((1, 0.0),)),  # NIST JPCRD Table 3
+    "Li": (0.618049, ((2, 0.0),), ((1, 0.0),)),  # NIST JPCRD Table 3
+    "Na": (0.547926, ((2, 0.0),), ((1, 0.0),)),  # WebBook C7440235
+    "Nb": (
+        0.894,
+        ((2, 0.0), (4, 154.19), (6, 391.99), (8, 695.25), (10, 1050.26)),
+        ((1, 0.0), (3, 110.0), (5, 310.0), (7, 560.0), (9, 870.0)),
+    ),  # WebBook C7440031; anion levels from NIST JPCRD Table 4
+    "O": (1.4611120, ((5, 0.0), (3, 158.265), (1, 226.977)), ((4, 0.0), (2, 177.10))),  # NIST JPCRD Tables 3-4
+    "Pb": (0.3650, ((1, 0.0), (3, 7819.263), (5, 10650.327)), ((4, 0.0),)),  # WebBook C7439921
+    "Rb": (0.485940, ((2, 0.0),), ((1, 0.0),)),  # WebBook C7440177
+    "Si": (
+        1.389517,
+        ((1, 0.0), (3, 77.112), (5, 223.157)),
+        ((4, 0.0), (4, 6954.78), (6, 6968.86), (2, 10973.31)),
+    ),  # WebBook C7440213; bound states from NIST JPCRD Table 3
+    "Ti": (0.0870, ((5, 0.0), (7, 170.134), (9, 386.875)), ((4, 0.0), (6, 72.0), (8, 171.0), (10, 295.0))),  # WebBook C7440326
+    "V": (
+        0.526,
+        ((4, 0.0), (6, 137.383), (8, 323.432), (10, 552.955)),
+        ((1, 0.0), (3, 35.0), (5, 105.0), (7, 205.0), (9, 330.0)),
+    ),  # WebBook C7440622; anion levels from NIST JPCRD Table 4
 }
 
 
-@pytest.mark.parametrize("element", tuple(_ATTACHMENT_LEVELS))
+_ATOMIC_ANION_ELEMENTS = (
+    "Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb",
+    "O", "Pb", "Rb", "Si", "Ti", "V",
+)
+_UNCHECKED_MOLECULAR_ANIONS = ("AlO", "AlO2", "BO", "BO2", "KO", "LiO", "NaO", "O2")
+
+
+def test_gas_table_atomic_anion_inventory() -> None:
+    """Keep every checked atomic row and unchecked molecular row enumerated."""
+    packaged = {
+        name
+        for name in load_gas_datapack().gas_df.index.unique()
+        if name.endswith("-(g)") and name != "e-(g)"
+    }
+    atomic = {f"{element}-(g)" for element in _ATOMIC_ANION_ELEMENTS}
+    molecular = {f"{species}-(g)" for species in _UNCHECKED_MOLECULAR_ANIONS}
+    assert packaged == atomic | molecular
+    assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic
+
+
+@pytest.mark.parametrize(
+    "element",
+    (
+        pytest.param(
+            "Al",
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="measured ratios 1.098824 (1500 K), 1.157028 (2500 K); source-implied EA 0.4460/0.4652 eV",
+            ),
+        ),
+        "B", "Cr", "Cs", "Cu", "Fe",
+        pytest.param(
+            "Ga",
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="measured ratios 0.369107 (1500 K), 0.568300 (2500 K); source-implied EA 0.3012/0.3083 eV",
+            ),
+        ),
+        pytest.param(
+            "Nb",
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="measured ratios 0.791087 (1500 K), 0.683870 (2500 K); source-implied EA 0.8637/0.8121 eV",
+            ),
+        ),
+        "K", "Li", "Na", "O", "Pb", "Rb", "Si", "Ti",
+        pytest.param(
+            "V",
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="measured ratios 0.856237 (1500 K), 0.736101 (2500 K); source-implied EA 0.5059/0.4600 eV",
+            ),
+        ),
+    ),
+)
 def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
     """Compare fitted attachment Kp with the NIST ground-state affinity.
 
     For M + e- = M-,
     Kp=(p°/kBT)*(Z-/2Z0)*(h²/(2*pi*me*kBT))^(3/2)*exp(EA/kBT).
-    The units are m^-3 times m^3, so Kp is dimensionless. This is the inverse
-    of the cation Saha expression in test_every_m_plus_matches_saha_with_level_populations:
-    K_attach(M)*K_ion(M-)=1, as required by detailed balance.
+    Premise: attachment is the reverse of ionization of M-. Algebra therefore
+    inverts the Saha translational factor and changes exp(-IE/kBT) to
+    exp(+EA/kBT), retaining the electron spin factor 2 in the denominator.
+    The units are m^-3 times m^3, so Kp is dimensionless at p°=1 bar.
+    Energies in cm^-1 convert with hc=1.986445857e-23 J cm. Sanity: for
+    one-level partitions this is exactly the inverse cation Saha expression;
+    adding the NIST low-lying levels changes only the population factors.
     """
     affinity_eV, neutral_levels, anion_levels = _ATTACHMENT_LEVELS[element]
     pack = load_gas_datapack()
@@ -2466,7 +2560,7 @@ def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
             * math.exp(affinity_eV * e_v / (k_b * temperature))
         )
         ratios.append(fitted_k / saha_k)
-    assert ratios == pytest.approx((0.941424, 0.958988), rel=5.0e-5)
+    assert ratios == pytest.approx((1.0, 1.0), rel=0.10), element
 
 
 def test_cr_channels_against_janaf_cells() -> None:
