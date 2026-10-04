@@ -326,7 +326,9 @@ fO2 = 1e-12–1e-4), O2− has a maximum attachment term `K_A p(O2)` of
 and KO− reaches p(KO−)/p(KO) = 1.48e-3. Cr−, V− and Nb− have maximum
 charge-balance terms `K_A p(A)` of 8.53e2, 0.385 and 8.91e-4, respectively.
 All these species are included in the fitted charge balance regardless of
-their individual attachment-term size. The KO− source is
+their individual attachment-term size. Ga− is a known source-vintage limit:
+its fitted/reference attachment ratios are 0.369 and 0.568 (low by factors
+2.71 and 1.76 at 1500 and 2500 K); all ion channels are opt-in. The KO− source is
 [JANAF table K-009](https://janaf.nist.gov/tables/K-009.html); its supplied
 thermochemistry is used as published.
 

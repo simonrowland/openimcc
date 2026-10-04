@@ -2323,7 +2323,11 @@ _SAHA_LEVELS = {
     "Ca": (6.1131553, ((1, 0.0),), ((2, 0.0),)),
     "Li": (5.3917148, ((2, 0.0),), ((1, 0.0),)),
     "Rb": (4.177128, ((2, 0.0),), ((1, 0.0),)),
-    "Cs": (3.89390572743, ((2, 0.0),), ((1, 0.0),)),
+    "Cs": (
+        3.89390572743,
+        ((2, 0.0), (2, 11178.2686), (4, 11732.3079), (4, 14499.2584), (6, 14596.8423)),
+        ((1, 0.0),),
+    ),  # NIST ASD: https://physics.nist.gov/PhysRefData/Handbook/Tables/cesiumtable5.htm
     "Pb": (
         7.4166798,
         ((1, 0.0), (3, 7819.263), (5, 10650.327)),
@@ -2408,45 +2412,46 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
 
 _ATTACHMENT_LEVELS = {
     # EAs are from NIST Chemistry WebBook SRD 69 records; Li, K, and O use
-    # Andersen et al., JPCRD 28 (1999), Table 3. Neutral fine-structure levels
-    # are NIST ASD records (https://physics.nist.gov/asd). Anion bound levels
-    # and splittings are from Andersen et al., Tables 3-4,
-    # https://srd.nist.gov/jpcrdreprint/1.556047.pdf. The test admits 10% for
-    # source vintage and omitted higher levels; larger misses remain as strict
-    # xfails below.
-    "Al": (0.433816, ((2, 0.0), (4, 112.061)), ((1, 0.0), (3, 22.7), (5, 68.4))),  # WebBook C7429905
-    "B": (0.279743, ((2, 0.0), (4, 15.287)), ((1, 0.0), (3, 3.23), (5, 8.41))),  # WebBook C7440428
-    "Cr": (0.67583, ((7, 0.0),), ((6, 0.0),)),  # WebBook C7440473
-    "Cs": (0.471630, ((2, 0.0),), ((1, 0.0),)),  # WebBook C7440462
-    "Cu": (1.23578, ((2, 0.0),), ((1, 0.0),)),  # WebBook C7440508
+    # Andersen et al., JPCRD 28 (1999), Table 3. Neutral levels through
+    # 15000 cm^-1 are from NIST ASD (https://physics.nist.gov/asd); the linked
+    # Handbook level tables are the cited NIST level outputs. Bound anion
+    # levels and splittings are from Andersen et al., Tables 3-4,
+    # https://srd.nist.gov/jpcrdreprint/1.556047.pdf, with V- fine structure
+    # updated from Fu et al., JCP 145, 164307 (2016). Energies are relative
+    # to each species' ground level; tuples are (2J+1, cm^-1).
+    "Al": (0.433816, ((2, 0.0), (4, 112.061)), ((1, 0.0), (3, 22.7), (5, 68.4), (5, 2611.0))),  # WebBook C7429905; https://physics.nist.gov/PhysRefData/Handbook/Tables/aluminumtable5.htm
+    "B": (0.279743, ((2, 0.0), (4, 15.287)), ((1, 0.0), (3, 3.23), (5, 8.41))),  # WebBook C7440428; https://physics.nist.gov/PhysRefData/Handbook/Tables/borontable5.htm
+    "Cr": (0.67583, ((7, 0.0), (5, 7593.16), (1, 7750.78), (3, 7810.82), (5, 7927.47), (7, 8095.21), (9, 8307.57)), ((6, 0.0),)),  # WebBook C7440473; https://physics.nist.gov/PhysRefData/Handbook/Tables/chromiumtable5.htm
+    "Cs": (0.471630, ((2, 0.0), (2, 11178.2686), (4, 11732.3079), (4, 14499.2584), (6, 14596.8423)), ((1, 0.0),)),  # WebBook C7440462; https://physics.nist.gov/PhysRefData/Handbook/Tables/cesiumtable5.htm
+    "Cu": (1.23578, ((2, 0.0), (6, 11202.565), (4, 13245.423)), ((1, 0.0),)),  # WebBook C7440508; https://physics.nist.gov/PhysRefData/Handbook/Tables/coppertable5.htm
     "Fe": (
         0.1510,
-        ((9, 0.0), (7, 415.933), (5, 704.007), (3, 888.132), (1, 978.074)),
+        ((9, 0.0), (7, 415.933), (5, 704.007), (3, 888.132), (1, 978.074), (11, 6928.268), (9, 7376.764), (7, 7728.059), (5, 7985.784), (3, 8154.713), (9, 11976.238), (7, 12560.933), (5, 12968.553)),
         ((10, 0.0), (8, 540.0), (6, 930.0), (4, 1200.0)),
-    ),  # WebBook C7439896
-    "Ga": (0.430, ((2, 0.0), (4, 826.19)), ((1, 0.0), (3, 220.0), (5, 580.0))),  # WebBook C7440553
-    "K": (0.501459, ((2, 0.0),), ((1, 0.0),)),  # NIST JPCRD Table 3
-    "Li": (0.618049, ((2, 0.0),), ((1, 0.0),)),  # NIST JPCRD Table 3
-    "Na": (0.547926, ((2, 0.0),), ((1, 0.0),)),  # WebBook C7440235
+    ),  # WebBook C7439896; https://physics.nist.gov/PhysRefData/Handbook/Tables/irontable5.htm
+    "Ga": (0.430, ((2, 0.0), (4, 826.19)), ((1, 0.0), (3, 220.0), (5, 580.0))),  # WebBook C7440553; https://physics.nist.gov/PhysRefData/Handbook/Tables/galliumtable5.htm
+    "K": (0.501459, ((2, 0.0), (2, 12985.186), (4, 13042.896)), ((1, 0.0),)),  # NIST JPCRD Table 3; https://physics.nist.gov/PhysRefData/Handbook/Tables/potassiumtable5.htm
+    "Li": (0.618049, ((2, 0.0), (2, 14903.622), (4, 14903.957)), ((1, 0.0),)),  # NIST JPCRD Table 3; https://physics.nist.gov/PhysRefData/Handbook/Tables/lithiumtable5.htm
+    "Na": (0.547926, ((2, 0.0),), ((1, 0.0),)),  # WebBook C7440235; https://physics.nist.gov/PhysRefData/Handbook/Tables/sodiumtable5.htm
     "Nb": (
         0.894,
-        ((2, 0.0), (4, 154.19), (6, 391.99), (8, 695.25), (10, 1050.26)),
+        ((2, 0.0), (4, 154.19), (6, 391.99), (8, 695.25), (10, 1050.26), (4, 1142.79), (6, 1586.90), (8, 2154.11), (10, 2805.36), (2, 4998.17), (4, 5297.92), (6, 5965.45), (2, 8410.90), (4, 8705.32), (6, 9043.14), (8, 9497.52), (8, 8827.00), (10, 9328.88), (4, 9439.08), (6, 10237.51), (2, 10126.06), (4, 11318.09), (8, 10922.74), (10, 11044.08), (12, 11247.88), (14, 11524.65), (6, 11344.70), (6, 12018.25), (8, 12136.86), (10, 12357.70), (12, 13012.20), (10, 12102.12), (12, 12502.97), (4, 12288.25), (6, 12692.12), (8, 12982.38), (10, 13145.71), (6, 13404.77), (8, 13515.20), (2, 13629.15), (4, 14211.30), (6, 14899.26)),
         ((1, 0.0), (3, 110.0), (5, 310.0), (7, 560.0), (9, 870.0)),
-    ),  # WebBook C7440031; anion levels from NIST JPCRD Table 4
+    ),  # WebBook C7440031; anion levels from NIST JPCRD Table 4; https://physics.nist.gov/PhysRefData/Handbook/Tables/niobiumtable5.htm
     "O": (1.4611120, ((5, 0.0), (3, 158.265), (1, 226.977)), ((4, 0.0), (2, 177.10))),  # NIST JPCRD Tables 3-4
-    "Pb": (0.3650, ((1, 0.0), (3, 7819.263), (5, 10650.327)), ((4, 0.0),)),  # WebBook C7439921
-    "Rb": (0.485940, ((2, 0.0),), ((1, 0.0),)),  # WebBook C7440177
+    "Pb": (0.3650, ((1, 0.0), (3, 7819.263), (5, 10650.327)), ((4, 0.0),)),  # WebBook C7439921; https://physics.nist.gov/PhysRefData/Handbook/Tables/leadtable5.htm
+    "Rb": (0.485940, ((2, 0.0), (2, 12578.950), (4, 12816.545)), ((1, 0.0),)),  # WebBook C7440177; https://physics.nist.gov/PhysRefData/Handbook/Tables/rubidiumtable5.htm
     "Si": (
         1.389517,
-        ((1, 0.0), (3, 77.112), (5, 223.157)),
+        ((1, 0.0), (3, 77.112), (5, 223.157), (5, 6298.847)),
         ((4, 0.0), (4, 6954.78), (6, 6968.86), (2, 10973.31)),
-    ),  # WebBook C7440213; bound states from NIST JPCRD Table 3
-    "Ti": (0.0870, ((5, 0.0), (7, 170.134), (9, 386.875)), ((4, 0.0), (6, 72.0), (8, 171.0), (10, 295.0))),  # WebBook C7440326
+    ),  # WebBook C7440213; bound states from NIST JPCRD Table 3; https://physics.nist.gov/PhysRefData/Handbook/Tables/silicontable5.htm
+    "Ti": (0.0870, ((5, 0.0), (7, 170.134), (9, 386.875), (3, 6556.833), (5, 6598.764), (7, 6661.004), (9, 6742.755), (11, 6842.965), (5, 7255.354), (1, 8436.617), (3, 8492.421), (5, 8602.342), (5, 11531.759), (7, 11639.810), (9, 11776.811), (9, 12118.394)), ((4, 0.0), (6, 72.0), (8, 171.0), (10, 295.0))),  # WebBook C7440326; https://physics.nist.gov/PhysRefData/Handbook/Tables/titaniumtable5.htm
     "V": (
         0.526,
-        ((4, 0.0), (6, 137.383), (8, 323.432), (10, 552.955)),
-        ((1, 0.0), (3, 35.0), (5, 105.0), (7, 205.0), (9, 330.0)),
-    ),  # WebBook C7440622; anion levels from NIST JPCRD Table 4
+        ((4, 0.0), (6, 137.383), (8, 323.432), (10, 552.955), (2, 2112.282), (4, 2153.221), (6, 2220.156), (8, 2311.369), (10, 2424.809), (2, 8413.009), (4, 8476.234), (6, 8578.542), (8, 8715.747), (2, 9544.635), (4, 9637.039), (6, 9824.626), (8, 10892.520), (10, 11100.596), (4, 13801.551), (2, 13810.910), (4, 14514.756), (6, 14548.816), (8, 14909.958), (10, 14949.359)),
+        ((1, 0.0), (3, 35.9), (5, 103.8), (7, 204.17), (9, 330.58)),
+    ),  # WebBook C7440622; https://physics.nist.gov/PhysRefData/Handbook/Tables/vanadiumtable5.htm; V- FS from Fu et al. 2016
 }
 
 
@@ -2472,41 +2477,15 @@ def test_gas_table_atomic_anion_inventory() -> None:
 
 @pytest.mark.parametrize(
     "element",
-    (
-        pytest.param(
-            "Al",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="measured ratios 1.098824 (1500 K), 1.157028 (2500 K); source-implied EA 0.4460/0.4652 eV",
-            ),
-        ),
-        "B", "Cr", "Cs", "Cu", "Fe",
-        pytest.param(
-            "Ga",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="measured ratios 0.369107 (1500 K), 0.568300 (2500 K); source-implied EA 0.3012/0.3083 eV",
-            ),
-        ),
-        pytest.param(
-            "Nb",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="measured ratios 0.791087 (1500 K), 0.683870 (2500 K); source-implied EA 0.8637/0.8121 eV",
-            ),
-        ),
-        "K", "Li", "Na", "O", "Pb", "Rb", "Si", "Ti",
-        pytest.param(
-            "V",
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="measured ratios 0.856237 (1500 K), 0.736101 (2500 K); source-implied EA 0.5059/0.4600 eV",
-            ),
-        ),
-    ),
+    ("Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb", "O", "Pb", "Rb", "Si", "Ti", "V"),
 )
 def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
     """Compare fitted attachment Kp with the NIST ground-state affinity.
+
+    Al, B, Cr, Cs, Cu, Fe, K, Li, Na, Nb, O, Pb, Rb, Si, Ti, and V
+    pass at 10%. Ga is pinned as a source-vintage known limit: its ratios
+    are 0.369 at 1500 K and 0.568 at 2500 K, consistent with the JANAF
+    source's implied EA near 0.30 eV rather than the current NIST 0.430 eV.
 
     For M + e- = M-,
     Kp=(p°/kBT)*(Z-/2Z0)*(h²/(2*pi*me*kBT))^(3/2)*exp(EA/kBT).
@@ -2560,7 +2539,17 @@ def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
             * math.exp(affinity_eV * e_v / (k_b * temperature))
         )
         ratios.append(fitted_k / saha_k)
-    assert ratios == pytest.approx((1.0, 1.0), rel=0.10), element
+    if element == "Ga":
+        # JANAF implies EA 0.301/0.308 eV; current NIST EA is 0.430 eV.
+        assert ratios == pytest.approx((0.369, 0.568), rel=0.02), element
+    else:
+        assert ratios == pytest.approx((1.0, 1.0), rel=0.10), element
+    if element == "Cu":
+        # Regression pin for the restored Cu- row, beside the shared physics
+        # bound: JANAF Cu-007 implies EA 1.228 eV against NIST 1.23578 eV.
+        assert ratios == pytest.approx(
+            (0.9414909282, 0.9644856595), rel=5e-5
+        ), element
 
 
 def test_cr_channels_against_janaf_cells() -> None:
