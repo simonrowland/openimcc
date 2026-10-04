@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 import pytest
@@ -58,6 +59,7 @@ EVALUATION_EXPECTATIONS = json.loads(
 # while remaining tight enough to catch the association-constant mutations
 # exercised during review. Exact zero expectations stay exact.
 EVALUATION_RTOL = 1.0e-12
+SOLVER_TOL = 1.0e-12
 
 
 def test_published_core_integrity_hash_and_refusal_are_pinned(
@@ -118,10 +120,26 @@ def test_packaged_evaluation_outputs_match_per_value_pins() -> None:
                     "temperature_K": result.temperature_K,
                     "basis": result.basis,
                     "D": result.D,
-                    "residual_inf": result.convergence.residual_inf,
-                    "residual_l2": result.convergence.residual_l2,
-                    "total_displacement": result.convergence.total_displacement,
                 }
+                # Solver diagnostics depend on the numerical library build, so
+                # they are checked against the solver's contract, not pinned.
+                # The solve accepts on the infinity norm of the residual
+                # (kernel tol, 1e-12). For a residual vector f of length n,
+                #   |f|_inf <= |f|_2 <= sqrt(n) * |f|_inf,
+                # and n is at most the number of parent oxides, so
+                #   |f|_2 <= sqrt(n_parents) * tol.
+                # Check: eight components of 5e-13 give inf 5e-13 (accepted)
+                # and L2 sqrt(8) * 5e-13 = 1.41e-12, inside sqrt(8) * 1e-12.
+                # The displacement is the log-space distance from the initial
+                # guess (order 10, not small); only its sanity is checked.
+                convergence = result.convergence
+                residual_inf = float(convergence.residual_inf)
+                residual_l2 = float(convergence.residual_l2)
+                l2_bound = math.sqrt(len(result.parent_x)) * SOLVER_TOL
+                assert 0.0 <= residual_inf <= SOLVER_TOL, f"{key} {residual_inf}"
+                assert 0.0 <= residual_l2 <= l2_bound, f"{key} {residual_l2}"
+                displacement = float(convergence.total_displacement)
+                assert math.isfinite(displacement) and displacement >= 0.0, key
                 for name, actual in scalars.items():
                     assert float(actual) == pytest.approx(
                         expected["scalars"][name],
