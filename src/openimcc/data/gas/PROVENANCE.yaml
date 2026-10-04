@@ -66,7 +66,7 @@ source_notes:
         source_path: data-src/janaf/Cu-006.txt
         source_sha256: 7699877b974780f89a88b8328d50996e4ab227c0f61c567daabe185fa8a8f9bf
         NIST_ionisation_energy_eV: 7.72638
-        NIST_ASD: https://physics.nist.gov/PhysRefData/Handbook/Tables/coppertable1.htm
+        NIST_WebBook: https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440508&Mask=1020
         ground_term_weights_Cu_to_Cu_plus: [2, 1]
         fitted_to_ground_term_saha_ratio:
           1500_K: 1666.15
@@ -76,20 +76,32 @@ source_notes:
           Declined; source retained without coefficient changes and Cu+ omitted
           from runtime. The anomalous entropy is present in the published
           JANAF Cu-006 table, so this is a source-consistency failure.
+    electron_attachment_checks:
       Cu-:
         source_record: Cu-007
         source_path: data-src/janaf/Cu-007.txt
         source_sha256: 2e45a80821a53dcd1f581910e0d2e109c3fb7be0f6026498e45a1460755b2cd6
         NIST_electron_affinity_eV: 1.23578
-        NIST_ASD: https://physics.nist.gov/PhysRefData/Handbook/Tables/coppertable1.htm
+        NIST_WebBook: https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440508&Mask=1020
         ground_term_weights_Cu_to_Cu_minus: [2, 1]
-        fitted_to_attachment_saha_ratio:
-          1500_K: 2.78857e-4
-          2500_K: 2.20885e-5
+        equation: >-
+          For Cu + e- = Cu-, Kp=(p°/kBT)*(Z-/2Z0)*
+          (h²/(2*pi*me*kBT))^(3/2)*exp(EA/kBT).
+        unit_check: >-
+          p°/(kBT) has units m^-3 and the electron translational factor has
+          units m^3, so Kp is dimensionless. This is the inverse cation Saha
+          form; detailed balance gives K_attach(Cu)*K_ion(Cu-)=1.
+        fitted_to_attachment_ratio:
+          1500_K: 0.941424
+          2500_K: 0.958988
+        implied_Cu007_electron_affinity_eV:
+          1500_K: 1.22798
+          2500_K: 1.22676
         disposition: >-
-          Declined; source retained without coefficient changes and Cu- omitted
-          from runtime because both fitted-to-attachment ratios fail by more
-          than a factor of three.
+          Retained in runtime. The ~1.227 eV implied JANAF affinity differs
+          from the modern NIST value by about 0.009 eV, consistent with source
+          vintage; a 0.01 eV offset changes K by factors 1.08 at 1500 K and
+          1.05 at 2500 K. The regression comparison allows 10%.
     material_disagreements:
       Li2O(l): >-
         The NASA polynomial minus JANAF dfH298+(H-H298)-T*S gives liquid ΔG
@@ -173,27 +185,27 @@ source_notes:
         disposition: fitted_and_included_in_charge_balance
     maximum_ion_to_neutral_pressure_ratios:
       O2-:
-        value: 2.151337948770686e-05
+        value: 1.8477491097917215e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       AlO2-:
-        value: 6.450282066404919
-        temperature_K: 2300
+        value: 5.051482184349738
+        temperature_K: 2100
         fO2_bar: 1.0e-12
       KO-:
-        value: 0.0014702225084190382
+        value: 0.0012627501563291558
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Cr-:
-        value: 1.8271578286999143e-05
+        value: 1.569316086930193e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       V-:
-        value: 8.827652540652657e-06
+        value: 7.581926927316159e-06
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Nb-:
-        value: 3.1151238752210466e-05
+        value: 2.6755291378649697e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
     ko_note: >-

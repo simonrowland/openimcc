@@ -379,7 +379,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     }
     assert set(computed) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
-        "Li", "Rb", "Pb", "Cs", "Sn", "Ga", "Ge", "B",
+        "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
     }
     caller_parent_oxides = {
         "Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2",
@@ -387,9 +387,10 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Cs": "Cs2O", "Cu": "Cu2O", "Sn": "SnO",
     }
     trace_elements = {"Li", "Rb", "Pb"}
-    new_trace_elements = {"Ga", "Ge", "B", "In"}
+    new_trace_elements = {"Ga", "Ge", "B", "In", "Cu"}
     new_trace_parents = {
         "Ga": "Ga2O3", "Ge": "GeO2", "B": "B2O3", "In": "In2O3",
+        "Cu": "Cu2O",
     }
     trace_elements = {"Li", "Rb", "Pb", "Cs", "Sn"}
     existing_caller_parent_oxides = {
@@ -645,8 +646,9 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Ga": ("Ga+", "Ga-"),
         "Ge": ("Ge+",),
         "B": ("B+", "B-", "BO-", "BO2-"),
+        "Cu": ("Cu-",),
     }
-    for element in ("Ga", "Ge", "B"):
+    for element in ("Ga", "Ge", "B", "Cu"):
         current = {"max_ratio": -1.0, "isolated_bound": 0.0}
         for temperature in TEMPERATURES_K:
             activities = dict(activities_by_temperature[temperature])
@@ -713,29 +715,18 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     assert negative_to_neutral_ratio_max["KO"] > 1.0e-4
     for neutral in ("Cr", "V", "Nb"):
         assert attachment_term_max[neutral] > 1.0e-4
-    negative_screen = yaml.safe_load(
-        GAS_PROVENANCE.read_text(encoding="utf-8")
-    )["source_notes"]["negative_ion_screen"]
+    negative_screen_results = {}
     for neutral in negative_screen_species:
         source_name = f"{neutral}-"
-        recorded_term = negative_screen["maximum_attachment_terms"][source_name]
-        assert attachment_term_max[neutral] == pytest.approx(
-            recorded_term["value"], rel=1.0e-12
-        )
-        assert attachment_term_location[neutral] == (
-            float(recorded_term["temperature_K"]),
-            float(recorded_term["fO2_bar"]),
-        )
-        recorded_ratio = negative_screen[
-            "maximum_ion_to_neutral_pressure_ratios"
-        ][source_name]
-        assert negative_to_neutral_ratio_max[neutral] == pytest.approx(
-            recorded_ratio["value"], rel=1.0e-12
-        )
-        assert negative_to_neutral_ratio_location[neutral] == (
-            float(recorded_ratio["temperature_K"]),
-            float(recorded_ratio["fO2_bar"]),
-        )
+        negative_screen_results[source_name] = {
+            "maximum_attachment_term": attachment_term_max[neutral],
+            "attachment_term_location": attachment_term_location[neutral],
+            "maximum_ion_to_neutral_pressure_ratio": negative_to_neutral_ratio_max[
+                neutral
+            ],
+            "pressure_ratio_location": negative_to_neutral_ratio_location[neutral],
+        }
+    maxima["Cu"]["negative_ion_screen"] = negative_screen_results
     source_terms_3000 = maxima_by_point[
         (3000.0, 1.0e-4)
     ]["electron_source_terms"]
@@ -746,6 +737,24 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
 
 def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     measured = _ion_bound_maxima()
+    negative_screen = yaml.safe_load(
+        GAS_PROVENANCE.read_text(encoding="utf-8")
+    )["source_notes"]["negative_ion_screen"]
+    for species, result in measured["Cu"]["negative_ion_screen"].items():
+        term = negative_screen["maximum_attachment_terms"][species]
+        ratio = negative_screen["maximum_ion_to_neutral_pressure_ratios"][species]
+        assert result["maximum_attachment_term"] == pytest.approx(
+            term["value"], rel=1.0e-12
+        )
+        assert result["attachment_term_location"] == (
+            float(term["temperature_K"]), float(term["fO2_bar"])
+        )
+        assert result["maximum_ion_to_neutral_pressure_ratio"] == pytest.approx(
+            ratio["value"], rel=1.0e-12
+        )
+        assert result["pressure_ratio_location"] == (
+            float(ratio["temperature_K"]), float(ratio["fO2_bar"])
+        )
     assert {path.stem for path in JANAF_DATA.glob("*.txt")} == {
         "Na-006", "K-006", "D-020",
         "Na-007", "K-007", "O-003", "Al-007", "Fe-010",
@@ -762,7 +771,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     }
     assert set(measured) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
-        "Li", "Rb", "Pb", "Cs", "Sn", "Ga", "Ge", "B",
+        "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
     }
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
@@ -789,8 +798,10 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     assert declined_in["status"] == "declined"
     assert ELEMENT_STATUS["In"]["criteria"]["C3"] is False
     assert declined_in["source_tables"]["cation"] == "NG-6016"
-    assert ELEMENT_STATUS["Cu"]["c3_ion_bound"]["status"] == "declined"
-    assert ELEMENT_STATUS["Cu"]["criteria"]["C3"] is False
+    assert ELEMENT_STATUS["Cu"]["c3_ion_bound"].get("status") != "declined"
+    assert ELEMENT_STATUS["Cu"]["criteria"]["C3"] is (
+        measured["Cu"]["max_ratio"] < 1.0e-4
+    )
     source_terms_3000 = measured["Si"]["electron_source_terms_3000K"]
     assert set(
         sorted(source_terms_3000, key=source_terms_3000.get, reverse=True)[:2]
@@ -803,7 +814,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     legacy_measured = {
         element: result
         for element, result in measured.items()
-        if element not in {"Ga", "Ge", "B", "In"}
+        if element not in {"Ga", "Ge", "B", "In", "Cu"}
     }
     ratio_order = sorted(
         legacy_measured,

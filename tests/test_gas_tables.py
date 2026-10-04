@@ -2050,6 +2050,7 @@ def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
         ("Ga", "Ga+", 1),
         ("B", "B+", 1),
         ("Cs", "Cs+", 1),
+        ("Cu", "Cu-", -1),
         ("Na", "Na-", -1),
         ("K", "K-", -1),
         ("O", "O-", -1),
@@ -2073,6 +2074,7 @@ def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
         ("B", "B-", -1),
         ("BO2", "BO2-", -1),
         ("Cs", "Cs-", -1),
+        ("Cu", "Cu-", -1),
     ]
     source_ids = set(ion_table_ids.values())
     source_ids.update(
@@ -2404,49 +2406,67 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
         assert fitted_k / saha_k == pytest.approx(1.0, rel=0.02), element
 
 
-def test_copper_negative_ion_is_declined_by_electron_affinity_check() -> None:
-    """Cu- source affinity fails the analogous NIST ground-state check.
+_ATTACHMENT_LEVELS = {
+    # NIST WebBook gives Cu EA determinations from 1.226 to 1.235792 eV;
+    # Cu-007's fitted EA is about 1.229 eV, consistent with an older JANAF
+    # evaluation. The resulting ~6% vintage offset justifies a 10% tolerance.
+    "Cu": (1.23578, ((2, 0.0),), ((1, 0.0),)),
+}
 
-    For M + e- = M-, Kp=(kBT/p°)*(2*g-/g0)*(2*pi*me*kBT/h²)^(3/2)
-    * exp(EA/kBT), dimensionless at p°=1 bar after the m³ and m⁻³ factors
-    cancel. NIST Cu EA is 1.23578 eV; ground-state weights are Cu:Cu-=2:1.
+
+@pytest.mark.parametrize("element", tuple(_ATTACHMENT_LEVELS))
+def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
+    """Compare fitted attachment Kp with the NIST ground-state affinity.
+
+    For M + e- = M-,
+    Kp=(p°/kBT)*(Z-/2Z0)*(h²/(2*pi*me*kBT))^(3/2)*exp(EA/kBT).
+    The units are m^-3 times m^3, so Kp is dimensionless. This is the inverse
+    of the cation Saha expression in test_every_m_plus_matches_saha_with_level_populations:
+    K_attach(M)*K_ion(M-)=1, as required by detailed balance.
     """
+    affinity_eV, neutral_levels, anion_levels = _ATTACHMENT_LEVELS[element]
     pack = load_gas_datapack()
-    assert "Cu-(g)" not in pack.gas_df.index
-    source = next(
-        source for source in build_gas_tables.TRACE_ION_GAS_TEXT_SOURCES
-        if source[0] == "Cu-(g)"
-    )
-    row = build_gas_tables._fit_janaf_text_row(JANAF_DATA, *source)
-    cu_minus_row = pd.Series(
-        {key: float(value) for key, value in row.items() if key in "ABCDEFG"}
-    )
+    attachment = f"{element}-(g)"
     k_b = 1.380649e-23
     h = 6.62607015e-34
     m_e = 9.1093837139e-31
     e_v = 1.602176634e-19
+    h_c = 1.986445857e-23
+
+    def partition(levels: tuple[tuple[int, float], ...], temperature: float) -> float:
+        return sum(
+            weight * math.exp(-h_c * energy / (k_b * temperature))
+            for weight, energy in levels
+        )
+
     ratios = []
     for temperature in (1500.0, 2500.0):
-        neutral = _nearest_interval_row(
-            pack.gas_df, "Cu(g)", temperature, allow_extrapolation=False
+        anion = _nearest_interval_row(
+            pack.gas_df, attachment, temperature, allow_extrapolation=False
         )
-        electron = _nearest_interval_row(
-            pack.gas_df, "e-(g)", temperature, allow_extrapolation=False
+        neutral = _nearest_interval_row(
+            pack.gas_df, f"{element}(g)", temperature, allow_extrapolation=False
         )
         delta_g = (
-            _janaf_gibbs(temperature, cu_minus_row)
+            _janaf_gibbs(temperature, anion)
             - _janaf_gibbs(temperature, neutral)
-            - _janaf_gibbs(temperature, electron)
+            - _janaf_gibbs(
+                temperature,
+                _nearest_interval_row(
+                    pack.gas_df, "e-(g)", temperature, allow_extrapolation=False
+                ),
+            )
         )
         fitted_k = math.exp(-delta_g / (R_J_MOL_K * temperature))
-        affinity_k = (
-            k_b * temperature / 1.0e5
-            * (2.0 * 1 / 2)
-            * (2.0 * math.pi * m_e * k_b * temperature / h**2) ** 1.5
-            * math.exp(1.23578 * e_v / (k_b * temperature))
+        saha_k = (
+            1.0e5 / (k_b * temperature)
+            * partition(anion_levels, temperature)
+            / (2.0 * partition(neutral_levels, temperature))
+            * (h**2 / (2.0 * math.pi * m_e * k_b * temperature)) ** 1.5
+            * math.exp(affinity_eV * e_v / (k_b * temperature))
         )
-        ratios.append(fitted_k / affinity_k)
-    assert ratios == pytest.approx((2.78857e-4, 2.20885e-5), rel=5.0e-4)
+        ratios.append(fitted_k / saha_k)
+    assert ratios == pytest.approx((0.941424, 0.958988), rel=5.0e-5)
 
 
 def test_cr_channels_against_janaf_cells() -> None:

@@ -268,21 +268,30 @@ re-fitted.
 Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
 `Li+`, `Rb+`, `Pb+`, `Cs+`, `Sn+`, `Cs2O+`, `Ga+`, `Ge+`, `B+`,
-`Ga-`, `B-`, `BO-`, `BO2-`, and every available JANAF-supported negative ion
+`Ga-`, `B-`, `BO-`, `BO2-`, `Cu-`, and every available JANAF-supported negative ion
 whose neutral is present. In+ is retained in the source ledger but declined
 after its NASA card failed the NIST Saha check. Cu+ is declined because its
 JANAF Cu-006 entropy yields fitted/Saha ratios 1666.15 and 1656.61 at 1500 and
 2500 K; the anomalous entropy is present in the published Cu-006 table. Cu-
-is also declined: with NIST EA(Cu)=1.23578 eV and Cu:Cu− ground weights 2:1,
-its fitted/attachment ratios are 2.79e-4 and 2.21e-5. Both source records
-remain in the ledger unchanged. BO- uses its NASA CEA card because JANAF has
-no BO- table. The default call remains neutral-only and
+is available on the opt-in ion path. For Cu + e- = Cu-,
+Kp=(p°/kBT)*(Z-/2Z0)*(h²/(2πme kBT))^(3/2)*exp(EA/kBT). The first factor
+has units m^-3 and the electron translational factor m^3, so Kp is
+dimensionless. This is the inverse of the cation Saha form in `openimcc.gas`;
+detailed balance gives K_attach(Cu)*K_ion(Cu-)=1. With NIST WebBook
+[EA(Cu)=1.23578 eV](https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440508&Mask=1020)
+and Cu:Cu− ground weights 2:1, fitted/attachment ratios are 0.941424 and
+0.958988 at 1500 and 2500 K. Cu-007 implies EA about 1.227 eV (1.22798 and
+1.22676 eV from those temperatures); the ~0.009 eV vintage difference is
+consistent with the JANAF evaluation. A 0.01 eV affinity shift changes K by
+factors 1.08 and 1.05 at those temperatures, supporting the test's 10%
+tolerance. Both Cu source records remain in the ledger unchanged. BO- uses
+its NASA CEA card because JANAF has no BO- table. The default call remains neutral-only and
 returns the same
 mapping as before. Ion entries use provenance class
 `janaf_fitted_ionisation` for JANAF rows and `nasa_glenn_fitted` for NASA
 cards; their source rows cover 1200–3000 K and their domain flags include the
-neutral and charge-species source rows. The Cs− row is emitted; the Cu− source
-is retained in provenance but declined with Cu+. No JANAF Sn− row was found.
+neutral and charge-species source rows. The Cs− and Cu− rows are emitted.
+No JANAF Sn− row was found.
 `gas_species` requests use the full default neutral set for the charge closure,
 then retain the requested neutral and charge channels. Requesting an ion name
 requires `include_ions=True`. `evaluate_gas_oxygen_balance` remains neutral-only.

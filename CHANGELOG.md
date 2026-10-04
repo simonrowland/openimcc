@@ -17,7 +17,7 @@
   fails C3 unchanged; its source function is retained without adjustment.
 - Added optional Cs, Cu and Sn gas channels with caller-supplied Cs2O(l),
   Cu2O(l) and SnO(l) activities, source-fitted 1200–3000 K rows, and opt-in
-  Cs+, Cu+, Sn+, Cs2O+, Cs− and Cu− channels. JANAF liquid cells are used for
+  Cs+, Sn+, Cs2O+, Cs− and Cu− channels. JANAF liquid cells are used for
   Cu2O(l) through 2000 K, with a NASA H/S-increment tail; NASA liquid cards
   supply Cs2O(l) and SnO(l), with a labelled SnO constant-Cp continuation from
   1250 K to 1200 K. SnO is selected over the later-starting SnO2(l) card.
@@ -27,6 +27,11 @@
   The published NASA In+ card is declined after its fitted Kion/Saha ratios
   are 1.510e28 at 1500 K and 9.143e16 at 2500 K. The source card is retained
   without adjustment, and neutral In channels remain available.
+  Cu− is available on the opt-in ion path: corrected attachment-Saha ratios
+  against [NIST's 1.23578 eV copper affinity](https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440508&Mask=1020) are 0.941424 and 0.958988 at
+  1500 and 2500 K, consistent with the older Cu-007 evaluation within 10%.
+  Cu+ remains declined because the JANAF Cu-006 entropy gives fitted/Saha
+  ratios of 1666.15 and 1656.61 at those temperatures.
 - Switched default SiO2(l), Al2O3(l), MgO(l), and CaO(l) parent rows to the
   generated JANAF fits and labelled constant-Cp liquid continuations through
   1200 K. The former LAM1987 default rows, including SiO2(cr), are preserved

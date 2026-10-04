@@ -107,7 +107,7 @@ _T625_AGAINST_JANAF_PRINTED_GAS_COLUMNS = {
 _ION_GAS_SPECIES = {
     "Na+", "K+", "Ca+", "e-",
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
-    "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-", "Cs-",
+    "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-", "Cs-", "Cu-",
     "Li+", "Rb+", "Pb+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Li+", "Rb+", "Pb+", "Cs+", "Sn+", "Cs2O+",
@@ -768,6 +768,21 @@ def test_ion_subsets_use_full_gas_charge_closure(
         evaluate_gas(
             activities, 3000.0, 1.0e-12, gas_pack, gas_species=("Na+",)
         )
+
+
+def test_cu_minus_is_opt_in_and_cu_plus_remains_declined(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = _quickstart_activities(2000.0)
+    activities["Cu2O"] = 1.0e-3
+    neutral = evaluate_gas(activities, 2000.0, 1.0e-8, gas_pack)
+    ions = evaluate_gas(
+        activities, 2000.0, 1.0e-8, gas_pack, include_ions=True
+    )
+    assert "Cu-" not in neutral
+    assert ions["Cu-"] > 0.0
+    assert "Cu+" not in ions
+    assert ions.provenance_class["Cu-"] == "janaf_fitted_ionisation"
 
 
 def test_non_na_gas_channels_match_the_base_na2o_row_bit_for_bit(

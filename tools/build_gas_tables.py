@@ -230,7 +230,7 @@ TRACE_ION_GAS_TEXT_SOURCES = (
     ("Cu+(g)", "Cu-006", "Cu", 1, 0),
     ("Cu-(g)", "Cu-007", "Cu", 1, 0),
 )
-DECLINED_ION_GAS_SPECIES = frozenset({"Cu+(g)", "Cu-(g)"})
+DECLINED_ION_GAS_SPECIES = frozenset({"Cu+(g)"})
 TRACE_ION_GAS_NASA_SOURCES = (
     ("BO-(g)", "NG-1074", "BO", "B", 1, 1),
     ("Ge+(g)", "NG-5197", "Ge", "Ge", 1, 0),
