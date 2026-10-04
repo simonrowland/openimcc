@@ -95,18 +95,16 @@ MUTATIONS = (
     (
         "i-duplicate-interval-order-dependence",
         "src/openimcc/gas.py",
-        """    if t_mins.size > 1:
-        unique_starts, start_counts = np.unique(t_mins, return_counts=True)
-    else:
-        return
-    if start_counts.size != t_mins.size:
-        start = unique_starts[np.flatnonzero(start_counts > 1)[0]]
-        raise ImccGasDuplicateIntervalError(
-            f"{table_name} database {table_path} has duplicate interval start "
-            f"for {species!r} at T_min={start!r} K"
-        )
+        """        if t_mins.size > 1:
+            unique_starts, start_counts = np.unique(t_mins, return_counts=True)
+            if start_counts.size != t_mins.size:
+                start = unique_starts[np.flatnonzero(start_counts > 1)[0]]
+                raise ImccGasDuplicateIntervalError(
+                    f"{table_name} database {table_path} has duplicate interval start "
+                    f"for {species!r} at T_min={start!r} K"
+                )
 """,
-        "    return\n",
+        "        if False and t_mins.size > 1:\n            pass\n",
         "loader accepted duplicate interval with same identity",
     ),
     (
@@ -132,8 +130,8 @@ MUTATIONS = (
     (
         "l-selector-reconversion",
         "src/openimcc/gas.py",
-        "    t_mins = rows[\"T_min\"].to_numpy(copy=False)\n",
-        "    t_mins = rows[\"T_min\"].astype(float).to_numpy()\n",
+        "        validate_coefficients=False,\n    )\n    t_mins = rows[\"T_min\"].to_numpy(copy=False)\n",
+        "        validate_coefficients=False,\n    )\n    t_mins = rows[\"T_min\"].astype(float).to_numpy()\n",
         "test_selector_uses_normalized_interval_values_without_reconversion",
     ),
     (
@@ -153,15 +151,15 @@ MUTATIONS = (
     (
         "o-selector-skips-duplicate-check",
         "src/openimcc/gas.py",
-        "        t_mins, t_maxs, species, \"gas/condensate\", Path(\"<in-memory>\")\n",
-        "        t_mins[:1], t_maxs[:1], species, \"gas/condensate\", Path(\"<in-memory>\")\n",
+        "        rows,\n        species,\n        \"gas/condensate\",\n        Path(\"<in-memory>\"),\n        validate_coefficients=False,\n",
+        "        rows.iloc[:1],\n        species,\n        \"gas/condensate\",\n        Path(\"<in-memory>\"),\n        validate_coefficients=False,\n",
         "test_invalid_duplicate_starts_refuse_evaluation",
     ),
     (
         "p-selector-restores-bare-assert",
         "src/openimcc/gas.py",
-        "    _validate_interval_arrays(\n        t_mins, t_maxs, species, \"gas/condensate\", Path(\"<in-memory>\")\n    )\n",
-        "    assert np.isfinite(t_mins).all()\n",
+        "    _validate_interval_arrays(\n        rows,\n        species,\n        \"gas/condensate\",\n        Path(\"<in-memory>\"),\n        validate_coefficients=False,\n    )\n",
+        "    assert np.isfinite(rows[\"T_min\"].to_numpy(copy=False)).all()\n",
         "test_invalid_direct_bounds_refuse_identity_and_evaluation",
     ),
     (
@@ -177,6 +175,34 @@ MUTATIONS = (
         "    if start_counts.size != t_mins.size:\n",
         "    if False and start_counts.size != t_mins.size:\n",
         "test_invalid_duplicate_starts_refuse_evaluation",
+    ),
+    (
+        "s-coefficient-dtype-check-removed",
+        "src/openimcc/gas.py",
+        "    if validate_coefficients:\n",
+        "    if False and validate_coefficients:\n",
+        "test_non_float64_evaluated_coefficients_are_refused_at_identity_and_evaluation",
+    ),
+    (
+        "t-coefficient-dtype-check-only-at-identity",
+        "src/openimcc/gas.py",
+        "                if scalar_dtype is not np.float64 and not (\n                    column == \"H\" and integer_h and scalar_dtype is np.int64\n                ):\n",
+        "                if False and scalar_dtype is not np.float64 and not (\n                    column == \"H\" and integer_h and scalar_dtype is np.int64\n                ):\n",
+        "test_non_float64_evaluated_coefficients_are_refused_at_identity_and_evaluation",
+    ),
+    (
+        "u-coefficient-dtype-check-only-at-evaluation",
+        "src/openimcc/gas.py",
+        "        _validate_interval_arrays(\n            rows,\n            species,\n            table_name,\n            table_path,\n        )\n",
+        "        _validate_interval_arrays(\n            rows,\n            species,\n            table_name,\n            table_path,\n            validate_coefficients=False,\n        )\n",
+        "test_non_float64_evaluated_coefficients_are_refused_at_identity_and_evaluation",
+    ),
+    (
+        "v-missing-label-check-removed",
+        "src/openimcc/gas.py",
+        "    if any(not isinstance(label, str) or not label.strip() for label in labels):\n",
+        "    if False and any(not isinstance(label, str) or not label.strip() for label in labels):\n",
+        "test_loader_refuses_unnamed_species_from_csv",
     ),
 )
 
