@@ -54,7 +54,7 @@ model, a volatility calculation, or an evaporation-flux term.
 
 ## Install
 
-Python >= 3.11 is required. Until the first release is published, install from
+Python >= 3.12 is required. Until the first release is published, install from
 a source checkout:
 
 ```bash

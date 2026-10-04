@@ -56,7 +56,7 @@ head "test matrix"
 if [ "$QUICK" = "1" ]; then
     VERSIONS=("$(python3 -c 'import sys;print(f"{sys.version_info.major}.{sys.version_info.minor}")')")
 else
-    VERSIONS=(3.11 3.12 3.13 3.14)
+    VERSIONS=(3.12 3.13 3.14)
 fi
 
 for V in "${VERSIONS[@]}"; do

@@ -260,6 +260,8 @@
 
 ### Changes that can break callers
 
+- Python 3.12 is now the minimum supported version. Python 3.11 is no longer
+  tested.
 - Default parent changes raise vapor pressures relative to the previous
   LAM1987 rows by these measured amounts. Values are log10 pressure shifts per
   metal atom; Si covers Si, SiO, SiO2, Si2, Si3; Al covers Al, AlO, AlO2, Al2O,

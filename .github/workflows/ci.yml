@@ -16,7 +16,7 @@ jobs:
       matrix:
         # 3.14 included because scripts/ci-local.sh verifies it passes; keep
         # the two matrices in step.
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

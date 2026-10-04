@@ -401,7 +401,7 @@ Three gates, and two of them are things `pytest` alone cannot catch:
 
 - **datapack drift** — a pack edited under an unchanged version string moves
   every activity the engine reports;
-- **test matrix** — across 3.11 through 3.14;
+- **test matrix** — across 3.12 through 3.14;
 - **core-only install** — `pip install openimcc` must need numpy and scipy
   alone. A developer machine has the extras installed, so one convenience
   import in a core module breaks users while every local test still passes.

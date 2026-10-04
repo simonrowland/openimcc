@@ -181,7 +181,7 @@ def test_documented_python_and_shell_commands_run_from_outside_repo(
         fences = _fences(path)
         source = _quickstart_text(path)
         if path == README:
-            assert "Python >= 3.11" in source
+            assert "Python >= 3.12" in source
             assert not re.search(r"python(?:3)?\s+-m\s+openimcc(?:\s|$)", source)
         for index, fence in enumerate(fences):
             if fence.language in PYTHON_LANGUAGES:
