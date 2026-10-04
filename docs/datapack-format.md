@@ -592,3 +592,38 @@ values and structures recorded in the shipped files. Their prose meanings
 are therefore documented as pack metadata, not promoted into an invented
 schema contract. No unresolved metadata meaning prevents a reader from
 predicting whether the current loader accepts a pack.
+
+## Gas table content identity
+
+`load_gas_datapack()` reads `gas-shomate.csv` and `condensate.csv` into parsed
+tables. `ImccGasDatapack.gas_table_digest` and
+`ImccGasDatapack.condensate_table_digest` hash every parsed column and row
+with the same canonical serializer used for melt-pack identity. Column labels
+are sorted, and rows are sorted by their full canonical row serialization, so
+CSV column order, quoting, line endings, and a trailing newline do not identify
+the content. Rows are unordered: interval bounds must be finite numbers and are
+compared as float64, and each species must have a unique `T_min` in either
+table. This ensures interval selection cannot depend on a tied start's file
+position and is why row order is excluded from the digest. Header spelling is
+preserved because the loader uses the exact column names when evaluating the
+tables.
+
+The loader normalizes CSV bounds to float64 and runs the shared interval
+validator. Digest properties run that validator again against the current
+mutable frame before issuing an identity, and the selector validates the
+selected species rows before evaluation. Directly constructed frames must
+already use float64 bound columns; other dtypes are refused with a typed
+interval error. Duplicate starts raise `ImccGasDuplicateIntervalError` and
+invalid bounds raise `ImccGasInvalidIntervalError`.
+
+Empty CSV cells parsed as NaN are represented as `null` in the digest payload.
+Non-finite numeric values are represented by a tagged mapping because the
+canonical serializer rejects non-finite numbers. Finite numeric values remain
+numeric. `gas_path` and `oxide_path` identify source locations for diagnostics;
+they are not content identity.
+
+`engine_binding_identity(melt_pack, gas_pack)` hashes the melt
+`binding_digest`, `condensate_table_digest`, and `gas_table_digest` as one
+canonical mapping and returns an `EngineBindingIdentity` with that digest and
+its three components. It refuses an unlabelled melt pack or a gas pack without
+both table digests.

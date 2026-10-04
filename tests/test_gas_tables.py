@@ -4306,8 +4306,11 @@ def test_janaf_gate_rejects_both_previously_incorrect_parent_liquid_rows(
     pack = sf04_gas_pack
 
     na_mutated = pack.oxide_df.copy(deep=True)
-    na_mask = na_mutated.index == "Na2O(l)"
+    na_rows = na_mutated.index == "Na2O(l)"
+    na_mask = na_rows & (na_mutated["T_min"] == 1500.0)
+    na_other_interval = na_rows & (na_mutated["T_min"] == 1200.0)
     na_mutated.loc[na_mask, "T_min"] = 825.0
+    na_mutated.loc[na_other_interval, ["T_min", "T_max"]] = [2001.0, 3000.0]
     for key, value in zip(
         ("dG_A", "dG_B", "dG_C", "dG_D", "dG_E"),
         (4.82, 19.292, -5.267, 0.623, 0.0),

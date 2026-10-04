@@ -12,6 +12,7 @@ the IMCC-SF04 spec r2.1.
 
 from __future__ import annotations
 
+import hashlib
 import math
 import os
 import re
@@ -25,7 +26,7 @@ from typing import TYPE_CHECKING, Callable, Literal, Mapping, NamedTuple, Sequen
 import numpy as np
 from scipy.optimize import brentq
 
-from openimcc.kernel import ImccRefusal
+from openimcc.kernel import ImccRefusal, _canonical_published_serialization
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -58,6 +59,18 @@ class ImccGasSpeciesNotFoundError(ImccRefusal):
     """Raised when a requested gas species or oxide has no G(T) row at T."""
 
     code = "imcc_gas_species_not_found"
+
+
+class ImccGasDuplicateIntervalError(ImccRefusal):
+    """Raised when one table has competing rows with the same interval start."""
+
+    code = "imcc_gas_duplicate_interval"
+
+
+class ImccGasInvalidIntervalError(ImccRefusal):
+    """Raised when a table interval has invalid or non-finite bounds."""
+
+    code = "imcc_gas_invalid_interval"
 
 
 class ImccGasTemperatureOutsideDomainError(ImccRefusal):
@@ -1598,14 +1611,132 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
 # --------------------------------------------------------------------------- #
 
 
+def _gas_table_identity_cell(value: object) -> object:
+    """Map parsed pandas cells to values accepted by the canonical encoder."""
+    if isinstance(value, np.generic):
+        value = value.item()
+    if isinstance(value, float) and not math.isfinite(value):
+        if math.isnan(value):
+            return None
+        return {
+            "non_finite_float": "positive_infinity" if value > 0.0 else "negative_infinity"
+        }
+    return value
+
+
+def _gas_table_digest(table_name: str, table: "pd.DataFrame") -> str:
+    """Hash every parsed cell, independent of CSV column and row order."""
+    rows = [
+        {column: _gas_table_identity_cell(value) for column, value in row.items()}
+        for row in table.reset_index().to_dict(orient="records")
+    ]
+    rows.sort(key=_canonical_published_serialization)
+    payload = {
+        "table": table_name,
+        "columns": sorted((table.index.name, *table.columns)),
+        "rows": rows,
+    }
+    return hashlib.sha256(_canonical_published_serialization(payload)).hexdigest()
+
+
+def _normalise_interval_bounds(
+    table: "pd.DataFrame", table_name: str, table_path: Path
+) -> None:
+    """Store loader bounds as float64 before shared interval validation."""
+    pd = _pandas()
+    for column in ("T_min", "T_max"):
+        if column not in table.columns:
+            raise ImccGasInvalidIntervalError(
+                f"{table_name} database {table_path} is missing {column!r}"
+            )
+        values = pd.to_numeric(table[column], errors="coerce").to_numpy(
+            dtype=np.float64
+        )
+        table[column] = values
+
+
+def _validate_interval_arrays(
+    t_mins: np.ndarray,
+    t_maxs: np.ndarray,
+    species: str,
+    table_name: str,
+    table_path: Path,
+) -> None:
+    """Validate float64 interval arrays for one species."""
+    if t_mins.dtype != np.dtype("float64"):
+        raise ImccGasInvalidIntervalError(
+            f"{table_name} database {table_path} requires float64 T_min values"
+        )
+    if t_maxs.dtype != np.dtype("float64"):
+        raise ImccGasInvalidIntervalError(
+            f"{table_name} database {table_path} requires float64 T_max values"
+        )
+    if not np.isfinite(t_mins).all():
+        row_index = int(np.flatnonzero(~np.isfinite(t_mins))[0])
+        raise ImccGasInvalidIntervalError(
+            f"{table_name} database {table_path} has non-finite or non-numeric "
+            f"T_min for {species!r}: {t_mins[row_index]!r}"
+        )
+    if not np.isfinite(t_maxs).all():
+        row_index = int(np.flatnonzero(~np.isfinite(t_maxs))[0])
+        raise ImccGasInvalidIntervalError(
+            f"{table_name} database {table_path} has non-finite or non-numeric "
+            f"T_max for {species!r}: {t_maxs[row_index]!r}"
+        )
+    if not np.all(t_mins <= t_maxs):
+        row_index = int(np.flatnonzero(t_mins > t_maxs)[0])
+        raise ImccGasInvalidIntervalError(
+            f"{table_name} database {table_path} has T_min greater than T_max "
+            f"for {species!r}: [{t_mins[row_index]}, {t_maxs[row_index]}] K"
+        )
+    if t_mins.size > 1:
+        unique_starts, start_counts = np.unique(t_mins, return_counts=True)
+    else:
+        return
+    if start_counts.size != t_mins.size:
+        start = unique_starts[np.flatnonzero(start_counts > 1)[0]]
+        raise ImccGasDuplicateIntervalError(
+            f"{table_name} database {table_path} has duplicate interval start "
+            f"for {species!r} at T_min={start!r} K"
+        )
+
+
+def _validate_interval_table(
+    table: "pd.DataFrame", table_name: str, table_path: Path
+) -> None:
+    """Apply array validation to each species in a parsed interval table."""
+    for species, rows in table.groupby(level=0, sort=False):
+        _validate_interval_arrays(
+            rows["T_min"].to_numpy(copy=False),
+            rows["T_max"].to_numpy(copy=False),
+            species,
+            table_name,
+            table_path,
+        )
+
+
 @dataclass(frozen=True)
 class ImccGasDatapack:
-    """Loaded JANAF + condensate thermodynamic tables for the gas layer."""
+    """Loaded JANAF + condensate tables and their parsed-content identities.
+
+    ``gas_path`` and ``oxide_path`` are diagnostic source locations; content
+    identity is exposed by the table digest properties.
+    """
 
     gas_df: pd.DataFrame
     oxide_df: pd.DataFrame
     gas_path: Path
     oxide_path: Path
+
+    @property
+    def gas_table_digest(self) -> str:
+        _validate_interval_table(self.gas_df, "JANAF gas", self.gas_path)
+        return _gas_table_digest("gas", self.gas_df)
+
+    @property
+    def condensate_table_digest(self) -> str:
+        _validate_interval_table(self.oxide_df, "condensate", self.oxide_path)
+        return _gas_table_digest("condensate", self.oxide_df)
 
 
 def load_gas_datapack(
@@ -1642,7 +1773,9 @@ def load_gas_datapack(
         raise ImccGasSpeciesNotFoundError(
             f"JANAF gas database {gas_display_path} missing 'species_name' column"
         )
+    _normalise_interval_bounds(gas_df, "JANAF gas", gas_display_path)
     gas_df = gas_df.set_index("species_name")
+    _validate_interval_table(gas_df, "JANAF gas", gas_display_path)
 
     if oxide_path is not None:
         oxide_source = Path(oxide_path)
@@ -1666,7 +1799,9 @@ def load_gas_datapack(
         raise ImccGasSpeciesNotFoundError(
             f"condensate database {oxide_display_path} missing 'species_name' column"
         )
+    _normalise_interval_bounds(oxide_df, "condensate", oxide_display_path)
     oxide_df = oxide_df.set_index("species_name")
+    _validate_interval_table(oxide_df, "condensate", oxide_display_path)
 
     return ImccGasDatapack(
         gas_df=gas_df,
@@ -1790,8 +1925,8 @@ def _nearest_interval_row(
     Selection inside this function: among rows with ``T_min <= T``, take the
     one with the largest ``T_min``. If every ``T_min`` is ``> T``, take the
     row with the smallest ``T_min``: the interval nearest to ``T``, because
-    low-temperature intervals are appended after the rows they extend. Ties on
-    ``T_min`` resolve to the first such row in file order. Then,
+    low-temperature intervals are appended after the rows they extend. Tied
+    ``T_min`` values are refused. Then,
     unless ``allow_extrapolation=True``, raise
     ``ImccGasTemperatureOutsideDomainError`` when ``T`` is outside that
     selected row's ``[T_min, T_max]``. That strict-mode refusal is the V2
@@ -1810,7 +1945,11 @@ def _nearest_interval_row(
         raise ImccGasSpeciesNotFoundError(
             f"no JANAF G(T) row for gas species {species!r}"
         )
-    t_mins = rows["T_min"].astype(float).to_numpy()
+    t_mins = rows["T_min"].to_numpy(copy=False)
+    t_maxs = rows["T_max"].to_numpy(copy=False)
+    _validate_interval_arrays(
+        t_mins, t_maxs, species, "gas/condensate", Path("<in-memory>")
+    )
     # Largest T_min that is <= T; below every T_min, the lowest interval.
     # Masking with -inf rather than multiplying by the boolean mask keeps a
     # valid row whose T_min is 0 from losing to an invalid row (0 * False == 0).

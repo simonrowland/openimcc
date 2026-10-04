@@ -518,7 +518,8 @@ def test_gas_domain_refusal_is_typed(gas_pack: ImccGasDatapack) -> None:
     gas_df = gas_pack.gas_df.copy()
     # Keep O2 available at the diagnostic temperature so the refusal names the
     # selected Fe(g) row rather than the caller-pinned reference row.
-    gas_df.loc["O2(g)", "T_min"] = 1000.0
+    o2_low = (gas_df.index == "O2(g)") & (gas_df["T_interval"].astype(int) == 2)
+    gas_df.loc[o2_low, "T_min"] = 1000.0
     fe_low = (gas_df.index == "Fe(g)") & (gas_df["T_interval"].astype(int) == 2)
     gas_df.loc[fe_low, "T_max"] = 1300.0
     diagnostic_pack = ImccGasDatapack(

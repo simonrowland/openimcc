@@ -18,9 +18,12 @@ from importlib import resources
 from pathlib import Path
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from openimcc.gas import ImccGasDatapack
 
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
@@ -194,6 +197,44 @@ class ImccAdapterLabels:
     flags: tuple[str, ...] = ()
     notices: tuple[str, ...] = ()
     acid_sink_ratio: float | None = None
+
+
+@dataclass(frozen=True)
+class EngineBindingIdentity:
+    """Content identity for the melt association constants and both gas tables."""
+
+    digest: str
+    melt_binding_digest: str
+    condensate_table_digest: str
+    gas_table_digest: str
+
+
+def engine_binding_identity(
+    melt_pack: ImccLoadedDatapack | ImccDatapack,
+    gas_pack: "ImccGasDatapack",
+) -> EngineBindingIdentity:
+    """Hash the three content digests that define one thermodynamic engine."""
+    melt_digest = getattr(melt_pack, "binding_digest", None)
+    condensate_digest = getattr(gas_pack, "condensate_table_digest", None)
+    gas_digest = getattr(gas_pack, "gas_table_digest", None)
+    if not all(
+        isinstance(value, str) and value
+        for value in (melt_digest, condensate_digest, gas_digest)
+    ):
+        raise ImccUnprovenDatapackError(
+            "engine binding identity requires a labelled melt pack and both "
+            "gas table content digests"
+        )
+
+    components = {
+        "melt_binding_digest": melt_digest,
+        "condensate_table_digest": condensate_digest,
+        "gas_table_digest": gas_digest,
+    }
+    return EngineBindingIdentity(
+        digest=_published_datapack_manifest_hash(components),
+        **components,
+    )
 
 
 def _as_fraction(value: Any) -> Fraction:

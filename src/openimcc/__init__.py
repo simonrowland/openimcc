@@ -19,6 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from openimcc.model import (
+    EngineBindingIdentity,
     ImccAdapterLabels,
     ImccComponentOutsideDomainError,
     ImccCompositionIncompleteError,
@@ -34,6 +35,7 @@ from openimcc.model import (
     ImccTOutsideDatapackDomainError,
     ImccUnprovenDatapackError,
     evaluate,
+    engine_binding_identity,
     label_research_datapack,
     load_datapack,
 )
@@ -78,7 +80,9 @@ _GAS_EXPORTS = frozenset({
     "IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES",
     "IMCC_PARENT_OXIDES",
     "ImccGasDatapack",
+    "ImccGasDuplicateIntervalError",
     "ImccGasInvalidFugacityError",
+    "ImccGasInvalidIntervalError",
     "ImccGasOxygenBalanceError",
     "ImccGasResult",
     "ImccGasSpeciesNotFoundError",
@@ -103,7 +107,9 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES,
         IMCC_PARENT_OXIDES,
         ImccGasDatapack,
+        ImccGasDuplicateIntervalError,
         ImccGasInvalidFugacityError,
+        ImccGasInvalidIntervalError,
         ImccGasOxygenBalanceError,
         ImccGasResult,
         ImccGasSpeciesNotFoundError,
@@ -143,6 +149,8 @@ __all__ = [
     # --- solve ------------------------------------------------------------
     "load_datapack",
     "evaluate",
+    "engine_binding_identity",
+    "EngineBindingIdentity",
     "label_research_datapack",
     "ImccDatapack",
     "ImccLoadedDatapack",
@@ -173,7 +181,9 @@ __all__ = [
     "oxygen_balance_from_pressure_model",
     "gas_species_provenance",
     "ImccGasDatapack",
+    "ImccGasDuplicateIntervalError",
     "ImccGasInvalidFugacityError",
+    "ImccGasInvalidIntervalError",
     "ImccGasOxygenBalanceError",
     "ImccGasResult",
     "ImccGasSpeciesNotFoundError",
