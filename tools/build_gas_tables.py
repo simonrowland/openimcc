@@ -470,6 +470,10 @@ _FIT_T_MIN_BY_TABLE = {
 # Keep the fit capped at its last complete row, 2900 K, to preserve bit identity.
 _FIT_T_MAX_BY_TABLE = {"Cr-005": 2900.0}
 
+# Cr-005's intact 3000 K thermal cells validate the unchanged fit's endpoint,
+# although its parse-ambiguous formation cells are excluded from fitting.
+_DECLARED_T_MAX_BY_TABLE = {"Cr-005": 3000.0}
+
 
 def _load_record(path: Path) -> dict[str, Any]:
     text = path.read_text(encoding="utf-8")
@@ -1155,7 +1159,9 @@ def _fit_row(
         ),
         "T_max": str(
             int(
-                _FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX)
+                _DECLARED_T_MAX_BY_TABLE.get(
+                    table_id, _FIT_T_MAX_BY_TABLE.get(table_id, FIT_T_MAX)
+                )
                 if fit_t_max is None
                 else fit_t_max
             )

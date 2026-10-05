@@ -503,21 +503,22 @@ rows:
     source_sha256: c16958856a7aa86c1864644c0546a2d9a385edd890930fd3726981c3f44ffb83
     authority: janaf_fitted
     method: fitted
-    T_range_K: [1500, 2900]
+    T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.6318350135698
     max_residual_log10_K: 3.04416607856472e-05
     note: >-
       Fitted by tools/build_gas_tables.py over the complete Cr-005 rows from
-      1500 K through 2900 K. Cr boils at 2952 K; JANAF switches the element
-      reference to the gas there and prints the 3000 K formation columns as
-      "0. 0. 0.", recorded as parse-ambiguous. The thermal cells are intact:
-      Cp = 30.788 J/(mol K), S = 225.796 J/(mol K), and H-H298 = 64.417
-      kJ/mol. With dfH298 = 397.480 kJ/mol from this species table, they give
-      G_app = -215.491 kJ/mol; the current fit's residuals are 0.040 J/(mol K)
-      for Cp, 0.0007 J/(mol K) for S, 2.068 J/mol for H_app, and 0.054 J/mol
-      for G_app. Refitting with the recovered node would change the existing
-      Cr coefficients and outputs at temperatures above 1500 K, so the endpoint
-      remains 2900 K to preserve the bit-identical interval-1 requirement.
+      1500 K through 2900 K. The unchanged interval-1 coefficients are
+      validated at the declared 3000 K endpoint against the intact thermal
+      cells of the parse-ambiguous line: Cp = 30.788 J/(mol K), S = 225.796
+      J/(mol K), and H-H298 = 64.417 kJ/mol. With dfH298 = 397.480 kJ/mol
+      from this species table, they give G_app = -215.491 kJ/mol; residuals
+      are 0.040 J/(mol K) for Cp, 0.0007 J/(mol K) for S, 2.068 J/mol for
+      H_app, and 0.054 J/mol for G_app. Cr boils at 2952 K and JANAF switches
+      the element reference to gas there, printing the 3000 K formation
+      columns as "0. 0. 0."; this switch does not enter G_app, which uses the
+      species' own dfH298 and thermal cells. Results from 2900 to 3000 K keep
+      the same fitted values and only lose the out-of-interval flag.
       Certification note: all Cr rows are fitted from each table's own
       dfH(298), H-H(298) and S columns. The printed dfG columns of the
       JANAF Cr-O tables (CrO(g), Cr2O3(l)) differ from those columns plus

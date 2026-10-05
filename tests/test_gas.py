@@ -496,8 +496,11 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     assert (trace_low_rows["T_min"] == 1200.0).all()
     assert (low_rows["T_max"] == build_gas_tables.LOW_FIT_T_MAX).all()
     expected_t_max = high_rows["Ref"].map(
-        lambda table_id: build_gas_tables._FIT_T_MAX_BY_TABLE.get(
-            table_id, build_gas_tables.FIT_T_MAX
+        lambda table_id: build_gas_tables._DECLARED_T_MAX_BY_TABLE.get(
+            table_id,
+            build_gas_tables._FIT_T_MAX_BY_TABLE.get(
+                table_id, build_gas_tables.FIT_T_MAX
+            ),
         )
     )
     assert (high_rows["T_max"].astype(float) == expected_t_max).all()
@@ -2069,31 +2072,19 @@ def test_caller_supplied_cr2o3_activity_returns_positive_cr_pressures(
         assert result.provenance_class[species] == "janaf_fitted"
 
 
-def test_cr_atomic_row_flags_or_refuses_above_declared_endpoint(
+def test_cr_atomic_row_covers_validated_3000_k_endpoint(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    with pytest.raises(ImccGasTemperatureOutsideDomainError, match="Cr\\(g\\)"):
-        evaluate_gas(
-            {"Cr2O3": 1.0e-3},
-            2950.0,
-            1.0e-10,
-            gas_pack,
-            gas_species=("Cr",),
-            allow_extrapolation=False,
-        )
-
     result = evaluate_gas(
         {"Cr2O3": 1.0e-3},
         2950.0,
         1.0e-10,
         gas_pack,
         gas_species=("Cr",),
-        allow_extrapolation=True,
+        allow_extrapolation=False,
     )
     assert math.isfinite(result["Cr"]) and result["Cr"] > 0.0
-    assert result.domain_flags["Cr"] == (
-        "T=2950.0 K outside declared G(T) interval for 'Cr(g)' [1500, 2900] K"
-    )
+    assert result.domain_flags["Cr"] is None
 
 
 def test_cr_liquid_parent_uses_labelled_extension_below_old_start(
@@ -2350,19 +2341,23 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         changed: set[str],
     ) -> tuple[str, list[str]]:
         lines = payload.splitlines()
-        return lines[0], [
-            line for line in lines[1:]
-            if line.split(",", 1)[0] not in excluded
-            and not (
-                line.split(",")[0].removesuffix("(g)")
-                in new_low_temperature_species
-                and line.split(",")[2] == "2"
-            )
-            and not (
-                line.split(",", 1)[0] in changed
-                and line.rsplit(",", 1)[-1].endswith("-SC-CP")
-            )
-        ]
+        rows = []
+        for line in lines[1:]:
+            fields = line.split(",")
+            if fields[0] == "Cr(g)" and fields[2] == "1":
+                fields[7] = "2900"
+                line = ",".join(fields)
+            if fields[0] in excluded:
+                continue
+            if (
+                fields[0].removesuffix("(g)") in new_low_temperature_species
+                and fields[2] == "2"
+            ):
+                continue
+            if fields[0] in changed and fields[-1].endswith("-SC-CP"):
+                continue
+            rows.append(line)
+        return lines[0], rows
 
     for relpath, current_path, excluded, changed in (
         (
@@ -3429,9 +3424,14 @@ def test_sf04_pack_reproduces_base_default_and_default_keeps_other_channels(
         assert {name: published[name] for name in unchanged_against_base} == {
             name: base[name] for name in unchanged_against_base
         }
+        expected_base_flags = dict(base.domain_flags)
+        if 2900 < temperature <= 3000 and "Cr" in unchanged_against_base:
+            expected_base_flags["Cr"] = None
         assert {
             name: published.domain_flags[name] for name in unchanged_against_base
-        } == {name: base.domain_flags[name] for name in unchanged_against_base}
+        } == {
+            name: expected_base_flags[name] for name in unchanged_against_base
+        }
         assert {
             name: published.provenance_class[name] for name in unchanged_against_base
         } == {name: base.provenance_class[name] for name in unchanged_against_base}

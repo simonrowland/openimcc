@@ -46,11 +46,15 @@ GAS_DATA = ROOT / "src/openimcc/data/gas"
 PACK_DIR = ROOT / "src/openimcc/data/packs"
 TABLE_FILES = ("gas-shomate.csv", "condensate.csv")
 PACKAGED_GAS_TABLE_DIGEST = (
-    "6dc7afd67397aa94b78a6a1b109c87156db2a79ac9e532146cfdcee44fb061fc"
+    "0ca523ed90000e4d2cd68be188e7635c5ba39d4c46962dda80f382baa3240a8d"
 )
 PACKAGED_CONDENSATE_TABLE_DIGEST = (
     "fdfb97d72472a5b7f286ffc958a59c8eaf3b1ccd89af396b22cb9b8ace3fd0b0"
 )
+PACKAGED_ENGINE_BINDING_DIGESTS = {
+    "v1": "2732a755cac0cff642a18a647e271eaeb2fc1e6d4d8e0d4094339087cece03fc",
+    "ext": "bc9174e518fc951ccc4b5102a9e39d3bd1d81dbbdb54eada323aca8c8cd6b214",
+}
 V1_COMPOSITION = {
     "SiO2": 0.45,
     "MgO": 0.20,
@@ -202,6 +206,8 @@ def test_combined_identity_includes_the_published_melt_binding_digest() -> None:
     assert v1_identity.gas_table_digest == extension_identity.gas_table_digest
     assert v1_identity.condensate_table_digest == extension_identity.condensate_table_digest
     assert v1_identity.digest != extension_identity.digest
+    assert v1_identity.digest == PACKAGED_ENGINE_BINDING_DIGESTS["v1"]
+    assert extension_identity.digest == PACKAGED_ENGINE_BINDING_DIGESTS["ext"]
 
 
 def test_combined_identity_refuses_any_missing_component() -> None:

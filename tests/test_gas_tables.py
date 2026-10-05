@@ -518,7 +518,7 @@ def test_cr_3000_thermal_cells_recover_g_app_without_refitting_coefficients() ->
         -2.068, abs=1.0e-3
     )
     assert g_fit - source_g == pytest.approx(-0.054033, abs=1.0e-6)
-    assert float(packaged["T_max"]) == 2900.0
+    assert float(packaged["T_max"]) == 3000.0
 
 
 def test_public_sources_contain_no_private_paths_or_tooling_names() -> None:
@@ -662,8 +662,11 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert row["source_sha256"] == source["extraction"]["source_sha256"]
         assert row["authority"] == "janaf_fitted"
         assert row["method"] == "fitted"
-        expected_t_max = build_gas_tables._FIT_T_MAX_BY_TABLE.get(
-            table_id, build_gas_tables.FIT_T_MAX
+        expected_t_max = build_gas_tables._DECLARED_T_MAX_BY_TABLE.get(
+            table_id,
+            build_gas_tables._FIT_T_MAX_BY_TABLE.get(
+                table_id, build_gas_tables.FIT_T_MAX
+            ),
         )
         assert row["T_range_K"] == [1500, int(expected_t_max)]
         assert source["source"]["doi"] == "10.18434/T42S31"
@@ -1547,6 +1550,10 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
         interval = values[2]
         intervals.append(interval)
         if interval == "1" and values[-1] not in ps_table_ids:
+            if values[0] == "Cr(g)":
+                values[7] = "2900"
+                retained.append(",".join(values).encode("utf-8") + b"\n")
+                continue
             retained.append(line)
 
     assert intervals[: intervals.index("2")] == ["1"] * 62
@@ -1579,7 +1586,6 @@ def test_existing_gas_coefficient_rows_are_text_identical_to_base() -> None:
             row["species_name"],
             row["state"],
             row["T_min"],
-            row["T_max"],
             row["T_interval"],
         ): row
         for row in current_rows
@@ -1589,10 +1595,12 @@ def test_existing_gas_coefficient_rows_are_text_identical_to_base() -> None:
             row["species_name"],
             row["state"],
             row["T_min"],
-            row["T_max"],
             row["T_interval"],
         )
-        assert current_by_key[key] == row
+        current = current_by_key[key]
+        if row["species_name"] == "Cr(g)" and row["T_interval"] == "1":
+            current = {**current, "T_max": row["T_max"]}
+        assert current == row
 
 
 def _hand_nasa7_properties(record: dict, temperature: float) -> tuple[float, float, float]:
