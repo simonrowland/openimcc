@@ -604,6 +604,9 @@ tables. `ImccGasDatapack` canonicalizes both complete frames once in
 `state`, `cation`, `cat_num`, `oxy_num`, `T_min`, `T_max`, `dH298_R`,
 `dG_A`–`dG_E`, `Ref`). Missing and extra columns are refused.
 
+During CSV loading, blank-header columns are dropped and reported through an
+`ImccGasIngestionWarning` that lists the columns and any non-empty values.
+
 Every numeric column is stored as float64. Conversion must be exact; float16
 and float32 widen exactly, integers are accepted through absolute value
 2**53, and pandas nullable Float64/Int64 columns are accepted when they have

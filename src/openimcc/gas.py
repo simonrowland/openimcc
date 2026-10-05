@@ -12,10 +12,12 @@ the IMCC-SF04 spec r2.1.
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import math
 import os
 import re
+import warnings
 from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
@@ -92,6 +94,10 @@ class ImccGasOxygenBalanceError(ImccRefusal):
     """Raised when the oxygen-balance root is not monotone or bracketed."""
 
     code = "imcc_gas_oxygen_balance_failed"
+
+
+class ImccGasIngestionWarning(UserWarning):
+    """A CSV load discarded one or more columns with empty headers."""
 
 
 # --------------------------------------------------------------------------- #
@@ -223,6 +229,39 @@ def _vaporock_root() -> Path:
             f"{_GAS_TABLE_RELPATH}"
         )
     return root.resolve()
+
+
+def _drop_unnamed_columns(
+    table: pd.DataFrame, header_source: object, display_path: Path
+) -> tuple[pd.DataFrame, str | None]:
+    pd = _pandas()
+    with header_source.open("r", encoding="utf-8-sig", newline="") as handle:
+        raw_header = next(csv.reader(handle))
+    unnamed_columns = [
+        table.columns[position]
+        for position, header in enumerate(raw_header)
+        if header == ""
+    ]
+    if not unnamed_columns:
+        return table, None
+
+    non_empty_values = []
+    for row_index, (species, row) in enumerate(table.iterrows(), start=1):
+        species_name = row.get("species_name", species)
+        if isinstance(species_name, str):
+            species_name = species_name.removesuffix("(l)")
+        reference = row.get("Ref", "")
+        for column in unnamed_columns:
+            value = row[column]
+            if not pd.isna(value):
+                non_empty_values.append(
+                    f"{column} at row {row_index} "
+                    f"({species_name}, {reference}) = {value}"
+                )
+    message = f"dropped unnamed columns {unnamed_columns!r} from {display_path}"
+    if non_empty_values:
+        message += "; non-empty: " + "; ".join(non_empty_values)
+    return table.drop(columns=unnamed_columns), message
 
 
 def _packaged_resource(name: str):
@@ -1918,16 +1957,20 @@ def load_gas_datapack(
     # Resolved lazily: an unconfigured install must fail with a typed refusal
     # at CALL time, not at import time, or `import openimcc.gas` breaks for
     # everyone who only wanted the species constants.
+    notice_messages = []
     if gas_path is not None:
         gas_source = Path(gas_path)
+        gas_header_source = gas_source
         gas_display_path = gas_source
         gas_df = pd.read_csv(gas_source)
     elif os.environ.get(_VAPOROCK_ENV_VAR):
         gas_source = _vaporock_root() / _GAS_TABLE_RELPATH
+        gas_header_source = gas_source
         gas_display_path = gas_source
         gas_df = pd.read_csv(gas_source)
     else:
         gas_resource = _packaged_resource(_PACKAGED_GAS_NAME)
+        gas_header_source = gas_resource
         gas_display_path = _packaged_database_path(_PACKAGED_GAS_NAME)
         with gas_resource.open("rb") as handle:
             gas_df = pd.read_csv(handle)
@@ -1935,10 +1978,16 @@ def load_gas_datapack(
         raise ImccGasSpeciesNotFoundError(
             f"JANAF gas database {gas_display_path} missing 'species_name' column"
         )
+    gas_df, gas_notice = _drop_unnamed_columns(
+        gas_df, gas_header_source, gas_display_path
+    )
+    if gas_notice:
+        notice_messages.append(gas_notice)
     gas_df = gas_df.set_index("species_name")
 
     if oxide_path is not None:
         oxide_source = Path(oxide_path)
+        oxide_header_source = oxide_source
         oxide_display_path = oxide_source
         oxide_df = pd.read_csv(oxide_source)
     elif os.environ.get(_VAPOROCK_ENV_VAR):
@@ -1948,25 +1997,24 @@ def load_gas_datapack(
                 f"{_VAPOROCK_ENV_VAR}={os.environ[_VAPOROCK_ENV_VAR]!r} does not contain "
                 f"{_CONDENSATE_TABLE_RELPATH}"
             )
+        oxide_header_source = oxide_source
         oxide_display_path = oxide_source
         oxide_df = pd.read_csv(oxide_source)
     else:
         oxide_resource = _packaged_resource(_PACKAGED_CONDENSATE_NAME)
+        oxide_header_source = oxide_resource
         oxide_display_path = _packaged_database_path(_PACKAGED_CONDENSATE_NAME)
         with oxide_resource.open("rb") as handle:
             oxide_df = pd.read_csv(handle)
-    empty_unnamed_columns = [
-        column
-        for column in oxide_df.columns
-        if (
-            isinstance(column, str)
-            and column.startswith("Unnamed: ")
-            and column.removeprefix("Unnamed: ").isdecimal()
-            and oxide_df[column].isna().all()
+    oxide_df, oxide_notice = _drop_unnamed_columns(
+        oxide_df, oxide_header_source, oxide_display_path
+    )
+    if oxide_notice:
+        notice_messages.append(oxide_notice)
+    if notice_messages:
+        warnings.warn(
+            ImccGasIngestionWarning("; ".join(notice_messages)), stacklevel=2
         )
-    ]
-    if empty_unnamed_columns:
-        oxide_df = oxide_df.drop(columns=empty_unnamed_columns)
     if "species_name" not in oxide_df.columns:
         raise ImccGasSpeciesNotFoundError(
             f"condensate database {oxide_display_path} missing 'species_name' column"
