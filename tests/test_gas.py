@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess
 import sys
+import warnings
 from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
@@ -32,6 +33,7 @@ from openimcc.gas import (
     R_J_MOL_K,
     ImccGasDatapack,
     ImccGasInvalidFugacityError,
+    ImccGasIngestionWarning,
     ImccGasInvalidIntervalError,
     ImccGasOxygenBalanceError,
     ImccGasResult,
@@ -281,45 +283,98 @@ def test_explicit_vaporock_override_remains_supported(
     assert overridden.oxide_df.equals(gas_pack.oxide_df)
 
 
-def test_vaporock_override_drops_empty_legacy_trailing_columns(
+def test_vaporock_override_drops_synthetic_unnamed_columns_with_notice(
     monkeypatch: pytest.MonkeyPatch,
     gas_pack: ImccGasDatapack,
     tmp_path: Path,
 ) -> None:
+    fixture = Path(__file__).parent / "fixtures" / "condensate-thermo-data.csv"
+    gas_fixture = Path(__file__).parent / "fixtures" / "JANAF-vapor-data-full.csv"
+    condensate_bytes = fixture.read_bytes()
+    assert condensate_bytes.startswith(b"\xef\xbb\xbf")
+    assert b"\r\n" in condensate_bytes
+    assert b"Ref,,,\r\n" in condensate_bytes
+    assert b"SYNTHETIC,,,not-source-data\r\n" in condensate_bytes
     root = tmp_path / "vaporock"
     gas_target = root / "src" / "vaporock" / "data"
     oxide_target = root / "data"
     gas_target.mkdir(parents=True)
     oxide_target.mkdir(parents=True)
-    shutil.copy2(gas_pack.gas_path, gas_target / "JANAF-vapor-data-full.csv")
+    shutil.copy2(gas_fixture, gas_target / "JANAF-vapor-data-full.csv")
     shutil.copy2(
-        Path(__file__).parent / "fixtures" / "vaporock-condensate-empty-columns.csv",
+        fixture,
         oxide_target / "condensate-thermo-data.csv",
     )
     monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
 
-    overridden = load_gas_datapack()
-    result = evaluate_gas(
-        {"Na2O": 0.05},
-        1800.0,
-        1.0e-8,
-        overridden,
-        parent_oxides=("Na2O",),
-        gas_species=("Na",),
-    )
-    packaged = evaluate_gas(
-        {"Na2O": 0.05},
-        1800.0,
-        1.0e-8,
-        gas_pack,
-        parent_oxides=("Na2O",),
-        gas_species=("Na",),
-    )
-    assert dict(result) == dict(packaged)
+    with pytest.warns(ImccGasIngestionWarning) as notices:
+        overridden = load_gas_datapack()
+    message = str(notices[0].message)
+    assert "Unnamed: 14" in message
+    assert "Unnamed: 15" in message
+    assert "Unnamed: 16" in message
+    assert "Unnamed: 16 at row 1 (SYNTHETIC-ROW, SYNTHETIC) = not-source-data" in message
     assert tuple(overridden.oxide_df.columns) == tuple(gas_pack.oxide_df.columns)
+    assert tuple(overridden.gas_df.columns) == tuple(gas_pack.gas_df.columns)
 
 
-def test_vaporock_override_keeps_nonempty_unnamed_column_for_schema_refusal(
+def test_vaporock_checkout_real_file_regression(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root_value = os.environ.get("OPENIMCC_TEST_VAPOROCK_ROOT")
+    if not root_value:
+        pytest.skip("set OPENIMCC_TEST_VAPOROCK_ROOT to a VapoRock checkout")
+    root = Path(root_value).expanduser().resolve()
+    expected_commit = "0159678a8eefb51dfe3f12bb646dc38507a07230"
+    # Read the external checkout's own commit: drop any repository-selection
+    # variables inherited from the caller (a harness may set GIT_DIR for this
+    # repository, and git -C does not override it).
+    external_git_env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR"}
+    }
+    commit = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=external_git_env,
+    ).stdout.strip()
+    assert commit == expected_commit
+    condensate = root / "data" / "condensate-thermo-data.csv"
+    gas = root / "src" / "vaporock" / "data" / "JANAF-vapor-data-full.csv"
+    assert hashlib.sha256(condensate.read_bytes()).hexdigest() == (
+        "1d8a0a827df3833861c368f06e08554a2e8896d18576195b896fa759931c491d"
+    )
+    assert hashlib.sha256(gas.read_bytes()).hexdigest() == (
+        "d45d76722f21746a0c73202f6b9d70928d0f285025672fa5593c7032ff182f8a"
+    )
+    monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
+    with pytest.warns(ImccGasIngestionWarning) as notices:
+        datapack = load_gas_datapack()
+    message = str(notices[0].message)
+    assert "Unnamed: 14" in message
+    assert "Unnamed: 15" in message
+    assert "Unnamed: 16" in message
+    assert "Unnamed: 16 at row 6 (Na2O, LAM1984) = -188.14" in message
+    result = evaluate_gas(
+        {"Na2O": 0.05}, 1800.0, 1.0e-8, datapack,
+        parent_oxides=("Na2O",), gas_species=("Na",),
+    )
+    assert result["Na"] == 0.04667660400876665
+
+
+def test_packaged_gas_tables_load_without_ingestion_warning() -> None:
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", ImccGasIngestionWarning)
+        load_gas_datapack()
+    assert not any(
+        issubclass(item.category, ImccGasIngestionWarning) for item in caught
+    )
+
+
+def test_vaporock_override_refuses_named_extra_columns(
     monkeypatch: pytest.MonkeyPatch,
     gas_pack: ImccGasDatapack,
     tmp_path: Path,
@@ -330,17 +385,19 @@ def test_vaporock_override_keeps_nonempty_unnamed_column_for_schema_refusal(
     gas_target.mkdir(parents=True)
     oxide_target.mkdir(parents=True)
     shutil.copy2(gas_pack.gas_path, gas_target / "JANAF-vapor-data-full.csv")
-    legacy_csv = (
-        Path(__file__).parent / "fixtures" / "vaporock-condensate-empty-columns.csv"
-    ).read_text(encoding="utf-8")
-    (oxide_target / "condensate-thermo-data.csv").write_text(
-        legacy_csv.replace("Na-013,,,\n", "Na-013,,,unexpected\n", 1),
-        encoding="utf-8",
-    )
     monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
 
-    with pytest.raises(ImccGasInvalidIntervalError, match="invalid schema"):
-        load_gas_datapack()
+    fixture = Path(__file__).parent / "fixtures" / "condensate-thermo-data.csv"
+    legacy_csv = fixture.read_text(encoding="utf-8-sig")
+    for named_column in ("unexpected", "Unnamed: 99"):
+        (oxide_target / "condensate-thermo-data.csv").write_text(
+            legacy_csv.replace("Ref,,,", f"Ref,,,{named_column}", 1),
+            encoding="utf-8",
+        )
+        with pytest.warns(ImccGasIngestionWarning):
+            with pytest.raises(ImccGasInvalidIntervalError, match="invalid schema") as refusal:
+                load_gas_datapack()
+        assert f"extra=['{named_column}']" in str(refusal.value)
 
 
 def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
@@ -1832,7 +1889,7 @@ def test_oxygen_balance_models_omit_missing_alkali_gas_rows(
 
 @pytest.mark.skipif(
     not os.environ.get("OPENIMCC_TEST_LEGACY_VAPOROCK_ROOT"),
-    reason="set OPENIMCC_VAPOROCK_ROOT to a local VapoRock checkout",
+    reason="set OPENIMCC_TEST_LEGACY_VAPOROCK_ROOT to a local VapoRock checkout",
 )
 def test_vaporock_default_reports_missing_alkali_channels(
     monkeypatch: pytest.MonkeyPatch,
@@ -2567,10 +2624,12 @@ def _deny_gas_table_reads(
 
     def guarded_getitem(frame: pd.DataFrame, key: object) -> object:
         if frame is gas_pack.gas_df or frame is gas_pack.oxide_df:
-            raise AssertionError("evaluation read a constructed gas table")
+            raise AssertionError("gas-table access sentinel is active")
         return original_getitem(frame, key)
 
     monkeypatch.setattr(pd.DataFrame, "__getitem__", guarded_getitem)
+    with pytest.raises(AssertionError, match="gas-table access sentinel is active"):
+        gas_pack.gas_df["state"]
 
 
 def test_pure_silica_oxygen_balance_matches_analytic_flux_limit(

@@ -199,22 +199,109 @@ MUTATIONS = (
         "test_evaluated_float_coefficients_and_exact_widenings_match",
     ),
     (
-        "w-empty-unnamed-column-drop-removed",
+        "w-unnamed-column-drop-removed",
         "src/openimcc/gas.py",
-        "    if empty_unnamed_columns:\n",
-        "    if False and empty_unnamed_columns:\n",
-        "test_vaporock_override_drops_empty_legacy_trailing_columns",
+        "    if not unnamed_columns:\n        return table, None\n",
+        "    if True:\n        return table, None\n",
+        "test_vaporock_override_drops_synthetic_unnamed_columns_with_notice",
         "tests/test_gas.py",
     ),
     (
-        "x-nonempty-unnamed-column-dropped",
+        "x-drop-widened-to-named-columns",
         "src/openimcc/gas.py",
-        '            and oxide_df[column].isna().all()\n',
-        "",
-        "test_vaporock_override_keeps_nonempty_unnamed_column_for_schema_refusal",
+        '        if header == ""\n',
+        "        if True\n",
+        "test_vaporock_override_refuses_named_extra_columns",
         "tests/test_gas.py",
     ),
+    (
+        "y-ingestion-notice-suppressed",
+        "src/openimcc/gas.py",
+        '        warnings.warn(\n            ImccGasIngestionWarning("; ".join(notice_messages)), stacklevel=2\n        )\n',
+        "        pass\n",
+        "test_vaporock_override_drops_synthetic_unnamed_columns_with_notice",
+        "tests/test_gas.py",
+    ),
+    (
+        "z-sentinel-setter-removed",
+        "tests/test_gas.py",
+        '    monkeypatch.setattr(pd.DataFrame, "__getitem__", guarded_getitem)\n',
+        "",
+        "test_nonfinite_temperature_refuses_before_table_access",
+        "tests/test_gas.py",
+    ),
+    (
+        "aa-sentinel-setter-removed-with-early-read",
+        "tests/test_gas.py",
+        '    monkeypatch.setattr(pd.DataFrame, "__getitem__", guarded_getitem)\n',
+        "",
+        "test_nonfinite_temperature_refuses_before_table_access",
+        "tests/test_gas.py",
+        (
+            (
+                "src/openimcc/gas.py",
+                "    T = float(T_K)\n    try:\n        p_O2 = float(fO2)\n",
+                '    datapack.gas_df["A"]\n    T = float(T_K)\n    try:\n        p_O2 = float(fO2)\n',
+            ),
+        ),
+    ),
 )
+
+
+def _prepare_test_tree(root: Path, test_file: str) -> None:
+    shutil.copytree(ROOT / "src/openimcc", root / "src/openimcc")
+    tests = root / "tests"
+    tests.mkdir()
+    shutil.copyfile(ROOT / test_file, root / test_file)
+    shutil.copyfile(ROOT / "tests/conftest.py", tests / "conftest.py")
+    if test_file == "tests/test_gas.py":
+        shutil.copytree(ROOT / "tests/fixtures", tests / "fixtures")
+        shutil.copytree(ROOT / "data-src/janaf", root / "data-src/janaf")
+        shutil.copytree(ROOT / "data-src/nasa-glenn", root / "data-src/nasa-glenn")
+        (root / "tools").mkdir()
+        shutil.copyfile(
+            ROOT / "tools/build_gas_tables.py", root / "tools/build_gas_tables.py"
+        )
+
+
+def _run_test_file(root: Path, test_file: str) -> subprocess.CompletedProcess[str]:
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = str(root / "src")
+    environment.pop("PYTEST_ADDOPTS", None)
+    if test_file == "tests/test_gas.py":
+        environment["GIT_DIR"] = subprocess.run(
+            ["git", "-C", str(ROOT), "rev-parse", "--absolute-git-dir"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        environment["GIT_WORK_TREE"] = str(root)
+    return subprocess.run(
+        [sys.executable, "-m", "pytest", test_file, "-q"],
+        cwd=root,
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _run_unmutated_control(test_file: str = TEST_FILE) -> None:
+    with TemporaryDirectory(prefix="openimcc-gas-identity-control-") as temporary:
+        root = Path(temporary)
+        _prepare_test_tree(root, test_file)
+        result = _run_test_file(root, test_file)
+        output = result.stdout + result.stderr
+        if result.returncode != 0:
+            tail = "\n".join(output.splitlines()[-50:])
+            raise RuntimeError(
+                f"unmutated full-file control failed; pytest returned "
+                f"{result.returncode}\n{tail}"
+            )
+        summary = next(
+            (line for line in reversed(output.splitlines()) if " passed" in line),
+            "pytest returned 0",
+        )
+        print(f"Unmutated control: GREEN ({summary})", flush=True)
 
 
 def _run_mutation(
@@ -224,40 +311,21 @@ def _run_mutation(
     replacement: str,
     expected_failure: str,
     test_file: str = TEST_FILE,
+    additional_changes: tuple[tuple[str, str, str], ...] = (),
 ) -> None:
     with TemporaryDirectory(prefix="openimcc-gas-identity-") as temporary:
         root = Path(temporary)
-        shutil.copytree(ROOT / "src/openimcc", root / "src/openimcc")
-        tests = root / "tests"
-        tests.mkdir()
-        shutil.copyfile(ROOT / test_file, root / test_file)
-        shutil.copyfile(ROOT / "tests/conftest.py", tests / "conftest.py")
-        if test_file == "tests/test_gas.py":
-            shutil.copytree(ROOT / "tests/fixtures", tests / "fixtures")
-            (root / "tools").mkdir()
-            shutil.copyfile(
-                ROOT / "tools/build_gas_tables.py", root / "tools/build_gas_tables.py"
-            )
+        _prepare_test_tree(root, test_file)
 
-        source = root / relative_source
-        content = source.read_text(encoding="utf-8")
-        if content.count(original) != 1:
-            raise RuntimeError(f"{name}: mutation target is not unique")
-        source.write_text(content.replace(original, replacement), encoding="utf-8")
+        changes = ((relative_source, original, replacement), *additional_changes)
+        for relative_path, before, after in changes:
+            source = root / relative_path
+            content = source.read_text(encoding="utf-8")
+            if content.count(before) != 1:
+                raise RuntimeError(f"{name}: mutation target is not unique")
+            source.write_text(content.replace(before, after), encoding="utf-8")
 
-        environment = os.environ.copy()
-        environment["PYTHONPATH"] = str(root / "src")
-        environment.pop("PYTEST_ADDOPTS", None)
-        pytest_args = [sys.executable, "-m", "pytest", test_file, "-q"]
-        if test_file != TEST_FILE:
-            pytest_args.extend(("-k", expected_failure))
-        result = subprocess.run(
-            pytest_args,
-            cwd=root,
-            env=environment,
-            capture_output=True,
-            text=True,
-        )
+        result = _run_test_file(root, test_file)
         output = result.stdout + result.stderr
         if result.returncode == 0 or expected_failure not in output:
             tail = "\n".join(output.splitlines()[-50:])
@@ -269,6 +337,12 @@ def _run_mutation(
 
 
 def main() -> None:
+    _run_unmutated_control()
+    if any(
+        len(mutation) > 5 and mutation[5] == "tests/test_gas.py"
+        for mutation in MUTATIONS
+    ):
+        _run_unmutated_control("tests/test_gas.py")
     for mutation in MUTATIONS:
         _run_mutation(*mutation)
     print(f"All {len(MUTATIONS)} mutations were RED.")
