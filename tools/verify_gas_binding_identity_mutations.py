@@ -60,15 +60,15 @@ MUTATIONS = (
     (
         "d-path-identity",
         "src/openimcc/gas.py",
-        '        return _gas_table_digest("gas", self.gas_df)\n',
-        '        return hashlib.sha256(str(self.gas_path).encode("utf-8")).hexdigest()\n',
+        '        object.__setattr__(self, "_gas_digest", _gas_table_digest("gas", gas_df))\n',
+        '        object.__setattr__(self, "_gas_digest", hashlib.sha256(str(self.gas_path).encode("utf-8")).hexdigest())\n',
         "test_same_tables_in_another_directory_have_the_same_identity",
     ),
     (
         "e-raw-file-bytes",
         "src/openimcc/gas.py",
-        '        return _gas_table_digest("gas", self.gas_df)\n',
-        '        return hashlib.sha256(self.gas_path.read_bytes()).hexdigest()\n',
+        '        object.__setattr__(self, "_gas_digest", _gas_table_digest("gas", gas_df))\n',
+        '        object.__setattr__(self, "_gas_digest", hashlib.sha256(self.gas_path.read_bytes()).hexdigest())\n',
         "test_csv_layout_does_not_change_parsed_content_identity",
     ),
     (
@@ -95,72 +95,66 @@ MUTATIONS = (
     (
         "i-duplicate-interval-order-dependence",
         "src/openimcc/gas.py",
-        """        if t_mins.size > 1:
-            unique_starts, start_counts = np.unique(t_mins, return_counts=True)
-            if start_counts.size != t_mins.size:
-                start = unique_starts[np.flatnonzero(start_counts > 1)[0]]
-                raise ImccGasDuplicateIntervalError(
-                    f"{table_name} database {table_path} has duplicate interval start "
-                    f"for {species!r} at T_min={start!r} K"
-                )
-""",
-        "        if False and t_mins.size > 1:\n            pass\n",
-        "loader accepted duplicate interval with same identity",
+        "        if key in starts:\n",
+        "        if False and key in starts:\n",
+        "test_invalid_duplicate_starts_refuse_identity",
     ),
     (
         "j-non-finite-interval-bound",
         "src/openimcc/gas.py",
-        "    if not np.isfinite(t_mins).all():\n",
-        "    if False and not np.isfinite(t_mins).all():\n",
+        "        if not math.isfinite(number):\n            raise ImccGasInvalidIntervalError(invalid_prefix)\n",
+        "        if False and not math.isfinite(number):\n            raise ImccGasInvalidIntervalError(invalid_prefix)\n",
         "test_loader_refuses_non_finite_interval_bounds",
     ),
     (
-        "k-raw-bound-uniqueness",
+        "k-numeric-bound-not-canonicalized",
         "src/openimcc/gas.py",
-        """    _normalise_interval_bounds(gas_df, "JANAF gas", gas_display_path)
-    gas_df = gas_df.set_index("species_name")
-    _validate_interval_table(gas_df, "JANAF gas", gas_display_path)
-""",
-        """    gas_df = gas_df.set_index("species_name")
-    _normalise_interval_bounds(gas_df.reset_index(), "JANAF gas", gas_display_path)
-    _validate_interval_table(gas_df, "JANAF gas", gas_display_path)
-""",
-        "test_loader_refuses_duplicate_starts_after_float64_normalization",
+        "        values[position] = number\n    return values\n",
+        "        values[position] = number\n    return table[column].to_numpy(copy=False)\n",
+        "test_direct_exact_bounds_are_canonicalized",
     ),
     (
         "l-selector-reconversion",
         "src/openimcc/gas.py",
-        "        validate_coefficients=False,\n    )\n    t_mins = rows[\"T_min\"].to_numpy(copy=False)\n",
-        "        validate_coefficients=False,\n    )\n    t_mins = rows[\"T_min\"].astype(float).to_numpy()\n",
+        '    t_mins = rows["T_min"].to_numpy(copy=False)\n',
+        '    t_mins = rows["T_min"].astype(float).to_numpy()\n',
         "test_selector_uses_normalized_interval_values_without_reconversion",
     ),
     (
-        "m-raw-bound-digest",
+        "m-numeric-digest-representation",
         "src/openimcc/gas.py",
-        "        table[column] = values\n",
-        "        table[column] = table[column].astype(object)\n",
-        "test_numeric_bound_spellings_have_one_evaluation_and_digest",
+        "    return value\n\n\ndef _gas_table_digest",
+        "    return str(value) if isinstance(value, (int, float)) else value\n\n\ndef _gas_table_digest",
+        "test_packaged_table_content_digests_match_current_tables",
     ),
     (
-        "n-digest-skips-current-validation",
+        "n-condensate-canonicalization-skipped",
         "src/openimcc/gas.py",
-        '        _validate_interval_table(self.gas_df, "JANAF gas", self.gas_path)\n',
-        "        pass\n",
-        "test_invalid_duplicate_starts_refuse_identity",
+        """        oxide_df = _canonicalize_gas_table(
+            self.oxide_df,
+            "condensate",
+            self.oxide_path,
+            _CONDENSATE_TABLE_SCHEMA,
+            _CONDENSATE_NUMERIC_COLUMNS,
+            _CONDENSATE_TEXT_COLUMNS,
+        )
+""",
+        "        oxide_df = self.oxide_df\n",
+        "test_evaluated_float_coefficients_and_exact_widenings_match",
     ),
     (
-        "o-selector-skips-duplicate-check",
+        "o-zero-width-interval-accepted",
         "src/openimcc/gas.py",
-        "        rows,\n        species,\n        \"gas/condensate\",\n        Path(\"<in-memory>\"),\n        validate_coefficients=False,\n",
-        "        rows.iloc[:1],\n        species,\n        \"gas/condensate\",\n        Path(\"<in-memory>\"),\n        validate_coefficients=False,\n",
-        "test_invalid_duplicate_starts_refuse_evaluation",
+        "np.flatnonzero(t_mins >= t_maxs)",
+        "np.flatnonzero(t_mins > t_maxs)",
+        "test_loader_refuses_inverted_and_zero_width_intervals",
     ),
     (
-        "p-selector-restores-bare-assert",
+        "p-integer-range-check-removed",
         "src/openimcc/gas.py",
-        "    _validate_interval_arrays(\n        rows,\n        species,\n        \"gas/condensate\",\n        Path(\"<in-memory>\"),\n        validate_coefficients=False,\n    )\n",
-        "    assert np.isfinite(rows[\"T_min\"].to_numpy(copy=False)).all()\n",
-        "test_invalid_direct_bounds_refuse_identity_and_evaluation",
+        "        if isinstance(value, (int, np.integer)) and abs(int(value)) > 2**53:\n",
+        "        if False and isinstance(value, (int, np.integer)) and abs(int(value)) > 2**53:\n",
+        "test_integer_above_binary64_exact_range_is_refused_at_construction",
     ),
     (
         "q-property-o2-domain-regression",
@@ -170,39 +164,39 @@ MUTATIONS = (
         "test_random_accepted_tables_are_order_independent",
     ),
     (
-        "r-array-validator-skips-uniqueness",
+        "r-schema-check-removed",
         "src/openimcc/gas.py",
-        "    if start_counts.size != t_mins.size:\n",
-        "    if False and start_counts.size != t_mins.size:\n",
-        "test_invalid_duplicate_starts_refuse_evaluation",
+        "        or set(actual_columns) != expected_columns\n",
+        "        or expected_columns - set(actual_columns)\n",
+        "test_construction_requires_the_complete_fixed_schema",
     ),
     (
-        "s-coefficient-dtype-check-removed",
+        "s-finiteness-limited-to-selected-rows",
         "src/openimcc/gas.py",
-        "    if validate_coefficients:\n",
-        "    if False and validate_coefficients:\n",
-        "test_non_float64_evaluated_coefficients_are_refused_at_identity_and_evaluation",
+        "        if not math.isfinite(number):\n            raise ImccGasInvalidIntervalError(invalid_prefix)\n",
+        '        if species == "Na(g)" and not math.isfinite(number):\n            raise ImccGasInvalidIntervalError(invalid_prefix)\n',
+        "test_non_finite_unselected_rows_refuse_construction",
     ),
     (
-        "t-coefficient-dtype-check-only-at-identity",
+        "t-label-missing-check-removed",
         "src/openimcc/gas.py",
-        "                if scalar_dtype is not np.float64 and not (\n                    column == \"H\" and integer_h and scalar_dtype is np.int64\n                ):\n",
-        "                if False and scalar_dtype is not np.float64 and not (\n                    column == \"H\" and integer_h and scalar_dtype is np.int64\n                ):\n",
-        "test_non_float64_evaluated_coefficients_are_refused_at_identity_and_evaluation",
+        '    if pd.isna(value):\n        if allow_empty:\n            return ""\n        raise ValueError("missing")\n',
+        '    if False and pd.isna(value):\n        if allow_empty:\n            return ""\n        raise ValueError("missing")\n',
+        "test_construction_refuses_missing_empty_or_whitespace_species_labels",
     ),
     (
-        "u-coefficient-dtype-check-only-at-evaluation",
+        "u-digest-uses-raw-frame",
         "src/openimcc/gas.py",
-        "        _validate_interval_arrays(\n            rows,\n            species,\n            table_name,\n            table_path,\n        )\n",
-        "        _validate_interval_arrays(\n            rows,\n            species,\n            table_name,\n            table_path,\n            validate_coefficients=False,\n        )\n",
-        "test_non_float64_evaluated_coefficients_are_refused_at_identity_and_evaluation",
+        '        object.__setattr__(self, "_gas_digest", _gas_table_digest("gas", gas_df))\n',
+        '        object.__setattr__(self, "_gas_digest", _gas_table_digest("gas", self.gas_df))\n',
+        "test_numeric_reference_float32_widening_binds_provenance_and_evaluation",
     ),
     (
-        "v-missing-label-check-removed",
+        "v-evaluation-reads-raw-frame",
         "src/openimcc/gas.py",
-        "    if any(not isinstance(label, str) or not label.strip() for label in labels):\n",
-        "    if False and any(not isinstance(label, str) or not label.strip() for label in labels):\n",
-        "test_loader_refuses_unnamed_species_from_csv",
+        '        object.__setattr__(self, "gas_df", gas_df)\n',
+        '        # object.__setattr__(self, "gas_df", gas_df)\n',
+        "test_evaluated_float_coefficients_and_exact_widenings_match",
     ),
 )
 

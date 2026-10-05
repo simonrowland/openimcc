@@ -796,13 +796,12 @@ def test_non_na_gas_channels_match_the_base_na2o_row_bit_for_bit(
     base_na2o = pd.DataFrame(
         [
             {
-                "state": "l",
-                "cation": "Na",
-                "cat_num": 2,
-                "oxy_num": 1,
-                "H": 0.0,
-                "T_min": 1405,
-                "T_max": 3000,
+                    "state": "l",
+                    "cation": "Na",
+                    "cat_num": 2,
+                    "oxy_num": 1,
+                    "T_min": 1405,
+                    "T_max": 3000,
                 "dH298_R": -50.17,
                 "dG_A": 7.67,
                 "dG_B": 6.193,
@@ -2444,29 +2443,24 @@ def test_gas_imports_without_pandas_and_refuses_at_load() -> None:
     assert probe.returncode == 0, probe.stderr
 
 
-def _unread_gas_pack() -> ImccGasDatapack:
-    return ImccGasDatapack(
-        gas_df=pd.DataFrame(),
-        oxide_df=pd.DataFrame(),
-        gas_path=Path("."),
-        oxide_path=Path("."),
-    )
-
-
 @pytest.mark.parametrize("temperature", [float("nan"), float("inf"), float("-inf")])
-def test_nonfinite_temperature_refuses_before_table_access(temperature: float) -> None:
+def test_nonfinite_temperature_refuses_before_table_access(
+    temperature: float, gas_pack: ImccGasDatapack
+) -> None:
     with pytest.raises(ValueError, match="finite and positive"):
         evaluate_gas(
             {"Na2O": 1.0},
             temperature,
             1.0,
-            _unread_gas_pack(),
+            gas_pack,
             gas_species=("Na",),
         )
 
 
 @pytest.mark.parametrize("fugacity", [float("nan"), float("inf"), float("-inf")])
-def test_nonfinite_fugacity_refuses_before_table_access(fugacity: float) -> None:
+def test_nonfinite_fugacity_refuses_before_table_access(
+    fugacity: float, gas_pack: ImccGasDatapack
+) -> None:
     with pytest.raises(
         ImccGasInvalidFugacityError,
         match=r"finite and positive p_O2/p°.*not log10 fO2",
@@ -2475,19 +2469,21 @@ def test_nonfinite_fugacity_refuses_before_table_access(fugacity: float) -> None
             {"Na2O": 1.0},
             2000.0,
             fugacity,
-            _unread_gas_pack(),
+            gas_pack,
             gas_species=("Na",),
         )
 
 
 @pytest.mark.parametrize("activity", [float("nan"), float("inf"), float("-inf")])
-def test_nonfinite_activity_refuses(activity: float) -> None:
+def test_nonfinite_activity_refuses(
+    activity: float, gas_pack: ImccGasDatapack
+) -> None:
     with pytest.raises(ValueError, match="finite and >= 0"):
         evaluate_gas(
             {"Na2O": activity},
             2000.0,
             1.0,
-            _unread_gas_pack(),
+            gas_pack,
             gas_species=("Na",),
         )
 

@@ -125,6 +125,19 @@ def _gas_activities(temperature: float) -> dict[str, float]:
     }
 
 
+def _na_gas_evaluation(pack: ImccGasDatapack) -> dict[str, float]:
+    return dict(
+        evaluate_gas(
+            {"Na2O": 0.05},
+            1800.0,
+            1.0e-8,
+            pack,
+            parent_oxides=("Na2O",),
+            gas_species=("Na",),
+        )
+    )
+
+
 def test_packaged_table_content_digests_match_current_tables() -> None:
     pack = load_gas_datapack()
     assert pack.gas_table_digest == PACKAGED_GAS_TABLE_DIGEST
@@ -378,7 +391,7 @@ def test_loader_refuses_invalid_interval_bound_spellings(
 @pytest.mark.parametrize(
     ("filename", "species", "coefficient", "first", "second"),
     (
-        ("gas-shomate.csv", "Na(g)", "A", "9007199254740992", "9007199254740993"),
+        ("gas-shomate.csv", "Na(g)", "A", "1500", "1500.0"),
         ("condensate.csv", "MgO(l)", "dG_A", "1500", "1500.0"),
     ),
 )
@@ -398,7 +411,7 @@ def test_loader_refuses_duplicate_starts_after_float64_normalization(
     duplicate = dict(original)
     original["T_min"] = first
     duplicate["T_min"] = second
-    original["T_max"] = duplicate["T_max"] = "9007199254740994"
+    original["T_max"] = duplicate["T_max"] = "3000"
     duplicate[coefficient] = format(float(original[coefficient]) + 1.0, ".17g")
     rows.append(duplicate)
     _write_csv(table_path, fields, rows)
@@ -473,57 +486,43 @@ def _pack_with_duplicate_start(
     tmp_path: Path, construction: str, table_name: str, reverse: bool
 ) -> ImccGasDatapack:
     loaded = _load_tables(tmp_path / f"{construction}-{table_name}-{reverse}")
-    pack = loaded if construction == "load_then_mutate" else ImccGasDatapack(
-        loaded.gas_df.copy(deep=True), loaded.oxide_df.copy(deep=True),
-        loaded.gas_path, loaded.oxide_path,
-    )
-    frame = pack.gas_df if table_name == "gas" else pack.oxide_df
+    frame = (loaded.gas_df if table_name == "gas" else loaded.oxide_df).copy(deep=True)
     species = "Na(g)" if table_name == "gas" else "Na2O(l)"
     bound_column = frame.columns.get_loc("T_min")
     row_positions = np.flatnonzero(frame.index == species)
     assert len(row_positions) >= 2
-    frame.iloc[row_positions[1], bound_column] = frame.iloc[row_positions[0]]["T_min"]
+    start = float(frame.iloc[row_positions[:2]]["T_min"].min())
+    max_end = max(float(value) for value in frame.iloc[row_positions[:2]]["T_max"])
+    for position in row_positions[:2]:
+        frame.iloc[position, bound_column] = start
+        frame.iloc[position, frame.columns.get_loc("T_max")] = max(max_end, start + 1.0)
     if reverse:
         frame = frame.iloc[::-1].copy()
-        pack = ImccGasDatapack(
-            frame if table_name == "gas" else pack.gas_df,
-            frame if table_name == "condensate" else pack.oxide_df,
-            pack.gas_path, pack.oxide_path,
-        )
-    return pack
+    gas_df = frame if table_name == "gas" else loaded.gas_df
+    oxide_df = frame if table_name == "condensate" else loaded.oxide_df
+    if construction == "direct":
+        return ImccGasDatapack(gas_df, oxide_df, loaded.gas_path, loaded.oxide_path)
+    return replace(loaded, gas_df=gas_df, oxide_df=oxide_df)
 
 
-@pytest.mark.parametrize("construction", ["direct", "load_then_mutate"])
+@pytest.mark.parametrize("construction", ["direct", "replace"])
 @pytest.mark.parametrize("table_name", ["gas", "condensate"])
 @pytest.mark.parametrize("reverse", [False, True])
 def test_invalid_duplicate_starts_refuse_identity(
     tmp_path: Path, construction: str, table_name: str, reverse: bool
 ) -> None:
-    pack = _pack_with_duplicate_start(tmp_path, construction, table_name, reverse)
-    digest_name = "gas_table_digest" if table_name == "gas" else "condensate_table_digest"
     with pytest.raises(ImccGasDuplicateIntervalError):
-        getattr(pack, digest_name)
-    melt_pack = load_datapack(PACK_DIR / "imcc-sf04-v1.0.2.json")
-    with pytest.raises(ImccGasDuplicateIntervalError):
-        engine_binding_identity(melt_pack, pack)
+        _pack_with_duplicate_start(tmp_path, construction, table_name, reverse)
 
 
-@pytest.mark.parametrize("construction", ["direct", "load_then_mutate"])
+@pytest.mark.parametrize("construction", ["direct", "replace"])
 @pytest.mark.parametrize("table_name", ["gas", "condensate"])
 @pytest.mark.parametrize("reverse", [False, True])
 def test_invalid_duplicate_starts_refuse_evaluation(
     tmp_path: Path, construction: str, table_name: str, reverse: bool
 ) -> None:
-    pack = _pack_with_duplicate_start(tmp_path, construction, table_name, reverse)
     with pytest.raises(ImccGasDuplicateIntervalError):
-        evaluate_gas(
-            {"Na2O": 0.05}, 1800.0, 1.0e-8, pack,
-            parent_oxides=("Na2O",), gas_species=("Na",), include_ions=True,
-        )
-    with pytest.raises(ImccGasDuplicateIntervalError):
-        evaluate_gas_oxygen_balance(
-            {"Na2O": 0.05}, 1800.0, pack, parent_oxides=("Na2O",),
-        )
+        _pack_with_duplicate_start(tmp_path, construction, table_name, reverse)
 
 
 @pytest.mark.parametrize("bad_value", [float("-inf"), float("nan"), "not-a-number"])
@@ -531,36 +530,30 @@ def test_invalid_direct_bounds_refuse_identity_and_evaluation(
     bad_value: object,
 ) -> None:
     loaded = load_gas_datapack()
-    pack = ImccGasDatapack(
-        loaded.gas_df.copy(deep=True), loaded.oxide_df.copy(deep=True),
-        loaded.gas_path, loaded.oxide_path,
-    )
-    index = pack.gas_df.index[pack.gas_df.index == "Na(g)"][0]
+    frame = loaded.gas_df.copy(deep=True)
+    index = frame.index[frame.index == "Na(g)"][0]
     if not isinstance(bad_value, float) or math.isfinite(bad_value):
-        pack.gas_df["T_min"] = pack.gas_df["T_min"].astype(object)
-    pack.gas_df.loc[index, "T_min"] = bad_value
+        frame["T_min"] = frame["T_min"].astype(object)
+    frame.loc[index, "T_min"] = bad_value
     with pytest.raises(ImccGasInvalidIntervalError):
-        _ = pack.gas_table_digest
-    with pytest.raises(ImccGasInvalidIntervalError):
-        evaluate_gas({"Na2O": 0.05}, 1800.0, 1.0e-8, pack,
-                     parent_oxides=("Na2O",), gas_species=("Na",))
+        replace(loaded, gas_df=frame)
 
 
 @pytest.mark.parametrize("dtype", ["int64", str])
-def test_direct_non_float64_bound_columns_are_refused(dtype: object) -> None:
+def test_direct_exact_bounds_are_canonicalized(dtype: object) -> None:
     loaded = load_gas_datapack()
-    pack = ImccGasDatapack(
-        loaded.gas_df.copy(deep=True), loaded.oxide_df.copy(deep=True),
-        loaded.gas_path, loaded.oxide_path,
+    frame = loaded.gas_df.copy(deep=True)
+    frame["T_min"] = frame["T_min"].astype(dtype)
+    pack = replace(loaded, gas_df=frame)
+    assert pack.gas_table_digest == loaded.gas_table_digest
+    assert pack.gas_df["T_min"].dtype == np.dtype("float64")
+    assert _na_gas_evaluation(pack) == _na_gas_evaluation(loaded)
+    assert species_thermo("Na", "g", 1800.0, pack) == species_thermo(
+        "Na", "g", 1800.0, loaded
     )
-    pack.gas_df["T_min"] = pack.gas_df["T_min"].astype(dtype)
-    with pytest.raises(ImccGasInvalidIntervalError):
-        _ = pack.gas_table_digest
-    with pytest.raises(ImccGasInvalidIntervalError):
-        evaluate_gas({"Na2O": 0.05}, 1800.0, 1.0e-8, pack,
-                     parent_oxides=("Na2O",), gas_species=("Na",))
 
 
+@pytest.mark.parametrize("storage_dtype", [np.float16, np.float32])
 @pytest.mark.parametrize(
     ("table_name", "species", "phase", "columns"),
     [
@@ -568,40 +561,31 @@ def test_direct_non_float64_bound_columns_are_refused(dtype: object) -> None:
         ("condensate", "Na2O", "l", ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")),
     ],
 )
-def test_evaluated_float32_coefficients_are_refused_but_float64_are_accepted(
+def test_evaluated_float_coefficients_and_exact_widenings_match(
     table_name: str,
     species: str,
     phase: str,
     columns: tuple[str, ...],
+    storage_dtype: object,
 ) -> None:
     loaded = load_gas_datapack()
     frame_name = "gas_df" if table_name == "gas" else "oxide_df"
     narrow_frame = getattr(loaded, frame_name).copy(deep=True)
     for column in columns:
-        narrow_frame[column] = narrow_frame[column].astype(np.float32)
+        narrow_frame[column] = narrow_frame[column].astype(storage_dtype)
     narrow = replace(loaded, **{frame_name: narrow_frame})
 
     digest_name = "gas_table_digest" if table_name == "gas" else "condensate_table_digest"
-    with pytest.raises(ImccGasInvalidIntervalError):
-        getattr(narrow, digest_name)
-    with pytest.raises(ImccGasInvalidIntervalError):
-        species_thermo(species, phase, 1800.0, narrow)
-    with pytest.raises(ImccGasInvalidIntervalError):
-        evaluate_gas(
-            {"Na2O": 0.05},
-            1800.0,
-            1.0e-8,
-            narrow,
-            parent_oxides=("Na2O",),
-            gas_species=("Na",),
-        )
-
     wide_frame = narrow_frame.copy(deep=True)
     for column in columns:
         wide_frame[column] = wide_frame[column].astype(np.float64)
     wide = replace(loaded, **{frame_name: wide_frame})
-    assert isinstance(getattr(wide, digest_name), str)
-    assert math.isfinite(species_thermo(species, phase, 1800.0, wide).G_J_mol)
+    assert getattr(narrow, digest_name) == getattr(wide, digest_name)
+    assert getattr(narrow, frame_name)[columns[0]].dtype == np.dtype("float64")
+    assert species_thermo(species, phase, 1800.0, narrow) == species_thermo(
+        species, phase, 1800.0, wide
+    )
+    assert _na_gas_evaluation(narrow) == _na_gas_evaluation(wide)
 
 
 @pytest.mark.parametrize(
@@ -613,7 +597,7 @@ def test_evaluated_float32_coefficients_are_refused_but_float64_are_accepted(
         ("condensate", "dG_A", object, "Na2O", "l"),
     ],
 )
-def test_non_float64_evaluated_coefficients_are_refused_at_identity_and_evaluation(
+def test_exact_integer_and_object_coefficients_are_canonicalized(
     table_name: str,
     column: str,
     dtype: object,
@@ -626,19 +610,9 @@ def test_non_float64_evaluated_coefficients_are_refused_at_identity_and_evaluati
     frame[column] = frame[column].astype(dtype)
     pack = replace(loaded, **{frame_name: frame})
     digest_name = "gas_table_digest" if table_name == "gas" else "condensate_table_digest"
-    with pytest.raises(ImccGasInvalidIntervalError):
-        getattr(pack, digest_name)
-    with pytest.raises(ImccGasInvalidIntervalError):
-        species_thermo(species, phase, 1800.0, pack)
-    with pytest.raises(ImccGasInvalidIntervalError):
-        evaluate_gas(
-            {"Na2O": 0.05},
-            1800.0,
-            1.0e-8,
-            pack,
-            parent_oxides=("Na2O",),
-            gas_species=("Na",),
-        )
+    assert isinstance(getattr(pack, digest_name), str)
+    assert getattr(pack, frame_name)[column].dtype == np.dtype("float64")
+    assert math.isfinite(species_thermo(species, phase, 1800.0, pack).G_J_mol)
 
 
 @pytest.mark.parametrize("table_name,column,species,phase", [
@@ -652,21 +626,8 @@ def test_non_finite_evaluated_coefficients_are_refused_at_identity_and_evaluatio
     frame_name = "gas_df" if table_name == "gas" else "oxide_df"
     frame = getattr(loaded, frame_name).copy(deep=True)
     frame.loc[f"{species}({'g' if table_name == 'gas' else 'l'})", column] = np.inf
-    pack = replace(loaded, **{frame_name: frame})
-    digest_name = "gas_table_digest" if table_name == "gas" else "condensate_table_digest"
     with pytest.raises(ImccGasInvalidIntervalError):
-        getattr(pack, digest_name)
-    with pytest.raises(ImccGasInvalidIntervalError):
-        species_thermo(species, phase, 1800.0, pack)
-    with pytest.raises(ImccGasInvalidIntervalError):
-        evaluate_gas(
-            {"Na2O": 0.05},
-            1800.0,
-            1.0e-8,
-            pack,
-            parent_oxides=("Na2O",),
-            gas_species=("Na",),
-        )
+        replace(loaded, **{frame_name: frame})
 
 
 @pytest.mark.parametrize("filename", TABLE_FILES)
@@ -686,20 +647,162 @@ def test_loader_refuses_unnamed_species_from_csv(
 
 
 @pytest.mark.parametrize("table_name", ["gas", "condensate"])
-@pytest.mark.parametrize("invalid_label", [np.nan, "", "   ", 7])
-def test_identity_refuses_missing_empty_or_non_string_species_labels(
+@pytest.mark.parametrize("invalid_label", [np.nan, None, "", "   "])
+def test_construction_refuses_missing_empty_or_whitespace_species_labels(
     table_name: str, invalid_label: object
 ) -> None:
     loaded = load_gas_datapack()
     frame_name = "gas_df" if table_name == "gas" else "oxide_df"
     frame = getattr(loaded, frame_name).copy(deep=True)
-    labels = frame.index.to_numpy(dtype=object)
+    labels = list(frame.index)
     labels[0] = invalid_label
     frame.index = pd.Index(labels, name="species_name")
-    pack = replace(loaded, **{frame_name: frame})
-    digest_name = "gas_table_digest" if table_name == "gas" else "condensate_table_digest"
     with pytest.raises(PublicInvalidIntervalError, match="species"):
-        getattr(pack, digest_name)
+        replace(loaded, **{frame_name: frame})
+
+
+@pytest.mark.parametrize("table_name", ["gas", "condensate"])
+@pytest.mark.parametrize("change", ["extra", "missing"])
+def test_construction_requires_the_complete_fixed_schema(
+    table_name: str, change: str
+) -> None:
+    loaded = load_gas_datapack()
+    frame_name = "gas_df" if table_name == "gas" else "oxide_df"
+    frame = getattr(loaded, frame_name).copy(deep=True)
+    if change == "extra":
+        frame["unused_metadata"] = "extra"
+    else:
+        frame = frame.drop(columns="Ref")
+    with pytest.raises(ImccGasInvalidIntervalError, match="schema"):
+        replace(loaded, **{frame_name: frame})
+
+
+def test_condensate_extra_a_column_cannot_switch_coefficient_schema() -> None:
+    loaded = load_gas_datapack()
+    narrow = loaded.oxide_df.copy(deep=True)
+    narrow["A"] = np.float32(0.0)
+    for column in ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E"):
+        narrow[column] = narrow[column].astype(np.float32)
+    wide = narrow.copy(deep=True)
+    for column in ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E"):
+        wide[column] = wide[column].astype(np.float64)
+    for frame in (narrow, wide):
+        with pytest.raises(ImccGasInvalidIntervalError, match="schema"):
+            replace(loaded, oxide_df=frame)
+
+
+@pytest.mark.parametrize(
+    ("table_name", "column"),
+    [("gas", "A"), ("condensate", "dG_A")],
+)
+@pytest.mark.parametrize("bad_value", [np.nan, np.inf, -np.inf])
+def test_non_finite_unselected_rows_refuse_construction(
+    table_name: str, column: str, bad_value: float
+) -> None:
+    loaded = load_gas_datapack()
+    frame_name = "gas_df" if table_name == "gas" else "oxide_df"
+    frame = getattr(loaded, frame_name).copy(deep=True)
+    row_position = int(np.flatnonzero(frame.index != ("Na(g)" if table_name == "gas" else "Na2O(l)"))[0])
+    frame.iloc[row_position, frame.columns.get_loc(column)] = bad_value
+    with pytest.raises(ImccGasInvalidIntervalError):
+        replace(loaded, **{frame_name: frame})
+
+
+def test_numeric_reference_float32_widening_binds_provenance_and_evaluation() -> None:
+    loaded = load_gas_datapack()
+    narrow_frame = loaded.gas_df.copy(deep=True)
+    narrow_frame["Ref"] = np.full(len(narrow_frame), np.float32(0.1), dtype=np.float32)
+    wide_frame = narrow_frame.copy(deep=True)
+    wide_frame["Ref"] = wide_frame["Ref"].astype(np.float64)
+    text_frame = narrow_frame.copy(deep=True)
+    text_frame["Ref"] = str(float(np.float32(0.1)))
+    packs = [
+        replace(loaded, gas_df=frame)
+        for frame in (narrow_frame, wide_frame, text_frame)
+    ]
+    assert len({pack.gas_table_digest for pack in packs}) == 1
+    thermos = [species_thermo("Na", "g", 1800.0, pack) for pack in packs]
+    assert thermos[0] == thermos[1] == thermos[2]
+    assert thermos[0].source_row_id == "0.10000000149011612"
+    evaluations = [_na_gas_evaluation(pack) for pack in packs]
+    assert evaluations[0] == evaluations[1] == evaluations[2]
+
+
+def test_nullable_float64_without_missing_values_is_canonicalized() -> None:
+    loaded = load_gas_datapack()
+    frame = loaded.gas_df.copy(deep=True)
+    frame["A"] = frame["A"].astype("Float64")
+    pack = replace(loaded, gas_df=frame)
+    assert pack.gas_table_digest == loaded.gas_table_digest
+    assert pack.gas_df["A"].dtype == np.dtype("float64")
+    assert species_thermo("Na", "g", 1800.0, pack) == species_thermo(
+        "Na", "g", 1800.0, loaded
+    )
+    assert _na_gas_evaluation(pack) == _na_gas_evaluation(loaded)
+
+
+def test_nullable_float64_with_missing_value_is_refused_at_construction() -> None:
+    loaded = load_gas_datapack()
+    frame = loaded.gas_df.copy(deep=True)
+    values = frame["A"].astype("Float64")
+    values.iloc[0] = pd.NA
+    frame["A"] = values
+    with pytest.raises(ImccGasInvalidIntervalError):
+        replace(loaded, gas_df=frame)
+
+
+def test_nullable_int64_and_object_numeric_columns_are_canonicalized() -> None:
+    loaded = load_gas_datapack()
+    nullable = loaded.gas_df.copy(deep=True)
+    nullable["T_interval"] = nullable["T_interval"].astype("Int64")
+    nullable_pack = replace(loaded, gas_df=nullable)
+    assert nullable_pack.gas_table_digest == loaded.gas_table_digest
+    assert nullable_pack.gas_df["T_interval"].dtype == np.dtype("float64")
+    assert _na_gas_evaluation(nullable_pack) == _na_gas_evaluation(loaded)
+    assert species_thermo("Na", "g", 1800.0, nullable_pack) == species_thermo(
+        "Na", "g", 1800.0, loaded
+    )
+
+    object_frame = loaded.gas_df.copy(deep=True)
+    object_frame["A"] = object_frame["A"].astype(object)
+    object_pack = replace(loaded, gas_df=object_frame)
+    assert object_pack.gas_table_digest == loaded.gas_table_digest
+    assert _na_gas_evaluation(object_pack) == _na_gas_evaluation(loaded)
+    assert species_thermo("Na", "g", 1800.0, object_pack) == species_thermo(
+        "Na", "g", 1800.0, loaded
+    )
+
+
+def test_integer_above_binary64_exact_range_is_refused_at_construction() -> None:
+    loaded = load_gas_datapack()
+    frame = loaded.gas_df.copy(deep=True)
+    values = frame["T_interval"].astype(object)
+    values.iloc[0] = 2**53 + 2
+    frame["T_interval"] = values
+    with pytest.raises(ImccGasInvalidIntervalError, match="exactly convert"):
+        replace(loaded, gas_df=frame)
+
+
+def test_csv_integer_above_binary64_exact_range_is_refused(
+    tmp_path: Path,
+) -> None:
+    gas_path, condensate_path = _copy_tables(tmp_path)
+    fields, rows = _read_csv(gas_path)
+    rows[0]["T_interval"] = str(2**53 + 2)
+    _write_csv(gas_path, fields, rows)
+    with pytest.raises(ImccGasInvalidIntervalError, match="exactly convert"):
+        load_gas_datapack(gas_path=gas_path, oxide_path=condensate_path)
+
+
+def test_non_string_species_labels_are_converted_to_python_str() -> None:
+    loaded = load_gas_datapack()
+    frame = loaded.gas_df.copy(deep=True)
+    labels = list(frame.index)
+    labels[0] = 7
+    frame.index = pd.Index(labels, name="species_name")
+    pack = replace(loaded, gas_df=frame)
+    assert pack.gas_df.index[0] == "7"
+    assert type(pack.gas_df.index[0]) is str
 
 
 def test_valid_direct_pack_matches_loaded_identity_and_evaluation() -> None:
@@ -718,10 +821,10 @@ def test_valid_direct_pack_matches_loaded_identity_and_evaluation() -> None:
 
 
 @pytest.mark.parametrize("filename", TABLE_FILES)
-def test_loader_refuses_inverted_bounds_and_accepts_equal_bounds(
+def test_loader_refuses_inverted_and_zero_width_intervals(
     tmp_path: Path, filename: str
 ) -> None:
-    for equal, expected_error in ((False, True), (True, False)):
+    for equal in (False, True):
         folder = tmp_path / f"{filename}-{equal}"
         gas_path, condensate_path = _copy_tables(folder)
         table_path = gas_path if filename == TABLE_FILES[0] else condensate_path
@@ -730,13 +833,8 @@ def test_loader_refuses_inverted_bounds_and_accepts_equal_bounds(
         row["T_min"] = "1200"
         row["T_max"] = "1200" if equal else "1199"
         _write_csv(table_path, fields, rows)
-        if expected_error:
-            with pytest.raises(ImccGasInvalidIntervalError, match="T_min greater than T_max"):
-                load_gas_datapack(gas_path=gas_path, oxide_path=condensate_path)
-        else:
-            pack = load_gas_datapack(gas_path=gas_path, oxide_path=condensate_path)
-            table = pack.gas_df if filename == TABLE_FILES[0] else pack.oxide_df
-            assert float(table.iloc[0]["T_min"]) == float(table.iloc[0]["T_max"])
+        with pytest.raises(ImccGasInvalidIntervalError, match="T_min < T_max"):
+            load_gas_datapack(gas_path=gas_path, oxide_path=condensate_path)
 
 
 def _order_outcome(activities, temperature, pack, allow_extrapolation):
