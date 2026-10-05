@@ -1,0 +1,922 @@
+{
+  "schema_version": "liquid_from_solid_inputs.v1",
+  "description": "Tiered central inputs and the accessible JANAF compound-pair validation sample.",
+  "rows": {
+    "K2O": {
+      "crystal_table_id": "K-012",
+      "formula": "K2O",
+      "inputs": {
+        "fusion_temperature": {
+          "value": 1013.0,
+          "tier": 1,
+          "spread": 0.0,
+          "source": "Assessed K2O melting temperature from the alkali-oxide trend in Lamoreaux and Hildenbrand (1984); this is an estimate, not a direct measurement.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 1013.0,
+              "source": "Tier 1 assessed value 1013 K; Lamoreaux and Hildenbrand (1984), doi:10.1063/1.555706, estimate K2O melting temperature from the alkali M2O trend.",
+              "references": [
+                "https://doi.org/10.1063/1.555706"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 33.74,
+          "tier": 2,
+          "spread": 0.21,
+          "unit": "J mol^-1 K^-1",
+          "source": "Mean of alkali oxide members Na2O (33.95) and K2O (33.53). Na2O appears in the optimized Na2O-Al2O3 dataset, Table 1, p. 8; the K2O value is the LH84 value supplied with this task.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": null,
+              "source": "No direct K2O fusion entropy measurement was available for this row."
+            },
+            {
+              "tier": 2,
+              "value": 33.74,
+              "source": "Alkali M2O family mean: (33.95 + 33.53) / 2. Half-range spread: 0.21 J mol^-1 K^-1.",
+              "references": [
+                "https://info.ornl.gov/sites/publications/Files/Pub57741.pdf",
+                "Lamoreaux and Hildenbrand (1984), DOI 10.1063/1.555706"
+              ]
+            },
+            {
+              "tier": 3,
+              "value": null,
+              "source": "Richards-type per-atom rule; red fallback because this rule is known to fail badly."
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 97.75,
+          "tier": 2,
+          "spread": 5.5,
+          "unit": "J mol^-1 K^-1",
+          "source": "Arithmetic mean of K2O partial-molar values 97.0 ± 5.1 and 98.5 ± 5.5 J mol^-1 K^-1; the larger reported spread is retained.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": null,
+              "source": "No direct K2O liquid heat-capacity measurement was available for this row."
+            },
+            {
+              "tier": 2,
+              "value": 97.75,
+              "source": "Mean of Stebbins, Carmichael and Moret (1984), pp. 131-148, K2O 97.0 ± 5.1, and Lange and Navrotsky (1992), pp. 311-320, K2O 98.5 ± 5.5. Original tables were not accessible for first-hand page-level verification.",
+              "references": [
+                "https://doi.org/10.1007/BF00381840",
+                "https://doi.org/10.1007/BF00310746"
+              ]
+            },
+            {
+              "tier": 3,
+              "value": 104.6,
+              "source": "Carry Na2O(l) JANAF Cp over to K2O(l); Na-013 reports 104.600 J mol^-1 K^-1. Red fallback."
+            }
+          ]
+        },
+        "condensate_fit": {
+          "fit_t_min": 1200,
+          "fit_t_max": 2000,
+          "runtime_t_min": 1200,
+          "runtime_t_max": 2000,
+          "table_id": "K-oxide-construction",
+          "cation": "K",
+          "cat_num": 2,
+          "oxy_num": 1,
+          "ref": "K-012"
+        }
+      },
+      "tier_error_band_inputs": [
+        "fusion_entropy:tier2",
+        "liquid_heat_capacity:tier2"
+      ],
+      "band_validation_sample": 6
+    },
+    "Na2SiO3": {
+      "crystal_table_id": "Na-016",
+      "liquid_table_id": "Na-017",
+      "formula": "Na2SiO3",
+      "family": "alkali_metasilicate",
+      "metal_atoms": 3,
+      "total_atoms": 6,
+      "inputs": {
+        "fusion_temperature": {
+          "value": 1362.0,
+          "tier": 1,
+          "spread": 0.0,
+          "unit": "K",
+          "source": "NIST-JANAF Na-017 transition marker CRYSTAL <--> LIQUID.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 1362.0,
+              "source": "Assessed crystal-liquid transition temperature from Na-017; marker: CRYSTAL <--> LIQUID.",
+              "references": [
+                "https://janaf.nist.gov/tables/Na-016.html",
+                "https://janaf.nist.gov/tables/Na-017.html"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 38.03,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "Difference between Na-017 liquid entropy and Na-016 crystal entropy at 1362 K.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 38.03,
+              "source": "JANAF liquid-minus-crystal entropy at the Na-017 transition marker.",
+              "references": [
+                "https://janaf.nist.gov/tables/Na-016.html",
+                "https://janaf.nist.gov/tables/Na-017.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": 40.199,
+              "source": "Leave-one-out mean of the other measured alkali_metasilicate pair rows.",
+              "family": "alkali_metasilicate",
+              "references": [
+                "https://janaf.nist.gov/tables/Na-016.html",
+                "https://janaf.nist.gov/tables/Na-017.html"
+              ]
+            },
+            {
+              "tier": 3,
+              "value": 45.318861416630924,
+              "source": "Leave-one-out Richards-type mean fusion entropy per total atom, scaled to this formula.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/Na-016.html",
+                "https://janaf.nist.gov/tables/Na-017.html"
+              ]
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 177.318,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "JANAF Na-017 liquid heat capacity at its transition marker.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 177.318,
+              "source": "Measured/assessed JANAF liquid Cp at 1362 K.",
+              "references": [
+                "https://janaf.nist.gov/tables/Na-017.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": 181.25,
+              "spread": 4.3,
+              "components": [
+                "Na2O",
+                "SiO2"
+              ],
+              "source": "Additive sum of the listed oxide partial-molar liquid heat capacities.",
+              "references": [
+                "Stebbins, Carmichael and Moret (1984), doi:10.1007/BF00381840",
+                "Lange and Navrotsky (1992), doi:10.1007/BF00310746"
+              ],
+              "source_status": "Values were checked in accessible cited compilations; the original 1984 and 1992 tables were not available for first-hand page-level verification."
+            },
+            {
+              "tier": 3,
+              "value": 183.407,
+              "spread": 0.0,
+              "source": "Crystal Cp at fusion carried over from Na-016.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/Na-016.html"
+              ]
+            }
+          ]
+        },
+        "condensate_fit": {
+          "fit_t_min": 1200,
+          "fit_t_max": 2000,
+          "runtime_t_min": 1200,
+          "runtime_t_max": 2000,
+          "table_id": "Na2SiO3-construction",
+          "cation": "Na",
+          "cat_num": 2,
+          "oxy_num": 3,
+          "ref": "Na-017"
+        }
+      }
+    },
+    "K2SiO3": {
+      "crystal_table_id": "K-014",
+      "liquid_table_id": "K-015",
+      "formula": "K2SiO3",
+      "family": "alkali_metasilicate",
+      "metal_atoms": 3,
+      "total_atoms": 6,
+      "inputs": {
+        "fusion_temperature": {
+          "value": 1249.0,
+          "tier": 1,
+          "spread": 0.0,
+          "unit": "K",
+          "source": "NIST-JANAF K-015 transition marker CRYSTAL <--> LIQUID.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 1249.0,
+              "source": "Assessed crystal-liquid transition temperature from K-015; marker: CRYSTAL <--> LIQUID.",
+              "references": [
+                "https://janaf.nist.gov/tables/K-014.html",
+                "https://janaf.nist.gov/tables/K-015.html"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 40.199,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "Difference between K-015 liquid entropy and K-014 crystal entropy at 1249 K.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 40.199,
+              "source": "JANAF liquid-minus-crystal entropy at the K-015 transition marker.",
+              "references": [
+                "https://janaf.nist.gov/tables/K-014.html",
+                "https://janaf.nist.gov/tables/K-015.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": 38.03,
+              "source": "Leave-one-out mean of the other measured alkali_metasilicate pair rows.",
+              "family": "alkali_metasilicate",
+              "references": [
+                "https://janaf.nist.gov/tables/K-014.html",
+                "https://janaf.nist.gov/tables/K-015.html"
+              ]
+            },
+            {
+              "tier": 3,
+              "value": 44.88506141663093,
+              "source": "Leave-one-out Richards-type mean fusion entropy per total atom, scaled to this formula.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/K-014.html",
+                "https://janaf.nist.gov/tables/K-015.html"
+              ]
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 179.912,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "JANAF K-015 liquid heat capacity at its transition marker.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 179.912,
+              "source": "Measured/assessed JANAF liquid Cp at 1249 K.",
+              "references": [
+                "https://janaf.nist.gov/tables/K-015.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": 179.05,
+              "spread": 6.7,
+              "components": [
+                "K2O",
+                "SiO2"
+              ],
+              "source": "Additive sum of the listed oxide partial-molar liquid heat capacities.",
+              "references": [
+                "Stebbins, Carmichael and Moret (1984), doi:10.1007/BF00381840",
+                "Lange and Navrotsky (1992), doi:10.1007/BF00310746"
+              ],
+              "source_status": "Values were checked in accessible cited compilations; the original 1984 and 1992 tables were not available for first-hand page-level verification."
+            },
+            {
+              "tier": 3,
+              "value": 186.376,
+              "spread": 0.0,
+              "source": "Crystal Cp at fusion carried over from K-014.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/K-014.html"
+              ]
+            }
+          ]
+        },
+        "condensate_fit": {
+          "fit_t_min": 1200,
+          "fit_t_max": 2000,
+          "runtime_t_min": 1200,
+          "runtime_t_max": 2000,
+          "table_id": "K2SiO3-construction",
+          "cation": "K",
+          "cat_num": 2,
+          "oxy_num": 3,
+          "ref": "K-015"
+        }
+      }
+    },
+    "MgSiO3": {
+      "crystal_table_id": "Mg-012",
+      "liquid_table_id": "Mg-013",
+      "formula": "MgSiO3",
+      "family": "alkaline_earth_metasilicate",
+      "metal_atoms": 2,
+      "total_atoms": 5,
+      "inputs": {
+        "fusion_temperature": {
+          "value": 1850.0,
+          "tier": 1,
+          "spread": 0.0,
+          "unit": "K",
+          "source": "NIST-JANAF Mg-013 transition marker III <--> LIQUID.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 1850.0,
+              "source": "Assessed crystal-liquid transition temperature from Mg-013; marker: III <--> LIQUID.",
+              "references": [
+                "https://janaf.nist.gov/tables/Mg-012.html",
+                "https://janaf.nist.gov/tables/Mg-013.html"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 40.71,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "Difference between Mg-013 liquid entropy and Mg-012 crystal entropy at 1850 K.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 40.71,
+              "source": "JANAF liquid-minus-crystal entropy at the Mg-013 transition marker.",
+              "references": [
+                "https://janaf.nist.gov/tables/Mg-012.html",
+                "https://janaf.nist.gov/tables/Mg-013.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": null,
+              "source": "No second measured member is present in family alkaline_earth_metasilicate.",
+              "family": "alkaline_earth_metasilicate",
+              "references": []
+            },
+            {
+              "tier": 3,
+              "value": 35.962051180525776,
+              "source": "Leave-one-out Richards-type mean fusion entropy per total atom, scaled to this formula.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/Mg-012.html",
+                "https://janaf.nist.gov/tables/Mg-013.html"
+              ]
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 146.44,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "JANAF Mg-013 liquid heat capacity at its transition marker.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 146.44,
+              "source": "Measured/assessed JANAF liquid Cp at 1850 K.",
+              "references": [
+                "https://janaf.nist.gov/tables/Mg-013.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": 178.25,
+              "spread": 8.5,
+              "components": [
+                "MgO",
+                "SiO2"
+              ],
+              "source": "Additive sum of the listed oxide partial-molar liquid heat capacities.",
+              "references": [
+                "Stebbins, Carmichael and Moret (1984), doi:10.1007/BF00381840",
+                "Lange and Navrotsky (1992), doi:10.1007/BF00310746"
+              ],
+              "source_status": "Values were checked in accessible cited compilations; the original 1984 and 1992 tables were not available for first-hand page-level verification."
+            },
+            {
+              "tier": 3,
+              "value": 122.432,
+              "spread": 0.0,
+              "source": "Crystal Cp at fusion carried over from Mg-012.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/Mg-012.html"
+              ]
+            }
+          ]
+        },
+        "condensate_fit": {
+          "fit_t_min": 1200,
+          "fit_t_max": 2000,
+          "runtime_t_min": 1200,
+          "runtime_t_max": 2000,
+          "table_id": "MgSiO3-construction",
+          "cation": "Mg",
+          "cat_num": 1,
+          "oxy_num": 3,
+          "ref": "Mg-013"
+        }
+      }
+    },
+    "Al2O3": {
+      "crystal_table_id": "Al-096",
+      "liquid_table_id": "Al-100",
+      "formula": "Al2O3",
+      "family": "alumina",
+      "metal_atoms": 2,
+      "total_atoms": 5,
+      "inputs": {
+        "fusion_temperature": {
+          "value": 2327.0,
+          "tier": 1,
+          "spread": 0.0,
+          "unit": "K",
+          "source": "NIST-JANAF Al-100 transition marker ALPHA <--> LIQUID.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 2327.0,
+              "source": "Assessed crystal-liquid transition temperature from Al-100; marker: ALPHA <--> LIQUID.",
+              "references": [
+                "https://janaf.nist.gov/tables/Al-096.html",
+                "https://janaf.nist.gov/tables/Al-100.html"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 47.738,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "Difference between Al-100 liquid entropy and Al-096 crystal entropy at 2327 K.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 47.738,
+              "source": "JANAF liquid-minus-crystal entropy at the Al-100 transition marker.",
+              "references": [
+                "https://janaf.nist.gov/tables/Al-096.html",
+                "https://janaf.nist.gov/tables/Al-100.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": null,
+              "source": "No second measured member is present in family alumina.",
+              "family": "alumina",
+              "references": []
+            },
+            {
+              "tier": 3,
+              "value": 34.55645118052578,
+              "source": "Leave-one-out Richards-type mean fusion entropy per total atom, scaled to this formula.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/Al-096.html",
+                "https://janaf.nist.gov/tables/Al-100.html"
+              ]
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 192.464,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "JANAF Al-100 liquid heat capacity at its transition marker.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 192.464,
+              "source": "Measured/assessed JANAF liquid Cp at 2327 K.",
+              "references": [
+                "https://janaf.nist.gov/tables/Al-100.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": 163.95,
+              "spread": 5.1,
+              "components": [
+                "Al2O3"
+              ],
+              "source": "Additive sum of the listed oxide partial-molar liquid heat capacities.",
+              "references": [
+                "Stebbins, Carmichael and Moret (1984), doi:10.1007/BF00381840",
+                "Lange and Navrotsky (1992), doi:10.1007/BF00310746"
+              ],
+              "source_status": "Values were checked in accessible cited compilations; the original 1984 and 1992 tables were not available for first-hand page-level verification."
+            },
+            {
+              "tier": 3,
+              "value": 138.934,
+              "spread": 0.0,
+              "source": "Crystal Cp at fusion carried over from Al-096.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/Al-096.html"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "CaO": {
+      "crystal_table_id": "Ca-027",
+      "liquid_table_id": "Ca-028",
+      "formula": "CaO",
+      "family": "alkaline_earth_monoxide",
+      "metal_atoms": 1,
+      "total_atoms": 2,
+      "inputs": {
+        "fusion_temperature": {
+          "value": 3200.0,
+          "tier": 1,
+          "spread": 0.0,
+          "unit": "K",
+          "source": "NIST-JANAF Ca-028 transition marker CRYSTAL <--> LIQUID.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 3200.0,
+              "source": "Assessed crystal-liquid transition temperature from Ca-028; marker: CRYSTAL <--> LIQUID.",
+              "references": [
+                "https://janaf.nist.gov/tables/Ca-027.html",
+                "https://janaf.nist.gov/tables/Ca-028.html"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 24.842,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "Difference between Ca-028 liquid entropy and Ca-027 crystal entropy at 3200 K.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 24.842,
+              "source": "JANAF liquid-minus-crystal entropy at the Ca-028 transition marker.",
+              "references": [
+                "https://janaf.nist.gov/tables/Ca-027.html",
+                "https://janaf.nist.gov/tables/Ca-028.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": null,
+              "source": "No second measured member is present in family alkaline_earth_monoxide.",
+              "family": "alkaline_earth_monoxide",
+              "references": []
+            },
+            {
+              "tier": 3,
+              "value": 12.673220472210312,
+              "source": "Leave-one-out Richards-type mean fusion entropy per total atom, scaled to this formula.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/Ca-027.html",
+                "https://janaf.nist.gov/tables/Ca-028.html"
+              ]
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 62.76,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "JANAF Ca-028 liquid heat capacity at its transition marker.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 62.76,
+              "source": "Measured/assessed JANAF liquid Cp at 3200 K.",
+              "references": [
+                "https://janaf.nist.gov/tables/Ca-028.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": 94.85,
+              "spread": 3.1,
+              "components": [
+                "CaO"
+              ],
+              "source": "Additive sum of the listed oxide partial-molar liquid heat capacities.",
+              "references": [
+                "Stebbins, Carmichael and Moret (1984), doi:10.1007/BF00381840",
+                "Lange and Navrotsky (1992), doi:10.1007/BF00310746"
+              ],
+              "source_status": "Values were checked in accessible cited compilations; the original 1984 and 1992 tables were not available for first-hand page-level verification."
+            },
+            {
+              "tier": 3,
+              "value": 63.434,
+              "spread": 0.0,
+              "source": "Crystal Cp at fusion carried over from Ca-027.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/Ca-027.html"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "SiO2": {
+      "crystal_table_id": "O-035",
+      "liquid_table_id": "O-038",
+      "formula": "SiO2",
+      "family": "silica",
+      "metal_atoms": 1,
+      "total_atoms": 3,
+      "inputs": {
+        "fusion_temperature": {
+          "value": 1696.0,
+          "tier": 1,
+          "spread": 0.0,
+          "unit": "K",
+          "source": "NIST-JANAF O-038 transition marker II <--> LIQUID.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 1696.0,
+              "source": "Assessed crystal-liquid transition temperature from O-038; marker: II <--> LIQUID.",
+              "references": [
+                "https://janaf.nist.gov/tables/O-035.html",
+                "https://janaf.nist.gov/tables/O-038.html"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 2.865853541577337,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "Difference between O-038 liquid entropy and O-035 crystal entropy at 1696 K.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 2.865853541577337,
+              "source": "JANAF liquid-minus-crystal entropy at the O-038 transition marker.",
+              "references": [
+                "https://janaf.nist.gov/tables/O-035.html",
+                "https://janaf.nist.gov/tables/O-038.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": null,
+              "source": "No second measured member is present in family silica.",
+              "family": "silica",
+              "references": []
+            },
+            {
+              "tier": 3,
+              "value": 25.88926,
+              "source": "Leave-one-out Richards-type mean fusion entropy per total atom, scaled to this formula.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/O-035.html",
+                "https://janaf.nist.gov/tables/O-038.html"
+              ]
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 85.772,
+          "tier": 1,
+          "spread": 0.001,
+          "unit": "J mol^-1 K^-1",
+          "source": "JANAF O-038 liquid heat capacity at its transition marker.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 85.772,
+              "source": "Measured/assessed JANAF liquid Cp at 1696 K.",
+              "references": [
+                "https://janaf.nist.gov/tables/O-038.html"
+              ]
+            },
+            {
+              "tier": 2,
+              "value": 81.3,
+              "spread": 1.2,
+              "components": [
+                "SiO2"
+              ],
+              "source": "Additive sum of the listed oxide partial-molar liquid heat capacities.",
+              "references": [
+                "Stebbins, Carmichael and Moret (1984), doi:10.1007/BF00381840",
+                "Lange and Navrotsky (1992), doi:10.1007/BF00310746"
+              ],
+              "source_status": "Values were checked in accessible cited compilations; the original 1984 and 1992 tables were not available for first-hand page-level verification."
+            },
+            {
+              "tier": 3,
+              "value": 73.52144,
+              "spread": 0.0,
+              "source": "Crystal Cp at fusion carried over from O-035.",
+              "flag": "red",
+              "references": [
+                "https://janaf.nist.gov/tables/O-035.html"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "partial_molar_cp_j_mol_k": {
+    "source_status": "Values were checked in accessible cited compilations; the original 1984 and 1992 tables were not available for first-hand page-level verification.",
+    "supporting_reference": "Navrotsky (1995), Energetics of Silicate Melts, Reviews in Mineralogy 32, Table 3, p. 130, doi:10.2138/rmg.1995.32.5. This is an accessible compilation of the cited partial-molar values, not a substitute for checking the original tables.",
+    "SiO2": {
+      "value": 81.3,
+      "spread": 1.2,
+      "source_values": [
+        80.0,
+        82.6
+      ]
+    },
+    "Na2O": {
+      "value": 99.95,
+      "spread": 3.1,
+      "source_values": [
+        102.3,
+        97.6
+      ]
+    },
+    "K2O": {
+      "value": 97.75,
+      "spread": 5.5,
+      "source_values": [
+        97.0,
+        98.5
+      ]
+    },
+    "MgO": {
+      "value": 96.95,
+      "spread": 7.3,
+      "source_values": [
+        99.7,
+        94.2
+      ]
+    },
+    "Al2O3": {
+      "value": 163.95,
+      "spread": 5.1,
+      "source_values": [
+        157.6,
+        170.3
+      ]
+    },
+    "CaO": {
+      "value": 94.85,
+      "spread": 3.1,
+      "source_values": [
+        99.9,
+        89.8
+      ]
+    }
+  },
+  "tier_error_bands": {
+    "definition": "Maximum and RMS absolute Gibbs construction error against the corresponding JANAF liquid Gibbs table. Input-tier estimates are leave-one-out on held-out liquid pairs. The accessible sample has six pairs: three silicates plus existing alumina, lime, and silica records.",
+    "offsets_k": [
+      0,
+      300,
+      800
+    ],
+    "units": {
+      "gibbs": "kJ mol^-1",
+      "dex": "log10 equilibrium units per metal atom"
+    },
+    "fusion_entropy_tier2": {
+      "sample_size": 2,
+      "max": [
+        0.001551,
+        0.778006,
+        1.83228
+      ],
+      "rms": [
+        0.001361,
+        0.658539,
+        1.735373
+      ],
+      "dex_max_per_metal_atom": [
+        2.2e-05,
+        0.00815,
+        0.014756
+      ],
+      "dex_rms_per_metal_atom": [
+        1.8e-05,
+        0.007055,
+        0.014322
+      ]
+    },
+    "fusion_entropy_tier3": {
+      "sample_size": 6,
+      "max": [
+        1.154923,
+        8.07199,
+        19.581036
+      ],
+      "rms": [
+        0.471497,
+        4.144969,
+        10.424638
+      ],
+      "dex_max_per_metal_atom": [
+        0.035569,
+        0.211237,
+        0.409771
+      ],
+      "dex_rms_per_metal_atom": [
+        0.014521,
+        0.091497,
+        0.180945
+      ]
+    },
+    "liquid_heat_capacity_tier2": {
+      "sample_size": 6,
+      "max": [
+        1.154923,
+        1.052749,
+        4.913977
+      ],
+      "rms": [
+        0.471497,
+        0.613449,
+        2.76943
+      ],
+      "dex_max_per_metal_atom": [
+        0.035569,
+        0.02755,
+        0.048429
+      ],
+      "dex_rms_per_metal_atom": [
+        0.014521,
+        0.012452,
+        0.028353
+      ]
+    },
+    "liquid_heat_capacity_tier3": {
+      "sample_size": 6,
+      "max": [
+        1.154923,
+        0.922182,
+        6.578776
+      ],
+      "rms": [
+        0.471497,
+        0.581916,
+        3.183846
+      ],
+      "dex_max_per_metal_atom": [
+        0.035569,
+        0.022441,
+        0.054946
+      ],
+      "dex_rms_per_metal_atom": [
+        0.014521,
+        0.010385,
+        0.028462
+      ]
+    }
+  }
+}
