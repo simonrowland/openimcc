@@ -450,6 +450,17 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
     ("input_key", "tier", "expected"),
     [
         (
+            "fusion_temperature",
+            1,
+            {
+                "sample_size_by_offset": [48, 48, 45],
+                "max": [1.154923273, 1.164968030, 4.239951354],
+                "rms": [0.166759609, 0.194222855, 0.686915566],
+                "dex_max_per_metal_atom": [0.035569471, 0.030486221, 0.024323595],
+                "dex_rms_per_metal_atom": [0.005134229, 0.004585847, 0.004784863],
+            },
+        ),
+        (
             "fusion_entropy",
             1,
             {

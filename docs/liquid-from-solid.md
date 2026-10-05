@@ -109,8 +109,9 @@ text endpoint could not be completed in this network-restricted environment.
 
 Each tier was evaluated against the corresponding JANAF liquid table at
 `T_fus`, `T_fus + 300 K`, and `T_fus + 800 K`. Tier 2 and tier 3 estimates
-exclude the tested pair when building their systematic. Tier 1 is the
-measured-value control, so it uses the row being validated. Three liquid
+exclude the tested pair when building their systematic. The Tier 1
+fusion-temperature, fusion-entropy, and liquid-Cp bands share the same
+measured-value control, so they use the row being validated. Three liquid
 tables end before `T_fus + 800 K`; they are omitted only at that offset. Each
 input's row band is its measured tier band plus that row's propagated input
 spread. Family entropy spread is half the training-member range; additive Cp
@@ -121,7 +122,7 @@ Cells below give maximum / RMS absolute error in kJ/mol. Sample counts are for
 
 | Input tier | N | T_fus | +300 K | +800 K |
 | --- | ---: | ---: | ---: | ---: |
-| Tier 1 measured-value control | 48 / 48 / 45 | 1.155 / 0.167 | 1.165 / 0.194 | 4.240 / 0.687 |
+| Fusion temperature, entropy, and Cp, tier 1 control | 48 / 48 / 45 | 1.155 / 0.167 | 1.165 / 0.194 | 4.240 / 0.687 |
 | Fusion entropy, tier 2 family | 32 / 32 / 31 | 0.002 / 0.001 | 7.357 / 2.946 | 19.756 / 8.139 |
 | Fusion entropy, tier 3 per formula atom | 48 / 48 / 45 | 1.155 / 0.167 | 16.463 / 5.276 | 43.473 / 13.854 |
 | Liquid Cp, tier 2 additive | 15 / 15 / 15 | 1.155 / 0.298 | 1.674 / 0.864 | 10.777 / 5.144 |
@@ -131,7 +132,7 @@ The paired maximum / RMS errors in dex per metal atom are:
 
 | Input tier | T_fus | +300 K | +800 K |
 | --- | ---: | ---: | ---: |
-| Tier 1 measured-value control | 0.035569 / 0.005134 | 0.030486 / 0.004586 | 0.024324 / 0.004785 |
+| Fusion temperature, entropy, and Cp, tier 1 control | 0.035569 / 0.005134 | 0.030486 / 0.004586 | 0.024324 / 0.004785 |
 | Fusion entropy, tier 2 family | 0.000047 / 0.000017 | 0.133430 / 0.040422 | 0.293724 / 0.087490 |
 | Fusion entropy, tier 3 per formula atom | 0.035569 / 0.005134 | 0.232041 / 0.064309 | 0.454136 / 0.124734 |
 | Liquid Cp, tier 2 additive | 0.035569 / 0.009184 | 0.027550 / 0.010219 | 0.066705 / 0.038084 |
