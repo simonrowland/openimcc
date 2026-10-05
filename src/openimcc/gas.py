@@ -18,7 +18,10 @@ import os
 import re
 from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field
+from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from importlib import resources
+from numbers import Number
 from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Callable, Literal, Mapping, NamedTuple, Sequence
@@ -102,6 +105,27 @@ _CONDENSATE_TABLE_RELPATH = Path("data") / "condensate-thermo-data.csv"
 _PACKAGED_DATA_PACKAGE = "openimcc.data.gas"
 _PACKAGED_GAS_NAME = "gas-shomate.csv"
 _PACKAGED_CONDENSATE_NAME = "condensate.csv"
+_GAS_TABLE_SCHEMA = frozenset(
+    {
+        "species_name", "state", "T_interval", "cation", "cat_num", "oxy_num",
+        "T_min", "T_max", "A", "B", "C", "D", "E", "F", "G", "H", "Ref",
+    }
+)
+_CONDENSATE_TABLE_SCHEMA = frozenset(
+    {
+        "species_name", "state", "cation", "cat_num", "oxy_num", "T_min", "T_max",
+        "dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E", "Ref",
+    }
+)
+_GAS_NUMERIC_COLUMNS = (
+    "T_interval", "cat_num", "oxy_num", "T_min", "T_max", *tuple("ABCDEFGH")
+)
+_CONDENSATE_NUMERIC_COLUMNS = (
+    "cat_num", "oxy_num", "T_min", "T_max", "dH298_R", "dG_A", "dG_B", "dG_C",
+    "dG_D", "dG_E",
+)
+_GAS_TEXT_COLUMNS = ("state", "cation", "Ref")
+_CONDENSATE_TEXT_COLUMNS = ("state", "cation", "Ref")
 
 
 class ImccGasDataUnavailableError(ImccRefusal):
@@ -1627,7 +1651,14 @@ def _gas_table_identity_cell(value: object) -> object:
 def _gas_table_digest(table_name: str, table: "pd.DataFrame") -> str:
     """Hash every parsed cell, independent of CSV column and row order."""
     rows = [
-        {column: _gas_table_identity_cell(value) for column, value in row.items()}
+        {
+            column: (
+                None
+                if column == "cation" and value == ""
+                else _gas_table_identity_cell(value)
+            )
+            for column, value in row.items()
+        }
         for row in table.reset_index().to_dict(orient="records")
     ]
     rows.sort(key=_canonical_published_serialization)
@@ -1639,141 +1670,184 @@ def _gas_table_digest(table_name: str, table: "pd.DataFrame") -> str:
     return hashlib.sha256(_canonical_published_serialization(payload)).hexdigest()
 
 
-def _normalise_interval_bounds(
-    table: "pd.DataFrame", table_name: str, table_path: Path
-) -> None:
-    """Store loader bounds as float64 before shared interval validation."""
-    pd = _pandas()
-    for column in ("T_min", "T_max"):
-        if column not in table.columns:
-            raise ImccGasInvalidIntervalError(
-                f"{table_name} database {table_path} is missing {column!r}"
-            )
-        values = pd.to_numeric(table[column], errors="coerce").to_numpy(
-            dtype=np.float64
-        )
-        table[column] = values
+def _canonical_text_value(
+    value: object, pd: object, *, allow_empty: bool = False
+) -> str:
+    """Convert text-schema cells to stable Python strings."""
+    if pd.isna(value):
+        if allow_empty:
+            return ""
+        raise ValueError("missing")
+    if isinstance(value, (bool, np.bool_)):
+        result = str(value)
+    elif isinstance(value, (int, np.integer)):
+        result = str(int(value))
+    elif isinstance(value, (float, np.floating)):
+        number = float(value)
+        if not math.isfinite(number):
+            raise ValueError("non-finite")
+        result = str(int(number)) if math.isfinite(number) and number.is_integer() else str(number)
+    elif isinstance(value, Decimal):
+        if not value.is_finite():
+            raise ValueError("non-finite")
+        result = str(value)
+    else:
+        result = str(value)
+    if not result.strip() and not allow_empty:
+        raise ValueError("empty")
+    return result
 
 
-def _validate_interval_arrays(
-    rows: "pd.DataFrame",
-    species: str,
+def _canonical_numeric_column(
+    table: "pd.DataFrame",
+    column: str,
     table_name: str,
     table_path: Path,
-    *,
-    validate_intervals: bool = True,
-    validate_coefficients: bool = True,
-    evaluated_row: "pd.Series | None" = None,
-) -> None:
-    """Validate interval bounds and evaluated numeric values for one species."""
-    if validate_intervals:
-        t_mins = rows["T_min"].to_numpy(copy=False)
-        t_maxs = rows["T_max"].to_numpy(copy=False)
-        if t_mins.dtype != np.dtype("float64"):
-            raise ImccGasInvalidIntervalError(
-                f"{table_name} database {table_path} requires float64 T_min values"
-            )
-        if t_maxs.dtype != np.dtype("float64"):
-            raise ImccGasInvalidIntervalError(
-                f"{table_name} database {table_path} requires float64 T_max values"
-            )
-        if not np.isfinite(t_mins).all():
-            row_index = int(np.flatnonzero(~np.isfinite(t_mins))[0])
-            raise ImccGasInvalidIntervalError(
-                f"{table_name} database {table_path} has non-finite or non-numeric "
-                f"T_min for {species!r}: {t_mins[row_index]!r}"
-            )
-        if not np.isfinite(t_maxs).all():
-            row_index = int(np.flatnonzero(~np.isfinite(t_maxs))[0])
-            raise ImccGasInvalidIntervalError(
-                f"{table_name} database {table_path} has non-finite or non-numeric "
-                f"T_max for {species!r}: {t_maxs[row_index]!r}"
-            )
-        if not np.all(t_mins <= t_maxs):
-            row_index = int(np.flatnonzero(t_mins > t_maxs)[0])
-            raise ImccGasInvalidIntervalError(
-                f"{table_name} database {table_path} has T_min greater than T_max "
-                f"for {species!r}: [{t_mins[row_index]}, {t_maxs[row_index]}] K"
-            )
-        if t_mins.size > 1:
-            unique_starts, start_counts = np.unique(t_mins, return_counts=True)
-            if start_counts.size != t_mins.size:
-                start = unique_starts[np.flatnonzero(start_counts > 1)[0]]
-                raise ImccGasDuplicateIntervalError(
-                    f"{table_name} database {table_path} has duplicate interval start "
-                    f"for {species!r} at T_min={start!r} K"
+    species_labels: list[str],
+    pd: object,
+) -> np.ndarray:
+    """Convert one complete numeric column to exact, finite binary64 values."""
+    values = np.empty(len(table), dtype=np.float64)
+    for position, value in enumerate(table[column].array):
+        species = species_labels[position]
+        invalid_prefix = (
+            f"{table_name} database {table_path} has non-finite or non-numeric "
+            f"{column} for {species!r}: {value!r}"
+        )
+        if pd.isna(value) or isinstance(value, (bool, np.bool_)):
+            raise ImccGasInvalidIntervalError(invalid_prefix)
+        if not isinstance(value, (Number, Decimal, Fraction)):
+            if not isinstance(value, (str, np.str_)):
+                raise ImccGasInvalidIntervalError(invalid_prefix)
+            try:
+                decimal_value = Decimal(str(value).strip())
+            except InvalidOperation:
+                raise ImccGasInvalidIntervalError(invalid_prefix) from None
+            if not decimal_value.is_finite():
+                raise ImccGasInvalidIntervalError(invalid_prefix)
+            try:
+                number = float(decimal_value)
+            except (OverflowError, ValueError):
+                raise ImccGasInvalidIntervalError(invalid_prefix) from None
+            if (
+                not math.isfinite(number)
+                or decimal_value != Decimal.from_float(number)
+            ):
+                raise ImccGasInvalidIntervalError(
+                    f"{table_name} database {table_path} cannot exactly convert "
+                    f"{column} for {species!r}: {value!r}"
                 )
-    if validate_coefficients:
-        evaluated_columns = (
-            tuple("ABCDEFGH")
-            if "A" in rows.columns
-            else ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
-        )
-        coefficient_columns = tuple(
-            column for column in evaluated_columns if column in rows.columns
-        )
-        # The source's Shomate H column is an integer zero in the packaged
-        # table; species_thermo explicitly converts it to float before use.
-        integer_h = (
-            "H" in rows.columns
-            and rows["H"].dtype == np.dtype("int64")
-        )
-        if evaluated_row is not None:
-            for column in coefficient_columns:
-                value = evaluated_row[column]
-                scalar_dtype = type(value)
-                if scalar_dtype is not np.float64 and not (
-                    column == "H" and integer_h and scalar_dtype is np.int64
-                ):
-                    raise ImccGasInvalidIntervalError(
-                        f"{table_name} database {table_path} requires float64 "
-                        f"{column} values"
-                    )
-                if not math.isfinite(float(value)):
-                    raise ImccGasInvalidIntervalError(
-                        f"{table_name} database {table_path} has non-finite "
-                        f"{column} for {species!r}: {value!r}"
-                    )
-        else:
-            coefficient_dtypes = rows.dtypes
-            for column in coefficient_columns:
-                dtype = coefficient_dtypes[column]
-                if dtype != np.dtype("float64") and not (
-                    column == "H" and integer_h
-                ):
-                    raise ImccGasInvalidIntervalError(
-                        f"{table_name} database {table_path} requires float64 "
-                        f"{column} values"
-                    )
-            for column in coefficient_columns:
-                if column == "H" and integer_h:
-                    continue
-                values = rows[column].to_numpy(copy=False)
-                if not np.isfinite(values).all():
-                    row_index = int(np.flatnonzero(~np.isfinite(values))[0])
-                    raise ImccGasInvalidIntervalError(
-                        f"{table_name} database {table_path} has non-finite "
-                        f"{column} for {species!r}: {values[row_index]!r}"
-                    )
+            values[position] = number
+            continue
+        if isinstance(value, (int, np.integer)) and abs(int(value)) > 2**53:
+            raise ImccGasInvalidIntervalError(
+                f"{table_name} database {table_path} cannot exactly convert "
+                f"{column} for {species!r}: {value!r}"
+            )
+        try:
+            number = float(value)
+        except (OverflowError, TypeError, ValueError):
+            raise ImccGasInvalidIntervalError(invalid_prefix) from None
+        if not math.isfinite(number):
+            raise ImccGasInvalidIntervalError(invalid_prefix)
+        try:
+            exact = bool(value == number)
+        except (TypeError, ValueError):
+            exact = False
+        if not exact:
+            raise ImccGasInvalidIntervalError(
+                f"{table_name} database {table_path} cannot exactly convert "
+                f"{column} for {species!r}: {value!r}"
+            )
+        values[position] = number
+    return values
 
 
-def _validate_interval_table(
-    table: "pd.DataFrame", table_name: str, table_path: Path
-) -> None:
-    """Apply array validation to each species in a parsed interval table."""
-    labels = table.index.to_numpy(dtype=object, copy=False)
-    if any(not isinstance(label, str) or not label.strip() for label in labels):
+def _canonicalize_gas_table(
+    table: "pd.DataFrame",
+    table_name: str,
+    table_path: Path,
+    schema: frozenset[str],
+    numeric_columns: tuple[str, ...],
+    text_columns: tuple[str, ...],
+) -> "pd.DataFrame":
+    """Validate the closed table schema and canonicalize every stored value."""
+    pd = _pandas()
+    if not isinstance(table, pd.DataFrame):
         raise ImccGasInvalidIntervalError(
-            f"{table_name} database {table_path} has a missing, empty, or "
-            "non-string species label"
+            f"{table_name} database {table_path} requires a pandas DataFrame"
         )
-    for species, rows in table.groupby(level=0, sort=False):
-        _validate_interval_arrays(
-            rows,
-            species,
-            table_name,
-            table_path,
+    if isinstance(table.index, pd.MultiIndex):
+        raise ImccGasInvalidIntervalError(
+            f"{table_name} database {table_path} requires a simple species index"
         )
+    expected_columns = schema - {"species_name"}
+    actual_columns = list(table.columns)
+    if (
+        len(actual_columns) != len(set(actual_columns))
+        or set(actual_columns) != expected_columns
+    ):
+        missing = sorted(expected_columns - set(actual_columns))
+        extra = sorted(set(actual_columns) - expected_columns)
+        raise ImccGasInvalidIntervalError(
+            f"{table_name} database {table_path} has an invalid schema "
+            f"(missing={missing}, extra={extra})"
+        )
+
+    species_labels = []
+    for value in table.index:
+        try:
+            label = _canonical_text_value(value, pd)
+        except ValueError:
+            raise ImccGasInvalidIntervalError(
+                f"{table_name} database {table_path} has a missing, empty, or "
+                "whitespace-only species label"
+            ) from None
+        species_labels.append(label)
+
+    canonical = table.copy(deep=True)
+    canonical.index = pd.Index(species_labels, name="species_name", dtype=object)
+    for column in numeric_columns:
+        canonical[column] = _canonical_numeric_column(
+            table, column, table_name, table_path, species_labels, pd
+        )
+    for column in text_columns:
+        text_values = []
+        for value in table[column].array:
+            try:
+                text_values.append(
+                    _canonical_text_value(value, pd, allow_empty=column == "cation")
+                )
+            except ValueError:
+                raise ImccGasInvalidIntervalError(
+                    f"{table_name} database {table_path} has a missing, empty, or "
+                    f"whitespace-only {column} label"
+                ) from None
+        canonical[column] = pd.Series(
+            text_values, index=canonical.index, dtype=object
+        )
+
+    t_mins = canonical["T_min"].to_numpy(copy=False)
+    t_maxs = canonical["T_max"].to_numpy(copy=False)
+    invalid_bounds = np.flatnonzero(t_mins >= t_maxs)
+    if invalid_bounds.size:
+        position = int(invalid_bounds[0])
+        species = species_labels[position]
+        raise ImccGasInvalidIntervalError(
+            f"{table_name} database {table_path} requires T_min < T_max "
+            f"for {species!r}: [{t_mins[position]}, {t_maxs[position]}] K"
+        )
+
+    starts = set()
+    for species, start in zip(species_labels, t_mins, strict=True):
+        key = species, float(start)
+        if key in starts:
+            raise ImccGasDuplicateIntervalError(
+                f"{table_name} database {table_path} has duplicate interval start "
+                f"for {species!r} at T_min={start!r} K"
+            )
+        starts.add(key)
+    return canonical
 
 
 @dataclass(frozen=True)
@@ -1781,23 +1855,50 @@ class ImccGasDatapack:
     """Loaded JANAF + condensate tables and their parsed-content identities.
 
     ``gas_path`` and ``oxide_path`` are diagnostic source locations; content
-    identity is exposed by the table digest properties.
+    identity is exposed by the table digest properties. Both frames are
+    canonicalized once at construction. In-place mutation of a stored frame is
+    outside the contract; use :func:`dataclasses.replace` to create a validated
+    pack with changed tables.
     """
 
     gas_df: pd.DataFrame
     oxide_df: pd.DataFrame
     gas_path: Path
     oxide_path: Path
+    _gas_digest: str = field(init=False, repr=False, compare=False)
+    _condensate_digest: str = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        gas_df = _canonicalize_gas_table(
+            self.gas_df,
+            "JANAF gas",
+            self.gas_path,
+            _GAS_TABLE_SCHEMA,
+            _GAS_NUMERIC_COLUMNS,
+            _GAS_TEXT_COLUMNS,
+        )
+        oxide_df = _canonicalize_gas_table(
+            self.oxide_df,
+            "condensate",
+            self.oxide_path,
+            _CONDENSATE_TABLE_SCHEMA,
+            _CONDENSATE_NUMERIC_COLUMNS,
+            _CONDENSATE_TEXT_COLUMNS,
+        )
+        object.__setattr__(self, "_gas_digest", _gas_table_digest("gas", gas_df))
+        object.__setattr__(
+            self, "_condensate_digest", _gas_table_digest("condensate", oxide_df)
+        )
+        object.__setattr__(self, "gas_df", gas_df)
+        object.__setattr__(self, "oxide_df", oxide_df)
 
     @property
     def gas_table_digest(self) -> str:
-        _validate_interval_table(self.gas_df, "JANAF gas", self.gas_path)
-        return _gas_table_digest("gas", self.gas_df)
+        return self._gas_digest
 
     @property
     def condensate_table_digest(self) -> str:
-        _validate_interval_table(self.oxide_df, "condensate", self.oxide_path)
-        return _gas_table_digest("condensate", self.oxide_df)
+        return self._condensate_digest
 
 
 def load_gas_datapack(
@@ -1834,9 +1935,7 @@ def load_gas_datapack(
         raise ImccGasSpeciesNotFoundError(
             f"JANAF gas database {gas_display_path} missing 'species_name' column"
         )
-    _normalise_interval_bounds(gas_df, "JANAF gas", gas_display_path)
     gas_df = gas_df.set_index("species_name")
-    _validate_interval_table(gas_df, "JANAF gas", gas_display_path)
 
     if oxide_path is not None:
         oxide_source = Path(oxide_path)
@@ -1860,9 +1959,7 @@ def load_gas_datapack(
         raise ImccGasSpeciesNotFoundError(
             f"condensate database {oxide_display_path} missing 'species_name' column"
         )
-    _normalise_interval_bounds(oxide_df, "condensate", oxide_display_path)
     oxide_df = oxide_df.set_index("species_name")
-    _validate_interval_table(oxide_df, "condensate", oxide_display_path)
 
     return ImccGasDatapack(
         gas_df=gas_df,
@@ -2006,13 +2103,6 @@ def _nearest_interval_row(
         raise ImccGasSpeciesNotFoundError(
             f"no JANAF G(T) row for gas species {species!r}"
         )
-    _validate_interval_arrays(
-        rows,
-        species,
-        "gas/condensate",
-        Path("<in-memory>"),
-        validate_coefficients=False,
-    )
     t_mins = rows["T_min"].to_numpy(copy=False)
     t_maxs = rows["T_max"].to_numpy(copy=False)
     # Largest T_min that is <= T; below every T_min, the lowest interval.
@@ -2029,14 +2119,6 @@ def _nearest_interval_row(
             f"T={T} K outside declared G(T) interval for {species!r} "
             f"[{selected['T_min']}, {selected['T_max']}] K"
         )
-    _validate_interval_arrays(
-        rows,
-        species,
-        "gas/condensate",
-        Path("<in-memory>"),
-        validate_intervals=False,
-        evaluated_row=selected,
-    )
     return selected
 
 

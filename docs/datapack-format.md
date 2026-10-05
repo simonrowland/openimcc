@@ -596,31 +596,39 @@ predicting whether the current loader accepts a pack.
 ## Gas table content identity
 
 `load_gas_datapack()` reads `gas-shomate.csv` and `condensate.csv` into parsed
-tables. `ImccGasDatapack.gas_table_digest` and
-`ImccGasDatapack.condensate_table_digest` hash every parsed column and row
-with the same canonical serializer used for melt-pack identity. Column labels
-are sorted, and rows are sorted by their full canonical row serialization, so
-CSV column order, quoting, line endings, and a trailing newline do not identify
-the content. Rows are unordered: interval bounds must be finite numbers and are
-compared as float64, and each species must have a unique `T_min` in either
-table. This ensures interval selection cannot depend on a tied start's file
-position and is why row order is excluded from the digest. Header spelling is
-preserved because the loader uses the exact column names when evaluating the
-tables.
+tables. `ImccGasDatapack` canonicalizes both complete frames once in
+`__post_init__`, whether created directly, loaded from paths, or created with
+`dataclasses.replace`. It requires the fixed gas schema
+(`species_name`, `state`, `T_interval`, `cation`, `cat_num`, `oxy_num`,
+`T_min`, `T_max`, `A`–`H`, `Ref`) and condensate schema (`species_name`,
+`state`, `cation`, `cat_num`, `oxy_num`, `T_min`, `T_max`, `dH298_R`,
+`dG_A`–`dG_E`, `Ref`). Missing and extra columns are refused.
 
-The loader normalizes CSV bounds to float64 and runs the shared interval
-validator. Digest properties run that validator again against the current
-mutable frame before issuing an identity, and the selector validates the
-selected species rows before evaluation. Directly constructed frames must
-already use float64 bound columns; other dtypes are refused with a typed
-interval error. Duplicate starts raise `ImccGasDuplicateIntervalError` and
-invalid bounds raise `ImccGasInvalidIntervalError`.
+Every numeric column is stored as float64. Conversion must be exact; float16
+and float32 widen exactly, integers are accepted through absolute value
+2**53, and pandas nullable Float64/Int64 columns are accepted when they have
+no missing values. Missing, inexact, and non-finite numeric cells are refused
+in every row. Species names, state, cation, and Ref are stored as Python
+strings. Empty cation cells denote no cation and are retained as the empty
+string; other missing or blank labels are refused. Numeric Ref values use one
+stable float64-to-string form, so a float32 value and its exact float64
+widening have the same identity and returned provenance.
 
-Empty CSV cells parsed as NaN are represented as `null` in the digest payload.
-Non-finite numeric values are represented by a tagged mapping because the
-canonical serializer rejects non-finite numbers. Finite numeric values remain
-numeric. `gas_path` and `oxide_path` identify source locations for diagnostics;
-they are not content identity.
+Construction also requires finite temperature bounds with `T_min < T_max`
+and no duplicate `(species_name, T_min)` pairs. Duplicate starts raise
+`ImccGasDuplicateIntervalError`; invalid schema, values, labels, and bounds
+raise `ImccGasInvalidIntervalError`. Table digests are computed and cached
+from these canonical frames. Rows and column labels are sorted for hashing,
+so row and CSV column order, quoting, line endings, and a trailing newline do
+not identify the content. `gas_path` and `oxide_path` identify source
+locations for diagnostics; they are not content identity.
+
+The dataclass is frozen, but pandas frames remain mutable. In-place mutation
+of a constructed pack's frames is outside the contract and does not update its
+cached digests. Use `dataclasses.replace` with changed frames to construct and
+validate a new pack. Evaluation and identity composition read the stored
+canonical frames and cached table digests; they do not revalidate a pack on
+each call.
 
 `engine_binding_identity(melt_pack, gas_pack)` hashes the melt
 `binding_digest`, `condensate_table_digest`, and `gas_table_digest` as one
