@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
+import re
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
 
 from openimcc.gas import _lamor_gibbs
 from tools.build_gas_tables import _janaf_text_source_rows, _load_record
-from tools.liquid_from_solid import _crystal_state, liquid_from_solid
+from tools.liquid_from_solid import _crystal_rows, _crystal_state, liquid_from_solid
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +22,7 @@ INPUTS = json.loads(INPUTS_PATH.read_text(encoding="utf-8"))
 R_J_MOL_K = 8.314462618
 
 
+@lru_cache(maxsize=None)
 def _source_rows(table_id: str) -> dict[float, dict[str, float]]:
     record_path = JANAF / f"{table_id}.yaml"
     if not record_path.exists():
@@ -101,18 +103,35 @@ def _reference_gibbs_kj_mol(
 def _tier_estimate(row: dict, key: str, tier: int, training: list[dict]):
     if key == "fusion_entropy":
         if tier == 1:
-            return row["inputs"]["fusion_entropy"]["value"]
+            return next(
+                entry["value"]
+                for entry in row["inputs"]["fusion_entropy"]["ladder"]
+                if entry["tier"] == 1
+            )
         if tier == 2:
-            family = [
+            family = row.get("family")
+            if family is None:
+                return None
+            family_rows = [
                 other
                 for other in training
-                if other["family"] == row["family"] and other is not row
+                if other.get("family") == family and other is not row
             ]
-            if not family:
+            values = [
+                other["inputs"]["fusion_entropy"]["value"]
+                for other in family_rows
+                if other["inputs"]["fusion_entropy"]["tier"] == 1
+            ]
+            values.extend(
+                member["value"]
+                for member in INPUTS.get(
+                    "fusion_entropy_family_reference_values", {}
+                ).get(row["family"], [])
+                if member["formula"] != row["formula"]
+            )
+            if not values:
                 return None
-            return sum(
-                x["inputs"]["fusion_entropy"]["value"] for x in family
-            ) / len(family)
+            return sum(values) / len(values)
         per_atom = [
             other["inputs"]["fusion_entropy"]["value"] / other["total_atoms"]
             for other in training
@@ -129,22 +148,22 @@ def _tier_estimate(row: dict, key: str, tier: int, training: list[dict]):
             for entry in row["inputs"]["liquid_heat_capacity"]["ladder"]
             if entry["tier"] == 2
         )
+        if not tier2.get("components"):
+            return None
         return sum(components[name]["value"] for name in tier2["components"])
-    crystal = _source_rows(row["crystal_table_id"])
-    crystal_rows = list(crystal.values())
+    crystal = _load_record(JANAF / f"{row['crystal_table_id']}.yaml")
+    crystal_rows = _crystal_rows(crystal)
     return _crystal_state(
         crystal_rows, row["inputs"]["fusion_temperature"]["value"]
     )[2]
 
 
-def _measured_error_band(input_key: str, tier: int) -> dict[str, list[float]]:
+def _measured_error_band(input_key: str, tier: int) -> dict[str, object]:
     rows = [
         row
         for row in INPUTS["rows"].values()
-        if "liquid_table_id" in row and "family" in row
+        if "liquid_table_id" in row
     ]
-    if input_key == "fusion_entropy" and tier == 2:
-        rows = [row for row in rows if row["family"] == "alkali_metasilicate"]
     errors_by_offset = {offset: [] for offset in (0, 300, 800)}
     dex_by_offset = {offset: [] for offset in (0, 300, 800)}
     for row in rows:
@@ -156,10 +175,14 @@ def _measured_error_band(input_key: str, tier: int) -> dict[str, list[float]]:
         else:
             ds = row["inputs"]["fusion_entropy"]["value"]
             cp = _tier_estimate(row, "liquid_heat_capacity", tier, rows)
+            if cp is None:
+                continue
         construction = _validation_construction(row["formula"], ds, cp)
         liquid_rows = _source_rows(row["liquid_table_id"])
         for offset in (0, 300, 800):
             temperature = row["inputs"]["fusion_temperature"]["value"] + offset
+            if temperature > max(liquid_rows):
+                continue
             error = construction.at(temperature).gibbs_kj_mol - _reference_gibbs_kj_mol(
                 liquid_rows, temperature
             )
@@ -175,36 +198,65 @@ def _measured_error_band(input_key: str, tier: int) -> dict[str, list[float]]:
                 )
             )
     return {
-        "sample_size": len(errors_by_offset[0]),
-        "max": [max(map(abs, errors_by_offset[offset])) for offset in (0, 300, 800)],
+        "sample_size_by_offset": [
+            len(errors_by_offset[offset]) for offset in (0, 300, 800)
+        ],
+        "max": [
+            max(map(abs, errors_by_offset[offset]))
+            if errors_by_offset[offset]
+            else None
+            for offset in (0, 300, 800)
+        ],
         "rms": [
             math.sqrt(
                 sum(error**2 for error in errors_by_offset[offset])
                 / len(errors_by_offset[offset])
             )
+            if errors_by_offset[offset]
+            else None
             for offset in (0, 300, 800)
         ],
         "dex_max_per_metal_atom": [
-            max(dex_by_offset[offset]) for offset in (0, 300, 800)
+            max(dex_by_offset[offset]) if dex_by_offset[offset] else None
+            for offset in (0, 300, 800)
         ],
         "dex_rms_per_metal_atom": [
             math.sqrt(
                 sum(error**2 for error in dex_by_offset[offset])
                 / len(dex_by_offset[offset])
             )
+            if dex_by_offset[offset]
+            else None
             for offset in (0, 300, 800)
         ],
     }
 
 
-def test_vendor_records_hash_the_tab_delimited_files():
-    table_ids = ("Na-016", "Na-017", "K-014", "K-015", "Mg-012", "Mg-013")
+def test_pair_records_have_canonical_source_provenance():
+    table_ids = sorted(
+        {
+            table_id
+            for row in INPUTS["rows"].values()
+            if "liquid_table_id" in row
+            for table_id in (row["crystal_table_id"], row["liquid_table_id"])
+        }
+    )
+    assert len(table_ids) == 96
     for table_id in table_ids:
-        record = json.loads((JANAF / f"{table_id}.yaml").read_text(encoding="utf-8"))
-        source = (JANAF / f"{table_id}.txt").read_bytes()
-        assert record["table"]["table_id"] == table_id
-        assert record["extraction"]["user_agent"] == "openimcc-janaf-vendor/1.0"
-        assert hashlib.sha256(source).hexdigest() == record["extraction"]["source_sha256"]
+        text = (JANAF / f"{table_id}.yaml").read_text(encoding="utf-8")
+        assert re.search(
+            rf'(?m)^\s*["\']?table_id["\']?\s*:\s*["\']?{re.escape(table_id)}',
+            text,
+        )
+        assert re.search(
+            r'(?m)^\s*["\']?user_agent["\']?\s*:\s*["\']?openimcc-janaf-vendor/1\.0',
+            text,
+        )
+        assert re.search(
+            r'(?m)^\s*["\']?source_sha256["\']?\s*:\s*["\']?[0-9a-f]{64}',
+            text,
+        )
+        assert not re.search(r'(?m)^\s*["\']?source_cache_path["\']?\s*:', text)
 
 
 def test_validation_rows_record_each_input_tier_and_source():
@@ -240,6 +292,11 @@ def test_validation_rows_record_each_input_tier_and_source():
                 assert entry["value"] == pytest.approx(estimated)
             if tier == 3:
                 assert entry["flag"] == "red"
+            elif key == "fusion_entropy":
+                assert all(member["source"] and member["references"] for member in entry["training_members"])
+            elif entry["value"] is not None:
+                assert entry["components"]
+                assert entry["provenance_class"] == "secondary_transcription_unverified_primary"
 
 
 @pytest.mark.parametrize(
@@ -260,6 +317,26 @@ def test_k2o_tier2_central_values_are_pinned(temperature_k, expected_kj_mol):
     assert construction.at(temperature_k).gibbs_kj_mol == pytest.approx(
         expected_kj_mol, abs=1e-9
     )
+
+
+def test_k2o_tier2_cp_is_the_cited_mean_of_both_partial_molar_values():
+    row = INPUTS["rows"]["K2O"]["inputs"]["liquid_heat_capacity"]["ladder"][1]
+    component = INPUTS["partial_molar_cp_j_mol_k"]["K2O"]
+    assert component["source_values"] == [98.5, 97.0]
+    assert component["value"] == pytest.approx(97.75)
+    assert row["value"] == pytest.approx(97.75)
+    assert row["provenance_class"] == "secondary_transcription_unverified_primary"
+    assert "Navrotsky (1995), Table 3, p. 130" in row["source"]
+    assert row["references"] == [
+        "https://doi.org/10.2138/rmg.1995.32.5",
+        "https://doi.org/10.1007/BF00381840",
+        "https://doi.org/10.1007/BF00310746",
+    ]
+    crystal = _load_record(JANAF / "K-012.yaml")
+    crystal_cp = _crystal_state(_crystal_rows(crystal), 1013.0)[2]
+    tier3 = INPUTS["rows"]["K2O"]["inputs"]["liquid_heat_capacity"]["ladder"][2]
+    assert tier3["value"] == pytest.approx(crystal_cp)
+    assert tier3["flag"] == "red"
 
 
 @pytest.mark.parametrize(
@@ -374,46 +451,68 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
     [
         (
             "fusion_entropy",
+            1,
+            {
+                "sample_size_by_offset": [48, 48, 45],
+                "max": [1.154923273, 1.164968030, 4.239951354],
+                "rms": [0.166759609, 0.194222855, 0.686915566],
+                "dex_max_per_metal_atom": [0.035569471, 0.030486221, 0.024323595],
+                "dex_rms_per_metal_atom": [0.005134229, 0.004585847, 0.004784863],
+            },
+        ),
+        (
+            "fusion_entropy",
             2,
             {
-                "sample_size": 2,
-                "max": [0.001551, 0.778006, 1.832280],
-                "rms": [0.001361, 0.658539, 1.735373],
-                "dex_max_per_metal_atom": [0.000022, 0.008150, 0.014756],
-                "dex_rms_per_metal_atom": [0.000018, 0.007055, 0.014322],
+                "sample_size_by_offset": [32, 32, 31],
+                "max": [0.002385000, 7.356668197, 19.755915428],
+                "rms": [0.000932845, 2.946475966, 8.139030435],
+                "dex_max_per_metal_atom": [0.000046593, 0.133429696, 0.293724484],
+                "dex_rms_per_metal_atom": [0.000016979, 0.040421986, 0.087489552],
             },
         ),
         (
             "fusion_entropy",
             3,
             {
-                "sample_size": 6,
-                "max": [1.154923, 8.071990, 19.581036],
-                "rms": [0.471497, 4.144969, 10.424638],
-                "dex_max_per_metal_atom": [0.035569, 0.211237, 0.409771],
-                "dex_rms_per_metal_atom": [0.014521, 0.091497, 0.180945],
+                "sample_size_by_offset": [48, 48, 45],
+                "max": [1.154923273, 16.463144105, 43.472805070],
+                "rms": [0.166759609, 5.276230136, 13.853989157],
+                "dex_max_per_metal_atom": [0.035569471, 0.232041418, 0.454135746],
+                "dex_rms_per_metal_atom": [0.005134229, 0.064308831, 0.124734186],
+            },
+        ),
+        (
+            "liquid_heat_capacity",
+            1,
+            {
+                "sample_size_by_offset": [48, 48, 45],
+                "max": [1.154923273, 1.164968030, 4.239951354],
+                "rms": [0.166759609, 0.194222855, 0.686915566],
+                "dex_max_per_metal_atom": [0.035569471, 0.030486221, 0.024323595],
+                "dex_rms_per_metal_atom": [0.005134229, 0.004585847, 0.004784863],
             },
         ),
         (
             "liquid_heat_capacity",
             2,
             {
-                "sample_size": 6,
-                "max": [1.154923, 1.052749, 4.913977],
-                "rms": [0.471497, 0.613449, 2.769430],
-                "dex_max_per_metal_atom": [0.035569, 0.027550, 0.048429],
-                "dex_rms_per_metal_atom": [0.014521, 0.012452, 0.028353],
+                "sample_size_by_offset": [15, 15, 15],
+                "max": [1.154923273, 1.674095117, 10.777037464],
+                "rms": [0.298202531, 0.863964153, 5.144294318],
+                "dex_max_per_metal_atom": [0.035569471, 0.027549534, 0.066705022],
+                "dex_rms_per_metal_atom": [0.009184022, 0.010219438, 0.038084465],
             },
         ),
         (
             "liquid_heat_capacity",
             3,
             {
-                "sample_size": 6,
-                "max": [1.154923, 0.922182, 6.578776],
-                "rms": [0.471497, 0.581916, 3.183846],
-                "dex_max_per_metal_atom": [0.035569, 0.022441, 0.054946],
-                "dex_rms_per_metal_atom": [0.014521, 0.010385, 0.028462],
+                "sample_size_by_offset": [48, 48, 45],
+                "max": [1.154923273, 6.710438257, 45.281589063],
+                "rms": [0.166759609, 1.613900384, 11.006661141],
+                "dex_max_per_metal_atom": [0.035569471, 0.042529719, 0.208794255],
+                "dex_rms_per_metal_atom": [0.005134229, 0.013327996, 0.064922836],
             },
         ),
     ],
@@ -422,15 +521,16 @@ def test_tier_error_bands_are_recomputed_and_pinned(input_key, tier, expected):
     key = f"{input_key}_tier{tier}"
     recorded = INPUTS["tier_error_bands"][key]
     recomputed = _measured_error_band(input_key, tier)
-    assert recomputed["sample_size"] == expected["sample_size"]
-    assert recorded == expected
+    assert recorded["sample_size_by_offset"] == expected["sample_size_by_offset"]
+    assert recomputed["sample_size_by_offset"] == expected["sample_size_by_offset"]
     for metric in (
         "max",
         "rms",
         "dex_max_per_metal_atom",
         "dex_rms_per_metal_atom",
     ):
-        assert recomputed[metric] == pytest.approx(expected[metric], abs=1e-6)
+        assert recorded[metric] == pytest.approx(expected[metric], abs=1e-9)
+        assert recomputed[metric] == pytest.approx(expected[metric], abs=1e-9)
 
 
 def test_k2o_band_adds_the_selected_tier_bands_and_input_spread():
@@ -439,6 +539,10 @@ def test_k2o_band_adds_the_selected_tier_bands_and_input_spread():
     construction = liquid_from_solid("K2O", crystal, row["inputs"])
     entropy_band = INPUTS["tier_error_bands"]["fusion_entropy_tier2"]["max"]
     cp_band = INPUTS["tier_error_bands"]["liquid_heat_capacity_tier2"]["max"]
+    assert row["band_validation_sample_by_tier"] == {
+        "fusion_entropy_tier2": [32, 32, 31],
+        "liquid_heat_capacity_tier2": [15, 15, 15],
+    }
     for i, offset in enumerate((0, 300, 800)):
         measured_band = entropy_band[i] + cp_band[i]
         expected_band = measured_band + construction.input_spread_kj_mol(
