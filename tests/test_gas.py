@@ -32,6 +32,7 @@ from openimcc.gas import (
     R_J_MOL_K,
     ImccGasDatapack,
     ImccGasInvalidFugacityError,
+    ImccGasInvalidIntervalError,
     ImccGasOxygenBalanceError,
     ImccGasResult,
     ImccGasSpeciesNotFoundError,
@@ -278,6 +279,68 @@ def test_explicit_vaporock_override_remains_supported(
     assert overridden.oxide_path == oxide_target / "condensate-thermo-data.csv"
     assert overridden.gas_df.equals(gas_pack.gas_df)
     assert overridden.oxide_df.equals(gas_pack.oxide_df)
+
+
+def test_vaporock_override_drops_empty_legacy_trailing_columns(
+    monkeypatch: pytest.MonkeyPatch,
+    gas_pack: ImccGasDatapack,
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "vaporock"
+    gas_target = root / "src" / "vaporock" / "data"
+    oxide_target = root / "data"
+    gas_target.mkdir(parents=True)
+    oxide_target.mkdir(parents=True)
+    shutil.copy2(gas_pack.gas_path, gas_target / "JANAF-vapor-data-full.csv")
+    shutil.copy2(
+        Path(__file__).parent / "fixtures" / "vaporock-condensate-empty-columns.csv",
+        oxide_target / "condensate-thermo-data.csv",
+    )
+    monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
+
+    overridden = load_gas_datapack()
+    result = evaluate_gas(
+        {"Na2O": 0.05},
+        1800.0,
+        1.0e-8,
+        overridden,
+        parent_oxides=("Na2O",),
+        gas_species=("Na",),
+    )
+    packaged = evaluate_gas(
+        {"Na2O": 0.05},
+        1800.0,
+        1.0e-8,
+        gas_pack,
+        parent_oxides=("Na2O",),
+        gas_species=("Na",),
+    )
+    assert dict(result) == dict(packaged)
+    assert tuple(overridden.oxide_df.columns) == tuple(gas_pack.oxide_df.columns)
+
+
+def test_vaporock_override_keeps_nonempty_unnamed_column_for_schema_refusal(
+    monkeypatch: pytest.MonkeyPatch,
+    gas_pack: ImccGasDatapack,
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "vaporock"
+    gas_target = root / "src" / "vaporock" / "data"
+    oxide_target = root / "data"
+    gas_target.mkdir(parents=True)
+    oxide_target.mkdir(parents=True)
+    shutil.copy2(gas_pack.gas_path, gas_target / "JANAF-vapor-data-full.csv")
+    legacy_csv = (
+        Path(__file__).parent / "fixtures" / "vaporock-condensate-empty-columns.csv"
+    ).read_text(encoding="utf-8")
+    (oxide_target / "condensate-thermo-data.csv").write_text(
+        legacy_csv.replace("Na-013,,,\n", "Na-013,,,unexpected\n", 1),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
+
+    with pytest.raises(ImccGasInvalidIntervalError, match="invalid schema"):
+        load_gas_datapack()
 
 
 def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
@@ -2445,8 +2508,11 @@ def test_gas_imports_without_pandas_and_refuses_at_load() -> None:
 
 @pytest.mark.parametrize("temperature", [float("nan"), float("inf"), float("-inf")])
 def test_nonfinite_temperature_refuses_before_table_access(
-    temperature: float, gas_pack: ImccGasDatapack
+    temperature: float,
+    gas_pack: ImccGasDatapack,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _deny_gas_table_reads(monkeypatch, gas_pack)
     with pytest.raises(ValueError, match="finite and positive"):
         evaluate_gas(
             {"Na2O": 1.0},
@@ -2459,8 +2525,11 @@ def test_nonfinite_temperature_refuses_before_table_access(
 
 @pytest.mark.parametrize("fugacity", [float("nan"), float("inf"), float("-inf")])
 def test_nonfinite_fugacity_refuses_before_table_access(
-    fugacity: float, gas_pack: ImccGasDatapack
+    fugacity: float,
+    gas_pack: ImccGasDatapack,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _deny_gas_table_reads(monkeypatch, gas_pack)
     with pytest.raises(
         ImccGasInvalidFugacityError,
         match=r"finite and positive p_O2/p°.*not log10 fO2",
@@ -2476,8 +2545,11 @@ def test_nonfinite_fugacity_refuses_before_table_access(
 
 @pytest.mark.parametrize("activity", [float("nan"), float("inf"), float("-inf")])
 def test_nonfinite_activity_refuses(
-    activity: float, gas_pack: ImccGasDatapack
+    activity: float,
+    gas_pack: ImccGasDatapack,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _deny_gas_table_reads(monkeypatch, gas_pack)
     with pytest.raises(ValueError, match="finite and >= 0"):
         evaluate_gas(
             {"Na2O": activity},
@@ -2486,6 +2558,19 @@ def test_nonfinite_activity_refuses(
             gas_pack,
             gas_species=("Na",),
         )
+
+
+def _deny_gas_table_reads(
+    monkeypatch: pytest.MonkeyPatch, gas_pack: ImccGasDatapack
+) -> None:
+    original_getitem = pd.DataFrame.__getitem__
+
+    def guarded_getitem(frame: pd.DataFrame, key: object) -> object:
+        if frame is gas_pack.gas_df or frame is gas_pack.oxide_df:
+            raise AssertionError("evaluation read a constructed gas table")
+        return original_getitem(frame, key)
+
+    monkeypatch.setattr(pd.DataFrame, "__getitem__", guarded_getitem)
 
 
 def test_pure_silica_oxygen_balance_matches_analytic_flux_limit(

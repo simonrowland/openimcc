@@ -198,6 +198,22 @@ MUTATIONS = (
         '        # object.__setattr__(self, "gas_df", gas_df)\n',
         "test_evaluated_float_coefficients_and_exact_widenings_match",
     ),
+    (
+        "w-empty-unnamed-column-drop-removed",
+        "src/openimcc/gas.py",
+        "    if empty_unnamed_columns:\n",
+        "    if False and empty_unnamed_columns:\n",
+        "test_vaporock_override_drops_empty_legacy_trailing_columns",
+        "tests/test_gas.py",
+    ),
+    (
+        "x-nonempty-unnamed-column-dropped",
+        "src/openimcc/gas.py",
+        '            and oxide_df[column].isna().all()\n',
+        "",
+        "test_vaporock_override_keeps_nonempty_unnamed_column_for_schema_refusal",
+        "tests/test_gas.py",
+    ),
 )
 
 
@@ -207,14 +223,21 @@ def _run_mutation(
     original: str,
     replacement: str,
     expected_failure: str,
+    test_file: str = TEST_FILE,
 ) -> None:
     with TemporaryDirectory(prefix="openimcc-gas-identity-") as temporary:
         root = Path(temporary)
         shutil.copytree(ROOT / "src/openimcc", root / "src/openimcc")
         tests = root / "tests"
         tests.mkdir()
-        shutil.copyfile(ROOT / TEST_FILE, root / TEST_FILE)
+        shutil.copyfile(ROOT / test_file, root / test_file)
         shutil.copyfile(ROOT / "tests/conftest.py", tests / "conftest.py")
+        if test_file == "tests/test_gas.py":
+            shutil.copytree(ROOT / "tests/fixtures", tests / "fixtures")
+            (root / "tools").mkdir()
+            shutil.copyfile(
+                ROOT / "tools/build_gas_tables.py", root / "tools/build_gas_tables.py"
+            )
 
         source = root / relative_source
         content = source.read_text(encoding="utf-8")
@@ -225,8 +248,11 @@ def _run_mutation(
         environment = os.environ.copy()
         environment["PYTHONPATH"] = str(root / "src")
         environment.pop("PYTEST_ADDOPTS", None)
+        pytest_args = [sys.executable, "-m", "pytest", test_file, "-q"]
+        if test_file != TEST_FILE:
+            pytest_args.extend(("-k", expected_failure))
         result = subprocess.run(
-            [sys.executable, "-m", "pytest", TEST_FILE, "-q"],
+            pytest_args,
             cwd=root,
             env=environment,
             capture_output=True,
