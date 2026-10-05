@@ -252,6 +252,25 @@ LOW_T_GAS_SPECIES = frozenset(
         "SiO",
         "Si",
         "SiO2",
+        "Si2",
+        "Si3",
+        "Al2",
+        "Co",
+        "Cr",
+        "CrO",
+        "CrO2",
+        "CrO3",
+        "Mn",
+        "Nb",
+        "NbO",
+        "NbO2",
+        "Ni",
+        "Ti",
+        "TiO",
+        "TiO2",
+        "V",
+        "VO",
+        "VO2",
         "O",
         "O2",
         "Fe",
@@ -443,12 +462,12 @@ _FIT_T_MIN_BY_TABLE = {
     "Na-013": 1500.0,
 }
 
-# Sources whose tabulated rows stop short of FIT_T_MAX.  Cr(g), Cr-005: Cr
-# boils at 2952 K, where JANAF switches the element reference to the gas and
-# prints the 3000 K formation columns as "0. 0. 0.".  The harvest records that
-# line only as parse-ambiguous, so no complete 3000 K row exists.  Fit to the
-# last complete grid row and declare that as the row's T_max; the runtime then
-# flags or refuses T above it instead of silently extrapolating.
+# Sources whose tabulated rows stop short of FIT_T_MAX. Cr(g), Cr-005: Cr boils
+# at 2952 K, where JANAF switches the element reference to the gas and prints
+# the 3000 K formation columns as "0. 0. 0.". The thermal cells remain intact
+# (Cp 30.788 J/(mol K), S 225.796 J/(mol K), H-H298 64.417 kJ/mol), but fitting
+# them would change the existing Cr coefficient row and outputs above 1500 K.
+# Keep the fit capped at its last complete row, 2900 K, to preserve bit identity.
 _FIT_T_MAX_BY_TABLE = {"Cr-005": 2900.0}
 
 

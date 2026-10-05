@@ -509,9 +509,11 @@ def test_interval_selection_uses_high_row_at_shared_1500_k_node(
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
         high = _nearest_interval_row(gas_pack.gas_df, f"{species}(g)", 1500.0)
         low = _nearest_interval_row(gas_pack.gas_df, f"{species}(g)", 1499.999)
+        pyrolysis = _nearest_interval_row(gas_pack.gas_df, f"{species}(g)", 1200.0)
         assert int(high["T_interval"]) == 1
         assert float(high["T_min"]) == 1500.0
         assert int(low["T_interval"]) == 2
+        assert int(pyrolysis["T_interval"]) == 2
         assert float(low["T_min"]) == build_gas_tables.LOW_FIT_T_MIN
 
 
@@ -619,18 +621,19 @@ def test_major_parent_calls_below_continuations_still_refuse(
 
 
 @pytest.mark.parametrize(("oxide", "species"), (("TiO2", "Ti"), ("V2O3", "V")))
-def test_ti_and_v_gas_rows_still_refuse_below_1500_k(
+def test_ti_and_v_gas_rows_use_the_low_fit_below_1500_k(
     gas_pack: ImccGasDatapack, oxide: str, species: str
 ) -> None:
-    with pytest.raises(ImccGasTemperatureOutsideDomainError, match=rf"{species}\(g\)"):
-        evaluate_gas(
-            {oxide: 1.0},
-            1200.0,
-            1.0e-10,
-            gas_pack,
-            gas_species=(species,),
-            allow_extrapolation=False,
-        )
+    result = evaluate_gas(
+        {oxide: 1.0},
+        1200.0,
+        1.0e-10,
+        gas_pack,
+        gas_species=(species,),
+        allow_extrapolation=False,
+    )
+    assert math.isfinite(result[species])
+    assert "extrapolation" not in result.domain_flags[species]
 
 
 def test_gas_domain_refusal_is_typed(gas_pack: ImccGasDatapack) -> None:
@@ -2336,6 +2339,10 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "SiO2(l)",
         "Al2O3(l)", "MgO(l)", "CaO(l)",
     }
+    new_low_temperature_species = {
+        "Al2", "Co", "Cr", "CrO", "CrO2", "CrO3", "Mn", "Nb", "NbO",
+        "NbO2", "Ni", "Si2", "Si3", "Ti", "TiO", "TiO2", "V", "VO", "VO2",
+    }
 
     def old_rows(
         payload: str,
@@ -2346,6 +2353,11 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         return lines[0], [
             line for line in lines[1:]
             if line.split(",", 1)[0] not in excluded
+            and not (
+                line.split(",")[0].removesuffix("(g)")
+                in new_low_temperature_species
+                and line.split(",")[2] == "2"
+            )
             and not (
                 line.split(",", 1)[0] in changed
                 and line.rsplit(",", 1)[-1].endswith("-SC-CP")
@@ -3391,6 +3403,10 @@ def test_sf04_pack_reproduces_base_default_and_default_keeps_other_channels(
         name for name, reaction in selected
         if reaction[0] in switched_parent_oxides
     }
+    new_low_temperature_channels = {
+        "Al2", "Co", "Cr", "CrO", "CrO2", "CrO3", "Mn", "Nb", "NbO",
+        "NbO2", "Ni", "Si2", "Si3", "Ti", "TiO", "TiO2", "V", "VO", "VO2",
+    }
 
     for temperature in range(1200, 3001):
         args = {
@@ -3404,15 +3420,27 @@ def test_sf04_pack_reproduces_base_default_and_default_keeps_other_channels(
         published = evaluate_gas(
             activities, float(temperature), 1.0e-10, sf04_gas_pack, **args
         )
-        assert dict(published) == dict(base)
-        assert dict(published.domain_flags) == dict(base.domain_flags)
-        assert dict(published.provenance_class) == dict(base.provenance_class)
+        newly_fitted_channels = (
+            {name for name in channels if name in new_low_temperature_channels}
+            if temperature < 1500
+            else set()
+        )
+        unchanged_against_base = set(base) - newly_fitted_channels
+        assert {name: published[name] for name in unchanged_against_base} == {
+            name: base[name] for name in unchanged_against_base
+        }
+        assert {
+            name: published.domain_flags[name] for name in unchanged_against_base
+        } == {name: base.domain_flags[name] for name in unchanged_against_base}
+        assert {
+            name: published.provenance_class[name] for name in unchanged_against_base
+        } == {name: base.provenance_class[name] for name in unchanged_against_base}
         assert dict(published.omitted_channels) == dict(base.omitted_channels)
 
         current = evaluate_gas(
             activities, float(temperature), 1.0e-10, default_pack, **args
         )
-        unchanged = set(base) - switched_channels
+        unchanged = set(base) - switched_channels - newly_fitted_channels
         assert {name: current[name] for name in unchanged} == {
             name: base[name] for name in unchanged
         }

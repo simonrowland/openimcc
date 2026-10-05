@@ -981,8 +981,8 @@ IMCC_PARENT_OXIDES = (
 )
 
 # The default major parents cover 1200-3000 K using labelled continuations
-# below their fits. Si and Al retain gas C4 gaps because Si2/Si3 and Al2 start
-# at 1500 K; Mg and Ca now have full C4 coverage.
+# below their fits. Added low-temperature gas intervals close the lower C4 gaps
+# for Si, Al, Ti, V and Nb; Mg and Ca also have full C4 coverage.
 ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO2 pinned)',
              'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': False},
              'validation': 'unvalidated',
@@ -1015,12 +1015,12 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                   ('O-034', 'SO2'),
                                   ('O-058', 'SO3'),
                                   ('O-011', 'SSO'))},
-    'Si': {   'status': 'gas-partial',
-              'criteria': {'C1': True, 'C2': True, 'C3': True, 'C4': False},
+    'Si': {   'status': 'complete',
+              'criteria': {'C1': True, 'C2': True, 'C3': True, 'C4': True},
               'validation': 'validated',
               'reason': 'The JANAF SiO2(l) parent covers 1200-3000 K with a labelled continuation '
-                        'below 1800 K, but Si2(g) and Si3(g) start at 1500 K, leaving a gas C4 '
-                        'gap; joint C3 closure-screen maximum 5.729e-14 at 2800 K and fO2=1e-4 '
+                        'below 1800 K; Si2(g) and Si3(g) now cover the 1200-1500 K interval; joint '
+                        'C3 closure-screen maximum 5.729e-14 at 2800 K and fO2=1e-4 '
                         'within the <=1-bar neutral-pressure domain; unmodeled positive molecular '
                         'ions and thermal electrons from walls or other sources remain outside the '
                         'estimate.',
@@ -1114,11 +1114,11 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                   'upstream_sha256': {   'Ca-007': 'ddd7d08df4aaf34beeaead89af83e7281f850eb453e859483f16520d61e98724',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'openimcc-janaf-vendor/1.0'}},
-    'Al': {   'status': 'gas-partial',
-              'criteria': {'C1': True, 'C2': True, 'C3': True, 'C4': False},
+    'Al': {   'status': 'complete',
+              'criteria': {'C1': True, 'C2': True, 'C3': True, 'C4': True},
               'validation': 'unvalidated',
               'reason': 'The JANAF Al2O3(l) parent covers 1200-3000 K with a labelled continuation '
-                        'below 2500 K, but Al2(g) starts at 1500 K, leaving a gas C4 gap; joint C3 '
+                        'below 2500 K; Al2(g) now covers the 1200-1500 K interval; joint C3 '
                         'closure-screen maximum 4.273e-06 at 2800 K and fO2=1e-4 within the '
                         '<=1-bar neutral-pressure domain; unmodeled positive molecular ions and '
                         'thermal electrons from walls or other sources remain outside the '
@@ -1143,12 +1143,12 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                   'upstream_sha256': {   'Al-006': '7e4e45bc108863c4baed5ca1bffe6b931a78a050af86d50a2fcbbe7b9251c6dd',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'openimcc-janaf-vendor/1.0'}},
-    'Ti': {   'status': 'gas-partial',
-              'criteria': {'C1': True, 'C2': True, 'C3': True, 'C4': False},
+    'Ti': {   'status': 'complete',
+              'criteria': {'C1': True, 'C2': True, 'C3': True, 'C4': True},
               'validation': 'unvalidated',
               'reason': 'A labelled constant-Cp TiO2(l) continuation covers 1200-1500 K below the '
-                        'glass branch; Ti(g), TiO(g), and TiO2(g) still start at 1500 K, leaving a '
-                        'lower C4 gap; joint C3 closure-screen maximum 1.159e-09 at 2300 K and '
+                        'glass branch; Ti(g), TiO(g), and TiO2(g) now cover the lower gas interval; '
+                        'joint C3 closure-screen maximum 1.159e-09 at 2300 K and '
                         'fO2=1e-10 within the <=1-bar neutral-pressure domain; unmodeled positive '
                         'molecular ions and thermal electrons from walls or other sources remain '
                         'outside the estimate.',
@@ -1258,11 +1258,11 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                                   'temperature_K': 1200.0,
                                                   'fO2': 1e-08,
                                                   'dominant': 'CrO3'}}},
-    'V': {   'status': 'gas-partial',
-             'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': False},
+    'V': {   'status': 'gas-complete-melt-pending',
+             'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
              'validation': 'unvalidated',
              'reason': 'A labelled constant-Cp V2O3(l) continuation covers 1200-1700 K; V(g), '
-                       'VO(g), and VO2(g) still start at 1500 K, leaving a lower C4 gap; activity '
+                       'VO(g), and VO2(g) now cover the lower gas interval; activity '
                        'is caller-supplied; joint C3 closure-screen maximum 8.022e-09 at 2300 K '
                        'and fO2=1e-10 within the <=1-bar neutral-pressure domain; unmodeled '
                        'positive molecular ions and thermal electrons from walls or other sources '
@@ -1296,11 +1296,11 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                                 'temperature_K': 1200.0,
                                                 'fO2': 1e-12,
                                                 'dominant': 'VO2'}}},
-    'Nb': {   'status': 'gas-partial',
-              'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': False},
+    'Nb': {   'status': 'gas-complete-melt-pending',
+              'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
               'validation': 'unvalidated',
               'reason': 'Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 '
-                        'K; Nb(g), NbO(g), and NbO2(g) start at 1500 K, leaving a gas C4 gap; '
+                        'K; Nb(g), NbO(g), and NbO2(g) now cover the lower gas interval; '
                         'activity is caller-supplied; joint C3 closure-screen maximum 5.436e-13 at '
                         '2300 K and fO2=1e-10 within the <=1-bar neutral-pressure domain; unmodeled '
                         'positive molecular ions and thermal electrons from walls or other sources '

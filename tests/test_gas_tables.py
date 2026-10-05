@@ -467,6 +467,60 @@ def test_cr_atomic_source_uses_only_its_declared_fit_endpoint(
         build_gas_tables._usable_rows(record["table"], "Cr-005")
 
 
+def test_cr_3000_thermal_cells_recover_g_app_without_refitting_coefficients() -> None:
+    record = _record("Cr-005")
+    raw_line = next(
+        ambiguity["raw_line"]
+        for ambiguity in record["table"]["parse_ambiguities"]
+        if ambiguity["raw_line"].startswith("3000\t")
+    )
+    cells = raw_line.split("\t")
+    assert cells[5] == "0. 0. 0."
+    cp_source, entropy_source, enthalpy_increment_source = map(
+        float, (cells[1], cells[2], cells[4])
+    )
+    reference_h = next(
+        row["formation_enthalpy"]
+        for row in _complete_rows("Cr-005")
+        if row["temperature"] == 298.15
+    )
+    source_g = (reference_h + enthalpy_increment_source) * 1000.0 - 3000.0 * entropy_source
+
+    packaged = next(
+        row
+        for row in csv.DictReader(
+            io.StringIO((GAS_DATA / "gas-shomate.csv").read_text(encoding="utf-8"))
+        )
+        if row["species_name"] == "Cr(g)" and row["T_interval"] == "1"
+    )
+    t = 3.0
+    A, B, C, D, E, F, G = (float(packaged[key]) for key in "ABCDEFG")
+    # Premise: dfG(298) is ambiguous at the elemental boiling transition, but
+    # the species' dfH298 and thermal cells still define its G_app. Algebra:
+    # evaluate Cp, S, and H_app from the current Shomate fit, then compare with
+    # dfH298 + (H-H298) - T*S. Unit check: H_app kJ/mol is converted to J/mol.
+    # Sanity: all four residuals stay below the gas fit's existing gates.
+    cp_fit = A + B * t + C * t**2 + D * t**3 + E / t**2
+    entropy_fit = (
+        A * math.log(t) + B * t + C * t**2 / 2.0
+        + D * t**3 / 3.0 - E / (2.0 * t**2) + G
+    )
+    h_app_fit = (
+        A * t + B * t**2 / 2.0 + C * t**3 / 3.0
+        + D * t**4 / 4.0 - E / t + F
+    )
+    g_fit = h_app_fit * 1000.0 - 3000.0 * entropy_fit
+    assert reference_h == 397.480
+    assert source_g == pytest.approx(-215491.0, abs=1.0e-9)
+    assert cp_fit - cp_source == pytest.approx(-0.039868, abs=1.0e-6)
+    assert entropy_fit - entropy_source == pytest.approx(-0.000671, abs=1.0e-6)
+    assert (h_app_fit - reference_h - enthalpy_increment_source) * 1000.0 == pytest.approx(
+        -2.068, abs=1.0e-3
+    )
+    assert g_fit - source_g == pytest.approx(-0.054033, abs=1.0e-6)
+    assert float(packaged["T_max"]) == 2900.0
+
+
 def test_public_sources_contain_no_private_paths_or_tooling_names() -> None:
     # Vendored records carry harvesting metadata; only the neutral tool name
     # may ship, and no file may carry a local filesystem path.
@@ -4156,9 +4210,9 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
 
     # D-020 was already vendored, but its electron gas row is newly included in
     # the packaged fit and therefore joins the source-node residual audit.
-    assert checked_rows == 102
-    assert checked_nodes == 1421
-    assert checked_nodes * 3 == 4263
+    assert checked_rows == 121
+    assert checked_nodes == 1630
+    assert checked_nodes * 3 == 4890
     assert overall_max["Cp_J_molK"] == pytest.approx(0.1287393152, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0136965061, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0088595244, abs=1e-9)

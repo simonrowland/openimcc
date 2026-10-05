@@ -510,8 +510,14 @@ rows:
       Fitted by tools/build_gas_tables.py over the complete Cr-005 rows from
       1500 K through 2900 K. Cr boils at 2952 K; JANAF switches the element
       reference to the gas there and prints the 3000 K formation columns as
-      "0. 0. 0.", recorded as a parse-ambiguous row, so the fit range ends
-      at the last complete source row rather than extending to 3000 K.
+      "0. 0. 0.", recorded as parse-ambiguous. The thermal cells are intact:
+      Cp = 30.788 J/(mol K), S = 225.796 J/(mol K), and H-H298 = 64.417
+      kJ/mol. With dfH298 = 397.480 kJ/mol from this species table, they give
+      G_app = -215.491 kJ/mol; the current fit's residuals are 0.040 J/(mol K)
+      for Cp, 0.0007 J/(mol K) for S, 2.068 J/mol for H_app, and 0.054 J/mol
+      for G_app. Refitting with the recovered node would change the existing
+      Cr coefficients and outputs at temperatures above 1500 K, so the endpoint
+      remains 2900 K to preserve the bit-identical interval-1 requirement.
       Certification note: all Cr rows are fitted from each table's own
       dfH(298), H-H(298) and S columns. The printed dfG columns of the
       JANAF Cr-O tables (CrO(g), Cr2O3(l)) differ from those columns plus
@@ -1419,6 +1425,215 @@ rows:
     T_range_K: [1200, 3000]
     max_residual_J_per_mol: 1.16885697213002
     max_residual_log10_K: 2.19648735557438e-05
+  - table: gas
+    species_name: Ti(g)
+    table_id: Ti-006
+    source_path: data-src/janaf/Ti-006.yaml
+    source_sha256: 66f195c514cbc4378faf2d5d7978015c92230777fb77e0947d7204672879b69d
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.801643376471475
+    max_residual_log10_K: 2.79151570663664e-05
+  - table: gas
+    species_name: TiO(g)
+    table_id: O-022
+    source_path: data-src/janaf/O-022.yaml
+    source_sha256: 4ffccfd8bda5f4944e176562fb66c6281d3f7bdddc80a467fb5eb5b7399997a1
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.660563012817875
+    max_residual_log10_K: 4.31294968473256e-05
+  - table: gas
+    species_name: TiO2(g)
+    table_id: O-046
+    source_path: data-src/janaf/O-046.yaml
+    source_sha256: 7dd56850c1ce8f2b74327202af8db7a6f4e4f50ee8635ef5982cbdf4aa21c122
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.632649623788893
+    max_residual_log10_K: 3.26185959443274e-05
+  - table: gas
+    species_name: Al2(g)
+    table_id: Al-080
+    source_path: data-src/janaf/Al-080.yaml
+    source_sha256: 30baf0339d37e31b39979c03ed19ed6b010d62fa291d610aed038ede34edf77b
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 1.34727398306131
+    max_residual_log10_K: 4.69153316205612e-05
+  - table: gas
+    species_name: Si2(g)
+    table_id: Si-008
+    source_path: data-src/janaf/Si-008.yaml
+    source_sha256: 6b15df4a28ed0efe57a4492e3d44a7274fdf5506adee3968c6aa6b935bd24b88
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.625261328415945
+    max_residual_log10_K: 3.34139334825618e-05
+  - table: gas
+    species_name: Si3(g)
+    table_id: Si-009
+    source_path: data-src/janaf/Si-009.yaml
+    source_sha256: 2db61e19f97851308fa50eb73efed4b4d4bac43f4c1f07ee8d6967be5e0dc5af
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.673740734346211
+    max_residual_log10_K: 5.02741679689127e-05
+  - table: gas
+    species_name: Cr(g)
+    table_id: Cr-005
+    source_path: data-src/janaf/Cr-005.yaml
+    source_sha256: c16958856a7aa86c1864644c0546a2d9a385edd890930fd3726981c3f44ffb83
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.698891208914574
+    max_residual_log10_K: 3.3186925375199e-05
+  - table: gas
+    species_name: CrO(g)
+    table_id: Cr-010
+    source_path: data-src/janaf/Cr-010.yaml
+    source_sha256: d1f34c3a79f65af105ec9c94e2a27560d2813ee71603cea3dabd798e646a48aa
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.985025944857625
+    max_residual_log10_K: 3.67510507239584e-05
+  - table: gas
+    species_name: CrO2(g)
+    table_id: Cr-011
+    source_path: data-src/janaf/Cr-011.yaml
+    source_sha256: b3b1ed54bea8aae47f1f0e05cae9d9f8eb093157e693f806a73ae77c5bfcf281
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.671000895963516
+    max_residual_log10_K: 5.94793749987574e-05
+  - table: gas
+    species_name: CrO3(g)
+    table_id: Cr-012
+    source_path: data-src/janaf/Cr-012.yaml
+    source_sha256: 3218773a55c6a0fe35e61069c50ad9b3e41f8a3dcfe7cd4bd93de1135f0cddad
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.719591602799483
+    max_residual_log10_K: 2.68477674451923e-05
+  - table: gas
+    species_name: V(g)
+    table_id: V-005
+    source_path: data-src/janaf/V-005.yaml
+    source_sha256: 4d69eb5d7ccbad1c8c9bc836ae2c9cee09433ade3e659ee18e259bc5a9ac7f02
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.856714520079549
+    max_residual_log10_K: 3.72910839953598e-05
+  - table: gas
+    species_name: VO(g)
+    table_id: O-026
+    source_path: data-src/janaf/O-026.yaml
+    source_sha256: 88369ab3325b6ee6561fbda52124e48407645d6f77cbd75877e0c4597f73a552
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.523300174711039
+    max_residual_log10_K: 2.55009157021676e-05
+  - table: gas
+    species_name: VO2(g)
+    table_id: O-076
+    source_path: data-src/janaf/O-076.yaml
+    source_sha256: a96061b26b9d078924505ecdab54b980631bd5883ef6d3a814651ee4066ab121
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.959486065781675
+    max_residual_log10_K: 4.49497969583078e-05
+  - table: gas
+    species_name: Nb(g)
+    table_id: Nb-005
+    source_path: data-src/janaf/Nb-005.yaml
+    source_sha256: ad5b3f37539971a3a42f45983c5a1dd1057dad7dbfc25ecc48e078f941baaf7a
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.619195127452258
+    max_residual_log10_K: 3.16129278546353e-05
+  - table: gas
+    species_name: NbO(g)
+    table_id: Nb-011
+    source_path: data-src/janaf/Nb-011.yaml
+    source_sha256: b8f576ebb7f71bd422f0c8977ce7c559eb6270af045fca068fdc367f1e97f8c3
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.496889309084509
+    max_residual_log10_K: 2.13780230197776e-05
+  - table: gas
+    species_name: NbO2(g)
+    table_id: Nb-015
+    source_path: data-src/janaf/Nb-015.yaml
+    source_sha256: 3db85303490cbd8b7b353b45cdbce0041b97b4b7bdeb7c7a1d507b296e2f7565
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.629260110436007
+    max_residual_log10_K: 6.57370671322895e-05
+  - table: gas
+    species_name: Mn(g)
+    table_id: Mn-005
+    source_path: data-src/janaf/Mn-005.yaml
+    source_sha256: 6e2b4c4f4fee21fa925c34e7aac461d5a8d709f06159bd70c626c621596faa19
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 1.00539184157969
+    max_residual_log10_K: 5.39682468082112e-05
+  - table: gas
+    species_name: Ni(g)
+    table_id: Ni-005
+    source_path: data-src/janaf/Ni-005.yaml
+    source_sha256: 1b86d14a543e9268d056860462f4604b8e987bfe66d78c17ea84ce7a85414cbf
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.634284023719374
+    max_residual_log10_K: 4.14136884301395e-05
+  - table: gas
+    species_name: Co(g)
+    table_id: Co-005
+    source_path: data-src/janaf/Co-005.yaml
+    source_sha256: 10e4ec800f8f0015f6f7b5033449ffd21e60f9563b273738b128f0594afbfc2a
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.804645670723403
+    max_residual_log10_K: 4.66995069966642e-05
   - table: condensate
     species_name: SiO2(cr)
     source_table_id: LH87 Table 2

@@ -358,8 +358,11 @@ tables. The Ti, Cr, V and Nb channels appear only when available: VapoRock's
 condensate table has no TiO2(l), Cr2O3(l), V2O3(l) or NbO2(l) rows, so under the
 override a default call returns the other channels. Caller-supplied Cr2O3,
 V2O3 or NbO2 activities opt into their corresponding channels.
-The Cr(g) fit uses complete JANAF Cr-005 rows through 2900 K; evaluation above
-that declared endpoint is flagged or refused according to the caller's
+The Cr(g) fit is declared through 2900 K. Cr-005's 3000 K thermal cells are
+intact and reproduce G_app to 0.054 J/mol, but including the recovered node in
+the fit would change the existing Cr coefficients and results above 1500 K, so
+the interval remains capped to preserve those outputs. Evaluation above that
+declared endpoint is flagged or refused according to the caller's
 extrapolation setting. The fitted Cr2O3(l) source interval starts at 1900 K;
 the labelled constant-Cp continuation covers 1200–1900 K. Cr channels carry its
 continuation notice in that interval, and Cr(g) still limits complete C4
