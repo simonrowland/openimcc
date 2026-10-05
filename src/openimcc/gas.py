@@ -1955,6 +1955,18 @@ def load_gas_datapack(
         oxide_display_path = _packaged_database_path(_PACKAGED_CONDENSATE_NAME)
         with oxide_resource.open("rb") as handle:
             oxide_df = pd.read_csv(handle)
+    empty_unnamed_columns = [
+        column
+        for column in oxide_df.columns
+        if (
+            isinstance(column, str)
+            and column.startswith("Unnamed: ")
+            and column.removeprefix("Unnamed: ").isdecimal()
+            and oxide_df[column].isna().all()
+        )
+    ]
+    if empty_unnamed_columns:
+        oxide_df = oxide_df.drop(columns=empty_unnamed_columns)
     if "species_name" not in oxide_df.columns:
         raise ImccGasSpeciesNotFoundError(
             f"condensate database {oxide_display_path} missing 'species_name' column"
