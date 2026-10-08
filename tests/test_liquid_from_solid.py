@@ -11,7 +11,11 @@ from pathlib import Path
 import pytest
 
 from openimcc.gas import _lamor_gibbs
-from tools.build_gas_tables import _janaf_text_source_rows, _load_record
+from tools.build_gas_tables import (
+    _janaf_text_source_rows,
+    _load_record,
+    _recover_thermal_transition_rows,
+)
 from tools.liquid_from_solid import _crystal_rows, _crystal_state, liquid_from_solid
 
 
@@ -67,7 +71,7 @@ def _validation_construction(
     species: str, fusion_entropy: float, liquid_cp: float
 ):
     row = INPUTS["rows"][species]
-    crystal = _source_rows(row["crystal_table_id"])
+    crystal = _load_record(JANAF / f"{row['crystal_table_id']}.yaml")
     inputs = {
         "fusion_temperature": {
             "value": row["inputs"]["fusion_temperature"]["value"]
@@ -75,7 +79,7 @@ def _validation_construction(
         "fusion_entropy": {"value": fusion_entropy},
         "liquid_heat_capacity": {"value": liquid_cp},
     }
-    return liquid_from_solid(species, {"values": list(crystal.values())}, inputs)
+    return liquid_from_solid(species, crystal, inputs)
 
 
 def _reference_gibbs_kj_mol(
@@ -270,9 +274,12 @@ def test_validation_rows_record_each_input_tier_and_source():
             value = row["inputs"][key]
             assert value["source"]
             assert value["tier"] == 1
-            assert [entry["tier"] for entry in value["ladder"]] == (
-                [1] if key == "fusion_temperature" else [1, 2, 3]
-            )
+            if key == "fusion_temperature":
+                tiers = [entry["tier"] for entry in value["ladder"]]
+                assert tiers[-1] == 3
+                assert tiers == sorted(set(tiers))
+            else:
+                assert [entry["tier"] for entry in value["ladder"]] == [1, 2, 3]
             assert all(entry["source"] for entry in value["ladder"])
         for key, tier in (
             ("fusion_entropy", 2),
@@ -297,6 +304,85 @@ def test_validation_rows_record_each_input_tier_and_source():
             elif entry["value"] is not None:
                 assert entry["components"]
                 assert entry["provenance_class"] == "secondary_transcription_unverified_primary"
+
+
+@pytest.mark.parametrize(
+    ("table_id", "recovered_temperature", "transition_temperature"),
+    [
+        ("B-118", 1200.0, 1190.0),
+        ("Mg-028", 2200.0, 2171.0),
+        ("Na-013", 1500.0, 1405.2),
+    ],
+)
+def test_thermal_cells_recover_only_when_formation_columns_are_malformed(
+    table_id, recovered_temperature, transition_temperature
+):
+    record = _load_record(JANAF / f"{table_id}.yaml")
+    recovered = _recover_thermal_transition_rows(record["table"])
+    temperatures = {row["temperature"] for row in recovered}
+    assert recovered_temperature in temperatures
+    assert transition_temperature not in temperatures
+    crystal_temperatures = {
+        row["temperature"] for row in _crystal_rows(record)
+    }
+    assert recovered_temperature in crystal_temperatures
+
+
+def test_extrapolated_liquidus_band_propagates_synthetic_temperature_bounds():
+    table = {
+        "values": [
+            {
+                "temperature": temperature,
+                "heat_capacity": 80.0,
+                "entropy": entropy,
+                "enthalpy_increment": enthalpy,
+                **({"formation_enthalpy": -825.0} if temperature == 298.15 else {}),
+            }
+            for temperature, entropy, enthalpy in (
+                (298.15, 55.0, 0.0),
+                (1800.0, 105.0, 120.0),
+                (2000.0, 115.0, 136.0),
+            )
+        ]
+    }
+    temperature = {"value": 1895.0, "bounds_k": [1850.0, 1940.0]}
+    inputs = {
+        "fusion_temperature": temperature,
+        "fusion_entropy": {"value": 30.0, "spread": 0.0},
+        "liquid_heat_capacity": {"value": 60.0, "spread": 0.0},
+    }
+    construction = liquid_from_solid("Fe2O3", table, inputs)
+    target = 2200.0
+    central = construction.at(target).gibbs_kj_mol
+    endpoint_gibbs = []
+    for endpoint in temperature["bounds_k"]:
+        endpoint_inputs = {
+            **inputs,
+            "fusion_temperature": {"value": endpoint},
+        }
+        endpoint_gibbs.append(
+            liquid_from_solid("Fe2O3", table, endpoint_inputs)
+            .at(target)
+            .gibbs_kj_mol
+        )
+    assert construction.input_spread_kj_mol(target) == pytest.approx(
+        max(abs(value - central) for value in endpoint_gibbs)
+    )
+    fallback = INPUTS["fusion_temperature_fallback"]
+    assert fallback["tier"] == 3
+    assert fallback["hematite_reference_example"]["first_hand_verified"] is False
+
+
+def test_k2o_fusion_temperature_provenance_and_asymmetric_bounds():
+    temperature = INPUTS["rows"]["K2O"]["inputs"]["fusion_temperature"]
+    assert temperature["value"] == 1013.0
+    assert temperature["bounds_k"] == [919.0, 1190.0]
+    assert temperature["ladder"][0]["alternative_assessments"][0][
+        "uncertainty_k"
+    ] == 50.0
+    assert temperature["ladder"][0]["alternative_assessments"][1][
+        "value_k"
+    ] == 919.0
 
 
 @pytest.mark.parametrize(
@@ -377,7 +463,7 @@ def test_negative_fusion_delta_cp_is_in_diagnostics_for_tier2_central():
 
 def test_na2sio3_compound_example_matches_its_janaf_liquid_at_fusion():
     row = INPUTS["rows"]["Na2SiO3"]
-    crystal_rows = _source_rows(row["crystal_table_id"])
+    crystal = _load_record(JANAF / f"{row['crystal_table_id']}.yaml")
     liquid_rows = _source_rows(row["liquid_table_id"])
     temperature = row["inputs"]["fusion_temperature"]["value"]
     inputs = {
@@ -394,9 +480,7 @@ def test_na2sio3_compound_example_matches_its_janaf_liquid_at_fusion():
         },
         "condensate_fit": row["inputs"]["condensate_fit"],
     }
-    construction = liquid_from_solid(
-        "Na2SiO3", {"values": list(crystal_rows.values())}, inputs
-    )
+    construction = liquid_from_solid("Na2SiO3", crystal, inputs)
     liquid_at_fusion = liquid_rows[temperature]
     reference_g = (
         liquid_rows[298.15]["formation_enthalpy"]
@@ -411,7 +495,7 @@ def test_na2sio3_compound_example_matches_its_janaf_liquid_at_fusion():
 
 def test_fitted_condensate_row_uses_the_existing_runtime_evaluator():
     row = INPUTS["rows"]["Na2SiO3"]
-    crystal_rows = _source_rows(row["crystal_table_id"])
+    crystal = _load_record(JANAF / f"{row['crystal_table_id']}.yaml")
     inputs = {
         "fusion_temperature": {
             "value": row["inputs"]["fusion_temperature"]["value"]
@@ -424,9 +508,7 @@ def test_fitted_condensate_row_uses_the_existing_runtime_evaluator():
         },
         "condensate_fit": row["inputs"]["condensate_fit"],
     }
-    construction = liquid_from_solid(
-        "Na2SiO3", {"values": list(crystal_rows.values())}, inputs
-    )
+    construction = liquid_from_solid("Na2SiO3", crystal, inputs)
     fitted = construction.fit_condensate_row()
     runtime_row = {
         key: float(fitted[key])
@@ -454,10 +536,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             1,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 1.164968030, 4.239951354],
-                "rms": [0.166759609, 0.194222855, 0.686915566],
+                "max": [1.154923273, 1.164968030, 4.244316141],
+                "rms": [0.166756612, 0.194235591, 0.688929378],
                 "dex_max_per_metal_atom": [0.035569471, 0.030486221, 0.024323595],
-                "dex_rms_per_metal_atom": [0.005134229, 0.004585847, 0.004784863],
+                "dex_rms_per_metal_atom": [0.005134217, 0.004586338, 0.004790863],
             },
         ),
         (
@@ -465,10 +547,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             1,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 1.164968030, 4.239951354],
-                "rms": [0.166759609, 0.194222855, 0.686915566],
+                "max": [1.154923273, 1.164968030, 4.244316141],
+                "rms": [0.166756612, 0.194235591, 0.688929378],
                 "dex_max_per_metal_atom": [0.035569471, 0.030486221, 0.024323595],
-                "dex_rms_per_metal_atom": [0.005134229, 0.004585847, 0.004784863],
+                "dex_rms_per_metal_atom": [0.005134217, 0.004586338, 0.004790863],
             },
         ),
         (
@@ -476,10 +558,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             2,
             {
                 "sample_size_by_offset": [32, 32, 31],
-                "max": [0.002385000, 7.356668197, 19.755915428],
-                "rms": [0.000932845, 2.946475966, 8.139030435],
-                "dex_max_per_metal_atom": [0.000046593, 0.133429696, 0.293724484],
-                "dex_rms_per_metal_atom": [0.000016979, 0.040421986, 0.087489552],
+                "max": [0.001821331, 7.357350966, 19.756923340],
+                "rms": [0.000707312, 2.947400086, 8.141331016],
+                "dex_max_per_metal_atom": [0.000034539, 0.133451600, 0.293746239],
+                "dex_rms_per_metal_atom": [0.000014018, 0.040429377, 0.087498699],
             },
         ),
         (
@@ -487,10 +569,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             3,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 16.463144105, 43.472805070],
-                "rms": [0.166759609, 5.276230136, 13.853989157],
+                "max": [1.154923273, 16.463782854, 43.473443387],
+                "rms": [0.166756612, 5.275975461, 13.853112193],
                 "dex_max_per_metal_atom": [0.035569471, 0.232041418, 0.454135746],
-                "dex_rms_per_metal_atom": [0.005134229, 0.064308831, 0.124734186],
+                "dex_rms_per_metal_atom": [0.005134217, 0.064309722, 0.124731647],
             },
         ),
         (
@@ -498,10 +580,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             1,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 1.164968030, 4.239951354],
-                "rms": [0.166759609, 0.194222855, 0.686915566],
+                "max": [1.154923273, 1.164968030, 4.244316141],
+                "rms": [0.166756612, 0.194235591, 0.688929378],
                 "dex_max_per_metal_atom": [0.035569471, 0.030486221, 0.024323595],
-                "dex_rms_per_metal_atom": [0.005134229, 0.004585847, 0.004784863],
+                "dex_rms_per_metal_atom": [0.005134217, 0.004586338, 0.004790863],
             },
         ),
         (
@@ -509,10 +591,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             2,
             {
                 "sample_size_by_offset": [15, 15, 15],
-                "max": [1.154923273, 1.674095117, 10.777037464],
-                "rms": [0.298202531, 0.863964153, 5.144294318],
-                "dex_max_per_metal_atom": [0.035569471, 0.027549534, 0.066705022],
-                "dex_rms_per_metal_atom": [0.009184022, 0.010219438, 0.038084465],
+                "max": [1.154923273, 1.673914153, 10.776914095],
+                "rms": [0.298201071, 0.864249049, 5.144593809],
+                "dex_max_per_metal_atom": [0.035569471, 0.027549534, 0.066704258],
+                "dex_rms_per_metal_atom": [0.009184008, 0.010222396, 0.038088008],
             },
         ),
         (
@@ -520,10 +602,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             3,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 6.710438257, 45.281589063],
-                "rms": [0.166759609, 1.613900384, 11.006661141],
-                "dex_max_per_metal_atom": [0.035569471, 0.042529719, 0.208794255],
-                "dex_rms_per_metal_atom": [0.005134229, 0.013327996, 0.064922836],
+                "max": [1.154923273, 6.697977676, 45.198184561],
+                "rms": [0.166756612, 1.613335036, 10.999609475],
+                "dex_max_per_metal_atom": [0.035569471, 0.042515407, 0.208409675],
+                "dex_rms_per_metal_atom": [0.005134217, 0.013318372, 0.064879782],
             },
         ),
     ],

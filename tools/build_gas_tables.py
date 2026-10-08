@@ -499,6 +499,45 @@ def _value(row: dict[str, Any], field: str) -> float | None:
     return value.get("value")
 
 
+def _recover_thermal_transition_rows(
+    table: dict[str, Any],
+) -> list[dict[str, float]]:
+    """Recover thermal cells when only a JANAF formation column is malformed."""
+    recovered = []
+    for ambiguity in table.get("parse_ambiguities", []):
+        cells = str(ambiguity.get("raw_line", "")).strip().split("\t")
+        if (
+            len(cells) < 6
+            or "<-->" in cells[-1]
+            or cells[5].strip() == "TRANSITION"
+        ):
+            continue
+        try:
+            temperature, cp, entropy, _, enthalpy_increment = map(
+                float, cells[:5]
+            )
+        except ValueError:
+            continue
+        malformed_formation = False
+        for cell in cells[5:7]:
+            try:
+                float(cell)
+            except ValueError:
+                malformed_formation = True
+                break
+        if not malformed_formation:
+            continue
+        recovered.append(
+            {
+                "temperature": temperature,
+                "heat_capacity": cp,
+                "entropy": entropy,
+                "enthalpy_increment": enthalpy_increment,
+            }
+        )
+    return recovered
+
+
 def _usable_rows(
     table: dict[str, Any],
     table_id: str,
@@ -557,24 +596,11 @@ def _usable_rows(
             )
         rows.append({field: float(value) for field, value in values.items()})
     if table_id == "Na-013" and fit_t_min <= 1500.0 <= fit_t_max:
-        for ambiguity in table.get("parse_ambiguities", []):
-            cells = str(ambiguity.get("raw_line", "")).strip().split("\t")
-            try:
-                temperature = float(cells[0])
-            except (IndexError, ValueError):
-                continue
-            if temperature == 1500.0:
-                # This exact row is ambiguous only in its formation cells;
-                # parse the thermal fields and use dfH(298) from the complete
-                # 298.15 K row.
-                rows.append(
-                    {
-                        "temperature": temperature,
-                        "heat_capacity": float(cells[1]),
-                        "entropy": float(cells[2]),
-                        "enthalpy_increment": float(cells[4]),
-                    }
-                )
+        rows.extend(
+            row
+            for row in _recover_thermal_transition_rows(table)
+            if row["temperature"] == 1500.0
+        )
     rows.sort(key=lambda row: row["temperature"])
     if minimum_rows is None:
         minimum_rows = 13

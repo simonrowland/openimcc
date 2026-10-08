@@ -16,7 +16,7 @@ species-specific branches in the construction code.
 
 | Input | Tier 1 | Tier 2 | Tier 3 |
 | --- | --- | --- | --- |
-| Fusion temperature | JANAF crystal-to-liquid marker or an assessed value | — | — |
+| Fusion temperature | JANAF crystal-to-liquid marker or assessed value | Cited alternative assessment with uncertainty | Extrapolated liquidus for incongruently melting or decomposing solids; band is the range of cited hypothetical constructions |
 | Fusion entropy | Liquid-minus-crystal entropy at the marker | Mean of measured/assessed members in a declared oxide or homologue family | Leave-one-out Richards-type mean per formula atom, including oxygen; red fallback |
 | Liquid heat capacity | JANAF liquid Cp at the marker | Stoichiometric sum of cited oxide partial-molar liquid Cp values | Crystal Cp at fusion carried over; red fallback |
 
@@ -25,6 +25,33 @@ uses the mean of Na₂O 33.95 J/(mol K) and the Lamoreaux–Hildenbrand K₂O va
 33.53 J/(mol K), giving 33.74 J/(mol K); its half-range spread is 0.21 J/(mol
 K). Where the cited partial-molar table does not cover every oxide component,
 the tier-2 Cp value is unavailable rather than inferred.
+
+K₂O's selected fusion temperature is 1013 K from the Gurvich lineage in the
+NASA Glenn CEA K₂O(l) interval (McBride, Zehe, and Gordon, NASA TP-2002-211556;
+Gurvich et al., *Thermodynamic Properties of Individual Substances*, vol. IV,
+pt. 1, p. 377 and pt. 2, p. 406); it is also listed in the TKV database
+(Gurvich lineage, with no further bibliography). The alkali M₂O trend—Li₂O
+1711 K (Ortman and Larsen), Na₂O 1405.2 K (NIST-JANAF/DTA), Rb₂O 778 K and
+Cs₂O 763–768 K (Gurvich)—supports this value over Lamoreaux and Hildenbrand's
+1190 ± 50 K estimate (1984, Table
+1, p. 153). Natola and Touzain measured 919 ± 5 K in Pyrex (1970, *Canadian
+Journal of Chemistry* 48, 1955–1958); silica contamination makes this a
+one-sided lower bound. The selected K₂O temperature band is therefore
+[919, 1190] K, with 919 K as the lower bound. Its per-atom entropy fallback is
+28.004377717 J/(mol K), the leave-one-out Richards-type mean from the other 47
+members of the declared 48-pair census; it is red-flagged because the rule is
+known to perform poorly.
+
+The Tier 3 temperature rung records a hypothetical fusion temperature for an
+incongruently melting or decomposing solid. Its band uses the minimum and
+maximum of cited constructions and propagates both endpoints through the
+crystal interpolation. Hematite is a literature example to check: Robie,
+Hemingway, and Fisher (1978), USGS Bulletin 1452, p. 165, gives a nominal
+metastable 1895 K; JANAF reports decomposition at 1735 K; Sugawara and Akaogi
+(2004, DOI 10.1016/S0016-7037(03)00202-3) report 133.4 ± 10.5 kJ/mol fusion at
+1895 K. Those sources were not verified first-hand here, so the hematite
+temperatures are recorded as a reference example, not a sourced band. A
+synthetic Fe₂O₃ construction test verifies endpoint propagation.
 
 The partial-molar Cp values come from [Navrotsky (1995)](https://doi.org/10.2138/rmg.1995.32.5),
 *Energetics of Silicate Melts*, Table 3, p. 130, which cites [Stebbins,
@@ -101,9 +128,10 @@ The 96 records retain their JANAF source SHA-256 and neutral extractor name
 `openimcc-janaf-vendor/1.0`; copied records have their local cache-path field
 removed. Eighteen records were already present and 78 were copied from the
 supplied corpus, including canonical replacements for six earlier records.
-The source hashes were checked against the corpus
-records. A fresh byte-for-byte download/hash spot-check against the live NIST
-text endpoint could not be completed in this network-restricted environment.
+The source hashes were checked against the corpus records. The Mg-012 and
+Na-016 text files now match their recorded SHA-256 after removing an extra
+terminal newline. Raw upstream bytes for K-014, K-015, Mg-013, and Na-017 could
+not be fetched in this environment; their YAML records remain authoritative.
 
 ## Measured construction bands
 
@@ -122,11 +150,11 @@ Cells below give maximum / RMS absolute error in kJ/mol. Sample counts are for
 
 | Input tier | N | T_fus | +300 K | +800 K |
 | --- | ---: | ---: | ---: | ---: |
-| Fusion temperature, entropy, and Cp, tier 1 control | 48 / 48 / 45 | 1.155 / 0.167 | 1.165 / 0.194 | 4.240 / 0.687 |
+| Fusion temperature, entropy, and Cp, tier 1 control | 48 / 48 / 45 | 1.155 / 0.167 | 1.165 / 0.194 | 4.244 / 0.689 |
 | Fusion entropy, tier 2 family | 32 / 32 / 31 | 0.002 / 0.001 | 7.357 / 2.946 | 19.756 / 8.139 |
 | Fusion entropy, tier 3 per formula atom | 48 / 48 / 45 | 1.155 / 0.167 | 16.463 / 5.276 | 43.473 / 13.854 |
-| Liquid Cp, tier 2 additive | 15 / 15 / 15 | 1.155 / 0.298 | 1.674 / 0.864 | 10.777 / 5.144 |
-| Liquid Cp, tier 3 crystal carry-over | 48 / 48 / 45 | 1.155 / 0.167 | 6.710 / 1.614 | 45.282 / 11.007 |
+| Liquid Cp, tier 2 additive | 15 / 15 / 15 | 1.155 / 0.298 | 1.674 / 0.864 | 10.777 / 5.145 |
+| Liquid Cp, tier 3 crystal carry-over | 48 / 48 / 45 | 1.155 / 0.167 | 6.698 / 1.613 | 45.198 / 11.000 |
 
 The paired maximum / RMS errors in dex per metal atom are:
 
@@ -167,12 +195,12 @@ The tier-2 K₂O construction uses `T_fus = 1013 K`, `ΔS_fus = 33.74 J/(mol K)`
 and `Cp_l = 97.75 J/(mol K)` with crystal table K-012. Its pinned Gibbs values
 are −555.309542, −582.045759, −637.722336, −787.694272, −950.015529, and
 −1122.178019 kJ/mol at 1200, 1300, 1500, 2000, 2500, and 3000 K. The separate
-requested mechanism test uses `Cp_l = 104.6 J/(mol K)` and reproduces
+synthetic mechanism test uses `Cp_l = 104.6 J/(mol K)` and reproduces
 −582.301144 kJ/mol at 1300 K and −790.252486 kJ/mol at 2000 K. The 104.6 value
-is an explicit test override from the requested controller calculation. The
+is an explicit synthetic test fixture. The
 K₂O row's Tier 3 fallback is the K-012 crystal Cp at fusion, 114.03681
-J/(mol K). Its assessed fusion temperature and entropy references are recorded
-with that row.
+J/(mol K). Its selected fusion temperature, bounds, alternative assessments,
+and entropy references are recorded with that row.
 
 The Na₂SiO₃ pair is also exercised through `liquid_from_solid` and the existing
 condensate fitter/evaluator as the crystalline-compound example.

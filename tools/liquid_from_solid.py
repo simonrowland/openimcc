@@ -35,6 +35,12 @@ def _crystal_rows(crystal_table: Mapping[str, Any]) -> list[dict[str, float]]:
         if formation_enthalpy is not None:
             row["formation_enthalpy"] = formation_enthalpy
         rows.append(row)
+    # JANAF parsing can reject a row because its formation columns are
+    # malformed even when its thermal cells are intact. Reuse the gas-table
+    # builder's narrow recovery so construction and validation share one path.
+    from tools.build_gas_tables import _recover_thermal_transition_rows
+
+    rows.extend(_recover_thermal_transition_rows(table))
     return sorted(rows, key=lambda row: row["temperature"])
 
 
@@ -170,7 +176,8 @@ class LiquidConstruction:
         tfus = self.fusion_temperature_k
         ds = self.fusion_entropy_j_mol_k
         cp = self.liquid_cp_j_mol_k
-        fusion_spread = float(self.inputs["fusion_temperature"].get("spread", 0.0))
+        fusion_temperature = self.inputs["fusion_temperature"]
+        fusion_spread = float(fusion_temperature.get("spread", 0.0))
         entropy_spread = float(self.inputs["fusion_entropy"].get("spread", 0.0))
         cp_spread = float(self.inputs["liquid_heat_capacity"].get("spread", 0.0))
 
@@ -180,9 +187,18 @@ class LiquidConstruction:
             * ((temperature - tfus) - temperature * math.log(temperature / tfus))
             / 1000.0
         )
-        if fusion_spread:
+        fusion_bounds = fusion_temperature.get("bounds_k")
+        shifted_temperatures = (
+            [float(value) for value in fusion_bounds]
+            if fusion_bounds is not None
+            else [tfus - fusion_spread, tfus + fusion_spread]
+            if fusion_spread
+            else []
+        )
+        if shifted_temperatures:
             central = self.at(temperature).gibbs_kj_mol
-            for shifted in (tfus - fusion_spread, tfus + fusion_spread):
+            temperature_deviations = []
+            for shifted in shifted_temperatures:
                 if shifted <= 0.0:
                     continue
                 h_cr, s_cr, _ = _crystal_state(
@@ -195,7 +211,12 @@ class LiquidConstruction:
                 )
                 s = s_cr + ds + cp * math.log(temperature / shifted)
                 shifted_g = self.dfh298_kj_mol + h - temperature * s / 1000.0
-                spread += abs(shifted_g - central)
+                temperature_deviations.append(abs(shifted_g - central))
+            if temperature_deviations:
+                # The fusion-temperature bounds describe one input interval;
+                # use its worst endpoint deviation once, rather than adding
+                # both endpoints as if they were independent uncertainties.
+                spread += max(temperature_deviations)
         return spread
 
     def band_kj_mol(
