@@ -263,6 +263,64 @@ def test_pair_records_have_canonical_source_provenance():
         assert not re.search(r'(?m)^\s*["\']?source_cache_path["\']?\s*:', text)
 
 
+def test_k2o_per_atom_entropy_rung_uses_the_full_census():
+    row = INPUTS["rows"]["K2O"]
+    rung = next(
+        entry
+        for entry in row["inputs"]["fusion_entropy"]["ladder"]
+        if entry["tier"] == 3
+    )
+    training = [
+        candidate
+        for candidate in INPUTS["rows"].values()
+        if "liquid_table_id" in candidate
+    ]
+    assert len(training) == 48
+    assert all(candidate["formula"] != "K2O" for candidate in training)
+    provenance = rung["training_provenance"]
+    assert provenance["training_count"] == 48
+    assert "excluded_formula" not in provenance
+    expected = 3 * sum(
+        candidate["inputs"]["fusion_entropy"]["value"]
+        / candidate["total_atoms"]
+        for candidate in training
+    ) / len(training)
+    assert rung["value"] == pytest.approx(28.004377717, abs=1e-9)
+    assert rung["value"] == pytest.approx(expected, abs=1e-9)
+
+
+def test_documented_error_tables_match_json():
+    docs = (ROOT / "docs" / "liquid-from-solid.md").read_text(encoding="utf-8")
+    labels = {
+        "fusion_temperature_tier1": "Fusion temperature, entropy, and Cp, tier 1 control",
+        "fusion_entropy_tier2": "Fusion entropy, tier 2 family",
+        "fusion_entropy_tier3": "Fusion entropy, tier 3 per formula atom",
+        "liquid_heat_capacity_tier2": "Liquid Cp, tier 2 additive",
+        "liquid_heat_capacity_tier3": "Liquid Cp, tier 3 crystal carry-over",
+    }
+    for key, label in labels.items():
+        metrics = INPUTS["tier_error_bands"][key]
+        counts = " / ".join(map(str, metrics["sample_size_by_offset"]))
+        error_pairs = [
+            " / ".join(f"{metrics[name][i]:.3f}" for name in ("max", "rms"))
+            for i in range(3)
+        ]
+        dex_pairs = [
+            " / ".join(
+                f"{metrics[name][i]:.6f}"
+                for name in ("dex_max_per_metal_atom", "dex_rms_per_metal_atom")
+            )
+            for i in range(3)
+        ]
+        assert "| " + " | ".join((label, counts, *error_pairs)) + " |" in docs
+        assert "| " + " | ".join((label, *dex_pairs)) + " |" in docs
+    entropy_tier3 = INPUTS["tier_error_bands"]["fusion_entropy_tier3"]
+    assert (
+        f"({entropy_tier3['max'][1]:.3f} /\n"
+        f"{entropy_tier3['max'][2]:.3f})"
+    ) in docs
+
+
 def test_validation_rows_record_each_input_tier_and_source():
     rows = [
         row

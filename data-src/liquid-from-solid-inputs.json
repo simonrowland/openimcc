@@ -526,12 +526,11 @@
             {
               "tier": 3,
               "value": 28.004377717,
-              "source": "Leave-one-out Richards-type estimate from the declared 48-pair census: mean fusion entropy per formula atom across the 47 other compounds, including oxygen, multiplied by K2O’s 3 atoms. The rule is known to fail badly.",
+              "source": "Richards-type estimate from the declared 48-pair census: mean fusion entropy per formula atom across all 48 pairs, including oxygen, multiplied by K2O’s 3 atoms. K2O is outside this census, so it is excluded by construction. The rule is known to fail badly.",
               "flag": "red",
               "training_provenance": {
                 "census": "48 liquid/crystal pairs in this file",
-                "training_count": 47,
-                "excluded_formula": "K2O",
+                "training_count": 48,
                 "normalization": "mean of fusion_entropy / total_atoms, multiplied by the target formula atom count",
                 "value_j_mol_k": 28.004377717
               }

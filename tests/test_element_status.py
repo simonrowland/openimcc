@@ -758,8 +758,8 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     assert {path.stem for path in JANAF_DATA.glob("*.txt")} == {
         "Na-006", "K-006", "D-020",
         "Na-007", "K-007", "O-003", "Al-007", "Fe-010",
-        "Si-007", "Ti-008", "Al-076", "Na-009", "Na-016", "Na-017",
-        "O-031", "Al-078", "K-009", "K-014", "K-015", "Mg-012", "Mg-013",
+        "Si-007", "Ti-008", "Al-076", "Na-009", "Na-016",
+        "O-031", "Al-078", "K-009", "Mg-012",
         "Li-007", "Li-012", "Rb-007", "Pb-007",
         "Cs-007", "Cu-007",
         "Cs-005", "Cs-006", "Cs-017", "Cs-021",

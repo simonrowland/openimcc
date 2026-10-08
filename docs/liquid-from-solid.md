@@ -38,9 +38,10 @@ Cs₂O 763–768 K (Gurvich)—supports this value over Lamoreaux and Hildenbran
 Journal of Chemistry* 48, 1955–1958); silica contamination makes this a
 one-sided lower bound. The selected K₂O temperature band is therefore
 [919, 1190] K, with 919 K as the lower bound. Its per-atom entropy fallback is
-28.004377717 J/(mol K), the leave-one-out Richards-type mean from the other 47
-members of the declared 48-pair census; it is red-flagged because the rule is
-known to perform poorly.
+28.004377717 J/(mol K), equal to three times the mean fusion entropy per atom
+across all 48 pairs in the declared census. K₂O is not in that census, so it
+is excluded by construction; this is not a leave-one-out estimate for K₂O. It
+is red-flagged because the rule is known to perform poorly.
 
 The Tier 3 temperature rung records a hypothetical fusion temperature for an
 incongruently melting or decomposing solid. Its band uses the minimum and
@@ -130,8 +131,9 @@ removed. Eighteen records were already present and 78 were copied from the
 supplied corpus, including canonical replacements for six earlier records.
 The source hashes were checked against the corpus records. The Mg-012 and
 Na-016 text files now match their recorded SHA-256 after removing an extra
-terminal newline. Raw upstream bytes for K-014, K-015, Mg-013, and Na-017 could
-not be fetched in this environment; their YAML records remain authoritative.
+terminal newline. The redundant text copies for K-014, K-015, Mg-013, and
+Na-017 are omitted because their bytes do not match their recorded hashes;
+their YAML records remain authoritative.
 
 ## Measured construction bands
 
@@ -151,8 +153,8 @@ Cells below give maximum / RMS absolute error in kJ/mol. Sample counts are for
 | Input tier | N | T_fus | +300 K | +800 K |
 | --- | ---: | ---: | ---: | ---: |
 | Fusion temperature, entropy, and Cp, tier 1 control | 48 / 48 / 45 | 1.155 / 0.167 | 1.165 / 0.194 | 4.244 / 0.689 |
-| Fusion entropy, tier 2 family | 32 / 32 / 31 | 0.002 / 0.001 | 7.357 / 2.946 | 19.756 / 8.139 |
-| Fusion entropy, tier 3 per formula atom | 48 / 48 / 45 | 1.155 / 0.167 | 16.463 / 5.276 | 43.473 / 13.854 |
+| Fusion entropy, tier 2 family | 32 / 32 / 31 | 0.002 / 0.001 | 7.357 / 2.947 | 19.757 / 8.141 |
+| Fusion entropy, tier 3 per formula atom | 48 / 48 / 45 | 1.155 / 0.167 | 16.464 / 5.276 | 43.473 / 13.853 |
 | Liquid Cp, tier 2 additive | 15 / 15 / 15 | 1.155 / 0.298 | 1.674 / 0.864 | 10.777 / 5.145 |
 | Liquid Cp, tier 3 crystal carry-over | 48 / 48 / 45 | 1.155 / 0.167 | 6.698 / 1.613 | 45.198 / 11.000 |
 
@@ -160,11 +162,11 @@ The paired maximum / RMS errors in dex per metal atom are:
 
 | Input tier | T_fus | +300 K | +800 K |
 | --- | ---: | ---: | ---: |
-| Fusion temperature, entropy, and Cp, tier 1 control | 0.035569 / 0.005134 | 0.030486 / 0.004586 | 0.024324 / 0.004785 |
-| Fusion entropy, tier 2 family | 0.000047 / 0.000017 | 0.133430 / 0.040422 | 0.293724 / 0.087490 |
-| Fusion entropy, tier 3 per formula atom | 0.035569 / 0.005134 | 0.232041 / 0.064309 | 0.454136 / 0.124734 |
-| Liquid Cp, tier 2 additive | 0.035569 / 0.009184 | 0.027550 / 0.010219 | 0.066705 / 0.038084 |
-| Liquid Cp, tier 3 crystal carry-over | 0.035569 / 0.005134 | 0.042530 / 0.013328 | 0.208794 / 0.064923 |
+| Fusion temperature, entropy, and Cp, tier 1 control | 0.035569 / 0.005134 | 0.030486 / 0.004586 | 0.024324 / 0.004791 |
+| Fusion entropy, tier 2 family | 0.000035 / 0.000014 | 0.133452 / 0.040429 | 0.293746 / 0.087499 |
+| Fusion entropy, tier 3 per formula atom | 0.035569 / 0.005134 | 0.232041 / 0.064310 | 0.454136 / 0.124732 |
+| Liquid Cp, tier 2 additive | 0.035569 / 0.009184 | 0.027550 / 0.010222 | 0.066704 / 0.038088 |
+| Liquid Cp, tier 3 crystal carry-over | 0.035569 / 0.005134 | 0.042515 / 0.013318 | 0.208410 / 0.064880 |
 
 The independent census reports maximum errors of 0.77 / 0.13 / 0.27 kJ/mol
 for integrated temperature-dependent `ΔCp`, 0.77 / 0.32 / 6.2 kJ/mol for
@@ -179,7 +181,7 @@ measured-Cp tier also holds an absolute liquid Cp constant, while constant
 reflect table selection and interpolation conventions; the
 independent census did not include enough method detail to reproduce its
 exact pair-by-pair calculation. Its Richards-rule maxima, 24.9 / 58.7 kJ/mol
-at +300 / +800 K, are above the formula-atom LOO results here (16.463 /
+at +300 / +800 K, are above the formula-atom LOO results here (16.464 /
 43.473); both use 48 formulas, but their exact phase-selection and
 normalization conventions were not supplied for a stricter comparison.
 
