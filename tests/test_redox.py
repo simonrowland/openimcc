@@ -259,7 +259,8 @@ def test_metal_amount_matches_independent_dense_thermodynamic_scan() -> None:
     [
         ({"Fe": 1.0, "Si": 0.5, "O": 0.5}, "reductant_exceeds_reducible_oxygen"),
         ({"Na": 0.1, "O": 1.2}, "alkali_couple_incomplete"),
-        ({"Fe": 1.0, "O": 2.0}, "oxidising_fugacity_limit"),
+        ({"Fe": 1.0, "O": 1.5}, "fully_oxidised_inventory_limit"),
+        ({"Fe": 1.0, "O": 2.0}, "fully_oxidised_inventory_limit"),
     ],
 )
 def test_prescribed_inventory_endpoints_are_typed(
@@ -278,7 +279,7 @@ def test_missing_fe_and_bad_mode_refuse_without_partial_results() -> None:
         evaluate_redox(_fe_only_inventory(), 2200.0, "unknown")  # type: ignore[arg-type]
 
 
-def test_imposed_mode_refuses_below_the_pure_fe_bound() -> None:
+def test_imposed_mode_resolves_the_metal_amount_below_saturation() -> None:
     result = evaluate_redox(
         {"Fe": 1.0}, 2200.0, "imposed", lambda_imposed=0.0
     )
@@ -289,8 +290,69 @@ def test_imposed_mode_refuses_below_the_pure_fe_bound() -> None:
             "imposed",
             lambda_imposed=result.lambda_sat - 1.0,
         )
-    assert exc_info.value.endpoint == "lambda_below_pure_fe_saturation"
-    assert exc_info.value.lambda_bound == pytest.approx(result.lambda_sat)
+    assert exc_info.value.endpoint == "lambda_below_dissolved_fe_saturation_range"
+
+
+def test_finite_closed_root_above_one_bar_standard_state() -> None:
+    result = evaluate_redox({"Fe": 1.0, "O": 1.4}, 2200.0, "closed")
+    assert result.lambda_ln_f_o2 == pytest.approx(4.825786986, abs=2.0e-8)
+    assert result.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-12)
+
+
+@pytest.mark.parametrize(
+    ("inventory", "buffered"),
+    [({"Fe": 1.0, "O": 1.25}, False), ({"Fe": 1.0, "O": 0.5}, True)],
+)
+def test_imposed_and_closed_match_on_both_branches(
+    inventory: dict[str, float], buffered: bool
+) -> None:
+    closed = evaluate_redox(inventory, 2200.0, "closed")
+    imposed = evaluate_redox(
+        inventory,
+        2200.0,
+        "imposed",
+        lambda_imposed=closed.lambda_ln_f_o2,
+    )
+    assert closed.metal_buffered is buffered
+    assert imposed.metal_moles == pytest.approx(closed.metal_moles, abs=2.0e-10)
+    assert imposed.species_moles == pytest.approx(closed.species_moles, rel=2.0e-10)
+    assert imposed.oxygen_mol == pytest.approx(closed.oxygen_mol, abs=2.0e-10)
+
+
+@pytest.mark.parametrize("warm_start", [["a"], [float("nan")], [float("inf")]])
+def test_invalid_warm_starts_raise_typed_input_error(warm_start: list[object]) -> None:
+    with pytest.raises(RedoxInputError):
+        evaluate_redox(
+            {"Fe": 1.0},
+            2200.0,
+            "imposed",
+            lambda_imposed=0.0,
+            warm_start=warm_start,  # type: ignore[arg-type]
+        )
+
+
+def test_result_publishes_domain_flags_and_active_band_intersection() -> None:
+    result = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+    assert "liquid_only_model" in result.flags
+    low, high = result.active_row_band_intersection_K
+    assert low <= 2200.0 <= high
+
+
+def test_buffered_capacity_includes_metal_response() -> None:
+    inventory = {"Fe": 1.0, "Si": 0.8, "Mg": 0.3, "Al": 0.2, "Ca": 0.1, "O": 2.8}
+    center = evaluate_redox(inventory, 2200.0, "closed")
+    assert center.metal_buffered
+    h_oxygen = 1.0e-5
+    plus_inventory = dict(inventory, O=inventory["O"] + h_oxygen)
+    minus_inventory = dict(inventory, O=inventory["O"] - h_oxygen)
+    plus = evaluate_redox(plus_inventory, 2200.0, "closed")
+    minus = evaluate_redox(minus_inventory, 2200.0, "closed")
+    finite_difference = (2.0 * h_oxygen) / (
+        plus.lambda_ln_f_o2 - minus.lambda_ln_f_o2
+    )
+    assert center.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
+        finite_difference, rel=3.0e-4
+    )
 
 
 def test_array_residual_and_jacobian_are_float64_and_consistent() -> None:

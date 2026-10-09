@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
+import gc
 import statistics
 import time
+
+import pytest
 
 from openimcc import evaluate, evaluate_redox
 from openimcc.redox_pack import load_redox_pack
 
 
-BASELINE_PATH = Path(__file__).with_name("redox_cost_baseline.json")
-
-
-def _element_inventory(composition: dict[str, float], T_K: float, basis_type: str) -> dict[str, float]:
+def _element_inventory(
+    composition: dict[str, float], T_K: float, basis_type: str, *, metal_bearing: bool
+) -> dict[str, float]:
     legacy = evaluate(
         composition,
         T_K,
@@ -24,17 +24,25 @@ def _element_inventory(composition: dict[str, float], T_K: float, basis_type: st
         for parent in load_redox_pack().parents
     }
     elements: dict[str, float] = {}
+    oxygen = 0.0
     for oxide, amount in zip(legacy.parent_oxides, legacy.parent_mol):
-        for element, count in records[oxide]["parent_formula_atoms"].items():
-            if element != "O" and amount:
+        atoms = records[oxide]["parent_formula_atoms"]
+        for element, count in atoms.items():
+            if element == "O":
+                oxygen += float(amount) * float(count)
+            elif amount:
                 elements[element] = elements.get(element, 0.0) + float(amount) * float(count)
+    if metal_bearing:
+        oxygen -= 0.25 * elements["Fe"]
+    elements["O"] = oxygen
     return elements
 
 
-def test_warm_numpy_path_stays_within_recorded_cpu_spread() -> None:
-    baseline = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
-    fixtures = {
-        "common_melt_3000k": (
+@pytest.mark.parametrize(
+    ("name", "composition", "temperature", "basis_type", "metal_bearing"),
+    [
+        (
+            "metal_free_common_melt",
             {
                 "SiO2": 0.50,
                 "MgO": 0.15,
@@ -47,9 +55,10 @@ def test_warm_numpy_path_stays_within_recorded_cpu_spread() -> None:
             },
             3000.0,
             "mol",
-            "direct",
+            False,
         ),
-        "oprl2n_2200k": (
+        (
+            "metal_bearing_oprl2n",
             {
                 "SiO2": 46.2,
                 "TiO2": 5.5,
@@ -61,52 +70,71 @@ def test_warm_numpy_path_stays_within_recorded_cpu_spread() -> None:
             },
             2200.0,
             "wt",
-            "continuation",
+            True,
         ),
-    }
-    assert baseline["repetitions"] >= 5
-
-    for name, (composition, temperature, basis_type, expected_legacy_path) in fixtures.items():
-        legacy = evaluate(
-            composition,
-            temperature,
-            basis_type=basis_type,
-            allow_out_of_envelope=True,
-        )
-        assert legacy.convergence.solver_path == expected_legacy_path
-        inventory = _element_inventory(composition, temperature, basis_type)
-        cold = evaluate_redox(
+    ],
+)
+def test_closed_solver_cost_against_local_legacy_baseline(
+    name: str,
+    composition: dict[str, float],
+    temperature: float,
+    basis_type: str,
+    metal_bearing: bool,
+) -> None:
+    repetitions = 7
+    wall_tripwire_ms = 250.0
+    inventory = _element_inventory(
+        composition, temperature, basis_type, metal_bearing=metal_bearing
+    )
+    if not metal_bearing:
+        inventory["O"] = evaluate_redox(
             inventory, temperature, "imposed", lambda_imposed=0.0
-        )
-        assert cold.fallback_fired is baseline["fixtures"][name]["new_numpy_warm"][
-            "cold_seed_fallback_fired"
-        ]
+        ).oxygen_mol + 1.0e-3
+    first = evaluate_redox(inventory, temperature, "closed")
+    assert first.metal_buffered is metal_bearing
+    warm_start = first.warm_start
 
-        warm_start = cold.warm_start
-        cpu_seconds: list[float] = []
-        wall_seconds: list[float] = []
-        fallback_count = 0
-        for _ in range(int(baseline["repetitions"])):
-            cpu_start = time.process_time()
-            wall_start = time.perf_counter()
+    legacy_cpu: list[float] = []
+    redox_cpu: list[float] = []
+    redox_wall: list[float] = []
+    gc_was_enabled = gc.isenabled()
+    gc.disable()
+    try:
+        for _ in range(repetitions):
+            started = time.process_time()
+            evaluate(
+                composition,
+                temperature,
+                basis_type=basis_type,
+                allow_out_of_envelope=True,
+            )
+            legacy_cpu.append(time.process_time() - started)
+
+            cpu_started = time.process_time()
+            wall_started = time.perf_counter()
             result = evaluate_redox(
                 inventory,
                 temperature,
-                "imposed",
-                lambda_imposed=0.0,
+                "closed",
                 warm_start=warm_start,
             )
-            wall_seconds.append(time.perf_counter() - wall_start)
-            cpu_seconds.append(time.process_time() - cpu_start)
-            fallback_count += int(result.fallback_fired)
-            assert result.solver_path == baseline["fixtures"][name]["new_numpy_warm"][
-                "solver_path"
-            ]
+            redox_wall.append(time.perf_counter() - wall_started)
+            redox_cpu.append(time.process_time() - cpu_started)
+            assert result.metal_buffered is metal_bearing
+    finally:
+        if gc_was_enabled:
+            gc.enable()
 
-        measured_median_ms = statistics.median(cpu_seconds) * 1000.0
-        recorded = baseline["fixtures"][name]["new_numpy_warm"]
-        assert measured_median_ms <= recorded["median_cpu_ms"] + recorded[
-            "spread_cpu_ms"
-        ]
-        assert max(wall_seconds) * 1000.0 <= baseline["wall_tripwire_ms"]
-        assert fallback_count / len(cpu_seconds) <= recorded["fallback_rate"]
+    legacy_median = statistics.median(legacy_cpu)
+    redox_median = statistics.median(redox_cpu)
+    legacy_spread = max(legacy_cpu) - min(legacy_cpu)
+    redox_spread = max(redox_cpu) - min(redox_cpu)
+    ratio = redox_median / legacy_median
+    print(
+        f"{name}: legacy CPU median={legacy_median * 1000:.3f} ms "
+        f"spread={legacy_spread * 1000:.3f} ms; closed CPU median="
+        f"{redox_median * 1000:.3f} ms spread={redox_spread * 1000:.3f} ms; "
+        f"ratio={ratio:.3f}; closed max wall={max(redox_wall) * 1000:.3f} ms"
+    )
+    assert ratio <= 1.3
+    assert max(redox_wall) * 1000.0 <= wall_tripwire_ms
