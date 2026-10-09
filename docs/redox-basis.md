@@ -30,6 +30,15 @@ function. It takes formula-unit mole amounts and a formula-to-atom-count
 mapping, then returns mol atoms by element. It performs no formula parsing,
 redox solve, or oxygen-fugacity adjustment.
 
+`evaluate_redox(..., mode="closed")` fixes all supplied element totals,
+including oxygen. In `mode="imposed"`, the solver fixes temperature, oxygen
+fugacity through `lambda_imposed`, and all non-oxygen element totals, then
+predicts both oxygen content and metal amount. Any oxygen value in the input
+inventory is ignored. On the buffered branch, metal amount is chosen by the
+Fe saturation condition `a_Fe = 1` at the imposed lambda. If changing metal
+amount leaves that saturation lambda invariant, oxygen is needed to select an
+extent; without it, the solver raises a typed endpoint error.
+
 ## Frozen preregistered predictions — 2026-10-08
 
 These predictions were recorded before any closed-mode redox result exists.

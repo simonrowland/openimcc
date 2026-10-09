@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pytest
 
@@ -290,13 +292,38 @@ def test_imposed_mode_resolves_the_metal_amount_below_saturation() -> None:
             "imposed",
             lambda_imposed=result.lambda_sat - 1.0,
         )
-    assert exc_info.value.endpoint == "lambda_below_dissolved_fe_saturation_range"
+    assert exc_info.value.endpoint == "imposed_invariant_requires_oxygen"
+    assert "oxygen inventory is required" in str(exc_info.value)
+
+
+def test_imposed_mixed_melt_predicts_buffered_metal_without_oxygen() -> None:
+    result = evaluate_redox(
+        {"Fe": 1.0, "Si": 0.8, "Mg": 0.3, "Al": 0.2, "Ca": 0.1},
+        2200.0,
+        "imposed",
+        lambda_imposed=-17.931129807709393,
+    )
+    assert result.metal_moles == pytest.approx(0.501694421294, abs=2.0e-9)
+    assert result.oxygen_inventory_mol is None
+    assert result.oxygen_residual_mol is None
+    assert result.lambda_sat == pytest.approx(-17.931129807709393, abs=1.0e-9)
 
 
 def test_finite_closed_root_above_one_bar_standard_state() -> None:
     result = evaluate_redox({"Fe": 1.0, "O": 1.4}, 2200.0, "closed")
     assert result.lambda_ln_f_o2 == pytest.approx(4.825786986, abs=2.0e-8)
     assert result.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-12)
+
+
+def test_closed_mode_solves_representable_states_near_oxygen_endpoints() -> None:
+    near_fully_oxidised = evaluate_redox(
+        {"Fe": 1.0, "O": 1.499999999999}, 2200.0, "closed"
+    )
+    trace_oxygen = evaluate_redox({"Fe": 1.0, "O": 1.0e-13}, 2200.0, "closed")
+    assert near_fully_oxidised.lambda_ln_f_o2 == pytest.approx(107.0317496963, abs=2.0e-2)
+    assert near_fully_oxidised.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-12)
+    assert math.isfinite(trace_oxygen.lambda_ln_f_o2)
+    assert trace_oxygen.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-12)
 
 
 @pytest.mark.parametrize(
