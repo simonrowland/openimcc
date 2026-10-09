@@ -58,7 +58,8 @@ def test_reaction_rows_are_balanced_and_have_evidence_and_range_flags() -> None:
         value = species_gibbs_j_mol(pack, name, (low + high) / 2.0)
         assert math.isfinite(value)
     for row in pack.rows:
-        assert row["T_domain_K"] == (1700, 3000)
+        expected_low = 1500 if row["complex"] == "FeO1.5(l)" else 1700
+        assert row["T_domain_K"] == (expected_low, 3000)
         assert row["band_kj_mol"] >= 0.0
         assert row["range_flags"]
         assert row["phase_or_construction"]
@@ -96,7 +97,7 @@ def test_ferric_reaction_gibbs_and_oxygen_fugacity_shift() -> None:
     assert ln_k_shifted - ln_k == pytest.approx(shift / 4.0)
 
 
-def test_pure_iron_reference_switches_at_janaf_fusion_temperature() -> None:
+def test_pure_iron_reference_switches_continuously_at_janaf_fusion_temperature() -> None:
     pack = load_redox_pack(PACK_PATH)
     species = pack.content["thermo_species"]["Fe(metal)"]
     assert species["reference_activity"] == 1.0
@@ -106,11 +107,11 @@ def test_pure_iron_reference_switches_at_janaf_fusion_temperature() -> None:
     assert species_gibbs_j_mol(pack, "Fe(metal)", 1809.0) == pytest.approx(
         species_gibbs_j_mol(pack, "Fe(l)", 1809.0)
     )
-    transition_gap_kj = abs(
+    transition_gap_j = abs(
         species_gibbs_j_mol(pack, "Fe(cr)", 1809.0)
         - species_gibbs_j_mol(pack, "Fe(l)", 1809.0)
-    ) / 1000.0
-    assert transition_gap_kj <= species["band_kj_mol"]
+    )
+    assert transition_gap_j < 1.0
 
 
 def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
@@ -122,8 +123,16 @@ def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
     for species_name, fitted in generated.items():
         packed = pack.content["thermo_species"][species_name]["row"]
         for coefficient in coefficients:
+            expected = float(fitted[coefficient])
+            if species_name == "Fe(l)" and coefficient == "dH298_R":
+                # G = 1000*R*dH298_R - R*T*P(tau); add
+                # ΔG_anchor/(1000*R) to the stored kK-scaled enthalpy anchor.
+                adjustment = pack.content["thermo_species"][species_name][
+                    "gibbs_anchor_adjustment_j_mol"
+                ]
+                expected += adjustment / (R_J_MOL_K * 1000.0)
             assert float(packed[coefficient]) == pytest.approx(
-                float(fitted[coefficient]), abs=1e-13
+                expected, abs=1e-13
             )
         assert pack.content["thermo_species"][species_name]["band_kj_mol"] >= float(
             fitted["_max_residual_J_per_mol"]
@@ -180,9 +189,13 @@ def test_hematite_row_reproduces_liquid_from_solid_construction_and_band() -> No
             sources["hematite_crystal_table"],
             {
                 "fusion_temperature": {"value": spec["fusion_temperature_K"]},
-                "fusion_entropy": {"value": fusion_entropy},
+                "fusion_entropy": {
+                    "value": fusion_entropy,
+                    "spread": spec["fusion_entropy_spread_j_mol_K"],
+                },
                 "liquid_heat_capacity": {
-                    "value": spec["liquid_heat_capacity_j_mol_K"]
+                    "value": spec["liquid_heat_capacity_j_mol_K"],
+                    "spread": spec["liquid_heat_capacity_spread_j_mol_K"],
                 },
                 "condensate_fit": {
                     "fit_t_min": spec["fit_T_K"][0],
@@ -203,24 +216,17 @@ def test_hematite_row_reproduces_liquid_from_solid_construction_and_band() -> No
     for key, value in record["row"].items():
         assert float(fitted[key]) == pytest.approx(float(value), abs=1e-12)
 
-    alternate = make_construction(
-        spec["alternate_construction"]["fusion_enthalpy_kj_mol"]
-    )
-    lower = make_construction(
-        spec["fusion_enthalpy_kj_mol"] - spec["fusion_enthalpy_spread_kj_mol"]
-    )
-    upper = make_construction(
-        spec["fusion_enthalpy_kj_mol"] + spec["fusion_enthalpy_spread_kj_mol"]
-    )
-    temperatures = (1700.0, 1895.0, 2195.0, 2695.0, 3000.0)
-    spread = max(
-        abs(candidate.at(temperature).gibbs_kj_mol - nominal.at(temperature).gibbs_kj_mol)
-        for temperature in temperatures
-        for candidate in (alternate, lower, upper)
-    )
+    temperatures = (1500.0, 1895.0, 2195.0, 2695.0, 3000.0)
+    # The input-spread helper conservatively propagates the primary upper
+    # fusion estimate and measured Cp uncertainty through this construction.
+    spread = max(nominal.input_spread_kj_mol(temperature) for temperature in temperatures)
+    spread += float(fitted["_max_residual_J_per_mol"]) / 1000.0
     assert record["band_kj_mol"] == pytest.approx(spread, abs=1e-3)
     assert record["provenance"]["tier"] == "tier3_flagged_estimate"
-    assert record["construction"]["liquid_heat_capacity_flag"].startswith("red;")
+    assert record["provenance"]["provenance_class"] == "secondary_transcription_unverified_primary"
+    assert record["construction"]["liquid_heat_capacity_j_mol_K"] == 240.9
+    assert record["construction"]["liquid_heat_capacity_flag"].startswith("amber;")
+    assert record["construction"]["fusion_enthalpy_kj_mol"] == 114.5
 
 
 def test_loader_rejects_a_rehashed_unbalanced_row(tmp_path: Path) -> None:
@@ -231,6 +237,26 @@ def test_loader_rejects_a_rehashed_unbalanced_row(tmp_path: Path) -> None:
     path.write_text(json.dumps(content), encoding="utf-8")
 
     with pytest.raises(ValueError, match="unbalanced for O"):
+        load_redox_pack(path)
+
+
+@pytest.mark.parametrize(
+    ("coefficient", "message"),
+    [
+        (1.0, "combination formula_atoms do not match constituents"),
+        (float("nan"), "finite number"),
+    ],
+)
+def test_loader_rejects_a_rehashed_derived_formula_contradiction(
+    tmp_path: Path, coefficient: float, message: str
+) -> None:
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["thermo_species"]["FeO1.5(l)"]["terms"][0]["coefficient"] = coefficient
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path = tmp_path / "derived-formula-contradiction.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=message):
         load_redox_pack(path)
 
 

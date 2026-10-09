@@ -189,13 +189,35 @@ def _validate_content(content: Mapping[str, Any]) -> None:
             if not isinstance(record.get("terms"), list) or not record["terms"]:
                 raise ValueError(f"thermo_species[{name!r}] has no terms")
             for term in record["terms"]:
-                if term.get("species") not in species:
+                if not isinstance(term, dict) or term.get("species") not in species:
                     raise ValueError(f"thermo_species[{name!r}] refers to an unknown term")
+                _finite_number(
+                    term.get("coefficient"),
+                    f"thermo_species[{name!r}]/terms/{term['species']}",
+                )
         if evaluator == "piecewise":
             if not isinstance(record.get("branches"), list) or len(record["branches"]) != 2:
                 raise ValueError(f"thermo_species[{name!r}] needs two branches")
             if any(branch.get("species") not in species for branch in record["branches"]):
                 raise ValueError(f"thermo_species[{name!r}] has an unknown branch")
+
+    for name, record in species.items():
+        if record["evaluator"] == "linear_combination":
+            totals: dict[str, float] = {}
+            for term in record["terms"]:
+                coefficient = float(term["coefficient"])
+                for element, count in species[term["species"]]["formula_atoms"].items():
+                    totals[element] = totals.get(element, 0.0) + coefficient * float(count)
+            declared = record["formula_atoms"]
+            for element in set(totals) | set(declared):
+                if not math.isclose(
+                    totals.get(element, 0.0), float(declared.get(element, 0.0)),
+                    rel_tol=0.0, abs_tol=1e-10,
+                ):
+                    raise ValueError(
+                        f"thermo_species[{name!r}] combination formula_atoms "
+                        f"do not match constituents for {element}"
+                    )
 
     rows = content["rows"]
     if not isinstance(rows, list) or not rows:

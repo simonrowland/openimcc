@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
+import struct
+import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
@@ -60,6 +64,21 @@ EVALUATION_EXPECTATIONS = json.loads(
 # exercised during review. Exact zero expectations stay exact.
 EVALUATION_RTOL = 1.0e-12
 SOLVER_TOL = 1.0e-12
+EXACT_PIN_ENVIRONMENT = ("3.14.5", "2.4.4")
+EXACT_EVALUATION_SHA256 = {
+    "v1:0:1800": "1159f55beb5a6469215ca21a88d89a32fe1ce4583c5ee1a982d67cedd979b890",
+    "v1:0:2500": "94a0d3d89e3bc1775c7c0af4c1e615e0afbbd33d71f892d97fab6e99c8046cff",
+    "v1:1:1800": "f9259c684768b6a181fd0676babf701f5de053086065a9a780ca995453315e14",
+    "v1:1:2500": "6bb1575fbbf88356e5c05395e0075a6cec3243d7858d3fb76b7c8fe92e3060c5",
+    "v1:2:1800": "71553eed4862c3fe07033e4a4a324d1de5253309a6d5d6adf80e838a0da04f45",
+    "v1:2:2500": "a7a541109b1f1fc2e3a6e6f2cdd1e5c0bdec356f357dea63b4a02775eaf6a750",
+    "ext:0:1800": "206cb9032b5d469349a4385e252976c7c3c292941ceb5e288f3eb914a0fe0cf7",
+    "ext:0:2500": "fe0c6481d162d9841225ea5b1a883984a4c65eaa43e090fb138ed656ec2b5328",
+    "ext:1:1800": "33df36559650a9e21efa2e521bb3ec9a8a1d3a2d9dc6f108573f408b6e4e894b",
+    "ext:1:2500": "7bf2e6cd70e398db60d7f2c4f5cde6f781ff79256eb95a7b929f4335c80fb077",
+    "ext:2:1800": "006ae56686e6d2e9ab3dfd8e374411024cc8fa9096d4d1dddb89da02355eef0a",
+    "ext:2:2500": "f707bfcc1960d8c76ca1820e78f04ab8ee909b3808dc9d3e7d03e03f4f9e681a",
+}
 
 
 def test_published_core_integrity_hash_and_refusal_are_pinned(
@@ -103,6 +122,7 @@ def test_packaged_evaluation_outputs_match_per_value_pins() -> None:
                 )
                 key = f"{label}:{composition_index}:{int(temperature)}"
                 expected = EVALUATION_EXPECTATIONS[key]
+                exact_values = []
                 for field in (
                     "parent_mol",
                     "parent_x",
@@ -113,6 +133,7 @@ def test_packaged_evaluation_outputs_match_per_value_pins() -> None:
                     "species_x",
                 ):
                     actual = [float(value) for value in getattr(result, field)]
+                    exact_values.extend(actual)
                     assert actual == pytest.approx(
                         expected[field], rel=EVALUATION_RTOL, abs=0.0
                     ), f"{key} {field} moved"
@@ -141,8 +162,17 @@ def test_packaged_evaluation_outputs_match_per_value_pins() -> None:
                 displacement = float(convergence.total_displacement)
                 assert math.isfinite(displacement) and displacement >= 0.0, key
                 for name, actual in scalars.items():
+                    exact_values.append(float(actual))
                     assert float(actual) == pytest.approx(
                         expected["scalars"][name],
                         rel=EVALUATION_RTOL,
                         abs=0.0,
                     ), f"{key} {name} moved"
+                # These hashes pin the IEEE-754 outputs from this exact Python
+                # and NumPy environment; tolerance pins above remain portable.
+                if (
+                    f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+                    np.__version__,
+                ) == EXACT_PIN_ENVIRONMENT:
+                    packed = b"".join(struct.pack("<d", value) for value in exact_values)
+                    assert hashlib.sha256(packed).hexdigest() == EXACT_EVALUATION_SHA256[key]
