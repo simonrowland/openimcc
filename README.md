@@ -425,7 +425,7 @@ Output:
 ```text
 activities: {'SiO2': '0.329959', 'MgO': '0.00468755', 'FeO': '0.106157', 'CaO': '5.58726e-05', 'Al2O3': '0.0165703', 'TiO2': '0.00299186', 'Na2O': '2.47359e-10', 'K2O': '2.29657e-19'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
-melt notices: ('K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS pressures (case 4: −0.89 dex); see https://github.com/simonrowland/openimcc',)
+melt notices: ('K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS pressures (case 4: −1.20 to −1.26 dex); see https://github.com/simonrowland/openimcc',)
 gas: bar {'Na': '0.000201444', 'K': '3.69676e-08'}
 Mg domain flag: MgO(l) uses a labelled constant-Cp supercooled-liquid continuation from JANAF Mg-009
 ```
@@ -718,11 +718,15 @@ predictions in that slice. Refusals have no residual.
 
 | dataset | observable | standard state | n | signed median | mean | RMSE |
 |---|---|---|--:|--:|--:|--:|
-| `hastie1981_kems` | `partial_pressure` | pure-liquid parent | 6 | −0.623 | −0.615 | 0.693 |
+| `hastie1981_kems` | `partial_pressure` | pure-liquid parent | 6 | −0.737 | −0.729 | 0.890 |
 | `kume2000_slag_si_alloy` | `activity` | pure-solid | 292 | −0.526 | −0.481 | 0.890 |
 | `richter_type_b_cai_digitized_flux` | `evaporation_flux` | unspecified | 4 | — | — | — |
 | `richter_type_b_cai_gamma` | `activity_coefficient` | pure-liquid | 3 | +0.050 | +0.053 | 0.110 |
 | `richter_type_b_cai_gamma` | `activity_coefficient` | CMAS basis | 3 | +0.543 | +0.554 | 0.577 |
+
+The Hastie 1981 KEMS slice includes three K and three SiO pressure points.
+The K residuals are now −1.20 to −1.26 dex with the default K2O(l)
+reference; the SiO results are unchanged.
 
 Kume's 292 rows carry the explicit warning: **unconverted solid standard
 state; not an accuracy figure for liquid activities**. No solid-to-liquid
@@ -833,8 +837,9 @@ difference in the paper's digitized data, not a reconciled result.
 As a separate pressure-vs-pressure check, Plante 1979 KEMS K pressures agree
 to median +0.09 dex (RMSE 0.20). The low-temperature drift is about +0.27 dex
 at about 1250 K (n = 6), falling to about +0.02 dex at 1750 K; the K channel
-uses the flagged K2O(l) secondary transcription. This is independent evidence
-for the gas pressure path, not a replacement for the SF04 activity comparison.
+uses the JANAF K-012 crystal with its liquid-from-solid construction. This is
+independent evidence for the gas pressure path, not a replacement for the
+SF04 activity comparison.
 
 #### Known limit: potassium in Ca- and Al-bearing melts
 
@@ -857,8 +862,14 @@ which is 1.3 and 1.7 dex below the floor. Both temperatures are below the
 pack domain, so these are extrapolated evaluations. Na passes the same test,
 with an implied `α` of about 0.05–0.10.
 
-Treat K activities in Ca- and Al-bearing melts as a known low bias. The pack
-is unchanged: the row is SF04's published value. The activity coefficients
+The default K2O(l) reference changes from the LAM1984 transcription to a
+liquid-from-solid construction based on JANAF K-012. At fixed melt activities,
+K pressure falls by about 0.35 dex per K atom at 1200–1500 K and 0.26 dex at
+3000 K. The SF04 `sf04-published` pack retains LAM1984. Potassium complex
+constants are being re-derived against the new reference in a separate change;
+until then the current constants leave K predictions 1.20–1.26 dex below the
+three Hastie 1981 KEMS pressures. Treat K activities in Ca- and Al-bearing
+melts as a known low bias. The activity coefficients
 printed in Zhang et al.'s Table 4 are MELTS model inputs, not measurements,
 and are not used here.
 

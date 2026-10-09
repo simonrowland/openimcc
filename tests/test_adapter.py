@@ -247,7 +247,7 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
         assert f"the {family} silicate ladder has exhausted its acidic sink" in edge_flags[0]
     assert result.labels.notices == (
         "K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS "
-        "pressures (case 4: −0.89 dex); see "
+        "pressures (case 4: −1.20 to −1.26 dex); see "
         "https://github.com/simonrowland/openimcc",
     )
 

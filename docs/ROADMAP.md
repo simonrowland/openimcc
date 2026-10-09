@@ -52,7 +52,7 @@ source-rated P2O5(l) row.
 | Al | complete | yes | yes | yes | yes | unvalidated | The JANAF Al2O3(l) parent covers 1200-3000 K with a labelled continuation below 2500 K; Al2(g) now covers the 1200-1500 K interval; joint C3 closure-screen maximum 4.273e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Ti | complete | yes | yes | yes | yes | unvalidated | A labelled constant-Cp TiO2(l) continuation covers 1200-1500 K below the glass branch; Ti(g), TiO(g), and TiO2(g) now cover the lower gas interval; joint C3 closure-screen maximum 1.159e-09 at 2300 K and fO2=1e-10 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Na | complete-except-ions | yes | yes | no | yes | unvalidated | Na2O(g) intervals cover 500-3000 K and JANAF Na-013 Na2O(l) intervals cover 1200-3000 K, including its supercooled-liquid branch; fitted Na+ channel maximum p(Na+)/neutral Na gas 9.568e-04 at 2800 K and fO2=1e-4 remains above 1e-4; ions are opt-in and omitted from default results. |
-| K | complete-except-ions | yes | yes | no | yes | validated | K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; fitted K+ channel maximum p(K+)/neutral K gas 4.325e-02 at 1200 K and fO2=1e-4 remains above 1e-4; ions are opt-in and omitted from default results. |
+| K | complete-except-ions | yes | yes | no | yes | validated | K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; fitted K+ channel maximum p(K+)/neutral K gas 4.789e-02 at 1200 K and fO2=1e-4 remains above 1e-4; ions are opt-in and omitted from default results. |
 | Cr | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Cr(g) and its neutral oxide channels cover 1200-3000 K, and a labelled constant-Cp Cr2O3(l) continuation covers the parent interval; Cr2O3 activity is caller-supplied, so melt closure remains pending; joint C3 closure-screen maximum 1.099e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | V | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | A labelled constant-Cp V2O3(l) continuation covers 1200-1700 K; V(g), VO(g), and VO2(g) now cover the lower gas interval; activity is caller-supplied; joint C3 closure-screen maximum 8.022e-09 at 2300 K and fO2=1e-10 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Nb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Nb-013 is liquid from 1000 K and its condensate intervals cover 1200-3000 K; Nb(g), NbO(g), and NbO2(g) now cover the lower gas interval; activity is caller-supplied; joint C3 closure-screen maximum 5.436e-13 at 2300 K and fO2=1e-10 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
@@ -201,26 +201,26 @@ into each result row. The datapack loads once per run. The tracked set with
 
 | id | T (K) | fO2 (bar) | measured (Pa) | predicted (Pa) | log10 residual | domain flag | provenance class |
 | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| `hastie_k_1917_186` | 1917.186331 | 5.694375450e-6 | 2.820005790 | 0.361935171 | −0.891619212 | — | `secondary_transcription_unverified_primary` |
-| `hastie_k_1917_282` | 1917.281980 | 5.703622101e-6 | 3.210036717 | 0.362238799 | −0.947515035 | — | `secondary_transcription_unverified_primary` |
-| `hastie_k_1955_825` | 1955.824724 | 1.082207471e-5 | 4.530018754 | 0.504424868 | −0.953303511 | — | `secondary_transcription_unverified_primary` |
+| `hastie_k_1917_186` | 1917.186331 | 5.694375450e-6 | 2.820005790 | 0.177933046 | −1.199993386 | — | `estimated_systematic` |
+| `hastie_k_1917_282` | 1917.281980 | 5.703622101e-6 | 3.210036717 | 0.178085193 | −1.255882188 | — | `estimated_systematic` |
+| `hastie_k_1955_825` | 1955.824724 | 1.082207471e-5 | 4.530018754 | 0.249587423 | −1.258877303 | — | `estimated_systematic` |
 | `hastie_sio_1907_796` | 1907.795668 | 4.851884054e-6 | 0.082727519 | 0.060040280 | −0.139207291 | — | `janaf_fitted` |
 | `hastie_sio_1909_739` | 1909.739189 | 5.016024124e-6 | 0.116737396 | 0.062052444 | −0.274451105 | — | `janaf_fitted` |
 | `hastie_sio_1948_149` | 1948.149056 | 9.545997137e-6 | 0.206709293 | 0.117379741 | −0.245766853 | — | `janaf_fitted` |
 
 The three SiO points are inside the default JANAF SiO2(l) fit interval, so they
 have no gas domain flag. The current full-set report has 402 rows, 398
-predictions, 94 flagged, 94 out-of-domain and 4 refused. Its arithmetic total
-across incompatible slices uses 304 residuals (median −0.5094 dex, mean
-−0.4678 dex, RMSE **0.8793 dex**, flagged RMSE **2.002 dex**); it is not an
+  predictions, 94 flagged, 94 out-of-domain and 4 refused. Its arithmetic total
+  across incompatible slices uses 304 residuals (median −0.5094 dex, mean
+  −0.4708 dex, RMSE **0.8830 dex**, flagged RMSE **2.002 dex**); it is not an
 accuracy figure. `per_slice` and `binary_slices` are the machine-readable
 standard-state-separated aggregates. The 396 non-gas rows retain their
 pre-rewire predictions, residuals, statuses and reasons exactly.
 
 The gas wiring does not settle the alkali species-family residuals. The
-published Table 9 K/Na and Hastie K counterfactuals below are the relevant
-diagnosis; the low Hastie K result must not be attributed to the gas-layer
-rewire or silently corrected by changing K2O(l).
+published Table 9 K/Na and `sf04-published` Hastie K counterfactuals below are
+the relevant diagnosis. With the default K-012 liquid reference, the three
+Hastie K residuals are now −1.20 to −1.26 dex; SiO is unchanged.
 
 Upstream this called the simulator's analytical vapour stack, which reads a
 large catalogue through two further subsystems. **That is not worth porting.**
@@ -293,7 +293,9 @@ Na inventory. The published-reference and species-set tests record these
 diagnostics; they do not tune the model.
 
 The K errors have opposite signs in different complex families. In Hastie case
-4, K is **−0.89 dex** and removing the `nu(K2O) = 0.5` K-aluminosilicates
+4, the preserved `sf04-published` reference gives K **−0.89 dex**; the default
+K-012 liquid reference gives **−1.20 to −1.26 dex**. Removing the
+`nu(K2O) = 0.5` K-aluminosilicates
 overshoots to **+1.45 dex**. In the Tsaplin K2O–SiO2 binary, the `nu = 1`
 silicates under-bind K and the measured activity residual is high (median
 **+0.69 dex** in the 11-row evidence summary; the tracked transcript's 10

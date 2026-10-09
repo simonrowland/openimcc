@@ -106,7 +106,8 @@
   SiO2(cr) has no gas-reaction consumer, but the public `species_thermo` solid
   phase query uses the row, so it remains in both default and compatibility
   tables. Gas reactions continue to use liquid SiO2. JANAF has K2O(cr) but no
-  K2O(l) table, so the secondary LAM1984 K2O(l) row is unchanged.
+  K2O(l) table; the default K2O(l) row is constructed from the K-012 crystal,
+  while `sf04-published` retains LAM1984.
 - Added optional Li, Rb and Pb gas channels with caller-supplied Li2O(l),
   Rb2O(l) and PbO(l) activities. NIST-JANAF rows are preferred, with NASA
   Glenn cards used for Rb oxides and the PbO high-temperature tail. Li2O(l)
@@ -260,6 +261,29 @@
 
 ### Changes that can break callers
 
+- Changed the default K2O(l) reference from LAM1984 to a construction from the
+  JANAF K-012 crystal, using `liquid_from_solid` inputs in
+  `data-src/liquid-from-solid-inputs.json`: fusion temperature 1013 K (band
+  919–1190 K), fusion entropy 33.74 ± 0.21 J/(mol K), and liquid heat capacity
+  97.75 ± 5.5 J/(mol K). The combined selected-tier Gibbs band samples are
+  7.420, 14.626, and 35.823 kJ/mol at 1013, 1313, and 1813 K. The apparent
+  Gibbs energies are:
+
+  | T (K) | G_app (kJ/mol) |
+  | ---: | ---: |
+  | 1200 | −555.309542 |
+  | 1500 | −637.722336 |
+  | 2000 | −787.694272 |
+  | 3000 | −1122.178019 |
+
+  Relative to LAM1984 this lowers K pressure by about 0.35 dex per K atom at
+  1200–1500 K and 0.26 dex at 3000 K. The `sf04-published` pack retains its
+  LAM1984 row. Potassium complex constants are being re-derived against this
+  reference in a separate change; coupled gas and oxygen balances use the new
+  parent Gibbs energy with the current constants. Default gas-binding and
+  oxygen-balance hashes and golden values were re-pinned for cases containing
+  K2O; SiO results are unchanged. The three Hastie K pressure residuals are
+  now −1.20 to −1.26 dex.
 - Python 3.12 is now the minimum supported version. Python 3.11 is no longer
   tested.
 - Default parent changes raise vapor pressures relative to the previous

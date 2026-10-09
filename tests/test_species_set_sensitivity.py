@@ -282,7 +282,8 @@ def test_hastie_k_family_and_fc87_supersedes_sensitivities() -> None:
     base_hastie = _hastie_k_residual(base)
     no_k_half_hastie = _hastie_k_residual(no_k_half)
 
-    # Hastie case 4's first pinned K point is -0.8916 dex.  Removing the four
+    # The counterfactual uses sf04-published, which preserves the old K2O(l)
+    # reference. Removing the four
     # nu(K2O)=0.5 K-aluminosilicates reverses the error and overshoots to
     # +1.4482 dex; this is a different family from the binary K rows.
     assert base_hastie == pytest.approx(-0.89, abs=0.05)

@@ -4153,6 +4153,15 @@ def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation(
         liquid.H_app_kJ_mol * 1000.0 - 2000.0 * liquid.S_J_molK
     )
 
+    default_k = species_thermo("K2O", "l", 1500.0)
+    published_k = species_thermo("K2O", "l", 1500.0, pack)
+    assert (default_k.source_row_id, default_k.source_table_id) == (
+        "K-012", "K-012"
+    )
+    assert (published_k.source_row_id, published_k.source_table_id) == (
+        "LAM1984", None
+    )
+
     with pytest.raises(ImccGasTemperatureOutsideDomainError):
         species_thermo("O2", "g", 499.0, pack)
     with pytest.raises(ImccGasTemperatureOutsideDomainError):

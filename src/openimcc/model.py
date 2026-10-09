@@ -135,7 +135,7 @@ _PARENT_CATION_SYMBOL = MappingProxyType(
 _SPECIES_COVERAGE_EDGE_RATIO = 1.9100549074388355e-3
 _ALKALI_BIAS_NOTICE = (
     "K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS "
-    "pressures (case 4: −0.89 dex); see "
+    "pressures (case 4: −1.20 to −1.26 dex); see "
     "https://github.com/simonrowland/openimcc"
 )
 

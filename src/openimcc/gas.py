@@ -712,10 +712,10 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "SnO": "nasa_glenn_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
-# data/gas/PROVENANCE.yaml. Rows without a table identifier there return None.
+# data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
+# table is K-012 by default and LAM1984 in sf04-published.
 _OXIDE_SOURCE_TABLE_IDS = {
     "Na2O": "Na-013",
-    "K2O": "K-012",
     "MgO": "Mg-009",
     "CaO": "Ca-028",
     "Al2O3": "Al-100",
@@ -1203,7 +1203,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
              'criteria': {'C1': True, 'C2': True, 'C3': False, 'C4': True},
              'validation': 'validated',
              'reason': 'K2O(g) intervals cover 500-3000 K and K2O(l) covers the C4 domain; fitted '
-                       'K+ channel maximum p(K+)/neutral K gas 4.325e-02 at 1200 K and fO2=1e-4 '
+                       'K+ channel maximum p(K+)/neutral K gas 4.789e-02 at 1200 K and fO2=1e-4 '
                        'remains above 1e-4; ions are opt-in and omitted from default results.',
              'c2_candidates': (('K-008', 'KO'),),
              'c3_ion_bound': {   'max_ratio': 0.047888815560848744,
@@ -2430,6 +2430,10 @@ def species_thermo(
         source_table_id = _LAM1987_SOURCE_TABLE_IDS.get(species)
     elif phase != "g" and source_ref.endswith(_SUPERCOOLED_EXTENSION_REF_SUFFIX):
         source_table_id = source_ref.removesuffix(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
+    elif phase != "g" and source_ref == "K-012":
+        source_table_id = source_ref
+    elif phase != "g" and source_ref == "LAM1984":
+        source_table_id = None
     else:
         source_table_id = _OXIDE_SOURCE_TABLE_IDS.get(species)
 
