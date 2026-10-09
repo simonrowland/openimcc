@@ -12,6 +12,7 @@ the simulator's backend glue.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, replace
 from fractions import Fraction
 from importlib import resources
@@ -81,7 +82,7 @@ _SP_EXTENSION_TIER = "EXT-SP"
 _SP_EXTENSION_FLAG = "enable_sp_extension"
 _SP_EXTENSION_PROVENANCE_CLASS = "extension-compound-thermo"
 _ENVELOPE_RELATIVE_SLACK = 1.0e-5
-_SILICA_SINK_FAMILY_SHARE = 0.20
+_ACID_SINK_FAMILY_SHARE = 0.20
 _PARENT_CATION_SYMBOL = MappingProxyType(
     {
         "SiO2": "Si",
@@ -890,34 +891,60 @@ def evaluate(
     }
     coverage: Mapping[str, str] = result.labels.coverage
     flags = list(result.labels.flags)
+    # Infer network-forming parent oxides from the loaded pack: their declared
+    # formula implies a formal cation charge of at least +3, and their nu row
+    # participates in a complex with another parent. This selects acid sinks
+    # from pack stoichiometry rather than from a species-name list.
+    acid_sink_indices: list[int] = []
+    for parent_index, parent_name in enumerate(parent_oxides):
+        oxide_formula = re.fullmatch(r"([A-Z][a-z]?)(\d*)O(\d*)", parent_name)
+        if oxide_formula is None:
+            continue
+        cation_count = int(oxide_formula.group(2) or 1)
+        oxygen_count = int(oxide_formula.group(3) or 1)
+        if 2 * oxygen_count < 3 * cation_count:
+            continue
+        if any(
+            kernel_pack.nu[parent_index, complex_index] > 0.0
+            and np.count_nonzero(kernel_pack.nu[:, complex_index] > 0.0) > 1
+            for complex_index in range(kernel_pack.n_complexes)
+        ):
+            acid_sink_indices.append(parent_index)
+
     si_index = parent_oxides.index("SiO2") if "SiO2" in parent_oxides else None
     acid_sink_ratio = (
         float(result.parent_x_star[si_index] / result.parent_x[si_index])
         if si_index is not None and result.parent_x[si_index] > 0.0
         else None
     )
-    if acid_sink_ratio is not None and acid_sink_ratio < _SPECIES_COVERAGE_EDGE_RATIO:
-        # The ratio is continuous and comes from the solved free-parent
-        # fraction, so it remains visible even when the flag is crossed.
-        # Partition bound silica from solved complexes, not input parents.
-        # A complex contributes nu(SiO2) * x(complex); only families holding
-        # at least 20% of that solved bound silica are named. Cations follow
-        # their order in the complex formula, so KCaAlSi2O7 is K–Ca–Al.
-        family_silica: dict[tuple[str, ...], float] = {}
-        bound_silica = 0.0
+    for sink_index in acid_sink_indices:
+        sink_name = parent_oxides[sink_index]
+        nominal_sink = float(result.parent_x[sink_index])
+        if nominal_sink <= 0.0:
+            continue
+        sink_ratio = float(result.parent_x_star[sink_index] / nominal_sink)
+        if sink_ratio >= _SPECIES_COVERAGE_EDGE_RATIO:
+            continue
+
+        # Partition each sink over solved complexes, not input parents. A
+        # complex contributes nu(sink) * x(complex); only families holding at
+        # least 20% of that solved amount are named. The silica branch keeps
+        # its original cation grouping and wording byte-for-byte.
+        family_amounts: dict[tuple[str, ...], float] = {}
+        bound_sink = 0.0
         for complex_index, complex_name in enumerate(kernel_pack.reactions):
-            silica_amount = float(
-                kernel_pack.nu[si_index, complex_index]
+            sink_amount = float(
+                kernel_pack.nu[sink_index, complex_index]
                 * result.complex_x[complex_index]
             )
-            if silica_amount <= 0.0:
+            if sink_amount <= 0.0:
                 continue
             cations = tuple(
                 sorted(
                     (
                         _PARENT_CATION_SYMBOL.get(name, name)
                         for name in parent_oxides
-                        if name != "SiO2"
+                        if (sink_name != "SiO2" or name != "SiO2")
                         and kernel_pack.nu[
                             parent_oxides.index(name), complex_index
                         ]
@@ -926,27 +953,34 @@ def evaluate(
                     key=complex_name.find,
                 )
             )
-            family_silica[cations] = (
-                family_silica.get(cations, 0.0) + silica_amount
+            family_amounts[cations] = (
+                family_amounts.get(cations, 0.0) + sink_amount
             )
-            bound_silica += silica_amount
+            bound_sink += sink_amount
         dominant_families = [
             "–".join(cations)
-            for cations, silica_amount in sorted(
-                family_silica.items(),
+            for cations, family_amount in sorted(
+                family_amounts.items(),
                 key=lambda item: item[1],
                 reverse=True,
             )
-            if bound_silica > 0.0
-            and silica_amount / bound_silica >= _SILICA_SINK_FAMILY_SHARE
+            if bound_sink > 0.0
+            and family_amount / bound_sink >= _ACID_SINK_FAMILY_SHARE
         ]
-        if dominant_families:
-            family = f"{' / '.join(dominant_families)} silicate"
+        if sink_name == "SiO2":
+            if dominant_families:
+                family = f"{' / '.join(dominant_families)} silicate"
+            else:
+                family = "solution silicate"
         else:
-            family = "solution silicate"
+            family = (
+                f"{' / '.join(dominant_families)} complex"
+                if dominant_families
+                else "solution complex"
+            )
         flags.append(
-            "species-coverage-edge: free x*(SiO2) is below "
-            f"{_SPECIES_COVERAGE_EDGE_RATIO:g} of nominal x(SiO2); "
+            f"species-coverage-edge: free x*({sink_name}) is below "
+            f"{_SPECIES_COVERAGE_EDGE_RATIO:g} of nominal x({sink_name}); "
             f"the {family} ladder has exhausted its acidic sink"
         )
 
