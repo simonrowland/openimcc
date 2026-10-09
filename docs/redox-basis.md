@@ -46,5 +46,6 @@ Without ferrite complexes and with no alkali dependence, the predicted Fe-only f
 slope is about 1/4. Kress reports 0.196. A poor held-out match is a missing-
 species signal; the slope is never tuned to the Kress value.
 
-Erratum: the preregistration premise was corrected to “without ferrite
-complexes” before any closed-mode result existed.
+Erratum (2026-10-09): the preregistration premise was corrected to “without
+ferrite complexes” before any closed-mode result existed; the original
+preregistration date is unchanged.
