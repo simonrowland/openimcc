@@ -164,7 +164,7 @@ source_notes:
         fO2_bar: 1.0e-4
         disposition: fitted_and_included_in_charge_balance
       KO-:
-        value: 5.228761473230903e-07
+        value: 2.906720378794559e-07
         temperature_K: 3000
         fO2_bar: 1.0e-4
         disposition: fitted_and_included_in_charge_balance
@@ -174,38 +174,38 @@ source_notes:
         fO2_bar: 1.0e-12
         disposition: fitted_and_included_in_charge_balance
       V-:
-        value: 0.3850021479929351
+        value: 0.38500214799293503
         temperature_K: 3000
         fO2_bar: 1.0e-12
         disposition: fitted_and_included_in_charge_balance
       Nb-:
-        value: 0.0008908644542926766
+        value: 0.0008908644542926767
         temperature_K: 3000
         fO2_bar: 1.0e-12
         disposition: fitted_and_included_in_charge_balance
     maximum_ion_to_neutral_pressure_ratios:
       O2-:
-        value: 1.8477491097917215e-05
+        value: 1.841668047125017e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       AlO2-:
-        value: 5.051477362451509
+        value: 5.006051897515916
         temperature_K: 2100
         fO2_bar: 1.0e-12
       KO-:
-        value: 0.0012627501563291558
+        value: 0.001258594363320064
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Cr-:
-        value: 1.569316086930193e-05
+        value: 1.5641513654764425e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       V-:
-        value: 7.581926927316159e-06
+        value: 7.556974311977284e-06
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Nb-:
-        value: 2.6755291378649697e-05
+        value: 2.6667237972114522e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
     ko_note: >-
@@ -214,7 +214,7 @@ source_notes:
       is not independently quantified.
     ko_reference: https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-Potassium.pdf
   condensate_rows_are_cc_by_4:
-    note: Published Lamoreaux coefficients and the K2O secondary transcription retain their source attribution below.
+    note: Published Lamoreaux coefficients and the K2O input estimates retain their source attribution below.
 rows:
   - table: gas
     species_name: Na(g)
@@ -2065,14 +2065,65 @@ rows:
       there.
   - table: condensate
     species_name: K2O(l)
-    authority: secondary_transcription_unverified_primary
-    method: transcribed_secondary_unverified_primary
-    T_range_K: [1190, 3000]
-    source:
-      primary_citation: Lamoreaux, R. H.; Hildenbrand, D. L. (1984), High Temperature Vaporization Behavior of Oxides. I, J. Phys. Chem. Ref. Data 13, 151-173.
-      primary_doi: 10.1063/1.555706
-      transcription: VapoRock data/condensate-thermo-data.csv
-      verification: primary coefficient source not available in this run; row is secondary and unverified.
+    authority: estimated_systematic
+    method: liquid_from_solid
+    method_class: estimated_systematic
+    method_rule: liquid_from_solid
+    source_table_id: K-012
+    source_path: data-src/janaf/K-012.yaml
+    source_sha256: 1322cee6495ef8394705a5005365575e809ea4b671ff63971c3be57c04208b93
+    T_range_K: [1200, 3000]
+    fit_intervals_K: [[1200, 2000], [2000, 3000]]
+    max_residual_J_per_mol_by_interval: [3.19386472436599, 1.54911242239177]
+    inputs:
+      fusion_temperature:
+        value_K: 1013
+        tier: 1
+        band_K: [919, 1190]
+        deciding_criterion: >-
+          Selected the NASA/Gurvich 1013 K interval value because the alkali
+          M2O melting-point series supports it; retained the silica-depressed
+          919 K observation as a one-sided lower bound and the higher 1190 K
+          Lamoreaux-Hildenbrand estimate as the upper bound.
+        references:
+        - https://ntrs.nasa.gov/citations/20020085330
+        - https://doi.org/10.1063/1.555706
+        - https://doi.org/10.1139/v70-324
+      fusion_entropy:
+        value_J_per_mol_K: 33.74
+        tier: 2
+        band_J_per_mol_K: 0.21
+        deciding_criterion: >-
+          Used the arithmetic mean of Na2O 33.95 and K2O 33.53 J/(mol K),
+          with their 0.21 J/(mol K) half-range as the input spread.
+        references:
+        - https://info.ornl.gov/sites/publications/Files/Pub57741.pdf
+        - https://doi.org/10.1063/1.555706
+      liquid_heat_capacity:
+        value_J_per_mol_K: 97.75
+        tier: 2
+        band_includes_J_per_mol_K: [104.6]
+        deciding_criterion: >-
+          Used the arithmetic mean of K2O partial-molar values 97.0 and 98.5
+          J/(mol K), retaining the larger reported ±5.5 J/(mol K) spread;
+          104.6 J/(mol K) is included in the combined systematic band.
+        references:
+        - https://doi.org/10.2138/rmg.1995.32.5
+        - https://doi.org/10.1007/BF00381840
+        - https://doi.org/10.1007/BF00310746
+    combined_band:
+      method: selected_tier_error_bands_plus_input_spread
+      sample_temperatures_K: [1013, 1313, 1813]
+      max_kJ_per_mol: [7.419961583530608, 14.62591086476948, 35.82295507971631]
+      note: >-
+        Conservative combined bands at T_fus and +300/+800 K. Runtime begins
+        at 1200 K, above the selected 1013 K fusion temperature; no
+        supercooled extrapolation is used.
+    note: >-
+      Generated from the JANAF K-012 crystal by tools/build_gas_tables.py
+      calling tools/liquid_from_solid.py. The single quartic over 1200–3000 K
+      exceeds the 10 J/mol node gate, so two existing-form fits share the
+      2000 K seam and cover the complete runtime interval.
   - table: condensate
     species_name: FeO(l)
     authority: janaf_transcribed

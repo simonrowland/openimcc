@@ -261,7 +261,7 @@ def test_partial_pressure_uses_parent_basis_and_converts_bar_to_pa(
     assert row.status == "ok", row.reason
     assert row.predicted is not None
     assert row.domain_flag is None
-    assert row.provenance_class == "secondary_transcription_unverified_primary"
+    assert row.provenance_class == "estimated_systematic"
 
     pack = load_datapack(DATAPACK_PATH)
     imcc = evaluate(dict(_K_CMAS_WT), 1800.0, pack, basis_type="wt")
@@ -291,7 +291,7 @@ def test_partial_pressure_units_are_a_typed_refusal(tmp_path: Path) -> None:
     assert row.predicted is None
     assert row.residual is None
     assert "expected units 'Pa'" in row.reason
-    assert row.provenance_class == "secondary_transcription_unverified_primary"
+    assert row.provenance_class == "estimated_systematic"
 
 
 @pytest.mark.parametrize("fO2_mode", ["missing", "null"])
@@ -314,7 +314,7 @@ def test_partial_pressure_missing_or_null_fO2_is_a_typed_refusal(
     assert row.reason == (
         "gas comparison refused: observation has no independent fO2 pin"
     )
-    assert row.provenance_class == "secondary_transcription_unverified_primary"
+    assert row.provenance_class == "estimated_systematic"
 
 
 def test_partial_pressure_loads_gas_datapack_once_per_run(
@@ -360,7 +360,7 @@ def test_partial_pressure_refuses_when_pandas_is_unavailable(
     assert row.predicted is None
     assert "pandas" in row.reason
     assert "openimcc[gas]" in row.reason
-    assert row.provenance_class == "secondary_transcription_unverified_primary"
+    assert row.provenance_class == "estimated_systematic"
 
 
 def test_filters_and_limit(tmp_path: Path) -> None:

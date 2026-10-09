@@ -128,7 +128,7 @@ NASA_TABLE_IDS = {"Na2O": "NG-0905", "K2O": "NG-0760"}
 
 PARENT_TABLE_IDS = {
     "Na2O": "Na-013",
-    "K2O": "K-012",  # JANAF has crystal K2O only; K2O(l) is LH84 secondary.
+    "K2O": "K-012",  # JANAF has crystal K2O; the liquid row uses its construction.
     "MgO": "Mg-009",
     "CaO": "Ca-028",
     "Al2O3": "Al-100",
@@ -816,10 +816,14 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert _record(GAS_TABLE_IDS[species])["table"]["index_entry"]["state"] == "g"
 
     k_row = oxide_rows["K2O(l)"]
-    assert k_row["authority"] == "secondary_transcription_unverified_primary"
-    assert k_row["method"] == "transcribed_secondary_unverified_primary"
-    assert k_row["source"]["primary_doi"] == "10.1063/1.555706"
-    assert "VapoRock" in k_row["source"]["transcription"]
+    assert k_row["authority"] == "estimated_systematic"
+    assert k_row["method_class"] == "estimated_systematic"
+    assert k_row["method_rule"] == "liquid_from_solid"
+    assert k_row["source_table_id"] == "K-012"
+    assert k_row["source_sha256"] == _record("K-012")["extraction"]["source_sha256"]
+    assert k_row["inputs"]["fusion_temperature"]["band_K"] == [919, 1190]
+    assert k_row["inputs"]["liquid_heat_capacity"]["band_includes_J_per_mol_K"] == [104.6]
+    assert k_row["combined_band"]["sample_temperatures_K"] == [1013, 1313, 1813]
 
 
 def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
@@ -1180,7 +1184,7 @@ def test_new_parent_condensate_rows_pass_the_10_j_mol_node_gate() -> None:
             "Li2O(l)", "Rb2O(l)", "PbO(l)", "B2O3(l)",
             "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
             "Li2O(l)", "Rb2O(l)", "PbO(l)",
-            "Cs2O(l)", "Cu2O(l)", "SnO(l)",
+            "Cs2O(l)", "Cu2O(l)", "SnO(l)", "K2O(l)",
         }
     ]
     direct_fits = [
@@ -1189,6 +1193,20 @@ def test_new_parent_condensate_rows_pass_the_10_j_mol_node_gate() -> None:
     ]
     assert direct_fits
     assert all(float(row["_max_residual_J_per_mol"]) < 10.0 for row in direct_fits)
+
+
+def test_k2o_from_solid_builder_fits_the_full_runtime_interval() -> None:
+    rows = [
+        row
+        for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
+        if row["species_name"] == "K2O(l)"
+    ]
+    assert [(int(row["T_min"]), int(row["T_max"])) for row in rows] == [
+        (1200, 2000),
+        (2000, 3000),
+    ]
+    assert all(row["Ref"] == "K-012" for row in rows)
+    assert all(float(row["_max_residual_J_per_mol"]) < 10.0 for row in rows)
 
 
 def test_trace_parent_reactions_balance_every_element() -> None:

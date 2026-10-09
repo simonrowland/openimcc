@@ -20,9 +20,13 @@ import io
 import json
 import math
 from pathlib import Path
+import sys
 from typing import Any
 
 import numpy as np
+
+# Keep package imports available when this file is invoked as a script.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 FIT_T_MIN = 1500.0
@@ -447,7 +451,7 @@ SUPERCOOLED_LIQUID_REF_SUFFIX = "-SC-CP"
 # These default rows now come only from their generated JANAF fits. Remove every
 # prior source interval, including disjoint LAM ranges above the new fit domain.
 REPLACED_DEFAULT_CONDENSATE_SPECIES = {
-    "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"
+    "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)", "K2O(l)"
 }
 
 REQUIRED_FIELDS = (
@@ -2253,6 +2257,7 @@ def build_condensate_rows(
             )
         else:
             rows.append(_fit_condensate_row(source_dir, *source))
+    rows.extend(_fit_k2o_from_solid(source_dir))
     # Na-013 is a liquid table below its 1405.2 K ALPHA <--> LIQUID marker.
     # Both fits share the recovered 1500 K thermal row so the runtime seam is
     # constrained by the declared endpoint on each side.
@@ -2494,6 +2499,55 @@ def build_condensate_rows(
             )
         )
     return rows
+
+
+def _fit_k2o_from_solid(source_dir: Path) -> list[dict[str, str]]:
+    """Fit K2O(l) from its crystal row and the recorded liquid input ladder."""
+    from tools.liquid_from_solid import liquid_from_solid
+
+    repository = Path(__file__).resolve().parents[1]
+    inputs_path = repository / "data-src/liquid-from-solid-inputs.json"
+    inputs = json.loads(inputs_path.read_text(encoding="utf-8"))["rows"]["K2O"]
+    crystal = _load_record(source_dir / f"{inputs['crystal_table_id']}.yaml")
+    construction = liquid_from_solid("K2O", crystal, inputs["inputs"])
+    fit = inputs["inputs"]["condensate_fit"]
+    domain_min = float(fit["fit_t_min"])
+    domain_max = float(fit["fit_t_max"])
+    # Premise: the existing condensate row is a quartic in T/1000. Algebra:
+    # fitting the full 1200–3000 K construction leaves a 76.5 J/mol node
+    # residual, while 1200–2000 and 2000–3000 K each stay below 10 J/mol.
+    # Unit check: the fitter records residuals in J/mol; sanity: both fits
+    # include their shared 2000 K seam and cover the full runtime interval.
+    intervals = ((domain_min, 2000.0), (2000.0, domain_max))
+    result = []
+    for fit_min, fit_max in intervals:
+        nodes = [
+            float(temperature)
+            for temperature in np.arange(
+                fit_min, fit_max + JANAF_GRID_STEP_K, JANAF_GRID_STEP_K
+            )
+        ]
+        row = _fit_condensate_values(
+            "K2O(l)",
+            str(fit["table_id"]),
+            str(fit["cation"]),
+            int(fit["cat_num"]),
+            int(fit["oxy_num"]),
+            construction.source_rows(nodes),
+            construction.dfh298_kj_mol,
+            fit_t_min=fit_min,
+            fit_t_max=fit_max,
+            runtime_t_min=fit_min,
+            runtime_t_max=fit_max,
+            ref=str(fit["ref"]),
+        )
+        residual = float(row["_max_residual_J_per_mol"])
+        if residual > 10.0:
+            raise ValueError(
+                f"K2O(l): condensate fit residual {residual:g} J/mol exceeds 10"
+            )
+        result.append(row)
+    return result
 
 
 def write_csv(rows: list[dict[str, str]], output: Path) -> None:

@@ -1016,6 +1016,23 @@ def _c4_rows_cover_domain(
             )
         )
         if source is None:
+            source = next(
+                (
+                    candidate
+                    for (table, species, source_range), candidate in by_key.items()
+                    if table == "condensate"
+                    and species == f"{parent}(l)"
+                    and source_range[0] <= int(liquid["T_min"])
+                    and source_range[1] >= int(liquid["T_max"])
+                    and any(
+                        fit_range[0] <= int(liquid["T_min"])
+                        and fit_range[1] >= int(liquid["T_max"])
+                        for fit_range in candidate.get("fit_intervals_K", [])
+                    )
+                ),
+                None,
+            )
+        if source is None:
             return False
         if source.get("extrapolation") is True:
             if source["source_data"] is not False or source["method"] != (
@@ -1062,6 +1079,13 @@ def _c4_rows_cover_domain(
                 source["method"] != "fitted"
                 or "NASA pure-liquid standard state at 1 atm"
                 not in source.get("note", "")
+            ):
+                return False
+        elif source["authority"] == "estimated_systematic":
+            if (
+                source.get("method_class") != "estimated_systematic"
+                or source.get("method_rule") != "liquid_from_solid"
+                or source.get("source_table_id") != "K-012"
             ):
                 return False
         elif source["authority"] not in {

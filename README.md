@@ -426,7 +426,7 @@ Output:
 activities: {'SiO2': '0.329959', 'MgO': '0.00468755', 'FeO': '0.106157', 'CaO': '5.58726e-05', 'Al2O3': '0.0165703', 'TiO2': '0.00299186', 'Na2O': '2.47359e-10', 'K2O': '2.29657e-19'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
 melt notices: ('K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS pressures (case 4: −0.89 dex); see https://github.com/simonrowland/openimcc',)
-gas: bar {'Na': '0.000201444', 'K': '7.67598e-08'}
+gas: bar {'Na': '0.000201444', 'K': '3.69676e-08'}
 Mg domain flag: MgO(l) uses a labelled constant-Cp supercooled-liquid continuation from JANAF Mg-009
 ```
 
