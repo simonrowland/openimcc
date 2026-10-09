@@ -384,6 +384,152 @@ def test_species_coverage_edge_uses_solution_family_not_trace_sodium() -> None:
     assert "the Na silicate ladder" not in trace_flags[0]
 
 
+@pytest.mark.parametrize(
+    ("row_id", "composition", "temperature_K"),
+    [
+        ("Gornerup-T1-19.6", {"Al2O3": 41.5, "CaO": 58.5, "SiO2": 0.0}, 1873.15),
+        ("Gornerup-T1-19.3", {"Al2O3": 39.1, "CaO": 60.9, "SiO2": 0.0}, 1973.15),
+        ("Gornerup-T1-19.4", {"Al2O3": 39.5, "CaO": 60.5, "SiO2": 0.0}, 1973.15),
+        ("Gornerup-T1-19.9", {"Al2O3": 37.0, "CaO": 63.0, "SiO2": 0.0}, 2023.15),
+    ],
+)
+def test_species_coverage_edge_flags_silica_free_gornerup_aluminate_rows(
+    row_id: str, composition: dict[str, float], temperature_K: float
+) -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    result = evaluate(
+        composition,
+        temperature_K,
+        pack,
+        basis_type="wt",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    edge_flags = [
+        flag for flag in result.labels.flags if "species-coverage-edge" in flag
+    ]
+    assert len(edge_flags) == 1, row_id
+    assert "free x*(Al2O3)" in edge_flags[0], row_id
+    assert "Ca–Al complex ladder" in edge_flags[0], row_id
+
+    alumina_index = pack.parent_oxides.index("Al2O3")
+    sink_ratio = float(
+        result.parent_x_star[alumina_index] / result.parent_x[alumina_index]
+    )
+    assert sink_ratio < 1.9100549074388355e-3, row_id
+    assert result.labels.acid_sink_ratio is None
+
+
+def test_species_coverage_edge_spares_composition_inside_aluminate_ladder() -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    result = evaluate(
+        {"CaO": 35.0, "Al2O3": 65.0, "SiO2": 0.0},
+        1873.15,
+        pack,
+        basis_type="wt",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    alumina_index = pack.parent_oxides.index("Al2O3")
+    sink_ratio = float(
+        result.parent_x_star[alumina_index] / result.parent_x[alumina_index]
+    )
+    assert sink_ratio > 1.9100549074388355e-3
+    assert not any("species-coverage-edge" in flag for flag in result.labels.flags)
+
+
+@pytest.mark.parametrize(
+    ("composition", "temperature_K", "expected_ratio", "expected_flag"),
+    [
+        (
+            {"SiO2": 0.502, "Na2O": 0.498},
+            1473.0,
+            1.6443042992971442e-3,
+            "species-coverage-edge: free x*(SiO2) is below 0.00191005 of nominal x(SiO2); the Na silicate ladder has exhausted its acidic sink",
+        ),
+        (
+            {"SiO2": 0.506, "K2O": 0.494},
+            1473.0,
+            1.8643823225979984e-3,
+            "species-coverage-edge: free x*(SiO2) is below 0.00191005 of nominal x(SiO2); the K silicate ladder has exhausted its acidic sink",
+        ),
+        (
+            {name: 0.125 for name in load_datapack(DATAPACK_PATH).parent_oxides},
+            2500.0,
+            8.988617498544909e-4,
+            "species-coverage-edge: free x*(SiO2) is below 0.00191005 of nominal x(SiO2); the K–Ca–Al silicate ladder has exhausted its acidic sink",
+        ),
+    ],
+)
+def test_silica_coverage_edge_labels_remain_byte_identical(
+    composition: dict[str, float],
+    temperature_K: float,
+    expected_ratio: float,
+    expected_flag: str,
+) -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    result = evaluate(
+        composition,
+        temperature_K,
+        pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    assert result.labels.acid_sink_ratio == pytest.approx(expected_ratio, rel=1e-12)
+    assert tuple(
+        flag for flag in result.labels.flags if "species-coverage-edge" in flag
+    ) == (expected_flag,)
+
+
+def test_coverage_edge_fires_for_each_exhausted_present_acid_sink() -> None:
+    pack = load_datapack(DATAPACK_PATH)
+    edge_threshold = 1.9100549074388355e-3
+    mixed_sink_state_seen = False
+    grid = [index / 10 for index in range(1, 10)]
+    for cao in grid:
+        for alumina in grid:
+            silica = 1.0 - cao - alumina
+            if silica < 0.0:
+                continue
+            composition = {"CaO": cao, "Al2O3": alumina, "SiO2": silica}
+            result = evaluate(
+                composition,
+                1873.15,
+                pack,
+                allow_extrapolation=True,
+                allow_out_of_envelope=True,
+            )
+            exhausted_sinks = []
+            present_sinks = []
+            for parent in ("SiO2", "Al2O3"):
+                if composition[parent] <= 0.0:
+                    continue
+                index = pack.parent_oxides.index(parent)
+                ratio = float(
+                    result.parent_x_star[index] / result.parent_x[index]
+                )
+                present_sinks.append(parent)
+                if ratio < edge_threshold:
+                    exhausted_sinks.append(parent)
+            edge_flags = [
+                flag
+                for flag in result.labels.flags
+                if "species-coverage-edge" in flag
+            ]
+            flagged_sinks = [
+                parent
+                for parent in present_sinks
+                if any(f"free x*({parent})" in flag for flag in edge_flags)
+            ]
+            assert set(flagged_sinks) == set(exhausted_sinks), composition
+            assert len(edge_flags) == len(exhausted_sinks), composition
+            if len(present_sinks) == 2 and len(exhausted_sinks) == 1:
+                mixed_sink_state_seen = True
+                assert edge_flags, composition
+                assert f"free x*({exhausted_sinks[0]})" in edge_flags[0]
+    assert mixed_sink_state_seen
+
+
 def test_paper_demonstrated_window_flag_names_active_rows() -> None:
     pack = load_datapack()
     result = evaluate({name: 0.125 for name in pack.parent_oxides}, 1800.0, pack)
