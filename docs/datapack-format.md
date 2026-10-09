@@ -1,9 +1,9 @@
 # IMCC datapack format
 
-This is the JSON format used by the melt model in openimcc.model and
-openimcc.kernel. It is derived from the five JSON files in
-src/openimcc/data/packs/ (excluding MANIFEST.json) and from the loader and
-solver code. The loader is deliberately stricter than the descriptive
+This section describes the JSON format used by the melt model in
+openimcc.model and openimcc.kernel. It is derived from the legacy melt packs
+and their loader and solver code. The separate redox thermochemistry component
+has its own schema below. The legacy loader is deliberately stricter than the descriptive
 metadata: a file can be a useful research record and still not be a pack that
 the current production loader accepts.
 
@@ -161,11 +161,10 @@ The S/P extension row provenance objects add these fields. `source` and
 
 ## 3. Active row objects
 
-The following are the 28 keys found across the active rows arrays in all
-five shipped packs. The Required? column again describes the current
-loader. Every shipped active row has the metadata fields marked “No” in at
-least some pack, but those fields are not required to construct the kernel
-datapack.
+The following are the keys found across the legacy active rows arrays. The
+Required? column again describes the legacy melt loader. Every shipped active
+row has the metadata fields marked “No” in at least some pack, but those
+fields are not required to construct the kernel datapack.
 
 | Key | JSON type in shipped packs | Required? | Meaning |
 |---|---|---|---|
@@ -592,6 +591,104 @@ values and structures recorded in the shipped files. Their prose meanings
 are therefore documented as pack metadata, not promoted into an invented
 schema contract. No unresolved metadata meaning prevents a reader from
 predicting whether the current loader accepts a pack.
+
+## Redox thermochemistry component
+
+`openimcc-redox-v1.json` is a separate, versioned thermochemistry component.
+The legacy `load_datapack()` path does not load it and the legacy eight-parent
+pack identity remains unchanged. `openimcc.redox_pack.load_redox_pack()` reads
+this schema and validates the N-parent registry, row balances, reference-state
+terms, ranges, provenance, and canonical content digest.
+
+The component digest is SHA-256 of UTF-8 JSON serialized with sorted keys,
+compact separators, and unescaped Unicode, after removing
+`canonical_content_digest`. It is exposed as `RedoxPack.canonical_digest`.
+The file's ordinary byte digest is also listed in `MANIFEST.json`; those two
+digests answer different questions. The canonical digest is a stable component
+identity independent of JSON whitespace, while the manifest catches any byte
+change.
+
+Top-level redox fields:
+
+| Key | JSON type | Meaning |
+|---|---|---|
+| schema | string | Versioned schema identifier, currently `openimcc-redox-pack.v1`. |
+| version | string | Version of this thermochemistry component. |
+| created | string | Date the component record was created. |
+| model | string | Human-readable description of the component's reaction thermochemistry. |
+| units | object | Explicit formula-unit, elemental-inventory, temperature, Gibbs-energy, band, and pressure units. |
+| source_selection_rail | array of strings | Required evidence ordering: standard-state consistency, primary measurement, domain match, then systematic estimate. |
+| canonical_content_digest | string | Canonical JSON SHA-256 checked by the redox loader and exposed on the loaded component. |
+| parent_registry | array of objects | Ordered registry of every feedstock element, its parent oxide formula and standard state, elemental reference state, and redox-row population status. Its length is not fixed at eight. |
+| thermo_species | object | Standard-state species and their formula atoms, temperature range, provenance, band, and evaluator definition. |
+| rows | array of objects | Balanced reaction rows assembled from standard-state Gibbs functions. |
+
+Every row retains the ext-v4 reaction fields `reaction`, `nu`, and
+`external_oxygen_stoich_product_positive`. Redox rows additionally declare
+`role`, `reactants`, `products`, `standard_gibbs_terms`, `T_domain_K`,
+`band_kj_mol`, `range_flags`, `provenance_class`, and `provenance`. `nu` is a
+mapping from any registered parent oxide to the amount consumed per reaction;
+there is no eight-parent ceiling. The signed external oxygen coefficient is
+positive for product O2 and negative for reactant O2.
+
+`standard_gibbs_terms` contains product-positive stoichiometric coefficients
+over named `thermo_species`. The loader checks that these terms match the
+reaction formula and that reactant and product atom totals balance. A species
+may use the existing condensate φ evaluator, the existing JANAF Shomate
+evaluator, or a linear/piecewise combination of those rows. The combination
+forms do not define a new Gibbs function. Bands use kJ per mole of reaction;
+standard Gibbs functions and reaction evaluation use J per mole.
+
+The FeO1.5 row consumes one FeO parent and has oxygen coefficient -0.25:
+
+~~~text
+FeO(l) + 1/4 O2(g) = FeO1.5(l)
+ln K' = ln K - nu_O2 * ln(fO2 / 1 bar) = ln K + lambda/4
+~~~
+
+Its product standard state is one half of the constructed Fe2O3(l) Gibbs
+function. Its documented range flags retain the hypothetical fusion and
+supercooled branches. Pure Fe uses the JANAF crystal row below 1809 K and the
+JANAF liquid row at and above 1809 K, with reference activity one. The pack
+also carries elemental Si(l), Cr(l), Ni(l), and Co(l) rows produced by the
+existing condensate fitter; their presence does not activate alloy solute
+rows.
+
+The current registry has 17 feedstock elements. FeO is populated as the Fe
+parent; the remaining parent oxide records are registered with their standard
+states and marked `registered_unpopulated` in this component until their redox
+thermochemistry rows pass the same gate.
+
+The redox species records use these schema fields:
+
+| Key | JSON type | Meaning |
+|---|---|---|
+| formula_atoms | object | Element atom counts per formula unit, including fractional oxygen for a pseudo-complex. |
+| evaluator | string | Existing φ-polynomial or JANAF Shomate evaluator, or a linear/piecewise combination of named records. |
+| row | object | Coefficients consumed by the existing condensate φ or JANAF Shomate evaluator. |
+| terms | array of objects | Product-positive species coefficients for a linear standard-state combination. |
+| branches | array of objects | Temperature-selected species records for a piecewise standard state. |
+| transition_temperature_K | number | Temperature used to select the piecewise standard-state branch. |
+| reference_activity | number | Pure reference activity; the Fe metal reference is 1. |
+| band_kj_mol | number | Gibbs band in kJ/mol of species or reaction, as specified by the containing record. |
+| phase_or_construction | string | Phase and standard-state construction used for the reaction row; retained from the ext-v4 row convention. |
+| method | string | Method used to assemble the reaction Gibbs function from named standard-state records. |
+| band_method | string | Method used to calculate the numeric Gibbs band. |
+| uncertainty_note | string | Uncertainty covered by the band and any known unquantified contribution. |
+| band_method | string | Method used to construct a standard-state uncertainty band. |
+| construction | object | Inputs, sources, fit range, and fallback flags for a constructed standard state. |
+| band_scope | string | States what the numeric construction band includes and any unquantified systematic error. |
+| provenance | object | Source, URL, tier, and the reason for selecting that evidence. |
+| selection_rationale | string | Evidence-specific explanation of the source choice under the declared source-selection rail. |
+| parent_formula_atoms | object | Element atom counts in one parent oxide formula unit. |
+| parent_standard_state | string | Phase or standard state assigned to the registered parent oxide. |
+| elemental_reference_state | string | Elemental reference state registered for the parent element. |
+| redox_thermochemistry_status | string | Whether this component currently contains a gated redox thermochemistry row for the parent. |
+| role | string | Whether a row is a parent reference reaction or an active complex reaction. |
+| reactants | object | Positive formula-unit stoichiometries on the left side of the balanced reaction. |
+| products | object | Positive formula-unit stoichiometries on the right side of the balanced reaction. |
+| standard_gibbs_terms | array of objects | Named standard-state Gibbs functions and product-positive coefficients used to evaluate reaction ΔG°. |
+| range_flags | array of strings | Explicit range caveats, including metastable or supercooled branches. |
 
 ## Gas table content identity
 

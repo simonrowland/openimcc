@@ -334,6 +334,17 @@ CONDENSATE_COLUMNS = (
     "Ref",
 )
 
+# Reference metal rows are generated for the independent redox data component.
+# They do not enter condensate.csv or the gas evaluator's oxide-parent set.
+REDOX_METAL_STANDARD_SOURCES = (
+    ("Fe(cr)", "Fe-007", "Fe", 1, 0, "cr", 500.0, 1800.0, 1700.0, 1809.0),
+    ("Fe(l)", "Fe-006", "Fe", 1, 0, "l", 1700.0, 3000.0, 1809.0, 3000.0),
+    ("Si(l)", "Si-003", "Si", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
+    ("Cr(l)", "Cr-003", "Cr", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
+    ("Ni(l)", "Ni-003", "Ni", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
+    ("Co(l)", "Co-003", "Co", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
+)
+
 # Parent-oxide liquids fitted here rather than transcribed. O-044 is the JANAF
 # "O2Ti1(l)" record. Its 1400 K row prints glass-side thermal cells followed
 # by the GLASS <--> LIQUID marker; the first complete, unambiguous liquid node
@@ -1469,6 +1480,60 @@ def _fit_condensate_values(
         "_max_residual_J_per_mol": number(residual_j),
         "_max_residual_log10_K": number(residual_log10),
     }
+
+
+def build_redox_metal_standard_rows(
+    source_tables: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, str]]:
+    """Fit JANAF pure-metal reference rows with the existing condensate form.
+
+    Premise: each source table carries ``[T, Cp, S, H-H(298)]`` nodes and its
+    own 298.15 K formation-enthalpy anchor. Algebra: delegate to
+    ``_fit_condensate_values`` so these standards use the same φ polynomial
+    and residual calculation as existing condensate rows. Unit check: the
+    source H column is kJ/mol and S is J/(mol K), as required by that fitter.
+    Sanity: each returned row records the maximum source-node residual.
+    """
+    fitted = {}
+    for (
+        species_name,
+        table_id,
+        cation,
+        cat_num,
+        oxy_num,
+        phase,
+        fit_t_min,
+        fit_t_max,
+        runtime_t_min,
+        runtime_t_max,
+    ) in REDOX_METAL_STANDARD_SOURCES:
+        table = source_tables[table_id]
+        source_rows = {
+            float(node[0]): {
+                "temperature": float(node[0]),
+                "heat_capacity": float(node[1]),
+                "entropy": float(node[2]),
+                "enthalpy_increment": float(node[3]),
+            }
+            for node in table["nodes"]
+        }
+        row = _fit_condensate_values(
+            species_name,
+            table_id,
+            cation,
+            cat_num,
+            oxy_num,
+            source_rows,
+            float(table["formation_enthalpy_298_kj_mol"]),
+            fit_t_min=fit_t_min,
+            fit_t_max=fit_t_max,
+            runtime_t_min=runtime_t_min,
+            runtime_t_max=runtime_t_max,
+            ref=table_id,
+        )
+        row["state"] = phase
+        fitted[species_name] = row
+    return fitted
 
 
 def _fit_janaf_text_condensate_row(

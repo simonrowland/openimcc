@@ -240,6 +240,7 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
     }
     assert names == {
         "imcc-sf04-ext-v4.json",
+        "openimcc-redox-v1.json",
         "imcc-sf04-v1.0.2.json",
     }
 
@@ -346,11 +347,19 @@ def test_hygiene_controls_go_red_then_restore() -> None:
 
 
 def test_every_shipped_pack_loads() -> None:
-    # packmanifest --check compares whole-file sha256 only.  The loader also
-    # verifies the hash-pinned SF04 core that every shipped pack embeds, so a
-    # pack can match the manifest and still be refused.  Load each one.
+    # The manifest checks whole-file hashes, while each component loader checks
+    # its own schema and identity rules. Exercise the legacy and redox loaders.
     manifest = json.loads((PACK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))
     names = sorted(Path(entry["file"]).name for entry in manifest["packs"])
-    assert names == ["imcc-sf04-ext-v4.json", "imcc-sf04-v1.0.2.json"]
+    assert names == [
+        "imcc-sf04-ext-v4.json",
+        "imcc-sf04-v1.0.2.json",
+        "openimcc-redox-v1.json",
+    ]
     for name in names:
-        load_datapack(PACK_DIR / name)
+        if name == "openimcc-redox-v1.json":
+            from openimcc.redox_pack import load_redox_pack
+
+            load_redox_pack(PACK_DIR / name)
+        else:
+            load_datapack(PACK_DIR / name)

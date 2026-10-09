@@ -1,0 +1,186 @@
+{
+  "schema": "openimcc-redox-pack.v1",
+  "version": "1.0.0",
+  "model": "Element-based redox thermochemistry with standard-state reaction rows",
+  "created": "2026-10-08",
+  "units": {
+    "amount": "mol formula units",
+    "inventory": "mol atoms by element",
+    "temperature": "K",
+    "gibbs_energy": "J mol^-1 reaction",
+    "band": "kJ mol^-1 reaction",
+    "pressure": "bar relative to 1 bar standard state"
+  },
+  "source_selection_rail": ["standard_state_consistency", "primary_measurement", "domain_match", "systematic_estimate"],
+  "canonical_content_digest": "b7e277ce5a56f94438d324e9aa6a7e8a6057f08ebea3ceaf6a060703d995ba68",
+  "parent_registry": [
+    {"element": "Si", "parent_oxide": "SiO2(l)", "parent_formula_atoms": {"Si": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Si(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Mg", "parent_oxide": "MgO(l)", "parent_formula_atoms": {"Mg": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Mg(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Fe", "parent_oxide": "FeO(l)", "parent_formula_atoms": {"Fe": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Fe(cr) below 1809 K; Fe(l) at and above 1809 K", "redox_thermochemistry_status": "populated"},
+    {"element": "Ca", "parent_oxide": "CaO(l)", "parent_formula_atoms": {"Ca": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ca(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Al", "parent_oxide": "Al2O3(l)", "parent_formula_atoms": {"Al": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Al(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Ti", "parent_oxide": "TiO2(l)", "parent_formula_atoms": {"Ti": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ti(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Na", "parent_oxide": "Na2O(l)", "parent_formula_atoms": {"Na": 2, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Na(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "K", "parent_oxide": "K2O(l)", "parent_formula_atoms": {"K": 2, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "K(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Cr", "parent_oxide": "Cr2O3(l)", "parent_formula_atoms": {"Cr": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Cr(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Ni", "parent_oxide": "NiO(l)", "parent_formula_atoms": {"Ni": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ni(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Co", "parent_oxide": "CoO(l)", "parent_formula_atoms": {"Co": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Co(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "P", "parent_oxide": "P2O5", "parent_formula_atoms": {"P": 2, "O": 5}, "parent_standard_state": "one half P4O10(cr)", "elemental_reference_state": "P4(cr, white)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "V", "parent_oxide": "V2O3(l)", "parent_formula_atoms": {"V": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "V(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Mn", "parent_oxide": "MnO(l)", "parent_formula_atoms": {"Mn": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Mn(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Eu", "parent_oxide": "Eu2O3(l)", "parent_formula_atoms": {"Eu": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Eu(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Ce", "parent_oxide": "CeO2(l)", "parent_formula_atoms": {"Ce": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ce(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "S", "parent_oxide": "S(l)", "parent_formula_atoms": {"S": 1}, "parent_standard_state": "liquid sulfur", "elemental_reference_state": "S(rhombic)", "redox_thermochemistry_status": "registered_unpopulated"}
+  ],
+  "thermo_species": {
+    "FeO(l)": {
+      "formula_atoms": {"Fe": 1, "O": 1},
+      "evaluator": "condensate_phi",
+      "T_domain_K": [1000, 5000],
+      "range_flags": [],
+      "row": {"dH298_R": -30.01, "dG_A": 6.72, "dG_B": 6.588, "dG_C": -1.248, "dG_D": 0.15, "dG_E": -0.007697},
+      "band_kj_mol": 0.31,
+      "provenance": {"source": "NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database", "source_url": "https://janaf.nist.gov/tables/Fe-019.html", "tier": "tier1_direct_assessed", "selection_rationale": "Direct assessed liquid function; reaction residual against the JANAF formation-Gibbs values and elemental standards is bounded by 0.31 kJ/mol over 1700-3000 K."}
+    },
+    "O2(g)": {
+      "formula_atoms": {"O": 2},
+      "evaluator": "janaf_shomate",
+      "T_domain_K": [1500, 3000],
+      "range_flags": [],
+      "row": {"A": 36.968440194934, "B": -1.34047840048787, "C": 1.35815923534018, "D": -0.188856387311611, "E": -1.8717368315994, "F": -15.8826786740787, "G": 243.357524494403},
+      "band_kj_mol": 0.002,
+      "provenance": {"source": "NIST-JANAF O2 reference-state table, O-029", "source_url": "https://janaf.nist.gov/tables/O-029.html", "tier": "tier1_direct_assessed", "selection_rationale": "Direct JANAF function; maximum local-node Gibbs residual is 0.00176 kJ/mol over the declared interval."}
+    },
+    "Fe(cr)": {
+      "formula_atoms": {"Fe": 1},
+      "evaluator": "condensate_phi",
+      "T_domain_K": [1700, 1809],
+      "range_flags": ["JANAF Fe(cr) source nodes end at 1800 K; the fit is extended nine kelvin to the 1809 K transition marker."],
+      "row": {"dH298_R": 0, "dG_A": 2.60304027327966, "dG_B": 1.26283574008411, "dG_C": 2.15571993648718, "dG_D": -1.06570517076819, "dG_E": 0.144791389787759},
+      "band_kj_mol": 0.075,
+      "provenance": {"source": "NIST-JANAF elemental iron crystal table, Fe-007", "source_url": "https://janaf.nist.gov/tables/Fe-007.html", "tier": "tier1_direct_assessed", "selection_rationale": "Existing condensate φ fitter applied to JANAF H-H(298) and S nodes; the final nine kelvin to the transition marker is an explicitly flagged short extrapolation."}
+    },
+    "Fe(l)": {
+      "formula_atoms": {"Fe": 1},
+      "evaluator": "condensate_phi",
+      "T_domain_K": [1809, 3000],
+      "range_flags": [],
+      "row": {"dH298_R": 1.49077584078207, "dG_A": 2.39304638614573, "dG_B": 4.2539349208347, "dG_C": -0.785731165530508, "dG_D": 0.0918940916919638, "dG_E": -0.00449130555799253},
+      "band_kj_mol": 0.002,
+      "provenance": {"source": "NIST-JANAF elemental iron liquid table, Fe-006", "source_url": "https://janaf.nist.gov/tables/Fe-006.html", "tier": "tier1_direct_assessed", "selection_rationale": "Existing condensate φ fitter applied to JANAF H-H(298) and S nodes; maximum fit residual is below 0.002 kJ/mol."}
+    },
+    "Fe(metal)": {
+      "formula_atoms": {"Fe": 1},
+      "evaluator": "piecewise",
+      "T_domain_K": [1700, 3000],
+      "range_flags": ["The crystal fit uses source nodes through 1800 K; its endpoint is extended to the 1809 K transition marker."],
+      "transition_temperature_K": 1809,
+      "branches": [{"branch": "below", "species": "Fe(cr)"}, {"branch": "at_or_above", "species": "Fe(l)"}],
+      "reference_activity": 1.0,
+      "band_kj_mol": 0.079,
+      "provenance": {"source": "NIST-JANAF elemental iron tables Fe-007 and Fe-006", "source_url": "https://janaf.nist.gov/tables/Fe-007.html", "tier": "tier1_direct_assessed", "selection_rationale": "Stable pure-iron reference state uses the crystal below the JANAF 1809 K fusion point and liquid at and above it; a_Fe is fixed to one for the saturation reference."}
+    },
+    "Fe2O3(l)": {
+      "formula_atoms": {"Fe": 2, "O": 3},
+      "evaluator": "condensate_phi",
+      "T_domain_K": [1700, 3000],
+      "range_flags": ["1700-1735 K is below the cited hematite decomposition marker and is a flagged supercooled metastable branch.", "1735-1895 K is below nominal hypothetical fusion and remains a metastable extrapolation."],
+      "row": {"dH298_R": -99.2851899066654, "dG_A": -24.0979436462971, "dG_B": 51.1404147953251, "dG_C": -18.9153357010277, "dG_D": 3.83883031059213, "dG_E": -0.31777794037805},
+      "band_kj_mol": 11.021,
+      "band_method": "maximum absolute Gibbs spread over nominal and alternate fusion constructions, including the stated primary fusion-enthalpy uncertainty, sampled at 1700, 1895, 2195, 2695, and 3000 K",
+      "construction": {
+        "crystal_source_table": "Fe-030",
+        "fusion_temperature_K": 1895,
+        "fusion_temperature_status": "nominal metastable hypothetical fusion; tier 3 flagged estimate",
+        "fusion_enthalpy_kj_mol": 133.4,
+        "fusion_enthalpy_spread_kj_mol": 10.5,
+        "fusion_entropy_j_mol_K": 70.3957783641161,
+        "fusion_entropy_derivation": "133.4 kJ/mol divided by 1895 K; J/mol/K",
+        "alternate_construction": {"fusion_enthalpy_kj_mol": 114.5, "fusion_entropy_j_mol_K": 60.422163588390504, "source": "Lesher and Spera supplemental compilation, Table S5.5"},
+        "liquid_heat_capacity_j_mol_K": 146.20845,
+        "liquid_heat_capacity_method": "tier 3 fallback: JANAF crystal Cp interpolated at the hypothetical fusion temperature",
+        "liquid_heat_capacity_flag": "red; no first-hand liquid Cp measurement located",
+        "band_scope": "construction spread and cited fusion-enthalpy uncertainty; it does not quantify the unknown systematic error of the tier 3 liquid-Cp fallback",
+        "fit_T_K": [1700, 3000],
+        "runtime_T_K": [1700, 3000],
+        "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"
+      },
+      "provenance": {"source": "NIST-JANAF hematite crystal table Fe-030; hypothetical fusion construction from Sugawara and Akaogi (2004), checked against the alternate construction of Lesher and Spera", "source_url": "https://doi.org/10.1016/S0016-7037(03)00202-3", "alternate_source_url": "https://magma.geol.ucsb.edu/papers/EoV_complete.pdf", "crystal_source_url": "https://janaf.nist.gov/tables/Fe-030.html", "tier": "tier3_flagged_estimate", "first_hand_verified": false, "selection_rationale": "Primary fusion enthalpy is the nominal estimate; the alternate compilation defines a construction-spread band. The liquid Cp falls to the tier 3 crystal-Cp fallback and remains flagged because a first-hand liquid measurement was not verified."}
+    },
+    "FeO1.5(l)": {
+      "formula_atoms": {"Fe": 1, "O": 1.5},
+      "evaluator": "linear_combination",
+      "T_domain_K": [1700, 3000],
+      "range_flags": ["The derived FeO1.5 standard state inherits the metastable and supercooled range of Fe2O3(l)."],
+      "terms": [{"species": "Fe2O3(l)", "coefficient": 0.5}],
+      "band_kj_mol": 5.511,
+      "provenance": {"source": "Half the constructed Fe2O3(l) standard Gibbs energy", "source_url": "https://janaf.nist.gov/tables/Fe-030.html", "tier": "tier3_flagged_estimate", "selection_rationale": "Stoichiometric pseudo-complex reference; it adds no independent Gibbs function."}
+    },
+    "Si(l)": {
+      "formula_atoms": {"Si": 1}, "evaluator": "condensate_phi", "T_domain_K": [1700, 3000], "range_flags": [],
+      "row": {"dH298_R": 5.82960104902837, "dG_A": 4.06878702262776, "dG_B": 3.83118369548727, "dG_C": -1.04017915813385, "dG_D": 0.179198580898701, "dG_E": -0.0134061386171519},
+      "band_kj_mol": 0.002,
+      "provenance": {"source": "NIST-JANAF silicon liquid table Si-003", "source_url": "https://janaf.nist.gov/tables/Si-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."}
+    },
+    "Cr(l)": {
+      "formula_atoms": {"Cr": 1}, "evaluator": "condensate_phi", "T_domain_K": [1700, 3000], "range_flags": ["JANAF liquid Cr is supercooled below its 2130 K crystal-liquid transition; 1700-2130 K is flagged."],
+      "row": {"dH298_R": 3.13525975131157, "dG_A": 3.11412277346623, "dG_B": 3.3088126380328, "dG_C": -0.533752325526362, "dG_D": 0.0498930412846965, "dG_E": -0.00148698361629795},
+      "band_kj_mol": 0.002,
+      "provenance": {"source": "NIST-JANAF chromium liquid table Cr-003", "source_url": "https://janaf.nist.gov/tables/Cr-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."}
+    },
+    "Ni(l)": {
+      "formula_atoms": {"Ni": 1}, "evaluator": "condensate_phi", "T_domain_K": [1700, 3000], "range_flags": ["1700-1728 K is below the 1728 K JANAF crystal-liquid transition and is flagged as supercooled liquid."],
+      "row": {"dH298_R": 2.10224049383055, "dG_A": 3.72774022376129, "dG_B": 3.51493786721722, "dG_C": -0.640199584172273, "dG_D": 0.0748436235036801, "dG_E": -0.00374471016373705},
+      "band_kj_mol": 0.002,
+      "provenance": {"source": "NIST-JANAF nickel liquid table Ni-003", "source_url": "https://janaf.nist.gov/tables/Ni-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."}
+    },
+    "Co(l)": {
+      "formula_atoms": {"Co": 1}, "evaluator": "condensate_phi", "T_domain_K": [1700, 3000], "range_flags": ["1700-1768 K is below the 1768 K JANAF beta-liquid transition and is flagged as supercooled liquid."],
+      "row": {"dH298_R": 2.16538348022915, "dG_A": 3.30132228613308, "dG_B": 4.03206745138485, "dG_C": -0.831414832185972, "dG_D": 0.11391385112234, "dG_E": -0.00700225800198168},
+      "band_kj_mol": 0.002,
+      "provenance": {"source": "NIST-JANAF cobalt liquid table Co-003", "source_url": "https://janaf.nist.gov/tables/Co-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."}
+    }
+  },
+  "rows": [
+    {
+      "row": 1,
+      "complex": "FeO(l)",
+      "role": "parent_reference",
+      "nu": {},
+      "reactants": {"Fe(metal)": 1, "O2(g)": 0.5},
+      "products": {"FeO(l)": 1},
+      "external_oxygen_stoich_product_positive": -0.5,
+      "reaction": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+      "phase_or_construction": "FeO(l) from JANAF; pure Fe uses crystal below and liquid at or above 1809 K.",
+      "method": "Assemble product-positive standard Gibbs terms with the existing condensate phi and JANAF Shomate evaluators.",
+      "standard_gibbs_terms": [{"species": "FeO(l)", "coefficient": 1}, {"species": "Fe(metal)", "coefficient": -1}, {"species": "O2(g)", "coefficient": -0.5}],
+      "T_domain_K": [1700, 3000],
+      "band_kj_mol": 0.31,
+      "band_method": "Maximum absolute reaction-Gibbs residual against the JANAF FeO formation-Gibbs values over 1700-3000 K.",
+      "uncertainty_note": "The 0.31 kJ/mol band includes the fitted reaction residual; the Fe(cr) endpoint extrapolation is separately flagged.",
+      "range_flags": ["Fe metal switches from crystal to liquid at 1809 K; the crystal fit uses source nodes through 1800 K."],
+      "provenance_class": "janaf_direct_liquid",
+      "provenance": {"source": "NIST-JANAF FeO liquid table Fe-019 and elemental reference tables Fe-007, Fe-006, O-029", "source_url": "https://janaf.nist.gov/tables/Fe-019.html", "tier": "tier1_direct_assessed", "selection_rationale": "Existing FeO parent row retained; reaction residual against JANAF formation Gibbs energies is at most 0.31 kJ/mol over 1700-3000 K."}
+    },
+    {
+      "row": 2,
+      "complex": "FeO1.5(l)",
+      "role": "complex",
+      "nu": {"FeO(l)": 1},
+      "reactants": {"FeO(l)": 1, "O2(g)": 0.25},
+      "products": {"FeO1.5(l)": 1},
+      "external_oxygen_stoich_product_positive": -0.25,
+      "reaction": "FeO(l) + 1/4 O2(g) = FeO1.5(l)",
+      "phase_or_construction": "FeO1.5(l) is one half Fe2O3(l), formed by the stated FeO oxidation reaction; Fe2O3(l) is a hypothetical metastable fusion construction.",
+      "method": "Assemble product-positive standard Gibbs terms with the existing condensate phi and JANAF Shomate evaluators.",
+      "standard_gibbs_terms": [{"species": "FeO1.5(l)", "coefficient": 1}, {"species": "FeO(l)", "coefficient": -1}, {"species": "O2(g)", "coefficient": -0.25}],
+      "T_domain_K": [1700, 3000],
+      "band_kj_mol": 5.83,
+      "band_method": "Conservative sum of one half the Fe2O3 construction envelope, the FeO reaction band, and one quarter the O2 fit band.",
+      "uncertainty_note": "The 5.83 kJ/mol band includes the cited fusion-enthalpy uncertainty and alternate construction spread; it does not quantify the unknown tier 3 liquid-Cp systematic.",
+      "range_flags": ["FeO1.5 uses half the hypothetical metastable Fe2O3(l) construction.", "1700-1735 K is below the cited hematite decomposition marker and is a flagged supercooled metastable branch.", "1735-1895 K is below nominal hypothetical fusion and remains a metastable extrapolation."],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {"source": "NIST-JANAF Fe-030 hematite crystal plus the flagged hypothetical fusion construction", "source_url": "https://janaf.nist.gov/tables/Fe-030.html", "tier": "tier3_flagged_estimate", "selection_rationale": "Reaction stoichiometry fixes the pseudo-complex; nominal fusion follows the cited primary estimate, with an alternate-construction spread band. The tier 3 liquid Cp fallback remains an explicit data gap."}
+    }
+  ]
+}

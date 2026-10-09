@@ -62,7 +62,7 @@ def _summarise(path: Path) -> dict:
         "sha256": _digest(path),
         "bytes": path.stat().st_size,
         "model": raw.get("model"),
-        "datapack_version": raw.get("imcc_sf04_datapack_version"),
+        "datapack_version": raw.get("imcc_sf04_datapack_version", raw.get("version")),
         "n_rows": len(rows),
         "n_screened_not_activated": len(raw.get("screens") or []),
         "provenance_classes": dict(sorted(provenance.items())),
