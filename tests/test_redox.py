@@ -172,7 +172,7 @@ def test_imposed_capacity_matches_finite_difference_and_is_monotone() -> None:
         finite_difference, rel=2.0e-8, abs=1.0e-12
     )
 
-    lambdas = np.linspace(center.lambda_sat, 0.0, 7)
+    lambdas = np.linspace(center.lambda_sat + 1.0e-8, 0.0, 7)
     oxygen = [
         evaluate_redox(
             inventory, temperature, "imposed", lambda_imposed=float(value)
@@ -188,7 +188,8 @@ def test_oxygen_response_is_continuous_across_pure_fe_saturation() -> None:
         {"Fe": 1.0}, temperature, "imposed", lambda_imposed=0.0
     )
     at_saturation = evaluate_redox(
-        {"Fe": 1.0},
+        # This is the oxygen surplus at zero metal and the exact Fe saturation fugacity.
+        {"Fe": 1.0, "O": 1.0132714999313717},
         temperature,
         "imposed",
         lambda_imposed=imposed.lambda_sat,
@@ -206,7 +207,8 @@ def test_oxygen_response_is_continuous_across_pure_fe_saturation() -> None:
     )
     assert reduced.metal_buffered
     assert reduced.lambda_ln_f_o2 == pytest.approx(reduced.lambda_sat, abs=1.0e-12)
-    assert reduced.metal_moles < 1.0e-4
+    assert reduced.metal_moles > at_saturation.metal_moles
+    assert reduced.metal_moles - at_saturation.metal_moles < 1.0e-6
     assert oxidised.metal_moles == 0.0
     assert oxidised.lambda_ln_f_o2 > oxidised.lambda_sat
     assert abs(oxidised.lambda_ln_f_o2 - at_saturation.lambda_sat) < 1.0e-4
@@ -292,8 +294,21 @@ def test_imposed_mode_resolves_the_metal_amount_below_saturation() -> None:
             "imposed",
             lambda_imposed=result.lambda_sat - 1.0,
         )
+    assert exc_info.value.endpoint == "lambda_below_dissolved_fe_saturation_range"
+
+
+def test_imposed_exact_invariant_saturation_requires_oxygen_inventory() -> None:
+    saturated = evaluate_redox(
+        {"Fe": 1.0}, 2200.0, "imposed", lambda_imposed=0.0
+    )
+    with pytest.raises(RedoxEndpointError) as exc_info:
+        evaluate_redox(
+            {"Fe": 1.0},
+            2200.0,
+            "imposed",
+            lambda_imposed=saturated.lambda_sat,
+        )
     assert exc_info.value.endpoint == "imposed_invariant_requires_oxygen"
-    assert "oxygen inventory is required" in str(exc_info.value)
 
 
 def test_imposed_mixed_melt_predicts_buffered_metal_without_oxygen() -> None:
@@ -315,15 +330,60 @@ def test_finite_closed_root_above_one_bar_standard_state() -> None:
     assert result.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-12)
 
 
-def test_closed_mode_solves_representable_states_near_oxygen_endpoints() -> None:
+@pytest.mark.parametrize(
+    ("oxygen", "expected_lambda"),
+    [
+        (1.4999999999999998, 140.6826343756),
+        (1.499999999999, 107.0317496963),
+    ],
+)
+def test_closed_mode_solves_representable_states_near_oxidised_endpoint(
+    oxygen: float, expected_lambda: float
+) -> None:
+    # Independent Fe-only mass action for FeO + 1/4 O2 = FeO1.5, evaluated
+    # at high precision, gives these roots for O = 1 + 0.5*x_FeO1.5.
     near_fully_oxidised = evaluate_redox(
-        {"Fe": 1.0, "O": 1.499999999999}, 2200.0, "closed"
+        {"Fe": 1.0, "O": oxygen}, 2200.0, "closed"
     )
+    assert near_fully_oxidised.lambda_ln_f_o2 == pytest.approx(
+        expected_lambda, abs=2.0e-2
+    )
+    assert abs(near_fully_oxidised.oxygen_residual_mol or 0.0) <= 5.0e-16
+
+
+def test_trace_oxygen_metal_extent_matches_in_closed_and_imposed_modes() -> None:
     trace_oxygen = evaluate_redox({"Fe": 1.0, "O": 1.0e-13}, 2200.0, "closed")
-    assert near_fully_oxidised.lambda_ln_f_o2 == pytest.approx(107.0317496963, abs=2.0e-2)
-    assert near_fully_oxidised.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-12)
+    imposed = evaluate_redox(
+        {"Fe": 1.0, "O": 1.0e-13},
+        2200.0,
+        "imposed",
+        lambda_imposed=trace_oxygen.lambda_ln_f_o2,
+    )
+    assert trace_oxygen.metal_moles == pytest.approx(
+        0.9999999999999013, abs=2.0e-15
+    )
+    assert imposed.metal_moles == pytest.approx(
+        0.9999999999999013, abs=2.0e-15
+    )
+    assert imposed.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-15)
     assert math.isfinite(trace_oxygen.lambda_ln_f_o2)
-    assert trace_oxygen.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-12)
+
+
+def test_mixed_inventory_near_reduced_endpoint_matches_imposed_mode() -> None:
+    inventory = {
+        "Fe": 1.0,
+        "Si": 0.8,
+        "Mg": 0.3,
+        "Al": 0.2,
+        "Ca": 0.1,
+        "O": 2.300000000001,
+    }
+    closed = evaluate_redox(inventory, 2200.0, "closed")
+    imposed = evaluate_redox(
+        inventory, 2200.0, "imposed", lambda_imposed=closed.lambda_ln_f_o2
+    )
+    assert imposed.metal_moles == pytest.approx(closed.metal_moles, abs=2.0e-12)
+    assert imposed.oxygen_mol == pytest.approx(inventory["O"], abs=2.0e-12)
 
 
 @pytest.mark.parametrize(

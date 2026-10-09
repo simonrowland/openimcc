@@ -364,6 +364,28 @@ def _state_species(
     return parents, species, oxygen_moles
 
 
+def _fe_redox_oxygen_amounts(
+    species_moles: Mapping[str, float], base_datapack: Any
+) -> tuple[float, float]:
+    """Return reduced and ferric Fe amounts without subtracting near-equal totals."""
+    fe_row = base_datapack.parent_oxides.index("FeO")
+    reduced_fe = math.fsum(
+        [float(species_moles["FeO"])]
+        + [
+            float(species_moles[name]) * float(base_datapack.nu[fe_row, index])
+            for index, name in enumerate(base_datapack.reactions)
+        ]
+    )
+    return reduced_fe, float(species_moles["FeO1.5(l)"])
+
+
+def _oxygen_surplus_from_reduced_fe(
+    species_moles: Mapping[str, float], base_datapack: Any
+) -> float:
+    reduced_fe, ferric_fe = _fe_redox_oxygen_amounts(species_moles, base_datapack)
+    return math.fsum((reduced_fe, 1.5 * ferric_fe))
+
+
 def _response(
     state: _LiquidState,
     base_datapack: Any,
@@ -659,13 +681,34 @@ def _assemble_result(
             oxygen_capacity = response.oxygen_derivative_m / slope
     parent_names = _redox_parent_names(redox_pack)
     fe_index = parent_names.index("FeO")
-    baseline_oxygen = float(
-        np.dot(state.parent_moles, oxygen_parent_counts)
-        + metal_moles * oxygen_parent_counts[fe_index]
+    non_fe_oxygen = math.fsum(
+        float(state.parent_moles[index]) * float(oxygen_parent_counts[index])
+        for index in range(len(parent_names))
+        if index != fe_index
     )
-    residual = (
-        None if oxygen_inventory is None else oxygen_mol - oxygen_inventory
+    baseline_oxygen = math.fsum(
+        (
+            non_fe_oxygen,
+            (float(state.parent_moles[fe_index]) + metal_moles)
+            * float(oxygen_parent_counts[fe_index]),
+        )
     )
+    residual = None
+    if oxygen_inventory is not None:
+        reduced_fe, ferric_fe = _fe_redox_oxygen_amounts(
+            species_values, base_datapack
+        )
+        if metal_moles == 0.0:
+            total_fe = float(state.parent_moles[fe_index])
+            target_deficit = math.fsum(
+                (1.5 * total_fe, non_fe_oxygen, -oxygen_inventory)
+            )
+            residual = target_deficit - 0.5 * reduced_fe
+        else:
+            target_surplus = math.fsum((oxygen_inventory, -non_fe_oxygen))
+            residual = math.fsum(
+                (reduced_fe, 1.5 * ferric_fe, -target_surplus)
+            )
     oxygen_scale = oxygen_mol if oxygen_inventory is None else oxygen_inventory
     flags = _make_flags(
         temperature_K,
@@ -800,9 +843,10 @@ def evaluate_redox(
             )
     ln_k_fe = _ln_k_fe(redox_pack, temperature)
     total_fe = float(parent_moles[fe_index])
-    non_fe_oxygen = float(
-        np.dot(parent_moles, oxygen_parent_counts)
-        - total_fe * oxygen_parent_counts[fe_index]
+    non_fe_oxygen = math.fsum(
+        float(parent_moles[index]) * float(oxygen_parent_counts[index])
+        for index in range(len(parent_names))
+        if index != fe_index
     )
 
     if mode == "imposed":
@@ -832,8 +876,29 @@ def evaluate_redox(
             abs(sat_response.lambda_sat_derivative_m)
             <= np.finfo(np.float64).eps
         )
-        buffered = lambda_value < lambda_sat - max(1.0e-10, tolerance)
-        if buffered and invariant_segment and oxygen_inventory is None:
+        lambda_tolerance = max(
+            10.0 * tolerance, 8.0 * math.ulp(lambda_sat)
+        )
+        below_invariant_bound = (
+            invariant_segment and lambda_value < lambda_sat - lambda_tolerance
+        )
+        at_invariant_bound = (
+            invariant_segment
+            and abs(lambda_value - lambda_sat) <= lambda_tolerance
+        )
+        if below_invariant_bound:
+            raise RedoxEndpointError(
+                "imposed oxygen fugacity is below the buffered saturation range",
+                endpoint="lambda_below_dissolved_fe_saturation_range",
+                flags=("lambda_below_dissolved_fe_saturation_range",),
+                lambda_bound=lambda_sat,
+            )
+        buffered = lambda_value < lambda_sat - (
+            lambda_tolerance
+            if invariant_segment
+            else max(1.0e-10, tolerance)
+        )
+        if at_invariant_bound and oxygen_inventory is None:
             raise RedoxEndpointError(
                 "imposed lambda is on a buffered invariant segment; oxygen inventory is required to select metal extent",
                 endpoint="imposed_invariant_requires_oxygen",
@@ -843,17 +908,17 @@ def evaluate_redox(
         if (
             invariant_segment
             and oxygen_inventory is not None
-            and lambda_value <= lambda_sat + max(1.0e-10, tolerance)
+            and at_invariant_bound
         ):
             # On a buffered invariant segment lambda does not identify m;
             # the supplied oxygen inventory selects its Fe-metal extent.
             metal_low = 0.0
-            metal_high = total_fe * (1.0 - 1.0e-10)
+            metal_high = float(np.nextafter(total_fe, 0.0))
 
-            def imposed_state_at_m(metal_amount: float) -> tuple[_LiquidState, float]:
+            def imposed_state_at_m(metal_amount: float) -> _LiquidState:
                 amounts = parent_moles.copy()
                 amounts[fe_index] = total_fe - metal_amount
-                candidate_state = _active_inner(
+                return _active_inner(
                     amounts,
                     temperature,
                     lambda_value,
@@ -863,52 +928,67 @@ def evaluate_redox(
                     tol=tolerance,
                     max_iter=iterations,
                 )
-                return candidate_state, _state_species(
-                    candidate_state, base_datapack, redox_pack
-                )[2]
 
-            low_state, low_oxygen = imposed_state_at_m(metal_low)
-            high_state, high_oxygen = imposed_state_at_m(metal_high)
-            low_residual = low_oxygen - oxygen_inventory
-            high_residual = high_oxygen - oxygen_inventory
+            low_state = imposed_state_at_m(metal_low)
+            high_state = imposed_state_at_m(metal_high)
+            low_species = _state_species(low_state, base_datapack, redox_pack)[1]
+            high_species = _state_species(high_state, base_datapack, redox_pack)[1]
+            target_surplus = math.fsum((oxygen_inventory, -non_fe_oxygen))
+            low_residual = (
+                _oxygen_surplus_from_reduced_fe(low_species, base_datapack)
+                - target_surplus
+            )
+            high_residual = (
+                _oxygen_surplus_from_reduced_fe(high_species, base_datapack)
+                - target_surplus
+            )
             if low_residual * high_residual > 0.0:
-                if lambda_value >= lambda_sat - max(1.0e-10, tolerance):
-                    return _assemble_result(
-                        mode="imposed",
-                        temperature_K=temperature,
-                        lambda_value=lambda_value,
-                        lambda_sat=lambda_sat,
-                        state=state,
-                        metal_moles=0.0,
-                        oxygen_inventory=oxygen_inventory,
-                        base_datapack=base_datapack,
-                        redox_pack=redox_pack,
-                        oxygen_parent_counts=oxygen_parent_counts,
-                        tolerance=tolerance,
-                        fallback_fired=(
-                            sat_state.fallback_fired or saturation_fallbacks > 0
-                        ),
-                    )
                 raise RedoxEndpointError(
                     "imposed oxygen inventory is outside the buffered extent range",
                     endpoint="imposed_inventory_inconsistent",
                     flags=("imposed_inventory_inconsistent",),
                     oxygen_residual_mol=min(abs(low_residual), abs(high_residual)),
                 )
-            buffered_state = low_state
-            metal = 0.0
-            for _ in range(64):
-                metal = (metal_low + metal_high) / 2.0
-                buffered_state, buffered_oxygen = imposed_state_at_m(metal)
-                residual = buffered_oxygen - oxygen_inventory
-                if abs(residual) <= tolerance * max(1.0, abs(oxygen_inventory)):
-                    break
-                if residual > 0.0:
-                    metal_low = metal
-                else:
-                    metal_high = metal
+            if low_residual == 0.0:
+                metal, buffered_state = metal_low, low_state
+            elif high_residual == 0.0:
+                metal, buffered_state = metal_high, high_state
             else:
-                raise RedoxNumericalError("imposed oxygen extent did not converge")
+                buffered_state = low_state
+                metal = 0.0
+                for _ in range(64):
+                    metal = metal_low + (metal_high - metal_low) / 2.0
+                    if not metal_low < metal < metal_high:
+                        low_error = abs(low_residual)
+                        high_error = abs(high_residual)
+                        if low_error <= high_error:
+                            metal, buffered_state = metal_low, low_state
+                        else:
+                            metal, buffered_state = metal_high, high_state
+                        break
+                    buffered_state = imposed_state_at_m(metal)
+                    buffered_species = _state_species(
+                        buffered_state, base_datapack, redox_pack
+                    )[1]
+                    residual = (
+                        _oxygen_surplus_from_reduced_fe(
+                            buffered_species, base_datapack
+                        )
+                        - target_surplus
+                    )
+                    oxygen_extent_tolerance = max(
+                        tolerance * abs(target_surplus), math.ulp(metal)
+                    )
+                    if abs(residual) <= oxygen_extent_tolerance:
+                        break
+                    if residual > 0.0:
+                        metal_low = metal
+                        low_residual, low_state = residual, buffered_state
+                    else:
+                        metal_high = metal
+                        high_residual, high_state = residual, buffered_state
+                else:
+                    raise RedoxNumericalError("imposed oxygen extent did not converge")
             buffered_parents = parent_moles.copy()
             buffered_parents[fe_index] = total_fe - metal
             buffered_lambda, buffered_state, extent_fallbacks = _saturation_state(
@@ -966,7 +1046,7 @@ def evaluate_redox(
             )
         if buffered:
             metal_low = 0.0
-            metal_high = total_fe * (1.0 - 1.0e-10)
+            metal_high = float(np.nextafter(total_fe, 0.0))
             high_parents = parent_moles.copy()
             high_parents[fe_index] = total_fe - metal_high
             high_lambda, high_state, high_fallbacks = _saturation_state(
@@ -1056,14 +1136,16 @@ def evaluate_redox(
         )
 
     assert oxygen_inventory is not None
-    if oxygen_inventory < non_fe_oxygen:
+    target_surplus = math.fsum((oxygen_inventory, -non_fe_oxygen))
+    target_deficit = math.fsum((1.5 * total_fe, -target_surplus))
+    if target_surplus < 0.0:
         raise RedoxEndpointError(
             "oxygen inventory is below the fixed non-Fe oxide oxygen",
             endpoint="reductant_exceeds_reducible_oxygen",
             flags=("reductant_exceeds_reducible_oxygen",),
-            oxygen_residual_mol=non_fe_oxygen - oxygen_inventory,
+            oxygen_residual_mol=-target_surplus,
         )
-    if oxygen_inventory == non_fe_oxygen:
+    if target_surplus == 0.0:
         raise RedoxNoLiveCoupleError(
             "all Fe is metallic at the oxygen inventory; no finite Fe redox couple remains"
         )
@@ -1071,9 +1153,8 @@ def evaluate_redox(
     # All non-Fe parents retain their oxygen; fully oxidising each Fe parent
     # raises its one-O FeO basis to FeO1.5, adding 0.5 O per Fe. This is the
     # inventory limit (mol O atoms), independent of a gas reference pressure.
-    fully_oxidised_oxygen = non_fe_oxygen + 1.5 * total_fe
-    if oxygen_inventory >= fully_oxidised_oxygen:
-        excess = fully_oxidised_oxygen - oxygen_inventory
+    if target_deficit <= 0.0:
+        excess = -target_deficit
         raise RedoxEndpointError(
             "oxygen inventory is at or above the fully oxidised FeO1.5 limit",
             endpoint="fully_oxidised_inventory_limit",
@@ -1081,13 +1162,10 @@ def evaluate_redox(
             oxygen_residual_mol=excess,
         )
     endpoint_distance = min(
-        oxygen_inventory - non_fe_oxygen,
-        fully_oxidised_oxygen - oxygen_inventory,
+        target_surplus,
+        target_deficit,
     )
-    oxygen_tolerance = min(
-        tolerance * max(abs(oxygen_inventory), 1.0),
-        0.01 * endpoint_distance,
-    )
+    oxygen_tolerance = tolerance * endpoint_distance
     root_tolerance = (
         min(tolerance, 1.0e-14)
         if endpoint_distance <= 1.0e-8 * max(abs(oxygen_inventory), 1.0)
@@ -1104,10 +1182,13 @@ def evaluate_redox(
         tol=tolerance,
         max_iter=iterations,
     )
-    oxidised_oxygen = _state_species(
+    oxidised_species = _state_species(
         oxidised_state, base_datapack, redox_pack
-    )[2]
-    oxidised_residual = oxidised_oxygen - oxygen_inventory
+    )[1]
+    oxidised_reduced_fe, _oxidised_ferric_fe = _fe_redox_oxygen_amounts(
+        oxidised_species, base_datapack
+    )
+    oxidised_residual = 0.5 * oxidised_reduced_fe - target_deficit
     if abs(oxidised_residual) <= oxygen_tolerance:
         lambda_sat, sat_state, saturation_fallbacks = _saturation_state(
             parent_moles,
@@ -1150,9 +1231,10 @@ def evaluate_redox(
         tol=tolerance,
         max_iter=iterations,
     )
-    sat_oxygen = _state_species(sat_state, base_datapack, redox_pack)[2]
-    sat_residual = sat_oxygen - oxygen_inventory
-    if sat_residual <= oxygen_tolerance:
+    sat_species = _state_species(sat_state, base_datapack, redox_pack)[1]
+    sat_surplus = _oxygen_surplus_from_reduced_fe(sat_species, base_datapack)
+    sat_residual = sat_surplus - target_surplus
+    if sat_residual <= 0.0:
         fallback_fired = (
             oxidised_state.fallback_fired
             or sat_state.fallback_fired
@@ -1164,7 +1246,7 @@ def evaluate_redox(
         upper_residual = oxidised_residual
         step = 1.0
         for _ in range(64):
-            if upper_residual >= 0.0:
+            if upper_residual <= 0.0:
                 break
             upper += step
             step *= 2.0
@@ -1179,15 +1261,18 @@ def evaluate_redox(
                 max_iter=iterations,
             )
             fallback_fired = fallback_fired or upper_state.fallback_fired
-            upper_residual = (
-                _state_species(upper_state, base_datapack, redox_pack)[2]
-                - oxygen_inventory
+            upper_species = _state_species(
+                upper_state, base_datapack, redox_pack
+            )[1]
+            upper_reduced_fe, _upper_ferric_fe = _fe_redox_oxygen_amounts(
+                upper_species, base_datapack
             )
-        if upper_residual < 0.0:
+            upper_residual = 0.5 * upper_reduced_fe - target_deficit
+        if upper_residual > 0.0:
             raise RedoxNumericalError("could not bracket the fully oxidised inventory limit")
-        lower_residual = sat_residual
+        lower_residual = -sat_residual
         lam = lower + (upper - lower) * (
-            -lower_residual / (upper_residual - lower_residual)
+            lower_residual / (lower_residual - upper_residual)
         )
         state_seed = sat_state.y
         for inner_solves in range(1, 81):
@@ -1202,8 +1287,11 @@ def evaluate_redox(
                 max_iter=iterations,
             )
             fallback_fired = fallback_fired or state.fallback_fired
-            oxygen_mol = _state_species(state, base_datapack, redox_pack)[2]
-            residual = oxygen_mol - oxygen_inventory
+            state_species = _state_species(state, base_datapack, redox_pack)[1]
+            reduced_fe, _ferric_fe = _fe_redox_oxygen_amounts(
+                state_species, base_datapack
+            )
+            residual = 0.5 * reduced_fe - target_deficit
             if abs(residual) <= oxygen_tolerance:
                 return _assemble_result(
                     mode="closed",
@@ -1220,14 +1308,14 @@ def evaluate_redox(
                     fallback_fired=fallback_fired,
                 )
             response = _response(state, base_datapack, redox_pack)
-            if residual < 0.0:
+            if residual > 0.0:
                 lower = lam
                 lower_residual = residual
             else:
                 upper = lam
                 upper_residual = residual
             candidate = (
-                lam - residual / response.oxygen_capacity
+                lam + residual / response.oxygen_capacity
                 if response.oxygen_capacity > 0.0
                 and math.isfinite(response.oxygen_capacity)
                 else math.nan
@@ -1244,7 +1332,7 @@ def evaluate_redox(
     metal_low = 0.0
     residual_low = sat_residual
     metal_high = float(np.nextafter(total_fe, 0.0))
-    residual_high = non_fe_oxygen - oxygen_inventory
+    residual_high = -target_surplus
     if residual_high >= 0.0:
         raise RedoxEndpointError(
             "oxygen inventory is below the all-metal endpoint",
@@ -1253,7 +1341,7 @@ def evaluate_redox(
             oxygen_residual_mol=residual_high,
         )
     metal = total_fe * residual_low / (residual_low - residual_high)
-    metal = min(max(metal, total_fe * 1.0e-12), total_fe * (1.0 - 1.0e-12))
+    metal = min(max(metal, metal_low), metal_high)
     lam = lambda_sat_zero
     state_seed = sat_state.y
     fallback_fired = (
@@ -1278,8 +1366,14 @@ def evaluate_redox(
             fallback_fired or state.fallback_fired or saturation_fallbacks > 0
         )
         response = _response(state, base_datapack, redox_pack)
-        residual = response.oxygen_mol - oxygen_inventory
-        if abs(residual) <= oxygen_tolerance:
+        state_species = _state_species(state, base_datapack, redox_pack)[1]
+        residual = (
+            _oxygen_surplus_from_reduced_fe(state_species, base_datapack)
+            - target_surplus
+        )
+        derivative = response.oxygen_derivative_m
+        representable_tolerance = abs(derivative) * math.ulp(metal)
+        if abs(residual) <= max(oxygen_tolerance, representable_tolerance):
             return _assemble_result(
                 mode="closed",
                 temperature_K=temperature,
@@ -1300,7 +1394,6 @@ def evaluate_redox(
         else:
             metal_high = metal
             residual_high = residual
-        derivative = response.oxygen_derivative_m
         candidate = metal - residual / derivative if derivative != 0.0 else math.nan
         if not (
             math.isfinite(candidate)
