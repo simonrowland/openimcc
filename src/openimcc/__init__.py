@@ -40,6 +40,14 @@ from openimcc.model import (
     load_datapack,
 )
 from openimcc.kernel import ImccDataframeUnavailableError, ImccSpeciesNotFoundError
+from openimcc.redox import (
+    RedoxEndpointError,
+    RedoxInputError,
+    RedoxNoLiveCoupleError,
+    RedoxNumericalError,
+    RedoxResult,
+    evaluate_redox,
+)
 
 
 def _resolve_version() -> str:
@@ -175,6 +183,13 @@ __all__ = [
     "ImccMalformedDatapackError",
     "ImccUnprovenDatapackError",
     "ImccNonconvergenceError",
+    # --- opt-in Fe redox --------------------------------------------------
+    "evaluate_redox",
+    "RedoxResult",
+    "RedoxInputError",
+    "RedoxNoLiveCoupleError",
+    "RedoxEndpointError",
+    "RedoxNumericalError",
     # --- gas (lazy; needs the [gas] extra) --------------------------------
     "load_gas_datapack",
     "evaluate_gas",

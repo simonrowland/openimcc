@@ -623,9 +623,24 @@ def _active_residual(
     lnK: np.ndarray,
     S: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, float, np.ndarray]:
+    """NumPy compatibility wrapper for the shared array residual."""
+    return active_residual_jacobian(y, x_target, nu, lnK, S, np)
+
+
+def active_residual_jacobian(
+    y: Any,
+    x_target: Any,
+    nu: Any,
+    lnK: Any,
+    S: Any,
+    xp: Any = np,
+) -> tuple[Any, Any, Any, Any]:
     """
-    Compute the parent-balance residual and its Jacobian for the active
-    subset of parents and complexes.
+    Pure array-namespace implementation of the active parent residual/Jacobian.
+
+    ``xp`` is a Python Array API namespace (NumPy by default); supplying the
+    namespace keeps the equations usable by optional array backends without
+    importing or requiring one here.
 
     Derivation
     ----------
@@ -680,15 +695,16 @@ def _active_residual(
     D: total-species denominator
     J: Jacobian (n_active, n_active)
     """
-    x_star = np.exp(y)
+    x_star = xp.exp(y)
     # Mass-action complex mole fractions on the total-species basis.
-    g = np.exp(lnK + nu.T @ y)
-    D = 1.0 + np.sum((S - 1.0) * g)
+    g = xp.exp(lnK + nu.T @ y)
+    D = 1.0 + xp.sum((S - 1.0) * g)
     # Parent-balance residual (analytical vs total-species bookkeeping).
     f = x_star + nu @ g - x_target * D
     # Jacobian.
-    M = nu - np.outer(x_target, S - 1.0)  # M[i, j] = nu_ij - x_i*(S_j - 1)
-    J = np.diag(x_star) + M @ (g[:, None] * nu.T)
+    M = nu - x_target[:, None] * (S[None, :] - 1.0)
+    J = xp.eye(x_star.shape[0], dtype=x_star.dtype) * x_star[:, None]
+    J = J + M @ (g[:, None] * nu.T)
     return f, g, D, J
 
 
@@ -699,6 +715,9 @@ def _solve_active(
     S: np.ndarray,
     tol: float,
     max_iter: int,
+    *,
+    y_init: np.ndarray | None = None,
+    relative_tolerance: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, float, int, float, float, float, str, int]:
     """
     Solve the reduced log-space parent-balance system.
@@ -756,6 +775,9 @@ def _solve_active(
     # Ideal-fraction start (no-complexing limit).  Floor tiny parents so the
     # logarithm stays finite.
     y0 = np.log(np.maximum(x_target, 1.0e-12))
+    direct_y0 = y0 if y_init is None else np.asarray(y_init, dtype=float)
+    if direct_y0.shape != y0.shape or not np.all(np.isfinite(direct_y0)):
+        raise ValueError("y_init must be a finite vector matching active parents")
 
     # Trust-region reflective least-squares with explicit bounds keeps the
     # log-space variables away from the exponential overflow cliff while still
@@ -775,11 +797,11 @@ def _solve_active(
 
         def fun(y: np.ndarray) -> np.ndarray:
             f, _g, _D, _J = _active_residual(y, x_target, nu, trial_lnK, S)
-            return f
+            return f / x_target if relative_tolerance else f
 
         def jac(y: np.ndarray) -> np.ndarray:
             _f, _g, _D, J = _active_residual(y, x_target, nu, trial_lnK, S)
-            return J
+            return J / x_target[:, None] if relative_tolerance else J
 
         try:
             # SciPy can warn while exploring deliberately ill-conditioned
@@ -803,8 +825,9 @@ def _solve_active(
             return None
         y = sol.x
         f, g, D, _J = _active_residual(y, x_target, nu, trial_lnK, S)
-        residual_inf = float(np.linalg.norm(f, ord=np.inf))
-        residual_l2 = float(np.linalg.norm(f, ord=2))
+        residual = f / x_target if relative_tolerance else f
+        residual_inf = float(np.linalg.norm(residual, ord=np.inf))
+        residual_l2 = float(np.linalg.norm(residual, ord=2))
         total_displacement = float(np.linalg.norm(y - y0))
         return (
             y,
@@ -819,7 +842,7 @@ def _solve_active(
 
     # The direct solve remains the fast path. The final message is retained only
     # for a typed refusal, so converged returns slice it off.
-    first = _attempt(y0, lnK, max_nfev)
+    first = _attempt(direct_y0, lnK, max_nfev)
     if first is None:
         raise ImccNonconvergenceError(
             "IMCC-SF04 parent-balance solve produced non-finite residuals",
@@ -926,6 +949,99 @@ def _solve_active(
         "IMCC-SF04 parent-balance solve did not converge",
         diagnostics,
     )
+
+
+def solve_active_warm(
+    x_target: np.ndarray,
+    nu: np.ndarray,
+    lnK: np.ndarray,
+    S: np.ndarray,
+    tol: float,
+    max_iter: int,
+    *,
+    y_init: np.ndarray | None = None,
+) -> tuple[
+    np.ndarray, np.ndarray, float, int, float, float, float, str, int, bool
+]:
+    """Use damped Newton first, then retain the existing NumPy fallback."""
+    ideal_y = np.log(np.maximum(x_target, 1.0e-12))
+    if y_init is None:
+        y = ideal_y.copy()
+    else:
+        y = np.asarray(y_init, dtype=np.float64).copy()
+        if y.shape != ideal_y.shape or not np.all(np.isfinite(y)):
+            raise ValueError("y_init must be a finite vector matching active parents")
+    y = np.clip(y, -200.0, 100.0)
+
+    newton_iterations = 0
+    for newton_iterations in range(max_iter + 1):
+        with np.errstate(over="ignore", invalid="ignore", under="ignore"):
+            f, g, D, J = _active_residual(y, x_target, nu, lnK, S)
+            scaled = f / x_target
+        if not (
+            np.all(np.isfinite(scaled))
+            and np.all(np.isfinite(g))
+            and math.isfinite(float(D))
+            and np.all(np.isfinite(J))
+        ):
+            break
+        residual_inf = float(np.linalg.norm(scaled, ord=np.inf))
+        residual_l2 = float(np.linalg.norm(scaled, ord=2))
+        if residual_inf <= tol:
+            return (
+                y,
+                g,
+                float(D),
+                newton_iterations,
+                residual_inf,
+                residual_l2,
+                float(np.linalg.norm(y - ideal_y)),
+                "newton",
+                0,
+                False,
+            )
+        if newton_iterations == max_iter:
+            break
+        try:
+            step = np.linalg.solve(J, -f)
+        except np.linalg.LinAlgError:
+            break
+        if not np.all(np.isfinite(step)):
+            break
+
+        accepted = False
+        alpha = 1.0
+        for _ in range(24):
+            candidate = y + alpha * step
+            if np.all(candidate >= -200.0) and np.all(candidate <= 100.0):
+                with np.errstate(over="ignore", invalid="ignore", under="ignore"):
+                    trial_f, _trial_g, _trial_D, _trial_J = _active_residual(
+                        candidate, x_target, nu, lnK, S
+                    )
+                    trial_norm = float(
+                        np.linalg.norm(trial_f / x_target, ord=np.inf)
+                    )
+                if math.isfinite(trial_norm) and trial_norm < residual_inf:
+                    y = candidate
+                    accepted = True
+                    break
+            alpha *= 0.5
+        if not accepted:
+            break
+
+    # The compatibility solve remains the only fallback; it now starts from
+    # the best Newton iterate and scales each balance by its analytical amount.
+    fallback = _solve_active(
+        x_target,
+        nu,
+        lnK,
+        S,
+        tol,
+        max_iter,
+        y_init=y,
+        relative_tolerance=True,
+    )
+    return (*fallback, True)
 
 
 def solve_imcc_sf04(
