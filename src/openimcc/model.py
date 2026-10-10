@@ -76,6 +76,46 @@ _EXPECTED_PARENT_OXIDES = (
 
 _PUBLISHED_CORE_ROWS = 38
 
+_D066_MODEL_ID = "IMCC-SF04-D066"
+_D066_CORE_ROWS = (
+    "Mg2SiO4", "MgSiO3", "MgAl2O4", "MgTiO3", "MgTi2O5", "Mg2TiO4",
+    "Al6Si2O13", "CaAl2O4", "CaAl4O7", "Ca12Al14O33", "CaSiO3",
+    "CaAl2Si2O8", "CaMgSi2O6", "Ca2MgSi2O7", "Ca2Al2SiO7", "CaTiO3",
+    "Ca2SiO4", "CaTiSiO5", "FeTiO3", "Fe2SiO4", "FeAl2O4", "CaAl12O19",
+    "Mg2Al4Si5O18", "Na2SiO3", "Na2Si2O5", "NaAlSiO4", "NaAlSi3O8",
+    "NaAlO2", "Na2TiO3", "NaAlSi2O6", "K2SiO3", "K2Si2O5", "KAlSiO4",
+    "KAlSi3O8", "KAlO2", "KAlSi2O6", "K2Si4O9", "KCaAlSi2O7",
+)
+_D066_TRANSLATED_ROWS = frozenset(
+    {"KAlSiO4", "KAlSi3O8", "KAlO2", "KAlSi2O6"}
+)
+_D066_REFERENCE_UNKNOWN_ROWS = frozenset(
+    {"K2SiO3", "K2Si2O5", "K2Si4O9"}
+)
+_D066_E25_ROWS = frozenset({"KCaAlSi2O7"})
+_D066_CARRIED_PUBLISHED_ROWS = frozenset(
+    name
+    for name in _D066_CORE_ROWS
+    if name not in (
+        _D066_TRANSLATED_ROWS
+        | _D066_REFERENCE_UNKNOWN_ROWS
+        | _D066_E25_ROWS
+    )
+)
+_D066_ROW_COVERAGE = MappingProxyType(
+    {
+        name: label
+        for rows, label in (
+            (_D066_TRANSLATED_ROWS, "D-translated-d066"),
+            (_D066_REFERENCE_UNKNOWN_ROWS, "D-reference-unknown"),
+            (_D066_E25_ROWS, "D-e25-kcaalsi2o7"),
+            (_D066_CARRIED_PUBLISHED_ROWS, "D-carried-published"),
+        )
+        for name in rows
+    }
+)
+_D066_E25_INACTIVE_REASON = "E25: out of liquid domain; owner-confirmed"
+
 _SP_EXTENSION_MODEL_ID = "IMCC-SF04-EXT"
 _SP_EXTENSION_PARENTS = ("S", "P2O5")
 _SP_EXTENSION_TIER = "EXT-SP"
@@ -173,6 +213,7 @@ class ImccLoadedDatapack:
     domain_basis: Sequence[str]
     extension_parents: Sequence[str] = ()
     extension_species: Sequence[str] = ()
+    inactive_rows: tuple[tuple[str, str], ...] = ()
 
     @property
     def model_id(self) -> str:
@@ -198,6 +239,7 @@ class ImccAdapterLabels:
     flags: tuple[str, ...] = ()
     notices: tuple[str, ...] = ()
     acid_sink_ratio: float | None = None
+    inactive_rows: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -280,6 +322,7 @@ def _validate_published_core(
             raise ImccMalformedDatapackError(
                 f"published core row {idx} is not an object"
             )
+    _validate_active_row_metadata(rows, label="published core")
     try:
         content_hash = _published_datapack_manifest_hash(
             _published_core_manifest_payload(
@@ -297,6 +340,107 @@ def _validate_published_core(
             "published IMCC datapack canonical hash mismatch: "
             f"expected {_PUBLISHED_DATAPACK_SHA256}, got {content_hash}"
         )
+    return rows, content_hash
+
+
+def _validate_active_row_metadata(
+    rows: Sequence[Mapping[str, Any]], *, label: str
+) -> None:
+    for idx, row in enumerate(rows):
+        active = row.get("active", True)
+        if "active" in row and not isinstance(active, bool):
+            raise ImccMalformedDatapackError(
+                f"{label} row {idx} active must be a boolean"
+            )
+        inactive_reason = row.get("inactive_reason")
+        if active is False:
+            if not isinstance(inactive_reason, str) or not inactive_reason.strip():
+                raise ImccMalformedDatapackError(
+                    f"{label} row {idx} inactive_reason must be a non-empty string when active is false"
+                )
+        elif "inactive_reason" in row:
+            raise ImccMalformedDatapackError(
+                f"{label} row {idx} inactive_reason is only allowed when active is false"
+            )
+
+
+def _validate_d066_core(
+    data: Mapping[str, Any],
+) -> tuple[list[dict[str, Any]], str]:
+    rows = data.get("rows")
+    if not isinstance(rows, list) or len(rows) != len(_D066_CORE_ROWS):
+        raise ImccMalformedDatapackError(
+            f"D066 core must contain exactly {len(_D066_CORE_ROWS)} rows"
+        )
+    if any(not isinstance(row, dict) for row in rows):
+        raise ImccMalformedDatapackError("D066 core rows must be objects")
+    _validate_active_row_metadata(rows, label="D066 core")
+
+    names = tuple(row.get("complex") for row in rows)
+    if names != _D066_CORE_ROWS:
+        raise ImccMalformedDatapackError(
+            "D066 core row set or order does not match the frozen SF04 row set"
+        )
+    for idx, row in enumerate(rows, start=1):
+        name = row["complex"]
+        source_row = row.get("row")
+        if type(source_row) is not int or source_row != idx:
+            raise ImccMalformedDatapackError(
+                f"D066 row {name!r} must retain source row number {idx}"
+            )
+        if row.get("coverage") != _D066_ROW_COVERAGE[name]:
+            raise ImccMalformedDatapackError(
+                f"D066 row {name!r} has invalid coverage label"
+            )
+        lineage = row.get("d066_source_row")
+        if (
+            not isinstance(lineage, dict)
+            or set(lineage) != {"pack", "row"}
+            or lineage.get("pack") != "imcc-sf04-v1.0.2.json"
+            or type(lineage.get("row")) is not int
+            or lineage["row"] != idx
+        ):
+            raise ImccMalformedDatapackError(
+                f"D066 row {name!r} must identify its v1.0.2 source row"
+            )
+        flags = row.get("flags", [])
+        if not isinstance(flags, list) or not all(
+            isinstance(flag, str) for flag in flags
+        ):
+            raise ImccMalformedDatapackError(
+                f"D066 row {name!r} flags must be a list of strings"
+            )
+        if name in _D066_REFERENCE_UNKNOWN_ROWS:
+            if row.get("active", True) is not True or "reference_unknown" not in flags:
+                raise ImccMalformedDatapackError(
+                    f"D066 row {name!r} must remain active and carry reference_unknown"
+                )
+        elif name not in _D066_E25_ROWS and row.get("active", True) is not True:
+            raise ImccMalformedDatapackError(
+                f"D066 row {name!r} cannot be inactive"
+            )
+
+    e25 = next(row for row in rows if row["complex"] in _D066_E25_ROWS)
+    if e25.get("active", True) is False:
+        if e25.get("inactive_reason") != _D066_E25_INACTIVE_REASON:
+            raise ImccMalformedDatapackError(
+                "D066 inactive KCaAlSi2O7 must identify the E25 ruling"
+            )
+        if "kcaalsi2o7_out_of_liquid_domain" in e25.get("flags", []):
+            raise ImccMalformedDatapackError(
+                "inactive D066 KCaAlSi2O7 cannot carry the sensitivity flag"
+            )
+    elif "kcaalsi2o7_out_of_liquid_domain" not in e25.get("flags", []):
+        raise ImccMalformedDatapackError(
+            "active D066 KCaAlSi2O7 must carry the sensitivity flag"
+        )
+
+    try:
+        content_hash = _published_datapack_manifest_hash(data)
+    except (TypeError, ValueError) as exc:
+        raise ImccMalformedDatapackError(
+            "D066 datapack cannot be canonically serialized"
+        ) from exc
     return rows, content_hash
 
 
@@ -327,10 +471,10 @@ def _wt_to_mol(vector: np.ndarray, parent_oxides: Sequence[str]) -> np.ndarray:
 def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     """Load an IMCC-SF04 datapack JSON into the kernel datapack object.
 
-    Validates the complete canonical published datapack hash. ``IMCC-SF04-EXT``
-    packs may add the separately labelled ``sp_extension`` section; their base
-    datapack projects to the same frozen published identity. With no path, the
-    packaged ``imcc-sf04-v1.0.2`` resource is loaded.
+    Published packs validate against the frozen published-core hash. D066 packs
+    validate their own frozen row set and carry a non-published identity.
+    ``sp_extension`` may accompany either identity. With no path, the packaged
+    v1.0.2 published resource is loaded.
     """
     source = (
         resources.files("openimcc")
@@ -374,21 +518,26 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     extension_parents: tuple[str, ...] = ()
     extension_rows: list[dict[str, Any]] = []
     if sp_extension is None:
-        if model_id != "IMCC-SF04":
+        if model_id not in {"IMCC-SF04", _D066_MODEL_ID}:
             raise ImccMalformedDatapackError(
                 f"model_id {model_id!r} requires a recognized extension section"
             )
     else:
-        if model_id != _SP_EXTENSION_MODEL_ID:
+        if model_id not in {_SP_EXTENSION_MODEL_ID, _D066_MODEL_ID}:
             raise ImccMalformedDatapackError(
-                "sp_extension requires model_id='IMCC-SF04-EXT'"
+                "sp_extension requires model_id='IMCC-SF04-EXT' or "
+                "model_id='IMCC-SF04-D066'"
             )
 
-    rows, published_manifest_sha256 = _validate_published_core(
-        data,
-        model_id=model_id,
-        version=version,
-    )
+    if model_id == _D066_MODEL_ID:
+        rows, _d066_manifest_sha256 = _validate_d066_core(data)
+        published_manifest_sha256 = None
+    else:
+        rows, published_manifest_sha256 = _validate_published_core(
+            data,
+            model_id=model_id,
+            version=version,
+        )
 
     if sp_extension is not None:
         if not isinstance(sp_extension, dict):
@@ -573,6 +722,12 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     if len(set(reactions)) != len(reactions):
         raise ImccMalformedDatapackError("datapack complex names must be unique")
 
+    inactive_rows = tuple(
+        (str(row["complex"]), row["inactive_reason"])
+        for row in rows
+        if row.get("active", True) is False
+    )
+
     binding_manifest = dict(data)
     binding_manifest["model_id"] = model_id
     binding_manifest["imcc_sf04_datapack_version"] = version
@@ -598,10 +753,31 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     )
     extension_species = tuple(str(row["complex"]) for row in extension_rows)
     extension_names = set(extension_parents) | set(extension_species)
-    coverage = {
-        name: (_SP_EXTENSION_TIER if name in extension_names else "A-published-imcc")
-        for name in (*parents, *reactions)
-    }
+    if model_id == _D066_MODEL_ID:
+        coverage = {
+            name: (
+                _SP_EXTENSION_TIER if name in extension_names else
+                "D-carried-published"
+            )
+            for name in parents
+        }
+        coverage.update(
+            {
+                str(row["complex"]): str(row["coverage"])
+                for row in rows
+            }
+        )
+        coverage.update(
+            {
+                name: _SP_EXTENSION_TIER
+                for name in extension_species
+            }
+        )
+    else:
+        coverage = {
+            name: (_SP_EXTENSION_TIER if name in extension_names else "A-published-imcc")
+            for name in (*parents, *reactions)
+        }
     kernel_datapack = _label_loaded_datapack(
         kernel_datapack,
         model_id=model_id,
@@ -610,13 +786,53 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         binding_digest=binding_digest,
     )
 
+    active_indices = list(range(len(all_rows)))
+    if inactive_rows:
+        active_indices = [
+            idx
+            for idx, row in enumerate(all_rows)
+            if row.get("active", True) is True
+        ]
+        labelled_identity = kernel_datapack._identity
+        kernel_datapack = replace(
+            kernel_datapack,
+            reactions=tuple(kernel_datapack.reactions[idx] for idx in active_indices),
+            nu=kernel_datapack.nu[:, active_indices],
+            A=kernel_datapack.A[active_indices],
+            B=kernel_datapack.B[active_indices],
+            domains=tuple(kernel_datapack.domains[idx] for idx in active_indices),
+            paper_domains=tuple(
+                kernel_datapack.paper_domains[idx] for idx in active_indices
+            ),
+        )
+        for array_name in ("nu", "A", "B"):
+            getattr(kernel_datapack, array_name).setflags(write=False)
+        # The digest identifies the complete source manifest; the loaded
+        # coverage map must describe the same active species as the arrays.
+        active_species = set(kernel_datapack.parent_oxides) | set(
+            kernel_datapack.reactions
+        )
+        active_coverage = {
+            name: label
+            for name, label in labelled_identity.coverage.items()
+            if name in active_species
+        }
+        kernel_datapack = _label_loaded_datapack(
+            kernel_datapack,
+            model_id=model_id,
+            coverage=active_coverage,
+            published_manifest_sha256=published_manifest_sha256,
+            binding_digest=binding_digest,
+        )
+
     return ImccLoadedDatapack(
         kernel_datapack=kernel_datapack,
         version=version,
         parent_oxides=parents,
-        domain_basis=tuple(domain_basis),
+        domain_basis=tuple(domain_basis[idx] for idx in active_indices),
         extension_parents=extension_parents,
         extension_species=extension_species,
+        inactive_rows=inactive_rows,
     )
 
 
@@ -645,8 +861,9 @@ def _sp_extension_refusal(component_names: Sequence[str]) -> ImccSPComponentRequ
     names = ", ".join(sorted(component_names)) or "S/P EXT component(s)"
     return ImccSPComponentRequiresExtensionError(
         f"{names} belong to the S/P EXT component class; unlock only with "
-        "model_id='IMCC-SF04-EXT' and enable_sp_extension=True. Plain "
-        "IMCC-SF04 intentionally excludes S/P speciation."
+        "an extension pack with model_id='IMCC-SF04-EXT' or "
+        "model_id='IMCC-SF04-D066' and enable_sp_extension=True. Plain core "
+        "packs intentionally exclude S/P speciation."
     )
 
 
@@ -680,7 +897,7 @@ def evaluate(
     pack:
         Loaded datapack, or a raw kernel datapack labelled by
         ``label_research_datapack()``. If omitted, the packaged
-        ``imcc-sf04-v1.0.2`` datapack is used. Unlabelled raw packs are refused.
+        D066 primary datapack is used. Unlabelled raw packs are refused.
     basis:
         Declared normalization basis in the same units as ``basis_type``. If
         ``None``, the composition sum is used.
@@ -691,7 +908,7 @@ def evaluate(
         raises ``ImccFerricInputUnsupportedError``; other positives outside the
         parent basis raise ``ImccComponentOutsideDomainError``.
     enable_sp_extension:
-        Explicitly enable S and P2O5 parents in an ``IMCC-SF04-EXT`` pack.
+        Explicitly enable S and P2O5 parents in an extension pack.
         The flag alone never widens a plain ``IMCC-SF04`` pack.
     allow_extrapolation:
         If ``True``, evaluate outside declared T domains and mark the result
@@ -717,12 +934,14 @@ def evaluate(
         kernel_pack = pack.kernel_datapack
         parent_oxides = pack.parent_oxides
         extension_parents = tuple(pack.extension_parents)
+        inactive_rows = pack.inactive_rows
     else:
         kernel_pack = pack
         parent_oxides = pack.parent_oxides
         extension_parents = tuple(
             name for name in _SP_EXTENSION_PARENTS if name in parent_oxides
         )
+        inactive_rows = ()
 
     binding_digest = kernel_pack.binding_digest
     if binding_digest is None:
@@ -762,7 +981,7 @@ def evaluate(
             if float(extra_mol.get(name, 0.0)) != 0.0
         )
 
-    if model_id == _SP_EXTENSION_MODEL_ID:
+    if extension_parents:
         if not enable_sp_extension:
             raise _sp_extension_refusal(extension_parents)
     elif enable_sp_extension or supplied_sp_names:
@@ -1005,6 +1224,7 @@ def evaluate(
         acid_sink_ratio=acid_sink_ratio,
         flags=tuple(flags),
         notices=notices,
+        inactive_rows=inactive_rows,
     )
 
     return replace(result, labels=adapter_labels)

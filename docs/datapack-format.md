@@ -161,14 +161,15 @@ The S/P extension row provenance objects add these fields. `source` and
 
 ## 3. Active row objects
 
-The following are the keys found across the legacy active rows arrays. The
-Required? column again describes the legacy melt loader. Every shipped active
-row has the metadata fields marked “No” in at least some pack, but those
-fields are not required to construct the kernel datapack.
+The following are keys found across the active `rows` arrays in the
+shipped packs. The Required? column again describes the current melt loader.
+Every shipped active row has the metadata fields marked “No” in at least some
+pack, but those fields are not required to construct the kernel datapack.
 
 | Key | JSON type in shipped packs | Required? | Meaning |
 |---|---|---|---|
 | A | number | Yes | Intercept in log10 K_j(T) = A_j + B_j/T_K. |
+| active | boolean | No | Defaults to true when absent. If false, the row must have a non-empty `inactive_reason`; if true or absent, `inactive_reason` is forbidden. Inactive core rows still count toward row-set and identity checks, then are filtered from solver species and equations and listed in `ImccLoadedDatapack.inactive_rows`. |
 | B | number | Yes | Kelvin-scaled inverse-temperature coefficient in the same fit. |
 | T_domain_K | array of two numbers | Yes | Declared inclusive [low, high] Kelvin interval used by the solver for this active complex. |
 | T_domain_basis | string | Yes | Evidence or policy basis for the declared runtime interval, such as the SF04-exercised interval or a JANAF regression interval. The loader stores the string but does not interpret its wording. |
@@ -178,6 +179,7 @@ fields are not required to construct the kernel datapack.
 | derivation | string | No | Reaction, reference-state, and coefficient-derivation narrative. The loader does not parse it. |
 | fit_metadata | object | No | Regression grid, point count, fit residuals, direct spot checks, or related fit diagnostics. |
 | fusion_transition_K | number | No | Fusion transition temperature used by the row's thermodynamic construction, in kelvin. |
+| inactive_reason | non-empty string | Required when active is false | Reason the core row is disabled. The loader rejects it when `active` is true or absent. |
 | janaf_liquid_table_range_K | array of two numbers | No | Temperature range represented by the cited JANAF liquid table, in kelvin. |
 | janaf_range_caveat | string or null | No | Caveat about liquid-table range, metastable/supercooled liquid values, or related table interpretation. |
 | merge_action | string | No | Extension-overlay action such as replace-same-name-published-fit. It records merge intent; the production loader does not apply it. |
@@ -196,6 +198,12 @@ fields are not required to construct the kernel datapack.
 | source_tables | string | No | Table/page identifiers used for a compound and its parents, used by one extension row. |
 | supersedes | object | No | Earlier row/fit record superseded by this row; shipped objects contain prior A, B, and source. |
 | transcription_note | string | No | Note about OCR, visual transcription, or a field-level source-reading decision. |
+
+For a pack with inactive core rows, the binding digest covers the complete
+source manifest, including those rows. After loading, the public coverage map
+contains only the parents and active complexes represented by the solver
+arrays; inactive-row provenance remains available through
+`ImccLoadedDatapack.inactive_rows`.
 
 The loader uses only the coefficient, stoichiometry, name, and declared-domain
 fields needed to construct the kernel object. It does not validate that
