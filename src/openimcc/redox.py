@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from fractions import Fraction
 import math
 from numbers import Real
 from types import MappingProxyType
@@ -173,6 +174,57 @@ def _parent_oxygen_counts(
     )
 
 
+def _oxygen_inventory_targets(
+    parent_moles: np.ndarray,
+    oxygen_parent_counts: np.ndarray,
+    fe_index: int,
+    oxygen_inventory: float,
+) -> tuple[float, float]:
+    total_fe = float(parent_moles[fe_index])
+    non_fe_products = [
+        float(parent_moles[index]) * float(oxygen_parent_counts[index])
+        for index in range(len(parent_moles))
+        if index != fe_index and parent_moles[index] > 0.0
+        and oxygen_parent_counts[index] > 0.0
+    ]
+    oxidised_fe_oxygen = 1.5 * total_fe
+    target_surplus = math.fsum(
+        [oxygen_inventory] + [-product for product in non_fe_products]
+    )
+    target_deficit = math.fsum(
+        [oxidised_fe_oxygen, *non_fe_products, -oxygen_inventory]
+    )
+    oxygen_scale = math.fsum(
+        [abs(oxygen_inventory), abs(oxidised_fe_oxygen)]
+        + [abs(product) for product in non_fe_products]
+    )
+    precision_limit = 16.0 * math.ulp(max(oxygen_scale, 1.0))
+    if min(abs(target_surplus), abs(target_deficit)) > precision_limit:
+        return target_surplus, target_deficit
+
+    # Near either endpoint, retain the exact products of the input floats so
+    # the oxygen difference is not quantized by a rounded intermediate sum.
+    fixed_oxygen = sum(
+        (
+            Fraction(float(parent_moles[index]))
+            * int(oxygen_parent_counts[index])
+            for index in range(len(parent_moles))
+            if index != fe_index and parent_moles[index] > 0.0
+            and oxygen_parent_counts[index] > 0.0
+        ),
+        Fraction(),
+    )
+    exact_inventory = Fraction(oxygen_inventory)
+    return (
+        float(exact_inventory - fixed_oxygen),
+        float(
+            Fraction(3, 2) * Fraction(total_fe)
+            + fixed_oxygen
+            - exact_inventory
+        ),
+    )
+
+
 def _inventory_parent_moles(
     inventory: Mapping[str, float],
     parent_names: Sequence[str],
@@ -330,19 +382,10 @@ def _state_species(
 ) -> tuple[dict[str, float], dict[str, float], float]:
     parent_names = _redox_parent_names(redox_pack)
     complex_names = tuple(base_datapack.reactions) + ("FeO1.5(l)",)
-    fe_index = parent_names.index("FeO")
-    all_nu = np.column_stack(
-        (
-            _redox_parent_stoichiometry(base_datapack, redox_pack),
-            np.eye(len(parent_names), dtype=np.float64)[fe_index],
-        )
-    )
     oxygen_parent = _parent_oxygen_counts(parent_names, redox_pack)
-    ferric_delta = -2.0 * float(
-        redox_pack.rows[1]["external_oxygen_stoich_product_positive"]
+    oxygen_complex = _complex_oxygen_counts(
+        base_datapack, redox_pack, oxygen_parent
     )
-    oxygen_complex = oxygen_parent @ all_nu
-    oxygen_complex[-1] += ferric_delta
 
     total_species_moles = state.basis / state.D
     parent_amount = np.zeros(len(parent_names), dtype=np.float64)
@@ -362,6 +405,26 @@ def _state_species(
         for name, value in zip(parent_names + complex_names, np.concatenate((parent_amount, complex_amount)))
     }
     return parents, species, oxygen_moles
+
+
+def _complex_oxygen_counts(
+    base_datapack: Any,
+    redox_pack: RedoxPack,
+    oxygen_parent: np.ndarray,
+) -> np.ndarray:
+    parent_names = _redox_parent_names(redox_pack)
+    fe_index = parent_names.index("FeO")
+    all_nu = np.column_stack(
+        (
+            _redox_parent_stoichiometry(base_datapack, redox_pack),
+            np.eye(len(parent_names), dtype=np.float64)[fe_index],
+        )
+    )
+    oxygen_complex = oxygen_parent @ all_nu
+    oxygen_complex[-1] -= 2.0 * float(
+        redox_pack.rows[1]["external_oxygen_stoich_product_positive"]
+    )
+    return oxygen_complex
 
 
 def _fe_redox_oxygen_amounts(
@@ -489,18 +552,37 @@ def _saturation_state(
     max_iter: int,
 ) -> tuple[float, _LiquidState, int]:
     fe_index = _redox_parent_names(redox_pack).index("FeO")
-    reduced = _active_inner(
-        parent_moles,
-        temperature_K,
-        0.0,
-        base_datapack,
-        redox_pack,
-        include_ferric=False,
-        y_init=y_init,
-        tol=tol,
-        max_iter=max_iter,
-    )
-    reduced_fe = int(np.flatnonzero(reduced.active_parent == fe_index)[0])
+    active_parent = parent_moles > 0.0
+    active_parent_indices = np.flatnonzero(active_parent)
+    parent_total = float(np.sum(parent_moles))
+    reduced_seed = np.log(parent_moles[active_parent] / parent_total)
+    try:
+        # The full-state Fe activity includes ferric Fe; reset that coordinate
+        # to its reduced-state ideal fraction while keeping the other warm starts.
+        if y_init is not None and y_init.shape == reduced_seed.shape:
+            reduced_seed = y_init.copy()
+        reduced_fe_seed = int(
+            np.flatnonzero(active_parent_indices == fe_index)[0]
+        )
+        reduced_seed[reduced_fe_seed] = math.log(
+            float(parent_moles[fe_index]) / parent_total
+        )
+        reduced = _active_inner(
+            parent_moles,
+            temperature_K,
+            0.0,
+            base_datapack,
+            redox_pack,
+            include_ferric=False,
+            y_init=reduced_seed,
+            tol=tol,
+            max_iter=max_iter,
+        )
+        reduced_fe = int(np.flatnonzero(reduced.active_parent == fe_index)[0])
+    except (IndexError, ValueError) as exc:
+        raise RedoxNumericalError(
+            "ferric-free Fe saturation solve failed"
+        ) from exc
     lambda_reduced = 2.0 * (float(reduced.y[reduced_fe]) - ln_k_fe)
     lower = lambda_reduced
     lower_state = _active_inner(
@@ -695,20 +777,19 @@ def _assemble_result(
     )
     residual = None
     if oxygen_inventory is not None:
-        reduced_fe, ferric_fe = _fe_redox_oxygen_amounts(
-            species_values, base_datapack
+        complex_names = tuple(base_datapack.reactions) + ("FeO1.5(l)",)
+        oxygen_complex = _complex_oxygen_counts(
+            base_datapack, redox_pack, oxygen_parent_counts
         )
-        if metal_moles == 0.0:
-            total_fe = float(state.parent_moles[fe_index])
-            target_deficit = math.fsum(
-                (1.5 * total_fe, non_fe_oxygen, -oxygen_inventory)
-            )
-            residual = target_deficit - 0.5 * reduced_fe
-        else:
-            target_surplus = math.fsum((oxygen_inventory, -non_fe_oxygen))
-            residual = math.fsum(
-                (reduced_fe, 1.5 * ferric_fe, -target_surplus)
-            )
+        species_oxygen_terms = [
+            float(species_values[name]) * float(oxygen_parent_counts[index])
+            for index, name in enumerate(parent_names)
+        ]
+        species_oxygen_terms.extend(
+            float(species_values[name]) * float(oxygen_complex[index])
+            for index, name in enumerate(complex_names)
+        )
+        residual = math.fsum((*species_oxygen_terms, -oxygen_inventory))
     oxygen_scale = oxygen_mol if oxygen_inventory is None else oxygen_inventory
     flags = _make_flags(
         temperature_K,
@@ -843,11 +924,6 @@ def evaluate_redox(
             )
     ln_k_fe = _ln_k_fe(redox_pack, temperature)
     total_fe = float(parent_moles[fe_index])
-    non_fe_oxygen = math.fsum(
-        float(parent_moles[index]) * float(oxygen_parent_counts[index])
-        for index in range(len(parent_names))
-        if index != fe_index
-    )
 
     if mode == "imposed":
         state = _active_inner(
@@ -933,7 +1009,12 @@ def evaluate_redox(
             high_state = imposed_state_at_m(metal_high)
             low_species = _state_species(low_state, base_datapack, redox_pack)[1]
             high_species = _state_species(high_state, base_datapack, redox_pack)[1]
-            target_surplus = math.fsum((oxygen_inventory, -non_fe_oxygen))
+            target_surplus, _target_deficit = _oxygen_inventory_targets(
+                parent_moles,
+                oxygen_parent_counts,
+                fe_index,
+                oxygen_inventory,
+            )
             low_residual = (
                 _oxygen_surplus_from_reduced_fe(low_species, base_datapack)
                 - target_surplus
@@ -1136,8 +1217,12 @@ def evaluate_redox(
         )
 
     assert oxygen_inventory is not None
-    target_surplus = math.fsum((oxygen_inventory, -non_fe_oxygen))
-    target_deficit = math.fsum((1.5 * total_fe, -target_surplus))
+    target_surplus, target_deficit = _oxygen_inventory_targets(
+        parent_moles,
+        oxygen_parent_counts,
+        fe_index,
+        oxygen_inventory,
+    )
     if target_surplus < 0.0:
         raise RedoxEndpointError(
             "oxygen inventory is below the fixed non-Fe oxide oxygen",

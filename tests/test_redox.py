@@ -6,9 +6,11 @@ import numpy as np
 import pytest
 
 from openimcc import (
+    ImccRefusal,
     RedoxEndpointError,
     RedoxInputError,
     RedoxNoLiveCoupleError,
+    RedoxResult,
     evaluate_redox,
     load_datapack,
 )
@@ -348,7 +350,144 @@ def test_closed_mode_solves_representable_states_near_oxidised_endpoint(
     assert near_fully_oxidised.lambda_ln_f_o2 == pytest.approx(
         expected_lambda, abs=2.0e-2
     )
-    assert abs(near_fully_oxidised.oxygen_residual_mol or 0.0) <= 5.0e-16
+
+
+def test_imposed_and_closed_match_at_nextafter_oxidised_fe_endpoint() -> None:
+    inventory = {"Fe": 1.0, "O": 1.4999999999999998}
+    # Independent Fe-only mass action at 2200 K, with
+    # O = 1 + 0.5*x_FeO1.5, gives lambda = 140.6826343756.
+    closed = evaluate_redox(inventory, 2200.0, "closed")
+    imposed = evaluate_redox(
+        inventory,
+        2200.0,
+        "imposed",
+        lambda_imposed=closed.lambda_ln_f_o2,
+    )
+
+    assert closed.lambda_ln_f_o2 == pytest.approx(140.6826343756, abs=2.0e-8)
+    assert imposed.lambda_ln_f_o2 == closed.lambda_ln_f_o2
+    assert imposed.species_moles == pytest.approx(closed.species_moles, rel=1.0e-12)
+    assert imposed.oxygen_mol == pytest.approx(closed.oxygen_mol, abs=1.0e-12)
+
+
+def test_mixed_inventory_signed_oxygen_cancellation_uses_unrounded_terms() -> None:
+    inventory = {
+        "Fe": 1.0,
+        "Si": 0.8,
+        "Mg": 0.3,
+        "Al": 0.2,
+        "Ca": 0.1,
+        "O": 3.7999999999999994,
+    }
+    # An independent 80-digit solve of the parent and ferric mass-action
+    # equations, retaining each input's exact binary value and oxide oxygen
+    # product, gives lambda = 136.5922522699.
+    result = evaluate_redox(inventory, 2200.0, "closed")
+
+    assert result.lambda_ln_f_o2 == pytest.approx(136.5922522699, abs=1.0e-8)
+
+
+def test_closed_residual_reconstructs_compensated_species_oxygen_ledger() -> None:
+    inventory = {"Fe": 1.0, "O": 1.4999999999999998}
+    result = evaluate_redox(inventory, 2200.0, "closed")
+    redox_pack = load_redox_pack()
+    base = load_datapack().kernel_datapack
+    parent_names = tuple(base.parent_oxides)
+    parent_records = {
+        str(record["parent_oxide"]).removesuffix("(l)"): record
+        for record in redox_pack.parents
+    }
+    oxygen_parent = np.asarray(
+        [
+            float(parent_records[name]["parent_formula_atoms"].get("O", 0.0))
+            for name in parent_names
+        ],
+        dtype=np.float64,
+    )
+    fe_index = parent_names.index("FeO")
+    all_nu = np.column_stack(
+        (base.nu, np.eye(len(parent_names), dtype=np.float64)[fe_index])
+    )
+    oxygen_complex = oxygen_parent @ all_nu
+    oxygen_complex[-1] -= 2.0 * float(
+        redox_pack.rows[1]["external_oxygen_stoich_product_positive"]
+    )
+    complex_names = tuple(base.reactions) + ("FeO1.5(l)",)
+    # Independent ledger: sum each returned species' oxygen atoms before
+    # subtracting the prescribed O inventory. This exposes the inner-balance
+    # error omitted by the former reduced-Fe-only residual.
+    oxygen_terms = [
+        result.species_moles[name] * oxygen_parent[index]
+        for index, name in enumerate(parent_names)
+    ]
+    oxygen_terms.extend(
+        result.species_moles[name] * oxygen_complex[index]
+        for index, name in enumerate(complex_names)
+    )
+    reconstructed_residual = math.fsum((*oxygen_terms, -inventory["O"]))
+
+    assert reconstructed_residual == pytest.approx(6.661338147750939e-16, abs=2.0e-30)
+    assert result.oxygen_residual_mol == reconstructed_residual
+
+
+def test_oxygen_sweep_is_typed_monotone_and_modes_agree_near_both_limits() -> None:
+    cases = (
+        ("Fe-only", {"Fe": 1.0}, 0.0, 1.5),
+        (
+            "mixed",
+            {"Fe": 1.0, "Si": 0.8, "Mg": 0.3, "Al": 0.2, "Ca": 0.1},
+            2.3,
+            3.8,
+        ),
+    )
+    for label, base_inventory, reduced_limit, oxidised_limit in cases:
+        oxygen_values = [math.nextafter(reduced_limit, math.inf)]
+        oxygen_values.extend(
+            float(value)
+            for value in np.linspace(reduced_limit, oxidised_limit, 9)[1:-1]
+        )
+        oxygen_values.append(math.nextafter(oxidised_limit, -math.inf))
+        closed_lambdas: list[float] = []
+        imposed_lambdas: list[float] = []
+
+        for oxygen in oxygen_values:
+            inventory = dict(base_inventory, O=oxygen)
+            closed = evaluate_redox(inventory, 2200.0, "closed")
+            assert isinstance(closed, RedoxResult)
+            closed_lambdas.append(closed.lambda_ln_f_o2)
+            try:
+                imposed = evaluate_redox(
+                    inventory,
+                    2200.0,
+                    "imposed",
+                    lambda_imposed=closed.lambda_ln_f_o2,
+                )
+            except ImccRefusal as exc:
+                # At the smallest positive Fe-only O float, the metal extent
+                # is below float resolution; the imposed endpoint is refused
+                # through the typed public error hierarchy.
+                assert label == "Fe-only"
+                assert oxygen == oxygen_values[0]
+                assert isinstance(exc, RedoxEndpointError)
+                assert exc.endpoint == "imposed_inventory_inconsistent"
+                continue
+            assert isinstance(imposed, RedoxResult)
+            imposed_lambdas.append(imposed.lambda_ln_f_o2)
+            assert imposed.lambda_ln_f_o2 == closed.lambda_ln_f_o2
+            assert imposed.metal_moles == pytest.approx(closed.metal_moles, abs=2.0e-10)
+            assert imposed.species_moles == pytest.approx(
+                closed.species_moles, rel=2.0e-9, abs=1.0e-14
+            )
+            assert imposed.oxygen_mol == pytest.approx(closed.oxygen_mol, abs=2.0e-10)
+
+        assert all(
+            following >= previous
+            for previous, following in zip(closed_lambdas, closed_lambdas[1:])
+        )
+        assert all(
+            following >= previous
+            for previous, following in zip(imposed_lambdas, imposed_lambdas[1:])
+        )
 
 
 def test_trace_oxygen_metal_extent_matches_in_closed_and_imposed_modes() -> None:
