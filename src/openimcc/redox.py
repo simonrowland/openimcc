@@ -11,6 +11,7 @@ from types import MappingProxyType
 from typing import Any, Literal
 
 import numpy as np
+from scipy.optimize import linprog
 
 from openimcc.kernel import (
     ImccRefusal,
@@ -274,6 +275,61 @@ def _oxygen_inventory_targets(
         for index in range(len(parent_moles))
     ]
     parent_oxygen_total = math.fsum(parent_oxygen)
+
+    # Premise: rows sharing a parent compete for the same feed. Algebra: the
+    # feasible row extents satisfy nu @ n <= parent_moles and n >= 0; min/max
+    # of Delta-O @ n give the endpoint shifts. Units are mol O atoms. Sanity:
+    # TiO3 and TiO4 cannot each consume the full amount of one TiO2 parent.
+    shared_parent = np.any(np.count_nonzero(redox_nu > 0.0, axis=1) > 1)
+    if shared_parent:
+        constraints = {
+            "A_ub": redox_nu,
+            "b_ub": parent_moles,
+            "bounds": (0.0, None),
+            "method": "highs",
+        }
+        minimum = linprog(row_oxygen_delta, **constraints)
+        maximum = linprog(-row_oxygen_delta, **constraints)
+        if not minimum.success or not maximum.success:
+            raise RedoxNumericalError(
+                "could not determine shared-parent oxygen inventory limits"
+            )
+
+        exact_parent_oxygen = sum(
+            (
+                Fraction(float(parent_moles[index]))
+                * Fraction(float(oxygen_parent_counts[index]))
+                for index in range(len(parent_moles))
+            ),
+            Fraction(),
+        )
+        exact_minimum_change = sum(
+            (
+                Fraction(float(delta)) * Fraction(float(extent))
+                for delta, extent in zip(row_oxygen_delta, minimum.x)
+            ),
+            Fraction(),
+        )
+        exact_maximum_change = sum(
+            (
+                Fraction(float(delta)) * Fraction(float(extent))
+                for delta, extent in zip(row_oxygen_delta, maximum.x)
+            ),
+            Fraction(),
+        )
+        exact_minimum = (
+            exact_parent_oxygen
+            - Fraction(float(parent_moles[fe_index]))
+            * Fraction(float(oxygen_parent_counts[fe_index]))
+            + exact_minimum_change
+        )
+        exact_maximum = exact_parent_oxygen + exact_maximum_change
+        exact_inventory = Fraction(float(oxygen_inventory))
+        return (
+            float(exact_inventory - exact_minimum),
+            float(exact_maximum - exact_inventory),
+        )
+
     minimum_terms = [
         parent_oxygen_total,
         -float(parent_moles[fe_index]) * float(oxygen_parent_counts[fe_index]),
@@ -643,15 +699,13 @@ def _closed_oxygen_deficit_residual(
                     math.fsum(other_usage[local_parent])
                     / float(redox_nu[parent_index, column])
                 )
-            missing_oxygen.append(
-                float(delta) * min(available_extents)
-            )
+            missing_oxygen.append(float(delta) * min(available_extents))
         elif delta < 0.0:
             missing_oxygen.append(-float(delta) * amount)
     # Premise: at parent balance, the unfilled extent of a positive-Delta row
-    # is carried by the other species consuming its parents; negative-Delta
-    # rows are absent at the oxidised endpoint. Algebra: inventory-minus-O is
-    # sum(missing Delta-O extents) - upper-endpoint deficit. Units are mol O.
+    # is carried by other species consuming its parents; negative-Delta rows
+    # are absent at the oxidised endpoint. Algebra: inventory-minus-O is the
+    # missing Delta-O extent minus the upper-endpoint deficit. Units are mol O.
     # Sanity: FeO1.5 reduces to 0.5*FeO_equivalents - (1.5*Fe - O_inventory).
     return math.fsum((*missing_oxygen, -target_deficit))
 
@@ -1437,9 +1491,9 @@ def evaluate_redox(
             "the oxygen inventory is at the fully reduced limit; no finite Fe redox couple remains"
         )
 
-    # Each endpoint starts from parent formula oxygen, then applies the largest
-    # stoichiometrically available extent of every redox row in its direction.
-    # The Fe-metal endpoint removes the oxygen in the FeO parent formula.
+    # Each endpoint starts from parent formula oxygen. Shared-parent rows use
+    # the joint extent constraints above; disjoint rows can each reach their
+    # individual limiting extent. The Fe-metal endpoint removes FeO oxygen.
     if target_deficit <= 0.0:
         excess = -target_deficit
         raise RedoxEndpointError(
@@ -1453,6 +1507,14 @@ def evaluate_redox(
         target_deficit,
     )
     oxygen_tolerance = tolerance * endpoint_distance
+    # Premise: the reported float64 ledger cannot resolve below its rounding
+    # scale. Algebra: accept max(solver tolerance, 16 ULPs of O), in mol O.
+    # Sanity: this floor matters only when the endpoint distance is itself
+    # below float64 resolution; the ordinary closed-root bar is unchanged.
+    ledger_tolerance = max(
+        oxygen_tolerance,
+        16.0 * math.ulp(max(abs(oxygen_inventory), 1.0)),
+    )
     root_tolerance = (
         min(tolerance, 1.0e-14)
         if endpoint_distance <= 1.0e-8 * max(abs(oxygen_inventory), 1.0)
@@ -1476,35 +1538,39 @@ def evaluate_redox(
         oxidised_state, oxidised_species, redox_pack, target_deficit
     )
     if abs(oxidised_residual) <= oxygen_tolerance:
-        lambda_sat, sat_state, saturation_fallbacks = _saturation_state(
-            parent_moles,
-            temperature,
-            base_datapack,
-            redox_pack,
-            ln_k_fe,
-            initial_lambda=None,
-            y_init=oxidised_state.y,
-            tol=tolerance,
-            max_iter=iterations,
+        oxidised_ledger_residual = _oxygen_residual(
+            oxidised_state, oxidised_species, redox_pack, oxygen_inventory
         )
-        return _assemble_result(
-            mode="closed",
-            temperature_K=temperature,
-            lambda_value=0.0,
-            lambda_sat=lambda_sat,
-            state=oxidised_state,
-            metal_moles=0.0,
-            oxygen_inventory=oxygen_inventory,
-            base_datapack=base_datapack,
-            redox_pack=redox_pack,
-            oxygen_parent_counts=oxygen_parent_counts,
-            tolerance=tolerance,
-            fallback_fired=(
-                oxidised_state.fallback_fired
-                or sat_state.fallback_fired
-                or saturation_fallbacks > 0
-            ),
-        )
+        if abs(oxidised_ledger_residual) <= ledger_tolerance:
+            lambda_sat, sat_state, saturation_fallbacks = _saturation_state(
+                parent_moles,
+                temperature,
+                base_datapack,
+                redox_pack,
+                ln_k_fe,
+                initial_lambda=None,
+                y_init=oxidised_state.y,
+                tol=tolerance,
+                max_iter=iterations,
+            )
+            return _assemble_result(
+                mode="closed",
+                temperature_K=temperature,
+                lambda_value=0.0,
+                lambda_sat=lambda_sat,
+                state=oxidised_state,
+                metal_moles=0.0,
+                oxygen_inventory=oxygen_inventory,
+                base_datapack=base_datapack,
+                redox_pack=redox_pack,
+                oxygen_parent_counts=oxygen_parent_counts,
+                tolerance=tolerance,
+                fallback_fired=(
+                    oxidised_state.fallback_fired
+                    or sat_state.fallback_fired
+                    or saturation_fallbacks > 0
+                ),
+            )
 
     lambda_sat_zero, sat_state, saturation_fallbacks = _saturation_state(
         parent_moles,
@@ -1578,20 +1644,53 @@ def evaluate_redox(
                 state, state_species, redox_pack, target_deficit
             )
             if abs(residual) <= oxygen_tolerance:
-                return _assemble_result(
-                    mode="closed",
-                    temperature_K=temperature,
-                    lambda_value=lam,
-                    lambda_sat=lambda_sat_zero,
-                    state=state,
-                    metal_moles=0.0,
-                    oxygen_inventory=oxygen_inventory,
-                    base_datapack=base_datapack,
-                    redox_pack=redox_pack,
-                    oxygen_parent_counts=oxygen_parent_counts,
-                    tolerance=tolerance,
-                    fallback_fired=fallback_fired,
+                ledger_residual = _oxygen_residual(
+                    state, state_species, redox_pack, oxygen_inventory
                 )
+                if abs(ledger_residual) > ledger_tolerance:
+                    state = _active_inner(
+                        parent_moles,
+                        temperature,
+                        lam,
+                        base_datapack,
+                        redox_pack,
+                        tol=min(root_tolerance, tolerance * 0.01),
+                        max_iter=iterations,
+                    )
+                    fallback_fired = fallback_fired or state.fallback_fired
+                    state_species = _state_species(
+                        state, base_datapack, redox_pack
+                    )[1]
+                    ledger_residual = _oxygen_residual(
+                        state, state_species, redox_pack, oxygen_inventory
+                    )
+                if abs(ledger_residual) <= ledger_tolerance:
+                    return _assemble_result(
+                        mode="closed",
+                        temperature_K=temperature,
+                        lambda_value=lam,
+                        lambda_sat=lambda_sat_zero,
+                        state=state,
+                        metal_moles=0.0,
+                        oxygen_inventory=oxygen_inventory,
+                        base_datapack=base_datapack,
+                        redox_pack=redox_pack,
+                        oxygen_parent_counts=oxygen_parent_counts,
+                        tolerance=tolerance,
+                        fallback_fired=fallback_fired,
+                    )
+                response = _response(state, base_datapack, redox_pack)
+                candidate = (
+                    lam - ledger_residual / response.oxygen_capacity
+                    if response.oxygen_capacity > 0.0
+                    and math.isfinite(response.oxygen_capacity)
+                    else math.nan
+                )
+                if not lower < candidate < upper:
+                    candidate = (lower + upper) / 2.0
+                state_seed = state.y
+                lam = candidate
+                continue
             response = _response(state, base_datapack, redox_pack)
             if residual > 0.0:
                 lower = lam
@@ -1617,15 +1716,46 @@ def evaluate_redox(
     metal_low = 0.0
     residual_low = sat_residual
     metal_high = float(np.nextafter(total_fe, 0.0))
-    residual_high = -target_surplus
-    if residual_high >= 0.0:
+    parent_moles[fe_index] = total_fe - metal_high
+    (
+        _lambda_sat_high,
+        high_state,
+        high_saturation_fallbacks,
+    ) = _saturation_state(
+        parent_moles,
+        temperature,
+        base_datapack,
+        redox_pack,
+        ln_k_fe,
+        initial_lambda=lambda_sat_zero,
+        y_init=sat_state.y,
+        tol=tolerance,
+        max_iter=iterations,
+    )
+    high_species = _state_species(high_state, base_datapack, redox_pack)[1]
+    residual_high = _oxygen_residual(
+        high_state, high_species, redox_pack, oxygen_inventory
+    )
+    parent_moles[fe_index] = total_fe
+    all_metal_resolution = max(
+        oxygen_tolerance,
+        math.ulp(max(abs(oxygen_inventory), 1.0)),
+    )
+    # Premise: a positive endpoint gap below one oxygen ULP is not resolvable
+    # at the last representable metal amount. Algebra: compare the speciated
+    # gap with max(outer tolerance, ULP(O)); units are mol O. Sanity: a
+    # subnormal Fe-only oxygen feed remains a representable buffered result.
+    if residual_high >= all_metal_resolution:
         raise RedoxEndpointError(
             "oxygen inventory is below the all-metal endpoint",
             endpoint="reductant_exceeds_reducible_oxygen",
             flags=("reductant_exceeds_reducible_oxygen",),
             oxygen_residual_mol=residual_high,
         )
-    metal = total_fe * residual_low / (residual_low - residual_high)
+    # The stoichiometric surplus sets only the first trial. Endpoint
+    # classification and subsequent bracket updates use speciated residuals;
+    # retaining this seed preserves the Fe-only closed-solve pins.
+    metal = total_fe * residual_low / (residual_low + target_surplus)
     metal = min(max(metal, metal_low), metal_high)
     lam = lambda_sat_zero
     state_seed = sat_state.y
@@ -1633,6 +1763,8 @@ def evaluate_redox(
         oxidised_state.fallback_fired
         or sat_state.fallback_fired
         or saturation_fallbacks > 0
+        or high_state.fallback_fired
+        or high_saturation_fallbacks > 0
     )
     for outer_iteration in range(1, 81):
         parent_moles[fe_index] = total_fe - metal

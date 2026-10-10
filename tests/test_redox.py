@@ -1010,6 +1010,10 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
     content["rows"] = list(pack.rows) + [synthetic_row, oxidised_row]
     synthetic_pack = RedoxPack(content, pack.canonical_digest)
     real_ln_k_prime = ln_k_prime
+    synthetic_offsets = {
+        synthetic_name: 0.4,
+        oxidised_name: 0.4,
+    }
 
     def synthetic_ln_k_prime(
         redox_pack: RedoxPack,
@@ -1019,7 +1023,7 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
     ) -> float:
         if row.get("synthetic_test_only"):
             q = -float(row["external_oxygen_stoich_product_positive"])
-            return 0.4 + q * ln_f_o2
+            return synthetic_offsets[str(row["complex"])] + q * ln_f_o2
         return real_ln_k_prime(redox_pack, row, temperature_K, ln_f_o2)
 
     monkeypatch.setattr("openimcc.redox.load_redox_pack", lambda: synthetic_pack)
@@ -1093,7 +1097,7 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
     assert not oxidised_window_root.metal_buffered
     assert oxidised_window_root.species_moles[oxidised_name] > 0.0
     assert oxidised_window_root.oxygen_residual_mol is not None
-    assert abs(oxidised_window_root.oxygen_residual_mol) <= 2.2e-12
+    assert abs(oxidised_window_root.oxygen_residual_mol) <= 5.0e-14
 
     with pytest.raises(RedoxEndpointError) as below_minimum:
         evaluate_redox({"Fe": 1.0, "Ti": 0.25, "O": 0.24}, 2200.0, "closed")
@@ -1109,6 +1113,26 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
         evaluate_redox({"Fe": 1.0, "Ti": 0.25, "O": 2.25}, 2200.0, "closed")
     assert at_maximum.value.endpoint == "fully_oxidised_inventory_limit"
     assert at_maximum.value.oxygen_residual_mol == pytest.approx(0.0, abs=0.0)
+
+    # At the all-metal endpoint, this synthetic oxidising couple stays above
+    # its reduced limit when the fugacity offset is large. Its speciated
+    # oxygen, rather than the stoichiometric minimum, determines the bracket.
+    synthetic_offsets.update(
+        {synthetic_name: -80.0, oxidised_name: 80.0}
+    )
+    with pytest.raises(RedoxEndpointError) as oxidising_all_metal:
+        evaluate_redox({"Fe": 0.1, "Ti": 1.0, "O": 2.2}, 2200.0, "closed")
+    assert oxidising_all_metal.value.endpoint == "reductant_exceeds_reducible_oxygen"
+    assert oxidising_all_metal.value.oxygen_residual_mol is not None
+    assert oxidising_all_metal.value.oxygen_residual_mol > 0.79
+
+    synthetic_offsets[oxidised_name] = 20.0
+    metal_root = evaluate_redox(
+        {"Fe": 0.1, "Ti": 1.0, "O": 2.2}, 2200.0, "closed"
+    )
+    assert metal_root.metal_buffered
+    assert metal_root.oxygen_residual_mol is not None
+    assert abs(metal_root.oxygen_residual_mol) <= 9.5e-13
 
     base = load_datapack().kernel_datapack
     parent_records = {
@@ -1174,3 +1198,51 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
     right_slope = (plus.oxygen_mol - center.oxygen_mol) / h
     assert left_slope == pytest.approx(right_slope, rel=2.0e-4)
     assert plus.species_moles[synthetic_name] < minus.species_moles[synthetic_name]
+
+
+def test_shared_parent_rows_share_the_oxygen_window_capacity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pack = load_redox_pack()
+    oxidised_name = "TiO3(shared-parent-test)"
+    more_oxidised_name = "TiO4(shared-parent-test)"
+    content = dict(pack.content)
+    thermo_species = dict(pack.content["thermo_species"])
+    thermo_species[oxidised_name] = {"formula_atoms": {"Ti": 1, "O": 3}}
+    thermo_species[more_oxidised_name] = {"formula_atoms": {"Ti": 1, "O": 4}}
+    content["thermo_species"] = thermo_species
+    shared_parent_rows = [
+        {
+            "complex": oxidised_name,
+            "nu": {"TiO2(l)": 1.0},
+            "external_oxygen_stoich_product_positive": -0.5,
+            "T_domain_K": [1500.0, 3000.0],
+            "range_flags": ["test-only synthetic reaction"],
+            "reaction": "TiO2(l) + 1/2 O2(g) = TiO3(test-only)",
+            "reactants": {"TiO2(l)": 1.0, "O2(g)": 0.5},
+            "products": {oxidised_name: 1.0},
+        },
+        {
+            "complex": more_oxidised_name,
+            "nu": {"TiO2(l)": 1.0},
+            "external_oxygen_stoich_product_positive": -1.0,
+            "T_domain_K": [1500.0, 3000.0],
+            "range_flags": ["test-only synthetic reaction"],
+            "reaction": "TiO2(l) + O2(g) = TiO4(test-only)",
+            "reactants": {"TiO2(l)": 1.0, "O2(g)": 1.0},
+            "products": {more_oxidised_name: 1.0},
+        },
+    ]
+    content["rows"] = list(pack.rows) + shared_parent_rows
+    shared_pack = RedoxPack(content, pack.canonical_digest)
+    monkeypatch.setattr("openimcc.redox.load_redox_pack", lambda: shared_pack)
+
+    with pytest.raises(RedoxEndpointError) as at_limit:
+        evaluate_redox({"Fe": 1.0, "Ti": 0.25, "O": 2.5}, 2200.0, "closed")
+    assert at_limit.value.endpoint == "fully_oxidised_inventory_limit"
+    assert at_limit.value.oxygen_residual_mol == pytest.approx(0.0, abs=0.0)
+
+    with pytest.raises(RedoxEndpointError) as above_limit:
+        evaluate_redox({"Fe": 1.0, "Ti": 0.25, "O": 2.6}, 2200.0, "closed")
+    assert above_limit.value.endpoint == "fully_oxidised_inventory_limit"
+    assert above_limit.value.oxygen_residual_mol == pytest.approx(0.1)
