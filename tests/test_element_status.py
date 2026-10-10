@@ -1070,7 +1070,16 @@ def _c4_rows_cover_domain(
         if source is None:
             return False
         if source.get("extrapolation") is True:
-            if source["source_data"] is not False:
+            if source["source_data"] is True:
+                source_fit_range = source.get("source_fit_range_K")
+                if (
+                    source_fit_range is None
+                    or source_fit_range[0] != row_start
+                    or source_fit_range[1]
+                    != source.get("extrapolation_source_limit_K")
+                ):
+                    return False
+            elif source["source_data"] is not False:
                 return False
             if source["authority"] == "liquid_from_solid_estimate":
                 if source["method"] != "liquid_from_solid_construction":

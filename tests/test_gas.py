@@ -194,7 +194,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 62
+    assert len(gas_pack.oxide_df) == 63
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -2528,6 +2528,10 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         assert math.log10(result[gas_species]) == pytest.approx(
             expected_log10, abs=0.001
         )
+        if gas_species == "Zn":
+            flag = result.domain_flags[gas_species]
+            assert "central liquid uses the printed 2250 K node" in flag
+            assert "quadratic crystal-Cp extension is its uncertainty bound" in flag
 
 
 def test_ti_channels_against_janaf_printed_formation_gibbs(

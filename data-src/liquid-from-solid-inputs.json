@@ -7285,9 +7285,10 @@
         }
       },
       "measured_band": {
-        "kind": "TSIV Phi uncertainty plus the fitted crystal-Cp extension band",
+        "kind": "TSIV dfH298 uncertainty, Phi uncertainty, and fitted crystal-Cp extension band",
+        "formation_enthalpy_uncertainty_kj_mol": 1.0,
         "phi_uncertainty_j_mol_k": [[298.15, 0.2], [500.0, 0.4], [1000.0, 0.7], [2000.0, 1.5], [3000.0, 3.0]],
-        "source": "TSIV Table 1603 reports the stated uncertainty in Phi at these temperatures; G uncertainty is T times Phi uncertainty.",
+        "source": "TSIV Table 1603 reports dfH298 = -350.5 +/- 1.0 kJ/mol and the stated uncertainty in Phi at these temperatures; add the 1000 J/mol dfH298 uncertainty once to T times Phi uncertainty.",
         "crystal_cp_extension": {
           "fit_degree": 2,
           "fit_nodes_k": [1900.0, 2000.0, 2100.0, 2200.0, 2250.0],
@@ -7324,8 +7325,8 @@
           "tier": 4,
           "spread": 0.0,
           "bounds_k": [1700.0, 1974.1],
-          "source": "Published CdO melting estimates used for the hypothetical liquidus: a 1700 K estimate and Tm0 = 9.3 B0 + 607 K with B0 = 147 GPa (1974.1 K). They do not establish a stable 1-bar melt.",
-          "references": ["https://doi.org/10.1016/j.jallcom.2024.174015"]
+          "source": "Bioud and Benchiheub, Ann. West Univ. Timisoara Phys. 66 (2024), 142-156, DOI 10.2478/awutp-2024-0009, report Tm0 = 9.3 B0 + 607 K with B0 = 147 GPa (1974.1 K); paired with the published 1700 K estimate for the hypothetical liquidus. These estimates do not establish a stable 1-bar melt.",
+          "references": ["https://doi.org/10.2478/awutp-2024-0009"]
         },
         "fusion_entropy": {
           "value": 23.255831348356413,
