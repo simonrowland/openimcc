@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
 R_J_MOL_K = 8.314462618
 _SUPERCOOLED_EXTENSION_REF_SUFFIX = "-SC-CP"
+_SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
 """Molar gas constant, J / (mol K)."""
 
 BAR = 1.0
@@ -464,6 +465,17 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Sn": ("SnO", 1, 0.5),
     "SnO": ("SnO", 1, 0.0),
     "SnO2": ("SnO", 1, -0.5),
+    # E_aO_b(l) -> E_cO_d(g) + n_O2 O2(g), with n_gas=a/c and
+    # n_O2=(b-n_gas*d)/2. ZnO and CdO parents give (1, 1/2) for E and (1, 0)
+    # for EO. Bi2O3 gives (2, 3/2), (1, 3/2), and (2, 1/2) for Bi, Bi2, BiO.
+    # These are dimensionless; the oxygen atoms balance explicitly.
+    "Zn": ("ZnO", 1, 0.5),
+    "ZnO": ("ZnO", 1, 0.0),
+    "Cd": ("CdO", 1, 0.5),
+    "CdO": ("CdO", 1, 0.0),
+    "Bi": ("Bi2O3", 2, 1.5),
+    "Bi2": ("Bi2O3", 1, 1.5),
+    "BiO": ("Bi2O3", 2, 0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -508,6 +520,13 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "NiO",
         "Co",
         "CoO",
+        "Zn",
+        "ZnO",
+        "Cd",
+        "CdO",
+        "Bi",
+        "Bi2",
+        "BiO",
         "P",
         "P2",
         "P4",
@@ -659,6 +678,12 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Sn": "nasa_glenn_fitted",
         "SnO": "nasa_glenn_fitted",
         "SnO2": "nasa_glenn_fitted",
+        "Cd": "nasa_glenn_fitted",
+        "ZnO": "published_fitted",
+        "CdO": "published_fitted",
+        "Bi": "published_fitted",
+        "Bi2": "published_fitted",
+        "BiO": "published_fitted",
     }
 )
 _ION_GAS_SPECIES = (
@@ -668,6 +693,7 @@ _ION_GAS_SPECIES = (
     "Li+", "Rb+", "Pb+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
+    "Zn+", "Zn-", "Cd+", "Bi+",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -681,7 +707,13 @@ _GAS_PROVENANCE_AUTHORITY.update(
 )
 _NASA_ION_GAS_SPECIES = frozenset({"Ge+", "BO-"})
 _GAS_PROVENANCE_AUTHORITY.update(
-    {species: "nasa_glenn_fitted_ionisation" for species in _NASA_ION_GAS_SPECIES}
+    {
+        **{
+            species: "nasa_glenn_fitted_ionisation"
+            for species in (*_NASA_ION_GAS_SPECIES, "Cd+")
+        },
+        "Bi+": "nist_partition_fitted_ionisation",
+    }
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
     "MnO": "external_datapack",
@@ -710,6 +742,9 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Cs2O": "nasa_glenn_fitted",
     "Cu2O": "janaf_fitted",
     "SnO": "nasa_glenn_fitted",
+    "ZnO": "liquid_from_solid_estimate",
+    "CdO": "liquid_from_solid_estimate",
+    "Bi2O3": "published_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -735,6 +770,9 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Cs2O": "NG-1842",
     "Cu2O": "Cu-020",
     "SnO": "NG-1848",
+    "ZnO": "TSIV-1603",
+    "CdO": "P672-T102",
+    "Bi2O3": "P672-T82",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
     "MgO": "LH87 Table 2",
@@ -753,6 +791,9 @@ _PROVENANCE_AUTHORITY_RANK = {
     "nasa_glenn_fitted": 3,
     "nasa_glenn_fitted_ionisation": 3,
     "external_datapack": 2,
+    "published_fitted": 2,
+    "liquid_from_solid_estimate": 1,
+    "nist_partition_fitted_ionisation": 3,
 }
 
 
@@ -898,14 +939,7 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # NASA/Gurvich gas rows joined the package. Mn/Ni/Co now have retained,
 # optional channels; the public-only load skips them because it has no parent
 # rows, while an external pack can activate them.
-IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
-    "Zn": (
-        "needs Zn(g) and ZnO(l) standard-Gibbs rows plus ZnO in the melt-oxide basis"
-    ),
-    "ZnO": (
-        "needs ZnO(g) and ZnO(l) standard-Gibbs rows plus ZnO in the melt-oxide basis"
-    ),
-}
+IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {}
 
 _GAS_IONIZATION_PAIRS = (
     ("Na", "Na+"),
@@ -920,6 +954,9 @@ _GAS_IONIZATION_PAIRS = (
     ("Cs", "Cs+"),
     ("Sn", "Sn+"),
     ("Cs2O", "Cs2O+"),
+    ("Zn", "Zn+"),
+    ("Cd", "Cd+"),
+    ("Bi", "Bi+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -947,6 +984,7 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("BO2", "BO2-"),
     ("Cs", "Cs-"),
     ("Cu", "Cu-"),
+    ("Zn", "Zn-"),
 )
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
@@ -1542,6 +1580,77 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                                        'electron': 'D-020'},
                                   'upstream_sha256': {   'NG-6016': '2ca1ace033413d51c8f2bcb88d3c05c37bf39d107b46442b671e5896ca237784',
                                                          'NG-6005': 'a826485a5b317bc65da051086db82c8b15798ceb1ce68bf65319b2abdc08312a',
+                                                         'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
+                                  'user_agent': 'neutral-source-vendor/1.0'}},
+    'Zn': {   'status': 'gas-complete-melt-pending',
+              'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
+              'validation': 'unvalidated',
+              'reason': 'Zn(g), ZnO(g), ZnO(l), and opt-in Zn ions cover 1200-3000 K; ZnO(l) is a flagged tier-4 construction from TSIV Table 1603; a(ZnO) is caller-supplied; the joint C3 screen used a(ZnO)=1e-3 and reached 1.484e-07 at 2600 K and fO2=1e-4 within the <=1-bar neutral-pressure domain.',
+              'c2_candidates': (('IVTAN-264', 'ZnO'),),
+              'c3_ion_bound': {   'max_ratio': 1.483957582217851e-07,
+                                  'isolated_bound': 2.338972206610675e-08,
+                                  'temperature_K': 2600.0,
+                                  'fO2': 0.0001,
+                                  'neutral_pressure_bar': 0.6745524435643065,
+                                  'element_total_pressure_bar': 0.6746587563673206,
+                                  'joint_ion_pressure_bar': 1.0011649769209512e-07,
+                                  'electron_pressure_bar': 1.7558514124695684e-05,
+                                  'K_ion': 3.690335426012708e-16,
+                                  'parent_oxide': 'ZnO',
+                                  'parent_activity': 0.001,
+                                  'source_tables': {   'cation': 'Zn-006',
+                                                       'anion': 'Zn-007',
+                                                       'neutral': 'Zn-005',
+                                                       'electron': 'D-020'},
+                                  'upstream_sha256': {   'Zn-006': '83272492a0be9e530ee03bfb5d0f88dcf59436b8d4862711cd29039cc1a2c9d6',
+                                                         'Zn-007': '01eb728c6cc7adefbca5e04eca489ab2901be44a20b86303951497e4799c8ddf',
+                                                         'Zn-005': 'b67dd110d66081622c01e120d71e6d2f181f50c22b157d8f3a6aa6f9732cd060',
+                                                         'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
+                                  'user_agent': 'neutral-source-vendor/1.0'}},
+    'Cd': {   'status': 'gas-complete-melt-pending',
+              'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
+              'validation': 'unvalidated',
+              'reason': 'Cd(g), estimated CdO(g), CdO(l), and opt-in Cd+ cover 1200-3000 K; CdO(l) is a flagged tier-4 construction from Pankratz Bulletin 672 Table 102; a(CdO) is caller-supplied; the joint C3 screen used a(CdO)=1e-3 and reached 1.994e-13 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain.',
+              'c2_candidates': (('P696-T191', 'CdO'),),
+              'c3_ion_bound': {   'max_ratio': 1.9937490314653584e-13,
+                                  'isolated_bound': 8.845662795030468e-11,
+                                  'temperature_K': 2000.0,
+                                  'fO2': 0.0001,
+                                  'neutral_pressure_bar': 0.6622948642070532,
+                                  'element_total_pressure_bar': 0.6623235403766004,
+                                  'joint_ion_pressure_bar': 1.3205069171425542e-13,
+                                  'electron_pressure_bar': 2.5990991869911765e-08,
+                                  'K_ion': 5.1821758558714285e-21,
+                                  'parent_oxide': 'CdO',
+                                  'parent_activity': 0.001,
+                                  'source_tables': {   'cation': 'NG-4071',
+                                                       'neutral': 'NG-4060',
+                                                       'electron': 'D-020'},
+                                  'upstream_sha256': {   'NG-4071': '5e98c6280ba5df7403fd4c7b7661aaac2fca70953525ded0a2ed4e8052adfddc',
+                                                         'NG-4060': '32f972c8438568e37c4f10bb43ff8a33cd43d629bccfcd1424fcdb98e8d19372',
+                                                         'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
+                                  'user_agent': 'neutral-source-vendor/1.0'}},
+    'Bi': {   'status': 'gas-complete-melt-pending',
+              'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
+              'validation': 'unvalidated',
+              'reason': 'Bi(g), Bi2(g), BiO(g), Bi2O3(l), and opt-in Bi+ cover 1200-3000 K; the measured Bi2O3(l) branch is selected as the Bi(III) parent; a(Bi2O3) is caller-supplied; the joint C3 screen used a(Bi2O3)=1e-3 and reached 4.129e-11 at 1800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain.',
+              'c2_candidates': (('P696-T115', 'BiO'),),
+              'c3_ion_bound': {   'max_ratio': 4.1288579668734594e-11,
+                                  'isolated_bound': 5.538611779245599e-10,
+                                  'temperature_K': 1800.0,
+                                  'fO2': 0.0001,
+                                  'neutral_pressure_bar': 0.29343632468173547,
+                                  'element_total_pressure_bar': 0.5603688775751227,
+                                  'joint_ion_pressure_bar': 2.3136835045639835e-11,
+                                  'electron_pressure_bar': 1.1416307250944278e-09,
+                                  'K_ion': 9.001517381391894e-20,
+                                  'parent_oxide': 'Bi2O3',
+                                  'parent_activity': 0.001,
+                                  'source_tables': {   'cation': 'NBS-T22-ASD-BiII',
+                                                       'neutral': 'P672-T80',
+                                                       'electron': 'D-020'},
+                                  'upstream_sha256': {   'NBS-T22-ASD-BiII': 'af74f5c00a03becc0ffe9955cb302f203ba9a28ae05978662e81d84681e0b942',
+                                                         'P672-T80': '368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'neutral-source-vendor/1.0'}},
     'Mn': {   'status': 'gas-partial',
@@ -2141,6 +2250,40 @@ def _outside_interval_flag(
     return None
 
 
+def _source_model_flag(
+    row_name: str, T: float, row: pd.Series, *, phase: str
+) -> str | None:
+    """Name a selected row's coverage construction or upper-tail continuation."""
+    source_ref = str(row.get("Ref", ""))
+    extension = _SOURCE_CP_EXTENSION_RE.search(source_ref)
+    source_table = _source_table_identifier(source_ref)
+    if phase == "l" and "-LFS" in source_ref:
+        if extension is None:
+            return (
+                f"{row_name} uses a tier-4 liquid_from_solid construction "
+                f"from {source_table}"
+            )
+        limit = float(extension["limit"])
+        return (
+            f"{row_name} uses a tier-4 liquid_from_solid construction from "
+            f"{source_table}; its crystal Cp was extended above {limit:g} K "
+            "to the estimated fusion temperature"
+        )
+    if extension is not None and T > float(extension["limit"]):
+        limit = float(extension["limit"])
+        return (
+            f"{row_name} uses a labelled constant-Cp continuation above "
+            f"{limit:g} K from {source_table}"
+        )
+    return None
+
+
+def _source_table_identifier(source_ref: str) -> str:
+    """Remove runtime construction suffixes while retaining the source ID."""
+    base = _SOURCE_CP_EXTENSION_RE.sub("", source_ref)
+    return base.removesuffix("-LFS").removesuffix(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
+
+
 def _nearest_interval_row(
     df: pd.DataFrame, species: str, T: float, allow_extrapolation: bool = False
 ) -> pd.Series:
@@ -2237,7 +2380,14 @@ def _add_ion_channels(
             row_cache[row_name] = (
                 _janaf_gibbs(T, row),
                 row,
-                _outside_interval_flag(row_name, T, row),
+                "; ".join(
+                    flag
+                    for flag in (
+                        _outside_interval_flag(row_name, T, row),
+                        _source_model_flag(row_name, T, row, phase="g"),
+                    )
+                    if flag
+                ) or None,
             )
         return row_cache[row_name]
 
@@ -2425,7 +2575,7 @@ def species_thermo(
 
     source_ref = str(row["Ref"])
     if phase == "g" and source_ref:
-        source_table_id = source_ref
+        source_table_id = _source_table_identifier(source_ref)
     elif phase != "g" and source_ref == "LAM1987":
         source_table_id = _LAM1987_SOURCE_TABLE_IDS.get(species)
     elif phase != "g" and source_ref.endswith(_SUPERCOOLED_EXTENSION_REF_SUFFIX):
@@ -2434,6 +2584,8 @@ def species_thermo(
         source_table_id = source_ref
     elif phase != "g" and source_ref == "LAM1984":
         source_table_id = None
+    elif phase != "g" and ("-LFS" in source_ref or _SOURCE_CP_EXTENSION_RE.search(source_ref)):
+        source_table_id = _source_table_identifier(source_ref)
     else:
         source_table_id = _OXIDE_SOURCE_TABLE_IDS.get(species)
 
@@ -2699,6 +2851,9 @@ def evaluate_gas(
         flag = _outside_interval_flag(gas_species, T, gas_row)
         if flag is not None:
             flags.append(flag)
+        flag = _source_model_flag(gas_species, T, gas_row, phase="g")
+        if flag is not None:
+            flags.append(flag)
 
         if O2_row is not None and n_O2 != 0.0:
             flag = _outside_interval_flag("O2(g)", T, O2_row)
@@ -2756,6 +2911,12 @@ def evaluate_gas(
                     f"{oxide_name} uses a labelled constant-Cp supercooled-liquid "
                     f"continuation from {source_name} {source_table}"
                 )
+            elif oxide_row is not None:
+                flag = _source_model_flag(
+                    oxide_name, T, oxide_row, phase="l"
+                )
+                if flag is not None:
+                    flags.append(flag)
         else:
             G_oxide = 0.0
             a_oxide = 1.0
@@ -2868,6 +3029,7 @@ _ATOMIC_MASS_G_MOL = {
     "Li": 6.94, "Rb": 85.4678, "Pb": 207.2,
     "B": 10.81, "Ga": 69.723, "Ge": 72.630, "In": 114.818,
     "Cs": 132.90545196, "Cu": 63.546, "Sn": 118.710,
+    "Zn": 65.38, "Cd": 112.411, "Bi": 208.9804,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,

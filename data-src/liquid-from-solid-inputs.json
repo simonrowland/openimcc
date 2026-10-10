@@ -7250,6 +7250,118 @@
           ]
         }
       }
+    },
+    "ZnO": {
+      "formula": "ZnO",
+      "crystal_table_id": "TSIV-1603",
+      "family": null,
+      "metal_atoms": 1,
+      "total_atoms": 2,
+      "selection_reason": "No measured ZnO liquid row is available at 1 bar. Construct ZnO(l) from the published ZnO(cr) function and the TSIV Table 1603 fusion and liquid-Cp estimates; this is the required tier-4 coverage row.",
+      "inputs": {
+        "fusion_temperature": {
+          "value": 2250.0,
+          "tier": 4,
+          "spread": 30.0,
+          "bounds_k": [2220.0, 2280.0],
+          "source": "TSIV Table 1603 reports 2250 ± 30 K.",
+          "references": ["https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html"]
+        },
+        "fusion_entropy": {
+          "value": 31.11111111111111,
+          "tier": 4,
+          "spread": 4.925,
+          "unit": "J mol^-1 K^-1",
+          "source": "Derived from the TSIV estimated fusion enthalpy, 70 ± 10 kJ/mol, divided by the 2250 ± 30 K transition temperature.",
+          "references": ["https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html"]
+        },
+        "liquid_heat_capacity": {
+          "value": 67.0,
+          "tier": 4,
+          "spread": 0.0,
+          "unit": "J mol^-1 K^-1",
+          "source": "TSIV Table 1603 estimated liquid Cp.",
+          "references": ["https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html"]
+        }
+      },
+      "measured_band": {
+        "kind": "TSIV Phi uncertainty plus the fitted crystal-Cp extension band",
+        "phi_uncertainty_j_mol_k": [[298.15, 0.2], [500.0, 0.4], [1000.0, 0.7], [2000.0, 1.5], [3000.0, 3.0]],
+        "source": "TSIV Table 1603 reports the stated uncertainty in Phi at these temperatures; G uncertainty is T times Phi uncertainty.",
+        "crystal_cp_extension": {
+          "fit_degree": 2,
+          "fit_nodes_k": [1900.0, 2000.0, 2100.0, 2200.0, 2250.0],
+          "maximum_absolute_fit_residual_j_mol_k": 0.000334655035708,
+          "extension_limit_k": 2280.0,
+          "gibbs_band_j_mol_1200_3000": 0.00472055287405,
+          "derivation": "Hold the maximum absolute Cp residual from the quadratic fit across 2250-2280 K, integrate dH=deltaCp*dT and dS=deltaCp*dT/T, then bound abs(dH-T*dS) at 1200 and 3000 K.",
+          "references": ["https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html"]
+        },
+        "references": ["https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html"]
+      },
+      "condensate_fit": {
+        "table_id": "TSIV-1603-LFS",
+        "ref": "TSIV-1603-LFS-CP-EXT-2250",
+        "cation": "Zn",
+        "cat_num": 1,
+        "oxy_num": 1,
+        "fit_t_min": 1200.0,
+        "fit_t_max": 3000.0,
+        "runtime_t_min": 1200.0,
+        "runtime_t_max": 3000.0
+      }
+    },
+    "CdO": {
+      "formula": "CdO",
+      "crystal_table_id": "P672-T102",
+      "family": "rocksalt_monoxide",
+      "metal_atoms": 1,
+      "total_atoms": 2,
+      "selection_reason": "CdO has no stable 1-bar liquid phase. The coverage row uses the published crystal Cp expression extended from its 1500 K limit to the hypothetical fusion range and the existing liquid_from_solid construction, with both extrapolations flagged.",
+      "inputs": {
+        "fusion_temperature": {
+          "value": 1974.1,
+          "tier": 4,
+          "spread": 0.0,
+          "bounds_k": [1700.0, 1974.1],
+          "source": "Published CdO melting estimates used for the hypothetical liquidus: a 1700 K estimate and Tm0 = 9.3 B0 + 607 K with B0 = 147 GPa (1974.1 K). They do not establish a stable 1-bar melt.",
+          "references": ["https://doi.org/10.1016/j.jallcom.2024.174015"]
+        },
+        "fusion_entropy": {
+          "value": 23.255831348356413,
+          "tier": 4,
+          "spread": 5.892456396549818,
+          "unit": "J mol^-1 K^-1",
+          "source": "Mean and half-range of the seven existing measured rocksalt-monoxide fusion-entropy inputs: BaO, CaO, FeO, MgO, SrO, TiO, and VO.",
+          "training_members": ["BaO", "CaO", "FeO", "MgO", "SrO", "TiO", "VO"],
+          "references": ["https://janaf.nist.gov/tables/Ba-035.txt", "https://janaf.nist.gov/tables/Ca-028.txt", "https://janaf.nist.gov/tables/Fe-019.txt", "https://janaf.nist.gov/tables/Mg-009.txt", "https://janaf.nist.gov/tables/O-014.txt", "https://janaf.nist.gov/tables/O-024.txt"]
+        },
+        "liquid_heat_capacity": {
+          "value": 65.92785714285715,
+          "tier": 4,
+          "spread": 2.7195,
+          "unit": "J mol^-1 K^-1",
+          "source": "Mean and half-range of the seven existing measured rocksalt-monoxide liquid-Cp inputs: BaO, CaO, FeO, MgO, SrO, TiO, and VO.",
+          "training_members": ["BaO", "CaO", "FeO", "MgO", "SrO", "TiO", "VO"],
+          "references": ["https://janaf.nist.gov/tables/Ba-035.txt", "https://janaf.nist.gov/tables/Ca-028.txt", "https://janaf.nist.gov/tables/Fe-019.txt", "https://janaf.nist.gov/tables/Mg-009.txt", "https://janaf.nist.gov/tables/O-014.txt", "https://janaf.nist.gov/tables/O-024.txt"]
+        }
+      },
+      "crystal_cp_extrapolation_band": {
+        "method": "absolute G difference between extending the published CdO Cp expression above 1500 K and holding the final printed Cp constant",
+        "source_limit_K": 1500.0,
+        "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
+      },
+      "condensate_fit": {
+        "table_id": "P672-T102-LFS",
+        "ref": "P672-T102-LFS-CP-EXT-1500",
+        "cation": "Cd",
+        "cat_num": 1,
+        "oxy_num": 1,
+        "fit_t_min": 1200.0,
+        "fit_t_max": 3000.0,
+        "runtime_t_min": 1200.0,
+        "runtime_t_max": 3000.0
+      }
     }
   },
   "fusion_temperature_fallback": {

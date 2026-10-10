@@ -1,0 +1,78 @@
+{
+  "schema_version": "published_thermo_tables.v1",
+  "publication": "Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672.",
+  "source_url": "https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf",
+  "tables": {
+    "P672-T80": {
+      "table": "80",
+      "species": "Bi(g)",
+      "formula": "Bi",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 49.500,
+      "nodes": [
+        [298.15, 4.968, 44.669, 0.000],
+        [1200, 4.968, 51.587, 4.480],
+        [1300, 4.969, 51.985, 4.977],
+        [1400, 4.970, 52.353, 5.474],
+        [1500, 4.972, 52.696, 5.971],
+        [1600, 4.976, 53.017, 6.469],
+        [1700, 4.981, 53.319, 6.966],
+        [1800, 4.988, 53.604, 7.465]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 80; thermal data and formation enthalpy are transcribed from the published row."
+    },
+    "P672-T81": {
+      "table": "81",
+      "species": "Bi2(g)",
+      "formula": "Bi2",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 52.600,
+      "nodes": [
+        [1200, 8.940, 77.796, 8.038],
+        [1300, 8.940, 78.512, 8.932],
+        [1400, 8.940, 79.174, 9.826],
+        [1500, 8.940, 79.792, 10.720],
+        [1600, 8.940, 80.368, 11.614],
+        [1700, 8.940, 80.910, 12.508],
+        [1800, 8.940, 81.422, 13.402]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 81; high-temperature nodes are transcribed from the published row."
+    },
+    "P672-T82": {
+      "table": "82",
+      "species": "Bi2O3(l)",
+      "formula": "Bi2O3",
+      "phase": "liquid",
+      "formation_enthalpy_298_kcal_mol": -137.160,
+      "fusion_temperature_K": 1098.0,
+      "nodes": [
+        [1098, 43.000, 86.455, 35.975],
+        [1100, 43.000, 86.533, 36.061],
+        [1200, 43.000, 90.275, 40.361],
+        [1300, 43.000, 93.717, 44.661]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 82; printed liquid branch begins at the 1098 K fusion marker."
+    },
+    "P672-T102": {
+      "table": "102",
+      "species": "CdO(cr)",
+      "formula": "CdO",
+      "phase": "crystal",
+      "formation_enthalpy_298_kcal_mol": -61.700,
+      "entropy_298_cal_mol_K": 13.100,
+      "cp_equation_cal_mol_K": {
+        "a": 11.536,
+        "b_per_K": 0.001520,
+        "c_K2": 117300.0,
+        "equation": "Cp = a + b*T - c/T^2",
+        "published_range_K": [298.15, 1500.0]
+      },
+      "last_printed_node": [1500, 13.770, 32.930, 15.193],
+      "last_printed_node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 102; Hf and S at 298 K from CODATA, other thermal data from Mills."
+    }
+  }
+}

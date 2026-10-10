@@ -1,0 +1,64 @@
+schema_version: published_thermo_provenance.v1
+tooling: neutral-source-vendor/1.0
+records:
+  - record_id: IVTAN-264
+    path: data-src/published-thermo/ivtan-table-264.json
+    source_sha256: 699198ee929d2830bb0a77758e047b6d8df99c9ba736886d39c2fc2ae0a6ef71
+    publication: IVTAN-TERMO, Table 264, ZnO(g)
+    source_url: https://www.chem.msu.ru/rus/handbook/ivtan/264.html
+    source_locator: Table 264
+    tier: 3
+    selection_reason: Published temperature functions provide direct ZnO(g) coverage through 3000 K with a compatible gas reference state.
+  - record_id: TSIV-1603
+    path: data-src/published-thermo/tsiv-table-1603.json
+    source_sha256: 8989bd90414e47d5aea02104d9915a17fa4e8d8c9847516ef6adda58a4e6d8ec
+    publication: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume V, Table 1603, ZnO(cr)
+    source_url: https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html
+    source_locator: Volume V, Table 1603
+    tier: 4
+    selection_reason: No source-rated ZnO(l) function is available; the published crystal function reaches the estimated fusion range and feeds the required liquid_from_solid construction.
+  - record_id: P672
+    path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    tables:
+      P672-T80:
+        source_locator: Table 80, Bi(g)
+        tier: 3
+        selection_reason: No JANAF or TSIV Bi(g) table is listed; this published high-temperature table supplies Bi(g) H/S/Cp nodes through 1800 K.
+      P672-T81:
+        source_locator: Table 81, Bi2(g)
+        tier: 3
+        selection_reason: Published high-temperature Bi2(g) functions are available through 1800 K.
+      P672-T82:
+        source_locator: Table 82, Bi2O3(l)
+        tier: 1
+        selection_reason: The source prints the Bi(III) liquid branch from its 1098 K fusion marker; this is the selected parent phase pair, and no other bismuth oxide liquid parent is offered.
+      P672-T102:
+        source_locator: Table 102, CdO(cr)
+        tier: 4
+        selection_reason: CdO(l) has no stable 1-bar source row; the published crystal Cp function is extended above 1500 K to the estimated fusion range for the required liquid_from_solid construction.
+  - record_id: P696
+    path: data-src/published-thermo/pankratz-bulletin-696.json
+    source_sha256: 88468b113c1920f12e92c8b02d00e72bfa3b00f4f3869e04afc309e1fe838604
+    publication: Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 696
+    source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    tables:
+      P696-T115:
+        source_locator: Table 115, BiO(g)
+        tier: 3
+        selection_reason: The published BiO(g) table provides a direct 1200 K node; the upper range uses the labelled constant-Cp continuation.
+      P696-T191:
+        source_locator: Table 191, CdO(g)
+        tier: 4
+        selection_reason: JANAF and NASA have no selected CdO(g) table; Bulletin 696 explicitly estimates CdO(g), so its sourced estimate is retained with that limitation visible.
+  - record_id: NBS-T22-ASD-BiII
+    path: data-src/published-thermo/bismuth-ion-sources.json
+    source_sha256: af74f5c00a03becc0ffe9955cb302f203ba9a28ae05978662e81d84681e0b942
+    publication: Wagman et al. (1982), The NBS Tables of Chemical Thermodynamic Properties, JPCRD 11 Supplement 2, Table 22; NIST Atomic Spectra Database, Bi II levels
+    source_url: https://srd.nist.gov/JPCRD/jpcrdS2Vol11.pdf
+    secondary_source_url: https://pml.nist.gov/PhysRefData/Handbook/Tables/bismuthtable1.htm
+    source_locator: Table 22 and Bi II term levels
+    tier: 1
+    selection_reason: JANAF has no bismuth ion row; the published 1-bar Bi+ formation enthalpy and NIST Bi II levels define the opt-in ion function by ideal-gas partition thermodynamics.

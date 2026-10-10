@@ -115,6 +115,7 @@ _ION_GAS_SPECIES = {
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Li+", "Rb+", "Pb+", "Cs+", "Sn+", "Cs2O+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
+    "Zn+", "Zn-", "Cd+", "Bi+",
 }
 
 
@@ -190,9 +191,10 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + len(_ION_GAS_SPECIES)
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
+        + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 57
+    assert len(gas_pack.oxide_df) == 62
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -454,6 +456,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         + len(build_gas_tables.TRACE_GAS_SPECIES)
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
+        + 3
     )
     assert set(low_rows.index) == {
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
@@ -464,7 +467,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
         species for species, *_ in build_gas_tables.TRACE_ION_NASA_SOURCES
-    }
+    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
     neutral_high_rows = high_rows.loc[
         ~high_rows.index.isin(tuple(f"{species}(g)" for species in _ION_GAS_SPECIES))
     ]
@@ -475,7 +478,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES
-    }
+    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
     split_ion_rows = ion_rows.loc[ion_rows.index.isin(split_ion_names)]
     single_interval_ion_rows = ion_rows.loc[
         ~ion_rows.index.isin(split_ion_names)
@@ -553,7 +556,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == 65 + len(build_gas_tables.TRACE_GAS_SPECIES)
-    assert len(unavailable) == 2
+    assert len(unavailable) == 0
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert not set(_P_CHANNELS) & (in_domain | extrapolated)
@@ -1235,10 +1238,7 @@ def test_gas_result_omitted_channels_default_is_empty_and_immutable() -> None:
 def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    assert set(IMCC_GAS_NO_JANAF_ROWS) == {
-        "Zn",
-        "ZnO",
-    }
+    assert set(IMCC_GAS_NO_JANAF_ROWS) == set()
     assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
     assert IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES == {
         "Mn": (
@@ -2162,10 +2162,12 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
     trace_gas |= {
         "Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)",
         *(source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES),
+        *(source[0] for source in build_gas_tables.TRACE_ION_PUBLISHED_SOURCES),
     }
     trace_parents = {
         "Li2O(l)", "Rb2O(l)", "PbO(l)", "Cs2O(l)", "Cu2O(l)", "SnO(l)",
         "B2O3(l)", "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
+        "ZnO(l)", "CdO(l)", "Bi2O3(l)",
     }
     return replace(
         pack,
@@ -2188,6 +2190,9 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Cs2O": 1.0e-3,
         "Cu2O": 1.0e-3,
         "SnO": 1.0e-3,
+        "ZnO": 1.0e-3,
+        "CdO": 1.0e-3,
+        "Bi2O3": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2238,14 +2243,17 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     expected_ions = {
         "Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-",
         "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
+        "Zn+", "Zn-", "Cd+", "Bi+",
     }
     assert expected_ions <= set(trace_ions)
     assert "In+" not in trace_ions
-    nasa_ions = {"Ge+", "BO-"}
+    nasa_ions = {"Ge+", "BO-", "Cd+"}
     for species in expected_ions:
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == (
-            "nasa_glenn_fitted_ionisation"
+            "nist_partition_fitted_ionisation"
+            if species == "Bi+"
+            else "nasa_glenn_fitted_ionisation"
             if species in nasa_ions
             else "janaf_fitted_ionisation"
         )
@@ -2258,14 +2266,21 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     expected_trace_ions = {
         "Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-",
         "Cs+", "Sn+", "Cs2O+",
+        "Zn+", "Zn-", "Cd+", "Bi+",
     }
     assert expected_trace_ions <= set(trace_ions)
-    for species in expected_trace_ions - {"Sn+", "Cs2O+"}:
+    for species in expected_trace_ions - {"Sn+", "Cs2O+", "Cd+", "Bi+"}:
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == "janaf_fitted_ionisation"
     for species in ("Sn+", "Cs2O+"):
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == "nasa_glenn_fitted"
+    assert trace_ions["Cd+"] > 0.0
+    assert trace_ions.provenance_class["Cd+"] == (
+        "nasa_glenn_fitted_ionisation"
+    )
+    assert trace_ions["Bi+"] > 0.0
+    assert trace_ions.provenance_class["Bi+"] == "nist_partition_fitted_ionisation"
 
 
 def test_default_outputs_are_unchanged_when_trace_rows_are_removed(
@@ -2308,7 +2323,7 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
     gas_pack: ImccGasDatapack,
 ) -> None:
     """Compare serialized old rows to the task base, without hash pins."""
-    base = "88d9aa9"
+    base = "702860c"
     root = Path(__file__).resolve().parents[1]
     trace_gas = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
@@ -2320,11 +2335,13 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
     trace_gas |= {
         "Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)",
         *(source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES),
+        *(source[0] for source in build_gas_tables.TRACE_ION_PUBLISHED_SOURCES),
     }
     trace_oxides = {
         "Li2O(l)", "Rb2O(l)", "PbO(l)",
         "B2O3(l)", "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
         "Cs2O(l)", "Cu2O(l)", "SnO(l)",
+        "ZnO(l)", "CdO(l)", "Bi2O3(l)",
     }
     changed_continuations = {
         "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "SiO2(l)",
@@ -2408,6 +2425,47 @@ def _trace_janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
 
 def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
     if not table_id.startswith("NG-"):
+        source_dir = Path(__file__).resolve().parents[1] / "data-src" / "published-thermo"
+        if table_id.startswith(("P672-", "P696-")) and table_id != "P672-T102":
+            record = build_gas_tables._published_table_record(source_dir, table_id)
+            if record.get("phase") == "liquid":
+                nodes = {
+                    float(T): {
+                        "temperature": float(T),
+                        "heat_capacity": float(cp) * 4.184,
+                        "entropy": float(entropy) * 4.184,
+                        "enthalpy_increment": float(h) * 4.184,
+                    }
+                    for T, cp, entropy, h in record["nodes"]
+                }
+                nodes = build_gas_tables._constant_cp_rows_through(nodes, temperature)
+                reference = float(record["formation_enthalpy_298_kcal_mol"]) * 4.184
+                node = nodes[temperature]
+                return (reference + node["enthalpy_increment"]) * 1000.0 - (
+                    temperature * node["entropy"]
+                )
+            nodes, reference, _limit = build_gas_tables._published_gas_source_rows(
+                source_dir, table_id
+            )
+            nodes = build_gas_tables._constant_cp_rows_through(nodes, temperature)
+            node = nodes[temperature]
+            return (reference + node["enthalpy_increment"]) * 1000.0 - (
+                temperature * node["entropy"]
+            )
+        if table_id in {"TSIV-1603", "P672-T102"}:
+            repository = Path(__file__).resolve().parents[1]
+            species = "ZnO" if table_id == "TSIV-1603" else "CdO"
+            config = json.loads(
+                (repository / "data-src" / "liquid-from-solid-inputs.json").read_text(
+                    encoding="utf-8"
+                )
+            )["rows"][species]
+            _rows, construction, _alternate = (
+                build_gas_tables._fit_liquid_from_solid_parent(
+                    source_dir, species, config
+                )
+            )
+            return construction.at(temperature).gibbs_kj_mol * 1000.0
         return _trace_janaf_apparent_gibbs(table_id, temperature)
     record = build_gas_tables._load_record(
         Path(__file__).resolve().parents[1]
@@ -2439,6 +2497,9 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("Ge", "GeO2", "NG-5186", "NG-12434"),
         ("B", "B2O3", "B-005", "B-096"),
         ("In", "In2O3", "NG-6005", "NG-12662"),
+        ("Zn", "ZnO", "Zn-005", "TSIV-1603"),
+        ("Cd", "CdO", "NG-4060", "P672-T102"),
+        ("Bi", "Bi2O3", "P672-T80", "P672-T82"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]

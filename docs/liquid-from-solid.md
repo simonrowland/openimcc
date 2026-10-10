@@ -20,6 +20,27 @@ species-specific branches in the construction code.
 | Fusion entropy | Liquid-minus-crystal entropy at the marker | Mean of measured/assessed members in a declared oxide or homologue family | Leave-one-out Richards-type mean per formula atom, including oxygen; red fallback |
 | Liquid heat capacity | JANAF liquid Cp at the marker | Stoichiometric sum of cited oxide partial-molar liquid Cp values | Crystal Cp at fusion carried over; red fallback |
 
+## Tier-4 ZnO and CdO constructions
+
+ZnO and CdO have no stable 1-bar liquid table. Their optional gas channels use
+caller-supplied parent activities; OpenIMCC supplies no activity model or
+activity coefficients. ZnO(l) is built from TSIV Volume V, Table 1603, which
+prints crystal nodes through 2250 K and estimates fusion at 2250 ± 30 K. A
+quadratic Cp(T) fit to the final five crystal nodes is integrated from 2250 K
+to the 2280 K upper bound. The largest fit residual is 0.000335 J/(mol K);
+holding that residual across 30 K and propagating `ΔH − TΔS` gives a 0.00472
+J/mol crystal-extension band over 1200–3000 K. The TSIV Phi uncertainty and
+fusion-input spreads are added to the per-row band. The runtime ref flags this
+crystal extension and the tier-4 liquid construction.
+
+CdO(l) uses the Pankratz Bulletin 672 Table 102 crystal Cp expression, printed
+through 1500 K, and extends that expression to the hypothetical fusion range.
+The continuation band compares that integrated expression with holding the
+last printed Cp constant; the liquid row also carries the measured
+rocksalt-monoxide fusion-entropy and liquid-Cp family ranges. The estimated
+CdO liquidus is not a claim that CdO has a stable 1-bar melt. Both the crystal
+Cp extension and liquid construction are flagged in the runtime result.
+
 Family tiers record their training members and citations. The K₂O entropy tier
 uses the mean of Na₂O 33.95 J/(mol K) and the Lamoreaux–Hildenbrand K₂O value
 33.53 J/(mol K), giving 33.74 J/(mol K); its half-range spread is 0.21 J/(mol

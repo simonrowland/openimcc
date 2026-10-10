@@ -1,0 +1,40 @@
+{
+  "schema_version": "published_thermo_tables.v1",
+  "publication": "Pankratz, L. B. (1994), Thermodynamic Properties of Halides, Bulletin 696, U.S. Bureau of Mines.",
+  "source_url": "https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf",
+  "tables": {
+    "P696-T115": {
+      "table": "115",
+      "species": "BiO(g)",
+      "formula": "BiO",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 29.200,
+      "nodes": [
+        [1200, 8.830, 70.690, 7.729]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 115; the selected final printed thermal row is 1200 K."
+    },
+    "P696-T191": {
+      "table": "191",
+      "species": "CdO(g)",
+      "formula": "CdO",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 30.000,
+      "formation_enthalpy_basis": "estimated at 298 K in the source table",
+      "nodes": [
+        [1200, 8.870, 67.659, 7.837],
+        [1300, 8.880, 68.369, 8.724],
+        [1400, 8.890, 69.027, 9.612],
+        [1500, 8.900, 69.641, 10.502],
+        [1600, 8.900, 70.216, 11.392],
+        [1700, 8.900, 70.756, 12.282],
+        [1800, 8.910, 71.264, 13.172],
+        [1900, 8.910, 71.746, 14.064],
+        [2000, 8.910, 72.204, 14.955]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 191; the source estimates the 298 K formation enthalpy."
+    }
+  }
+}

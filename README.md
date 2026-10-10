@@ -231,6 +231,17 @@ supercooled-liquid notice to each affected gas channel's `domain_flags`.
 Row-level source hashes, methods, temperature ranges, fit residuals, Cp errors,
 and Gibbs/entropy seams are in `src/openimcc/data/gas/PROVENANCE.yaml`.
 
+Optional Zn, Cd and Bi channels cover 1200–3000 K with caller-supplied ZnO,
+CdO and Bi2O3 activities. Zn(g) uses JANAF; the NASA Zn atom and Zn+ cards are
+recorded as G_app comparisons, with JANAF retained. The JANAF catalogue has no
+Cd table, so Cd(g) and Cd+ use NASA Glenn cards. ZnO(g), Bi(g), Bi2(g), BiO(g)
+and CdO(g) use their cited published tables; CdO(g)'s source is explicitly an
+estimate. ZnO(l) and CdO(l) are flagged tier-4 `liquid_from_solid`
+constructions. Their fitted crystal-Cp extensions, construction input ranges
+and measured bands are recorded per row. Bi2O3(l) uses the printed Pankratz
+Table 82 liquid branch, followed by a flagged constant-Cp continuation above
+its last liquid node. No activity model or activity coefficients are supplied.
+
 Melt activities use the published FC87/SF04 complex-formation constants
 relative to pure liquid oxide parents. The default gas conversion uses JANAF
 4th-edition parent Gibbs functions and labelled liquid continuations; the melt
@@ -268,6 +279,7 @@ re-fitted.
 Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
 `Li+`, `Rb+`, `Pb+`, `Cs+`, `Sn+`, `Cs2O+`, `Ga+`, `Ge+`, `B+`,
+`Zn+`, `Cd+`, and `Bi+`,
 `Ga-`, `B-`, `BO-`, `BO2-`, `Cu-`, and every available JANAF-supported negative ion
 whose neutral is present. In+ is retained in the source ledger but declined
 after its NASA card failed the NIST Saha check. Cu+ is declined because its

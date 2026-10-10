@@ -57,6 +57,7 @@ _ION_GAS_PROVENANCE_SPECIES = tuple(
         *build_gas_tables.ION_GAS_YAML_SOURCES,
         *build_gas_tables.TRACE_ION_GAS_TEXT_SOURCES,
         *build_gas_tables.TRACE_ION_GAS_NASA_SOURCES,
+        *build_gas_tables.TRACE_ION_PUBLISHED_SOURCES,
         *build_gas_tables.TRACE_ION_NASA_SOURCES,
     )
 )
@@ -586,7 +587,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
     )
-    assert len(oxide_rows) == 22
+    assert len(oxide_rows) == 25
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -605,11 +606,12 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             *build_gas_tables.TRACE_ION_NASA_SOURCES,
         )
     }
+    split_ion_species = nasa_ion_species | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
     nasa_atomic_ion_species = {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     }
     for species, records in ion_records.items():
-        if species in nasa_ion_species:
+        if species in split_ion_species:
             assert {tuple(row["T_range_K"]) for row in records} == {
                 (1500, 3000), (1200, 1500),
             }
@@ -638,6 +640,11 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
                 assert row["authority"] == "nasa_glenn_fitted"
                 assert row["source_path"].startswith("data-src/nasa-glenn/")
                 assert row["source_locator"].startswith("thermo.inp lines ")
+            elif species == "Bi+(g)":
+                assert row["authority"] == "nist_partition_fitted_ionisation"
+                assert row["source_path"] == (
+                    "data-src/published-thermo/bismuth-ion-sources.json"
+                )
             else:
                 assert row["authority"] == "janaf_fitted_ionisation"
                 assert row["source_url"] == (
@@ -904,17 +911,22 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
         if species_name not in {
             "Li2O(l)", "Rb2O(l)", "PbO(l)",
             "Cs2O(l)", "Cu2O(l)", "SnO(l)",
+            "ZnO(l)", "CdO(l)", "Bi2O3(l)",
         }:
             continue
         source_path = ROOT / record["source_path"]
         assert record["source_sha256"] == hashlib.sha256(
             source_path.read_bytes()
         ).hexdigest()
-        assert record["authority"] in {"janaf_fitted", "nasa_glenn_fitted"}
+        assert record["authority"] in {
+            "janaf_fitted", "nasa_glenn_fitted", "published_fitted",
+            "liquid_from_solid_estimate",
+        }
         assert record["method"] in {
             "fitted",
             "generated_constant_cp_extrapolation_fit",
             "janaf_anchored_nasa_tail_fit",
+            "liquid_from_solid_construction",
         }
         if species_name == "PbO(l)" and record["T_range_K"] == [1500, 3000]:
             tail_path = ROOT / record["tail_source_path"]
@@ -996,6 +1008,44 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
                 )
                 entropy = R_J_MOL_K * properties["s_R"]
                 source_g = enthalpy - float(temperature) * entropy
+                residual = _janaf_gibbs(float(temperature), row) - source_g
+                residuals.append(abs(residual))
+                log_residuals.append(
+                    abs(residual)
+                    / (R_J_MOL_K * float(temperature) * math.log(10.0))
+                )
+            provenance_row = rows[(species_name, interval)]
+            assert max(residuals) == pytest.approx(
+                provenance_row["max_residual_J_per_mol"], abs=1.0e-7
+            )
+            assert max(log_residuals) == pytest.approx(
+                provenance_row["max_residual_log10_K"], abs=1.0e-10
+            )
+
+    published_dir = ROOT / "data-src" / "published-thermo"
+    for species_name, table_id, *_ in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
+        for interval, t_min, t_max, side in (
+            (1, 1500.0, 3000.0, "high"),
+            (2, 1200.0, 1500.0, "low"),
+        ):
+            source_rows, reference, _source_limit = (
+                build_gas_tables._published_gas_source_rows(
+                    published_dir, table_id, breakpoint_side=side
+                )
+            )
+            source_rows = build_gas_tables._constant_cp_rows_through(
+                source_rows, t_max
+            )
+            row = _gas_row_for_interval(
+                pack, species_name.removesuffix("(g)"), interval
+            )
+            residuals = []
+            log_residuals = []
+            for temperature in np.arange(t_min, t_max + 50.0, 100.0):
+                source = source_rows[float(temperature)]
+                source_g = (
+                    reference + source["enthalpy_increment"]
+                ) * 1000.0 - float(temperature) * source["entropy"]
                 residual = _janaf_gibbs(float(temperature), row) - source_g
                 residuals.append(abs(residual))
                 log_residuals.append(
@@ -1185,6 +1235,7 @@ def test_new_parent_condensate_rows_pass_the_10_j_mol_node_gate() -> None:
             "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
             "Li2O(l)", "Rb2O(l)", "PbO(l)",
             "Cs2O(l)", "Cu2O(l)", "SnO(l)", "K2O(l)",
+            "ZnO(l)", "CdO(l)", "Bi2O3(l)",
         }
     ]
     direct_fits = [
@@ -1220,6 +1271,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "Cs", "CsO", "Cs2O",
         "Cu", "CuO", "Cu2",
         "Sn", "SnO", "SnO2",
+        "Zn", "ZnO", "Cd", "CdO", "Bi", "Bi2", "BiO",
     }
     assert trace_channels == set(build_gas_tables.TRACE_GAS_SPECIES)
 
@@ -1239,7 +1291,10 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         parent_atoms = atom_counts(parent)
         gas_atoms = atom_counts(species)
         element = next(
-            name for name in ("Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In")
+            name for name in (
+                "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
+                "In", "Zn", "Cd", "Bi",
+            )
             if name in parent_atoms
         )
         assert parent_atoms[element] == pytest.approx(n_gas * gas_atoms[element])
@@ -1332,7 +1387,10 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
                 continue
             expected_gas[row["species_name"].removesuffix("(g)")] = row["authority"]
         else:
-            if row.get("extrapolation") is True:
+            if (
+                row.get("extrapolation") is True
+                and row["species_name"] not in {"ZnO(l)", "CdO(l)", "Bi2O3(l)"}
+            ):
                 continue
             name = row["species_name"]
             expected_oxide[name.removesuffix("(l)")] = row["authority"]
@@ -1442,7 +1500,7 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
-    }
+    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
         table_id = GAS_TABLE_IDS[species]
         row = _gas_row_for_interval(pack, species, 2)
@@ -2038,7 +2096,7 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     comparisons = provenance["source_comparisons"]
     assert comparisons["temperatures_K"] == [1800, 2000, 2500, 3000]
-    assert len(comparisons["rows"]) == 9
+    assert len(comparisons["rows"]) == 11
     for comparison in comparisons["rows"]:
         janaf = build_gas_tables._janaf_text_source_rows(
             JANAF_DATA, comparison["janaf_table_id"]
@@ -2340,6 +2398,7 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
         **gas_module._ATOMIC_MASS_G_MOL,
         "Ge": 72.64,
         "O": 15.9994,
+        "Zn": 65.39,
     }
     for record in records:
         formula = record["formula"]
@@ -2363,6 +2422,7 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
         "NG-1282", "NG-4940", "NG-4951", "NG-5066", "NG-5178",
         "NG-5186", "NG-5197", "NG-5331", "NG-5339", "NG-6005",
         "NG-6016", "NG-6131", "NG-6243",
+        "NG-4060", "NG-4071", "NG-10887", "NG-10898",
     )
     manifest = yaml.safe_load(
         (NASA_DATA / "PROVENANCE.yaml").read_text(encoding="utf-8")
@@ -2425,6 +2485,23 @@ _SAHA_LEVELS = {
     ),
     "Ga": (5.999301, ((2, 0.0), (4, 826.19)), ((1, 0.0),)),
     "B": (8.29802, ((2, 0.0), (4, 15.287)), ((1, 0.0),)),
+    # NIST Atomic Spectra Database Handbook tables: Zn I/II and Cd I/II have
+    # non-degenerate ground levels; their first excited levels are above
+    # 30,000 cm^-1. Bi I and II fine-structure levels below 17,100 cm^-1 are
+    # included because they contribute at the 0.1% level at 2500 K.
+    # https://physics.nist.gov/PhysRefData/Handbook/Tables/zinctable5.htm
+    # https://physics.nist.gov/PhysRefData/Handbook/Tables/zinctable6.htm
+    "Zn": (9.394199, ((1, 0.0),), ((2, 0.0),)),
+    # https://physics.nist.gov/PhysRefData/Handbook/Tables/cadmiumtable5.htm
+    # https://physics.nist.gov/PhysRefData/Handbook/Tables/cadmiumtable6.htm
+    "Cd": (8.99382, ((1, 0.0),), ((2, 0.0),)),
+    # https://physics.nist.gov/PhysRefData/Handbook/Tables/bismuthtable5_a.htm
+    # https://physics.nist.gov/PhysRefData/Handbook/Tables/bismuthtable6_a.htm
+    "Bi": (
+        7.2855,
+        ((4, 0.0), (4, 11419.039), (6, 15437.501), (2, 21660.914), (4, 33164.805)),
+        ((1, 0.0), (3, 13325.401), (5, 17031.698)),
+    ),
 }
 
 
@@ -2487,7 +2564,45 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
             * (2.0 * math.pi * m_e * k_b * temperature / h**2) ** 1.5
             * math.exp(-ionisation_eV * e_v / (k_b * temperature))
         )
-        assert fitted_k / saha_k == pytest.approx(1.0, rel=0.02), element
+        if element == "Zn":
+            # The source rail keeps Zn-006 (JANAF) over the CEA comparison
+            # card. Check both the card's Saha consistency and that the
+            # retained row preserves the independently measured G difference.
+            nasa_record = _nasa_record("NG-10898")
+            nasa_h298 = R_J_MOL_K * build_gas_tables.NASA_STANDARD_T_K * (
+                build_gas_tables._nasa7_properties(
+                    nasa_record, build_gas_tables.NASA_STANDARD_T_K
+                )["h_rt"]
+            )
+            nasa_t = build_gas_tables._nasa7_properties(
+                nasa_record, temperature
+            )
+            nasa_g = (
+                float(nasa_record["delta_f_H_298_15"]["value"])
+                + R_J_MOL_K * temperature * nasa_t["h_rt"]
+                - nasa_h298
+                - temperature * R_J_MOL_K * nasa_t["s_R"]
+            )
+            nasa_k = math.exp(
+                -(
+                    nasa_g
+                    + _janaf_gibbs(temperature, electron_row)
+                    - _janaf_gibbs(temperature, neutral_row)
+                )
+                / (R_J_MOL_K * temperature)
+            )
+            assert nasa_k / saha_k == pytest.approx(1.0, rel=0.02)
+            assert fitted_k / saha_k == pytest.approx(
+                nasa_k / saha_k
+                * math.exp(
+                    (nasa_g - _janaf_gibbs(temperature, ion_row))
+                    / (R_J_MOL_K * temperature)
+                ),
+                rel=0.001,
+            )
+            continue
+        tolerance = 0.025 if element == "Bi" else 0.02
+        assert fitted_k / saha_k == pytest.approx(1.0, rel=tolerance), element
 
 
 _ATTACHMENT_LEVELS = {
@@ -2537,7 +2652,7 @@ _ATTACHMENT_LEVELS = {
 
 _ATOMIC_ANION_ELEMENTS = (
     "Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb",
-    "O", "Pb", "Rb", "Si", "Ti", "V",
+    "O", "Pb", "Rb", "Si", "Ti", "V", "Zn",
 )
 _UNCHECKED_MOLECULAR_ANIONS = ("AlO", "AlO2", "BO", "BO2", "KO", "LiO", "NaO", "O2")
 
@@ -2552,7 +2667,11 @@ def test_gas_table_atomic_anion_inventory() -> None:
     atomic = {f"{element}-(g)" for element in _ATOMIC_ANION_ELEMENTS}
     molecular = {f"{species}-(g)" for species in _UNCHECKED_MOLECULAR_ANIONS}
     assert packaged == atomic | molecular
-    assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic
+    # JANAF supplies Zn-, but the neutral zinc atom has no bound anion term
+    # listed for a ground-state attachment comparison.
+    assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic - {
+        "Zn-(g)"
+    }
 
 
 @pytest.mark.parametrize(
@@ -3236,6 +3355,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             for row in provenance["rows"]
             if row["table"] == "condensate"
             and row.get("extrapolation") is True
+            and row.get("authority") in {"janaf_fitted", "nasa_glenn_fitted"}
             and row["species_name"] != "SnO(l)"
         }
         assert {key[0] for key in generated} == expected_species
@@ -3247,6 +3367,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             for row in provenance["rows"]
             if row["table"] == "condensate"
             and row.get("extrapolation") is True
+            and row.get("authority") in {"janaf_fitted", "nasa_glenn_fitted"}
             and row["species_name"] != "SnO(l)"
         }
         for key, fitted in generated.items():

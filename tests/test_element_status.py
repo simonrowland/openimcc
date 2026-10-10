@@ -111,6 +111,7 @@ def _neutral_oxide_sources(
     if source_dir == JANAF_DATA:
         for species_name, table_id, formula, cation, *_ in (
             build_gas_tables.TRACE_NASA_GAS_SOURCES
+            + build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES
         ):
             if "O" in formula:
                 result[table_id] = (cation, species_name.removesuffix("(g)"))
@@ -385,6 +386,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     assert set(computed) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
+        "Zn", "Cd", "Bi",
     }
     caller_parent_oxides = {
         "Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2",
@@ -395,13 +397,17 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     new_trace_elements = {"Ga", "Ge", "B", "In", "Cu"}
     new_trace_parents = {
         "Ga": "Ga2O3", "Ge": "GeO2", "B": "B2O3", "In": "In2O3",
-        "Cu": "Cu2O",
+        "Cu": "Cu2O", "Zn": "ZnO", "Cd": "CdO", "Bi": "Bi2O3",
     }
+    new_trace_elements.update({"Zn", "Cd", "Bi"})
+    caller_parent_oxides.update(
+        {"Zn": "ZnO", "Cd": "CdO", "Bi": "Bi2O3"}
+    )
     trace_elements = {"Li", "Rb", "Pb", "Cs", "Sn"}
     existing_caller_parent_oxides = {
         element: oxide
         for element, oxide in caller_parent_oxides.items()
-        if element not in trace_elements
+        if element not in trace_elements | {"Zn", "Cd", "Bi"}
     }
     activities_by_temperature = {}
     trace_activities_by_temperature = {}
@@ -653,8 +659,11 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Ge": ("Ge+",),
         "B": ("B+", "B-", "BO-", "BO2-"),
         "Cu": ("Cu-",),
+        "Zn": ("Zn+", "Zn-"),
+        "Cd": ("Cd+",),
+        "Bi": ("Bi+",),
     }
-    for element in ("Ga", "Ge", "B", "Cu"):
+    for element in ("Ga", "Ge", "B", "Cu", "Zn", "Cd", "Bi"):
         current = {"max_ratio": -1.0, "isolated_bound": 0.0}
         for temperature in TEMPERATURES_K:
             activities = dict(activities_by_temperature[temperature])
@@ -771,6 +780,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "Cs-005", "Cs-006", "Cs-017", "Cs-021",
         "Cu-005", "Cu-006", "Cu-016", "Cu-018", "Cu-020",
         "Cr-007", "V-007", "Nb-007",
+        "Zn-005", "Zn-006", "Zn-007",
         "Li-005", "Li-006", "Li-011", "Li-015", "Li-017", "Li-019",
         "O-007", "O-009", "Pb-005", "Pb-006", "Rb-005", "Rb-006",
         "B-005", "B-006", "B-007", "B-078", "B-079", "B-080",
@@ -779,10 +789,14 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     assert set(measured) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
+        "Zn", "Cd", "Bi",
     }
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
-        if element in {"Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In"}:
+        if element in {
+            "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In",
+            "Zn", "Cd", "Bi",
+        }:
             assert recorded["parent_activity"] == 1.0e-3
         assert recorded["temperature_K"] == result["temperature_K"], element
         assert recorded["fO2"] == result["fO2"], element
@@ -821,7 +835,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     legacy_measured = {
         element: result
         for element, result in measured.items()
-        if element not in {"Ga", "Ge", "B", "In", "Cu"}
+        if element not in {"Ga", "Ge", "B", "In", "Cu", "Zn", "Cd", "Bi"}
     }
     ratio_order = sorted(
         legacy_measured,
@@ -861,6 +875,8 @@ def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
         ("Ga", "Ga-006"), ("Ge", "NG-5197"), ("B", "B-006"),
         ("In", "NG-6016"),
         ("Cs", "Cs-006"), ("Cu", "Cu-006"),
+        ("Zn", "Zn-006"), ("Cd", "NG-4071"),
+        ("Bi", "NBS-T22-ASD-BiII"),
     ):
         c3 = ELEMENT_STATUS[element]["c3_ion_bound"]
         text_path = JANAF_DATA / f"{table_id}.txt"
@@ -882,6 +898,11 @@ def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
             assert record["phase"] == "gas"
             assert record["formula"] == element
             assert record["name_as_published"] == f"{element}+"
+            digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
+        elif table_id == "NBS-T22-ASD-BiII":
+            source_path = ROOT / "data-src" / "published-thermo" / (
+                "bismuth-ion-sources.json"
+            )
             digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
         else:
             record = _record(table_id)
@@ -981,7 +1002,7 @@ def _c4_rows_cover_domain(
                     (int(row["T_min"]), int(row["T_max"])),
                 )
             )
-            if source is None or source["method"] != "fitted":
+            if source is None:
                 return False
             if source["authority"] == "janaf_fitted":
                 if not _one_bar_janaf_source(source["table_id"]):
@@ -989,6 +1010,14 @@ def _c4_rows_cover_domain(
             elif source["authority"] == "nasa_glenn_fitted":
                 if "NASA/TP-2002-211556" not in source["source"].get(
                     "citation", ""
+                ):
+                    return False
+            elif source["authority"] == "published_fitted":
+                if (
+                    source["method"] not in {
+                        "fitted", "generated_constant_cp_extrapolation_fit"
+                    }
+                    or not source.get("source", {}).get("citation")
                 ):
                     return False
             else:
@@ -1041,18 +1070,24 @@ def _c4_rows_cover_domain(
         if source is None:
             return False
         if source.get("extrapolation") is True:
-            if source["source_data"] is not False or source["method"] != (
-                "generated_constant_cp_extrapolation_fit"
-            ):
+            if source["source_data"] is not False:
+                return False
+            if source["authority"] == "liquid_from_solid_estimate":
+                if source["method"] != "liquid_from_solid_construction":
+                    return False
+            elif source["method"] != "generated_constant_cp_extrapolation_fit":
                 return False
             if source["authority"] == "nasa_glenn_fitted":
                 if "NASA pure-liquid standard state at 1 atm" not in source.get(
                     "note", ""
                 ):
                     return False
-            elif source["authority"] != "janaf_fitted" or not _one_bar_janaf_source(
-                source["table_id"]
-            ):
+            elif source["authority"] == "janaf_fitted":
+                if not _one_bar_janaf_source(source["table_id"]):
+                    return False
+            elif source["authority"] not in {
+                "published_fitted", "liquid_from_solid_estimate"
+            }:
                 return False
             if source["authority"] == "janaf_fitted":
                 if not _one_bar_janaf_source(source["table_id"]):
@@ -1063,6 +1098,14 @@ def _c4_rows_cover_domain(
                     not in source["source"].get("citation", "")
                     or "NASA pure-liquid standard state at 1 atm"
                     not in source.get("note", "")
+                ):
+                    return False
+            elif source["authority"] in {
+                "published_fitted", "liquid_from_solid_estimate"
+            }:
+                if (
+                    source.get("tier") not in {1, 3, 4}
+                    or not source.get("source", {}).get("citation")
                 ):
                     return False
             else:
@@ -1094,6 +1137,12 @@ def _c4_rows_cover_domain(
                 or source.get("source_table_id") != "K-012"
             ):
                 return False
+        elif source["authority"] in {"published_fitted", "liquid_from_solid_estimate"}:
+            if (
+                source["method"] != "fitted"
+                or not source.get("source", {}).get("citation")
+            ):
+                return False
         elif source["authority"] not in {
             "janaf_transcribed",
             "lam1984_transcribed",
@@ -1114,6 +1163,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Ga", "Ge", "B", "In",
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Cs", "Cu", "Sn",
         "Mn", "Ni", "Co", "P", "S",
+        "Zn", "Cd", "Bi",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1145,6 +1195,9 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Cs": "Cs2O",
         "Cu": "Cu2O",
         "Sn": "SnO",
+        "Zn": "ZnO",
+        "Cd": "CdO",
+        "Bi": "Bi2O3",
     }
     gas_parent_by_element = {"S": "S2"}
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")

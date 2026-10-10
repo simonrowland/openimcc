@@ -215,6 +215,31 @@ source_notes:
     ko_reference: https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-Potassium.pdf
   condensate_rows_are_cc_by_4:
     note: Published Lamoreaux coefficients and the K2O input estimates retain their source attribution below.
+  trace_channel_additions:
+    activity_policy: >-
+      ZnO, CdO, and Bi2O3 parent activities are caller supplied. OpenIMCC does
+      not provide an activity model or activity coefficients for these channels.
+    source_selection:
+      Zn: >-
+        JANAF Zn(g), Zn+(g), and Zn-(g) rows are retained. The NASA Glenn Zn
+        atom and cation cards are comparison-only; their G_app differences are
+        recorded below. The ZnO(g) IVTAN table supplies direct 1-bar gas cells.
+      Cd: >-
+        The JANAF fourth-edition index contains no Cd table, so Cd(g) and Cd+(g)
+        use NASA Glenn cards as the tier-2 fallback. CdO(g) is an explicitly
+        estimated Pankratz table; CdO(l) is the tier-4 crystal-to-liquid
+        construction because no stable 1-bar liquid row is available.
+      Bi: >-
+        JANAF and TSIV list no Bi(g) table. Pankratz Table 80 supplies Bi(g),
+        Table 81 supplies Bi2(g), and Bulletin 696 Table 115 supplies BiO(g).
+        Bi2O3(l) is selected as the Bi(III) parent because Table 82 prints its
+        liquid branch; no other bismuth-oxide liquid parent is offered.
+    measured_continuation_bands: >-
+      Gas continuation bands are maximum held-Cp errors measured by truncating
+      published JANAF gas tables at the matching source-node limit. The
+      Bi2O3(l) band is the maximum held-Cp error measured against nine JANAF
+      parent-liquid tables truncated at 1300 K. These source-data back-tests
+      define continuation bands and are not benchmark tuning.
 rows:
   - table: gas
     species_name: Na(g)
@@ -4945,6 +4970,957 @@ rows:
       liquid node at 1250 K. It extends SnO(l) downward to 1200 K only below that card
       boundary and retains the NASA pure-liquid standard state at 1 atm.
 
+  - table: gas
+    species_name: Zn(g)
+    table_id: Zn-005
+    runtime_ref: Zn-005
+    source_path: data-src/janaf/Zn-005.txt
+    source_sha256: b67dd110d66081622c01e120d71e6d2f181f50c22b157d8f3a6aa6f9732cd060
+    authority: janaf_fitted
+    method: fitted
+    tier: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 0.909184256452136
+    max_residual_log10_K: 2.45153704547562e-05
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 1
+    source_url: https://janaf.nist.gov/tables/Zn-005.html
+    download_url: https://janaf.nist.gov/tables/Zn-005.txt
+    source_locator: Zn-005 table header and thermal cells
+    retrieval_date: '2026-10-10'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Cd(g)
+    table_id: NG-4060
+    runtime_ref: NG-4060
+    source_path: data-src/nasa-glenn/NG-4060.json
+    source_sha256: 32f972c8438568e37c4f10bb43ff8a33cd43d629bccfcd1424fcdb98e8d19372
+    authority: nasa_glenn_fitted
+    method: fitted
+    tier: 2
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 0.00170907838037238
+    max_residual_log10_K: 4.46356754391429e-08
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 1
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
+      source_record: NASA Glenn PAC coefficient card NG-4060
+      card_citation: Hf:Cox,1989. Moore,1971. Gordon,1999.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 4061-4071
+      official_url: https://www.grc.nasa.gov/www/CEAWeb/
+      licence: US government work; 17 U.S.C. § 105 (no U.S. copyright). Public-domain basis.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    source_locator: thermo.inp lines 4061-4071
+    source_data: true
+  - table: gas
+    species_name: ZnO(g)
+    table_id: IVTAN-264
+    runtime_ref: IVTAN-264
+    source_path: data-src/published-thermo/ivtan-table-264.json
+    source_sha256: 699198ee929d2830bb0a77758e047b6d8df99c9ba736886d39c2fc2ae0a6ef71
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.28986842173617
+    max_residual_log10_K: 2.65759816561344e-05
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 1
+    source:
+      citation: IVTAN-TERMO, Table 264, ZnO(g)
+      source_record: IVTAN-TERMO, Table 264, ZnO(g), Table 264
+      source_locator: Table 264
+      source_url: https://www.chem.msu.ru/rus/handbook/ivtan/264.html
+    source_url: https://www.chem.msu.ru/rus/handbook/ivtan/264.html
+    source_locator: Table 264
+    source_data: true
+  - table: gas
+    species_name: Bi(g)
+    table_id: P672-T80
+    runtime_ref: P672-T80-CP-EXT-1800
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 2.98218741052551
+    max_residual_log10_K: 9.73565277078693e-05
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags:
+    - constant-Cp continuation above 1800 K
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: &id001
+        1800: 0.0
+        2000: 13.18
+        2500: 525.0
+        3000: 2334.0
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 672
+      source_record: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 672, Table 80, Bi(g)
+      source_locator: Table 80, Bi(g)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 80, Bi(g)
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1800
+  - table: gas
+    species_name: Bi2(g)
+    table_id: P672-T81
+    runtime_ref: P672-T81-CP-EXT-1800
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 6.22003716084873
+    max_residual_log10_K: 0.000194585452164303
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags:
+    - constant-Cp continuation above 1800 K
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: &id002
+        1800: 0.0
+        2000: 13.18
+        2500: 525.0
+        3000: 2334.0
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 672
+      source_record: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 672, Table 81, Bi2(g)
+      source_locator: Table 81, Bi2(g)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 81, Bi2(g)
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1800
+  - table: gas
+    species_name: BiO(g)
+    table_id: P696-T115
+    runtime_ref: P696-T115-CP-EXT-1200
+    source_path: data-src/published-thermo/pankratz-bulletin-696.json
+    source_sha256: 88468b113c1920f12e92c8b02d00e72bfa3b00f4f3869e04afc309e1fe838604
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 2.3283064365387e-10
+    max_residual_log10_K: 4.19365082526446e-15
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags:
+    - constant-Cp continuation above 1200 K
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: &id003
+        1800: 522.0
+        2000: 1085.55
+        2500: 3491.87
+        3000: 7294.27
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 696
+      source_record: Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 696, Table 115, BiO(g)
+      source_locator: Table 115, BiO(g)
+      source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    source_locator: Table 115, BiO(g)
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1200
+  - table: gas
+    species_name: CdO(g)
+    table_id: P696-T191
+    runtime_ref: P696-T191-CP-EXT-2000
+    source_path: data-src/published-thermo/pankratz-bulletin-696.json
+    source_sha256: 88468b113c1920f12e92c8b02d00e72bfa3b00f4f3869e04afc309e1fe838604
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 4
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 6.27510594797786
+    max_residual_log10_K: 0.000172511315952112
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags:
+    - constant-Cp continuation above 2000 K
+    - Pankratz source explicitly estimates CdO(g)
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: &id004
+        1800: 0.0
+        2000: 0.0
+        2500: 188.63
+        3000: 1283.1
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 696
+      source_record: Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 696, Table 191, CdO(g)
+      source_locator: Table 191, CdO(g)
+      source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    source_locator: Table 191, CdO(g)
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2000
+  - table: gas
+    species_name: Zn(g)
+    table_id: Zn-005
+    runtime_ref: Zn-005
+    source_path: data-src/janaf/Zn-005.txt
+    source_sha256: b67dd110d66081622c01e120d71e6d2f181f50c22b157d8f3a6aa6f9732cd060
+    authority: janaf_fitted
+    method: fitted
+    tier: 1
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 1.00567863453762
+    max_residual_log10_K: 5.37192368895092e-05
+    source_fit_range_K:
+    - 500
+    - 1500
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 2
+    source_url: https://janaf.nist.gov/tables/Zn-005.html
+    download_url: https://janaf.nist.gov/tables/Zn-005.txt
+    source_locator: Zn-005 table header and thermal cells
+    retrieval_date: '2026-10-10'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Cd(g)
+    table_id: NG-4060
+    runtime_ref: NG-4060
+    source_path: data-src/nasa-glenn/NG-4060.json
+    source_sha256: 32f972c8438568e37c4f10bb43ff8a33cd43d629bccfcd1424fcdb98e8d19372
+    authority: nasa_glenn_fitted
+    method: fitted
+    tier: 2
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 0.0265614475356415
+    max_residual_log10_K: 2.43467231617896e-06
+    source_fit_range_K:
+    - 500
+    - 1500
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 2
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
+      source_record: NASA Glenn PAC coefficient card NG-4060
+      card_citation: Hf:Cox,1989. Moore,1971. Gordon,1999.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 4061-4071
+      official_url: https://www.grc.nasa.gov/www/CEAWeb/
+      licence: US government work; 17 U.S.C. § 105 (no U.S. copyright). Public-domain basis.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    source_locator: thermo.inp lines 4061-4071
+    source_data: true
+  - table: gas
+    species_name: ZnO(g)
+    table_id: IVTAN-264
+    runtime_ref: IVTAN-264
+    source_path: data-src/published-thermo/ivtan-table-264.json
+    source_sha256: 699198ee929d2830bb0a77758e047b6d8df99c9ba736886d39c2fc2ae0a6ef71
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 0.956947160913842
+    max_residual_log10_K: 3.84498572919598e-05
+    source_fit_range_K:
+    - 1200
+    - 1500
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 2
+    source:
+      citation: IVTAN-TERMO, Table 264, ZnO(g)
+      source_record: IVTAN-TERMO, Table 264, ZnO(g), Table 264
+      source_locator: Table 264
+      source_url: https://www.chem.msu.ru/rus/handbook/ivtan/264.html
+    source_url: https://www.chem.msu.ru/rus/handbook/ivtan/264.html
+    source_locator: Table 264
+    source_data: true
+  - table: gas
+    species_name: Bi(g)
+    table_id: P672-T80
+    runtime_ref: P672-T80
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 0.972410390910227
+    max_residual_log10_K: 3.9071165354639e-05
+    source_fit_range_K:
+    - 1200
+    - 1500
+    flags: []
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: *id001
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 672
+      source_record: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 672, Table 80, Bi(g)
+      source_locator: Table 80, Bi(g)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 80, Bi(g)
+    source_data: true
+  - table: gas
+    species_name: Bi2(g)
+    table_id: P672-T81
+    runtime_ref: P672-T81
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 4.67421184486011
+    max_residual_log10_K: 0.000162767337247978
+    source_fit_range_K:
+    - 1200
+    - 1500
+    flags: []
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: *id002
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 672
+      source_record: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 672, Table 81, Bi2(g)
+      source_locator: Table 81, Bi2(g)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 81, Bi2(g)
+    source_data: true
+  - table: gas
+    species_name: BiO(g)
+    table_id: P696-T115
+    runtime_ref: P696-T115-CP-EXT-1200
+    source_path: data-src/published-thermo/pankratz-bulletin-696.json
+    source_sha256: 88468b113c1920f12e92c8b02d00e72bfa3b00f4f3869e04afc309e1fe838604
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 0.000409900734666735
+    max_residual_log10_K: 1.44652441451237e-08
+    source_fit_range_K:
+    - 1200
+    - 1500
+    flags:
+    - constant-Cp continuation above 1200 K
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: *id003
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 696
+      source_record: Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 696, Table 115, BiO(g)
+      source_locator: Table 115, BiO(g)
+      source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    source_locator: Table 115, BiO(g)
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1200
+  - table: gas
+    species_name: CdO(g)
+    table_id: P696-T191
+    runtime_ref: P696-T191
+    source_path: data-src/published-thermo/pankratz-bulletin-696.json
+    source_sha256: 88468b113c1920f12e92c8b02d00e72bfa3b00f4f3869e04afc309e1fe838604
+    authority: published_fitted
+    method: fitted
+    tier: 4
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 0.511222381901462
+    max_residual_log10_K: 1.78019971292422e-05
+    source_fit_range_K:
+    - 1200
+    - 1500
+    flags:
+    - Pankratz source explicitly estimates CdO(g)
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: *id004
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 696
+      source_record: Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 696, Table 191, CdO(g)
+      source_locator: Table 191, CdO(g)
+      source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    source_locator: Table 191, CdO(g)
+    source_data: true
+  - table: gas
+    species_name: Cd+(g)
+    table_id: NG-4071
+    runtime_ref: NG-4071
+    source_path: data-src/nasa-glenn/NG-4071.json
+    source_sha256: 5e98c6280ba5df7403fd4c7b7661aaac2fca70953525ded0a2ed4e8052adfddc
+    authority: nasa_glenn_fitted_ionisation
+    method: fitted
+    tier: 2
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 2.00923532247543e-05
+    max_residual_log10_K: 5.52366497731244e-10
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 1
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
+      source_record: NASA Glenn PAC coefficient card NG-4071
+      card_citation: Moore,1971. Gordon,1999.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 4072-4082
+      official_url: https://www.grc.nasa.gov/www/CEAWeb/
+      licence: US government work; 17 U.S.C. § 105 (no U.S. copyright). Public-domain basis.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    source_locator: thermo.inp lines 4072-4082
+    source_data: true
+  - table: gas
+    species_name: Zn+(g)
+    table_id: Zn-006
+    runtime_ref: Zn-006
+    source_path: data-src/janaf/Zn-006.txt
+    source_sha256: 83272492a0be9e530ee03bfb5d0f88dcf59436b8d4862711cd29039cc1a2c9d6
+    authority: janaf_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 0.904760331381112
+    max_residual_log10_K: 2.54160789426351e-05
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 1
+    source_url: https://janaf.nist.gov/tables/Zn-006.html
+    download_url: https://janaf.nist.gov/tables/Zn-006.txt
+    source_locator: Zn-006 table header and thermal cells
+    retrieval_date: '2026-10-10'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Zn-(g)
+    table_id: Zn-007
+    runtime_ref: Zn-007
+    source_path: data-src/janaf/Zn-007.txt
+    source_sha256: 01eb728c6cc7adefbca5e04eca489ab2901be44a20b86303951497e4799c8ddf
+    authority: janaf_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 0.904760331381112
+    max_residual_log10_K: 2.54160789426351e-05
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 1
+    source_url: https://janaf.nist.gov/tables/Zn-007.html
+    download_url: https://janaf.nist.gov/tables/Zn-007.txt
+    source_locator: Zn-007 table header and thermal cells
+    retrieval_date: '2026-10-10'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Zn+(g)
+    table_id: Zn-006
+    runtime_ref: Zn-006
+    source_path: data-src/janaf/Zn-006.txt
+    source_sha256: 83272492a0be9e530ee03bfb5d0f88dcf59436b8d4862711cd29039cc1a2c9d6
+    authority: janaf_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 1.00567863462493
+    max_residual_log10_K: 5.37192368773476e-05
+    source_fit_range_K:
+    - 500
+    - 1500
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 2
+    source_url: https://janaf.nist.gov/tables/Zn-006.html
+    download_url: https://janaf.nist.gov/tables/Zn-006.txt
+    source_locator: Zn-006 table header and thermal cells
+    retrieval_date: '2026-10-10'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Zn-(g)
+    table_id: Zn-007
+    runtime_ref: Zn-007
+    source_path: data-src/janaf/Zn-007.txt
+    source_sha256: 01eb728c6cc7adefbca5e04eca489ab2901be44a20b86303951497e4799c8ddf
+    authority: janaf_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 1.00567863453762
+    max_residual_log10_K: 5.37192368895092e-05
+    source_fit_range_K:
+    - 500
+    - 1500
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 2
+    source_url: https://janaf.nist.gov/tables/Zn-007.html
+    download_url: https://janaf.nist.gov/tables/Zn-007.txt
+    source_locator: Zn-007 table header and thermal cells
+    retrieval_date: '2026-10-10'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Cd+(g)
+    table_id: NG-4071
+    runtime_ref: NG-4071
+    source_path: data-src/nasa-glenn/NG-4071.json
+    source_sha256: 5e98c6280ba5df7403fd4c7b7661aaac2fca70953525ded0a2ed4e8052adfddc
+    authority: nasa_glenn_fitted_ionisation
+    method: fitted
+    tier: 2
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 0.00130251736845821
+    max_residual_log10_K: 8.41716233154767e-08
+    source_fit_range_K:
+    - 500
+    - 1500
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 2
+    source:
+      citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
+      source_record: NASA Glenn PAC coefficient card NG-4071
+      card_citation: Moore,1971. Gordon,1999.
+      upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+      source_locator: thermo.inp lines 4072-4082
+      official_url: https://www.grc.nasa.gov/www/CEAWeb/
+      licence: US government work; 17 U.S.C. § 105 (no U.S. copyright). Public-domain basis.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    source_locator: thermo.inp lines 4072-4082
+    source_data: true
+  - table: gas
+    species_name: Bi+(g)
+    table_id: NBS-T22-ASD-BiII
+    runtime_ref: NBS-T22-ASD-BiII
+    source_path: data-src/published-thermo/bismuth-ion-sources.json
+    source_sha256: af74f5c00a03becc0ffe9955cb302f203ba9a28ae05978662e81d84681e0b942
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 0.0227794709498994
+    max_residual_log10_K: 5.94927116083207e-07
+    source_fit_range_K:
+    - 1500
+    - 3000
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 1
+    source:
+      citation: Wagman et al. (1982), The NBS Tables of Chemical Thermodynamic Properties, JPCRD 11 Supplement
+        2, Table 22; NIST Atomic Spectra Database, Bi II levels
+      source_record: Wagman et al. (1982), The NBS Tables of Chemical Thermodynamic Properties, JPCRD 11 Supplement
+        2, Table 22; NIST Atomic Spectra Database, Bi II levels, Table 22 and Bi II term levels
+      source_locator: Table 22 and Bi II term levels
+      source_url: https://srd.nist.gov/JPCRD/jpcrdS2Vol11.pdf
+      secondary_source_url: https://pml.nist.gov/PhysRefData/Handbook/Tables/bismuthtable1.htm
+    source_url: https://srd.nist.gov/JPCRD/jpcrdS2Vol11.pdf
+    source_locator: Table 22 and Bi II term levels
+    source_data: true
+  - table: gas
+    species_name: Bi+(g)
+    table_id: NBS-T22-ASD-BiII
+    runtime_ref: NBS-T22-ASD-BiII
+    source_path: data-src/published-thermo/bismuth-ion-sources.json
+    source_sha256: af74f5c00a03becc0ffe9955cb302f203ba9a28ae05978662e81d84681e0b942
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 0.000138267874717712
+    max_residual_log10_K: 4.81482109534395e-09
+    source_fit_range_K:
+    - 1200
+    - 1500
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 2
+    source:
+      citation: Wagman et al. (1982), The NBS Tables of Chemical Thermodynamic Properties, JPCRD 11 Supplement
+        2, Table 22; NIST Atomic Spectra Database, Bi II levels
+      source_record: Wagman et al. (1982), The NBS Tables of Chemical Thermodynamic Properties, JPCRD 11 Supplement
+        2, Table 22; NIST Atomic Spectra Database, Bi II levels, Table 22 and Bi II term levels
+      source_locator: Table 22 and Bi II term levels
+      source_url: https://srd.nist.gov/JPCRD/jpcrdS2Vol11.pdf
+      secondary_source_url: https://pml.nist.gov/PhysRefData/Handbook/Tables/bismuthtable1.htm
+    source_url: https://srd.nist.gov/JPCRD/jpcrdS2Vol11.pdf
+    source_locator: Table 22 and Bi II term levels
+    source_data: true
+  - table: condensate
+    species_name: ZnO(l)
+    table_id: TSIV-1603
+    runtime_ref: TSIV-1603-LFS-CP-EXT-2250
+    source_path: data-src/published-thermo/tsiv-table-1603.json
+    source_sha256: 8989bd90414e47d5aea02104d9915a17fa4e8d8c9847516ef6adda58a4e6d8ec
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K:
+    - 1200
+    - 1700
+    max_residual_J_per_mol: 0.350242234300822
+    max_residual_log10_K: 1.21962798779894e-05
+    source_fit_range_K:
+    - 1200
+    - 1700
+    flags:
+    - tier-4 liquid_from_solid construction
+    - quadratic crystal Cp extension above 2250 K
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: TSIV Phi uncertainty plus propagated fusion-input spread and quadratic crystal-Cp extrapolation band
+      values_J_per_mol:
+        1800: 5536.83414274245
+        2000: 5151.871263726412
+        2500: 7806.964066186401
+        3000: 13674.556868646503
+    source:
+      citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume V, Table 1603, ZnO(cr)
+      source_record: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume V, Table 1603,
+        ZnO(cr), Volume V, Table 1603
+      source_locator: Volume V, Table 1603
+      source_url: https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html
+    source_locator: Volume V, Table 1603
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2250
+  - table: condensate
+    species_name: ZnO(l)
+    table_id: TSIV-1603
+    runtime_ref: TSIV-1603-LFS-CP-EXT-2250
+    source_path: data-src/published-thermo/tsiv-table-1603.json
+    source_sha256: 8989bd90414e47d5aea02104d9915a17fa4e8d8c9847516ef6adda58a4e6d8ec
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K:
+    - 1700
+    - 3000
+    max_residual_J_per_mol: 7.53106123278849
+    max_residual_log10_K: 0.000181799329179532
+    source_fit_range_K:
+    - 1700
+    - 3000
+    flags:
+    - tier-4 liquid_from_solid construction
+    - quadratic crystal Cp extension above 2250 K
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: TSIV Phi uncertainty plus propagated fusion-input spread and quadratic crystal-Cp extrapolation band
+      values_J_per_mol:
+        1800: 5536.83414274245
+        2000: 5151.871263726412
+        2500: 7806.964066186401
+        3000: 13674.556868646503
+    source:
+      citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume V, Table 1603, ZnO(cr)
+      source_record: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume V, Table 1603,
+        ZnO(cr), Volume V, Table 1603
+      source_locator: Volume V, Table 1603
+      source_url: https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html
+    source_locator: Volume V, Table 1603
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2250
+  - table: condensate
+    species_name: CdO(l)
+    table_id: P672-T102
+    runtime_ref: P672-T102-LFS-CP-EXT-1500
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K:
+    - 1200
+    - 1600
+    max_residual_J_per_mol: 6.98491930961609e-10
+    max_residual_log10_K: 2.28029763623755e-14
+    source_fit_range_K:
+    - 1200
+    - 1600
+    flags:
+    - tier-4 liquid_from_solid construction
+    - quadratic crystal Cp extension above 1500 K
+    - published CdO Cp equation extended above 1500 K
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: measured rocksalt-monoxide fusion-input range plus published-Cp versus held-Cp extension difference
+      values_J_per_mol:
+        1800: 7401.026370085821
+        2000: 6762.82066438134
+        2500: 10544.477901149574
+        3000: 14599.927783423298
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 672
+      source_record: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 672, Table 102, CdO(cr)
+      source_locator: Table 102, CdO(cr)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 102, CdO(cr)
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1500
+  - table: condensate
+    species_name: CdO(l)
+    table_id: P672-T102
+    runtime_ref: P672-T102-LFS-CP-EXT-1500
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K:
+    - 1600
+    - 3000
+    max_residual_J_per_mol: 7.8113559121266
+    max_residual_log10_K: 0.000196000644415253
+    source_fit_range_K:
+    - 1600
+    - 3000
+    flags:
+    - tier-4 liquid_from_solid construction
+    - quadratic crystal Cp extension above 1500 K
+    - published CdO Cp equation extended above 1500 K
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: measured rocksalt-monoxide fusion-input range plus published-Cp versus held-Cp extension difference
+      values_J_per_mol:
+        1800: 7401.026370085821
+        2000: 6762.82066438134
+        2500: 10544.477901149574
+        3000: 14599.927783423298
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 672
+      source_record: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 672, Table 102, CdO(cr)
+      source_locator: Table 102, CdO(cr)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 102, CdO(cr)
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1500
+  - table: condensate
+    species_name: Bi2O3(l)
+    table_id: P672-T82
+    runtime_ref: P672-T82-CP-EXT-1300
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 1
+    T_range_K:
+    - 1200
+    - 1600
+    max_residual_J_per_mol: 1.16415321826935e-09
+    max_residual_log10_K: 3.80049606039592e-14
+    source_fit_range_K:
+    - 1200
+    - 1600
+    flags:
+    - constant-Cp continuation above 1300 K
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published liquid-source tables
+      values_J_per_mol: &id005
+        1500: 505.689
+        2000: 8544.934
+        2500: 24507.754
+        3000: 46784.971
+      method: maximum absolute error in held-Cp back-tests on nine JANAF parent-liquid tables, truncated at the
+        1300 K source limit
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 672
+      source_record: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 672, Table 82, Bi2O3(l)
+      source_locator: Table 82, Bi2O3(l)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 82, Bi2O3(l)
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1300
+  - table: condensate
+    species_name: Bi2O3(l)
+    table_id: P672-T82
+    runtime_ref: P672-T82-CP-EXT-1300
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 1
+    T_range_K:
+    - 1600
+    - 3000
+    max_residual_J_per_mol: 7.19390200637281
+    max_residual_log10_K: 0.000162130457703549
+    source_fit_range_K:
+    - 1600
+    - 3000
+    flags:
+    - constant-Cp continuation above 1300 K
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published liquid-source tables
+      values_J_per_mol: *id005
+      method: maximum absolute error in held-Cp back-tests on nine JANAF parent-liquid tables, truncated at the
+        1300 K source limit
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines
+        Bulletin 672
+      source_record: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of
+        Mines Bulletin 672, Table 82, Bi2O3(l)
+      source_locator: Table 82, Bi2O3(l)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 82, Bi2O3(l)
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1300
 source_comparisons:
   basis: >-
     NASA cards use G_app(T)=H_card(T)-T*S_card(T), where H_card includes the
@@ -5140,6 +6116,48 @@ source_comparisons:
       janaf_G_app_J_mol: -1956902.0
       nasa_G_app_J_mol: -1962312.716
       nasa_minus_janaf_J_mol: -5410.716
+
+
+  - species_name: Zn(g)
+    janaf_table_id: Zn-005
+    nasa_record_id: NG-10887
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -195412.8
+      nasa_G_app_J_mol: -195438.094
+      nasa_minus_janaf_J_mol: -25.294
+    - T_K: 2000
+      janaf_G_app_J_mol: -235307.0
+      nasa_G_app_J_mol: -235333.78
+      nasa_minus_janaf_J_mol: -26.78
+    - T_K: 2500
+      janaf_G_app_J_mol: -336784.5
+      nasa_G_app_J_mol: -336813.619
+      nasa_minus_janaf_J_mol: -29.119
+    - T_K: 3000
+      janaf_G_app_J_mol: -440356.0
+      nasa_G_app_J_mol: -440386.434
+      nasa_minus_janaf_J_mol: -30.434
+  - species_name: Zn+(g)
+    janaf_table_id: Zn-006
+    nasa_record_id: NG-10898
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: 701131.6
+      nasa_G_app_J_mol: 706788.038
+      nasa_minus_janaf_J_mol: 5656.438
+    - T_K: 2000
+      janaf_G_app_J_mol: 660085.0
+      nasa_G_app_J_mol: 665739.719
+      nasa_minus_janaf_J_mol: 5654.719
+    - T_K: 2500
+      janaf_G_app_J_mol: 555726.5
+      nasa_G_app_J_mol: 561378.258
+      nasa_minus_janaf_J_mol: 5651.758
+    - T_K: 3000
+      janaf_G_app_J_mol: 449274.0
+      nasa_G_app_J_mol: 454923.498
+      nasa_minus_janaf_J_mol: 5649.498
 
 
 certification_items:

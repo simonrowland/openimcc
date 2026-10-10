@@ -19,8 +19,8 @@ import csv
 import io
 import json
 import math
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -169,6 +169,7 @@ TRACE_JANAF_GAS_SOURCES = (
     ("Cu(g)", "Cu-005", "Cu", 1, 0),
     ("CuO(g)", "Cu-016", "Cu", 1, 1),
     ("Cu2(g)", "Cu-018", "Cu", 2, 0),
+    ("Zn(g)", "Zn-005", "Zn", 1, 0),
 )
 TRACE_NASA_GAS_SOURCES = (
     ("RbO(g)", "NG-1329", "RbO", "Rb", 1, 1),
@@ -185,11 +186,21 @@ TRACE_NASA_GAS_SOURCES = (
     ("Sn(g)", "NG-1845", "Sn", "Sn", 1, 0),
     ("SnO(g)", "NG-1847", "SnO", "Sn", 1, 1),
     ("SnO2(g)", "NG-1849", "SnO2", "Sn", 1, 2),
+    ("Cd(g)", "NG-4060", "Cd", "Cd", 1, 0),
+)
+TRACE_PUBLISHED_GAS_SOURCES = (
+    ("ZnO(g)", "IVTAN-264", "ZnO", "Zn", 1, 1, 3000.0),
+    ("Bi(g)", "P672-T80", "Bi", "Bi", 1, 0, 1800.0),
+    ("Bi2(g)", "P672-T81", "Bi2", "Bi", 2, 0, 1800.0),
+    ("BiO(g)", "P696-T115", "BiO", "Bi", 1, 1, 1200.0),
+    ("CdO(g)", "P696-T191", "CdO", "Cd", 1, 1, 2000.0),
 )
 TRACE_GAS_SPECIES = frozenset(
     {source[0].removesuffix("(g)") for source in TRACE_JANAF_GAS_SOURCES}
     | {source[0].removesuffix("(g)") for source in TRACE_NASA_GAS_SOURCES}
+    | {source[0].removesuffix("(g)") for source in TRACE_PUBLISHED_GAS_SOURCES}
 )
+TRACE_NASA_COMPARISON_SOURCES = (("NG-10887", "Zn"), ("NG-10898", "Zn+"))
 
 # Charge-balance rows are appended after every neutral row so the established
 # neutral coefficient rows and their ordering remain unchanged. The text
@@ -233,12 +244,16 @@ TRACE_ION_GAS_TEXT_SOURCES = (
     ("Cs-(g)", "Cs-007", "Cs", 1, 0),
     ("Cu+(g)", "Cu-006", "Cu", 1, 0),
     ("Cu-(g)", "Cu-007", "Cu", 1, 0),
+    ("Zn+(g)", "Zn-006", "Zn", 1, 0),
+    ("Zn-(g)", "Zn-007", "Zn", 1, 0),
 )
 DECLINED_ION_GAS_SPECIES = frozenset({"Cu+(g)"})
 TRACE_ION_GAS_NASA_SOURCES = (
     ("BO-(g)", "NG-1074", "BO", "B", 1, 1),
     ("Ge+(g)", "NG-5197", "Ge", "Ge", 1, 0),
+    ("Cd+(g)", "NG-4071", "Cd", "Cd", 1, 0),
 )
+TRACE_ION_PUBLISHED_SOURCES = (("Bi+(g)", "NBS-T22-ASD-BiII", "Bi", 1, 0),)
 TRACE_ION_NASA_SOURCES = (
     ("Sn+(g)", "NG-1846", "Sn+", "Sn", 1, 0),
     ("Cs2O+(g)", "NG-1843", "Cs2O+", "Cs", 2, 1),
@@ -452,7 +467,9 @@ SUPERCOOLED_LIQUID_REF_SUFFIX = "-SC-CP"
 # These default rows now come only from their generated JANAF fits. Remove every
 # prior source interval, including disjoint LAM ranges above the new fit domain.
 REPLACED_DEFAULT_CONDENSATE_SPECIES = {
-    "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)", "K2O(l)"
+    "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)",
+    "K2O(l)",
+    "ZnO(l)", "CdO(l)", "Bi2O3(l)",
 }
 
 REQUIRED_FIELDS = (
@@ -1322,6 +1339,258 @@ def _fit_janaf_text_row(
     }
 
 
+def _published_table_record(source_dir: Path, table_id: str) -> dict[str, Any]:
+    """Read one transcribed record from its named published table bundle."""
+    if table_id.startswith("P672-"):
+        filename = "pankratz-bulletin-672.json"
+    elif table_id.startswith("P696-"):
+        filename = "pankratz-bulletin-696.json"
+    elif table_id == "IVTAN-264":
+        filename = "ivtan-table-264.json"
+    elif table_id == "TSIV-1603":
+        filename = "tsiv-table-1603.json"
+    else:
+        raise ValueError(f"{table_id}: unsupported published source record")
+    record = _load_record(source_dir / filename)
+    if table_id in {"IVTAN-264", "TSIV-1603"}:
+        return record
+    try:
+        return record["tables"][table_id]
+    except KeyError as error:
+        raise ValueError(f"{filename}: no table record {table_id}") from error
+
+
+def _published_gas_source_rows(
+    source_dir: Path, table_id: str, *, breakpoint_side: str = "single"
+) -> tuple[dict[float, dict[str, float]], float, float]:
+    """Convert one published gas table's cells to the common fit units.
+
+    Premise: the selected Pankratz tables print Cp and S in cal/(mol K), H-H298
+    in kcal/mol, and Hf298 in kcal/mol; IVTAN Table 264 prints Cp and S in
+    J/(mol K), H-H0 in kJ/mol, and separately gives H(298)-H(0). Algebra:
+    multiply Pankratz thermal values by 4.184 and subtract IVTAN's H(298)-H(0)
+    from each H-H0 cell. Unit check: the returned rows use J/(mol K), kJ/mol,
+    and kJ/mol for Cp, S, and Hinc, respectively. Sanity: the IVTAN 298.15 K
+    node becomes H-H(298)=0 and retains its printed S and Cp.
+    """
+    record = _published_table_record(source_dir, table_id)
+    rows: dict[float, dict[str, float]] = {}
+    if table_id == "IVTAN-264":
+        h298_minus_h0 = float(record["enthalpy_298_minus_H0_kj_mol"])
+        for temperature, cp, entropy, enthalpy, side in record["nodes"]:
+            if side not in ("single", breakpoint_side):
+                continue
+            rows[float(temperature)] = {
+                "temperature": float(temperature),
+                "heat_capacity": float(cp),
+                "entropy": float(entropy),
+                "enthalpy_increment": float(enthalpy) - h298_minus_h0,
+            }
+        reference = float(record["formation_enthalpy_298_kj_mol"])
+        source_limit = 3000.0
+    else:
+        for temperature, cp, entropy, enthalpy in record["nodes"]:
+            rows[float(temperature)] = {
+                "temperature": float(temperature),
+                "heat_capacity": float(cp) * 4.184,
+                "entropy": float(entropy) * 4.184,
+                "enthalpy_increment": float(enthalpy) * 4.184,
+            }
+        reference = float(record["formation_enthalpy_298_kcal_mol"]) * 4.184
+        source_limit = max(rows)
+    return rows, reference, source_limit
+
+
+def _constant_cp_rows_through(
+    rows: dict[float, dict[str, float]], end_temperature: float
+) -> dict[float, dict[str, float]]:
+    """Continue printed Cp, Hinc and S from the last published thermal node.
+
+    Premise: the coverage-only continuation holds the last printed Cp
+    constant. Algebra: Hinc(T)=Hinc(T0)+Cp*(T-T0)/1000 and
+    S(T)=S(T0)+Cp*ln(T/T0). Unit check: the enthalpy increment is kJ/mol and
+    entropy is J/(mol K). Sanity: both generated functions meet the last
+    printed H/S node exactly; they are an estimate, not source data.
+    """
+    result = dict(rows)
+    anchor_temperature = max(result)
+    anchor = result[anchor_temperature]
+    cp = anchor["heat_capacity"]
+    previous_temperature = anchor_temperature
+    previous_h = anchor["enthalpy_increment"]
+    previous_s = anchor["entropy"]
+    for temperature in np.arange(
+        anchor_temperature + JANAF_GRID_STEP_K,
+        end_temperature + JANAF_GRID_STEP_K / 2.0,
+        JANAF_GRID_STEP_K,
+    ):
+        temperature = float(temperature)
+        previous_h += cp * (temperature - previous_temperature) / 1000.0
+        previous_s += cp * math.log(temperature / previous_temperature)
+        result[temperature] = {
+            "temperature": temperature,
+            "heat_capacity": cp,
+            "enthalpy_increment": previous_h,
+            "entropy": previous_s,
+        }
+        previous_temperature = temperature
+    return result
+
+
+def _fit_published_gas_row(
+    source_dir: Path,
+    species_name: str,
+    table_id: str,
+    formula: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    *,
+    t_interval: int,
+    fit_t_min: float,
+    fit_t_max: float,
+    runtime_t_min: float,
+    breakpoint_side: str = "single",
+) -> dict[str, str]:
+    record = _published_table_record(source_dir, table_id)
+    source_formula = record.get("formula")
+    source_species = record.get("species")
+    if source_formula is not None and source_formula != formula:
+        raise ValueError(f"{table_id}: expected published formula {formula}")
+    if source_species is not None and source_species != species_name:
+        raise ValueError(f"{table_id}: expected published species {species_name}")
+    rows, reference, source_limit = _published_gas_source_rows(
+        source_dir, table_id, breakpoint_side=breakpoint_side
+    )
+    rows = _constant_cp_rows_through(rows, fit_t_max)
+    temperatures = [
+        float(T)
+        for T in np.arange(fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K)
+    ]
+    missing = [T for T in temperatures if T not in rows]
+    if missing:
+        raise ValueError(f"{table_id}: missing published gas fit nodes {missing!r}")
+    fit = _fit_shomate_values([rows[T] for T in temperatures], reference)
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    ref = table_id
+    if source_limit < fit_t_max:
+        ref += f"-CP-EXT-{number(source_limit)}"
+    return {
+        "species_name": species_name,
+        "state": "g",
+        "T_interval": str(t_interval),
+        "cation": cation,
+        "cat_num": str(cat_num),
+        "oxy_num": str(oxy_num),
+        "T_min": number(runtime_t_min),
+        "T_max": number(fit_t_max),
+        **{key: number(fit[key]) for key in "ABCDEFG"},
+        "H": "0",
+        "Ref": ref,
+        "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
+        "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+    }
+
+
+def _bi_plus_thermal_rows(
+    temperatures: list[float], published_source_dir: Path
+) -> tuple[list[dict[str, float]], float]:
+    """Build Bi+ ideal-gas H/S nodes from its sourced anchor and ASD levels."""
+    # Premise: NBS Table 22 supplies ΔfH°(Bi+, 298.15 K)=916.7 kJ/mol;
+    # NIST ASD supplies Bi II term energies and J values. The ion is treated
+    # as a monatomic ideal gas at 1 bar. Algebra: Qel=Σ(2J+1)e^(-hcν/kT),
+    # Uel=R*<hcν/k>, Cp=5R/2+dUel/dT, S=Strans+R(ln Qel+Uel/RT), and Hinc
+    # is integrated relative to 298.15 K. Unit check: hcν is converted from
+    # cm^-1 to J per particle before multiplication by Avogadro's constant.
+    # Sanity: the ground level has J=0, and excited levels make a small,
+    # positive correction to H and S across the 1200-3000 K fit interval.
+    R = R_J_MOL_K
+    k_b = 1.380649e-23
+    h = 6.62607015e-34
+    c = 299792458.0
+    avogadro = 6.02214076e23
+    pressure = 100000.0
+    record = _load_record(published_source_dir / "bismuth-ion-sources.json")
+    mass = 208.9804e-3 / avogadro
+    levels = tuple(
+        (int(weight), float(energy))
+        for weight, energy in record["levels_cm_minus_1"]
+    )
+
+    def electronic(temperature: float) -> tuple[float, float]:
+        energies = [h * c * 100.0 * wavenumber for _, wavenumber in levels]
+        weights = [
+            degeneracy * math.exp(-energy / (k_b * temperature))
+            for (degeneracy, _), energy in zip(levels, energies)
+        ]
+        partition = sum(weights)
+        mean_energy_mol = avogadro * sum(
+            weight * energy for weight, energy in zip(weights, energies)
+        ) / partition
+        return math.log(partition), mean_energy_mol
+
+    def entropy(temperature: float) -> float:
+        log_q, u_el = electronic(temperature)
+        q_trans = (2.0 * math.pi * mass * k_b * temperature / h**2) ** 1.5
+        q_trans *= k_b * temperature / pressure
+        return R * (math.log(q_trans) + 2.5 + log_q) + u_el / temperature
+
+    def enthalpy_increment(temperature: float) -> float:
+        _log_q_t, u_t = electronic(temperature)
+        _log_q_298, u_298 = electronic(NASA_STANDARD_T_K)
+        return 2.5 * R * (temperature - NASA_STANDARD_T_K) + u_t - u_298
+
+    rows = []
+    for temperature in temperatures:
+        rows.append(
+            {
+                "temperature": temperature,
+                "heat_capacity": (
+                    enthalpy_increment(temperature + 0.01)
+                    - enthalpy_increment(temperature - 0.01)
+                )
+                / 0.02,
+                "entropy": entropy(temperature),
+                "enthalpy_increment": enthalpy_increment(temperature) / 1000.0,
+            }
+        )
+    return rows, float(record["cation_formation_enthalpy_298_kj_mol"])
+
+
+def _fit_bi_plus_row(
+    published_source_dir: Path,
+    *, t_interval: int, fit_t_min: float, fit_t_max: float, runtime_t_min: float
+) -> dict[str, str]:
+    temperatures = [
+        float(T)
+        for T in np.arange(fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K)
+    ]
+    rows, reference = _bi_plus_thermal_rows(temperatures, published_source_dir)
+    fit = _fit_shomate_values(rows, reference)
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    return {
+        "species_name": "Bi+(g)",
+        "state": "g",
+        "T_interval": str(t_interval),
+        "cation": "Bi",
+        "cat_num": "1",
+        "oxy_num": "0",
+        "T_min": number(runtime_t_min),
+        "T_max": number(fit_t_max),
+        **{key: number(fit[key]) for key in "ABCDEFG"},
+        "H": "0",
+        "Ref": "NBS-T22-ASD-BiII",
+        "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
+        "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+    }
+
+
 def _fit_nasa_row(
     nasa_source_dir: Path,
     lh84_source_dir: Path,
@@ -2119,6 +2388,7 @@ def build_rows(
     repository = Path(__file__).resolve().parents[1]
     nasa_source_dir = nasa_source_dir or repository / "data-src/nasa-glenn"
     lh84_source_dir = lh84_source_dir or repository / "data-src/lh84"
+    published_source_dir = repository / "data-src/published-thermo"
     rows = [_fit_row(source_dir, *source) for source in GAS_SOURCES]
     rows.extend(
         _fit_nasa_row(
@@ -2189,6 +2459,18 @@ def build_rows(
         )
         for source in TRACE_NASA_GAS_SOURCES
     )
+    for source in TRACE_PUBLISHED_GAS_SOURCES:
+        rows.append(
+            _fit_published_gas_row(
+                published_source_dir,
+                *source[:6],
+                t_interval=1,
+                fit_t_min=FIT_T_MIN,
+                fit_t_max=FIT_T_MAX,
+                runtime_t_min=FIT_T_MIN,
+                breakpoint_side="high",
+            )
+        )
     rows.extend(
         _fit_janaf_text_row(
             source_dir,
@@ -2211,10 +2493,23 @@ def build_rows(
         )
         for source in TRACE_NASA_GAS_SOURCES
     )
+    for source in TRACE_PUBLISHED_GAS_SOURCES:
+        rows.append(
+            _fit_published_gas_row(
+                published_source_dir,
+                *source[:6],
+                t_interval=2,
+                fit_t_min=1200.0,
+                fit_t_max=1500.0,
+                runtime_t_min=1200.0,
+                breakpoint_side="low",
+            )
+        )
     rows.extend(
         _fit_janaf_text_row(source_dir, *source)
         for source in TRACE_ION_GAS_TEXT_SOURCES
         if source[0] not in DECLINED_ION_GAS_SPECIES
+        and source[1] not in {"Zn-006", "Zn-007"}
     )
     rows.extend(
         _fit_nasa_card_gas_row(
@@ -2227,6 +2522,29 @@ def build_rows(
         for source in TRACE_ION_GAS_NASA_SOURCES + TRACE_ION_NASA_SOURCES
     )
     rows.extend(
+        _fit_janaf_text_row(
+            source_dir,
+            *source,
+            t_interval=1,
+            fit_t_min=FIT_T_MIN,
+            fit_t_max=FIT_T_MAX,
+        )
+        for source in TRACE_ION_GAS_TEXT_SOURCES
+        if source[1] in {"Zn-006", "Zn-007"}
+    )
+    rows.extend(
+        _fit_janaf_text_row(
+            source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=LOW_FIT_T_MIN,
+            fit_t_max=LOW_FIT_T_MAX,
+            runtime_t_min=1200.0,
+        )
+        for source in TRACE_ION_GAS_TEXT_SOURCES
+        if source[1] in {"Zn-006", "Zn-007"}
+    )
+    rows.extend(
         _fit_nasa_card_gas_row(
             nasa_source_dir,
             *source,
@@ -2237,15 +2555,257 @@ def build_rows(
         )
         for source in TRACE_ION_GAS_NASA_SOURCES + TRACE_ION_NASA_SOURCES
     )
+    rows.extend(
+        _fit_bi_plus_row(
+            published_source_dir,
+            t_interval=interval,
+            fit_t_min=fit_t_min,
+            fit_t_max=fit_t_max,
+            runtime_t_min=runtime_t_min,
+        )
+        for interval, fit_t_min, fit_t_max, runtime_t_min in (
+            (1, FIT_T_MIN, FIT_T_MAX, FIT_T_MIN),
+            (2, 1200.0, 1500.0, 1200.0),
+        )
+    )
     return rows
 
 
-def build_condensate_rows(
-    source_dir: Path, nasa_source_dir: Path | None = None
-) -> list[dict[str, str]]:
-    nasa_source_dir = nasa_source_dir or (
-        Path(__file__).resolve().parents[1] / "data-src/nasa-glenn"
+def _cd_o_crystal_table(record: dict[str, Any], *, extrapolate_cp: bool) -> dict[str, Any]:
+    """Build the CdO crystal table, extending its published Cp equation if asked.
+
+    Premise: Pankratz Table 102 gives a CdO crystal Cp equation through 1500 K
+    and printed H/S/Cp there. For the required hypothetical fusion range, the
+    same equation may be extended, with a flag. Algebra: integrate
+    Cp=a+bT-c/T² from 1500 K; Hinc adds aΔT+bΔ(T²)/2+c(1/T-1/T0), and S adds
+    a ln(T/T0)+bΔT+c(1/T²-1/T0²)/2. Unit check: the source equation is in
+    cal/(mol K), so both integrals are converted with 4.184; Hinc is then
+    divided by 1000 to kJ/mol. Sanity: at 1500 K the generated anchor is the
+    printed table node; each extension node is the analytic equation value.
+    """
+    equation = record["cp_equation_cal_mol_K"]
+    a = float(equation["a"])
+    b = float(equation["b_per_K"])
+    c = float(equation["c_K2"])
+    t0 = float(record["last_printed_node"][0])
+    cp0_cal = float(record["last_printed_node"][1])
+    s0_cal = float(record["last_printed_node"][2])
+    h0_kcal = float(record["last_printed_node"][3])
+    tfus = 1974.1
+    values = [
+        {
+            "temperature": 298.15,
+            "heat_capacity": (a + b * 298.15 - c / 298.15**2) * 4.184,
+            "entropy": float(record["entropy_298_cal_mol_K"]) * 4.184,
+            "enthalpy_increment": 0.0,
+            "formation_enthalpy": float(record["formation_enthalpy_298_kcal_mol"])
+            * 4.184,
+        },
+        {
+            "temperature": t0,
+            "heat_capacity": cp0_cal * 4.184,
+            "entropy": s0_cal * 4.184,
+            "enthalpy_increment": h0_kcal * 4.184,
+        },
+    ]
+    extension_temperatures = sorted(
+        {T for T in (1700.0, *range(1600, 2000, 100), tfus) if T > t0}
     )
+    for temperature in extension_temperatures:
+        delta_t = temperature - t0
+        if extrapolate_cp:
+            cp_cal = a + b * temperature - c / temperature**2
+            delta_h_cal = (
+                a * delta_t
+                + 0.5 * b * (temperature**2 - t0**2)
+                + c * (1.0 / temperature - 1.0 / t0)
+            )
+            delta_s_cal = (
+                a * math.log(temperature / t0)
+                + b * delta_t
+                + 0.5 * c * (1.0 / temperature**2 - 1.0 / t0**2)
+            )
+        else:
+            cp_cal = cp0_cal
+            delta_h_cal = cp_cal * delta_t
+            delta_s_cal = cp_cal * math.log(temperature / t0)
+        values.append(
+            {
+                "temperature": float(temperature),
+                "heat_capacity": cp_cal * 4.184,
+                "entropy": (s0_cal + delta_s_cal) * 4.184,
+                "enthalpy_increment": (h0_kcal + delta_h_cal / 1000.0) * 4.184,
+            }
+        )
+    return {"table": {"values": values}}
+
+
+def _tsiv_crystal_table(record: dict[str, Any]) -> dict[str, Any]:
+    """Convert TSIV ZnO cells and extend fitted Cp to the upper fusion bound.
+
+    Premise: TSIV prints ZnO crystal nodes through 2250 K and estimates the
+    transition as 2250 +/- 30 K. Algebra: a quadratic Cp(T) fit to the final
+    five crystal nodes is integrated from the printed endpoint to 2280 K,
+    with H=integral(Cp dT) and S=integral(Cp/T dT). Unit check: Cp is
+    J/(mol K), so H is converted to kJ/mol while S remains J/(mol K).
+    Sanity: the extension starts at the final printed H/S/Cp node and the
+    quadratic reproduces all five source Cp values within their rounding.
+    """
+    h298_minus_h0 = float(record["enthalpy_298_minus_H0_kj_mol"])
+    values = []
+    for temperature, cp, entropy, enthalpy_h0 in record["crystal_nodes"]:
+        row = {
+            "temperature": float(temperature),
+            "heat_capacity": float(cp),
+            "entropy": float(entropy),
+            "enthalpy_increment": float(enthalpy_h0) - h298_minus_h0,
+        }
+        if float(temperature) == 298.15:
+            row["formation_enthalpy"] = float(
+                record["formation_enthalpy_298_kj_mol"]
+            )
+        values.append(row)
+    source_nodes = np.asarray(record["crystal_nodes"][-5:], dtype=float)
+    fit = np.polyfit(source_nodes[:, 0], source_nodes[:, 1], deg=2)
+    extension_limit = float(record["fusion_temperature_K"]["value"])
+    extension_limit += float(record["fusion_temperature_K"]["spread"])
+    t0 = float(values[-1]["temperature"])
+    h0 = float(values[-1]["enthalpy_increment"])
+    s0 = float(values[-1]["entropy"])
+    c2, b, a = (float(coefficient) for coefficient in fit)
+    delta_h = (
+        a * (extension_limit - t0)
+        + 0.5 * b * (extension_limit**2 - t0**2)
+        + (c2 / 3.0) * (extension_limit**3 - t0**3)
+    )
+    delta_s = (
+        a * math.log(extension_limit / t0)
+        + b * (extension_limit - t0)
+        + 0.5 * c2 * (extension_limit**2 - t0**2)
+    )
+    values.append(
+        {
+            "temperature": extension_limit,
+            "heat_capacity": float(np.polyval(fit, extension_limit)),
+            "entropy": s0 + delta_s,
+            "enthalpy_increment": h0 + delta_h / 1000.0,
+        }
+    )
+    return {"table": {"values": values}}
+
+
+def _fit_liquid_from_solid_parent(
+    published_source_dir: Path,
+    species: str,
+    config: dict[str, Any],
+) -> tuple[list[dict[str, str]], Any, Any | None]:
+    """Fit one required tier-4 parent from its published crystal and inputs."""
+    if __package__:
+        from .liquid_from_solid import liquid_from_solid
+    else:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from tools.liquid_from_solid import liquid_from_solid
+
+    if species == "ZnO":
+        record = _published_table_record(published_source_dir, "TSIV-1603")
+        crystal = _tsiv_crystal_table(record)
+        alternate = None
+    elif species == "CdO":
+        record = _published_table_record(published_source_dir, "P672-T102")
+        crystal = _cd_o_crystal_table(record, extrapolate_cp=True)
+        alternate = _cd_o_crystal_table(record, extrapolate_cp=False)
+    else:
+        raise ValueError(f"{species}: no source-supported liquid-from-solid parent")
+    inputs = {**config["inputs"], "condensate_fit": config["condensate_fit"]}
+    construction = liquid_from_solid(species, crystal, inputs)
+    intervals = {
+        "ZnO": ((1200.0, 1700.0), (1700.0, 3000.0)),
+        "CdO": ((1200.0, 1600.0), (1600.0, 3000.0)),
+    }[species]
+    fit = inputs["condensate_fit"]
+    rows = []
+    for fit_t_min, fit_t_max in intervals:
+        temperatures = list(
+            np.arange(fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K)
+        )
+        rows.append(
+            _fit_condensate_values(
+                f"{species}(l)",
+                str(fit["table_id"]),
+                str(fit["cation"]),
+                int(fit["cat_num"]),
+                int(fit["oxy_num"]),
+                construction.source_rows(temperatures),
+                construction.dfh298_kj_mol,
+                fit_t_min=fit_t_min,
+                fit_t_max=fit_t_max,
+                runtime_t_min=fit_t_min,
+                runtime_t_max=fit_t_max,
+                ref=str(fit["ref"]),
+            )
+        )
+    return rows, construction, alternate
+
+
+def _fit_published_condensate_row(
+    table_id: str,
+    species_name: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    published_source_dir: Path,
+) -> list[dict[str, str]]:
+    """Fit a published liquid branch plus a labelled constant-Cp upper tail."""
+    record = _published_table_record(published_source_dir, table_id)
+    if record.get("species") != species_name:
+        raise ValueError(f"{table_id}: source liquid does not match {species_name}")
+    rows = {
+        float(temperature): {
+            "temperature": float(temperature),
+            "heat_capacity": float(cp) * 4.184,
+            "entropy": float(entropy) * 4.184,
+            "enthalpy_increment": float(enthalpy) * 4.184,
+        }
+        for temperature, cp, entropy, enthalpy in record["nodes"]
+    }
+    source_limit = max(rows)
+    rows = _constant_cp_rows_through(rows, 3000.0)
+    result = []
+    for fit_t_min, fit_t_max in ((1200.0, 1600.0), (1600.0, 3000.0)):
+        # The split keeps the on-node G residual below 10 J/mol over the
+        # published liquid nodes and the labelled constant-Cp continuation.
+        fit_rows = {
+            temperature: value
+            for temperature, value in rows.items()
+            if fit_t_min <= temperature <= fit_t_max
+        }
+        result.append(
+            _fit_condensate_values(
+                species_name,
+                table_id,
+                cation,
+                cat_num,
+                oxy_num,
+                fit_rows,
+                float(record["formation_enthalpy_298_kcal_mol"]) * 4.184,
+                fit_t_min=fit_t_min,
+                fit_t_max=fit_t_max,
+                runtime_t_min=fit_t_min,
+                runtime_t_max=fit_t_max,
+                ref=f"{table_id}-CP-EXT-{source_limit:g}",
+            )
+        )
+    return result
+
+
+def build_condensate_rows(
+    source_dir: Path,
+    nasa_source_dir: Path | None = None,
+    published_source_dir: Path | None = None,
+) -> list[dict[str, str]]:
+    repository = Path(__file__).resolve().parents[1]
+    nasa_source_dir = nasa_source_dir or repository / "data-src/nasa-glenn"
+    published_source_dir = published_source_dir or repository / "data-src/published-thermo"
     rows = []
     for source in CONDENSATE_SOURCES:
         if source[1] == "Na-013":
@@ -2499,6 +3059,22 @@ def build_condensate_rows(
                 fit_t_max=fit_t_max,
             )
         )
+    liquid_inputs = _load_record(repository / "data-src/liquid-from-solid-inputs.json")
+    for species in ("ZnO", "CdO"):
+        fitted_rows, _construction, _alternate = _fit_liquid_from_solid_parent(
+            published_source_dir, species, liquid_inputs["rows"][species]
+        )
+        rows.extend(fitted_rows)
+    rows.extend(
+        _fit_published_condensate_row(
+            "P672-T82",
+            "Bi2O3(l)",
+            "Bi",
+            2,
+            3,
+            published_source_dir,
+        )
+    )
     return rows
 
 

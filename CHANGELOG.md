@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Added optional Zn, Cd and Bi gas channels with caller-supplied ZnO, CdO and
+  Bi2O3 activities. JANAF Zn(g), Zn+(g) and Zn-(g) remain selected; source
+  G_app comparisons are recorded for the NASA Zn and Zn+ cards. The JANAF
+  catalogue has no Cd table, so NASA Glenn supplies Cd(g) and Cd+. Published
+  tables supply ZnO(g), Bi(g), Bi2(g), BiO(g) and estimated CdO(g). ZnO(l) and
+  CdO(l) are flagged tier-4 `liquid_from_solid` constructions with fitted
+  crystal-Cp extensions and measured input bands; Bi2O3(l) uses its printed
+  Pankratz liquid branch and a flagged constant-Cp upper continuation. Added
+  opt-in Zn+, Zn-, Cd+ and Bi+ channels. All new condensate fits pass the
+  10 J/mol source-node gate, the computed C3 ion shares remain below 1e-4, and
+  default gas results and existing coefficient rows are unchanged. Source
+  hashes, locators, G_app differences, bands and residuals are in the
+  provenance ledger.
+
 - Refit the seven JANAF constant-Cp liquid continuations with Cp-constrained
   polynomials. Cr2O3 and SiO2 use two continuation segments; Al2O3, MgO and CaO
   use three. Across all segments, the largest Gibbs residual is 1.618 J/mol,

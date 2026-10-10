@@ -27,13 +27,14 @@ meet that bound. `evaluate_gas(..., include_ions=True)` solves charge balance
 on the full default neutral set, adds fitted Na+, K+, Ca+ and e−, and includes
 every available JANAF-supported anion whose neutral is present. Caller-supplied
 trace-parent activities enable Li+, Rb+, Pb+, Cs+, Cu+, Sn+, Cs2O+, Ga+, Ge+,
-B+, Ga−, B−, BO− and BO2−. BO− uses a NASA CEA card because JANAF has no BO−
+B+, Zn+, Cd+, Bi+, Zn−, Ga−, B−, BO− and BO2−. Zn− uses its JANAF row; BO−
+uses a NASA CEA card because JANAF has no BO−
 table. In+ remains in the source ledger but is declined after its fitted
 Kion/Saha ratios (1.510e28 at 1500 K and 9.143e16 at 2500 K) fail the NIST
 5.78636 eV ionisation-energy check. The default result remains neutral-only.
 Na and K remain `complete-except-ions` because their bounded shares exceed
-1e-4 while ions are opt-in; Ca, Li, Rb, Pb, Ga and Ge remain below the C3
-threshold on their recorded activity screens. B exceeds the threshold when
+1e-4 while ions are opt-in; Ca, Li, Rb, Pb, Ga, Ge, Zn, Cd and Bi remain below
+the C3 threshold on their recorded activity screens. B exceeds the threshold when
 its cation and available anions are combined; Cs is also above the threshold.
 Positive molecular ions and nonthermal electrons remain outside this
 calculation. Mn, Ni and Co are not computed because their parent-liquid rows
@@ -42,6 +43,9 @@ source-rated P2O5(l) row.
 
 | Element | Status | C1 | C2 | C3 | C4 | Validation | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| Zn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Zn(g), ZnO(g), ZnO(l), and opt-in Zn ions cover 1200-3000 K; ZnO(l) is a flagged tier-4 construction from TSIV Table 1603; a(ZnO) is caller-supplied; the joint C3 screen used a(ZnO)=1e-3 and reached 1.484e-07 at 2600 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
+| Cd | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Cd(g), estimated CdO(g), CdO(l), and opt-in Cd+ cover 1200-3000 K; CdO(l) is a flagged tier-4 construction from Pankratz Bulletin 672 Table 102; a(CdO) is caller-supplied; the joint C3 screen used a(CdO)=1e-3 and reached 1.994e-13 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
+| Bi | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Bi(g), Bi2(g), BiO(g), Bi2O3(l), and opt-in Bi+ cover 1200-3000 K; the measured Bi2O3(l) branch is selected as the Bi(III) parent; a(Bi2O3) is caller-supplied; the joint C3 screen used a(Bi2O3)=1e-3 and reached 4.129e-11 at 1800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
 | O | input (fO2 pinned) | n/a | yes | n/a | n/a | unvalidated | O is input (fO2 pinned), so C1, C3 and C4 do not apply. |
 | P | gas-partial | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | no | unvalidated | JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) function was found and JANAF lists P4O10(cr) only. Channels need an external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); OpenIMCC provides no pyrolysis-temperature melt activity model. |
 | S | gas-complete-melt-pending | no | yes | not computed: ionized sulfur channels are outside this neutral gas-only change | yes | unvalidated | JANAF sulfur gas rows and the S2(g) parent cover 500-3000 K; callers supply a(S2)=f(S2)/p° on the 1-bar gas reference. OpenIMCC provides no pyrolysis-temperature sulfur melt activity model. |
@@ -88,6 +92,9 @@ prior positive-only estimate and bounded fitted closure screen give:
 | Ge | — | 3.495e-14 (2300 K, 1e-4) |
 | B | — | 1.252e-2 (2800 K, 1e-4) |
 | Cs | — | 1.342e-4 (2000 K, 1e-4) |
+| Zn | — | 1.484e-7 (2600 K, 1e-4) |
+| Cd | — | 1.994e-13 (2000 K, 1e-4) |
+| Bi | — | 4.129e-11 (1800 K, 1e-4) |
 | Cu | — | 2.331e-5 (2800 K, 1e-4) |
 | Sn | — | 3.515e-8 (2800 K, 1e-4) |
 
