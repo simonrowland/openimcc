@@ -131,8 +131,15 @@ def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
                     "gibbs_anchor_adjustment_j_mol"
                 ]
                 expected += adjustment / (R_J_MOL_K * 1000.0)
+            # Least-squares coefficients differ in the last few ulps across
+            # NumPy/BLAS builds (4e-13 relative measured on NumPy 1.26 vs 2.x),
+            # so compare relatively. Sanity of the bound: G = 1000*R*dH298_R
+            # - R*T*P(tau); every individual term of G in this pack is below
+            # 1.9e6 J/mol in magnitude over 298-3000 K (measured), so a 1e-9
+            # relative change in any one coefficient moves G by < 2e-3 J/mol,
+            # 1000x below the smallest band in the pack (2 J/mol).
             assert float(packed[coefficient]) == pytest.approx(
-                expected, abs=1e-13
+                expected, rel=1e-9, abs=1e-12
             )
         assert pack.content["thermo_species"][species_name]["band_kj_mol"] >= float(
             fitted["_max_residual_J_per_mol"]
@@ -214,7 +221,9 @@ def test_hematite_row_reproduces_liquid_from_solid_construction_and_band() -> No
     nominal = make_construction(spec["fusion_enthalpy_kj_mol"])
     fitted = nominal.fit_condensate_row()
     for key, value in record["row"].items():
-        assert float(fitted[key]) == pytest.approx(float(value), abs=1e-12)
+        # Relative bound for the same cross-build roundoff reason as the
+        # metal-standard test above (1e-9 relative moves G by < 2e-3 J/mol).
+        assert float(fitted[key]) == pytest.approx(float(value), rel=1e-9, abs=1e-12)
 
     temperatures = (1500.0, 1895.0, 2195.0, 2695.0, 3000.0)
     # The input-spread helper conservatively propagates the primary upper
