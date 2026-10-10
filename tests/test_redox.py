@@ -1608,3 +1608,16 @@ def test_pack_level_evaluators_stay_strict_by_default() -> None:
         ln_k_prime(pack, row, 2200.0)
     with pytest.raises(ValueError):
         species_gibbs_j_mol(pack, "MnO(l)", 2200.0)
+
+
+def test_missing_default_pack_is_a_typed_refusal(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    import openimcc.redox as redox_module
+    from openimcc.kernel import ImccRefusal
+
+    monkeypatch.setattr(
+        redox_module, "_DEFAULT_REDOX_PACK_PATH", tmp_path / "absent.json"
+    )
+    with pytest.raises(ImccRefusal):
+        evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")

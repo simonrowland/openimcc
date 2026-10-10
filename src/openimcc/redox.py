@@ -22,6 +22,7 @@ from openimcc.kernel import (
 )
 from openimcc.model import (
     ImccComponentOutsideDomainError,
+    ImccMalformedDatapackError,
     ImccTOutsideDatapackDomainError,
     load_datapack,
 )
@@ -42,8 +43,19 @@ _DEFAULT_REDOX_PACK_CACHE: tuple[tuple[str, int, int], RedoxPack] | None = None
 
 
 def _pack_file_identity(path: Path) -> tuple[str, int, int]:
-    resolved = path.resolve(strict=True)
-    stat = resolved.stat()
+    # The cache key is (resolved path, mtime_ns, size): any ordinary rewrite of
+    # a pack file changes mtime_ns, so the pack is re-read and re-validated.
+    # A deliberate same-size rewrite that also restores mtime_ns is not
+    # detected; hashing the file on every call would cost what the cache saves.
+    try:
+        resolved = path.resolve(strict=True)
+        stat = resolved.stat()
+    except OSError as exc:
+        # Keep a missing or unreadable default pack inside the refusal
+        # hierarchy, as load_datapack does for an explicit path.
+        raise ImccMalformedDatapackError(
+            f"default datapack {path.name} is not readable: {exc}"
+        ) from exc
     return str(resolved), stat.st_mtime_ns, stat.st_size
 
 
