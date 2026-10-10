@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from openimcc import evaluate as evaluate_imcc
+from openimcc import evaluate as evaluate_imcc, load_datapack
 from openimcc.gas import (
     ELEMENT_STATUS,
     IMCC_GAS_CHANNEL_SPECIES,
@@ -370,6 +370,11 @@ def _gas_element_atom_count(species: str, element: str) -> int:
 @cache
 def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     pack = load_gas_datapack()
+    # This gas-status grid is pinned to the melt identity used by its source
+    # values; changing the package default must not silently retune the screen.
+    melt_pack = load_datapack(
+        ROOT / "src/openimcc/data/packs/imcc-sf04-v1.0.2.json"
+    )
     computed = {
         element: status["c3_ion_bound"]
         for element, status in ELEMENT_STATUS.items()
@@ -404,6 +409,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         melt = evaluate_imcc(
             README_BASALT,
             temperature,
+            melt_pack,
             basis_type="wt",
             allow_extrapolation=True,
         )

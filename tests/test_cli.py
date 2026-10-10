@@ -94,11 +94,11 @@ def test_solve_and_describe_use_the_packaged_default(capsys):
     ]
     assert cli.main(argv) == cli.EXIT_OK
     payload = json.loads(capsys.readouterr().out)
-    assert payload["labels"]["identity"]["datapack_version"] == "1.0.2"
+    assert payload["labels"]["identity"]["datapack_version"] == "1.0.3-d066-v1"
     assert payload["labels"]["notices"]
 
     assert cli.main(["describe"]) == cli.EXIT_OK
-    assert "1.0.2" in capsys.readouterr().out
+    assert "1.0.3-d066-v1" in capsys.readouterr().out
 
 
 def test_out_of_domain_is_a_typed_refusal_not_a_crash(capsys):

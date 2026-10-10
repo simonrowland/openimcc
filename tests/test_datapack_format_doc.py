@@ -41,9 +41,8 @@ PRIVATE_PATH_MARKERS = ("/" + "Users/", "Cloud" + "Storage/", "drop" + "box/")
 RETIRED_PACK_NAMES = tuple(
     "imcc-sf04-" + suffix for suffix in ("ext-v1", "ext-v2", "ext-v3")
 )
-# Both packs carry the published SF04 core, whose hash the loader verifies, and
-# that core contains the documented DOI erratum; NOTICE explains why it cannot
-# be rewritten.
+# The two hash-frozen published packs retain the DOI copied from the SF04
+# source record; NOTICE explains why their source citation remains unchanged.
 FROZEN_DOI_PACKS = frozenset(
     {
         "src/openimcc/data/packs/imcc-sf04-v1.0.2.json",
@@ -54,7 +53,7 @@ WRONG_SF04_DOI = "10.1016/j.icarus." + "2003.11.023"
 ERRATUM_START = "The packs `imcc-sf04-v1.0.2.json`"
 ERRATUM_END = "make every pin of the current identity unloadable."
 RETIREMENT_START = "The ext-v1, ext-v2, and ext-v3 records are retired"
-RETIREMENT_END = "research records; the shipped loadable packs are v1.0.2 and ext-v4."
+RETIREMENT_END = "variants above."
 
 # The specification uses the first cell of its top-level and row-field tables
 # for field names. Restricting this parser to identifier-shaped cells avoids
@@ -239,6 +238,9 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         if path.name != "MANIFEST.json"
     }
     assert names == {
+        "imcc-sf04-d066-ext-v1.json",
+        "imcc-sf04-d066-v1-kcaalsi2o7.json",
+        "imcc-sf04-d066-v1.json",
         "imcc-sf04-ext-v4.json",
         "openimcc-redox-v1.json",
         "imcc-sf04-v1.0.2.json",
@@ -347,11 +349,14 @@ def test_hygiene_controls_go_red_then_restore() -> None:
 
 
 def test_every_shipped_pack_loads() -> None:
-    # The manifest checks whole-file hashes, while each component loader checks
-    # its own schema and identity rules. Exercise the legacy and redox loaders.
+    # packmanifest --check compares whole-file hashes only. Each component
+    # loader also checks its own schema and identity rules, so load every pack.
     manifest = json.loads((PACK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))
     names = sorted(Path(entry["file"]).name for entry in manifest["packs"])
     assert names == [
+        "imcc-sf04-d066-ext-v1.json",
+        "imcc-sf04-d066-v1-kcaalsi2o7.json",
+        "imcc-sf04-d066-v1.json",
         "imcc-sf04-ext-v4.json",
         "imcc-sf04-v1.0.2.json",
         "openimcc-redox-v1.json",

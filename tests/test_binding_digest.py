@@ -252,6 +252,9 @@ packs = Path('src/openimcc/data/packs')
 digests = [
     load_datapack(packs / 'imcc-sf04-v1.0.2.json').binding_digest,
     load_datapack(packs / 'imcc-sf04-ext-v4.json').binding_digest,
+    load_datapack(packs / 'imcc-sf04-d066-v1.json').binding_digest,
+    load_datapack(packs / 'imcc-sf04-d066-v1-kcaalsi2o7.json').binding_digest,
+    load_datapack(packs / 'imcc-sf04-d066-ext-v1.json').binding_digest,
 ]
 print(json.dumps(digests))
 """

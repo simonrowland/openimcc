@@ -14,12 +14,34 @@ import pytest
 
 from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
 import openimcc.kernel as kernel
+import openimcc.model as model
 
 
 PACK_DIR = Path("src/openimcc/data/packs")
 PUBLISHED_CORE_SHA256 = (
     "f2b479cd54e3c82704a5863fcc06836f72045375d9a8c7f8d2fad19e98f75d05"
 )
+LEGACY_PACK_SHA256 = {
+    "imcc-sf04-v1.0.2.json": "313ab57ffb45f25d762b76f54cba70c4bac5df06cb8eca59dba4a7ce046c89bf",
+    "imcc-sf04-ext-v4.json": "fbae18acb13acb18404581183ab9bf91ef657992ec9273d0ae83f924695c0922",
+}
+LEGACY_BINDING_SHA256 = {
+    "imcc-sf04-v1.0.2.json": "f2b479cd54e3c82704a5863fcc06836f72045375d9a8c7f8d2fad19e98f75d05",
+    "imcc-sf04-ext-v4.json": "4cbec2ee85cd95314a5f62f5ce4e00cbe660935bde12df3a7e5daa425612ad03",
+}
+D066_MANIFEST_SHA256 = {
+    "imcc-sf04-d066-v1.json": (
+        "d894f4e5ce79ba393f7068ec7d9032336eda8276293c4f46cafb18944a8b247e"
+    ),
+    "imcc-sf04-d066-v1-kcaalsi2o7.json": (
+        "e737f191a6b12df89bf8c3814e65e25ee0d37745ad8142d12ed0c8614d9f55d5"
+    ),
+    "imcc-sf04-d066-ext-v1.json": (
+        "90b3fb016073b415e7f505b4739fb193e9cf4680232307d642db730694bcb44b"
+    ),
+}
+D066_BINDING_SHA256 = D066_MANIFEST_SHA256
+D066_DEFAULT_K_PRESSURE_BAR = float.fromhex("0x1.edb56ea3c124cp-12")
 COMPOSITIONS = (
     {
         "SiO2": 0.45,
@@ -104,7 +126,61 @@ def test_published_core_integrity_hash_and_refusal_are_pinned(
         raise AssertionError("modified published core row was accepted")
 
 
-def test_packaged_evaluation_outputs_match_per_value_pins() -> None:
+def test_legacy_pack_bytes_are_pinned() -> None:
+    import hashlib
+
+    for filename, expected in LEGACY_PACK_SHA256.items():
+        raw = (PACK_DIR / filename).read_bytes()
+        assert hashlib.sha256(raw).hexdigest() == expected
+
+
+def test_legacy_canonical_binding_digests_are_pinned() -> None:
+    for filename, expected in LEGACY_BINDING_SHA256.items():
+        pack = load_datapack(PACK_DIR / filename)
+        assert pack.kernel_datapack.binding_digest == expected
+
+
+def test_d066_manifest_and_binding_digests_are_pinned() -> None:
+    # Intended data identity: FC87 K rows translated to JANAF K2O(l), KCa
+    # disabled per E25 in primary, with a separate active sensitivity arm.
+    for filename, expected_manifest in D066_MANIFEST_SHA256.items():
+        path = PACK_DIR / filename
+        data = json.loads(path.read_text(encoding="utf-8"))
+        _, actual_manifest = model._validate_d066_core(data)
+        pack = load_datapack(path)
+        assert pack.model_id == "IMCC-SF04-D066"
+        assert actual_manifest == expected_manifest
+        assert pack.kernel_datapack.binding_digest == D066_BINDING_SHA256[filename]
+
+
+def test_default_d066_k_pressure_is_pinned_after_data_change() -> None:
+    from openimcc.gas import evaluate_gas, load_gas_datapack
+
+    melt = load_datapack()
+    result = evaluate(
+        COMPOSITIONS[0],
+        2000.0,
+        melt,
+        allow_out_of_envelope=True,
+    )
+    pressure = evaluate_gas(
+        dict(zip(result.parent_oxides, result.parent_activity)),
+        2000.0,
+        1.0e-6,
+        load_gas_datapack(),
+        gas_species=("K",),
+    )["K"]
+    # The previous CI matrix showed about 5e-17 backend movement in one
+    # legacy activity. Keep the existing portable-golden convention: a tight
+    # relative bound with no absolute allowance; pack and digest pins stay exact.
+    assert float(pressure) == pytest.approx(
+        D066_DEFAULT_K_PRESSURE_BAR,
+        rel=EVALUATION_RTOL,
+        abs=0.0,
+    )
+
+
+def test_legacy_evaluation_outputs_match_portable_pins() -> None:
     packs = {
         "v1": load_datapack(PACK_DIR / "imcc-sf04-v1.0.2.json"),
         "ext": load_datapack(PACK_DIR / "imcc-sf04-ext-v4.json"),
