@@ -219,6 +219,74 @@ class LiquidConstruction:
                 spread += max(temperature_deviations)
         return spread
 
+    def fusion_gibbs_kj_mol(self, temperature_k: float) -> float:
+        """Return the exact constant-ΔCp fusion Gibbs difference below T_fus."""
+        temperature = float(temperature_k)
+        if temperature <= 0.0:
+            raise ValueError("temperature must be positive")
+        tfus = self.fusion_temperature_k
+        if temperature > tfus:
+            raise ValueError(
+                "fusion Gibbs difference is defined only at or below T_fus"
+            )
+        delta_s = self.fusion_entropy_j_mol_k
+        delta_cp = self.liquid_cp_j_mol_k - self.crystal_cp_at_fusion_j_mol_k
+        delta_h = tfus * delta_s
+        shape = (tfus - temperature) - temperature * math.log(
+            tfus / temperature
+        )
+        return (
+            delta_h * (1.0 - temperature / tfus) - delta_cp * shape
+        ) / 1000.0
+
+    def below_fusion_band_kj_mol(
+        self, temperature_k: float, measured_tier_band_kj_mol: float
+    ) -> float:
+        """Propagate the measured construction spreads below the fusion point.
+
+        Premise: constant liquid and crystal heat capacities give
+        ΔG_fus(T)=ΔH_fus(1−T/T_m)−ΔCp[(T_m−T)−T ln(T_m/T)], with
+        ΔH_fus=T_m ΔS_fus. Algebra: propagate the measured ΔS, ΔCp, and
+        T_m spreads with sensitivities (T_m−T), [(T_m−T)−T ln(T_m/T)],
+        and ΔS_fus−ΔCp(1−T/T_m). Unit check: each sensitivity times its
+        J-based spread is J/mol, divided by 1000 for the stored kJ/mol band.
+        Sanity: at T=T_m, ΔG_fus=0 and the co-moving fusion-boundary
+        temperature sensitivity is zero, leaving only the measured LOO band.
+        """
+        temperature = float(temperature_k)
+        if temperature <= 0.0:
+            raise ValueError("temperature must be positive")
+        tfus = self.fusion_temperature_k
+        if temperature > tfus:
+            raise ValueError("below-fusion band requires T <= T_fus")
+
+        entropy_spread = abs(
+            float(self.inputs["fusion_entropy"].get("spread", 0.0))
+        )
+        cp_spread = abs(
+            float(self.inputs["liquid_heat_capacity"].get("spread", 0.0))
+        )
+        fusion_temperature = self.inputs["fusion_temperature"]
+        tfus_spread = abs(float(fusion_temperature.get("spread", 0.0)))
+        delta_s = self.fusion_entropy_j_mol_k
+        delta_cp = self.liquid_cp_j_mol_k - self.crystal_cp_at_fusion_j_mol_k
+        shape = (tfus - temperature) - temperature * math.log(
+            tfus / temperature
+        )
+
+        propagated = abs(entropy_spread * (tfus - temperature))
+        propagated += abs(cp_spread * shape)
+        # Holding T fixed gives the partial sensitivity below. At the exact
+        # fusion anchor, T follows T_m along the identity ΔG_fus(T_m)=0.
+        d_g_d_tm_j_mol_k = delta_s - delta_cp * (1.0 - temperature / tfus)
+        tm_term = (
+            0.0
+            if temperature == tfus
+            else abs(d_g_d_tm_j_mol_k * tfus_spread)
+        )
+        propagated += tm_term
+        return float(measured_tier_band_kj_mol) + propagated / 1000.0
+
     def band_kj_mol(
         self, temperature_k: float, measured_tier_band_kj_mol: float
     ) -> float:

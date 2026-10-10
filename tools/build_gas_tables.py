@@ -347,6 +347,7 @@ REDOX_METAL_STANDARD_SOURCES = (
     ("Cr(l)", "Cr-003", "Cr", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
     ("Ni(l)", "Ni-003", "Ni", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
     ("Co(l)", "Co-003", "Co", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
+    ("Mn(l)", "Mn-003", "Mn", 1, 0, "l", 1600.0, 2200.0, 1600.0, 2200.0),
 )
 
 # Parent-oxide liquids fitted here rather than transcribed. O-044 is the JANAF

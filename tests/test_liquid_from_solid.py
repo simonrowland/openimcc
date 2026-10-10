@@ -23,6 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 JANAF = ROOT / "data-src" / "janaf"
 INPUTS_PATH = ROOT / "data-src" / "liquid-from-solid-inputs.json"
 INPUTS = json.loads(INPUTS_PATH.read_text(encoding="utf-8"))
+CRYSTALS_PATH = ROOT / "data-src" / "crystal-thermochemistry.json"
+CRYSTALS = json.loads(CRYSTALS_PATH.read_text(encoding="utf-8"))["tables"]
 R_J_MOL_K = 8.314462618
 
 
@@ -67,11 +69,18 @@ def _source_rows(table_id: str) -> dict[float, dict[str, float]]:
     return rows
 
 
+def _crystal_table(row: dict):
+    table_id = row["crystal_table_id"]
+    if table_id in CRYSTALS:
+        return CRYSTALS[table_id]
+    return _load_record(JANAF / f"{table_id}.yaml")
+
+
 def _validation_construction(
     species: str, fusion_entropy: float, liquid_cp: float
 ):
     row = INPUTS["rows"][species]
-    crystal = _load_record(JANAF / f"{row['crystal_table_id']}.yaml")
+    crystal = _crystal_table(row)
     inputs = {
         "fusion_temperature": {
             "value": row["inputs"]["fusion_temperature"]["value"]
@@ -155,7 +164,7 @@ def _tier_estimate(row: dict, key: str, tier: int, training: list[dict]):
         if not tier2.get("components"):
             return None
         return sum(components[name]["value"] for name in tier2["components"])
-    crystal = _load_record(JANAF / f"{row['crystal_table_id']}.yaml")
+    crystal = _crystal_table(row)
     crystal_rows = _crystal_rows(crystal)
     return _crystal_state(
         crystal_rows, row["inputs"]["fusion_temperature"]["value"]
@@ -702,3 +711,19 @@ def test_k2o_band_adds_the_selected_tier_bands_and_input_spread():
         assert construction.band_kj_mol(
             construction.fusion_temperature_k + offset, measured_band
         ) == pytest.approx(expected_band)
+
+
+def test_below_fusion_band_is_anchored_to_the_measured_loo_term():
+    row = INPUTS["rows"]["MnO"]
+    construction = liquid_from_solid(
+        "MnO", CRYSTALS[row["crystal_table_id"]], row["inputs"]
+    )
+    temperature = construction.fusion_temperature_k
+    measured_loo_band = INPUTS["tier_error_bands"]["fusion_entropy_tier3"][
+        "max"
+    ][0]
+
+    assert construction.fusion_gibbs_kj_mol(temperature) == 0.0
+    assert construction.below_fusion_band_kj_mol(
+        temperature, measured_loo_band
+    ) == pytest.approx(measured_loo_band)

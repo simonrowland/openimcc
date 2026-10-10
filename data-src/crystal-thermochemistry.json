@@ -1,0 +1,84 @@
+{
+  "schema_version": "openimcc-crystal-thermochemistry.v1",
+  "tables": {
+    "MnO-IVTAN-1435": {
+      "table_id": "MnO-IVTAN-1435",
+      "formula": "MnO",
+      "source": "Lyutsareva, Bergman, and Gusarov, IVTAN Table 1435; the crystal Cp fit uses Shapiro et al. heat-capacity measurements and Southard and Shomate enthalpy increments.",
+      "source_url": "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+      "thermal_function": "Cp = 46.926 + 7.651e-3*T - 4.486e5/T^2 J mol^-1 K^-1, integrated from 298.15 K.",
+      "values": [
+        {
+          "temperature": 298.15,
+          "heat_capacity": 44.1606530369,
+          "entropy": 59.02,
+          "enthalpy_increment": 0.0,
+          "formation_enthalpy": -385.0
+        },
+        {
+          "temperature": 2120.0,
+          "heat_capacity": 63.0463068993,
+          "entropy": 162.5344865981,
+          "enthalpy_increment": 101.0523905249
+        }
+      ]
+    },
+    "MnSiO3-Robie-1995": {
+      "table_id": "MnSiO3-Robie-1995",
+      "formula": "MnSiO3",
+      "source": "Robie, Huebner, and Hemingway (1995), Heat capacities and thermodynamic properties of braunite and rhodonite, American Mineralogist 80, 560-575.",
+      "source_url": "https://rruff.info/uploads/AM80_560.pdf",
+      "doi": "10.2138/am-1995-5-615",
+      "thermal_function": "Cp = 99.04 + 0.01915*T - 3.041e6/T^2 + 274.5/sqrt(T) J mol^-1 K^-1; integrated from 298.15 K, with the source fit extended from 1500 K to the 1559-1564 K transition interval.",
+      "values": [
+        {
+          "temperature": 298.15,
+          "heat_capacity": 86.4374248349,
+          "entropy": 100.5,
+          "enthalpy_increment": 0.0,
+          "formation_enthalpy": -1321.6
+        },
+        {
+          "temperature": 1559.0,
+          "heat_capacity": 134.5958098527,
+          "entropy": 289.8888115702,
+          "enthalpy_increment": 151.2435477229
+        },
+        {
+          "temperature": 1564.0,
+          "heat_capacity": 134.6884253464,
+          "entropy": 290.3199425653,
+          "enthalpy_increment": 151.9167583209
+        }
+      ]
+    },
+    "Mn2SiO4-Robie-1982": {
+      "table_id": "Mn2SiO4-Robie-1982",
+      "formula": "Mn2SiO4",
+      "source": "Robie et al. (1982), Entropies of Mg2SiO4, Mn2SiO4, and Co2SiO4, American Mineralogist 67, 470-482.",
+      "source_url": "https://msaweb.org/AmMin/AM67/AM67_470.pdf",
+      "thermal_function": "Cp = 261.28 - 0.01378*T - 2217.7/sqrt(T) J mol^-1 K^-1; integrated from 298.15 K, with the source fit extended from 1600 K to the 1616-1620 K transition interval.",
+      "values": [
+        {
+          "temperature": 298.15,
+          "heat_capacity": 128.7359016571,
+          "entropy": 155.9,
+          "enthalpy_increment": 0.0,
+          "formation_enthalpy": -1731.5
+        },
+        {
+          "temperature": 1616.0,
+          "heat_capacity": 183.8441705818,
+          "entropy": 432.7961431666,
+          "enthalpy_increment": 225.2326616750
+        },
+        {
+          "temperature": 1620.0,
+          "heat_capacity": 183.8572005144,
+          "entropy": 433.2506568804,
+          "enthalpy_increment": 225.9680645016
+        }
+      ]
+    }
+  }
+}

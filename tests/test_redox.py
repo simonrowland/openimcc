@@ -279,16 +279,16 @@ def test_all_registered_feedstock_elements_share_the_redox_parent_solve() -> Non
                 inventory[atom] = inventory.get(atom, 0.0) + units * float(count)
 
     at_zero = evaluate_redox(
-        inventory, 2200.0, "imposed", lambda_imposed=0.0
+        inventory, 2000.0, "imposed", lambda_imposed=0.0
     )
     at_saturation = evaluate_redox(
         inventory,
-        2200.0,
+        2000.0,
         "imposed",
         lambda_imposed=at_zero.lambda_sat,
     )
     inventory["O"] = at_saturation.oxygen_mol + 0.001
-    result = evaluate_redox(inventory, 2200.0, "closed")
+    result = evaluate_redox(inventory, 2000.0, "closed")
 
     assert not result.metal_buffered
     for parent_name, amount in parent_units.items():
@@ -924,13 +924,15 @@ def test_unrowed_positive_parent_is_reported_as_red_flagged_last_resort() -> Non
     all_active = evaluate_redox(
         every_parent, 2200.0, "imposed", lambda_imposed=0.0
     )
+    # Mn has sourced rows (parent and association rows), so it is not a
+    # last-resort parent.
     assert all_active.last_resort_ideal_parents == (
-        "Cr", "Ni", "Co", "P", "V", "Mn", "Eu", "Ce", "S"
+        "Cr", "Ni", "Co", "P", "V", "Eu", "Ce", "S"
     )
     assert any(
         flag.startswith("RED:")
         and "last_resort_ideal_parents" in flag
-        and "Cr, Ni, Co, P, V, Mn, Eu, Ce, S" in flag
+        and "Cr, Ni, Co, P, V, Eu, Ce, S" in flag
         for flag in all_active.flags
     )
 
@@ -969,6 +971,14 @@ def test_positive_parent_underflow_is_not_dropped_or_logged_as_zero() -> None:
             "imposed",
             lambda_imposed=-4.0,
         )
+
+
+def test_populated_manganese_parent_is_not_reported_as_last_resort() -> None:
+    result = evaluate_redox(
+        {"Fe": 1.0, "Mn": 0.1, "Cr": 0.2, "O": 1.5}, 2000.0, "closed"
+    )
+    assert "Mn" not in result.last_resort_ideal_parents
+    assert result.last_resort_ideal_parents == ("Cr",)
 
 
 def test_synthetic_second_redox_couple_closes_and_has_complete_response(

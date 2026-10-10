@@ -29,7 +29,7 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     pack = load_redox_pack(PACK_PATH)
     elements = [parent["element"] for parent in pack.parents]
 
-    assert pack.version == "1.0.0"
+    assert pack.version == "1.1.0"
     assert elements == [
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K", "Cr", "Ni",
         "Co", "P", "V", "Mn", "Eu", "Ce", "S",
@@ -39,7 +39,7 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     assert sum(
         parent["redox_thermochemistry_status"] == "registered_unpopulated"
         for parent in pack.parents
-    ) == 16
+    ) == 15
     with pytest.raises(TypeError):
         pack.content["version"] = "changed"
 
@@ -47,7 +47,9 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
 def test_reaction_rows_are_balanced_and_have_evidence_and_range_flags() -> None:
     pack = load_redox_pack(PACK_PATH)
 
-    assert [row["complex"] for row in pack.rows] == ["FeO(l)", "FeO1.5(l)"]
+    assert [row["complex"] for row in pack.rows] == [
+        "FeO(l)", "FeO1.5(l)", "MnO(l)", "MnSiO3(l)", "Mn2SiO4(l)"
+    ]
     for name, species in pack.content["thermo_species"].items():
         assert species["band_kj_mol"] >= 0.0
         assert isinstance(species["range_flags"], tuple)
@@ -58,8 +60,14 @@ def test_reaction_rows_are_balanced_and_have_evidence_and_range_flags() -> None:
         value = species_gibbs_j_mol(pack, name, (low + high) / 2.0)
         assert math.isfinite(value)
     for row in pack.rows:
-        expected_low = 1500 if row["complex"] == "FeO1.5(l)" else 1700
-        assert row["T_domain_K"] == (expected_low, 3000)
+        expected_domains = {
+            "FeO(l)": (1700, 3000),
+            "FeO1.5(l)": (1500, 3000),
+            "MnO(l)": (1673, 2000),
+            "MnSiO3(l)": (1673, 2000),
+            "Mn2SiO4(l)": (1673, 2000),
+        }
+        assert row["T_domain_K"] == expected_domains[row["complex"]]
         assert row["band_kj_mol"] >= 0.0
         assert row["range_flags"]
         assert row["phase_or_construction"]
@@ -236,6 +244,88 @@ def test_hematite_row_reproduces_liquid_from_solid_construction_and_band() -> No
     assert record["construction"]["liquid_heat_capacity_j_mol_K"] == 240.9
     assert record["construction"]["liquid_heat_capacity_flag"].startswith("amber;")
     assert record["construction"]["fusion_enthalpy_kj_mol"] == 114.5
+
+
+def test_manganese_liquid_rows_reproduce_crystal_constructions_and_bands():
+    inputs = json.loads(
+        (ROOT / "data-src/liquid-from-solid-inputs.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    crystals = json.loads(
+        (ROOT / "data-src/crystal-thermochemistry.json").read_text(
+            encoding="utf-8"
+        )
+    )["tables"]
+    pack = load_redox_pack(PACK_PATH)
+    loo_entropy = inputs["tier_error_bands"]["fusion_entropy_tier3"]["max"]
+    loo_cp = inputs["tier_error_bands"]["liquid_heat_capacity_tier3"]["max"]
+    coefficients = ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
+
+    for name in ("MnO", "MnSiO3", "Mn2SiO4"):
+        construction_row = inputs["rows"][name]
+        species = pack.content["thermo_species"][f"{name}(l)"]
+        construction = liquid_from_solid(
+            name,
+            crystals[construction_row["crystal_table_id"]],
+            construction_row["inputs"],
+        )
+        fitted = construction.fit_condensate_row()
+        for coefficient in coefficients:
+            assert float(species["row"][coefficient]) == pytest.approx(
+                float(fitted[coefficient]), abs=1e-12
+            )
+
+        low, high = map(float, species["T_domain_K"])
+        temperatures = [low, high, *range(int(low), int(high) + 1, 25)]
+        residual = float(fitted["_max_residual_J_per_mol"]) / 1000.0
+        if name == "MnO":
+            expected_band = max(
+                construction.below_fusion_band_kj_mol(t, float(loo_entropy[0]))
+                for t in temperatures
+            )
+        else:
+            # The measured Tier 3 LOO residuals at +800 K bound the declared
+            # +109..+436 K association domains; parameter propagation remains
+            # temperature-specific and activity data do not enter the band.
+            expected_band = max(
+                construction.input_spread_kj_mol(t)
+                + float(loo_entropy[2])
+                + float(loo_cp[2])
+                for t in temperatures
+            )
+        expected_band += residual
+        assert species["band_kj_mol"] == pytest.approx(expected_band, abs=1e-6)
+
+    generated = build_redox_metal_standard_rows(
+        json.loads(SOURCE_PATH.read_text(encoding="utf-8"))["tables"]
+    )
+    metal = pack.content["thermo_species"]["Mn(l)"]
+    for coefficient in coefficients:
+        assert float(metal["row"][coefficient]) == pytest.approx(
+            float(generated["Mn(l)"][coefficient]), abs=1e-13
+        )
+
+
+def test_manganese_parent_and_association_reactions_have_expected_constants():
+    pack = load_redox_pack(PACK_PATH)
+    by_reaction = {row["reaction"]: row for row in pack.rows}
+    manganese = next(parent for parent in pack.parents if parent["element"] == "Mn")
+    assert manganese["redox_thermochemistry_status"] == "populated"
+    assert manganese["parent_standard_state"] == "pure liquid MnO at 1 bar"
+    assert manganese["elemental_reference_state"] == "Mn(l)"
+    parent_row = by_reaction["Mn(l) + 1/2 O2(g) = MnO(l)"]
+    assert parent_row["role"] == "parent_reference"
+    assert parent_row["external_oxygen_stoich_product_positive"] == -0.5
+    expected = {
+        "Mn(l) + 1/2 O2(g) = MnO(l)": (17.9402808965, 13.6445678969),
+        "MnO(l) + SiO2(l) = MnSiO3(l)": (2.6891564601, 2.6626304454),
+        "2 MnO(l) + SiO2(l) = Mn2SiO4(l)": (4.3095062381, 3.8389528273),
+    }
+    for reaction, (at_1673, at_2000) in expected.items():
+        row = by_reaction[reaction]
+        assert ln_k_prime(pack, row, 1673.0) == pytest.approx(at_1673, abs=1e-9)
+        assert ln_k_prime(pack, row, 2000.0) == pytest.approx(at_2000, abs=1e-9)
 
 
 def test_loader_rejects_a_rehashed_unbalanced_row(tmp_path: Path) -> None:

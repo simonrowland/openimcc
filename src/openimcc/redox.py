@@ -540,7 +540,20 @@ def _active_inner(
         base_datapack.A + base_datapack.B / temperature_K
     )
     redox_lnK: list[float] = []
+    active_parent_names = {
+        parent_names[index]
+        for index in np.flatnonzero(parent_moles > 0.0)
+    }
     for row in redox_rows:
+        if any(
+            float(amount) > 0.0
+            and str(parent).removesuffix("(l)") not in active_parent_names
+            for parent, amount in row["nu"].items()
+        ):
+            # An inactive association has zero extent and its K is discarded
+            # below; do not reject its absent reactants because of its domain.
+            redox_lnK.append(0.0)
+            continue
         try:
             redox_lnK.append(
                 ln_k_prime(redox_pack, row, temperature_K, ln_f_o2=lambda_value)
@@ -988,11 +1001,17 @@ def _last_resort_ideal_parents(
     redox_pack: RedoxPack,
 ) -> tuple[str, ...]:
     base_parents = set(base_datapack.parent_oxides)
+    sourced_parents = {
+        str(row["complex"]).removesuffix("(l)")
+        for row in redox_pack.rows
+        if row.get("role") == "parent_reference"
+    }
     return tuple(
         str(parent["element"])
         for index, parent in enumerate(redox_pack.parents)
         if index in state.active_parent
         and str(parent["parent_oxide"]).removesuffix("(l)") not in base_parents
+        and str(parent["parent_oxide"]).removesuffix("(l)") not in sourced_parents
     )
 
 
@@ -1108,6 +1127,20 @@ def _assemble_result(
         parent_names[index]: float(value)
         for index, value in zip(state.active_parent, state.y)
     }
+    active_parent_names = {parent_names[index] for index in state.active_parent}
+    active_redox_rows = []
+    for row in redox_pack.rows:
+        if row.get("role") == "parent_reference":
+            product = str(row["complex"]).removesuffix("(l)")
+            is_active = product in active_parent_names
+        else:
+            is_active = all(
+                float(amount) <= 0.0
+                or str(parent).removesuffix("(l)") in active_parent_names
+                for parent, amount in row.get("nu", {}).items()
+            )
+        if is_active:
+            active_redox_rows.append(row)
     active_lows = [
         float(base_datapack.domains[index][0])
         for index in state.active_complex
@@ -1118,8 +1151,8 @@ def _assemble_result(
         for index in state.active_complex
         if index < len(base_datapack.domains)
     ]
-    active_lows.extend(float(row["T_domain_K"][0]) for row in redox_pack.rows)
-    active_highs.extend(float(row["T_domain_K"][1]) for row in redox_pack.rows)
+    active_lows.extend(float(row["T_domain_K"][0]) for row in active_redox_rows)
+    active_highs.extend(float(row["T_domain_K"][1]) for row in active_redox_rows)
     band_intersection = (
         max(active_lows, default=temperature_K),
         min(active_highs, default=temperature_K),

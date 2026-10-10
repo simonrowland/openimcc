@@ -206,3 +206,26 @@ and entropy references are recorded with that row.
 
 The Na₂SiO₃ pair is also exercised through `liquid_from_solid` and the existing
 condensate fitter/evaluator as the crystalline-compound example.
+
+## Below-fusion band
+
+For a constructed liquid evaluated below its fusion temperature, constant
+`ΔCp = Cp_liquid - Cp_crystal(T_fus)` gives the exact fusion difference
+
+```text
+ΔG_fus(T) = ΔH_fus(1 - T/T_fus)
+             - ΔCp[(T_fus - T) - T ln(T_fus/T)]
+ΔH_fus = T_fus ΔS_fus
+```
+
+The band is the measured leave-one-out maximum at `T_fus`, plus the absolute
+fusion-entropy, heat-capacity-difference, and fusion-temperature sensitivities
+times their measured input spreads. The 48-pair validation census gives a
+maximum absolute leave-one-out residual of 54.1349 J/(mol K) for the Tier 3
+per-formula-atom fusion-entropy estimator (RMS 17.3520 J/(mol K)). For Tier 3
+crystal-Cp carry-over, the maximum absolute residual in `ΔCp` is 170.200
+J/(mol K) (RMS 45.2682 J/(mol K)). These maxima, rather than the smaller RMS
+values, are used as the conservative input spreads. The measured Tier 3
+leave-one-out Gibbs maximum at `T_fus` is 1.154923 kJ/mol across the same 48
+pairs. At `T = T_fus`, `ΔG_fus` and all propagated terms vanish, so the band
+equals that measured leave-one-out maximum.

@@ -3757,6 +3757,246 @@
         }
       }
     },
+    "MnO": {
+      "formula": "MnO",
+      "crystal_table_id": "MnO-IVTAN-1435",
+      "family": null,
+      "metal_atoms": 1,
+      "total_atoms": 2,
+      "inputs": {
+        "fusion_temperature": {
+          "value": 2120.0,
+          "tier": 1,
+          "spread": 20.0,
+          "bounds_k": [2100.0, 2140.0],
+          "source": "Measured MnO melting temperature 2120 ± 20 K, reported in IVTAN Table 1435 from Schenk et al.; the bounds retain that measurement interval.",
+          "ladder": [
+            {
+              "tier": 1,
+              "value": 2120.0,
+              "spread": 20.0,
+              "bounds_k": [2100.0, 2140.0],
+              "source": "Measured MnO melting temperature 2120 ± 20 K in IVTAN Table 1435.",
+              "references": [
+                "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 18.6695851447,
+          "tier": 3,
+          "spread": 54.1349436118,
+          "unit": "J mol^-1 K^-1",
+          "flag": "red",
+          "source": "Tool Tier 3 leave-one-out mean fusion entropy per formula atom over 48 validation pairs, multiplied by two atoms; spread is the measured maximum absolute entropy residual over those pairs. IVTAN's 40 ± 5 kJ/mol fusion enthalpy is retained as a cross-check only.",
+          "ladder": [
+            {
+              "tier": 3,
+              "value": 18.6695851447,
+              "spread": 54.1349436118,
+              "flag": "red",
+              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by two; the 48-pair maximum absolute entropy residual supplies the spread.",
+              "references": [
+                "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html"
+              ]
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 63.0463068993,
+          "tier": 3,
+          "spread": 170.2,
+          "unit": "J mol^-1 K^-1",
+          "flag": "red",
+          "source": "Tier 3 carries the MnO crystal Cp at 2120 K over as liquid Cp; the spread is the 48-pair maximum absolute residual in the crystal-Cp estimate of ΔCp.",
+          "ladder": [
+            {
+              "tier": 3,
+              "value": 63.0463068993,
+              "spread": 170.2,
+              "flag": "red",
+              "source": "Carry the IVTAN crystal Cp function to the 2120 K fusion point over as liquid Cp; use the 48-pair maximum absolute ΔCp residual as its spread.",
+              "references": [
+                "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html"
+              ]
+            }
+          ]
+        },
+        "condensate_fit": {
+          "fit_t_min": 1600.0,
+          "fit_t_max": 2200.0,
+          "runtime_t_min": 1673.0,
+          "runtime_t_max": 2000.0,
+          "table_id": "MnO-liquid-construction",
+          "cation": "Mn",
+          "cat_num": 1,
+          "oxy_num": 1,
+          "ref": "MnO crystal function plus systematic liquid construction"
+        }
+      }
+    },
+    "Mn2SiO4": {
+      "formula": "Mn2SiO4",
+      "crystal_table_id": "Mn2SiO4-Robie-1982",
+      "family": null,
+      "metal_atoms": 2,
+      "total_atoms": 7,
+      "inputs": {
+        "fusion_temperature": {
+          "value": 1616.0,
+          "tier": 3,
+          "spread": 4.0,
+          "bounds_k": [1616.0, 1620.0],
+          "source": "Mn2SiO4 transition temperatures of 1616 K (Glasser) and 1620 K (Singleton et al.) as summarized in the open Mn-Si-O assessment; the source liquid-Cp fit is extended 16 K to the selected transition.",
+          "ladder": [
+            {
+              "tier": 3,
+              "value": 1616.0,
+              "spread": 4.0,
+              "bounds_k": [1616.0, 1620.0],
+              "source": "The two reported phase-diagram transition temperatures bound the construction.",
+              "references": [
+                "https://link.springer.com/article/10.1007/s00269-024-01302-8",
+                "https://msaweb.org/AmMin/AM67/AM67_470.pdf"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 65.3435480064,
+          "tier": 3,
+          "spread": 54.1349436118,
+          "unit": "J mol^-1 K^-1",
+          "flag": "red",
+          "source": "Tool Tier 3 leave-one-out mean fusion entropy per formula atom over 48 validation pairs, multiplied by seven atoms; spread is the measured maximum absolute entropy residual over those pairs.",
+          "ladder": [
+            {
+              "tier": 3,
+              "value": 65.3435480064,
+              "spread": 54.1349436118,
+              "flag": "red",
+              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by seven; use the 48-pair maximum absolute entropy residual as the spread.",
+              "references": [
+                "https://msaweb.org/AmMin/AM67/AM67_470.pdf"
+              ]
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 183.8441705818,
+          "tier": 3,
+          "spread": 170.2,
+          "unit": "J mol^-1 K^-1",
+          "flag": "red",
+          "source": "Tier 3 carries tephroite crystal Cp at 1616 K over as liquid Cp; the spread is the 48-pair maximum absolute residual in the crystal-Cp estimate of ΔCp.",
+          "ladder": [
+            {
+              "tier": 3,
+              "value": 183.8441705818,
+              "spread": 170.2,
+              "flag": "red",
+              "source": "Carry the Robie et al. crystal Cp fit at the selected transition over as liquid Cp; use the 48-pair maximum absolute ΔCp residual as its spread.",
+              "references": [
+                "https://msaweb.org/AmMin/AM67/AM67_470.pdf"
+              ]
+            }
+          ]
+        },
+        "condensate_fit": {
+          "fit_t_min": 1500.0,
+          "fit_t_max": 2000.0,
+          "runtime_t_min": 1673.0,
+          "runtime_t_max": 2000.0,
+          "table_id": "Mn2SiO4-liquid-construction",
+          "cation": "Mn",
+          "cat_num": 2,
+          "oxy_num": 4,
+          "ref": "Robie et al. tephroite crystal function plus systematic liquid construction"
+        }
+      }
+    },
+    "MnSiO3": {
+      "formula": "MnSiO3",
+      "crystal_table_id": "MnSiO3-Robie-1995",
+      "family": null,
+      "metal_atoms": 1,
+      "total_atoms": 5,
+      "inputs": {
+        "fusion_temperature": {
+          "value": 1564.0,
+          "tier": 3,
+          "spread": 5.0,
+          "bounds_k": [1559.0, 1564.0],
+          "source": "Rhodonite transition temperatures of 1564 K (Glasser) and 1559 K (Singleton et al.) as summarized in the open Mn-Si-O assessment; the source liquid-Cp fit is extended 64 K to the selected transition.",
+          "ladder": [
+            {
+              "tier": 3,
+              "value": 1564.0,
+              "spread": 5.0,
+              "bounds_k": [1559.0, 1564.0],
+              "source": "The two reported phase-diagram transition temperatures bound the construction.",
+              "references": [
+                "https://link.springer.com/article/10.1007/s00269-024-01302-8",
+                "https://rruff.info/uploads/AM80_560.pdf"
+              ]
+            }
+          ]
+        },
+        "fusion_entropy": {
+          "value": 46.6739628617,
+          "tier": 3,
+          "spread": 54.1349436118,
+          "unit": "J mol^-1 K^-1",
+          "flag": "red",
+          "source": "Tool Tier 3 leave-one-out mean fusion entropy per formula atom over 48 validation pairs, multiplied by five atoms; spread is the measured maximum absolute entropy residual over those pairs.",
+          "ladder": [
+            {
+              "tier": 3,
+              "value": 46.6739628617,
+              "spread": 54.1349436118,
+              "flag": "red",
+              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by five; use the 48-pair maximum absolute entropy residual as the spread.",
+              "references": [
+                "https://rruff.info/uploads/AM80_560.pdf"
+              ]
+            }
+          ]
+        },
+        "liquid_heat_capacity": {
+          "value": 134.6884253464,
+          "tier": 3,
+          "spread": 170.2,
+          "unit": "J mol^-1 K^-1",
+          "flag": "red",
+          "source": "Tier 3 carries rhodonite crystal Cp at 1564 K over as liquid Cp; the spread is the 48-pair maximum absolute residual in the crystal-Cp estimate of ΔCp.",
+          "ladder": [
+            {
+              "tier": 3,
+              "value": 134.6884253464,
+              "spread": 170.2,
+              "unit": "J mol^-1 K^-1",
+              "flag": "red",
+              "source": "Carry the Robie et al. crystal Cp fit at the selected transition over as liquid Cp; use the 48-pair maximum absolute ΔCp residual as its spread.",
+              "references": [
+                "https://rruff.info/uploads/AM80_560.pdf"
+              ]
+            }
+          ]
+        },
+        "condensate_fit": {
+          "fit_t_min": 1500.0,
+          "fit_t_max": 2000.0,
+          "runtime_t_min": 1673.0,
+          "runtime_t_max": 2000.0,
+          "table_id": "MnSiO3-liquid-construction",
+          "cation": "Mn",
+          "cat_num": 1,
+          "oxy_num": 3,
+          "ref": "Robie et al. rhodonite crystal function plus systematic liquid construction"
+        }
+      }
+    },
     "MoO3": {
       "formula": "MoO3",
       "crystal_table_id": "Mo-014",

@@ -1,6 +1,6 @@
 {
   "schema": "openimcc-redox-pack.v1",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "model": "Element-based redox thermochemistry with standard-state reaction rows",
   "created": "2026-10-08",
   "units": {
@@ -12,7 +12,7 @@
     "pressure": "bar relative to 1 bar standard state"
   },
   "source_selection_rail": ["standard_state_consistency", "primary_measurement", "domain_match", "systematic_estimate"],
-  "canonical_content_digest": "441df08305a7e7fc95e62186a7914b71578125383c952a88fef486a3e9e823f0",
+  "canonical_content_digest": "83814ffa4ac38ca79d461ccb82452bce151acc0b59587b489a222bd0cbdb1f8e",
   "parent_registry": [
     {"element": "Si", "parent_oxide": "SiO2(l)", "parent_formula_atoms": {"Si": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Si(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
     {"element": "Mg", "parent_oxide": "MgO(l)", "parent_formula_atoms": {"Mg": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Mg(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
@@ -27,7 +27,7 @@
     {"element": "Co", "parent_oxide": "CoO(l)", "parent_formula_atoms": {"Co": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Co(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
     {"element": "P", "parent_oxide": "P2O5", "parent_formula_atoms": {"P": 2, "O": 5}, "parent_standard_state": "one half P4O10(cr)", "elemental_reference_state": "P4(cr, white)", "redox_thermochemistry_status": "registered_unpopulated"},
     {"element": "V", "parent_oxide": "V2O3(l)", "parent_formula_atoms": {"V": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "V(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Mn", "parent_oxide": "MnO(l)", "parent_formula_atoms": {"Mn": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Mn(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Mn", "parent_oxide": "MnO(l)", "parent_formula_atoms": {"Mn": 1, "O": 1}, "parent_standard_state": "pure liquid MnO at 1 bar", "elemental_reference_state": "Mn(l)", "redox_thermochemistry_status": "populated"},
     {"element": "Eu", "parent_oxide": "Eu2O3(l)", "parent_formula_atoms": {"Eu": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Eu(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
     {"element": "Ce", "parent_oxide": "CeO2(l)", "parent_formula_atoms": {"Ce": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ce(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
     {"element": "S", "parent_oxide": "S(l)", "parent_formula_atoms": {"S": 1}, "parent_standard_state": "liquid sulfur", "elemental_reference_state": "S(rhombic)", "redox_thermochemistry_status": "registered_unpopulated"}
@@ -142,6 +142,52 @@
       "row": {"dH298_R": 2.16538348022915, "dG_A": 3.30132228613308, "dG_B": 4.03206745138485, "dG_C": -0.831414832185972, "dG_D": 0.11391385112234, "dG_E": -0.00700225800198168},
       "band_kj_mol": 0.002,
       "provenance": {"source": "NIST-JANAF cobalt liquid table Co-003", "source_url": "https://janaf.nist.gov/tables/Co-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."}
+    },
+    "Mn(l)": {
+      "formula_atoms": {"Mn": 1}, "evaluator": "condensate_phi", "T_domain_K": [1600, 2200], "range_flags": ["Uses the JANAF liquid reference over 1600-2200 K, below the source table's 2334.526 K one-bar boiling marker."],
+      "row": {"dH298_R": 1.95911639132707, "dG_A": 3.90764925965174, "dG_B": 3.44644589474198, "dG_C": -0.244200953116657, "dG_D": -0.0776798564699167, "dG_E": 0.0158023187385586},
+      "band_kj_mol": 0.001,
+      "provenance": {"source": "NIST-JANAF manganese liquid table Mn-003", "source_url": "https://janaf.nist.gov/tables/Mn-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "The existing condensate φ fitter was applied to the JANAF Mn(l) H-H(298), entropy, and heat-capacity nodes at 1600-2200 K; its maximum Gibbs residual is 0.000749 kJ/mol."}
+    },
+    "MnO(l)": {
+      "formula_atoms": {"Mn": 1, "O": 1}, "evaluator": "condensate_phi", "T_domain_K": [1673, 2000], "range_flags": ["The constructed liquid is supercooled below the measured 2120 ± 20 K MnO melting point throughout this domain.", "Fusion entropy and liquid heat capacity use Tier 3 systematic estimates with broad measured residual spreads."],
+      "row": {"dH298_R": -46.3048566923029, "dG_A": -4.7517225829243, "dG_B": 18.522547615701, "dG_C": -7.68380038061084, "dG_D": 1.84242016404087, "dG_E": -0.184227647723605},
+      "band_kj_mol": 34.379365,
+      "construction": {"crystal_source_table": "MnO-IVTAN-1435", "fusion_temperature_K": 2120, "fusion_temperature_spread_K": 20, "fusion_entropy_j_mol_K": 18.6695851447, "fusion_entropy_spread_j_mol_K": 54.1349436118, "liquid_heat_capacity_j_mol_K": 63.0463068993, "liquid_heat_capacity_spread_j_mol_K": 170.2, "fit_T_K": [1600, 2200], "runtime_T_K": [1673, 2000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
+      "provenance": {"source": "IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.", "source_url": "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html", "tier": "tier4_systematic_estimate", "selection_rationale": "The construction uses the measured crystal function and 2120 ± 20 K melting temperature. The tool's leave-one-out mean fusion entropy per formula atom supplies the center; IVTAN's 40 ± 5 kJ/mol fusion enthalpy is a cross-check only. The below-fusion band propagates the measured 48-pair maximum residuals."}
+    },
+    "MnSiO3(l)": {
+      "formula_atoms": {"Mn": 1, "Si": 1, "O": 3}, "evaluator": "condensate_phi", "T_domain_K": [1673, 2000], "range_flags": ["Rhodonite melts incongruently; the pure-liquid standard is a constructed association reference.", "The source heat-capacity fit is extended 64 K from its 1500 K upper limit to the selected 1564 K transition."],
+      "row": {"dH298_R": -158.951944427396, "dG_A": -12.7163301577398, "dG_B": 43.065483296729, "dG_C": -19.3896196803774, "dG_D": 5.04563323676232, "dG_E": -0.547732731893597},
+      "band_kj_mol": 122.005430,
+      "construction": {"crystal_source_table": "MnSiO3-Robie-1995", "fusion_temperature_K": 1564, "fusion_temperature_spread_K": 5, "fusion_entropy_j_mol_K": 46.6739628617, "fusion_entropy_spread_j_mol_K": 54.1349436118, "liquid_heat_capacity_j_mol_K": 134.6884253464, "liquid_heat_capacity_spread_j_mol_K": 170.2, "fit_T_K": [1500, 2000], "runtime_T_K": [1673, 2000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
+      "provenance": {"source": "Robie, Huebner, and Hemingway rhodonite crystal thermochemistry with the reported 1559-1564 K phase-transition interval; liquid standard constructed from crystal data.", "source_url": "https://rruff.info/uploads/AM80_560.pdf", "tier": "tier4_systematic_estimate", "selection_rationale": "The crystal formation enthalpy and heat-capacity function are source-derived. The liquid fusion entropy and Cp are Tier 3 systematic estimates; no activity data were used to select them."}
+    },
+    "Mn2SiO4(l)": {
+      "formula_atoms": {"Mn": 2, "Si": 1, "O": 4}, "evaluator": "condensate_phi", "T_domain_K": [1673, 2000], "range_flags": ["Tephroite is congruently melting only in the reported low-oxygen phase diagram; peritectic behavior is reported near air conditions.", "The source heat-capacity fit is extended 16 K from its 1600 K upper limit to the selected 1616 K transition."],
+      "row": {"dH298_R": -208.251582760318, "dG_A": -18.4491312856461, "dG_B": 64.4966556679615, "dG_C": -29.7500156567454, "dG_D": 7.82826629411676, "dG_E": -0.855245390113343},
+      "band_kj_mol": 116.935287,
+      "construction": {"crystal_source_table": "Mn2SiO4-Robie-1982", "fusion_temperature_K": 1616, "fusion_temperature_spread_K": 4, "fusion_entropy_j_mol_K": 65.3435480064, "fusion_entropy_spread_j_mol_K": 54.1349436118, "liquid_heat_capacity_j_mol_K": 183.8441705818, "liquid_heat_capacity_spread_j_mol_K": 170.2, "fit_T_K": [1500, 2000], "runtime_T_K": [1673, 2000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
+      "provenance": {"source": "Robie et al. tephroite crystal thermochemistry with the reported 1616-1620 K phase-transition interval; liquid standard constructed from crystal data.", "source_url": "https://msaweb.org/AmMin/AM67/AM67_470.pdf", "tier": "tier4_systematic_estimate", "selection_rationale": "The crystal formation enthalpy and heat-capacity function are source-derived. The liquid fusion entropy and Cp are Tier 3 systematic estimates; no activity data were used to select them."}
+    },
+    "SiO2(l)-supercooled": {
+      "formula_atoms": {"Si": 1, "O": 2}, "evaluator": "condensate_phi", "T_domain_K": [1500, 1800], "range_flags": ["Supercooled silica-liquid branch from the existing O-038-SC-CP construction."],
+      "row": {"dH298_R": -108.565164277223, "dG_A": 5.32820370263852, "dG_B": 2.7502207533237, "dG_C": 2.13101743270814, "dG_D": -1.02813696221069, "dG_E": 0.147416014779165},
+      "band_kj_mol": 0.01,
+      "provenance": {"source": "Existing SiO2 supercooled liquid construction O-038-SC-CP", "source_url": "https://janaf.nist.gov/tables/O-038.html", "tier": "tier3_flagged_estimate", "selection_rationale": "Uses the existing supercooled branch below the direct liquid-function interval."}
+    },
+    "SiO2(l)-direct": {
+      "formula_atoms": {"Si": 1, "O": 2}, "evaluator": "condensate_phi", "T_domain_K": [1800, 3000], "range_flags": [],
+      "row": {"dH298_R": -108.565164277223, "dG_A": 3.56984832846972, "dG_B": 6.50208372215561, "dG_C": -0.885290785836491, "dG_D": 0.0548103280961078, "dG_E": 0.000912865784425249},
+      "band_kj_mol": 0.002,
+      "provenance": {"source": "NIST-JANAF silicon dioxide liquid table O-038", "source_url": "https://janaf.nist.gov/tables/O-038.html", "tier": "tier1_direct_assessed", "selection_rationale": "Uses the direct assessed liquid function from its tabulated interval."}
+    },
+    "SiO2(l)": {
+      "formula_atoms": {"Si": 1, "O": 2}, "evaluator": "piecewise", "T_domain_K": [1500, 3000], "range_flags": ["Uses the existing supercooled silica construction below 1800 K and the direct JANAF liquid function at and above 1800 K."],
+      "transition_temperature_K": 1800,
+      "branches": [{"branch": "below", "species": "SiO2(l)-supercooled"}, {"branch": "at_or_above", "species": "SiO2(l)-direct"}],
+      "band_kj_mol": 0.01,
+      "provenance": {"source": "NIST-JANAF O-038 and its existing supercooled liquid construction", "source_url": "https://janaf.nist.gov/tables/O-038.html", "tier": "tier3_flagged_estimate", "selection_rationale": "The two existing standard-state branches meet within 0.01 kJ/mol at their 1800 K join."}
     }
   },
   "rows": [
@@ -184,6 +230,66 @@
       "range_flags": ["FeO1.5 uses half the hypothetical metastable Fe2O3(l) construction.", "1500-1735 K is below the cited hematite decomposition marker and is a flagged supercooled metastable branch.", "1735-1895 K is below nominal hypothetical fusion and remains a metastable extrapolation.", "Lange and Navrotsky's tier-2 liquid-component Cp is extrapolated across the 1500-3000 K runtime interval."],
       "provenance_class": "extension-compound-thermo",
       "provenance": {"source": "NIST-JANAF Fe-030 hematite crystal, Lesher and Spera supplemental Table S5.5, Sugawara and Akaogi (2004), and Lange and Navrotsky (1992)", "source_url": "https://magma.geol.ucsb.edu/papers/EoV_complete.pdf", "tier": "tier3_flagged_estimate", "selection_rationale": "Reaction stoichiometry fixes the pseudo-complex; the centrally selected secondary fusion transcription is bounded by the verified primary estimate, and the tier-2 liquid-component Cp is central with stated uncertainty and an extrapolation flag."}
+    },
+    {
+      "row": 3,
+      "complex": "MnO(l)",
+      "role": "parent_reference",
+      "nu": {},
+      "reactants": {"Mn(l)": 1, "O2(g)": 0.5},
+      "products": {"MnO(l)": 1},
+      "external_oxygen_stoich_product_positive": -0.5,
+      "reaction": "Mn(l) + 1/2 O2(g) = MnO(l)",
+      "phase_or_construction": "Pure liquid MnO at 1 bar from the measured MnO crystal function and a Tier 3 systematic fusion construction.",
+      "method": "Assemble product-positive standard Gibbs terms with the existing condensate phi and JANAF Shomate evaluators.",
+      "standard_gibbs_terms": [{"species": "MnO(l)", "coefficient": 1}, {"species": "Mn(l)", "coefficient": -1}, {"species": "O2(g)", "coefficient": -0.5}],
+      "T_domain_K": [1673, 2000],
+      "band_kj_mol": 34.382,
+      "band_method": "Conservative sum of the below-fusion MnO construction band, the Mn(l) source-fit band, and one half the O2 fit band.",
+      "uncertainty_note": "The MnO liquid reference is supercooled throughout the declared domain; its band uses the measured 48-pair Tier 3 residual spreads and is intentionally broad.",
+      "range_flags": ["MnO(l) is supercooled below its measured 2120 ± 20 K melting point throughout 1673-2000 K.", "The fusion entropy and liquid heat capacity are systematic estimates rather than direct liquid measurements."],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {"source": "NIST-JANAF Mn(l) table Mn-003 and IVTAN Table 1435 MnO crystal function", "source_url": "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html", "tier": "tier4_systematic_estimate", "selection_rationale": "The elemental reference uses the direct assessed liquid-metal function; the oxide uses the measured melting point and crystal function with a tool-derived Tier 3 center. IVTAN's estimated fusion enthalpy is a cross-check only."}
+    },
+    {
+      "row": 4,
+      "complex": "MnSiO3(l)",
+      "role": "complex",
+      "nu": {"MnO(l)": 1, "SiO2(l)": 1},
+      "reactants": {"MnO(l)": 1, "SiO2(l)": 1},
+      "products": {"MnSiO3(l)": 1},
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "MnO(l) + SiO2(l) = MnSiO3(l)",
+      "phase_or_construction": "Rhodonite-derived liquid association reference; the rhodonite crystal melts incongruently and the liquid standard is constructed.",
+      "method": "Assemble product-positive standard Gibbs terms with the existing condensate phi evaluator and the existing piecewise silica reference.",
+      "standard_gibbs_terms": [{"species": "MnSiO3(l)", "coefficient": 1}, {"species": "MnO(l)", "coefficient": -1}, {"species": "SiO2(l)", "coefficient": -1}],
+      "T_domain_K": [1673, 2000],
+      "band_kj_mol": 156.395,
+      "band_method": "Conservative sum of the constructed MnSiO3(l) band, the MnO(l) parent band, and the existing supercooled SiO2(l) band.",
+      "uncertainty_note": "The wide band propagates the measured Tier 3 construction residual spreads and the rhodonite transition interval; the Chen activity data are held out and were not used to select the row.",
+      "range_flags": ["Rhodonite melts incongruently; MnSiO3(l) is an association standard constructed from open crystal thermochemistry.", "The source heat-capacity fit is extended from 1500 K to the selected 1564 K transition."],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {"source": "Robie, Huebner, and Hemingway rhodonite crystal thermochemistry with the reported phase-transition interval", "source_url": "https://rruff.info/uploads/AM80_560.pdf", "tier": "tier4_systematic_estimate", "selection_rationale": "The reaction is fixed by crystal stoichiometry. The liquid Gibbs function is constructed from the reported crystal function and Tier 3 systematic fusion estimates; no activity data selected its parameters."}
+    },
+    {
+      "row": 5,
+      "complex": "Mn2SiO4(l)",
+      "role": "complex",
+      "nu": {"MnO(l)": 2, "SiO2(l)": 1},
+      "reactants": {"MnO(l)": 2, "SiO2(l)": 1},
+      "products": {"Mn2SiO4(l)": 1},
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "2 MnO(l) + SiO2(l) = Mn2SiO4(l)",
+      "phase_or_construction": "Tephroite-derived liquid association reference; its phase behavior near air is peritectic and the liquid standard is constructed.",
+      "method": "Assemble product-positive standard Gibbs terms with the existing condensate phi evaluator and the existing piecewise silica reference.",
+      "standard_gibbs_terms": [{"species": "Mn2SiO4(l)", "coefficient": 1}, {"species": "MnO(l)", "coefficient": -2}, {"species": "SiO2(l)", "coefficient": -1}],
+      "T_domain_K": [1673, 2000],
+      "band_kj_mol": 185.705,
+      "band_method": "Conservative sum of the constructed Mn2SiO4(l) band, two MnO(l) parent bands, and the existing supercooled SiO2(l) band.",
+      "uncertainty_note": "The wide band propagates the measured Tier 3 construction residual spreads and the tephroite transition interval; the Chen activity data are held out and were not used to select the row.",
+      "range_flags": ["Tephroite peritectic behavior is reported near air conditions; Mn2SiO4(l) is an association standard constructed from open crystal thermochemistry.", "The source heat-capacity fit is extended from 1600 K to the selected 1616 K transition."],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {"source": "Robie et al. tephroite crystal thermochemistry with the reported phase-transition interval", "source_url": "https://msaweb.org/AmMin/AM67/AM67_470.pdf", "tier": "tier4_systematic_estimate", "selection_rationale": "The reaction is fixed by crystal stoichiometry. The liquid Gibbs function is constructed from the reported crystal function and Tier 3 systematic fusion estimates; no activity data selected its parameters."}
     }
   ]
 }
