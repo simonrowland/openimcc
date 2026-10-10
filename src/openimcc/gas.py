@@ -329,9 +329,8 @@ def default_condensate_database_path() -> Path:
 # n_gas=2 and n_O2=3/2, 1/2 and -1/2. For the caller-supplied NbO2 parent
 # (a=1, b=2), Nb, NbO and NbO2 use n_gas=1 and n_O2=1, 1/2 and 0.
 # For caller-supplied MnO, NiO and CoO parents (a=1, b=1), the atomic and
-# monoxide channels use n_gas=1 and n_O2=1/2 and 0. These entries are data-free
-# wiring: the public pack has the gas rows but no parent rows, while an external
-# pack can provide both sides of each reaction.
+# monoxide channels use n_gas=1 and n_O2=1/2 and 0. MnO(l) and its gas products
+# use the public tables; NiO and CoO still require an external pack.
 # For caller-supplied P2O5(l) (a=2, b=5), n_gas=2/n_P and
 # n_O2=(5-n_gas*n_O)/2: P, P2, P4, PO, PO2, P4O6 and P4O10 use
 # (2, 5/2), (1, 5/2), (1/2, 5/2), (2, 3/2), (2, 1/2),
@@ -487,9 +486,9 @@ IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 # Channels that a default evaluate_gas call includes only when the active
 # datapack carries their gas row and their parent's standard-state row. The legacy
 # tables selected by OPENIMCC_VAPOROCK_ROOT have Ti gas rows but no TiO2(l)
-# row, while the public tables have Mn/Ni/Co gas rows but no MnO(l)/NiO(l)/CoO(l)
-# rows. Optional channels therefore stay absent from a default call until an
-# active pack supplies both sides. Original SF04 channels stay strict: a table
+# row, while NiO and CoO parents remain external-pack-only. Optional channels
+# stay absent from a default call until an active pack supplies the parent
+# activity and both table rows. Original SF04 channels stay strict: a table
 # missing one of their rows is broken and the default call keeps refusing on it
 # rather than silently omitting it.
 # The Na2O and K2O channels use the optional rule for alternate tables that
@@ -647,10 +646,9 @@ def default_gas_channels(
 # reaction is only as authoritative as its least-authoritative input row, so a
 # potassium channel inherits the K2O(l) estimated-systematic class while the
 # other retained channels retain their JANAF/Lamoreaux classes. The Na2O/K2O
-# gas rows are NASA/Gurvich fits. The Mn/Ni/Co atomic rows are public JANAF
-# fits; the monoxide rows are external-pack-only and carry no public row
-# provenance.
-_EXTERNAL_PACK_GAS_SPECIES = frozenset({"MnO", "NiO", "CoO"})
+# gas rows are NASA/Gurvich fits. Mn/Ni/Co atomic rows are public JANAF fits;
+# the MnO row uses the published IVTAN fit, while NiO and CoO remain external.
+_EXTERNAL_PACK_GAS_SPECIES = frozenset({"NiO", "CoO"})
 _GAS_PROVENANCE_AUTHORITY = {
     species: (
         "external_datapack"
@@ -684,6 +682,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Bi": "published_fitted",
         "Bi2": "published_fitted",
         "BiO": "published_fitted",
+        "MnO": "published_fitted",
     }
 )
 _ION_GAS_SPECIES = (
@@ -694,6 +693,7 @@ _ION_GAS_SPECIES = (
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
     "Zn+", "Zn-", "Cd+", "Bi+",
+    "Mn+",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -716,7 +716,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
     }
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
-    "MnO": "external_datapack",
+    "MnO": "liquid_from_solid_estimate",
     "NiO": "external_datapack",
     "CoO": "external_datapack",
     "P2O5": "external_datapack",
@@ -773,6 +773,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "ZnO": "TSIV-1603",
     "CdO": "P672-T102",
     "Bi2O3": "P672-T82",
+    "MnO": "MnO-liquid-construction",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
     "MgO": "LH87 Table 2",
@@ -936,9 +937,9 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # Closure ledger for species outside the retained channel set. These entries
 # still lack a gas G(T) row in the vendored source set or require a model
 # convention not present in the layer. Na2O/K2O left this ledger when their
-# NASA/Gurvich gas rows joined the package. Mn/Ni/Co now have retained,
-# optional channels; the public-only load skips them because it has no parent
-# rows, while an external pack can activate them.
+# NASA/Gurvich gas rows joined the package. Mn/Ni/Co have retained optional
+# channels; callers can activate Mn with public MnO(l), while Ni and Co still
+# require external parent rows.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {}
 
 _GAS_IONIZATION_PAIRS = (
@@ -957,6 +958,7 @@ _GAS_IONIZATION_PAIRS = (
     ("Zn", "Zn+"),
     ("Cd", "Cd+"),
     ("Bi", "Bi+"),
+    ("Mn", "Mn+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -990,14 +992,9 @@ _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
 IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {}
 
-# These retained channels are wired but cannot run from the public pack: only
-# the atomic gas rows are public, while the monoxide gas and parent rows arrive
-# through an external datapack.
+# These retained channels are wired but cannot run from the public pack because
+# their gas and parent rows are absent from its source set.
 IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES: dict[str, str] = {
-    "Mn": (
-        "public pack has Mn(g) but no MnO(g) or MnO(l); "
-        "external pack supplies both"
-    ),
     "Ni": (
         "public pack has Ni(g) but no NiO(g) or NiO(l); "
         "external pack supplies both"
@@ -1654,18 +1651,30 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'neutral-source-vendor/1.0'}},
     'Mn': {   'status': 'gas-partial',
-              'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': False},
+              'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': False},
               'validation': 'unvalidated',
-              'reason': 'Only Mn(g) has a public row; the MnO gas and MnO liquid parents are '
-                        'absent.',
-              'c2_candidates': (),
-              'c3_ion_bound': {   'status': 'not computed',
-                                  'reason': 'not computed: p(E) needs a parent liquid row that is '
-                                            'only available from an external private pack',
+              'reason': 'Mn(g), MnO(g), MnO(l), and opt-in Mn+ are available; MnO(l) is a tier-4 '
+                        'liquid_from_solid construction over 1673-2000 K and is supercooled below '
+                        'measured Tm 2120 ± 20 K; a(MnO) is caller-supplied; the joint C3 screen '
+                        'used a(MnO)=1e-3 and reached 1.621e-07 at 2800 K and fO2=1e-4 within the '
+                        '<=1-bar neutral-pressure domain.',
+              'c2_candidates': (('TSIV-1436', 'MnO'),),
+              'c3_ion_bound': {   'max_ratio': 1.6207006439556975e-07,
+                                  'isolated_bound': 0.0001745528521533135,
+                                  'temperature_K': 2800.0,
+                                  'fO2': 0.0001,
+                                  'neutral_pressure_bar': 0.0004388258669373584,
+                                  'element_total_pressure_bar': 0.0004451944383639283,
+                                  'joint_ion_pressure_bar': 7.215269129419137e-11,
+                                  'electron_pressure_bar': 8.131783416340654e-05,
+                                  'K_ion': 1.337045289981064e-11,
+                                  'parent_oxide': 'MnO',
+                                  'parent_activity': 0.001,
                                   'source_tables': {   'cation': 'Mn-006',
                                                        'neutral': 'Mn-005',
                                                        'electron': 'D-020'},
                                   'upstream_sha256': {   'Mn-006': 'e90269050c0e94dae563a80fcb120b812af5382fada2c54aa6b951264fa56542',
+                                                         'Mn-005': '6e2b4c4f4fee21fa925c34e7aac461d5a8d709f06159bd70c626c621596faa19',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'openimcc-janaf-vendor/1.0'}},
     'Ni': {   'status': 'gas-partial',

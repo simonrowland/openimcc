@@ -194,6 +194,7 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("Bi2(g)", "P672-T81", "Bi2", "Bi", 2, 0, 1800.0),
     ("BiO(g)", "P696-T115", "BiO", "Bi", 1, 1, 1200.0),
     ("CdO(g)", "P696-T191", "CdO", "Cd", 1, 1, 2000.0),
+    ("MnO(g)", "TSIV-1436", "MnO", "Mn", 1, 1, 6000.0),
 )
 TRACE_GAS_SPECIES = frozenset(
     {source[0].removesuffix("(g)") for source in TRACE_JANAF_GAS_SOURCES}
@@ -259,6 +260,7 @@ TRACE_ION_NASA_SOURCES = (
     ("Cs2O+(g)", "NG-1843", "Cs2O+", "Cs", 2, 1),
 )
 ION_GAS_YAML_SOURCES = (("Ca+(g)", "Ca-007", "Ca", 1, 0),)
+TRACE_ION_GAS_YAML_SOURCES = (("Mn+(g)", "Mn-006", "Mn", 1, 0),)
 
 LOW_T_GAS_SPECIES = frozenset(
     {
@@ -1349,10 +1351,12 @@ def _published_table_record(source_dir: Path, table_id: str) -> dict[str, Any]:
         filename = "ivtan-table-264.json"
     elif table_id == "TSIV-1603":
         filename = "tsiv-table-1603.json"
+    elif table_id == "TSIV-1436":
+        filename = "tsiv-table-1436.json"
     else:
         raise ValueError(f"{table_id}: unsupported published source record")
     record = _load_record(source_dir / filename)
-    if table_id in {"IVTAN-264", "TSIV-1603"}:
+    if table_id in {"IVTAN-264", "TSIV-1603", "TSIV-1436"}:
         return record
     try:
         return record["tables"][table_id]
@@ -1366,11 +1370,11 @@ def _published_gas_source_rows(
     """Convert one published gas table's cells to the common fit units.
 
     Premise: the selected Pankratz tables print Cp and S in cal/(mol K), H-H298
-    in kcal/mol, and Hf298 in kcal/mol; IVTAN Table 264 prints Cp and S in
-    J/(mol K), H-H0 in kJ/mol, and separately gives H(298)-H(0). Algebra:
+    in kcal/mol, and Hf298 in kcal/mol; IVTAN Tables 264 and 1436 print Cp and
+    S in J/(mol K), H-H0 in kJ/mol, and separately give H(298)-H(0). Algebra:
     multiply Pankratz thermal values by 4.184 and subtract IVTAN's H(298)-H(0)
     from each H-H0 cell. Unit check: the returned rows use J/(mol K), kJ/mol,
-    and kJ/mol for Cp, S, and Hinc, respectively. Sanity: the IVTAN 298.15 K
+    and kJ/mol for Cp, S, and Hinc, respectively. Sanity: an IVTAN 298.15 K
     node becomes H-H(298)=0 and retains its printed S and Cp.
     """
     record = _published_table_record(source_dir, table_id)
@@ -1388,6 +1392,17 @@ def _published_gas_source_rows(
             }
         reference = float(record["formation_enthalpy_298_kj_mol"])
         source_limit = 3000.0
+    elif table_id == "TSIV-1436":
+        h298_minus_h0 = float(record["enthalpy_298_minus_H0_kj_mol"])
+        for temperature, cp, entropy, enthalpy in record["nodes"]:
+            rows[float(temperature)] = {
+                "temperature": float(temperature),
+                "heat_capacity": float(cp),
+                "entropy": float(entropy),
+                "enthalpy_increment": float(enthalpy) - h298_minus_h0,
+            }
+        reference = float(record["formation_enthalpy_298_kj_mol"])
+        source_limit = max(rows)
     else:
         for temperature, cp, entropy, enthalpy in record["nodes"]:
             rows[float(temperature)] = {
@@ -2568,6 +2583,27 @@ def build_rows(
             (2, 1200.0, 1500.0, 1200.0),
         )
     )
+    rows.extend(
+        _fit_row(
+            source_dir,
+            *source,
+            t_interval=1,
+            fit_t_min=FIT_T_MIN,
+            fit_t_max=FIT_T_MAX,
+        )
+        for source in TRACE_ION_GAS_YAML_SOURCES
+    )
+    for source in TRACE_ION_GAS_YAML_SOURCES:
+        low_row = _fit_row(
+            source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=1000.0,
+            fit_t_max=1500.0,
+            minimum_rows=6,
+        )
+        low_row["T_min"] = "1200"
+        rows.append(low_row)
     return rows
 
 
@@ -2714,6 +2750,19 @@ def _fit_liquid_from_solid_parent(
         record = _published_table_record(published_source_dir, "P672-T102")
         crystal = _cd_o_crystal_table(record, extrapolate_cp=True)
         alternate = _cd_o_crystal_table(record, extrapolate_cp=False)
+    elif species == "MnO":
+        crystals = _load_record(
+            published_source_dir.parent / "crystal-thermochemistry.json"
+        )["tables"]
+        crystal = crystals[config["crystal_table_id"]]
+        construction = liquid_from_solid(species, crystal, config["inputs"])
+        row = construction.fit_condensate_row()
+        residual = float(row["_max_residual_J_per_mol"])
+        if residual > 10.0:
+            raise ValueError(
+                f"MnO(l): condensate fit residual {residual:g} J/mol exceeds 10"
+            )
+        return [row], construction, None
     else:
         raise ValueError(f"{species}: no source-supported liquid-from-solid parent")
     inputs = {**config["inputs"], "condensate_fit": config["condensate_fit"]}
@@ -3060,7 +3109,7 @@ def build_condensate_rows(
             )
         )
     liquid_inputs = _load_record(repository / "data-src/liquid-from-solid-inputs.json")
-    for species in ("ZnO", "CdO"):
+    for species in ("ZnO", "CdO", "MnO"):
         fitted_rows, _construction, _alternate = _fit_liquid_from_solid_parent(
             published_source_dir, species, liquid_inputs["rows"][species]
         )

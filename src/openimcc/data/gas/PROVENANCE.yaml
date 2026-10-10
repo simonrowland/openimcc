@@ -227,9 +227,14 @@ source_notes:
     note: Published Lamoreaux coefficients and the K2O input estimates retain their source attribution below.
   trace_channel_additions:
     activity_policy: >-
-      ZnO, CdO, and Bi2O3 parent activities are caller supplied. OpenIMCC does
-      not provide an activity model or activity coefficients for these channels.
+      MnO, ZnO, CdO, and Bi2O3 parent activities are caller supplied. OpenIMCC
+      does not provide an activity model or activity coefficients for these channels.
     source_selection:
+      Mn: >-
+        Mn(g) and Mn+(g) use JANAF tables Mn-005 and Mn-006. No JANAF MnO(g)
+        row is indexed; TSIV Table 1436 supplies MnO(g). MnO(l) is built by the
+        same liquid_from_solid construction and input record as the redox pack,
+        using the TSIV Table 1435 crystal function and measured melting point.
       Zn: >-
         JANAF Zn(g), Zn+(g), and Zn-(g) rows are retained. The NASA Glenn Zn
         atom and cation cards are comparison-only; their G_app differences are
@@ -5925,6 +5930,145 @@ rows:
     extrapolation: true
     source_data: false
     extrapolation_source_limit_K: 1300
+  - table: gas
+    species_name: MnO(g)
+    table_id: TSIV-1436
+    runtime_ref: TSIV-1436
+    source_path: data-src/published-thermo/tsiv-table-1436.json
+    source_sha256: 3897075e33efef02e943eab7e11847eb0aa1a9eb171644ddd1c5cbf448683e50
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.63828870980069
+    max_residual_log10_K: 3.44874681162528e-05
+    source_fit_range_K: [1500, 3000]
+    flags: []
+    uncertainty_band:
+      kind: published formation-enthalpy uncertainty ±12.2 kJ/mol plus stated Phi uncertainty
+      phi_uncertainty_J_mol_K:
+        298.15: 0.04
+        1000: 0.1
+        3000: 0.4
+    T_interval: 1
+    source:
+      citation: Gusarov and Kulikov, IVTANTHERMO, Table 1436, MnO(g)
+      source_record: Gusarov and Kulikov, IVTANTHERMO, Table 1436, MnO(g)
+      source_locator: Table 1436
+      source_url: https://www.chem.msu.ru/rus/tsiv/Mn/ivtan0005.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Mn/ivtan0005.html
+    source_locator: Table 1436
+    source_data: true
+  - table: gas
+    species_name: MnO(g)
+    table_id: TSIV-1436
+    runtime_ref: TSIV-1436
+    source_path: data-src/published-thermo/tsiv-table-1436.json
+    source_sha256: 3897075e33efef02e943eab7e11847eb0aa1a9eb171644ddd1c5cbf448683e50
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.70695484225871
+    max_residual_log10_K: 2.80827103867126e-05
+    source_fit_range_K: [1200, 1500]
+    flags: []
+    uncertainty_band:
+      kind: published formation-enthalpy uncertainty ±12.2 kJ/mol plus stated Phi uncertainty
+      phi_uncertainty_J_mol_K:
+        298.15: 0.04
+        1000: 0.1
+        3000: 0.4
+    T_interval: 2
+    source:
+      citation: Gusarov and Kulikov, IVTANTHERMO, Table 1436, MnO(g)
+      source_record: Gusarov and Kulikov, IVTANTHERMO, Table 1436, MnO(g)
+      source_locator: Table 1436
+      source_url: https://www.chem.msu.ru/rus/tsiv/Mn/ivtan0005.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Mn/ivtan0005.html
+    source_locator: Table 1436
+    source_data: true
+  - table: gas
+    species_name: Mn+(g)
+    table_id: Mn-006
+    runtime_ref: Mn-006
+    source_path: data-src/janaf/Mn-006.yaml
+    source_sha256: b3368c6f80a0747d15bdac6693a7c9b0c650dd8d37856f87a7eecce112c795ca
+    authority: janaf_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 0.880211176467128
+    max_residual_log10_K: 2.67817404634378e-05
+    source_fit_range_K: [1500, 3000]
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 1
+    source_url: https://janaf.nist.gov/tables/Mn-006.html
+    download_url: https://janaf.nist.gov/tables/Mn-006.txt
+    source_locator: Mn-006 table header and thermal cells
+    retrieval_date: '2026-10-10'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Mn+(g)
+    table_id: Mn-006
+    runtime_ref: Mn-006
+    source_path: data-src/janaf/Mn-006.yaml
+    source_sha256: b3368c6f80a0747d15bdac6693a7c9b0c650dd8d37856f87a7eecce112c795ca
+    authority: janaf_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.763036661082879
+    max_residual_log10_K: 2.84686907812869e-05
+    source_fit_range_K: [1000, 1500]
+    flags: []
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    T_interval: 2
+    source_url: https://janaf.nist.gov/tables/Mn-006.html
+    download_url: https://janaf.nist.gov/tables/Mn-006.txt
+    source_locator: Mn-006 table header and thermal cells
+    retrieval_date: '2026-10-10'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: condensate
+    species_name: MnO(l)
+    table_id: MnO-liquid-construction
+    runtime_ref: MnO-liquid-construction
+    source_path: data-src/crystal-thermochemistry.json
+    source_sha256: b0c87afeaf0a53ec159a23e45d59d6a2eee023e810402f16504a51eac32bf22d
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: 6e645be6661efc938a0527a4130bab28bc075247afdc28b103ae341042fa1651
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K: [1673, 2000]
+    max_residual_J_per_mol: 0.186390915536322
+    max_residual_log10_K: 5.24784571800106e-06
+    source_fit_range_K: [1600, 2200]
+    flags:
+    - tier-4 liquid_from_solid construction
+    - supercooled-liquid runtime below the measured 2120 ± 20 K fusion interval
+    - tier-3 fusion-entropy and liquid-heat-capacity inputs; measured fusion-temperature spread
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: shared redox liquid_from_solid below-fusion band, including tier-3 fusion-entropy and liquid-Cp spreads and the measured fusion-temperature interval; the fitted-row residual is included
+      values_J_per_mol:
+        1673: 5753.514078551055
+        2000: 2520.124902785479
+    source:
+      citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume V, Table 1435, MnO(cr)
+      source_record: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume V, Table 1435, MnO(cr)
+      source_locator: Volume V, Table 1435
+      source_url: https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html
+      construction_input_record: data-src/liquid-from-solid-inputs.json rows.MnO
+    source_url: https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html
+    source_locator: Volume V, Table 1435
+    extrapolation: true
+    source_data: false
 source_comparisons:
   basis: >-
     NASA cards use G_app(T)=H_card(T)-T*S_card(T), where H_card includes the

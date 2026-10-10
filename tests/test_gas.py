@@ -51,6 +51,8 @@ from openimcc.gas import (
     _REACTION_PARENT_OXIDES,
     _SF04_REACTIONS,
     _default_reactions,
+    _janaf_gibbs,
+    _lamor_gibbs,
     _nearest_interval_row,
     _SF04_REACTIONS,
 )
@@ -116,6 +118,7 @@ _ION_GAS_SPECIES = {
     "Li+", "Rb+", "Pb+", "Cs+", "Sn+", "Cs2O+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Zn+", "Zn-", "Cd+", "Bi+",
+    "Mn+",
 }
 
 
@@ -191,10 +194,11 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + len(_ION_GAS_SPECIES)
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
+        + len(build_gas_tables.TRACE_ION_GAS_YAML_SOURCES)
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 63
+    assert len(gas_pack.oxide_df) == 64
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -437,7 +441,6 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         "Ref",
     )
     public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES) - {
-        "MnO",
         "NiO",
         "CoO",
     }
@@ -456,6 +459,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         + len(build_gas_tables.TRACE_GAS_SPECIES)
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
+        + len(build_gas_tables.TRACE_ION_GAS_YAML_SOURCES)
         + 3
     )
     assert set(low_rows.index) == {
@@ -467,6 +471,8 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
         species for species, *_ in build_gas_tables.TRACE_ION_NASA_SOURCES
+    } | {
+        source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
     } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
     neutral_high_rows = high_rows.loc[
         ~high_rows.index.isin(tuple(f"{species}(g)" for species in _ION_GAS_SPECIES))
@@ -478,6 +484,8 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES
+    } | {
+        source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
     } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
     split_ion_rows = ion_rows.loc[ion_rows.index.isin(split_ion_names)]
     single_interval_ion_rows = ion_rows.loc[
@@ -555,7 +563,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     unavailable = set(IMCC_GAS_UNAVAILABLE_SPECIES)
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
-    assert len(implemented) == 65 + len(build_gas_tables.TRACE_GAS_SPECIES)
+    assert len(implemented) == 64 + len(build_gas_tables.TRACE_GAS_SPECIES)
     assert len(unavailable) == 0
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
@@ -1010,11 +1018,12 @@ def test_full_workbook_grid_runs_for_in_domain_channels(
                 activities = {**unit_activities, "Cr2O3": 1.0}
             elif species in _VNB_CHANNELS:
                 activities = {**unit_activities, "V2O3": 1.0e-3, "NbO2": 1.0e-3}
-            elif species in _MNNICO_CHANNELS:
+            elif species in _MN_CHANNELS:
+                activities = {**unit_activities, "MnO": 1.0}
+            elif species in _NICO_CHANNELS:
                 datapack = synthetic_mnnico_pack
                 activities = {
                     **unit_activities,
-                    "MnO": 1.0,
                     "NiO": 1.0,
                     "CoO": 1.0,
                 }
@@ -1241,10 +1250,6 @@ def test_unavailable_species_ledger_names_the_closing_source(
     assert set(IMCC_GAS_NO_JANAF_ROWS) == set()
     assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
     assert IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES == {
-        "Mn": (
-            "public pack has Mn(g) but no MnO(g) or MnO(l); "
-            "external pack supplies both"
-        ),
         "Ni": (
             "public pack has Ni(g) but no NiO(g) or NiO(l); "
             "external pack supplies both"
@@ -1262,9 +1267,13 @@ def test_unavailable_species_ledger_names_the_closing_source(
         f"{species}(g)" not in gas_pack.gas_df.index
         for species in IMCC_GAS_NO_JANAF_ROWS
     )
-    assert {"Mn(g)", "Ni(g)", "Co(g)"} <= set(gas_pack.gas_df.index)
-    assert not {"MnO(g)", "NiO(g)", "CoO(g)"} & set(gas_pack.gas_df.index)
-    assert set(_MNNICO_CHANNELS) <= set(IMCC_GAS_CHANNEL_SPECIES)
+    assert {"Mn(g)", "MnO(g)", "Mn+(g)", "Ni(g)", "Co(g)"} <= set(
+        gas_pack.gas_df.index
+    )
+    assert not {"NiO(g)", "CoO(g)"} & set(gas_pack.gas_df.index)
+    assert (set(_MN_CHANNELS) | set(_NICO_CHANNELS)) <= set(
+        IMCC_GAS_CHANNEL_SPECIES
+    )
     assert {"Ti(g)", "TiO(g)", "TiO2(g)"} <= set(gas_pack.gas_df.index)
     assert "TiO2(l)" in gas_pack.oxide_df.index
     assert {"Ti", "TiO", "TiO2"} <= set(IMCC_GAS_CHANNEL_SPECIES)
@@ -1331,20 +1340,22 @@ def test_tio2_bearing_melt_returns_ti_pressures(
 _TI_CHANNELS = ("Ti", "TiO", "TiO2")
 _CR_CHANNELS = ("Cr", "CrO", "CrO2", "CrO3")
 _VNB_CHANNELS = ("V", "VO", "VO2", "Nb", "NbO", "NbO2")
-_MNNICO_CHANNELS = ("Mn", "MnO", "Ni", "NiO", "Co", "CoO")
+_MN_CHANNELS = ("Mn", "MnO")
+_NICO_CHANNELS = ("Ni", "NiO", "Co", "CoO")
 _P_CHANNELS = ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10")
 _S_CHANNELS = (
     "S", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
     "SO", "SO2", "SO3", "SSO",
 )
 _PS_CHANNELS = _P_CHANNELS + _S_CHANNELS
-_MNNICO_PARENT_PAIRS = (("Mn", "MnO"), ("Ni", "NiO"), ("Co", "CoO"))
+_NICO_PARENT_PAIRS = (("Ni", "NiO"), ("Co", "CoO"))
 _PRE_GATED_CHANNELS = tuple(
     species
     for species in IMCC_GAS_CHANNEL_SPECIES
     if species not in _CR_CHANNELS
     and species not in _VNB_CHANNELS
-    and species not in _MNNICO_CHANNELS
+    and species not in _MN_CHANNELS
+    and species not in _NICO_CHANNELS
     and species not in _PS_CHANNELS
     and species not in build_gas_tables.TRACE_GAS_SPECIES
 )
@@ -1621,27 +1632,27 @@ def synthetic_mnnico_pack(
 ) -> ImccGasDatapack:
     """Synthetic wiring fixture, not thermodynamic data.
 
-    It copies the public Fe(g), FeO(g), and FeO(l) rows under Mn/Ni/Co names so
+    It copies the public Fe(g), FeO(g), and FeO(l) rows under Ni/Co names so
     the tests exercise optional-channel wiring with an external pack.
     """
     gas_df = pd.read_csv(gas_pack.gas_path)
     oxide_df = pd.read_csv(gas_pack.oxide_path)
-    atomic_species = {f"{gas}(g)" for gas, _parent in _MNNICO_PARENT_PAIRS}
+    atomic_species = {f"{gas}(g)" for gas, _parent in _NICO_PARENT_PAIRS}
     gas_df = gas_df.loc[~gas_df["species_name"].isin(atomic_species)]
     atomic_gas_template = gas_df.loc[gas_df["species_name"] == "Fe(g)"].iloc[[0]]
     monoxide_gas_template = gas_df.loc[gas_df["species_name"] == "FeO(g)"].iloc[[0]]
     oxide_template = oxide_df.loc[oxide_df["species_name"] == "FeO(l)"].iloc[[0]]
     gas_rows = [
         atomic_gas_template.assign(species_name=f"{gas}(g)")
-        for gas, _parent in _MNNICO_PARENT_PAIRS
+        for gas, _parent in _NICO_PARENT_PAIRS
     ]
     gas_rows.extend(
         monoxide_gas_template.assign(species_name=f"{parent}(g)")
-        for _gas, parent in _MNNICO_PARENT_PAIRS
+        for _gas, parent in _NICO_PARENT_PAIRS
     )
     oxide_rows = [
         oxide_template.assign(species_name=f"{parent}(l)")
-        for _gas, parent in _MNNICO_PARENT_PAIRS
+        for _gas, parent in _NICO_PARENT_PAIRS
     ]
     gas_path = tmp_path / "synthetic-gas.csv"
     oxide_path = tmp_path / "synthetic-condensate.csv"
@@ -1652,10 +1663,10 @@ def synthetic_mnnico_pack(
     return load_gas_datapack(gas_path=gas_path, oxide_path=oxide_path)
 
 
-def test_public_pack_skips_mnnico_channels_and_explicit_requests_refuse(
+def test_public_pack_skips_nico_channels_and_explicit_requests_refuse(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    parent_oxides = (*IMCC_PARENT_OXIDES, "MnO", "NiO", "CoO")
+    parent_oxides = (*IMCC_PARENT_OXIDES, "NiO", "CoO")
     activities = {name: 1.0 for name in parent_oxides}
     result = evaluate_gas(
         activities,
@@ -1664,9 +1675,9 @@ def test_public_pack_skips_mnnico_channels_and_explicit_requests_refuse(
         gas_pack,
         parent_oxides=parent_oxides,
     )
-    assert not set(_MNNICO_CHANNELS) & set(result)
+    assert not set(_NICO_CHANNELS) & set(result)
 
-    for gas, parent in _MNNICO_PARENT_PAIRS:
+    for gas, parent in _NICO_PARENT_PAIRS:
         with pytest.raises(ImccGasSpeciesNotFoundError) as exc:
             evaluate_gas(
                 {parent: 1.0},
@@ -1680,27 +1691,157 @@ def test_public_pack_skips_mnnico_channels_and_explicit_requests_refuse(
         assert f"{parent}(l)" in str(exc.value)
 
 
-def test_external_pack_activates_mnnico_channels_with_data_free_scaling(
+def test_public_mn_channels_use_the_mno_parent_and_janaf_ion(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    no_parent_default = evaluate_gas(
+        _quickstart_activities(2000.0), 2000.0, 1.0e-6, gas_pack
+    )
+    assert not set(_MN_CHANNELS) & set(no_parent_default)
+    assert not set(_MN_CHANNELS) & set(no_parent_default.omitted_channels)
+
+    activities = {"MnO": 1.0e-3}
+    parent_oxides = ("MnO",)
+    default = evaluate_gas(
+        activities, 2000.0, 1.0e-6, gas_pack, parent_oxides=parent_oxides
+    )
+    neutral = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-6,
+        gas_pack,
+        parent_oxides=parent_oxides,
+        gas_species=_MN_CHANNELS,
+        include_ions=False,
+    )
+    with_ions = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-6,
+        gas_pack,
+        parent_oxides=parent_oxides,
+        gas_species=_MN_CHANNELS,
+        include_ions=True,
+    )
+    assert set(_MN_CHANNELS) <= set(default)
+    assert set(_MN_CHANNELS) <= set(neutral)
+    assert "Mn+" not in neutral
+    assert "Mn+" in with_ions
+    assert neutral.provenance_class["Mn"] == "liquid_from_solid_estimate"
+    assert neutral.provenance_class["MnO"] == "liquid_from_solid_estimate"
+
+    missing_mno_gas = replace(
+        gas_pack, gas_df=gas_pack.gas_df.drop(index="MnO(g)")
+    )
+    partial = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-6,
+        missing_mno_gas,
+        parent_oxides=parent_oxides,
+    )
+    assert "Mn" in partial
+    assert "MnO" not in partial
+    assert partial.omitted_channels["MnO"] == "missing from active table: MnO(g)"
+
+    missing_parent = replace(
+        gas_pack, oxide_df=gas_pack.oxide_df.drop(index="MnO(l)")
+    )
+    with pytest.raises(ImccGasSpeciesNotFoundError) as refusal:
+        evaluate_gas(
+            activities,
+            2000.0,
+            1.0e-6,
+            missing_parent,
+            parent_oxides=parent_oxides,
+            gas_species=("Mn",),
+        )
+    assert refusal.value.code == "imcc_gas_species_not_found"
+    assert "MnO(l)" in str(refusal.value)
+
+    without_mn_ion = replace(
+        gas_pack, gas_df=gas_pack.gas_df.drop(index="Mn+(g)")
+    )
+    neutral_without_ion_row = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-6,
+        without_mn_ion,
+        parent_oxides=parent_oxides,
+        gas_species=_MN_CHANNELS,
+        include_ions=False,
+    )
+    assert dict(neutral) == dict(neutral_without_ion_row)
+
+
+def test_mn_evaporation_pressures_match_hand_mass_action_at_2000_k(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    temperature = 2000.0
+    activity = 2.5e-3
+    fugacity = 1.0e-6
+    parent_row = _nearest_interval_row(
+        gas_pack.oxide_df, "MnO(l)", temperature, allow_extrapolation=False
+    )
+    parent_gibbs = _lamor_gibbs(temperature, parent_row)
+    oxygen_gibbs = _janaf_gibbs(
+        temperature,
+        _nearest_interval_row(
+            gas_pack.gas_df, "O2(g)", temperature, allow_extrapolation=False
+        ),
+    )
+    expected = {}
+    for species, oxygen_count in (("Mn", 0.5), ("MnO", 0.0)):
+        gas_gibbs = _janaf_gibbs(
+            temperature,
+            _nearest_interval_row(
+                gas_pack.gas_df,
+                f"{species}(g)",
+                temperature,
+                allow_extrapolation=False,
+            ),
+        )
+        delta_g = gas_gibbs + oxygen_count * oxygen_gibbs - parent_gibbs
+        expected[species] = (
+            activity
+            * math.exp(-delta_g / (R_J_MOL_K * temperature))
+            * fugacity ** (-oxygen_count)
+        )
+
+    result = evaluate_gas(
+        {"MnO": activity},
+        temperature,
+        fugacity,
+        gas_pack,
+        parent_oxides=("MnO",),
+        gas_species=_MN_CHANNELS,
+        include_ions=False,
+    )
+    assert result["Mn"] == pytest.approx(expected["Mn"], rel=1.0e-12)
+    assert result["MnO"] == pytest.approx(expected["MnO"], rel=1.0e-12)
+
+
+def test_external_pack_activates_nico_channels_with_data_free_scaling(
     synthetic_mnnico_pack: ImccGasDatapack,
 ) -> None:
-    activities = {parent: 1.0 for _gas, parent in _MNNICO_PARENT_PAIRS}
+    activities = {parent: 1.0 for _gas, parent in _NICO_PARENT_PAIRS}
     common = {
         "activities": activities,
         "T_K": 2200.0,
         "datapack": synthetic_mnnico_pack,
         "parent_oxides": tuple(activities),
-        "gas_species": _MNNICO_CHANNELS,
+        "gas_species": _NICO_CHANNELS,
         "allow_extrapolation": False,
     }
     low_fugacity = evaluate_gas(fO2=1.0e-10, **common)
     high_fugacity = evaluate_gas(fO2=1.0e-6, **common)
 
-    assert tuple(low_fugacity) == _MNNICO_CHANNELS
+    assert tuple(low_fugacity) == _NICO_CHANNELS
     assert all(
         math.isfinite(low_fugacity[name]) and low_fugacity[name] > 0.0
-        for name in _MNNICO_CHANNELS
+        for name in _NICO_CHANNELS
     )
-    for gas, monoxide in _MNNICO_PARENT_PAIRS:
+    for gas, monoxide in _NICO_PARENT_PAIRS:
         assert low_fugacity.provenance_class[gas] == "external_datapack"
         assert low_fugacity.provenance_class[monoxide] == "external_datapack"
         # MO(l) = M(g) + 1/2 O2: p(M) scales as fO2**(-1/2).
@@ -2158,16 +2299,18 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     }
-    trace_gas |= {"Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)"}
+    trace_gas |= {"Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)", "Mn(g)"}
     trace_gas |= {
         "Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)",
         *(source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES),
         *(source[0] for source in build_gas_tables.TRACE_ION_PUBLISHED_SOURCES),
+        *(source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES),
     }
     trace_parents = {
         "Li2O(l)", "Rb2O(l)", "PbO(l)", "Cs2O(l)", "Cu2O(l)", "SnO(l)",
         "B2O3(l)", "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
         "ZnO(l)", "CdO(l)", "Bi2O3(l)",
+        "MnO(l)",
     }
     return replace(
         pack,
@@ -2179,8 +2322,9 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
 def test_default_trace_channels_are_optional_and_report_missing_rows(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    trace_gases = set(build_gas_tables.TRACE_GAS_SPECIES)
+    trace_gases = set(build_gas_tables.TRACE_GAS_SPECIES) | {"Mn"}
     parents = {
+        "MnO": 1.0e-3,
         "Li2O": 1.0e-3, "Rb2O": 1.0e-3, "PbO": 1.0e-3,
         "Ga2O3": 1.0e-3, "GeO2": 1.0e-3, "B2O3": 1.0e-3,
         "In2O3": 1.0e-3,
@@ -2336,12 +2480,14 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         "Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)",
         *(source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES),
         *(source[0] for source in build_gas_tables.TRACE_ION_PUBLISHED_SOURCES),
+        *(source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES),
     }
     trace_oxides = {
         "Li2O(l)", "Rb2O(l)", "PbO(l)",
         "B2O3(l)", "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
         "Cs2O(l)", "Cu2O(l)", "SnO(l)",
         "ZnO(l)", "CdO(l)", "Bi2O3(l)",
+        "MnO(l)",
     }
     changed_continuations = {
         "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "SiO2(l)",

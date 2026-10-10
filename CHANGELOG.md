@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added the Mn evaporation channel with caller-supplied MnO activity. Mn(g) and
+  Mn+(g) use JANAF; MnO(g) uses IVTAN Table 1436. MnO(l) is generated from the
+  same `liquid_from_solid` construction and input record as the redox pack,
+  using the TSIV Table 1435 crystal function and measured 2120 ± 20 K melting
+  temperature. Its 1673–2000 K supercooled runtime band carries the tier-3
+  fusion-input uncertainty; the fitted Gibbs residual is 0.186 J/mol. Mn+
+  remains opt-in, and existing coefficients and default gas results are
+  unchanged.
+
 - Added optional Zn, Cd and Bi gas channels with caller-supplied ZnO, CdO and
   Bi2O3 activities. JANAF Zn(g), Zn+(g) and Zn-(g) remain selected; source
   G_app comparisons are recorded for the NASA Zn and Zn+ cards. The JANAF

@@ -83,9 +83,9 @@ Ga, GaO, Ga2O,
 Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
 CuO, Cu2, Sn, SnO, SnO2, Na2O, K2O, O and O2.
-The Mn/Ni/Co channels activate only when an external pack provides their gas
-and MnO(l)/NiO(l)/CoO(l) parent rows; the public pack carries only the atomic
-gas rows.
+The Mn channels use public Mn(g), MnO(g) and opt-in Mn+(g) rows with a
+caller-supplied MnO(l) activity. Ni and Co still require an external pack to
+provide their monoxide gas and liquid-parent rows.
 The sulfur channels activate only when the caller supplies `S2` fugacity as
 `a(S2) = f(S2)/p°` on JANAF's 1-bar `S2(g)` reference. OpenIMCC does not
 provide a sulfur melt-side activity model for pyrolysis temperatures.
@@ -242,6 +242,18 @@ and measured bands are recorded per row. Bi2O3(l) uses the printed Pankratz
 Table 82 liquid branch, followed by a flagged constant-Cp continuation above
 its last liquid node. No activity model or activity coefficients are supplied.
 
+The optional Mn channel uses caller-supplied MnO activity with Mn(g), MnO(g)
+and opt-in Mn+(g). MnO(g) is fitted to IVTAN Table 1436 (tier 3; the source
+reports ±12.2 kJ/mol formation-enthalpy uncertainty and Phi uncertainty).
+MnO(l) covers 1673–2000 K and reuses the redox pack's tier-4
+`liquid_from_solid` construction and input record: the TSIV Table 1435 crystal
+function, measured Tm = 2120 ± 20 K, and tier-3 fusion-entropy and liquid-Cp
+estimates. The parent is supercooled throughout this runtime interval. Its
+shared construction band is 5.754 kJ/mol at 1673 K and 2.520 kJ/mol at 2000 K;
+the fitted-row Gibbs residual is 0.186 J/mol. The 10 J/mol on-node fit gate
+applies, and the row provenance records the input band and supercooled flag.
+No activity model or activity coefficients are supplied.
+
 Melt activities use the published FC87/SF04 complex-formation constants
 relative to pure liquid oxide parents. The default gas conversion uses JANAF
 4th-edition parent Gibbs functions and labelled liquid continuations; the melt
@@ -279,7 +291,7 @@ re-fitted.
 Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
 `Li+`, `Rb+`, `Pb+`, `Cs+`, `Sn+`, `Cs2O+`, `Ga+`, `Ge+`, `B+`,
-`Zn+`, `Cd+`, and `Bi+`,
+`Zn+`, `Cd+`, `Bi+`, and `Mn+`,
 `Ga-`, `B-`, `BO-`, `BO2-`, `Cu-`, and every available JANAF-supported negative ion
 whose neutral is present. In+ is retained in the source ledger but declined
 after its NASA card failed the NIST Saha check. Cu+ is declined because its

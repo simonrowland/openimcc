@@ -138,10 +138,11 @@ def _evaluated_public_c2_species(
         parent_oxide = ion_bound.get("parent_oxide")
         if parent_oxide is None:
             continue
+        temperature = 1800.0 if element == "Mn" else 2200.0
         try:
             pressures = evaluate_gas(
                 {parent_oxide: 1.0},
-                2200.0,
+                temperature,
                 1.0e-10,
                 pack,
                 parent_oxides=(parent_oxide,),
@@ -204,10 +205,10 @@ def test_unscreened_fixture_candidate_is_rejected() -> None:
     fixture_dir = ROOT / "tests" / "fixtures" / "janaf-c2"
     source_candidates = _neutral_oxide_sources(fixture_dir)
     statuses = {
-        "Mn": {"c2_candidates": (("MnO", "MnO"),), "c2_screened_out": {}}
+        "Mn": {"c2_candidates": (("MnO2", "MnO2"),), "c2_screened_out": {}}
     }
-    assert source_candidates == {"MnO": ("Mn", "MnO")}
-    assert "MnO" in IMCC_GAS_CHANNEL_SPECIES
+    assert source_candidates == {"MnO2": ("Mn", "MnO2")}
+    assert "MnO2" not in IMCC_GAS_CHANNEL_SPECIES
     with pytest.raises(ImccGasSpeciesNotFoundError):
         evaluate_gas(
             {"MnO": 1.0},
@@ -215,9 +216,9 @@ def test_unscreened_fixture_candidate_is_rejected() -> None:
             1.0e-10,
             load_gas_datapack(),
             parent_oxides=("MnO",),
-            gas_species=("MnO",),
+            gas_species=("MnO2",),
         )
-    with pytest.raises(AssertionError, match="MnO is neither included nor screened"):
+    with pytest.raises(AssertionError, match="MnO2 is neither included nor screened"):
         _assert_c2_candidate_coverage(
             source_candidates,
             statuses,
@@ -386,7 +387,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     assert set(computed) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
-        "Zn", "Cd", "Bi",
+        "Zn", "Cd", "Bi", "Mn",
     }
     caller_parent_oxides = {
         "Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2",
@@ -394,10 +395,11 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Cs": "Cs2O", "Cu": "Cu2O", "Sn": "SnO",
     }
     trace_elements = {"Li", "Rb", "Pb"}
-    new_trace_elements = {"Ga", "Ge", "B", "In", "Cu"}
+    new_trace_elements = {"Ga", "Ge", "B", "In", "Cu", "Mn"}
     new_trace_parents = {
         "Ga": "Ga2O3", "Ge": "GeO2", "B": "B2O3", "In": "In2O3",
         "Cu": "Cu2O", "Zn": "ZnO", "Cd": "CdO", "Bi": "Bi2O3",
+        "Mn": "MnO",
     }
     new_trace_elements.update({"Zn", "Cd", "Bi"})
     caller_parent_oxides.update(
@@ -662,8 +664,9 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Zn": ("Zn+", "Zn-"),
         "Cd": ("Cd+",),
         "Bi": ("Bi+",),
+        "Mn": ("Mn+",),
     }
-    for element in ("Ga", "Ge", "B", "Cu", "Zn", "Cd", "Bi"):
+    for element in ("Ga", "Ge", "B", "Cu", "Zn", "Cd", "Bi", "Mn"):
         current = {"max_ratio": -1.0, "isolated_bound": 0.0}
         for temperature in TEMPERATURES_K:
             activities = dict(activities_by_temperature[temperature])
@@ -789,13 +792,13 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     assert set(measured) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
-        "Zn", "Cd", "Bi",
+        "Zn", "Cd", "Bi", "Mn",
     }
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
         if element in {
             "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In",
-            "Zn", "Cd", "Bi",
+            "Zn", "Cd", "Bi", "Mn",
         }:
             assert recorded["parent_activity"] == 1.0e-3
         assert recorded["temperature_K"] == result["temperature_K"], element
@@ -835,7 +838,9 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     legacy_measured = {
         element: result
         for element, result in measured.items()
-        if element not in {"Ga", "Ge", "B", "In", "Cu", "Zn", "Cd", "Bi"}
+        if element not in {
+            "Ga", "Ge", "B", "In", "Cu", "Zn", "Cd", "Bi", "Mn"
+        }
     }
     ratio_order = sorted(
         legacy_measured,
@@ -1207,6 +1212,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Zn": "ZnO",
         "Cd": "CdO",
         "Bi": "Bi2O3",
+        "Mn": "MnO",
     }
     gas_parent_by_element = {"S": "S2"}
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")
@@ -1242,7 +1248,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         assert status["criteria"]["C2"] is c2
         ion_bound = measured_ions.get(element)
         c3 = ion_bound is not None and ion_bound["max_ratio"] < 1.0e-4
-        if element in {"Mn", "Ni", "Co"}:
+        if element in {"Ni", "Co"}:
             assert status["c3_ion_bound"]["status"] == "not computed"
             assert status["c3_ion_bound"]["reason"] == (
                 "not computed: p(E) needs a parent liquid row that is only available "

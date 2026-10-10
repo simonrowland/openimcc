@@ -1,6 +1,22 @@
 schema_version: published_thermo_provenance.v1
 tooling: neutral-source-vendor/1.0
 records:
+  - record_id: TSIV-1435
+    path: data-src/crystal-thermochemistry.json
+    source_sha256: b0c87afeaf0a53ec159a23e45d59d6a2eee023e810402f16504a51eac32bf22d
+    publication: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume V, Table 1435, MnO(cr)
+    source_url: https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html
+    source_locator: Volume V, Table 1435
+    tier: 4
+    selection_reason: The published MnO crystal function and measured melting point are the source inputs for the shared liquid_from_solid parent construction.
+  - record_id: TSIV-1436
+    path: data-src/published-thermo/tsiv-table-1436.json
+    source_sha256: 3897075e33efef02e943eab7e11847eb0aa1a9eb171644ddd1c5cbf448683e50
+    publication: Gusarov and Kulikov, IVTANTHERMO, Table 1436, MnO(g)
+    source_url: https://www.chem.msu.ru/rus/tsiv/Mn/ivtan0005.html
+    source_locator: Table 1436
+    tier: 3
+    selection_reason: The JANAF index has no MnO(g) row; the published table supplies MnO(g) heat-capacity, entropy, and enthalpy nodes through 3000 K, with a stated formation-enthalpy uncertainty of ±12.2 kJ/mol and Phi uncertainty.
   - record_id: IVTAN-264
     path: data-src/published-thermo/ivtan-table-264.json
     source_sha256: 699198ee929d2830bb0a77758e047b6d8df99c9ba736886d39c2fc2ae0a6ef71

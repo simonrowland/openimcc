@@ -59,6 +59,7 @@ _ION_GAS_PROVENANCE_SPECIES = tuple(
         *build_gas_tables.TRACE_ION_GAS_NASA_SOURCES,
         *build_gas_tables.TRACE_ION_PUBLISHED_SOURCES,
         *build_gas_tables.TRACE_ION_NASA_SOURCES,
+        *build_gas_tables.TRACE_ION_GAS_YAML_SOURCES,
     )
 )
 
@@ -577,7 +578,6 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         if current is None or row["T_range_K"][1] > current["T_range_K"][1]:
             oxide_rows[row["species_name"]] = row
     public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES) - {
-        "MnO",
         "NiO",
         "CoO",
     }
@@ -587,7 +587,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
     )
-    assert len(oxide_rows) == 25
+    assert len(oxide_rows) == 26
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -606,7 +606,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             *build_gas_tables.TRACE_ION_NASA_SOURCES,
         )
     }
-    split_ion_species = nasa_ion_species | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
+    split_ion_species = nasa_ion_species | {
+        "Zn+(g)", "Zn-(g)", "Bi+(g)", "Mn+(g)"
+    }
     nasa_atomic_ion_species = {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     }
@@ -912,6 +914,7 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
             "Li2O(l)", "Rb2O(l)", "PbO(l)",
             "Cs2O(l)", "Cu2O(l)", "SnO(l)",
             "ZnO(l)", "CdO(l)", "Bi2O3(l)",
+            "MnO(l)",
         }:
             continue
         source_path = ROOT / record["source_path"]
@@ -1236,6 +1239,7 @@ def test_new_parent_condensate_rows_pass_the_10_j_mol_node_gate() -> None:
             "Li2O(l)", "Rb2O(l)", "PbO(l)",
             "Cs2O(l)", "Cu2O(l)", "SnO(l)", "K2O(l)",
             "ZnO(l)", "CdO(l)", "Bi2O3(l)",
+            "MnO(l)",
         }
     ]
     direct_fits = [
@@ -1244,6 +1248,139 @@ def test_new_parent_condensate_rows_pass_the_10_j_mol_node_gate() -> None:
     ]
     assert direct_fits
     assert all(float(row["_max_residual_J_per_mol"]) < 10.0 for row in direct_fits)
+
+
+def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
+    inputs_path = ROOT / "data-src" / "liquid-from-solid-inputs.json"
+    inputs = json.loads(inputs_path.read_text(encoding="utf-8"))
+    redox_path = ROOT / "src" / "openimcc" / "data" / "packs" / (
+        "openimcc-redox-v1.json"
+    )
+    redox = json.loads(redox_path.read_text(encoding="utf-8"))
+    config = inputs["rows"]["MnO"]
+    rows, construction, alternate = build_gas_tables._fit_liquid_from_solid_parent(
+        ROOT / "data-src" / "published-thermo", "MnO", config
+    )
+    gas_row = rows[0]
+    redox_species = redox["thermo_species"]["MnO(l)"]
+    redox_row = redox_species["row"]
+    redox_construction = redox_species["construction"]
+    residual = float(gas_row["_max_residual_J_per_mol"])
+
+    assert alternate is None
+    assert construction.inputs == config["inputs"]
+    assert redox_construction["crystal_source_table"] == config["crystal_table_id"]
+    assert redox_construction["fusion_temperature_K"] == config["inputs"][
+        "fusion_temperature"
+    ]["value"]
+    assert redox_construction["fusion_temperature_spread_K"] == config["inputs"][
+        "fusion_temperature"
+    ]["spread"]
+    assert redox_construction["fusion_entropy_j_mol_K"] == config["inputs"][
+        "fusion_entropy"
+    ]["value"]
+    assert redox_construction[
+        "fusion_entropy_spread_j_mol_K"
+    ] == config["inputs"]["fusion_entropy"]["spread"]
+    assert redox_construction["liquid_heat_capacity_j_mol_K"] == config["inputs"][
+        "liquid_heat_capacity"
+    ]["value"]
+    assert redox_construction[
+        "liquid_heat_capacity_spread_j_mol_K"
+    ] == config["inputs"]["liquid_heat_capacity"]["spread"]
+    assert gas_row["species_name"] == "MnO(l)"
+    assert [(gas_row["T_min"], gas_row["T_max"])] == [("1673", "2000")]
+    assert residual == pytest.approx(0.186390915536322, abs=1e-12)
+    assert residual < 10.0
+    assert all(
+        float(gas_row[key]) == pytest.approx(float(redox_row[key]), abs=1e-12)
+        for key in ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
+    )
+    assert config["inputs"]["condensate_fit"] == {
+        "fit_t_min": 1600.0,
+        "fit_t_max": 2200.0,
+        "runtime_t_min": 1673.0,
+        "runtime_t_max": 2000.0,
+        "table_id": "MnO-liquid-construction",
+        "cation": "Mn",
+        "cat_num": 1,
+        "oxy_num": 1,
+        "ref": "MnO crystal function plus systematic liquid construction",
+    }
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    condensate_provenance = next(
+        item
+        for item in provenance["rows"]
+        if item["table"] == "condensate" and item["species_name"] == "MnO(l)"
+    )
+    inputs_digest = hashlib.sha256(inputs_path.read_bytes()).hexdigest()
+    assert condensate_provenance["construction_inputs_path"] == (
+        "data-src/liquid-from-solid-inputs.json"
+    )
+    assert condensate_provenance["construction_inputs_sha256"] == inputs_digest
+    assert condensate_provenance["source"]["construction_input_record"] == (
+        "data-src/liquid-from-solid-inputs.json rows.MnO"
+    )
+    assert "tier-4 liquid_from_solid construction" in condensate_provenance["flags"]
+    assert any("supercooled-liquid" in flag for flag in condensate_provenance["flags"])
+    assert any("tier-3" in flag for flag in condensate_provenance["flags"])
+    expected_band = {
+        temperature: construction.below_fusion_band_kj_mol(
+            temperature,
+            inputs["tier_error_bands"]["fusion_entropy_tier3"]["max"][0],
+        )
+        + residual / 1000.0
+        for temperature in (1673.0, 2000.0)
+    }
+    for temperature, value in expected_band.items():
+        assert condensate_provenance["uncertainty_band"]["values_J_per_mol"][
+            int(temperature)
+        ] == pytest.approx(value * 1000.0, abs=1e-6)
+
+    source_manifest = yaml.safe_load(
+        (ROOT / "data-src" / "published-thermo" / "PROVENANCE.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    source_records = {
+        record["record_id"]: record for record in source_manifest["records"]
+    }
+    for source_id, source_path in (
+        ("TSIV-1435", ROOT / "data-src" / "crystal-thermochemistry.json"),
+        ("TSIV-1436", ROOT / "data-src" / "published-thermo" / "tsiv-table-1436.json"),
+    ):
+        assert source_records[source_id]["source_sha256"] == hashlib.sha256(
+            source_path.read_bytes()
+        ).hexdigest()
+
+    mn_gas_provenance = [
+        item
+        for item in provenance["rows"]
+        if item["table"] == "gas" and item["species_name"] in {"MnO(g)", "Mn+(g)"}
+    ]
+    assert {(item["species_name"], item["T_interval"]) for item in mn_gas_provenance} == {
+        ("MnO(g)", 1), ("MnO(g)", 2), ("Mn+(g)", 1), ("Mn+(g)", 2),
+    }
+    for item in mn_gas_provenance:
+        if item["species_name"] == "MnO(g)":
+            assert item["table_id"] == "TSIV-1436"
+            assert item["tier"] == 3
+            assert "±12.2 kJ/mol" in item["uncertainty_band"]["kind"]
+        else:
+            assert item["table_id"] == "Mn-006"
+            assert item["tier"] == 1
+
+    pack = load_gas_datapack()
+    packaged_row = pack.oxide_df.loc["MnO(l)"]
+    assert packaged_row["Ref"] == gas_row["Ref"]
+    for temperature in (1673.0, 1800.0, 1900.0, 2000.0):
+        gas_gibbs = _condensate_gibbs(packaged_row, temperature)
+        redox_gibbs = _condensate_gibbs(redox_row, temperature)
+        assert gas_gibbs == pytest.approx(redox_gibbs, abs=1e-9)
+        assert abs(gas_gibbs - redox_gibbs) <= residual + 1e-9
+        if temperature % 100.0 == 0.0:
+            constructed_gibbs = construction.at(temperature).gibbs_kj_mol * 1000.0
+            assert abs(gas_gibbs - constructed_gibbs) <= residual + 1e-6
 
 
 def test_k2o_from_solid_builder_fits_the_full_runtime_interval() -> None:
@@ -1271,7 +1408,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "Cs", "CsO", "Cs2O",
         "Cu", "CuO", "Cu2",
         "Sn", "SnO", "SnO2",
-        "Zn", "ZnO", "Cd", "CdO", "Bi", "Bi2", "BiO",
+        "Zn", "ZnO", "Cd", "CdO", "Bi", "Bi2", "BiO", "MnO",
     }
     assert trace_channels == set(build_gas_tables.TRACE_GAS_SPECIES)
 
@@ -1293,7 +1430,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         element = next(
             name for name in (
                 "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
-                "In", "Zn", "Cd", "Bi",
+                "In", "Zn", "Cd", "Bi", "Mn",
             )
             if name in parent_atoms
         )
@@ -1389,7 +1526,9 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
         else:
             if (
                 row.get("extrapolation") is True
-                and row["species_name"] not in {"ZnO(l)", "CdO(l)", "Bi2O3(l)"}
+                and row["species_name"] not in {
+                    "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)"
+                }
             ):
                 continue
             name = row["species_name"]
@@ -1500,6 +1639,8 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
+    } | {
+        source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
     } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
         table_id = GAS_TABLE_IDS[species]
@@ -2537,7 +2678,10 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     atomic_pairs = {
         neutral for neutral, ion in _GAS_IONIZATION_PAIRS if ion != "Cs2O+"
     }
-    assert atomic_pairs == set(_SAHA_LEVELS)
+    # Mn+ is a JANAF ionization row with no fine-structure level set in this
+    # spectroscopy-backed Saha audit; its row and Mn channel have separate
+    # JANAF fit and hand mass-action checks.
+    assert atomic_pairs - {"Mn"} == set(_SAHA_LEVELS)
     k_b = 1.380649e-23
     h = 6.62607015e-34
     m_e = 9.1093837139e-31
@@ -4387,9 +4531,9 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
 
     # D-020 was already vendored, but its electron gas row is newly included in
     # the packaged fit and therefore joins the source-node residual audit.
-    assert checked_rows == 121
-    assert checked_nodes == 1630
-    assert checked_nodes * 3 == 4890
+    assert checked_rows == 123
+    assert checked_nodes == 1650
+    assert checked_nodes * 3 == 4950
     assert overall_max["Cp_J_molK"] == pytest.approx(0.1287393152, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0136965061, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0088595244, abs=1e-9)
