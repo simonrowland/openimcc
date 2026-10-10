@@ -3866,17 +3866,17 @@
         "fusion_entropy": {
           "value": 65.3435480064,
           "tier": 3,
-          "spread": 54.1349436118,
+          "spread": 14.893918964,
           "unit": "J mol^-1 K^-1",
           "flag": "red",
-          "source": "Tier 3 leave-one-out mean fusion entropy per formula atom over 48 validation pairs, multiplied by seven atoms; no measured spinel homologues with liquid references are present, so the 48-pair maximum residual is the fallback spread.",
+          "source": "Tier 3 leave-one-out mean fusion entropy per formula atom, multiplied by seven atoms; the maximum measured residual over the two liquid-reference spinel homologues MgAl2O4 (Al-090) and Mg2TiO4 (Mg-032) supplies the spread (N=2).",
           "ladder": [
             {
               "tier": 3,
               "value": 65.3435480064,
-              "spread": 54.1349436118,
+              "spread": 14.893918964,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by seven; use the measured 48-pair maximum residual because the census has no liquid-reference spinel homologue.",
+              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by seven; use the maximum measured residual over MgAl2O4 (Al-090) and Mg2TiO4 (Mg-032) liquid-reference spinel homologues (N=2).",
               "references": [
                 "https://doi.org/10.1016/j.calphad.2011.12.008",
                 "https://doi.org/10.1016/j.jmrt.2020.02.046"
@@ -3887,17 +3887,17 @@
         "liquid_heat_capacity": {
           "value": 188.6890475,
           "tier": 3,
-          "spread": 170.2,
+          "spread": 12.11656,
           "unit": "J mol^-1 K^-1",
           "flag": "red",
-          "source": "Tier 3 carries the measured spinel Cp function to the 2000 K transition as liquid Cp; the spread is the measured 48-pair maximum absolute residual in crystal-Cp carry-over.",
+          "source": "Tier 3 carries the measured spinel Cp function to the 2000 K transition as liquid Cp; the spread is the maximum measured absolute ΔCp residual over MgAl2O4 (Al-090) and Mg2TiO4 (Mg-032) liquid-reference spinel homologues (N=2).",
           "ladder": [
             {
               "tier": 3,
               "value": 188.6890475,
-              "spread": 170.2,
+              "spread": 12.11656,
               "flag": "red",
-              "source": "Carry the primary DSC heat-capacity fit to the selected transition over as liquid Cp; use the 48-pair maximum absolute ΔCp residual as its spread.",
+              "source": "Carry the primary DSC heat-capacity fit to the selected transition over as liquid Cp; use the maximum absolute ΔCp residual over MgAl2O4 (Al-090) and Mg2TiO4 (Mg-032) liquid-reference spinel homologues (N=2).",
               "references": [
                 "https://calphad.org/Data/Sites/1/documents/calphad2019-proceedingsv7.pdf",
                 "https://doi.org/10.1016/j.jmrt.2020.02.046"
