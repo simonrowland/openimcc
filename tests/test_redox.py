@@ -19,7 +19,7 @@ from openimcc import (
 import openimcc.kernel as kernel_module
 from openimcc.kernel import active_residual_jacobian, solve_active_warm
 from openimcc.redox_basis import oxide_inventory_to_elements
-from openimcc.redox_pack import RedoxPack, load_redox_pack, ln_k_prime
+from openimcc.redox_pack import RedoxPack, load_redox_pack, ln_k_prime, species_gibbs_j_mol
 
 
 def _formula_atoms() -> dict[str, dict[str, float]]:
@@ -1507,3 +1507,23 @@ def test_reduced_limit_counts_fe_locked_in_minimizing_redox_extent(
 
     with pytest.raises(RedoxNoLiveCoupleError):
         evaluate_redox({"Fe": 1.0, "Ti": 0.25, "O": 0.25}, 2200.0, "closed")
+
+
+def test_only_active_rows_are_flagged_as_extrapolated() -> None:
+    # Fe-only melt at 1500 K: the FeO row's evidence domain starts at 1700 K,
+    # so it is extrapolated; the Mn rows are inactive (no Mn in the inventory)
+    # and must not be reported even though 1500 K is outside their domain too.
+    result = evaluate_redox({"Fe": 1.0, "Si": 0.8, "O": 2.4}, 1500.0, "closed")
+    assert result.extrapolated_redox_rows == ("FeO(l)",)
+    assert not any("MnO(l)" in flag for flag in result.flags)
+
+
+def test_pack_level_evaluators_stay_strict_by_default() -> None:
+    # Only evaluate_redox opts into evidence-domain extrapolation; direct pack
+    # calls keep the fail-loud default outside a row's declared domain.
+    pack = load_redox_pack()
+    row = next(row for row in pack.rows if row["complex"] == "MnO(l)")
+    with pytest.raises(ValueError):
+        ln_k_prime(pack, row, 2200.0)
+    with pytest.raises(ValueError):
+        species_gibbs_j_mol(pack, "MnO(l)", 2200.0)

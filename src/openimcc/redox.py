@@ -1060,7 +1060,9 @@ def _make_flags(
             "(last_resort_ideal_parents): "
             + ", ".join(unassociated)
         )
-    for row in redox_pack.rows:
+    # Only rows that took part in the solve report their provenance range
+    # flags; an inactive row (its parent absent) says nothing about this melt.
+    for row in active_redox_rows:
         row_name = str(row["complex"])
         for flag in row["range_flags"]:
             flags.append(f"{row_name}: {flag}")
