@@ -57,7 +57,12 @@ def test_fe_valence_splits_give_the_same_closed_solution() -> None:
 
 def test_elemental_and_oxygen_closure_are_independently_reconstructed() -> None:
     redox_pack = load_redox_pack()
-    base = load_datapack().kernel_datapack
+    loaded = load_datapack()
+    base = loaded.kernel_datapack
+    assert loaded.inactive_rows == (
+        ("KCaAlSi2O7", "E25: out of liquid domain; owner-confirmed"),
+    )
+    assert "KCaAlSi2O7" not in base.reactions
     inventory = {
         "Si": 0.5,
         "Mg": 0.15,
@@ -79,6 +84,7 @@ def test_elemental_and_oxygen_closure_are_independently_reconstructed() -> None:
     )
     inventory["O"] = oxygen_fixed + 0.002
     result = evaluate_redox(inventory, 2500.0, "closed")
+    assert "KCaAlSi2O7" not in result.species_moles
 
     for element, amount in inventory.items():
         if element == "O":

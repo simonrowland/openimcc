@@ -474,13 +474,13 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     Published packs validate against the frozen published-core hash. D066 packs
     validate their own frozen row set and carry a non-published identity.
     ``sp_extension`` may accompany either identity. With no path, the packaged
-    v1.0.2 published resource is loaded.
+    D066 primary resource is loaded.
     """
     source = (
         resources.files("openimcc")
         / "data"
         / "packs"
-        / "imcc-sf04-v1.0.2.json"
+        / "imcc-sf04-d066-v1.json"
         if path is None
         else Path(path)
     )

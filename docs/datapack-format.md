@@ -282,10 +282,9 @@ evaluate() also requires enable_sp_extension=True. Its extension is explicitly
 uncertified (`certification: denied`) and records that redox and sulfur-
 solubility behavior remain out of scope.
 
-The default `load_datapack()` resource remains the published reproduction,
-imcc-sf04-v1.0.2.json. The nonpublished D066 primary pack,
-imcc-sf04-d066-v1.json, is explicitly selectable. Its sibling KCa
-sensitivity pack is imcc-sf04-d066-v1-kcaalsi2o7.json. The D066 S/P extension pack,
+The default `load_datapack()` resource is the nonpublished D066 primary pack,
+imcc-sf04-d066-v1.json. Its sibling KCa sensitivity pack is
+imcc-sf04-d066-v1-kcaalsi2o7.json. The D066 S/P extension pack,
 imcc-sf04-d066-ext-v1.json, carries the ext-v4 sp_extension unchanged and
 requires `enable_sp_extension=True`. All three use model_id IMCC-SF04-D066 and
 the loader validates their explicit 38-row core structure and row coverage.
@@ -293,8 +292,7 @@ The published reproduction remains selectable as
 imcc-sf04-v1.0.2.json. Pair that melt pack with the SF04-published gas
 condensate table (`gas/gas-shomate.csv` plus
 `packs/sf04-published/condensate.csv`) to reproduce the published LAM K2O(l)
-gas pressures; an explicitly selected D066 pack pairs with the packaged JANAF
-condensate.
+gas pressures; the default D066 pack pairs with the packaged JANAF condensate.
 
 The ext-v1, ext-v2, and ext-v3 records are retired and no longer shipped:
 ext-v1 and ext-v3 fail the frozen canonical hash, while ext-v2 fails the fixed
