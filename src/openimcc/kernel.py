@@ -772,9 +772,14 @@ def _solve_active(
             {"iterations": 0, "residual_inf": float("inf"), "residual_l2": float("inf")},
         )
 
-    # Ideal-fraction start (no-complexing limit).  Floor tiny parents so the
-    # logarithm stays finite.
-    y0 = np.log(np.maximum(x_target, 1.0e-12))
+    # The relative-tolerance path receives only positive active parents and
+    # must seed them at their actual scale. Keep the legacy evaluate() seed
+    # unchanged so its established outputs remain bit-identical.
+    y0 = (
+        np.log(x_target)
+        if relative_tolerance
+        else np.log(np.maximum(x_target, 1.0e-12))
+    )
     direct_y0 = y0 if y_init is None else np.asarray(y_init, dtype=float)
     if direct_y0.shape != y0.shape or not np.all(np.isfinite(direct_y0)):
         raise ValueError("y_init must be a finite vector matching active parents")
@@ -964,7 +969,9 @@ def solve_active_warm(
     np.ndarray, np.ndarray, float, int, float, float, float, str, int, bool
 ]:
     """Use damped Newton first, then retain the existing NumPy fallback."""
-    ideal_y = np.log(np.maximum(x_target, 1.0e-12))
+    # Active parents are positive by construction; retaining their real scale
+    # avoids a 1e-12 floor for ppm and lower feed fractions.
+    ideal_y = np.log(x_target)
     if y_init is None:
         y = ideal_y.copy()
     else:
