@@ -41,6 +41,87 @@ def _fe_only_inventory() -> dict[str, float]:
     return {"Fe": 1.0, "O": 1.25}
 
 
+def test_default_redox_pack_cache_is_immutable_and_reloads_changed_files(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    import openimcc.redox as redox_module
+
+    loaded = redox_module._load_default_datapack()
+    assert loaded is redox_module._load_default_datapack()
+    with pytest.raises(ValueError):
+        loaded.kernel_datapack.nu[0, 0] = 0.0
+
+    melt_source = redox_module._DEFAULT_DATAPACK_PATH
+    melt_path = tmp_path / "melt.json"
+    melt_path.write_bytes(melt_source.read_bytes())
+    monkeypatch.setattr(redox_module, "_DEFAULT_DATAPACK_PATH", melt_path)
+    melt_pack = redox_module._load_default_datapack()
+    assert melt_pack is redox_module._load_default_datapack()
+    melt_path.write_bytes(melt_path.read_bytes() + b"\n")
+    assert melt_pack is not redox_module._load_default_datapack()
+
+    source = redox_module._DEFAULT_REDOX_PACK_PATH
+    changed_path = tmp_path / "redox.json"
+    changed_path.write_bytes(source.read_bytes())
+    monkeypatch.setattr(redox_module, "_DEFAULT_REDOX_PACK_PATH", changed_path)
+    pack = redox_module._load_default_redox_pack()
+    version = pack.version
+    with pytest.raises(TypeError):
+        pack.content["version"] = "changed"
+    assert pack is redox_module._load_default_redox_pack()
+    assert redox_module._load_default_redox_pack().version == version
+
+    changed_path.write_text("{", encoding="utf-8")
+    with pytest.raises(ValueError):
+        redox_module._load_default_redox_pack()
+
+
+def test_shared_parent_lp_skips_rows_inactive_for_the_current_inventory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import openimcc.redox as redox_module
+
+    pack = load_redox_pack()
+    content = dict(pack.content)
+    species = dict(pack.content["thermo_species"])
+    species["TiO3(inactive-sharing-test)"] = {
+        "formula_atoms": {"Ti": 1, "O": 3}
+    }
+    species["TiO4(inactive-sharing-test)"] = {
+        "formula_atoms": {"Ti": 1, "O": 4}
+    }
+    content["thermo_species"] = species
+    content["rows"] = [
+        {
+            "complex": "TiO3(inactive-sharing-test)",
+            "nu": {"TiO2(l)": 1.0},
+        },
+        {
+            "complex": "TiO4(inactive-sharing-test)",
+            "nu": {"TiO2(l)": 1.0},
+        },
+    ]
+    shared_pack = RedoxPack(content, pack.canonical_digest)
+    parent_names = redox_module._redox_parent_names(shared_pack)
+    fe_index = parent_names.index("FeO")
+    parent_moles = np.zeros(len(parent_names), dtype=np.float64)
+    parent_moles[fe_index] = 1.0
+
+    def unexpected_linprog(*args, **kwargs):
+        pytest.fail("inactive shared-parent rows must not run the LP")
+
+    monkeypatch.setattr(redox_module, "linprog", unexpected_linprog)
+    surplus, deficit, shared_positive_rows = redox_module._oxygen_inventory_targets(
+        parent_moles,
+        redox_module._parent_oxygen_counts(parent_names, shared_pack),
+        fe_index,
+        1.0,
+        shared_pack,
+    )
+    assert (surplus, deficit) == (1.0, 0.0)
+    assert shared_positive_rows
+
+
 def test_redox_reference_outputs_before_generalized_rows() -> None:
     fe_closed = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
     assert fe_closed.lambda_ln_f_o2 == pytest.approx(-0.7193904586464315, rel=1.0e-12)

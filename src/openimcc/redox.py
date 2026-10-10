@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from fractions import Fraction
 import math
 from numbers import Real
+from pathlib import Path
+from threading import RLock
 from types import MappingProxyType
 from typing import Any, Literal
 
@@ -24,6 +26,55 @@ from openimcc.model import (
     load_datapack,
 )
 from openimcc.redox_pack import RedoxPack, load_redox_pack, ln_k_prime
+
+
+_DEFAULT_DATAPACK_PATH = (
+    Path(__file__).parent / "data" / "packs" / "imcc-sf04-d066-v1.json"
+)
+_DEFAULT_REDOX_PACK_PATH = (
+    Path(__file__).parent / "data" / "packs" / "openimcc-redox-v1.json"
+)
+_ORIGINAL_LOAD_DATAPACK = load_datapack
+_ORIGINAL_LOAD_REDOX_PACK = load_redox_pack
+_DEFAULT_PACK_CACHE_LOCK = RLock()
+_DEFAULT_DATAPACK_CACHE: tuple[tuple[str, int, int], Any] | None = None
+_DEFAULT_REDOX_PACK_CACHE: tuple[tuple[str, int, int], RedoxPack] | None = None
+
+
+def _pack_file_identity(path: Path) -> tuple[str, int, int]:
+    resolved = path.resolve(strict=True)
+    stat = resolved.stat()
+    return str(resolved), stat.st_mtime_ns, stat.st_size
+
+
+def _load_default_datapack() -> Any:
+    """Reuse the immutable default melt pack until its file identity changes."""
+    if load_datapack is not _ORIGINAL_LOAD_DATAPACK:
+        return load_datapack()
+    identity = _pack_file_identity(_DEFAULT_DATAPACK_PATH)
+    global _DEFAULT_DATAPACK_CACHE
+    with _DEFAULT_PACK_CACHE_LOCK:
+        if _DEFAULT_DATAPACK_CACHE is None or _DEFAULT_DATAPACK_CACHE[0] != identity:
+            _DEFAULT_DATAPACK_CACHE = (
+                identity,
+                load_datapack(_DEFAULT_DATAPACK_PATH),
+            )
+        return _DEFAULT_DATAPACK_CACHE[1]
+
+
+def _load_default_redox_pack() -> RedoxPack:
+    """Reuse the recursively read-only redox pack until its file changes."""
+    if load_redox_pack is not _ORIGINAL_LOAD_REDOX_PACK:
+        return load_redox_pack()
+    identity = _pack_file_identity(_DEFAULT_REDOX_PACK_PATH)
+    global _DEFAULT_REDOX_PACK_CACHE
+    with _DEFAULT_PACK_CACHE_LOCK:
+        if _DEFAULT_REDOX_PACK_CACHE is None or _DEFAULT_REDOX_PACK_CACHE[0] != identity:
+            _DEFAULT_REDOX_PACK_CACHE = (
+                identity,
+                load_redox_pack(_DEFAULT_REDOX_PACK_PATH),
+            )
+        return _DEFAULT_REDOX_PACK_CACHE[1]
 
 
 class RedoxInputError(ImccRefusal):
@@ -285,17 +336,20 @@ def _oxygen_inventory_targets(
     # Premise: a row's extent is limited by each consumed parent. Algebra:
     # n_max=min_i(n_i/nu_ij), so its endpoint shift is Delta-O_j*n_max.
     # Units are mol O atoms. Sanity: FeO1.5 adds 0.5 O/Fe; TiO removes 1 O/Ti.
-    parent_oxygen = [
-        float(parent_moles[index]) * float(oxygen_parent_counts[index])
-        for index in range(len(parent_moles))
-    ]
-    parent_oxygen_total = math.fsum(parent_oxygen)
-
     # Premise: rows sharing a parent compete for the same feed. Algebra: the
     # feasible row extents satisfy nu @ n <= parent_moles and n >= 0; min/max
     # of Delta-O @ n give the endpoint shifts. Units are mol O atoms. Sanity:
     # TiO3 and TiO4 cannot each consume the full amount of one TiO2 parent.
-    shared_parent = np.any(np.count_nonzero(redox_nu > 0.0, axis=1) > 1)
+    # A missing required parent forces that row's extent to zero, so it cannot
+    # create a shared-feed constraint for this inventory.
+    active_redox_rows = np.all(
+        (redox_nu <= 0.0) | (parent_moles[:, np.newaxis] > 0.0), axis=0
+    )
+    shared_parent = bool(
+        np.any(
+            np.count_nonzero(redox_nu[:, active_redox_rows] > 0.0, axis=1) > 1
+        )
+    )
     if shared_parent:
         constraints = {
             "A_ub": redox_nu,
@@ -309,93 +363,28 @@ def _oxygen_inventory_targets(
             raise RedoxNumericalError(
                 "could not determine shared-parent oxygen inventory limits"
             )
-
-        exact_parent_oxygen = sum(
-            (
-                Fraction(float(parent_moles[index]))
-                * Fraction(float(oxygen_parent_counts[index]))
-                for index in range(len(parent_moles))
-            ),
-            Fraction(),
-        )
-        exact_minimum_change = sum(
-            (
-                Fraction(float(delta)) * Fraction(float(extent))
-                for delta, extent in zip(row_oxygen_delta, minimum.x)
-            ),
-            Fraction(),
-        )
-        exact_maximum_change = sum(
-            (
-                Fraction(float(delta)) * Fraction(float(extent))
-                for delta, extent in zip(row_oxygen_delta, maximum.x)
-            ),
-            Fraction(),
-        )
-        exact_fe_consumption = sum(
-            (
-                Fraction(float(redox_nu[fe_index, column]))
-                * Fraction(float(extent))
-                for column, extent in enumerate(minimum.x)
-            ),
-            Fraction(),
-        )
-        # Premise: minimizing extents can lock Fe in a product. Algebra:
-        # O_min=O_parent-O_Fe*(n_Fe-nu_Fe@n_min)+DeltaO@n_min. Units are mol O.
-        # Sanity: FeO+TiO2->FeTiO+O2 leaves 0.75 FeO and has O_min=0.25.
-        exact_minimum = (
-            exact_parent_oxygen
-            - Fraction(float(parent_moles[fe_index]))
-            * Fraction(float(oxygen_parent_counts[fe_index]))
-            + Fraction(float(oxygen_parent_counts[fe_index]))
-            * exact_fe_consumption
-            + exact_minimum_change
-        )
-        exact_maximum = exact_parent_oxygen + exact_maximum_change
-        exact_inventory = Fraction(float(oxygen_inventory))
-        return (
-            float(exact_inventory - exact_minimum),
-            float(exact_maximum - exact_inventory),
-            shared_positive_rows,
-        )
-
-    minimum_terms = [
-        parent_oxygen_total,
-        -float(parent_moles[fe_index]) * float(oxygen_parent_counts[fe_index]),
-    ]
-    maximum_terms = [parent_oxygen_total]
-    for column, delta in enumerate(row_oxygen_delta):
-        consumed = np.flatnonzero(redox_nu[:, column] > 0.0)
-        if consumed.size == 0:
-            continue
-        max_extent = min(
-            float(parent_moles[index]) / float(redox_nu[index, column])
-            for index in consumed
-        )
-        change = float(delta) * max_extent
-        if change < 0.0:
-            minimum_terms.append(change)
-            minimum_terms.append(
-                float(oxygen_parent_counts[fe_index])
-                * float(redox_nu[fe_index, column])
-                * max_extent
+        minimum_extents = minimum.x
+        maximum_extents = maximum.x
+    else:
+        # With disjoint active rows, each objective is separable by row. Its
+        # optimum is zero or the limiting parent ratio, selected by Delta-O.
+        minimum_extents = np.zeros(len(redox_rows), dtype=np.float64)
+        maximum_extents = np.zeros(len(redox_rows), dtype=np.float64)
+        for column, delta in enumerate(row_oxygen_delta):
+            if delta == 0.0:
+                continue
+            consumed = np.flatnonzero(redox_nu[:, column] > 0.0)
+            if consumed.size == 0:
+                continue
+            max_extent = min(
+                float(parent_moles[index]) / float(redox_nu[index, column])
+                for index in consumed
             )
-        else:
-            maximum_terms.append(change)
+            if delta < 0.0:
+                minimum_extents[column] = max_extent
+            else:
+                maximum_extents[column] = max_extent
 
-    minimum_oxygen = math.fsum(minimum_terms)
-    maximum_oxygen = math.fsum(maximum_terms)
-    target_surplus = math.fsum((oxygen_inventory, -minimum_oxygen))
-    target_deficit = math.fsum((maximum_oxygen, -oxygen_inventory))
-    oxygen_scale = math.fsum(
-        (abs(oxygen_inventory), abs(minimum_oxygen), abs(maximum_oxygen))
-    )
-    precision_limit = 16.0 * math.ulp(max(oxygen_scale, 1.0))
-    if min(abs(target_surplus), abs(target_deficit)) > precision_limit:
-        return target_surplus, target_deficit, shared_positive_rows
-
-    # Near either endpoint, retain the exact input-float products and row
-    # extents so a rounded bulk oxygen sum does not move the limiting root.
     exact_parent_oxygen = sum(
         (
             Fraction(float(parent_moles[index]))
@@ -404,39 +393,40 @@ def _oxygen_inventory_targets(
         ),
         Fraction(),
     )
-    # Remove only Fe parent left outside the minimizing extents. The correction
-    # is mol O and is zero on the disjoint path when reducing rows use no Fe.
-    exact_minimum = exact_parent_oxygen - (
-        Fraction(float(parent_moles[fe_index]))
-        * Fraction(float(oxygen_parent_counts[fe_index]))
+    exact_minimum_change = sum(
+        (
+            Fraction(float(delta)) * Fraction(float(extent))
+            for delta, extent in zip(row_oxygen_delta, minimum_extents)
+        ),
+        Fraction(),
     )
-    exact_maximum = exact_parent_oxygen
-    for column, row in enumerate(redox_rows):
-        consumed = np.flatnonzero(redox_nu[:, column] > 0.0)
-        if consumed.size == 0:
-            continue
-        max_extent = min(
-            Fraction(float(parent_moles[index]))
-            / Fraction(float(redox_nu[index, column]))
-            for index in consumed
-        )
-        delta = Fraction(float(product_oxygen[column])) - sum(
-            (
-                Fraction(float(oxygen_parent_counts[index]))
-                * Fraction(float(redox_nu[index, column]))
-                for index in consumed
-            ),
-            Fraction(),
-        )
-        change = delta * max_extent
-        if change < 0:
-            exact_minimum += change + (
-                Fraction(float(oxygen_parent_counts[fe_index]))
-                * Fraction(float(redox_nu[fe_index, column]))
-                * max_extent
-            )
-        else:
-            exact_maximum += change
+    exact_maximum_change = sum(
+        (
+            Fraction(float(delta)) * Fraction(float(extent))
+            for delta, extent in zip(row_oxygen_delta, maximum_extents)
+        ),
+        Fraction(),
+    )
+    exact_fe_consumption = sum(
+        (
+            Fraction(float(redox_nu[fe_index, column]))
+            * Fraction(float(extent))
+            for column, extent in enumerate(minimum_extents)
+        ),
+        Fraction(),
+    )
+    # Premise: minimizing extents can lock Fe in a product. Algebra:
+    # O_min=O_parent-O_Fe*(n_Fe-nu_Fe@n_min)+DeltaO@n_min. Units are mol O.
+    # Sanity: FeO+TiO2->FeTiO+O2 leaves 0.75 FeO and has O_min=0.25.
+    exact_minimum = (
+        exact_parent_oxygen
+        - Fraction(float(parent_moles[fe_index]))
+        * Fraction(float(oxygen_parent_counts[fe_index]))
+        + Fraction(float(oxygen_parent_counts[fe_index]))
+        * exact_fe_consumption
+        + exact_minimum_change
+    )
+    exact_maximum = exact_parent_oxygen + exact_maximum_change
     exact_inventory = Fraction(float(oxygen_inventory))
     return (
         float(exact_inventory - exact_minimum),
@@ -1265,9 +1255,9 @@ def evaluate_redox(
     elif lambda_imposed is not None:
         raise RedoxInputError("closed mode determines lambda and rejects lambda_imposed")
 
-    loaded = load_datapack()
+    loaded = _load_default_datapack()
     base_datapack = loaded.kernel_datapack
-    redox_pack = load_redox_pack()
+    redox_pack = _load_default_redox_pack()
     parent_names = _redox_parent_names(redox_pack)
     fe_index = parent_names.index("FeO")
     oxygen_parent_counts = _parent_oxygen_counts(parent_names, redox_pack)
