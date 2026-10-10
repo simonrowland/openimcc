@@ -144,5 +144,11 @@ def test_closed_solver_cost_against_local_legacy_baseline(
         # The metal-free case adds an outer oxygen root. Keep its 1.3x median
         # target, with two observed combined ranges as a load-variation margin:
         # each range is the measured max-minus-min over these seven samples.
+        # The allowance is capped at 1.9x legacy so a genuine 2x regression
+        # (every closed call doing double work) still fails however noisy the
+        # run: ceiling = min(1.3*L + 2*(range_L + range_R), 1.9*L).
         combined_spread = legacy_spread + redox_spread
-        assert redox_median <= 1.3 * legacy_median + 2.0 * combined_spread
+        ceiling = min(
+            1.3 * legacy_median + 2.0 * combined_spread, 1.9 * legacy_median
+        )
+        assert redox_median <= ceiling
