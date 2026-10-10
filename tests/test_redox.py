@@ -7,6 +7,7 @@ import pytest
 
 from openimcc import (
     ImccRefusal,
+    ImccTOutsideDatapackDomainError,
     RedoxEndpointError,
     RedoxInputError,
     RedoxNoLiveCoupleError,
@@ -704,6 +705,79 @@ def test_result_publishes_domain_flags_and_active_band_intersection() -> None:
     assert "liquid_only_model" in result.flags
     low, high = result.active_row_band_intersection_K
     assert low <= 2200.0 <= high
+    assert result.extrapolated_redox_rows == ()
+
+
+@pytest.mark.parametrize("temperature", [1500.0, 2200.0, 3000.0])
+def test_manganese_redox_rows_extrapolate_with_typed_flags(
+    temperature: float,
+) -> None:
+    inventory = {
+        "Fe": 1.0,
+        "Mn": 0.1,
+        "Si": 0.2,
+        "Al": 0.1,
+        "O": 1.65,
+    }
+    closed = evaluate_redox(inventory, temperature, "closed")
+    imposed = evaluate_redox(
+        inventory,
+        temperature,
+        "imposed",
+        lambda_imposed=closed.lambda_ln_f_o2,
+    )
+    expected = {"MnO(l)", "MnSiO3(l)", "Mn2SiO4(l)", "MnAl2O4(l)"}
+    if temperature == 1500.0:
+        expected.add("FeO(l)")
+    for result in (closed, imposed):
+        assert set(result.extrapolated_redox_rows) == expected
+        assert result.active_row_band_intersection_K == (1700.0, 2000.0)
+        row_flags = [
+            flag
+            for flag in result.flags
+            if flag.startswith("RED: redox_row_temperature_extrapolation ")
+        ]
+        assert len(row_flags) == len(expected)
+        assert all(f"temperature_K={temperature:g}" in flag for flag in row_flags)
+        flagged_rows = {
+            flag.split(" row=", 1)[1].split(" temperature_K=", 1)[0]
+            for flag in row_flags
+        }
+        assert flagged_rows == expected
+
+
+@pytest.mark.parametrize("mode", ["closed", "imposed"])
+def test_manganese_rows_inside_evidence_domain_have_no_extrapolation_flag(
+    mode: str,
+) -> None:
+    inventory = {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65}
+    if mode == "closed":
+        result = evaluate_redox(inventory, 1800.0, "closed")
+    else:
+        closed = evaluate_redox(inventory, 1800.0, "closed")
+        result = evaluate_redox(
+            inventory,
+            1800.0,
+            "imposed",
+            lambda_imposed=closed.lambda_ln_f_o2,
+        )
+    assert result.extrapolated_redox_rows == ()
+    assert not any(
+        flag.startswith("RED: redox_row_temperature_extrapolation ")
+        for flag in result.flags
+    )
+
+
+def test_species_gibbs_domain_still_refuses_redox_extrapolation() -> None:
+    with pytest.raises(
+        ImccTOutsideDatapackDomainError,
+        match=r"species 'O2\(g\)' G\(T\) is outside its fitted table domain",
+    ):
+        evaluate_redox(
+            {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65},
+            1400.0,
+            "closed",
+        )
 
 
 def test_buffered_capacity_includes_metal_response() -> None:
@@ -1030,11 +1104,19 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
         row: dict[str, object],
         temperature_K: float,
         ln_f_o2: float = 0.0,
+        *,
+        allow_extrapolation: bool = False,
     ) -> float:
         if row.get("synthetic_test_only"):
             q = -float(row["external_oxygen_stoich_product_positive"])
             return synthetic_offsets[str(row["complex"])] + q * ln_f_o2
-        return real_ln_k_prime(redox_pack, row, temperature_K, ln_f_o2)
+        return real_ln_k_prime(
+            redox_pack,
+            row,
+            temperature_K,
+            ln_f_o2,
+            allow_extrapolation=allow_extrapolation,
+        )
 
     monkeypatch.setattr("openimcc.redox.load_redox_pack", lambda: synthetic_pack)
     monkeypatch.setattr("openimcc.redox.ln_k_prime", synthetic_ln_k_prime)
@@ -1257,11 +1339,19 @@ def test_shared_parent_rows_share_the_oxygen_window_capacity(
         row: dict[str, object],
         temperature_K: float,
         ln_f_o2: float = 0.0,
+        *,
+        allow_extrapolation: bool = False,
     ) -> float:
         if row.get("synthetic_test_only"):
             q = -float(row["external_oxygen_stoich_product_positive"])
             return synthetic_offsets[str(row["complex"])] + q * ln_f_o2
-        return real_ln_k_prime(redox_pack, row, temperature_K, ln_f_o2)
+        return real_ln_k_prime(
+            redox_pack,
+            row,
+            temperature_K,
+            ln_f_o2,
+            allow_extrapolation=allow_extrapolation,
+        )
 
     monkeypatch.setattr("openimcc.redox.ln_k_prime", synthetic_ln_k_prime)
 
@@ -1337,11 +1427,19 @@ def test_shared_parent_multi_element_oxidising_root_closes(
         row: dict[str, object],
         temperature_K: float,
         ln_f_o2: float = 0.0,
+        *,
+        allow_extrapolation: bool = False,
     ) -> float:
         if row.get("synthetic_test_only"):
             q = -float(row["external_oxygen_stoich_product_positive"])
             return 0.4 + q * ln_f_o2
-        return real_ln_k_prime(redox_pack, row, temperature_K, ln_f_o2)
+        return real_ln_k_prime(
+            redox_pack,
+            row,
+            temperature_K,
+            ln_f_o2,
+            allow_extrapolation=allow_extrapolation,
+        )
 
     monkeypatch.setattr("openimcc.redox.ln_k_prime", synthetic_ln_k_prime)
     result = evaluate_redox(
@@ -1382,10 +1480,18 @@ def test_reduced_limit_counts_fe_locked_in_minimizing_redox_extent(
         row: dict[str, object],
         temperature_K: float,
         ln_f_o2: float = 0.0,
+        *,
+        allow_extrapolation: bool = False,
     ) -> float:
         if row.get("synthetic_test_only"):
             return 80.0 - ln_f_o2
-        return real_ln_k_prime(redox_pack, row, temperature_K, ln_f_o2)
+        return real_ln_k_prime(
+            redox_pack,
+            row,
+            temperature_K,
+            ln_f_o2,
+            allow_extrapolation=allow_extrapolation,
+        )
 
     monkeypatch.setattr("openimcc.redox.ln_k_prime", synthetic_ln_k_prime)
 

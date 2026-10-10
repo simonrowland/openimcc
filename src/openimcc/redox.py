@@ -67,7 +67,12 @@ class RedoxNumericalError(ImccRefusal):
 
 @dataclass(frozen=True)
 class RedoxResult:
-    """A complete redox point with liquid speciation and the Fe ledger."""
+    """A complete redox point with speciation, Fe ledger, and row-domain flags.
+
+    ``extrapolated_redox_rows`` lists active redox rows evaluated outside their
+    evidence intervals. ``active_row_band_intersection_K`` is the intersection
+    of the active base and redox row evidence intervals.
+    """
 
     temperature_K: float
     mode: Literal["closed", "imposed"]
@@ -86,6 +91,7 @@ class RedoxResult:
     endpoint_status: str
     flags: tuple[str, ...]
     last_resort_ideal_parents: tuple[str, ...]
+    extrapolated_redox_rows: tuple[str, ...]
     active_row_band_intersection_K: tuple[float, float]
     solver_path: str
     fallback_fired: bool
@@ -556,12 +562,18 @@ def _active_inner(
             continue
         try:
             redox_lnK.append(
-                ln_k_prime(redox_pack, row, temperature_K, ln_f_o2=lambda_value)
+                ln_k_prime(
+                    redox_pack,
+                    row,
+                    temperature_K,
+                    ln_f_o2=lambda_value,
+                    allow_extrapolation=True,
+                )
             )
         except ValueError as exc:
             raise ImccTOutsideDatapackDomainError(
-                f"temperature {temperature_K:g} K is outside the "
-                f"{row['complex']} redox row domain"
+                f"temperature {temperature_K:g} K cannot be evaluated for "
+                f"{row['complex']} because species G(T) evaluation failed: {exc}"
             ) from exc
     lnK_full = np.concatenate((lnK_base, np.asarray(redox_lnK, dtype=np.float64)))
     parent_oxygen = _parent_oxygen_counts(parent_names, redox_pack)
@@ -840,10 +852,16 @@ def _response(
 
 def _ln_k_fe(redox_pack: RedoxPack, temperature_K: float) -> float:
     try:
-        return ln_k_prime(redox_pack, redox_pack.rows[0], temperature_K)
+        return ln_k_prime(
+            redox_pack,
+            redox_pack.rows[0],
+            temperature_K,
+            allow_extrapolation=True,
+        )
     except ValueError as exc:
         raise ImccTOutsideDatapackDomainError(
-            f"temperature {temperature_K:g} K is outside the Fe metal reference row domain"
+            f"temperature {temperature_K:g} K cannot be evaluated for the Fe "
+            f"metal reference row because species G(T) evaluation failed: {exc}"
         ) from exc
 
 
@@ -1022,7 +1040,8 @@ def _make_flags(
     redox_pack: RedoxPack,
     capacity: float,
     capacity_tolerance: float,
-) -> tuple[str, ...]:
+    active_redox_rows: Sequence[Mapping[str, Any]],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
     flags: list[str] = ["liquid_only_model"]
     for index in state.active_complex:
         if index >= len(base_datapack.domains):
@@ -1045,12 +1064,19 @@ def _make_flags(
         row_name = str(row["complex"])
         for flag in row["range_flags"]:
             flags.append(f"{row_name}: {flag}")
+    extrapolated_redox_rows: list[str] = []
+    for row in active_redox_rows:
+        row_name = str(row["complex"])
         low, high = map(float, row["T_domain_K"])
         if temperature_K < low or temperature_K > high:
-            flags.append(f"temperature extrapolation for {row_name}")
+            extrapolated_redox_rows.append(row_name)
+            flags.append(
+                "RED: redox_row_temperature_extrapolation "
+                f"row={row_name} temperature_K={temperature_K:.17g}"
+            )
     if capacity <= capacity_tolerance:
         flags.append("redox_poorly_buffered")
-    return tuple(dict.fromkeys(flags))
+    return tuple(dict.fromkeys(flags)), tuple(extrapolated_redox_rows)
 
 
 def _assemble_result(
@@ -1115,18 +1141,6 @@ def _assemble_result(
         )
         residual = math.fsum((*species_oxygen_terms, -oxygen_inventory))
     oxygen_scale = oxygen_mol if oxygen_inventory is None else oxygen_inventory
-    flags = _make_flags(
-        temperature_K,
-        base_datapack,
-        state,
-        redox_pack,
-        oxygen_capacity,
-        tolerance * max(abs(oxygen_scale), 1.0),
-    )
-    active_log_activity = {
-        parent_names[index]: float(value)
-        for index, value in zip(state.active_parent, state.y)
-    }
     active_parent_names = {parent_names[index] for index in state.active_parent}
     active_redox_rows = []
     for row in redox_pack.rows:
@@ -1141,6 +1155,20 @@ def _assemble_result(
             )
         if is_active:
             active_redox_rows.append(row)
+    flags, extrapolated_redox_rows = _make_flags(
+        temperature_K,
+        base_datapack,
+        state,
+        redox_pack,
+        oxygen_capacity,
+        tolerance * max(abs(oxygen_scale), 1.0),
+        active_redox_rows,
+    )
+    active_log_activity = {
+        parent_names[index]: float(value)
+        for index, value in zip(state.active_parent, state.y)
+    }
+    # These are declared evidence windows, not a method-imposed solve limit.
     active_lows = [
         float(base_datapack.domains[index][0])
         for index in state.active_complex
@@ -1180,6 +1208,7 @@ def _assemble_result(
         endpoint_status="point",
         flags=flags,
         last_resort_ideal_parents=last_resort_ideal_parents,
+        extrapolated_redox_rows=extrapolated_redox_rows,
         active_row_band_intersection_K=band_intersection,
         solver_path=state.solver_path,
         fallback_fired=state.fallback_fired or fallback_fired,

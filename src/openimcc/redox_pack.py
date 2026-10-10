@@ -328,12 +328,23 @@ def load_redox_pack(path: str | Path | None = None) -> RedoxPack:
 
 
 def species_gibbs_j_mol(
-    pack: RedoxPack, species_name: str, temperature_k: float
+    pack: RedoxPack,
+    species_name: str,
+    temperature_k: float,
+    *,
+    allow_extrapolation: bool = False,
 ) -> float:
-    """Evaluate one pack species through openimcc's existing G(T) evaluators."""
+    """Evaluate one pack species through openimcc's existing G(T) evaluators.
+
+    ``allow_extrapolation`` permits analytic condensate expressions beyond
+    their declared evidence intervals. JANAF Shomate fitted-table bounds
+    remain enforced.
+    """
     temperature = _finite_number(temperature_k, "temperature_k")
     species = pack.content["thermo_species"]
-    return _species_gibbs_j_mol(species, species_name, temperature, set())
+    return _species_gibbs_j_mol(
+        species, species_name, temperature, set(), allow_extrapolation
+    )
 
 
 def _species_gibbs_j_mol(
@@ -341,6 +352,7 @@ def _species_gibbs_j_mol(
     species_name: str,
     temperature_k: float,
     visiting: set[str],
+    allow_extrapolation: bool = False,
 ) -> float:
     if species_name not in species:
         raise ValueError(f"unknown thermochemical species {species_name!r}")
@@ -348,9 +360,22 @@ def _species_gibbs_j_mol(
         raise ValueError(f"cyclic thermochemical reference at {species_name!r}")
     record = species[species_name]
     low, high = map(float, record["T_domain_K"])
-    if not low <= temperature_k <= high:
-        raise ValueError(f"{species_name} is outside its declared temperature domain")
     evaluator = record["evaluator"]
+    # Redox row T_domain_K values are evidence intervals. Analytic condensate
+    # expressions and their composites can be evaluated beyond those intervals,
+    # while a JANAF Shomate species is bounded by its fitted table interval.
+    if not low <= temperature_k <= high and (
+        not allow_extrapolation or evaluator == "janaf_shomate"
+    ):
+        bound = (
+            "fitted table domain"
+            if evaluator == "janaf_shomate"
+            else "declared species domain"
+        )
+        raise ValueError(
+            f"species {species_name!r} G(T) is outside its {bound} "
+            f"[{low:g}, {high:g}] K"
+        )
     if evaluator in {"condensate_phi", "janaf_shomate"}:
         from openimcc.gas import _janaf_gibbs, _lamor_gibbs
 
@@ -366,7 +391,11 @@ def _species_gibbs_j_mol(
             return sum(
                 float(term["coefficient"])
                 * _species_gibbs_j_mol(
-                    species, term["species"], temperature_k, visiting
+                    species,
+                    term["species"],
+                    temperature_k,
+                    visiting,
+                    allow_extrapolation,
                 )
                 for term in record["terms"]
             )
@@ -375,7 +404,11 @@ def _species_gibbs_j_mol(
             branch = "below" if temperature_k < transition else "at_or_above"
             selected = next(item for item in record["branches"] if item["branch"] == branch)
             return _species_gibbs_j_mol(
-                species, selected["species"], temperature_k, visiting
+                species,
+                selected["species"],
+                temperature_k,
+                visiting,
+                allow_extrapolation,
             )
     finally:
         visiting.remove(species_name)
@@ -383,16 +416,32 @@ def _species_gibbs_j_mol(
 
 
 def reaction_gibbs_j_mol(
-    pack: RedoxPack, row: Mapping[str, Any], temperature_k: float
+    pack: RedoxPack,
+    row: Mapping[str, Any],
+    temperature_k: float,
+    *,
+    allow_extrapolation: bool = False,
 ) -> float:
-    """Return standard reaction ΔG° from its balanced standard-state terms."""
+    """Return standard reaction ΔG° from its balanced standard-state terms.
+
+    ``allow_extrapolation`` bypasses the reaction's evidence interval while
+    keeping species evaluator bounds in force.
+    """
     temperature = _finite_number(temperature_k, "temperature_k")
     low, high = map(float, row["T_domain_K"])
-    if not low <= temperature <= high:
-        raise ValueError("reaction is outside its declared temperature domain")
+    if not low <= temperature <= high and not allow_extrapolation:
+        raise ValueError(
+            f"reaction evidence domain [{low:g}, {high:g}] K does not include "
+            f"{temperature:g} K"
+        )
     return sum(
         float(term["coefficient"])
-        * species_gibbs_j_mol(pack, str(term["species"]), temperature)
+        * species_gibbs_j_mol(
+            pack,
+            str(term["species"]),
+            temperature,
+            allow_extrapolation=allow_extrapolation,
+        )
         for term in row["standard_gibbs_terms"]
     )
 
@@ -402,16 +451,26 @@ def ln_k_prime(
     row: Mapping[str, Any],
     temperature_k: float,
     ln_f_o2: float = 0.0,
+    *,
+    allow_extrapolation: bool = False,
 ) -> float:
     """Evaluate ln K and apply ext-v4's product-positive oxygen convention.
 
     Since the stored oxygen coefficient is positive for product O2, the
     fugacity term is ``-ν_O2 * ln(fO2)``. For FeO + 1/4 O2 = FeO1.5,
     ``ν_O2=-1/4`` and this gives the requested ``ln K + λ/4``.
+
+    ``allow_extrapolation`` bypasses the reaction evidence interval while
+    keeping species evaluator bounds in force.
     """
     from openimcc.gas import R_J_MOL_K
 
     oxygen = float(row["external_oxygen_stoich_product_positive"])
-    return -reaction_gibbs_j_mol(pack, row, temperature_k) / (
+    return -reaction_gibbs_j_mol(
+        pack,
+        row,
+        temperature_k,
+        allow_extrapolation=allow_extrapolation,
+    ) / (
         R_J_MOL_K * float(temperature_k)
     ) - oxygen * float(ln_f_o2)
