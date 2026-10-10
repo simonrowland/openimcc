@@ -63,7 +63,7 @@ def _gas_activity_mapping(melt_pack, composition: dict[str, float], temperature:
         melt_pack,
         allow_out_of_envelope=True,
         allow_extrapolation=True,
-        enable_sp_extension=melt_pack.model_id == "IMCC-SF04-EXT",
+        enable_sp_extension=bool(melt_pack.extension_parents),
     )
     return {
         oxide: float(melt.parent_activity[index])

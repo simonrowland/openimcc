@@ -92,7 +92,15 @@ _BenchYAML12SafeLoader.add_implicit_resolver(
 
 # Bare pack names that resolve to the packaged resource when no file of that
 # name exists relative to the working directory.
-_PACKAGED_PACK_NAMES = frozenset({"imcc-sf04-v1.0.2.json", "imcc-sf04-ext-v4.json"})
+_PACKAGED_PACK_NAMES = frozenset(
+    {
+        "imcc-sf04-v1.0.2.json",
+        "imcc-sf04-ext-v4.json",
+        "imcc-sf04-d066-v1.json",
+        "imcc-sf04-d066-v1-kcaalsi2o7.json",
+        "imcc-sf04-d066-ext-v1.json",
+    }
+)
 
 POINT_STATUSES = (
     "ok",
@@ -402,7 +410,7 @@ def load_pack(pack_path: Path) -> _PackedEngine:
         raise ImccMalformedDatapackError("datapack JSON root must be an object")
     try:
         pack = load_datapack(pack_path)
-        enable_sp_extension = pack.model_id != "IMCC-SF04"
+        enable_sp_extension = bool(pack.extension_parents)
         return _PackedEngine(
             pack=pack,
             enable_sp_extension=enable_sp_extension,

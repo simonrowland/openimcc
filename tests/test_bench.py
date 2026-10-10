@@ -15,6 +15,7 @@ import pytest
 
 from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
 from openimcc.bench import (
+    _evaluate_imcc,
     load_bench_set,
     load_pack,
     main,
@@ -32,6 +33,35 @@ _CMAS_WT = {
     "Al2O3": 15.0,
 }
 _K_CMAS_WT = {**_CMAS_WT, "K2O": 1.0}
+
+
+@pytest.mark.parametrize(
+    "pack_name",
+    [
+        "imcc-sf04-v1.0.2.json",
+        "imcc-sf04-ext-v4.json",
+        "imcc-sf04-d066-v1.json",
+        "imcc-sf04-d066-v1-kcaalsi2o7.json",
+        "imcc-sf04-d066-ext-v1.json",
+    ],
+)
+def test_packaged_core_and_extension_packs_run_through_bench(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pack_name: str,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    engine = load_pack(Path(pack_name))
+
+    assert engine.enable_sp_extension is bool(engine.pack.extension_parents)
+    status, activities, _, reason, _ = _evaluate_imcc(
+        engine,
+        {"SiO2": 100.0},
+        2000.0,
+    )
+
+    assert status == "ok", reason
+    assert activities["SiO2"] > 0.0
 
 
 def _write_fixture(path: Path, points: list[dict], compositions: dict | None = None) -> Path:
