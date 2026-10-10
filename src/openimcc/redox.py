@@ -221,7 +221,7 @@ def _complex_oxygen_data(
     consumed_oxygen = parent_oxygen @ redox_nu
     # Premise: each balanced pseudo-complex product contains the consumed
     # parent oxygen plus the row's external O2. Algebra: Delta-O = O_product
-    # - sum(nu_i*O_parent_i) = 2*nu_O2 = -2*q. Units are mol O atoms per mol
+    # - sum(nu_i*O_parent_i) = -2*nu_O2 = +2*q. Units are mol O atoms per mol
     # product formula unit. Sanity: FeO + 1/4 O2 -> FeO1.5 gives +0.5 O.
     oxygen_delta = product_oxygen - consumed_oxygen
     oxygen_counts = np.concatenate((base_oxygen, product_oxygen))
@@ -251,50 +251,95 @@ def _oxygen_inventory_targets(
     oxygen_parent_counts: np.ndarray,
     fe_index: int,
     oxygen_inventory: float,
+    redox_pack: RedoxPack,
 ) -> tuple[float, float]:
-    total_fe = float(parent_moles[fe_index])
-    non_fe_products = [
+    parent_names = _redox_parent_names(redox_pack)
+    redox_rows = _redox_complex_rows(redox_pack)
+    redox_nu = _redox_complex_stoichiometry(parent_names, redox_rows)
+    thermo_species = redox_pack.content["thermo_species"]
+    product_oxygen = np.asarray(
+        [
+            float(thermo_species[str(row["complex"])]["formula_atoms"].get("O", 0.0))
+            for row in redox_rows
+        ],
+        dtype=np.float64,
+    )
+    row_oxygen_delta = product_oxygen - oxygen_parent_counts @ redox_nu
+
+    # Premise: a row's extent is limited by each consumed parent. Algebra:
+    # n_max=min_i(n_i/nu_ij), so its endpoint shift is Delta-O_j*n_max.
+    # Units are mol O atoms. Sanity: FeO1.5 adds 0.5 O/Fe; TiO removes 1 O/Ti.
+    parent_oxygen = [
         float(parent_moles[index]) * float(oxygen_parent_counts[index])
         for index in range(len(parent_moles))
-        if index != fe_index and parent_moles[index] > 0.0
-        and oxygen_parent_counts[index] > 0.0
     ]
-    oxidised_fe_oxygen = 1.5 * total_fe
-    target_surplus = math.fsum(
-        [oxygen_inventory] + [-product for product in non_fe_products]
-    )
-    target_deficit = math.fsum(
-        [oxidised_fe_oxygen, *non_fe_products, -oxygen_inventory]
-    )
+    parent_oxygen_total = math.fsum(parent_oxygen)
+    minimum_terms = [
+        parent_oxygen_total,
+        -float(parent_moles[fe_index]) * float(oxygen_parent_counts[fe_index]),
+    ]
+    maximum_terms = [parent_oxygen_total]
+    for column, delta in enumerate(row_oxygen_delta):
+        consumed = np.flatnonzero(redox_nu[:, column] > 0.0)
+        if consumed.size == 0:
+            continue
+        max_extent = min(
+            float(parent_moles[index]) / float(redox_nu[index, column])
+            for index in consumed
+        )
+        change = float(delta) * max_extent
+        (minimum_terms if change < 0.0 else maximum_terms).append(change)
+
+    minimum_oxygen = math.fsum(minimum_terms)
+    maximum_oxygen = math.fsum(maximum_terms)
+    target_surplus = math.fsum((oxygen_inventory, -minimum_oxygen))
+    target_deficit = math.fsum((maximum_oxygen, -oxygen_inventory))
     oxygen_scale = math.fsum(
-        [abs(oxygen_inventory), abs(oxidised_fe_oxygen)]
-        + [abs(product) for product in non_fe_products]
+        (abs(oxygen_inventory), abs(minimum_oxygen), abs(maximum_oxygen))
     )
     precision_limit = 16.0 * math.ulp(max(oxygen_scale, 1.0))
     if min(abs(target_surplus), abs(target_deficit)) > precision_limit:
         return target_surplus, target_deficit
 
-    # Near either endpoint, retain the exact products of the input floats so
-    # the oxygen difference is not quantized by a rounded intermediate sum.
-    fixed_oxygen = sum(
+    # Near either endpoint, retain the exact input-float products and row
+    # extents so a rounded bulk oxygen sum does not move the limiting root.
+    exact_parent_oxygen = sum(
         (
             Fraction(float(parent_moles[index]))
-            * int(oxygen_parent_counts[index])
+            * Fraction(float(oxygen_parent_counts[index]))
             for index in range(len(parent_moles))
-            if index != fe_index and parent_moles[index] > 0.0
-            and oxygen_parent_counts[index] > 0.0
         ),
         Fraction(),
     )
-    exact_inventory = Fraction(oxygen_inventory)
-    return (
-        float(exact_inventory - fixed_oxygen),
-        float(
-            Fraction(3, 2) * Fraction(total_fe)
-            + fixed_oxygen
-            - exact_inventory
-        ),
+    exact_minimum = exact_parent_oxygen - (
+        Fraction(float(parent_moles[fe_index]))
+        * Fraction(float(oxygen_parent_counts[fe_index]))
     )
+    exact_maximum = exact_parent_oxygen
+    for column, row in enumerate(redox_rows):
+        consumed = np.flatnonzero(redox_nu[:, column] > 0.0)
+        if consumed.size == 0:
+            continue
+        max_extent = min(
+            Fraction(float(parent_moles[index]))
+            / Fraction(float(redox_nu[index, column]))
+            for index in consumed
+        )
+        delta = Fraction(float(product_oxygen[column])) - sum(
+            (
+                Fraction(float(oxygen_parent_counts[index]))
+                * Fraction(float(redox_nu[index, column]))
+                for index in consumed
+            ),
+            Fraction(),
+        )
+        change = delta * max_extent
+        if change < 0:
+            exact_minimum += change
+        else:
+            exact_maximum += change
+    exact_inventory = Fraction(float(oxygen_inventory))
+    return float(exact_inventory - exact_minimum), float(exact_maximum - exact_inventory)
 
 
 def _inventory_parent_moles(
@@ -426,7 +471,22 @@ def _active_inner(
         (nu_full > 0.0) & (~active_parent[:, None]), axis=0
     )
     active_complex = ~inactive_complex
-    x_target = parent_moles[active_parent] / basis
+    active_parent_moles = parent_moles[active_parent]
+    x_target = active_parent_moles / basis
+    underflowed = x_target == 0.0
+    if np.any(underflowed):
+        # The feed amount remains active even when its normalized fraction is
+        # below float64 range. Form its scale as log(n)-log(basis) for the
+        # typed refusal; never pass a synthetic zero to the log-space kernel.
+        active_indices = np.flatnonzero(active_parent)
+        active_index = int(active_indices[int(np.flatnonzero(underflowed)[0])])
+        log_fraction = math.log(float(parent_moles[active_index])) - math.log(basis)
+        parent_name = parent_names[active_index]
+        raise RedoxNumericalError(
+            f"positive active parent {parent_name} has an unrepresentable float64 "
+            f"mole fraction (ln fraction={log_fraction:g}); it remains in the "
+            "active inventory but is outside the normalized solve range"
+        )
     nu = nu_full[active_parent, :][:, active_complex]
     lnK = lnK_full[active_complex]
     S = np.sum(nu, axis=0)
@@ -505,65 +565,95 @@ def _state_species(
     return parents, species, oxygen_moles
 
 
-def _oxygen_surplus(
+def _oxygen_residual(
     state: _LiquidState,
     species_moles: Mapping[str, float],
     redox_pack: RedoxPack,
+    oxygen_inventory: float,
 ) -> float:
     parent_names = _redox_parent_names(redox_pack)
-    fe_index = parent_names.index("FeO")
     oxygen_parent = _parent_oxygen_counts(parent_names, redox_pack)
-    # Non-Fe parent oxygen is fixed. The remaining liquid oxygen is the
-    # dissolved Fe-parent baseline plus every redox row's formula-atom delta.
     return math.fsum(
         [
-            float(state.parent_moles[fe_index]) * float(oxygen_parent[fe_index]),
-            *(
-                float(delta) * float(species_moles[name])
-                for name, delta in zip(
-                    state.complex_names, state.complex_oxygen_deltas
-                )
-                if delta != 0.0
-            ),
+            float(species_moles.get(name, 0.0)) * float(oxygen_parent[index])
+            for index, name in enumerate(parent_names)
         ]
+        + [
+            float(species_moles.get(name, 0.0))
+            * float(state.complex_oxygen_counts[index])
+            for index, name in enumerate(state.complex_names)
+        ]
+        + [-oxygen_inventory]
     )
 
 
 def _closed_oxygen_deficit_residual(
     state: _LiquidState,
     species_moles: Mapping[str, float],
-    base_datapack: Any,
     redox_pack: RedoxPack,
     target_deficit: float,
 ) -> float:
     parent_names = _redox_parent_names(redox_pack)
-    fe_index = parent_names.index("FeO")
-    fe_base_index = base_datapack.parent_oxides.index("FeO")
-    reduced_fe = math.fsum(
-        [float(species_moles["FeO"])]
-        + [
-            float(species_moles[name]) * float(base_datapack.nu[fe_base_index, index])
-            for index, name in enumerate(base_datapack.reactions)
-        ]
+    oxygen_parent = _parent_oxygen_counts(parent_names, redox_pack)
+    redox_rows = _redox_complex_rows(redox_pack)
+    redox_nu = _redox_complex_stoichiometry(parent_names, redox_rows)
+    thermo_species = redox_pack.content["thermo_species"]
+    product_oxygen = np.asarray(
+        [
+            float(thermo_species[str(row["complex"])]["formula_atoms"].get("O", 0.0))
+            for row in redox_rows
+        ],
+        dtype=np.float64,
     )
-    active_fe = int(np.flatnonzero(state.active_parent == fe_index)[0])
-    adjustments = []
-    for local_index, full_index in enumerate(state.active_complex):
-        if full_index < base_datapack.n_complexes:
+    oxygen_delta = product_oxygen - oxygen_parent @ redox_nu
+    missing_oxygen = []
+    for column, delta in enumerate(oxygen_delta):
+        consumed = np.flatnonzero(redox_nu[:, column] > 0.0)
+        if consumed.size == 0 or any(
+            index not in state.active_parent for index in consumed
+        ):
             continue
-        fe_parent_stoich = float(state.nu[active_fe, local_index])
-        delta_oxygen = float(state.complex_oxygen_deltas[full_index])
-        adjustment = (
-            0.5 * fe_parent_stoich - delta_oxygen
-        ) * float(species_moles[state.complex_names[full_index]])
-        if adjustment:
-            adjustments.append(adjustment)
-    # Premise: the FeO-to-FeO1.5 endpoint contains 0.5 mol O per mol Fe.
-    # Replacing each generalized row extent contributes (0.5*nu_Fe-Delta-O)n
-    # to that endpoint residual. Units are mol O; for the FeO1.5 row the term
-    # is zero, recovering the legacy residual 0.5*reduced_Fe-target_deficit.
-    residual = 0.5 * reduced_fe - target_deficit
-    return residual + math.fsum(adjustments)
+        row_name = str(redox_rows[column]["complex"])
+        row_index = state.complex_names.index(row_name)
+        local_row = np.flatnonzero(state.active_complex == row_index)
+        amount = float(species_moles.get(row_name, 0.0))
+        if delta > 0.0:
+            other_usage: list[list[float]] = [
+                [float(species_moles.get(parent_names[index], 0.0))]
+                for index in state.active_parent
+            ]
+            for local_complex, full_complex in enumerate(state.active_complex):
+                if local_row.size and full_complex == row_index:
+                    continue
+                complex_amount = float(
+                    species_moles.get(state.complex_names[full_complex], 0.0)
+                )
+                for local_parent, parent_index in enumerate(state.active_parent):
+                    coefficient = float(state.nu[local_parent, local_complex])
+                    if coefficient > 0.0:
+                        other_usage[local_parent].append(
+                            coefficient * complex_amount
+                        )
+            available_extents = []
+            for parent_index in consumed:
+                local_parent = int(
+                    np.flatnonzero(state.active_parent == parent_index)[0]
+                )
+                available_extents.append(
+                    math.fsum(other_usage[local_parent])
+                    / float(redox_nu[parent_index, column])
+                )
+            missing_oxygen.append(
+                float(delta) * min(available_extents)
+            )
+        elif delta < 0.0:
+            missing_oxygen.append(-float(delta) * amount)
+    # Premise: at parent balance, the unfilled extent of a positive-Delta row
+    # is carried by the other species consuming its parents; negative-Delta
+    # rows are absent at the oxidised endpoint. Algebra: inventory-minus-O is
+    # sum(missing Delta-O extents) - upper-endpoint deficit. Units are mol O.
+    # Sanity: FeO1.5 reduces to 0.5*FeO_equivalents - (1.5*Fe - O_inventory).
+    return math.fsum((*missing_oxygen, -target_deficit))
 
 
 def _response(
@@ -1130,19 +1220,11 @@ def evaluate_redox(
             high_state = imposed_state_at_m(metal_high)
             low_species = _state_species(low_state, base_datapack, redox_pack)[1]
             high_species = _state_species(high_state, base_datapack, redox_pack)[1]
-            target_surplus, _target_deficit = _oxygen_inventory_targets(
-                parent_moles,
-                oxygen_parent_counts,
-                fe_index,
-                oxygen_inventory,
+            low_residual = _oxygen_residual(
+                low_state, low_species, redox_pack, oxygen_inventory
             )
-            low_residual = (
-                _oxygen_surplus(low_state, low_species, redox_pack)
-                - target_surplus
-            )
-            high_residual = (
-                _oxygen_surplus(high_state, high_species, redox_pack)
-                - target_surplus
+            high_residual = _oxygen_residual(
+                high_state, high_species, redox_pack, oxygen_inventory
             )
             if low_residual * high_residual > 0.0:
                 raise RedoxEndpointError(
@@ -1172,14 +1254,12 @@ def evaluate_redox(
                     buffered_species = _state_species(
                         buffered_state, base_datapack, redox_pack
                     )[1]
-                    residual = (
-                        _oxygen_surplus(
-                            buffered_state, buffered_species, redox_pack
-                        )
-                        - target_surplus
+                    residual = _oxygen_residual(
+                        buffered_state, buffered_species, redox_pack,
+                        oxygen_inventory,
                     )
                     oxygen_extent_tolerance = max(
-                        tolerance * abs(target_surplus), math.ulp(metal)
+                        tolerance * abs(oxygen_inventory), math.ulp(metal)
                     )
                     if abs(residual) <= oxygen_extent_tolerance:
                         break
@@ -1343,26 +1423,27 @@ def evaluate_redox(
         oxygen_parent_counts,
         fe_index,
         oxygen_inventory,
+        redox_pack,
     )
     if target_surplus < 0.0:
         raise RedoxEndpointError(
-            "oxygen inventory is below the fixed non-Fe oxide oxygen",
+            "oxygen inventory is below the fully reduced liquid limit",
             endpoint="reductant_exceeds_reducible_oxygen",
             flags=("reductant_exceeds_reducible_oxygen",),
             oxygen_residual_mol=-target_surplus,
         )
     if target_surplus == 0.0:
         raise RedoxNoLiveCoupleError(
-            "all Fe is metallic at the oxygen inventory; no finite Fe redox couple remains"
+            "the oxygen inventory is at the fully reduced limit; no finite Fe redox couple remains"
         )
 
-    # All non-Fe parents retain their oxygen; fully oxidising each Fe parent
-    # raises its one-O FeO basis to FeO1.5, adding 0.5 O per Fe. This is the
-    # inventory limit (mol O atoms), independent of a gas reference pressure.
+    # Each endpoint starts from parent formula oxygen, then applies the largest
+    # stoichiometrically available extent of every redox row in its direction.
+    # The Fe-metal endpoint removes the oxygen in the FeO parent formula.
     if target_deficit <= 0.0:
         excess = -target_deficit
         raise RedoxEndpointError(
-            "oxygen inventory is at or above the fully oxidised FeO1.5 limit",
+            "oxygen inventory is at or above the fully oxidised liquid limit",
             endpoint="fully_oxidised_inventory_limit",
             flags=("fully_oxidised_inventory_limit",),
             oxygen_residual_mol=excess,
@@ -1392,11 +1473,7 @@ def evaluate_redox(
         oxidised_state, base_datapack, redox_pack
     )[1]
     oxidised_residual = _closed_oxygen_deficit_residual(
-        oxidised_state,
-        oxidised_species,
-        base_datapack,
-        redox_pack,
-        target_deficit,
+        oxidised_state, oxidised_species, redox_pack, target_deficit
     )
     if abs(oxidised_residual) <= oxygen_tolerance:
         lambda_sat, sat_state, saturation_fallbacks = _saturation_state(
@@ -1441,8 +1518,9 @@ def evaluate_redox(
         max_iter=iterations,
     )
     sat_species = _state_species(sat_state, base_datapack, redox_pack)[1]
-    sat_surplus = _oxygen_surplus(sat_state, sat_species, redox_pack)
-    sat_residual = sat_surplus - target_surplus
+    sat_residual = _oxygen_residual(
+        sat_state, sat_species, redox_pack, oxygen_inventory
+    )
     if sat_residual <= 0.0:
         fallback_fired = (
             oxidised_state.fallback_fired
@@ -1474,11 +1552,7 @@ def evaluate_redox(
                 upper_state, base_datapack, redox_pack
             )[1]
             upper_residual = _closed_oxygen_deficit_residual(
-                upper_state,
-                upper_species,
-                base_datapack,
-                redox_pack,
-                target_deficit,
+                upper_state, upper_species, redox_pack, target_deficit
             )
         if upper_residual > 0.0:
             raise RedoxNumericalError("could not bracket the fully oxidised inventory limit")
@@ -1501,11 +1575,7 @@ def evaluate_redox(
             fallback_fired = fallback_fired or state.fallback_fired
             state_species = _state_species(state, base_datapack, redox_pack)[1]
             residual = _closed_oxygen_deficit_residual(
-                state,
-                state_species,
-                base_datapack,
-                redox_pack,
-                target_deficit,
+                state, state_species, redox_pack, target_deficit
             )
             if abs(residual) <= oxygen_tolerance:
                 return _assemble_result(
@@ -1582,9 +1652,18 @@ def evaluate_redox(
         )
         response = _response(state, base_datapack, redox_pack)
         state_species = _state_species(state, base_datapack, redox_pack)[1]
-        residual = _oxygen_surplus(state, state_species, redox_pack) - target_surplus
+        residual = _oxygen_residual(
+            state, state_species, redox_pack, oxygen_inventory
+        )
         derivative = response.oxygen_derivative_m
-        representable_tolerance = abs(derivative) * math.ulp(metal)
+        # Premise: both metal amount and the reported oxygen ledger are
+        # float64. Algebra: one metal ULP moves oxygen by dO/dm*ulp(m), while
+        # the ledger itself resolves only to an oxygen ULP. Units are mol O;
+        # this floor matters only when the requested root is less representable.
+        representable_tolerance = max(
+            abs(derivative) * math.ulp(metal),
+            math.ulp(max(abs(oxygen_inventory), 1.0)),
+        )
         if abs(residual) <= max(oxygen_tolerance, representable_tolerance):
             return _assemble_result(
                 mode="closed",

@@ -10,11 +10,13 @@ from openimcc import (
     RedoxEndpointError,
     RedoxInputError,
     RedoxNoLiveCoupleError,
+    RedoxNumericalError,
     RedoxResult,
     evaluate_redox,
     load_datapack,
 )
-from openimcc.kernel import active_residual_jacobian
+import openimcc.kernel as kernel_module
+from openimcc.kernel import active_residual_jacobian, solve_active_warm
 from openimcc.redox_basis import oxide_inventory_to_elements
 from openimcc.redox_pack import RedoxPack, load_redox_pack, ln_k_prime
 
@@ -58,8 +60,10 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
         -15.127740855106792, rel=1.0e-12
     )
     assert fe_buffered.metal_moles == pytest.approx(
-        0.013097674149791579, rel=1.0e-12
+        0.013097674149791579, rel=1.0e-12, abs=0.0
     )
+    assert fe_buffered.oxygen_residual_mol is not None
+    assert abs(fe_buffered.oxygen_residual_mol) <= 5.0e-13
     assert math.isinf(fe_buffered.oxygen_capacity_mol_per_ln_f_o2)
     assert {
         name: amount for name, amount in fe_buffered.species_moles.items() if amount
@@ -913,6 +917,59 @@ def test_unrowed_positive_parent_is_reported_as_red_flagged_last_resort() -> Non
         for flag in result.flags
     )
 
+    pack = load_redox_pack()
+    every_parent = {
+        str(parent["element"]): 0.01 for parent in pack.parents
+    }
+    all_active = evaluate_redox(
+        every_parent, 2200.0, "imposed", lambda_imposed=0.0
+    )
+    assert all_active.last_resort_ideal_parents == (
+        "Cr", "Ni", "Co", "P", "V", "Mn", "Eu", "Ce", "S"
+    )
+    assert any(
+        flag.startswith("RED:")
+        and "last_resort_ideal_parents" in flag
+        and "Cr, Ni, Co, P, V, Mn, Eu, Ce, S" in flag
+        for flag in all_active.flags
+    )
+
+
+def test_seed_uses_the_true_positive_parent_scale(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class SeedObserved(Exception):
+        pass
+
+    captured: list[np.ndarray] = []
+
+    def capture_seed(y: np.ndarray, *_args: object) -> None:
+        captured.append(y.copy())
+        raise SeedObserved
+
+    monkeypatch.setattr(kernel_module, "_active_residual", capture_seed)
+    x_target = np.asarray([1.0 - 1.0e-15, 1.0e-15], dtype=np.float64)
+    with pytest.raises(SeedObserved):
+        solve_active_warm(
+            x_target,
+            np.empty((2, 0), dtype=np.float64),
+            np.empty(0, dtype=np.float64),
+            np.empty(0, dtype=np.float64),
+            1.0e-12,
+            10,
+        )
+    assert captured[0][1] == pytest.approx(math.log(1.0e-15), abs=0.0)
+
+
+def test_positive_parent_underflow_is_not_dropped_or_logged_as_zero() -> None:
+    with pytest.raises(RedoxNumericalError, match="positive active parent Cr"):
+        evaluate_redox(
+            {"Fe": 1.0e308, "Cr": 1.0e-308, "O": 1.0e308},
+            2200.0,
+            "imposed",
+            lambda_imposed=-4.0,
+        )
+
 
 def test_synthetic_second_redox_couple_closes_and_has_complete_response(
     monkeypatch: pytest.MonkeyPatch,
@@ -937,7 +994,20 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
         "reactants": {"TiO2(l)": 1.0},
         "products": {synthetic_name: 1.0, "O2(g)": 0.5},
     }
-    content["rows"] = list(pack.rows) + [synthetic_row]
+    oxidised_name = "TiO3(test-only)"
+    thermo_species[oxidised_name] = {"formula_atoms": {"Ti": 1, "O": 3}}
+    oxidised_row = {
+        "complex": oxidised_name,
+        "nu": {"TiO2(l)": 1.0},
+        "external_oxygen_stoich_product_positive": -0.5,
+        "T_domain_K": [1500.0, 3000.0],
+        "range_flags": ["test-only synthetic reaction"],
+        "synthetic_test_only": True,
+        "reaction": "TiO2(l) + 1/2 O2(g) = TiO3(test-only)",
+        "reactants": {"TiO2(l)": 1.0, "O2(g)": 0.5},
+        "products": {oxidised_name: 1.0},
+    }
+    content["rows"] = list(pack.rows) + [synthetic_row, oxidised_row]
     synthetic_pack = RedoxPack(content, pack.canonical_digest)
     real_ln_k_prime = ln_k_prime
 
@@ -957,6 +1027,7 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
 
     formulas = _formula_atoms()
     formulas[synthetic_name] = {"Ti": 1.0, "O": 1.0}
+    formulas[oxidised_name] = {"Ti": 1.0, "O": 3.0}
     first_inventory = oxide_inventory_to_elements(
         {"FeO(l)": 1.0, "TiO2(l)": 0.25}, formulas
     )
@@ -972,6 +1043,72 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
     assert first.species_moles == pytest.approx(second.species_moles, rel=1.0e-12)
     assert first.species_moles[synthetic_name] > 0.0
     assert first.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-12)
+
+    from openimcc.redox import _active_inner, _redox_parent_names
+
+    parent_names = _redox_parent_names(synthetic_pack)
+    parent_records_by_element = {
+        str(parent["element"]): parent for parent in synthetic_pack.parents
+    }
+    parent_moles = np.zeros(len(parent_names), dtype=np.float64)
+    for element, amount in {"Fe": 1.0, "Ti": 0.25}.items():
+        record = parent_records_by_element[element]
+        parent_name = str(record["parent_oxide"]).removesuffix("(l)")
+        parent_index = parent_names.index(parent_name)
+        element_count = float(record["parent_formula_atoms"][element])
+        parent_moles[parent_index] = amount / element_count
+    state = _active_inner(
+        parent_moles,
+        2200.0,
+        first.lambda_ln_f_o2,
+        load_datapack().kernel_datapack,
+        synthetic_pack,
+        tol=1.0e-12,
+        max_iter=100,
+    )
+    for row_name, expected_delta, expected_q in (
+        ("FeO1.5(l)", 0.5, 0.25),
+        (synthetic_name, -1.0, -0.5),
+        (oxidised_name, 1.0, 0.5),
+    ):
+        row_index = state.complex_names.index(row_name)
+        delta = float(state.complex_oxygen_deltas[row_index])
+        q = float(state.complex_lambda_shift[row_index])
+        assert delta == pytest.approx(expected_delta, abs=0.0)
+        assert q == pytest.approx(expected_q, abs=0.0)
+        assert delta == pytest.approx(2.0 * q, abs=0.0)
+
+    # These inventories lie outside the Fe-only [0.5, 2.0] oxygen window.
+    # The Ti row limits extend the endpoints to 0.25 and 2.25 mol O.
+    reduced_window_root = evaluate_redox(
+        {"Fe": 1.0, "Ti": 0.25, "O": 0.4}, 2200.0, "closed"
+    )
+    oxidised_window_root = evaluate_redox(
+        {"Fe": 1.0, "Ti": 0.25, "O": 2.2}, 2200.0, "closed"
+    )
+    assert reduced_window_root.metal_buffered
+    assert reduced_window_root.metal_moles > 0.8
+    assert reduced_window_root.oxygen_residual_mol is not None
+    assert abs(reduced_window_root.oxygen_residual_mol) <= 1.5e-13
+    assert not oxidised_window_root.metal_buffered
+    assert oxidised_window_root.species_moles[oxidised_name] > 0.0
+    assert oxidised_window_root.oxygen_residual_mol is not None
+    assert abs(oxidised_window_root.oxygen_residual_mol) <= 2.2e-12
+
+    with pytest.raises(RedoxEndpointError) as below_minimum:
+        evaluate_redox({"Fe": 1.0, "Ti": 0.25, "O": 0.24}, 2200.0, "closed")
+    assert below_minimum.value.endpoint == "reductant_exceeds_reducible_oxygen"
+    assert below_minimum.value.oxygen_residual_mol == pytest.approx(0.01)
+    with pytest.raises(RedoxNoLiveCoupleError):
+        evaluate_redox({"Fe": 1.0, "Ti": 0.25, "O": 0.25}, 2200.0, "closed")
+    with pytest.raises(RedoxEndpointError) as above_maximum:
+        evaluate_redox({"Fe": 1.0, "Ti": 0.25, "O": 2.26}, 2200.0, "closed")
+    assert above_maximum.value.endpoint == "fully_oxidised_inventory_limit"
+    assert above_maximum.value.oxygen_residual_mol == pytest.approx(0.01)
+    with pytest.raises(RedoxEndpointError) as at_maximum:
+        evaluate_redox({"Fe": 1.0, "Ti": 0.25, "O": 2.25}, 2200.0, "closed")
+    assert at_maximum.value.endpoint == "fully_oxidised_inventory_limit"
+    assert at_maximum.value.oxygen_residual_mol == pytest.approx(0.0, abs=0.0)
 
     base = load_datapack().kernel_datapack
     parent_records = {
@@ -998,7 +1135,7 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
         * float(np.dot(oxygen_parent, base.nu[:, index]))
         for index, name in enumerate(base.reactions)
     )
-    for row in (synthetic_pack.rows[1], synthetic_row):
+    for row in (synthetic_pack.rows[1], synthetic_row, oxidised_row):
         amount = float(first.species_moles[str(row["complex"])])
         oxygen_terms.append(
             amount
