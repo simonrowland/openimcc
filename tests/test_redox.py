@@ -1621,3 +1621,21 @@ def test_missing_default_pack_is_a_typed_refusal(
     )
     with pytest.raises(ImccRefusal):
         evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+
+
+def test_unreadable_default_pack_is_a_typed_refusal_without_a_full_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    import openimcc.redox as redox_module
+    from openimcc.kernel import ImccRefusal
+
+    def deny(*args, **kwargs):
+        raise PermissionError(13, "Permission denied", str(tmp_path / "x.json"))
+
+    monkeypatch.setattr(redox_module, "_DEFAULT_REDOX_PACK_CACHE", None)
+    monkeypatch.setattr(redox_module, "_ORIGINAL_LOAD_REDOX_PACK", deny)
+    monkeypatch.setattr(redox_module, "load_redox_pack", deny)
+    with pytest.raises(ImccRefusal) as refusal:
+        evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+    assert str(tmp_path) not in str(refusal.value)
+    assert "Permission denied" in str(refusal.value)

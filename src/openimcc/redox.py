@@ -42,20 +42,27 @@ _DEFAULT_DATAPACK_CACHE: tuple[tuple[str, int, int], Any] | None = None
 _DEFAULT_REDOX_PACK_CACHE: tuple[tuple[str, int, int], RedoxPack] | None = None
 
 
+def _unreadable_default_pack(path: Path, exc: OSError) -> ImccMalformedDatapackError:
+    # Keep a missing or unreadable default pack inside the refusal hierarchy.
+    # The message names only the file and the OS reason, never a full path;
+    # the original exception stays chained as __cause__.
+    reason = exc.strerror or type(exc).__name__
+    return ImccMalformedDatapackError(
+        f"default datapack {path.name} is not readable: {reason}"
+    )
+
+
 def _pack_file_identity(path: Path) -> tuple[str, int, int]:
-    # The cache key is (resolved path, mtime_ns, size): any ordinary rewrite of
-    # a pack file changes mtime_ns, so the pack is re-read and re-validated.
-    # A deliberate same-size rewrite that also restores mtime_ns is not
-    # detected; hashing the file on every call would cost what the cache saves.
+    # The cache key is (resolved path, mtime_ns, size). A rewrite that leaves
+    # all three unchanged is served from the cache: a same-size rewrite that
+    # restores mtime_ns, or one on a filesystem whose timestamp resolution is
+    # too coarse to register it. Hashing the file on every call would cost
+    # what the cache saves, so that limit is accepted for packaged data.
     try:
         resolved = path.resolve(strict=True)
         stat = resolved.stat()
     except OSError as exc:
-        # Keep a missing or unreadable default pack inside the refusal
-        # hierarchy, as load_datapack does for an explicit path.
-        raise ImccMalformedDatapackError(
-            f"default datapack {path.name} is not readable: {exc}"
-        ) from exc
+        raise _unreadable_default_pack(path, exc) from exc
     return str(resolved), stat.st_mtime_ns, stat.st_size
 
 
@@ -67,10 +74,11 @@ def _load_default_datapack() -> Any:
     global _DEFAULT_DATAPACK_CACHE
     with _DEFAULT_PACK_CACHE_LOCK:
         if _DEFAULT_DATAPACK_CACHE is None or _DEFAULT_DATAPACK_CACHE[0] != identity:
-            _DEFAULT_DATAPACK_CACHE = (
-                identity,
-                load_datapack(_DEFAULT_DATAPACK_PATH),
-            )
+            try:
+                loaded = load_datapack(_DEFAULT_DATAPACK_PATH)
+            except OSError as exc:
+                raise _unreadable_default_pack(_DEFAULT_DATAPACK_PATH, exc) from exc
+            _DEFAULT_DATAPACK_CACHE = (identity, loaded)
         return _DEFAULT_DATAPACK_CACHE[1]
 
 
@@ -82,10 +90,11 @@ def _load_default_redox_pack() -> RedoxPack:
     global _DEFAULT_REDOX_PACK_CACHE
     with _DEFAULT_PACK_CACHE_LOCK:
         if _DEFAULT_REDOX_PACK_CACHE is None or _DEFAULT_REDOX_PACK_CACHE[0] != identity:
-            _DEFAULT_REDOX_PACK_CACHE = (
-                identity,
-                load_redox_pack(_DEFAULT_REDOX_PACK_PATH),
-            )
+            try:
+                loaded = load_redox_pack(_DEFAULT_REDOX_PACK_PATH)
+            except OSError as exc:
+                raise _unreadable_default_pack(_DEFAULT_REDOX_PACK_PATH, exc) from exc
+            _DEFAULT_REDOX_PACK_CACHE = (identity, loaded)
         return _DEFAULT_REDOX_PACK_CACHE[1]
 
 
