@@ -253,7 +253,7 @@ def _oxygen_inventory_targets(
     fe_index: int,
     oxygen_inventory: float,
     redox_pack: RedoxPack,
-) -> tuple[float, float]:
+) -> tuple[float, float, bool]:
     parent_names = _redox_parent_names(redox_pack)
     redox_rows = _redox_complex_rows(redox_pack)
     redox_nu = _redox_complex_stoichiometry(parent_names, redox_rows)
@@ -266,6 +266,15 @@ def _oxygen_inventory_targets(
         dtype=np.float64,
     )
     row_oxygen_delta = product_oxygen - oxygen_parent_counts @ redox_nu
+    shared_positive_rows = bool(
+        np.any(
+            np.count_nonzero(
+                (redox_nu > 0.0) & (row_oxygen_delta[np.newaxis, :] > 0.0),
+                axis=1,
+            )
+            > 1
+        )
+    )
 
     # Premise: a row's extent is limited by each consumed parent. Algebra:
     # n_max=min_i(n_i/nu_ij), so its endpoint shift is Delta-O_j*n_max.
@@ -317,10 +326,23 @@ def _oxygen_inventory_targets(
             ),
             Fraction(),
         )
+        exact_fe_consumption = sum(
+            (
+                Fraction(float(redox_nu[fe_index, column]))
+                * Fraction(float(extent))
+                for column, extent in enumerate(minimum.x)
+            ),
+            Fraction(),
+        )
+        # Premise: minimizing extents can lock Fe in a product. Algebra:
+        # O_min=O_parent-O_Fe*(n_Fe-nu_Fe@n_min)+DeltaO@n_min. Units are mol O.
+        # Sanity: FeO+TiO2->FeTiO+O2 leaves 0.75 FeO and has O_min=0.25.
         exact_minimum = (
             exact_parent_oxygen
             - Fraction(float(parent_moles[fe_index]))
             * Fraction(float(oxygen_parent_counts[fe_index]))
+            + Fraction(float(oxygen_parent_counts[fe_index]))
+            * exact_fe_consumption
             + exact_minimum_change
         )
         exact_maximum = exact_parent_oxygen + exact_maximum_change
@@ -328,6 +350,7 @@ def _oxygen_inventory_targets(
         return (
             float(exact_inventory - exact_minimum),
             float(exact_maximum - exact_inventory),
+            shared_positive_rows,
         )
 
     minimum_terms = [
@@ -344,7 +367,15 @@ def _oxygen_inventory_targets(
             for index in consumed
         )
         change = float(delta) * max_extent
-        (minimum_terms if change < 0.0 else maximum_terms).append(change)
+        if change < 0.0:
+            minimum_terms.append(change)
+            minimum_terms.append(
+                float(oxygen_parent_counts[fe_index])
+                * float(redox_nu[fe_index, column])
+                * max_extent
+            )
+        else:
+            maximum_terms.append(change)
 
     minimum_oxygen = math.fsum(minimum_terms)
     maximum_oxygen = math.fsum(maximum_terms)
@@ -355,7 +386,7 @@ def _oxygen_inventory_targets(
     )
     precision_limit = 16.0 * math.ulp(max(oxygen_scale, 1.0))
     if min(abs(target_surplus), abs(target_deficit)) > precision_limit:
-        return target_surplus, target_deficit
+        return target_surplus, target_deficit, shared_positive_rows
 
     # Near either endpoint, retain the exact input-float products and row
     # extents so a rounded bulk oxygen sum does not move the limiting root.
@@ -367,6 +398,8 @@ def _oxygen_inventory_targets(
         ),
         Fraction(),
     )
+    # Remove only Fe parent left outside the minimizing extents. The correction
+    # is mol O and is zero on the disjoint path when reducing rows use no Fe.
     exact_minimum = exact_parent_oxygen - (
         Fraction(float(parent_moles[fe_index]))
         * Fraction(float(oxygen_parent_counts[fe_index]))
@@ -391,11 +424,19 @@ def _oxygen_inventory_targets(
         )
         change = delta * max_extent
         if change < 0:
-            exact_minimum += change
+            exact_minimum += change + (
+                Fraction(float(oxygen_parent_counts[fe_index]))
+                * Fraction(float(redox_nu[fe_index, column]))
+                * max_extent
+            )
         else:
             exact_maximum += change
     exact_inventory = Fraction(float(oxygen_inventory))
-    return float(exact_inventory - exact_minimum), float(exact_maximum - exact_inventory)
+    return (
+        float(exact_inventory - exact_minimum),
+        float(exact_maximum - exact_inventory),
+        shared_positive_rows,
+    )
 
 
 def _inventory_parent_moles(
@@ -1472,7 +1513,7 @@ def evaluate_redox(
         )
 
     assert oxygen_inventory is not None
-    target_surplus, target_deficit = _oxygen_inventory_targets(
+    target_surplus, target_deficit, shared_positive_rows = _oxygen_inventory_targets(
         parent_moles,
         oxygen_parent_counts,
         fe_index,
@@ -1493,7 +1534,8 @@ def evaluate_redox(
 
     # Each endpoint starts from parent formula oxygen. Shared-parent rows use
     # the joint extent constraints above; disjoint rows can each reach their
-    # individual limiting extent. The Fe-metal endpoint removes FeO oxygen.
+    # individual limiting extent. The reduced endpoint removes only unreacted
+    # Fe parent oxygen after those minimizing extents.
     if target_deficit <= 0.0:
         excess = -target_deficit
         raise RedoxEndpointError(
@@ -1534,10 +1576,20 @@ def evaluate_redox(
     oxidised_species = _state_species(
         oxidised_state, base_datapack, redox_pack
     )[1]
-    oxidised_residual = _closed_oxygen_deficit_residual(
-        oxidised_state, oxidised_species, redox_pack, target_deficit
+    if shared_positive_rows:
+        # Independent row deficits double-count capacity when same-sign rows
+        # compete for a feed parent; use the reported speciated oxygen ledger.
+        oxidised_residual = -_oxygen_residual(
+            oxidised_state, oxidised_species, redox_pack, oxygen_inventory
+        )
+    else:
+        oxidised_residual = _closed_oxygen_deficit_residual(
+            oxidised_state, oxidised_species, redox_pack, target_deficit
+        )
+    oxidised_acceptance_tolerance = (
+        ledger_tolerance if shared_positive_rows else oxygen_tolerance
     )
-    if abs(oxidised_residual) <= oxygen_tolerance:
+    if abs(oxidised_residual) <= oxidised_acceptance_tolerance:
         oxidised_ledger_residual = _oxygen_residual(
             oxidised_state, oxidised_species, redox_pack, oxygen_inventory
         )
@@ -1617,9 +1669,14 @@ def evaluate_redox(
             upper_species = _state_species(
                 upper_state, base_datapack, redox_pack
             )[1]
-            upper_residual = _closed_oxygen_deficit_residual(
-                upper_state, upper_species, redox_pack, target_deficit
-            )
+            if shared_positive_rows:
+                upper_residual = -_oxygen_residual(
+                    upper_state, upper_species, redox_pack, oxygen_inventory
+                )
+            else:
+                upper_residual = _closed_oxygen_deficit_residual(
+                    upper_state, upper_species, redox_pack, target_deficit
+                )
         if upper_residual > 0.0:
             raise RedoxNumericalError("could not bracket the fully oxidised inventory limit")
         lower_residual = -sat_residual
@@ -1640,10 +1697,18 @@ def evaluate_redox(
             )
             fallback_fired = fallback_fired or state.fallback_fired
             state_species = _state_species(state, base_datapack, redox_pack)[1]
-            residual = _closed_oxygen_deficit_residual(
-                state, state_species, redox_pack, target_deficit
+            if shared_positive_rows:
+                residual = -_oxygen_residual(
+                    state, state_species, redox_pack, oxygen_inventory
+                )
+            else:
+                residual = _closed_oxygen_deficit_residual(
+                    state, state_species, redox_pack, target_deficit
+                )
+            residual_tolerance = (
+                ledger_tolerance if shared_positive_rows else oxygen_tolerance
             )
-            if abs(residual) <= oxygen_tolerance:
+            if abs(residual) <= residual_tolerance:
                 ledger_residual = _oxygen_residual(
                     state, state_species, redox_pack, oxygen_inventory
                 )
