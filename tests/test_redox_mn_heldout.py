@@ -10,7 +10,7 @@ import pytest
 from openimcc import load_datapack
 from openimcc.gas import R_J_MOL_K
 from openimcc.redox import _active_inner, _redox_parent_names
-from openimcc.redox_pack import load_redox_pack
+from openimcc.redox_pack import canonical_redox_digest, load_redox_pack
 from tools.liquid_from_solid import liquid_from_solid
 
 
@@ -19,6 +19,7 @@ DATA_PATH = ROOT / "tests/data/redox-mn-heldout.json"
 REPORT_PATH = ROOT / "tests/data/redox-mn-heldout-residuals.json"
 INPUTS_PATH = ROOT / "data-src/liquid-from-solid-inputs.json"
 CRYSTALS_PATH = ROOT / "data-src/crystal-thermochemistry.json"
+PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v1.json"
 FORMULA_WEIGHT_G_MOL = {
     "MnO": 54.938044 + 15.999,
     "FeO": 55.845 + 15.999,
@@ -29,7 +30,10 @@ FORMULA_WEIGHT_G_MOL = {
 }
 
 
-def _heldout_residuals() -> list[list[float | int | str]]:
+def _heldout_residuals(
+    removed_complexes: tuple[str, ...] = (),
+    temporary_directory: Path | None = None,
+) -> list[list[float | int | str]]:
     dataset = json.loads(DATA_PATH.read_text(encoding="utf-8"))
     inputs = json.loads(INPUTS_PATH.read_text(encoding="utf-8"))
     crystals = json.loads(CRYSTALS_PATH.read_text(encoding="utf-8"))["tables"]
@@ -43,7 +47,28 @@ def _heldout_residuals() -> list[list[float | int | str]]:
     )
 
     base = load_datapack().kernel_datapack
-    pack = load_redox_pack()
+    if removed_complexes:
+        if temporary_directory is None:
+            raise ValueError("temporary_directory is required for a reduced pack")
+        content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+        content["rows"] = [
+            item
+            for item in content["rows"]
+            if item["complex"] not in removed_complexes
+        ]
+        for complex_name in removed_complexes:
+            content["thermo_species"].pop(complex_name, None)
+        content["canonical_content_digest"] = canonical_redox_digest(content)
+        reduced_name = "-".join(
+            name.removesuffix("(l)") for name in removed_complexes
+        )
+        reduced_path = temporary_directory / f"redox-{reduced_name}.json"
+        reduced_path.write_text(
+            json.dumps(content, separators=(",", ":")), encoding="utf-8"
+        )
+        pack = load_redox_pack(reduced_path)
+    else:
+        pack = load_redox_pack(PACK_PATH)
     parent_names = _redox_parent_names(pack)
     manganese_parent = parent_names.index("MnO")
     report: list[list[float | int | str]] = []
@@ -111,9 +136,24 @@ def _heldout_residuals() -> list[list[float | int | str]]:
     return report
 
 
-def test_manganese_heldout_activities_are_converted_and_reported():
-    report = _heldout_residuals()
-    recorded = json.loads(REPORT_PATH.read_text(encoding="utf-8"))["points"]
+def test_manganese_heldout_activities_are_converted_and_reported(tmp_path):
+    scenario_removals = {
+        "all_three": (),
+        "without_MnSiO3": ("MnSiO3(l)",),
+        "without_Mn2SiO4": ("Mn2SiO4(l)",),
+        "without_MnAl2O4": ("MnAl2O4(l)",),
+        "MnSiO3_only": ("Mn2SiO4(l)", "MnAl2O4(l)"),
+        "Mn2SiO4_only": ("MnSiO3(l)", "MnAl2O4(l)"),
+        "MnAl2O4_only": ("MnSiO3(l)", "Mn2SiO4(l)"),
+        "no_complexes": ("MnSiO3(l)", "Mn2SiO4(l)", "MnAl2O4(l)"),
+    }
+    scenarios = {
+        name: _heldout_residuals(removed, tmp_path)
+        for name, removed in scenario_removals.items()
+    }
+    report = scenarios["all_three"]
+    recorded_document = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    recorded = recorded_document["points"]
     assert len(report) == 55
     assert len(recorded) == len(report)
     for row, saved in zip(report, recorded):
@@ -127,4 +167,41 @@ def test_manganese_heldout_activities_are_converted_and_reported():
             # This checks that the report reproduces the calculations. It does
             # not impose any residual, activity, or within-band fit threshold.
             assert float(value) == pytest.approx(float(expected), rel=1e-10)
-    print(json.dumps(report, separators=(",", ":")))
+    summaries = {}
+    for name, scenario in scenarios.items():
+        residuals = [float(row[5]) for row in scenario]
+        summaries[name] = {
+            "median_activity_ratio": float(
+                np.median([math.exp(residual) for residual in residuals])
+            ),
+            "out_of_band_count": sum(float(row[8]) > 1.0 for row in scenario),
+            "out_of_band_total": len(scenario),
+            "min_residual_ln": min(residuals),
+            "median_residual_ln": float(np.median(residuals)),
+            "max_residual_ln": max(residuals),
+        }
+    for name, computed in summaries.items():
+        saved = recorded_document["scenarios"][name]
+        assert computed["out_of_band_count"] == saved["out_of_band_count"]
+        assert computed["out_of_band_total"] == saved["out_of_band_total"]
+        for metric in (
+            "median_activity_ratio",
+            "min_residual_ln",
+            "median_residual_ln",
+            "max_residual_ln",
+        ):
+            assert computed[metric] == pytest.approx(
+                float(saved[metric]), rel=1e-10
+            )
+
+    rationale = next(
+        row["provenance"]["selection_rationale"]
+        for row in load_redox_pack(PACK_PATH).rows
+        if row["complex"] == "MnAl2O4(l)"
+    )
+    for name, summary in summaries.items():
+        line = (
+            f"{name}: median ratio {summary['median_activity_ratio']:.3f}, "
+            f"out-of-band {summary['out_of_band_count']}/55"
+        )
+        assert line in rationale

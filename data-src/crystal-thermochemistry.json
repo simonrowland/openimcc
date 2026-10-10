@@ -55,8 +55,9 @@
     "Mn2SiO4-Robie-1982": {
       "table_id": "Mn2SiO4-Robie-1982",
       "formula": "Mn2SiO4",
-      "source": "Robie et al. (1982), Entropies of Mg2SiO4, Mn2SiO4, and Co2SiO4, American Mineralogist 67, 470-482.",
+      "source": "Robie et al. (1982), Entropies of Mg2SiO4, Mn2SiO4, and Co2SiO4, American Mineralogist 67, 470-482; primary solution-calorimetry value ΔfH° = −1732.0 ± 2.9 kJ/mol.",
       "source_url": "https://msaweb.org/AmMin/AM67/AM67_470.pdf",
+      "formation_enthalpy_spread_kj_mol": 2.9,
       "thermal_function": "Cp = 261.28 - 0.01378*T - 2217.7/sqrt(T) J mol^-1 K^-1; integrated from 298.15 K, with the source fit extended from 1600 K to the 1616-1620 K transition interval.",
       "values": [
         {
@@ -64,7 +65,7 @@
           "heat_capacity": 128.7359016571,
           "entropy": 155.9,
           "enthalpy_increment": 0.0,
-          "formation_enthalpy": -1731.5
+          "formation_enthalpy": -1732.0
         },
         {
           "temperature": 1616.0,
@@ -77,6 +78,43 @@
           "heat_capacity": 183.8572005144,
           "entropy": 433.2506568804,
           "enthalpy_increment": 225.9680645016
+        }
+      ]
+    },
+    "MnAl2O4-open-primary": {
+      "table_id": "MnAl2O4-open-primary",
+      "formula": "MnAl2O4",
+      "source": "Navarro, Gomez, and de Avillez (2012) measured stoichiometric galaxite heat capacity from 2 to 873 K; Souza et al. (2020) measured its low-temperature heat capacity and reported S°298.15 = 118.7 ± 0.5 J/(mol K); Ilatovskaya and Fabrichnaya (2019) reported primary DSC heat-capacity measurements and DTA melting behavior.",
+      "source_url": "https://doi.org/10.1016/j.jmrt.2020.02.046",
+      "related_source_urls": [
+        "https://doi.org/10.1016/j.calphad.2011.12.008",
+        "https://calphad.org/Data/Sites/1/documents/calphad2019-proceedingsv7.pdf",
+        "https://doi.org/10.1016/j.jallcom.2021.161153"
+      ],
+      "formation_enthalpy_from_oxides_kj_mol": -39.5,
+      "formation_enthalpy_spread_kj_mol": 12.6,
+      "entropy_spread_j_mol_k": 0.5,
+      "formation_enthalpy_derivation": "Premise: ΔfH°(MnAl2O4) = ΔfH°(MnO) + ΔfH°(Al2O3) + ΔH°(MnO + Al2O3 → MnAl2O4). Algebra: -385.0 + (-1675.692) + (-39.5) = -2100.192. Units: kJ mol^-1 formula. Sanity: the oxide-association term is much smaller than the sum of the oxide formation enthalpies and is included with ±12.6 kJ mol^-1 once.",
+      "thermal_function": "Cp = 160.69 + 0.01444*T - 3.52381e6/T^2 J mol^-1 K^-1; the primary DSC fit covers 250-873 K and is extrapolated to the 1992-2000 K melting interval. Premise: dH/dT=Cp and dS/dT=Cp/T; integrating the fit gives H-H(298.15) in J mol^-1 and S-S(298.15) in J mol^-1 K^-1. The positive Cp and increasing H,S over the tabulated range are the sanity check.",
+      "values": [
+        {
+          "temperature": 298.15,
+          "heat_capacity": 125.3544453068,
+          "entropy": 118.7,
+          "enthalpy_increment": 0.0,
+          "formation_enthalpy": -2100.192
+        },
+        {
+          "temperature": 1992.0,
+          "heat_capacity": 188.5664373676,
+          "entropy": 428.9809460102,
+          "enthalpy_increment": 290.1424323406
+        },
+        {
+          "temperature": 2000.0,
+          "heat_capacity": 188.6890475,
+          "entropy": 429.7369699024,
+          "enthalpy_increment": 291.6514543369
         }
       ]
     }

@@ -693,6 +693,38 @@ def test_tier_error_bands_are_recomputed_and_pinned(input_key, tier, expected):
         assert recomputed[metric] == pytest.approx(expected[metric], abs=1e-9)
 
 
+def test_mno_input_spreads_use_the_maximum_residual_of_rock_salt_monoxides():
+    names = ("BaO", "CaO", "FeO", "MgO", "SrO", "TiO", "VO")
+    training = [
+        row for row in INPUTS["rows"].values() if "liquid_table_id" in row
+    ]
+    homologues = [INPUTS["rows"][name] for name in names]
+    entropy_residuals = []
+    cp_residuals = []
+    for row in homologues:
+        entropy_estimate = _tier_estimate(
+            row, "fusion_entropy", 3, training
+        )
+        cp_estimate = _tier_estimate(
+            row, "liquid_heat_capacity", 3, training
+        )
+        entropy_residuals.append(
+            abs(entropy_estimate - row["inputs"]["fusion_entropy"]["value"])
+        )
+        cp_residuals.append(
+            abs(cp_estimate - row["inputs"]["liquid_heat_capacity"]["value"])
+        )
+
+    manganese = INPUTS["rows"]["MnO"]["inputs"]
+    assert len(homologues) == 7
+    assert manganese["fusion_entropy"]["spread"] == pytest.approx(
+        max(entropy_residuals), abs=1e-12
+    )
+    assert manganese["liquid_heat_capacity"]["spread"] == pytest.approx(
+        max(cp_residuals), abs=1e-12
+    )
+
+
 def test_k2o_band_adds_the_selected_tier_bands_and_input_spread():
     row = INPUTS["rows"]["K2O"]
     crystal = json.loads((JANAF / "K-012.yaml").read_text(encoding="utf-8"))
@@ -727,3 +759,57 @@ def test_below_fusion_band_is_anchored_to_the_measured_loo_term():
     assert construction.below_fusion_band_kj_mol(
         temperature, measured_loo_band
     ) == pytest.approx(measured_loo_band)
+
+
+@pytest.mark.parametrize(
+    ("temperature", "expected_fusion_kj", "expected_band_kj"),
+    [
+        (1673.0, 8.345304559680903, 5.753327687635518),
+        (2000.0, 2.240350217364, 2.5199385118699427),
+    ],
+)
+def test_below_fusion_band_matches_the_constant_delta_cp_identity(
+    temperature, expected_fusion_kj, expected_band_kj
+):
+    row = INPUTS["rows"]["MnO"]
+    construction = liquid_from_solid(
+        "MnO", CRYSTALS[row["crystal_table_id"]], row["inputs"]
+    )
+    tfus = construction.fusion_temperature_k
+    delta_s = construction.fusion_entropy_j_mol_k
+    delta_cp = (
+        construction.liquid_cp_j_mol_k
+        - construction.crystal_cp_at_fusion_j_mol_k
+    )
+    entropy_spread = row["inputs"]["fusion_entropy"]["spread"]
+    cp_spread = row["inputs"]["liquid_heat_capacity"]["spread"]
+    tm_spread = row["inputs"]["fusion_temperature"]["spread"]
+    loo_band = INPUTS["tier_error_bands"]["fusion_entropy_tier3"]["max"][0]
+    shape = (tfus - temperature) - temperature * math.log(tfus / temperature)
+
+    # Premise: constant ΔCp gives ΔG_fus = ΔH_fus(1-T/Tm)
+    # - ΔCp[(Tm-T)-T ln(Tm/T)], with ΔH_fus=Tm ΔS_fus.
+    # The three sensitivities propagate ΔS_fus, ΔCp, and Tm; J/mol is divided
+    # by 1000 once. At Tm the propagated terms vanish except for the LOO anchor.
+    expected_fusion = (
+        tfus * delta_s * (1.0 - temperature / tfus) - delta_cp * shape
+    ) / 1000.0
+    expected_band = loo_band + (
+        abs(entropy_spread * (tfus - temperature))
+        + abs(cp_spread * shape)
+        + abs(
+            (
+                delta_s
+                - delta_cp * (1.0 - temperature / tfus)
+            )
+            * tm_spread
+        )
+    ) / 1000.0
+    assert expected_fusion == pytest.approx(expected_fusion_kj, abs=1e-12)
+    assert expected_band == pytest.approx(expected_band_kj, abs=1e-12)
+    assert construction.fusion_gibbs_kj_mol(
+        temperature
+    ) == pytest.approx(expected_fusion_kj, abs=1e-12)
+    assert construction.below_fusion_band_kj_mol(
+        temperature, loo_band
+    ) == pytest.approx(expected_band_kj, abs=1e-12)

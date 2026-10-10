@@ -220,12 +220,26 @@ For a constructed liquid evaluated below its fusion temperature, constant
 
 The band is the measured leave-one-out maximum at `T_fus`, plus the absolute
 fusion-entropy, heat-capacity-difference, and fusion-temperature sensitivities
-times their measured input spreads. The 48-pair validation census gives a
+times their selected input spreads. The 48-pair validation census gives a
 maximum absolute leave-one-out residual of 54.1349 J/(mol K) for the Tier 3
 per-formula-atom fusion-entropy estimator (RMS 17.3520 J/(mol K)). For Tier 3
 crystal-Cp carry-over, the maximum absolute residual in `ΔCp` is 170.200
-J/(mol K) (RMS 45.2682 J/(mol K)). These maxima, rather than the smaller RMS
-values, are used as the conservative input spreads. The measured Tier 3
+J/(mol K) (RMS 45.2682 J/(mol K)). Those census maxima remain the fallback
+spreads where no closer measured homologues apply. The measured Tier 3
 leave-one-out Gibbs maximum at `T_fus` is 1.154923 kJ/mol across the same 48
 pairs. At `T = T_fus`, `ΔG_fus` and all propagated terms vanish, so the band
 equals that measured leave-one-out maximum.
+
+For MnO, the selected entropy and `ΔCp` spreads are the maximum absolute
+leave-one-out residuals over the seven measured rock-salt monoxides BaO, CaO,
+FeO, MgO, SrO, TiO, and VO: 7.8596 J/(mol K) and 14.0011 J/(mol K). The
+48-pair Gibbs anchor at `T_fus` remains 1.154923 kJ/mol. The construction uses
+the homologue maxima, not the census-wide maxima or RMS values.
+
+Above fusion, an association species uses the Tier 3 leave-one-out entropy and
+heat-capacity Gibbs columns linearly interpolated in `T - T_fus` over that
+species' evaluation domain. The same residuals set the construction input
+spreads, so they are not added a second time. The independent fusion-temperature
+interval, source thermochemistry uncertainty, and condensate-fit residual are
+added once to the species band. Reaction bands then sum each participating
+species band once, with its stoichiometric coefficient.

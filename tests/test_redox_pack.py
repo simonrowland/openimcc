@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import math
 from pathlib import Path
@@ -29,7 +30,7 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     pack = load_redox_pack(PACK_PATH)
     elements = [parent["element"] for parent in pack.parents]
 
-    assert pack.version == "1.1.0"
+    assert pack.version == "1.2.0"
     assert elements == [
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K", "Cr", "Ni",
         "Co", "P", "V", "Mn", "Eu", "Ce", "S",
@@ -48,7 +49,8 @@ def test_reaction_rows_are_balanced_and_have_evidence_and_range_flags() -> None:
     pack = load_redox_pack(PACK_PATH)
 
     assert [row["complex"] for row in pack.rows] == [
-        "FeO(l)", "FeO1.5(l)", "MnO(l)", "MnSiO3(l)", "Mn2SiO4(l)"
+        "FeO(l)", "FeO1.5(l)", "MnO(l)", "MnSiO3(l)", "Mn2SiO4(l)",
+        "MnAl2O4(l)"
     ]
     for name, species in pack.content["thermo_species"].items():
         assert species["band_kj_mol"] >= 0.0
@@ -66,6 +68,7 @@ def test_reaction_rows_are_balanced_and_have_evidence_and_range_flags() -> None:
             "MnO(l)": (1673, 2000),
             "MnSiO3(l)": (1673, 2000),
             "Mn2SiO4(l)": (1673, 2000),
+            "MnAl2O4(l)": (1673, 2000),
         }
         assert row["T_domain_K"] == expected_domains[row["complex"]]
         assert row["band_kj_mol"] >= 0.0
@@ -262,7 +265,7 @@ def test_manganese_liquid_rows_reproduce_crystal_constructions_and_bands():
     loo_cp = inputs["tier_error_bands"]["liquid_heat_capacity_tier3"]["max"]
     coefficients = ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
 
-    for name in ("MnO", "MnSiO3", "Mn2SiO4"):
+    for name in ("MnO", "MnSiO3", "Mn2SiO4", "MnAl2O4"):
         construction_row = inputs["rows"][name]
         species = pack.content["thermo_species"][f"{name}(l)"]
         construction = liquid_from_solid(
@@ -279,23 +282,95 @@ def test_manganese_liquid_rows_reproduce_crystal_constructions_and_bands():
         low, high = map(float, species["T_domain_K"])
         temperatures = [low, high, *range(int(low), int(high) + 1, 25)]
         residual = float(fitted["_max_residual_J_per_mol"]) / 1000.0
-        if name == "MnO":
-            expected_band = max(
-                construction.below_fusion_band_kj_mol(t, float(loo_entropy[0]))
+        if name in {"MnO", "MnAl2O4"}:
+            expected_at = {
+                t: construction.below_fusion_band_kj_mol(
+                    t, float(loo_entropy[0])
+                )
+                + residual
                 for t in temperatures
-            )
+            }
+            if name == "MnAl2O4":
+                expected_at = {
+                    t: band
+                    + float(crystals[construction_row["crystal_table_id"]][
+                        "formation_enthalpy_spread_kj_mol"
+                    ])
+                    + t
+                    * float(crystals[construction_row["crystal_table_id"]][
+                        "entropy_spread_j_mol_k"
+                    ])
+                    / 1000.0
+                    for t, band in expected_at.items()
+                }
         else:
-            # The measured Tier 3 LOO residuals at +800 K bound the declared
-            # +109..+436 K association domains; parameter propagation remains
-            # temperature-specific and activity data do not enter the band.
-            expected_band = max(
-                construction.input_spread_kj_mol(t)
-                + float(loo_entropy[2])
-                + float(loo_cp[2])
-                for t in temperatures
+            def loo_at_offset(columns, offset):
+                if offset <= 300.0:
+                    fraction = offset / 300.0
+                    return float(columns[0]) + fraction * (
+                        float(columns[1]) - float(columns[0])
+                    )
+                fraction = (offset - 300.0) / 500.0
+                return float(columns[1]) + fraction * (
+                    float(columns[2]) - float(columns[1])
+                )
+
+            input_entropy_spread = float(
+                construction_row["inputs"]["fusion_entropy"]["spread"]
             )
-        expected_band += residual
+            input_cp_spread = float(
+                construction_row["inputs"]["liquid_heat_capacity"]["spread"]
+            )
+            expected_at = {}
+            for t in temperatures:
+                tfus = construction.fusion_temperature_k
+                shape = (t - tfus) - t * math.log(t / tfus)
+                # The LOO columns already measure these entropy and Cp
+                # residuals. Keep only the independent fusion-temperature
+                # interval from input propagation, then add the fitted-row
+                # residual and any direct crystal formation-enthalpy error.
+                entropy_input = abs(
+                    (tfus - t) * input_entropy_spread / 1000.0
+                )
+                cp_input = abs(input_cp_spread * shape / 1000.0)
+                temperature_input = max(
+                    0.0,
+                    construction.input_spread_kj_mol(t)
+                    - entropy_input
+                    - cp_input,
+                )
+                expected_at[t] = (
+                    loo_at_offset(loo_entropy, t - tfus)
+                    + loo_at_offset(loo_cp, t - tfus)
+                    + temperature_input
+                    + residual
+                    + float(
+                        crystals[construction_row["crystal_table_id"]].get(
+                            "formation_enthalpy_spread_kj_mol", 0.0
+                        )
+                    )
+                )
+        expected_band = max(expected_at.values())
         assert species["band_kj_mol"] == pytest.approx(expected_band, abs=1e-6)
+
+    with (ROOT / "src/openimcc/data/gas/condensate.csv").open(
+        newline="", encoding="utf-8"
+    ) as stream:
+        alumina_source = next(
+            row
+            for row in csv.DictReader(stream)
+            if row["species_name"] == "Al2O3(l)"
+            and row["T_min"] == "1500"
+            and row["T_max"] == "2000"
+        )
+    alumina = pack.content["thermo_species"]["Al2O3(l)"]
+    for coefficient in coefficients:
+        assert float(alumina["row"][coefficient]) == pytest.approx(
+            float(alumina_source[coefficient]), abs=1e-12
+        )
+    assert alumina["band_kj_mol"] == pytest.approx(
+        inputs["tier_error_bands"]["fusion_entropy_tier1"]["max"][0]
+    )
 
     generated = build_redox_metal_standard_rows(
         json.loads(SOURCE_PATH.read_text(encoding="utf-8"))["tables"]
@@ -320,12 +395,33 @@ def test_manganese_parent_and_association_reactions_have_expected_constants():
     expected = {
         "Mn(l) + 1/2 O2(g) = MnO(l)": (17.9402808965, 13.6445678969),
         "MnO(l) + SiO2(l) = MnSiO3(l)": (2.6891564601, 2.6626304454),
-        "2 MnO(l) + SiO2(l) = Mn2SiO4(l)": (4.3095062381, 3.8389528273),
+        "2 MnO(l) + SiO2(l) = Mn2SiO4(l)": (4.3454513532, 3.8690209161),
+        "MnO(l) + Al2O3(l) = MnAl2O4(l)": (4.5312726509, 4.0426340273),
     }
     for reaction, (at_1673, at_2000) in expected.items():
         row = by_reaction[reaction]
         assert ln_k_prime(pack, row, 1673.0) == pytest.approx(at_1673, abs=1e-9)
         assert ln_k_prime(pack, row, 2000.0) == pytest.approx(at_2000, abs=1e-9)
+
+
+def test_manganese_reaction_bands_sum_each_species_band_once():
+    pack = load_redox_pack(PACK_PATH)
+    for row in pack.rows:
+        if row["row"] < 3:
+            continue
+        band = sum(
+            float(coefficient)
+            * float(pack.content["thermo_species"][species]["band_kj_mol"])
+            for species, coefficient in row["reactants"].items()
+        )
+        band += sum(
+            float(coefficient)
+            * float(pack.content["thermo_species"][species]["band_kj_mol"])
+            for species, coefficient in row["products"].items()
+        )
+        assert float(row["band_kj_mol"]) == pytest.approx(
+            round(band, 3), abs=1e-12
+        )
 
 
 def test_loader_rejects_a_rehashed_unbalanced_row(tmp_path: Path) -> None:
