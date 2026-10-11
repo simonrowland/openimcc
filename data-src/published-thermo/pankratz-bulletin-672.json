@@ -73,6 +73,216 @@
       "last_printed_node": [1500, 13.770, 32.930, 15.193],
       "last_printed_node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
       "source_note": "Table 102; Hf and S at 298 K from CODATA, other thermal data from Mills."
+    },
+    "P672-Se-g": {
+      "table": "Selenium gas table",
+      "species": "Se(g)",
+      "formula": "Se",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 39.600,
+      "nodes": [
+        [1200, 5.550, 49.560, 4.814], [1300, 5.580, 50.010, 5.371],
+        [1400, 5.620, 50.430, 5.931], [1500, 5.660, 50.810, 6.496],
+        [1600, 5.700, 51.180, 7.063], [1700, 5.730, 51.530, 7.635],
+        [1800, 5.770, 51.860, 8.210], [1900, 5.810, 52.170, 8.789],
+        [2000, 5.840, 52.470, 9.372]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Pankratz Bulletin 672 selenium gas table; formation from 0.5 Se2(g), thermal data from Mills (158)."
+    },
+    "P672-Se2-g": {
+      "table": "Selenium gas table",
+      "species": "Se2(g)",
+      "formula": "Se2",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 33.300,
+      "nodes": [
+        [1200, 9.860, 72.150, 9.035], [1400, 9.740, 73.570, 10.995],
+        [1600, 9.620, 74.960, 12.931], [1800, 9.500, 75.090, 14.843],
+        [2000, 9.380, 77.080, 16.730]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "cp_equation_cal_mol_K": {
+        "a": 10.664,
+        "b_per_K": -0.000638,
+        "c_K2": -59900.0,
+        "equation": "Cp = a + b*T + c/T^2",
+        "published_range_K": [298.15, 2000.0]
+      },
+      "source_note": "Pankratz Bulletin 672 selenium gas table; data from Mills (158). The source prints selected 200 K nodes in the upper range and publishes the Cp equation."
+    },
+    "P672-Te-g": {
+      "table": "415",
+      "species": "Te(g)",
+      "formula": "Te",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 31.435,
+      "nodes": [
+        [1200, 5.180, 50.600, 4.527], [1300, 5.220, 51.010, 5.048],
+        [1400, 5.270, 51.400, 5.572], [1500, 5.310, 51.770, 6.101],
+        [1600, 5.350, 52.110, 6.634], [1700, 5.390, 52.430, 7.171],
+        [1800, 5.440, 52.740, 7.712], [1900, 5.480, 53.040, 8.258],
+        [2000, 5.520, 53.320, 8.809]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 415; data from Mills (158)."
+    },
+    "P672-Te2-g": {
+      "table": "416",
+      "species": "Te2(g)",
+      "formula": "Te2",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 38.330,
+      "nodes": [
+        [1200, 10.170, 74.800, 8.521], [1300, 10.330, 75.620, 9.546],
+        [1400, 10.490, 76.390, 10.587], [1500, 10.450, 77.110, 11.632],
+        [1600, 10.430, 77.780, 12.676], [1700, 10.410, 78.420, 13.718],
+        [1800, 10.370, 79.010, 14.757], [1900, 10.330, 79.570, 15.792],
+        [2000, 10.280, 80.100, 16.822]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 416; source prints 100 K Cp, entropy, and enthalpy nodes to 2000 K; data from Mills (158)."
+    },
+    "P672-TeO2-g": {
+      "table": "Tellurium Dioxide gas table",
+      "species": "TeO2(g)",
+      "formula": "TeO2",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": -15.100,
+      "nodes": [
+        [1200, 13.571, 82.970, 11.570], [1300, 13.619, 84.050, 12.930],
+        [1400, 13.658, 85.060, 14.294], [1500, 13.689, 86.010, 15.661]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Thermal data from Spoliti (210); formation enthalpy at 298 K from Muenow (164)."
+    },
+    "P672-SeO2-g": {
+      "table": "Selenium Dioxide gas table, printed p. 81",
+      "species": "SeO2(g)",
+      "formula": "SeO2",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": -26.200,
+      "nodes": [[958, 13.251, 76.781, 8.123]],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "cp_equation_cal_mol_K": {
+        "a": 12.030,
+        "b_per_K": 0.001390,
+        "c_K2": -184900.0,
+        "equation": "Cp = a + b*T + c/T^2",
+        "published_range_K": [298.15, 1500.0]
+      },
+      "source_note": "Formation is Se(c,l)+O2(g)=SeO2(g); gas data from Behrens et al. (12). Table nodes stop below the stated equation limit."
+    },
+    "P672-SeO2-c": {
+      "table": "378, SeO2(c,g)",
+      "species": "SeO2(cr)",
+      "formula": "SeO2",
+      "phase": "crystal",
+      "formation_enthalpy_298_kcal_mol": -53.860,
+      "entropy_298_cal_mol_K": 15.940,
+      "sublimation_temperature_K": 602.0,
+      "cp_equation_cal_mol_K": {
+        "a": 11.292,
+        "b_per_K": 0.013152,
+        "c_K2": 118000.0,
+        "equation": "Cp = a + b*T - c/T^2",
+        "published_range_K": [298.15, 602.0]
+      },
+      "nodes": [
+        [298.15, 13.886, 15.940, 0.000], [300, 13.927, 16.026, 0.026],
+        [400, 15.825, 20.306, 1.518], [494.3, 17.278, 23.807, 3.080],
+        [500, 17.366, 24.006, 3.179], [600, 18.752, 27.297, 4.986],
+        [602, 18.776, 27.358, 5.030]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "The source labels the 413-602 K region estimated and marks 602 K as the SeO2 sublimation point; source equations extend through 602 K."
+    },
+    "P672-TeO2-l": {
+      "table": "Tellurium Dioxide condensed-phase table, printed p. 418",
+      "species": "TeO2(l)",
+      "formula": "TeO2",
+      "phase": "liquid",
+      "formation_enthalpy_298_kcal_mol": -96.265,
+      "fusion_temperature_K": 1006.0,
+      "nodes": [
+        [1006, 27.600, 46.773, 19.250], [1100, 27.600, 49.239, 21.844],
+        [1200, 27.600, 51.640, 24.604], [1300, 27.600, 53.850, 27.364],
+        [1400, 27.600, 55.895, 30.124], [1500, 27.600, 57.799, 32.884]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Source marks the 1006 K melting point and 6.760 kcal/mol fusion enthalpy; liquid Cp is 27.600 cal/(mol K). Formation anchor and entropy from Wagman (236); high-temperature liquid data based on Prescher (186) and Mezaki (154)."
+    },
+    "P672-As-g": {
+      "table": "Arsenic gas table, printed p. 49",
+      "species": "As(g)",
+      "formula": "As",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 72.120,
+      "nodes": [
+        [1200, 4.968, 48.529, 4.480]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Thermal data from Hultgren (99); table relates As(g) to the 1/4 As4(g) reference."
+    },
+    "P672-As2-g": {
+      "table": "Arsenic gas table, printed p. 49",
+      "species": "As2(g)",
+      "formula": "As2",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 52.820,
+      "nodes": [[1200, 8.900, 69.702, 7.920]],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Thermal data from Hultgren (99); formation reaction is 2As[cr, 1/4As4(g)] = As2(g)."
+    },
+    "P672-As4-g": {
+      "table": "Arsenic gas table, printed p. 49",
+      "species": "As4(g)",
+      "formula": "As4",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 36.640,
+      "nodes": [[1200, 19.776, 105.212, 17.588]],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Selected tetramer row; source labels a separate As4 row as ideal triatomic. Thermal data from Hultgren (99)."
+    },
+    "P672-As4O6-g": {
+      "table": "56",
+      "species": "As4O6(g)",
+      "formula": "As4O6",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": -285.910,
+      "nodes": [
+        [298.15, 41.490, 97.810, 0.000], [300, 41.610, 98.070, 0.077],
+        [400, 46.560, 110.790, 4.509], [500, 49.390, 121.510, 9.318],
+        [600, 51.110, 130.670, 14.350], [700, 52.230, 138.640, 19.521],
+        [800, 52.980, 145.670, 24.783], [876, 53.383, 150.495, 28.826],
+        [900, 53.510, 151.940, 30.109], [1000, 53.900, 157.600, 35.481]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 56; data from Behrens and Rosenblatt (13); formation table marks the arsenic sublimation transition at 876 K."
+    },
+    "P672-As2O3-c": {
+      "table": "53",
+      "species": "As2O3(cr)",
+      "formula": "As2O3",
+      "phase": "crystal",
+      "formation_enthalpy_298_kcal_mol": -157.020,
+      "entropy_298_cal_mol_K": 25.672,
+      "fusion_temperature_K": 551.0,
+      "cp_equation_cal_mol_K": {
+        "a": 21.045,
+        "b_per_K": 0.017368,
+        "c_K2": 272800.0,
+        "equation": "Cp = a + b*T - c/T^2",
+        "published_range_K": [298.15, 551.0]
+      },
+      "nodes": [
+        [298.15, 23.155, 25.672, 0.000], [300, 23.225, 25.815, 0.043],
+        [350, 24.896, 29.526, 1.248], [400, 26.269, 32.943, 2.528],
+        [450, 27.501, 36.109, 3.872], [500, 28.654, 39.066, 5.276],
+        [550, 29.713, 41.848, 6.736], [551, 29.732, 41.902, 6.766]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "Table 53; above 360 K data are estimated; low-temperature heat capacity and S298 from Chang (29), formation enthalpy from Wagman (236)."
     }
   }
 }

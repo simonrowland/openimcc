@@ -35,7 +35,7 @@ records:
     selection_reason: No source-rated ZnO(l) function is available; the published crystal function reaches the estimated fusion range and feeds the required liquid_from_solid construction.
   - record_id: P672
     path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded
+    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     tables:
@@ -55,6 +55,58 @@ records:
         source_locator: Table 102, CdO(cr)
         tier: 4
         selection_reason: CdO(l) has no stable 1-bar source row; the published crystal Cp function is extended above 1500 K to the estimated fusion range for the required liquid_from_solid construction.
+      P672-Se-g:
+        source_locator: Selenium gas table, printed pp. 80-81
+        tier: 3
+        selection_reason: JANAF and NASA Glenn provide no selenium atom card; the Bureau of Mines evaluation supplies a measured-data-based function through 2000 K, with the explicitly stated Se2 elemental reference.
+      P672-Se2-g:
+        source_locator: Selenium gas table, printed p. 81
+        tier: 3
+        selection_reason: The table directly supplies the elemental diatomic gas function and its source equations through 2000 K; the unsupported upper range is separately labelled for continuation.
+      P672-SeO2-g:
+        source_locator: SeO2(g) table, printed p. 81
+        tier: 2
+        selection_reason: JANAF and NASA Glenn supply no SeO2(g) table; the compilation cites the primary Behrens measurements and gives temperature functions through 1500 K.
+      P672-SeO2-c:
+        source_locator: Table 378, SeO2(cr)
+        tier: 4
+        selection_reason: SeO2(l) has no measured liquid row in the source; the documented crystal Cp function and its measured uncertainty basis are used for the required tier-4 liquid_from_solid construction.
+      P672-Te-g:
+        source_locator: Table 415, Te(g)
+        tier: 3
+        selection_reason: JANAF and NASA Glenn provide no tellurium atom card; the evaluated Bureau of Mines table supplies measured-data-based thermodynamic values through 2000 K.
+      P672-Te2-g:
+        source_locator: Table 416, Te2(g)
+        tier: 3
+        selection_reason: JANAF and NASA Glenn provide no tellurium dimer card; the evaluated Bureau of Mines table supplies the matching elemental diatomic function through 2000 K.
+      P672-TeO2-g:
+        source_locator: TeO2(g) table, printed p. 81
+        tier: 2
+        selection_reason: JANAF has no TeO2(g) table; the compilation reports the primary Spoliti thermal data and Muenow formation measurement, supplying a direct 1500 K source limit.
+      P672-TeO2-l:
+        source_locator: TeO2(c,l) table, printed p. 418
+        tier: 1
+        selection_reason: The source prints the TeO2 liquid branch at its 1006 K melting marker with a measured high-temperature Cp function, making it the phase-pair-consistent caller parent; only the continuation above 1500 K is estimated.
+      P672-As-g:
+        source_locator: As(g) table, printed p. 49
+        tier: 3
+        selection_reason: JANAF and NASA Glenn provide no arsenic atom card; the Bureau of Mines evaluation supplies the thermodynamic row and its 1/4 As4 reference through 1200 K.
+      P672-As2-g:
+        source_locator: As2(g) table, printed p. 49
+        tier: 3
+        selection_reason: The table supplies As2 thermodynamic values through 1200 K with its explicit elemental reference; continuation covers the requested upper interval.
+      P672-As4-g:
+        source_locator: As4(g) table, printed p. 49, ideal tetrameric row
+        tier: 3
+        selection_reason: The tetramer row is selected by its printed formula and formation data; the separate triatomic-labelled row is not conflated with As4.
+      P672-As4O6-g:
+        source_locator: Table 56, As4O6(g)
+        tier: 2
+        selection_reason: JANAF and NASA Glenn provide no arsenic oxide vapor card; the table cites the Behrens and Rosenblatt primary thermodynamic measurement through 1000 K, with explicit continuation above that limit.
+      P672-As2O3-c:
+        source_locator: Table 53, cubic As2O3(cr)
+        tier: 4
+        selection_reason: No evaluated As2O3 liquid function is available; the source crystal Cp equation reaches the 551 K melt marker and is the input to the required tier-4 liquid_from_solid construction.
   - record_id: P696
     path: data-src/published-thermo/pankratz-bulletin-696.json
     source_sha256: 1b0de65dc2fdd078a4babe5fb0430205259b503f4f74064f727af9df8c99e291
