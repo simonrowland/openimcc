@@ -1290,6 +1290,7 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
     ] == config["inputs"]["liquid_heat_capacity"]["spread"]
     assert gas_row["species_name"] == "MnO(l)"
     assert [(gas_row["T_min"], gas_row["T_max"])] == [("1673", "2000")]
+    assert gas_row["Ref"] == "LFS[MnO-IVTAN-1435;Tf=2120]"
     assert residual == pytest.approx(0.186390915536322, abs=1e-12)
     assert residual < 10.0
     assert all(
@@ -1345,6 +1346,16 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
     source_records = {
         record["record_id"]: record for record in source_manifest["records"]
     }
+    mno_source = json.loads(
+        (ROOT / "data-src" / "published-thermo" / "tsiv-table-1436.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert mno_source["accuracy_class"] == "4-E"
+    assert mno_source["formation_enthalpy_298_kj_mol"] == 155.620
+    assert mno_source["formation_enthalpy_0_kj_mol"] == 156.096
+    assert mno_source["dissociation_enthalpy_kj_mol"] == {"value": 374.0}
+    assert "not quantify a numeric uncertainty band" in mno_source["table_note"]
     for source_id, source_path in (
         ("TSIV-1435", ROOT / "data-src" / "crystal-thermochemistry.json"),
         ("TSIV-1436", ROOT / "data-src" / "published-thermo" / "tsiv-table-1436.json"),
@@ -1365,7 +1376,11 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
         if item["species_name"] == "MnO(g)":
             assert item["table_id"] == "TSIV-1436"
             assert item["tier"] == 3
-            assert "±12.2 kJ/mol" in item["uncertainty_band"]["kind"]
+            assert item["uncertainty_band"]["kind"] == (
+                "Table 1436 prints accuracy class 4-E; numeric uncertainty band is "
+                "not quantified by the cited page"
+            )
+            assert "phi_uncertainty_J_mol_K" not in item["uncertainty_band"]
         else:
             assert item["table_id"] == "Mn-006"
             assert item["tier"] == 1

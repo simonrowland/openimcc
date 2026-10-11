@@ -44,6 +44,9 @@ if TYPE_CHECKING:
 R_J_MOL_K = 8.314462618
 _SUPERCOOLED_EXTENSION_REF_SUFFIX = "-SC-CP"
 _SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
+_LIQUID_FROM_SOLID_REF_RE = re.compile(
+    r"^LFS\[(?P<source>[^;\]]+);Tf=(?P<temperature>[0-9]+(?:\.[0-9]+)?)\]$"
+)
 """Molar gas constant, J / (mol K)."""
 
 BAR = 1.0
@@ -1656,8 +1659,10 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
               'reason': 'Mn(g), MnO(g), MnO(l), and opt-in Mn+ are available; MnO(l) is a tier-4 '
                         'liquid_from_solid construction over 1673-2000 K and is supercooled below '
                         'measured Tm 2120 ± 20 K; a(MnO) is caller-supplied; the joint C3 screen '
-                        'used a(MnO)=1e-3 and reached 1.621e-07 at 2800 K and fO2=1e-4 within the '
-                        '<=1-bar neutral-pressure domain.',
+                        'used a(MnO)=1e-3 and reached 1.621e-07 at 2800 K and fO2=1e-4, outside '
+                        "MnO(l)'s declared 1673-2000 K interval; the 100 K-grid maximum within that "
+                        'interval was 8.706e-10 at 2000 K and fO2=1e-4, both within the <=1-bar '
+                        'neutral-pressure domain.',
               'c2_candidates': (('TSIV-1436', 'MnO'),),
               'c3_ion_bound': {   'max_ratio': 1.6207006439556975e-07,
                                   'isolated_bound': 0.0001745528521533135,
@@ -2266,7 +2271,7 @@ def _source_model_flag(
     source_ref = str(row.get("Ref", ""))
     extension = _SOURCE_CP_EXTENSION_RE.search(source_ref)
     source_table = _source_table_identifier(source_ref)
-    if phase == "l" and "-LFS" in source_ref:
+    if phase == "l" and _liquid_from_solid_reference(source_ref) is not None:
         if extension is None:
             return (
                 f"{row_name} uses a tier-4 liquid_from_solid construction "
@@ -2293,8 +2298,36 @@ def _source_model_flag(
     return None
 
 
+def _liquid_from_solid_reference(
+    source_ref: str,
+) -> tuple[str, float | None] | None:
+    """Read explicit liquid-from-solid metadata, retaining legacy table refs."""
+    match = _LIQUID_FROM_SOLID_REF_RE.fullmatch(source_ref)
+    if match is not None:
+        return match["source"], float(match["temperature"])
+    if "-LFS" in source_ref:
+        return _source_table_identifier(source_ref), None
+    return None
+
+
+def _supercooled_liquid_from_solid_flag(
+    row_name: str, T: float, row: pd.Series
+) -> str | None:
+    """Flag a constructed liquid below its measured or selected fusion point."""
+    construction = _liquid_from_solid_reference(str(row.get("Ref", "")))
+    if construction is None or construction[1] is None or T >= construction[1]:
+        return None
+    return (
+        f"{row_name} uses a supercooled liquid_from_solid branch below "
+        f"the {construction[1]:g} K fusion temperature"
+    )
+
+
 def _source_table_identifier(source_ref: str) -> str:
     """Remove runtime construction suffixes while retaining the source ID."""
+    match = _LIQUID_FROM_SOLID_REF_RE.fullmatch(source_ref)
+    if match is not None:
+        return match["source"]
     base = _SOURCE_CP_EXTENSION_RE.sub("", source_ref)
     return base.removesuffix("-LFS").removesuffix(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
 
@@ -2929,6 +2962,11 @@ def evaluate_gas(
             elif oxide_row is not None:
                 flag = _source_model_flag(
                     oxide_name, T, oxide_row, phase="l"
+                )
+                if flag is not None:
+                    flags.append(flag)
+                flag = _supercooled_liquid_from_solid_flag(
+                    oxide_name, T, oxide_row
                 )
                 if flag is not None:
                     flags.append(flag)

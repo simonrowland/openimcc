@@ -243,8 +243,10 @@ Table 82 liquid branch, followed by a flagged constant-Cp continuation above
 its last liquid node. No activity model or activity coefficients are supplied.
 
 The optional Mn channel uses caller-supplied MnO activity with Mn(g), MnO(g)
-and opt-in Mn+(g). MnO(g) is fitted to IVTAN Table 1436 (tier 3; the source
-reports ±12.2 kJ/mol formation-enthalpy uncertainty and Phi uncertainty).
+and opt-in Mn+(g). MnO(g) is fitted to IVTAN Table 1436 (tier 3); the table
+prints accuracy class 4-E and formation enthalpies of 155.620 kJ/mol at
+298.15 K and 156.096 kJ/mol at 0 K. The cited page does not quantify a numeric
+uncertainty band.
 MnO(l) covers 1673–2000 K and reuses the redox pack's tier-4
 `liquid_from_solid` construction and input record: the TSIV Table 1435 crystal
 function, measured Tm = 2120 ± 20 K, and tier-3 fusion-entropy and liquid-Cp

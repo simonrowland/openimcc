@@ -2762,6 +2762,10 @@ def _fit_liquid_from_solid_parent(
             raise ValueError(
                 f"MnO(l): condensate fit residual {residual:g} J/mol exceeds 10"
             )
+        row["Ref"] = (
+            f"LFS[{config['crystal_table_id']};Tf="
+            f"{float(config['inputs']['fusion_temperature']['value']):g}]"
+        )
         return [row], construction, None
     else:
         raise ValueError(f"{species}: no source-supported liquid-from-solid parent")

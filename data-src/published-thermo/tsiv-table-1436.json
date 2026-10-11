@@ -4,9 +4,11 @@
   "source_url": "https://www.chem.msu.ru/rus/tsiv/Mn/ivtan0005.html",
   "formula": "MnO",
   "species": "MnO(g)",
+  "accuracy_class": "4-E",
   "formation_enthalpy_298_kj_mol": 155.620,
+  "formation_enthalpy_0_kj_mol": 156.096,
   "enthalpy_298_minus_H0_kj_mol": 8.862,
-  "dissociation_enthalpy_kj_mol": {"value": 374.0, "spread": 10.0},
+  "dissociation_enthalpy_kj_mol": {"value": 374.0},
   "nodes": [
     [298.15, 31.656, 235.992, 8.862],
     [1200, 37.321, 284.719, 40.979],
@@ -30,5 +32,5 @@
     [3000, 47.910, 322.044, 115.710]
   ],
   "node_columns": ["T_K", "Cp_J_mol_K", "S_J_mol_K", "H_minus_H0_kJ_mol"],
-  "table_note": "Table 1436 reports the MnO gas function over 100-6000 K. This checked subset supplies the 1200-3000 K fitted runtime rows. The 298.15 K formation-enthalpy uncertainty is ±12.2 kJ/mol; the source estimates the uncertainty in Phi at 0.04, 0.1, and 0.4 J/(mol K) at 298.15, 1000, and 3000 K."
+  "table_note": "Table 1436 prints accuracy class 4-E, DrH = 374.000 kJ/mol, DH(298.15 K) = 155.620 kJ/mol, and DH(0) = 156.096 kJ/mol. This checked subset supplies the 1200-3000 K fitted runtime rows. The cited page does not quantify a numeric uncertainty band in this transcription."
 }

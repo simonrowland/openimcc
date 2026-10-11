@@ -1729,6 +1729,11 @@ def test_public_mn_channels_use_the_mno_parent_and_janaf_ion(
     assert "Mn+" in with_ions
     assert neutral.provenance_class["Mn"] == "liquid_from_solid_estimate"
     assert neutral.provenance_class["MnO"] == "liquid_from_solid_estimate"
+    for species in ("Mn", "MnO"):
+        flags = neutral.domain_flags[species]
+        assert flags is not None
+        assert "tier-4 liquid_from_solid construction from MnO-IVTAN-1435" in flags
+        assert "supercooled liquid_from_solid branch" in flags
 
     missing_mno_gas = replace(
         gas_pack, gas_df=gas_pack.gas_df.drop(index="MnO(g)")
