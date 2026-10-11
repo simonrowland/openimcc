@@ -291,8 +291,9 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     )
 
     # Fe reference functions are refit directly to JANAF. The previous rows
-    # carried a 60-79 J/mol fusion-anchor offset; these pins record the
-    # resulting source-accurate change.
+    # missed their JANAF source by up to 79 J/mol (a fusion-anchor offset on
+    # Fe(l); a single polynomial across the Fe(cr) delta phase); these pins
+    # record the resulting source-accurate change.
     fe_buffered = evaluate_redox({"Fe": 1.0, "O": 1.0}, 2200.0, "closed")
     assert fe_buffered.lambda_ln_f_o2 == pytest.approx(
         -15.119336858668342, rel=1.0e-12
@@ -703,7 +704,7 @@ def test_imposed_mixed_melt_predicts_buffered_metal_without_oxygen() -> None:
         lambda_imposed=-17.931129807709393,
     )
     # This exact pin moves with the direct JANAF Fe reference refit; the old
-    # elemental rows carried a 60-79 J/mol fusion-anchor offset.
+    # elemental rows missed their JANAF source by up to 79 J/mol.
     assert result.metal_moles == pytest.approx(0.505175189115107, abs=2.0e-9)
     assert result.oxygen_inventory_mol is None
     assert result.oxygen_residual_mol is None

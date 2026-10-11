@@ -3,8 +3,10 @@
 ## Unreleased
 
 - Refit the elemental iron reference functions directly to the JANAF phase
-  tables. The earlier Fe rows carried 60–79 J/mol fusion-anchor offsets; the
-  direct fits remove that correction and retain a 2.345 J/mol Fe(cr)/Fe(l)
+  tables. The earlier Fe(l) row carried a 76–79 J/mol fusion-anchor offset,
+  and the earlier single-polynomial Fe(cr) row missed its delta-phase source
+  nodes by −63 to +77 J/mol; the direct fits remove the anchor correction
+  and retain a 2.345 J/mol Fe(cr)/Fe(l)
   seam, within the 10 J/mol fit gate. Fe(cr) now separates alpha, gamma, and
   delta at 1184 and 1665 K, with an additional 900 K alpha fit split for the
   source-node residual gate. The recorded Fe reference bands are fit/seam

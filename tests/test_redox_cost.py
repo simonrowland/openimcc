@@ -163,8 +163,9 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     assert median <= ceiling
 
 
-# Fe saturation pins follow the direct JANAF Fe(l) refit; the previous Fe
-# reference carried a 60-79 J/mol fusion-anchor offset.
+# Fe saturation pins follow the direct JANAF Fe refit; the previous Fe
+# reference rows missed their JANAF source by up to 79 J/mol (a fusion-anchor
+# offset on Fe(l); a single polynomial across the Fe(cr) delta phase).
 @pytest.mark.parametrize(
     (
         "name",
