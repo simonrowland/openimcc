@@ -60,14 +60,17 @@ process working directory. Missing or unreadable files raise the typed
 `ImccMalformedDatapackError` refusal with a message that omits the full path.
 Content digest mismatches continue to raise the loader's `ValueError`.
 
-`evaluate_redox()` uses optional `threadpoolctl` to limit supported
-BLAS/OpenMP thread pools to one thread for the duration of the call; it does
-not add an install dependency. These limits are process-wide while active, so
-other threads in the process are affected. The guard does not set HiGHS'
-separate `threads` option. Without `threadpoolctl`, callers can set
-`OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`, `VECLIB_MAXIMUM_THREADS=1`, and
-`MKL_NUM_THREADS=1` in the environment. CPU time exceeding wall time is a sign
-of thread oversubscription.
+## Threading
+
+These solves use small dense linear algebra. Multi-threaded BLAS gives no
+benefit and, under machine load, can cost orders of magnitude in wall time;
+CPU time far above wall time is a sign of oversubscription. Callers can limit
+BLAS threads with `OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`,
+`MKL_NUM_THREADS=1`, and `VECLIB_MAXIMUM_THREADS=1` set before NumPy is
+imported, or with one `threadpoolctl.threadpool_limits(limits=1)` context
+around a whole run. Entering that context costs about 0.7 ms, so do not enter
+it per solve; it does not control Apple Accelerate. The library does not
+change thread settings.
 
 ## Frozen preregistered predictions — 2026-10-08
 

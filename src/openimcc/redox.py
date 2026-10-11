@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from fractions import Fraction
-from functools import wraps
 import math
 from numbers import Real
 from pathlib import Path
@@ -1481,20 +1480,6 @@ def _assemble_result(
     )
 
 
-def _single_threaded_blas(function: Callable[..., Any]) -> Callable[..., Any]:
-    @wraps(function)
-    def wrapped(*args: Any, **kwargs: Any) -> Any:
-        try:
-            from threadpoolctl import threadpool_limits
-        except ImportError:
-            return function(*args, **kwargs)
-        with threadpool_limits(limits=1):
-            return function(*args, **kwargs)
-
-    return wrapped
-
-
-@_single_threaded_blas
 def evaluate_redox(
     inventory: Mapping[str, float],
     T_K: float,
