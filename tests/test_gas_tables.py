@@ -1505,6 +1505,8 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "Cu", "CuO", "Cu2",
         "Sn", "SnO", "SnO2",
         "Zn", "ZnO", "Cd", "CdO", "Bi", "Bi2", "BiO", "MnO",
+        "Te", "Te2", "TeO2", "Se", "Se2", "SeO2",
+        "As", "As2", "As4", "As4O6",
     }
     assert trace_channels == set(build_gas_tables.TRACE_GAS_SPECIES)
 
@@ -1526,7 +1528,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         element = next(
             name for name in (
                 "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
-                "In", "Zn", "Cd", "Bi", "Mn",
+                "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As",
             )
             if name in parent_atoms
         )
