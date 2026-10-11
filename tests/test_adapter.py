@@ -258,6 +258,91 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
     )
 
 
+@pytest.mark.parametrize(
+    ("pack_name", "expected_notice"),
+    [
+        (
+            None,
+            "K predictions from IMCC-SF04-D066 remain low against Hastie "
+            "1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see "
+            "https://github.com/simonrowland/openimcc",
+        ),
+        (
+            "imcc-sf04-v1.0.2.json",
+            "K predictions from IMCC-SF04 remain low against Hastie 1981 "
+            "KEMS pressures (case 4: −1.20 to −1.26 dex); see "
+            "https://github.com/simonrowland/openimcc",
+        ),
+        (
+            "imcc-sf04-ext-v4.json",
+            "K predictions from IMCC-SF04-EXT remain low against Hastie "
+            "1981 KEMS pressures (case 4: −1.20 to −1.26 dex); see "
+            "https://github.com/simonrowland/openimcc",
+        ),
+        (
+            "imcc-sf04-d066-v1.json",
+            "K predictions from IMCC-SF04-D066 remain low against Hastie "
+            "1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see "
+            "https://github.com/simonrowland/openimcc",
+        ),
+        (
+            "imcc-sf04-d066-v1-kcaalsi2o7.json",
+            "K predictions from IMCC-SF04-D066 remain low against Hastie "
+            "1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see "
+            "https://github.com/simonrowland/openimcc",
+        ),
+        (
+            "imcc-sf04-d066-ext-v1.json",
+            "K predictions from IMCC-SF04-D066 remain low against Hastie "
+            "1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see "
+            "https://github.com/simonrowland/openimcc",
+        ),
+    ],
+)
+def test_alkali_notice_uses_loaded_pack_identity(
+    pack_name: str | None,
+    expected_notice: str,
+) -> None:
+    pack_path = (
+        None
+        if pack_name is None
+        else Path("src/openimcc/data/packs") / pack_name
+    )
+    pack = load_datapack(pack_path)
+    result = evaluate(
+        {"SiO2": 0.9, "K2O": 0.1},
+        1473.0,
+        pack,
+        enable_sp_extension=bool(pack.extension_parents),
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.labels.notices == (expected_notice,)
+
+
+def test_alkali_notice_reports_unmeasured_pack_identity() -> None:
+    published = load_datapack(DATAPACK_PATH)
+    research_pack = label_research_datapack(
+        published.kernel_datapack,
+        model_id="IMCC-SF04-RE",
+        coverage="test-pack",
+    )
+    result = evaluate(
+        {"SiO2": 0.9, "K2O": 0.1},
+        1473.0,
+        research_pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.labels.notices == (
+        "K predictions against Hastie 1981 KEMS pressures (case 4) have "
+        "not been evaluated for this IMCC-SF04-RE pack; see "
+        "https://github.com/simonrowland/openimcc",
+    )
+
+
 def test_species_coverage_threshold_uses_published_binary_and_validated_rows() -> None:
     pack = load_datapack(DATAPACK_PATH)
     fixture = load_bench_set(Path("benchmarks/sets/basalt-bench-set-v1.yaml"))

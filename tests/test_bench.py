@@ -64,6 +64,71 @@ def test_packaged_core_and_extension_packs_run_through_bench(
     assert activities["SiO2"] > 0.0
 
 
+@pytest.mark.parametrize(
+    ("pack_name", "expected_residuals"),
+    [
+        (
+            "imcc-sf04-v1.0.2.json",
+            {
+                "hastie_k_1917_186": -1.199993386,
+                "hastie_k_1917_282": -1.255882188,
+                "hastie_k_1955_825": -1.258877303,
+            },
+        ),
+        (
+            "imcc-sf04-ext-v4.json",
+            {
+                "hastie_k_1917_186": -1.199993386,
+                "hastie_k_1917_282": -1.255882188,
+                "hastie_k_1955_825": -1.258877303,
+            },
+        ),
+        (
+            "imcc-sf04-d066-v1.json",
+            {
+                "hastie_k_1917_186": -1.166030703,
+                "hastie_k_1917_282": -1.221907826,
+                "hastie_k_1955_825": -1.220289609,
+            },
+        ),
+        (
+            "imcc-sf04-d066-v1-kcaalsi2o7.json",
+            {
+                "hastie_k_1917_186": -1.166030703,
+                "hastie_k_1917_282": -1.221907826,
+                "hastie_k_1955_825": -1.220289609,
+            },
+        ),
+        (
+            "imcc-sf04-d066-ext-v1.json",
+            {
+                "hastie_k_1917_186": -1.166030703,
+                "hastie_k_1917_282": -1.221907826,
+                "hastie_k_1955_825": -1.220289609,
+            },
+        ),
+    ],
+)
+def test_hastie_case4_k_residuals_are_pinned_per_pack(
+    pack_name: str,
+    expected_residuals: dict[str, float],
+) -> None:
+    report = run_bench(
+        Path("benchmarks/sets/basalt-bench-set-v1.yaml"),
+        Path("src/openimcc/data/packs") / pack_name,
+        populations=("hastie1981_kems",),
+        species=("K",),
+    )
+
+    rows = {row.point_id: row for row in report.points}
+    assert set(rows) == set(expected_residuals)
+    for point_id, expected_residual in expected_residuals.items():
+        assert rows[point_id].status == "ok"
+        assert rows[point_id].residual == pytest.approx(
+            expected_residual, abs=5.0e-8
+        )
+
+
 def _write_fixture(path: Path, points: list[dict], compositions: dict | None = None) -> Path:
     payload = {
         "schema_version": "melt-activity-bench.v1",

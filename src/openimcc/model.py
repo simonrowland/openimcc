@@ -173,11 +173,49 @@ _PARENT_CATION_SYMBOL = MappingProxyType(
 # their geometric mean, sqrt(product) = 1.91005490744e-3. This is a
 # predict-and-flag threshold, not a coefficient change.
 _SPECIES_COVERAGE_EDGE_RATIO = 1.9100549074388355e-3
-_ALKALI_BIAS_NOTICE = (
-    "K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS "
-    "pressures (case 4: −1.20 to −1.26 dex); see "
-    "https://github.com/simonrowland/openimcc"
+# The benchmark range uses the tracked Hastie case-4 K points and the bench
+# runner's default gas pack. Key by the complete melt-pack identity so a new
+# or external pack cannot inherit another pack's measured bias.
+_ALKALI_BIAS_BENCHMARKS = MappingProxyType(
+    {
+        (
+            "IMCC-SF04",
+            "f2b479cd54e3c82704a5863fcc06836f72045375d9a8c7f8d2fad19e98f75d05",
+        ): "−1.20 to −1.26 dex",
+        (
+            "IMCC-SF04-EXT",
+            "4cbec2ee85cd95314a5f62f5ce4e00cbe660935bde12df3a7e5daa425612ad03",
+        ): "−1.20 to −1.26 dex",
+        (
+            "IMCC-SF04-D066",
+            "d894f4e5ce79ba393f7068ec7d9032336eda8276293c4f46cafb18944a8b247e",
+        ): "−1.17 to −1.22 dex",
+        (
+            "IMCC-SF04-D066",
+            "e737f191a6b12df89bf8c3814e65e25ee0d37745ad8142d12ed0c8614d9f55d5",
+        ): "−1.17 to −1.22 dex",
+        (
+            "IMCC-SF04-D066",
+            "90b3fb016073b415e7f505b4739fb193e9cf4680232307d642db730694bcb44b",
+        ): "−1.17 to −1.22 dex",
+    }
 )
+_ALKALI_BIAS_BENCH_URL = "https://github.com/simonrowland/openimcc"
+
+
+def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
+    measured_bias = _ALKALI_BIAS_BENCHMARKS.get((model_id, binding_digest))
+    if measured_bias is None:
+        return (
+            "K predictions against Hastie 1981 KEMS pressures (case 4) have "
+            f"not been evaluated for this {model_id} pack; see "
+            f"{_ALKALI_BIAS_BENCH_URL}"
+        )
+    return (
+        f"K predictions from {model_id} remain low against Hastie 1981 KEMS "
+        f"pressures (case 4: {measured_bias}); see {_ALKALI_BIAS_BENCH_URL}"
+    )
+
 
 class ImccMalformedDatapackError(ImccRefusal):
     """Raised when a datapack JSON file is malformed or schema-invalid."""
@@ -1204,7 +1242,7 @@ def evaluate(
         )
 
     notices = (
-        (_ALKALI_BIAS_NOTICE,)
+        (_alkali_bias_notice(model_id, binding_digest),)
         if any(
             vector[parent_oxides.index(name)] > 0.0
             for name in ("Na2O", "K2O")
