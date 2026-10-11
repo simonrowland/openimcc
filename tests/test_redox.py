@@ -290,12 +290,15 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
         abs=0.0,
     )
 
+    # Fe reference functions are refit directly to JANAF. The previous rows
+    # carried a 60-79 J/mol fusion-anchor offset; these pins record the
+    # resulting source-accurate change.
     fe_buffered = evaluate_redox({"Fe": 1.0, "O": 1.0}, 2200.0, "closed")
     assert fe_buffered.lambda_ln_f_o2 == pytest.approx(
-        -15.119589936828516, rel=1.0e-12
+        -15.119336858668342, rel=1.0e-12
     )
     assert fe_buffered.metal_moles == pytest.approx(
-        0.013123339041090802, rel=1.0e-12, abs=0.0
+        0.01312413668273617, rel=1.0e-12, abs=0.0
     )
     assert fe_buffered.oxygen_residual_mol is not None
     assert abs(fe_buffered.oxygen_residual_mol) <= 5.0e-13
@@ -303,7 +306,7 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     assert {
         name: amount for name, amount in fe_buffered.species_moles.items() if amount
     } == pytest.approx(
-        {"FeO": 0.9606299828739262, "FeO1.5(l)": 0.0262466780840492},
+        {"FeO": 0.9606275899489891, "FeO1.5(l)": 0.026248273367340567},
         rel=1.0e-12,
         abs=0.0,
     )
@@ -568,8 +571,9 @@ def test_oxygen_response_is_continuous_across_pure_fe_saturation() -> None:
         {"Fe": 1.0}, temperature, "imposed", lambda_imposed=0.0
     )
     at_saturation = evaluate_redox(
-        # This updated zero-metal boundary follows the phase-fitted Fe(l) anchor.
-        {"Fe": 1.0, "O": 1.0132978512},
+        # The source-refitted Fe(l) function moves the saturation boundary;
+        # this inventory sits just below its zero-metal endpoint.
+        {"Fe": 1.0, "O": 1.0132986},
         temperature,
         "imposed",
         lambda_imposed=imposed.lambda_sat,
@@ -698,7 +702,9 @@ def test_imposed_mixed_melt_predicts_buffered_metal_without_oxygen() -> None:
         "imposed",
         lambda_imposed=-17.931129807709393,
     )
-    assert result.metal_moles == pytest.approx(0.5050706980982794, abs=2.0e-9)
+    # This exact pin moves with the direct JANAF Fe reference refit; the old
+    # elemental rows carried a 60-79 J/mol fusion-anchor offset.
+    assert result.metal_moles == pytest.approx(0.505175189115107, abs=2.0e-9)
     assert result.oxygen_inventory_mol is None
     assert result.oxygen_residual_mol is None
     assert result.lambda_sat == pytest.approx(-17.931129807709393, abs=1.0e-9)

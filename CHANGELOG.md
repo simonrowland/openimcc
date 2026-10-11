@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+- Refit the elemental iron reference functions directly to the JANAF phase
+  tables. The earlier Fe rows carried 60–79 J/mol fusion-anchor offsets; the
+  direct fits remove that correction and retain a 2.345 J/mol Fe(cr)/Fe(l)
+  seam, within the 10 J/mol fit gate. Fe(cr) now separates alpha, gamma, and
+  delta at 1184 and 1665 K, with an additional 900 K alpha fit split for the
+  source-node residual gate. The recorded Fe reference bands are fit/seam
+  residuals, not thermochemical accuracy estimates.
+
+  Closed Fe-only inventory `{Fe: 1, O: 1}` changes from the prior pack are:
+
+  | T (K) | Δλ | Δmetal (mol) | ΔFeO (mol) | ΔFeO1.5 (mol) |
+  |---:|---:|---:|---:|---:|
+  | 1700 | -0.008884 | -1.9345e-5 | +5.8036e-5 | -3.8690e-5 |
+  | 2200 | +0.008404 | +2.6463e-5 | -7.9388e-5 | +5.2925e-5 |
+  | 3000 | +0.006080 | +3.6994e-5 | -1.1098e-4 | +7.3987e-5 |
+
+  At imposed `λ = -4`, the Fe-only species and metal outputs are unchanged at
+  these temperatures. The FeO(l) reaction row has Δln K′ values +0.004482,
+  -0.004258, and -0.003122 at 1700, 2200, and 3000 K; its largest absolute
+  change is 0.004482 at 1700 K.
+
+  For the basalt cation inventory used by the redox regression fixture, the
+  closed oxygen inventory is 0.050 mol below the parent-oxide oxygen total.
+  The imposed comparison fixes λ to the prior-pack closed result at each
+  temperature. Changes are:
+
+  | T (K) | Mode | Δλ | Δmetal (mol) | ΔFeO (mol) | ΔFeO1.5 (mol) | ΔO (mol) |
+  |---:|---|---:|---:|---:|---:|---:|
+  | 1700 | closed | -0.008952 | -4.7777e-7 | +1.4333e-6 | -9.5555e-7 | — |
+  | 1700 | imposed | 0 | -0.0011766 | +0.0011743 | +2.2570e-6 | +0.0011777 |
+  | 2200 | closed | +0.008486 | +1.2012e-6 | -3.6035e-6 | +2.4023e-6 | — |
+  | 2200 | imposed | 0 | +0.0012060 | -0.0012000 | -5.9622e-6 | -0.0012090 |
+
+  Across the default redox test fixtures, the largest absolute change in
+  log10 fO2 is 0.012012 at 3000 K in a closed manganese-bearing case. Its
+  reaction evidence domain is unchanged, so the result remains flagged as an
+  extrapolation. All reaction evidence domains are unchanged.
+
 - Added the Mn evaporation channel with caller-supplied MnO activity. Mn(g) and
   Mn+(g) use JANAF; MnO(g) uses IVTAN Table 1436. MnO(l) is generated from the
   same `liquid_from_solid` construction and input record as the redox pack,

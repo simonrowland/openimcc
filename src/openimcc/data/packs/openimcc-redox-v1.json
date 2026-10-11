@@ -12,7 +12,7 @@
     "pressure": "bar relative to 1 bar standard state"
   },
   "source_selection_rail": ["standard_state_consistency", "primary_measurement", "domain_match", "systematic_estimate"],
-  "canonical_content_digest": "37c4cfc81e336cb70c7ce21d141e7f8394853692e5a06b8cf5c6b8d446ed4624",
+  "canonical_content_digest": "cae887f4e7cc537d330396767911a817f68503219ff723af2162829031819cec",
   "parent_registry": [
     {"element": "Si", "parent_oxide": "SiO2(l)", "parent_formula_atoms": {"Si": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Si(cr)", "parent_oxidation_state": 4, "known_oxidation_states": [4], "redox_thermochemistry_status": "registered_unpopulated"},
     {"element": "Mg", "parent_oxide": "MgO(l)", "parent_formula_atoms": {"Mg": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Mg(cr)", "parent_oxidation_state": 2, "known_oxidation_states": [2], "redox_thermochemistry_status": "registered_unpopulated"},
@@ -42,7 +42,7 @@
       "range_flags": [],
       "row": {"dH298_R": -30.01, "dG_A": 6.72, "dG_B": 6.588, "dG_C": -1.248, "dG_D": 0.15, "dG_E": -0.007697},
       "band_kj_mol": 0.31,
-      "provenance": {"source": "NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database", "source_url": "https://janaf.nist.gov/tables/Fe-019.html", "tier": "tier1_direct_assessed", "selection_rationale": "Direct assessed liquid function; reaction residual is at most 0.31 kJ/mol against the unshifted JANAF elemental fits over 1700-3000 K. The reaction band includes the Fe(l) fusion-anchor adjustment."}
+      "provenance": {"source": "NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database", "source_url": "https://janaf.nist.gov/tables/Fe-019.html", "tier": "tier1_direct_assessed", "selection_rationale": "Direct assessed liquid function; reaction residual is at most 0.31 kJ/mol against the directly fitted JANAF elemental references over 1700-3000 K. The band records reaction-fit residual, not thermochemical accuracy; no Fe(l) fusion-anchor adjustment is applied."}
     },
     "O2(g)": {
       "formula_atoms": {"O": 2},
@@ -61,14 +61,16 @@
       "ferric_fe_units": 0.0,
       "ferrous_fe_units": 0.0,
       "evaluator": "condensate_phi",
-      "T_domain_K": [1200, 1809],
-      "range_flags": ["JANAF gamma and delta iron are fitted separately at their 1665 K transition.", "The delta fit extends nine kelvin beyond the last source node to the 1809 K solid-liquid transition marker."],
+      "T_domain_K": [500, 1809],
+      "range_flags": ["JANAF alpha, gamma, and delta iron are fitted separately at their 1184 K and 1665 K transitions.", "The delta fit extends nine kelvin beyond the last source node to the 1809 K solid-liquid transition marker."],
       "intervals": [
-        {"T_domain_K": [1200, 1665], "row": {"dH298_R": 0.0, "dG_A": -0.5182507515612352, "dG_B": 8.764315028268804, "dG_C": -4.389050704238409, "dG_D": 1.3802482713201845, "dG_E": -0.18324169832328657}},
+        {"T_domain_K": [500, 900], "row": {"dH298_R": 0.0, "dG_A": 3.320911108562, "dG_B": -3.03256163733011, "dG_C": 11.4590520356759, "dG_D": -9.70586768883361, "dG_E": 3.05374054905732}},
+        {"T_domain_K": [900, 1184], "row": {"dH298_R": 0.0, "dG_A": 4.18649676981651, "dG_B": -2.90164454877791, "dG_C": 5.56157157817209, "dG_D": -1.75373146954268, "dG_E": 0.0}},
+        {"T_domain_K": [1184, 1665], "row": {"dH298_R": 0.0, "dG_A": -0.662049664918421, "dG_B": 9.16399022449625, "dG_C": -4.80389331685069, "dG_D": 1.57084117637393, "dG_E": -0.21594811741867}},
         {"T_domain_K": [1665, 1809], "row": {"dH298_R": 0.0, "dG_A": 1.79429766742696, "dG_B": 3.81346327112023, "dG_C": -0.459610049999803, "dG_D": 0.0, "dG_E": 0.0}}
       ],
-      "band_kj_mol": 0.075,
-      "provenance": {"source": "NIST-JANAF elemental iron crystal table, Fe-007", "source_url": "https://janaf.nist.gov/tables/Fe-007.html", "tier": "tier1_direct_assessed", "selection_rationale": "Separate gamma and delta fits use the phase-side H-H(298) and S values at the 1665 K transition. Their source-node Gibbs residuals are 0.342 J/mol and below 0.001 J/mol respectively; the delta fit extends nine kelvin beyond the final 1800 K node to the transition marker."}
+      "band_kj_mol": 0.001,
+      "provenance": {"source": "NIST-JANAF elemental iron crystal table, Fe-007", "source_url": "https://janaf.nist.gov/tables/Fe-007.html", "tier": "tier1_direct_assessed", "selection_rationale": "Separate alpha, gamma, and delta fits use the phase-side H-H(298), S, and Cp values at the 1184 and 1665 K transitions. The delta fit extends nine kelvin beyond the final 1800 K node to the transition marker. This band records source-node fit residual only, not thermochemical accuracy."}
     },
     "Fe(l)": {
       "formula_atoms": {"Fe": 1},
@@ -77,10 +79,9 @@
       "evaluator": "condensate_phi",
       "T_domain_K": [1700, 3000],
       "range_flags": ["The 1700-1809 K portion is the JANAF supercooled liquid reference; the Fe(metal) stable reference remains crystalline below 1809 K."],
-      "gibbs_anchor_adjustment_j_mol": 2.34541034295398,
-      "row": {"dH298_R": 1.49105792880756, "dG_A": 2.39304638614573, "dG_B": 4.2539349208347, "dG_C": -0.785731165530508, "dG_D": 0.0918940916919638, "dG_E": -0.00449130555799253},
-      "band_kj_mol": 0.08,
-      "provenance": {"source": "NIST-JANAF elemental iron liquid table, Fe-006, Gibbs anchored continuously to the phase-fitted Fe(cr) branch at 1809 K", "source_url": "https://janaf.nist.gov/tables/Fe-006.html", "tier": "tier1_direct_assessed", "selection_rationale": "The 1700-3000 K Fe(l) fit uses the cited Fe-006 nodes. A 2.345 J/mol correction makes its Gibbs value continuous with the phase-fitted Fe(cr) continuation at the 1809 K fusion marker; the largest corrected source-node residual remains below 4 J/mol."}
+      "row": {"dH298_R": 1.49077584078207, "dG_A": 2.39304638614573, "dG_B": 4.2539349208347, "dG_C": -0.785731165530508, "dG_D": 0.0918940916919638, "dG_E": -0.00449130555799253},
+      "band_kj_mol": 0.002,
+      "provenance": {"source": "NIST-JANAF elemental iron liquid table, Fe-006", "source_url": "https://janaf.nist.gov/tables/Fe-006.html", "tier": "tier1_direct_assessed", "selection_rationale": "The 1700-3000 K Fe(l) fit uses the cited Fe-006 nodes directly. Its maximum source-node fit residual is 1.507 J/mol; the 2.345 J/mol Fe(cr)/Fe(l) seam at the 1809 K fusion marker remains unadjusted and is within the 10 J/mol fit gate. This band records fit residual only, not thermochemical accuracy."}
     },
     "Fe(metal)": {
       "formula_atoms": {"Fe": 1},
@@ -92,8 +93,8 @@
       "transition_temperature_K": 1809,
       "branches": [{"branch": "below", "species": "Fe(cr)"}, {"branch": "at_or_above", "species": "Fe(l)"}],
       "reference_activity": 1.0,
-      "band_kj_mol": 0.08,
-      "provenance": {"source": "NIST-JANAF elemental iron tables Fe-007 and Fe-006", "source_url": "https://janaf.nist.gov/tables/Fe-007.html", "tier": "tier1_direct_assessed", "selection_rationale": "Stable pure-iron reference state uses the crystal below the JANAF 1809 K fusion point and liquid at and above it; a_Fe is fixed to one for the saturation reference."}
+      "band_kj_mol": 0.003,
+      "provenance": {"source": "NIST-JANAF elemental iron tables Fe-007 and Fe-006", "source_url": "https://janaf.nist.gov/tables/Fe-007.html", "tier": "tier1_direct_assessed", "selection_rationale": "Stable pure-iron reference state uses the crystal below the JANAF 1809 K fusion point and liquid at and above it; a_Fe is fixed to one for the saturation reference. The 2.345 J/mol branch-seam residual is within the 10 J/mol fit gate; this band records fit and seam residual only, not thermochemical accuracy."}
     },
     "Fe2O3(l)": {
       "formula_atoms": {"Fe": 2, "O": 3},
@@ -269,10 +270,10 @@
       "T_domain_K": [1700, 3000],
       "band_kj_mol": 0.39,
       "band_method": "Maximum absolute reaction-Gibbs residual against the JANAF FeO formation-Gibbs values over 1700-3000 K.",
-      "uncertainty_note": "The 0.39 kJ/mol band includes the fitted reaction residual and the Fe(l) fusion-anchor adjustment; the Fe(cr) endpoint extrapolation is separately flagged.",
+      "uncertainty_note": "The 0.39 kJ/mol band bounds the fitted reaction-Gibbs residual against JANAF FeO values; it is a residual band, not a thermochemical accuracy estimate. The Fe(cr) endpoint extrapolation is separately flagged.",
       "range_flags": ["Fe metal switches from crystal to liquid at 1809 K; the crystal fit uses source nodes through 1800 K."],
       "provenance_class": "janaf_direct_liquid",
-      "provenance": {"source": "NIST-JANAF FeO liquid table Fe-019 and elemental reference tables Fe-007, Fe-006, O-029", "source_url": "https://janaf.nist.gov/tables/Fe-019.html", "tier": "tier1_direct_assessed", "selection_rationale": "Existing FeO parent row retained; the residual is at most 0.31 kJ/mol against unshifted JANAF elemental fits over 1700-3000 K, with the final reaction band including the Fe(l) fusion-anchor adjustment."}
+      "provenance": {"source": "NIST-JANAF FeO liquid table Fe-019 and elemental reference tables Fe-007, Fe-006, O-029", "source_url": "https://janaf.nist.gov/tables/Fe-019.html", "tier": "tier1_direct_assessed", "selection_rationale": "Existing FeO parent row retained; its reaction-Gibbs residual is at most 0.31 kJ/mol against the JANAF FeO values over 1700-3000 K using the direct source-fitted Fe(cr) and Fe(l) reference functions. The reaction band records this fit residual, not thermochemical accuracy."}
     },
     {
       "row": 2,

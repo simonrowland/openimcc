@@ -163,6 +163,8 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     assert median <= ceiling
 
 
+# Fe saturation pins follow the direct JANAF Fe(l) refit; the previous Fe
+# reference carried a 60-79 J/mol fusion-anchor offset.
 @pytest.mark.parametrize(
     (
         "name",
@@ -226,7 +228,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
             {"Fe": 1.0, "O": 1.0},
             2200.0,
             "imposed",
-            -15.119589936828516,
+            -15.119336858668342,
             2,
         ),
         (
@@ -234,7 +236,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
             {"Fe": 1.0, "O": 1.0},
             2200.0,
             "imposed",
-            -15.119589936828516,
+            -15.119336858668342,
             4,
         ),
         (
@@ -242,8 +244,8 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
             {"Fe": 1.0, "O": 1.0},
             2200.0,
             "imposed",
-            -15.119589936828516,
-            44,
+            -15.119336858668342,
+            50,
         ),
     ],
 )
@@ -321,7 +323,7 @@ def test_fallback_flag_collects_kernel_bit_during_invariant_extent(
         {"Fe": 1.0, "O": 1.0},
         2200.0,
         "imposed",
-        lambda_imposed=-15.119589936828516,
+        lambda_imposed=-15.119336858668342,
     )
 
     assert seen_calls > selected_call

@@ -1820,10 +1820,10 @@ def build_redox_metal_standard_rows(
         table = source_tables[table_id]
         if species_name == "Fe(cr)":
             # JANAF Fe-007 reports stable crystal allotropes, with separate
-            # gamma and delta values at 1665 K. Fit each phase from its own
-            # H-H(298), S, Cp nodes so no polynomial smooths through that
-            # transition. The 1800-1809 K tail is the existing short flagged
-            # continuation to the solid-liquid marker.
+            # alpha/gamma and gamma/delta values at 1184 and 1665 K. Fit each
+            # phase from its own H-H(298), S, Cp nodes so no polynomial
+            # smooths through either transition. The 1800-1809 K tail is the
+            # existing short flagged continuation to the solid-liquid marker.
             phase_nodes = table.get("transition_nodes", [])
             source_nodes = {
                 float(node[0]): {
@@ -1835,34 +1835,39 @@ def build_redox_metal_standard_rows(
                 for node in table["nodes"]
             }
             intervals = []
-            for phase, fit_low, fit_high, run_low, run_high, transition_t in (
-                ("gamma", 1200.0, 1665.0, 1200.0, 1665.0, 1665.0),
-                ("delta", 1665.0, 1800.0, 1665.0, 1809.0, 1665.0),
+            # One alpha fit has a 19.316 J/mol source-node residual, so split
+            # that phase at an existing 900 K node; each fitted segment then
+            # stays under the same 10 J/mol gate without an anchor correction.
+            for phase, fit_low, fit_high, run_low, run_high in (
+                ("alpha", 500.0, 900.0, 500.0, 900.0),
+                ("alpha", 900.0, 1184.0, 900.0, 1184.0),
+                ("gamma", 1184.0, 1665.0, 1184.0, 1665.0),
+                ("delta", 1665.0, 1800.0, 1665.0, 1809.0),
             ):
-                transition = next(
-                    (
-                        node
-                        for node in phase_nodes
-                        if node.get("phase") == phase
-                        and float(node["temperature_K"]) == transition_t
-                    ),
-                    None,
-                )
-                if transition is None:
-                    raise ValueError(
-                        f"{table_id}: missing {phase} transition node at {fit_low:g} K"
-                    )
                 branch_nodes = {
                     temperature: row
                     for temperature, row in source_nodes.items()
                     if fit_low <= temperature <= fit_high
                 }
-                branch_nodes[transition_t] = {
-                    "temperature": transition_t,
-                    "heat_capacity": float(transition["heat_capacity"]),
-                    "entropy": float(transition["entropy"]),
-                    "enthalpy_increment": float(transition["enthalpy_increment"]),
-                }
+                for endpoint in (fit_low, fit_high):
+                    phase_node = next(
+                        (
+                            node
+                            for node in phase_nodes
+                            if node.get("phase") == phase
+                            and float(node["temperature_K"]) == endpoint
+                        ),
+                        None,
+                    )
+                    if phase_node is not None:
+                        branch_nodes[endpoint] = {
+                            "temperature": endpoint,
+                            "heat_capacity": float(phase_node["heat_capacity"]),
+                            "entropy": float(phase_node["entropy"]),
+                            "enthalpy_increment": float(
+                                phase_node["enthalpy_increment"]
+                            ),
+                        }
                 temperatures = sorted(branch_nodes)
                 row = _fit_condensate_values(
                     species_name,

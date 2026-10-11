@@ -241,13 +241,16 @@ def test_pure_iron_reference_switches_continuously_at_janaf_fusion_temperature()
         species_gibbs_j_mol(pack, "Fe(cr)", 1809.0)
         - species_gibbs_j_mol(pack, "Fe(l)", 1809.0)
     )
-    assert transition_gap_j < 1.0
+    # The direct JANAF fits retain a 2.345 J/mol seam residual at fusion;
+    # this is within the 10 J/mol fit gate and is not removed by an anchor.
+    assert transition_gap_j < 10.0
 
-    lower_gamma = species_gibbs_j_mol(
-        pack, "Fe(cr)", math.nextafter(1665.0, 0.0)
-    )
-    upper_delta = species_gibbs_j_mol(pack, "Fe(cr)", 1665.0)
-    assert abs(upper_delta - lower_gamma) < 10.0
+    for transition in (900.0, 1184.0, 1665.0):
+        lower_phase = species_gibbs_j_mol(
+            pack, "Fe(cr)", math.nextafter(transition, 0.0)
+        )
+        upper_phase = species_gibbs_j_mol(pack, "Fe(cr)", transition)
+        assert abs(upper_phase - lower_phase) < 10.0
 
 
 def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
@@ -260,10 +263,12 @@ def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
         record = pack.content["thermo_species"][species_name]
         if species_name == "Fe(cr)":
             assert [item["T_domain_K"] for item in fitted["intervals"]] == [
-                [1200.0, 1665.0], [1665.0, 1809.0],
+                [500.0, 900.0], [900.0, 1184.0],
+                [1184.0, 1665.0], [1665.0, 1809.0],
             ]
             assert [item["T_domain_K"] for item in record["intervals"]] == [
-                (1200, 1665), (1665, 1809),
+                (500, 900), (900, 1184),
+                (1184, 1665), (1665, 1809),
             ]
             for source_interval, packed_interval in zip(
                 fitted["intervals"], record["intervals"]
@@ -297,27 +302,18 @@ def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
         packed = record["row"]
         for coefficient in coefficients:
             expected = float(fitted[coefficient])
-            if species_name == "Fe(l)" and coefficient == "dH298_R":
-                # G = 1000*R*dH298_R - R*T*P(tau); anchor continuity adds
-                # ΔG_join/(1000*R) to the stored kK-scaled enthalpy anchor.
-                adjustment = record[
-                    "gibbs_anchor_adjustment_j_mol"
-                ]
-                expected += adjustment / (R_J_MOL_K * 1000.0)
             # Least-squares coefficients differ in the last few ulps across
             # NumPy/BLAS builds (4e-13 relative measured on NumPy 1.26 vs 2.x),
             # so compare relatively. Sanity of the bound: G = 1000*R*dH298_R
             # - R*T*P(tau); every individual term of G in this pack is below
             # 1.9e6 J/mol in magnitude over 298-3000 K (measured), so a 1e-9
             # relative change in any one coefficient moves G by < 2e-3 J/mol,
-            # 1000x below the smallest band in the pack (2 J/mol).
+            # at least 500x below the smallest Fe fit band (1 J/mol).
             assert float(packed[coefficient]) == pytest.approx(
                 expected, rel=1e-9, abs=1e-12
             )
-        corrected_residual = float(fitted["_max_residual_J_per_mol"])
-        if species_name == "Fe(l)":
-            corrected_residual += abs(float(record["gibbs_anchor_adjustment_j_mol"]))
-        assert record["band_kj_mol"] >= corrected_residual / 1000.0
+        residual = float(fitted["_max_residual_J_per_mol"])
+        assert record["band_kj_mol"] >= residual / 1000.0
 
 
 def test_ferrous_parent_reaction_band_covers_janaf_reference_residual() -> None:
@@ -373,11 +369,8 @@ def test_elemental_metal_functions_match_their_source_nodes_within_ten_joules() 
         table = sources[table_id]
         reference = float(table["formation_enthalpy_298_kj_mol"])
         record = pack.content["thermo_species"][species_name]
-        adjustment = float(record.get("gibbs_anchor_adjustment_j_mol", 0.0))
         nodes = list(table["nodes"])
         for node in table.get("transition_nodes", []):
-            if species_name == "Fe(cr)" and node["phase"] == "gamma":
-                continue
             nodes.append(
                 [
                     node["temperature_K"],
@@ -395,7 +388,6 @@ def test_elemental_metal_functions_match_their_source_nodes_within_ten_joules() 
             expected = (
                 (reference + float(enthalpy_increment)) * 1000.0
                 - temperature * float(entropy)
-                + adjustment
             )
             actual = species_gibbs_j_mol(pack, species_name, temperature)
             residuals.append(abs(actual - expected))
