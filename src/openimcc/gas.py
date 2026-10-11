@@ -478,6 +478,13 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Bi": ("Bi2O3", 2, 1.5),
     "Bi2": ("Bi2O3", 1, 1.5),
     "BiO": ("Bi2O3", 2, 0.5),
+    # Premise: TeO2(l) supplies one Te atom and two O atoms. Algebra: its
+    # Te/Te2/TeO2 gas coefficients are 1, 1/2, and 1; the O2 coefficients
+    # are (2 - n_gas*oxy_num)/2 = 1, 1, and 0. These are dimensionless; the
+    # reaction-balance test checks Te and O atom counts independently.
+    "Te": ("TeO2", 1, 1.0),
+    "Te2": ("TeO2", 0.5, 1.0),
+    "TeO2": ("TeO2", 1, 0.0),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -529,6 +536,9 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Bi",
         "Bi2",
         "BiO",
+        "Te",
+        "Te2",
+        "TeO2",
         "P",
         "P2",
         "P4",
@@ -685,6 +695,9 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Bi": "published_fitted",
         "Bi2": "published_fitted",
         "BiO": "published_fitted",
+        "Te": "published_fitted",
+        "Te2": "published_fitted",
+        "TeO2": "published_fitted",
         "MnO": "published_fitted",
     }
 )
@@ -748,6 +761,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "ZnO": "liquid_from_solid_estimate",
     "CdO": "liquid_from_solid_estimate",
     "Bi2O3": "published_fitted",
+    "TeO2": "published_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -776,6 +790,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "ZnO": "TSIV-1603",
     "CdO": "P672-T102",
     "Bi2O3": "P672-T82",
+    "TeO2": "P672-TeO2-l",
     "MnO": "MnO-liquid-construction",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
@@ -943,7 +958,9 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # NASA/Gurvich gas rows joined the package. Mn/Ni/Co have retained optional
 # channels; callers can activate Mn with public MnO(l), while Ni and Co still
 # require external parent rows.
-IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {}
+IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
+    "TeO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
+}
 
 _GAS_IONIZATION_PAIRS = (
     ("Na", "Na+"),
@@ -1768,6 +1785,13 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                                          'Cu-005': 'f7a575e44a41d314cc6532ca84b063e05201f7f7076e77d1e2dd80ad817e817d',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'neutral-source-vendor/1.0'}},
+    'Te': {   'status': 'gas-complete-melt-pending',
+              'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
+              'validation': 'unvalidated',
+              'reason': 'Te(g), Te2(g), TeO2(g), and the TeO2(l) parent cover 1200-3000 K; TeO2(l) is selected because Bulletin 672 prints a measured liquid branch; a(TeO2) is caller-supplied. This oxide-parent convention does not model telluride dissolution in reduced melts.',
+              'c2_candidates': (('P672-TeO2-g', 'TeO2'),),
+              'c3_ion_bound': {   'status': 'declined',
+                                  'reason': 'No source for Te+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},
     'Sn': {   'status': 'gas-complete-melt-pending',
               'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
               'validation': 'unvalidated',

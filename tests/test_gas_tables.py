@@ -47,6 +47,7 @@ ROOT = Path(__file__).resolve().parents[1]
 GAS_DATA = ROOT / "src" / "openimcc" / "data" / "gas"
 JANAF_DATA = ROOT / "data-src" / "janaf"
 NASA_DATA = ROOT / "data-src" / "nasa-glenn"
+PUBLISHED_DATA = ROOT / "data-src" / "published-thermo"
 LH84_DATA = ROOT / "data-src" / "lh84"
 PROVENANCE_PATH = GAS_DATA / "PROVENANCE.yaml"
 _BASE_INTERVAL_1_SHA256 = "ea3a8db1419140329e36be433453fdc67969a7e3826d9af5a310d284a1526c0a"
@@ -1090,7 +1091,7 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         species_name: str,
         row: pd.Series,
         source_nodes: list[tuple[float, float]],
-    ) -> None:
+    ) -> float:
         residual = max(
             abs(_lamor_gibbs(temperature, row) - source_g)
             for temperature, source_g in source_nodes
@@ -1105,6 +1106,7 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         assert residual == pytest.approx(
             provenance_row["max_residual_J_per_mol"], abs=1.0e-6
         )
+        return residual
 
     li_source = build_gas_tables._janaf_text_source_rows(JANAF_DATA, "Li-015")
     for t_min, t_max in ((1200.0, 1400.0), (1400.0, 2000.0), (2000.0, 3000.0)):
@@ -1126,6 +1128,22 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
             if source_min <= temperature <= t_max
         ]
         assert_residuals("B2O3(l)", fitted_row("B2O3(l)", t_min), nodes)
+
+    te_source, te_reference, _te_limit = build_gas_tables._published_gas_source_rows(
+        PUBLISHED_DATA, "P672-TeO2-l"
+    )
+    te_source = build_gas_tables._constant_cp_rows_through(te_source, 3000.0)
+    for t_min, t_max in ((1200.0, 1600.0), (1600.0, 3000.0)):
+        nodes = []
+        for temperature, source in te_source.items():
+            if t_min <= temperature <= t_max:
+                source_g = (
+                    te_reference + source["enthalpy_increment"]
+                ) * 1000.0 - temperature * source["entropy"]
+                nodes.append((temperature, source_g))
+        assert assert_residuals(
+            "TeO2(l)", fitted_row("TeO2(l)", t_min), nodes
+        ) < 10.0
 
     rb_record = _nasa_record("NG-1841")
     for t_min, t_max in (

@@ -564,7 +564,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == 64 + len(build_gas_tables.TRACE_GAS_SPECIES)
-    assert len(unavailable) == 0
+    assert unavailable == {"TeO"}
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert not set(_P_CHANNELS) & (in_domain | extrapolated)
@@ -1247,7 +1247,7 @@ def test_gas_result_omitted_channels_default_is_empty_and_immutable() -> None:
 def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    assert set(IMCC_GAS_NO_JANAF_ROWS) == set()
+    assert set(IMCC_GAS_NO_JANAF_ROWS) == {"TeO"}
     assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
     assert IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES == {
         "Ni": (
@@ -2315,6 +2315,7 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
         "Li2O(l)", "Rb2O(l)", "PbO(l)", "Cs2O(l)", "Cu2O(l)", "SnO(l)",
         "B2O3(l)", "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
         "ZnO(l)", "CdO(l)", "Bi2O3(l)",
+        "TeO2(l)",
         "MnO(l)",
     }
     return replace(
@@ -2342,6 +2343,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "ZnO": 1.0e-3,
         "CdO": 1.0e-3,
         "Bi2O3": 1.0e-3,
+        "TeO2": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2651,6 +2653,7 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("Zn", "ZnO", "Zn-005", "TSIV-1603"),
         ("Cd", "CdO", "NG-4060", "P672-T102"),
         ("Bi", "Bi2O3", "P672-T80", "P672-T82"),
+        ("Te", "TeO2", "P672-Te-g", "P672-TeO2-l"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]

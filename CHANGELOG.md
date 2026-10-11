@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added optional Te, Te2, and TeO2 gas channels with caller-supplied TeO2(l)
+  activity. Pankratz Bulletin 672 supplies the selected rows; the TeO2(l)
+  liquid branch is fitted through its printed nodes, with a flagged, banded
+  constant-Cp continuation above them. TeO(g) and Te+(g) had no source in the
+  checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.
 - Refit the elemental iron reference functions directly to the JANAF phase
   tables. The earlier Fe(l) row carried a 76–79 J/mol fusion-anchor offset,
   and the earlier single-polynomial Fe(cr) row missed its delta-phase source

@@ -18,7 +18,7 @@ source_notes:
   trace_parent_channels:
     retrieval_date: '2026-10-01'
     activity_policy: >-
-      Li2O, Rb2O, PbO, Cs2O, Cu2O, SnO, Ga2O3, GeO2, B2O3, and In2O3
+      Li2O, Rb2O, PbO, Cs2O, Cu2O, SnO, Ga2O3, GeO2, B2O3, In2O3, and TeO2
       activities are supplied by the caller. OpenIMCC has no trace-element
       activity model; no activity coefficients are applied. Published silicate-
       melt activity-coefficient work is cited in README.md as context only and
@@ -227,7 +227,7 @@ source_notes:
     note: Published Lamoreaux coefficients and the K2O input estimates retain their source attribution below.
   trace_channel_additions:
     activity_policy: >-
-      MnO, ZnO, CdO, and Bi2O3 parent activities are caller supplied. OpenIMCC
+      MnO, ZnO, CdO, Bi2O3, and TeO2 parent activities are caller supplied. OpenIMCC
       does not provide an activity model or activity coefficients for these channels.
     source_selection:
       Mn: >-
@@ -249,6 +249,14 @@ source_notes:
         Table 81 supplies Bi2(g), and Bulletin 696 Table 115 supplies BiO(g).
         Bi2O3(l) is selected as the Bi(III) parent because Table 82 prints its
         liquid branch; no other bismuth-oxide liquid parent is offered.
+      Te: >-
+        Pankratz Bulletin 672 Tables 415 and 416 supply Te(g) and Te2(g), and
+        its Tellurium Dioxide tables supply TeO2(g) and a measured TeO2(l)
+        branch. TeO2(l) is the Te(IV) parent by tier-1 phase-pair consistency.
+        No TeO(g) or Te+(g) source was found in the checked JANAF, NASA
+        Glenn/CEA, NIST WebBook, and Gurvich/IVTAN routes. Telluride
+        dissolution in reduced melts is outside the caller-supplied oxide
+        parent convention.
     measured_continuation_bands: >-
       Gas continuation bands are maximum held-Cp errors measured by truncating
       published JANAF gas tables at the matching source-node limit. The
@@ -5930,6 +5938,222 @@ rows:
     extrapolation: true
     source_data: false
     extrapolation_source_limit_K: 1300
+  - table: gas
+    species_name: Te(g)
+    table_id: P672-Te-g
+    runtime_ref: P672-Te-g-CP-EXT-2000
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 38.7188940007472
+    max_residual_log10_K: 0.00134828533384048
+    source_fit_range_K: [1500, 3000]
+    flags: [constant-Cp continuation above 2000 K]
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: {2000: 0, 2500: 525, 3000: 2334}
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Table 415, Te(g)
+      source_locator: Table 415
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 415
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2000
+  - table: gas
+    species_name: Te(g)
+    table_id: P672-Te-g
+    runtime_ref: P672-Te-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 20.9997050276725
+    max_residual_log10_K: 0.00084376201159967
+    source_fit_range_K: [1200, 1500]
+    flags: []
+    uncertainty_band: {kind: not separately quantified by selected source}
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Table 415, Te(g)
+      source_locator: Table 415
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 415
+    source_data: true
+  - table: gas
+    species_name: Te2(g)
+    table_id: P672-Te2-g
+    runtime_ref: P672-Te2-g-CP-EXT-2000
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 38.8684173367801
+    max_residual_log10_K: 0.00126889884118398
+    source_fit_range_K: [1500, 3000]
+    flags: [constant-Cp continuation above 2000 K]
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: {2000: 0, 2500: 525, 3000: 2334}
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Table 416, Te2(g)
+      source_locator: Table 416
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 416
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2000
+  - table: gas
+    species_name: Te2(g)
+    table_id: P672-Te2-g
+    runtime_ref: P672-Te2-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 10.0601026641089
+    max_residual_log10_K: 0.000350317053960418
+    source_fit_range_K: [1200, 1500]
+    flags: []
+    uncertainty_band: {kind: not separately quantified by selected source}
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Table 416, Te2(g)
+      source_locator: Table 416
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 416
+    source_data: true
+  - table: gas
+    species_name: TeO2(g)
+    table_id: P672-TeO2-g
+    runtime_ref: P672-TeO2-g-CP-EXT-1500
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 2
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 4.65661287307739e-10
+    max_residual_log10_K: 8.38730165052892e-15
+    source_fit_range_K: [1500, 3000]
+    flags: [constant-Cp continuation above 1500 K]
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published source tables
+      values_J_per_mol: {2000: 13.18, 2500: 525, 3000: 2334}
+      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Tellurium Dioxide gas table, printed p. 81
+      source_locator: printed p. 81
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 81
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1500
+  - table: gas
+    species_name: TeO2(g)
+    table_id: P672-TeO2-g
+    runtime_ref: P672-TeO2-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
+    authority: published_fitted
+    method: fitted
+    tier: 2
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 25.6221983324504
+    max_residual_log10_K: 0.00111528347864637
+    source_fit_range_K: [1200, 1500]
+    flags: []
+    uncertainty_band: {kind: not separately quantified by selected source}
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Tellurium Dioxide gas table, printed p. 81
+      source_locator: printed p. 81
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 81
+    source_data: true
+  - table: condensate
+    species_name: TeO2(l)
+    table_id: P672-TeO2-l
+    runtime_ref: P672-TeO2-l-CP-EXT-1500
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 1
+    T_range_K: [1200, 1600]
+    max_residual_J_per_mol: 0.000000001
+    max_residual_log10_K: 0.00000000004
+    source_fit_range_K: [1200, 1600]
+    flags: [constant-Cp continuation above 1500 K, caller-supplied parent activity; no activity model]
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published liquid-source tables
+      values_J_per_mol: {1500: 505.689, 2000: 8544.934, 2500: 24507.754, 3000: 46784.971}
+      method: maximum absolute error in held-Cp back-tests on nine JANAF parent-liquid tables, truncated at the 1300 K source limit
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Tellurium Dioxide condensed-phase table, printed p. 418
+      source_locator: printed p. 418
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 418
+    extrapolation: true
+    source_data: true
+    extrapolation_source_limit_K: 1500
+  - table: condensate
+    species_name: TeO2(l)
+    table_id: P672-TeO2-l
+    runtime_ref: P672-TeO2-l-CP-EXT-1500
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 1
+    T_range_K: [1600, 3000]
+    max_residual_J_per_mol: 3.47145577427
+    max_residual_log10_K: 0.0000738180676965711
+    source_fit_range_K: [1600, 3000]
+    flags: [constant-Cp continuation above 1500 K, caller-supplied parent activity; no activity model]
+    uncertainty_band:
+      kind: measured held-Cp continuation error envelope against published liquid-source tables
+      values_J_per_mol: {1500: 505.689, 2000: 8544.934, 2500: 24507.754, 3000: 46784.971}
+      method: maximum absolute error in held-Cp back-tests on nine JANAF parent-liquid tables, truncated at the 1300 K source limit
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Tellurium Dioxide condensed-phase table, printed p. 418
+      source_locator: printed p. 418
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 418
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1500
+source_comparisons:
   - table: gas
     species_name: MnO(g)
     table_id: TSIV-1436

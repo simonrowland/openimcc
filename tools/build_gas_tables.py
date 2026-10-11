@@ -194,6 +194,9 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("Bi2(g)", "P672-T81", "Bi2", "Bi", 2, 0, 1800.0),
     ("BiO(g)", "P696-T115", "BiO", "Bi", 1, 1, 1200.0),
     ("CdO(g)", "P696-T191", "CdO", "Cd", 1, 1, 2000.0),
+    ("Te(g)", "P672-Te-g", "Te", "Te", 1, 0, 2000.0),
+    ("Te2(g)", "P672-Te2-g", "Te2", "Te", 2, 0, 2000.0),
+    ("TeO2(g)", "P672-TeO2-g", "TeO2", "Te", 1, 2, 1500.0),
     ("MnO(g)", "TSIV-1436", "MnO", "Mn", 1, 1, 6000.0),
 )
 TRACE_GAS_SPECIES = frozenset(
@@ -472,6 +475,7 @@ REPLACED_DEFAULT_CONDENSATE_SPECIES = {
     "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)",
     "K2O(l)",
     "ZnO(l)", "CdO(l)", "Bi2O3(l)",
+    "TeO2(l)",
 }
 
 REQUIRED_FIELDS = (
@@ -3309,6 +3313,16 @@ def build_condensate_rows(
             "Bi",
             2,
             3,
+            published_source_dir,
+        )
+    )
+    rows.extend(
+        _fit_published_condensate_row(
+            "P672-TeO2-l",
+            "TeO2(l)",
+            "Te",
+            1,
+            2,
             published_source_dir,
         )
     )
