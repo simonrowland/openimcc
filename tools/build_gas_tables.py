@@ -200,6 +200,10 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("Se(g)", "P672-Se-g", "Se", "Se", 1, 0, 2000.0),
     ("Se2(g)", "P672-Se2-g", "Se2", "Se", 2, 0, 2000.0),
     ("SeO2(g)", "P672-SeO2-g", "SeO2", "Se", 1, 2, 1500.0),
+    ("As(g)", "P672-As-g", "As", "As", 1, 0, 1200.0),
+    ("As2(g)", "P672-As2-g", "As2", "As", 2, 0, 1200.0),
+    ("As4(g)", "P672-As4-g", "As4", "As", 4, 0, 1200.0),
+    ("As4O6(g)", "P672-As4O6-g", "As4O6", "As", 4, 6, 1000.0),
     ("MnO(g)", "TSIV-1436", "MnO", "Mn", 1, 1, 6000.0),
 )
 TRACE_GAS_SPECIES = frozenset(
@@ -2872,12 +2876,15 @@ def _pankratz_crystal_table(
         cp = cp0
         dh = cp * dt
         ds = cp * math.log(t / t0)
-    values.append({
-        "temperature": t,
-        "heat_capacity": cp * 4.184,
-        "entropy": (s0 + ds) * 4.184,
-        "enthalpy_increment": (h0 + dh / 1000.0) * 4.184,
-    })
+    if t > t0:
+        values.append(
+            {
+                "temperature": t,
+                "heat_capacity": cp * 4.184,
+                "entropy": (s0 + ds) * 4.184,
+                "enthalpy_increment": (h0 + dh / 1000.0) * 4.184,
+            }
+        )
     return {"table": {"values": values}}
 
 
@@ -3384,7 +3391,7 @@ def build_condensate_rows(
             )
         )
     liquid_inputs = _load_record(repository / "data-src/liquid-from-solid-inputs.json")
-    for species in ("ZnO", "CdO", "MnO", "SeO2"):
+    for species in ("ZnO", "CdO", "MnO", "SeO2", "As2O3"):
         fitted_rows, _construction, _alternate = _fit_liquid_from_solid_parent(
             published_source_dir, species, liquid_inputs["rows"][species]
         )

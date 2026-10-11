@@ -18,7 +18,8 @@ source_notes:
   trace_parent_channels:
     retrieval_date: '2026-10-01'
     activity_policy: >-
-      Li2O, Rb2O, PbO, Cs2O, Cu2O, SnO, Ga2O3, GeO2, B2O3, In2O3, TeO2, and SeO2
+      Li2O, Rb2O, PbO, Cs2O, Cu2O, SnO, Ga2O3, GeO2, B2O3, In2O3, TeO2, SeO2,
+      and As2O3
       activities are supplied by the caller. OpenIMCC has no trace-element
       activity model; no activity coefficients are applied. Published silicate-
       melt activity-coefficient work is cited in README.md as context only and
@@ -227,7 +228,7 @@ source_notes:
     note: Published Lamoreaux coefficients and the K2O input estimates retain their source attribution below.
   trace_channel_additions:
     activity_policy: >-
-      MnO, ZnO, CdO, Bi2O3, TeO2, and SeO2 parent activities are caller supplied. OpenIMCC
+      MnO, ZnO, CdO, Bi2O3, TeO2, SeO2, and As2O3 parent activities are caller supplied. OpenIMCC
       does not provide an activity model or activity coefficients for these channels.
     source_selection:
       Mn: >-
@@ -268,6 +269,14 @@ source_notes:
         because no standard liquid function is available. SeO(g) and Se+(g)
         have no located source in the checked JANAF, NASA Glenn/CEA, NIST
         WebBook, or Gurvich/IVTAN routes.
+      As: >-
+        Pankratz Bulletin 672 supplies As(g), As2(g), As4(g), As4O6(g), and the
+        Table 53 As2O3 crystal function. As2O3(l) is the only selected oxide
+        parent and uses the tier-4 liquid_from_solid construction with the
+        repository's tier-3 fusion-entropy and liquid-Cp rules; its leave-one-
+        out band is based on the 48 JANAF fusion-pair calibration and is
+        extrapolated beyond +800 K. No AsO(g) or As+(g) source was located in
+        the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.
     measured_continuation_bands: >-
       Gas continuation bands are maximum held-Cp errors measured by truncating
       published JANAF gas tables at the matching source-node limit. The
@@ -6512,6 +6521,278 @@ rows:
     source_locator: Volume V, Table 1435
     extrapolation: true
     source_data: false
+  - table: gas
+    species_name: As(g)
+    table_id: P672-As-g
+    runtime_ref: P672-As-g-CP-EXT-1200
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 0.000000000116415321826935
+    max_residual_log10_K: 0.0000000000000034
+    source_fit_range_K: [1500, 3000]
+    flags: [constant-Cp continuation above 1200 K]
+    uncertainty_band:
+      kind: repository held-Cp continuation error envelope against published source tables
+      values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}
+      method: maximum absolute errors in published-source back-tests truncated at or below 1200 K
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, arsenic gas table, As(g)
+      source_locator: printed p. 49
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 49
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1200
+  - table: gas
+    species_name: As(g)
+    table_id: P672-As-g
+    runtime_ref: P672-As-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.000230621488299221
+    max_residual_log10_K: 0.00000000813854188456635
+    source_fit_range_K: [1200, 1500]
+    flags: [constant-Cp continuation above the printed 1200 K node]
+    uncertainty_band:
+      kind: repository held-Cp continuation error envelope against published source tables
+      values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}
+      method: maximum absolute errors in published-source back-tests truncated at or below 1200 K
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, arsenic gas table, As(g)
+      source_locator: printed p. 49
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 49
+    extrapolation: true
+    source_data: true
+    extrapolation_source_limit_K: 1200
+  - table: gas
+    species_name: As2(g)
+    table_id: P672-As2-g
+    runtime_ref: P672-As2-g-CP-EXT-1200
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 2
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 0.000000000174622982740402
+    max_residual_log10_K: 0.00000000000000397
+    source_fit_range_K: [1500, 3000]
+    flags: [constant-Cp continuation above 1200 K]
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, arsenic gas table, As2(g)
+      source_locator: printed p. 49
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 49
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1200
+  - table: gas
+    species_name: As2(g)
+    table_id: P672-As2-g
+    runtime_ref: P672-As2-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 2
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.000413150293752551
+    max_residual_log10_K: 0.000000014579916512755
+    source_fit_range_K: [1200, 1500]
+    flags: [constant-Cp continuation above the printed 1200 K node]
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, arsenic gas table, As2(g)
+      source_locator: printed p. 49
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 49
+    extrapolation: true
+    source_data: true
+    extrapolation_source_limit_K: 1200
+  - table: gas
+    species_name: As4(g)
+    table_id: P672-As4-g
+    runtime_ref: P672-As4-g-CP-EXT-1200
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 2
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 0.000000000465661287307692
+    max_residual_log10_K: 0.00000000000000869
+    source_fit_range_K: [1500, 3000]
+    flags: [constant-Cp continuation above 1200 K]
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, arsenic gas table, selected As4(g) tetramer row
+      source_locator: printed p. 49
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 49
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1200
+  - table: gas
+    species_name: As4(g)
+    table_id: P672-As4-g
+    runtime_ref: P672-As4-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 2
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.000918029109016061
+    max_residual_log10_K: 0.0000000323969055416
+    source_fit_range_K: [1200, 1500]
+    flags: [constant-Cp continuation above the printed 1200 K node]
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, arsenic gas table, selected As4(g) tetramer row
+      source_locator: printed p. 49
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 49
+    extrapolation: true
+    source_data: true
+    extrapolation_source_limit_K: 1200
+  - table: gas
+    species_name: As4O6(g)
+    table_id: P672-As4O6-g
+    runtime_ref: P672-As4O6-g-CP-EXT-1000
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 2
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 0.000000000931322574615479
+    max_residual_log10_K: 0.000000000000018
+    source_fit_range_K: [1500, 3000]
+    flags: [constant-Cp continuation above 1000 K]
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: conservative errors from published-source back-tests truncated at or below 1200 K}
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Table 56, As4O6(g)
+      source_locator: Table 56
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 56
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1000
+  - table: gas
+    species_name: As4O6(g)
+    table_id: P672-As4O6-g
+    runtime_ref: P672-As4O6-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 2
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.00250211264938116
+    max_residual_log10_K: 0.0000000882986073241016
+    source_fit_range_K: [1200, 1500]
+    flags: [constant-Cp continuation above 1000 K]
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: conservative errors from published-source back-tests truncated at or below 1200 K}
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Table 56, As4O6(g)
+      source_locator: Table 56
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 56
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1000
+  - table: condensate
+    species_name: As2O3(l)
+    table_id: P672-As2O3
+    runtime_ref: P672-As2O3-LFS
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K: [1200, 1600]
+    max_residual_J_per_mol: 0.000000000465661287307692
+    max_residual_log10_K: 0.000000000000008
+    source_fit_range_K: [1200, 1600]
+    flags: [tier-4 liquid_from_solid construction, tier-3 fusion-entropy mean and crystal-Cp carry-over, leave-one-out band extrapolated beyond +800 K, caller-supplied parent activity; no activity model]
+    uncertainty_band:
+      kind: tier-3 leave-one-out liquid_from_solid Gibbs error against 48 JANAF fusion pairs; uncertainty estimate is extrapolated above +800 K
+      values_J_per_mol: {1200: 35316.525905814444, 1500: 51522.32222520653, 1800: 67728.11854459862, 2000: 78531.98275752667, 2500: 105541.64328984682, 3000: 132551.30382216698}
+      method: interpolate measured maximum errors at +300/+800 K and continue the final measured slope above +800 K
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Table 53, cubic As2O3(cr); tier-3 inputs and band from the 48-pair repository calibration
+      source_locator: Table 53; data-src/liquid-from-solid-inputs.json tier_error_bands
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 53; data-src/liquid-from-solid-inputs.json tier_error_bands
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 551
+  - table: condensate
+    species_name: As2O3(l)
+    table_id: P672-As2O3
+    runtime_ref: P672-As2O3-LFS
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K: [1600, 3000]
+    max_residual_J_per_mol: 8.76125862612389
+    max_residual_log10_K: 0.000212066765704567
+    source_fit_range_K: [1600, 3000]
+    flags: [tier-4 liquid_from_solid construction, tier-3 fusion-entropy mean and crystal-Cp carry-over, leave-one-out band extrapolated beyond +800 K, caller-supplied parent activity; no activity model]
+    uncertainty_band:
+      kind: tier-3 leave-one-out liquid_from_solid Gibbs error against 48 JANAF fusion pairs; uncertainty estimate is extrapolated above +800 K
+      values_J_per_mol: {1200: 35316.525905814444, 1500: 51522.32222520653, 1800: 67728.11854459862, 2000: 78531.98275752667, 2500: 105541.64328984682, 3000: 132551.30382216698}
+      method: interpolate measured maximum errors at +300/+800 K and continue the final measured slope above +800 K
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Table 53, cubic As2O3(cr); tier-3 inputs and band from the 48-pair repository calibration
+      source_locator: Table 53; data-src/liquid-from-solid-inputs.json tier_error_bands
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 53; data-src/liquid-from-solid-inputs.json tier_error_bands
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 551
 source_comparisons:
   basis: >-
     NASA cards use G_app(T)=H_card(T)-T*S_card(T), where H_card includes the

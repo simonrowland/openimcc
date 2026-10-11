@@ -490,6 +490,12 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Se": ("SeO2", 1, 1.0),
     "Se2": ("SeO2", 0.5, 1.0),
     "SeO2": ("SeO2", 1, 0.0),
+    # As2O3(l) supplies two As and three O atoms; the selected gas rows balance
+    # at n_gas=(2,1,1/2,1/2) and n_O2=(3/2,3/2,3/2,0).
+    "As": ("As2O3", 2, 1.5),
+    "As2": ("As2O3", 1, 1.5),
+    "As4": ("As2O3", 0.5, 1.5),
+    "As4O6": ("As2O3", 0.5, 0.0),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -547,6 +553,10 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Se",
         "Se2",
         "SeO2",
+        "As",
+        "As2",
+        "As4",
+        "As4O6",
         "P",
         "P2",
         "P4",
@@ -709,6 +719,10 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Se": "published_fitted",
         "Se2": "published_fitted",
         "SeO2": "published_fitted",
+        "As": "published_fitted",
+        "As2": "published_fitted",
+        "As4": "published_fitted",
+        "As4O6": "published_fitted",
         "MnO": "published_fitted",
     }
 )
@@ -774,6 +788,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Bi2O3": "published_fitted",
     "TeO2": "published_fitted",
     "SeO2": "liquid_from_solid_estimate",
+    "As2O3": "liquid_from_solid_estimate",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -804,6 +819,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Bi2O3": "P672-T82",
     "TeO2": "P672-TeO2-l",
     "SeO2": "P672-SeO2",
+    "As2O3": "P672-As2O3",
     "MnO": "MnO-liquid-construction",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
@@ -974,6 +990,7 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     "TeO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
     "SeO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
+    "AsO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
 }
 
 _GAS_IONIZATION_PAIRS = (
@@ -1813,6 +1830,13 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
               'c2_candidates': (('P672-SeO2-g', 'SeO2'),),
               'c3_ion_bound': {   'status': 'declined',
                                   'reason': 'No source for Se+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},
+    'As': {   'status': 'gas-complete-melt-pending',
+              'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
+              'validation': 'unvalidated',
+              'reason': 'As(g), As2(g), As4(g), As4O6(g), and a tier-4 As2O3(l) parent cover 1200-3000 K; As2O3(l) is constructed from the Pankratz Table 53 crystal function and the repository tier-3 liquid_from_solid estimates because no standard liquid function was located; a(As2O3) is caller-supplied.',
+              'c2_candidates': (('P672-As4O6-g', 'As4O6'),),
+              'c3_ion_bound': {   'status': 'declined',
+                                  'reason': 'No source for As+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},
     'Sn': {   'status': 'gas-complete-melt-pending',
               'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
               'validation': 'unvalidated',
@@ -3126,6 +3150,7 @@ _ATOMIC_MASS_G_MOL = {
     "B": 10.81, "Ga": 69.723, "Ge": 72.630, "In": 114.818,
     "Cs": 132.90545196, "Cu": 63.546, "Sn": 118.710,
     "Zn": 65.38, "Cd": 112.411, "Bi": 208.9804,
+    "As": 74.921595, "Se": 78.971, "Te": 127.60,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,

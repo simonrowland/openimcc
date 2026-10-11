@@ -588,7 +588,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
     )
-    assert len(oxide_rows) == 28
+    assert len(oxide_rows) == 29
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -1164,6 +1164,25 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
             "SeO2(l)", fitted_row("SeO2(l)", t_min), nodes
         ) < 10.0
 
+    as_config = json.loads(
+        (ROOT / "data-src" / "liquid-from-solid-inputs.json").read_text(
+            encoding="utf-8"
+        )
+    )["rows"]["As2O3"]
+    _as_rows, as_construction, _as_alternate = (
+        build_gas_tables._fit_liquid_from_solid_parent(
+            PUBLISHED_DATA, "As2O3", as_config
+        )
+    )
+    for t_min, t_max in ((1200.0, 1600.0), (1600.0, 3000.0)):
+        nodes = [
+            (float(t), as_construction.at(float(t)).gibbs_kj_mol * 1000.0)
+            for t in np.arange(t_min, t_max + 100.0, 100.0)
+        ]
+        assert assert_residuals(
+            "As2O3(l)", fitted_row("As2O3(l)", t_min), nodes
+        ) < 10.0
+
     rb_record = _nasa_record("NG-1841")
     for t_min, t_max in (
         (1200.0, 1500.0),
@@ -1604,7 +1623,7 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
             if (
                 row.get("extrapolation") is True
                 and row["species_name"] not in {
-                    "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)", "TeO2(l)", "SeO2(l)"
+                    "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)", "TeO2(l)", "SeO2(l)", "As2O3(l)"
                 }
             ):
                 continue

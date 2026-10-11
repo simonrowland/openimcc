@@ -7413,6 +7413,110 @@
         "runtime_t_min": 1200.0,
         "runtime_t_max": 1600.0
       }
+    },
+    "As2O3": {
+      "formula": "As2O3",
+      "crystal_table_id": "P672-As2O3-c",
+      "family": null,
+      "metal_atoms": 2,
+      "total_atoms": 5,
+      "selection_reason": "No evaluated As2O3(l) standard-state function is available. Pankratz Bulletin 672 Table 53 marks the cubic As2O3 crystal melting transition at 551 K and supplies its crystal Cp equation through that node. Use the repository's tier-3 fusion-entropy mean and crystal-Cp carry-over, with its leave-one-out model band, in the required tier-4 liquid_from_solid construction.",
+      "inputs": {
+        "fusion_temperature": {
+          "value": 551.0,
+          "tier": 1,
+          "spread": 0.0,
+          "bounds_k": [551.0, 551.0],
+          "source": "Pankratz Bulletin 672 Table 53 identifies the 551 K phase-change marker as the melting point of cubic arsenic trioxide.",
+          "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
+        },
+        "fusion_entropy": {
+          "value": 46.673962861666666,
+          "tier": 3,
+          "spread": 0.0,
+          "unit": "J mol^-1 K^-1",
+          "source": "No As2O3 fusion enthalpy or fusion entropy was located. Apply the documented tier-3 Richards-type estimate: 28.004377717 J/(mol K) for K2O divided by its three atoms gives the repository's 48-pair mean per formula atom; multiply by the five atoms in As2O3. The leave-one-out construction band is recorded separately.",
+          "training_count": 48,
+          "references": ["data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"]
+        },
+        "liquid_heat_capacity": {
+          "value": 124.33266546326435,
+          "tier": 3,
+          "spread": 0.0,
+          "unit": "J mol^-1 K^-1",
+          "source": "No As2O3 liquid heat capacity was located. Apply the documented tier-3 fallback: carry the source crystal Cp at fusion into the liquid. Cp at 551 K evaluates to 29.716220235 cal/(mol K) x 4.184 J/cal. The source labels crystal thermal data above 360 K as estimated; the tier-3 leave-one-out construction band is recorded separately.",
+          "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
+        }
+      },
+      "measured_band": {
+        "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs",
+        "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
+        "method": "Interpolate the measured maximum absolute leave-one-out Gibbs error between +300 and +800 K from fusion; above +800 K, continue its final measured slope as a flagged uncertainty estimate.",
+        "values_J_per_mol": {"1200": 35316.525905814444, "1500": 51522.32222520653, "1800": 67728.11854459862, "2000": 78531.98275752667, "2500": 105541.64328984682, "3000": 132551.30382216698}
+      },
+      "condensate_fit": {
+        "table_id": "P672-As2O3-LFS",
+        "ref": "P672-As2O3-LFS",
+        "cation": "As",
+        "cat_num": 2,
+        "oxy_num": 3,
+        "fit_t_min": 1200.0,
+        "fit_t_max": 1600.0,
+        "runtime_t_min": 1200.0,
+        "runtime_t_max": 1600.0
+      }
+    },
+    "As2O3": {
+      "formula": "As2O3",
+      "crystal_table_id": "P672-As2O3-c",
+      "family": null,
+      "metal_atoms": 2,
+      "total_atoms": 5,
+      "selection_reason": "No evaluated As2O3(l) standard-state function is available. Pankratz Bulletin 672 Table 53 marks the cubic As2O3 crystal melting transition at 551 K and supplies its crystal Cp equation through that node. Use the repository's tier-3 fusion-entropy mean and crystal-Cp carry-over, with its leave-one-out model band, in the required tier-4 liquid_from_solid construction.",
+      "inputs": {
+        "fusion_temperature": {
+          "value": 551.0,
+          "tier": 1,
+          "spread": 0.0,
+          "bounds_k": [551.0, 551.0],
+          "source": "Pankratz Bulletin 672 Table 53 identifies the 551 K phase-change marker as the melting point of cubic arsenic trioxide.",
+          "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
+        },
+        "fusion_entropy": {
+          "value": 46.673962861666666,
+          "tier": 3,
+          "spread": 0.0,
+          "unit": "J mol^-1 K^-1",
+          "source": "No As2O3 fusion enthalpy or fusion entropy was located. Apply the documented tier-3 Richards-type estimate: 28.004377717 J/(mol K) for K2O divided by its three atoms gives the repository's 48-pair mean per formula atom; multiply by the five atoms in As2O3. The leave-one-out construction band is recorded separately.",
+          "training_count": 48,
+          "references": ["data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"]
+        },
+        "liquid_heat_capacity": {
+          "value": 124.33266546326435,
+          "tier": 3,
+          "spread": 0.0,
+          "unit": "J mol^-1 K^-1",
+          "source": "No As2O3 liquid heat capacity was located. Apply the documented tier-3 fallback: carry the source crystal Cp at fusion into the liquid. Cp at 551 K evaluates to 29.716220235 cal/(mol K) x 4.184 J/cal. The source labels crystal thermal data above 360 K as estimated; the tier-3 leave-one-out construction band is recorded separately.",
+          "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
+        }
+      },
+      "measured_band": {
+        "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs",
+        "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
+        "method": "Interpolate the measured maximum absolute leave-one-out Gibbs error between +300 and +800 K from fusion; above +800 K, continue its final measured slope as a flagged uncertainty estimate.",
+        "values_J_per_mol": {"1200": 35316.525905814444, "1500": 51522.32222520653, "1800": 67728.11854459862, "2000": 78531.98275752667, "2500": 105541.64328984682, "3000": 132551.30382216698}
+      },
+      "condensate_fit": {
+        "table_id": "P672-As2O3-LFS",
+        "ref": "P672-As2O3-LFS",
+        "cation": "As",
+        "cat_num": 2,
+        "oxy_num": 3,
+        "fit_t_min": 1200.0,
+        "fit_t_max": 1600.0,
+        "runtime_t_min": 1200.0,
+        "runtime_t_max": 1600.0
+      }
     }
   },
   "fusion_temperature_fallback": {

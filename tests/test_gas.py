@@ -198,7 +198,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 66
+    assert len(gas_pack.oxide_df) == 72
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -564,7 +564,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == 64 + len(build_gas_tables.TRACE_GAS_SPECIES)
-    assert unavailable == {"TeO", "SeO"}
+    assert unavailable == {"TeO", "SeO", "AsO"}
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert not set(_P_CHANNELS) & (in_domain | extrapolated)
@@ -1247,7 +1247,7 @@ def test_gas_result_omitted_channels_default_is_empty_and_immutable() -> None:
 def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    assert set(IMCC_GAS_NO_JANAF_ROWS) == {"TeO", "SeO"}
+    assert set(IMCC_GAS_NO_JANAF_ROWS) == {"TeO", "SeO", "AsO"}
     assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
     assert IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES == {
         "Ni": (
@@ -2317,6 +2317,7 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
         "ZnO(l)", "CdO(l)", "Bi2O3(l)",
         "TeO2(l)",
         "SeO2(l)",
+        "As2O3(l)",
         "MnO(l)",
     }
     return replace(
@@ -2346,6 +2347,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Bi2O3": 1.0e-3,
         "TeO2": 1.0e-3,
         "SeO2": 1.0e-3,
+        "As2O3": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2496,7 +2498,7 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         "B2O3(l)", "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
         "Cs2O(l)", "Cu2O(l)", "SnO(l)",
         "ZnO(l)", "CdO(l)", "Bi2O3(l)",
-        "MnO(l)", "SeO2(l)",
+        "MnO(l)", "TeO2(l)", "SeO2(l)", "As2O3(l)",
     }
     changed_continuations = {
         "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "SiO2(l)",
@@ -2579,16 +2581,17 @@ def _trace_janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
 
 
 def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
-    if table_id == "P672-SeO2-LFS":
+    if table_id in {"P672-SeO2-LFS", "P672-As2O3-LFS"}:
         repository = Path(__file__).resolve().parents[1]
         source_dir = repository / "data-src" / "published-thermo"
         config = json.loads(
             (repository / "data-src" / "liquid-from-solid-inputs.json").read_text(
                 encoding="utf-8"
             )
-        )["rows"]["SeO2"]
+        )["rows"]["SeO2" if table_id == "P672-SeO2-LFS" else "As2O3"]
+        species = "SeO2" if table_id == "P672-SeO2-LFS" else "As2O3"
         _rows, construction, _alternate = build_gas_tables._fit_liquid_from_solid_parent(
-            source_dir, "SeO2", config
+            source_dir, species, config
         )
         return construction.at(temperature).gibbs_kj_mol * 1000.0
     if not table_id.startswith("NG-"):
@@ -2619,12 +2622,13 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
             return (reference + node["enthalpy_increment"]) * 1000.0 - (
                 temperature * node["entropy"]
             )
-        if table_id in {"TSIV-1603", "P672-T102", "P672-SeO2-LFS"}:
+        if table_id in {"TSIV-1603", "P672-T102", "P672-SeO2-LFS", "P672-As2O3-LFS"}:
             repository = Path(__file__).resolve().parents[1]
             species = {
                 "TSIV-1603": "ZnO",
                 "P672-T102": "CdO",
                 "P672-SeO2-LFS": "SeO2",
+                "P672-As2O3-LFS": "As2O3",
             }[table_id]
             config = json.loads(
                 (repository / "data-src" / "liquid-from-solid-inputs.json").read_text(
@@ -2673,6 +2677,7 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("Bi", "Bi2O3", "P672-T80", "P672-T82"),
         ("Te", "TeO2", "P672-Te-g", "P672-TeO2-l"),
         ("Se", "SeO2", "P672-Se-g", "P672-SeO2-LFS"),
+        ("As", "As2O3", "P672-As-g", "P672-As2O3-LFS"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]

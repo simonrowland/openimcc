@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+import openimcc.gas as gas_module
 
 from openimcc import evaluate as evaluate_imcc, load_datapack
 from openimcc.gas import (
@@ -136,6 +137,8 @@ def _evaluated_public_c2_species(
         if ion_bound is None:
             continue
         parent_oxide = ion_bound.get("parent_oxide")
+        if parent_oxide is None and species in gas_module._SF04_REACTIONS:
+            parent_oxide = gas_module._SF04_REACTIONS[species][0]
         if parent_oxide is None:
             continue
         temperature = 1800.0 if element == "Mn" else 2200.0
@@ -1177,7 +1180,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Ga", "Ge", "B", "In",
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Cs", "Cu", "Sn",
         "Mn", "Ni", "Co", "P", "S",
-        "Zn", "Cd", "Bi", "Te", "Se",
+        "Zn", "Cd", "Bi", "Te", "Se", "As",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1195,6 +1198,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "In": "In2O3",
         "Te": "TeO2",
         "Se": "SeO2",
+        "As": "As2O3",
     }
     liquid_by_element = {
         **parent_by_element,
@@ -1216,6 +1220,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Bi": "Bi2O3",
         "Te": "TeO2",
         "Se": "SeO2",
+        "As": "As2O3",
         "Mn": "MnO",
     }
     gas_parent_by_element = {"S": "S2"}
