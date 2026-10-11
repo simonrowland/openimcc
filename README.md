@@ -694,6 +694,28 @@ the source record's `dfH298`. Condensate H_app includes the stable-phase
 packaged tables by default and accept a loaded `ImccGasDatapack` for explicit
 table selection.
 
+### Redox results
+
+`evaluate_redox()` returns `RedoxResult.element_moles_by_oxidation_state`, a
+mapping from element symbols to oxidation-state/mole-atom mappings. It counts
+all liquid parent and complex species; Fe-bearing MELT complexes inherit their
+Fe(II) count from parent stoichiometry, while redox-pack species use declared
+valence metadata. Fe metal is included at state `0` when present.
+`ferric_fe_mol` and `ferrous_fe_mol` alias the Fe entries at states `3` and `2`.
+
+Build Fe3+/sum-Fe from this mapping. For the full Fe inventory, divide state
+`3` by the sum of Fe state amounts; for dissolved-only Fe, use states `2` and
+`3` in the denominator and leave metal state `0` out. The
+`unmodelled_redox_couples` tuple reports present elements whose other known
+states have no redox rows in the selected pack. Each record has `element`,
+`modelled_states`, and `unmodelled_states`; the records do not estimate shares.
+`redox_pack_digest` and `melt_pack_binding_digest` identify the loaded pack
+objects. Result flag strings are descriptive, not a stable API.
+
+The keyword-only `redox_pack_path` argument selects a validated redox
+component. Relative paths resolve against the process working directory;
+omitting the argument uses the packaged default.
+
 ## The empirical bench
 
 From a **source checkout** (the bench set is not included in the wheel),

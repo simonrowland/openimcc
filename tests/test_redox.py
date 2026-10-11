@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -19,7 +21,17 @@ from openimcc import (
 import openimcc.kernel as kernel_module
 from openimcc.kernel import active_residual_jacobian, solve_active_warm
 from openimcc.redox_basis import oxide_inventory_to_elements
-from openimcc.redox_pack import RedoxPack, load_redox_pack, ln_k_prime, species_gibbs_j_mol
+from openimcc.redox_pack import (
+    RedoxPack,
+    canonical_redox_digest,
+    load_redox_pack,
+    ln_k_prime,
+    species_gibbs_j_mol,
+)
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v1.json"
 
 
 def _formula_atoms() -> dict[str, dict[str, float]]:
@@ -39,6 +51,116 @@ def _formula_atoms() -> dict[str, dict[str, float]]:
 
 def _fe_only_inventory() -> dict[str, float]:
     return {"Fe": 1.0, "O": 1.25}
+
+
+def _inventory_with_parent_oxygen(
+    element_moles: dict[str, float], *, excess_oxygen: float = 0.02
+) -> dict[str, float]:
+    parents = {str(parent["element"]): parent for parent in load_redox_pack().parents}
+    oxygen = math.fsum(
+        amount
+        * float(parents[element]["parent_formula_atoms"].get("O", 0.0))
+        / float(parents[element]["parent_formula_atoms"][element])
+        for element, amount in element_moles.items()
+    )
+    return {**element_moles, "O": oxygen + excess_oxygen}
+
+
+def _assert_valence_totals_conserve(result, inventory: dict[str, float]) -> None:
+    totals = result.element_moles_by_oxidation_state
+    expected = dict(inventory)
+    expected.setdefault("O", result.oxygen_mol)
+    for element, amount in expected.items():
+        assert math.fsum(totals[element].values()) == pytest.approx(amount, abs=2e-12)
+    fe = totals["Fe"]
+    assert result.ferric_fe_mol == fe.get(3, 0.0)
+    assert result.ferrous_fe_mol == fe.get(2, 0.0)
+
+
+def _write_synthetic_redox_pack(tmp_path: Path, *, add_mn_couple: bool = False) -> Path:
+    content = json.loads(DEFAULT_REDOX_PACK_PATH.read_text(encoding="utf-8"))
+    provenance = content["thermo_species"]["FeO(l)"]["provenance"]
+    content["thermo_species"]["SynthFe3O4(l)"] = {
+        "formula_atoms": {"Fe": 3, "O": 4},
+        "ferric_fe_units": 2.0,
+        "ferrous_fe_units": 1.0,
+        "evaluator": "linear_combination",
+        "terms": [
+            {"species": "FeO(l)", "coefficient": 1.0},
+            {"species": "FeO1.5(l)", "coefficient": 2.0},
+        ],
+        "T_domain_K": [1700.0, 3000.0],
+        "range_flags": [],
+        "band_kj_mol": 0.0,
+        "provenance": provenance,
+    }
+    content["rows"].append(
+        {
+            "complex": "SynthFe3O4(l)",
+            "reaction": "FeO(l) + 2 FeO1.5(l) = SynthFe3O4(l)",
+            "nu": {"FeO(l)": 3.0},
+            "external_oxygen_stoich_product_positive": 0.0,
+            "reactants": {"FeO(l)": 1.0, "FeO1.5(l)": 2.0},
+            "products": {"SynthFe3O4(l)": 1.0},
+            "standard_gibbs_terms": [
+                {"species": "SynthFe3O4(l)", "coefficient": 1.0},
+                {"species": "FeO(l)", "coefficient": -1.0},
+                {"species": "FeO1.5(l)", "coefficient": -2.0},
+            ],
+            "T_domain_K": [1700.0, 3000.0],
+            "band_kj_mol": 0.0,
+            "phase_or_construction": "synthetic test species",
+            "method": "linear combination of registered redox species",
+            "band_method": "zero-width synthetic test band",
+            "uncertainty_note": "test fixture only",
+            "range_flags": ["synthetic test fixture"],
+            "provenance": provenance,
+            "provenance_class": "extension-compound-thermo",
+            "role": "complex",
+        }
+    )
+    if add_mn_couple:
+        content["thermo_species"]["MnO1.5(l)"] = {
+            "formula_atoms": {"Mn": 1, "O": 1.5},
+            "evaluator": "linear_combination",
+            "terms": [
+                {"species": "MnO(l)", "coefficient": 1.0},
+                {"species": "O2(g)", "coefficient": 0.25},
+            ],
+            "T_domain_K": [1700.0, 3000.0],
+            "range_flags": [],
+            "band_kj_mol": 0.0,
+            "provenance": provenance,
+        }
+        content["rows"].append(
+            {
+                "complex": "MnO1.5(l)",
+                "reaction": "MnO(l) + 1/4 O2(g) = MnO1.5(l)",
+                "nu": {"MnO(l)": 1.0},
+                "external_oxygen_stoich_product_positive": -0.25,
+                "reactants": {"MnO(l)": 1.0, "O2(g)": 0.25},
+                "products": {"MnO1.5(l)": 1.0},
+                "standard_gibbs_terms": [
+                    {"species": "MnO1.5(l)", "coefficient": 1.0},
+                    {"species": "O2(g)", "coefficient": -0.25},
+                    {"species": "MnO(l)", "coefficient": -1.0},
+                ],
+                "T_domain_K": [1700.0, 3000.0],
+                "band_kj_mol": 0.0,
+                "phase_or_construction": "synthetic test species",
+                "method": "linear combination of registered species",
+                "band_method": "zero-width synthetic test band",
+                "uncertainty_note": "test fixture only",
+                "range_flags": ["synthetic test fixture"],
+                "provenance": provenance,
+                "provenance_class": "extension-compound-thermo",
+                "role": "complex",
+            }
+        )
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path = tmp_path / "synthetic-redox-pack.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+    return path
 
 
 def test_default_redox_pack_cache_is_immutable_and_reloads_changed_files(
@@ -1768,3 +1890,275 @@ def test_redox_limits_optional_blas_threads_once_and_preserves_result_bits(
         (field.name, result_bits(getattr(unguarded, field.name)))
         for field in fields(unguarded)
     )
+
+
+def test_valence_fields_and_synthetic_nested_pack_selection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inventory = _fe_only_inventory()
+    default = evaluate_redox(inventory, 2200.0, "closed")
+    explicit_default = evaluate_redox(
+        inventory,
+        2200.0,
+        "closed",
+        redox_pack_path=DEFAULT_REDOX_PACK_PATH,
+    )
+    assert explicit_default == default
+    assert default.ferric_fe_mol == default.species_moles["FeO1.5(l)"]
+    assert default.ferrous_fe_mol == default.species_moles["FeO"]
+    _assert_valence_totals_conserve(default, inventory)
+    default_pack = load_redox_pack(DEFAULT_REDOX_PACK_PATH)
+    melt_pack = load_datapack()
+    assert default.redox_pack_digest == default_pack.canonical_digest
+    assert default.melt_pack_binding_digest == melt_pack.binding_digest
+
+    synthetic_path = _write_synthetic_redox_pack(tmp_path)
+    synthetic_pack = load_redox_pack(synthetic_path)
+    synthetic = evaluate_redox(
+        inventory, 2200.0, "closed", redox_pack_path=synthetic_path
+    )
+    synthetic_amount = synthetic.species_moles["SynthFe3O4(l)"]
+    assert synthetic_amount > 0.0
+    assert synthetic.ferric_fe_mol == pytest.approx(
+        synthetic.species_moles["FeO1.5(l)"] + 2.0 * synthetic_amount,
+        abs=1e-13,
+    )
+    assert synthetic.ferrous_fe_mol == pytest.approx(
+        synthetic.species_moles["FeO"] + synthetic_amount, abs=1e-13
+    )
+    assert synthetic.redox_pack_digest == synthetic_pack.canonical_digest
+    assert synthetic.redox_pack_digest != default.redox_pack_digest
+    assert synthetic.melt_pack_binding_digest == melt_pack.binding_digest
+    _assert_valence_totals_conserve(synthetic, inventory)
+
+    monkeypatch.chdir(tmp_path)
+    relative = evaluate_redox(
+        inventory, 2200.0, "closed", redox_pack_path=synthetic_path.name
+    )
+    assert relative.redox_pack_digest == synthetic_pack.canonical_digest
+
+
+def test_redox_pack_path_refuses_missing_unreadable_and_bad_digest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from openimcc.model import ImccMalformedDatapackError
+    import openimcc.redox as redox_module
+
+    missing = tmp_path / "missing-redox-pack.json"
+    with pytest.raises(ImccMalformedDatapackError) as refusal:
+        evaluate_redox(_fe_only_inventory(), 2200.0, "closed", redox_pack_path=missing)
+    assert str(tmp_path) not in str(refusal.value)
+    assert "missing-redox-pack.json" in str(refusal.value)
+
+    def deny(path):
+        raise PermissionError(13, "Permission denied", str(path))
+
+    monkeypatch.setattr(redox_module, "load_redox_pack", deny)
+    with pytest.raises(ImccMalformedDatapackError) as refusal:
+        evaluate_redox(_fe_only_inventory(), 2200.0, "closed", redox_pack_path=missing)
+    assert str(tmp_path) not in str(refusal.value)
+    assert "Permission denied" in str(refusal.value)
+
+    monkeypatch.undo()
+    mismatched = _write_synthetic_redox_pack(tmp_path)
+    content = json.loads(mismatched.read_text(encoding="utf-8"))
+    content["version"] = "changed-without-rehash"
+    mismatched.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="canonical content digest mismatch"):
+        evaluate_redox(
+            _fe_only_inventory(), 2200.0, "closed", redox_pack_path=mismatched
+        )
+
+
+def test_rounded_basalt_species_reproduce_the_ferrous_fe_correction() -> None:
+    import openimcc.redox as redox_module
+
+    pack = load_redox_pack()
+    melt_pack = redox_module._load_default_datapack().kernel_datapack
+    species = {
+        "FeO": 0.043329,
+        "FeTiO3": 0.003141,
+        "Fe2SiO4": 0.011010,
+        "FeAl2O4": 0.028703,
+        "FeO1.5(l)": 0.155158,
+    }
+    totals = redox_module._element_moles_by_oxidation_state(
+        species, melt_pack, pack, 0.0
+    )
+    fe = totals["Fe"]
+    assert fe[3] == pytest.approx(0.155158, abs=1e-12)
+    assert fe[2] == pytest.approx(0.097194, abs=2e-6)
+    assert math.fsum(fe.values()) == pytest.approx(0.252352, abs=2e-6)
+    assert fe[3] / math.fsum(fe.values()) == pytest.approx(0.6148, abs=1e-4)
+
+
+def test_element_valence_totals_conserve_across_melt_and_metal_cases() -> None:
+    basalt = {
+        "Si": 1.135951923,
+        "Mg": 0.156286148,
+        "Fe": 0.252352,
+        "Ca": 0.211933693,
+        "Al": 0.382287998,
+        "Ti": 0.028649319,
+        "Na": 0.137246205,
+        "K": 0.022004693,
+    }
+    basalt_result = evaluate_redox(
+        basalt,
+        1731.0,
+        "imposed",
+        lambda_imposed=-0.68 * math.log(10.0),
+    )
+    assert all(
+        basalt_result.species_moles[name] > 0.0
+        for name in ("FeTiO3", "Fe2SiO4", "FeAl2O4")
+    )
+    _assert_valence_totals_conserve(basalt_result, basalt)
+
+    peridotite = {
+        "Si": 0.45,
+        "Mg": 0.35,
+        "Fe": 0.15,
+        "Ca": 0.03,
+        "Al": 0.015,
+        "Ti": 0.005,
+    }
+    peridotite_inventory = _inventory_with_parent_oxygen(peridotite)
+    peridotite_result = evaluate_redox(peridotite_inventory, 1800.0, "closed")
+    _assert_valence_totals_conserve(peridotite_result, peridotite_inventory)
+
+    manganese = {
+        "Si": 0.30,
+        "Mg": 0.20,
+        "Fe": 0.15,
+        "Ca": 0.10,
+        "Al": 0.10,
+        "Ti": 0.01,
+        "Mn": 0.02,
+    }
+    manganese_inventory = _inventory_with_parent_oxygen(manganese)
+    manganese_result = evaluate_redox(manganese_inventory, 1800.0, "closed")
+    _assert_valence_totals_conserve(manganese_result, manganese_inventory)
+
+    metal_inventory = {"Fe": 1.0, "O": 1.0}
+    metal_result = evaluate_redox(metal_inventory, 2200.0, "closed")
+    assert metal_result.metal_moles > 0.0
+    assert metal_result.element_moles_by_oxidation_state["Fe"][0] == pytest.approx(
+        metal_result.metal_moles
+    )
+    _assert_valence_totals_conserve(metal_result, metal_inventory)
+
+
+def test_unmodelled_couple_detection_uses_non_iron_redox_rows(
+    tmp_path: Path,
+) -> None:
+    path = _write_synthetic_redox_pack(tmp_path, add_mn_couple=True)
+    inventory = {"Fe": 0.1, "Mn": 0.02, "Cr": 0.01, "Si": 0.25}
+    result = evaluate_redox(
+        inventory, 1800.0, "imposed", lambda_imposed=-4.0, redox_pack_path=path
+    )
+    records = {record["element"]: record for record in result.unmodelled_redox_couples}
+    assert "Mn" not in records
+    assert records["Cr"]["unmodelled_states"] == (2, 6)
+    assert result.element_moles_by_oxidation_state["Mn"].get(3, 0.0) > 0.0
+    assert sum(flag == "RED: unmodelled_redox_couples" for flag in result.flags) == 1
+
+
+def test_unmodelled_redox_couples_are_presence_only_and_flagged_once() -> None:
+    iron = evaluate_redox(_fe_only_inventory(), 2200.0, "closed")
+    assert iron.unmodelled_redox_couples == ()
+
+    lunar_elements = {
+        "Si": 0.25,
+        "Mg": 0.20,
+        "Fe": 0.10,
+        "Ca": 0.08,
+        "Al": 0.10,
+        "Ti": 0.01,
+        "Cr": 0.005,
+        "V": 0.005,
+        "Mn": 0.01,
+        "Eu": 0.001,
+        "Ce": 0.001,
+        "P": 0.004,
+        "S": 0.002,
+        "Na": 0.01,
+        "K": 0.005,
+    }
+    lunar_inventory = _inventory_with_parent_oxygen(lunar_elements)
+    lunar = evaluate_redox(lunar_inventory, 1800.0, "closed")
+    records = {record["element"]: record for record in lunar.unmodelled_redox_couples}
+    assert set(records) == {"Cr", "Ti", "V", "Mn", "Eu", "Ce", "P", "S"}
+    assert records["Cr"]["modelled_states"] == (3,)
+    assert records["Cr"]["unmodelled_states"] == (2, 6)
+    assert records["Ti"]["modelled_states"] == (4,)
+    assert records["Ti"]["unmodelled_states"] == (3,)
+    assert records["Mn"]["unmodelled_states"] == (3,)
+    assert records["S"]["modelled_states"] == (0,)
+    assert records["S"]["unmodelled_states"] == (-2, 4, 6)
+    assert all(
+        set(record) == {"element", "modelled_states", "unmodelled_states"}
+        for record in records.values()
+    )
+    assert sum(flag == "RED: unmodelled_redox_couples" for flag in lunar.flags) == 1
+    _assert_valence_totals_conserve(lunar, lunar_inventory)
+
+
+def test_synthetic_nested_pack_oxygen_window_response_and_metal_branch(
+    tmp_path: Path,
+) -> None:
+    import openimcc.redox as redox_module
+
+    path = _write_synthetic_redox_pack(tmp_path)
+    pack = load_redox_pack(path)
+    parent_names = redox_module._redox_parent_names(pack)
+    fe_index = parent_names.index("FeO")
+    parent_moles = np.zeros(len(parent_names), dtype=np.float64)
+    parent_moles[fe_index] = 1.0
+    surplus, deficit, shared_rows = redox_module._oxygen_inventory_targets(
+        parent_moles,
+        redox_module._parent_oxygen_counts(parent_names, pack),
+        fe_index,
+        1.0,
+        pack,
+    )
+    assert shared_rows
+    assert surplus == pytest.approx(1.0)
+    assert deficit == pytest.approx(0.5)
+
+    inventory = {"Fe": 1.0}
+    temperature = 2200.0
+    center = evaluate_redox(
+        inventory, temperature, "imposed", lambda_imposed=-4.0, redox_pack_path=path
+    )
+    step = 1.0e-5
+    minus = evaluate_redox(
+        inventory,
+        temperature,
+        "imposed",
+        lambda_imposed=-4.0 - step,
+        redox_pack_path=path,
+    )
+    plus = evaluate_redox(
+        inventory,
+        temperature,
+        "imposed",
+        lambda_imposed=-4.0 + step,
+        redox_pack_path=path,
+    )
+    finite_difference = (plus.oxygen_mol - minus.oxygen_mol) / (2.0 * step)
+    assert center.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
+        finite_difference, rel=2.0e-6, abs=1.0e-12
+    )
+
+    metal_branch = evaluate_redox(
+        {"Fe": 1.0, "O": 1.0}, temperature, "closed", redox_pack_path=path
+    )
+    assert metal_branch.metal_buffered
+    assert metal_branch.metal_moles > 0.0
+    assert metal_branch.oxygen_residual_mol == pytest.approx(0.0, abs=1.0e-12)
+    assert (
+        metal_branch.ferric_fe_mol
+        + metal_branch.ferrous_fe_mol
+        + metal_branch.metal_moles
+    ) == pytest.approx(1.0, abs=1.0e-12)

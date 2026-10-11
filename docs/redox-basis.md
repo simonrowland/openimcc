@@ -39,6 +39,27 @@ Fe saturation condition `a_Fe = 1` at the imposed lambda. If changing metal
 amount leaves that saturation lambda invariant, oxygen is needed to select an
 extent; without it, the solver raises a typed endpoint error.
 
+`RedoxResult.element_moles_by_oxidation_state` reports each present liquid
+element as moles of atoms by integer oxidation state. MELT-pack complexes
+expand through parent stoichiometry, and redox-pack species use their valence
+metadata. Fe metal is included separately at state 0. `ferric_fe_mol` and
+`ferrous_fe_mol` alias Fe states 3 and 2; form Fe3+/sum-Fe from the valence
+totals, using states 2 and 3 for dissolved-only Fe and including state 0 for
+total inventory Fe.
+
+`unmodelled_redox_couples` records present elements whose known melt valences
+are not represented by rows in the selected redox pack. Its records contain
+`element`, `modelled_states`, and `unmodelled_states`, without estimated
+shares. `redox_pack_digest` and `melt_pack_binding_digest` identify the pack
+objects used by the solve. Result flag strings remain descriptive, not a
+stable API.
+
+The keyword-only `redox_pack_path` argument selects a validated redox pack;
+omitting it uses the packaged default. Relative paths resolve against the
+process working directory. Missing or unreadable files raise the typed
+`ImccMalformedDatapackError` refusal with a message that omits the full path.
+Content digest mismatches continue to raise the loader's `ValueError`.
+
 `evaluate_redox()` uses optional `threadpoolctl` to limit supported
 BLAS/OpenMP thread pools to one thread for the duration of the call; it does
 not add an install dependency. These limits are process-wide while active, so

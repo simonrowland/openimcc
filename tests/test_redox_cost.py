@@ -296,6 +296,39 @@ def test_fallback_flag_covers_forced_inner_scipy_calls(
         assert result.metal_buffered is True
 
 
+def test_fallback_flag_collects_kernel_bit_during_invariant_extent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import openimcc.redox as redox_module
+
+    solve_active_warm = redox_module.solve_active_warm
+    selected_call = 15
+    seen_calls = 0
+    marked_calls: list[int] = []
+
+    def mark_kernel_fallback(*args, **kwargs):
+        nonlocal seen_calls
+        call_index = seen_calls
+        seen_calls += 1
+        result = solve_active_warm(*args, **kwargs)
+        if call_index == selected_call:
+            marked_calls.append(call_index)
+            return (*result[:-1], True)
+        return result
+
+    monkeypatch.setattr(redox_module, "solve_active_warm", mark_kernel_fallback)
+    result = evaluate_redox(
+        {"Fe": 1.0, "O": 1.0},
+        2200.0,
+        "imposed",
+        lambda_imposed=-15.127740855106792,
+    )
+
+    assert seen_calls > selected_call
+    assert marked_calls == [selected_call]
+    assert result.fallback_fired is True
+
+
 @pytest.mark.parametrize(
     ("name", "composition", "temperature", "basis_type", "metal_bearing"),
     [

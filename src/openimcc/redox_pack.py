@@ -18,7 +18,7 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 _PACK_NAME = "openimcc-redox-v1.json"
-_SCHEMA = "openimcc-redox-pack.v1"
+_SCHEMA = "openimcc-redox-pack.v2"
 
 
 def canonical_redox_digest(content: Mapping[str, Any]) -> str:
@@ -113,7 +113,7 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         "band": "kJ mol^-1 reaction",
         "pressure": "bar relative to 1 bar standard state",
     }:
-        raise ValueError("redox pack units do not match schema v1")
+        raise ValueError("redox pack units do not match schema v2")
     if content["source_selection_rail"] != [
         "standard_state_consistency", "primary_measurement", "domain_match",
         "systematic_estimate",
@@ -136,6 +136,21 @@ def _validate_content(content: Mapping[str, Any]) -> None:
             raise ValueError(f"parent_registry[{index}] has no parent oxide")
         if not isinstance(parent.get("parent_standard_state"), str):
             raise ValueError(f"parent_registry[{index}] has no parent standard state")
+        parent_state = parent.get("parent_oxidation_state")
+        if isinstance(parent_state, bool) or not isinstance(parent_state, int):
+            raise ValueError(
+                f"parent_registry[{index}] parent_oxidation_state must be an integer"
+            )
+        known_states = parent.get("known_oxidation_states")
+        if (
+            not isinstance(known_states, list)
+            or not known_states
+            or any(isinstance(state, bool) or not isinstance(state, int) for state in known_states)
+            or len(set(known_states)) != len(known_states)
+        ):
+            raise ValueError(
+                f"parent_registry[{index}] known_oxidation_states must be a non-empty list of unique integers"
+            )
         atoms = parent.get("parent_formula_atoms")
         if not isinstance(atoms, dict) or not atoms or element not in atoms:
             raise ValueError(f"parent_registry[{index}] has invalid parent_formula_atoms")
@@ -144,6 +159,17 @@ def _validate_content(content: Mapping[str, Any]) -> None:
                 count, f"parent_registry[{index}]/parent_formula_atoms/{atom}"
             ) <= 0.0:
                 raise ValueError(f"parent_registry[{index}] has invalid atom count")
+        oxygen_atoms = float(atoms.get("O", 0.0))
+        element_atoms = float(atoms[element])
+        if set(atoms) <= {element, "O"} and not math.isclose(
+            parent_state * element_atoms,
+            2.0 * oxygen_atoms,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            raise ValueError(
+                f"parent_registry[{index}] parent_oxidation_state does not balance its oxide formula"
+            )
         elements.add(element)
         if parent_oxide in parent_names:
             raise ValueError(f"parent_registry[{index}] has duplicate parent oxide")
@@ -162,6 +188,24 @@ def _validate_content(content: Mapping[str, Any]) -> None:
                 count, f"thermo_species[{name!r}]/formula_atoms/{element}"
             ) <= 0.0:
                 raise ValueError(f"thermo_species[{name!r}] has invalid formula atoms")
+        iron_atoms = float(record["formula_atoms"].get("Fe", 0.0))
+        if iron_atoms > 0.0:
+            valence_counts = []
+            for field in ("ferric_fe_units", "ferrous_fe_units"):
+                count = _finite_number(record.get(field), f"thermo_species[{name!r}]/{field}")
+                if count < 0.0:
+                    raise ValueError(f"thermo_species[{name!r}] has negative {field}")
+                valence_counts.append(count)
+            if sum(valence_counts) > iron_atoms + 1e-10:
+                raise ValueError(
+                    f"thermo_species[{name!r}] ferric and ferrous Fe exceed formula Fe"
+                )
+        elif "ferric_fe_units" in record or "ferrous_fe_units" in record:
+            for field in ("ferric_fe_units", "ferrous_fe_units"):
+                if _finite_number(record.get(field, 0.0), f"thermo_species[{name!r}]/{field}") != 0.0:
+                    raise ValueError(
+                        f"thermo_species[{name!r}] assigns iron valence without Fe"
+                    )
         domain = record.get("T_domain_K")
         if not isinstance(domain, list) or len(domain) != 2:
             raise ValueError(f"thermo_species[{name!r}] needs a two-point T_domain_K")
@@ -218,6 +262,19 @@ def _validate_content(content: Mapping[str, Any]) -> None:
                         f"thermo_species[{name!r}] combination formula_atoms "
                         f"do not match constituents for {element}"
                     )
+            if "Fe" in record["formula_atoms"]:
+                for field in ("ferric_fe_units", "ferrous_fe_units"):
+                    expected = sum(
+                        float(term["coefficient"])
+                        * float(species[term["species"]].get(field, 0.0))
+                        for term in record["terms"]
+                    )
+                    if not math.isclose(
+                        float(record[field]), expected, rel_tol=0.0, abs_tol=1e-10
+                    ):
+                        raise ValueError(
+                            f"thermo_species[{name!r}] {field} does not match constituents"
+                        )
 
     rows = content["rows"]
     if not isinstance(rows, list) or not rows:
@@ -228,6 +285,18 @@ def _validate_content(content: Mapping[str, Any]) -> None:
             raise ValueError(f"{label} must be an object")
         if row.get("complex") not in species:
             raise ValueError(f"{label} names an unknown product species")
+        product_species = species[str(row["complex"])]
+        product_iron = float(product_species["formula_atoms"].get("Fe", 0.0))
+        if product_iron > 0.0 and not math.isclose(
+            float(product_species["ferric_fe_units"])
+            + float(product_species["ferrous_fe_units"]),
+            product_iron,
+            rel_tol=0.0,
+            abs_tol=1e-10,
+        ):
+            raise ValueError(
+                f"{label} Fe-bearing product does not assign every Fe atom a valence"
+            )
         if not isinstance(row.get("nu"), dict):
             raise ValueError(f"{label} needs parent stoichiometry nu")
         for parent, amount in row["nu"].items():
@@ -250,14 +319,6 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         row_oxygen = float(row["products"].get("O2(g)", 0.0)) - float(
             row["reactants"].get("O2(g)", 0.0)
         )
-        for parent_oxide in parent_names:
-            if not math.isclose(
-                float(row["nu"].get(parent_oxide, 0.0)),
-                float(row["reactants"].get(parent_oxide, 0.0)),
-                rel_tol=0.0,
-                abs_tol=1e-12,
-            ):
-                raise ValueError(f"{label} nu does not match parent reactant stoichiometry")
         if not math.isclose(
             float(row["products"].get(row["complex"], 0.0)),
             1.0,
@@ -307,6 +368,53 @@ def _validate_content(content: Mapping[str, Any]) -> None:
             raise ValueError(f"{label} has incomplete provenance")
         if not isinstance(row.get("provenance_class"), str) or not row["provenance_class"]:
             raise ValueError(f"{label} has no provenance_class")
+
+    # Complex rows may consume one registered pseudo-complex. Expand it to
+    # registered-parent extents before validating the row's parent basis.
+    row_by_complex = {str(row["complex"]): row for row in rows}
+
+    def parent_equivalents(species_name: str, amount: float) -> dict[str, float]:
+        if species_name in parent_names:
+            return {species_name: amount}
+        nested = row_by_complex.get(species_name)
+        if nested is None or nested.get("role") != "complex":
+            return {}
+        return {
+            str(parent): amount * float(coefficient)
+            for parent, coefficient in nested["nu"].items()
+        }
+
+    for index, row in enumerate(rows):
+        expected: dict[str, float] = {}
+        for species_name, coefficient in row["reactants"].items():
+            for parent, amount in parent_equivalents(
+                str(species_name), float(coefficient)
+            ).items():
+                expected[parent] = expected.get(parent, 0.0) + amount
+        for parent in parent_names:
+            if not math.isclose(
+                float(row["nu"].get(parent, 0.0)),
+                expected.get(parent, 0.0),
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ):
+                raise ValueError(
+                    f"rows[{index}] nu does not match parent-equivalent reactant stoichiometry"
+                )
+        if float(row["external_oxygen_stoich_product_positive"]) == 0.0:
+            valence_delta = {"ferric_fe_units": 0.0, "ferrous_fe_units": 0.0}
+            for species_name, coefficient in row["products"].items():
+                for field in valence_delta:
+                    valence_delta[field] += float(coefficient) * float(
+                        species[species_name].get(field, 0.0)
+                    )
+            for species_name, coefficient in row["reactants"].items():
+                for field in valence_delta:
+                    valence_delta[field] -= float(coefficient) * float(
+                        species[species_name].get(field, 0.0)
+                    )
+            if any(abs(value) > 1e-10 for value in valence_delta.values()):
+                raise ValueError(f"rows[{index}] changes Fe valence without external O2")
 
 
 def load_redox_pack(path: str | Path | None = None) -> RedoxPack:
@@ -462,15 +570,75 @@ def ln_k_prime(
 
     ``allow_extrapolation`` bypasses the reaction evidence interval while
     keeping species evaluator bounds in force.
+
+    Complex equilibria use registered-parent activities in the solver. When
+    a balanced reaction consumes another complex, this evaluates its
+    equivalent parent-basis Gibbs function; ``reaction_gibbs_j_mol`` continues
+    to return the Gibbs energy of the displayed reaction itself.
     """
     from openimcc.gas import R_J_MOL_K
 
-    oxygen = float(row["external_oxygen_stoich_product_positive"])
-    return -reaction_gibbs_j_mol(
-        pack,
-        row,
-        temperature_k,
-        allow_extrapolation=allow_extrapolation,
-    ) / (
-        R_J_MOL_K * float(temperature_k)
-    ) - oxygen * float(ln_f_o2)
+    complex_products = {
+        str(candidate["complex"])
+        for candidate in pack.rows
+        if candidate.get("role") == "complex"
+    }
+    consumes_complex = any(
+        str(species) in complex_products for species in row["reactants"]
+    )
+    if row.get("role") == "complex" and consumes_complex:
+        parent_oxygen = {
+            str(parent["parent_oxide"]): float(
+                parent["parent_formula_atoms"].get("O", 0.0)
+            )
+            for parent in pack.parents
+        }
+        product_oxygen = float(
+            pack.content["thermo_species"][str(row["complex"])]
+            ["formula_atoms"].get("O", 0.0)
+        )
+        consumed_oxygen = sum(
+            float(amount) * parent_oxygen[str(parent)]
+            for parent, amount in row["nu"].items()
+        )
+        # Premise: solver mass-action rows use registered-parent activities.
+        # Algebra: ΔG on that basis is G(product) - ν·G(parent) - (ΔO/2)G(O2).
+        # Units are J/mol. Sanity: consuming two FeO1.5 units adds one O
+        # beyond three FeO parents, so the shift is lambda/2.
+        lambda_shift = 0.5 * (product_oxygen - consumed_oxygen)
+        reaction_gibbs = (
+            species_gibbs_j_mol(
+                pack,
+                str(row["complex"]),
+                float(temperature_k),
+                allow_extrapolation=allow_extrapolation,
+            )
+            - math.fsum(
+                float(amount)
+                * species_gibbs_j_mol(
+                    pack,
+                    str(parent),
+                    float(temperature_k),
+                    allow_extrapolation=allow_extrapolation,
+                )
+                for parent, amount in row["nu"].items()
+            )
+            - lambda_shift
+            * species_gibbs_j_mol(
+                pack,
+                "O2(g)",
+                float(temperature_k),
+                allow_extrapolation=allow_extrapolation,
+            )
+        )
+    else:
+        lambda_shift = -float(row["external_oxygen_stoich_product_positive"])
+        reaction_gibbs = reaction_gibbs_j_mol(
+            pack,
+            row,
+            temperature_k,
+            allow_extrapolation=allow_extrapolation,
+        )
+    return -reaction_gibbs / (R_J_MOL_K * float(temperature_k)) + (
+        lambda_shift * float(ln_f_o2)
+    )

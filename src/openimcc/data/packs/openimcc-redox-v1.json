@@ -1,6 +1,6 @@
 {
-  "schema": "openimcc-redox-pack.v1",
-  "version": "1.2.0",
+  "schema": "openimcc-redox-pack.v2",
+  "version": "1.3.0",
   "model": "Element-based redox thermochemistry with standard-state reaction rows",
   "created": "2026-10-10",
   "units": {
@@ -12,29 +12,31 @@
     "pressure": "bar relative to 1 bar standard state"
   },
   "source_selection_rail": ["standard_state_consistency", "primary_measurement", "domain_match", "systematic_estimate"],
-  "canonical_content_digest": "f8c680e441bb62bb285b2b1fbc3900531bd7adcc39ae2c3c3498b855559944bc",
+  "canonical_content_digest": "bc5cf6fc7c726a7f9d8ed41544dd1b7cb432f76c4037c6f228ad6aa7fac88bec",
   "parent_registry": [
-    {"element": "Si", "parent_oxide": "SiO2(l)", "parent_formula_atoms": {"Si": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Si(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Mg", "parent_oxide": "MgO(l)", "parent_formula_atoms": {"Mg": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Mg(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Fe", "parent_oxide": "FeO(l)", "parent_formula_atoms": {"Fe": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Fe(cr) below 1809 K; Fe(l) at and above 1809 K", "redox_thermochemistry_status": "populated"},
-    {"element": "Ca", "parent_oxide": "CaO(l)", "parent_formula_atoms": {"Ca": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ca(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Al", "parent_oxide": "Al2O3(l)", "parent_formula_atoms": {"Al": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Al(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Ti", "parent_oxide": "TiO2(l)", "parent_formula_atoms": {"Ti": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ti(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Na", "parent_oxide": "Na2O(l)", "parent_formula_atoms": {"Na": 2, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Na(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "K", "parent_oxide": "K2O(l)", "parent_formula_atoms": {"K": 2, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "K(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Cr", "parent_oxide": "Cr2O3(l)", "parent_formula_atoms": {"Cr": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Cr(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Ni", "parent_oxide": "NiO(l)", "parent_formula_atoms": {"Ni": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ni(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Co", "parent_oxide": "CoO(l)", "parent_formula_atoms": {"Co": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Co(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "P", "parent_oxide": "P2O5", "parent_formula_atoms": {"P": 2, "O": 5}, "parent_standard_state": "one half P4O10(cr)", "elemental_reference_state": "P4(cr, white)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "V", "parent_oxide": "V2O3(l)", "parent_formula_atoms": {"V": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "V(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Mn", "parent_oxide": "MnO(l)", "parent_formula_atoms": {"Mn": 1, "O": 1}, "parent_standard_state": "pure liquid MnO at 1 bar", "elemental_reference_state": "Mn(l)", "redox_thermochemistry_status": "populated"},
-    {"element": "Eu", "parent_oxide": "Eu2O3(l)", "parent_formula_atoms": {"Eu": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Eu(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "Ce", "parent_oxide": "CeO2(l)", "parent_formula_atoms": {"Ce": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ce(cr)", "redox_thermochemistry_status": "registered_unpopulated"},
-    {"element": "S", "parent_oxide": "S(l)", "parent_formula_atoms": {"S": 1}, "parent_standard_state": "liquid sulfur", "elemental_reference_state": "S(rhombic)", "redox_thermochemistry_status": "registered_unpopulated"}
+    {"element": "Si", "parent_oxide": "SiO2(l)", "parent_formula_atoms": {"Si": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Si(cr)", "parent_oxidation_state": 4, "known_oxidation_states": [4], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Mg", "parent_oxide": "MgO(l)", "parent_formula_atoms": {"Mg": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Mg(cr)", "parent_oxidation_state": 2, "known_oxidation_states": [2], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Fe", "parent_oxide": "FeO(l)", "parent_formula_atoms": {"Fe": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Fe(cr) below 1809 K; Fe(l) at and above 1809 K", "parent_oxidation_state": 2, "known_oxidation_states": [0, 2, 3], "redox_thermochemistry_status": "populated"},
+    {"element": "Ca", "parent_oxide": "CaO(l)", "parent_formula_atoms": {"Ca": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ca(cr)", "parent_oxidation_state": 2, "known_oxidation_states": [2], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Al", "parent_oxide": "Al2O3(l)", "parent_formula_atoms": {"Al": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Al(cr)", "parent_oxidation_state": 3, "known_oxidation_states": [3], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Ti", "parent_oxide": "TiO2(l)", "parent_formula_atoms": {"Ti": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ti(cr)", "parent_oxidation_state": 4, "known_oxidation_states": [3, 4], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Na", "parent_oxide": "Na2O(l)", "parent_formula_atoms": {"Na": 2, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Na(cr)", "parent_oxidation_state": 1, "known_oxidation_states": [1], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "K", "parent_oxide": "K2O(l)", "parent_formula_atoms": {"K": 2, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "K(cr)", "parent_oxidation_state": 1, "known_oxidation_states": [1], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Cr", "parent_oxide": "Cr2O3(l)", "parent_formula_atoms": {"Cr": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Cr(cr)", "parent_oxidation_state": 3, "known_oxidation_states": [2, 3, 6], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Ni", "parent_oxide": "NiO(l)", "parent_formula_atoms": {"Ni": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ni(cr)", "parent_oxidation_state": 2, "known_oxidation_states": [0, 2], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Co", "parent_oxide": "CoO(l)", "parent_formula_atoms": {"Co": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Co(cr)", "parent_oxidation_state": 2, "known_oxidation_states": [0, 2], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "P", "parent_oxide": "P2O5", "parent_formula_atoms": {"P": 2, "O": 5}, "parent_standard_state": "one half P4O10(cr)", "elemental_reference_state": "P4(cr, white)", "parent_oxidation_state": 5, "known_oxidation_states": [0, 5], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "V", "parent_oxide": "V2O3(l)", "parent_formula_atoms": {"V": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "V(cr)", "parent_oxidation_state": 3, "known_oxidation_states": [2, 3, 4, 5], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Mn", "parent_oxide": "MnO(l)", "parent_formula_atoms": {"Mn": 1, "O": 1}, "parent_standard_state": "pure liquid MnO at 1 bar", "elemental_reference_state": "Mn(l)", "parent_oxidation_state": 2, "known_oxidation_states": [2, 3], "redox_thermochemistry_status": "populated"},
+    {"element": "Eu", "parent_oxide": "Eu2O3(l)", "parent_formula_atoms": {"Eu": 2, "O": 3}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Eu(cr)", "parent_oxidation_state": 3, "known_oxidation_states": [2, 3], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "Ce", "parent_oxide": "CeO2(l)", "parent_formula_atoms": {"Ce": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Ce(cr)", "parent_oxidation_state": 4, "known_oxidation_states": [3, 4], "redox_thermochemistry_status": "registered_unpopulated"},
+    {"element": "S", "parent_oxide": "S(l)", "parent_formula_atoms": {"S": 1}, "parent_standard_state": "liquid sulfur", "elemental_reference_state": "S(rhombic)", "parent_oxidation_state": 0, "known_oxidation_states": [-2, 4, 6], "redox_thermochemistry_status": "registered_unpopulated"}
   ],
   "thermo_species": {
     "FeO(l)": {
       "formula_atoms": {"Fe": 1, "O": 1},
+      "ferric_fe_units": 0.0,
+      "ferrous_fe_units": 1.0,
       "evaluator": "condensate_phi",
       "T_domain_K": [1000, 5000],
       "range_flags": [],
@@ -53,6 +55,8 @@
     },
     "Fe(cr)": {
       "formula_atoms": {"Fe": 1},
+      "ferric_fe_units": 0.0,
+      "ferrous_fe_units": 0.0,
       "evaluator": "condensate_phi",
       "T_domain_K": [1700, 1809],
       "range_flags": ["JANAF Fe(cr) source nodes end at 1800 K; the fit is extended nine kelvin to the 1809 K transition marker."],
@@ -62,6 +66,8 @@
     },
     "Fe(l)": {
       "formula_atoms": {"Fe": 1},
+      "ferric_fe_units": 0.0,
+      "ferrous_fe_units": 0.0,
       "evaluator": "condensate_phi",
       "T_domain_K": [1809, 3000],
       "range_flags": [],
@@ -72,6 +78,8 @@
     },
     "Fe(metal)": {
       "formula_atoms": {"Fe": 1},
+      "ferric_fe_units": 0.0,
+      "ferrous_fe_units": 0.0,
       "evaluator": "piecewise",
       "T_domain_K": [1700, 3000],
       "range_flags": ["The crystal fit uses source nodes through 1800 K; its endpoint is extended to the 1809 K transition marker."],
@@ -83,6 +91,8 @@
     },
     "Fe2O3(l)": {
       "formula_atoms": {"Fe": 2, "O": 3},
+      "ferric_fe_units": 2.0,
+      "ferrous_fe_units": 0.0,
       "evaluator": "condensate_phi",
       "T_domain_K": [1500, 3000],
       "range_flags": ["1500-1735 K is below the cited hematite decomposition marker and is a flagged supercooled metastable branch.", "1735-1895 K is below nominal hypothetical fusion and remains a metastable extrapolation.", "Lange and Navrotsky's tier-2 liquid-component Cp is extrapolated from its calorimetry domain across the 1500-3000 K runtime interval."],
@@ -112,6 +122,8 @@
     },
     "FeO1.5(l)": {
       "formula_atoms": {"Fe": 1, "O": 1.5},
+      "ferric_fe_units": 1.0,
+      "ferrous_fe_units": 0.0,
       "evaluator": "linear_combination",
       "T_domain_K": [1500, 3000],
       "range_flags": ["The derived FeO1.5 standard state inherits the metastable and supercooled range of Fe2O3(l)."],

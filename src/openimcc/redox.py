@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fractions import Fraction
 from functools import wraps
 import math
@@ -43,13 +43,15 @@ _DEFAULT_DATAPACK_CACHE: tuple[tuple[str, int, int], Any] | None = None
 _DEFAULT_REDOX_PACK_CACHE: tuple[tuple[str, int, int], RedoxPack] | None = None
 
 
-def _unreadable_default_pack(path: Path, exc: OSError) -> ImccMalformedDatapackError:
-    # Keep a missing or unreadable default pack inside the refusal hierarchy.
+def _unreadable_pack(
+    path: Path, exc: OSError, *, description: str
+) -> ImccMalformedDatapackError:
+    # Keep a missing or unreadable pack inside the refusal hierarchy.
     # The message names only the file and the OS reason, never a full path;
     # the original exception stays chained as __cause__.
     reason = exc.strerror or type(exc).__name__
     return ImccMalformedDatapackError(
-        f"default datapack {path.name} is not readable: {reason}"
+        f"{description} {path.name} is not readable: {reason}"
     )
 
 
@@ -63,7 +65,7 @@ def _pack_file_identity(path: Path) -> tuple[str, int, int]:
         resolved = path.resolve(strict=True)
         stat = resolved.stat()
     except OSError as exc:
-        raise _unreadable_default_pack(path, exc) from exc
+        raise _unreadable_pack(path, exc, description="default datapack") from exc
     return str(resolved), stat.st_mtime_ns, stat.st_size
 
 
@@ -78,7 +80,9 @@ def _load_default_datapack() -> Any:
             try:
                 loaded = load_datapack(_DEFAULT_DATAPACK_PATH)
             except OSError as exc:
-                raise _unreadable_default_pack(_DEFAULT_DATAPACK_PATH, exc) from exc
+                raise _unreadable_pack(
+                    _DEFAULT_DATAPACK_PATH, exc, description="default datapack"
+                ) from exc
             _DEFAULT_DATAPACK_CACHE = (identity, loaded)
         return _DEFAULT_DATAPACK_CACHE[1]
 
@@ -94,7 +98,9 @@ def _load_default_redox_pack() -> RedoxPack:
             try:
                 loaded = load_redox_pack(_DEFAULT_REDOX_PACK_PATH)
             except OSError as exc:
-                raise _unreadable_default_pack(_DEFAULT_REDOX_PACK_PATH, exc) from exc
+                raise _unreadable_pack(
+                    _DEFAULT_REDOX_PACK_PATH, exc, description="default datapack"
+                ) from exc
             _DEFAULT_REDOX_PACK_CACHE = (identity, loaded)
         return _DEFAULT_REDOX_PACK_CACHE[1]
 
@@ -140,7 +146,7 @@ class RedoxNumericalError(ImccRefusal):
 
 @dataclass(frozen=True)
 class RedoxResult:
-    """A complete redox point with speciation, Fe ledger, and row-domain flags.
+    """A complete redox point with speciation, valence ledger, and row flags.
 
     ``extrapolated_redox_rows`` lists active redox rows evaluated outside their
     evidence intervals. ``active_row_band_intersection_K`` is the intersection
@@ -154,6 +160,8 @@ class RedoxResult:
     parent_moles: Mapping[str, float]
     parent_activity: Mapping[str, float]
     species_moles: Mapping[str, float]
+    ferric_fe_mol: float
+    ferrous_fe_mol: float
     oxygen_inventory_mol: float | None
     oxygen_mol: float
     oxygen_residual_mol: float | None
@@ -169,6 +177,12 @@ class RedoxResult:
     solver_path: str
     fallback_fired: bool
     warm_start: tuple[float, ...]
+    element_moles_by_oxidation_state: Mapping[str, Mapping[int, float]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    unmodelled_redox_couples: tuple[Mapping[str, Any], ...] = ()
+    redox_pack_digest: str = ""
+    melt_pack_binding_digest: str | None = None
 
     @property
     def speciation(self) -> Mapping[str, float]:
@@ -298,10 +312,10 @@ def _complex_oxygen_data(
         dtype=np.float64,
     )
     consumed_oxygen = parent_oxygen @ redox_nu
-    # Premise: each balanced pseudo-complex product contains the consumed
-    # parent oxygen plus the row's external O2. Algebra: Delta-O = O_product
-    # - sum(nu_i*O_parent_i) = -2*nu_O2 = +2*q. Units are mol O atoms per mol
-    # product formula unit. Sanity: FeO + 1/4 O2 -> FeO1.5 gives +0.5 O.
+    # Premise: registered parents are the reduced composition basis. Algebra:
+    # Delta-O = O_product - sum(nu_i*O_parent_i), including oxygen inherited
+    # from consumed pseudo-complexes. Units are mol O atoms per mol product.
+    # Sanity: FeO1.5 has +0.5 O; Fe3O4 on three FeO parents has +1 O.
     oxygen_delta = product_oxygen - consumed_oxygen
     oxygen_counts = np.concatenate((base_oxygen, product_oxygen))
     deltas = np.concatenate(
@@ -310,13 +324,7 @@ def _complex_oxygen_data(
     shifts = np.concatenate(
         (
             np.zeros(base_datapack.n_complexes, dtype=np.float64),
-            np.asarray(
-                [
-                    -float(row["external_oxygen_stoich_product_positive"])
-                    for row in redox_rows
-                ],
-                dtype=np.float64,
-            ),
+            0.5 * oxygen_delta,
         )
     )
     names = tuple(base_datapack.reactions) + tuple(
@@ -706,6 +714,221 @@ def _state_species(
     return parents, species, oxygen_moles
 
 
+def _inferred_redox_oxidation_state(
+    formula_atoms: Mapping[str, Any],
+    element: str,
+    parent_records: Mapping[str, Mapping[str, Any]],
+    ferric_fe_units: float,
+    ferrous_fe_units: float,
+) -> int | None:
+    count = float(formula_atoms[element])
+    iron_atoms = float(formula_atoms.get("Fe", 0.0))
+    other_charge: list[float] = []
+    for other, raw_count in formula_atoms.items():
+        if other == element:
+            continue
+        other_count = float(raw_count)
+        if other == "O":
+            other_charge.append(-2.0 * other_count)
+        elif other == "Fe" and iron_atoms > 0.0:
+            unassigned = max(0.0, iron_atoms - ferric_fe_units - ferrous_fe_units)
+            fe_state = int(parent_records["Fe"]["parent_oxidation_state"])
+            other_charge.append(
+                3.0 * ferric_fe_units + 2.0 * ferrous_fe_units + fe_state * unassigned
+            )
+        elif other in parent_records:
+            other_charge.append(
+                int(parent_records[other]["parent_oxidation_state"]) * other_count
+            )
+    inferred = -math.fsum(other_charge) / count
+    oxidation_state = round(inferred)
+    known_states = set(map(int, parent_records[element]["known_oxidation_states"]))
+    if (
+        oxidation_state in known_states
+        and math.isclose(inferred, oxidation_state, rel_tol=0.0, abs_tol=1e-10)
+    ):
+        return oxidation_state
+    return None
+
+
+def _element_moles_by_oxidation_state(
+    species_moles: Mapping[str, float],
+    base_datapack: Any,
+    redox_pack: RedoxPack,
+    metal_moles: float,
+) -> Mapping[str, Mapping[int, float]]:
+    """Count liquid atoms by registry valence and species-level Fe valence.
+
+    Premise: MELT ``nu`` rows conserve parent formula units, while redox-pack
+    species carry explicit Fe valence counts. Algebra: expand each melt
+    complex through its parent ``nu`` column, then assign each parent element
+    its registered parent state; override Fe with species metadata. Oxygen is
+    -2 in these liquid oxides. Units are mol atoms by integer state. Sanity:
+    Fe2SiO4 contributes two Fe(II), one Si(IV), and four O(-II) per formula.
+    """
+    parent_records = _parent_records(redox_pack)
+    by_oxide = {
+        str(parent["parent_oxide"]).removesuffix("(l)"): parent
+        for parent in redox_pack.parents
+    }
+    thermo_species = redox_pack.content["thermo_species"]
+    redox_complex_products = {
+        str(row["complex"])
+        for row in redox_pack.rows
+        if row.get("role") == "complex"
+    }
+    base_complex_index = {
+        str(name): index for index, name in enumerate(base_datapack.reactions)
+    }
+    totals: dict[str, dict[int, list[float]]] = {}
+
+    def add(element: str, oxidation_state: int, amount: float) -> None:
+        if amount > 0.0:
+            totals.setdefault(element, {}).setdefault(oxidation_state, []).append(amount)
+
+    for name, raw_amount in species_moles.items():
+        amount = float(raw_amount)
+        if amount <= 0.0:
+            continue
+        parent = by_oxide.get(name)
+        species_record = thermo_species.get(name)
+        if parent is not None:
+            species_record = thermo_species.get(
+                str(parent["parent_oxide"]), species_record
+            )
+        if species_record is not None:
+            formula_atoms = species_record["formula_atoms"]
+        elif name in base_complex_index:
+            formula_atoms: dict[str, float] = {}
+            complex_index = base_complex_index[name]
+            for parent_index, parent_name in enumerate(base_datapack.parent_oxides):
+                coefficient = float(base_datapack.nu[parent_index, complex_index])
+                if coefficient <= 0.0:
+                    continue
+                parent_formula = by_oxide[str(parent_name)]["parent_formula_atoms"]
+                for element, count in parent_formula.items():
+                    formula_atoms[element] = formula_atoms.get(element, 0.0) + (
+                        coefficient * float(count)
+                    )
+        elif parent is not None:
+            formula_atoms = parent["parent_formula_atoms"]
+        else:
+            raise ValueError(f"liquid species {name!r} has no registered formula")
+
+        ferric_units = float(
+            species_record.get("ferric_fe_units", 0.0)
+            if species_record is not None
+            else 0.0
+        )
+        ferrous_units = float(
+            species_record.get("ferrous_fe_units", 0.0)
+            if species_record is not None
+            else 0.0
+        )
+        for element, raw_count in formula_atoms.items():
+            count = float(raw_count)
+            if element == "O":
+                add(element, -2, amount * count)
+            elif element == "Fe" and species_record is not None and (
+                "ferric_fe_units" in species_record
+                or "ferrous_fe_units" in species_record
+            ):
+                add(element, 3, amount * ferric_units)
+                add(element, 2, amount * ferrous_units)
+                unassigned = max(0.0, count - ferric_units - ferrous_units)
+                add(
+                    element,
+                    int(parent_records[element]["parent_oxidation_state"]),
+                    amount * unassigned,
+                )
+            else:
+                oxidation_state = int(
+                    parent_records[element]["parent_oxidation_state"]
+                )
+                if species_record is not None and name in redox_complex_products:
+                    inferred = _inferred_redox_oxidation_state(
+                        formula_atoms,
+                        element,
+                        parent_records,
+                        ferric_units,
+                        ferrous_units,
+                    )
+                    if inferred is not None:
+                        oxidation_state = inferred
+                add(
+                    element,
+                    oxidation_state,
+                    amount * count,
+                )
+
+    add("Fe", 0, float(metal_moles))
+    return MappingProxyType(
+        {
+            element: MappingProxyType(
+                {state: math.fsum(amounts) for state, amounts in states.items()}
+            )
+            for element, states in totals.items()
+        }
+    )
+
+
+def _unmodelled_redox_couples(
+    element_moles_by_oxidation_state: Mapping[str, Mapping[int, float]],
+    redox_pack: RedoxPack,
+) -> tuple[Mapping[str, Any], ...]:
+    """Report present elements whose known melt valences lack pack support."""
+    parents = _parent_records(redox_pack)
+    modelled_states = {
+        element: {int(parent["parent_oxidation_state"])}
+        for element, parent in parents.items()
+    }
+    modelled_states.setdefault("Fe", set()).add(0)
+    thermo_species = redox_pack.content["thermo_species"]
+    for row in redox_pack.rows:
+        if row.get("role") != "complex":
+            continue
+        product = thermo_species[str(row["complex"])]
+        formula_atoms = product["formula_atoms"]
+        ferric = float(product.get("ferric_fe_units", 0.0))
+        ferrous = float(product.get("ferrous_fe_units", 0.0))
+        iron_atoms = float(formula_atoms.get("Fe", 0.0))
+        if ferric > 0.0:
+            modelled_states["Fe"].add(3)
+        if ferrous > 0.0:
+            modelled_states["Fe"].add(2)
+
+        for element in formula_atoms:
+            if element == "O" or element not in parents or element == "Fe":
+                continue
+            oxidation_state = _inferred_redox_oxidation_state(
+                formula_atoms, element, parents, ferric, ferrous
+            )
+            if oxidation_state is not None:
+                modelled_states[element].add(oxidation_state)
+
+    records: list[Mapping[str, Any]] = []
+    for parent in redox_pack.parents:
+        element = str(parent["element"])
+        present = element_moles_by_oxidation_state.get(element)
+        if not present or math.fsum(present.values()) <= 0.0:
+            continue
+        modelled = modelled_states[element]
+        unmodelled = sorted(
+            set(map(int, parent["known_oxidation_states"])) - modelled
+        )
+        if unmodelled:
+            records.append(
+                MappingProxyType(
+                    {
+                        "element": element,
+                        "modelled_states": tuple(sorted(modelled)),
+                        "unmodelled_states": tuple(unmodelled),
+                    }
+                )
+            )
+    return tuple(records)
+
+
 def _oxygen_residual(
     state: _LiquidState,
     species_moles: Mapping[str, float],
@@ -808,9 +1031,10 @@ def _response(
     M = state.nu - np.outer(state.x_target, state.S - 1.0)
     # Premise: the converged balances satisfy F(y, x, lnK) = 0. For a
     # parameter p, J dy/dp = -F_p; the row-scaled Jacobian is the one used by
-    # Newton. Each pseudo-complex has q=-nu_O2, so F_lambda=M@(g*q).
-    # Units: y and lambda are dimensionless. Sanity: for FeO + 1/4 O2 =
-    # FeO1.5, q=1/4 and Delta-O=+0.5; the original one-row response follows.
+    # Newton. On registered-parent activities each row's lambda shift is
+    # Delta-O/2, so F_lambda=M@(g*shift). Units: y and lambda are dimensionless.
+    # Sanity: FeO1.5 has Delta-O=+0.5 and shift +1/4; Fe3O4 has Delta-O=+1
+    # because its FeO1.5 reactants contribute oxygen beyond three FeO parents.
     f_lambda = M @ (state.g * shift)
     try:
         y_lambda = np.linalg.solve(state.J, -f_lambda)
@@ -1121,6 +1345,15 @@ def _assemble_result(
     parent_values, species_values, oxygen_mol = _state_species(
         state, base_datapack, redox_pack
     )
+    element_moles_by_oxidation_state = _element_moles_by_oxidation_state(
+        species_values, base_datapack, redox_pack, metal_moles
+    )
+    fe_valence_moles = element_moles_by_oxidation_state.get("Fe", {})
+    ferric_fe_mol = float(fe_valence_moles.get(3, 0.0))
+    ferrous_fe_mol = float(fe_valence_moles.get(2, 0.0))
+    unmodelled_redox_couples = _unmodelled_redox_couples(
+        element_moles_by_oxidation_state, redox_pack
+    )
     response = _response(state, base_datapack, redox_pack)
     oxygen_capacity = response.oxygen_capacity
     if metal_moles > 0.0:
@@ -1188,6 +1421,8 @@ def _assemble_result(
         tolerance * max(abs(oxygen_scale), 1.0),
         active_redox_rows,
     )
+    if unmodelled_redox_couples:
+        flags = (*flags, "RED: unmodelled_redox_couples")
     active_log_activity = {
         parent_names[index]: float(value)
         for index, value in zip(state.active_parent, state.y)
@@ -1222,6 +1457,12 @@ def _assemble_result(
             }
         ),
         species_moles=MappingProxyType(species_values),
+        element_moles_by_oxidation_state=element_moles_by_oxidation_state,
+        ferric_fe_mol=ferric_fe_mol,
+        ferrous_fe_mol=ferrous_fe_mol,
+        unmodelled_redox_couples=unmodelled_redox_couples,
+        redox_pack_digest=redox_pack.canonical_digest,
+        melt_pack_binding_digest=getattr(base_datapack, "binding_digest", None),
         oxygen_inventory_mol=oxygen_inventory,
         oxygen_mol=float(oxygen_mol),
         oxygen_residual_mol=None if residual is None else float(residual),
@@ -1263,6 +1504,7 @@ def evaluate_redox(
     *,
     tol: float = 1.0e-12,
     max_iter: int = 100,
+    redox_pack_path: str | Path | None = None,
 ) -> RedoxResult:
     """Solve an imposed- or closed-oxygen Fe liquid equilibrium.
 
@@ -1274,6 +1516,9 @@ def evaluate_redox(
     saturation at the imposed lambda.
     ``lambda_imposed`` is ``ln(fO2 / 1 bar)``. Pressure is not an independent
     input once oxygen fugacity has been supplied through lambda.
+    ``redox_pack_path`` selects a validated alternative redox component; when
+    omitted, the packaged default is used. Relative paths resolve from the
+    process working directory.
     """
     try:
         temperature = float(T_K)
@@ -1303,7 +1548,15 @@ def evaluate_redox(
 
     loaded = _load_default_datapack()
     base_datapack = loaded.kernel_datapack
-    redox_pack = _load_default_redox_pack()
+    if redox_pack_path is None:
+        redox_pack = _load_default_redox_pack()
+    else:
+        try:
+            redox_pack = load_redox_pack(redox_pack_path)
+        except OSError as exc:
+            raise _unreadable_pack(
+                Path(redox_pack_path), exc, description="redox datapack"
+            ) from exc
     parent_names = _redox_parent_names(redox_pack)
     fe_index = parent_names.index("FeO")
     oxygen_parent_counts = _parent_oxygen_counts(parent_names, redox_pack)

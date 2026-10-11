@@ -662,16 +662,22 @@ Top-level redox fields:
 
 | Key | JSON type | Meaning |
 |---|---|---|
-| schema | string | Versioned schema identifier, currently `openimcc-redox-pack.v1`. |
+| schema | string | Versioned schema identifier, currently `openimcc-redox-pack.v2`. |
 | version | string | Version of this thermochemistry component. |
 | created | string | Date the component record was created. |
 | model | string | Human-readable description of the component's reaction thermochemistry. |
 | units | object | Explicit formula-unit, elemental-inventory, temperature, Gibbs-energy, band, and pressure units. |
 | source_selection_rail | array of strings | Required evidence ordering: standard-state consistency, primary measurement, domain match, then systematic estimate. |
 | canonical_content_digest | string | Canonical JSON SHA-256 checked by the redox loader and exposed on the loaded component. |
-| parent_registry | array of objects | Ordered registry of every feedstock element, its parent oxide formula and standard state, elemental reference state, and redox-row population status. Its length is not fixed at eight. |
+| parent_registry | array of objects | Ordered registry of every feedstock element, its parent oxide formula and valence, known melt valences, standard state, elemental reference state, and redox-row population status. Its length is not fixed at eight. |
 | thermo_species | object | Standard-state species and their formula atoms, temperature range, provenance, band, and evaluator definition. |
 | rows | array of objects | Balanced reaction rows assembled from standard-state Gibbs functions. |
+
+Each Fe-bearing `thermo_species` record declares non-negative
+`ferric_fe_units` and `ferrous_fe_units` counts per formula unit. Their sum may
+not exceed the formula's Fe count; linear combinations must reproduce the
+counts of their constituents. Elemental iron reference species declare zero
+of each count because they are not dissolved ferric or ferrous species.
 
 Every row retains the ext-v4 reaction fields `reaction`, `nu`, and
 `external_oxygen_stoich_product_positive`. Redox rows additionally declare
@@ -680,6 +686,14 @@ Every row retains the ext-v4 reaction fields `reaction`, `nu`, and
 mapping from any registered parent oxide to the amount consumed per reaction;
 there is no eight-parent ceiling. The signed external oxygen coefficient is
 positive for product O2 and negative for reactant O2.
+
+For a complex row, `nu` is expressed on the registered-parent basis. If its
+balanced reaction consumes a previously registered complex, the loader expands
+that reactant through its row when checking `nu`. The solver composes the
+consumed complex's Gibbs relation into the parent-basis equilibrium constant.
+Its oxygen fugacity shift is `(O_product - O_parent_basis)/2`, so oxygen
+inherited from a pseudo-complex is retained even when the displayed reaction
+has no external O2.
 
 `standard_gibbs_terms` contains product-positive stoichiometric coefficients
 over named `thermo_species`. The loader checks that these terms match the
@@ -704,16 +718,21 @@ also carries elemental Si(l), Cr(l), Ni(l), and Co(l) rows produced by the
 existing condensate fitter; their presence does not activate alloy solute
 rows.
 
-The current registry has 17 feedstock elements. FeO is populated as the Fe
-parent; the remaining parent oxide records are registered with their standard
-states and marked `registered_unpopulated` in this component until their redox
-thermochemistry rows pass the same gate.
+The current registry has 17 feedstock elements. Each `parent_registry` record
+declares `parent_oxidation_state` as an integer and `known_oxidation_states` as
+a non-empty list of unique integers. The first records the element's state in
+its parent oxide; the second lists states represented in silicate melts. The
+loader checks these types and checks that oxide formulas balance the declared
+parent state. FeO is populated as the Fe parent; other parent oxide records
+retain their registered thermochemistry status until rows pass the same gate.
 
 The redox species records use these schema fields:
 
 | Key | JSON type | Meaning |
 |---|---|---|
 | formula_atoms | object | Element atom counts per formula unit, including fractional oxygen for a pseudo-complex. |
+| ferric_fe_units | number | Ferric Fe atoms per formula unit; required on Fe-bearing species and validated against the formula and any combination terms. |
+| ferrous_fe_units | number | Ferrous Fe atoms per formula unit; required on Fe-bearing species and validated against the formula and any combination terms. |
 | evaluator | string | Existing φ-polynomial or JANAF Shomate evaluator, or a linear/piecewise combination of named records. |
 | row | object | Coefficients consumed by the existing condensate φ or JANAF Shomate evaluator. |
 | terms | array of objects | Product-positive species coefficients for a linear standard-state combination. |
@@ -725,12 +744,13 @@ The redox species records use these schema fields:
 | method | string | Method used to assemble the reaction Gibbs function from named standard-state records. |
 | band_method | string | Method used to calculate the numeric Gibbs band. |
 | uncertainty_note | string | Uncertainty covered by the band and any known unquantified contribution. |
-| band_method | string | Method used to construct a standard-state uncertainty band. |
 | construction | object | Inputs, sources, fit range, and fallback flags for a constructed standard state. |
 | band_scope | string | States what the numeric construction band includes and any unquantified systematic error. |
 | provenance | object | Source, URL, tier, and the reason for selecting that evidence. |
 | selection_rationale | string | Evidence-specific explanation of the source choice under the declared source-selection rail. |
 | parent_formula_atoms | object | Element atom counts in one parent oxide formula unit. |
+| parent_oxidation_state | integer | Oxidation state of the registered element in its parent oxide. |
+| known_oxidation_states | array of integers | Oxidation states known for the element in silicate melts; the loader requires a non-empty list without duplicates. |
 | parent_standard_state | string | Phase or standard state assigned to the registered parent oxide. |
 | elemental_reference_state | string | Elemental reference state registered for the parent element. |
 | redox_thermochemistry_status | string | Whether this component currently contains a gated redox thermochemistry row for the parent. |
@@ -739,6 +759,32 @@ The redox species records use these schema fields:
 | products | object | Positive formula-unit stoichiometries on the right side of the balanced reaction. |
 | standard_gibbs_terms | array of objects | Named standard-state Gibbs functions and product-positive coefficients used to evaluate reaction ΔG°. |
 | range_flags | array of strings | Explicit range caveats, including metastable or supercooled branches. |
+
+## Redox result fields
+
+`RedoxResult.element_moles_by_oxidation_state` maps each present element to a
+mapping from integer oxidation state to moles of atoms. Parent and MELT-pack
+complex contributions use registered parent states and the melt pack's
+parent stoichiometry. Redox-pack species use their valence-unit metadata.
+Oxygen is counted at state -2. Fe metal is added at state 0, so summing all
+states for an element, including Fe metal, conserves its input inventory (or
+the predicted oxygen amount in imposed mode). Fe(0) is modeled only through
+the solver's pure-metal saturation bound.
+
+`ferric_fe_mol` and `ferrous_fe_mol` are aliases of the Fe state-3 and state-2
+totals. Form Fe3+/sum-Fe ratios from the valence mapping. Include Fe state 0
+for a full inventory ratio; use states 2 and 3 for dissolved-only Fe.
+
+`unmodelled_redox_couples` is a tuple of records with exactly these keys:
+`element` (symbol), `modelled_states` (tuple of supported integer states), and
+`unmodelled_states` (tuple of known integer states without a redox row). It is
+presence-only and contains no estimated shares. The result may add one
+`RED: unmodelled_redox_couples` flag when this tuple is non-empty. Flag strings
+are descriptive and are not a stable API; use the structured field instead.
+
+`redox_pack_digest` is the canonical digest of the loaded `RedoxPack` used for
+the solve. `melt_pack_binding_digest` is the loaded melt pack's binding digest
+and may be `None` when that pack has no binding identity.
 
 ## Gas table content identity
 

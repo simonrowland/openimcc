@@ -231,6 +231,19 @@ def test_every_shipped_datapack_key_is_documented() -> None:
     assert not any(missing.values()), f"undocumented datapack keys: {missing}"
 
 
+def test_redox_species_schema_table_has_no_duplicate_rows() -> None:
+    document = DOC.read_text(encoding="utf-8")
+    start = document.index("The redox species records use these schema fields:")
+    end = document.index("## Redox result fields", start)
+    keys = [
+        key
+        for key, _description in _documented_rows(document[start:end])
+        if key != "Key"
+    ]
+    duplicates = sorted(key for key in set(keys) if keys.count(key) > 1)
+    assert not duplicates, f"duplicate redox species schema rows: {duplicates}"
+
+
 def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
     names = {
         path.name

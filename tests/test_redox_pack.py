@@ -30,7 +30,8 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     pack = load_redox_pack(PACK_PATH)
     elements = [parent["element"] for parent in pack.parents]
 
-    assert pack.version == "1.2.0"
+    assert pack.version == "1.3.0"
+    assert pack.content["schema"] == "openimcc-redox-pack.v2"
     assert elements == [
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K", "Cr", "Ni",
         "Co", "P", "V", "Mn", "Eu", "Ce", "S",
@@ -43,6 +44,63 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     ) == 15
     with pytest.raises(TypeError):
         pack.content["version"] = "changed"
+
+
+def test_parent_registry_oxidation_states_and_oxide_charge_are_validated(
+    tmp_path: Path,
+) -> None:
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["parent_registry"][0]["known_oxidation_states"] = [4, 4]
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path = tmp_path / "invalid-parent-states.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="known_oxidation_states"):
+        load_redox_pack(path)
+
+    content["parent_registry"][0]["known_oxidation_states"] = [4]
+    content["parent_registry"][0]["parent_oxidation_state"] = 5
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="parent_oxidation_state"):
+        load_redox_pack(path)
+
+    content["parent_registry"][0]["parent_oxidation_state"] = 4
+    sulfur = next(parent for parent in content["parent_registry"] if parent["element"] == "S")
+    sulfur["parent_oxidation_state"] = 4
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="does not balance its oxide formula"):
+        load_redox_pack(path)
+
+
+def test_redox_pack_v1_schema_is_refused(tmp_path: Path) -> None:
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["schema"] = "openimcc-redox-pack.v1"
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path = tmp_path / "legacy-schema.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unsupported redox pack schema"):
+        load_redox_pack(path)
+
+
+def test_fe_valence_metadata_is_validated_for_species_and_combinations(
+    tmp_path: Path,
+) -> None:
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["thermo_species"]["FeO1.5(l)"]["ferric_fe_units"] = 0.5
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path = tmp_path / "invalid-fe-valence.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="ferric_fe_units does not match constituents"):
+        load_redox_pack(path)
+
+    content["thermo_species"]["FeO1.5(l)"]["ferric_fe_units"] = 1.0
+    content["thermo_species"]["FeO(l)"]["ferrous_fe_units"] = 0.0
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="does not assign every Fe atom a valence"):
+        load_redox_pack(path)
 
 
 def test_reaction_rows_are_balanced_and_have_evidence_and_range_flags() -> None:
