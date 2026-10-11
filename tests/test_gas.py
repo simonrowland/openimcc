@@ -2712,6 +2712,52 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
             assert "quadratic crystal-Cp extension is its uncertainty bound" in flag
 
 
+def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> None:
+    """Check anchor reference conversions against printed reaction cells.
+
+    The expected values are the independently printed 298.15 K ΔH° cells in
+    Bulletin 672, not values derived from the gas fit. Energies are kcal/mol.
+    """
+    source_path = (
+        Path(__file__).resolve().parents[1]
+        / "data-src"
+        / "published-thermo"
+        / "pankratz-bulletin-672.json"
+    )
+    tables = json.loads(source_path.read_text())["tables"]
+
+    def anchor(table_id: str) -> float:
+        return tables[table_id]["formation_enthalpy_298_kcal_mol"]
+
+    # 0.5 E2(g) = E(g), as separately printed for Te (p. 415) and Se
+    # (p. 367). The equality catches either atom anchor left on the E2 basis.
+    for atom_id, dimer_id, printed_delta_h in (
+        ("P672-Te-g", "P672-Te2-g", 31.435),
+        ("P672-Se-g", "P672-Se2-g", 39.600),
+    ):
+        assert anchor(atom_id) - 0.5 * anchor(dimer_id) == pytest.approx(
+            printed_delta_h, abs=0.0005
+        )
+
+    # 0.5 Te2(g) + O2(g) = TeO2(l), p. 419. O2 has zero formation
+    # enthalpy at 298.15 K, so this independently checks the liquid anchor.
+    assert anchor("P672-TeO2-l") - 0.5 * anchor("P672-Te2-g") == pytest.approx(
+        -96.265, abs=0.0005
+    )
+
+    # Element-formation anchors are also pinned directly to the printed
+    # formation tables (Te p. 418, Se p. 367, As p. 53/56); these literals
+    # prevent mutually consistent but wrongly shifted rows from passing.
+    for table_id, printed_delta_h in (
+        ("P672-Te-g", 50.600),
+        ("P672-TeO2-l", -77.100),
+        ("P672-Se-g", 56.250),
+        ("P672-As2O3-c", -157.020),
+        ("P672-As4O6-g", -285.910),
+    ):
+        assert anchor(table_id) == pytest.approx(printed_delta_h, abs=0.0005)
+
+
 def test_ti_channels_against_janaf_printed_formation_gibbs(
     gas_pack: ImccGasDatapack,
 ) -> None:
