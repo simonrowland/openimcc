@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import gc
+import math
 import statistics
 import time
+from typing import Literal
 
 import pytest
 
@@ -36,6 +38,129 @@ def _element_inventory(
         oxygen -= 0.25 * elements["Fe"]
     elements["O"] = oxygen
     return elements
+
+
+# Recorded before the cold-start fix: median process CPU and max-minus-min
+# spread over seven calls with no warm start. The natural-melt measurement is
+# the prior typed failure's cost; the fixture now requires a converged root.
+_COLD_COST_BASELINES = {
+    "basalt": (0.035180, 0.031351),
+    "basalt_with_traces": (0.029706, 0.009574),
+    "closed_natural_melt": (0.077567, 0.014011),
+}
+
+_COLD_BASALT_INVENTORY = {
+    "Si": 0.855,
+    "Ti": 0.0238,
+    "Al": 0.275,
+    "Fe": 0.1576,
+    "Mg": 0.172,
+    "Ca": 0.187,
+    "Na": 0.0739,
+    "K": 0.0153,
+    "O": 2.66455,
+}
+_COLD_TRACE_BASALT_INVENTORY = {
+    **_COLD_BASALT_INVENTORY,
+    "Mn": 0.0035,
+    "P": 0.0028,
+    "Cr": 0.00026,
+    "V": 0.0008,
+}
+# Derivation: convert measured oxide weights to moles with their molar masses,
+# then sum elemental atom counts; O is stored as moles of oxygen atoms.
+_CLOSED_NATURAL_MELT_INVENTORY = {
+    "Si": 0.855797604365866,
+    "Ti": 0.025041945258307666,
+    "Al": 0.27696782995116775,
+    "Fe": 0.15520533538813916,
+    "Cr": 0.0002631745162852391,
+    "Mn": 0.0031013259578163282,
+    "Mg": 0.17839243358045276,
+    "Ca": 0.20329045212509855,
+    "Na": 0.08551297296337947,
+    "K": 0.004458788058940932,
+    "P": 0.0033816033731493647,
+    "V": 0.0010675121362785994,
+    "O": 2.7862705529228937,
+}
+
+
+@pytest.mark.parametrize(
+    ("name", "inventory", "temperature", "mode", "baseline"),
+    [
+        (
+            "basalt",
+            _COLD_BASALT_INVENTORY,
+            1734.15,
+            "imposed",
+            _COLD_COST_BASELINES["basalt"],
+        ),
+        (
+            "basalt_with_traces",
+            _COLD_TRACE_BASALT_INVENTORY,
+            1734.15,
+            "imposed",
+            _COLD_COST_BASELINES["basalt_with_traces"],
+        ),
+        (
+            "closed_natural_melt",
+            _CLOSED_NATURAL_MELT_INVENTORY,
+            1572.15,
+            "closed",
+            _COLD_COST_BASELINES["closed_natural_melt"],
+        ),
+    ],
+)
+def test_cold_redox_solver_cost_against_recorded_baseline(
+    name: str,
+    inventory: dict[str, float],
+    temperature: float,
+    mode: Literal["closed", "imposed"],
+    baseline: tuple[float, float],
+) -> None:
+    repetitions = 7
+    baseline_median, baseline_spread = baseline
+    cpu_samples: list[float] = []
+    wall_samples: list[float] = []
+    gc_was_enabled = gc.isenabled()
+    gc.disable()
+    try:
+        for _ in range(repetitions):
+            cpu_started = time.process_time()
+            wall_started = time.perf_counter()
+            result = evaluate_redox(
+                inventory,
+                temperature,
+                mode,
+                lambda_imposed=(
+                    -7.17 * math.log(10) if mode == "imposed" else None
+                ),
+            )
+            wall_samples.append(time.perf_counter() - wall_started)
+            cpu_samples.append(time.process_time() - cpu_started)
+            assert result.solver_path == "newton"
+            assert result.fallback_fired is False
+            if name == "closed_natural_melt":
+                assert abs(result.oxygen_residual_mol) <= 1.0e-10
+    finally:
+        if gc_was_enabled:
+            gc.enable()
+
+    median = statistics.median(cpu_samples)
+    spread = max(cpu_samples) - min(cpu_samples)
+    ceiling = min(
+        1.3 * baseline_median + 2.0 * (baseline_spread + spread),
+        1.9 * baseline_median,
+    )
+    print(
+        f"{name}: cold CPU median={median * 1000:.3f} ms "
+        f"spread={spread * 1000:.3f} ms; baseline="
+        f"{baseline_median * 1000:.3f} ms spread="
+        f"{baseline_spread * 1000:.3f} ms; ceiling={ceiling * 1000:.3f} ms; "
+        f"max wall={max(wall_samples) * 1000:.3f} ms"
+    )
+    assert median <= ceiling
 
 
 @pytest.mark.parametrize(

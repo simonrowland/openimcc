@@ -199,7 +199,8 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     assert mixed_closed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
         0.0004897171807855382, rel=1.0e-12
     )
-    assert mixed_closed.fallback_fired is True
+    assert mixed_closed.solver_path == "newton"
+    assert mixed_closed.fallback_fired is False
     assert {
         name: amount for name, amount in mixed_closed.species_moles.items() if amount
     } == pytest.approx(

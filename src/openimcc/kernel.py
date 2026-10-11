@@ -627,6 +627,27 @@ def _active_residual(
     return active_residual_jacobian(y, x_target, nu, lnK, S, np)
 
 
+def _association_continuation_log_lambdas(
+    nu: np.ndarray,
+    lnK: np.ndarray,
+    ideal_y: np.ndarray,
+) -> np.ndarray:
+    # Premise: g_j = K_j exp(nu_j·y). Algebra: choose ln(lambda) so every
+    # ideal-seed complex is <= 1e-4, then raise ln(lambda) by at most 2 ln(10)
+    # per stage. Units check: lambda is dimensionless; sanity: lambda -> 0
+    # removes association and makes y=ln(x) the exact root.
+    max_log_complex_at_ideal = float(np.max(lnK + nu.T @ ideal_y))
+    start_log_lambda = min(
+        0.0,
+        math.log(_CONTINUATION_INITIAL_COMPLEX_X) - max_log_complex_at_ideal,
+    )
+    stage_count = max(
+        1,
+        math.ceil(-start_log_lambda / _CONTINUATION_LOGK_STEP),
+    )
+    return np.linspace(start_log_lambda, 0.0, stage_count + 1)
+
+
 def active_residual_jacobian(
     y: Any,
     x_target: Any,
@@ -876,16 +897,7 @@ def _solve_active(
             "residual_inf": first[4],
         }
     ]
-    max_log_complex_at_ideal = float(np.max(lnK + nu.T @ y0))
-    start_log_lambda = min(
-        0.0,
-        math.log(_CONTINUATION_INITIAL_COMPLEX_X) - max_log_complex_at_ideal,
-    )
-    stage_count = max(
-        1,
-        math.ceil(-start_log_lambda / _CONTINUATION_LOGK_STEP),
-    )
-    log_lambdas = np.linspace(start_log_lambda, 0.0, stage_count + 1)
+    log_lambdas = _association_continuation_log_lambdas(nu, lnK, y0)
 
     best = first
     y_stage = y0
@@ -968,7 +980,7 @@ def solve_active_warm(
 ) -> tuple[
     np.ndarray, np.ndarray, float, int, float, float, float, str, int, bool
 ]:
-    """Use damped Newton first, then retain the existing NumPy fallback."""
+    """Use damped Newton with association continuation before SciPy fallback."""
     # Active parents are positive by construction; retaining their real scale
     # avoids a 1e-12 floor for ppm and lower feed fractions.
     ideal_y = np.log(x_target)
@@ -980,64 +992,129 @@ def solve_active_warm(
             raise ValueError("y_init must be a finite vector matching active parents")
     y = np.clip(y, -200.0, 100.0)
 
-    newton_iterations = 0
-    for newton_iterations in range(max_iter + 1):
-        with np.errstate(over="ignore", invalid="ignore", under="ignore"):
-            f, g, D, J = _active_residual(y, x_target, nu, lnK, S)
-            scaled = f / x_target
-        if not (
-            np.all(np.isfinite(scaled))
-            and np.all(np.isfinite(g))
-            and math.isfinite(float(D))
-            and np.all(np.isfinite(J))
-        ):
+    def _newton_attempt(
+        trial_lnK: np.ndarray,
+        y_init: np.ndarray,
+        *,
+        scale_rows: bool,
+    ) -> tuple[
+        tuple[np.ndarray, np.ndarray, float, int, float, float] | None,
+        np.ndarray,
+        int,
+    ]:
+        """Try one damped-Newton solve, optionally scaling balance rows."""
+        y_attempt = np.clip(
+            np.asarray(y_init, dtype=np.float64).copy(), -200.0, 100.0
+        )
+        for iteration in range(max_iter + 1):
+            with np.errstate(over="ignore", invalid="ignore", under="ignore"):
+                f, g, D, J = _active_residual(
+                    y_attempt, x_target, nu, trial_lnK, S
+                )
+                scaled = f / x_target
+            if not (
+                np.all(np.isfinite(scaled))
+                and np.all(np.isfinite(g))
+                and math.isfinite(float(D))
+                and np.all(np.isfinite(J))
+            ):
+                return None, y_attempt, iteration
+            residual_inf = float(np.linalg.norm(scaled, ord=np.inf))
+            residual_l2 = float(np.linalg.norm(scaled, ord=2))
+            if residual_inf <= tol:
+                return (
+                    y_attempt,
+                    g,
+                    float(D),
+                    iteration,
+                    residual_inf,
+                    residual_l2,
+                ), y_attempt, iteration
+            if iteration == max_iter:
+                return None, y_attempt, iteration
+            try:
+                if scale_rows:
+                    step = np.linalg.solve(J / x_target[:, None], -scaled)
+                else:
+                    step = np.linalg.solve(J, -f)
+            except np.linalg.LinAlgError:
+                return None, y_attempt, iteration
+            if not np.all(np.isfinite(step)):
+                return None, y_attempt, iteration
+
+            accepted = False
+            alpha = 1.0
+            for _ in range(24):
+                candidate = y_attempt + alpha * step
+                if np.all(candidate >= -200.0) and np.all(candidate <= 100.0):
+                    with np.errstate(
+                        over="ignore", invalid="ignore", under="ignore"
+                    ):
+                        trial_f, _trial_g, _trial_D, _trial_J = _active_residual(
+                            candidate, x_target, nu, trial_lnK, S
+                        )
+                        trial_norm = float(
+                            np.linalg.norm(trial_f / x_target, ord=np.inf)
+                        )
+                    if math.isfinite(trial_norm) and trial_norm < residual_inf:
+                        y_attempt = candidate
+                        accepted = True
+                        break
+                alpha *= 0.5
+            if not accepted:
+                return None, y_attempt, iteration
+        return None, y_attempt, max_iter
+
+    first, _, direct_iterations = _newton_attempt(lnK, y, scale_rows=False)
+    if first is not None:
+        y, g, D, newton_iterations, residual_inf, residual_l2 = first
+        return (
+            y,
+            g,
+            D,
+            newton_iterations,
+            residual_inf,
+            residual_l2,
+            float(np.linalg.norm(y - ideal_y)),
+            "newton",
+            0,
+            False,
+        )
+
+    # Follow the association branch inside Newton before using SciPy. Scaling
+    # each balance by its analytical amount leaves the root unchanged and puts
+    # each parent row on the same relative scale in the linear solve.
+    total_iterations = direct_iterations
+    continuation_stages = 0
+    y_stage = ideal_y.copy()
+    for log_lambda in _association_continuation_log_lambdas(nu, lnK, ideal_y):
+        stage, y_stage_next, stage_iterations = _newton_attempt(
+            lnK + log_lambda,
+            y_stage,
+            scale_rows=True,
+        )
+        total_iterations += stage_iterations
+        if stage is None:
             break
-        residual_inf = float(np.linalg.norm(scaled, ord=np.inf))
-        residual_l2 = float(np.linalg.norm(scaled, ord=2))
-        if residual_inf <= tol:
+        continuation_stages += 1
+        y_stage = y_stage_next
+        if log_lambda == 0.0:
+            y, g, D, _stage_iterations, residual_inf, residual_l2 = stage
             return (
                 y,
                 g,
-                float(D),
-                newton_iterations,
+                D,
+                total_iterations,
                 residual_inf,
                 residual_l2,
                 float(np.linalg.norm(y - ideal_y)),
                 "newton",
-                0,
+                continuation_stages,
                 False,
             )
-        if newton_iterations == max_iter:
-            break
-        try:
-            step = np.linalg.solve(J, -f)
-        except np.linalg.LinAlgError:
-            break
-        if not np.all(np.isfinite(step)):
-            break
 
-        accepted = False
-        alpha = 1.0
-        for _ in range(24):
-            candidate = y + alpha * step
-            if np.all(candidate >= -200.0) and np.all(candidate <= 100.0):
-                with np.errstate(over="ignore", invalid="ignore", under="ignore"):
-                    trial_f, _trial_g, _trial_D, _trial_J = _active_residual(
-                        candidate, x_target, nu, lnK, S
-                    )
-                    trial_norm = float(
-                        np.linalg.norm(trial_f / x_target, ord=np.inf)
-                    )
-                if math.isfinite(trial_norm) and trial_norm < residual_inf:
-                    y = candidate
-                    accepted = True
-                    break
-            alpha *= 0.5
-        if not accepted:
-            break
-
-    # The compatibility solve remains the only fallback; it now starts from
-    # the best Newton iterate and scales each balance by its analytical amount.
+    # SciPy remains the last resort and receives the latest connected Newton
+    # iterate, with each balance scaled to its analytical amount.
     fallback = _solve_active(
         x_target,
         nu,
@@ -1045,7 +1122,7 @@ def solve_active_warm(
         S,
         tol,
         max_iter,
-        y_init=y,
+        y_init=y_stage,
         relative_tolerance=True,
     )
     return (*fallback, True)
