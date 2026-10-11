@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added optional As, As2, As4, and As4O6 gas channels with caller-supplied
+  As2O3(l) activity. Pankratz Bulletin 672 supplies the gas channels and the
+  As2O3 crystal function. As2O3(l) is a flagged tier-4 construction using the
+  repository's tier-3 liquid_from_solid estimate and leave-one-out band. No
+  AsO(g) or As+(g) source was located in the checked JANAF, NASA Glenn/CEA,
+  NIST WebBook, or Gurvich/IVTAN routes.
 - Added optional Se, Se2, and SeO2 gas channels with caller-supplied SeO2(l)
   activity. Pankratz Bulletin 672 supplies the gas rows. SeO2(l) is a flagged
   tier-4 construction using the OECD/NEA reviewed fusion inputs and the
