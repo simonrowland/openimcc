@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
+from functools import wraps
 import math
 from numbers import Real
 from pathlib import Path
@@ -204,7 +205,6 @@ class _LiquidState:
     D: float
     J: np.ndarray
     solver_path: str
-    fallback_fired: bool
     iterations: int
 
 
@@ -366,9 +366,11 @@ def _oxygen_inventory_targets(
     active_redox_rows = np.all(
         (redox_nu <= 0.0) | (parent_moles[:, np.newaxis] > 0.0), axis=0
     )
+    oxygen_exchange_rows = active_redox_rows & (row_oxygen_delta != 0.0)
     shared_parent = bool(
         np.any(
-            np.count_nonzero(redox_nu[:, active_redox_rows] > 0.0, axis=1) > 1
+            np.count_nonzero(redox_nu[:, oxygen_exchange_rows] > 0.0, axis=1)
+            > 1
         )
     )
     if shared_parent:
@@ -467,11 +469,6 @@ def _inventory_parent_moles(
         raise RedoxInputError("inventory must map element symbols to mol atoms")
     records = _parent_records(redox_pack)
     allowed = set(records) | {"O"}
-    unknown = set(inventory) - allowed
-    if unknown:
-        raise ImccComponentOutsideDomainError(
-            f"inventory names unregistered element(s): {sorted(unknown)}"
-        )
     element_moles: dict[str, float] = {}
     for element, raw in inventory.items():
         if isinstance(raw, bool) or not isinstance(raw, Real):
@@ -482,6 +479,15 @@ def _inventory_parent_moles(
                 f"inventory amount for {element!r} must be finite and non-negative"
             )
         element_moles[element] = amount
+    unknown = {
+        element
+        for element, amount in element_moles.items()
+        if element not in allowed and amount > 0.0
+    }
+    if unknown:
+        raise ImccComponentOutsideDomainError(
+            f"inventory names unregistered element(s): {sorted(unknown)}"
+        )
     if require_oxygen and "O" not in element_moles:
         raise RedoxInputError("closed mode requires total oxygen in mol O atoms")
     oxygen = element_moles.get("O")
@@ -527,6 +533,7 @@ def _active_inner(
     base_datapack: Any,
     redox_pack: RedoxPack,
     *,
+    fallback_counter: list[int] | None = None,
     exclude_fe_redox: bool = False,
     y_init: np.ndarray | None = None,
     tol: float,
@@ -633,7 +640,7 @@ def _active_inner(
         _displacement,
         solver_path,
         _continuation_stages,
-        fallback_fired,
+        inner_fallback_fired,
     ) = solve_active_warm(
         x_target,
         nu,
@@ -643,6 +650,8 @@ def _active_inner(
         max_iter,
         y_init=y_init,
     )
+    if fallback_counter is not None:
+        fallback_counter[0] += int(inner_fallback_fired)
     _f, _g, _D, J = active_residual_jacobian(y, x_target, nu, lnK, S, np)
     return _LiquidState(
         parent_moles=parent_moles,
@@ -662,7 +671,6 @@ def _active_inner(
         D=float(D),
         J=J,
         solver_path=solver_path,
-        fallback_fired=fallback_fired,
         iterations=iterations,
     )
 
@@ -883,11 +891,12 @@ def _saturation_state(
     redox_pack: RedoxPack,
     ln_k_fe: float,
     *,
+    fallback_counter: list[int],
     initial_lambda: float | None,
     y_init: np.ndarray | None,
     tol: float,
     max_iter: int,
-) -> tuple[float, _LiquidState, int]:
+) -> tuple[float, _LiquidState]:
     fe_index = _redox_parent_names(redox_pack).index("FeO")
     active_parent = parent_moles > 0.0
     active_parent_indices = np.flatnonzero(active_parent)
@@ -910,6 +919,7 @@ def _saturation_state(
             0.0,
             base_datapack,
             redox_pack,
+            fallback_counter=fallback_counter,
             exclude_fe_redox=True,
             y_init=reduced_seed,
             tol=tol,
@@ -928,13 +938,13 @@ def _saturation_state(
         lower,
         base_datapack,
         redox_pack,
+        fallback_counter=fallback_counter,
         y_init=reduced.y,
         tol=tol,
         max_iter=max_iter,
     )
     lower_fe = int(np.flatnonzero(lower_state.active_parent == fe_index)[0])
     lower_s = lower - 2.0 * (float(lower_state.y[lower_fe]) - ln_k_fe)
-    lower_fallbacks = int(reduced.fallback_fired) + int(lower_state.fallback_fired)
     step = 1.0
     for _ in range(64):
         if lower_s < 0.0:
@@ -947,13 +957,13 @@ def _saturation_state(
             lower,
             base_datapack,
             redox_pack,
+            fallback_counter=fallback_counter,
             y_init=lower_state.y,
             tol=tol,
             max_iter=max_iter,
         )
         lower_fe = int(np.flatnonzero(lower_state.active_parent == fe_index)[0])
         lower_s = lower - 2.0 * (float(lower_state.y[lower_fe]) - ln_k_fe)
-        lower_fallbacks += int(lower_state.fallback_fired)
     if lower_s >= 0.0:
         raise RedoxNumericalError("could not bracket the reduced Fe saturation limit")
 
@@ -965,13 +975,13 @@ def _saturation_state(
         upper,
         base_datapack,
         redox_pack,
+        fallback_counter=fallback_counter,
         y_init=lower_state.y,
         tol=tol,
         max_iter=max_iter,
     )
     upper_fe = int(np.flatnonzero(upper_state.active_parent == fe_index)[0])
     upper_s = upper - 2.0 * (float(upper_state.y[upper_fe]) - ln_k_fe)
-    upper_fallbacks = lower_fallbacks + int(upper_state.fallback_fired)
     if upper_s < 0.0:
         raise RedoxNumericalError("FeO activity violated its thermodynamic upper bound")
 
@@ -988,15 +998,15 @@ def _saturation_state(
             lam,
             base_datapack,
             redox_pack,
+            fallback_counter=fallback_counter,
             y_init=state_seed,
             tol=tol,
             max_iter=max_iter,
         )
-        upper_fallbacks += int(state.fallback_fired)
         fe_local = int(np.flatnonzero(state.active_parent == fe_index)[0])
         saturation_residual = lam - 2.0 * (float(state.y[fe_local]) - ln_k_fe)
         if abs(saturation_residual) <= max(1.0e-12, tol):
-            return lam, state, upper_fallbacks
+            return lam, state
         if saturation_residual < 0.0:
             lower = lam
         else:
@@ -1016,11 +1026,12 @@ def _saturation_state(
                 final_lam,
                 base_datapack,
                 redox_pack,
+                fallback_counter=fallback_counter,
                 y_init=state_seed,
                 tol=tol,
                 max_iter=max_iter,
             )
-            return final_lam, final_state, upper_fallbacks + int(final_state.fallback_fired)
+            return final_lam, final_state
     raise RedoxNumericalError("pure-Fe saturation solve did not converge")
 
 
@@ -1105,7 +1116,7 @@ def _assemble_result(
     redox_pack: RedoxPack,
     oxygen_parent_counts: np.ndarray,
     tolerance: float,
-    fallback_fired: bool = False,
+    fallback_counter: list[int],
 ) -> RedoxResult:
     parent_values, species_values, oxygen_mol = _state_species(
         state, base_datapack, redox_pack
@@ -1224,11 +1235,25 @@ def _assemble_result(
         extrapolated_redox_rows=extrapolated_redox_rows,
         active_row_band_intersection_K=band_intersection,
         solver_path=state.solver_path,
-        fallback_fired=state.fallback_fired or fallback_fired,
+        fallback_fired=fallback_counter[0] > 0,
         warm_start=tuple(active_log_activity.values()),
     )
 
 
+def _single_threaded_blas(function: Callable[..., Any]) -> Callable[..., Any]:
+    @wraps(function)
+    def wrapped(*args: Any, **kwargs: Any) -> Any:
+        try:
+            from threadpoolctl import threadpool_limits
+        except ImportError:
+            return function(*args, **kwargs)
+        with threadpool_limits(limits=1):
+            return function(*args, **kwargs)
+
+    return wrapped
+
+
+@_single_threaded_blas
 def evaluate_redox(
     inventory: Mapping[str, float],
     T_K: float,
@@ -1305,6 +1330,7 @@ def evaluate_redox(
             )
     ln_k_fe = _ln_k_fe(redox_pack, temperature)
     total_fe = float(parent_moles[fe_index])
+    fallback_counter = [0]
 
     if mode == "imposed":
         state = _active_inner(
@@ -1313,16 +1339,18 @@ def evaluate_redox(
             lambda_value,
             base_datapack,
             redox_pack,
+            fallback_counter=fallback_counter,
             y_init=y_seed,
             tol=tolerance,
             max_iter=iterations,
         )
-        lambda_sat, sat_state, saturation_fallbacks = _saturation_state(
+        lambda_sat, sat_state = _saturation_state(
             parent_moles,
             temperature,
             base_datapack,
             redox_pack,
             ln_k_fe,
+            fallback_counter=fallback_counter,
             initial_lambda=None,
             y_init=state.y,
             tol=tolerance,
@@ -1381,6 +1409,7 @@ def evaluate_redox(
                     lambda_value,
                     base_datapack,
                     redox_pack,
+                    fallback_counter=fallback_counter,
                     y_init=state.y,
                     tol=tolerance,
                     max_iter=iterations,
@@ -1443,12 +1472,13 @@ def evaluate_redox(
                     raise RedoxNumericalError("imposed oxygen extent did not converge")
             buffered_parents = parent_moles.copy()
             buffered_parents[fe_index] = total_fe - metal
-            buffered_lambda, buffered_state, extent_fallbacks = _saturation_state(
+            buffered_lambda, buffered_state = _saturation_state(
                 buffered_parents,
                 temperature,
                 base_datapack,
                 redox_pack,
                 ln_k_fe,
+                fallback_counter=fallback_counter,
                 initial_lambda=lambda_value,
                 y_init=buffered_state.y,
                 tol=tolerance,
@@ -1468,9 +1498,7 @@ def evaluate_redox(
                         redox_pack=redox_pack,
                         oxygen_parent_counts=oxygen_parent_counts,
                         tolerance=tolerance,
-                        fallback_fired=(
-                            sat_state.fallback_fired or saturation_fallbacks > 0
-                        ),
+                        fallback_counter=fallback_counter,
                     )
                 raise RedoxEndpointError(
                     "imposed oxygen inventory is inconsistent with Fe saturation",
@@ -1490,23 +1518,20 @@ def evaluate_redox(
                 redox_pack=redox_pack,
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
-                fallback_fired=(
-                    saturation_fallbacks > 0
-                    or extent_fallbacks > 0
-                    or buffered_state.fallback_fired
-                ),
+                fallback_counter=fallback_counter,
             )
         if buffered:
             metal_low = 0.0
             metal_high = float(np.nextafter(total_fe, 0.0))
             high_parents = parent_moles.copy()
             high_parents[fe_index] = total_fe - metal_high
-            high_lambda, high_state, high_fallbacks = _saturation_state(
+            high_lambda, high_state = _saturation_state(
                 high_parents,
                 temperature,
                 base_datapack,
                 redox_pack,
                 ln_k_fe,
+                fallback_counter=fallback_counter,
                 initial_lambda=lambda_value,
                 y_init=sat_state.y,
                 tol=tolerance,
@@ -1521,24 +1546,23 @@ def evaluate_redox(
                 )
             buffered_state = high_state
             metal = metal_high
-            fallback_fired = sat_state.fallback_fired or high_fallbacks > 0
             for _ in range(64):
                 metal = (metal_low + metal_high) / 2.0
                 candidate_parents = parent_moles.copy()
                 candidate_parents[fe_index] = total_fe - metal
-                candidate_lambda, candidate_state, candidate_fallbacks = _saturation_state(
+                candidate_lambda, candidate_state = _saturation_state(
                     candidate_parents,
                     temperature,
                     base_datapack,
                     redox_pack,
                     ln_k_fe,
+                    fallback_counter=fallback_counter,
                     initial_lambda=lambda_value,
                     y_init=buffered_state.y,
                     tol=tolerance,
                     max_iter=iterations,
                 )
                 buffered_state = candidate_state
-                fallback_fired = fallback_fired or candidate_fallbacks > 0
                 residual = candidate_lambda - lambda_value
                 if abs(residual) <= max(1.0e-10, tolerance):
                     break
@@ -1560,7 +1584,7 @@ def evaluate_redox(
                 redox_pack=redox_pack,
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
-                fallback_fired=fallback_fired,
+                fallback_counter=fallback_counter,
             )
         if lambda_value < lambda_sat - max(1.0e-10, tolerance):
             raise RedoxEndpointError(
@@ -1582,9 +1606,7 @@ def evaluate_redox(
             redox_pack=redox_pack,
             oxygen_parent_counts=oxygen_parent_counts,
             tolerance=tolerance,
-            fallback_fired=(
-                sat_state.fallback_fired or saturation_fallbacks > 0
-            ),
+            fallback_counter=fallback_counter,
         )
 
     assert oxygen_inventory is not None
@@ -1644,6 +1666,7 @@ def evaluate_redox(
         0.0,
         base_datapack,
         redox_pack,
+        fallback_counter=fallback_counter,
         y_init=y_seed,
         tol=tolerance,
         max_iter=iterations,
@@ -1669,12 +1692,13 @@ def evaluate_redox(
             oxidised_state, oxidised_species, redox_pack, oxygen_inventory
         )
         if abs(oxidised_ledger_residual) <= ledger_tolerance:
-            lambda_sat, sat_state, saturation_fallbacks = _saturation_state(
+            lambda_sat, sat_state = _saturation_state(
                 parent_moles,
                 temperature,
                 base_datapack,
                 redox_pack,
                 ln_k_fe,
+                fallback_counter=fallback_counter,
                 initial_lambda=None,
                 y_init=oxidised_state.y,
                 tol=tolerance,
@@ -1692,19 +1716,16 @@ def evaluate_redox(
                 redox_pack=redox_pack,
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
-                fallback_fired=(
-                    oxidised_state.fallback_fired
-                    or sat_state.fallback_fired
-                    or saturation_fallbacks > 0
-                ),
+                fallback_counter=fallback_counter,
             )
 
-    lambda_sat_zero, sat_state, saturation_fallbacks = _saturation_state(
+    lambda_sat_zero, sat_state = _saturation_state(
         parent_moles,
         temperature,
         base_datapack,
         redox_pack,
         ln_k_fe,
+        fallback_counter=fallback_counter,
         initial_lambda=None,
         y_init=oxidised_state.y,
         tol=tolerance,
@@ -1715,11 +1736,6 @@ def evaluate_redox(
         sat_state, sat_species, redox_pack, oxygen_inventory
     )
     if sat_residual <= 0.0:
-        fallback_fired = (
-            oxidised_state.fallback_fired
-            or sat_state.fallback_fired
-            or saturation_fallbacks > 0
-        )
         lower = lambda_sat_zero
         upper = 0.0
         upper_state = oxidised_state
@@ -1736,11 +1752,11 @@ def evaluate_redox(
                 upper,
                 base_datapack,
                 redox_pack,
+                fallback_counter=fallback_counter,
                 y_init=upper_state.y,
                 tol=root_tolerance,
                 max_iter=iterations,
             )
-            fallback_fired = fallback_fired or upper_state.fallback_fired
             upper_species = _state_species(
                 upper_state, base_datapack, redox_pack
             )[1]
@@ -1766,11 +1782,11 @@ def evaluate_redox(
                 lam,
                 base_datapack,
                 redox_pack,
+                fallback_counter=fallback_counter,
                 y_init=state_seed,
                 tol=root_tolerance,
                 max_iter=iterations,
             )
-            fallback_fired = fallback_fired or state.fallback_fired
             state_species = _state_species(state, base_datapack, redox_pack)[1]
             if shared_positive_rows:
                 residual = -_oxygen_residual(
@@ -1794,10 +1810,10 @@ def evaluate_redox(
                         lam,
                         base_datapack,
                         redox_pack,
+                        fallback_counter=fallback_counter,
                         tol=min(root_tolerance, tolerance * 0.01),
                         max_iter=iterations,
                     )
-                    fallback_fired = fallback_fired or state.fallback_fired
                     state_species = _state_species(
                         state, base_datapack, redox_pack
                     )[1]
@@ -1817,7 +1833,7 @@ def evaluate_redox(
                         redox_pack=redox_pack,
                         oxygen_parent_counts=oxygen_parent_counts,
                         tolerance=tolerance,
-                        fallback_fired=fallback_fired,
+                        fallback_counter=fallback_counter,
                     )
                 response = _response(state, base_datapack, redox_pack)
                 candidate = (
@@ -1860,13 +1876,13 @@ def evaluate_redox(
     (
         _lambda_sat_high,
         high_state,
-        high_saturation_fallbacks,
     ) = _saturation_state(
         parent_moles,
         temperature,
         base_datapack,
         redox_pack,
         ln_k_fe,
+        fallback_counter=fallback_counter,
         initial_lambda=lambda_sat_zero,
         y_init=sat_state.y,
         tol=tolerance,
@@ -1899,28 +1915,19 @@ def evaluate_redox(
     metal = min(max(metal, metal_low), metal_high)
     lam = lambda_sat_zero
     state_seed = sat_state.y
-    fallback_fired = (
-        oxidised_state.fallback_fired
-        or sat_state.fallback_fired
-        or saturation_fallbacks > 0
-        or high_state.fallback_fired
-        or high_saturation_fallbacks > 0
-    )
     for outer_iteration in range(1, 81):
         parent_moles[fe_index] = total_fe - metal
-        lam, state, saturation_fallbacks = _saturation_state(
+        lam, state = _saturation_state(
             parent_moles,
             temperature,
             base_datapack,
             redox_pack,
             ln_k_fe,
+            fallback_counter=fallback_counter,
             initial_lambda=lam,
             y_init=state_seed,
             tol=tolerance,
             max_iter=iterations,
-        )
-        fallback_fired = (
-            fallback_fired or state.fallback_fired or saturation_fallbacks > 0
         )
         response = _response(state, base_datapack, redox_pack)
         state_species = _state_species(state, base_datapack, redox_pack)[1]
@@ -1949,7 +1956,7 @@ def evaluate_redox(
                 redox_pack=redox_pack,
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
-                fallback_fired=fallback_fired,
+                fallback_counter=fallback_counter,
             )
         if residual > 0.0:
             metal_low = metal

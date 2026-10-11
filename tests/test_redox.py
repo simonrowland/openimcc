@@ -103,6 +103,7 @@ def test_shared_parent_lp_skips_rows_inactive_for_the_current_inventory(
     ]
     shared_pack = RedoxPack(content, pack.canonical_digest)
     parent_names = redox_module._redox_parent_names(shared_pack)
+    original_linprog = redox_module.linprog
     fe_index = parent_names.index("FeO")
     parent_moles = np.zeros(len(parent_names), dtype=np.float64)
     parent_moles[fe_index] = 1.0
@@ -120,6 +121,36 @@ def test_shared_parent_lp_skips_rows_inactive_for_the_current_inventory(
     )
     assert (surplus, deficit) == (1.0, 0.0)
     assert shared_positive_rows
+
+    monkeypatch.setattr(redox_module, "linprog", original_linprog)
+    active_parent_moles = np.zeros(len(parent_names), dtype=np.float64)
+    active_parent_moles[parent_names.index("TiO2")] = 1.0
+    surplus, deficit, shared_positive_rows = redox_module._oxygen_inventory_targets(
+        active_parent_moles,
+        redox_module._parent_oxygen_counts(parent_names, shared_pack),
+        fe_index,
+        2.0,
+        shared_pack,
+    )
+    assert (surplus, deficit) == (0.0, 2.0)
+    assert shared_positive_rows
+
+
+def test_manganese_zero_delta_sharing_does_not_call_the_oxygen_window_lp(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import openimcc.redox as redox_module
+
+    def unexpected_linprog(*args, **kwargs):
+        pytest.fail("zero-oxygen-change manganese rows must not trigger the LP")
+
+    monkeypatch.setattr(redox_module, "linprog", unexpected_linprog)
+    result = evaluate_redox(
+        {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65},
+        2200.0,
+        "closed",
+    )
+    assert result.mode == "closed"
 
 
 def test_redox_reference_outputs_before_generalized_rows() -> None:
@@ -782,6 +813,24 @@ def test_invalid_warm_starts_raise_typed_input_error(warm_start: list[object]) -
         )
 
 
+def test_unregistered_inventory_amounts_are_validated_by_value() -> None:
+    from openimcc import ImccComponentOutsideDomainError
+
+    inventory = {"Fe": 1.0, "O": 1.25}
+    baseline = evaluate_redox(inventory, 2200.0, "closed")
+    with_zero = evaluate_redox(
+        {**inventory, "Xx": 0.0}, 2200.0, "closed"
+    )
+    assert with_zero == baseline
+
+    with pytest.raises(ImccComponentOutsideDomainError):
+        evaluate_redox({**inventory, "Xx": 0.1}, 2200.0, "closed")
+    with pytest.raises(RedoxInputError):
+        evaluate_redox({**inventory, "Xx": -0.1}, 2200.0, "closed")
+    with pytest.raises(RedoxInputError):
+        evaluate_redox({**inventory, "Xx": float("nan")}, 2200.0, "closed")
+
+
 def test_result_publishes_domain_flags_and_active_band_intersection() -> None:
     result = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
     assert "liquid_only_model" in result.flags
@@ -1045,6 +1094,7 @@ def test_trace_parent_converges_relatively_and_reports_conditioning(
         result.lambda_ln_f_o2,
         base,
         redox_pack,
+        fallback_counter=[0],
         tol=1.0e-12,
         max_iter=100,
     )
@@ -1241,6 +1291,7 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
         first.lambda_ln_f_o2,
         load_datapack().kernel_datapack,
         synthetic_pack,
+        fallback_counter=[0],
         tol=1.0e-12,
         max_iter=100,
     )
@@ -1640,3 +1691,80 @@ def test_unreadable_default_pack_is_a_typed_refusal_without_a_full_path(
         evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
     assert str(tmp_path) not in str(refusal.value)
     assert "Permission denied" in str(refusal.value)
+
+
+def test_redox_limits_optional_blas_threads_once_and_preserves_result_bits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import builtins
+    from collections.abc import Mapping
+    from contextlib import contextmanager
+    from dataclasses import fields
+    import sys
+    from types import ModuleType
+
+    inventory = {"Fe": 1.0, "O": 1.25}
+    events: list[tuple[str, int]] = []
+    try:
+        import threadpoolctl
+    except ImportError:
+        threadpoolctl = ModuleType("threadpoolctl")
+
+        @contextmanager
+        def threadpool_limits(*, limits: int):
+            events.append(("enter", limits))
+            try:
+                yield
+            finally:
+                events.append(("exit", limits))
+
+        threadpoolctl.threadpool_limits = threadpool_limits
+    else:
+        actual_threadpool_limits = threadpoolctl.threadpool_limits
+
+        @contextmanager
+        def observed_threadpool_limits(*, limits: int):
+            events.append(("enter", limits))
+            try:
+                with actual_threadpool_limits(limits=limits):
+                    yield
+            finally:
+                events.append(("exit", limits))
+
+        monkeypatch.setattr(
+            threadpoolctl, "threadpool_limits", observed_threadpool_limits
+        )
+
+    monkeypatch.setitem(sys.modules, "threadpoolctl", threadpoolctl)
+    guarded = evaluate_redox(inventory, 2200.0, "closed")
+    assert events == [("enter", 1), ("exit", 1)]
+
+    monkeypatch.delitem(sys.modules, "threadpoolctl")
+    original_import = builtins.__import__
+
+    def without_threadpoolctl(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "threadpoolctl":
+            raise ImportError("threadpoolctl is unavailable")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", without_threadpoolctl)
+    unguarded = evaluate_redox(inventory, 2200.0, "closed")
+
+    def result_bits(value):
+        if isinstance(value, float):
+            return ("float", value.hex())
+        if isinstance(value, Mapping):
+            return tuple(
+                sorted((key, result_bits(item)) for key, item in value.items())
+            )
+        if isinstance(value, tuple):
+            return tuple(result_bits(item) for item in value)
+        return value
+
+    assert tuple(
+        (field.name, result_bits(getattr(guarded, field.name)))
+        for field in fields(guarded)
+    ) == tuple(
+        (field.name, result_bits(getattr(unguarded, field.name)))
+        for field in fields(unguarded)
+    )

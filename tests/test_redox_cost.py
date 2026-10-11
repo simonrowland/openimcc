@@ -40,13 +40,13 @@ def _element_inventory(
     return elements
 
 
-# Recorded before the cold-start fix: median process CPU and max-minus-min
-# spread over seven calls with no warm start. The natural-melt measurement is
-# the prior typed failure's cost; the fixture now requires a converged root.
+# Measured after the cold-start fix: median process CPU and max-minus-min
+# spread over seven cold calls per fixture, with no warm start. The median and
+# spread both contribute to a ceiling that rejects a return to fallback costs.
 _COLD_COST_BASELINES = {
-    "basalt": (0.035180, 0.031351),
-    "basalt_with_traces": (0.029706, 0.009574),
-    "closed_natural_melt": (0.077567, 0.014011),
+    "basalt": (0.009259, 0.027440),
+    "basalt_with_traces": (0.009416, 0.001370),
+    "closed_natural_melt": (0.022004, 0.003787),
 }
 
 _COLD_BASALT_INVENTORY = {
@@ -161,6 +161,139 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         f"max wall={max(wall_samples) * 1000:.3f} ms"
     )
     assert median <= ceiling
+
+
+@pytest.mark.parametrize(
+    (
+        "name",
+        "inventory",
+        "temperature",
+        "mode",
+        "lambda_imposed",
+        "inner_call",
+    ),
+    [
+        (
+            "imposed liquid",
+            _COLD_BASALT_INVENTORY,
+            1734.15,
+            "imposed",
+            -7.17 * math.log(10),
+            0,
+        ),
+        (
+            "closed liquid",
+            _CLOSED_NATURAL_MELT_INVENTORY,
+            1572.15,
+            "closed",
+            None,
+            0,
+        ),
+        (
+            "closed buffered endpoint",
+            {"Fe": 1.0, "O": 1.0},
+            2200.0,
+            "closed",
+            None,
+            11,
+        ),
+        (
+            "buffered imposed initial liquid",
+            _COLD_BASALT_INVENTORY,
+            1734.15,
+            "imposed",
+            -20.0 * math.log(10),
+            0,
+        ),
+        (
+            "buffered imposed reduced seed",
+            _COLD_BASALT_INVENTORY,
+            1734.15,
+            "imposed",
+            -20.0 * math.log(10),
+            1,
+        ),
+        (
+            "buffered imposed bisection",
+            _COLD_BASALT_INVENTORY,
+            1734.15,
+            "imposed",
+            -20.0 * math.log(10),
+            20,
+        ),
+        (
+            "saturation lower endpoint probe",
+            {"Fe": 1.0, "O": 1.0},
+            2200.0,
+            "imposed",
+            -15.127740855106792,
+            2,
+        ),
+        (
+            "saturation upper endpoint probe",
+            {"Fe": 1.0, "O": 1.0},
+            2200.0,
+            "imposed",
+            -15.127740855106792,
+            4,
+        ),
+        (
+            "invariant extent bisection",
+            {"Fe": 1.0, "O": 1.0},
+            2200.0,
+            "imposed",
+            -15.127740855106792,
+            52,
+        ),
+    ],
+)
+def test_fallback_flag_covers_forced_inner_scipy_calls(
+    name: str,
+    inventory: dict[str, float],
+    temperature: float,
+    mode: Literal["closed", "imposed"],
+    lambda_imposed: float | None,
+    inner_call: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import numpy as np
+    import openimcc.redox as redox_module
+
+    solve_active_warm = redox_module.solve_active_warm
+    seen_calls = 0
+    forced_calls: list[int] = []
+
+    def fail_linear_solve(*args, **kwargs):
+        raise np.linalg.LinAlgError("forced redox fallback")
+
+    def force_selected_inner_call(*args, **kwargs):
+        nonlocal seen_calls
+        call_index = seen_calls
+        seen_calls += 1
+        if call_index != inner_call:
+            return solve_active_warm(*args, **kwargs)
+        with monkeypatch.context() as selected_call:
+            selected_call.setattr(np.linalg, "solve", fail_linear_solve)
+            result = solve_active_warm(*args, **kwargs)
+        assert result[-1] is True, (
+            f"{name}: selected inner solve did not use SciPy"
+        )
+        forced_calls.append(call_index)
+        return result
+
+    monkeypatch.setattr(redox_module, "solve_active_warm", force_selected_inner_call)
+    result = evaluate_redox(
+        inventory,
+        temperature,
+        mode,
+        lambda_imposed=lambda_imposed,
+    )
+
+    assert seen_calls > inner_call, f"{name}: selected inner call was not reached"
+    assert forced_calls == [inner_call]
+    assert result.fallback_fired is True
+    if name == "invariant extent bisection":
+        assert result.metal_buffered is True
 
 
 @pytest.mark.parametrize(

@@ -39,6 +39,15 @@ Fe saturation condition `a_Fe = 1` at the imposed lambda. If changing metal
 amount leaves that saturation lambda invariant, oxygen is needed to select an
 extent; without it, the solver raises a typed endpoint error.
 
+`evaluate_redox()` uses optional `threadpoolctl` to limit supported
+BLAS/OpenMP thread pools to one thread for the duration of the call; it does
+not add an install dependency. These limits are process-wide while active, so
+other threads in the process are affected. The guard does not set HiGHS'
+separate `threads` option. Without `threadpoolctl`, callers can set
+`OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`, `VECLIB_MAXIMUM_THREADS=1`, and
+`MKL_NUM_THREADS=1` in the environment. CPU time exceeding wall time is a sign
+of thread oversubscription.
+
 ## Frozen preregistered predictions — 2026-10-08
 
 These predictions were recorded before any closed-mode redox result exists.
