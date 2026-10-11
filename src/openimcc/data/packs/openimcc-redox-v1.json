@@ -1,8 +1,8 @@
 {
   "schema": "openimcc-redox-pack.v2",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "model": "Element-based redox thermochemistry with standard-state reaction rows",
-  "created": "2026-10-10",
+  "created": "2026-10-11",
   "units": {
     "amount": "mol formula units",
     "inventory": "mol atoms by element",
@@ -12,7 +12,7 @@
     "pressure": "bar relative to 1 bar standard state"
   },
   "source_selection_rail": ["standard_state_consistency", "primary_measurement", "domain_match", "systematic_estimate"],
-  "canonical_content_digest": "bc5cf6fc7c726a7f9d8ed41544dd1b7cb432f76c4037c6f228ad6aa7fac88bec",
+  "canonical_content_digest": "37c4cfc81e336cb70c7ce21d141e7f8394853692e5a06b8cf5c6b8d446ed4624",
   "parent_registry": [
     {"element": "Si", "parent_oxide": "SiO2(l)", "parent_formula_atoms": {"Si": 1, "O": 2}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Si(cr)", "parent_oxidation_state": 4, "known_oxidation_states": [4], "redox_thermochemistry_status": "registered_unpopulated"},
     {"element": "Mg", "parent_oxide": "MgO(l)", "parent_formula_atoms": {"Mg": 1, "O": 1}, "parent_standard_state": "liquid oxide", "elemental_reference_state": "Mg(cr)", "parent_oxidation_state": 2, "known_oxidation_states": [2], "redox_thermochemistry_status": "registered_unpopulated"},
@@ -47,42 +47,48 @@
     "O2(g)": {
       "formula_atoms": {"O": 2},
       "evaluator": "janaf_shomate",
-      "T_domain_K": [1500, 3000],
+      "T_domain_K": [1200, 3000],
       "range_flags": [],
-      "row": {"A": 36.968440194934, "B": -1.34047840048787, "C": 1.35815923534018, "D": -0.188856387311611, "E": -1.8717368315994, "F": -15.8826786740787, "G": 243.357524494403},
+      "intervals": [
+        {"T_domain_K": [1200, 1500], "row": {"A": 21.5784798494751, "B": 24.9873569037532, "C": -15.332266304837, "D": 3.53820477825075, "E": 0.101759745988703, "F": -7.04169585033391, "G": 225.128058070067}},
+        {"T_domain_K": [1500, 3000], "row": {"A": 36.968440194934, "B": -1.34047840048787, "C": 1.35815923534018, "D": -0.188856387311611, "E": -1.8717368315994, "F": -15.8826786740787, "G": 243.357524494403}}
+      ],
       "band_kj_mol": 0.002,
-      "provenance": {"source": "NIST-JANAF O2 reference-state table, O-029", "source_url": "https://janaf.nist.gov/tables/O-029.html", "tier": "tier1_direct_assessed", "selection_rationale": "Direct JANAF function; maximum local-node Gibbs residual is 0.00176 kJ/mol over the declared interval."}
+      "provenance": {"source": "NIST-JANAF O2 reference-state table, O-029", "source_url": "https://janaf.nist.gov/tables/O-029.html", "tier": "tier1_direct_assessed", "selection_rationale": "The 1200-1500 K interval uses the existing lower JANAF Shomate fit; the original 1500-3000 K coefficients are retained unchanged. Both intervals reproduce their JANAF source nodes within 1 J/mol."}
     },
     "Fe(cr)": {
       "formula_atoms": {"Fe": 1},
       "ferric_fe_units": 0.0,
       "ferrous_fe_units": 0.0,
       "evaluator": "condensate_phi",
-      "T_domain_K": [1700, 1809],
-      "range_flags": ["JANAF Fe(cr) source nodes end at 1800 K; the fit is extended nine kelvin to the 1809 K transition marker."],
-      "row": {"dH298_R": 0, "dG_A": 2.60304027327966, "dG_B": 1.26283574008411, "dG_C": 2.15571993648718, "dG_D": -1.06570517076819, "dG_E": 0.144791389787759},
+      "T_domain_K": [1200, 1809],
+      "range_flags": ["JANAF gamma and delta iron are fitted separately at their 1665 K transition.", "The delta fit extends nine kelvin beyond the last source node to the 1809 K solid-liquid transition marker."],
+      "intervals": [
+        {"T_domain_K": [1200, 1665], "row": {"dH298_R": 0.0, "dG_A": -0.5182507515612352, "dG_B": 8.764315028268804, "dG_C": -4.389050704238409, "dG_D": 1.3802482713201845, "dG_E": -0.18324169832328657}},
+        {"T_domain_K": [1665, 1809], "row": {"dH298_R": 0.0, "dG_A": 1.79429766742696, "dG_B": 3.81346327112023, "dG_C": -0.459610049999803, "dG_D": 0.0, "dG_E": 0.0}}
+      ],
       "band_kj_mol": 0.075,
-      "provenance": {"source": "NIST-JANAF elemental iron crystal table, Fe-007", "source_url": "https://janaf.nist.gov/tables/Fe-007.html", "tier": "tier1_direct_assessed", "selection_rationale": "Existing condensate φ fitter applied to JANAF H-H(298) and S nodes; the final nine kelvin to the transition marker is an explicitly flagged short extrapolation."}
+      "provenance": {"source": "NIST-JANAF elemental iron crystal table, Fe-007", "source_url": "https://janaf.nist.gov/tables/Fe-007.html", "tier": "tier1_direct_assessed", "selection_rationale": "Separate gamma and delta fits use the phase-side H-H(298) and S values at the 1665 K transition. Their source-node Gibbs residuals are 0.342 J/mol and below 0.001 J/mol respectively; the delta fit extends nine kelvin beyond the final 1800 K node to the transition marker."}
     },
     "Fe(l)": {
       "formula_atoms": {"Fe": 1},
       "ferric_fe_units": 0.0,
       "ferrous_fe_units": 0.0,
       "evaluator": "condensate_phi",
-      "T_domain_K": [1809, 3000],
-      "range_flags": [],
-      "gibbs_anchor_adjustment_j_mol": 77.8833059828612,
-      "row": {"dH298_R": 1.50014304941131, "dG_A": 2.39304638614573, "dG_B": 4.2539349208347, "dG_C": -0.785731165530508, "dG_D": 0.0918940916919638, "dG_E": -0.00449130555799253},
+      "T_domain_K": [1700, 3000],
+      "range_flags": ["The 1700-1809 K portion is the JANAF supercooled liquid reference; the Fe(metal) stable reference remains crystalline below 1809 K."],
+      "gibbs_anchor_adjustment_j_mol": 2.34541034295398,
+      "row": {"dH298_R": 1.49105792880756, "dG_A": 2.39304638614573, "dG_B": 4.2539349208347, "dG_C": -0.785731165530508, "dG_D": 0.0918940916919638, "dG_E": -0.00449130555799253},
       "band_kj_mol": 0.08,
-      "provenance": {"source": "NIST-JANAF elemental iron liquid table, Fe-006, Gibbs anchored continuously to the Fe(cr) fit at 1809 K", "source_url": "https://janaf.nist.gov/tables/Fe-006.html", "tier": "tier1_direct_assessed", "selection_rationale": "Existing condensate φ fit is shifted by the 77.883 J/mol fusion-point offset so the crystal and liquid branches share one JANAF fusion Gibbs anchor; the 0.08 kJ/mol band covers the source-fit residual and anchor shift."}
+      "provenance": {"source": "NIST-JANAF elemental iron liquid table, Fe-006, Gibbs anchored continuously to the phase-fitted Fe(cr) branch at 1809 K", "source_url": "https://janaf.nist.gov/tables/Fe-006.html", "tier": "tier1_direct_assessed", "selection_rationale": "The 1700-3000 K Fe(l) fit uses the cited Fe-006 nodes. A 2.345 J/mol correction makes its Gibbs value continuous with the phase-fitted Fe(cr) continuation at the 1809 K fusion marker; the largest corrected source-node residual remains below 4 J/mol."}
     },
     "Fe(metal)": {
       "formula_atoms": {"Fe": 1},
       "ferric_fe_units": 0.0,
       "ferrous_fe_units": 0.0,
       "evaluator": "piecewise",
-      "T_domain_K": [1700, 3000],
-      "range_flags": ["The crystal fit uses source nodes through 1800 K; its endpoint is extended to the 1809 K transition marker."],
+      "T_domain_K": [1200, 3000],
+      "range_flags": ["Fe(cr) uses separate gamma and delta fits; the delta fit uses source nodes through 1800 K and extends to the 1809 K fusion marker. Fe(l) is tabulated from 1700 K as a supercooled liquid below fusion."],
       "transition_temperature_K": 1809,
       "branches": [{"branch": "below", "species": "Fe(cr)"}, {"branch": "at_or_above", "species": "Fe(l)"}],
       "reference_activity": 1.0,
@@ -94,9 +100,12 @@
       "ferric_fe_units": 2.0,
       "ferrous_fe_units": 0.0,
       "evaluator": "condensate_phi",
-      "T_domain_K": [1500, 3000],
-      "range_flags": ["1500-1735 K is below the cited hematite decomposition marker and is a flagged supercooled metastable branch.", "1735-1895 K is below nominal hypothetical fusion and remains a metastable extrapolation.", "Lange and Navrotsky's tier-2 liquid-component Cp is extrapolated from its calorimetry domain across the 1500-3000 K runtime interval."],
-      "row": {"dH298_R": -99.2851899066654, "dG_A": -5.19343777284234, "dG_B": 24.1976011398934, "dG_C": -4.92648520465542, "dG_D": 0.650581619736861, "dG_E": -0.0374934244619601},
+      "T_domain_K": [1200, 3000],
+      "range_flags": ["1200-1735 K is below the cited hematite decomposition marker and is a flagged supercooled metastable branch.", "1735-1895 K is below nominal hypothetical fusion and remains a metastable extrapolation.", "Lange and Navrotsky's tier-2 liquid-component Cp is extrapolated from its calorimetry domain across the 1200-3000 K runtime interval."],
+      "intervals": [
+        {"T_domain_K": [1200, 1500], "row": {"dH298_R": -99.2851899066654, "dG_A": -0.124023426756372, "dG_B": 11.2184910113985, "dG_C": 7.63534177386617, "dG_D": -4.7961621169826, "dG_E": 0.854977706900047}},
+        {"T_domain_K": [1500, 3000], "row": {"dH298_R": -99.2851899066654, "dG_A": -5.19343777284234, "dG_B": 24.1976011398934, "dG_C": -4.92648520465542, "dG_D": 0.650581619736861, "dG_E": -0.0374934244619601}}
+      ],
       "band_kj_mol": 19.306,
       "band_method": "conservative propagated Gibbs spread from the primary fusion-enthalpy estimate and tier-2 liquid-Cp uncertainty, sampled at 1500, 1895, 2195, 2695, and 3000 K",
       "construction": {
@@ -115,7 +124,8 @@
         "liquid_heat_capacity_flag": "amber; direct liquid-component measurement extrapolated beyond the calorimetry domain",
         "band_scope": "conservative propagated fusion-enthalpy and tier-2 liquid-Cp uncertainty; the extrapolation remains a systematic limitation",
         "fit_T_K": [1500, 3000],
-        "runtime_T_K": [1500, 3000],
+        "runtime_T_K": [1200, 3000],
+        "fit_intervals_K": [[1200, 1500], [1500, 3000]],
         "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"
       },
       "provenance": {"source": "NIST-JANAF hematite crystal table Fe-030; Lesher and Spera supplemental Table S5.5 secondary transcription, checked against Sugawara and Akaogi (2004)", "source_url": "https://magma.geol.ucsb.edu/papers/EoV_complete.pdf", "provenance_class": "secondary_transcription_unverified_primary", "alternate_source_url": "https://doi.org/10.2138/am-2004-11-1202", "crystal_source_url": "https://janaf.nist.gov/tables/Fe-030.html", "liquid_cp_source_url": "https://doi.org/10.1007/BF00310746", "tier": "tier3_flagged_estimate", "first_hand_verified": false, "selection_rationale": "The central nominal fusion value follows the explicit Lesher and Spera secondary transcription; the genuine Sugawara and Akaogi primary estimate is retained as an uncertainty bound. The tier-2 liquid-component Cp is used centrally with its stated uncertainty and a high-temperature extrapolation flag; the hypothetical hematite phase remains metastable."}
@@ -125,14 +135,14 @@
       "ferric_fe_units": 1.0,
       "ferrous_fe_units": 0.0,
       "evaluator": "linear_combination",
-      "T_domain_K": [1500, 3000],
+      "T_domain_K": [1200, 3000],
       "range_flags": ["The derived FeO1.5 standard state inherits the metastable and supercooled range of Fe2O3(l)."],
       "terms": [{"species": "Fe2O3(l)", "coefficient": 0.5}],
       "band_kj_mol": 9.653,
       "provenance": {"source": "Half the constructed Fe2O3(l) standard Gibbs energy", "source_url": "https://janaf.nist.gov/tables/Fe-030.html", "tier": "tier3_flagged_estimate", "selection_rationale": "Stoichiometric pseudo-complex reference; it adds no independent Gibbs function."}
     },
     "Si(l)": {
-      "formula_atoms": {"Si": 1}, "evaluator": "condensate_phi", "T_domain_K": [1700, 3000], "range_flags": [],
+      "formula_atoms": {"Si": 1}, "evaluator": "condensate_phi", "T_domain_K": [1685, 3000], "range_flags": ["The liquid branch begins at the 1685 K JANAF transition node; the source's regular 100 K grid begins at 1700 K."],
       "row": {"dH298_R": 5.82960104902837, "dG_A": 4.06878702262776, "dG_B": 3.83118369548727, "dG_C": -1.04017915813385, "dG_D": 0.179198580898701, "dG_E": -0.0134061386171519},
       "band_kj_mol": 0.002,
       "provenance": {"source": "NIST-JANAF silicon liquid table Si-003", "source_url": "https://janaf.nist.gov/tables/Si-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."}
@@ -156,48 +166,76 @@
       "provenance": {"source": "NIST-JANAF cobalt liquid table Co-003", "source_url": "https://janaf.nist.gov/tables/Co-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."}
     },
     "Mn(l)": {
-      "formula_atoms": {"Mn": 1}, "evaluator": "condensate_phi", "T_domain_K": [1600, 2200], "range_flags": ["Uses the JANAF liquid reference over 1600-2200 K, below the source table's 2334.526 K one-bar boiling marker."],
-      "row": {"dH298_R": 1.95911639132707, "dG_A": 3.90764925965174, "dG_B": 3.44644589474198, "dG_C": -0.244200953116657, "dG_D": -0.0776798564699167, "dG_E": 0.0158023187385586},
+      "formula_atoms": {"Mn": 1}, "evaluator": "condensate_phi", "T_domain_K": [1200, 3000], "range_flags": ["Uses the JANAF Mn(l) reference from 1200-3000 K; the tabulated liquid standard continues above its 2334.526 K one-bar boiling marker."],
+      "intervals": [
+        {"T_domain_K": [1200, 1600], "row": {"dH298_R": 1.95911639132707, "dG_A": 3.58505098951918, "dG_B": 4.69420335443276, "dG_C": -1.87666153240899, "dG_D": 0.81701036479705, "dG_E": -0.161101992665589}},
+        {"T_domain_K": [1600, 2200], "row": {"dH298_R": 1.95911639132707, "dG_A": 3.90764925965174, "dG_B": 3.44644589474198, "dG_C": -0.244200953116657, "dG_D": -0.0776798564699167, "dG_E": 0.0158023187385586}},
+        {"T_domain_K": [2200, 3000], "row": {"dH298_R": 1.95911639132707, "dG_A": 3.46777981164283, "dG_B": 4.2776738123271, "dG_C": -0.83608322949013, "dG_D": 0.110268407390718, "dG_E": -0.00662592482849032}}
+      ],
       "band_kj_mol": 0.001,
-      "provenance": {"source": "NIST-JANAF manganese liquid table Mn-003", "source_url": "https://janaf.nist.gov/tables/Mn-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "The existing condensate φ fitter was applied to the JANAF Mn(l) H-H(298), entropy, and heat-capacity nodes at 1600-2200 K; its maximum Gibbs residual is 0.000749 kJ/mol."}
+      "provenance": {"source": "NIST-JANAF manganese liquid table Mn-003", "source_url": "https://janaf.nist.gov/tables/Mn-003.html", "tier": "tier1_direct_assessed", "selection_rationale": "The original 1600-2200 K coefficients are retained; separate condensate φ fits use the cited JANAF liquid nodes over 1200-1600 K and 2200-3000 K. Their maximum source residual is 0.524 J/mol."}
     },
     "Al2O3(l)": {
-      "formula_atoms": {"Al": 2, "O": 3}, "evaluator": "condensate_phi", "T_domain_K": [1500, 2000], "range_flags": ["Uses the existing NIST-JANAF Al-100 supercooled Al2O3 liquid reference over 1500-2000 K."],
-      "row": {"dH298_R": -194.909409598118, "dG_A": 10.285160008207, "dG_B": -1.46791813602592, "dG_C": 8.44621147724374, "dG_D": -3.12821914888592, "dG_E": 0.396004795483549},
+      "formula_atoms": {"Al": 2, "O": 3}, "evaluator": "condensate_phi", "T_domain_K": [1200, 3000], "range_flags": ["Uses the existing JANAF liquid function, including its supercooled continuation below the 2500 K direct liquid interval."],
+      "intervals": [
+        {"T_domain_K": [1200, 1500], "row": {"dH298_R": -194.909409598118, "dG_A": 18.2162348734695, "dG_B": -22.5222622905866, "dG_C": 29.4504760974634, "dG_D": -12.4612377871925, "dG_E": 1.95447512379949}},
+        {"T_domain_K": [1500, 2000], "row": {"dH298_R": -194.909409598118, "dG_A": 10.285160008207, "dG_B": -1.46791813602592, "dG_C": 8.44621147724374, "dG_D": -3.12821914888592, "dG_E": 0.396004795483549}},
+        {"T_domain_K": [2000, 2500], "row": {"dH298_R": -194.909409598118, "dG_A": 5.45584898303628, "dG_B": 8.41764109241767, "dG_C": 0.845011535357561, "dG_D": -0.526533022254633, "dG_E": 0.0615989152660013}},
+        {"T_domain_K": [2500, 3000], "row": {"dH298_R": -194.909409598118, "dG_A": 4.79573284777208, "dG_B": 9.72240939339925, "dG_C": -0.0815698102801247, "dG_D": -0.242420426738831, "dG_E": 0.0296006639702302}}
+      ],
       "band_kj_mol": 1.154923273485,
-      "provenance": {"source": "NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval", "source_url": "https://janaf.nist.gov/tables/Al-100.txt", "tier": "tier3_flagged_estimate", "selection_rationale": "This is the existing Al2O3 liquid-component reference used over 1500-2000 K; its band uses the measured Tier 1 leave-one-out maximum at fusion."}
+      "provenance": {"source": "NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval", "source_url": "https://janaf.nist.gov/tables/Al-100.txt", "tier": "tier3_flagged_estimate", "selection_rationale": "Uses the existing Al-100-SC-CP continuation over 1200-2500 K and the direct liquid fit over 2500-3000 K; the numeric band remains based on the measured Tier 1 leave-one-out maximum at fusion."}
     },
     "MnO(l)": {
-      "formula_atoms": {"Mn": 1, "O": 1}, "evaluator": "condensate_phi", "T_domain_K": [1673, 2000], "range_flags": ["The constructed liquid is supercooled below the measured 2120 ± 20 K MnO melting point throughout this domain.", "Fusion entropy and liquid heat capacity use Tier 3 systematic estimates with broad measured residual spreads."],
-      "row": {"dH298_R": -46.3048566923029, "dG_A": -4.7517225829243, "dG_B": 18.522547615701, "dG_C": -7.68380038061084, "dG_D": 1.84242016404087, "dG_E": -0.184227647723605},
+      "formula_atoms": {"Mn": 1, "O": 1}, "evaluator": "condensate_phi", "T_domain_K": [1200, 3000], "range_flags": ["The constructed liquid is supercooled below the measured 2120 ± 20 K MnO melting point from 1200-2140 K.", "Fusion entropy and liquid heat capacity use Tier 3 systematic estimates with broad measured residual spreads."],
+      "intervals": [
+        {"T_domain_K": [1200, 1600], "row": {"dH298_R": -46.3048566923029, "dG_A": -7.83104044164041, "dG_B": 26.1997182155252, "dG_C": -14.8949330564491, "dG_D": 4.86671869171394, "dG_E": -0.662008497731185}},
+        {"T_domain_K": [1600, 2200], "row": {"dH298_R": -46.3048566923029, "dG_A": -4.7517225829243, "dG_B": 18.522547615701, "dG_C": -7.68380038061084, "dG_D": 1.84242016404087, "dG_E": -0.184227647723605}},
+        {"T_domain_K": [2200, 3000], "row": {"dH298_R": -46.3048566923029, "dG_A": -1.76566278414145, "dG_B": 13.0607610846536, "dG_C": -3.91889263965776, "dG_D": 0.683409938352985, "dG_E": -0.0498078394267018}}
+      ],
       "band_kj_mol": 5.753514,
-      "construction": {"crystal_source_table": "MnO-IVTAN-1435", "fusion_temperature_K": 2120, "fusion_temperature_spread_K": 20, "fusion_entropy_j_mol_K": 18.6695851447, "fusion_entropy_spread_j_mol_K": 7.859575422458086, "liquid_heat_capacity_j_mol_K": 63.0463068993, "liquid_heat_capacity_spread_j_mol_K": 14.001129999999996, "fit_T_K": [1600, 2200], "runtime_T_K": [1673, 2000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
-      "provenance": {"source": "IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.", "source_url": "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html", "tier": "tier4_systematic_estimate", "selection_rationale": "The construction uses the measured crystal function and 2120 ± 20 K melting temperature. The tool's leave-one-out mean fusion entropy per formula atom supplies the center; IVTAN's 40 ± 5 kJ/mol fusion enthalpy is a cross-check only. Below fusion, the measured maximum input residuals use seven rock-salt monoxide homologues: BaO, CaO, FeO, MgO, SrO, TiO, and VO (N=7)."}
+      "construction": {"crystal_source_table": "MnO-IVTAN-1435", "fusion_temperature_K": 2120, "fusion_temperature_spread_K": 20, "fusion_entropy_j_mol_K": 18.6695851447, "fusion_entropy_spread_j_mol_K": 7.859575422458086, "liquid_heat_capacity_j_mol_K": 63.0463068993, "liquid_heat_capacity_spread_j_mol_K": 14.001129999999996, "fit_T_K": [1600, 2200], "fit_intervals_K": [[1200, 1600], [1600, 2200], [2200, 3000]], "runtime_T_K": [1200, 3000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
+      "provenance": {"source": "IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.", "source_url": "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html", "tier": "tier4_systematic_estimate", "selection_rationale": "The original 1600-2200 K coefficients are retained. The same liquid_from_solid construction is independently fitted below and above that interval on 100 K nodes; maximum outer-interval residual is 0.271 J/mol. The construction uses the tool's leave-one-out mean fusion entropy per formula atom; IVTAN's 40 ± 5 kJ/mol fusion enthalpy is a cross-check only."}
     },
     "MnSiO3(l)": {
-      "formula_atoms": {"Mn": 1, "Si": 1, "O": 3}, "evaluator": "condensate_phi", "T_domain_K": [1673, 2000], "range_flags": ["Rhodonite melts incongruently; the pure-liquid standard is a constructed association reference.", "The source heat-capacity fit is extended 64 K from its 1500 K upper limit to the selected 1564 K transition."],
-      "row": {"dH298_R": -158.951944427396, "dG_A": -12.7163301577398, "dG_B": 43.065483296729, "dG_C": -19.3896196803774, "dG_D": 5.04563323676232, "dG_E": -0.547732731893597},
+      "formula_atoms": {"Mn": 1, "Si": 1, "O": 3}, "evaluator": "condensate_phi", "T_domain_K": [1200, 3000], "range_flags": ["Rhodonite melts incongruently; the pure-liquid standard is a constructed association reference.", "The source heat-capacity fit is extended 64 K from its 1500 K upper limit to the selected 1564 K transition."],
+      "intervals": [
+        {"T_domain_K": [1200, 1500], "row": {"dH298_R": -158.951944427396, "dG_A": -4.70782772294077, "dG_B": 17.2461589187094, "dG_C": 11.2473421989589, "dG_D": -10.8808448426388, "dG_E": 2.521735350972}},
+        {"T_domain_K": [1500, 2000], "row": {"dH298_R": -158.951944427396, "dG_A": -12.7163301577398, "dG_B": 43.065483296729, "dG_C": -19.3896196803774, "dG_D": 5.04563323676232, "dG_E": -0.547732731893597}},
+        {"T_domain_K": [2000, 3000], "row": {"dH298_R": -158.951944427396, "dG_A": -5.66227073638746, "dG_B": 29.2468245326632, "dG_C": -9.17563610426423, "dG_D": 1.66944702873464, "dG_E": -0.126678474152575}}
+      ],
       "band_kj_mol": 43.214067,
-      "construction": {"crystal_source_table": "MnSiO3-Robie-1995", "fusion_temperature_K": 1564, "fusion_temperature_spread_K": 5, "fusion_entropy_j_mol_K": 46.6739628617, "fusion_entropy_spread_j_mol_K": 54.1349436118, "liquid_heat_capacity_j_mol_K": 134.6884253464, "liquid_heat_capacity_spread_j_mol_K": 170.2, "fit_T_K": [1500, 2000], "runtime_T_K": [1673, 2000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
-      "provenance": {"source": "Robie, Huebner, and Hemingway rhodonite crystal thermochemistry; the 1559-1564 K interval is reported in the 2024 Mn-Si-O assessment.", "source_url": "https://rruff.info/uploads/AM80_560.pdf", "tier": "tier4_systematic_estimate", "selection_rationale": "The crystal formation enthalpy and heat-capacity function are source-derived; the published ±2.0 kJ/mol formation-enthalpy uncertainty is counted once. The above-fusion recipe has no crystal-entropy uncertainty term. The liquid fusion entropy and Cp are Tier 3 systematic estimates. The leave-one-out Gibbs columns are interpolated to T-T_fus; the same residuals are not also added as propagated entropy and Cp spreads. No activity data were used to select the row."}
+      "construction": {"crystal_source_table": "MnSiO3-Robie-1995", "fusion_temperature_K": 1564, "fusion_temperature_spread_K": 5, "fusion_entropy_j_mol_K": 46.6739628617, "fusion_entropy_spread_j_mol_K": 54.1349436118, "liquid_heat_capacity_j_mol_K": 134.6884253464, "liquid_heat_capacity_spread_j_mol_K": 170.2, "fit_T_K": [1500, 2000], "fit_intervals_K": [[1200, 1500], [1500, 2000], [2000, 3000]], "runtime_T_K": [1200, 3000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
+      "provenance": {"source": "Robie, Huebner, and Hemingway rhodonite crystal thermochemistry; the 1559-1564 K interval is reported in the 2024 Mn-Si-O assessment.", "source_url": "https://rruff.info/uploads/AM80_560.pdf", "tier": "tier4_systematic_estimate", "selection_rationale": "The original 1500-2000 K coefficients are retained. The same liquid_from_solid construction is fitted on source nodes in 1200-1500 K and 2000-3000 K; the largest additional source-node residual is 2.278 J/mol. No activity data were used to select coefficients."}
     },
     "Mn2SiO4(l)": {
-      "formula_atoms": {"Mn": 2, "Si": 1, "O": 4}, "evaluator": "condensate_phi", "T_domain_K": [1673, 2000], "range_flags": ["Tephroite is congruently melting only in the reported low-oxygen phase diagram; peritectic behavior is reported near air conditions.", "The source heat-capacity fit is extended 16 K from its 1600 K upper limit to the selected 1616 K transition."],
-      "row": {"dH298_R": -208.311718937841, "dG_A": -18.4491312856461, "dG_B": 64.4966556679615, "dG_C": -29.7500156567454, "dG_D": 7.82826629411676, "dG_E": -0.855245390113343},
+      "formula_atoms": {"Mn": 2, "Si": 1, "O": 4}, "evaluator": "condensate_phi", "T_domain_K": [1200, 3000], "range_flags": ["Tephroite is congruently melting only in the reported low-oxygen phase diagram; peritectic behavior is reported near air conditions.", "The source heat-capacity fit is extended 16 K from its 1600 K upper limit to the selected 1616 K transition."],
+      "intervals": [
+        {"T_domain_K": [1200, 1500], "row": {"dH298_R": -208.311718937841, "dG_A": -6.47888670277998, "dG_B": 25.6718888682996, "dG_C": 16.5234210464591, "dG_D": -16.3078982353273, "dG_E": 3.80870054949582}},
+        {"T_domain_K": [1500, 2000], "row": {"dH298_R": -208.311718937841, "dG_A": -18.4491312856461, "dG_B": 64.4966556679615, "dG_C": -29.7500156567454, "dG_D": 7.82826629411676, "dG_E": -0.855245390113343}},
+        {"T_domain_K": [2000, 3000], "row": {"dH298_R": -208.311718937841, "dG_A": -7.373779783941, "dG_B": 42.7789960442169, "dG_C": -13.6817525097737, "dG_D": 2.51184421906215, "dG_E": -0.191596876190974}}
+      ],
       "band_kj_mol": 37.329086,
-      "construction": {"crystal_source_table": "Mn2SiO4-Robie-1982", "fusion_temperature_K": 1616, "fusion_temperature_spread_K": 4, "fusion_entropy_j_mol_K": 65.3435480064, "fusion_entropy_spread_j_mol_K": 54.1349436118, "liquid_heat_capacity_j_mol_K": 183.8441705818, "liquid_heat_capacity_spread_j_mol_K": 170.2, "crystal_formation_enthalpy_spread_kj_mol": 2.9, "fit_T_K": [1500, 2000], "runtime_T_K": [1673, 2000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
-      "provenance": {"source": "Robie et al. (1982) primary tephroite thermochemistry; the 1616-1620 K interval is reported in the 2024 Mn-Si-O assessment.", "source_url": "https://msaweb.org/AmMin/AM67/AM67_470.pdf", "tier": "tier4_systematic_estimate", "selection_rationale": "The primary 1982 oxide-basis calorimetry reports ΔfH° = -1732.0 ± 2.9 kJ/mol; this value is used instead of the later -1731.5 tabulation. The transition interval comes from the 2024 Mn-Si-O assessment (Tier 3). The liquid fusion entropy and Cp are Tier 3 systematic estimates. Above fusion, the leave-one-out Gibbs columns are interpolated to T-T_fus and are not stacked with the same propagated entropy and Cp residuals."}
+      "construction": {"crystal_source_table": "Mn2SiO4-Robie-1982", "fusion_temperature_K": 1616, "fusion_temperature_spread_K": 4, "fusion_entropy_j_mol_K": 65.3435480064, "fusion_entropy_spread_j_mol_K": 54.1349436118, "liquid_heat_capacity_j_mol_K": 183.8441705818, "liquid_heat_capacity_spread_j_mol_K": 170.2, "crystal_formation_enthalpy_spread_kj_mol": 2.9, "fit_T_K": [1500, 2000], "fit_intervals_K": [[1200, 1500], [1500, 2000], [2000, 3000]], "runtime_T_K": [1200, 3000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
+      "provenance": {"source": "Robie et al. (1982) primary tephroite thermochemistry; the 1616-1620 K interval is reported in the 2024 Mn-Si-O assessment.", "source_url": "https://msaweb.org/AmMin/AM67/AM67_470.pdf", "tier": "tier4_systematic_estimate", "selection_rationale": "The original 1500-2000 K coefficients are retained. The same liquid_from_solid construction is fitted on source nodes in 1200-1500 K and 2000-3000 K; the largest additional source-node residual is 3.510 J/mol. No activity data were used to select coefficients."}
     },
     "MnAl2O4(l)": {
-      "formula_atoms": {"Mn": 1, "Al": 2, "O": 4}, "evaluator": "condensate_phi", "T_domain_K": [1673, 2000], "range_flags": ["The constructed liquid is supercooled below the measured 2000 K peritectic throughout the runtime domain.", "Heat capacity was measured on the crystal through 873 K and its published fit is extrapolated to the melting interval."],
-      "row": {"dH298_R": -252.595037886548, "dG_A": -26.3119094712813, "dG_B": 63.6610352673248, "dG_C": -27.3577821758627, "dG_D": 6.66649816238445, "dG_E": -0.672774135824228},
+      "formula_atoms": {"Mn": 1, "Al": 2, "O": 4}, "evaluator": "condensate_phi", "T_domain_K": [1200, 3000], "range_flags": ["The constructed liquid is supercooled below the measured 2000 K peritectic from 1200-2000 K.", "Heat capacity was measured on the crystal through 873 K and its published fit is extrapolated to the melting interval."],
+      "intervals": [
+        {"T_domain_K": [1200, 1600], "row": {"dH298_R": -252.595037886548, "dG_A": -38.2511318188318, "dG_B": 93.4633052657963, "dG_C": -55.384575513828, "dG_D": 18.4346068357748, "dG_E": -2.53404133941698}},
+        {"T_domain_K": [1600, 2200], "row": {"dH298_R": -252.595037886548, "dG_A": -26.3119094712813, "dG_B": 63.6610352673248, "dG_C": -27.3577821758627, "dG_D": 6.66649816238445, "dG_E": -0.672774135824228}},
+        {"T_domain_K": [2200, 3000], "row": {"dH298_R": -252.595037886548, "dG_A": -15.2902295148775, "dG_B": 43.4775663192872, "dG_C": -13.4287563559271, "dG_D": 2.37362887899684, "dG_E": -0.174346630952001}}
+      ],
       "band_kj_mol": 20.328344,
-      "construction": {"crystal_source_table": "MnAl2O4-open-primary", "fusion_temperature_K": 2000, "fusion_temperature_spread_K": 8, "fusion_entropy_j_mol_K": 65.3435480064, "fusion_entropy_spread_j_mol_K": 14.893918964, "liquid_heat_capacity_j_mol_K": 188.6890475, "liquid_heat_capacity_spread_j_mol_K": 12.11656, "crystal_formation_enthalpy_spread_kj_mol": 12.6, "crystal_entropy_spread_j_mol_K": 0.5, "fit_T_K": [1600, 2200], "runtime_T_K": [1673, 2000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
-      "provenance": {"source": "Open primary galaxite heat-capacity and entropy measurements by Navarro et al. (2012) and Navarro, de Avillez, Goes, and Gomes (2020), with primary phase-equilibrium data from Ilatovskaya and Fabrichnaya.", "source_url": "https://doi.org/10.1016/j.jmrt.2020.02.046", "tier": "tier4_systematic_estimate", "selection_rationale": "The crystal Cp is taken from the primary DSC fit and extended from its measured range to the reported 2000 K peritectic; the low-temperature primary measurement gives S°298.15 = 118.7 ± 0.5 J/(mol K). No primary formation enthalpy is available: the center uses the -39.5 kJ/mol oxide-formation value used with the measured Cp in the Navarro assessment, with the published ±12.6 kJ/mol alternative carried once in the band. Below fusion, the Tier 3 entropy and Cp spreads use the maximum measured residuals among the two liquid-reference spinel homologues MgAl2O4 (Al-090) and Mg2TiO4 (Mg-032), N=2. Liquid fusion entropy and Cp centers use Tier 3 systematic estimates. Chen activities were not used to select the constants."}
+      "construction": {"crystal_source_table": "MnAl2O4-open-primary", "fusion_temperature_K": 2000, "fusion_temperature_spread_K": 8, "fusion_entropy_j_mol_K": 65.3435480064, "fusion_entropy_spread_j_mol_K": 14.893918964, "liquid_heat_capacity_j_mol_K": 188.6890475, "liquid_heat_capacity_spread_j_mol_K": 12.11656, "crystal_formation_enthalpy_spread_kj_mol": 12.6, "crystal_entropy_spread_j_mol_K": 0.5, "fit_T_K": [1600, 2200], "fit_intervals_K": [[1200, 1600], [1600, 2200], [2200, 3000]], "runtime_T_K": [1200, 3000], "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"},
+      "provenance": {"source": "Open primary galaxite heat-capacity and entropy measurements by Navarro et al. (2012) and Navarro, de Avillez, Goes, and Gomes (2020), with primary phase-equilibrium data from Ilatovskaya and Fabrichnaya.", "source_url": "https://doi.org/10.1016/j.jmrt.2020.02.046", "tier": "tier4_systematic_estimate", "selection_rationale": "The original 1600-2200 K coefficients are retained. The same liquid_from_solid construction is fitted below and above that interval on 100 K nodes; the maximum additional source-node residual is 0.975 J/mol. Chen activities were not used to select coefficients."}
     },
     "SiO2(l)-supercooled": {
-      "formula_atoms": {"Si": 1, "O": 2}, "evaluator": "condensate_phi", "T_domain_K": [1500, 1800], "range_flags": ["Supercooled silica-liquid branch from the existing O-038-SC-CP construction."],
-      "row": {"dH298_R": -108.565164277223, "dG_A": 5.32820370263852, "dG_B": 2.7502207533237, "dG_C": 2.13101743270814, "dG_D": -1.02813696221069, "dG_E": 0.147416014779165},
+      "formula_atoms": {"Si": 1, "O": 2}, "evaluator": "condensate_phi", "T_domain_K": [1200, 1800], "range_flags": ["Supercooled silica-liquid branch from the existing O-038-SC-CP construction."],
+      "intervals": [
+        {"T_domain_K": [1200, 1500], "row": {"dH298_R": -108.565164277223, "dG_A": 7.36860812966104, "dG_B": -2.76842452195642, "dG_C": 7.73493748113369, "dG_D": -3.56009357435465, "dG_E": 0.576867240399126}},
+        {"T_domain_K": [1500, 1800], "row": {"dH298_R": -108.565164277223, "dG_A": 5.32820370263852, "dG_B": 2.7502207533237, "dG_C": 2.13101743270814, "dG_D": -1.02813696221069, "dG_E": 0.147416014779165}}
+      ],
       "band_kj_mol": 0.01,
       "provenance": {"source": "Existing SiO2 supercooled liquid construction O-038-SC-CP", "source_url": "https://janaf.nist.gov/tables/O-038.html", "tier": "tier3_flagged_estimate", "selection_rationale": "Uses the existing supercooled branch below the direct liquid-function interval."}
     },
@@ -208,7 +246,7 @@
       "provenance": {"source": "NIST-JANAF silicon dioxide liquid table O-038", "source_url": "https://janaf.nist.gov/tables/O-038.html", "tier": "tier1_direct_assessed", "selection_rationale": "Uses the direct assessed liquid function from its tabulated interval."}
     },
     "SiO2(l)": {
-      "formula_atoms": {"Si": 1, "O": 2}, "evaluator": "piecewise", "T_domain_K": [1500, 3000], "range_flags": ["Uses the existing supercooled silica construction below 1800 K and the direct JANAF liquid function at and above 1800 K."],
+      "formula_atoms": {"Si": 1, "O": 2}, "evaluator": "piecewise", "T_domain_K": [1200, 3000], "range_flags": ["Uses the existing supercooled silica construction below 1800 K and the direct JANAF liquid function at and above 1800 K."],
       "transition_temperature_K": 1800,
       "branches": [{"branch": "below", "species": "SiO2(l)-supercooled"}, {"branch": "at_or_above", "species": "SiO2(l)-direct"}],
       "band_kj_mol": 0.01,

@@ -19,6 +19,10 @@
       "url": "https://janaf.nist.gov/tables/Fe-007.txt",
       "crystal_liquid_transition_temperature_k": 1809,
       "formation_enthalpy_298_kj_mol": 0.0,
+      "transition_nodes": [
+        {"temperature_K": 1665, "phase": "gamma", "heat_capacity": 37.907, "entropy": 88.218, "enthalpy_increment": 51.784},
+        {"temperature_K": 1665, "phase": "delta", "heat_capacity": 41.112, "entropy": 88.721, "enthalpy_increment": 52.621}
+      ],
       "nodes": [
         [500, 29.702, 41.377, 5.527],
         [600, 32.049, 46.997, 8.613],
@@ -64,6 +68,9 @@
       "url": "https://janaf.nist.gov/tables/Si-003.html",
       "crystal_liquid_transition_temperature_k": 1685,
       "formation_enthalpy_298_kj_mol": 48.470,
+      "transition_nodes": [
+        {"temperature_K": 1685, "phase": "liquid", "heat_capacity": 27.196, "entropy": 91.562, "enthalpy_increment": 37.717}
+      ],
       "nodes": [
         [1700, 27.196, 91.803, 38.125],
         [1800, 27.196, 93.357, 40.844],
@@ -157,13 +164,25 @@
       "crystal_liquid_transition_temperature_k": 1519,
       "formation_enthalpy_298_kj_mol": 16.289,
       "nodes": [
+        [1200, 46.024, 89.082, 31.136],
+        [1300, 46.024, 92.766, 35.738],
+        [1400, 46.024, 96.176, 40.341],
+        [1500, 46.024, 99.352, 44.943],
         [1600, 46.024, 102.322, 49.545],
         [1700, 46.024, 105.112, 54.148],
         [1800, 46.024, 107.743, 58.750],
         [1900, 46.024, 110.231, 63.353],
         [2000, 46.024, 112.592, 67.955],
         [2100, 46.024, 114.837, 72.557],
-        [2200, 46.024, 116.978, 77.160]
+        [2200, 46.024, 116.978, 77.160],
+        [2300, 46.024, 119.024, 81.762],
+        [2400, 46.024, 120.983, 86.365],
+        [2500, 46.024, 122.862, 90.967],
+        [2600, 46.024, 124.667, 95.569],
+        [2700, 46.024, 126.404, 100.172],
+        [2800, 46.024, 128.078, 104.774],
+        [2900, 46.024, 129.693, 109.377],
+        [3000, 46.024, 131.253, 113.979]
       ]
     }
   },

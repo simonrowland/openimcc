@@ -226,9 +226,51 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         evaluator = record.get("evaluator")
         if evaluator not in {"condensate_phi", "janaf_shomate", "linear_combination", "piecewise"}:
             raise ValueError(f"thermo_species[{name!r}] has unknown evaluator")
+        if evaluator not in {"condensate_phi", "janaf_shomate"} and "intervals" in record:
+            raise ValueError(
+                f"thermo_species[{name!r}] intervals require a direct fitted evaluator"
+            )
         if evaluator in {"condensate_phi", "janaf_shomate"}:
-            if not isinstance(record.get("row"), dict):
-                raise ValueError(f"thermo_species[{name!r}] has no evaluator row")
+            if "intervals" not in record:
+                if not isinstance(record.get("row"), dict):
+                    raise ValueError(f"thermo_species[{name!r}] has no evaluator row")
+            else:
+                intervals = record["intervals"]
+                if "row" in record:
+                    raise ValueError(
+                        f"thermo_species[{name!r}] cannot have both row and intervals"
+                    )
+                if not isinstance(intervals, list) or len(intervals) < 2:
+                    raise ValueError(
+                        f"thermo_species[{name!r}] intervals must contain at least two rows"
+                    )
+                previous_high = low
+                for interval_index, interval in enumerate(intervals):
+                    interval_label = (
+                        f"thermo_species[{name!r}]/intervals[{interval_index}]"
+                    )
+                    if not isinstance(interval, dict):
+                        raise ValueError(f"{interval_label} must be an object")
+                    interval_domain = interval.get("T_domain_K")
+                    if not isinstance(interval_domain, list) or len(interval_domain) != 2:
+                        raise ValueError(f"{interval_label} needs a two-point T_domain_K")
+                    interval_low, interval_high = (
+                        _finite_number(value, f"{interval_label}/T_domain_K")
+                        for value in interval_domain
+                    )
+                    if interval_low <= 0.0 or interval_high <= interval_low:
+                        raise ValueError(f"{interval_label} has invalid temperature domain")
+                    if interval_low != previous_high:
+                        raise ValueError(
+                            f"{interval_label} does not continue the preceding interval"
+                        )
+                    if not isinstance(interval.get("row"), dict):
+                        raise ValueError(f"{interval_label} has no evaluator row")
+                    previous_high = interval_high
+                if previous_high != high:
+                    raise ValueError(
+                        f"thermo_species[{name!r}] intervals do not cover T_domain_K"
+                    )
         if evaluator == "linear_combination":
             if not isinstance(record.get("terms"), list) or not record["terms"]:
                 raise ValueError(f"thermo_species[{name!r}] has no terms")
@@ -487,7 +529,30 @@ def _species_gibbs_j_mol(
     if evaluator in {"condensate_phi", "janaf_shomate"}:
         from openimcc.gas import _janaf_gibbs, _lamor_gibbs
 
-        row = record["row"]
+        intervals = record.get("intervals")
+        if intervals is None:
+            row = record["row"]
+        else:
+            # Select the highest lower bound at a shared endpoint, matching
+            # the gas-table interval convention; the last interval includes
+            # its upper endpoint. This leaves legacy single-row records alone.
+            first_low = float(intervals[0]["T_domain_K"][0])
+            last_high = float(intervals[-1]["T_domain_K"][1])
+            if temperature_k < first_low:
+                selected = intervals[0]
+            elif temperature_k > last_high:
+                selected = intervals[-1]
+            else:
+                selected = intervals[-1]
+                for interval in intervals:
+                    interval_low, interval_high = map(
+                        float, interval["T_domain_K"]
+                    )
+                    if interval_low <= temperature_k <= interval_high:
+                        selected = interval
+                        if temperature_k < interval_high:
+                            break
+            row = selected["row"]
         return float(
             _lamor_gibbs(temperature_k, row)
             if evaluator == "condensate_phi"

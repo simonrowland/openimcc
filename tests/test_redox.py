@@ -292,10 +292,10 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
 
     fe_buffered = evaluate_redox({"Fe": 1.0, "O": 1.0}, 2200.0, "closed")
     assert fe_buffered.lambda_ln_f_o2 == pytest.approx(
-        -15.127740855106792, rel=1.0e-12
+        -15.119589936828516, rel=1.0e-12
     )
     assert fe_buffered.metal_moles == pytest.approx(
-        0.013097674149791579, rel=1.0e-12, abs=0.0
+        0.013123339041090802, rel=1.0e-12, abs=0.0
     )
     assert fe_buffered.oxygen_residual_mol is not None
     assert abs(fe_buffered.oxygen_residual_mol) <= 5.0e-13
@@ -303,7 +303,7 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     assert {
         name: amount for name, amount in fe_buffered.species_moles.items() if amount
     } == pytest.approx(
-        {"FeO": 0.9607069775478426, "FeO1.5(l)": 0.02619534830143822},
+        {"FeO": 0.9606299828739262, "FeO1.5(l)": 0.0262466780840492},
         rel=1.0e-12,
         abs=0.0,
     )
@@ -568,8 +568,8 @@ def test_oxygen_response_is_continuous_across_pure_fe_saturation() -> None:
         {"Fe": 1.0}, temperature, "imposed", lambda_imposed=0.0
     )
     at_saturation = evaluate_redox(
-        # This is the oxygen surplus at zero metal and the exact Fe saturation fugacity.
-        {"Fe": 1.0, "O": 1.0132714999313717},
+        # This updated zero-metal boundary follows the phase-fitted Fe(l) anchor.
+        {"Fe": 1.0, "O": 1.0132978512},
         temperature,
         "imposed",
         lambda_imposed=imposed.lambda_sat,
@@ -698,7 +698,7 @@ def test_imposed_mixed_melt_predicts_buffered_metal_without_oxygen() -> None:
         "imposed",
         lambda_imposed=-17.931129807709393,
     )
-    assert result.metal_moles == pytest.approx(0.501694421294, abs=2.0e-9)
+    assert result.metal_moles == pytest.approx(0.5050706980982794, abs=2.0e-9)
     assert result.oxygen_inventory_mol is None
     assert result.oxygen_residual_mol is None
     assert result.lambda_sat == pytest.approx(-17.931129807709393, abs=1.0e-9)
@@ -819,7 +819,12 @@ def test_oxygen_sweep_is_typed_monotone_and_modes_agree_near_both_limits() -> No
         ),
     )
     for label, base_inventory, reduced_limit, oxidised_limit in cases:
-        oxygen_values = [math.nextafter(reduced_limit, math.inf)]
+        # Stay above one oxygen-pool resolution step at the reduced endpoint;
+        # the separate trace-oxygen case exercises smaller Fe-only inputs.
+        first_positive_oxygen = max(
+            math.nextafter(reduced_limit, math.inf), reduced_limit + 1.0e-12
+        )
+        oxygen_values = [first_positive_oxygen]
         oxygen_values.extend(
             float(value)
             for value in np.linspace(reduced_limit, oxidised_limit, 9)[1:-1]
@@ -841,9 +846,8 @@ def test_oxygen_sweep_is_typed_monotone_and_modes_agree_near_both_limits() -> No
                     lambda_imposed=closed.lambda_ln_f_o2,
                 )
             except ImccRefusal as exc:
-                # At the smallest positive Fe-only O float, the metal extent
-                # is below float resolution; the imposed endpoint is refused
-                # through the typed public error hierarchy.
+                # At trace Fe-only oxygen, the imposed extent can fall below
+                # float resolution and is refused through the typed hierarchy.
                 assert label == "Fe-only"
                 assert oxygen == oxygen_values[0]
                 assert isinstance(exc, RedoxEndpointError)
@@ -1028,7 +1032,7 @@ def test_species_gibbs_domain_still_refuses_redox_extrapolation() -> None:
     ):
         evaluate_redox(
             {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65},
-            1400.0,
+            1000.0,
             "closed",
         )
 
@@ -1781,7 +1785,7 @@ def test_pack_level_evaluators_stay_strict_by_default() -> None:
     with pytest.raises(ValueError):
         ln_k_prime(pack, row, 2200.0)
     with pytest.raises(ValueError):
-        species_gibbs_j_mol(pack, "MnO(l)", 2200.0)
+        species_gibbs_j_mol(pack, "MnO(l)", 1199.0)
 
 
 def test_missing_default_pack_is_a_typed_refusal(
@@ -1990,6 +1994,36 @@ def test_rounded_basalt_species_reproduce_the_ferrous_fe_correction() -> None:
     assert fe[2] == pytest.approx(0.097194, abs=2e-6)
     assert math.fsum(fe.values()) == pytest.approx(0.252352, abs=2e-6)
     assert fe[3] / math.fsum(fe.values()) == pytest.approx(0.6148, abs=1e-4)
+
+
+@pytest.mark.parametrize("temperature", [1468.15, 1474.15, 1491.15])
+def test_imposed_basalt_at_low_temperature_flags_extrapolated_rows_without_refusal(
+    temperature: float,
+) -> None:
+    basalt = {
+        "Si": 1.135951923,
+        "Mg": 0.156286148,
+        "Fe": 0.252352,
+        "Ca": 0.211933693,
+        "Al": 0.382287998,
+        "Ti": 0.028649319,
+        "Na": 0.137246205,
+        "K": 0.022004693,
+    }
+    result = evaluate_redox(
+        basalt,
+        temperature,
+        "imposed",
+        lambda_imposed=-0.68 * math.log(10.0),
+    )
+    assert set(result.extrapolated_redox_rows) == {"FeO(l)", "FeO1.5(l)"}
+    row_flags = [
+        flag
+        for flag in result.flags
+        if flag.startswith("RED: redox_row_temperature_extrapolation ")
+    ]
+    assert len(row_flags) == 2
+    assert all(f"temperature_K={temperature:g}" in flag for flag in row_flags)
 
 
 def test_element_valence_totals_conserve_across_melt_and_metal_cases() -> None:

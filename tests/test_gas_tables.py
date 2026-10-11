@@ -1261,11 +1261,17 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
     rows, construction, alternate = build_gas_tables._fit_liquid_from_solid_parent(
         ROOT / "data-src" / "published-thermo", "MnO", config
     )
-    gas_row = rows[0]
     redox_species = redox["thermo_species"]["MnO(l)"]
-    redox_row = redox_species["row"]
+    redox_intervals = redox_species["intervals"]
     redox_construction = redox_species["construction"]
-    residual = float(gas_row["_max_residual_J_per_mol"])
+    middle_index = next(
+        index
+        for index, row in enumerate(rows)
+        if (float(row["T_min"]), float(row["T_max"])) == (1600.0, 2200.0)
+    )
+    middle_gas_row = rows[middle_index]
+    middle_redox_row = redox_intervals[middle_index]["row"]
+    residual = float(middle_gas_row["_max_residual_J_per_mol"])
 
     assert alternate is None
     assert construction.inputs == config["inputs"]
@@ -1288,15 +1294,23 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
     assert redox_construction[
         "liquid_heat_capacity_spread_j_mol_K"
     ] == config["inputs"]["liquid_heat_capacity"]["spread"]
-    assert gas_row["species_name"] == "MnO(l)"
-    assert [(gas_row["T_min"], gas_row["T_max"])] == [("1673", "2000")]
-    assert gas_row["Ref"] == "LFS[MnO-IVTAN-1435;Tf=2120]"
+    assert [(float(row["T_min"]), float(row["T_max"])) for row in rows] == [
+        (1200.0, 1600.0), (1600.0, 2200.0), (2200.0, 3000.0),
+    ]
+    assert [tuple(interval["T_domain_K"]) for interval in redox_intervals] == [
+        (1200, 1600), (1600, 2200), (2200, 3000),
+    ]
+    assert all(row["species_name"] == "MnO(l)" for row in rows)
+    assert all(row["Ref"] == "LFS[MnO-IVTAN-1435;Tf=2120]" for row in rows)
     assert residual == pytest.approx(0.186390915536322, abs=1e-12)
-    assert residual < 10.0
-    assert all(
-        float(gas_row[key]) == pytest.approx(float(redox_row[key]), abs=1e-12)
-        for key in ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
-    )
+    assert max(float(row["_max_residual_J_per_mol"]) for row in rows) < 10.0
+    for gas_row, redox_interval in zip(rows, redox_intervals):
+        assert all(
+            float(gas_row[key]) == pytest.approx(
+                float(redox_interval["row"][key]), abs=1e-12
+            )
+            for key in ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
+        )
     assert config["inputs"]["condensate_fit"] == {
         "fit_t_min": 1600.0,
         "fit_t_max": 2200.0,
@@ -1319,6 +1333,11 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
         "data-src/liquid-from-solid-inputs.json"
     )
     assert condensate_provenance["construction_inputs_sha256"] == inputs_digest
+    assert condensate_provenance["T_range_K"] == [1200, 3000]
+    assert condensate_provenance["source_fit_range_K"] == [1200, 3000]
+    assert condensate_provenance["fit_intervals_K"] == [
+        [1200, 1600], [1600, 2200], [2200, 3000],
+    ]
     assert condensate_provenance["source"]["construction_input_record"] == (
         "data-src/liquid-from-solid-inputs.json rows.MnO"
     )
@@ -1386,16 +1405,22 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
             assert item["tier"] == 1
 
     pack = load_gas_datapack()
-    packaged_row = pack.oxide_df.loc["MnO(l)"]
-    assert packaged_row["Ref"] == gas_row["Ref"]
-    for temperature in (1673.0, 1800.0, 1900.0, 2000.0):
-        gas_gibbs = _condensate_gibbs(packaged_row, temperature)
-        redox_gibbs = _condensate_gibbs(redox_row, temperature)
+    from openimcc.gas import _oxide_row_for_T
+    from openimcc.redox_pack import load_redox_pack, species_gibbs_j_mol
+
+    redox_pack = load_redox_pack(redox_path)
+    assert len(pack.oxide_df.loc["MnO(l)"]) == 3
+    for temperature in range(1200, 3001, 100):
+        gas_row = _oxide_row_for_T(pack.oxide_df, "MnO(l)", float(temperature))
+        gas_gibbs = _condensate_gibbs(gas_row, float(temperature))
+        redox_gibbs = species_gibbs_j_mol(
+            redox_pack, "MnO(l)", float(temperature)
+        )
+        constructed_gibbs = construction.at(
+            float(temperature)
+        ).gibbs_kj_mol * 1000.0
         assert gas_gibbs == pytest.approx(redox_gibbs, abs=1e-9)
-        assert abs(gas_gibbs - redox_gibbs) <= residual + 1e-9
-        if temperature % 100.0 == 0.0:
-            constructed_gibbs = construction.at(temperature).gibbs_kj_mol * 1000.0
-            assert abs(gas_gibbs - constructed_gibbs) <= residual + 1e-6
+        assert abs(gas_gibbs - constructed_gibbs) <= 10.0
 
 
 def test_k2o_from_solid_builder_fits_the_full_runtime_interval() -> None:

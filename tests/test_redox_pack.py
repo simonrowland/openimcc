@@ -30,7 +30,7 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     pack = load_redox_pack(PACK_PATH)
     elements = [parent["element"] for parent in pack.parents]
 
-    assert pack.version == "1.3.0"
+    assert pack.version == "1.4.0"
     assert pack.content["schema"] == "openimcc-redox-pack.v2"
     assert elements == [
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K", "Cr", "Ni",
@@ -81,6 +81,67 @@ def test_redox_pack_v1_schema_is_refused(tmp_path: Path) -> None:
     path.write_text(json.dumps(content), encoding="utf-8")
 
     with pytest.raises(ValueError, match="unsupported redox pack schema"):
+        load_redox_pack(path)
+
+
+def test_multi_interval_species_are_contiguous_and_allow_legacy_rows(
+    tmp_path: Path,
+) -> None:
+    from openimcc.gas import _janaf_gibbs, _lamor_gibbs
+
+    pack = load_redox_pack(PACK_PATH)
+    species = pack.content["thermo_species"]["MnO(l)"]
+    assert "row" not in species
+    assert [interval["T_domain_K"] for interval in species["intervals"]] == [
+        (1200, 1600), (1600, 2200), (2200, 3000),
+    ]
+    for temperature in (1200.0, 1600.0, 2200.0, 3000.0):
+        assert math.isfinite(species_gibbs_j_mol(pack, "MnO(l)", temperature))
+    assert math.isfinite(
+        species_gibbs_j_mol(pack, "MnO(l)", 1100.0, allow_extrapolation=True)
+    )
+    assert math.isfinite(
+        species_gibbs_j_mol(pack, "MnO(l)", 3100.0, allow_extrapolation=True)
+    )
+    with pytest.raises(ValueError, match="outside its fitted table domain"):
+        species_gibbs_j_mol(pack, "O2(g)", 1199.0, allow_extrapolation=True)
+    for name, record in pack.content["thermo_species"].items():
+        intervals = record.get("intervals")
+        if intervals is None:
+            continue
+        evaluator = (
+            _janaf_gibbs
+            if record["evaluator"] == "janaf_shomate"
+            else _lamor_gibbs
+        )
+        for lower, upper in zip(intervals, intervals[1:]):
+            join = float(lower["T_domain_K"][1])
+            gap = abs(evaluator(join, lower["row"]) - evaluator(join, upper["row"]))
+            assert gap <= 10.0, (name, join, gap)
+
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["thermo_species"]["MnO(l)"]["intervals"][1]["T_domain_K"][0] = 1601
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path = tmp_path / "non-contiguous-species-intervals.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="does not continue the preceding interval"):
+        load_redox_pack(path)
+
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["thermo_species"]["MnO(l)"]["row"] = dict(
+        content["thermo_species"]["MnO(l)"]["intervals"][1]["row"]
+    )
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="cannot have both row and intervals"):
+        load_redox_pack(path)
+
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["thermo_species"]["MnO(l)"]["intervals"] = None
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path = tmp_path / "null-species-intervals.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="intervals must contain at least two rows"):
         load_redox_pack(path)
 
 
@@ -182,6 +243,12 @@ def test_pure_iron_reference_switches_continuously_at_janaf_fusion_temperature()
     )
     assert transition_gap_j < 1.0
 
+    lower_gamma = species_gibbs_j_mol(
+        pack, "Fe(cr)", math.nextafter(1665.0, 0.0)
+    )
+    upper_delta = species_gibbs_j_mol(pack, "Fe(cr)", 1665.0)
+    assert abs(upper_delta - lower_gamma) < 10.0
+
 
 def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
     sources = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
@@ -190,13 +257,50 @@ def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
     coefficients = ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
 
     for species_name, fitted in generated.items():
-        packed = pack.content["thermo_species"][species_name]["row"]
+        record = pack.content["thermo_species"][species_name]
+        if species_name == "Fe(cr)":
+            assert [item["T_domain_K"] for item in fitted["intervals"]] == [
+                [1200.0, 1665.0], [1665.0, 1809.0],
+            ]
+            assert [item["T_domain_K"] for item in record["intervals"]] == [
+                (1200, 1665), (1665, 1809),
+            ]
+            for source_interval, packed_interval in zip(
+                fitted["intervals"], record["intervals"]
+            ):
+                assert float(source_interval["row"]["_max_residual_J_per_mol"]) < 10.0
+                for coefficient in coefficients:
+                    assert float(packed_interval["row"][coefficient]) == pytest.approx(
+                        float(source_interval["row"][coefficient]),
+                        rel=1e-9,
+                        abs=1e-12,
+                    )
+            assert record["band_kj_mol"] >= float(
+                fitted["_max_residual_J_per_mol"]
+            ) / 1000.0
+            continue
+        if species_name == "Mn(l)":
+            assert [item["T_domain_K"] for item in fitted["intervals"]] == [
+                [1200.0, 1600.0], [1600.0, 2200.0], [2200.0, 3000.0],
+            ]
+            for source_interval, packed_interval in zip(
+                fitted["intervals"], record["intervals"]
+            ):
+                assert float(source_interval["row"]["_max_residual_J_per_mol"]) < 10.0
+                for coefficient in coefficients:
+                    assert float(packed_interval["row"][coefficient]) == pytest.approx(
+                        float(source_interval["row"][coefficient]),
+                        rel=1e-9,
+                        abs=1e-12,
+                    )
+            continue
+        packed = record["row"]
         for coefficient in coefficients:
             expected = float(fitted[coefficient])
             if species_name == "Fe(l)" and coefficient == "dH298_R":
-                # G = 1000*R*dH298_R - R*T*P(tau); add
-                # ΔG_anchor/(1000*R) to the stored kK-scaled enthalpy anchor.
-                adjustment = pack.content["thermo_species"][species_name][
+                # G = 1000*R*dH298_R - R*T*P(tau); anchor continuity adds
+                # ΔG_join/(1000*R) to the stored kK-scaled enthalpy anchor.
+                adjustment = record[
                     "gibbs_anchor_adjustment_j_mol"
                 ]
                 expected += adjustment / (R_J_MOL_K * 1000.0)
@@ -210,9 +314,10 @@ def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
             assert float(packed[coefficient]) == pytest.approx(
                 expected, rel=1e-9, abs=1e-12
             )
-        assert pack.content["thermo_species"][species_name]["band_kj_mol"] >= float(
-            fitted["_max_residual_J_per_mol"]
-        ) / 1000.0
+        corrected_residual = float(fitted["_max_residual_J_per_mol"])
+        if species_name == "Fe(l)":
+            corrected_residual += abs(float(record["gibbs_anchor_adjustment_j_mol"]))
+        assert record["band_kj_mol"] >= corrected_residual / 1000.0
 
 
 def test_ferrous_parent_reaction_band_covers_janaf_reference_residual() -> None:
@@ -242,7 +347,7 @@ def test_oxygen_standard_row_band_covers_janaf_nodes() -> None:
         temperature = float(point["temperature"]["value"])
         enthalpy = point["enthalpy_increment"]["value"]
         entropy = point["entropy"]["value"]
-        if 1700.0 <= temperature <= 3000.0 and enthalpy is not None and entropy is not None:
+        if 1200.0 <= temperature <= 3000.0 and enthalpy is not None and entropy is not None:
             expected = float(enthalpy) * 1000.0 - temperature * float(entropy)
             residuals.append(
                 abs(species_gibbs_j_mol(pack, "O2(g)", temperature) - expected) / 1000.0
@@ -250,6 +355,52 @@ def test_oxygen_standard_row_band_covers_janaf_nodes() -> None:
 
     assert residuals
     assert max(residuals) <= species["band_kj_mol"]
+
+
+def test_elemental_metal_functions_match_their_source_nodes_within_ten_joules() -> None:
+    sources = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))["tables"]
+    pack = load_redox_pack(PACK_PATH)
+    table_by_species = {
+        "Fe(cr)": "Fe-007",
+        "Fe(l)": "Fe-006",
+        "Si(l)": "Si-003",
+        "Cr(l)": "Cr-003",
+        "Ni(l)": "Ni-003",
+        "Co(l)": "Co-003",
+        "Mn(l)": "Mn-003",
+    }
+    for species_name, table_id in table_by_species.items():
+        table = sources[table_id]
+        reference = float(table["formation_enthalpy_298_kj_mol"])
+        record = pack.content["thermo_species"][species_name]
+        adjustment = float(record.get("gibbs_anchor_adjustment_j_mol", 0.0))
+        nodes = list(table["nodes"])
+        for node in table.get("transition_nodes", []):
+            if species_name == "Fe(cr)" and node["phase"] == "gamma":
+                continue
+            nodes.append(
+                [
+                    node["temperature_K"],
+                    node["heat_capacity"],
+                    node["entropy"],
+                    node["enthalpy_increment"],
+                ]
+            )
+        residuals = []
+        for temperature, _cp, entropy, enthalpy_increment in nodes:
+            temperature = float(temperature)
+            low, high = map(float, record["T_domain_K"])
+            if not low <= temperature <= high:
+                continue
+            expected = (
+                (reference + float(enthalpy_increment)) * 1000.0
+                - temperature * float(entropy)
+                + adjustment
+            )
+            actual = species_gibbs_j_mol(pack, species_name, temperature)
+            residuals.append(abs(actual - expected))
+        assert residuals, species_name
+        assert max(residuals) <= 10.0, (species_name, max(residuals))
 
 
 def test_hematite_row_reproduces_liquid_from_solid_construction_and_band() -> None:
@@ -289,7 +440,12 @@ def test_hematite_row_reproduces_liquid_from_solid_construction_and_band() -> No
 
     nominal = make_construction(spec["fusion_enthalpy_kj_mol"])
     fitted = nominal.fit_condensate_row()
-    for key, value in record["row"].items():
+    retained_row = next(
+        interval["row"]
+        for interval in record["intervals"]
+        if interval["T_domain_K"] == (1500, 3000)
+    )
+    for key, value in retained_row.items():
         # Relative bound for the same cross-build roundoff reason as the
         # metal-standard test above (1e-9 relative moves G by < 2e-3 J/mol).
         assert float(fitted[key]) == pytest.approx(float(value), rel=1e-9, abs=1e-12)
@@ -332,14 +488,33 @@ def test_manganese_liquid_rows_reproduce_crystal_constructions_and_bands():
             construction_row["inputs"],
         )
         fitted = construction.fit_condensate_row()
+        fit = construction_row["inputs"]["condensate_fit"]
+        retained = next(
+            interval
+            for interval in species["intervals"]
+            if interval["T_domain_K"]
+            == (fit["fit_t_min"], fit["fit_t_max"])
+        )
         for coefficient in coefficients:
-            assert float(species["row"][coefficient]) == pytest.approx(
+            assert float(retained["row"][coefficient]) == pytest.approx(
                 float(fitted[coefficient]), abs=1e-12
             )
 
-        low, high = map(float, species["T_domain_K"])
+        evidence_row = next(
+            row for row in pack.rows if row["complex"] == f"{name}(l)"
+        )
+        low, high = map(float, evidence_row["T_domain_K"])
         temperatures = [low, high, *range(int(low), int(high) + 1, 25)]
         residual = float(fitted["_max_residual_J_per_mol"]) / 1000.0
+        construction_residuals = []
+        for temperature in range(1200, 3001, 100):
+            expected_g = construction.at(float(temperature)).gibbs_kj_mol * 1000.0
+            actual_g = species_gibbs_j_mol(
+                pack, f"{name}(l)", float(temperature)
+            )
+            construction_residuals.append(abs(actual_g - expected_g))
+        assert max(construction_residuals) <= 10.0
+
         if name in {"MnO", "MnAl2O4"}:
             expected_at = {
                 t: construction.below_fusion_band_kj_mol(
@@ -414,18 +589,48 @@ def test_manganese_liquid_rows_reproduce_crystal_constructions_and_bands():
     with (ROOT / "src/openimcc/data/gas/condensate.csv").open(
         newline="", encoding="utf-8"
     ) as stream:
-        alumina_source = next(
-            row
-            for row in csv.DictReader(stream)
-            if row["species_name"] == "Al2O3(l)"
-            and row["T_min"] == "1500"
-            and row["T_max"] == "2000"
+        gas_rows = list(csv.DictReader(stream))
+    for redox_name, gas_name in (
+        ("Al2O3(l)", "Al2O3(l)"),
+        ("SiO2(l)-supercooled", "SiO2(l)"),
+        ("SiO2(l)-direct", "SiO2(l)"),
+    ):
+        alumina_or_silica = pack.content["thermo_species"][redox_name]
+        fitted_intervals = alumina_or_silica.get("intervals") or [
+            {
+                "T_domain_K": alumina_or_silica["T_domain_K"],
+                "row": alumina_or_silica["row"],
+            }
+        ]
+        gas_intervals = sorted(
+            (
+                row
+                for row in gas_rows
+                if row["species_name"] == gas_name
+                and (
+                    gas_name != "SiO2(l)"
+                    or (
+                        redox_name == "SiO2(l)-supercooled"
+                        and int(row["T_max"]) <= 1800
+                    )
+                    or (
+                        redox_name == "SiO2(l)-direct"
+                        and int(row["T_min"]) >= 1800
+                    )
+                )
+            ),
+            key=lambda row: int(row["T_min"]),
         )
+        assert [interval["T_domain_K"] for interval in fitted_intervals] == [
+            (int(row["T_min"]), int(row["T_max"])) for row in gas_intervals
+        ]
+        for fitted, source in zip(fitted_intervals, gas_intervals):
+            for coefficient in coefficients:
+                assert float(fitted["row"][coefficient]) == pytest.approx(
+                    float(source[coefficient]), abs=1e-12
+                )
+
     alumina = pack.content["thermo_species"]["Al2O3(l)"]
-    for coefficient in coefficients:
-        assert float(alumina["row"][coefficient]) == pytest.approx(
-            float(alumina_source[coefficient]), abs=1e-12
-        )
     assert alumina["band_kj_mol"] == pytest.approx(
         inputs["tier_error_bands"]["fusion_entropy_tier1"]["max"][0]
     )
@@ -434,10 +639,13 @@ def test_manganese_liquid_rows_reproduce_crystal_constructions_and_bands():
         json.loads(SOURCE_PATH.read_text(encoding="utf-8"))["tables"]
     )
     metal = pack.content["thermo_species"]["Mn(l)"]
-    for coefficient in coefficients:
-        assert float(metal["row"][coefficient]) == pytest.approx(
-            float(generated["Mn(l)"][coefficient]), abs=1e-13
-        )
+    for source_interval, packed_interval in zip(
+        generated["Mn(l)"]["intervals"], metal["intervals"]
+    ):
+        for coefficient in coefficients:
+            assert float(packed_interval["row"][coefficient]) == pytest.approx(
+                float(source_interval["row"][coefficient]), abs=1e-13
+            )
 
 
 def test_manganese_parent_and_association_reactions_have_expected_constants():
@@ -452,9 +660,9 @@ def test_manganese_parent_and_association_reactions_have_expected_constants():
     assert parent_row["external_oxygen_stoich_product_positive"] == -0.5
     expected = {
         "Mn(l) + 1/2 O2(g) = MnO(l)": (17.9402808965, 13.6445678969),
-        "MnO(l) + SiO2(l) = MnSiO3(l)": (2.6891564601, 2.6626304454),
-        "2 MnO(l) + SiO2(l) = Mn2SiO4(l)": (4.3454513532, 3.8690209161),
-        "MnO(l) + Al2O3(l) = MnAl2O4(l)": (4.5312726509, 4.0426340273),
+        "MnO(l) + SiO2(l) = MnSiO3(l)": (2.6891564601, 2.6626851027),
+        "2 MnO(l) + SiO2(l) = Mn2SiO4(l)": (4.3454513532, 3.8691053805),
+        "MnO(l) + Al2O3(l) = MnAl2O4(l)": (4.5312726509, 4.0426314336),
     }
     for reaction, (at_1673, at_2000) in expected.items():
         row = by_reaction[reaction]

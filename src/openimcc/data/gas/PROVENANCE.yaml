@@ -6037,12 +6037,14 @@ rows:
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
-    T_range_K: [1673, 2000]
-    max_residual_J_per_mol: 0.186390915536322
-    max_residual_log10_K: 5.24784571800106e-06
-    source_fit_range_K: [1600, 2200]
+    T_range_K: [1200, 3000]
+    max_residual_J_per_mol: 0.270663917646743
+    max_residual_log10_K: 5.30338755425991e-06
+    source_fit_range_K: [1200, 3000]
+    fit_intervals_K: [[1200, 1600], [1600, 2200], [2200, 3000]]
     flags:
     - tier-4 liquid_from_solid construction
+    - multi-interval condensate fit over 1200-3000 K; middle fit retained
     - supercooled-liquid runtime below the measured 2120 ± 20 K fusion interval
     - tier-3 fusion-entropy and liquid-heat-capacity inputs; measured fusion-temperature spread
     - caller-supplied parent activity; no activity model

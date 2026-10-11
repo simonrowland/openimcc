@@ -198,7 +198,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 64
+    assert len(gas_pack.oxide_df) == 66
 
 
 _MAJOR_PARENT_CONTINUATIONS = (

@@ -1653,25 +1653,23 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                                          'P672-T80': '368475919ca53f62ad8e4579ddaf7c6832cc38a1ca75e46f891c7b569d181ded',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'neutral-source-vendor/1.0'}},
-    'Mn': {   'status': 'gas-partial',
-              'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': False},
+    'Mn': {   'status': 'gas-complete-melt-pending',
+              'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
               'validation': 'unvalidated',
               'reason': 'Mn(g), MnO(g), MnO(l), and opt-in Mn+ are available; MnO(l) is a tier-4 '
-                        'liquid_from_solid construction over 1673-2000 K and is supercooled below '
-                        'measured Tm 2120 ± 20 K; a(MnO) is caller-supplied; the joint C3 screen '
-                        'used a(MnO)=1e-3 and reached 1.621e-07 at 2800 K and fO2=1e-4, outside '
-                        "MnO(l)'s declared 1673-2000 K interval; the 100 K-grid maximum within that "
-                        'interval was 8.706e-10 at 2000 K and fO2=1e-4, both within the <=1-bar '
-                        'neutral-pressure domain.',
+                        'liquid_from_solid construction fitted over 1200-3000 K and supercooled '
+                        'below measured Tm 2120 ± 20 K; a(MnO) is caller-supplied; the joint C3 '
+                        'screen used a(MnO)=1e-3 and reached 1.621e-07 at 2800 K and fO2=1e-4, '
+                        'within the fitted interval and the <=1-bar neutral-pressure domain.',
               'c2_candidates': (('TSIV-1436', 'MnO'),),
-              'c3_ion_bound': {   'max_ratio': 1.6207006439556975e-07,
-                                  'isolated_bound': 0.0001745528521533135,
+              'c3_ion_bound': {   'max_ratio': 1.6207006631146375e-07,
+                                  'isolated_bound': 0.0001771497679124323,
                                   'temperature_K': 2800.0,
                                   'fO2': 0.0001,
-                                  'neutral_pressure_bar': 0.0004388258669373584,
-                                  'element_total_pressure_bar': 0.0004451944383639283,
-                                  'joint_ion_pressure_bar': 7.215269129419137e-11,
-                                  'electron_pressure_bar': 8.131783416340654e-05,
+                                  'neutral_pressure_bar': 0.0004260542904211233,
+                                  'element_total_pressure_bar': 0.0004322375111120103,
+                                  'joint_ion_pressure_bar': 7.005276208822556e-11,
+                                  'electron_pressure_bar': 8.131783320211644e-05,
                                   'K_ion': 1.337045289981064e-11,
                                   'parent_oxide': 'MnO',
                                   'parent_activity': 0.001,

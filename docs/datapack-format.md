@@ -735,6 +735,7 @@ The redox species records use these schema fields:
 | ferrous_fe_units | number | Ferrous Fe atoms per formula unit; required on Fe-bearing species and validated against the formula and any combination terms. |
 | evaluator | string | Existing φ-polynomial or JANAF Shomate evaluator, or a linear/piecewise combination of named records. |
 | row | object | Coefficients consumed by the existing condensate φ or JANAF Shomate evaluator. |
+| intervals | array of objects | Optional alternative to `row` for a fitted function with multiple contiguous intervals; each item has `T_domain_K` and `row`. |
 | terms | array of objects | Product-positive species coefficients for a linear standard-state combination. |
 | branches | array of objects | Temperature-selected species records for a piecewise standard state. |
 | transition_temperature_K | number | Temperature used to select the piecewise standard-state branch. |
@@ -745,6 +746,7 @@ The redox species records use these schema fields:
 | band_method | string | Method used to calculate the numeric Gibbs band. |
 | uncertainty_note | string | Uncertainty covered by the band and any known unquantified contribution. |
 | construction | object | Inputs, sources, fit range, and fallback flags for a constructed standard state. |
+| fit_intervals_K | array of two-number arrays | Optional fitted intervals recorded for a constructed function that preserves a prior fit between added outer fits. |
 | band_scope | string | States what the numeric construction band includes and any unquantified systematic error. |
 | provenance | object | Source, URL, tier, and the reason for selecting that evidence. |
 | selection_rationale | string | Evidence-specific explanation of the source choice under the declared source-selection rail. |
@@ -759,6 +761,15 @@ The redox species records use these schema fields:
 | products | object | Positive formula-unit stoichiometries on the right side of the balanced reaction. |
 | standard_gibbs_terms | array of objects | Named standard-state Gibbs functions and product-positive coefficients used to evaluate reaction ΔG°. |
 | range_flags | array of strings | Explicit range caveats, including metastable or supercooled branches. |
+
+An evaluator record with one fitted interval may continue to use `row`; this
+keeps existing pack records valid. A multi-interval record uses `intervals`
+instead and must not also include `row`. Its intervals are ordered and
+contiguous, begin and end at the species record's `T_domain_K` bounds, and
+select the interval with the highest lower bound at a shared endpoint (the
+last interval includes its upper endpoint). The species `T_domain_K` describes
+the fitted-function bounds. A reaction row's separate `T_domain_K` remains the
+evidence interval used to flag extrapolation in redox evaluation.
 
 ## Redox result fields
 

@@ -359,7 +359,7 @@ CONDENSATE_COLUMNS = (
 # They do not enter condensate.csv or the gas evaluator's oxide-parent set.
 REDOX_METAL_STANDARD_SOURCES = (
     ("Fe(cr)", "Fe-007", "Fe", 1, 0, "cr", 500.0, 1800.0, 1700.0, 1809.0),
-    ("Fe(l)", "Fe-006", "Fe", 1, 0, "l", 1700.0, 3000.0, 1809.0, 3000.0),
+    ("Fe(l)", "Fe-006", "Fe", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
     ("Si(l)", "Si-003", "Si", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
     ("Cr(l)", "Cr-003", "Cr", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
     ("Ni(l)", "Ni-003", "Ni", 1, 0, "l", 1700.0, 3000.0, 1700.0, 3000.0),
@@ -1697,6 +1697,7 @@ def _fit_condensate_values(
     runtime_t_max: float,
     ref: str | None = None,
     allow_missing_nodes: bool = False,
+    fit_temperatures: Sequence[float] | None = None,
 ) -> dict[str, str]:
     """Fit source Cp/S/H increments to the existing condensate row form.
 
@@ -1708,10 +1709,21 @@ def _fit_condensate_values(
     independently reconstructed source G values set the recorded fit
     residual in J/mol and log10(K).
     """
-    temperatures = [
-        float(T)
-        for T in np.arange(fit_t_min, fit_t_max + 50.0, JANAF_GRID_STEP_K)
-    ]
+    temperatures = (
+        [
+            float(T)
+            for T in np.arange(fit_t_min, fit_t_max + 50.0, JANAF_GRID_STEP_K)
+        ]
+        if fit_temperatures is None
+        else sorted(float(T) for T in fit_temperatures)
+    )
+    if fit_temperatures is not None and (
+        len(temperatures) < 2
+        or len(set(temperatures)) != len(temperatures)
+        or temperatures[0] != fit_t_min
+        or temperatures[-1] != fit_t_max
+    ):
+        raise ValueError(f"{table_id}: explicit fit nodes must span the fit interval")
     missing = [T for T in temperatures if T not in source_rows]
     if missing:
         if not allow_missing_nodes:
@@ -1729,8 +1741,17 @@ def _fit_condensate_values(
     enthalpy_increment = np.asarray([row["enthalpy_increment"] for row in rows])
     entropy = np.asarray([row["entropy"] for row in rows])
     phi = entropy - enthalpy_increment * 1000.0 / np.asarray(temperatures)
+    # Transition intervals can contain fewer than five published nodes. Fit
+    # only as many polynomial terms as those independent source nodes support;
+    # regular grid fits keep the historical quartic path byte-for-byte.
+    degree = 4 if fit_temperatures is None else min(4, len(temperatures) - 1)
+    fit_design = np.column_stack([tau**power for power in range(degree + 1)])
+    fitted_coefficients = np.linalg.lstsq(
+        fit_design, phi / R_J_MOL_K, rcond=None
+    )[0]
+    coefficients = np.zeros(5, dtype=float)
+    coefficients[: degree + 1] = fitted_coefficients
     design = np.column_stack((np.ones_like(tau), tau, tau**2, tau**3, tau**4))
-    coefficients = np.linalg.lstsq(design, phi / R_J_MOL_K, rcond=None)[0]
     dH298_R = reference_kJ_mol / R_J_MOL_K
     model_g = 1000.0 * R_J_MOL_K * dH298_R - R_J_MOL_K * np.asarray(temperatures) * (
         design @ coefficients
@@ -1773,7 +1794,7 @@ def _fit_condensate_values(
 
 def build_redox_metal_standard_rows(
     source_tables: dict[str, dict[str, Any]],
-) -> dict[str, dict[str, str]]:
+) -> dict[str, dict[str, Any]]:
     """Fit JANAF pure-metal reference rows with the existing condensate form.
 
     Premise: each source table carries ``[T, Cp, S, H-H(298)]`` nodes and its
@@ -1783,7 +1804,7 @@ def build_redox_metal_standard_rows(
     source H column is kJ/mol and S is J/(mol K), as required by that fitter.
     Sanity: each returned row records the maximum source-node residual.
     """
-    fitted = {}
+    fitted: dict[str, dict[str, Any]] = {}
     for (
         species_name,
         table_id,
@@ -1797,6 +1818,126 @@ def build_redox_metal_standard_rows(
         runtime_t_max,
     ) in REDOX_METAL_STANDARD_SOURCES:
         table = source_tables[table_id]
+        if species_name == "Fe(cr)":
+            # JANAF Fe-007 reports stable crystal allotropes, with separate
+            # gamma and delta values at 1665 K. Fit each phase from its own
+            # H-H(298), S, Cp nodes so no polynomial smooths through that
+            # transition. The 1800-1809 K tail is the existing short flagged
+            # continuation to the solid-liquid marker.
+            phase_nodes = table.get("transition_nodes", [])
+            source_nodes = {
+                float(node[0]): {
+                    "temperature": float(node[0]),
+                    "heat_capacity": float(node[1]),
+                    "entropy": float(node[2]),
+                    "enthalpy_increment": float(node[3]),
+                }
+                for node in table["nodes"]
+            }
+            intervals = []
+            for phase, fit_low, fit_high, run_low, run_high, transition_t in (
+                ("gamma", 1200.0, 1665.0, 1200.0, 1665.0, 1665.0),
+                ("delta", 1665.0, 1800.0, 1665.0, 1809.0, 1665.0),
+            ):
+                transition = next(
+                    (
+                        node
+                        for node in phase_nodes
+                        if node.get("phase") == phase
+                        and float(node["temperature_K"]) == transition_t
+                    ),
+                    None,
+                )
+                if transition is None:
+                    raise ValueError(
+                        f"{table_id}: missing {phase} transition node at {fit_low:g} K"
+                    )
+                branch_nodes = {
+                    temperature: row
+                    for temperature, row in source_nodes.items()
+                    if fit_low <= temperature <= fit_high
+                }
+                branch_nodes[transition_t] = {
+                    "temperature": transition_t,
+                    "heat_capacity": float(transition["heat_capacity"]),
+                    "entropy": float(transition["entropy"]),
+                    "enthalpy_increment": float(transition["enthalpy_increment"]),
+                }
+                temperatures = sorted(branch_nodes)
+                row = _fit_condensate_values(
+                    species_name,
+                    table_id,
+                    cation,
+                    cat_num,
+                    oxy_num,
+                    branch_nodes,
+                    float(table["formation_enthalpy_298_kj_mol"]),
+                    fit_t_min=fit_low,
+                    fit_t_max=fit_high,
+                    runtime_t_min=run_low,
+                    runtime_t_max=run_high,
+                    ref=table_id,
+                    fit_temperatures=temperatures,
+                )
+                row["state"] = phase
+                intervals.append({
+                    "T_domain_K": [run_low, run_high],
+                    "row": row,
+                })
+            fitted[species_name] = {
+                "intervals": intervals,
+                "_max_residual_J_per_mol": format(
+                    max(
+                        float(interval["row"]["_max_residual_J_per_mol"])
+                        for interval in intervals
+                    ),
+                    ".15g",
+                ),
+            }
+            continue
+        if species_name == "Mn(l)":
+            # Preserve the original 1600-2200 K row, and fit the same JANAF
+            # liquid reference on its newly represented lower and upper nodes.
+            source_rows = {
+                float(node[0]): {
+                    "temperature": float(node[0]),
+                    "heat_capacity": float(node[1]),
+                    "entropy": float(node[2]),
+                    "enthalpy_increment": float(node[3]),
+                }
+                for node in table["nodes"]
+            }
+            intervals = []
+            for fit_low, fit_high in (
+                (1200.0, 1600.0), (1600.0, 2200.0), (2200.0, 3000.0),
+            ):
+                row = _fit_condensate_values(
+                    species_name,
+                    table_id,
+                    cation,
+                    cat_num,
+                    oxy_num,
+                    source_rows,
+                    float(table["formation_enthalpy_298_kj_mol"]),
+                    fit_t_min=fit_low,
+                    fit_t_max=fit_high,
+                    runtime_t_min=fit_low,
+                    runtime_t_max=fit_high,
+                    ref=table_id,
+                )
+                row["state"] = phase
+                intervals.append({"T_domain_K": [fit_low, fit_high], "row": row})
+            fitted[species_name] = {
+                "intervals": intervals,
+                "_max_residual_J_per_mol": format(
+                    max(
+                        float(interval["row"]["_max_residual_J_per_mol"])
+                        for interval in intervals
+                    ),
+                    ".15g",
+                ),
+            }
+            continue
         source_rows = {
             float(node[0]): {
                 "temperature": float(node[0]),
@@ -2756,17 +2897,55 @@ def _fit_liquid_from_solid_parent(
         )["tables"]
         crystal = crystals[config["crystal_table_id"]]
         construction = liquid_from_solid(species, crystal, config["inputs"])
-        row = construction.fit_condensate_row()
-        residual = float(row["_max_residual_J_per_mol"])
-        if residual > 10.0:
-            raise ValueError(
-                f"MnO(l): condensate fit residual {residual:g} J/mol exceeds 10"
+        fit = config["inputs"]["condensate_fit"]
+        # Keep the measured legacy fit exactly on its original 1600-2200 K
+        # interval. Outside it, fit the same liquid_from_solid construction
+        # on each 100 K source node; every interval remains below the 10 J/mol
+        # residual gate, and the shared endpoint checks continuity.
+        intervals = ((1200.0, 1600.0), (1600.0, 2200.0), (2200.0, 3000.0))
+        rows = []
+        for fit_t_min, fit_t_max in intervals:
+            if (fit_t_min, fit_t_max) == (
+                float(fit["fit_t_min"]),
+                float(fit["fit_t_max"]),
+            ):
+                row = construction.fit_condensate_row()
+                row["T_min"] = str(int(fit_t_min))
+                row["T_max"] = str(int(fit_t_max))
+            else:
+                temperatures = [
+                    float(t)
+                    for t in np.arange(
+                        fit_t_min,
+                        fit_t_max + JANAF_GRID_STEP_K / 2.0,
+                        JANAF_GRID_STEP_K,
+                    )
+                ]
+                row = _fit_condensate_values(
+                    f"{species}(l)",
+                    str(fit["table_id"]),
+                    str(fit["cation"]),
+                    int(fit["cat_num"]),
+                    int(fit["oxy_num"]),
+                    construction.source_rows(temperatures),
+                    construction.dfh298_kj_mol,
+                    fit_t_min=fit_t_min,
+                    fit_t_max=fit_t_max,
+                    runtime_t_min=fit_t_min,
+                    runtime_t_max=fit_t_max,
+                    ref=str(fit["ref"]),
+                )
+            residual = float(row["_max_residual_J_per_mol"])
+            if residual > 10.0:
+                raise ValueError(
+                    f"MnO(l): condensate fit residual {residual:g} J/mol exceeds 10"
+                )
+            row["Ref"] = (
+                f"LFS[{config['crystal_table_id']};Tf="
+                f"{float(config['inputs']['fusion_temperature']['value']):g}]"
             )
-        row["Ref"] = (
-            f"LFS[{config['crystal_table_id']};Tf="
-            f"{float(config['inputs']['fusion_temperature']['value']):g}]"
-        )
-        return [row], construction, None
+            rows.append(row)
+        return rows, construction, None
     else:
         raise ValueError(f"{species}: no source-supported liquid-from-solid parent")
     inputs = {**config["inputs"], "condensate_fit": config["condensate_fit"]}

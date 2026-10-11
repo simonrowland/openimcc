@@ -1314,9 +1314,6 @@ def test_roadmap_status_table_matches_element_status() -> None:
             status["validation"],
             status["reason"],
         ]
-    assert "outside MnO(l)'s declared 1673-2000 K interval" in ELEMENT_STATUS[
-        "Mn"
-    ]["reason"]
-    assert "8.706e-10 at 2000 K" in ELEMENT_STATUS["Mn"]["reason"]
-    assert "1.621e-7 (2800 K, 1e-4; outside MnO(l)'s declared interval)" in roadmap
-    assert "8.706e-10 within interval (2000 K, 1e-4; 100 K grid)" in roadmap
+    assert "fitted over 1200-3000 K" in ELEMENT_STATUS["Mn"]["reason"]
+    assert "within the fitted interval" in ELEMENT_STATUS["Mn"]["reason"]
+    assert "1.621e-7 (2800 K, 1e-4; within the 1200-3000 K fitted interval)" in roadmap
