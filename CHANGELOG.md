@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added optional Se, Se2, and SeO2 gas channels with caller-supplied SeO2(l)
+  activity. Pankratz Bulletin 672 supplies the gas rows. SeO2(l) is a flagged
+  tier-4 construction using the OECD/NEA reviewed fusion inputs and the
+  documented crystal-Cp carry-over estimate; its crystal Cp equation extends
+  above the printed 602 K range. The Se2 entropy transcription was checked
+  against the published Cp equation. SeO(g) and Se+(g) had no source in the
+  checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.
 - Added optional Te, Te2, and TeO2 gas channels with caller-supplied TeO2(l)
   activity. Pankratz Bulletin 672 supplies the selected rows; the TeO2(l)
   liquid branch is fitted through its printed nodes, with a flagged, banded

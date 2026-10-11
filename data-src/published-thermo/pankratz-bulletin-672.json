@@ -97,8 +97,10 @@
       "phase": "gas",
       "formation_enthalpy_298_kcal_mol": 33.300,
       "nodes": [
-        [1200, 9.860, 72.150, 9.035], [1400, 9.740, 73.570, 10.995],
-        [1600, 9.620, 74.960, 12.931], [1800, 9.500, 75.090, 14.843],
+        [1200, 9.860, 72.160, 9.035], [1300, 9.800, 72.950, 10.018],
+        [1400, 9.740, 73.670, 10.995], [1500, 9.680, 74.340, 11.966],
+        [1600, 9.620, 74.960, 12.931], [1700, 9.560, 75.550, 13.890],
+        [1800, 9.500, 76.090, 14.843], [1900, 9.440, 76.600, 15.790],
         [2000, 9.380, 77.080, 16.730]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
@@ -109,7 +111,7 @@
         "equation": "Cp = a + b*T + c/T^2",
         "published_range_K": [298.15, 2000.0]
       },
-      "source_note": "Pankratz Bulletin 672 selenium gas table; data from Mills (158). The source prints selected 200 K nodes in the upper range and publishes the Cp equation."
+      "source_note": "Pankratz Bulletin 672 selenium gas table; data from Mills (158). The nodes and published Cp equation agree within printed rounding; source entropy transcription errors at 1400 K and 1800 K were corrected against the scan."
     },
     "P672-Te-g": {
       "table": "415",
@@ -162,7 +164,19 @@
       "formula": "SeO2",
       "phase": "gas",
       "formation_enthalpy_298_kcal_mol": -26.200,
-      "nodes": [[958, 13.251, 76.781, 8.123]],
+      "nodes": [
+        [298.15, 10.364, 62.735, 0.000], [300.0, 10.384, 62.799, 0.019],
+        [400.0, 11.309, 65.919, 1.106], [494.3, 11.942, 68.382, 2.204],
+        [500.0, 11.980, 68.519, 2.272], [600.0, 12.446, 70.747, 3.495],
+        [700.0, 12.773, 72.692, 4.757], [800.0, 13.006, 74.414, 6.047],
+        [900.0, 13.177, 75.956, 7.356], [958.0, 13.251, 76.781, 8.123],
+        [1000.0, 13.235, 77.321, 8.641], [1100.0, 13.406, 78.591, 9.973],
+        [1200.0, 13.570, 79.764, 11.322], [1300.0, 13.728, 80.857, 12.687],
+        [1400.0, 13.882, 81.880, 14.067], [1500.0, 14.033, 82.843, 15.463]
+      ],
+      "equation_generated_nodes_K": [1000, 1100, 1200, 1300, 1400, 1500],
+      "equation_node_derivation": "Nodes from 1000-1500 K evaluate the published Cp and H equations; S is integrated from S(298.15 K)=62.735 cal/(mol K) using the same Cp equation. Values are rounded to the table's 0.001 units.",
+      "equation_node_note": "At the printed 958 K boiling node, the table gives Cp=13.251 cal/(mol K), S=76.781 cal/(mol K), and H-H298=8.123 kcal/mol. The published equations give Cp=13.160152, S=76.754946, and H-H298=8.086592, respectively. The runtime high interval fits the published equations through 1500 K; the printed 958 K row is retained as source data.",
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
       "cp_equation_cal_mol_K": {
         "a": 12.030,
@@ -171,7 +185,7 @@
         "equation": "Cp = a + b*T + c/T^2",
         "published_range_K": [298.15, 1500.0]
       },
-      "source_note": "Formation is Se(c,l)+O2(g)=SeO2(g); gas data from Behrens et al. (12). Table nodes stop below the stated equation limit."
+      "source_note": "Formation is Se(c,l)+O2(g)=SeO2(g); gas data from Behrens et al. (12), Selenium Dioxide gas table, printed p. 81. The printed 958 K boiling node is retained; its Cp/H/S disagree with the published heat-capacity and enthalpy equations by 0.090848 cal/(mol K), 0.036408 kcal/mol, and 0.026054 cal/(mol K). The 1200-1500 K fit uses equation-derived nodes because the source prints those equations through 1500 K."
     },
     "P672-SeO2-c": {
       "table": "378, SeO2(c,g)",

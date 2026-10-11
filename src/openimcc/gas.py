@@ -485,6 +485,11 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Te": ("TeO2", 1, 1.0),
     "Te2": ("TeO2", 0.5, 1.0),
     "TeO2": ("TeO2", 1, 0.0),
+    # SeO2(l) supplies one Se atom and two O atoms, so Se and Se2 release
+    # one O2 each while SeO2(g) releases none.
+    "Se": ("SeO2", 1, 1.0),
+    "Se2": ("SeO2", 0.5, 1.0),
+    "SeO2": ("SeO2", 1, 0.0),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -539,6 +544,9 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Te",
         "Te2",
         "TeO2",
+        "Se",
+        "Se2",
+        "SeO2",
         "P",
         "P2",
         "P4",
@@ -698,6 +706,9 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Te": "published_fitted",
         "Te2": "published_fitted",
         "TeO2": "published_fitted",
+        "Se": "published_fitted",
+        "Se2": "published_fitted",
+        "SeO2": "published_fitted",
         "MnO": "published_fitted",
     }
 )
@@ -762,6 +773,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "CdO": "liquid_from_solid_estimate",
     "Bi2O3": "published_fitted",
     "TeO2": "published_fitted",
+    "SeO2": "liquid_from_solid_estimate",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -791,6 +803,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "CdO": "P672-T102",
     "Bi2O3": "P672-T82",
     "TeO2": "P672-TeO2-l",
+    "SeO2": "P672-SeO2",
     "MnO": "MnO-liquid-construction",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
@@ -960,6 +973,7 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # require external parent rows.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     "TeO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
+    "SeO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
 }
 
 _GAS_IONIZATION_PAIRS = (
@@ -1792,6 +1806,13 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
               'c2_candidates': (('P672-TeO2-g', 'TeO2'),),
               'c3_ion_bound': {   'status': 'declined',
                                   'reason': 'No source for Te+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},
+    'Se': {   'status': 'gas-complete-melt-pending',
+              'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
+              'validation': 'unvalidated',
+              'reason': 'Se(g), Se2(g), SeO2(g), and the SeO2(l) parent cover 1200-3000 K; SeO2(l) is the selected caller parent because no standard liquid function was found and the oxide state is the sourced parent convention; a(SeO2) is caller-supplied. This oxide-parent convention does not model selenide dissolution in reduced melts.',
+              'c2_candidates': (('P672-SeO2-g', 'SeO2'),),
+              'c3_ion_bound': {   'status': 'declined',
+                                  'reason': 'No source for Se+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},
     'Sn': {   'status': 'gas-complete-melt-pending',
               'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
               'validation': 'unvalidated',

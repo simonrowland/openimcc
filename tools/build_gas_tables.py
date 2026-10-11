@@ -197,6 +197,9 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("Te(g)", "P672-Te-g", "Te", "Te", 1, 0, 2000.0),
     ("Te2(g)", "P672-Te2-g", "Te2", "Te", 2, 0, 2000.0),
     ("TeO2(g)", "P672-TeO2-g", "TeO2", "Te", 1, 2, 1500.0),
+    ("Se(g)", "P672-Se-g", "Se", "Se", 1, 0, 2000.0),
+    ("Se2(g)", "P672-Se2-g", "Se2", "Se", 2, 0, 2000.0),
+    ("SeO2(g)", "P672-SeO2-g", "SeO2", "Se", 1, 2, 1500.0),
     ("MnO(g)", "TSIV-1436", "MnO", "Mn", 1, 1, 6000.0),
 )
 TRACE_GAS_SPECIES = frozenset(
@@ -2826,6 +2829,58 @@ def _cd_o_crystal_table(record: dict[str, Any], *, extrapolate_cp: bool) -> dict
     return {"table": {"values": values}}
 
 
+def _pankratz_crystal_table(
+    record: dict[str, Any], *, extension_limit_k: float, extrapolate_cp: bool = True
+) -> dict[str, Any]:
+    """Convert a Pankratz crystal record and extend its Cp equation to fusion.
+
+    Premise: the printed crystal nodes anchor H, S, and Cp, while the source's
+    own Cp equation continues through its last declared range and may be
+    continued to the hypothetical fusion marker under the task's rule.
+    Algebra: integrate Cp=a+bT-c/T² from the final node: dH=aΔT+bΔ(T²)/2+
+    c(1/T-1/T0), dS=a ln(T/T0)+bΔT+c(1/T²-1/T0²)/2. Unit check: the
+    source equation is cal/(mol K); convert H and Cp by 4.184 and H to kJ.
+    Sanity: the extension begins at the source's final H/S/Cp node.
+    """
+    values = [
+        {
+            "temperature": float(t),
+            "heat_capacity": float(cp) * 4.184,
+            "entropy": float(entropy) * 4.184,
+            "enthalpy_increment": float(h) * 4.184,
+            **(
+                {"formation_enthalpy": float(record["formation_enthalpy_298_kcal_mol"]) * 4.184}
+                if float(t) == 298.15
+                else {}
+            ),
+        }
+        for t, cp, entropy, h in record["nodes"]
+    ]
+    t0, cp0, s0, h0 = values[-1]["temperature"], None, None, None
+    cp0 = float(record["nodes"][-1][1])
+    s0 = float(record["nodes"][-1][2])
+    h0 = float(record["nodes"][-1][3])
+    equation = record["cp_equation_cal_mol_K"]
+    a, b, c = float(equation["a"]), float(equation["b_per_K"]), float(equation["c_K2"])
+    t = float(extension_limit_k)
+    dt = t - t0
+    if extrapolate_cp:
+        cp = a + b * t - c / t**2
+        dh = a * dt + 0.5 * b * (t**2 - t0**2) + c * (1.0 / t - 1.0 / t0)
+        ds = a * math.log(t / t0) + b * dt + 0.5 * c * (1.0 / t**2 - 1.0 / t0**2)
+    else:
+        cp = cp0
+        dh = cp * dt
+        ds = cp * math.log(t / t0)
+    values.append({
+        "temperature": t,
+        "heat_capacity": cp * 4.184,
+        "entropy": (s0 + ds) * 4.184,
+        "enthalpy_increment": (h0 + dh / 1000.0) * 4.184,
+    })
+    return {"table": {"values": values}}
+
+
 def _tsiv_crystal_table(record: dict[str, Any]) -> dict[str, Any]:
     """Convert TSIV ZnO cells and extend fitted Cp to the upper fusion bound.
 
@@ -2955,13 +3010,41 @@ def _fit_liquid_from_solid_parent(
             )
             rows.append(row)
         return rows, construction, None
+    elif species in {"SeO2", "As2O3"}:
+        record = _published_table_record(published_source_dir, config["crystal_table_id"])
+        crystal = _pankratz_crystal_table(
+            record,
+            extension_limit_k=max(
+                float(value)
+                for value in config["inputs"]["fusion_temperature"].get(
+                    "bounds_k",
+                    [config["inputs"]["fusion_temperature"]["value"]],
+                )
+            ),
+        )
+        alternate = None
     else:
         raise ValueError(f"{species}: no source-supported liquid-from-solid parent")
     inputs = {**config["inputs"], "condensate_fit": config["condensate_fit"]}
     construction = liquid_from_solid(species, crystal, inputs)
+    if species in {"SeO2", "As2O3"}:
+        alternate_crystal = _pankratz_crystal_table(
+            record,
+            extension_limit_k=max(
+                float(value)
+                for value in config["inputs"]["fusion_temperature"].get(
+                    "bounds_k",
+                    [config["inputs"]["fusion_temperature"]["value"]],
+                )
+            ),
+            extrapolate_cp=False,
+        )
+        alternate = liquid_from_solid(species, alternate_crystal, inputs)
     intervals = {
         "ZnO": ((1200.0, 1700.0), (1700.0, 3000.0)),
         "CdO": ((1200.0, 1600.0), (1600.0, 3000.0)),
+        "SeO2": ((1200.0, 1600.0), (1600.0, 3000.0)),
+        "As2O3": ((1200.0, 1600.0), (1600.0, 3000.0)),
     }[species]
     fit = inputs["condensate_fit"]
     rows = []
@@ -3301,7 +3384,7 @@ def build_condensate_rows(
             )
         )
     liquid_inputs = _load_record(repository / "data-src/liquid-from-solid-inputs.json")
-    for species in ("ZnO", "CdO", "MnO"):
+    for species in ("ZnO", "CdO", "MnO", "SeO2"):
         fitted_rows, _construction, _alternate = _fit_liquid_from_solid_parent(
             published_source_dir, species, liquid_inputs["rows"][species]
         )

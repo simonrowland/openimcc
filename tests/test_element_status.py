@@ -1177,7 +1177,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Ga", "Ge", "B", "In",
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Cs", "Cu", "Sn",
         "Mn", "Ni", "Co", "P", "S",
-        "Zn", "Cd", "Bi", "Te",
+        "Zn", "Cd", "Bi", "Te", "Se",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1194,6 +1194,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "B": "B2O3",
         "In": "In2O3",
         "Te": "TeO2",
+        "Se": "SeO2",
     }
     liquid_by_element = {
         **parent_by_element,
@@ -1214,6 +1215,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Cd": "CdO",
         "Bi": "Bi2O3",
         "Te": "TeO2",
+        "Se": "SeO2",
         "Mn": "MnO",
     }
     gas_parent_by_element = {"S": "S2"}

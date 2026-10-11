@@ -7363,6 +7363,56 @@
         "runtime_t_min": 1200.0,
         "runtime_t_max": 3000.0
       }
+    },
+    "SeO2": {
+      "formula": "SeO2",
+      "crystal_table_id": "P672-SeO2-c",
+      "family": null,
+      "metal_atoms": 1,
+      "total_atoms": 3,
+      "selection_reason": "No standard SeO2(l) thermodynamic function is available. OECD/NEA reviews the reported 613 K transition as erroneous and evaluates a 660 K fusion point with a measured fusion-enthalpy band; the liquid heat capacity follows the documented tier-3 crystal-Cp carry-over estimate. The existing liquid_from_solid construction supplies the required tier-4 caller parent.",
+      "inputs": {
+        "fusion_temperature": {
+          "value": 660.0,
+          "tier": 2,
+          "spread": 10.0,
+          "bounds_k": [650.0, 670.0],
+          "source": "The OECD/NEA critical review reports 657 +/- 10 K and selects the midpoint rounded to 660 K; it rejects the older 613 K value as erroneous.",
+          "references": ["https://tdb.oecd-nea.org/dbtdb/pubs/vol7-selenium.pdf"]
+        },
+        "fusion_entropy": {
+          "value": 33.333333333333336,
+          "tier": 2,
+          "spread": 7.575757575757576,
+          "unit": "J mol^-1 K^-1",
+          "source": "OECD/NEA selects Delta_fus H = 22 +/- 5 kJ/mol at 660 K. Delta_fus S = Delta_fus H/T = 22000 J/mol / 660 K; the stated enthalpy uncertainty divided by 660 K gives the band.",
+          "references": ["https://tdb.oecd-nea.org/dbtdb/pubs/vol7-selenium.pdf"]
+        },
+        "liquid_heat_capacity": {
+          "value": 82.423,
+          "tier": 3,
+          "spread": 0.0,
+          "unit": "J mol^-1 K^-1",
+          "source": "No liquid SeO2 heat capacity is available in the critical review. Apply the documented tier-3 fallback: carry the source crystal Cp at fusion into the liquid. No independent Cp uncertainty is stated; the propagated band uses the reviewed fusion-enthalpy and transition-temperature uncertainties.",
+          "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
+        }
+      },
+      "crystal_cp_extrapolation_band": {
+        "method": "Absolute G difference between integrating the published Pankratz crystal Cp equation from its 602 K limit to 660 K and holding the final printed Cp constant.",
+        "source_limit_K": 602.0,
+        "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
+      },
+      "condensate_fit": {
+        "table_id": "P672-SeO2-LFS",
+        "ref": "P672-SeO2-LFS-CP-EXT-602",
+        "cation": "Se",
+        "cat_num": 1,
+        "oxy_num": 2,
+        "fit_t_min": 1200.0,
+        "fit_t_max": 1600.0,
+        "runtime_t_min": 1200.0,
+        "runtime_t_max": 1600.0
+      }
     }
   },
   "fusion_temperature_fallback": {

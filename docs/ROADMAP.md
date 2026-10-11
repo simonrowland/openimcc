@@ -34,7 +34,8 @@ Kion/Saha ratios (1.510e28 at 1500 K and 9.143e16 at 2500 K) fail the NIST
 5.78636 eV ionisation-energy check. The default result remains neutral-only.
 Na and K remain `complete-except-ions` because their bounded shares exceed
 1e-4 while ions are opt-in; Ca, Li, Rb, Pb, Ga, Ge, Zn, Cd, Bi and Mn remain
-below the C3 threshold on their recorded activity screens. B exceeds the threshold when
+below the C3 threshold on their recorded activity screens. Se's positive ion
+source is unavailable, so its C3 screen is declined. B exceeds the threshold when
 its cation and available anions are combined; Cs is also above the threshold.
 Positive molecular ions and nonthermal electrons remain outside this
 calculation. Mn has a public but range-limited MnO(l) parent; Ni and Co still
@@ -46,6 +47,7 @@ P2O5(l) row.
 | Zn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Zn(g), ZnO(g), ZnO(l), and opt-in Zn ions cover 1200-3000 K; ZnO(l) is a flagged tier-4 construction from TSIV Table 1603; a(ZnO) is caller-supplied; the joint C3 screen used a(ZnO)=1e-3 and reached 1.477e-07 at 2600 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
 | Cd | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Cd(g), estimated CdO(g), CdO(l), and opt-in Cd+ cover 1200-3000 K; CdO(l) is a flagged tier-4 construction from Pankratz Bulletin 672 Table 102; a(CdO) is caller-supplied; the joint C3 screen used a(CdO)=1e-3 and reached 2.015e-13 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
 | Bi | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Bi(g), Bi2(g), BiO(g), Bi2O3(l), and opt-in Bi+ cover 1200-3000 K; the measured Bi2O3(l) branch is selected as the Bi(III) parent; a(Bi2O3) is caller-supplied; the joint C3 screen used a(Bi2O3)=1e-3 and reached 4.195e-11 at 1800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
+| Se | gas-complete-melt-pending | no | yes | declined | yes | unvalidated | Se(g), Se2(g), SeO2(g), and the SeO2(l) parent cover 1200-3000 K; SeO2(l) is the selected caller parent because no standard liquid function was found and the oxide state is the sourced parent convention; a(SeO2) is caller-supplied. This oxide-parent convention does not model selenide dissolution in reduced melts. |
 | Mn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Mn(g), MnO(g), MnO(l), and opt-in Mn+ are available; MnO(l) is a tier-4 liquid_from_solid construction fitted over 1200-3000 K and supercooled below measured Tm 2120 ± 20 K; a(MnO) is caller-supplied; the joint C3 screen used a(MnO)=1e-3 and reached 1.621e-07 at 2800 K and fO2=1e-4, within the fitted interval and the <=1-bar neutral-pressure domain. |
 | O | input (fO2 pinned) | n/a | yes | n/a | n/a | unvalidated | O is input (fO2 pinned), so C1, C3 and C4 do not apply. |
 | P | gas-partial | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | no | unvalidated | JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) function was found and JANAF lists P4O10(cr) only. Channels need an external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); OpenIMCC provides no pyrolysis-temperature melt activity model. |
