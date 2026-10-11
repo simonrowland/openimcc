@@ -6120,21 +6120,17 @@ rows:
   - table: condensate
     species_name: TeO2(l)
     table_id: P672-TeO2-l
-    runtime_ref: P672-TeO2-l-CP-EXT-1500
+    runtime_ref: P672-TeO2-l
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
     authority: published_fitted
-    method: generated_constant_cp_extrapolation_fit
+    method: fitted
     tier: 1
-    T_range_K: [1200, 1600]
-    max_residual_J_per_mol: 0.000000001
-    max_residual_log10_K: 0.00000000004
-    source_fit_range_K: [1200, 1600]
-    flags: [constant-Cp continuation above 1500 K, caller-supplied parent activity; no activity model]
-    uncertainty_band:
-      kind: measured held-Cp continuation error envelope against published liquid-source tables
-      values_J_per_mol: {1500: 505.689, 2000: 8544.934, 2500: 24507.754, 3000: 46784.971}
-      method: maximum absolute error in held-Cp back-tests on nine JANAF parent-liquid tables, truncated at the 1300 K source limit
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.00000000023283064365487
+    max_residual_log10_K: 0.00000000000000810772492884462
+    source_fit_range_K: [1200, 1500]
+    flags: [caller-supplied parent activity; no activity model]
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
       source_record: Pankratz Bulletin 672, Tellurium Dioxide condensed-phase table, printed p. 418
@@ -6142,9 +6138,8 @@ rows:
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_locator: printed p. 418
-    extrapolation: true
+    extrapolation: false
     source_data: true
-    extrapolation_source_limit_K: 1500
   - table: condensate
     species_name: TeO2(l)
     table_id: P672-TeO2-l
@@ -6154,10 +6149,10 @@ rows:
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
-    T_range_K: [1600, 3000]
-    max_residual_J_per_mol: 3.47145577427
-    max_residual_log10_K: 0.0000738180676965711
-    source_fit_range_K: [1600, 3000]
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 5.15298339352012
+    max_residual_log10_K: 0.000102237322098889
+    source_fit_range_K: [1500, 3000]
     flags: [constant-Cp continuation above 1500 K, caller-supplied parent activity; no activity model]
     uncertainty_band:
       kind: measured held-Cp continuation error envelope against published liquid-source tables
@@ -6171,7 +6166,7 @@ rows:
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_locator: printed p. 418
     extrapolation: true
-    source_data: true
+    source_data: false
     extrapolation_source_limit_K: 1500
   - table: gas
     species_name: Se(g)

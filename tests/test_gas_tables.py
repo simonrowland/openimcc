@@ -1133,7 +1133,7 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         PUBLISHED_DATA, "P672-TeO2-l"
     )
     te_source = build_gas_tables._constant_cp_rows_through(te_source, 3000.0)
-    for t_min, t_max in ((1200.0, 1600.0), (1600.0, 3000.0)):
+    for t_min, t_max in ((1200.0, 1500.0), (1500.0, 3000.0)):
         nodes = []
         for temperature, source in te_source.items():
             if t_min <= temperature <= t_max:
@@ -1295,7 +1295,7 @@ def test_new_parent_condensate_rows_pass_the_10_j_mol_node_gate() -> None:
             "Li2O(l)", "Rb2O(l)", "PbO(l)",
             "Cs2O(l)", "Cu2O(l)", "SnO(l)", "K2O(l)",
             "ZnO(l)", "CdO(l)", "Bi2O3(l)",
-            "MnO(l)",
+            "MnO(l)", "TeO2(l)",
         }
     ]
     direct_fits = [

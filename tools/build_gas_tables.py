@@ -3102,7 +3102,12 @@ def _fit_published_condensate_row(
     source_limit = max(rows)
     rows = _constant_cp_rows_through(rows, 3000.0)
     result = []
-    for fit_t_min, fit_t_max in ((1200.0, 1600.0), (1600.0, 3000.0)):
+    intervals = (
+        ((1200.0, source_limit), (source_limit, 3000.0))
+        if table_id == "P672-TeO2-l"
+        else ((1200.0, 1600.0), (1600.0, 3000.0))
+    )
+    for fit_t_min, fit_t_max in intervals:
         # The split keeps the on-node G residual below 10 J/mol over the
         # published liquid nodes and the labelled constant-Cp continuation.
         fit_rows = {
@@ -3123,7 +3128,11 @@ def _fit_published_condensate_row(
                 fit_t_max=fit_t_max,
                 runtime_t_min=fit_t_min,
                 runtime_t_max=fit_t_max,
-                ref=f"{table_id}-CP-EXT-{source_limit:g}",
+                ref=(
+                    table_id
+                    if table_id == "P672-TeO2-l" and fit_t_min < source_limit
+                    else f"{table_id}-CP-EXT-{source_limit:g}"
+                ),
             )
         )
     return result
