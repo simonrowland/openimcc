@@ -72,6 +72,15 @@ around a whole run. Entering that context costs about 0.7 ms, so do not enter
 it per solve; it does not control Apple Accelerate. The library does not
 change thread settings.
 
+The thread count can also change the last bits of a result. In measurements
+with NumPy 1.26 on OpenBLAS, `numpy.linalg.solve` returned identical bytes at
+every thread count for systems of up to nine unknowns; from ten unknowns the
+one-thread result differed from the multi-thread results by about 1e-16 to
+5e-15 relative, and larger systems differed between thread counts. A redox
+solve with twelve parent oxides used 8 to 260 times the CPU of the one-thread
+run when threads were left unlimited on loaded machines. Fix the thread count
+when results must be reproducible to the last bit across processes or hosts.
+
 ## Frozen preregistered predictions — 2026-10-08
 
 These predictions were recorded before any closed-mode redox result exists.
