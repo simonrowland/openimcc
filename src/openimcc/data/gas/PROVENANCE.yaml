@@ -5731,6 +5731,8 @@ rows:
     runtime_ref: TSIV-1603-LFS-CP-EXT-2250
     source_path: data-src/published-thermo/tsiv-table-1603.json
     source_sha256: 8989bd90414e47d5aea02104d9915a17fa4e8d8c9847516ef6adda58a4e6d8ec
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -5770,6 +5772,8 @@ rows:
     runtime_ref: TSIV-1603-LFS-CP-EXT-2250
     source_path: data-src/published-thermo/tsiv-table-1603.json
     source_sha256: 8989bd90414e47d5aea02104d9915a17fa4e8d8c9847516ef6adda58a4e6d8ec
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -5809,6 +5813,8 @@ rows:
     runtime_ref: P672-T102-LFS-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -5850,6 +5856,8 @@ rows:
     runtime_ref: P672-T102-LFS-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6396,6 +6404,8 @@ rows:
     runtime_ref: P672-SeO2-LFS-CP-EXT-602
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6424,6 +6434,8 @@ rows:
     runtime_ref: P672-SeO2-LFS-CP-EXT-602
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6800,6 +6812,7 @@ rows:
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6810,7 +6823,7 @@ rows:
     flags: [tier-4 liquid_from_solid construction, tier-3 fusion-entropy mean and crystal-Cp carry-over, leave-one-out band extrapolated beyond +800 K, caller-supplied parent activity; no activity model]
     uncertainty_band:
       kind: tier-3 leave-one-out liquid_from_solid Gibbs error against 48 JANAF fusion pairs; uncertainty estimate is extrapolated above +800 K
-      values_J_per_mol: {1200: 15034.955959773, 1500: 31157.038183952, 1800: 47362.834503752, 2000: 58166.698716952, 2500: 85176.359249952, 3000: 112186.019782952}
+      values_J_per_mol: {1200: 35316.525905814444, 1500: 51522.32222520653, 1800: 67728.11854459862, 2000: 78531.98275752667, 2500: 105541.64328984682, 3000: 132551.30382216698}
       method: interpolate measured maximum errors at +300/+800 K and continue the final measured slope above +800 K
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6829,6 +6842,7 @@ rows:
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6839,7 +6853,7 @@ rows:
     flags: [tier-4 liquid_from_solid construction, tier-3 fusion-entropy mean and crystal-Cp carry-over, leave-one-out band extrapolated beyond +800 K, caller-supplied parent activity; no activity model]
     uncertainty_band:
       kind: tier-3 leave-one-out liquid_from_solid Gibbs error against 48 JANAF fusion pairs; uncertainty estimate is extrapolated above +800 K
-      values_J_per_mol: {1200: 15034.955959773, 1500: 31157.038183952, 1800: 47362.834503752, 2000: 58166.698716952, 2500: 85176.359249952, 3000: 112186.019782952}
+      values_J_per_mol: {1200: 35316.525905814444, 1500: 51522.32222520653, 1800: 67728.11854459862, 2000: 78531.98275752667, 2500: 105541.64328984682, 3000: 132551.30382216698}
       method: interpolate measured maximum errors at +300/+800 K and continue the final measured slope above +800 K
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6858,6 +6872,7 @@ rows:
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6883,6 +6898,7 @@ rows:
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6908,6 +6924,7 @@ rows:
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6918,7 +6935,7 @@ rows:
     flags: [tier-4 liquid_from_solid construction, tier-3 fusion-entropy mean and crystal-Cp carry-over, leave-one-out band extrapolated beyond +800 K, caller-supplied parent activity; no activity model]
     uncertainty_band:
       kind: tier-3 leave-one-out liquid_from_solid Gibbs error against 48 JANAF fusion pairs; uncertainty estimate is extrapolated above +800 K
-      values_J_per_mol: {1200: 35316.525905814444, 1500: 51522.32222520653, 1800: 67728.11854459862, 2000: 78531.98275752667, 2500: 105541.64328984682, 3000: 132551.30382216698}
+      values_J_per_mol: {1200: 15034.955959773, 1500: 31157.038183952, 1800: 47362.834503752, 2000: 58166.698716952, 2500: 85176.359249952, 3000: 112186.019782952}
       method: interpolate measured maximum errors at +300/+800 K and continue the final measured slope above +800 K
     source: {citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672, source_record: Pankratz Bulletin 672, orthorhombic Sb2O3 table, printed p. 358; tier-3 inputs from the 48-pair repository calibration, source_locator: printed p. 358 and data-src/liquid-from-solid-inputs.json tier_error_bands; page notes cubic-to-orthorhombic transition at 879 K and no cubic table, source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf}
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
@@ -6933,6 +6950,7 @@ rows:
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: ab4ebfe3b6fb8c7a6bbcb307ab8d6f5435d4f56bb021a7ba05d2bf83f3247368
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6943,7 +6961,7 @@ rows:
     flags: [tier-4 liquid_from_solid construction, tier-3 fusion-entropy mean and crystal-Cp carry-over, leave-one-out band extrapolated beyond +800 K, caller-supplied parent activity; no activity model]
     uncertainty_band:
       kind: tier-3 leave-one-out liquid_from_solid Gibbs error against 48 JANAF fusion pairs; uncertainty estimate is extrapolated above +800 K
-      values_J_per_mol: {1200: 35316.525905814444, 1500: 51522.32222520653, 1800: 67728.11854459862, 2000: 78531.98275752667, 2500: 105541.64328984682, 3000: 132551.30382216698}
+      values_J_per_mol: {1200: 15034.955959773, 1500: 31157.038183952, 1800: 47362.834503752, 2000: 58166.698716952, 2500: 85176.359249952, 3000: 112186.019782952}
       method: interpolate measured maximum errors at +300/+800 K and continue the final measured slope above +800 K
     source: {citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672, source_record: Pankratz Bulletin 672, orthorhombic Sb2O3 table, printed p. 358; tier-3 inputs from the 48-pair repository calibration, source_locator: printed p. 358 and data-src/liquid-from-solid-inputs.json tier_error_bands; page notes cubic-to-orthorhombic transition at 879 K and no cubic table, source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf}
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
@@ -7580,12 +7598,12 @@ source_comparisons:
     values:
     - T_K: 1800
       pankratz_G_app_J_mol: -62360.010
-      nasa_G_app_J_mol: -62548.610
-      nasa_minus_pankratz_J_mol: -188.600
+      nasa_G_app_J_mol: -62550.233
+      nasa_minus_pankratz_J_mol: -190.223
     - T_K: 2000
       pankratz_G_app_J_mol: -104629.288
-      nasa_G_app_J_mol: -104845.447
-      nasa_minus_pankratz_J_mol: -216.159
+      nasa_G_app_J_mol: -104847.071
+      nasa_minus_pankratz_J_mol: -217.783
 
 
 certification_items:

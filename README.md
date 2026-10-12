@@ -134,7 +134,7 @@ Bulletin 672 tables. The Ag2O-parent convention requires caller-supplied
 activity and does not represent silver dissolved as metal in reduced melts.
 The Ag2O(l) construction extends the +800 K-calibrated tier-3 band slope about
 1500–2500 K past the source's decomposition region near 500 K.
-constant-Cp continuations cover SnO(l) from 1200–1250 K and the Ga2O3, GeO2,
+Constant-Cp continuations cover SnO(l) from 1200–1250 K and the Ga2O3, GeO2,
 and In2O3 parents down to 1200 K. SnO is selected over the later-starting
 SnO2(l) card. Cu2O(l) is the Cu(I) parent because JANAF provides its liquid
 row. PbO(l) is the Pb(II) parent; no evaluated PbO2(l) row was found. No

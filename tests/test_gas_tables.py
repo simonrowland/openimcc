@@ -1653,6 +1653,53 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
         assert abs(gas_gibbs - constructed_gibbs) <= 10.0
 
 
+def test_constructed_condensate_bands_match_liquid_construction_inputs() -> None:
+    inputs_path = ROOT / "data-src" / "liquid-from-solid-inputs.json"
+    inputs = json.loads(inputs_path.read_text(encoding="utf-8"))
+    digest = hashlib.sha256(inputs_path.read_bytes()).hexdigest()
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    constructed = [
+        row
+        for row in provenance["rows"]
+        if row.get("table") == "condensate"
+        and row.get("method") == "liquid_from_solid_construction"
+    ]
+    assert constructed
+    # These rows store source parameters or a derived envelope, not a value table.
+    other_input_forms = {
+        "MnO(l)": "fusion and fit-residual band checked by the MnO construction test",
+        "SeO2(l)": "crystal-Cp extrapolation parameters",
+        "CdO(l)": "crystal-Cp extrapolation parameters",
+        "ZnO(l)": "TSIV uncertainties and crystal-Cp extension parameters",
+    }
+    seen_other_forms: set[str] = set()
+    for row in constructed:
+        species = row["species_name"]
+        input_row = inputs["rows"][species.removesuffix("(l)")]
+        assert row["construction_inputs_sha256"] == digest, species
+        band = input_row.get("measured_band")
+        if band and isinstance(band.get("values_J_per_mol"), dict):
+            expected = band["values_J_per_mol"]
+            actual = row["uncertainty_band"]["values_J_per_mol"]
+            actual_values = {str(key): value for key, value in actual.items()}
+            assert set(actual_values) == {str(key) for key in expected}, species
+            for temperature, value in expected.items():
+                assert actual_values[str(temperature)] == pytest.approx(value, abs=0.002), (
+                    f"{species} at {temperature} K"
+                )
+            continue
+        assert species in other_input_forms, f"unhandled input band for {species}"
+        seen_other_forms.add(species)
+        assert row["uncertainty_band"]["values_J_per_mol"], species
+        if species in {"SeO2(l)", "CdO(l)"}:
+            assert input_row["crystal_cp_extrapolation_band"]
+        elif species == "ZnO(l)":
+            assert input_row["measured_band"].get("phi_uncertainty_j_mol_k")
+        else:
+            assert "fusion_entropy" in input_row["inputs"]
+    assert seen_other_forms == set(other_input_forms), sorted(seen_other_forms)
+
+
 def test_k2o_from_solid_builder_fits_the_full_runtime_interval() -> None:
     rows = [
         row
@@ -2533,10 +2580,15 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                     * build_gas_tables._nasa7_properties(nasa, 298.15)["h_rt"]
                 )
                 nasa_properties = build_gas_tables._nasa7_properties(nasa, temperature)
-                nasa_h = formation_h + (
-                    R_J_MOL_K * temperature * nasa_properties["h_rt"] - card_h298
-                )
-                nasa_g = nasa_h - temperature * R_J_MOL_K * nasa_properties["s_R"]
+                if comparison["nasa_record_id"] == "NG-0074":
+                    nasa_g = R_J_MOL_K * temperature * nasa_properties["h_rt"] - (
+                        temperature * R_J_MOL_K * nasa_properties["s_R"]
+                    )
+                else:
+                    nasa_h = formation_h + (
+                        R_J_MOL_K * temperature * nasa_properties["h_rt"] - card_h298
+                    )
+                    nasa_g = nasa_h - temperature * R_J_MOL_K * nasa_properties["s_R"]
                 assert value["pankratz_G_app_J_mol"] == pytest.approx(pankratz_g, abs=0.001)
                 assert value["nasa_G_app_J_mol"] == pytest.approx(nasa_g, abs=0.001)
                 assert value["nasa_minus_pankratz_J_mol"] == pytest.approx(
