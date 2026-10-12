@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added optional Mo, MoO, MoO2, MoO3, and (MoO3)2–5 gas channels with
+  caller-supplied MoO3(l) activity, plus opt-in Mo+ and Mo−. JANAF supplies the
+  monomers, ions, and parent liquid through 2000 K; NASA Glenn supplies the
+  oxide clusters JANAF does not list. The MoO3(l) continuation above 2000 K is
+  labelled and is not source data.
+- Added optional W, WO, WO2, WO3, (WO3)2–5, and W3O8 gas channels with
+  caller-supplied WO3(l) activity, plus opt-in W+ and W−. JANAF supplies the
+  measured gas and liquid rows except (WO3)5, which uses NASA Glenn. O-066's
+  printed supercooled liquid cells below its 1745 K marker are retained as
+  source data.
 - Added optional Ag(g) with caller-supplied Ag2O(l) activity and opt-in Ag+ and Ag-.
   NASA Glenn supplies the atomic and cation cards; Bulletin 672's independent
   Ag(g) row is compared by apparent Gibbs energy through 2000 K. Ag2O(l) is a

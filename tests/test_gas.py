@@ -120,6 +120,7 @@ _ION_GAS_SPECIES = {
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Zn+", "Zn-", "Cd+", "Bi+",
     "Mn+", "Ag+", "Ag-",
+    "Mo+", "Mo-", "W+", "W-",
 }
 
 
@@ -199,7 +200,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 80
+    assert len(gas_pack.oxide_df) == 88
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -2334,6 +2335,7 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
         "Sb2O3(l)",
         "Ag2O(l)",
         "MnO(l)",
+        "MoO3(l)", "WO3(l)",
     }
     return replace(
         pack,
@@ -2365,6 +2367,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "As2O3": 1.0e-3,
         "Sb2O3": 1.0e-3,
         "Ag2O": 1.0e-3,
+        "MoO3": 1.0e-3, "WO3": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2416,8 +2419,10 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-",
         "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
         "Zn+", "Zn-", "Cd+", "Bi+",
+        "Mo+", "Mo-", "W+", "W-",
         "Ag+",
         "Ag-",
+        "Mo+", "Mo-", "W+", "W-",
     }
     assert expected_ions <= set(trace_ions)
     assert "In+" not in trace_ions
@@ -2441,6 +2446,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-",
         "Cs+", "Sn+", "Cs2O+",
         "Zn+", "Zn-", "Cd+", "Bi+",
+        "Mo+", "Mo-", "W+", "W-",
     }
     assert expected_trace_ions <= set(trace_ions)
     for species in expected_trace_ions - {"Sn+", "Cs2O+", "Cd+", "Bi+"}:
@@ -2638,6 +2644,8 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("As", "As2O3", "P672-As-g", "P672-As2O3-LFS"),
         ("Sb", "Sb2O3", "P672-Sb-g", "P672-Sb2O3-LFS"),
         ("Ag", "Ag2O", "NG-0074", "P672-Ag2O-LFS"),
+        ("MoO2", "MoO3", "Mo-010", "Mo-015"),
+        ("WO2", "WO3", "O-048", "O-066"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]
@@ -3192,16 +3200,16 @@ def test_oxygen_balance_molar_masses_sum_repeated_formula_tokens() -> None:
     )
     changed = set()
     for species, entry in metadata.items():
-        parts = gas_module._FORMULA_PART.findall(species)
-        prior_atoms = {element: int(count or 1) for element, count in parts}
+        prior_atoms = gas_module._formula_atoms(species)
         prior_mass = sum(
             gas_module._ATOMIC_MASS_G_MOL[element] * count
             for element, count in prior_atoms.items()
         )
         if entry.molar_mass != prior_mass:
             changed.add(species)
-    assert changed == {"SSO"}
+    assert changed == set()
     assert metadata["SSO"].molar_mass == pytest.approx(80.119)
+    assert metadata["(MoO3)2"].molar_mass == pytest.approx(287.894)
 
 
 def test_oxygen_balance_accepts_caller_supplied_s2_gas_parent(

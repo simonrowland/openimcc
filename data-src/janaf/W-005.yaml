@@ -1,0 +1,4728 @@
+schema_version: literature_compilation.v1
+source_id: nist-janaf-4th
+source:
+  citation: Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition, J. Phys. Chem. Ref. Data Monograph 9 (1998)
+  database: NIST Standard Reference Database 13
+  doi: 10.18434/T42S31
+  url: https://janaf.nist.gov/
+  last_data_update: 1998
+  licence: 'Quoted from NIST SRD 13 (https://data.nist.gov/od/id/ECBCC1C1301D2ED9E04306570681B10735): "These data are public."
+    Quoted from https://www.nist.gov/copyrights-disclaimers: "With the exception of material marked as copyrighted, information
+    presented on NIST sites are considered public information and may be distributed or copied."'
+compilation_role:
+  kind: assessed_thermodynamic_functions
+  engine_reference_input: true
+  validation_measurement: false
+  scoring_eligible: false
+  battery_refusal: gibbs_table_not_runtime_observable
+  circularity_warning: Do not validate an engine against a compilation it consumes.
+extraction:
+  method: machine parse of NIST tab-delimited table download; source bytes cached unchanged
+  date: '2026-09-06'
+  user_agent: "openimcc-janaf-vendor/1.0"
+  source_sha256: fdf2523b89b49953a092eb84a71fd967244fe4a1124be77daa227c1f9fa8fa0e
+  review_status: machine_transcribed_unreviewed
+table:
+  table_id: W-005
+  url: https://janaf.nist.gov/tables/W-005.html
+  download_url: https://janaf.nist.gov/tables/W-005.txt
+  index_entry:
+    formula: W
+    formula_as_published: W
+    formula_normalised: W
+    charge: 0
+    name: Tungsten
+    state: g
+  title_as_published: Tungsten (W)  |  W1(g)
+  standard_state_as_published: p° = 0.1 MPa (as published by JANAF)
+  units_as_published:
+    temperature: K
+    heat_capacity: J K^-1 mol^-1
+    entropy: J K^-1 mol^-1
+    negative_gibbs_enthalpy_function: J K^-1 mol^-1
+    enthalpy_increment: kJ mol^-1
+    formation_enthalpy: kJ mol^-1
+    formation_gibbs_energy: kJ mol^-1
+    log10_formation_equilibrium_constant: dimensionless
+  values:
+  - temperature:
+      value: 0.0
+      as_published: '0'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '0'
+        column: T(K)
+    heat_capacity:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '0'
+        column: Cp
+    entropy:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '0'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: null
+      as_published: INFINITE
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '0'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -6.216
+      as_published: '-6.216'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '0'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 849.782
+      as_published: '849.782'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '0'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 849.782
+      as_published: '849.782'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '0'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: null
+      as_published: INFINITE
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '0'
+        column: log Kf
+  - temperature:
+      value: 100.0
+      as_published: '100'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '100'
+        column: T(K)
+    heat_capacity:
+      value: 20.786
+      as_published: '20.786'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '100'
+        column: Cp
+    entropy:
+      value: 151.176
+      as_published: '151.176'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 192.553
+      as_published: '192.553'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -4.138
+      as_published: '-4.138'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.209
+      as_published: '851.209'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 837.052
+      as_published: '837.052'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -437.231
+      as_published: '-437.231'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '100'
+        column: log Kf
+  - temperature:
+      value: 200.0
+      as_published: '200'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '200'
+        column: T(K)
+    heat_capacity:
+      value: 20.808
+      as_published: '20.808'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '200'
+        column: Cp
+    entropy:
+      value: 165.586
+      as_published: '165.586'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 175.879
+      as_published: '175.879'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -2.059
+      as_published: '-2.059'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.28
+      as_published: '851.280'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 822.818
+      as_published: '822.818'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -214.898
+      as_published: '-214.898'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '200'
+        column: log Kf
+  - temperature:
+      value: 250.0
+      as_published: '250'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '250'
+        column: T(K)
+    heat_capacity:
+      value: 20.94
+      as_published: '20.940'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '250'
+        column: Cp
+    entropy:
+      value: 170.24
+      as_published: '170.240'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '250'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 174.303
+      as_published: '174.303'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '250'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -1.016
+      as_published: '-1.016'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '250'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.166
+      as_published: '851.166'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '250'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 815.714
+      as_published: '815.714'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '250'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -170.434
+      as_published: '-170.434'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '250'
+        column: log Kf
+  - temperature:
+      value: 298.15
+      as_published: '298.15'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '298.15'
+        column: T(K)
+    heat_capacity:
+      value: 21.297
+      as_published: '21.297'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '298.15'
+        column: Cp
+    entropy:
+      value: 173.954
+      as_published: '173.954'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '298.15'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 173.954
+      as_published: '173.954'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '298.15'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '298.15'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.026
+      as_published: '851.026'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '298.15'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 808.899
+      as_published: '808.899'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '298.15'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -141.716
+      as_published: '-141.716'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '298.15'
+        column: log Kf
+  - temperature:
+      value: 300.0
+      as_published: '300'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '300'
+        column: T(K)
+    heat_capacity:
+      value: 21.316
+      as_published: '21.316'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '300'
+        column: Cp
+    entropy:
+      value: 174.086
+      as_published: '174.086'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 173.955
+      as_published: '173.955'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 0.039
+      as_published: '0.039'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.02
+      as_published: '851.020'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 808.637
+      as_published: '808.637'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -140.796
+      as_published: '-140.796'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '300'
+        column: log Kf
+  - temperature:
+      value: 350.0
+      as_published: '350'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '350'
+        column: T(K)
+    heat_capacity:
+      value: 22.004
+      as_published: '22.004'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '350'
+        column: Cp
+    entropy:
+      value: 177.42
+      as_published: '177.420'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '350'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 174.217
+      as_published: '174.217'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '350'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 1.121
+      as_published: '1.121'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '350'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 850.878
+      as_published: '850.878'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '350'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 801.585
+      as_published: '801.585'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '350'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -119.63
+      as_published: '-119.630'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '350'
+        column: log Kf
+  - temperature:
+      value: 400.0
+      as_published: '400'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '400'
+        column: T(K)
+    heat_capacity:
+      value: 22.968
+      as_published: '22.968'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '400'
+        column: Cp
+    entropy:
+      value: 180.418
+      as_published: '180.418'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 174.807
+      as_published: '174.807'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 2.244
+      as_published: '2.244'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 850.762
+      as_published: '850.762'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 794.551
+      as_published: '794.551'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -103.758
+      as_published: '-103.758'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '400'
+        column: log Kf
+  - temperature:
+      value: 450.0
+      as_published: '450'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '450'
+        column: T(K)
+    heat_capacity:
+      value: 24.103
+      as_published: '24.103'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '450'
+        column: Cp
+    entropy:
+      value: 183.188
+      as_published: '183.188'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '450'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 175.586
+      as_published: '175.586'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '450'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 3.421
+      as_published: '3.421'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '450'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 850.686
+      as_published: '850.686'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '450'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 787.53
+      as_published: '787.530'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '450'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -91.414
+      as_published: '-91.414'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '450'
+        column: log Kf
+  - temperature:
+      value: 500.0
+      as_published: '500'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '500'
+        column: T(K)
+    heat_capacity:
+      value: 25.285
+      as_published: '25.285'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '500'
+        column: Cp
+    entropy:
+      value: 185.789
+      as_published: '185.789'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 176.478
+      as_published: '176.478'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 4.656
+      as_published: '4.656'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 850.658
+      as_published: '850.658'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 780.515
+      as_published: '780.515'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -81.54
+      as_published: '-81.540'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '500'
+        column: log Kf
+  - temperature:
+      value: 600.0
+      as_published: '600'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '600'
+        column: T(K)
+    heat_capacity:
+      value: 27.406
+      as_published: '27.406'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '600'
+        column: Cp
+    entropy:
+      value: 190.594
+      as_published: '190.594'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 178.437
+      as_published: '178.437'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 7.294
+      as_published: '7.294'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 850.74
+      as_published: '850.740'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 766.481
+      as_published: '766.481'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -66.728
+      as_published: '-66.728'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '600'
+        column: log Kf
+  - temperature:
+      value: 700.0
+      as_published: '700'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '700'
+        column: T(K)
+    heat_capacity:
+      value: 28.913
+      as_published: '28.913'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '700'
+        column: Cp
+    entropy:
+      value: 194.94
+      as_published: '194.940'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 180.489
+      as_published: '180.489'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 10.116
+      as_published: '10.116'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 850.96
+      as_published: '850.960'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 752.422
+      as_published: '752.422'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -56.146
+      as_published: '-56.146'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '700'
+        column: log Kf
+  - temperature:
+      value: 800.0
+      as_published: '800'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '800'
+        column: T(K)
+    heat_capacity:
+      value: 29.823
+      as_published: '29.823'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '800'
+        column: Cp
+    entropy:
+      value: 198.866
+      as_published: '198.866'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 182.545
+      as_published: '182.545'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 13.057
+      as_published: '13.057'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.256
+      as_published: '851.256'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 738.326
+      as_published: '738.326'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -48.208
+      as_published: '-48.208'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '800'
+        column: log Kf
+  - temperature:
+      value: 900.0
+      as_published: '900'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '900'
+        column: T(K)
+    heat_capacity:
+      value: 30.328
+      as_published: '30.328'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '900'
+        column: Cp
+    entropy:
+      value: 202.411
+      as_published: '202.411'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 184.559
+      as_published: '184.559'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 16.067
+      as_published: '16.067'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.577
+      as_published: '851.577'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 724.19
+      as_published: '724.190'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -42.031
+      as_published: '-42.031'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '900'
+        column: log Kf
+  - temperature:
+      value: 1000.0
+      as_published: '1000'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1000'
+        column: T(K)
+    heat_capacity:
+      value: 30.606
+      as_published: '30.606'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1000'
+        column: Cp
+    entropy:
+      value: 205.622
+      as_published: '205.622'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 186.507
+      as_published: '186.507'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 19.115
+      as_published: '19.115'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.892
+      as_published: '851.892'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 710.019
+      as_published: '710.019'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -37.088
+      as_published: '-37.088'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1000'
+        column: log Kf
+  - temperature:
+      value: 1100.0
+      as_published: '1100'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1100'
+        column: T(K)
+    heat_capacity:
+      value: 30.771
+      as_published: '30.771'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1100'
+        column: Cp
+    entropy:
+      value: 208.548
+      as_published: '208.548'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 188.38
+      as_published: '188.380'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 22.184
+      as_published: '22.184'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.182
+      as_published: '852.182'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 695.817
+      as_published: '695.817'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -33.042
+      as_published: '-33.042'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1100'
+        column: log Kf
+  - temperature:
+      value: 1200.0
+      as_published: '1200'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1200'
+        column: T(K)
+    heat_capacity:
+      value: 30.877
+      as_published: '30.877'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1200'
+        column: Cp
+    entropy:
+      value: 211.23
+      as_published: '211.230'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 190.174
+      as_published: '190.174'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 25.267
+      as_published: '25.267'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.44
+      as_published: '852.440'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 681.591
+      as_published: '681.591'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -29.669
+      as_published: '-29.669'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1200'
+        column: log Kf
+  - temperature:
+      value: 1300.0
+      as_published: '1300'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1300'
+        column: T(K)
+    heat_capacity:
+      value: 30.944
+      as_published: '30.944'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1300'
+        column: Cp
+    entropy:
+      value: 213.704
+      as_published: '213.704'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 191.89
+      as_published: '191.890'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 28.359
+      as_published: '28.359'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.662
+      as_published: '852.662'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 667.344
+      as_published: '667.344'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -26.814
+      as_published: '-26.814'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1300'
+        column: log Kf
+  - temperature:
+      value: 1400.0
+      as_published: '1400'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1400'
+        column: T(K)
+    heat_capacity:
+      value: 30.98
+      as_published: '30.980'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1400'
+        column: Cp
+    entropy:
+      value: 215.999
+      as_published: '215.999'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 193.531
+      as_published: '193.531'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 31.455
+      as_published: '31.455'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.842
+      as_published: '852.842'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 653.082
+      as_published: '653.082'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -24.367
+      as_published: '-24.367'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1400'
+        column: log Kf
+  - temperature:
+      value: 1500.0
+      as_published: '1500'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1500'
+        column: T(K)
+    heat_capacity:
+      value: 30.989
+      as_published: '30.989'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1500'
+        column: Cp
+    entropy:
+      value: 218.137
+      as_published: '218.137'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 195.101
+      as_published: '195.101'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 34.554
+      as_published: '34.554'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.978
+      as_published: '852.978'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 638.808
+      as_published: '638.808'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -22.245
+      as_published: '-22.245'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1500'
+        column: log Kf
+  - temperature:
+      value: 1600.0
+      as_published: '1600'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1600'
+        column: T(K)
+    heat_capacity:
+      value: 30.978
+      as_published: '30.978'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1600'
+        column: Cp
+    entropy:
+      value: 220.136
+      as_published: '220.136'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 196.604
+      as_published: '196.604'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 37.652
+      as_published: '37.652'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 853.067
+      as_published: '853.067'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 624.527
+      as_published: '624.527'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -20.389
+      as_published: '-20.389'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1600'
+        column: log Kf
+  - temperature:
+      value: 1700.0
+      as_published: '1700'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1700'
+        column: T(K)
+    heat_capacity:
+      value: 30.958
+      as_published: '30.958'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1700'
+        column: Cp
+    entropy:
+      value: 222.014
+      as_published: '222.014'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 198.044
+      as_published: '198.044'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 40.749
+      as_published: '40.749'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 853.107
+      as_published: '853.107'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 610.242
+      as_published: '610.242'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -18.75
+      as_published: '-18.750'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1700'
+        column: log Kf
+  - temperature:
+      value: 1800.0
+      as_published: '1800'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1800'
+        column: T(K)
+    heat_capacity:
+      value: 30.944
+      as_published: '30.944'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1800'
+        column: Cp
+    entropy:
+      value: 223.783
+      as_published: '223.783'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 199.425
+      as_published: '199.425'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 43.844
+      as_published: '43.844'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 853.097
+      as_published: '853.097'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 595.956
+      as_published: '595.956'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -17.294
+      as_published: '-17.294'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1800'
+        column: log Kf
+  - temperature:
+      value: 1900.0
+      as_published: '1900'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1900'
+        column: T(K)
+    heat_capacity:
+      value: 30.951
+      as_published: '30.951'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1900'
+        column: Cp
+    entropy:
+      value: 225.456
+      as_published: '225.456'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 200.752
+      as_published: '200.752'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 46.939
+      as_published: '46.939'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 853.039
+      as_published: '853.039'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 581.672
+      as_published: '581.672'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -15.991
+      as_published: '-15.991'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '1900'
+        column: log Kf
+  - temperature:
+      value: 2000.0
+      as_published: '2000'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2000'
+        column: T(K)
+    heat_capacity:
+      value: 30.996
+      as_published: '30.996'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2000'
+        column: Cp
+    entropy:
+      value: 227.045
+      as_published: '227.045'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 202.027
+      as_published: '202.027'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 50.036
+      as_published: '50.036'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.935
+      as_published: '852.935'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 567.392
+      as_published: '567.392'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -14.819
+      as_published: '-14.819'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2000'
+        column: log Kf
+  - temperature:
+      value: 2100.0
+      as_published: '2100'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2100'
+        column: T(K)
+    heat_capacity:
+      value: 31.094
+      as_published: '31.094'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2100'
+        column: Cp
+    entropy:
+      value: 228.559
+      as_published: '228.559'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 203.255
+      as_published: '203.255'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 53.14
+      as_published: '53.140'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.789
+      as_published: '852.789'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 553.118
+      as_published: '553.118'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -13.758
+      as_published: '-13.758'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2100'
+        column: log Kf
+  - temperature:
+      value: 2200.0
+      as_published: '2200'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2200'
+        column: T(K)
+    heat_capacity:
+      value: 31.257
+      as_published: '31.257'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2200'
+        column: Cp
+    entropy:
+      value: 230.009
+      as_published: '230.009'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 204.438
+      as_published: '204.438'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 56.256
+      as_published: '56.256'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.607
+      as_published: '852.607'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 538.852
+      as_published: '538.852'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -12.794
+      as_published: '-12.794'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2200'
+        column: log Kf
+  - temperature:
+      value: 2300.0
+      as_published: '2300'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2300'
+        column: T(K)
+    heat_capacity:
+      value: 31.496
+      as_published: '31.496'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2300'
+        column: Cp
+    entropy:
+      value: 231.403
+      as_published: '231.403'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 205.58
+      as_published: '205.580'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 59.393
+      as_published: '59.393'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.395
+      as_published: '852.395'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 524.595
+      as_published: '524.595'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -11.914
+      as_published: '-11.914'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2300'
+        column: log Kf
+  - temperature:
+      value: 2400.0
+      as_published: '2400'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2400'
+        column: T(K)
+    heat_capacity:
+      value: 31.818
+      as_published: '31.818'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2400'
+        column: Cp
+    entropy:
+      value: 232.75
+      as_published: '232.750'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 206.684
+      as_published: '206.684'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 62.558
+      as_published: '62.558'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 852.162
+      as_published: '852.162'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 510.348
+      as_published: '510.348'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -11.107
+      as_published: '-11.107'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2400'
+        column: log Kf
+  - temperature:
+      value: 2500.0
+      as_published: '2500'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2500'
+        column: T(K)
+    heat_capacity:
+      value: 32.229
+      as_published: '32.229'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2500'
+        column: Cp
+    entropy:
+      value: 234.057
+      as_published: '234.057'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 207.753
+      as_published: '207.753'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 65.76
+      as_published: '65.760'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.915
+      as_published: '851.915'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 496.11
+      as_published: '496.110'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -10.366
+      as_published: '-10.366'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2500'
+        column: log Kf
+  - temperature:
+      value: 2600.0
+      as_published: '2600'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2600'
+        column: T(K)
+    heat_capacity:
+      value: 32.729
+      as_published: '32.729'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2600'
+        column: Cp
+    entropy:
+      value: 235.331
+      as_published: '235.331'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 208.79
+      as_published: '208.790'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 69.007
+      as_published: '69.007'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.667
+      as_published: '851.667'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 481.883
+      as_published: '481.883'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -9.681
+      as_published: '-9.681'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2600'
+        column: log Kf
+  - temperature:
+      value: 2700.0
+      as_published: '2700'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2700'
+        column: T(K)
+    heat_capacity:
+      value: 33.319
+      as_published: '33.319'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2700'
+        column: Cp
+    entropy:
+      value: 236.577
+      as_published: '236.577'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 209.796
+      as_published: '209.796'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 72.309
+      as_published: '72.309'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.399
+      as_published: '851.399'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 467.666
+      as_published: '467.666'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -9.048
+      as_published: '-9.048'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2700'
+        column: log Kf
+  - temperature:
+      value: 2800.0
+      as_published: '2800'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2800'
+        column: T(K)
+    heat_capacity:
+      value: 33.993
+      as_published: '33.993'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2800'
+        column: Cp
+    entropy:
+      value: 237.8
+      as_published: '237.800'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 210.774
+      as_published: '210.774'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 75.674
+      as_published: '75.674'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 851.086
+      as_published: '851.086'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 453.459
+      as_published: '453.459'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -8.459
+      as_published: '-8.459'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2800'
+        column: log Kf
+  - temperature:
+      value: 2900.0
+      as_published: '2900'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2900'
+        column: T(K)
+    heat_capacity:
+      value: 34.747
+      as_published: '34.747'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2900'
+        column: Cp
+    entropy:
+      value: 239.006
+      as_published: '239.006'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 211.727
+      as_published: '211.727'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 79.11
+      as_published: '79.110'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 850.696
+      as_published: '850.696'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 439.264
+      as_published: '439.264'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -7.912
+      as_published: '-7.912'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '2900'
+        column: log Kf
+  - temperature:
+      value: 3000.0
+      as_published: '3000'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3000'
+        column: T(K)
+    heat_capacity:
+      value: 35.572
+      as_published: '35.572'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3000'
+        column: Cp
+    entropy:
+      value: 240.198
+      as_published: '240.198'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 212.656
+      as_published: '212.656'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 82.625
+      as_published: '82.625'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 850.209
+      as_published: '850.209'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 425.085
+      as_published: '425.085'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -7.401
+      as_published: '-7.401'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3000'
+        column: log Kf
+  - temperature:
+      value: 3100.0
+      as_published: '3100'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3100'
+        column: T(K)
+    heat_capacity:
+      value: 36.459
+      as_published: '36.459'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3100'
+        column: Cp
+    entropy:
+      value: 241.379
+      as_published: '241.379'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 213.564
+      as_published: '213.564'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 86.227
+      as_published: '86.227'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 849.59
+      as_published: '849.590'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 410.924
+      as_published: '410.924'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -6.924
+      as_published: '-6.924'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3100'
+        column: log Kf
+  - temperature:
+      value: 3200.0
+      as_published: '3200'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3200'
+        column: T(K)
+    heat_capacity:
+      value: 37.397
+      as_published: '37.397'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3200'
+        column: Cp
+    entropy:
+      value: 242.551
+      as_published: '242.551'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 214.451
+      as_published: '214.451'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 89.919
+      as_published: '89.919'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 848.813
+      as_published: '848.813'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 396.786
+      as_published: '396.786'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -6.477
+      as_published: '-6.477'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3200'
+        column: log Kf
+  - temperature:
+      value: 3300.0
+      as_published: '3300'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3300'
+        column: T(K)
+    heat_capacity:
+      value: 38.375
+      as_published: '38.375'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3300'
+        column: Cp
+    entropy:
+      value: 243.717
+      as_published: '243.717'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 215.32
+      as_published: '215.320'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 93.707
+      as_published: '93.707'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 847.856
+      as_published: '847.856'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 382.674
+      as_published: '382.674'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -6.057
+      as_published: '-6.057'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3300'
+        column: log Kf
+  - temperature:
+      value: 3400.0
+      as_published: '3400'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3400'
+        column: T(K)
+    heat_capacity:
+      value: 39.381
+      as_published: '39.381'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3400'
+        column: Cp
+    entropy:
+      value: 244.877
+      as_published: '244.877'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 216.173
+      as_published: '216.173'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 97.595
+      as_published: '97.595'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 846.688
+      as_published: '846.688'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 368.595
+      as_published: '368.595'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -5.663
+      as_published: '-5.663'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3400'
+        column: log Kf
+  - temperature:
+      value: 3500.0
+      as_published: '3500'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3500'
+        column: T(K)
+    heat_capacity:
+      value: 40.402
+      as_published: '40.402'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3500'
+        column: Cp
+    entropy:
+      value: 246.033
+      as_published: '246.033'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 217.009
+      as_published: '217.009'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 101.584
+      as_published: '101.584'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 845.246
+      as_published: '845.246'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 354.553
+      as_published: '354.553'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -5.291
+      as_published: '-5.291'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3500'
+        column: log Kf
+  - temperature:
+      value: 3600.0
+      as_published: '3600'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3600'
+        column: T(K)
+    heat_capacity:
+      value: 41.426
+      as_published: '41.426'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3600'
+        column: Cp
+    entropy:
+      value: 247.186
+      as_published: '247.186'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 217.832
+      as_published: '217.832'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 105.675
+      as_published: '105.675'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 843.431
+      as_published: '843.431'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 340.558
+      as_published: '340.558'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.941
+      as_published: '-4.941'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3600'
+        column: log Kf
+  - temperature:
+      value: 3700.0
+      as_published: '3700'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3700'
+        column: T(K)
+    heat_capacity:
+      value: 42.442
+      as_published: '42.442'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3700'
+        column: Cp
+    entropy:
+      value: 248.335
+      as_published: '248.335'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 218.64
+      as_published: '218.640'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 109.869
+      as_published: '109.869'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 806.403
+      as_published: '806.403'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 326.81
+      as_published: '326.810'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.614
+      as_published: '-4.614'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3700'
+        column: log Kf
+  - temperature:
+      value: 3800.0
+      as_published: '3800'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3800'
+        column: T(K)
+    heat_capacity:
+      value: 43.44
+      as_published: '43.440'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3800'
+        column: Cp
+    entropy:
+      value: 249.48
+      as_published: '249.480'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 219.437
+      as_published: '219.437'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 114.163
+      as_published: '114.163'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 807.141
+      as_published: '807.141'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 313.838
+      as_published: '313.838'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.314
+      as_published: '-4.314'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3800'
+        column: log Kf
+  - temperature:
+      value: 3900.0
+      as_published: '3900'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3900'
+        column: T(K)
+    heat_capacity:
+      value: 44.408
+      as_published: '44.408'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3900'
+        column: Cp
+    entropy:
+      value: 250.621
+      as_published: '250.621'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 220.222
+      as_published: '220.222'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 118.556
+      as_published: '118.556'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 807.977
+      as_published: '807.977'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 300.846
+      as_published: '300.846'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.029
+      as_published: '-4.029'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '3900'
+        column: log Kf
+  - temperature:
+      value: 4000.0
+      as_published: '4000'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4000'
+        column: T(K)
+    heat_capacity:
+      value: 45.338
+      as_published: '45.338'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4000'
+        column: Cp
+    entropy:
+      value: 251.757
+      as_published: '251.757'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 220.996
+      as_published: '220.996'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 123.043
+      as_published: '123.043'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 808.909
+      as_published: '808.909'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 287.831
+      as_published: '287.831'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.759
+      as_published: '-3.759'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4000'
+        column: log Kf
+  - temperature:
+      value: 4100.0
+      as_published: '4100'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4100'
+        column: T(K)
+    heat_capacity:
+      value: 46.222
+      as_published: '46.222'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4100'
+        column: Cp
+    entropy:
+      value: 252.887
+      as_published: '252.887'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 221.76
+      as_published: '221.760'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 127.622
+      as_published: '127.622'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 809.931
+      as_published: '809.931'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 274.792
+      as_published: '274.792'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.501
+      as_published: '-3.501'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4100'
+        column: log Kf
+  - temperature:
+      value: 4200.0
+      as_published: '4200'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4200'
+        column: T(K)
+    heat_capacity:
+      value: 47.054
+      as_published: '47.054'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4200'
+        column: Cp
+    entropy:
+      value: 254.011
+      as_published: '254.011'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 222.515
+      as_published: '222.515'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 132.286
+      as_published: '132.286'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 811.038
+      as_published: '811.038'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 261.726
+      as_published: '261.726'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.255
+      as_published: '-3.255'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4200'
+        column: log Kf
+  - temperature:
+      value: 4300.0
+      as_published: '4300'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4300'
+        column: T(K)
+    heat_capacity:
+      value: 47.829
+      as_published: '47.829'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4300'
+        column: Cp
+    entropy:
+      value: 255.128
+      as_published: '255.128'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 223.26
+      as_published: '223.260'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 137.031
+      as_published: '137.031'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 812.227
+      as_published: '812.227'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 248.634
+      as_published: '248.634'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.02
+      as_published: '-3.020'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4300'
+        column: log Kf
+  - temperature:
+      value: 4400.0
+      as_published: '4400'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4400'
+        column: T(K)
+    heat_capacity:
+      value: 48.543
+      as_published: '48.543'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4400'
+        column: Cp
+    entropy:
+      value: 256.236
+      as_published: '256.236'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 223.997
+      as_published: '223.997'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 141.85
+      as_published: '141.850'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 813.489
+      as_published: '813.489'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 235.512
+      as_published: '235.512'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.796
+      as_published: '-2.796'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4400'
+        column: log Kf
+  - temperature:
+      value: 4500.0
+      as_published: '4500'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4500'
+        column: T(K)
+    heat_capacity:
+      value: 49.193
+      as_published: '49.193'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4500'
+        column: Cp
+    entropy:
+      value: 257.334
+      as_published: '257.334'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 224.726
+      as_published: '224.726'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 146.737
+      as_published: '146.737'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 814.82
+      as_published: '814.820'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 222.362
+      as_published: '222.362'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.581
+      as_published: '-2.581'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4500'
+        column: log Kf
+  - temperature:
+      value: 4600.0
+      as_published: '4600'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4600'
+        column: T(K)
+    heat_capacity:
+      value: 49.778
+      as_published: '49.778'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4600'
+        column: Cp
+    entropy:
+      value: 258.422
+      as_published: '258.422'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 225.446
+      as_published: '225.446'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 151.686
+      as_published: '151.686'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 816.213
+      as_published: '816.213'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 209.181
+      as_published: '209.181'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.375
+      as_published: '-2.375'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4600'
+        column: log Kf
+  - temperature:
+      value: 4700.0
+      as_published: '4700'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4700'
+        column: T(K)
+    heat_capacity:
+      value: 50.297
+      as_published: '50.297'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4700'
+        column: Cp
+    entropy:
+      value: 259.498
+      as_published: '259.498'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 226.159
+      as_published: '226.159'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 156.691
+      as_published: '156.691'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 817.661
+      as_published: '817.661'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 195.969
+      as_published: '195.969'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.178
+      as_published: '-2.178'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4700'
+        column: log Kf
+  - temperature:
+      value: 4800.0
+      as_published: '4800'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4800'
+        column: T(K)
+    heat_capacity:
+      value: 50.752
+      as_published: '50.752'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4800'
+        column: Cp
+    entropy:
+      value: 260.562
+      as_published: '260.562'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 226.865
+      as_published: '226.865'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 161.744
+      as_published: '161.744'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 819.158
+      as_published: '819.158'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 182.726
+      as_published: '182.726'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.988
+      as_published: '-1.988'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4800'
+        column: log Kf
+  - temperature:
+      value: 4900.0
+      as_published: '4900'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4900'
+        column: T(K)
+    heat_capacity:
+      value: 51.142
+      as_published: '51.142'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4900'
+        column: Cp
+    entropy:
+      value: 261.612
+      as_published: '261.612'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 227.564
+      as_published: '227.564'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 166.839
+      as_published: '166.839'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 820.696
+      as_published: '820.696'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 169.451
+      as_published: '169.451'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.806
+      as_published: '-1.806'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '4900'
+        column: log Kf
+  - temperature:
+      value: 5000.0
+      as_published: '5000'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5000'
+        column: T(K)
+    heat_capacity:
+      value: 51.471
+      as_published: '51.471'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5000'
+        column: Cp
+    entropy:
+      value: 262.649
+      as_published: '262.649'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 228.255
+      as_published: '228.255'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 171.97
+      as_published: '171.970'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 822.271
+      as_published: '822.271'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 156.144
+      as_published: '156.144'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.631
+      as_published: '-1.631'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5000'
+        column: log Kf
+  - temperature:
+      value: 5100.0
+      as_published: '5100'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5100'
+        column: T(K)
+    heat_capacity:
+      value: 51.741
+      as_published: '51.741'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5100'
+        column: Cp
+    entropy:
+      value: 263.671
+      as_published: '263.671'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 228.939
+      as_published: '228.939'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 177.131
+      as_published: '177.131'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 823.876
+      as_published: '823.876'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 142.806
+      as_published: '142.806'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.463
+      as_published: '-1.463'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5100'
+        column: log Kf
+  - temperature:
+      value: 5200.0
+      as_published: '5200'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5200'
+        column: T(K)
+    heat_capacity:
+      value: 51.955
+      as_published: '51.955'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5200'
+        column: Cp
+    entropy:
+      value: 264.678
+      as_published: '264.678'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 229.617
+      as_published: '229.617'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 182.317
+      as_published: '182.317'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 825.505
+      as_published: '825.505'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 129.435
+      as_published: '129.435'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.3
+      as_published: '-1.300'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5200'
+        column: log Kf
+  - temperature:
+      value: 5300.0
+      as_published: '5300'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5300'
+        column: T(K)
+    heat_capacity:
+      value: 52.117
+      as_published: '52.117'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5300'
+        column: Cp
+    entropy:
+      value: 265.669
+      as_published: '265.669'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 230.288
+      as_published: '230.288'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 187.52
+      as_published: '187.520'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 827.152
+      as_published: '827.152'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 116.034
+      as_published: '116.034'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.144
+      as_published: '-1.144'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5300'
+        column: log Kf
+  - temperature:
+      value: 5400.0
+      as_published: '5400'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5400'
+        column: T(K)
+    heat_capacity:
+      value: 52.23
+      as_published: '52.230'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5400'
+        column: Cp
+    entropy:
+      value: 266.644
+      as_published: '266.644'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 230.952
+      as_published: '230.952'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 192.738
+      as_published: '192.738'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 828.814
+      as_published: '828.814'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 102.601
+      as_published: '102.601'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -0.992
+      as_published: '-0.992'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5400'
+        column: log Kf
+  - temperature:
+      value: 5500.0
+      as_published: '5500'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5500'
+        column: T(K)
+    heat_capacity:
+      value: 52.298
+      as_published: '52.298'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5500'
+        column: Cp
+    entropy:
+      value: 267.603
+      as_published: '267.603'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 231.61
+      as_published: '231.610'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 197.965
+      as_published: '197.965'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 830.484
+      as_published: '830.484'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 89.137
+      as_published: '89.137'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -0.847
+      as_published: '-0.847'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5500'
+        column: log Kf
+  - temperature:
+      value: 5600.0
+      as_published: '5600'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5600'
+        column: T(K)
+    heat_capacity:
+      value: 52.325
+      as_published: '52.325'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5600'
+        column: Cp
+    entropy:
+      value: 268.546
+      as_published: '268.546'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 232.261
+      as_published: '232.261'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 203.196
+      as_published: '203.196'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 832.159
+      as_published: '832.159'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 75.643
+      as_published: '75.643'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -0.706
+      as_published: '-0.706'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5600'
+        column: log Kf
+  - temperature:
+      value: 5700.0
+      as_published: '5700'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5700'
+        column: T(K)
+    heat_capacity:
+      value: 52.315
+      as_published: '52.315'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5700'
+        column: Cp
+    entropy:
+      value: 269.472
+      as_published: '269.472'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 232.906
+      as_published: '232.906'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 208.429
+      as_published: '208.429'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 833.835
+      as_published: '833.835'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 62.119
+      as_published: '62.119'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -0.569
+      as_published: '-0.569'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5700'
+        column: log Kf
+  - temperature:
+      value: 5800.0
+      as_published: '5800'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5800'
+        column: T(K)
+    heat_capacity:
+      value: 52.271
+      as_published: '52.271'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5800'
+        column: Cp
+    entropy:
+      value: 270.382
+      as_published: '270.382'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 233.544
+      as_published: '233.544'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 213.658
+      as_published: '213.658'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 835.508
+      as_published: '835.508'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 48.565
+      as_published: '48.565'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -0.437
+      as_published: '-0.437'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5800'
+        column: log Kf
+  - temperature:
+      value: 5900.0
+      as_published: '5900'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5900'
+        column: T(K)
+    heat_capacity:
+      value: 52.197
+      as_published: '52.197'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5900'
+        column: Cp
+    entropy:
+      value: 271.275
+      as_published: '271.275'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 234.176
+      as_published: '234.176'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 218.882
+      as_published: '218.882'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 837.175
+      as_published: '837.175'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 34.983
+      as_published: '34.983'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -0.31
+      as_published: '-0.310'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '5900'
+        column: log Kf
+  - temperature:
+      value: 6000.0
+      as_published: '6000'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '6000'
+        column: T(K)
+    heat_capacity:
+      value: 52.097
+      as_published: '52.097'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '6000'
+        column: Cp
+    entropy:
+      value: 272.151
+      as_published: '272.151'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '6000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 234.802
+      as_published: '234.802'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '6000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 224.097
+      as_published: '224.097'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '6000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 838.834
+      as_published: '838.834'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '6000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 21.373
+      as_published: '21.373'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '6000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -0.186
+      as_published: '-0.186'
+      locator:
+        table_id: W-005
+        url: https://janaf.nist.gov/tables/W-005.html
+        download_url: https://janaf.nist.gov/tables/W-005.txt
+        row_temperature_as_published: '6000'
+        column: log Kf
+  parse_ambiguities: []

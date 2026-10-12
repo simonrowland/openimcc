@@ -507,6 +507,29 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     # The source reports decomposition near 500 K, not a bulk liquid row;
     # Ag2O(l) is only the flagged caller-activity construction convention.
     "Ag": ("Ag2O", 2, 0.5),
+    # For MoO3(l), balance gases per oxide parent unit: n_gas=1/cation_count
+    # and n_O2=(3-n_gas*oxygen_count)/2. The dimensionless stoichiometry
+    # closes Mo and O independently for monomers and oxide clusters.
+    "Mo": ("MoO3", 1, 1.5),
+    "MoO": ("MoO3", 1, 1.0),
+    "MoO2": ("MoO3", 1, 0.5),
+    "MoO3": ("MoO3", 1, 0.0),
+    "(MoO3)2": ("MoO3", 0.5, 0.0),
+    "(MoO3)3": ("MoO3", 1 / 3, 0.0),
+    "(MoO3)4": ("MoO3", 0.25, 0.0),
+    "(MoO3)5": ("MoO3", 0.2, 0.0),
+    # WO3(l) supplies one W and three O atoms. The W3O8 row therefore needs
+    # 1/3 mol gas and 1/6 mol O2 per WO3 parent unit; each (WO3)n is a
+    # stoichiometric multiple of the parent and releases no O2.
+    "W": ("WO3", 1, 1.5),
+    "WO": ("WO3", 1, 1.0),
+    "WO2": ("WO3", 1, 0.5),
+    "WO3": ("WO3", 1, 0.0),
+    "(WO3)2": ("WO3", 0.5, 0.0),
+    "(WO3)3": ("WO3", 1 / 3, 0.0),
+    "(WO3)4": ("WO3", 0.25, 0.0),
+    "(WO3)5": ("WO3", 0.2, 0.0),
+    "W3O8": ("WO3", 1 / 3, 1 / 6),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -539,6 +562,10 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "CrO",
         "CrO2",
         "CrO3",
+        "Mo", "MoO", "MoO2", "MoO3",
+        "(MoO3)2", "(MoO3)3", "(MoO3)4", "(MoO3)5",
+        "W", "WO", "WO2", "WO3",
+        "(WO3)2", "(WO3)3", "(WO3)4", "(WO3)5", "W3O8",
         "V",
         "VO",
         "VO2",
@@ -707,6 +734,14 @@ _GAS_PROVENANCE_AUTHORITY = {
 }
 _GAS_PROVENANCE_AUTHORITY.update(
     {
+        "(MoO3)2": "nasa_glenn_fitted",
+        "(MoO3)3": "nasa_glenn_fitted",
+        "(MoO3)4": "nasa_glenn_fitted",
+        "(MoO3)5": "nasa_glenn_fitted",
+        "(WO3)2": "janaf_fitted",
+        "(WO3)3": "janaf_fitted",
+        "(WO3)4": "janaf_fitted",
+        "(WO3)5": "nasa_glenn_fitted",
         "Na2O": "nasa_glenn_fitted",
         "K2O": "nasa_glenn_fitted",
         "RbO": "nasa_glenn_fitted",
@@ -757,7 +792,7 @@ _ION_GAS_SPECIES = (
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
     "Zn+", "Zn-", "Cd+", "Bi+",
-    "Mn+", "Ag+", "Ag-",
+    "Mn+", "Ag+", "Ag-", "Mo+", "Mo-", "W+", "W-",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -816,6 +851,8 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "As2O3": "liquid_from_solid_estimate",
     "Sb2O3": "liquid_from_solid_estimate",
     "Ag2O": "liquid_from_solid_estimate",
+    "MoO3": "janaf_fitted",
+    "WO3": "janaf_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -832,6 +869,8 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "V2O3": "O-063",
     "NbO2": "Nb-013",
     "Li2O": "Li-015",
+    "MoO3": "Mo-015",
+    "WO3": "O-066",
     "Rb2O": "NG-1841",
     "PbO": "O-007",
     "B2O3": "B-096",
@@ -1039,6 +1078,8 @@ _GAS_IONIZATION_PAIRS = (
     ("Bi", "Bi+"),
     ("Mn", "Mn+"),
     ("Ag", "Ag+"),
+    ("Mo", "Mo+"),
+    ("W", "W+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -1068,6 +1109,8 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("Cu", "Cu-"),
     ("Zn", "Zn-"),
     ("Ag", "Ag-"),
+    ("Mo", "Mo-"),
+    ("W", "W-"),
 )
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
@@ -1934,6 +1977,72 @@ ELEMENT_STATUS["Ag"] = {
             "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
         },
         "user_agent": "neutral-source-vendor/1.0",
+    },
+}
+
+ELEMENT_STATUS["Mo"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+    "validation": "unvalidated",
+    "reason": "MoO3(l), JANAF Mo monomers and ions, and NASA Glenn Mo oxide clusters cover 1200-3000 K; MoO3(l) uses its JANAF liquid branch through 2000 K and a labelled constant-Cp continuation above it; a(MoO3) is caller-supplied; the C3 screen at a(MoO3)=1e-3 reached 1.192e-09 at 2600 K and fO2=1e-6 within the <=1-bar neutral-pressure domain.",
+    "c2_candidates": (
+        ("Mo-008", "MoO"), ("Mo-010", "MoO2"), ("Mo-017", "MoO3"),
+        ("NG-0831", "(MoO3)2"), ("NG-0832", "(MoO3)3"),
+        ("NG-0833", "(MoO3)4"), ("NG-0834", "(MoO3)5"),
+    ),
+    "c3_ion_bound": {
+        "status": "computed",
+        "max_ratio": 1.1918231274644968e-09,
+        "isolated_bound": 38906.85178134413,
+        "temperature_K": 2600.0,
+        "fO2": 1.0e-6,
+        "neutral_pressure_bar": 9.751648553137538e-05,
+        "element_total_pressure_bar": 0.009347350884885657,
+        "joint_ion_pressure_bar": 1.1140388965132455e-11,
+        "electron_pressure_bar": 2.983390605958947e-05,
+        "K_ion": 3.4082432969578687e-12,
+        "parent_oxide": "MoO3",
+        "parent_activity": 1.0e-3,
+        "source_tables": {"neutral": "Mo-005", "cation": "Mo-006", "electron": "D-020"},
+        "upstream_sha256": {
+            "Mo-005": "831d1538d9b43dc01390e595aac3e97854290b2b714ad27c048529c06aa5041b",
+            "Mo-006": "0ceb49007573c24e17516379ec29a8e69af92004db4210ba1e12db7f1715621f",
+            "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+        },
+        "user_agent": "openimcc-janaf-vendor/1.0",
+    },
+}
+
+ELEMENT_STATUS["W"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+    "validation": "unvalidated",
+    "reason": "WO3(l), JANAF W monomers, oxide clusters and ions, and NASA Glenn (WO3)5(g) cover 1200-3000 K; O-066 prints the liquid values below its 1745 K marker as supercooled source data; a(WO3) is caller-supplied; the C3 screen at a(WO3)=1e-3 reached 6.594e-13 at 2300 K and fO2=1e-10 within the <=1-bar neutral-pressure domain.",
+    "c2_candidates": (
+        ("O-027", "WO"), ("O-048", "WO2"), ("O-068", "WO3"),
+        ("O-088", "(WO3)2"), ("O-092", "W3O8"), ("O-093", "(WO3)3"),
+        ("O-096", "(WO3)4"), ("NG-1258", "(WO3)5"),
+    ),
+    "c3_ion_bound": {
+        "status": "computed",
+        "max_ratio": 6.594318508976297e-13,
+        "isolated_bound": 665186539.0955995,
+        "temperature_K": 2300.0,
+        "fO2": 1.0e-10,
+        "neutral_pressure_bar": 1.3347845296417244e-07,
+        "element_total_pressure_bar": 8.318312853938228e-05,
+        "joint_ion_pressure_bar": 5.48536044161803e-17,
+        "electron_pressure_bar": 4.935840956984356e-06,
+        "K_ion": 2.0283218318286082e-15,
+        "parent_oxide": "WO3",
+        "parent_activity": 1.0e-3,
+        "source_tables": {"neutral": "W-005", "cation": "W-006", "electron": "D-020"},
+        "upstream_sha256": {
+            "W-005": "fdf2523b89b49953a092eb84a71fd967244fe4a1124be77daa227c1f9fa8fa0e",
+            "W-006": "f16518d3b08afc18b91a7da69c615429ebbeb690eabf451d4556929a1ced90b6",
+            "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+        },
+        "user_agent": "openimcc-janaf-vendor/1.0",
     },
 }
 
@@ -3224,6 +3333,7 @@ _ATOMIC_MASS_G_MOL = {
     "Cs": 132.90545196, "Cu": 63.546, "Sn": 118.710,
     "Zn": 65.38, "Cd": 112.411, "Bi": 208.9804,
     "As": 74.921595, "Se": 78.971, "Te": 127.60,
+    "Mo": 95.95, "W": 183.84,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,
@@ -3248,6 +3358,13 @@ class OxygenBalanceSpeciesMetadata(NamedTuple):
 
 def _formula_atoms(formula: str) -> dict[str, int]:
     """Count atoms in a retained gas or parent-oxide formula."""
+    group = re.fullmatch(r"\(([^()]+)\)(\d+)", formula)
+    if group:
+        subformula, multiplier = group.groups()
+        return {
+            element: number * int(multiplier)
+            for element, number in _formula_atoms(subformula).items()
+        }
     parts = _FORMULA_PART.findall(formula)
     if not parts or "".join(element + count for element, count in parts) != formula:
         raise ImccGasOxygenBalanceError(

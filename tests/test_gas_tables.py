@@ -28,6 +28,7 @@ from openimcc.gas import (
     _GAS_PROVENANCE_AUTHORITY,
     _OXIDE_PROVENANCE_AUTHORITY,
     _OXIDE_SOURCE_TABLE_IDS,
+    _formula_atoms,
     ImccGasTemperatureOutsideDomainError,
     IMCC_GAS_CHANNEL_SPECIES,
     IMCC_SF04_WORKBOOK_GRID_K,
@@ -588,7 +589,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
     )
-    assert len(oxide_rows) == 31
+    assert len(oxide_rows) == 33
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -608,7 +609,8 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         )
     }
     split_ion_species = nasa_ion_species | {
-        "Zn+(g)", "Zn-(g)", "Bi+(g)", "Mn+(g)"
+        "Zn+(g)", "Zn-(g)", "Bi+(g)", "Mn+(g)",
+        "Mo+(g)", "Mo-(g)", "W+(g)", "W-(g)",
     }
     nasa_atomic_ion_species = {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
@@ -868,6 +870,29 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
                 f"https://janaf.nist.gov/tables/{table_id}.txt"
             )
 
+    for species_name, table_id, *_ in build_gas_tables.TRACE_JANAF_YAML_GAS_SOURCES:
+        source_path = JANAF_DATA / f"{table_id}.yaml"
+        source_record = _record(table_id)
+        expected_sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
+        for interval, runtime_range, source_range in (
+            (1, [1500, 3000], [1500, 3000]),
+            (2, [1200, 1500], [500, 1500]),
+        ):
+            record = next(
+                row for row in gas_records
+                if row["species_name"] == species_name
+                and row.get("T_interval") == interval
+            )
+            assert record["table_id"] == table_id
+            assert record["source_path"] == f"data-src/janaf/{table_id}.yaml"
+            assert record["source_sha256"] == expected_sha
+            assert record["upstream_source_sha256"] == source_record[
+                "extraction"
+            ]["source_sha256"]
+            assert record["authority"] == "janaf_fitted"
+            assert record["T_range_K"] == runtime_range
+            assert record["source_fit_range_K"] == source_range
+
     for source in (
         *build_gas_tables.TRACE_NASA_GAS_SOURCES,
         *build_gas_tables.TRACE_ION_GAS_NASA_SOURCES,
@@ -879,12 +904,16 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
         nasa_source = _nasa_record(table_id)
         assert nasa_source["record_id"] == table_id
         assert nasa_source["phase"] == "gas"
-        assert next(
+        source_row = next(
             row
             for row in gas_records
             if row["species_name"] == species_name
             and row.get("T_interval") == 1
-        )["source"]["upstream_source_sha256"] == (
+        )
+        assert source_row.get(
+            "upstream_source_sha256",
+            source_row.get("source", {}).get("upstream_source_sha256"),
+        ) == (
             "fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363"
         )
         for interval, runtime_range, source_range in (
@@ -1029,6 +1058,31 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
 
 
 
+    for species_name, table_id, *_ in build_gas_tables.TRACE_JANAF_YAML_GAS_SOURCES:
+        source_values = _record(table_id)["table"]["values"]
+        for interval, source_min, source_max in (
+            (1, 1500.0, 3000.0),
+            (2, 500.0, 1500.0),
+        ):
+            row = _gas_row_for_interval(
+                pack, species_name.removesuffix("(g)"), interval
+            )
+            residuals = [
+                abs(
+                    _janaf_gibbs(float(value["temperature"]["value"]), row)
+                    - _janaf_apparent_gibbs(
+                        table_id, float(value["temperature"]["value"])
+                    )
+                )
+                for value in source_values
+                if source_min <= float(value["temperature"]["value"]) <= source_max
+            ]
+            record = rows[(species_name, interval)]
+            assert residuals
+            assert max(residuals) == pytest.approx(
+                record["max_residual_J_per_mol"], abs=1.0e-6
+            )
+
     published_dir = ROOT / "data-src" / "published-thermo"
     for species_name, table_id, *_rest in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
         source_limit = _rest[-1]
@@ -1080,7 +1134,14 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
     nasa_cards = sorted(
         path
         for path in (ROOT / "data-src" / "nasa-glenn").glob("NG-*.json")
-        if path.stem not in {"NG-0074", "NG-0085", "NG-0086"}
+        if path.stem not in {
+            "NG-0074", "NG-0085", "NG-0086",
+            "NG-0824", "NG-0825", "NG-0826", "NG-0827", "NG-0828",
+            "NG-0829", "NG-0831", "NG-0832", "NG-0833", "NG-0834",
+            "NG-1245", "NG-1246", "NG-1247", "NG-1249", "NG-1251",
+            "NG-1253", "NG-1255", "NG-1256", "NG-1257", "NG-1258",
+            "NG-1701", "NG-2013",
+        }
     )
     expected_by_limit = {}
     for limit in (1000.0, 1200.0, 1500.0, 1860.0, 2000.0):
@@ -1157,6 +1218,13 @@ def test_published_source_data_flags_follow_source_limits() -> None:
         )
 
 
+def test_trace_nasa_card_thermal_increments_are_zero_at_the_formation_anchor() -> None:
+    for _species_name, table_id, *_ in build_gas_tables.TRACE_NASA_GAS_SOURCES:
+        record = _nasa_record(table_id)
+        thermal = build_gas_tables._nasa_card_thermal_rows(record, [298.15])
+        assert thermal[0]["enthalpy_increment"] == pytest.approx(0.0, abs=1.0e-12)
+
+
 def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = [row for row in provenance["rows"] if row["table"] == "condensate"]
@@ -1171,6 +1239,8 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         return matches.iloc[0]
 
     def source_janaf_g(table_id: str, temperature: float) -> float:
+        if (JANAF_DATA / f"{table_id}.yaml").is_file():
+            return _janaf_apparent_gibbs(table_id, temperature)
         source_rows = build_gas_tables._janaf_text_source_rows(JANAF_DATA, table_id)
         reference = source_rows[298.15]["formation_enthalpy"]
         source = source_rows[temperature]
@@ -1200,7 +1270,7 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         )
         return residual
 
-    li_source = build_gas_tables._janaf_text_source_rows(JANAF_DATA, "Li-015")
+    li_source = {row["temperature"]: row for row in _complete_rows("Li-015")}
     for t_min, t_max in ((1200.0, 1400.0), (1400.0, 2000.0), (2000.0, 3000.0)):
         li_nodes = [
             (temperature, source_janaf_g("Li-015", temperature))
@@ -1209,7 +1279,7 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         ]
         assert_residuals("Li2O(l)", fitted_row("Li2O(l)", t_min), li_nodes)
 
-    b_source = build_gas_tables._janaf_text_source_rows(JANAF_DATA, "B-096")
+    b_source = {row["temperature"]: row for row in _complete_rows("B-096")}
     for t_min, t_max, source_min in (
         (1200.0, 1500.0, 800.0),
         (1500.0, 3000.0, 1500.0),
@@ -1296,18 +1366,18 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
 
     pb_low_nodes = [
         (temperature, source_janaf_g("O-007", temperature))
-        for temperature in build_gas_tables._janaf_text_source_rows(
-            JANAF_DATA, "O-007"
-        )
+        for temperature in {
+            row["temperature"] for row in _complete_rows("O-007")
+        }
         if 1200.0 <= temperature <= 1500.0
     ]
     assert_residuals("PbO(l)", fitted_row("PbO(l)", 1200.0), pb_low_nodes)
 
     pb_high_nodes = [
         (temperature, source_janaf_g("O-007", temperature))
-        for temperature in build_gas_tables._janaf_text_source_rows(
-            JANAF_DATA, "O-007"
-        )
+        for temperature in {
+            row["temperature"] for row in _complete_rows("O-007")
+        }
         if 1500.0 <= temperature <= 2500.0
     ]
     pb_record = _nasa_record("NG-1801")
@@ -1336,6 +1406,45 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         )
         pb_high_nodes.append((float(temperature), source_g))
     assert_residuals("PbO(l)", fitted_row("PbO(l)", 1500.0), pb_high_nodes)
+
+    for table_id, species_name in (("Mo-015", "MoO3(l)"), ("O-066", "WO3(l)")):
+        source_values = _record(table_id)["table"]["values"]
+        complete_source = {
+            row["temperature"]: row for row in _complete_rows(table_id)
+        }
+        if table_id == "Mo-015":
+            complete_source = build_gas_tables._constant_cp_rows_through(
+                complete_source, 3000.0
+            )
+        source_anchor = next(
+            float(value["formation_enthalpy"]["value"])
+            for value in source_values
+            if float(value["temperature"]["value"]) == 298.15
+        )
+        condensate_rows = load_gas_datapack().oxide_df
+        assert all(
+            float(row["dH298_R"]) * R_J_MOL_K
+            == pytest.approx(source_anchor, abs=1.0e-12)
+            for _, row in condensate_rows.loc[
+                condensate_rows.index == species_name
+            ].iterrows()
+        )
+        for provenance_row in rows:
+            if provenance_row["species_name"] != species_name:
+                continue
+            t_min, t_max = map(float, provenance_row["T_range_K"])
+            nodes = [
+                (
+                    temperature,
+                    (source_anchor + value["enthalpy_increment"]) * 1000.0
+                    - temperature * value["entropy"],
+                )
+                for temperature, value in complete_source.items()
+                if t_min <= temperature <= t_max
+            ]
+            assert assert_residuals(
+                species_name, fitted_row(species_name, t_min), nodes
+            ) < 10.0
 
     for (
         species_name,
@@ -1729,19 +1838,15 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "Te", "Te2", "TeO2", "Se", "Se2", "SeO", "SeO2",
         "As", "As2", "As4", "As4O6",
         "Sb", "Sb2", "Sb4", "Sb4O6", "Ag",
+        "Mo", "MoO", "MoO2", "MoO3", "(MoO3)2", "(MoO3)3",
+        "(MoO3)4", "(MoO3)5", "W", "WO", "WO2", "WO3",
+        "(WO3)2", "(WO3)3", "(WO3)4", "W3O8",
+        "(WO3)5",
     }
     assert trace_channels == set(build_gas_tables.TRACE_GAS_SPECIES)
 
     def atom_counts(formula: str) -> dict[str, int]:
-        atoms: dict[str, int] = {}
-        cursor = 0
-        for match in re.finditer(r"([A-Z][a-z]?)([0-9]*)", formula):
-            assert match.start() == cursor
-            cursor = match.end()
-            element, count = match.groups()
-            atoms[element] = atoms.get(element, 0) + int(count or "1")
-        assert cursor == len(formula)
-        return atoms
+        return _formula_atoms(formula)
 
     for species in trace_channels:
         parent, n_gas, n_o2 = _SF04_REACTIONS[species]
@@ -1751,6 +1856,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
             name for name in (
                 "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
                 "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag",
+                "Mo", "W",
             )
             if name in parent_atoms
         )
@@ -2557,7 +2663,12 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     comparisons = provenance["source_comparisons"]
     assert comparisons["temperatures_K"] == [1800, 2000, 2500, 3000]
-    assert len(comparisons["rows"]) == 12
+    compared_species = {row["species_name"] for row in comparisons["rows"]}
+    assert {
+        "Mo(g)", "Mo+(g)", "Mo-(g)", "MoO(g)", "MoO2(g)", "MoO3(g)",
+        "MoO3(l)", "W(g)", "W+(g)", "W-(g)", "WO(g)", "WO2(g)",
+        "WO3(g)", "WO3(l)", "(WO3)2(g)", "(WO3)3(g)", "(WO3)4(g)",
+    } <= compared_species
     for comparison in comparisons["rows"]:
         nasa = _nasa_record(comparison["nasa_record_id"])
         if "pankratz_table_id" in comparison:
@@ -2595,9 +2706,19 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                     nasa_g - pankratz_g, abs=0.001
                 )
             continue
-        janaf = build_gas_tables._janaf_text_source_rows(
-            JANAF_DATA, comparison["janaf_table_id"]
-        )
+        if (JANAF_DATA / f"{comparison['janaf_table_id']}.yaml").is_file():
+            janaf_gibbs = lambda temperature: _janaf_apparent_gibbs(
+                comparison["janaf_table_id"], temperature
+            )
+        else:
+            janaf = build_gas_tables._janaf_text_source_rows(
+                JANAF_DATA, comparison["janaf_table_id"]
+            )
+            formation_h_298 = janaf[298.15]["formation_enthalpy"]
+            janaf_gibbs = lambda temperature: (
+                formation_h_298
+                + janaf[temperature]["enthalpy_increment"]
+            ) * 1000.0 - temperature * janaf[temperature]["entropy"]
         formation_h = float(nasa["delta_f_H_298_15"]["value"])
         card_h298 = (
             R_J_MOL_K
@@ -2606,11 +2727,7 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
         )
         for value in comparison["values"]:
             temperature = float(value["T_K"])
-            janaf_reference = janaf[298.15]["formation_enthalpy"]
-            janaf_node = janaf[temperature]
-            janaf_g = (
-                janaf_reference + janaf_node["enthalpy_increment"]
-            ) * 1000.0 - temperature * janaf_node["entropy"]
+            janaf_g = janaf_gibbs(temperature)
             nasa_properties = build_gas_tables._nasa7_properties(
                 nasa, temperature
             )
@@ -2672,6 +2789,7 @@ def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
             *build_gas_tables.ION_GAS_TEXT_SOURCES,
             *build_gas_tables.ION_GAS_YAML_SOURCES,
             *build_gas_tables.TRACE_ION_GAS_TEXT_SOURCES,
+            *build_gas_tables.TRACE_ION_GAS_YAML_SOURCES,
         )
     }
     reactions = [
@@ -2683,8 +2801,12 @@ def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
         ("Pb", "Pb+", 1),
         ("Ga", "Ga+", 1),
         ("B", "B+", 1),
+        ("Mo", "Mo+", 1),
+        ("W", "W+", 1),
         ("Cs", "Cs+", 1),
         ("Cu", "Cu-", -1),
+        ("Mo", "Mo-", -1),
+        ("W", "W-", -1),
         ("Na", "Na-", -1),
         ("K", "K-", -1),
         ("O", "O-", -1),
@@ -2900,15 +3022,18 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
         "Ge": 72.64,
         "O": 15.9994,
         "Zn": 65.39,
+        "Mo": 95.94,
+        "W": 183.84,
     }
     for record in records:
         formula = record["formula"]
-        neutral_formula = formula.removesuffix("+").removesuffix("-")
-        parts = gas_module._FORMULA_PART.findall(neutral_formula)
-        assert "".join(element + count for element, count in parts) == neutral_formula
+        neutral_formula = (
+            formula.removesuffix("+").removesuffix("-").removesuffix("E-1")
+        )
+        parts = gas_module._formula_atoms(neutral_formula)
+        parts.pop("E", None)  # CEA's E-1 charge marker carries no atomic mass.
         formula_mass = sum(
-            atomic_masses[element] * (int(count) if count else 1)
-            for element, count in parts
+            atomic_masses[element] * number for element, number in parts.items()
         )
         assert abs(record["molecular_weight"]["value"] - formula_mass) <= 0.01, (
             record["record_id"],
@@ -2924,6 +3049,10 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
         "NG-5186", "NG-5197", "NG-5331", "NG-5339", "NG-6005",
         "NG-6016", "NG-6131", "NG-6243",
         "NG-4060", "NG-4071", "NG-10887", "NG-10898", "NG-0074", "NG-0085", "NG-0086",
+        "NG-0824", "NG-0825", "NG-0826", "NG-0827", "NG-0828", "NG-0829",
+        "NG-0831", "NG-0832", "NG-0833", "NG-0834", "NG-1701",
+        "NG-1245", "NG-1246", "NG-1247", "NG-1249", "NG-1251", "NG-1253",
+        "NG-1255", "NG-1256", "NG-1257", "NG-1258", "NG-2013",
     )
     manifest = yaml.safe_load(
         (NASA_DATA / "PROVENANCE.yaml").read_text(encoding="utf-8")
@@ -2951,6 +3080,14 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
             "NG-4071": 4073,
             "NG-10887": 10889,
             "NG-10898": 10900,
+            "NG-0824": 7015, "NG-0825": 7026, "NG-0826": 7037,
+            "NG-0827": 7048, "NG-0828": 7059, "NG-0829": 7067,
+            "NG-0831": 7083, "NG-0832": 7091, "NG-0833": 7099,
+            "NG-0834": 7107, "NG-1701": 13503,
+            "NG-1245": 10743, "NG-1246": 10754, "NG-1247": 10765,
+            "NG-1249": 10784, "NG-1251": 10803, "NG-1253": 10819,
+            "NG-1255": 10835, "NG-1256": 10843, "NG-1257": 10851,
+            "NG-1258": 10859, "NG-2013": 15372,
         }
         assert locator["name_line"] == expected_name_lines.get(
             table_id, int(table_id.removeprefix("NG-")) + 1
@@ -3044,7 +3181,7 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     # Mn+ has no fine-structure level set in this spectroscopy-backed Saha
     # audit. Ag+ is checked against its NASA card and neutral-ionization
     # reaction, but no Ag level set is part of this audit.
-    assert atomic_pairs - {"Mn", "Ag"} == set(_SAHA_LEVELS)
+    assert atomic_pairs - {"Mn", "Ag", "Mo", "W"} == set(_SAHA_LEVELS)
     k_b = 1.380649e-23
     h = 6.62607015e-34
     m_e = 9.1093837139e-31
@@ -3180,7 +3317,7 @@ _ATTACHMENT_LEVELS = {
 
 _ATOMIC_ANION_ELEMENTS = (
     "Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb",
-    "O", "Pb", "Rb", "Si", "Ti", "V", "Zn", "Ag",
+    "O", "Pb", "Rb", "Si", "Ti", "V", "Zn", "Ag", "Mo", "W",
 )
 _UNCHECKED_MOLECULAR_ANIONS = ("AlO", "AlO2", "BO", "BO2", "KO", "LiO", "NaO", "O2")
 
@@ -3199,7 +3336,7 @@ def test_gas_table_atomic_anion_inventory() -> None:
     # listed for a ground-state attachment comparison. Ag- comes from NASA CEA,
     # whose card supplies no JANAF attachment-level entry.
     assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic - {
-        "Zn-(g)", "Ag-(g)"
+        "Zn-(g)", "Ag-(g)", "Mo-(g)", "W-(g)"
     }
 
 
@@ -3415,7 +3552,7 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
         for species in fitted_condensate_species
     }
     assert_table_matches(
-        generated, packaged_gas, gas_fit_columns
+        generated, packaged_gas, gas_fit_columns, ignore_row_order=True
     )
     assert_table_matches(
         condensate,
@@ -3885,7 +4022,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             if row["table"] == "condensate"
             and row.get("extrapolation") is True
             and row.get("authority") in {"janaf_fitted", "nasa_glenn_fitted"}
-            and row["species_name"] != "SnO(l)"
+            and row["species_name"] not in {"SnO(l)", "MoO3(l)"}
         }
         assert {key[0] for key in generated} == expected_species
         assert set(provenance_rows) == set(generated)
@@ -3897,7 +4034,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             if row["table"] == "condensate"
             and row.get("extrapolation") is True
             and row.get("authority") in {"janaf_fitted", "nasa_glenn_fitted"}
-            and row["species_name"] != "SnO(l)"
+            and row["species_name"] not in {"SnO(l)", "MoO3(l)"}
         }
         for key, fitted in generated.items():
             species, T_min, T_max = key
@@ -4232,9 +4369,20 @@ def _assert_nasa_anchored_rows_match_direct_card_evaluation() -> None:
         allowed = float(record["max_residual_J_per_mol"]) + 10.0
         for temperature in temperatures:
             properties = build_gas_tables._nasa7_properties(card, temperature)
-            direct_g = R_J_MOL_K * temperature * (
-                properties["h_rt"] - properties["s_R"]
-            )
+            if record["table_id"] in {
+                "NG-0831", "NG-0832", "NG-0833", "NG-0834", "NG-1258"
+            }:
+                at_298 = build_gas_tables._nasa7_properties(card, 298.15)
+                direct_g = (
+                    float(card["delta_f_H_298_15"]["value"])
+                    + R_J_MOL_K
+                    * (temperature * properties["h_rt"] - 298.15 * at_298["h_rt"])
+                    - temperature * R_J_MOL_K * properties["s_R"]
+                )
+            else:
+                direct_g = R_J_MOL_K * temperature * (
+                    properties["h_rt"] - properties["s_R"]
+                )
             assert abs(fitted_g(temperature) - direct_g) <= allowed
 
     # The JANAF-anchored tails preserve NASA's H/S increments from their splice.
@@ -4895,9 +5043,9 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
 
     # D-020 was already vendored, but its electron gas row is newly included in
     # the packaged fit and therefore joins the source-node residual audit.
-    assert checked_rows == 123
-    assert checked_nodes == 1650
-    assert checked_nodes * 3 == 4950
+    assert checked_rows == 155
+    assert checked_nodes == 1970
+    assert checked_nodes * 3 == 5910
     assert overall_max["Cp_J_molK"] == pytest.approx(0.1287393152, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0136965061, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0088595244, abs=1e-9)

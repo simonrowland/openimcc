@@ -19,7 +19,7 @@ source_notes:
     retrieval_date: '2026-10-01'
     activity_policy: >-
       Li2O, Rb2O, PbO, Cs2O, Cu2O, SnO, Ga2O3, GeO2, B2O3, In2O3, TeO2, SeO2,
-      and As2O3
+      As2O3, MoO3, and WO3
       activities are supplied by the caller. OpenIMCC has no trace-element
       activity model; no activity coefficients are applied. Published silicate-
       melt activity-coefficient work is cited in README.md as context only and
@@ -34,6 +34,23 @@ source_notes:
       uses NASA H and S increments anchored to the JANAF 1 bar row at 2500 K.
       No liquid pressure correction is applied because no source molar volume
       is included; that small 1 atm-to-1 bar correction remains unquantified.
+    molybdenum_and_tungsten_anchors: >-
+      JANAF gas and ion rows Mo-005, Mo-006, Mo-007, Mo-008, Mo-010, Mo-017,
+      W-005, W-006, W-007, O-027, O-048, O-068, O-088, O-092, O-093, and
+      O-096 take each species' formation enthalpy from that table's 298.15 K
+      row, formation_enthalpy cell, on the elemental reference states printed
+      for the table. Parent liquid anchors are the same cell in Mo-015 and
+      O-066; their thermal rows follow the printed liquid branch. JANAF has no
+      rows for (MoO3)2-5 or (WO3)5. Those NASA-only species use the
+      delta_f_H_298_15.value header cell of CEA records NG-0831 through
+      NG-0834 and NG-1258 respectively, with the card's elemental-reference
+      gas functions. The fitting code subtracts each NASA polynomial's own
+      H(298.15 K) before applying that printed formation anchor.
+    molybdenum_and_tungsten_parent_choice: >-
+      MoO3(l) is the Mo parent because JANAF has a measured MoO3 liquid
+      branch; MoO2 has crystal data only and is not offered as a liquid
+      parent. WO3(l) is the W parent for the same reason; WO2 has crystal
+      data only and is not offered as a liquid parent.
     nasa_cards:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
@@ -7355,270 +7372,6 @@ rows:
     extrapolation: true
     source_data: false
     extrapolation_source_limit_K: 500
-source_comparisons:
-  basis: >-
-    NASA cards use G_app(T)=H_card(T)-T*S_card(T), where H_card includes the
-    assigned elemental reference in b1. JANAF uses dfH298+[H(T)-H(298.15 K)]-T*S(T).
-  temperatures_K:
-  - 1800
-  - 2000
-  - 2500
-  - 3000
-  selection: NIST-JANAF is retained for every paired species; NASA values are recorded
-    for comparison.
-  standard_state_note: The compared gases use the 1 bar ideal-gas reference. For B2O3(l),
-    JANAF uses 1 bar and the NASA CEA liquid card uses its published 1 atm pure-liquid
-    reference; no pressure correction is applied.
-  rows:
-  - species_name: Ga(g)
-    janaf_table_id: Ga-005
-    nasa_record_id: NG-4940
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: -76662.8
-      nasa_G_app_J_mol: -76630.989
-      nasa_minus_janaf_J_mol: 31.811
-    - T_K: 2000
-      janaf_G_app_J_mol: -119617.0
-      nasa_G_app_J_mol: -119587.201
-      nasa_minus_janaf_J_mol: 29.799
-    - T_K: 2500
-      janaf_G_app_J_mol: -228803.0
-      nasa_G_app_J_mol: -228775.137
-      nasa_minus_janaf_J_mol: 27.863
-    - T_K: 3000
-      janaf_G_app_J_mol: -340131.0
-      nasa_G_app_J_mol: -340104.303
-      nasa_minus_janaf_J_mol: 26.697
-  - species_name: Ga+(g)
-    janaf_table_id: Ga-006
-    nasa_record_id: NG-4951
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: 529373.4
-      nasa_G_app_J_mol: 529410.641
-      nasa_minus_janaf_J_mol: 37.241
-    - T_K: 2000
-      janaf_G_app_J_mol: 489319.0
-      nasa_G_app_J_mol: 489354.958
-      nasa_minus_janaf_J_mol: 35.958
-    - T_K: 2500
-      janaf_G_app_J_mol: 387438.5
-      nasa_G_app_J_mol: 387475.202
-      nasa_minus_janaf_J_mol: 36.702
-    - T_K: 3000
-      janaf_G_app_J_mol: 283469.0
-      nasa_G_app_J_mol: 283502.773
-      nasa_minus_janaf_J_mol: 33.773
-  - species_name: BO(g)
-    janaf_table_id: B-078
-    nasa_record_id: NG-1063
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: -420617.6
-      nasa_G_app_J_mol: -400207.551
-      nasa_minus_janaf_J_mol: 20410.049
-    - T_K: 2000
-      janaf_G_app_J_mol: -473343.0
-      nasa_G_app_J_mol: -452932.404
-      nasa_minus_janaf_J_mol: 20410.596
-    - T_K: 2500
-      janaf_G_app_J_mol: -608224.5
-      nasa_G_app_J_mol: -587820.479
-      nasa_minus_janaf_J_mol: 20404.021
-    - T_K: 3000
-      janaf_G_app_J_mol: -746841.0
-      nasa_G_app_J_mol: -726445.693
-      nasa_minus_janaf_J_mol: 20395.307
-  - species_name: BO2(g)
-    janaf_table_id: B-079
-    nasa_record_id: NG-1122
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: -788607.0
-      nasa_G_app_J_mol: -813746.606
-      nasa_minus_janaf_J_mol: -25139.606
-    - T_K: 2000
-      janaf_G_app_J_mol: -854748.0
-      nasa_G_app_J_mol: -879952.912
-      nasa_minus_janaf_J_mol: -25204.912
-    - T_K: 2500
-      janaf_G_app_J_mol: -1025233.0
-      nasa_G_app_J_mol: -1050624.518
-      nasa_minus_janaf_J_mol: -25391.518
-    - T_K: 3000
-      janaf_G_app_J_mol: -1201926.0
-      nasa_G_app_J_mol: -1227535.504
-      nasa_minus_janaf_J_mol: -25609.504
-  - species_name: BO2-(g)
-    janaf_table_id: B-080
-    nasa_record_id: NG-1130
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: -1167059.2
-      nasa_G_app_J_mol: -1187581.918
-      nasa_minus_janaf_J_mol: -20522.718
-    - T_K: 2000
-      janaf_G_app_J_mol: -1229189.0
-      nasa_G_app_J_mol: -1249872.813
-      nasa_minus_janaf_J_mol: -20683.813
-    - T_K: 2500
-      janaf_G_app_J_mol: -1389561.0
-      nasa_G_app_J_mol: -1410670.513
-      nasa_minus_janaf_J_mol: -21109.513
-    - T_K: 3000
-      janaf_G_app_J_mol: -1556056.0
-      nasa_G_app_J_mol: -1577614.183
-      nasa_minus_janaf_J_mol: -21558.183
-  - species_name: B2O(g)
-    janaf_table_id: B-093
-    nasa_record_id: NG-1266
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: -393552.6
-      nasa_G_app_J_mol: -308918.966
-      nasa_minus_janaf_J_mol: 84633.634
-    - T_K: 2000
-      janaf_G_app_J_mol: -457083.0
-      nasa_G_app_J_mol: -375025.509
-      nasa_minus_janaf_J_mol: 82057.491
-    - T_K: 2500
-      janaf_G_app_J_mol: -620647.0
-      nasa_G_app_J_mol: -545451.343
-      nasa_minus_janaf_J_mol: 75195.657
-    - T_K: 3000
-      janaf_G_app_J_mol: -789953.0
-      nasa_G_app_J_mol: -722101.572
-      nasa_minus_janaf_J_mol: 67851.428
-  - species_name: B2O2(g)
-    janaf_table_id: B-094
-    nasa_record_id: NG-1274
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: -1012538.4
-      nasa_G_app_J_mol: -1029034.098
-      nasa_minus_janaf_J_mol: -16495.698
-    - T_K: 2000
-      janaf_G_app_J_mol: -1087975.0
-      nasa_G_app_J_mol: -1106213.082
-      nasa_minus_janaf_J_mol: -18238.082
-    - T_K: 2500
-      janaf_G_app_J_mol: -1283642.0
-      nasa_G_app_J_mol: -1306243.945
-      nasa_minus_janaf_J_mol: -22601.945
-    - T_K: 3000
-      janaf_G_app_J_mol: -1487895.0
-      nasa_G_app_J_mol: -1514864.962
-      nasa_minus_janaf_J_mol: -26969.962
-  - species_name: B2O3(g)
-    janaf_table_id: B-098
-    nasa_record_id: NG-1282
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: -1491616.6
-      nasa_G_app_J_mol: -1492797.477
-      nasa_minus_janaf_J_mol: -1180.877
-    - T_K: 2000
-      janaf_G_app_J_mol: -1581143.0
-      nasa_G_app_J_mol: -1582408.604
-      nasa_minus_janaf_J_mol: -1265.604
-    - T_K: 2500
-      janaf_G_app_J_mol: -1813711.0
-      nasa_G_app_J_mol: -1815178.793
-      nasa_minus_janaf_J_mol: -1467.793
-    - T_K: 3000
-      janaf_G_app_J_mol: -2056900.0
-      nasa_G_app_J_mol: -2058560.838
-      nasa_minus_janaf_J_mol: -1660.838
-  - species_name: B2O3(l)
-    janaf_table_id: B-096
-    nasa_record_id: NG-11154
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: -1576501.2
-      nasa_G_app_J_mol: -1581469.807
-      nasa_minus_janaf_J_mol: -4968.607
-    - T_K: 2000
-      janaf_G_app_J_mol: -1634106.0
-      nasa_G_app_J_mol: -1639236.645
-      nasa_minus_janaf_J_mol: -5130.645
-    - T_K: 2500
-      janaf_G_app_J_mol: -1788974.0
-      nasa_G_app_J_mol: -1794353.176
-      nasa_minus_janaf_J_mol: -5379.176
-    - T_K: 3000
-      janaf_G_app_J_mol: -1956902.0
-      nasa_G_app_J_mol: -1962312.716
-      nasa_minus_janaf_J_mol: -5410.716
-
-
-  - species_name: Zn(g)
-    janaf_table_id: Zn-005
-    nasa_record_id: NG-10887
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: -195412.8
-      nasa_G_app_J_mol: -195438.094
-      nasa_minus_janaf_J_mol: -25.294
-    - T_K: 2000
-      janaf_G_app_J_mol: -235307.0
-      nasa_G_app_J_mol: -235333.78
-      nasa_minus_janaf_J_mol: -26.78
-    - T_K: 2500
-      janaf_G_app_J_mol: -336784.5
-      nasa_G_app_J_mol: -336813.619
-      nasa_minus_janaf_J_mol: -29.119
-    - T_K: 3000
-      janaf_G_app_J_mol: -440356.0
-      nasa_G_app_J_mol: -440386.434
-      nasa_minus_janaf_J_mol: -30.434
-  - species_name: Zn+(g)
-    janaf_table_id: Zn-006
-    nasa_record_id: NG-10898
-    values:
-    - T_K: 1800
-      janaf_G_app_J_mol: 701131.6
-      nasa_G_app_J_mol: 706788.038
-      nasa_minus_janaf_J_mol: 5656.438
-    - T_K: 2000
-      janaf_G_app_J_mol: 660085.0
-      nasa_G_app_J_mol: 665739.719
-      nasa_minus_janaf_J_mol: 5654.719
-    - T_K: 2500
-      janaf_G_app_J_mol: 555726.5
-      nasa_G_app_J_mol: 561378.258
-      nasa_minus_janaf_J_mol: 5651.758
-    - T_K: 3000
-      janaf_G_app_J_mol: 449274.0
-      nasa_G_app_J_mol: 454923.498
-      nasa_minus_janaf_J_mol: 5649.498
-  - species_name: Ag(g)
-    pankratz_table_id: P672-Ag-g
-    nasa_record_id: NG-0074
-    values:
-    - T_K: 1800
-      pankratz_G_app_J_mol: -62360.010
-      nasa_G_app_J_mol: -62550.233
-      nasa_minus_pankratz_J_mol: -190.223
-    - T_K: 2000
-      pankratz_G_app_J_mol: -104629.288
-      nasa_G_app_J_mol: -104847.071
-      nasa_minus_pankratz_J_mol: -217.783
-
-
-certification_items:
-  - authority: lh84_evaluated_with_nasa_cp
-    species_name: Na2O(g)
-    issue: >-
-      LH84 Table 4 supplies the formation reference while NASA Glenn supplies
-      the Cp(T) shape; NASA's dfH298 is -16.559830 kJ/mol versus LH84's
-      -3.82 kK*R, a disagreement of about 15 kJ/mol.
-  - authority: lh84_evaluated_with_nasa_cp
-    species_name: K2O(g)
-    issue: >-
-      LH84 Table 4 supplies the formation reference while NASA Glenn supplies
-      the Cp(T) shape; NASA's dfH298 is -74.086902 kJ/mol versus LH84's
-      -7.05 kK*R, a disagreement of about 15 kJ/mol.
   - table: gas
     species_name: Mo(g)
     table_id: Mo-005
@@ -8117,6 +7870,284 @@ certification_items:
     runtime_ref: Mo-015-CP-EXT-2000
     note: The JANAF liquid branch ends at 2000 K. Above it the last printed liquid Cp
       is held constant; the labelled continuation is generated, not source data.
+  - {"table":"gas","species_name":"W(g)","table_id":"W-005","source_path":"data-src/janaf/W-005.yaml","source_sha256":"32556e7fb4922aa7abd32c019042bc3a27924379519d979c7c17ce34579e7d06","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.33139741478954,"max_residual_log10_K":2.48370381410358e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/W-005.html","download_url":"https://janaf.nist.gov/tables/W-005.txt","upstream_source_sha256":"fdf2523b89b49953a092eb84a71fd967244fe4a1124be77daa227c1f9fa8fa0e","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"WO(g)","table_id":"O-027","source_path":"data-src/janaf/O-027.yaml","source_sha256":"320b7bf1af6507816704ef10bb8eb3edbd536c500d46fd845f094495bcc3a382","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.290371087729,"max_residual_log10_K":2.75265270531343e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-027.html","download_url":"https://janaf.nist.gov/tables/O-027.txt","upstream_source_sha256":"a7b478fbb89b4bf1fbd560c7c8a1400aa8f67b406db3e6dd5d380f037254b722","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"WO2(g)","table_id":"O-048","source_path":"data-src/janaf/O-048.yaml","source_sha256":"d69db317ded6fd9395aeda69c86dd5551db3580ff0e721a434ae662f3cff0fc0","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.84011016506702,"max_residual_log10_K":4.08764862747131e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-048.html","download_url":"https://janaf.nist.gov/tables/O-048.txt","upstream_source_sha256":"8df6c1b4022b439cd93fee827e08d65c62d133ade8355a3325dc7f18f9b86d93","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"WO3(g)","table_id":"O-068","source_path":"data-src/janaf/O-068.yaml","source_sha256":"4b0a3e4ce7333f72e41b7ecbeb356a1629c04b99ec17b434a2c9562477840f57","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.22748121619225,"max_residual_log10_K":2.28984955546058e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-068.html","download_url":"https://janaf.nist.gov/tables/O-068.txt","upstream_source_sha256":"2e7389ad5a9f80ad4acc4b121aa39f714d93a03b740c776c31308a748e2e6de5","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"(WO3)2(g)","table_id":"O-088","source_path":"data-src/janaf/O-088.yaml","source_sha256":"3200b174f286d38090a6c0b4d63a71b470cc1a7e1a87cdfa9b0341469fffa5db","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.09667038591579,"max_residual_log10_K":3.8188709557636e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-088.html","download_url":"https://janaf.nist.gov/tables/O-088.txt","upstream_source_sha256":"c1d7a696a2444f19d5dcbdcc2b029fce175bc9fa16c6ab2dfc9d35d66c642b16","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"(WO3)3(g)","table_id":"O-093","source_path":"data-src/janaf/O-093.yaml","source_sha256":"db825ddfcecc4691773bec9a1502c427837459a70359e97b4b78306f5c30d18c","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.44073546444997,"max_residual_log10_K":3.13561787273717e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-093.html","download_url":"https://janaf.nist.gov/tables/O-093.txt","upstream_source_sha256":"f6e6d16a11240da51032aa9ae2885dc9ec0ee74df974eb08abdac421de5bb9a6","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"(WO3)4(g)","table_id":"O-096","source_path":"data-src/janaf/O-096.yaml","source_sha256":"a1221fb06f9aaa962871158e7db4329c326d20919fc2af1b0d690355ce275df4","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.40461229160428,"max_residual_log10_K":3.2634635593372e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-096.html","download_url":"https://janaf.nist.gov/tables/O-096.txt","upstream_source_sha256":"40420b9f365b697a7494d890aeae2a33551b76482d355b8101783b9eb31a0331","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"W3O8(g)","table_id":"O-092","source_path":"data-src/janaf/O-092.yaml","source_sha256":"c5e579bafeeebcc44b72dfdaab3a16612489920a28bca96ef1ceeb69fd6def1d","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.50293022440746,"max_residual_log10_K":3.56834029140279e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-092.html","download_url":"https://janaf.nist.gov/tables/O-092.txt","upstream_source_sha256":"64e4ead9fde896fc3519c1da31d4c296289a4fc1314fd49c586207f546ecde79","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"(WO3)5(g)","table_id":"NG-1258","source_path":"data-src/nasa-glenn/NG-1258.json","source_sha256":"86b9d5f276aa798e643c02a3b98b50daa782a4e3e307d04758945cbcd4a6c994","authority":"nasa_glenn_fitted","method":"fitted","max_residual_J_per_mol":0.00374436099082232,"max_residual_log10_K":9.77907647962393e-08,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_locator":"thermo.inp lines 10859-10866","upstream_source_sha256":"fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363","source_record":"data-src/nasa-glenn/NG-1258.json","source_url":"https://www.grc.nasa.gov/www/CEAWeb/","retrieval_date":"2026-10-12","user_agent":"neutral-source-vendor/1.0"}
+  - {"table":"gas","species_name":"W(g)","table_id":"W-005","source_path":"data-src/janaf/W-005.yaml","source_sha256":"32556e7fb4922aa7abd32c019042bc3a27924379519d979c7c17ce34579e7d06","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.15272345172707,"max_residual_log10_K":6.33374071642633e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/W-005.html","download_url":"https://janaf.nist.gov/tables/W-005.txt","upstream_source_sha256":"fdf2523b89b49953a092eb84a71fd967244fe4a1124be77daa227c1f9fa8fa0e","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"WO(g)","table_id":"O-027","source_path":"data-src/janaf/O-027.yaml","source_sha256":"320b7bf1af6507816704ef10bb8eb3edbd536c500d46fd845f094495bcc3a382","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.764091744204052,"max_residual_log10_K":3.89889524751858e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-027.html","download_url":"https://janaf.nist.gov/tables/O-027.txt","upstream_source_sha256":"a7b478fbb89b4bf1fbd560c7c8a1400aa8f67b406db3e6dd5d380f037254b722","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"WO2(g)","table_id":"O-048","source_path":"data-src/janaf/O-048.yaml","source_sha256":"d69db317ded6fd9395aeda69c86dd5551db3580ff0e721a434ae662f3cff0fc0","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.737824560666922,"max_residual_log10_K":5.0556737920899e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-048.html","download_url":"https://janaf.nist.gov/tables/O-048.txt","upstream_source_sha256":"8df6c1b4022b439cd93fee827e08d65c62d133ade8355a3325dc7f18f9b86d93","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"WO3(g)","table_id":"O-068","source_path":"data-src/janaf/O-068.yaml","source_sha256":"4b0a3e4ce7333f72e41b7ecbeb356a1629c04b99ec17b434a2c9562477840f57","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.412041427451186,"max_residual_log10_K":3.91117100302966e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-068.html","download_url":"https://janaf.nist.gov/tables/O-068.txt","upstream_source_sha256":"2e7389ad5a9f80ad4acc4b121aa39f714d93a03b740c776c31308a748e2e6de5","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"(WO3)2(g)","table_id":"O-088","source_path":"data-src/janaf/O-088.yaml","source_sha256":"3200b174f286d38090a6c0b4d63a71b470cc1a7e1a87cdfa9b0341469fffa5db","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.695651580579579,"max_residual_log10_K":4.03737782188153e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-088.html","download_url":"https://janaf.nist.gov/tables/O-088.txt","upstream_source_sha256":"c1d7a696a2444f19d5dcbdcc2b029fce175bc9fa16c6ab2dfc9d35d66c642b16","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"(WO3)3(g)","table_id":"O-093","source_path":"data-src/janaf/O-093.yaml","source_sha256":"db825ddfcecc4691773bec9a1502c427837459a70359e97b4b78306f5c30d18c","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.08473045565188,"max_residual_log10_K":4.11083136120394e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-093.html","download_url":"https://janaf.nist.gov/tables/O-093.txt","upstream_source_sha256":"f6e6d16a11240da51032aa9ae2885dc9ec0ee74df974eb08abdac421de5bb9a6","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"(WO3)4(g)","table_id":"O-096","source_path":"data-src/janaf/O-096.yaml","source_sha256":"a1221fb06f9aaa962871158e7db4329c326d20919fc2af1b0d690355ce275df4","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.00658079795539,"max_residual_log10_K":7.16672423175761e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-096.html","download_url":"https://janaf.nist.gov/tables/O-096.txt","upstream_source_sha256":"40420b9f365b697a7494d890aeae2a33551b76482d355b8101783b9eb31a0331","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"W3O8(g)","table_id":"O-092","source_path":"data-src/janaf/O-092.yaml","source_sha256":"c5e579bafeeebcc44b72dfdaab3a16612489920a28bca96ef1ceeb69fd6def1d","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.619029065594077,"max_residual_log10_K":3.96367855687508e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-092.html","download_url":"https://janaf.nist.gov/tables/O-092.txt","upstream_source_sha256":"64e4ead9fde896fc3519c1da31d4c296289a4fc1314fd49c586207f546ecde79","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"(WO3)5(g)","table_id":"NG-1258","source_path":"data-src/nasa-glenn/NG-1258.json","source_sha256":"86b9d5f276aa798e643c02a3b98b50daa782a4e3e307d04758945cbcd4a6c994","authority":"nasa_glenn_fitted","method":"fitted","max_residual_J_per_mol":1.01572940405458,"max_residual_log10_K":9.02071740584459e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_locator":"thermo.inp lines 10859-10866","upstream_source_sha256":"fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363","source_record":"data-src/nasa-glenn/NG-1258.json","source_url":"https://www.grc.nasa.gov/www/CEAWeb/","retrieval_date":"2026-10-12","user_agent":"neutral-source-vendor/1.0"}
+  - {"table":"gas","species_name":"W+(g)","table_id":"W-006","source_path":"data-src/janaf/W-006.yaml","source_sha256":"7b44053aad18dd31e160daff04ab5d86e5425c082fb51d67be75e9bb7c8847d2","authority":"janaf_fitted_ionisation","method":"fitted","max_residual_J_per_mol":1.39998202165589,"max_residual_log10_K":3.35305703635248e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/W-006.html","download_url":"https://janaf.nist.gov/tables/W-006.txt","upstream_source_sha256":"f16518d3b08afc18b91a7da69c615429ebbeb690eabf451d4556929a1ced90b6","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"W-(g)","table_id":"W-007","source_path":"data-src/janaf/W-007.yaml","source_sha256":"a5bdbdc27e81463b7bfeb13fb722c7d75375f1845df1895c574cf52b701562f0","authority":"janaf_fitted_ionisation","method":"fitted","max_residual_J_per_mol":1.27051591302734,"max_residual_log10_K":2.7651518983094e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/W-007.html","download_url":"https://janaf.nist.gov/tables/W-007.txt","upstream_source_sha256":"70233b28f81bdd93b07d1104076c4e4a903a6d67f0bae85cc0def3d3cef3c2e0","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"W+(g)","table_id":"W-006","source_path":"data-src/janaf/W-006.yaml","source_sha256":"7b44053aad18dd31e160daff04ab5d86e5425c082fb51d67be75e9bb7c8847d2","authority":"janaf_fitted_ionisation","method":"fitted","max_residual_J_per_mol":0.734977510757744,"max_residual_log10_K":3.49004873588962e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/W-006.html","download_url":"https://janaf.nist.gov/tables/W-006.txt","upstream_source_sha256":"f16518d3b08afc18b91a7da69c615429ebbeb690eabf451d4556929a1ced90b6","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"gas","species_name":"W-(g)","table_id":"W-007","source_path":"data-src/janaf/W-007.yaml","source_sha256":"a5bdbdc27e81463b7bfeb13fb722c7d75375f1845df1895c574cf52b701562f0","authority":"janaf_fitted_ionisation","method":"fitted","max_residual_J_per_mol":0.288912383723073,"max_residual_log10_K":1.50909396997959e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/W-007.html","download_url":"https://janaf.nist.gov/tables/W-007.txt","upstream_source_sha256":"70233b28f81bdd93b07d1104076c4e4a903a6d67f0bae85cc0def3d3cef3c2e0","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"condensate","species_name":"WO3(l)","table_id":"O-066","source_path":"data-src/janaf/O-066.yaml","source_sha256":"a2df28caa4038366de66b6d79874f35bd76faf97fe54c2926aa879c37526bc8a","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.16415321826935e-10,"max_residual_log10_K":5.06732808052789e-15,"T_range_K":[1200,1500],"source_locator":"JANAF O-066, liquid branch; source table text marks II <--> LIQUID at 1745 K.","branch_decision":"O-066 prints these supercooled liquid cells below its 1745 K II <--> LIQUID marker; they are retained as source data.","source_url":"https://janaf.nist.gov/tables/O-066.html","download_url":"https://janaf.nist.gov/tables/O-066.txt","upstream_source_sha256":"3eaa6e4a2b2ebce41ce61d4955ea292dfe133ffa4a057b3bc014a56a2d3b33cc","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"condensate","species_name":"WO3(l)","table_id":"O-066","source_path":"data-src/janaf/O-066.yaml","source_sha256":"a2df28caa4038366de66b6d79874f35bd76faf97fe54c2926aa879c37526bc8a","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":4.65661287307739e-10,"max_residual_log10_K":1.62154498576892e-14,"T_range_K":[1500,2000],"source_locator":"JANAF O-066, liquid branch; source table text marks II <--> LIQUID at 1745 K.","branch_decision":"O-066 prints these supercooled liquid cells below its 1745 K II <--> LIQUID marker; they are retained as source data.","source_url":"https://janaf.nist.gov/tables/O-066.html","download_url":"https://janaf.nist.gov/tables/O-066.txt","upstream_source_sha256":"3eaa6e4a2b2ebce41ce61d4955ea292dfe133ffa4a057b3bc014a56a2d3b33cc","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"condensate","species_name":"WO3(l)","table_id":"O-066","source_path":"data-src/janaf/O-066.yaml","source_sha256":"a2df28caa4038366de66b6d79874f35bd76faf97fe54c2926aa879c37526bc8a","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.017801312264055,"max_residual_log10_K":4.04272619097953e-07,"T_range_K":[2000,2500],"source_locator":"JANAF O-066, liquid branch; source table text marks II <--> LIQUID at 1745 K.","source_url":"https://janaf.nist.gov/tables/O-066.html","download_url":"https://janaf.nist.gov/tables/O-066.txt","upstream_source_sha256":"3eaa6e4a2b2ebce41ce61d4955ea292dfe133ffa4a057b3bc014a56a2d3b33cc","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - {"table":"condensate","species_name":"WO3(l)","table_id":"O-066","source_path":"data-src/janaf/O-066.yaml","source_sha256":"a2df28caa4038366de66b6d79874f35bd76faf97fe54c2926aa879c37526bc8a","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.344668519217521,"max_residual_log10_K":6.42974479494244e-06,"T_range_K":[2500,3000],"source_locator":"JANAF O-066, liquid branch; source table text marks II <--> LIQUID at 1745 K.","source_url":"https://janaf.nist.gov/tables/O-066.html","download_url":"https://janaf.nist.gov/tables/O-066.txt","upstream_source_sha256":"3eaa6e4a2b2ebce41ce61d4955ea292dfe133ffa4a057b3bc014a56a2d3b33cc","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+source_comparisons:
+  basis: >-
+    NASA cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each card's
+    printed 298.15 K formation anchor and 1 bar gas standard. JANAF uses the
+    corresponding printed dfH298+[H(T)-H(298.15 K)]-T*S(T) cells.
+  temperatures_K:
+  - 1800
+  - 2000
+  - 2500
+  - 3000
+  selection: NIST-JANAF is retained for every paired species; NASA values are recorded
+    for comparison.
+  standard_state_note: The compared gases use the 1 bar ideal-gas reference. For B2O3(l),
+    JANAF uses 1 bar and the NASA CEA liquid card uses its published 1 atm pure-liquid
+    reference; no pressure correction is applied.
+  rows:
+  - species_name: Ga(g)
+    janaf_table_id: Ga-005
+    nasa_record_id: NG-4940
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -76662.8
+      nasa_G_app_J_mol: -76630.989
+      nasa_minus_janaf_J_mol: 31.811
+    - T_K: 2000
+      janaf_G_app_J_mol: -119617.0
+      nasa_G_app_J_mol: -119587.201
+      nasa_minus_janaf_J_mol: 29.799
+    - T_K: 2500
+      janaf_G_app_J_mol: -228803.0
+      nasa_G_app_J_mol: -228775.137
+      nasa_minus_janaf_J_mol: 27.863
+    - T_K: 3000
+      janaf_G_app_J_mol: -340131.0
+      nasa_G_app_J_mol: -340104.303
+      nasa_minus_janaf_J_mol: 26.697
+  - species_name: Ga+(g)
+    janaf_table_id: Ga-006
+    nasa_record_id: NG-4951
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: 529373.4
+      nasa_G_app_J_mol: 529410.641
+      nasa_minus_janaf_J_mol: 37.241
+    - T_K: 2000
+      janaf_G_app_J_mol: 489319.0
+      nasa_G_app_J_mol: 489354.958
+      nasa_minus_janaf_J_mol: 35.958
+    - T_K: 2500
+      janaf_G_app_J_mol: 387438.5
+      nasa_G_app_J_mol: 387475.202
+      nasa_minus_janaf_J_mol: 36.702
+    - T_K: 3000
+      janaf_G_app_J_mol: 283469.0
+      nasa_G_app_J_mol: 283502.773
+      nasa_minus_janaf_J_mol: 33.773
+  - species_name: BO(g)
+    janaf_table_id: B-078
+    nasa_record_id: NG-1063
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -420617.6
+      nasa_G_app_J_mol: -400207.551
+      nasa_minus_janaf_J_mol: 20410.049
+    - T_K: 2000
+      janaf_G_app_J_mol: -473343.0
+      nasa_G_app_J_mol: -452932.404
+      nasa_minus_janaf_J_mol: 20410.596
+    - T_K: 2500
+      janaf_G_app_J_mol: -608224.5
+      nasa_G_app_J_mol: -587820.479
+      nasa_minus_janaf_J_mol: 20404.021
+    - T_K: 3000
+      janaf_G_app_J_mol: -746841.0
+      nasa_G_app_J_mol: -726445.693
+      nasa_minus_janaf_J_mol: 20395.307
+  - species_name: BO2(g)
+    janaf_table_id: B-079
+    nasa_record_id: NG-1122
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -788607.0
+      nasa_G_app_J_mol: -813746.606
+      nasa_minus_janaf_J_mol: -25139.606
+    - T_K: 2000
+      janaf_G_app_J_mol: -854748.0
+      nasa_G_app_J_mol: -879952.912
+      nasa_minus_janaf_J_mol: -25204.912
+    - T_K: 2500
+      janaf_G_app_J_mol: -1025233.0
+      nasa_G_app_J_mol: -1050624.518
+      nasa_minus_janaf_J_mol: -25391.518
+    - T_K: 3000
+      janaf_G_app_J_mol: -1201926.0
+      nasa_G_app_J_mol: -1227535.504
+      nasa_minus_janaf_J_mol: -25609.504
+  - species_name: BO2-(g)
+    janaf_table_id: B-080
+    nasa_record_id: NG-1130
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -1167059.2
+      nasa_G_app_J_mol: -1187581.918
+      nasa_minus_janaf_J_mol: -20522.718
+    - T_K: 2000
+      janaf_G_app_J_mol: -1229189.0
+      nasa_G_app_J_mol: -1249872.813
+      nasa_minus_janaf_J_mol: -20683.813
+    - T_K: 2500
+      janaf_G_app_J_mol: -1389561.0
+      nasa_G_app_J_mol: -1410670.513
+      nasa_minus_janaf_J_mol: -21109.513
+    - T_K: 3000
+      janaf_G_app_J_mol: -1556056.0
+      nasa_G_app_J_mol: -1577614.183
+      nasa_minus_janaf_J_mol: -21558.183
+  - species_name: B2O(g)
+    janaf_table_id: B-093
+    nasa_record_id: NG-1266
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -393552.6
+      nasa_G_app_J_mol: -308918.966
+      nasa_minus_janaf_J_mol: 84633.634
+    - T_K: 2000
+      janaf_G_app_J_mol: -457083.0
+      nasa_G_app_J_mol: -375025.509
+      nasa_minus_janaf_J_mol: 82057.491
+    - T_K: 2500
+      janaf_G_app_J_mol: -620647.0
+      nasa_G_app_J_mol: -545451.343
+      nasa_minus_janaf_J_mol: 75195.657
+    - T_K: 3000
+      janaf_G_app_J_mol: -789953.0
+      nasa_G_app_J_mol: -722101.572
+      nasa_minus_janaf_J_mol: 67851.428
+  - species_name: B2O2(g)
+    janaf_table_id: B-094
+    nasa_record_id: NG-1274
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -1012538.4
+      nasa_G_app_J_mol: -1029034.098
+      nasa_minus_janaf_J_mol: -16495.698
+    - T_K: 2000
+      janaf_G_app_J_mol: -1087975.0
+      nasa_G_app_J_mol: -1106213.082
+      nasa_minus_janaf_J_mol: -18238.082
+    - T_K: 2500
+      janaf_G_app_J_mol: -1283642.0
+      nasa_G_app_J_mol: -1306243.945
+      nasa_minus_janaf_J_mol: -22601.945
+    - T_K: 3000
+      janaf_G_app_J_mol: -1487895.0
+      nasa_G_app_J_mol: -1514864.962
+      nasa_minus_janaf_J_mol: -26969.962
+  - species_name: B2O3(g)
+    janaf_table_id: B-098
+    nasa_record_id: NG-1282
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -1491616.6
+      nasa_G_app_J_mol: -1492797.477
+      nasa_minus_janaf_J_mol: -1180.877
+    - T_K: 2000
+      janaf_G_app_J_mol: -1581143.0
+      nasa_G_app_J_mol: -1582408.604
+      nasa_minus_janaf_J_mol: -1265.604
+    - T_K: 2500
+      janaf_G_app_J_mol: -1813711.0
+      nasa_G_app_J_mol: -1815178.793
+      nasa_minus_janaf_J_mol: -1467.793
+    - T_K: 3000
+      janaf_G_app_J_mol: -2056900.0
+      nasa_G_app_J_mol: -2058560.838
+      nasa_minus_janaf_J_mol: -1660.838
+  - species_name: B2O3(l)
+    janaf_table_id: B-096
+    nasa_record_id: NG-11154
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -1576501.2
+      nasa_G_app_J_mol: -1581469.807
+      nasa_minus_janaf_J_mol: -4968.607
+    - T_K: 2000
+      janaf_G_app_J_mol: -1634106.0
+      nasa_G_app_J_mol: -1639236.645
+      nasa_minus_janaf_J_mol: -5130.645
+    - T_K: 2500
+      janaf_G_app_J_mol: -1788974.0
+      nasa_G_app_J_mol: -1794353.176
+      nasa_minus_janaf_J_mol: -5379.176
+    - T_K: 3000
+      janaf_G_app_J_mol: -1956902.0
+      nasa_G_app_J_mol: -1962312.716
+      nasa_minus_janaf_J_mol: -5410.716
+
+
+  - species_name: Zn(g)
+    janaf_table_id: Zn-005
+    nasa_record_id: NG-10887
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -195412.8
+      nasa_G_app_J_mol: -195438.094
+      nasa_minus_janaf_J_mol: -25.294
+    - T_K: 2000
+      janaf_G_app_J_mol: -235307.0
+      nasa_G_app_J_mol: -235333.78
+      nasa_minus_janaf_J_mol: -26.78
+    - T_K: 2500
+      janaf_G_app_J_mol: -336784.5
+      nasa_G_app_J_mol: -336813.619
+      nasa_minus_janaf_J_mol: -29.119
+    - T_K: 3000
+      janaf_G_app_J_mol: -440356.0
+      nasa_G_app_J_mol: -440386.434
+      nasa_minus_janaf_J_mol: -30.434
+  - species_name: Zn+(g)
+    janaf_table_id: Zn-006
+    nasa_record_id: NG-10898
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: 701131.6
+      nasa_G_app_J_mol: 706788.038
+      nasa_minus_janaf_J_mol: 5656.438
+    - T_K: 2000
+      janaf_G_app_J_mol: 660085.0
+      nasa_G_app_J_mol: 665739.719
+      nasa_minus_janaf_J_mol: 5654.719
+    - T_K: 2500
+      janaf_G_app_J_mol: 555726.5
+      nasa_G_app_J_mol: 561378.258
+      nasa_minus_janaf_J_mol: 5651.758
+    - T_K: 3000
+      janaf_G_app_J_mol: 449274.0
+      nasa_G_app_J_mol: 454923.498
+      nasa_minus_janaf_J_mol: 5649.498
+  - species_name: Ag(g)
+    pankratz_table_id: P672-Ag-g
+    nasa_record_id: NG-0074
+    values:
+    - T_K: 1800
+      pankratz_G_app_J_mol: -62360.010
+      nasa_G_app_J_mol: -62550.233
+      nasa_minus_pankratz_J_mol: -190.223
+    - T_K: 2000
+      pankratz_G_app_J_mol: -104629.288
+      nasa_G_app_J_mol: -104847.071
+      nasa_minus_pankratz_J_mol: -217.783
+
+
   - species_name: Mo(g)
     janaf_table_id: Mo-005
     nasa_record_id: NG-0824
@@ -8256,3 +8287,26 @@ certification_items:
       janaf_G_app_J_mol: -1143808.0
       nasa_G_app_J_mol: -1166701.138
       nasa_minus_janaf_J_mol: -22893.138
+  - {species_name: W(g), janaf_table_id: W-005, nasa_record_id: NG-1245, common_298K_anchor_table: W-005, values: [{T_K: 1800, janaf_G_app_J_mol: 492060.6, nasa_G_app_J_mol: 485668.843, nasa_minus_janaf_J_mol: -6391.757}, {T_K: 2000, janaf_G_app_J_mol: 446972.0, nasa_G_app_J_mol: 438770.096, nasa_minus_janaf_J_mol: -8201.904}, {T_K: 2500, janaf_G_app_J_mol: 331643.5, nasa_G_app_J_mol: 318832.318, nasa_minus_janaf_J_mol: -12811.182}, {T_K: 3000, janaf_G_app_J_mol: 213057.0, nasa_G_app_J_mol: 195821.136, nasa_minus_janaf_J_mol: -17235.864}]}
+  - {species_name: W+(g), janaf_table_id: W-006, nasa_record_id: NG-1246, common_298K_anchor_table: W-006, values: [{T_K: 1800, janaf_G_app_J_mol: 1249447.4, nasa_G_app_J_mol: 1258238.757, nasa_minus_janaf_J_mol: 8791.357}, {T_K: 2000, janaf_G_app_J_mol: 1201879.0, nasa_G_app_J_mol: 1211711.156, nasa_minus_janaf_J_mol: 9832.156}, {T_K: 2500, janaf_G_app_J_mol: 1080580.5, nasa_G_app_J_mol: 1092522.867, nasa_minus_janaf_J_mol: 11942.367}, {T_K: 3000, janaf_G_app_J_mol: 956421.0, nasa_G_app_J_mol: 969903.368, nasa_minus_janaf_J_mol: 13482.368}]}
+  - {species_name: W-(g), janaf_table_id: W-007, nasa_record_id: NG-1247, common_298K_anchor_table: W-007, values: [{T_K: 1800, janaf_G_app_J_mol: 390315.6, nasa_G_app_J_mol: 390532.76, nasa_minus_janaf_J_mol: 217.16}, {T_K: 2000, janaf_G_app_J_mol: 344863.0, nasa_G_app_J_mol: 345079.194, nasa_minus_janaf_J_mol: 216.194}, {T_K: 2500, janaf_G_app_J_mol: 229489.5, nasa_G_app_J_mol: 229704.716, nasa_minus_janaf_J_mol: 215.216}, {T_K: 3000, janaf_G_app_J_mol: 112022.0, nasa_G_app_J_mol: 112237.539, nasa_minus_janaf_J_mol: 215.539}]}
+  - {species_name: WO(g), janaf_table_id: O-027, nasa_record_id: NG-1249, common_298K_anchor_table: O-027, values: [{T_K: 1800, janaf_G_app_J_mol: -80261.8, nasa_G_app_J_mol: -96648.893, nasa_minus_janaf_J_mol: -16387.093}, {T_K: 2000, janaf_G_app_J_mol: -142750.0, nasa_G_app_J_mol: -158420.054, nasa_minus_janaf_J_mol: -15670.054}, {T_K: 2500, janaf_G_app_J_mol: -302117.0, nasa_G_app_J_mol: -316142.081, nasa_minus_janaf_J_mol: -14025.081}, {T_K: 3000, janaf_G_app_J_mol: -465334.0, nasa_G_app_J_mol: -477986.15, nasa_minus_janaf_J_mol: -12652.15}]}
+  - {species_name: WO2(g), janaf_table_id: O-048, nasa_record_id: NG-1251, common_298K_anchor_table: O-048, values: [{T_K: 1800, janaf_G_app_J_mol: -525831.8, nasa_G_app_J_mol: -547609.465, nasa_minus_janaf_J_mol: -21777.665}, {T_K: 2000, janaf_G_app_J_mol: -602465.0, nasa_G_app_J_mol: -621775.454, nasa_minus_janaf_J_mol: -19310.454}, {T_K: 2500, janaf_G_app_J_mol: -798870.0, nasa_G_app_J_mol: -812821.976, nasa_minus_janaf_J_mol: -13951.976}, {T_K: 3000, janaf_G_app_J_mol: -1001092.0, nasa_G_app_J_mol: -1010925.585, nasa_minus_janaf_J_mol: -9833.585}]}
+  - {species_name: WO3(g), janaf_table_id: O-068, nasa_record_id: NG-1253, common_298K_anchor_table: O-068, values: [{T_K: 1800, janaf_G_app_J_mol: -934190.6, nasa_G_app_J_mol: -953669.833, nasa_minus_janaf_J_mol: -19479.233}, {T_K: 2000, janaf_G_app_J_mol: -1019278.0, nasa_G_app_J_mol: -1037877.401, nasa_minus_janaf_J_mol: -18599.401}, {T_K: 2500, janaf_G_app_J_mol: -1238882.0, nasa_G_app_J_mol: -1255286.382, nasa_minus_janaf_J_mol: -16404.382}, {T_K: 3000, janaf_G_app_J_mol: -1466792.0, nasa_G_app_J_mol: -1481034.34, nasa_minus_janaf_J_mol: -14242.34}]}
+  - {species_name: (WO3)2(g), janaf_table_id: O-088, nasa_record_id: NG-1255, common_298K_anchor_table: O-088, values: [{T_K: 1800, janaf_G_app_J_mol: -2208917.4, nasa_G_app_J_mol: -2194817.836, nasa_minus_janaf_J_mol: 14099.564}, {T_K: 2000, janaf_G_app_J_mol: -2356555.0, nasa_G_app_J_mol: -2334474.104, nasa_minus_janaf_J_mol: 22080.896}, {T_K: 2500, janaf_G_app_J_mol: -2740903.5, nasa_G_app_J_mol: -2698758.064, nasa_minus_janaf_J_mol: 42145.436}, {T_K: 3000, janaf_G_app_J_mol: -3143611.0, nasa_G_app_J_mol: -3081308.235, nasa_minus_janaf_J_mol: 62302.765}]}
+  - {species_name: (WO3)3(g), janaf_table_id: O-093, nasa_record_id: NG-1256, common_298K_anchor_table: O-093, values: [{T_K: 1800, janaf_G_app_J_mol: -3377511.8, nasa_G_app_J_mol: -3371988.525, nasa_minus_janaf_J_mol: 5523.275}, {T_K: 2000, janaf_G_app_J_mol: -3576035.0, nasa_G_app_J_mol: -3569926.149, nasa_minus_janaf_J_mol: 6108.851}, {T_K: 2500, janaf_G_app_J_mol: -4095862.5, nasa_G_app_J_mol: -4088183.357, nasa_minus_janaf_J_mol: 7679.143}, {T_K: 3000, janaf_G_app_J_mol: -4644014.0, nasa_G_app_J_mol: -4634678.599, nasa_minus_janaf_J_mol: 9335.401}]}
+  - {species_name: (WO3)4(g), janaf_table_id: O-096, nasa_record_id: NG-1257, common_298K_anchor_table: O-096, values: [{T_K: 1800, janaf_G_app_J_mol: -4502082.2, nasa_G_app_J_mol: -4507096.83, nasa_minus_janaf_J_mol: -5014.63}, {T_K: 2000, janaf_G_app_J_mol: -4756030.0, nasa_G_app_J_mol: -4758364.399, nasa_minus_janaf_J_mol: -2334.399}, {T_K: 2500, janaf_G_app_J_mol: -5422733.0, nasa_G_app_J_mol: -5418207.104, nasa_minus_janaf_J_mol: 4525.896}, {T_K: 3000, janaf_G_app_J_mol: -6127776.0, nasa_G_app_J_mol: -6116251.745, nasa_minus_janaf_J_mol: 11524.255}]}
+  - {species_name: WO3(l), janaf_table_id: O-066, nasa_record_id: NG-2013, common_298K_anchor_table: O-066, values: [{T_K: 2000, janaf_G_app_J_mol: -1198760.0, nasa_G_app_J_mol: -1238680.283, nasa_minus_janaf_J_mol: -39920.283}, {T_K: 2500, janaf_G_app_J_mol: -1357990.0, nasa_G_app_J_mol: -1400373.456, nasa_minus_janaf_J_mol: -42383.456}, {T_K: 3000, janaf_G_app_J_mol: -1530492.0, nasa_G_app_J_mol: -1575053.962, nasa_minus_janaf_J_mol: -44561.962}]}
+certification_items:
+  - authority: lh84_evaluated_with_nasa_cp
+    species_name: Na2O(g)
+    issue: >-
+      LH84 Table 4 supplies the formation reference while NASA Glenn supplies
+      the Cp(T) shape; NASA's dfH298 is -16.559830 kJ/mol versus LH84's
+      -3.82 kK*R, a disagreement of about 15 kJ/mol.
+  - authority: lh84_evaluated_with_nasa_cp
+    species_name: K2O(g)
+    issue: >-
+      LH84 Table 4 supplies the formation reference while NASA Glenn supplies
+      the Cp(T) shape; NASA's dfH298 is -74.086902 kJ/mol versus LH84's
+      -7.05 kK*R, a disagreement of about 15 kJ/mol.

@@ -97,15 +97,21 @@ until an external pack supplies a source-rated `P2O5(l)` standard state and the
 caller supplies `a(P2O5)` on that reference. OpenIMCC does not provide a
 melt-side P2O5 activity model for pyrolysis temperatures.
 
-Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, As, Sb, and Ag channels activate when the caller
+Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, As, Sb, Ag, Mo, and W channels activate when the caller
 supplies their parent activity (`Li2O`, `Rb2O`, `PbO`, `Cs2O`, `Cu2O`, `SnO`,
-`Ga2O3`, `GeO2`, `B2O3`, `In2O3`, `TeO2`, `SeO2`, `As2O3`, `Sb2O3`, or `Ag2O`) in the
+`Ga2O3`, `GeO2`, `B2O3`, `In2O3`, `TeO2`, `SeO2`, `As2O3`, `Sb2O3`, `Ag2O`,
+`MoO3`, or `WO3`) in the
 `evaluate_gas` mapping. Activities are caller-supplied; openimcc has no
 trace-element activity model and applies no activity coefficients. As(g), As2(g),
 and As4(g) are constant-Cp continuation above 1200 K; As4O6(g) is continuation
 above 1000 K. TeO2(l) is
 the Te(IV) parent because Bulletin 672 prints its measured liquid branch; its
 constant-Cp continuation above the last printed node is flagged and banded.
+MoO3(l) uses the JANAF liquid branch from its 1074 K crystal/liquid marker
+through 2000 K, then a labelled constant-Cp continuation. WO3(l) uses the
+JANAF O-066 liquid cells through 3000 K, including its printed supercooled
+cells below the 1745 K II/liquid marker. These parent activities are supplied
+by the caller on their 1-bar liquid standard states.
 The oxide-parent convention does not represent telluride dissolution in
 reduced melts. SeO2(l) is a flagged tier-4 construction from the Pankratz
 crystal function and the OECD/NEA reviewed fusion inputs; its liquid heat
@@ -324,8 +330,8 @@ re-fitted.
 Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
 `Li+`, `Rb+`, `Pb+`, `Cs+`, `Sn+`, `Cs2O+`, `Ga+`, `Ge+`, `B+`,
-`Zn+`, `Cd+`, `Bi+`, and `Mn+`,
-`Ga-`, `B-`, `BO-`, `BO2-`, `Cu-`, and every available JANAF-supported negative ion
+`Zn+`, `Cd+`, `Bi+`, `Mn+`, `Mo+`, and `W+`,
+`Ga-`, `B-`, `BO-`, `BO2-`, `Cu-`, `Mo-`, `W-`, and every available JANAF-supported negative ion
 whose neutral is present. In+ is retained in the source ledger but declined
 after its NASA card failed the NIST Saha check. Cu+ is declined because its
 JANAF Cu-006 entropy yields fitted/Saha ratios 1666.15 and 1656.61 at 1500 and

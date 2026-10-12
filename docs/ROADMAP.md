@@ -34,7 +34,8 @@ Kion/Saha ratios (1.510e28 at 1500 K and 9.143e16 at 2500 K) fail the NIST
 5.78636 eV ionisation-energy check. The default result remains neutral-only.
 Na and K remain `complete-except-ions` because their bounded shares exceed
 1e-4 while ions are opt-in; Ca, Li, Rb, Pb, Ga, Ge, Zn, Cd, Bi and Mn remain
-below the C3 threshold on their recorded activity screens. Se's positive ion
+below the C3 threshold on their recorded activity screens. Mo and W are also
+screened using their caller-supplied parent activities. Se's positive ion
 source is unavailable, so its C3 screen is declined. B exceeds the threshold when
 its cation and available anions are combined; Cs is also above the threshold.
 Positive molecular ions and nonthermal electrons remain outside this
@@ -51,6 +52,8 @@ P2O5(l) row.
 | As | gas-partial | no | yes | declined | yes | unvalidated | As(g), As2(g), As4(g), As4O6(g), and a tier-4 As2O3(l) parent cover 1200-3000 K; As(g), As2(g), and As4(g) are constant-Cp continuation above 1200 K, and As4O6(g) is continuation above 1000 K. As2O3(l) is constructed from the Pankratz Table 53 crystal function and the repository tier-3 liquid_from_solid estimates because no standard liquid function was located; a(As2O3) is caller-supplied. |
 | Sb | gas-partial | no | yes | declined | yes | unvalidated | Sb(g), Sb2(g), Sb4(g), Sb4O6(g), and a tier-4 Sb2O3(l) construction cover 1200-3000 K; the source Sb4O6(g) nodes end at 1000 K and the other source nodes end at 2000 K. Bulletin 672 reports a 928 K Sb2O3 melting marker but insufficient fusion-enthalpy data and no liquid function; a(Sb2O3) is caller-supplied. |
 | Ag | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Ag(g) and a tier-4 hypothetical Ag2O(l) caller-activity standard cover 1200-3000 K; NASA Glenn supplies opt-in Ag+(g) and Ag-(g). Ag2O decomposes near 500 K and has no measured liquid function; the Ag2O-parent convention does not represent reduced melts where silver dissolves largely as metal. |
+| Mo | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | MoO3(l), JANAF Mo monomers and ions, and NASA Glenn Mo oxide clusters cover 1200-3000 K; MoO3(l) uses its JANAF liquid branch through 2000 K and a labelled constant-Cp continuation above it; a(MoO3) is caller-supplied; the C3 screen at a(MoO3)=1e-3 reached 1.192e-09 at 2600 K and fO2=1e-6 within the <=1-bar neutral-pressure domain. |
+| W | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | WO3(l), JANAF W monomers, oxide clusters and ions, and NASA Glenn (WO3)5(g) cover 1200-3000 K; O-066 prints the liquid values below its 1745 K marker as supercooled source data; a(WO3) is caller-supplied; the C3 screen at a(WO3)=1e-3 reached 6.594e-13 at 2300 K and fO2=1e-10 within the <=1-bar neutral-pressure domain. |
 | Mn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Mn(g), MnO(g), MnO(l), and opt-in Mn+ are available; MnO(l) is a tier-4 liquid_from_solid construction fitted over 1200-3000 K and supercooled below measured Tm 2120 ± 20 K; a(MnO) is caller-supplied; the joint C3 screen used a(MnO)=1e-3 and reached 1.621e-07 at 2800 K and fO2=1e-4, within the fitted interval and the <=1-bar neutral-pressure domain. |
 | O | input (fO2 pinned) | n/a | yes | n/a | n/a | unvalidated | O is input (fO2 pinned), so C1, C3 and C4 do not apply. |
 | P | gas-partial | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | no | unvalidated | JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) function was found and JANAF lists P4O10(cr) only. Channels need an external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); OpenIMCC provides no pyrolysis-temperature melt activity model. |

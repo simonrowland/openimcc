@@ -71,6 +71,10 @@ def _neutral_oxide_sources(
                 "O6P4": "P4O6",
                 "O10P4": "P4O10",
                 "O1S2": "SSO",
+                "O6W2": "(WO3)2",
+                "O9W3": "(WO3)3",
+                "O12W4": "(WO3)4",
+                "O8W3": "W3O8",
             }.get(
                 formula, formula
             )
@@ -365,6 +369,10 @@ def _text_table_value(table_id: str, column: int, temperature: float) -> float:
 
 
 def _gas_element_atom_count(species: str, element: str) -> int:
+    polymer = re.fullmatch(r"\((MoO3|WO3)\)([2-5])", species)
+    if polymer:
+        atoms_per_unit = 1 if element in {"Mo", "W"} else 3 if element == "O" else 0
+        return atoms_per_unit * int(polymer.group(2))
     return sum(
         int(count) if count else 1
         for symbol, count in re.findall(r"([A-Z][a-z]?)(\d*)", species)
@@ -390,11 +398,12 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     assert set(computed) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
-        "Zn", "Cd", "Bi", "Mn", "Ag",
+        "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W",
     }
     caller_parent_oxides = {
         "Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2",
         "Li": "Li2O", "Rb": "Rb2O", "Pb": "PbO",
+        "Mo": "MoO3", "W": "WO3",
         "Cs": "Cs2O", "Cu": "Cu2O", "Sn": "SnO", "Ag": "Ag2O",
     }
     trace_elements = {"Li", "Rb", "Pb"}
@@ -403,12 +412,13 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Ga": "Ga2O3", "Ge": "GeO2", "B": "B2O3", "In": "In2O3",
         "Cu": "Cu2O", "Zn": "ZnO", "Cd": "CdO", "Bi": "Bi2O3",
         "Mn": "MnO",
+        "Mo": "MoO3", "W": "WO3",
     }
     new_trace_elements.update({"Zn", "Cd", "Bi"})
     caller_parent_oxides.update(
         {"Zn": "ZnO", "Cd": "CdO", "Bi": "Bi2O3"}
     )
-    trace_elements = {"Li", "Rb", "Pb", "Cs", "Sn", "Ag"}
+    trace_elements = {"Li", "Rb", "Pb", "Cs", "Sn", "Ag", "Mo", "W"}
     existing_caller_parent_oxides = {
         element: oxide
         for element, oxide in caller_parent_oxides.items()
@@ -443,7 +453,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                     **activities,
                     caller_parent_oxides[element]: 1.0e-3,
                 }
-                for element in ("Cs", "Cu", "Sn", "Ag")
+                for element in ("Cs", "Cu", "Sn", "Ag", "Mo", "W")
             },
         }
 
@@ -795,13 +805,13 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     assert set(measured) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
-        "Zn", "Cd", "Bi", "Mn", "Ag",
+        "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W",
     }
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
         if element in {
             "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In",
-            "Zn", "Cd", "Bi", "Mn", "Ag",
+            "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W",
         }:
             assert recorded["parent_activity"] == 1.0e-3
         assert recorded["temperature_K"] == result["temperature_K"], element
@@ -842,7 +852,8 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         element: result
         for element, result in measured.items()
         if element not in {
-                "Ga", "Ge", "B", "In", "Cu", "Zn", "Cd", "Bi", "Mn", "Ag"
+                "Ga", "Ge", "B", "In", "Cu", "Zn", "Cd", "Bi", "Mn", "Ag",
+                "Mo", "W",
         }
     }
     ratio_order = sorted(
@@ -886,6 +897,7 @@ def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
         ("Zn", "Zn-006"), ("Cd", "NG-4071"),
         ("Bi", "NBS-T22-ASD-BiII"),
         ("Ag", "NG-0085"),
+        ("Mo", "Mo-006"), ("W", "W-006"),
     ):
         c3 = ELEMENT_STATUS[element]["c3_ion_bound"]
         text_path = JANAF_DATA / f"{table_id}.txt"
@@ -1017,8 +1029,11 @@ def _c4_rows_cover_domain(
                 if not _one_bar_janaf_source(source["table_id"]):
                     return False
             elif source["authority"] == "nasa_glenn_fitted":
-                if "NASA/TP-2002-211556" not in source["source"].get(
-                    "citation", ""
+                citation = source.get("source", {}).get("citation", "")
+                source_record = source.get("source_record", "")
+                if (
+                    "NASA/TP-2002-211556" not in citation
+                    and not source_record.startswith("data-src/nasa-glenn/")
                 ):
                     return False
             elif source["authority"] == "published_fitted":
@@ -1181,7 +1196,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Ga", "Ge", "B", "In",
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Cs", "Cu", "Sn",
         "Mn", "Ni", "Co", "P", "S",
-        "Zn", "Cd", "Bi", "Te", "Se", "As", "Sb", "Ag",
+        "Zn", "Cd", "Bi", "Te", "Se", "As", "Sb", "Ag", "Mo", "W",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1202,6 +1217,8 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "As": "As2O3",
         "Sb": "Sb2O3",
         "Ag": "Ag2O",
+        "Mo": "MoO3",
+        "W": "WO3",
     }
     liquid_by_element = {
         **parent_by_element,
@@ -1227,6 +1244,8 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Sb": "Sb2O3",
         "Ag": "Ag2O",
         "Mn": "MnO",
+        "Mo": "MoO3",
+        "W": "WO3",
     }
     gas_parent_by_element = {"S": "S2"}
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")

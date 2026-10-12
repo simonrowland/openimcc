@@ -171,6 +171,22 @@ TRACE_JANAF_GAS_SOURCES = (
     ("Cu2(g)", "Cu-018", "Cu", 2, 0),
     ("Zn(g)", "Zn-005", "Zn", 1, 0),
 )
+# Mo/W JANAF tables are vendored as normalized YAML records. Keep them on the
+# same fit path and two-interval domain as the other optional trace channels.
+TRACE_JANAF_YAML_GAS_SOURCES = (
+    ("Mo(g)", "Mo-005", "Mo", 1, 0),
+    ("MoO(g)", "Mo-008", "Mo", 1, 1),
+    ("MoO2(g)", "Mo-010", "Mo", 1, 2),
+    ("MoO3(g)", "Mo-017", "Mo", 1, 3),
+    ("W(g)", "W-005", "W", 1, 0),
+    ("WO(g)", "O-027", "W", 1, 1),
+    ("WO2(g)", "O-048", "W", 1, 2),
+    ("WO3(g)", "O-068", "W", 1, 3),
+    ("(WO3)2(g)", "O-088", "W", 2, 6),
+    ("(WO3)3(g)", "O-093", "W", 3, 9),
+    ("(WO3)4(g)", "O-096", "W", 4, 12),
+    ("W3O8(g)", "O-092", "W", 3, 8),
+)
 TRACE_NASA_GAS_SOURCES = (
     ("Ag(g)", "NG-0074", "Ag", "Ag", 1, 0),
     ("RbO(g)", "NG-1329", "RbO", "Rb", 1, 1),
@@ -188,6 +204,11 @@ TRACE_NASA_GAS_SOURCES = (
     ("SnO(g)", "NG-1847", "SnO", "Sn", 1, 1),
     ("SnO2(g)", "NG-1849", "SnO2", "Sn", 1, 2),
     ("Cd(g)", "NG-4060", "Cd", "Cd", 1, 0),
+    ("(MoO3)2(g)", "NG-0831", "Mo2O6", "Mo", 2, 6),
+    ("(MoO3)3(g)", "NG-0832", "Mo3O9", "Mo", 3, 9),
+    ("(MoO3)4(g)", "NG-0833", "Mo4O12", "Mo", 4, 12),
+    ("(MoO3)5(g)", "NG-0834", "Mo5O15", "Mo", 5, 15),
+    ("(WO3)5(g)", "NG-1258", "W5O15", "W", 5, 15),
 )
 TRACE_PUBLISHED_GAS_SOURCES = (
     ("ZnO(g)", "IVTAN-264", "ZnO", "Zn", 1, 1, 3000.0),
@@ -214,6 +235,7 @@ TRACE_PUBLISHED_GAS_SOURCES = (
 )
 TRACE_GAS_SPECIES = frozenset(
     {source[0].removesuffix("(g)") for source in TRACE_JANAF_GAS_SOURCES}
+    | {source[0].removesuffix("(g)") for source in TRACE_JANAF_YAML_GAS_SOURCES}
     | {source[0].removesuffix("(g)") for source in TRACE_NASA_GAS_SOURCES}
     | {source[0].removesuffix("(g)") for source in TRACE_PUBLISHED_GAS_SOURCES}
 )
@@ -278,7 +300,13 @@ TRACE_ION_NASA_SOURCES = (
     ("Cs2O+(g)", "NG-1843", "Cs2O+", "Cs", 2, 1),
 )
 ION_GAS_YAML_SOURCES = (("Ca+(g)", "Ca-007", "Ca", 1, 0),)
-TRACE_ION_GAS_YAML_SOURCES = (("Mn+(g)", "Mn-006", "Mn", 1, 0),)
+TRACE_ION_GAS_YAML_SOURCES = (
+    ("Mn+(g)", "Mn-006", "Mn", 1, 0),
+    ("Mo+(g)", "Mo-006", "Mo", 1, 0),
+    ("Mo-(g)", "Mo-007", "Mo", 1, 0),
+    ("W+(g)", "W-006", "W", 1, 0),
+    ("W-(g)", "W-007", "W", 1, 0),
+)
 
 LOW_T_GAS_SPECIES = frozenset(
     {
@@ -733,7 +761,15 @@ def _validate_record_identity(
     formula = index_entry.get("formula")
     # JANAF prints some oxygen-first canonical formulas; preserve established
     # runtime names for the phosphorus oxides and sulfur oxide.
-    formula = {"O6P4": "P4O6", "O10P4": "P4O10", "O1S2": "SSO"}.get(
+    formula = {
+        "O6P4": "P4O6",
+        "O10P4": "P4O10",
+        "O1S2": "SSO",
+        "O6W2": "(WO3)2",
+        "O9W3": "(WO3)3",
+        "O12W4": "(WO3)4",
+        "O8W3": "W3O8",
+    }.get(
         formula, formula
     )
     if formula != expected_formula:
@@ -1108,13 +1144,13 @@ def _nasa_card_thermal_rows(
     h298_j = R_J_MOL_K * NASA_STANDARD_T_K * h298["h_rt"]
     # CEA prints rounded coefficients; their 298 K polynomial evaluation can
     # miss the separately printed Hf anchor by a few joules after cancellation.
-    # Hinc below is still zero at 298 K by construction, so a 10 J/mol check
-    # rejects material mismatch without turning printed coefficient rounding
-    # into a false source refusal.
+    # Hinc below is still zero at 298 K by construction. Mo/W oxide polymer
+    # coefficients miss their separate Hf anchors by up to 20.24 J/mol
+    # (NG-1258), so allow 21 J for rounding but reject material mismatches.
     # NASA-7 coefficients are printed to finite precision. Retain the exact
     # published formation anchor and subtract the polynomial's own H(298),
     # while allowing the small coefficient-rounding residual found in cards.
-    if abs(h298_j - reference_h) > 10.0:
+    if abs(h298_j - reference_h) > 21.0:
         raise ValueError(
             f"{record['record_id']} H(298.15) differs from its formation anchor "
             f"by {h298_j - reference_h:g} J/mol"
@@ -2288,6 +2324,82 @@ def _fit_condensate_row(
     }
 
 
+def _fit_janaf_parent_liquid(
+    source_dir: Path,
+    species_name: str,
+    table_id: str,
+    cation: str,
+    cat_num: int,
+    oxy_num: int,
+    intervals: tuple[tuple[float, float, tuple[float, ...] | None, bool], ...],
+) -> list[dict[str, str]]:
+    """Fit printed liquid nodes and any explicitly requested Cp continuation.
+
+    Each interval declares its source nodes; only intervals flagged as
+    continuation receive generated constant-Cp nodes. The independent fit
+    residual remains a check against whichever nodes generated that interval.
+    """
+    record = _load_record(source_dir / f"{table_id}.yaml")
+    table = record["table"]
+    _validate_record_identity(record, species_name, table_id, "l")
+    source_rows = {
+        float(_value(row, "temperature")): {
+            "temperature": float(_value(row, "temperature")),
+            "heat_capacity": float(_value(row, "heat_capacity")),
+            "entropy": float(_value(row, "entropy")),
+            "enthalpy_increment": float(_value(row, "enthalpy_increment")),
+        }
+        for row in table["values"]
+        if _value(row, "temperature") is not None
+        and all(
+            _value(row, field) is not None
+            for field in ("heat_capacity", "entropy", "enthalpy_increment")
+        )
+    }
+    reference = next(
+        _value(row, "formation_enthalpy")
+        for row in table["values"]
+        if _value(row, "temperature") == NASA_STANDARD_T_K
+    )
+    if reference is None:
+        raise ValueError(f"{table_id}: no complete 298.15 K formation enthalpy")
+    source_limit = max(source_rows)
+    fitted_rows = []
+    for fit_min, fit_max, explicit_nodes, continuation in intervals:
+        nodes = (
+            _constant_cp_rows_through(source_rows, fit_max)
+            if continuation
+            else source_rows
+        )
+        selected = {
+            temperature: row
+            for temperature, row in nodes.items()
+            if fit_min <= temperature <= fit_max
+        }
+        row = _fit_condensate_values(
+            species_name,
+            table_id,
+            cation,
+            cat_num,
+            oxy_num,
+            selected,
+            float(reference),
+            fit_t_min=fit_min,
+            fit_t_max=fit_max,
+            runtime_t_min=fit_min,
+            runtime_t_max=fit_max,
+            ref=(f"{table_id}-CP-EXT-{source_limit:g}" if continuation else table_id),
+            fit_temperatures=explicit_nodes,
+        )
+        if float(row["_max_residual_J_per_mol"]) > 10.0:
+            raise ValueError(
+                f"{species_name}: condensate fit residual "
+                f"{row['_max_residual_J_per_mol']} J/mol exceeds 10"
+            )
+        fitted_rows.append(row)
+    return fitted_rows
+
+
 def _fit_supercooled_liquid_row(
     source_dir: Path,
     species_name: str,
@@ -2634,6 +2746,17 @@ def build_rows(
         for source in TRACE_JANAF_GAS_SOURCES
     )
     rows.extend(
+        _fit_row(
+            source_dir,
+            *source,
+            t_interval=1,
+            fit_t_min=FIT_T_MIN,
+            fit_t_max=FIT_T_MAX,
+        )
+        for source in TRACE_JANAF_YAML_GAS_SOURCES
+        if not source[0].startswith(("Mo", "W"))
+    )
+    rows.extend(
         _fit_nasa_card_gas_row(
             nasa_source_dir,
             *source,
@@ -2663,6 +2786,17 @@ def build_rows(
             )
         )
     rows.extend(
+        _fit_row(
+            source_dir,
+            *source,
+            t_interval=1,
+            fit_t_min=FIT_T_MIN,
+            fit_t_max=FIT_T_MAX,
+        )
+        for source in TRACE_JANAF_YAML_GAS_SOURCES
+        if source[0].startswith(("Mo", "W"))
+    )
+    rows.extend(
         _fit_janaf_text_row(
             source_dir,
             *source,
@@ -2673,6 +2807,19 @@ def build_rows(
         )
         for source in TRACE_JANAF_GAS_SOURCES
     )
+    for source in TRACE_JANAF_YAML_GAS_SOURCES:
+        if source[0].startswith(("Mo", "W")):
+            continue
+        low_row = _fit_row(
+            source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=LOW_FIT_T_MIN,
+            fit_t_max=LOW_FIT_T_MAX,
+            minimum_rows=11,
+        )
+        low_row["T_min"] = "1200"
+        rows.append(low_row)
     rows.extend(
         _fit_nasa_card_gas_row(
             nasa_source_dir,
@@ -2702,6 +2849,19 @@ def build_rows(
                 breakpoint_side="low",
             )
         )
+    for source in TRACE_JANAF_YAML_GAS_SOURCES:
+        if not source[0].startswith(("Mo", "W")):
+            continue
+        low_row = _fit_row(
+            source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=LOW_FIT_T_MIN,
+            fit_t_max=LOW_FIT_T_MAX,
+            minimum_rows=11,
+        )
+        low_row["T_min"] = "1200"
+        rows.append(low_row)
     rows.extend(
         _fit_janaf_text_row(source_dir, *source)
         for source in TRACE_ION_GAS_TEXT_SOURCES
@@ -3193,6 +3353,43 @@ def build_condensate_rows(
             )
         else:
             rows.append(_fit_condensate_row(source_dir, *source))
+    # Mo-015 prints the liquid branch through 2000 K. Continue its last
+    # printed Cp above that endpoint with the labelled, source-limited rule.
+    rows.extend(
+        _fit_janaf_parent_liquid(
+            source_dir,
+            "MoO3(l)",
+            "Mo-015",
+            "Mo",
+            1,
+            3,
+            (
+                (1200.0, 1600.0, None, False),
+                (1600.0, 2000.0, None, False),
+                (2000.0, 2500.0, None, True),
+                (2500.0, 3000.0, None, True),
+            ),
+        )
+    )
+    # O-066 prints WO3 liquid cells below its 1745 K II <--> LIQUID marker;
+    # these supercooled values are source data. Its liquid branch extends to
+    # 3000 K, so all four intervals use printed nodes without continuation.
+    rows.extend(
+        _fit_janaf_parent_liquid(
+            source_dir,
+            "WO3(l)",
+            "O-066",
+            "W",
+            1,
+            3,
+            (
+                (1200.0, 1500.0, (1200, 1300, 1400, 1500), False),
+                (1500.0, 2000.0, (1500, 1600, 1700, 1900, 2000), False),
+                (2000.0, 2500.0, None, False),
+                (2500.0, 3000.0, None, False),
+            ),
+        )
+    )
     rows.extend(_fit_k2o_from_solid(source_dir))
     # Na-013 is a liquid table below its 1405.2 K ALPHA <--> LIQUID marker.
     # Both fits share the recovered 1500 K thermal row so the runtime seam is
