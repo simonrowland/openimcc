@@ -20,7 +20,7 @@
         [1800, 4.988, 53.604, 7.465]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Table 80; thermal data and formation enthalpy are transcribed from the published row."
+      "source_note": "Table 80, printed p. 80; the 49.500 kcal/mol 298 K anchor is the elemental formation-table value. Thermal data are transcribed from the published row."
     },
     "P672-T81": {
       "table": "81",
@@ -38,7 +38,7 @@
         [1800, 8.940, 81.422, 13.402]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Table 81; high-temperature nodes are transcribed from the published row."
+      "source_note": "Table 81, printed p. 81; the 52.600 kcal/mol 298 K anchor is the elemental formation-table value. High-temperature nodes are transcribed from the published row."
     },
     "P672-T82": {
       "table": "82",
@@ -54,7 +54,7 @@
         [1300, 43.000, 93.717, 44.661]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Table 82; printed liquid branch begins at the 1098 K fusion marker."
+      "source_note": "Table 82, printed p. 82; the -137.160 kcal/mol 298 K anchor is the elemental formation-table value. The printed liquid branch begins at the 1098 K fusion marker."
     },
     "P672-T102": {
       "table": "102",
@@ -72,7 +72,7 @@
       },
       "last_printed_node": [1500, 13.770, 32.930, 15.193],
       "last_printed_node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Table 102; Hf and S at 298 K from CODATA, other thermal data from Mills."
+      "source_note": "Table 102, printed p. 102; the -61.700 kcal/mol 298 K anchor is from the elemental formation table and CODATA. Other thermal data from Mills."
     },
     "P672-Se-g": {
       "table": "Selenium gas table",
@@ -88,7 +88,7 @@
         [2000, 5.840, 52.470, 9.372]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Pankratz Bulletin 672 selenium gas table, printed p. 367; 56.250 kcal/mol is the elemental-formation-table anchor, while the separate reaction table prints 39.600 kcal/mol for 0.5 Se2(g)=Se(g). Thermal data from Mills (158)."
+      "source_note": "Pankratz Bulletin 672 selenium gas table, printed p. 367; 56.250 kcal/mol is the elemental formation-table anchor at 298 K, while the separate reaction table prints 39.600 kcal/mol for 0.5 Se2(g)=Se(g). Thermal data from Mills (158)."
     },
     "P672-Se2-g": {
       "table": "Selenium gas table",
@@ -111,7 +111,7 @@
         "equation": "Cp = a + b*T + c/T^2",
         "published_range_K": [298.15, 2000.0]
       },
-      "source_note": "Pankratz Bulletin 672 selenium gas table; data from Mills (158). The nodes and published Cp equation agree within printed rounding; source entropy transcription errors at 1400 K and 1800 K were corrected against the scan."
+      "source_note": "Pankratz Bulletin 672 selenium gas table, printed pp. 368-369; the 33.300 kcal/mol 298 K anchor is the elemental formation-table value. Data from Mills (158). Printed entropy nodes at 1400 K and 1800 K match the scan, and the printed Cp equation agrees within rounding."
     },
     "P672-Te-g": {
       "table": "415",
@@ -143,7 +143,7 @@
         [2000, 10.280, 80.100, 16.822]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Table 416; source prints 100 K Cp, entropy, and enthalpy nodes to 2000 K; data from Mills (158)."
+      "source_note": "Table 416, printed p. 416; 38.330 kcal/mol is the elemental formation-table anchor. Source prints 100 K Cp, entropy, and enthalpy nodes to 2000 K; data from Mills (158)."
     },
     "P672-TeO2-g": {
       "table": "Tellurium Dioxide gas table",
@@ -156,10 +156,10 @@
         [1400, 13.658, 85.060, 14.294], [1500, 13.689, 86.010, 15.661]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Thermal data from Spoliti (210); formation enthalpy at 298 K from Muenow (164)."
+      "source_note": "Tellurium Dioxide gas table, printed pp. 420-421; -15.100 kcal/mol is the elemental formation-table anchor on p. 420. Thermal data from Spoliti (210); formation enthalpy at 298 K from Muenow (164)."
     },
     "P672-SeO2-g": {
-      "table": "Selenium Dioxide gas table, printed p. 81",
+      "table": "Selenium Dioxide gas table, printed pp. 380-381",
       "species": "SeO2(g)",
       "formula": "SeO2",
       "phase": "gas",
@@ -170,12 +170,10 @@
         [500.0, 11.980, 68.519, 2.272], [600.0, 12.446, 70.747, 3.495],
         [700.0, 12.773, 72.692, 4.757], [800.0, 13.006, 74.414, 6.047],
         [900.0, 13.177, 75.956, 7.356], [958.0, 13.251, 76.781, 8.123],
-        [1000.0, 13.235, 77.321, 8.641], [1100.0, 13.406, 78.591, 9.973],
-        [1200.0, 13.570, 79.764, 11.322], [1300.0, 13.728, 80.857, 12.687],
-        [1400.0, 13.882, 81.880, 14.067], [1500.0, 14.033, 82.843, 15.463]
+        [1000.0, 13.305, 77.351, 8.681], [1100.0, 13.403, 78.624, 10.016],
+        [1200.0, 13.479, 79.794, 11.360], [1300.0, 13.540, 80.875, 12.711],
+        [1400.0, 13.588, 81.880, 14.068], [1500.0, 13.628, 82.819, 15.429]
       ],
-      "equation_generated_nodes_K": [1000, 1100, 1200, 1300, 1400, 1500],
-      "equation_node_derivation": "Nodes from 1000-1500 K evaluate the published Cp and H equations; S is integrated from S(298.15 K)=62.735 cal/(mol K) using the same Cp equation. Values are rounded to the table's 0.001 units.",
       "equation_node_note": "At the printed 958 K boiling node, the table gives Cp=13.251 cal/(mol K), S=76.781 cal/(mol K), and H-H298=8.123 kcal/mol. The published equations give Cp=13.160152, S=76.754946, and H-H298=8.086592, respectively. The runtime high interval fits the published equations through 1500 K; the printed 958 K row is retained as source data.",
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
       "cp_equation_cal_mol_K": {
@@ -185,7 +183,23 @@
         "equation": "Cp = a + b*T + c/T^2",
         "published_range_K": [298.15, 1500.0]
       },
-      "source_note": "Formation is Se(c,l)+O2(g)=SeO2(g); gas data from Behrens et al. (12), Selenium Dioxide gas table, printed p. 81. The printed 958 K boiling node is retained; its Cp/H/S disagree with the published heat-capacity and enthalpy equations by 0.090848 cal/(mol K), 0.036408 kcal/mol, and 0.026054 cal/(mol K). The 1200-1500 K fit uses equation-derived nodes because the source prints those equations through 1500 K."
+      "source_note": "Elemental formation enthalpy is from the formation table on printed p. 380; gas data from Behrens et al. (12), reaction table on printed p. 381. Printed 1000-1500 K Cp, S, and H-H298 nodes are source data. At the printed 958 K boiling node, Cp/H/S disagree with the published heat-capacity and enthalpy equations by 0.090848 cal/(mol K), 0.036408 kcal/mol, and 0.026054 cal/(mol K); the printed node is retained."
+    },
+    "P672-SeO-g": {
+      "table": "Selenium Oxide gas table, printed pp. 376-377",
+      "species": "SeO(g)",
+      "formula": "SeO",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 12.750,
+      "nodes": [
+        [1200, 8.835, 67.448, 7.603], [1300, 8.867, 68.157, 8.488],
+        [1400, 8.894, 68.815, 9.376], [1500, 8.918, 69.429, 10.266],
+        [1600, 8.938, 70.005, 11.159], [1700, 8.957, 70.548, 12.054],
+        [1800, 8.973, 71.060, 12.951], [1900, 8.988, 71.546, 13.849],
+        [2000, 9.001, 72.007, 14.748]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "The elemental formation table on printed p. 376 gives ΔfH°298 = 12.750 kcal/mol; the reaction table on printed p. 377 gives -3.900 kcal/mol for 0.5 Se2(g)+0.5 O2(g)=SeO(g). Cp, S, and H-H298 nodes and thermal data are from Gordon (81)."
     },
     "P672-SeO2-c": {
       "table": "378, SeO2(c,g)",
@@ -209,7 +223,7 @@
         [602, 18.776, 27.358, 5.030]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "The source labels the 413-602 K region estimated and marks 602 K as the SeO2 sublimation point; source equations extend through 602 K."
+      "source_note": "Table 378, printed p. 378; -53.860 kcal/mol is the elemental formation-table anchor. The source labels the 413-602 K region estimated and marks 602 K as the SeO2 sublimation point; source equations extend through 602 K."
     },
     "P672-TeO2-l": {
       "table": "Tellurium Dioxide condensed-phase formation table, printed p. 418",
@@ -233,30 +247,30 @@
       "phase": "gas",
       "formation_enthalpy_298_kcal_mol": 72.120,
       "nodes": [
-        [1200, 4.968, 48.529, 4.480]
+        [1200, 4.970, 48.529, 4.480]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Thermal data from Hultgren (99); table relates As(g) to the 1/4 As4(g) reference."
+      "source_note": "As(g), printed p. 49; 72.120 kcal/mol is the elemental formation-table anchor, while the high-temperature table relates gas thermochemistry to the 1/4 As4(g) reference. Thermal data from Hultgren (99)."
     },
     "P672-As2-g": {
-      "table": "Arsenic gas table, printed p. 49",
+      "table": "Arsenic gas table, printed p. 50",
       "species": "As2(g)",
       "formula": "As2",
       "phase": "gas",
       "formation_enthalpy_298_kcal_mol": 52.820,
       "nodes": [[1200, 8.900, 69.702, 7.920]],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Thermal data from Hultgren (99); formation reaction is 2As[cr, 1/4As4(g)] = As2(g)."
+      "source_note": "As2(g), printed p. 50; 52.820 kcal/mol is the elemental formation-table anchor. Thermal data from Hultgren (99); source reaction is 2As[cr, 1/4As4(g)] = As2(g)."
     },
     "P672-As4-g": {
-      "table": "Arsenic gas table, printed p. 49",
+      "table": "Arsenic gas table, printed p. 52",
       "species": "As4(g)",
       "formula": "As4",
       "phase": "gas",
       "formation_enthalpy_298_kcal_mol": 36.640,
       "nodes": [[1200, 19.776, 105.212, 17.588]],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Selected tetramer row; source labels a separate As4 row as ideal triatomic. Thermal data from Hultgren (99)."
+      "source_note": "As4(g), printed p. 52, ideal tetratomic row; 36.640 kcal/mol is the elemental formation-table anchor. The ideal triatomic label belongs to As3(g) on p. 51. Thermal data from Hultgren (99)."
     },
     "P672-As4O6-g": {
       "table": "56",
@@ -272,7 +286,7 @@
         [900, 53.510, 151.940, 30.109], [1000, 53.900, 157.600, 35.481]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Table 56; data from Behrens and Rosenblatt (13); formation table marks the arsenic sublimation transition at 876 K."
+      "source_note": "Table 56, printed p. 56; -285.910 kcal/mol is the 298 K elemental formation-table anchor. Above 876 K, the printed enthalpy-of-formation column switches to the 1/4 As4(g) reference; stored 298 K formation remains on the crystal reference. Data from Behrens and Rosenblatt (13)."
     },
     "P672-As2O3-c": {
       "table": "53",
@@ -296,7 +310,7 @@
         [550, 29.713, 41.848, 6.736], [551, 29.732, 41.902, 6.766]
       ],
       "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
-      "source_note": "Table 53; above 360 K data are estimated; low-temperature heat capacity and S298 from Chang (29), formation enthalpy from Wagman (236)."
+      "source_note": "Table 53, printed p. 53; -157.020 kcal/mol is the elemental formation-table anchor. Above 360 K data are estimated; low-temperature heat capacity and S298 from Chang (29), formation enthalpy from Wagman (236)."
     }
   }
 }

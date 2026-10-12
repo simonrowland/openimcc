@@ -35,7 +35,7 @@ records:
     selection_reason: No source-rated ZnO(l) function is available; the published crystal function reaches the estimated fusion range and feeds the required liquid_from_solid construction.
   - record_id: P672
     path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 23e21e31e6bcc30f03307ef7b64478b62d7bd17d19d41843f16c9c1909e47a28
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     tables:
@@ -60,11 +60,15 @@ records:
         tier: 3
         selection_reason: JANAF and NASA Glenn provide no selenium atom card; the Bureau of Mines evaluation supplies a measured-data-based function through 2000 K, with the explicitly stated Se2 elemental reference.
       P672-Se2-g:
-        source_locator: Selenium gas table, printed p. 81
+        source_locator: Selenium gas table, printed p. 369
         tier: 3
         selection_reason: The table directly supplies the elemental diatomic gas function and its source equations through 2000 K; the unsupported upper range is separately labelled for continuation.
+      P672-SeO-g:
+        source_locator: Selenium Oxide gas table, printed pp. 376-377
+        tier: 2
+        selection_reason: JANAF and NASA Glenn supply no SeO(g) table; Bulletin 672 cites the primary Gordon thermal data and includes the elemental formation and reaction tables through 2000 K.
       P672-SeO2-g:
-        source_locator: SeO2(g) table, printed p. 81
+        source_locator: SeO2(g) tables, printed pp. 380-381
         tier: 2
         selection_reason: JANAF and NASA Glenn supply no SeO2(g) table; the compilation cites the primary Behrens measurements and gives temperature functions through 1500 K.
       P672-SeO2-c:
@@ -80,11 +84,11 @@ records:
         tier: 3
         selection_reason: JANAF and NASA Glenn provide no tellurium dimer card; the evaluated Bureau of Mines table supplies the matching elemental diatomic function through 2000 K.
       P672-TeO2-g:
-        source_locator: TeO2(g) table, printed p. 81
+        source_locator: TeO2(g) tables, printed pp. 420-421
         tier: 2
         selection_reason: JANAF has no TeO2(g) table; the compilation reports the primary Spoliti thermal data and Muenow formation measurement, supplying a direct 1500 K source limit.
       P672-TeO2-l:
-        source_locator: TeO2(c,l) table, printed p. 418
+        source_locator: TeO2(c,l) formation and reaction tables, printed pp. 418-419
         tier: 1
         selection_reason: The source prints the TeO2 liquid branch at its 1006 K melting marker with a measured high-temperature Cp function, making it the phase-pair-consistent caller parent; only the continuation above 1500 K is estimated.
       P672-As-g:
@@ -92,11 +96,11 @@ records:
         tier: 3
         selection_reason: JANAF and NASA Glenn provide no arsenic atom card; the Bureau of Mines evaluation supplies the thermodynamic row and its 1/4 As4 reference through 1200 K.
       P672-As2-g:
-        source_locator: As2(g) table, printed p. 49
+        source_locator: As2(g) table, printed p. 50
         tier: 3
         selection_reason: The table supplies As2 thermodynamic values through 1200 K with its explicit elemental reference; continuation covers the requested upper interval.
       P672-As4-g:
-        source_locator: As4(g) table, printed p. 49, ideal tetrameric row
+        source_locator: As4(g) table, printed p. 52, ideal tetratomic row
         tier: 3
         selection_reason: The tetramer row is selected by its printed formula and formation data; the separate triatomic-labelled row is not conflated with As4.
       P672-As4O6-g:

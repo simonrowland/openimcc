@@ -6,20 +6,24 @@
   As2O3(l) activity. Pankratz Bulletin 672 supplies the gas channels and the
   As2O3 crystal function. As2O3(l) is a flagged tier-4 construction using the
   repository's tier-3 liquid_from_solid estimate and leave-one-out band. No
-  AsO(g) or As+(g) source was located in the checked JANAF, NASA Glenn/CEA,
-  NIST WebBook, or Gurvich/IVTAN routes.
-- Added optional Se, Se2, and SeO2 gas channels with caller-supplied SeO2(l)
+  As(g), As2(g), and As4(g) continue by constant Cp above 1200 K; As4O6(g)
+  continues above 1000 K. No AsO(g) or As+(g) source was located in Bulletin
+  672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN.
+- Added optional Se, Se2, SeO, and SeO2 gas channels with caller-supplied SeO2(l)
   activity. Pankratz Bulletin 672 supplies the gas rows. SeO2(l) is a flagged
   tier-4 construction using the OECD/NEA reviewed fusion inputs and the
   documented crystal-Cp carry-over estimate; its crystal Cp equation extends
   above the printed 602 K range. The Se2 entropy transcription was checked
-  against the published Cp equation. SeO(g) and Se+(g) had no source in the
-  checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.
+  against the published Cp equation. SeO(g) uses the Bulletin 672 gas table;
+  Se+(g) had no source in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook,
+  or Gurvich/IVTAN. SeO2(g)'s 1000–1500 K nodes are transcribed from the
+  printed reaction table.
 - Added optional Te, Te2, and TeO2 gas channels with caller-supplied TeO2(l)
   activity. Pankratz Bulletin 672 supplies the selected rows; the TeO2(l)
   liquid branch is fitted through its printed nodes, with a flagged, banded
   constant-Cp continuation above them. TeO(g) and Te+(g) had no source in the
-  checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.
+  checked Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN
+  routes.
 - Refit the elemental iron reference functions directly to the JANAF phase
   tables. The earlier Fe(l) row carried a 76–79 J/mol fusion-anchor offset,
   and the earlier single-polynomial Fe(cr) row missed its delta-phase source

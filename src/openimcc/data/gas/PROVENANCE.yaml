@@ -254,29 +254,34 @@ source_notes:
         Pankratz Bulletin 672 Tables 415 and 416 supply Te(g) and Te2(g), and
         its Tellurium Dioxide tables supply TeO2(g) and a measured TeO2(l)
         branch. TeO2(l) is the Te(IV) parent by tier-1 phase-pair consistency.
-        No TeO(g) or Te+(g) source was found in the checked JANAF, NASA
-        Glenn/CEA, NIST WebBook, and Gurvich/IVTAN routes. Telluride
+        No TeO(g) source was found in Bulletin 672, JANAF, NASA Glenn/CEA,
+        NIST WebBook, or Gurvich/IVTAN. Te+(g) had no source in the checked
+        JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes. Telluride
         dissolution in reduced melts is outside the caller-supplied oxide
         parent convention.
       Se: >-
-        Pankratz Bulletin 672 supplies Se(g), Se2(g), and SeO2(g). The Se2
-        entropy transcription is corrected against the printed Cp equation.
+        Pankratz Bulletin 672 supplies Se(g), Se2(g), SeO(g), and SeO2(g);
+        the SeO table is on printed pp. 376-377. Se2 entropy nodes at 1400 K
+        and 1800 K match the scan, and its printed Cp equation agrees within
+        rounding.
         For SeO2(g), the printed 958 K node is retained despite its measured
         Cp/H/S mismatch with the source equations, which supply fit nodes
         through 1500 K. The OECD/NEA selenium review rejects the often-cited
         613 K fusion point and selects 660 K with a 22 +/- 5 kJ/mol fusion
         enthalpy. SeO2(l) is the tier-4 crystal-Cp carry-over construction
-        because no standard liquid function is available. SeO(g) and Se+(g)
-        have no located source in the checked JANAF, NASA Glenn/CEA, NIST
-        WebBook, or Gurvich/IVTAN routes.
+        because no standard liquid function is available. Se+(g) had no source
+        in the checked Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or
+        Gurvich/IVTAN routes.
       As: >-
         Pankratz Bulletin 672 supplies As(g), As2(g), As4(g), As4O6(g), and the
         Table 53 As2O3 crystal function. As2O3(l) is the only selected oxide
         parent and uses the tier-4 liquid_from_solid construction with the
         repository's tier-3 fusion-entropy and liquid-Cp rules; its leave-one-
         out band is based on the 48 JANAF fusion-pair calibration and is
-        extrapolated beyond +800 K. No AsO(g) or As+(g) source was located in
-        the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.
+        extrapolated beyond +800 K. No AsO(g) source was located in Bulletin
+        672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN. As+(g) had
+        no source in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or
+        Gurvich/IVTAN routes.
     measured_continuation_bands: >-
       Gas continuation bands are maximum held-Cp errors measured by truncating
       published JANAF gas tables at the matching source-node limit. The
@@ -5107,7 +5112,7 @@ rows:
     table_id: P672-T80
     runtime_ref: P672-T80-CP-EXT-1800
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -5147,7 +5152,7 @@ rows:
     table_id: P672-T81
     runtime_ref: P672-T81-CP-EXT-1800
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -5357,7 +5362,7 @@ rows:
     table_id: P672-T80
     runtime_ref: P672-T80
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: fitted
     tier: 3
@@ -5388,7 +5393,7 @@ rows:
     table_id: P672-T81
     runtime_ref: P672-T81
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: fitted
     tier: 3
@@ -5803,7 +5808,7 @@ rows:
     table_id: P672-T102
     runtime_ref: P672-T102-LFS-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -5844,7 +5849,7 @@ rows:
     table_id: P672-T102
     runtime_ref: P672-T102-LFS-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -5885,7 +5890,7 @@ rows:
     table_id: P672-T82
     runtime_ref: P672-T82-CP-EXT-1300
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
@@ -5926,7 +5931,7 @@ rows:
     table_id: P672-T82
     runtime_ref: P672-T82-CP-EXT-1300
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
@@ -5963,19 +5968,19 @@ rows:
     table_id: P672-Te-g
     runtime_ref: P672-Te-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
-    T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 38.7188940007472
-    max_residual_log10_K: 0.00134828533384048
-    source_fit_range_K: [1500, 3000]
+    T_range_K: [2000, 3000]
+    max_residual_J_per_mol: 5.82076609134674e-11
+    max_residual_log10_K: 1.32191167318119e-15
+    source_fit_range_K: [2000, 3000]
     flags: [constant-Cp continuation above 2000 K]
     uncertainty_band:
       kind: measured held-Cp continuation error envelope against published source tables
-      values_J_per_mol: {2000: 0, 2500: 525, 3000: 2334}
-      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+      values_J_per_mol: {2000: 0, 2500: 33.337, 3000: 216.910}
+      method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 2000 K
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -5992,14 +5997,15 @@ rows:
     table_id: P672-Te-g
     runtime_ref: P672-Te-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: fitted
     tier: 3
-    T_range_K: [1200, 1500]
-    max_residual_J_per_mol: 20.9997050276725
-    max_residual_log10_K: 0.00084376201159967
-    source_fit_range_K: [1200, 1500]
+    T_range_K: [1200, 2000]
+    max_residual_J_per_mol: 32.6360598398605
+    max_residual_log10_K: 0.00112751324812471
+    fit_limitation: A single source-only Shomate interval from 1200 to 2000 K leaves the measured 32.6360598398605 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
+    source_fit_range_K: [1200, 2000]
     flags: []
     uncertainty_band: {kind: not separately quantified by selected source}
     T_interval: 2
@@ -6016,19 +6022,19 @@ rows:
     table_id: P672-Te2-g
     runtime_ref: P672-Te2-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
-    T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 38.8684173367801
-    max_residual_log10_K: 0.00126889884118398
-    source_fit_range_K: [1500, 3000]
+    T_range_K: [2000, 3000]
+    max_residual_J_per_mol: 1.16415321826935e-10
+    max_residual_log10_K: 2.17171203451195e-15
+    source_fit_range_K: [2000, 3000]
     flags: [constant-Cp continuation above 2000 K]
     uncertainty_band:
       kind: measured held-Cp continuation error envelope against published source tables
-      values_J_per_mol: {2000: 0, 2500: 525, 3000: 2334}
-      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+      values_J_per_mol: {2000: 0, 2500: 33.337, 3000: 216.910}
+      method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 2000 K
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6045,14 +6051,15 @@ rows:
     table_id: P672-Te2-g
     runtime_ref: P672-Te2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: fitted
     tier: 3
-    T_range_K: [1200, 1500]
-    max_residual_J_per_mol: 10.0601026641089
-    max_residual_log10_K: 0.000350317053960418
-    source_fit_range_K: [1200, 1500]
+    T_range_K: [1200, 2000]
+    max_residual_J_per_mol: 34.1594227857422
+    max_residual_log10_K: 0.00111516894585069
+    fit_limitation: A single source-only Shomate interval from 1200 to 2000 K leaves the measured 34.1594227857422 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
+    source_fit_range_K: [1200, 2000]
     flags: []
     uncertainty_band: {kind: not separately quantified by selected source}
     T_interval: 2
@@ -6069,7 +6076,7 @@ rows:
     table_id: P672-TeO2-g
     runtime_ref: P672-TeO2-g-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6080,16 +6087,16 @@ rows:
     flags: [constant-Cp continuation above 1500 K]
     uncertainty_band:
       kind: measured held-Cp continuation error envelope against published source tables
-      values_J_per_mol: {2000: 13.18, 2500: 525, 3000: 2334}
-      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+      values_J_per_mol: {1500: 0, 1800: 18.610410857, 2000: 76.175637940, 2500: 465.483881887, 3000: 1250.622930920}
+      method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1500 K
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
-      source_record: Pankratz Bulletin 672, Tellurium Dioxide gas table, printed p. 81
-      source_locator: printed p. 81
+      source_record: Pankratz Bulletin 672, Tellurium Dioxide gas tables, printed pp. 420-421
+      source_locator: printed pp. 420-421
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 81
+    source_locator: printed pp. 420-421
     extrapolation: true
     source_data: true
     extrapolation_source_limit_K: 1500
@@ -6098,31 +6105,32 @@ rows:
     table_id: P672-TeO2-g
     runtime_ref: P672-TeO2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: fitted
     tier: 2
     T_range_K: [1200, 1500]
     max_residual_J_per_mol: 25.6221983324504
     max_residual_log10_K: 0.00111528347864637
+    fit_limitation: A single source-only Shomate interval from 1200 to 1500 K leaves the measured 25.6221983324504 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
     source_fit_range_K: [1200, 1500]
     flags: []
     uncertainty_band: {kind: not separately quantified by selected source}
     T_interval: 2
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
-      source_record: Pankratz Bulletin 672, Tellurium Dioxide gas table, printed p. 81
-      source_locator: printed p. 81
+      source_record: Pankratz Bulletin 672, Tellurium Dioxide gas tables, printed pp. 420-421
+      source_locator: printed pp. 420-421
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 81
+    source_locator: printed pp. 420-421
     source_data: true
   - table: condensate
     species_name: TeO2(l)
     table_id: P672-TeO2-l
     runtime_ref: P672-TeO2-l
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: fitted
     tier: 1
@@ -6133,11 +6141,11 @@ rows:
     flags: [caller-supplied parent activity; no activity model]
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
-      source_record: Pankratz Bulletin 672, Tellurium Dioxide condensed-phase table, printed p. 418
-      source_locator: printed p. 418
+      source_record: Pankratz Bulletin 672, Tellurium Dioxide condensed-phase formation and reaction tables, printed pp. 418-419
+      source_locator: printed pp. 418-419
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 418
+    source_locator: printed pp. 418-419
     extrapolation: false
     source_data: true
   - table: condensate
@@ -6145,7 +6153,7 @@ rows:
     table_id: P672-TeO2-l
     runtime_ref: P672-TeO2-l-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
@@ -6160,11 +6168,11 @@ rows:
       method: maximum absolute error in held-Cp back-tests on nine JANAF parent-liquid tables, truncated at the 1300 K source limit
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
-      source_record: Pankratz Bulletin 672, Tellurium Dioxide condensed-phase table, printed p. 418
-      source_locator: printed p. 418
+      source_record: Pankratz Bulletin 672, Tellurium Dioxide condensed-phase formation and reaction tables, printed pp. 418-419
+      source_locator: printed pp. 418-419
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 418
+    source_locator: printed pp. 418-419
     extrapolation: true
     source_data: false
     extrapolation_source_limit_K: 1500
@@ -6173,14 +6181,15 @@ rows:
     table_id: P672-Se-g
     runtime_ref: P672-Se-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: fitted
     tier: 3
-    T_range_K: [1200, 1500]
-    max_residual_J_per_mol: 35.2620588979917
-    max_residual_log10_K: 0.00131561784941473
-    source_fit_range_K: [1200, 1500]
+    T_range_K: [1200, 2000]
+    max_residual_J_per_mol: 32.9632124524214
+    max_residual_log10_K: 0.00114785861148332
+    fit_limitation: A single source-only Shomate interval from 1200 to 2000 K leaves the measured 32.9632124524214 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
+    source_fit_range_K: [1200, 2000]
     flags: []
     T_interval: 2
     source:
@@ -6197,19 +6206,19 @@ rows:
     table_id: P672-Se-g
     runtime_ref: P672-Se-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
-    T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 38.3428225355747
-    max_residual_log10_K: 0.0013351896178069
-    source_fit_range_K: [1500, 3000]
+    T_range_K: [2000, 3000]
+    max_residual_J_per_mol: 1.16415321826935e-10
+    max_residual_log10_K: 2.33876680639749e-15
+    source_fit_range_K: [2000, 3000]
     flags: [constant-Cp continuation above 2000 K]
     uncertainty_band:
       kind: repository held-Cp continuation error envelope against published source tables
-      values_J_per_mol: {2000: 0, 2500: 525, 3000: 2334}
-      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+      values_J_per_mol: {2000: 0, 2500: 33.337, 3000: 216.910}
+      method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 2000 K
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6226,14 +6235,15 @@ rows:
     table_id: P672-Se2-g
     runtime_ref: P672-Se2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: fitted
     tier: 3
-    T_range_K: [1200, 1500]
-    max_residual_J_per_mol: 15.2537569706328
-    max_residual_log10_K: 0.000612891497715488
-    source_fit_range_K: [1200, 1500]
+    T_range_K: [1200, 2000]
+    max_residual_J_per_mol: 37.3361059894669
+    max_residual_log10_K: 0.00114717645710053
+    fit_limitation: A single source-only Shomate interval from 1200 to 2000 K leaves the measured 37.3361059894669 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
+    source_fit_range_K: [1200, 2000]
     flags: []
     T_interval: 2
     source:
@@ -6250,14 +6260,14 @@ rows:
     table_id: P672-Se2-g
     runtime_ref: P672-Se2-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
-    T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 54.7935534076532
-    max_residual_log10_K: 0.0016835680316494
-    source_fit_range_K: [1500, 3000]
+    T_range_K: [2000, 3000]
+    max_residual_J_per_mol: 2.3283064365387e-10
+    max_residual_log10_K: 6.08079369663347e-15
+    source_fit_range_K: [2000, 3000]
     flags: [constant-Cp continuation above 2000 K]
     uncertainty_band:
       kind: repository held-Cp continuation error envelope against published source tables
@@ -6275,27 +6285,80 @@ rows:
     source_data: true
     extrapolation_source_limit_K: 2000
   - table: gas
+    species_name: SeO(g)
+    table_id: P672-SeO-g
+    runtime_ref: P672-SeO-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    authority: published_fitted
+    method: fitted
+    tier: 2
+    T_range_K: [1200, 2000]
+    max_residual_J_per_mol: 3.37458454468288
+    max_residual_log10_K: 0.000097925981763857
+    source_fit_range_K: [1200, 2000]
+    flags: []
+    T_interval: 2
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Selenium Oxide gas table, SeO(g)
+      source_locator: printed pp. 376-377
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed pp. 376-377
+    extrapolation: false
+    source_data: true
+  - table: gas
+    species_name: SeO(g)
+    table_id: P672-SeO-g
+    runtime_ref: P672-SeO-g-CP-EXT-2000
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 2
+    T_range_K: [2000, 3000]
+    max_residual_J_per_mol: 4.65661287307739e-10
+    max_residual_log10_K: 8.68684813804781e-15
+    source_fit_range_K: [2000, 3000]
+    flags: [constant-Cp continuation above 2000 K]
+    uncertainty_band:
+      kind: repository held-Cp continuation error envelope against published source tables
+      values_J_per_mol: {2000: 0, 2500: 33.337, 3000: 216.910}
+      method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 2000 K
+    T_interval: 1
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Pankratz Bulletin 672, Selenium Oxide gas table, SeO(g)
+      source_locator: printed pp. 376-377
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed pp. 376-377
+    extrapolation: true
+    source_data: true
+    extrapolation_source_limit_K: 2000
+  - table: gas
     species_name: SeO2(g)
     table_id: P672-SeO2-g
     runtime_ref: P672-SeO2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: fitted
     tier: 2
     T_range_K: [1200, 1500]
-    max_residual_J_per_mol: 2.8152776437928
-    max_residual_log10_K: 0.000122543452485418
+    max_residual_J_per_mol: 2.96943323104642
+    max_residual_log10_K: 0.000129253539472265
     source_fit_range_K: [1200, 1500]
     flags: []
     T_interval: 2
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
-      source_record: Pankratz Bulletin 672, Selenium Dioxide gas table, printed p. 81
-      source_locator: printed p. 81
+      source_record: Pankratz Bulletin 672, Selenium Dioxide gas tables, printed pp. 380-381
+      source_locator: printed pp. 380-381
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 81
+    source_locator: printed pp. 380-381
     extrapolation: false
     source_data: true
   - table: gas
@@ -6303,27 +6366,27 @@ rows:
     table_id: P672-SeO2-g
     runtime_ref: P672-SeO2-g-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
     T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 1.16415321826935e-10
-    max_residual_log10_K: 4.05386246442231e-15
+    max_residual_J_per_mol: 4.65661287307739e-10
+    max_residual_log10_K: 8.38730165052892e-15
     source_fit_range_K: [1500, 3000]
     flags: [constant-Cp continuation above 1500 K]
     uncertainty_band:
       kind: repository held-Cp continuation error envelope against published source tables
-      values_J_per_mol: {1500: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}
-      method: conservative maximum absolute error from repository published-source back-tests truncated at or below 1200 K
+      values_J_per_mol: {1500: 0, 1800: 18.610410857, 2000: 76.175637940, 2500: 465.483881887, 3000: 1250.622930920}
+      method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1500 K
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
-      source_record: Pankratz Bulletin 672, Selenium Dioxide gas table, printed p. 81
-      source_locator: printed p. 81
+      source_record: Pankratz Bulletin 672, Selenium Dioxide gas tables, printed pp. 380-381
+      source_locator: printed pp. 380-381
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 81
+    source_locator: printed pp. 380-381
     extrapolation: true
     source_data: true
     extrapolation_source_limit_K: 1500
@@ -6332,7 +6395,7 @@ rows:
     table_id: P672-SeO2
     runtime_ref: P672-SeO2-LFS-CP-EXT-602
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6343,8 +6406,8 @@ rows:
     flags: [tier-4 liquid_from_solid construction, Pankratz crystal Cp equation extended above 602 K to the fusion bounds, caller-supplied parent activity; no activity model]
     uncertainty_band:
       kind: reviewed fusion-enthalpy and transition-temperature spreads plus crystal-Cp extension model spread
-      values_J_per_mol: {1800: 9176.148, 2000: 10726.92, 2500: 14603.849, 3000: 18480.778}
-      method: propagated 22 ± 5 kJ/mol fusion-enthalpy uncertainty, 657 ± 10 K transition range, and absolute G difference between source Cp integration and held final Cp
+      values_J_per_mol: {1200: 4523.898170, 1500: 6850.091232, 1600: 7625.488919, 1800: 9176.284293, 2000: 10727.079668, 2500: 14604.068104, 3000: 18481.056540}
+      method: Sum the fusion-entropy and fusion-temperature spreads propagated through the liquid construction and the absolute Gibbs difference between extending the source crystal Cp equation and holding its 602 K terminal Cp; see the term-by-term regression check.
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672; OECD/NEA (2003), Chemical Thermodynamics of Selenium, Volume 7
       source_record: Pankratz Bulletin 672, Table 378, SeO2(c,g); OECD/NEA Volume 7, pp. 121-122
@@ -6360,19 +6423,19 @@ rows:
     table_id: P672-SeO2
     runtime_ref: P672-SeO2-LFS-CP-EXT-602
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
     T_range_K: [1600, 3000]
-    max_residual_J_per_mol: 6.42074745171703
-    max_residual_log10_K: 0.000156841009452521
+    max_residual_J_per_mol: 6.42040616902523
+    max_residual_log10_K: 0.000156744924810351
     source_fit_range_K: [1600, 3000]
     flags: [tier-4 liquid_from_solid construction, Pankratz crystal Cp equation extended above 602 K to the fusion bounds, caller-supplied parent activity; no activity model]
     uncertainty_band:
       kind: reviewed fusion-enthalpy and transition-temperature spreads plus crystal-Cp extension model spread
-      values_J_per_mol: {1800: 9176.148, 2000: 10726.92, 2500: 14603.849, 3000: 18480.778}
-      method: propagated 22 ± 5 kJ/mol fusion-enthalpy uncertainty, 657 ± 10 K transition range, and absolute G difference between source Cp integration and held final Cp
+      values_J_per_mol: {1200: 4523.898170, 1500: 6850.091232, 1600: 7625.488919, 1800: 9176.284293, 2000: 10727.079668, 2500: 14604.068104, 3000: 18481.056540}
+      method: Sum the fusion-entropy and fusion-temperature spreads propagated through the liquid construction and the absolute Gibbs difference between extending the source crystal Cp equation and holding its 602 K terminal Cp; see the term-by-term regression check.
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672; OECD/NEA (2003), Chemical Thermodynamics of Selenium, Volume 7
       source_record: Pankratz Bulletin 672, Table 378, SeO2(c,g); OECD/NEA Volume 7, pp. 121-122
@@ -6486,7 +6549,7 @@ rows:
     source_path: data-src/crystal-thermochemistry.json
     source_sha256: b0c87afeaf0a53ec159a23e45d59d6a2eee023e810402f16504a51eac32bf22d
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 6e559fbf416cc5f7123703af489b923938c8f59864f8d2087f613b8840c24787
+    construction_inputs_sha256: d02d1db8307941633c7bdb43ac16d1a9bee818d5bcab1a82c482c7339a80cc4d
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6521,13 +6584,13 @@ rows:
     table_id: P672-As-g
     runtime_ref: P672-As-g-CP-EXT-1200
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
     T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 0.000000000116415321826935
-    max_residual_log10_K: 0.0000000000000034
+    max_residual_J_per_mol: 1.16415321826935e-10
+    max_residual_log10_K: 3.37821872035192e-15
     source_fit_range_K: [1500, 3000]
     flags: [constant-Cp continuation above 1200 K]
     uncertainty_band:
@@ -6550,13 +6613,13 @@ rows:
     table_id: P672-As-g
     runtime_ref: P672-As-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
     T_range_K: [1200, 1500]
     max_residual_J_per_mol: 0.000230621488299221
-    max_residual_log10_K: 0.00000000813854188456635
+    max_residual_log10_K: 8.13854188456635e-9
     source_fit_range_K: [1200, 1500]
     flags: [constant-Cp continuation above the printed 1200 K node]
     uncertainty_band:
@@ -6579,13 +6642,13 @@ rows:
     table_id: P672-As2-g
     runtime_ref: P672-As2-g-CP-EXT-1200
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
     T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 0.000000000174622982740402
-    max_residual_log10_K: 0.00000000000000397
+    max_residual_J_per_mol: 1.74622982740402e-10
+    max_residual_log10_K: 3.96573501954356e-15
     source_fit_range_K: [1500, 3000]
     flags: [constant-Cp continuation above 1200 K]
     uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
@@ -6593,10 +6656,10 @@ rows:
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
       source_record: Pankratz Bulletin 672, arsenic gas table, As2(g)
-      source_locator: printed p. 49
+      source_locator: printed p. 50
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 49
+    source_locator: printed p. 50
     extrapolation: true
     source_data: false
     extrapolation_source_limit_K: 1200
@@ -6605,13 +6668,13 @@ rows:
     table_id: P672-As2-g
     runtime_ref: P672-As2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
     T_range_K: [1200, 1500]
     max_residual_J_per_mol: 0.000413150293752551
-    max_residual_log10_K: 0.000000014579916512755
+    max_residual_log10_K: 1.4579916512754e-8
     source_fit_range_K: [1200, 1500]
     flags: [constant-Cp continuation above the printed 1200 K node]
     uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
@@ -6619,10 +6682,10 @@ rows:
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
       source_record: Pankratz Bulletin 672, arsenic gas table, As2(g)
-      source_locator: printed p. 49
+      source_locator: printed p. 50
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 49
+    source_locator: printed p. 50
     extrapolation: true
     source_data: true
     extrapolation_source_limit_K: 1200
@@ -6631,13 +6694,13 @@ rows:
     table_id: P672-As4-g
     runtime_ref: P672-As4-g-CP-EXT-1200
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
     T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 0.000000000465661287307692
-    max_residual_log10_K: 0.00000000000000869
+    max_residual_J_per_mol: 4.65661287307739e-10
+    max_residual_log10_K: 8.68684813804781e-15
     source_fit_range_K: [1500, 3000]
     flags: [constant-Cp continuation above 1200 K]
     uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
@@ -6645,10 +6708,10 @@ rows:
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
       source_record: Pankratz Bulletin 672, arsenic gas table, selected As4(g) tetramer row
-      source_locator: printed p. 49
+      source_locator: printed p. 52
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 49
+    source_locator: printed p. 52
     extrapolation: true
     source_data: false
     extrapolation_source_limit_K: 1200
@@ -6657,13 +6720,13 @@ rows:
     table_id: P672-As4-g
     runtime_ref: P672-As4-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
     T_range_K: [1200, 1500]
     max_residual_J_per_mol: 0.000918029109016061
-    max_residual_log10_K: 0.0000000323969055416
+    max_residual_log10_K: 3.23969055449503e-8
     source_fit_range_K: [1200, 1500]
     flags: [constant-Cp continuation above the printed 1200 K node]
     uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
@@ -6671,10 +6734,10 @@ rows:
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
       source_record: Pankratz Bulletin 672, arsenic gas table, selected As4(g) tetramer row
-      source_locator: printed p. 49
+      source_locator: printed p. 52
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
-    source_locator: printed p. 49
+    source_locator: printed p. 52
     extrapolation: true
     source_data: true
     extrapolation_source_limit_K: 1200
@@ -6683,16 +6746,16 @@ rows:
     table_id: P672-As4O6-g
     runtime_ref: P672-As4O6-g-CP-EXT-1000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
     T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 0.000000000931322574615479
-    max_residual_log10_K: 0.000000000000018
+    max_residual_J_per_mol: 9.31322574615479e-10
+    max_residual_log10_K: 1.80171665085436e-14
     source_fit_range_K: [1500, 3000]
     flags: [constant-Cp continuation above 1000 K]
-    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: conservative errors from published-source back-tests truncated at or below 1200 K}
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1000: 0, 1200: 20.968062742, 1500: 256.330987740, 1800: 850.904873203, 2000: 1466.261906934, 2500: 3762.550934491, 3000: 7070.857799071}, method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1000 K}
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6709,16 +6772,16 @@ rows:
     table_id: P672-As4O6-g
     runtime_ref: P672-As4O6-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
     T_range_K: [1200, 1500]
     max_residual_J_per_mol: 0.00250211264938116
-    max_residual_log10_K: 0.0000000882986073241016
+    max_residual_log10_K: 8.8298607324101e-8
     source_fit_range_K: [1200, 1500]
     flags: [constant-Cp continuation above 1000 K]
-    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: conservative errors from published-source back-tests truncated at or below 1200 K}
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1000: 0, 1200: 20.968062742, 1500: 256.330987740, 1800: 850.904873203, 2000: 1466.261906934, 2500: 3762.550934491, 3000: 7070.857799071}, method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1000 K}
     T_interval: 2
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6735,7 +6798,7 @@ rows:
     table_id: P672-As2O3
     runtime_ref: P672-As2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
@@ -6764,7 +6827,7 @@ rows:
     table_id: P672-As2O3
     runtime_ref: P672-As2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 46d250e8ad1c2e69426303f00629b2fec85afe1dd6e7118d876a1d5c547dbc51
+    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction

@@ -489,6 +489,7 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     # one O2 each while SeO2(g) releases none.
     "Se": ("SeO2", 1, 1.0),
     "Se2": ("SeO2", 0.5, 1.0),
+    "SeO": ("SeO2", 1, 0.5),
     "SeO2": ("SeO2", 1, 0.0),
     # As2O3(l) supplies two As and three O atoms; the selected gas rows balance
     # at n_gas=(2,1,1/2,1/2) and n_O2=(3/2,3/2,3/2,0).
@@ -552,6 +553,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "TeO2",
         "Se",
         "Se2",
+        "SeO",
         "SeO2",
         "As",
         "As2",
@@ -718,6 +720,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "TeO2": "published_fitted",
         "Se": "published_fitted",
         "Se2": "published_fitted",
+        "SeO": "published_fitted",
         "SeO2": "published_fitted",
         "As": "published_fitted",
         "As2": "published_fitted",
@@ -989,7 +992,6 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # require external parent rows.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     "TeO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
-    "SeO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
     "AsO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
 }
 
@@ -1826,14 +1828,14 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
     'Se': {   'status': 'gas-partial',
               'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
               'validation': 'unvalidated',
-              'reason': 'Se(g), Se2(g), SeO2(g), and the SeO2(l) parent cover 1200-3000 K; SeO2(l) is the selected caller parent because no standard liquid function was found and the oxide state is the sourced parent convention; a(SeO2) is caller-supplied. This oxide-parent convention does not model selenide dissolution in reduced melts.',
-              'c2_candidates': (('P672-SeO2-g', 'SeO2'),),
+              'reason': 'Se(g), Se2(g), SeO(g), SeO2(g), and the SeO2(l) parent cover 1200-3000 K; SeO2(l) is the selected caller parent because no standard liquid function was found and the oxide state is the sourced parent convention; a(SeO2) is caller-supplied. This oxide-parent convention does not model selenide dissolution in reduced melts.',
+              'c2_candidates': (('P672-SeO-g', 'SeO'), ('P672-SeO2-g', 'SeO2')),
               'c3_ion_bound': {   'status': 'declined',
                                   'reason': 'No source for Se+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},
     'As': {   'status': 'gas-partial',
               'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
               'validation': 'unvalidated',
-              'reason': 'As(g), As2(g), As4(g), As4O6(g), and a tier-4 As2O3(l) parent cover 1200-3000 K; As2O3(l) is constructed from the Pankratz Table 53 crystal function and the repository tier-3 liquid_from_solid estimates because no standard liquid function was located; a(As2O3) is caller-supplied.',
+              'reason': 'As(g), As2(g), As4(g), As4O6(g), and a tier-4 As2O3(l) parent cover 1200-3000 K; As(g), As2(g), and As4(g) are constant-Cp continuation above 1200 K, and As4O6(g) is continuation above 1000 K. As2O3(l) is constructed from the Pankratz Table 53 crystal function and the repository tier-3 liquid_from_solid estimates because no standard liquid function was located; a(As2O3) is caller-supplied.',
               'c2_candidates': (('P672-As4O6-g', 'As4O6'),),
               'c3_ion_bound': {   'status': 'declined',
                                   'reason': 'No source for As+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},

@@ -82,7 +82,7 @@ PO, PO2, P4O6, P4O10, S, S2, S3, S4, S5, S6, S7, S8, SO, SO2, SO3, SSO,
 Ga, GaO, Ga2O,
 Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
-CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO2, As, As2, As4,
+CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
 As4O6, Na2O, K2O, O and O2.
 The Mn channels use public Mn(g), MnO(g) and opt-in Mn+(g) rows with a
 caller-supplied MnO(l) activity. Ni and Co still require an external pack to
@@ -101,7 +101,9 @@ Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, and As channels activate when the
 supplies their parent activity (`Li2O`, `Rb2O`, `PbO`, `Cs2O`, `Cu2O`, `SnO`,
 `Ga2O3`, `GeO2`, `B2O3`, `In2O3`, `TeO2`, `SeO2`, or `As2O3`) in the
 `evaluate_gas` mapping. Activities are caller-supplied; openimcc has no
-trace-element activity model and applies no activity coefficients. TeO2(l) is
+trace-element activity model and applies no activity coefficients. As(g), As2(g),
+and As4(g) are constant-Cp continuation above 1200 K; As4O6(g) is continuation
+above 1000 K. TeO2(l) is
 the Te(IV) parent because Bulletin 672 prints its measured liquid branch; its
 constant-Cp continuation above the last printed node is flagged and banded.
 The oxide-parent convention does not represent telluride dissolution in
@@ -109,14 +111,14 @@ reduced melts. SeO2(l) is a flagged tier-4 construction from the Pankratz
 crystal function and the OECD/NEA reviewed fusion inputs; its liquid heat
 capacity is the documented crystal-Cp carry-over estimate. Selenium can
 dissolve as selenide in reduced melts, which this oxide-parent convention does
-not represent. No SeO(g) or Se+(g) source was located in the checked JANAF,
-NASA Glenn/CEA, NIST WebBook, and Gurvich/IVTAN routes. No TeO(g) or Te+(g)
-source was located in those routes. As2O3(l) is a flagged tier-4 construction
+not represent. SeO(g) is included from the Pankratz gas table; no Se+(g)
+source was located in the checked Bulletin 672, JANAF, NASA Glenn/CEA, NIST
+WebBook, and Gurvich/IVTAN sources. No TeO(g), Te+(g), AsO(g), or As+(g)
+source was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or
+Gurvich/IVTAN. As2O3(l) is a flagged tier-4 construction
 based on the Pankratz Table 53
 crystal function and the repository's leave-one-out liquid_from_solid error
-band. The source has no liquid standard-state function. No AsO(g) or As+(g)
-source was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, and
-Gurvich/IVTAN routes. Li2O(l),
+band. The source has no liquid standard-state function. Li2O(l),
 Cu2O(l), and PbO(l) use JANAF liquid rows. Rb2O(l), Cs2O(l), SnO(l),
 Ga2O3(l), GeO2(l), and In2O3(l) use NASA Glenn CEA liquid cards; labelled
 constant-Cp continuations cover SnO(l) from 1200–1250 K and the Ga2O3, GeO2,

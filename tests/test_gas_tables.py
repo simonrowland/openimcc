@@ -564,7 +564,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     gas_rows = {
         row["species_name"]: row
         for row in gas_records
-        if row["T_range_K"][0] == 1500 and row["species_name"] not in ion_species
+        if row["T_range_K"][0] >= 1500 and row["species_name"] not in ion_species
     }
     low_gas_rows = {
         row["species_name"].removesuffix("(g)"): row
@@ -1020,17 +1020,26 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
                 )
             provenance_row = rows[(species_name, interval)]
             assert max(residuals) == pytest.approx(
-                provenance_row["max_residual_J_per_mol"], abs=1.0e-7
-            )
+                provenance_row["max_residual_J_per_mol"],
+                abs=1.0e-7,
+            ), f"{species_name} interval {interval}"
             assert max(log_residuals) == pytest.approx(
                 provenance_row["max_residual_log10_K"], abs=1.0e-10
             )
 
+
+
     published_dir = ROOT / "data-src" / "published-thermo"
-    for species_name, table_id, *_ in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
+    for species_name, table_id, *_rest in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
+        source_limit = _rest[-1]
+        split = (
+            min(max(source_limit, 1500.0), 2000.0)
+            if table_id.startswith(("P672-Te", "P672-Se", "P672-As"))
+            else 1500.0
+        )
         for interval, t_min, t_max, side in (
-            (1, 1500.0, 3000.0, "high"),
-            (2, 1200.0, 1500.0, "low"),
+            (1, split, 3000.0, "high"),
+            (2, 1200.0, split, "low"),
         ):
             source_rows, reference, _source_limit = (
                 build_gas_tables._published_gas_source_rows(
@@ -1059,10 +1068,71 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
             provenance_row = rows[(species_name, interval)]
             assert max(residuals) == pytest.approx(
                 provenance_row["max_residual_J_per_mol"], abs=1.0e-7
-            )
+            ), f"published {species_name} interval {interval}"
             assert max(log_residuals) == pytest.approx(
                 provenance_row["max_residual_log10_K"], abs=1.0e-10
             )
+
+
+def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    nasa_cards = sorted((ROOT / "data-src" / "nasa-glenn").glob("NG-*.json"))
+    expected_by_limit = {}
+    for limit in (1000.0, 1500.0, 2000.0):
+        maximum = {}
+        counts = {}
+        for card_path in nasa_cards:
+            record = build_gas_tables._load_record(card_path)
+            try:
+                at_limit = build_gas_tables._nasa7_properties(record, limit)
+            except (KeyError, ValueError):
+                continue
+            cp = R_J_MOL_K * at_limit["cp_R"]
+            enthalpy = R_J_MOL_K * limit * at_limit["h_rt"]
+            entropy = R_J_MOL_K * at_limit["s_R"]
+            for temperature in (1200, 1500, 1800, 2000, 2500, 3000):
+                if temperature <= limit:
+                    continue
+                try:
+                    actual = build_gas_tables._nasa7_properties(record, temperature)
+                except (KeyError, ValueError):
+                    continue
+                if at_limit.get("region") != actual.get("region"):
+                    continue
+                held_g = (
+                    enthalpy
+                    + cp * (temperature - limit)
+                    - temperature
+                    * (entropy + cp * math.log(temperature / limit))
+                )
+                actual_g = R_J_MOL_K * temperature * (
+                    actual["h_rt"] - actual["s_R"]
+                )
+                maximum[temperature] = max(
+                    maximum.get(temperature, 0.0), abs(held_g - actual_g)
+                )
+                counts[temperature] = counts.get(temperature, 0) + 1
+        assert all(count == 44 for count in counts.values())
+        expected_by_limit[limit] = maximum
+
+    # Truncate each published card's Cp function at the row's own source
+    # limit, hold Cp there, and compare G(T). Zero belongs only at the limit.
+    for row in provenance["rows"]:
+        if row["species_name"] in {"TeO2(g)", "SeO2(g)"}:
+            limit = 1500.0
+        elif row["species_name"] == "As4O6(g)":
+            limit = 1000.0
+        elif row["species_name"] in {"Te(g)", "Te2(g)", "SeO(g)"}:
+            limit = 2000.0
+        else:
+            continue
+        band = row.get("uncertainty_band")
+        if band is None or "values_J_per_mol" not in band:
+            continue
+        values = band["values_J_per_mol"]
+        assert values[int(limit)] == 0.0
+        for temperature, expected in expected_by_limit[limit].items():
+            assert values[temperature] == pytest.approx(expected, abs=0.002)
 
 
 def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
@@ -1284,7 +1354,89 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
     assert_residuals("SnO(l)", fitted_row("SnO(l)", 1250.0), sn_nodes)
 
 
-def test_new_parent_condensate_rows_pass_the_10_j_mol_node_gate() -> None:
+def test_pankratz_liquid_construction_inputs_and_band_are_independent() -> None:
+    inputs = json.loads(
+        (ROOT / "data-src" / "liquid-from-solid-inputs.json").read_text(
+            encoding="utf-8"
+        )
+    )["rows"]
+    source = build_gas_tables._published_table_record(
+        PUBLISHED_DATA, "P672-SeO2-c"
+    )
+    se = inputs["SeO2"]
+    fusion_t = se["inputs"]["fusion_temperature"]["value"]
+    fusion_h = se["inputs"]["fusion_entropy"]["value"] * fusion_t
+    assert fusion_t == 660.0
+    assert fusion_h == pytest.approx(22000.0, abs=1e-9)
+    assert se["inputs"]["fusion_entropy"]["spread"] == pytest.approx(
+        5000.0 / 660.0
+    )
+    assert "calculated triple point" in se["inputs"]["fusion_temperature"]["source"]
+    assert "662.5 +/- 0.5 K" in se["inputs"]["fusion_temperature"]["source"]
+    assert source["formation_enthalpy_298_kcal_mol"] == -53.860
+    source_602 = next(row for row in source["nodes"] if row[0] == 602)
+    assert source_602 == [602, 18.776, 27.358, 5.030]
+    cp_equation = source["cp_equation_cal_mol_K"]
+    cp_660 = (
+        cp_equation["a"]
+        + cp_equation["b_per_K"] * 660.0
+        - cp_equation["c_K2"] / 660.0**2
+    )
+    assert cp_660 * 4.184 == pytest.approx(
+        se["inputs"]["liquid_heat_capacity"]["value"], abs=1e-9
+    )
+
+    arsenic = inputs["As2O3"]
+    as_source = build_gas_tables._published_table_record(
+        PUBLISHED_DATA, "P672-As2O3-c"
+    )
+    assert as_source["formation_enthalpy_298_kcal_mol"] == -157.020
+    as_melt = next(row for row in as_source["nodes"] if row[0] == 551)
+    assert as_melt == [551, 29.732, 41.902, 6.766]
+    as_cp = as_source["cp_equation_cal_mol_K"]
+    as_equation_cp = (
+        as_cp["a"]
+        + as_cp["b_per_K"] * 551.0
+        - as_cp["c_K2"] / 551.0**2
+    )
+    assert as_equation_cp == pytest.approx(29.716220235, abs=1e-9)
+    assert arsenic["inputs"]["fusion_temperature"]["value"] == 551.0
+    assert arsenic["inputs"]["liquid_heat_capacity"]["value"] == pytest.approx(
+        as_equation_cp * 4.184, abs=1e-9
+    )
+
+    _rows, construction, held_cp = build_gas_tables._fit_liquid_from_solid_parent(
+        PUBLISHED_DATA, "SeO2", se
+    )
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    band = next(
+        row["uncertainty_band"]["values_J_per_mol"]
+        for row in provenance["rows"]
+        if row["table"] == "condensate"
+        and row["species_name"] == "SeO2(l)"
+    )
+    for temperature, expected in band.items():
+        temperature = float(temperature)
+        # At 2000 K the entropy term is |(660-2000) K| *
+        # (5000 J/mol / 660 K) = 10151.515 J/mol. The heat-capacity term is
+        # zero because the fallback has no stated Cp spread. The bounded
+        # fusion-temperature endpoint term is 341.553 J/mol, evaluated from
+        # the source crystal state. Finally the 602->660 K crystal-Cp model
+        # spread contributes |G(source Cp)-G(held Cp)| = 234.011 J/mol.
+        # Sum: 10151.515 + 341.553 + 234.011 = 10727.080 J/mol at 2000 K.
+        propagated = construction.input_spread_kj_mol(temperature) * 1000.0
+        crystal_extension = abs(
+            construction.at(temperature).gibbs_kj_mol
+            - held_cp.at(temperature).gibbs_kj_mol
+        ) * 1000.0
+        assert propagated + crystal_extension == pytest.approx(
+            expected, abs=0.002
+        )
+    assert band[1200] > 0.0
+    assert band[2000] == pytest.approx(10727.079668, abs=0.002)
+
+
+def test_constructed_parent_fit_nodes_are_only_self_fit_checks() -> None:
     rows = build_gas_tables.build_condensate_rows(JANAF_DATA)
     selected = [
         row
@@ -1505,7 +1657,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "Cu", "CuO", "Cu2",
         "Sn", "SnO", "SnO2",
         "Zn", "ZnO", "Cd", "CdO", "Bi", "Bi2", "BiO", "MnO",
-        "Te", "Te2", "TeO2", "Se", "Se2", "SeO2",
+        "Te", "Te2", "TeO2", "Se", "Se2", "SeO", "SeO2",
         "As", "As2", "As4", "As4O6",
     }
     assert trace_channels == set(build_gas_tables.TRACE_GAS_SPECIES)

@@ -199,6 +199,7 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("TeO2(g)", "P672-TeO2-g", "TeO2", "Te", 1, 2, 1500.0),
     ("Se(g)", "P672-Se-g", "Se", "Se", 1, 0, 2000.0),
     ("Se2(g)", "P672-Se2-g", "Se2", "Se", 2, 0, 2000.0),
+    ("SeO(g)", "P672-SeO-g", "SeO", "Se", 1, 1, 2000.0),
     ("SeO2(g)", "P672-SeO2-g", "SeO2", "Se", 1, 2, 1500.0),
     ("As(g)", "P672-As-g", "As", "As", 1, 0, 1200.0),
     ("As2(g)", "P672-As2-g", "As2", "As", 2, 0, 1200.0),
@@ -1476,6 +1477,7 @@ def _fit_published_gas_row(
     fit_t_min: float,
     fit_t_max: float,
     runtime_t_min: float,
+    runtime_t_max: float | None = None,
     breakpoint_side: str = "single",
 ) -> dict[str, str]:
     record = _published_table_record(source_dir, table_id)
@@ -1512,7 +1514,7 @@ def _fit_published_gas_row(
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
         "T_min": number(runtime_t_min),
-        "T_max": number(fit_t_max),
+        "T_max": number(fit_t_max if runtime_t_max is None else runtime_t_max),
         **{key: number(fit[key]) for key in "ABCDEFG"},
         "H": "0",
         "Ref": ref,
@@ -2632,14 +2634,20 @@ def build_rows(
         for source in TRACE_NASA_GAS_SOURCES
     )
     for source in TRACE_PUBLISHED_GAS_SOURCES:
+        split_temperature = (
+            min(max(source[6], 1500.0), 2000.0)
+            if source[1].startswith(("P672-Te", "P672-Se", "P672-As"))
+            else 1500.0
+        )
         rows.append(
             _fit_published_gas_row(
                 published_source_dir,
                 *source[:6],
                 t_interval=1,
-                fit_t_min=FIT_T_MIN,
+                fit_t_min=split_temperature,
                 fit_t_max=FIT_T_MAX,
-                runtime_t_min=FIT_T_MIN,
+                runtime_t_min=split_temperature,
+                runtime_t_max=FIT_T_MAX,
                 breakpoint_side="high",
             )
         )
@@ -2666,14 +2674,20 @@ def build_rows(
         for source in TRACE_NASA_GAS_SOURCES
     )
     for source in TRACE_PUBLISHED_GAS_SOURCES:
+        split_temperature = (
+            min(max(source[6], 1500.0), 2000.0)
+            if source[1].startswith(("P672-Te", "P672-Se", "P672-As"))
+            else 1500.0
+        )
         rows.append(
             _fit_published_gas_row(
                 published_source_dir,
                 *source[:6],
                 t_interval=2,
                 fit_t_min=1200.0,
-                fit_t_max=1500.0,
+                fit_t_max=split_temperature,
                 runtime_t_min=1200.0,
+                runtime_t_max=split_temperature,
                 breakpoint_side="low",
             )
         )

@@ -491,7 +491,19 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     single_interval_ion_rows = ion_rows.loc[
         ~ion_rows.index.isin(split_ion_names)
     ]
-    assert (neutral_high_rows["T_min"] == 1500).all()
+    reviewed_trace_species = {
+        f"{source[0]}" for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES
+        if source[1].startswith(("P672-Te", "P672-Se", "P672-As"))
+    }
+    ordinary_high_rows = neutral_high_rows.loc[
+        ~neutral_high_rows.index.isin(reviewed_trace_species)
+    ]
+    assert (ordinary_high_rows["T_min"] == 1500).all()
+    for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
+        if source[1].startswith(("P672-Te", "P672-Se", "P672-As")):
+            split = min(max(source[6], 1500.0), 2000.0)
+            assert float(high_rows.loc[source[0], "T_min"]) == split
+            assert float(low_rows.loc[source[0], "T_max"]) == split
     assert (single_interval_ion_rows["T_min"] == 1200).all()
     assert (single_interval_ion_rows["T_max"] == 3000).all()
     assert (split_ion_rows.loc[split_ion_rows["T_interval"] == 1, "T_min"] == 1500).all()
@@ -505,7 +517,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     trace_low_rows = low_rows.loc[low_rows.index.isin(trace_low_species)]
     assert (legacy_low_rows["T_min"] == build_gas_tables.LOW_FIT_T_MIN).all()
     assert (trace_low_rows["T_min"] == 1200.0).all()
-    assert (low_rows["T_max"] == build_gas_tables.LOW_FIT_T_MAX).all()
+    assert (legacy_low_rows["T_max"] == build_gas_tables.LOW_FIT_T_MAX).all()
     expected_t_max = high_rows["Ref"].map(
         lambda table_id: build_gas_tables._DECLARED_T_MAX_BY_TABLE.get(
             table_id,
@@ -564,7 +576,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == 64 + len(build_gas_tables.TRACE_GAS_SPECIES)
-    assert unavailable == {"TeO", "SeO", "AsO"}
+    assert unavailable == {"TeO", "AsO"}
     assert implemented.isdisjoint(unavailable)
     assert in_domain.isdisjoint(extrapolated)
     assert not set(_P_CHANNELS) & (in_domain | extrapolated)
@@ -1247,7 +1259,7 @@ def test_gas_result_omitted_channels_default_is_empty_and_immutable() -> None:
 def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    assert set(IMCC_GAS_NO_JANAF_ROWS) == {"TeO", "SeO", "AsO"}
+    assert set(IMCC_GAS_NO_JANAF_ROWS) == {"TeO", "AsO"}
     assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
     assert IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES == {
         "Ni": (
@@ -2677,6 +2689,7 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("Bi", "Bi2O3", "P672-T80", "P672-T82"),
         ("Te", "TeO2", "P672-Te-g", "P672-TeO2-l"),
         ("Se", "SeO2", "P672-Se-g", "P672-SeO2-LFS"),
+        ("SeO", "SeO2", "P672-SeO-g", "P672-SeO2-LFS"),
         ("As", "As2O3", "P672-As-g", "P672-As2O3-LFS"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
@@ -2725,6 +2738,12 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         / "pankratz-bulletin-672.json"
     )
     tables = json.loads(source_path.read_text())["tables"]
+    for table_id, record in tables.items():
+        if not table_id.startswith("P672-"):
+            continue
+        note = record["source_note"].casefold()
+        assert "formation" in note and "table" in note
+        assert "formation_enthalpy_298_kcal_mol" in record
 
     def anchor(table_id: str) -> float:
         return tables[table_id]["formation_enthalpy_298_kcal_mol"]
@@ -2756,6 +2775,53 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         ("P672-As4O6-g", -285.910),
     ):
         assert anchor(table_id) == pytest.approx(printed_delta_h, abs=0.0005)
+
+    # Independent 1500 K reaction-table ΔG° cells (Bulletin 672 pp. 421 and
+    # 381) check the complete elemental reference and the printed oxide rows.
+    # Compute G = ΔfH298 + (H-H298) - T*S from the vendored source nodes;
+    # subtract 0.5 E2(g) and O2(g), then compare to the separately printed
+    # reaction ΔG°. Tolerance covers three-decimal source rounding (0.01 kcal).
+    for oxide_id, dimer_id, printed_delta_g_kcal in (
+        ("P672-TeO2-g", "P672-Te2-g", -12.826),
+        ("P672-SeO2-g", "P672-Se2-g", -19.101),
+    ):
+        oxide_g = _trace_source_apparent_gibbs(oxide_id, 1500.0)
+        dimer_g = _trace_source_apparent_gibbs(dimer_id, 1500.0)
+        oxygen_g = _trace_source_apparent_gibbs("O-029", 1500.0)
+        # Bulletin 672 reaction tables use the 1-atm gas standard; JANAF's
+        # O2 row uses 1 bar. Convert the oxygen chemical potential by RT ln
+        # (1.01325) before comparing the independently printed ΔG° cells.
+        oxygen_g += R_J_MOL_K * 1500.0 * math.log(101325.0 / 100000.0)
+        computed_delta_g_kcal = (
+            oxide_g - 0.5 * dimer_g - oxygen_g
+        ) / 4184.0
+        assert computed_delta_g_kcal == pytest.approx(
+            printed_delta_g_kcal, abs=0.01
+        )
+
+    # For As, the balanced exchange 2 As2O3(cr) = As4O6(g) cancels both
+    # elemental reference contributions. Its independent log K follows from
+    # the printed formation-table log Kf cells: 191.361 - 2*100.913. The
+    # apparent-G difference from stored 298.15 K enthalpy and entropy rows
+    # must reproduce that value. kcal*4184 gives J, cal*4.184 gives J/K;
+    # a 0.002 dex tolerance covers the printed three-decimal cells.
+    as4o6 = tables["P672-As4O6-g"]
+    as2o3 = tables["P672-As2O3-c"]
+    as4o6_node = next(row for row in as4o6["nodes"] if row[0] == 298.15)
+    as2o3_node = next(row for row in as2o3["nodes"] if row[0] == 298.15)
+    as_reaction_g = (
+        anchor("P672-As4O6-g") * 4184.0
+        - 298.15 * as4o6_node[2] * 4.184
+        - 2 * (
+            anchor("P672-As2O3-c") * 4184.0
+            - 298.15 * as2o3_node[2] * 4.184
+        )
+    )
+    as_reaction_log10_k = -as_reaction_g / (
+        R_J_MOL_K * 298.15 * math.log(10.0)
+    )
+    printed_as_log10_k = 191.361 - 2 * 100.913
+    assert as_reaction_log10_k == pytest.approx(printed_as_log10_k, abs=0.002)
 
 
 def test_ti_channels_against_janaf_printed_formation_gibbs(
