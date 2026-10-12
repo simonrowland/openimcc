@@ -148,14 +148,24 @@ CuO(l), Cu2O(g), or Sn2O2(g) source was found. NASA CEA gas cards use the same
 1 bar standard pressure as JANAF, while NASA liquid cards retain their
 published pure-liquid 1 atm reference. The printed liquid-card formation
 enthalpies are crystal anchors for NG-1643, NG-1801, NG-1842, NG-1844,
-NG-1848, NG-1850, NG-12403, NG-12434 and NG-12662; liquid functions start above
-the crystal reference state. NASA's [coefficient report](https://ntrs.nasa.gov/api/citations/20020085330/downloads/20020085330.pdf)
+NG-1848, NG-1850, NG-12403, NG-12434, NG-12662, NG-1701 and NG-2013; liquid
+functions start above the crystal reference state. NASA's [coefficient report](https://ntrs.nasa.gov/api/citations/20020085330/downloads/20020085330.pdf)
 defines the NASA-9 H/(R·T) polynomial; including b1 gives the assigned
 element-reference enthalpy directly, so
 G_app(T)=H_card(T)-T·S_card(T). A liquid-card value extrapolated to 298.15 K
 does not replace the assigned formation enthalpy. The JANAF-style expression
 dfH298+[H(T)-H(298.15 K)]-T·S(T) agrees only when H_card(298.15 K) equals
 dfH298.
+
+The same header-anchor distinction applies to the MoO3(l) card NG-1701 and
+WO3(l) card NG-2013. Their liquid-fitter card-G differences from JANAF are
++0.970 and −10.240 kJ/mol at 2000 K; the header-anchored differences are
+−22.893 and −39.920 kJ/mol. The liquid-card comparison ledger records both
+definitions, and the JANAF parent rows remain selected. The NASA-only clusters
+(MoO3)2–5(g) are paired with JANAF MoO3(l), and (WO3)5(g) with JANAF WO3(l).
+Their provenance bands report n times the absolute parent card-G scale gap in
+J per mole of cluster formula, at each comparison temperature; at 2000 K this
+is 1.940–4.850 kJ/mol for the Mo clusters and 51.199 kJ/mol for the W pentamer.
 
 Where the JANAF and NASA Cu2O(l) functions overlap, compare
 `G_app = dfH298 + (H-H298) - T·S`, using the crystal anchor for the NASA card.

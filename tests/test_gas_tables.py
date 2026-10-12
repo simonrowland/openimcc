@@ -1135,6 +1135,9 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         path
         for path in (ROOT / "data-src" / "nasa-glenn").glob("NG-*.json")
         if path.stem not in {
+            # NG-0074/0085/0086 are the Ag atom/ion cards; the other listed
+            # records are the Mo/W channel cards. These added channels are not
+            # inputs to the frozen envelope made from the original 44 cards.
             "NG-0074", "NG-0085", "NG-0086",
             "NG-0824", "NG-0825", "NG-0826", "NG-0827", "NG-0828",
             "NG-0829", "NG-0831", "NG-0832", "NG-0833", "NG-0834",
@@ -1186,7 +1189,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
     for row in provenance["rows"]:
         band = row.get("uncertainty_band")
         if (
-            row["table"] != "gas"
+            row["table"] not in {"gas", "condensate"}
             or band is None
             or "44 published NASA Glenn cards" not in band.get("method", "")
         ):
@@ -2670,6 +2673,10 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
         "WO3(g)", "WO3(l)", "(WO3)2(g)", "(WO3)3(g)", "(WO3)4(g)",
     } <= compared_species
     for comparison in comparisons["rows"]:
+        if "janaf_298K_element_reference_table" in comparison:
+            assert comparison["janaf_298K_element_reference_table"] == (
+                comparison["janaf_table_id"]
+            )
         nasa = _nasa_record(comparison["nasa_record_id"])
         if "pankratz_table_id" in comparison:
             source = json.loads(
@@ -2731,20 +2738,83 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             nasa_properties = build_gas_tables._nasa7_properties(
                 nasa, temperature
             )
-            nasa_h = formation_h + (
-                R_J_MOL_K * temperature * nasa_properties["h_rt"] - card_h298
+            card_g = R_J_MOL_K * temperature * (
+                nasa_properties["h_rt"] - nasa_properties["s_R"]
             )
-            nasa_s = R_J_MOL_K * nasa_properties["s_R"]
-            nasa_g = nasa_h - temperature * nasa_s
+            if comparison["nasa_record_id"] in {"NG-1701", "NG-2013"}:
+                nasa_g = card_g
+                header_g = formation_h + (
+                    R_J_MOL_K * temperature * nasa_properties["h_rt"]
+                    - card_h298
+                ) - temperature * R_J_MOL_K * nasa_properties["s_R"]
+                assert value["nasa_header_anchored_G_app_J_mol"] == pytest.approx(
+                    header_g, abs=0.001
+                )
+                assert value["nasa_card_G_app_J_mol"] == pytest.approx(
+                    card_g, abs=0.001
+                )
+                assert value["card_G_nasa_minus_janaf_J_mol"] == pytest.approx(
+                    card_g - janaf_g, abs=0.001
+                )
+            else:
+                nasa_h = formation_h + (
+                    R_J_MOL_K * temperature * nasa_properties["h_rt"] - card_h298
+                )
+                nasa_g = nasa_h - temperature * R_J_MOL_K * nasa_properties["s_R"]
             assert value["janaf_G_app_J_mol"] == pytest.approx(
                 janaf_g, abs=0.001
             )
-            assert value["nasa_G_app_J_mol"] == pytest.approx(
-                nasa_g, abs=0.001
+            comparison_g = (
+                value["nasa_header_anchored_G_app_J_mol"]
+                if comparison["nasa_record_id"] in {"NG-1701", "NG-2013"}
+                else value["nasa_G_app_J_mol"]
+            )
+            assert comparison_g == pytest.approx(
+                nasa_g if comparison["nasa_record_id"] not in {"NG-1701", "NG-2013"} else header_g,
+                abs=0.001,
             )
             assert value["nasa_minus_janaf_J_mol"] == pytest.approx(
-                nasa_g - janaf_g, abs=0.001
+                comparison_g - janaf_g, abs=0.001
             )
+
+
+def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
+    """Cluster bands are n times the absolute NASA/JANAF parent card-G gap."""
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    comparisons = {
+        row["species_name"]: row
+        for row in provenance["source_comparisons"]["rows"]
+    }
+    gas_rows = {
+        row["species_name"]: row
+        for row in provenance["rows"]
+        if row["table"] == "gas"
+    }
+    for parent, clusters in {
+        "MoO3(l)": (2, 3, 4, 5),
+        "WO3(l)": (5,),
+    }.items():
+        comparison = comparisons[parent]
+        card = _nasa_record(comparison["nasa_record_id"])
+        for n in clusters:
+            species = f"({parent[:-3]}){n}(g)"
+            band = gas_rows[species]["uncertainty_band"]
+            assert band["basis"] == "card_G_parent_scale_inconsistency"
+            assert band["per_formula"] == "cluster formula"
+            assert band["factor_from_parent_formula"] == n
+            for value in comparison["values"]:
+                temperature = float(value["T_K"])
+                props = build_gas_tables._nasa7_properties(card, temperature)
+                nasa_card_g = R_J_MOL_K * temperature * (
+                    props["h_rt"] - props["s_R"]
+                )
+                janaf_g = _janaf_apparent_gibbs(
+                    comparison["janaf_table_id"], temperature
+                )
+                expected = n * abs(nasa_card_g - janaf_g)
+                assert band["values_J_per_mol"][int(temperature)] == pytest.approx(
+                    expected, abs=0.002
+                )
 
 
 def _janaf_log10_kf(table_id: str, temperature: float) -> float:
@@ -3151,6 +3221,25 @@ _SAHA_LEVELS = {
         ((4, 0.0), (4, 11419.039), (6, 15437.501), (2, 21660.914), (4, 33164.805)),
         ((1, 0.0), (3, 13325.401), (5, 17031.698)),
     ),
+    # NIST Handbook Mo I/II and W I/II tables. Low levels and complete
+    # fine-structure terms are included through the thermally relevant range.
+    "Mo": (
+        7.09243,
+        ((7, 0.0), (5, 10768.332), (1, 10965.947), (3, 11142.784),
+         (5, 11454.362), (7, 11858.499), (9, 12346.280)),
+        ((6, 0.0), (2, 11783.36), (4, 12034.06), (6, 12417.28),
+         (8, 12900.33), (10, 13460.70), (6, 15199.25), (8, 15330.56),
+         (10, 15427.73), (12, 15446.97)),
+    ),
+    "W": (
+        7.86403,
+        ((1, 0.0), (3, 1670.29), (5, 3325.53), (7, 4830.00),
+         (9, 6219.33), (7, 2951.29), (1, 9258.06), (3, 13307.10),
+         (5, 19253.56)),
+        ((2, 0.0), (4, 1518.829), (6, 3172.473), (8, 4716.278),
+         (10, 6147.085), (6, 7420.261), (4, 8711.274), (6, 11301.024),
+         (8, 13411.939), (10, 14857.160)),
+    ),
 }
 
 
@@ -3181,7 +3270,7 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     # Mn+ has no fine-structure level set in this spectroscopy-backed Saha
     # audit. Ag+ is checked against its NASA card and neutral-ionization
     # reaction, but no Ag level set is part of this audit.
-    assert atomic_pairs - {"Mn", "Ag", "Mo", "W"} == set(_SAHA_LEVELS)
+    assert atomic_pairs - {"Mn", "Ag"} == set(_SAHA_LEVELS)
     k_b = 1.380649e-23
     h = 6.62607015e-34
     m_e = 9.1093837139e-31
@@ -3194,7 +3283,10 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
             for weight, energy in levels
         )
 
-    for temperature in (1500.0, 2500.0):
+    temperatures = (1500.0, 2500.0, 3000.0) if element in {"Mo", "W"} else (
+        1500.0, 2500.0
+    )
+    for temperature in temperatures:
         ion_row = _nearest_interval_row(
             pack.gas_df, f"{element}+(g)", temperature, allow_extrapolation=False
         )
@@ -3266,6 +3358,16 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
             assert fitted_k / saha_k == pytest.approx(
                 expected_ratio, rel=5e-5
             ), element
+        elif element in {"Mo", "W"}:
+            # Pin the source offsets after the NIST low-level populations are
+            # included; values are filled from the JANAF ion rows below.
+            expected = {
+                "Mo": {1500.0: 0.9479675449, 2500.0: 0.9683176023,
+                       3000.0: 0.9727944998},
+                "W": {1500.0: 0.9368243558, 2500.0: 1.8811176727,
+                      3000.0: 2.1512200673},
+            }[element][temperature]
+            assert fitted_k / saha_k == pytest.approx(expected, rel=5e-5)
         else:
             assert fitted_k / saha_k == pytest.approx(1.0, rel=0.02), element
 
@@ -3312,6 +3414,8 @@ _ATTACHMENT_LEVELS = {
         ((4, 0.0), (6, 137.383), (8, 323.432), (10, 552.955), (2, 2112.282), (4, 2153.221), (6, 2220.156), (8, 2311.369), (10, 2424.809), (2, 8413.009), (4, 8476.234), (6, 8578.542), (8, 8715.747), (2, 9544.635), (4, 9637.039), (6, 9824.626), (8, 10892.520), (10, 11100.596), (4, 13801.551), (2, 13810.910), (4, 14514.756), (6, 14548.816), (8, 14909.958), (10, 14949.359)),
         ((1, 0.0), (3, 35.9), (5, 103.8), (7, 204.17), (9, 330.58)),
     ),  # WebBook C7440622; https://physics.nist.gov/PhysRefData/Handbook/Tables/vanadiumtable5.htm; V- FS from Fu et al. 2016
+    "Mo": (0.74942, ((7, 0.0),), ((6, 0.0),)),  # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7439987&Mask=267; Bilodeau et al. 1998
+    "W": (0.816265, ((1, 0.0),), ((2, 0.0),)),  # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440337&Mask=267; Lindahl et al. 2010
 }
 
 
@@ -3336,13 +3440,13 @@ def test_gas_table_atomic_anion_inventory() -> None:
     # listed for a ground-state attachment comparison. Ag- comes from NASA CEA,
     # whose card supplies no JANAF attachment-level entry.
     assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic - {
-        "Zn-(g)", "Ag-(g)", "Mo-(g)", "W-(g)"
+        "Zn-(g)", "Ag-(g)"
     }
 
 
 @pytest.mark.parametrize(
     "element",
-    ("Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb", "O", "Pb", "Rb", "Si", "Ti", "V"),
+    ("Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Mo", "Na", "Nb", "O", "Pb", "Rb", "Si", "Ti", "V", "W"),
 )
 def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
     """Compare fitted attachment Kp with the NIST ground-state affinity.
@@ -3407,6 +3511,12 @@ def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
     if element == "Ga":
         # JANAF implies EA 0.301/0.308 eV; current NIST EA is 0.430 eV.
         assert ratios == pytest.approx((0.369, 0.568), rel=0.02), element
+    elif element in {"Mo", "W"}:
+        expected = {
+            "Mo": (0.9737712359, 0.9782649482),
+            "W": (1.7760941297, 1.1437305022),
+        }[element]
+        assert ratios == pytest.approx(expected, rel=5e-5), element
     else:
         assert ratios == pytest.approx((1.0, 1.0), rel=0.10), element
     if element == "Cu":

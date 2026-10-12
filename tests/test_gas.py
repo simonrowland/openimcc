@@ -2436,7 +2436,10 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
             if species in nasa_ions
             else "janaf_fitted_ionisation"
         )
-    for species in ("Ga", "Ge", "B", "In"):
+    for species in (
+        "Ga", "Ge", "B", "In", "Mo", "MoO3", "(MoO3)5",
+        "W", "W3O8", "(WO3)5",
+    ):
         with pytest.raises(ImccGasSpeciesNotFoundError):
             evaluate_gas(
                 {}, 2000.0, 1.0e-8, gas_pack,

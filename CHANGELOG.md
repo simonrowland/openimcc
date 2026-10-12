@@ -12,6 +12,14 @@
   measured gas and liquid rows except (WO3)5, which uses NASA Glenn. O-066's
   printed supercooled liquid cells below its 1745 K marker are retained as
   source data.
+- Disclosed the NASA-cluster/JANAF-parent card-G scale gaps in provenance
+  bands per cluster formula. NG-1701 and NG-2013 liquid comparisons report the
+  fitter's card-G value separately from the header-anchored comparison; the
+  JANAF MoO3(l) and WO3(l) parents remain selected. The MoO3(l) held-Cp
+  continuation now carries the existing continuation envelope.
+- Added Mo+ and W+ to the NIST-level Saha audit, and Mo− and W− to the
+  NIST-affinity attachment audit. Measured JANAF source offsets are pinned in
+  tests and recorded in provenance.
 - Added optional Ag(g) with caller-supplied Ag2O(l) activity and opt-in Ag+ and Ag-.
   NASA Glenn supplies the atomic and cation cards; Bulletin 672's independent
   Ag(g) row is compared by apparent Gibbs energy through 2000 K. Ag2O(l) is a

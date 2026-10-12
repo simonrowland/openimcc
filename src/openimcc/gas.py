@@ -3008,8 +3008,8 @@ def evaluate_gas(
     a(S2)=f(S2)/p° on the JANAF 1-bar gas reference.
 
     The returned mapping reports those p̃_gas values as bar.  For the special
-    retained species O2, p̃_O2 = fO2 by definition.  For n_O2 = 0, (5)
-    reduces to p̃_gas = K° * a_oxide.
+    retained species O2, p̃_O2 = fO2 by definition. For n_O2 = 0 the oxygen
+    term vanishes, while p̃_gas = (K° * a_oxide)^(1/n_gas) still applies.
 
     Unit check: ΔG° / (R T) is dimensionless, so K° is dimensionless;
     p̃_i is dimensionless; the bar label on the return value is the p° = 1
