@@ -298,6 +298,67 @@ def test_k2o_per_atom_entropy_rung_uses_the_full_census():
     assert rung["value"] == pytest.approx(expected, abs=1e-9)
 
 
+def test_constructed_tier3_fusion_entropies_use_the_per_atom_mean_once():
+    training = [
+        row for row in INPUTS["rows"].values() if "liquid_table_id" in row
+    ]
+    per_atom_mean = sum(
+        row["inputs"]["fusion_entropy"]["value"] / row["total_atoms"]
+        for row in training
+    ) / len(training)
+    constructed = [
+        (species, row)
+        for species, row in INPUTS["rows"].items()
+        if row["inputs"]["fusion_entropy"].get("tier") == 3
+    ]
+    assert constructed
+    for species, row in constructed:
+        estimate = row["inputs"]["fusion_entropy"]["value"]
+        assert estimate == pytest.approx(
+            per_atom_mean * row["total_atoms"], abs=1e-9
+        ), species
+
+
+def test_tier3_constructed_liquid_bands_follow_each_transition_offset():
+    anchor_offsets = (0.0, 300.0, 800.0)
+    anchor_errors = INPUTS["tier_error_bands"]["fusion_entropy_tier3"]["max"]
+    slope = (anchor_errors[2] - anchor_errors[1]) / (
+        anchor_offsets[2] - anchor_offsets[1]
+    )
+
+    def band_at_offset(offset_k: float) -> float:
+        if offset_k <= anchor_offsets[1]:
+            lower, upper = 0, 1
+        elif offset_k <= anchor_offsets[2]:
+            lower, upper = 1, 2
+        else:
+            return (anchor_errors[2] + slope * (offset_k - 800.0)) * 1000.0
+        fraction = (offset_k - anchor_offsets[lower]) / (
+            anchor_offsets[upper] - anchor_offsets[lower]
+        )
+        return (
+            anchor_errors[lower]
+            + fraction * (anchor_errors[upper] - anchor_errors[lower])
+        ) * 1000.0
+
+    constructed = [
+        (species, row)
+        for species, row in INPUTS["rows"].items()
+        if row.get("measured_band", {}).get("kind", "").startswith(
+            "tier-3 liquid_from_solid"
+        )
+    ]
+    assert constructed
+    for species, row in constructed:
+        transition = row["inputs"]["fusion_temperature"]["value"]
+        for temperature, recorded in row["measured_band"][
+            "values_J_per_mol"
+        ].items():
+            assert recorded == pytest.approx(
+                band_at_offset(float(temperature) - transition), abs=0.002
+            ), f"{species} at {temperature} K"
+
+
 def test_documented_error_tables_match_json():
     docs = (ROOT / "docs" / "liquid-from-solid.md").read_text(encoding="utf-8")
     labels = {

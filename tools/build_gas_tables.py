@@ -206,7 +206,7 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("As2(g)", "P672-As2-g", "As2", "As", 2, 0, 1200.0),
     ("As4(g)", "P672-As4-g", "As4", "As", 4, 0, 1200.0),
     ("As4O6(g)", "P672-As4O6-g", "As4O6", "As", 4, 6, 1000.0),
-    ("Sb(g)", "P672-Sb-g", "Sb", "Sb", 1, 0, 1860.0),
+    ("Sb(g)", "P672-Sb-g", "Sb", "Sb", 1, 0, 2000.0),
     ("Sb2(g)", "P672-Sb2-g", "Sb2", "Sb", 2, 0, 2000.0),
     ("Sb4(g)", "P672-Sb4-g", "Sb4", "Sb", 4, 0, 2000.0),
     ("Sb4O6(g)", "P672-Sb4O6-g", "Sb4O6", "Sb", 4, 6, 1000.0),
@@ -267,6 +267,7 @@ TRACE_ION_GAS_TEXT_SOURCES = (
 DECLINED_ION_GAS_SPECIES = frozenset({"Cu+(g)"})
 TRACE_ION_GAS_NASA_SOURCES = (
     ("Ag+(g)", "NG-0085", "Ag", "Ag", 1, 0),
+    ("Ag-(g)", "NG-0086", "Ag", "Ag", 1, 0),
     ("BO-(g)", "NG-1074", "BO", "B", 1, 1),
     ("Ge+(g)", "NG-5197", "Ge", "Ge", 1, 0),
     ("Cd+(g)", "NG-4071", "Cd", "Cd", 1, 0),

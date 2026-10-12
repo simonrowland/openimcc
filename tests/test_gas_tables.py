@@ -1080,7 +1080,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
     nasa_cards = sorted(
         path
         for path in (ROOT / "data-src" / "nasa-glenn").glob("NG-*.json")
-        if path.stem not in {"NG-0074", "NG-0085"}
+        if path.stem not in {"NG-0074", "NG-0085", "NG-0086"}
     )
     expected_by_limit = {}
     for limit in (1000.0, 1200.0, 1500.0, 1860.0, 2000.0):
@@ -2871,7 +2871,7 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
         "NG-1282", "NG-4940", "NG-4951", "NG-5066", "NG-5178",
         "NG-5186", "NG-5197", "NG-5331", "NG-5339", "NG-6005",
         "NG-6016", "NG-6131", "NG-6243",
-        "NG-4060", "NG-4071", "NG-10887", "NG-10898", "NG-0074", "NG-0085",
+        "NG-4060", "NG-4071", "NG-10887", "NG-10898", "NG-0074", "NG-0085", "NG-0086",
     )
     manifest = yaml.safe_load(
         (NASA_DATA / "PROVENANCE.yaml").read_text(encoding="utf-8")
@@ -2892,6 +2892,9 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
         assert record["delta_f_H_298_15"]["as_published"] == tail[2]
         locator = record["source_locator"]
         expected_name_lines = {
+            "NG-0074": 76,
+            "NG-0085": 87,
+            "NG-0086": 98,
             "NG-4060": 4062,
             "NG-4071": 4073,
             "NG-10887": 10889,
@@ -3125,7 +3128,7 @@ _ATTACHMENT_LEVELS = {
 
 _ATOMIC_ANION_ELEMENTS = (
     "Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb",
-    "O", "Pb", "Rb", "Si", "Ti", "V", "Zn",
+    "O", "Pb", "Rb", "Si", "Ti", "V", "Zn", "Ag",
 )
 _UNCHECKED_MOLECULAR_ANIONS = ("AlO", "AlO2", "BO", "BO2", "KO", "LiO", "NaO", "O2")
 
@@ -3141,9 +3144,10 @@ def test_gas_table_atomic_anion_inventory() -> None:
     molecular = {f"{species}-(g)" for species in _UNCHECKED_MOLECULAR_ANIONS}
     assert packaged == atomic | molecular
     # JANAF supplies Zn-, but the neutral zinc atom has no bound anion term
-    # listed for a ground-state attachment comparison.
+    # listed for a ground-state attachment comparison. Ag- comes from NASA CEA,
+    # whose card supplies no JANAF attachment-level entry.
     assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic - {
-        "Zn-(g)"
+        "Zn-(g)", "Ag-(g)"
     }
 
 

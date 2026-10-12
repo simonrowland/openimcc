@@ -757,7 +757,7 @@ _ION_GAS_SPECIES = (
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
     "Zn+", "Zn-", "Cd+", "Bi+",
-    "Mn+", "Ag+",
+    "Mn+", "Ag+", "Ag-",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -778,6 +778,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
         },
         "Bi+": "nist_partition_fitted_ionisation",
         "Ag+": "nasa_glenn_fitted_ionisation",
+        "Ag-": "nasa_glenn_fitted_ionisation",
     }
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
@@ -1066,6 +1067,7 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("Cs", "Cs-"),
     ("Cu", "Cu-"),
     ("Zn", "Zn-"),
+    ("Ag", "Ag-"),
 )
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
@@ -1899,7 +1901,7 @@ ELEMENT_STATUS["Sb"] = {
     "status": "gas-partial",
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
     "validation": "unvalidated",
-    "reason": "Sb(g), Sb2(g), Sb4(g), Sb4O6(g), and a tier-4 Sb2O3(l) construction cover 1200-3000 K; the source Sb4O6(g) nodes end at 1000 K and the other source nodes end at 1860-2000 K. Bulletin 672 reports a 928 K Sb2O3 melting marker but insufficient fusion-enthalpy data and no liquid function; a(Sb2O3) is caller-supplied.",
+    "reason": "Sb(g), Sb2(g), Sb4(g), Sb4O6(g), and a tier-4 Sb2O3(l) construction cover 1200-3000 K; the source Sb4O6(g) nodes end at 1000 K and the other source nodes end at 2000 K. Bulletin 672 reports a 928 K Sb2O3 melting marker but insufficient fusion-enthalpy data and no liquid function; a(Sb2O3) is caller-supplied.",
     "c2_candidates": (("P672-Sb4O6-g", "Sb4O6"),),
     "c3_ion_bound": {
         "status": "declined",
@@ -1911,24 +1913,24 @@ ELEMENT_STATUS["Ag"] = {
     "status": "gas-complete-melt-pending",
     "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
     "validation": "unvalidated",
-    "reason": "Ag(g) and a tier-4 hypothetical Ag2O(l) caller-activity standard cover 1200-3000 K; NASA Glenn supplies Ag+(g). Ag2O decomposes near 500 K and has no measured liquid function; the Ag2O-parent convention does not represent reduced melts where silver dissolves largely as metal.",
+    "reason": "Ag(g) and a tier-4 hypothetical Ag2O(l) caller-activity standard cover 1200-3000 K; NASA Glenn supplies opt-in Ag+(g) and Ag-(g). Ag2O decomposes near 500 K and has no measured liquid function; the Ag2O-parent convention does not represent reduced melts where silver dissolves largely as metal.",
     "c2_candidates": (),
     "c3_ion_bound": {
-        "max_ratio": 1.7494037240684078e-07,
-        "isolated_bound": 1.7368574813908657e-07,
-        "temperature_K": 2700.0,
+        "max_ratio": 8.677635624166437e-09,
+        "isolated_bound": 3.462457407497183e-09,
+        "temperature_K": 2200.0,
         "fO2": 1.0e-4,
-        "neutral_pressure_bar": 0.6792364936783882,
-        "element_total_pressure_bar": 0.6792364936783882,
-        "joint_ion_pressure_bar": 1.1882588515641399e-07,
-        "electron_pressure_bar": 3.898043393835064e-05,
-        "K_ion": 2.0490350096500935e-14,
+        "neutral_pressure_bar": 0.6590716895454442,
+        "element_total_pressure_bar": 0.6590716895454442,
+        "joint_ion_pressure_bar": 5.719183972079108e-09,
+        "electron_pressure_bar": 1.9336054153397106e-07,
+        "K_ion": 7.901354303958975e-18,
         "parent_oxide": "Ag2O",
         "parent_activity": 0.001,
         "source_tables": {"cation": "NG-0085", "neutral": "NG-0074", "electron": "D-020"},
         "upstream_sha256": {
-            "NG-0085": "6a2d99e0f142c27bd04d232a9b064c11096de84ef87720e9254669785bf938e7",
-            "NG-0074": "10e568f98b288c4411c8d32f8fbfe6f6c4dafd0a6c12fa3f6a09c730f18f2766",
+            "NG-0085": "d16a68a0d76ed157b085a32683f5b54f5e973e224e1618d6b29eb9e3186dde43",
+            "NG-0074": "9c755e46e9429dbffb432ac877457f0b907a032916642e7ba45fb4822fc24aad",
             "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
         },
         "user_agent": "neutral-source-vendor/1.0",

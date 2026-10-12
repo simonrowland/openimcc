@@ -7420,39 +7420,39 @@
       "family": null,
       "metal_atoms": 2,
       "total_atoms": 5,
-      "selection_reason": "No measured Sb2O3(l) function is tabulated. Bulletin 672 Table 53 reports a 928 K melting marker but says the fusion enthalpy is insufficiently known. Construct a hypothetical caller-activity liquid standard from the source crystal using the tier-3 fusion-entropy mean and crystal-Cp carry-over, with the documented leave-one-out Gibbs-error band; this is a tier-4 construction, not a measured liquid function.",
+      "selection_reason": "No measured Sb2O3(l) function is tabulated. Bulletin 672's orthorhombic Sb2O3 table on printed p. 358 reports a 928 K melting marker but says the fusion enthalpy is insufficiently known. Construct a hypothetical caller-activity liquid standard from the source crystal using the tier-3 fusion-entropy mean and crystal-Cp carry-over, with the documented leave-one-out Gibbs-error band; this is a tier-4 construction, not a measured liquid function.",
       "inputs": {
         "fusion_temperature": {
           "value": 928.0,
           "tier": 1,
           "spread": 0.0,
           "bounds_k": [928.0, 928.0],
-          "source": "Pankratz Bulletin 672 Table 53, printed p. 358, identifies the 928 K phase marker as the melting point of Sb2O3.",
+          "source": "Pankratz Bulletin 672's orthorhombic Sb2O3 table, printed p. 358, identifies the 928 K phase marker as the melting point of Sb2O3. The table also notes a cubic-to-orthorhombic transition at 879 K (ΔH = 1 ± 0.5 kcal/mol), metastable orthorhombic crystal below that point, and insufficient data to tabulate the cubic form.",
           "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
         },
         "fusion_entropy": {
-          "value": 140.021888585,
+          "value": 46.673962862,
           "tier": 3,
           "spread": 0.0,
           "unit": "J mol^-1 K^-1",
-          "source": "No Sb2O3 fusion enthalpy or entropy is tabulated. Tier-3 estimate: the 48-pair mean 28.004377717 J/(mol K) per formula atom times five atoms per Sb2O3 formula unit. The matching five-atom leave-one-out Gibbs-error envelope is retained below.",
+          "source": "No Sb2O3 fusion enthalpy or entropy is tabulated. Tier-3 estimate: the 48-pair per-atom mean 9.334792572 J/(mol K) times five atoms per Sb2O3 formula unit. The matching five-atom leave-one-out Gibbs-error envelope is retained below.",
           "training_count": 48,
           "references": ["data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"]
         },
         "liquid_heat_capacity": {
-          "value": 120.17286991624972,
+          "value": 120.260712,
           "tier": 3,
           "spread": 0.0,
           "unit": "J mol^-1 K^-1",
-          "source": "No liquid Cp is tabulated. Carry the source crystal Cp at the 928 K marker into the hypothetical liquid: [27.250 + 0.001988(928) - 321100/(928^2)] cal/(mol K) x 4.184 J/cal = 120.172869916 J/(mol K). The source labels high-temperature crystal data as estimated.",
+          "source": "No liquid Cp is tabulated. Carry the printed source-crystal Cp node at the 928 K marker into the hypothetical liquid: 28.743 cal/(mol K) x 4.184 J/cal = 120.260712 J/(mol K). The source labels high-temperature crystal data as estimated.",
           "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
         }
       },
       "measured_band": {
         "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs",
         "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
-        "method": "Interpolate the measured maximum absolute leave-one-out Gibbs error between +300 and +800 K from the constructed transition; above +800 K, continue its final measured slope as a flagged uncertainty estimate.",
-        "values_J_per_mol": {"1200":35316.525905814444,"1500":51522.32222520653,"1800":67728.11854459862,"2000":78531.98275752667,"2500":105541.64328984682,"3000":132551.30382216698}
+        "method": "Evaluate the tier-3 leave-one-out Gibbs envelope at each listed temperature's offset from the constructed 928 K transition: interpolate the measured maxima at offsets 0, +300, and +800 K, then continue the final measured slope above +800 K.",
+        "values_J_per_mol": {"1200":15034.955959773,"1500":31157.038183952,"1800":47362.834503752,"2000":58166.698716952,"2500":85176.359249952,"3000":112186.019782952}
       },
       "condensate_fit": {
         "table_id": "P672-Sb2O3-LFS",
@@ -7475,14 +7475,14 @@
       "selection_reason": "No Ag2O liquid function exists; Bulletin 672 marks decomposition near 500 K. Construct a flagged tier-4 hypothetical caller-activity standard from the sourced crystal, using the tier-3 fusion-entropy-per-atom estimate and crystal-Cp carry-over. The 500 K anchor is a construction reference, not a measured melting point or stable pure liquid.",
       "inputs": {
         "fusion_temperature": {"value":500.0,"tier":4,"spread":0.0,"bounds_k":[500.0,500.0],"source":"Construction reference at the upper limit of the Bulletin 672 Ag2O crystal table; the table marks decomposition near this temperature and supplies no melting transition or liquid function.","references":["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]},
-        "fusion_entropy": {"value":84.013133151,"tier":3,"spread":0.0,"unit":"J mol^-1 K^-1","source":"No Ag2O transition entropy is published. Apply the repository tier-3 estimate of 28.004377717 J/(mol K) per formula atom to the three atoms in Ag2O; this is a construction input, not a measured fusion entropy.","training_count":48,"references":["data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"]},
+        "fusion_entropy": {"value":28.004377717,"tier":3,"spread":0.0,"unit":"J mol^-1 K^-1","source":"No Ag2O transition entropy is published. Apply the repository tier-3 per-atom mean of 9.334792572 J/(mol K) to the three atoms in Ag2O; this is a construction input, not a measured fusion entropy.","training_count":48,"references":["data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"]},
         "liquid_heat_capacity": {"value":77.969,"tier":3,"spread":0.0,"unit":"J mol^-1 K^-1","source":"No Ag2O liquid Cp is published. Carry the printed crystal Cp at the 500 K table limit: 18.637 cal/(mol K) x 4.184 J/cal = 77.969 J/(mol K). This is a tier-4 construction input.","references":["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]}
       },
       "measured_band": {
-        "kind":"tier-3 liquid_from_solid leave-one-out Gibbs error scaled by formula atom count",
+        "kind":"tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs",
         "source":"data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
-        "method":"Use 3/5 of the five-atom tier-3 construction envelope at each listed temperature because the calibration is specified per formula atom. This construction uncertainty is not a fit residual.",
-        "values_J_per_mol":{"1200":21189.915543488665,"1500":30913.39333536232,"1800":40636.87112675917,"2000":47119.189654515996,"2500":63324.98597390809,"3000":79530.78229329998}
+        "method":"Evaluate the tier-3 leave-one-out Gibbs envelope at each listed temperature's offset from the 500 K hypothetical anchor: interpolate the measured maxima at offsets 0, +300, and +800 K, then continue the final measured slope above +800 K. This construction uncertainty is not a fit residual; its +800 K-calibrated slope is extended 1500-2500 K past the decomposition near 500 K.",
+        "values_J_per_mol":{"1200":38071.5112804,"1500":54277.3076002,"1800":70483.10392,"2000":81286.9681332,"2500":108296.6286662,"3000":135306.2891992}
       },
       "condensate_fit":{"table_id":"P672-Ag2O-LFS","ref":"P672-Ag2O-LFS","cation":"Ag","cat_num":2,"oxy_num":1,"fit_t_min":1200.0,"fit_t_max":1600.0,"runtime_t_min":1200.0,"runtime_t_max":1600.0}
     },

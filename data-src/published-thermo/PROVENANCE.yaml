@@ -35,7 +35,7 @@ records:
     selection_reason: No source-rated ZnO(l) function is available; the published crystal function reaches the estimated fusion range and feeds the required liquid_from_solid construction.
   - record_id: P672
     path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 3e96524c8590a7bce2c074a5ce2274224246a980de148d4ab981946864d68f04
+    source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     tables:
@@ -122,7 +122,7 @@ records:
       P672-Sb-g:
         source_locator: Antimony gas table, printed p. 352
         tier: 3
-        selection_reason: JANAF and NASA Glenn provide no Sb(g) row; the elemental formation table supplies H/S/Cp nodes to its 1860 K equilibrium-mixture limit.
+        selection_reason: JANAF and NASA Glenn provide no Sb(g) row; the formation table supplies printed nodes through the 1860 K equilibrium-mixture limit and p. 353 reaction equations with p. 354 Sb2(g) nodes derive its thermal nodes through 2000 K.
       P672-Sb2-g:
         source_locator: Antimony gas table, printed pp. 354-355
         tier: 3
@@ -139,34 +139,6 @@ records:
         source_locator: Antimony sesquioxide table, printed p. 358
         tier: 4
         selection_reason: The source identifies the 928 K melt marker but states fusion enthalpy is insufficient and supplies no liquid function; construct the required hypothetical Sb2O3(l) caller standard state from the source crystal with the tier-3 estimate ladder and construction band.
-      P672-Ag2O-c:
-        source_locator: Table 34, Ag2O(cr), printed p. 34
-        tier: 4
-        selection_reason: No Ag2O(l) function is published; the crystal row ends at the reported decomposition region near 500 K and supplies only the hypothetical tier-4 caller-parent construction input.
-      P672-Ag-g:
-        source_locator: Table 33, Ag(g), printed p. 33
-        tier: 3
-        selection_reason: JANAF has no silver table; this independent Pankratz atom row is retained to compare apparent Gibbs energies with the higher-ranked NASA Glenn card where source coverage overlaps.
-      P672-Sb-g:
-        source_locator: Antimony gas table, printed p. 352
-        tier: 3
-        selection_reason: JANAF and NASA Glenn provide no Sb(g) row; the elemental formation table supplies H/S/Cp nodes to its 1860 K equilibrium-mixture limit.
-      P672-Sb2-g:
-        source_locator: Antimony gas table, printed pp. 354-355
-        tier: 3
-        selection_reason: JANAF and NASA Glenn provide no Sb2(g) row; the formation table gives the elemental 298 K anchor and thermal nodes through 2000 K.
-      P672-Sb4-g:
-        source_locator: Antimony gas formation and reaction tables, printed pp. 356-357
-        tier: 3
-        selection_reason: JANAF and NASA Glenn provide no Sb4(g) row; the formation anchor is pinned to Table 356 and the separate 2Sb2(g)=Sb4(g) reaction table supplies independent closure cells.
-      P672-Sb4O6-g:
-        source_locator: Antimony oxide gas table, printed p. 361
-        tier: 2
-        selection_reason: JANAF and NASA Glenn provide no Sb4O6(g) row; the published formation table gives the elemental anchor and nodes through 1000 K, with continuation explicitly banded above that limit.
-      P672-Sb2O3-c:
-        source_locator: Antimony sesquioxide table, printed p. 358
-        tier: 4
-        selection_reason: The source identifies the 928 K melt marker but states fusion enthalpy is insufficient and supplies no liquid function; construct the required hypothetical Sb2O3(l) caller standard state from the source crystal with tier-3 inputs and construction band.
   - record_id: P696
     path: data-src/published-thermo/pankratz-bulletin-696.json
     source_sha256: 1b0de65dc2fdd078a4babe5fb0430205259b503f4f74064f727af9df8c99e291

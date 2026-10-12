@@ -58,9 +58,10 @@ Cs₂O 763–768 K (Gurvich)—supports this value over Lamoreaux and Hildenbran
 1, p. 153). Natola and Touzain measured 919 ± 5 K in Pyrex (1970, *Canadian
 Journal of Chemistry* 48, 1955–1958); silica contamination makes this a
 one-sided lower bound. The selected K₂O temperature band is therefore
-[919, 1190] K, with 919 K as the lower bound. Its per-atom entropy fallback is
-28.004377717 J/(mol K), equal to three times the mean fusion entropy per atom
-across all 48 pairs in the declared census. K₂O is not in that census, so it
+[919, 1190] K, with 919 K as the lower bound. Its tier-3 formula entropy is
+28.004377717 J/(mol K), equal to three atoms times the mean fusion entropy of
+9.334792572 J/(mol K) per atom across all 48 pairs in the declared census.
+K₂O is not in that census, so it
 is excluded by construction; this is not a leave-one-out estimate for K₂O. It
 is red-flagged because the rule is known to perform poorly.
 

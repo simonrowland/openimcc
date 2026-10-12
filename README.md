@@ -115,24 +115,25 @@ not represent. SeO(g) is included from the Pankratz gas table; no Se+(g)
 source was located in the checked Bulletin 672, JANAF, NASA Glenn/CEA, NIST
 WebBook, and Gurvich/IVTAN sources. No TeO(g), Te+(g), AsO(g), or As+(g)
 source was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or
-Gurvich/IVTAN. As2O3(l) is a flagged tier-4 construction
-based on the Pankratz Table 53
-crystal function and the repository's leave-one-out liquid_from_solid error
-band. The source has no liquid standard-state function. Sb2O3(l) is likewise
+Gurvich/IVTAN. As2O3(l) is a flagged tier-4 construction based on the Pankratz
+Table 53 crystal function and the repository's leave-one-out liquid_from_solid
+error band. The source has no liquid standard-state function. Sb2O3(l) is likewise
 a tier-4 caller-supplied liquid standard constructed from the Pankratz crystal
 row: the 928 K marker has no fusion enthalpy, and Bulletin 672 publishes no
 liquid function. Sb(g), Sb2(g), and Sb4(g) continue above their source nodes;
 Sb4O6(g) continues above 1000 K. SbO(g) and Sb+(g) were not located in the
 checked Bulletin 672 and NASA Glenn sources. Li2O(l),
 Cu2O(l), and PbO(l) use JANAF liquid rows. Rb2O(l), Cs2O(l), SnO(l),
-Ga2O3(l), GeO2(l), and In2O3(l) use NASA Glenn CEA liquid cards; labelled
-Ag(g) and opt-in Ag+(g) use the NASA Glenn cards because JANAF has no silver
+Ga2O3(l), GeO2(l), and In2O3(l) use NASA Glenn CEA liquid cards. Ag(g) and
+opt-in Ag+(g) and Ag-(g) use NASA Glenn cards because JANAF has no silver
 tables; the Pankratz Ag(g) row is retained for a G_app comparison over its
 1800–2000 K source range. Ag2O(l) is a flagged tier-4 construction from the
 Pankratz crystal table, which marks decomposition near 500 K and has no liquid
 function. Ag2(g) and AgO(g) were not located in the checked NASA Appendix D or
 Bulletin 672 tables. The Ag2O-parent convention requires caller-supplied
 activity and does not represent silver dissolved as metal in reduced melts.
+The Ag2O(l) construction extends the +800 K-calibrated tier-3 band slope about
+1500–2500 K past the source's decomposition region near 500 K.
 constant-Cp continuations cover SnO(l) from 1200–1250 K and the Ga2O3, GeO2,
 and In2O3 parents down to 1200 K. SnO is selected over the later-starting
 SnO2(l) card. Cu2O(l) is the Cu(I) parent because JANAF provides its liquid

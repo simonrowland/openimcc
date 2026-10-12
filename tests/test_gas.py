@@ -119,7 +119,7 @@ _ION_GAS_SPECIES = {
     "Li+", "Rb+", "Pb+", "Cs+", "Sn+", "Cs2O+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Zn+", "Zn-", "Cd+", "Bi+",
-    "Mn+", "Ag+",
+    "Mn+", "Ag+", "Ag-",
 }
 
 
@@ -2417,10 +2417,11 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
         "Zn+", "Zn-", "Cd+", "Bi+",
         "Ag+",
+        "Ag-",
     }
     assert expected_ions <= set(trace_ions)
     assert "In+" not in trace_ions
-    nasa_ions = {"Ge+", "BO-", "Cd+", "Ag+"}
+    nasa_ions = {"Ge+", "BO-", "Cd+", "Ag+", "Ag-"}
     for species in expected_ions:
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == (
