@@ -1078,7 +1078,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     nasa_cards = sorted((ROOT / "data-src" / "nasa-glenn").glob("NG-*.json"))
     expected_by_limit = {}
-    for limit in (1000.0, 1500.0, 2000.0):
+    for limit in (1000.0, 1200.0, 1500.0, 2000.0):
         maximum = {}
         counts = {}
         for card_path in nasa_cards:
@@ -1118,19 +1118,18 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
     # Truncate each published card's Cp function at the row's own source
     # limit, hold Cp there, and compare G(T). Zero belongs only at the limit.
     for row in provenance["rows"]:
-        if row["species_name"] in {"TeO2(g)", "SeO2(g)"}:
-            limit = 1500.0
-        elif row["species_name"] == "As4O6(g)":
-            limit = 1000.0
-        elif row["species_name"] in {"Te(g)", "Te2(g)", "SeO(g)"}:
-            limit = 2000.0
-        else:
-            continue
         band = row.get("uncertainty_band")
-        if band is None or "values_J_per_mol" not in band:
+        if (
+            row["table"] != "gas"
+            or band is None
+            or "44 published NASA Glenn cards" not in band.get("method", "")
+        ):
             continue
+        limit = float(row["extrapolation_source_limit_K"])
+        assert limit in expected_by_limit
         values = band["values_J_per_mol"]
         assert values[int(limit)] == 0.0
+        assert set(values) == {int(limit), *expected_by_limit[limit]}
         for temperature, expected in expected_by_limit[limit].items():
             assert values[temperature] == pytest.approx(expected, abs=0.002)
 

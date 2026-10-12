@@ -5,7 +5,7 @@
 - Added optional As, As2, As4, and As4O6 gas channels with caller-supplied
   As2O3(l) activity. Pankratz Bulletin 672 supplies the gas channels and the
   As2O3 crystal function. As2O3(l) is a flagged tier-4 construction using the
-  repository's tier-3 liquid_from_solid estimate and leave-one-out band. No
+  repository's tier-3 liquid_from_solid estimate and leave-one-out band.
   As(g), As2(g), and As4(g) continue by constant Cp above 1200 K; As4O6(g)
   continues above 1000 K. No AsO(g) or As+(g) source was located in Bulletin
   672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN.

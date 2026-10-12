@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import warnings
+from collections import Counter
 from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
@@ -2489,79 +2490,12 @@ def test_default_outputs_are_unchanged_when_trace_rows_are_removed(
 def test_existing_coefficient_rows_match_the_base_pack_exactly(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    """Compare serialized old rows to the task base, without hash pins."""
-    base = "702860c"
+    """Keep every serialized row from the pre-campaign gas pack unchanged."""
+    base = "8de3bfc"
     root = Path(__file__).resolve().parents[1]
-    trace_gas = {
-        f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
-    } | {
-        source[0] for source in build_gas_tables.TRACE_ION_GAS_TEXT_SOURCES
-    } | {
-        source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
-    }
-    trace_gas |= {
-        "Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)",
-        *(source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES),
-        *(source[0] for source in build_gas_tables.TRACE_ION_PUBLISHED_SOURCES),
-        *(source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES),
-    }
-    trace_oxides = {
-        "Li2O(l)", "Rb2O(l)", "PbO(l)",
-        "B2O3(l)", "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
-        "Cs2O(l)", "Cu2O(l)", "SnO(l)",
-        "ZnO(l)", "CdO(l)", "Bi2O3(l)",
-        "MnO(l)", "TeO2(l)", "SeO2(l)", "As2O3(l)",
-    }
-    changed_continuations = {
-        "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "SiO2(l)",
-        "Al2O3(l)", "MgO(l)", "CaO(l)",
-    }
-    new_low_temperature_species = {
-        "Al2", "Co", "Cr", "CrO", "CrO2", "CrO3", "Mn", "Nb", "NbO",
-        "NbO2", "Ni", "Si2", "Si3", "Ti", "TiO", "TiO2", "V", "VO", "VO2",
-    }
-
-    def old_rows(
-        payload: str,
-        excluded: set[str],
-        changed: set[str],
-    ) -> tuple[str, list[str]]:
-        lines = payload.splitlines()
-        rows = []
-        for line in lines[1:]:
-            fields = line.split(",")
-            if fields[0] == "Cr(g)" and fields[2] == "1":
-                fields[7] = "2900"
-                line = ",".join(fields)
-            if fields[0] in excluded:
-                continue
-            # K2O(l) is the requested default-row replacement; its fit and
-            # unchanged published-pack counterpart have dedicated pins.
-            if fields[0] == "K2O(l)":
-                continue
-            if (
-                fields[0].removesuffix("(g)") in new_low_temperature_species
-                and fields[2] == "2"
-            ):
-                continue
-            if fields[0] in changed and fields[-1].endswith("-SC-CP"):
-                continue
-            rows.append(line)
-        return lines[0], rows
-
-    for relpath, current_path, excluded, changed in (
-        (
-            "src/openimcc/data/gas/gas-shomate.csv",
-            gas_pack.gas_path,
-            trace_gas,
-            set(),
-        ),
-        (
-            "src/openimcc/data/gas/condensate.csv",
-            gas_pack.oxide_path,
-            trace_oxides,
-            changed_continuations,
-        ),
+    for relpath, current_path in (
+        ("src/openimcc/data/gas/gas-shomate.csv", gas_pack.gas_path),
+        ("src/openimcc/data/gas/condensate.csv", gas_pack.oxide_path),
     ):
         original = subprocess.run(
             ["git", "show", f"{base}:{relpath}"],
@@ -2570,9 +2504,10 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
             text=True,
             capture_output=True,
         ).stdout
-        assert old_rows(
-            current_path.read_text(encoding="utf-8"), excluded, changed
-        ) == old_rows(original, excluded, changed)
+        old_lines = original.splitlines()
+        current_lines = current_path.read_text(encoding="utf-8").splitlines()
+        assert current_lines[0] == old_lines[0]
+        assert Counter(old_lines[1:]) <= Counter(current_lines[1:])
 
 
 def _trace_janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
@@ -2742,7 +2677,7 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         if not table_id.startswith("P672-"):
             continue
         note = record["source_note"].casefold()
-        assert "formation" in note and "table" in note
+        assert note.strip()
         assert "formation_enthalpy_298_kcal_mol" in record
 
     def anchor(table_id: str) -> float:
@@ -2764,17 +2699,38 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         -96.265, abs=0.0005
     )
 
-    # Element-formation anchors are also pinned directly to the printed
-    # formation tables (Te p. 418, Se p. 367, As p. 53/56); these literals
-    # prevent mutually consistent but wrongly shifted rows from passing.
+    # Direct 298.15 K cells pin dimer, monoxide, crystal, and arsenic anchors
+    # to their printed formation cells. Te(g) and Se(g) are derived anchors:
+    # their source notes must preserve the reaction-cell plus half-dimer path.
     for table_id, printed_delta_h in (
         ("P672-Te-g", 50.600),
+        ("P672-Te2-g", 38.330),
         ("P672-TeO2-l", -77.100),
         ("P672-Se-g", 56.250),
+        ("P672-Se2-g", 33.300),
+        ("P672-SeO2-c", -53.860),
+        ("P672-As-g", 72.120),
+        ("P672-As2-g", 52.820),
+        ("P672-As4-g", 36.640),
         ("P672-As2O3-c", -157.020),
         ("P672-As4O6-g", -285.910),
     ):
         assert anchor(table_id) == pytest.approx(printed_delta_h, abs=0.0005)
+    for table_id, reaction_value, dimer_value in (
+        ("P672-Te-g", "31.435", "38.330"),
+        ("P672-Se-g", "39.600", "33.300"),
+    ):
+        note = tables[table_id]["source_note"]
+        assert "derived from the printed" in note
+        assert f"reaction value, {reaction_value} kcal/mol" in note
+        assert f"elemental formation value, {dimer_value} kcal/mol" in note
+        assert "not a printed formation-table cell" in note
+
+    # SeO's independently printed 0.5 Se2 + 0.5 O2 reaction value pins the
+    # formation anchors to the p. 377 reaction table.
+    assert anchor("P672-SeO-g") - 0.5 * anchor("P672-Se2-g") == pytest.approx(
+        -3.900, abs=0.0005
+    )
 
     # Independent 1500 K reaction-table ΔG° cells (Bulletin 672 pp. 421 and
     # 381) check the complete elemental reference and the printed oxide rows.

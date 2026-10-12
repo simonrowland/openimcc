@@ -991,8 +991,8 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # channels; callers can activate Mn with public MnO(l), while Ni and Co still
 # require external parent rows.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
-    "TeO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
-    "AsO": "needs a source; none was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes",
+    "TeO": "needs a source; none was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN",
+    "AsO": "needs a source; none was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN",
 }
 
 _GAS_IONIZATION_PAIRS = (

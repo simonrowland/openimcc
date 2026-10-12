@@ -5112,7 +5112,7 @@ rows:
     table_id: P672-T80
     runtime_ref: P672-T80-CP-EXT-1800
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -5152,7 +5152,7 @@ rows:
     table_id: P672-T81
     runtime_ref: P672-T81-CP-EXT-1800
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -5362,7 +5362,7 @@ rows:
     table_id: P672-T80
     runtime_ref: P672-T80
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 3
@@ -5393,7 +5393,7 @@ rows:
     table_id: P672-T81
     runtime_ref: P672-T81
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 3
@@ -5808,7 +5808,7 @@ rows:
     table_id: P672-T102
     runtime_ref: P672-T102-LFS-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -5849,7 +5849,7 @@ rows:
     table_id: P672-T102
     runtime_ref: P672-T102-LFS-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -5890,7 +5890,7 @@ rows:
     table_id: P672-T82
     runtime_ref: P672-T82-CP-EXT-1300
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
@@ -5931,7 +5931,7 @@ rows:
     table_id: P672-T82
     runtime_ref: P672-T82-CP-EXT-1300
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
@@ -5968,7 +5968,7 @@ rows:
     table_id: P672-Te-g
     runtime_ref: P672-Te-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -5997,14 +5997,14 @@ rows:
     table_id: P672-Te-g
     runtime_ref: P672-Te-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 3
     T_range_K: [1200, 2000]
     max_residual_J_per_mol: 32.6360598398605
     max_residual_log10_K: 0.00112751324812471
-    fit_limitation: A single source-only Shomate interval from 1200 to 2000 K leaves the measured 32.6360598398605 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
+    fit_limitation: The two-interval convention assigns this one source interval; no third-interval fit was attempted. The measured maximum source-node residual is 32.6360598398605 J/mol.
     source_fit_range_K: [1200, 2000]
     flags: []
     uncertainty_band: {kind: not separately quantified by selected source}
@@ -6022,7 +6022,7 @@ rows:
     table_id: P672-Te2-g
     runtime_ref: P672-Te2-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -6051,14 +6051,14 @@ rows:
     table_id: P672-Te2-g
     runtime_ref: P672-Te2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 3
     T_range_K: [1200, 2000]
     max_residual_J_per_mol: 34.1594227857422
     max_residual_log10_K: 0.00111516894585069
-    fit_limitation: A single source-only Shomate interval from 1200 to 2000 K leaves the measured 34.1594227857422 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
+    fit_limitation: The two-interval convention assigns this one source interval; no third-interval fit was attempted. The measured maximum source-node residual is 34.1594227857422 J/mol.
     source_fit_range_K: [1200, 2000]
     flags: []
     uncertainty_band: {kind: not separately quantified by selected source}
@@ -6076,7 +6076,7 @@ rows:
     table_id: P672-TeO2-g
     runtime_ref: P672-TeO2-g-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6105,14 +6105,14 @@ rows:
     table_id: P672-TeO2-g
     runtime_ref: P672-TeO2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 2
     T_range_K: [1200, 1500]
     max_residual_J_per_mol: 25.6221983324504
     max_residual_log10_K: 0.00111528347864637
-    fit_limitation: A single source-only Shomate interval from 1200 to 1500 K leaves the measured 25.6221983324504 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
+    fit_limitation: The two-interval convention assigns this one source interval; no third-interval fit was attempted. The measured maximum source-node residual is 25.6221983324504 J/mol.
     source_fit_range_K: [1200, 1500]
     flags: []
     uncertainty_band: {kind: not separately quantified by selected source}
@@ -6130,7 +6130,7 @@ rows:
     table_id: P672-TeO2-l
     runtime_ref: P672-TeO2-l
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 1
@@ -6153,7 +6153,7 @@ rows:
     table_id: P672-TeO2-l
     runtime_ref: P672-TeO2-l-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
@@ -6181,14 +6181,14 @@ rows:
     table_id: P672-Se-g
     runtime_ref: P672-Se-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 3
     T_range_K: [1200, 2000]
     max_residual_J_per_mol: 32.9632124524214
     max_residual_log10_K: 0.00114785861148332
-    fit_limitation: A single source-only Shomate interval from 1200 to 2000 K leaves the measured 32.9632124524214 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
+    fit_limitation: The two-interval convention assigns this one source interval; no third-interval fit was attempted. The measured maximum source-node residual is 32.9632124524214 J/mol.
     source_fit_range_K: [1200, 2000]
     flags: []
     T_interval: 2
@@ -6206,7 +6206,7 @@ rows:
     table_id: P672-Se-g
     runtime_ref: P672-Se-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -6235,14 +6235,14 @@ rows:
     table_id: P672-Se2-g
     runtime_ref: P672-Se2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 3
     T_range_K: [1200, 2000]
     max_residual_J_per_mol: 37.3361059894669
     max_residual_log10_K: 0.00114717645710053
-    fit_limitation: A single source-only Shomate interval from 1200 to 2000 K leaves the measured 37.3361059894669 J/mol maximum residual; the two-interval convention cannot reduce it without introducing a third interval.
+    fit_limitation: The two-interval convention assigns this one source interval; no third-interval fit was attempted. The measured maximum source-node residual is 37.3361059894669 J/mol.
     source_fit_range_K: [1200, 2000]
     flags: []
     T_interval: 2
@@ -6260,7 +6260,7 @@ rows:
     table_id: P672-Se2-g
     runtime_ref: P672-Se2-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -6271,8 +6271,8 @@ rows:
     flags: [constant-Cp continuation above 2000 K]
     uncertainty_band:
       kind: repository held-Cp continuation error envelope against published source tables
-      values_J_per_mol: {2000: 0, 2500: 525, 3000: 2334}
-      method: maximum absolute error in published-source back-tests truncated at the matching source-node limit
+      values_J_per_mol: {2000: 0, 2500: 33.337, 3000: 216.910}
+      method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 2000 K
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6289,7 +6289,7 @@ rows:
     table_id: P672-SeO-g
     runtime_ref: P672-SeO-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 2
@@ -6313,7 +6313,7 @@ rows:
     table_id: P672-SeO-g
     runtime_ref: P672-SeO-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6342,7 +6342,7 @@ rows:
     table_id: P672-SeO2-g
     runtime_ref: P672-SeO2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: fitted
     tier: 2
@@ -6366,7 +6366,7 @@ rows:
     table_id: P672-SeO2-g
     runtime_ref: P672-SeO2-g-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6395,7 +6395,7 @@ rows:
     table_id: P672-SeO2
     runtime_ref: P672-SeO2-LFS-CP-EXT-602
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6423,7 +6423,7 @@ rows:
     table_id: P672-SeO2
     runtime_ref: P672-SeO2-LFS-CP-EXT-602
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6584,7 +6584,7 @@ rows:
     table_id: P672-As-g
     runtime_ref: P672-As-g-CP-EXT-1200
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -6595,8 +6595,8 @@ rows:
     flags: [constant-Cp continuation above 1200 K]
     uncertainty_band:
       kind: repository held-Cp continuation error envelope against published source tables
-      values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}
-      method: maximum absolute errors in published-source back-tests truncated at or below 1200 K
+      values_J_per_mol: {1200: 0, 1500: 37.772, 1800: 245.363, 2000: 513.692, 2500: 1679.874, 3000: 3542.421}
+      method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1200 K
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6613,7 +6613,7 @@ rows:
     table_id: P672-As-g
     runtime_ref: P672-As-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -6624,8 +6624,8 @@ rows:
     flags: [constant-Cp continuation above the printed 1200 K node]
     uncertainty_band:
       kind: repository held-Cp continuation error envelope against published source tables
-      values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}
-      method: maximum absolute errors in published-source back-tests truncated at or below 1200 K
+      values_J_per_mol: {1200: 0, 1500: 37.772, 1800: 245.363, 2000: 513.692, 2500: 1679.874, 3000: 3542.421}
+      method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1200 K
     T_interval: 2
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6642,7 +6642,7 @@ rows:
     table_id: P672-As2-g
     runtime_ref: P672-As2-g-CP-EXT-1200
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6651,7 +6651,7 @@ rows:
     max_residual_log10_K: 3.96573501954356e-15
     source_fit_range_K: [1500, 3000]
     flags: [constant-Cp continuation above 1200 K]
-    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1500: 37.772, 1800: 245.363, 2000: 513.692, 2500: 1679.874, 3000: 3542.421}, method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1200 K}
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6668,7 +6668,7 @@ rows:
     table_id: P672-As2-g
     runtime_ref: P672-As2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6677,7 +6677,7 @@ rows:
     max_residual_log10_K: 1.4579916512754e-8
     source_fit_range_K: [1200, 1500]
     flags: [constant-Cp continuation above the printed 1200 K node]
-    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1500: 37.772, 1800: 245.363, 2000: 513.692, 2500: 1679.874, 3000: 3542.421}, method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1200 K}
     T_interval: 2
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6694,7 +6694,7 @@ rows:
     table_id: P672-As4-g
     runtime_ref: P672-As4-g-CP-EXT-1200
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6703,7 +6703,7 @@ rows:
     max_residual_log10_K: 8.68684813804781e-15
     source_fit_range_K: [1500, 3000]
     flags: [constant-Cp continuation above 1200 K]
-    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1500: 37.772, 1800: 245.363, 2000: 513.692, 2500: 1679.874, 3000: 3542.421}, method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1200 K}
     T_interval: 1
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6720,7 +6720,7 @@ rows:
     table_id: P672-As4-g
     runtime_ref: P672-As4-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6729,7 +6729,7 @@ rows:
     max_residual_log10_K: 3.23969055449503e-8
     source_fit_range_K: [1200, 1500]
     flags: [constant-Cp continuation above the printed 1200 K node]
-    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1800: 522, 2000: 1085.55, 2500: 3491.87, 3000: 7294.27}, method: maximum errors in published-source back-tests truncated at or below 1200 K}
+    uncertainty_band: {kind: repository held-Cp continuation error envelope, values_J_per_mol: {1200: 0, 1500: 37.772, 1800: 245.363, 2000: 513.692, 2500: 1679.874, 3000: 3542.421}, method: maximum absolute Gibbs error across the 44 published NASA Glenn cards when constant Cp is held from 1200 K}
     T_interval: 2
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -6746,7 +6746,7 @@ rows:
     table_id: P672-As4O6-g
     runtime_ref: P672-As4O6-g-CP-EXT-1000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6772,7 +6772,7 @@ rows:
     table_id: P672-As4O6-g
     runtime_ref: P672-As4O6-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6798,7 +6798,7 @@ rows:
     table_id: P672-As2O3
     runtime_ref: P672-As2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
@@ -6827,7 +6827,7 @@ rows:
     table_id: P672-As2O3
     runtime_ref: P672-As2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: a4d63bced173f202c22bb5515dc0c606c647a5c7f868ebde8bd94429ce3a2bb2
+    source_sha256: de00adcd717f2ab01deb260e4a2e1bf866249fc74bbf48a098803443095ac7d7
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
