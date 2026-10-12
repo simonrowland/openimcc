@@ -1134,6 +1134,24 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
             assert values[temperature] == pytest.approx(expected, abs=0.002)
 
 
+def test_published_source_data_flags_follow_source_limits() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    for row in provenance["rows"]:
+        limit = row.get("extrapolation_source_limit_K")
+        bounds = row.get("T_range_K")
+        if (
+            not row.get("source_path", "").startswith("data-src/published-thermo/")
+            or limit is None
+            or bounds is None
+            or float(bounds[0]) < float(limit)
+        ):
+            continue
+        assert row["source_data"] is False, (
+            f"{row['species_name']} interval {bounds} starts at {bounds[0]} K, "
+            f"at or above its {limit} K source limit"
+        )
+
+
 def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = [row for row in provenance["rows"] if row["table"] == "condensate"]
