@@ -504,6 +504,9 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Sb2": ("Sb2O3", 1, 1.5),
     "Sb4": ("Sb2O3", 0.5, 1.5),
     "Sb4O6": ("Sb2O3", 0.5, 0.0),
+    # The source reports decomposition near 500 K, not a bulk liquid row;
+    # Ag2O(l) is only the flagged caller-activity construction convention.
+    "Ag": ("Ag2O", 2, 0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -570,6 +573,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Sb2",
         "Sb4",
         "Sb4O6",
+        "Ag",
         "P",
         "P2",
         "P4",
@@ -741,6 +745,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Sb2": "published_fitted",
         "Sb4": "published_fitted",
         "Sb4O6": "published_fitted",
+        "Ag": "nasa_glenn_fitted",
         "MnO": "published_fitted",
     }
 )
@@ -752,7 +757,7 @@ _ION_GAS_SPECIES = (
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
     "Zn+", "Zn-", "Cd+", "Bi+",
-    "Mn+",
+    "Mn+", "Ag+",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -772,6 +777,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
             for species in (*_NASA_ION_GAS_SPECIES, "Cd+")
         },
         "Bi+": "nist_partition_fitted_ionisation",
+        "Ag+": "nasa_glenn_fitted_ionisation",
     }
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
@@ -808,6 +814,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "SeO2": "liquid_from_solid_estimate",
     "As2O3": "liquid_from_solid_estimate",
     "Sb2O3": "liquid_from_solid_estimate",
+    "Ag2O": "liquid_from_solid_estimate",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -839,7 +846,8 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "TeO2": "P672-TeO2-l",
     "SeO2": "P672-SeO2",
     "As2O3": "P672-As2O3",
-    "Sb2O3": "P672-Sb2O3",
+    "Sb2O3": "P672-Sb2O3-c",
+    "Ag2O": "P672-Ag2O-c",
     "MnO": "MnO-liquid-construction",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
@@ -1029,6 +1037,7 @@ _GAS_IONIZATION_PAIRS = (
     ("Cd", "Cd+"),
     ("Bi", "Bi+"),
     ("Mn", "Mn+"),
+    ("Ag", "Ag+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -1890,11 +1899,39 @@ ELEMENT_STATUS["Sb"] = {
     "status": "gas-partial",
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
     "validation": "unvalidated",
-    "reason": "Sb(g), Sb2(g), Sb4(g), Sb4O6(g), and a tier-4 Sb2O3(l) construction cover 1200-3000 K; the source Sb4O6(g) table ends at 1000 K and other source limits are 1860-2000 K. The caller supplies a(Sb2O3); no standard Sb2O3 liquid function or Sb+(g) source was located.",
+    "reason": "Sb(g), Sb2(g), Sb4(g), Sb4O6(g), and a tier-4 Sb2O3(l) construction cover 1200-3000 K; the source Sb4O6(g) nodes end at 1000 K and the other source nodes end at 1860-2000 K. Bulletin 672 reports a 928 K Sb2O3 melting marker but insufficient fusion-enthalpy data and no liquid function; a(Sb2O3) is caller-supplied.",
     "c2_candidates": (("P672-Sb4O6-g", "Sb4O6"),),
     "c3_ion_bound": {
         "status": "declined",
         "reason": "No JANAF, NASA Glenn/CEA, or Bulletin 672 source for Sb+(g) was located.",
+    },
+}
+
+ELEMENT_STATUS["Ag"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+    "validation": "unvalidated",
+    "reason": "Ag(g) and a tier-4 hypothetical Ag2O(l) caller-activity standard cover 1200-3000 K; NASA Glenn supplies Ag+(g). Ag2O decomposes near 500 K and has no measured liquid function; the Ag2O-parent convention does not represent reduced melts where silver dissolves largely as metal.",
+    "c2_candidates": (),
+    "c3_ion_bound": {
+        "max_ratio": 1.7494037240684078e-07,
+        "isolated_bound": 1.7368574813908657e-07,
+        "temperature_K": 2700.0,
+        "fO2": 1.0e-4,
+        "neutral_pressure_bar": 0.6792364936783882,
+        "element_total_pressure_bar": 0.6792364936783882,
+        "joint_ion_pressure_bar": 1.1882588515641399e-07,
+        "electron_pressure_bar": 3.898043393835064e-05,
+        "K_ion": 2.0490350096500935e-14,
+        "parent_oxide": "Ag2O",
+        "parent_activity": 0.001,
+        "source_tables": {"cation": "NG-0085", "neutral": "NG-0074", "electron": "D-020"},
+        "upstream_sha256": {
+            "NG-0085": "6a2d99e0f142c27bd04d232a9b064c11096de84ef87720e9254669785bf938e7",
+            "NG-0074": "10e568f98b288c4411c8d32f8fbfe6f6c4dafd0a6c12fa3f6a09c730f18f2766",
+            "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+        },
+        "user_agent": "neutral-source-vendor/1.0",
     },
 }
 
@@ -3178,7 +3215,7 @@ _ATOMIC_MASS_G_MOL = {
     "Fe": 55.845, "Mg": 24.305, "Al": 26.9815385, "Ca": 40.078,
     "Ti": 47.867, "Cr": 51.9961, "V": 50.9415, "Nb": 92.90637,
     "Mn": 54.938044, "Ni": 58.6934, "Co": 58.933194,
-    "Sb": 121.760,
+    "Sb": 121.760, "Ag": 107.8682,
     "P": 30.973761998, "S": 32.06,
     "Li": 6.94, "Rb": 85.4678, "Pb": 207.2,
     "B": 10.81, "Ga": 69.723, "Ge": 72.630, "In": 114.818,

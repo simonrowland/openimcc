@@ -119,7 +119,7 @@ _ION_GAS_SPECIES = {
     "Li+", "Rb+", "Pb+", "Cs+", "Sn+", "Cs2O+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Zn+", "Zn-", "Cd+", "Bi+",
-    "Mn+",
+    "Mn+", "Ag+",
 }
 
 
@@ -199,7 +199,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 72
+    assert len(gas_pack.oxide_df) == 80
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -494,14 +494,14 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     ]
     reviewed_trace_species = {
         f"{source[0]}" for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES
-        if source[1].startswith(("P672-Te", "P672-Se", "P672-As"))
+        if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb"))
     }
     ordinary_high_rows = neutral_high_rows.loc[
         ~neutral_high_rows.index.isin(reviewed_trace_species)
     ]
     assert (ordinary_high_rows["T_min"] == 1500).all()
     for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
-        if source[1].startswith(("P672-Te", "P672-Se", "P672-As")):
+        if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb")):
             split = min(max(source[6], 1500.0), 2000.0)
             assert float(high_rows.loc[source[0], "T_min"]) == split
             assert float(low_rows.loc[source[0], "T_max"]) == split
@@ -2331,6 +2331,8 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
         "TeO2(l)",
         "SeO2(l)",
         "As2O3(l)",
+        "Sb2O3(l)",
+        "Ag2O(l)",
         "MnO(l)",
     }
     return replace(
@@ -2361,6 +2363,8 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "TeO2": 1.0e-3,
         "SeO2": 1.0e-3,
         "As2O3": 1.0e-3,
+        "Sb2O3": 1.0e-3,
+        "Ag2O": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2412,10 +2416,11 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-",
         "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
         "Zn+", "Zn-", "Cd+", "Bi+",
+        "Ag+",
     }
     assert expected_ions <= set(trace_ions)
     assert "In+" not in trace_ions
-    nasa_ions = {"Ge+", "BO-", "Cd+"}
+    nasa_ions = {"Ge+", "BO-", "Cd+", "Ag+"}
     for species in expected_ions:
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == (
@@ -2491,7 +2496,7 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
     gas_pack: ImccGasDatapack,
 ) -> None:
     """Keep every serialized row from the pre-campaign gas pack unchanged."""
-    base = "8de3bfc"
+    base = "af0f2a2"
     root = Path(__file__).resolve().parents[1]
     for relpath, current_path in (
         ("src/openimcc/data/gas/gas-shomate.csv", gas_pack.gas_path),
@@ -2528,7 +2533,7 @@ def _trace_janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
 
 
 def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
-    if table_id in {"P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS"}:
+    if table_id in {"P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS", "P672-Ag2O-LFS"}:
         repository = Path(__file__).resolve().parents[1]
         source_dir = repository / "data-src" / "published-thermo"
         config = json.loads(
@@ -2536,9 +2541,9 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
                 encoding="utf-8"
             )
         )["rows"][
-            {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3"}[table_id]
+            {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3", "P672-Ag2O-LFS": "Ag2O"}[table_id]
         ]
-        species = {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3"}[table_id]
+        species = {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3", "P672-Ag2O-LFS": "Ag2O"}[table_id]
         _rows, construction, _alternate = build_gas_tables._fit_liquid_from_solid_parent(
             source_dir, species, config
         )
@@ -2571,7 +2576,7 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
             return (reference + node["enthalpy_increment"]) * 1000.0 - (
                 temperature * node["entropy"]
             )
-        if table_id in {"TSIV-1603", "P672-T102", "P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS"}:
+        if table_id in {"TSIV-1603", "P672-T102", "P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS", "P672-Ag2O-LFS"}:
             repository = Path(__file__).resolve().parents[1]
             species = {
                 "TSIV-1603": "ZnO",
@@ -2579,6 +2584,7 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
                 "P672-SeO2-LFS": "SeO2",
                 "P672-As2O3-LFS": "As2O3",
                 "P672-Sb2O3-LFS": "Sb2O3",
+                "P672-Ag2O-LFS": "Ag2O",
             }[table_id]
             config = json.loads(
                 (repository / "data-src" / "liquid-from-solid-inputs.json").read_text(
@@ -2630,6 +2636,7 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("SeO", "SeO2", "P672-SeO-g", "P672-SeO2-LFS"),
         ("As", "As2O3", "P672-As-g", "P672-As2O3-LFS"),
         ("Sb", "Sb2O3", "P672-Sb-g", "P672-Sb2O3-LFS"),
+        ("Ag", "Ag2O", "NG-0074", "P672-Ag2O-LFS"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]
@@ -2723,6 +2730,8 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         ("P672-Sb4-g", 49.000),
         ("P672-Sb4O6-g", -290.520),
         ("P672-Sb2O3-c", -169.400),
+        ("P672-Ag-g", 68.090),
+        ("P672-Ag2O-c", -7.420),
     ):
         assert anchor(table_id) == pytest.approx(printed_delta_h, abs=0.0005)
     for table_id, reaction_value, dimer_value in (
@@ -3728,7 +3737,9 @@ def test_sf04_pack_reproduces_base_default_and_default_keeps_other_channels(
     """Compare every 1 K result with the base tables in this environment."""
     base_pack = _load_task_base_gas_pack(tmp_path)
     default_pack = load_gas_datapack()
-    parents = collection_type(sorted(_REACTION_PARENT_OXIDES))
+    parents = collection_type(
+        sorted(parent for parent in _REACTION_PARENT_OXIDES if parent != "Ag2O")
+    )
     activities = {parent: 1.0 for parent in parents}
     selected, _omitted = _default_reactions(parents, base_pack)
     channels = collection_type(name for name, _reaction in selected)

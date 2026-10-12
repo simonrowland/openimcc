@@ -7466,6 +7466,26 @@
         "runtime_t_max": 1600.0
       }
     },
+    "Ag2O": {
+      "formula": "Ag2O",
+      "crystal_table_id": "P672-Ag2O-c",
+      "family": null,
+      "metal_atoms": 2,
+      "total_atoms": 3,
+      "selection_reason": "No Ag2O liquid function exists; Bulletin 672 marks decomposition near 500 K. Construct a flagged tier-4 hypothetical caller-activity standard from the sourced crystal, using the tier-3 fusion-entropy-per-atom estimate and crystal-Cp carry-over. The 500 K anchor is a construction reference, not a measured melting point or stable pure liquid.",
+      "inputs": {
+        "fusion_temperature": {"value":500.0,"tier":4,"spread":0.0,"bounds_k":[500.0,500.0],"source":"Construction reference at the upper limit of the Bulletin 672 Ag2O crystal table; the table marks decomposition near this temperature and supplies no melting transition or liquid function.","references":["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]},
+        "fusion_entropy": {"value":84.013133151,"tier":3,"spread":0.0,"unit":"J mol^-1 K^-1","source":"No Ag2O transition entropy is published. Apply the repository tier-3 estimate of 28.004377717 J/(mol K) per formula atom to the three atoms in Ag2O; this is a construction input, not a measured fusion entropy.","training_count":48,"references":["data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"]},
+        "liquid_heat_capacity": {"value":77.969,"tier":3,"spread":0.0,"unit":"J mol^-1 K^-1","source":"No Ag2O liquid Cp is published. Carry the printed crystal Cp at the 500 K table limit: 18.637 cal/(mol K) x 4.184 J/cal = 77.969 J/(mol K). This is a tier-4 construction input.","references":["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]}
+      },
+      "measured_band": {
+        "kind":"tier-3 liquid_from_solid leave-one-out Gibbs error scaled by formula atom count",
+        "source":"data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
+        "method":"Use 3/5 of the five-atom tier-3 construction envelope at each listed temperature because the calibration is specified per formula atom. This construction uncertainty is not a fit residual.",
+        "values_J_per_mol":{"1200":21189.915543488665,"1500":30913.39333536232,"1800":40636.87112675917,"2000":47119.189654515996,"2500":63324.98597390809,"3000":79530.78229329998}
+      },
+      "condensate_fit":{"table_id":"P672-Ag2O-LFS","ref":"P672-Ag2O-LFS","cation":"Ag","cat_num":2,"oxy_num":1,"fit_t_min":1200.0,"fit_t_max":1600.0,"runtime_t_min":1200.0,"runtime_t_max":1600.0}
+    },
     "As2O3": {
       "formula": "As2O3",
       "crystal_table_id": "P672-As2O3-c",

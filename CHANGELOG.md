@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added optional Ag(g) with caller-supplied Ag2O(l) activity and opt-in Ag+(g).
+  NASA Glenn supplies the atomic and cation cards; Bulletin 672's independent
+  Ag(g) row is compared by apparent Gibbs energy through 2000 K. Ag2O(l) is a
+  flagged tier-4 construction from the crystal table, which marks decomposition
+  near 500 K and provides no liquid function. The oxide-parent convention does
+  not represent silver dissolved as metal in reduced melts; Ag2(g) and AgO(g)
+  had no source table in the checked records.
 - Added optional Sb, Sb2, Sb4, and Sb4O6 gas channels with caller-supplied
   Sb2O3(l) activity. Bulletin 672 supplies the gas and crystal data; the
   hypothetical liquid parent is a tier-4 construction because its fusion

@@ -1,0 +1,44 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "source_id": "nasa-glenn",
+  "source": {
+    "database": "NASA Glenn / CEA thermo.inp",
+    "citation": "McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556; NASA CEA thermo.inp.",
+    "version": "thermo.inp dated 9/8/2021 (Snyder CEA standalone updates)",
+    "official_url": "https://www.grc.nasa.gov/www/CEAWeb/",
+    "licence": "U.S. government work; 17 U.S.C. § 105. Public-domain basis."
+  },
+  "compilation_role": {"kind":"assessed_thermodynamic_functions","engine_reference_input":true,"validation_measurement":false,"scoring_eligible":false,"battery_refusal":"gibbs_table_not_runtime_observable","circularity_warning":"Do not validate an engine against a compilation it consumes."},
+  "record_id": "NG-0085",
+  "name_as_published": "Ag+",
+  "citation_as_published": "Moore,1971. Gordon,1999.",
+  "cea_section": "products",
+  "formula": "Ag",
+  "phase": "gas",
+  "phase_as_published": "0",
+  "phase_flag": 0,
+  "phase_flag_as_published": " 0",
+  "phase_normalization_rule": "G or CEA flag 0 maps to gas; a recognized terminal state suffix keeps its published label.",
+  "n_intervals_declared": 3,
+  "source_ref_code": "g10/97",
+  "composition": [
+    {"element_as_published":"AG","count_as_published":"  1.00","element":"Ag","count":1,"filler":false},
+    {"element_as_published":"E ","count_as_published":" -1.00","element":null,"count":-1,"filler":true},
+    {"element_as_published":"  ","count_as_published":"  0.00","element":null,"count":0,"filler":true},
+    {"element_as_published":"  ","count_as_published":"  0.00","element":null,"count":0,"filler":true},
+    {"element_as_published":"  ","count_as_published":"  0.00","element":null,"count":0,"filler":true}
+  ],
+  "molecular_weight": {"as_published":"107.8676514","value":107.8676514},
+  "delta_f_H_298_15": {"as_published":"1022093.730","value":1022093.730,"units_as_published":"J/mol"},
+  "intervals": [
+    {"T_min_K":{"as_published":"298.150","value":298.15},"T_max_K":{"as_published":"1000.000","value":1000},"exponents":[{"value":-2},{"value":-1},{"value":0},{"value":1},{"value":2},{"value":3},{"value":4}],"H298_minus_H0":{"as_published":"6197.530","value":6197.530},"a_coefficients":[{"value":3691132.750},{"value":-43169.83000},{"value":202.8445385},{"value":-0.465841374},{"value":0.000558620051},{"value":-3.154880975e-7},{"value":6.578702060e-11}],"b1":{"value":337157.4470},"b2":{"value":-1142.924427},"raw_t_line":"    298.150   1000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         6197.530","raw_coeff_lines":[" 3.691132750D+06-4.316983000D+04 2.028445385D+02-4.658413740D-01 5.586200510D-04","-3.154880975D-07 6.578702060D-11                 3.371574470D+05-1.142924427D+03"]},
+    {"T_min_K":{"as_published":"1000.000","value":1000},"T_max_K":{"as_published":"6000.000","value":6000},"exponents":[{"value":-2},{"value":-1},{"value":0},{"value":1},{"value":2},{"value":3},{"value":4}],"H298_minus_H0":{"as_published":"6197.530","value":6197.530},"a_coefficients":[{"value":-53274323.50},{"value":131071.0631},{"value":-109.8820208},{"value":0.04826002760},{"value":-1.093661557e-5},{"value":1.263835910e-9},{"value":-5.852542535e-14}],"b1":{"value":-743912.2510},"b2":{"value":844.6266190},"raw_t_line":"   1000.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         6197.530","raw_coeff_lines":["-5.327432350D+07 1.310710631D+05-1.098820208D+02 4.826002760D-02-1.093661557D-05"," 1.263835910D-09-5.852542535D-14                -7.439122510D+05 8.446266190D+02"]},
+    {"T_min_K":{"as_published":"6000.000","value":6000},"T_max_K":{"as_published":"20000.000","value":20000},"exponents":[{"value":-2},{"value":-1},{"value":0},{"value":1},{"value":2},{"value":3},{"value":4}],"H298_minus_H0":{"as_published":"6197.530","value":6197.530},"a_coefficients":[{"value":-211946917.0},{"value":115962.1936},{"value":-22.20792532},{"value":0.002938747589},{"value":-1.822389545e-7},{"value":5.823925360e-12},{"value":-7.455184012e-17}],"b1":{"value":-806801.4150},"b2":{"value":227.1702823},"raw_t_line":"   6000.000  20000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         6197.530","raw_coeff_lines":["-2.119469170D+08 1.159621936D+05-2.220792532D+01 2.938747589D-03-1.822389545D-07"," 5.823925360D-12-7.455184012D-17                -8.068014150D+05 2.271702823D+02"]}
+  ],
+  "coefficient_count": 27,
+  "interval_count": 3,
+  "ambiguity_count": 0,
+  "ambiguities": [],
+  "source_locator": {"path":"data/literature/compilations/nasa-glenn/source/thermo.inp","name_line":86,"header_line":87,"end_line":96},
+  "source_text": {"name_line":"Ag+               Moore,1971. Gordon,1999.","header_line":" 3 g10/97 AG  1.00E  -1.00    0.00    0.00    0.00 0  107.8676514    1022093.730","interval_lines":["    298.150   1000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         6197.530"," 3.691132750D+06-4.316983000D+04 2.028445385D+02-4.658413740D-01 5.586200510D-04","-3.154880975D-07 6.578702060D-11                 3.371574470D+05-1.142924427D+03","   1000.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         6197.530","-5.327432350D+07 1.310710631D+05-1.098820208D+02 4.826002760D-02-1.093661557D-05"," 1.263835910D-09-5.852542535D-14                -7.439122510D+05 8.446266190D+02","   6000.000  20000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0         6197.530","-2.119469170D+08 1.159621936D+05-2.220792532D+01 2.938747589D-03-1.822389545D-07"," 5.823925360D-12-7.455184012D-17                -8.068014150D+05 2.271702823D+02"]}
+}

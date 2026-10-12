@@ -74,7 +74,7 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te channels:
+and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
@@ -83,7 +83,7 @@ Ga, GaO, Ga2O,
 Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
 CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
-As4O6, Na2O, K2O, O and O2.
+As4O6, Ag, Na2O, K2O, O and O2.
 The Mn channels use public Mn(g), MnO(g) and opt-in Mn+(g) rows with a
 caller-supplied MnO(l) activity. Ni and Co still require an external pack to
 provide their monoxide gas and liquid-parent rows.
@@ -97,9 +97,9 @@ until an external pack supplies a source-rated `P2O5(l)` standard state and the
 caller supplies `a(P2O5)` on that reference. OpenIMCC does not provide a
 melt-side P2O5 activity model for pyrolysis temperatures.
 
-Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, As, and Sb channels activate when the caller
+Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, As, Sb, and Ag channels activate when the caller
 supplies their parent activity (`Li2O`, `Rb2O`, `PbO`, `Cs2O`, `Cu2O`, `SnO`,
-`Ga2O3`, `GeO2`, `B2O3`, `In2O3`, `TeO2`, `SeO2`, `As2O3`, or `Sb2O3`) in the
+`Ga2O3`, `GeO2`, `B2O3`, `In2O3`, `TeO2`, `SeO2`, `As2O3`, `Sb2O3`, or `Ag2O`) in the
 `evaluate_gas` mapping. Activities are caller-supplied; openimcc has no
 trace-element activity model and applies no activity coefficients. As(g), As2(g),
 and As4(g) are constant-Cp continuation above 1200 K; As4O6(g) is continuation
@@ -126,6 +126,13 @@ Sb4O6(g) continues above 1000 K. SbO(g) and Sb+(g) were not located in the
 checked Bulletin 672 and NASA Glenn sources. Li2O(l),
 Cu2O(l), and PbO(l) use JANAF liquid rows. Rb2O(l), Cs2O(l), SnO(l),
 Ga2O3(l), GeO2(l), and In2O3(l) use NASA Glenn CEA liquid cards; labelled
+Ag(g) and opt-in Ag+(g) use the NASA Glenn cards because JANAF has no silver
+tables; the Pankratz Ag(g) row is retained for a G_app comparison over its
+1800–2000 K source range. Ag2O(l) is a flagged tier-4 construction from the
+Pankratz crystal table, which marks decomposition near 500 K and has no liquid
+function. Ag2(g) and AgO(g) were not located in the checked NASA Appendix D or
+Bulletin 672 tables. The Ag2O-parent convention requires caller-supplied
+activity and does not represent silver dissolved as metal in reduced melts.
 constant-Cp continuations cover SnO(l) from 1200–1250 K and the Ga2O3, GeO2,
 and In2O3 parents down to 1200 K. SnO is selected over the later-starting
 SnO2(l) card. Cu2O(l) is the Cu(I) parent because JANAF provides its liquid
@@ -209,7 +216,7 @@ direct intervals; and 10.793 and 0.591 J/mol for the In2O3 continuation and
 direct interval. The lower branches are generated continuations, not source
 data; direct NASA-card fit residuals remain below 10 J/mol.
 
-Opt-in trace ions add Ga+, Ge+, B+, Ga−, B−, BO− and BO2−; BO− uses a
+Opt-in trace ions add Ga+, Ge+, B+, Ag+, Ga−, B−, BO− and BO2−; BO− uses a
 NASA CEA card because no JANAF BO− table is available. The source-based C3
 screen passes for Ga and Ge. B's combined cation and anion share reaches
 1.252e-2 at 2800 K and exceeds the 1e-4 criterion. The NASA In+ card is

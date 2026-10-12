@@ -6549,7 +6549,7 @@ rows:
     source_path: data-src/crystal-thermochemistry.json
     source_sha256: b0c87afeaf0a53ec159a23e45d59d6a2eee023e810402f16504a51eac32bf22d
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: d02d1db8307941633c7bdb43ac16d1a9bee818d5bcab1a82c482c7339a80cc4d
+    construction_inputs_sha256: 7ff711ee075067d84027a200773e659cce385c8856a79030fdf1ac952821c5d4
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7124,6 +7124,181 @@ rows:
     extrapolation: true
     source_data: false
     extrapolation_source_limit_K: 1000
+  - table: gas
+    species_name: Ag(g)
+    table_id: NG-0074
+    runtime_ref: NG-0074
+    source_path: data-src/nasa-glenn/NG-0074.json
+    source_sha256: 10e568f98b288c4411c8d32f8fbfe6f6c4dafd0a6c12fa3f6a09c730f18f2766
+    authority: nasa_glenn_fitted
+    method: fitted
+    tier: 2
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    max_residual_J_per_mol: 0.00174030510243028
+    max_residual_log10_K: 4.54512178079496e-08
+    flags: []
+    T_interval: 1
+    source: {citation: 'McBride, Zehe and Gordon (2002), NASA/TP-2002-211556; NASA CEA thermo.inp', source_record: NASA Glenn CEA NG-0074, source_locator: thermo.inp lines 75-85, upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363}
+    source_locator: thermo.inp lines 75-85
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    source_data: true
+  - table: gas
+    species_name: Ag(g)
+    table_id: NG-0074
+    runtime_ref: NG-0074
+    source_path: data-src/nasa-glenn/NG-0074.json
+    source_sha256: 10e568f98b288c4411c8d32f8fbfe6f6c4dafd0a6c12fa3f6a09c730f18f2766
+    authority: nasa_glenn_fitted
+    method: fitted
+    tier: 2
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [500, 1500]
+    max_residual_J_per_mol: 0.030530538293533
+    max_residual_log10_K: 2.7773780487831e-06
+    flags: []
+    T_interval: 2
+    source: {citation: 'McBride, Zehe and Gordon (2002), NASA/TP-2002-211556; NASA CEA thermo.inp', source_record: NASA Glenn CEA NG-0074, source_locator: thermo.inp lines 75-85, upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363}
+    source_locator: thermo.inp lines 75-85
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    source_data: true
+  - table: gas
+    species_name: Ag+(g)
+    table_id: NG-0085
+    runtime_ref: NG-0085
+    source_path: data-src/nasa-glenn/NG-0085.json
+    source_sha256: 6a2d99e0f142c27bd04d232a9b064c11096de84ef87720e9254669785bf938e7
+    authority: nasa_glenn_fitted_ionisation
+    method: fitted
+    tier: 2
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    max_residual_J_per_mol: 0.241982778534293
+    max_residual_log10_K: 6.31981826495598e-06
+    flags: []
+    T_interval: 1
+    source: {citation: 'McBride, Zehe and Gordon (2002), NASA/TP-2002-211556; NASA CEA thermo.inp', source_record: NASA Glenn CEA NG-0085, source_locator: thermo.inp lines 86-96, upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363}
+    source_locator: thermo.inp lines 86-96
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    source_data: true
+  - table: gas
+    species_name: Ag+(g)
+    table_id: NG-0085
+    runtime_ref: NG-0085
+    source_path: data-src/nasa-glenn/NG-0085.json
+    source_sha256: 6a2d99e0f142c27bd04d232a9b064c11096de84ef87720e9254669785bf938e7
+    authority: nasa_glenn_fitted_ionisation
+    method: fitted
+    tier: 2
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [500, 1500]
+    max_residual_J_per_mol: 10.4178117807023
+    max_residual_log10_K: 0.000680200028813472
+    flags: []
+    T_interval: 2
+    source: {citation: 'McBride, Zehe and Gordon (2002), NASA/TP-2002-211556; NASA CEA thermo.inp', source_record: NASA Glenn CEA NG-0085, source_locator: thermo.inp lines 86-96, upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363}
+    source_locator: thermo.inp lines 86-96
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    source_data: true
+  - table: condensate
+    species_name: Ag2O(l)
+    table_id: P672-Ag2O-c
+    runtime_ref: P672-Ag2O-LFS
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3e96524c8590a7bce2c074a5ce2274224246a980de148d4ab981946864d68f04
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: 7ff711ee075067d84027a200773e659cce385c8856a79030fdf1ac952821c5d4
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K: [1200, 1600]
+    source_fit_range_K: [1200, 1600]
+    fit_intervals_K: [[1200, 1600], [1600, 2000], [2000, 2400], [2400, 3000]]
+    max_residual_J_per_mol: 5.23868948221207e-10
+    max_residual_log10_K: 1.71022322717816e-14
+    flags: [tier-4 hypothetical liquid_from_solid construction, tier-3 fusion-entropy-per-atom estimate and printed crystal-Cp carry-over, construction uncertainty band, caller-supplied parent activity; no activity model]
+    uncertainty_band:
+      kind: three-atom tier-3 leave-one-out liquid_from_solid Gibbs error estimate
+      values_J_per_mol: {1200: 21189.915543488665, 1500: 30913.39333536232, 1800: 40636.87112675917, 2000: 47119.189654515996, 2500: 63324.98597390809, 3000: 79530.78229329998}
+      method: scale the five-atom tier-3 construction envelope by the Ag2O formula's three atoms over five; not a fit residual
+    source: {citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672, source_record: Pankratz Bulletin 672 Table 34 Ag2O(cr), construction_input_record: data-src/liquid-from-solid-inputs.json rows.Ag2O, source_locator: printed p. 34, source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf}
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 34; construction inputs in data-src/liquid-from-solid-inputs.json
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 500
+  - table: condensate
+    species_name: Ag2O(l)
+    table_id: P672-Ag2O-c
+    runtime_ref: P672-Ag2O-LFS
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3e96524c8590a7bce2c074a5ce2274224246a980de148d4ab981946864d68f04
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: 7ff711ee075067d84027a200773e659cce385c8856a79030fdf1ac952821c5d4
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K: [1600, 2000]
+    source_fit_range_K: [1600, 2000]
+    fit_intervals_K: [[1200, 1600], [1600, 2000], [2000, 2400], [2400, 3000]]
+    max_residual_J_per_mol: 2.6775524020195e-09
+    max_residual_log10_K: 6.99291275112848e-14
+    flags: [tier-4 hypothetical liquid_from_solid construction, tier-3 fusion-entropy-per-atom estimate and printed crystal-Cp carry-over, construction uncertainty band, caller-supplied parent activity; no activity model]
+    uncertainty_band: {kind: three-atom tier-3 construction uncertainty, values_J_per_mol: {1200: 21189.915543488665, 1500: 30913.39333536232, 1800: 40636.87112675917, 2000: 47119.189654515996, 2500: 63324.98597390809, 3000: 79530.78229329998}, method: scaled three-atom estimate}
+    source: {citation: Pankratz Bulletin 672 Table 34 Ag2O(cr), source_record: Pankratz Bulletin 672, construction_input_record: data-src/liquid-from-solid-inputs.json rows.Ag2O, source_locator: printed p. 34, source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf}
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 34; construction inputs in data-src/liquid-from-solid-inputs.json
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 500
+  - table: condensate
+    species_name: Ag2O(l)
+    table_id: P672-Ag2O-c
+    runtime_ref: P672-Ag2O-LFS
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3e96524c8590a7bce2c074a5ce2274224246a980de148d4ab981946864d68f04
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: 7ff711ee075067d84027a200773e659cce385c8856a79030fdf1ac952821c5d4
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K: [2000, 2400]
+    source_fit_range_K: [2000, 2400]
+    fit_intervals_K: [[1200, 1600], [1600, 2000], [2000, 2400], [2400, 3000]]
+    max_residual_J_per_mol: 1.74622982740402e-09
+    max_residual_log10_K: 4.25655558764343e-14
+    flags: [tier-4 hypothetical liquid_from_solid construction, tier-3 fusion-entropy-per-atom estimate and printed crystal-Cp carry-over, construction uncertainty band, caller-supplied parent activity; no activity model]
+    uncertainty_band: {kind: three-atom tier-3 construction uncertainty, values_J_per_mol: {1200: 21189.915543488665, 1500: 30913.39333536232, 1800: 40636.87112675917, 2000: 47119.189654515996, 2500: 63324.98597390809, 3000: 79530.78229329998}, method: scaled three-atom estimate}
+    source: {citation: Pankratz Bulletin 672 Table 34 Ag2O(cr), source_record: Pankratz Bulletin 672, construction_input_record: data-src/liquid-from-solid-inputs.json rows.Ag2O, source_locator: printed p. 34, source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf}
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 34; construction inputs in data-src/liquid-from-solid-inputs.json
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 500
+  - table: condensate
+    species_name: Ag2O(l)
+    table_id: P672-Ag2O-c
+    runtime_ref: P672-Ag2O-LFS
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3e96524c8590a7bce2c074a5ce2274224246a980de148d4ab981946864d68f04
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: 7ff711ee075067d84027a200773e659cce385c8856a79030fdf1ac952821c5d4
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K: [2400, 3000]
+    source_fit_range_K: [2400, 3000]
+    fit_intervals_K: [[1200, 1600], [1600, 2000], [2000, 2400], [2400, 3000]]
+    max_residual_J_per_mol: 0.060987020493485
+    max_residual_log10_K: 1.20027517061349e-06
+    flags: [tier-4 hypothetical liquid_from_solid construction, tier-3 fusion-entropy-per-atom estimate and printed crystal-Cp carry-over, construction uncertainty band, caller-supplied parent activity; no activity model]
+    uncertainty_band: {kind: three-atom tier-3 construction uncertainty, values_J_per_mol: {1200: 21189.915543488665, 1500: 30913.39333536232, 1800: 40636.87112675917, 2000: 47119.189654515996, 2500: 63324.98597390809, 3000: 79530.78229329998}, method: scaled three-atom estimate}
+    source: {citation: Pankratz Bulletin 672 Table 34 Ag2O(cr), source_record: Pankratz Bulletin 672, construction_input_record: data-src/liquid-from-solid-inputs.json rows.Ag2O, source_locator: printed p. 34, source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf}
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: printed p. 34; construction inputs in data-src/liquid-from-solid-inputs.json
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 500
 source_comparisons:
   basis: >-
     NASA cards use G_app(T)=H_card(T)-T*S_card(T), where H_card includes the
@@ -7361,6 +7536,18 @@ source_comparisons:
       janaf_G_app_J_mol: 449274.0
       nasa_G_app_J_mol: 454923.498
       nasa_minus_janaf_J_mol: 5649.498
+  - species_name: Ag(g)
+    pankratz_table_id: P672-Ag-g
+    nasa_record_id: NG-0074
+    values:
+    - T_K: 1800
+      pankratz_G_app_J_mol: -62360.010
+      nasa_G_app_J_mol: -62548.610
+      nasa_minus_pankratz_J_mol: -188.600
+    - T_K: 2000
+      pankratz_G_app_J_mol: -104629.288
+      nasa_G_app_J_mol: -104845.447
+      nasa_minus_pankratz_J_mol: -216.159
 
 
 certification_items:

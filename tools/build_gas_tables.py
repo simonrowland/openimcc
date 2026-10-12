@@ -172,6 +172,7 @@ TRACE_JANAF_GAS_SOURCES = (
     ("Zn(g)", "Zn-005", "Zn", 1, 0),
 )
 TRACE_NASA_GAS_SOURCES = (
+    ("Ag(g)", "NG-0074", "Ag", "Ag", 1, 0),
     ("RbO(g)", "NG-1329", "RbO", "Rb", 1, 1),
     ("Rb2O(g)", "NG-1352", "Rb2O", "Rb", 2, 1),
     ("PbO2(g)", "NG-1276", "PbO2", "Pb", 1, 2),
@@ -216,7 +217,7 @@ TRACE_GAS_SPECIES = frozenset(
     | {source[0].removesuffix("(g)") for source in TRACE_NASA_GAS_SOURCES}
     | {source[0].removesuffix("(g)") for source in TRACE_PUBLISHED_GAS_SOURCES}
 )
-TRACE_NASA_COMPARISON_SOURCES = (("NG-10887", "Zn"), ("NG-10898", "Zn+"))
+TRACE_NASA_COMPARISON_SOURCES = (("NG-10887", "Zn"), ("NG-10898", "Zn+"), ("NG-0074", "Ag"))
 
 # Charge-balance rows are appended after every neutral row so the established
 # neutral coefficient rows and their ordering remain unchanged. The text
@@ -265,6 +266,7 @@ TRACE_ION_GAS_TEXT_SOURCES = (
 )
 DECLINED_ION_GAS_SPECIES = frozenset({"Cu+(g)"})
 TRACE_ION_GAS_NASA_SOURCES = (
+    ("Ag+(g)", "NG-0085", "Ag", "Ag", 1, 0),
     ("BO-(g)", "NG-1074", "BO", "B", 1, 1),
     ("Ge+(g)", "NG-5197", "Ge", "Ge", 1, 0),
     ("Cd+(g)", "NG-4071", "Cd", "Cd", 1, 0),
@@ -2750,19 +2752,6 @@ def build_rows(
         for source in TRACE_ION_GAS_NASA_SOURCES + TRACE_ION_NASA_SOURCES
     )
     rows.extend(
-        _fit_bi_plus_row(
-            published_source_dir,
-            t_interval=interval,
-            fit_t_min=fit_t_min,
-            fit_t_max=fit_t_max,
-            runtime_t_min=runtime_t_min,
-        )
-        for interval, fit_t_min, fit_t_max, runtime_t_min in (
-            (1, FIT_T_MIN, FIT_T_MAX, FIT_T_MIN),
-            (2, 1200.0, 1500.0, 1200.0),
-        )
-    )
-    rows.extend(
         _fit_row(
             source_dir,
             *source,
@@ -2783,6 +2772,19 @@ def build_rows(
         )
         low_row["T_min"] = "1200"
         rows.append(low_row)
+    rows.extend(
+        _fit_bi_plus_row(
+            published_source_dir,
+            t_interval=interval,
+            fit_t_min=fit_t_min,
+            fit_t_max=fit_t_max,
+            runtime_t_min=runtime_t_min,
+        )
+        for interval, fit_t_min, fit_t_max, runtime_t_min in (
+            (1, FIT_T_MIN, FIT_T_MAX, FIT_T_MIN),
+            (2, 1200.0, 1500.0, 1200.0),
+        )
+    )
     return rows
 
 
@@ -3039,7 +3041,7 @@ def _fit_liquid_from_solid_parent(
             )
             rows.append(row)
         return rows, construction, None
-    elif species in {"SeO2", "As2O3", "Sb2O3"}:
+    elif species in {"SeO2", "As2O3", "Sb2O3", "Ag2O"}:
         record = _published_table_record(published_source_dir, config["crystal_table_id"])
         crystal = _pankratz_crystal_table(
             record,
@@ -3083,6 +3085,7 @@ def _fit_liquid_from_solid_parent(
             (2000.0, 2400.0),
             (2400.0, 3000.0),
         ),
+        "Ag2O": ((1200.0, 1600.0), (1600.0, 2000.0), (2000.0, 2400.0), (2400.0, 3000.0)),
     }[species]
     fit = inputs["condensate_fit"]
     rows = []
@@ -3431,7 +3434,7 @@ def build_condensate_rows(
             )
         )
     liquid_inputs = _load_record(repository / "data-src/liquid-from-solid-inputs.json")
-    for species in ("ZnO", "CdO", "MnO", "SeO2", "As2O3", "Sb2O3"):
+    for species in ("ZnO", "CdO", "MnO", "SeO2", "As2O3", "Sb2O3", "Ag2O"):
         fitted_rows, _construction, _alternate = _fit_liquid_from_solid_parent(
             published_source_dir, species, liquid_inputs["rows"][species]
         )
