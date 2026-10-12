@@ -97,9 +97,9 @@ until an external pack supplies a source-rated `P2O5(l)` standard state and the
 caller supplies `a(P2O5)` on that reference. OpenIMCC does not provide a
 melt-side P2O5 activity model for pyrolysis temperatures.
 
-Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, and As channels activate when the caller
+Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, As, and Sb channels activate when the caller
 supplies their parent activity (`Li2O`, `Rb2O`, `PbO`, `Cs2O`, `Cu2O`, `SnO`,
-`Ga2O3`, `GeO2`, `B2O3`, `In2O3`, `TeO2`, `SeO2`, or `As2O3`) in the
+`Ga2O3`, `GeO2`, `B2O3`, `In2O3`, `TeO2`, `SeO2`, `As2O3`, or `Sb2O3`) in the
 `evaluate_gas` mapping. Activities are caller-supplied; openimcc has no
 trace-element activity model and applies no activity coefficients. As(g), As2(g),
 and As4(g) are constant-Cp continuation above 1200 K; As4O6(g) is continuation
@@ -118,7 +118,12 @@ source was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or
 Gurvich/IVTAN. As2O3(l) is a flagged tier-4 construction
 based on the Pankratz Table 53
 crystal function and the repository's leave-one-out liquid_from_solid error
-band. The source has no liquid standard-state function. Li2O(l),
+band. The source has no liquid standard-state function. Sb2O3(l) is likewise
+a tier-4 caller-supplied liquid standard constructed from the Pankratz crystal
+row: the 928 K marker has no fusion enthalpy, and Bulletin 672 publishes no
+liquid function. Sb(g), Sb2(g), and Sb4(g) continue above their source nodes;
+Sb4O6(g) continues above 1000 K. SbO(g) and Sb+(g) were not located in the
+checked Bulletin 672 and NASA Glenn sources. Li2O(l),
 Cu2O(l), and PbO(l) use JANAF liquid rows. Rb2O(l), Cs2O(l), SnO(l),
 Ga2O3(l), GeO2(l), and In2O3(l) use NASA Glenn CEA liquid cards; labelled
 constant-Cp continuations cover SnO(l) from 1200–1250 K and the Ga2O3, GeO2,

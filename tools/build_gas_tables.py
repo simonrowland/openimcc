@@ -205,6 +205,10 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("As2(g)", "P672-As2-g", "As2", "As", 2, 0, 1200.0),
     ("As4(g)", "P672-As4-g", "As4", "As", 4, 0, 1200.0),
     ("As4O6(g)", "P672-As4O6-g", "As4O6", "As", 4, 6, 1000.0),
+    ("Sb(g)", "P672-Sb-g", "Sb", "Sb", 1, 0, 1860.0),
+    ("Sb2(g)", "P672-Sb2-g", "Sb2", "Sb", 2, 0, 2000.0),
+    ("Sb4(g)", "P672-Sb4-g", "Sb4", "Sb", 4, 0, 2000.0),
+    ("Sb4O6(g)", "P672-Sb4O6-g", "Sb4O6", "Sb", 4, 6, 1000.0),
     ("MnO(g)", "TSIV-1436", "MnO", "Mn", 1, 1, 6000.0),
 )
 TRACE_GAS_SPECIES = frozenset(
@@ -1446,8 +1450,11 @@ def _constant_cp_rows_through(
     previous_temperature = anchor_temperature
     previous_h = anchor["enthalpy_increment"]
     previous_s = anchor["entropy"]
+    first_grid_temperature = (
+        math.floor(anchor_temperature / JANAF_GRID_STEP_K) + 1
+    ) * JANAF_GRID_STEP_K
     for temperature in np.arange(
-        anchor_temperature + JANAF_GRID_STEP_K,
+        first_grid_temperature,
         end_temperature + JANAF_GRID_STEP_K / 2.0,
         JANAF_GRID_STEP_K,
     ):
@@ -2636,15 +2643,16 @@ def build_rows(
     for source in TRACE_PUBLISHED_GAS_SOURCES:
         split_temperature = (
             min(max(source[6], 1500.0), 2000.0)
-            if source[1].startswith(("P672-Te", "P672-Se", "P672-As"))
+            if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb"))
             else 1500.0
         )
+        high_fit_start = math.floor(split_temperature / 100.0) * 100.0
         rows.append(
             _fit_published_gas_row(
                 published_source_dir,
                 *source[:6],
                 t_interval=1,
-                fit_t_min=split_temperature,
+                fit_t_min=high_fit_start,
                 fit_t_max=FIT_T_MAX,
                 runtime_t_min=split_temperature,
                 runtime_t_max=FIT_T_MAX,
@@ -2676,7 +2684,7 @@ def build_rows(
     for source in TRACE_PUBLISHED_GAS_SOURCES:
         split_temperature = (
             min(max(source[6], 1500.0), 2000.0)
-            if source[1].startswith(("P672-Te", "P672-Se", "P672-As"))
+            if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb"))
             else 1500.0
         )
         rows.append(
@@ -3031,7 +3039,7 @@ def _fit_liquid_from_solid_parent(
             )
             rows.append(row)
         return rows, construction, None
-    elif species in {"SeO2", "As2O3"}:
+    elif species in {"SeO2", "As2O3", "Sb2O3"}:
         record = _published_table_record(published_source_dir, config["crystal_table_id"])
         crystal = _pankratz_crystal_table(
             record,
@@ -3048,7 +3056,7 @@ def _fit_liquid_from_solid_parent(
         raise ValueError(f"{species}: no source-supported liquid-from-solid parent")
     inputs = {**config["inputs"], "condensate_fit": config["condensate_fit"]}
     construction = liquid_from_solid(species, crystal, inputs)
-    if species in {"SeO2", "As2O3"}:
+    if species in {"SeO2", "As2O3", "Sb2O3"}:
         alternate_crystal = _pankratz_crystal_table(
             record,
             extension_limit_k=max(
@@ -3066,6 +3074,15 @@ def _fit_liquid_from_solid_parent(
         "CdO": ((1200.0, 1600.0), (1600.0, 3000.0)),
         "SeO2": ((1200.0, 1600.0), (1600.0, 3000.0)),
         "As2O3": ((1200.0, 1600.0), (1600.0, 3000.0)),
+        # The tier-4 Cp carry-over is linear in G, but a single 1600-3000 K
+        # Shomate interval misses the 10 J/mol source-node gate. These three
+        # additional intervals fit the same construction, each below 10 J/mol.
+        "Sb2O3": (
+            (1200.0, 1600.0),
+            (1600.0, 2000.0),
+            (2000.0, 2400.0),
+            (2400.0, 3000.0),
+        ),
     }[species]
     fit = inputs["condensate_fit"]
     rows = []
@@ -3414,7 +3431,7 @@ def build_condensate_rows(
             )
         )
     liquid_inputs = _load_record(repository / "data-src/liquid-from-solid-inputs.json")
-    for species in ("ZnO", "CdO", "MnO", "SeO2", "As2O3"):
+    for species in ("ZnO", "CdO", "MnO", "SeO2", "As2O3", "Sb2O3"):
         fitted_rows, _construction, _alternate = _fit_liquid_from_solid_parent(
             published_source_dir, species, liquid_inputs["rows"][species]
         )

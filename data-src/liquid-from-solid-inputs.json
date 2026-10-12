@@ -7414,6 +7414,58 @@
         "runtime_t_max": 1600.0
       }
     },
+    "Sb2O3": {
+      "formula": "Sb2O3",
+      "crystal_table_id": "P672-Sb2O3-c",
+      "family": null,
+      "metal_atoms": 2,
+      "total_atoms": 5,
+      "selection_reason": "No measured Sb2O3(l) function is tabulated. Bulletin 672 Table 53 reports a 928 K melting marker but says the fusion enthalpy is insufficiently known. Construct a hypothetical caller-activity liquid standard from the source crystal using the tier-3 fusion-entropy mean and crystal-Cp carry-over, with the documented leave-one-out Gibbs-error band; this is a tier-4 construction, not a measured liquid function.",
+      "inputs": {
+        "fusion_temperature": {
+          "value": 928.0,
+          "tier": 1,
+          "spread": 0.0,
+          "bounds_k": [928.0, 928.0],
+          "source": "Pankratz Bulletin 672 Table 53, printed p. 358, identifies the 928 K phase marker as the melting point of Sb2O3.",
+          "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
+        },
+        "fusion_entropy": {
+          "value": 140.021888585,
+          "tier": 3,
+          "spread": 0.0,
+          "unit": "J mol^-1 K^-1",
+          "source": "No Sb2O3 fusion enthalpy or entropy is tabulated. Tier-3 estimate: the 48-pair mean 28.004377717 J/(mol K) per formula atom times five atoms per Sb2O3 formula unit. The matching five-atom leave-one-out Gibbs-error envelope is retained below.",
+          "training_count": 48,
+          "references": ["data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"]
+        },
+        "liquid_heat_capacity": {
+          "value": 120.17286991624972,
+          "tier": 3,
+          "spread": 0.0,
+          "unit": "J mol^-1 K^-1",
+          "source": "No liquid Cp is tabulated. Carry the source crystal Cp at the 928 K marker into the hypothetical liquid: [27.250 + 0.001988(928) - 321100/(928^2)] cal/(mol K) x 4.184 J/cal = 120.172869916 J/(mol K). The source labels high-temperature crystal data as estimated.",
+          "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]
+        }
+      },
+      "measured_band": {
+        "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs",
+        "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
+        "method": "Interpolate the measured maximum absolute leave-one-out Gibbs error between +300 and +800 K from the constructed transition; above +800 K, continue its final measured slope as a flagged uncertainty estimate.",
+        "values_J_per_mol": {"1200":35316.525905814444,"1500":51522.32222520653,"1800":67728.11854459862,"2000":78531.98275752667,"2500":105541.64328984682,"3000":132551.30382216698}
+      },
+      "condensate_fit": {
+        "table_id": "P672-Sb2O3-LFS",
+        "ref": "P672-Sb2O3-LFS",
+        "cation": "Sb",
+        "cat_num": 2,
+        "oxy_num": 3,
+        "fit_t_min": 1200.0,
+        "fit_t_max": 1600.0,
+        "runtime_t_min": 1200.0,
+        "runtime_t_max": 1600.0
+      }
+    },
     "As2O3": {
       "formula": "As2O3",
       "crystal_table_id": "P672-As2O3-c",

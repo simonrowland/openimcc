@@ -2528,15 +2528,17 @@ def _trace_janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
 
 
 def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
-    if table_id in {"P672-SeO2-LFS", "P672-As2O3-LFS"}:
+    if table_id in {"P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS"}:
         repository = Path(__file__).resolve().parents[1]
         source_dir = repository / "data-src" / "published-thermo"
         config = json.loads(
             (repository / "data-src" / "liquid-from-solid-inputs.json").read_text(
                 encoding="utf-8"
             )
-        )["rows"]["SeO2" if table_id == "P672-SeO2-LFS" else "As2O3"]
-        species = "SeO2" if table_id == "P672-SeO2-LFS" else "As2O3"
+        )["rows"][
+            {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3"}[table_id]
+        ]
+        species = {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3"}[table_id]
         _rows, construction, _alternate = build_gas_tables._fit_liquid_from_solid_parent(
             source_dir, species, config
         )
@@ -2569,13 +2571,14 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
             return (reference + node["enthalpy_increment"]) * 1000.0 - (
                 temperature * node["entropy"]
             )
-        if table_id in {"TSIV-1603", "P672-T102", "P672-SeO2-LFS", "P672-As2O3-LFS"}:
+        if table_id in {"TSIV-1603", "P672-T102", "P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS"}:
             repository = Path(__file__).resolve().parents[1]
             species = {
                 "TSIV-1603": "ZnO",
                 "P672-T102": "CdO",
                 "P672-SeO2-LFS": "SeO2",
                 "P672-As2O3-LFS": "As2O3",
+                "P672-Sb2O3-LFS": "Sb2O3",
             }[table_id]
             config = json.loads(
                 (repository / "data-src" / "liquid-from-solid-inputs.json").read_text(
@@ -2626,6 +2629,7 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("Se", "SeO2", "P672-Se-g", "P672-SeO2-LFS"),
         ("SeO", "SeO2", "P672-SeO-g", "P672-SeO2-LFS"),
         ("As", "As2O3", "P672-As-g", "P672-As2O3-LFS"),
+        ("Sb", "Sb2O3", "P672-Sb-g", "P672-Sb2O3-LFS"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]
@@ -2714,6 +2718,11 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         ("P672-As4-g", 36.640),
         ("P672-As2O3-c", -157.020),
         ("P672-As4O6-g", -285.910),
+        ("P672-Sb-g", 62.700),
+        ("P672-Sb2-g", 56.300),
+        ("P672-Sb4-g", 49.000),
+        ("P672-Sb4O6-g", -290.520),
+        ("P672-Sb2O3-c", -169.400),
     ):
         assert anchor(table_id) == pytest.approx(printed_delta_h, abs=0.0005)
     for table_id, reaction_value, dimer_value in (
@@ -2778,6 +2787,24 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
     )
     printed_as_log10_k = 191.361 - 2 * 100.913
     assert as_reaction_log10_k == pytest.approx(printed_as_log10_k, abs=0.002)
+
+
+def test_sb4_reaction_closes_to_printed_pankratz_cells(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    """Stored Sb gas rows reproduce the separate 2 Sb2(g)=Sb4(g) table."""
+    tables = json.loads(
+        (Path(__file__).resolve().parents[1] / "data-src/published-thermo/pankratz-bulletin-672.json").read_text()
+    )["tables"]
+    assert tables["P672-Sb4-g"]["formation_enthalpy_298_kcal_mol"] - 2 * tables["P672-Sb2-g"]["formation_enthalpy_298_kcal_mol"] == pytest.approx(-63.600, abs=0.0005)
+    # Printed p. 357 log K cells. The source rows use the elemental 298 K
+    # anchors, with kcal-to-J and cal-to-J/K conversion in the fitted G values.
+    for temperature, printed_log10_k in ((1200.0, 3.521), (1500.0, 1.280), (2000.0, -0.934)):
+        sb2 = _nearest_interval_row(gas_pack.gas_df, "Sb2(g)", temperature)
+        sb4 = _nearest_interval_row(gas_pack.gas_df, "Sb4(g)", temperature)
+        delta_g = _janaf_gibbs(temperature, sb4) - 2 * _janaf_gibbs(temperature, sb2)
+        log10_k = -delta_g / (R_J_MOL_K * temperature * math.log(10.0))
+        assert log10_k == pytest.approx(printed_log10_k, abs=0.002)
 
 
 def test_ti_channels_against_janaf_printed_formation_gibbs(

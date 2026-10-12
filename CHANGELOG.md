@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added optional Sb, Sb2, Sb4, and Sb4O6 gas channels with caller-supplied
+  Sb2O3(l) activity. Bulletin 672 supplies the gas and crystal data; the
+  hypothetical liquid parent is a tier-4 construction because its fusion
+  enthalpy and liquid function are unavailable. Constant-Cp continuation above
+  each gas row's source limit is flagged and banded. SbO(g) and Sb+(g) were not
+  located in the checked sources.
 - Added optional As, As2, As4, and As4O6 gas channels with caller-supplied
   As2O3(l) activity. Pankratz Bulletin 672 supplies the gas channels and the
   As2O3 crystal function. As2O3(l) is a flagged tier-4 construction using the

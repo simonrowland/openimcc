@@ -588,7 +588,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
     )
-    assert len(oxide_rows) == 29
+    assert len(oxide_rows) == 30
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -1034,11 +1034,12 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
         source_limit = _rest[-1]
         split = (
             min(max(source_limit, 1500.0), 2000.0)
-            if table_id.startswith(("P672-Te", "P672-Se", "P672-As"))
+            if table_id.startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb"))
             else 1500.0
         )
+        high_fit_start = math.floor(split / 100.0) * 100.0
         for interval, t_min, t_max, side in (
-            (1, split, 3000.0, "high"),
+            (1, high_fit_start, 3000.0, "high"),
             (2, 1200.0, split, "low"),
         ):
             source_rows, reference, _source_limit = (
@@ -1078,7 +1079,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     nasa_cards = sorted((ROOT / "data-src" / "nasa-glenn").glob("NG-*.json"))
     expected_by_limit = {}
-    for limit in (1000.0, 1200.0, 1500.0, 2000.0):
+    for limit in (1000.0, 1200.0, 1500.0, 1860.0, 2000.0):
         maximum = {}
         counts = {}
         for card_path in nasa_cards:
@@ -1464,7 +1465,7 @@ def test_constructed_parent_fit_nodes_are_only_self_fit_checks() -> None:
             "Li2O(l)", "Rb2O(l)", "PbO(l)",
             "Cs2O(l)", "Cu2O(l)", "SnO(l)", "K2O(l)",
             "ZnO(l)", "CdO(l)", "Bi2O3(l)",
-            "MnO(l)", "TeO2(l)",
+            "MnO(l)", "TeO2(l)", "Sb2O3(l)",
         }
     ]
     direct_fits = [
@@ -1794,7 +1795,7 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
             if (
                 row.get("extrapolation") is True
                 and row["species_name"] not in {
-                    "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)", "TeO2(l)", "SeO2(l)", "As2O3(l)"
+                    "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)", "TeO2(l)", "SeO2(l)", "As2O3(l)", "Sb2O3(l)"
                 }
             ):
                 continue

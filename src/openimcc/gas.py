@@ -497,6 +497,13 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "As2": ("As2O3", 1, 1.5),
     "As4": ("As2O3", 0.5, 1.5),
     "As4O6": ("As2O3", 0.5, 0.0),
+    # Sb2O3(l) is a tier-4 hypothetical activity standard constructed from
+    # its crystal; atom and oxygen balances give (2,3/2), (1,3/2),
+    # (1/2,3/2), and (1/2,0) for Sb, Sb2, Sb4, and Sb4O6 respectively.
+    "Sb": ("Sb2O3", 2, 1.5),
+    "Sb2": ("Sb2O3", 1, 1.5),
+    "Sb4": ("Sb2O3", 0.5, 1.5),
+    "Sb4O6": ("Sb2O3", 0.5, 0.0),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -559,6 +566,10 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "As2",
         "As4",
         "As4O6",
+        "Sb",
+        "Sb2",
+        "Sb4",
+        "Sb4O6",
         "P",
         "P2",
         "P4",
@@ -726,6 +737,10 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "As2": "published_fitted",
         "As4": "published_fitted",
         "As4O6": "published_fitted",
+        "Sb": "published_fitted",
+        "Sb2": "published_fitted",
+        "Sb4": "published_fitted",
+        "Sb4O6": "published_fitted",
         "MnO": "published_fitted",
     }
 )
@@ -792,6 +807,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "TeO2": "published_fitted",
     "SeO2": "liquid_from_solid_estimate",
     "As2O3": "liquid_from_solid_estimate",
+    "Sb2O3": "liquid_from_solid_estimate",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -823,6 +839,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "TeO2": "P672-TeO2-l",
     "SeO2": "P672-SeO2",
     "As2O3": "P672-As2O3",
+    "Sb2O3": "P672-Sb2O3",
     "MnO": "MnO-liquid-construction",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
@@ -1866,6 +1883,20 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'neutral-source-vendor/1.0'}}}
 
+
+# Sb is gas-partial: the neutral channels and a tier-4 hypothetical parent
+# cover the requested domain, while no sourced Sb+ card was located.
+ELEMENT_STATUS["Sb"] = {
+    "status": "gas-partial",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": "Sb(g), Sb2(g), Sb4(g), Sb4O6(g), and a tier-4 Sb2O3(l) construction cover 1200-3000 K; the source Sb4O6(g) table ends at 1000 K and other source limits are 1860-2000 K. The caller supplies a(Sb2O3); no standard Sb2O3 liquid function or Sb+(g) source was located.",
+    "c2_candidates": (("P672-Sb4O6-g", "Sb4O6"),),
+    "c3_ion_bound": {
+        "status": "declined",
+        "reason": "No JANAF, NASA Glenn/CEA, or Bulletin 672 source for Sb+(g) was located.",
+    },
+}
 
 # --------------------------------------------------------------------------- #
 # Data pack
@@ -3147,6 +3178,7 @@ _ATOMIC_MASS_G_MOL = {
     "Fe": 55.845, "Mg": 24.305, "Al": 26.9815385, "Ca": 40.078,
     "Ti": 47.867, "Cr": 51.9961, "V": 50.9415, "Nb": 92.90637,
     "Mn": 54.938044, "Ni": 58.6934, "Co": 58.933194,
+    "Sb": 121.760,
     "P": 30.973761998, "S": 32.06,
     "Li": 6.94, "Rb": 85.4678, "Pb": 207.2,
     "B": 10.81, "Ga": 69.723, "Ge": 72.630, "In": 114.818,
