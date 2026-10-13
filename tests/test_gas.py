@@ -198,8 +198,9 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + len(build_gas_tables.TRACE_ION_GAS_YAML_SOURCES)
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
+        + 1  # Sc+ has an additional interval row.
     )
-    assert len(gas_pack.oxide_df) == 104
+    assert len(gas_pack.oxide_df) == 113
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -444,7 +445,9 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES)
     assert set(gas_pack.gas_df.index) == {
         f"{species}(g)" for species in public_gas_channels
-    } | {f"{species}(g)" for species in _ION_GAS_SPECIES}
+    } | {f"{species}(g)" for species in _ION_GAS_SPECIES} | {
+        source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
+    }
     high_rows = gas_pack.gas_df.loc[
         gas_pack.gas_df["T_interval"].astype(int) == 1
     ]
@@ -2695,13 +2698,6 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("UO", "UO2", "NG-1224", "NG-1977"),
         ("UO2", "UO2", "NG-1230", "NG-1977"),
         ("UO3", "UO2", "NG-1235", "NG-1977"),
-        ("Sc", "Sc2O3", "NG-1087", "NG-1857"),
-        ("ScO", "Sc2O3", "NG-1090", "NG-1857"),
-        ("ScO2", "Sc2O3", "NG-1092", "NG-1857"),
-        ("U", "UO2", "NG-1206", "NG-1977"),
-        ("UO", "UO2", "NG-1224", "NG-1977"),
-        ("UO2", "UO2", "NG-1230", "NG-1977"),
-        ("UO3", "UO2", "NG-1235", "NG-1977"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]
@@ -3685,6 +3681,7 @@ def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> N
         "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "SiO2(l)",
         "Al2O3(l)", "MgO(l)", "CaO(l)",
         "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
+        "Sc2O3(l)", "UO2(l)",
         "Al2O3(l)", "MgO(l)", "CaO(l)", "SnO(l)",
     }
     for row_name, row in extension_rows.iterrows():

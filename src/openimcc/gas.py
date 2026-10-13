@@ -3580,6 +3580,7 @@ _ATOMIC_MASS_G_MOL = {
     "As": 74.921595, "Se": 78.971, "Te": 127.60,
     "Mo": 95.95, "W": 183.84,
     "Ba": 137.327, "Sr": 87.62, "Zr": 91.224,
+    "Sc": 44.955908, "U": 238.02891,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,
