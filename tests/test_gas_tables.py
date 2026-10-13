@@ -3103,6 +3103,7 @@ def test_u_g_source_disagreement_band_recomputes_from_vendored_records() -> None
     band_rows = [
         row for row in provenance["rows"]
         if row["table"] == "gas" and row["species_name"] == "U(g)"
+        and row.get("uncertainty_band") is not None
     ]
     assert len(band_rows) == 1
     band = band_rows[0]["uncertainty_band"]
