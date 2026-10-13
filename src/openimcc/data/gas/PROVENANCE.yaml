@@ -110,10 +110,12 @@ source_notes:
       6.63412 eV. JANAF fitted/Saha ratios at 1500, 2500, and 3000 K are Ba
       0.999607, 0.999722, 0.999631 and Sr 1.000162, 1.000076, 1.000043;
       these agree within 2%. Zr ratios are 0.187223, 0.380302, and 0.454302.
-      Zr JANAF ion/neutral 298 K anchors imply 667.853 kJ/mol, about 27.7
-      kJ/mol above the NIST 6.63412 eV ionization energy; the rising ratio is
-      the Boltzmann response to that formation-anchor offset, not a missing
-      partition term. Zr- attachment ratios against NIST EA 0.427 eV are
+      The pinned Zr+ ratios correspond to a roughly 20 kJ/mol Gibbs offset
+      (−RT ln(ratio)). The 298.15 K JANAF ion/neutral enthalpy difference is
+      667.853 kJ/mol, 27.758 kJ/mol above NIST's 6.63412 eV (640.095 kJ/mol);
+      it includes the 5/2 RT thermal-electron term, 6.197 kJ/mol at 298.15 K,
+      and is not itself the pinned Gibbs offset. Zr- attachment ratios against
+      NIST EA 0.427 eV are
       0.897178, 0.963296, and 0.972007 at 1500, 2500, and 3000 K. Their
       temperature dependence is a JANAF versus spectroscopic partition-entropy
       difference. All measured ratios are pinned in tests.
@@ -129,9 +131,9 @@ source_notes:
       fitted/Saha ratios are Ni 165.896 and 259.904 and Co 1.139494 and
       1.293826 at 1500 and 2500 K. Ni-006 minus Ni-005 gives an ionization
       enthalpy of 748.888 kJ/mol, 11.759 kJ/mol above NIST's 7.6398 eV;
-      ratios imply about 14.0 kJ/mol and 51.8 J/(mol K) source offsets over
-      this range, so both the enthalpy anchor and JANAF partition entropy
-      contribute. Co-006 minus Co-005 gives 764.921 kJ/mol, 4.520 kJ/mol above
+      the ratio-implied split is about 14.0 kJ/mol from the enthalpy anchor
+      and 51.8 J/(mol K) from the JANAF partition-entropy difference over
+      this range. Co-006 minus Co-005 gives 764.921 kJ/mol, 4.520 kJ/mol above
       NIST's 7.8810 eV; ratios imply about 4.0 kJ/mol and 3.7 J/(mol K).
       These retained source offsets are pinned in tests. Ni- and Co- are also
       checked against NIST electron affinities
@@ -8591,9 +8593,9 @@ rows:
     upstream_source_sha256: abb1faf911bf78d7c6597d75e4a1abe683c439833e13ceb79c61adf99a6f8be9
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: BaO(l)
     table_id: Ba-035
@@ -8612,9 +8614,9 @@ rows:
     upstream_source_sha256: abb1faf911bf78d7c6597d75e4a1abe683c439833e13ceb79c61adf99a6f8be9
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: BaO(l)
     table_id: Ba-035
@@ -8633,9 +8635,9 @@ rows:
     upstream_source_sha256: abb1faf911bf78d7c6597d75e4a1abe683c439833e13ceb79c61adf99a6f8be9
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: BaO(l)
     table_id: Ba-035
@@ -8654,9 +8656,9 @@ rows:
     upstream_source_sha256: abb1faf911bf78d7c6597d75e4a1abe683c439833e13ceb79c61adf99a6f8be9
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: SrO(l)
     table_id: O-014
@@ -8675,9 +8677,9 @@ rows:
     upstream_source_sha256: 5079ca914bd2d58042b52d5358ee3666dc29afb70540e451c9a3b8596a0b3d8e
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: SrO(l)
     table_id: O-014
@@ -8696,9 +8698,9 @@ rows:
     upstream_source_sha256: 5079ca914bd2d58042b52d5358ee3666dc29afb70540e451c9a3b8596a0b3d8e
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: SrO(l)
     table_id: O-014
@@ -8717,9 +8719,9 @@ rows:
     upstream_source_sha256: 5079ca914bd2d58042b52d5358ee3666dc29afb70540e451c9a3b8596a0b3d8e
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: SrO(l)
     table_id: O-014
@@ -8738,9 +8740,9 @@ rows:
     upstream_source_sha256: 5079ca914bd2d58042b52d5358ee3666dc29afb70540e451c9a3b8596a0b3d8e
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: ZrO2(l)
     table_id: O-053
@@ -8759,9 +8761,9 @@ rows:
     upstream_source_sha256: c13a6083aed93a2fe25c5d4d0352e9ce5bc1b5c8a8b6cfe59a97c99c9081c6ae
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: ZrO2(l)
     table_id: O-053
@@ -8780,9 +8782,9 @@ rows:
     upstream_source_sha256: c13a6083aed93a2fe25c5d4d0352e9ce5bc1b5c8a8b6cfe59a97c99c9081c6ae
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: ZrO2(l)
     table_id: O-053
@@ -8801,9 +8803,9 @@ rows:
     upstream_source_sha256: c13a6083aed93a2fe25c5d4d0352e9ce5bc1b5c8a8b6cfe59a97c99c9081c6ae
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: ZrO2(l)
     table_id: O-053
@@ -8822,9 +8824,9 @@ rows:
     upstream_source_sha256: c13a6083aed93a2fe25c5d4d0352e9ce5bc1b5c8a8b6cfe59a97c99c9081c6ae
     retrieval_date: '2026-10-12'
     user_agent: openimcc-janaf-vendor/1.0
-    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
-      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
-      continuation is used.
+    branch_decision: Fit the printed JANAF liquid-column thermal nodes directly, including
+      glass-phase cells below the crystal/liquid marker; no supercooled-liquid extrapolation
+      or constant-Cp continuation is used.
   - table: condensate
     species_name: NiO(l)
     table_id: TSIV-2026
@@ -8840,8 +8842,8 @@ rows:
     max_residual_log10_K: 0.000200571591865207
     flags: [supercooled TSIV liquid branch below 2228 K, caller-supplied parent activity; no activity model]
     uncertainty_band:
-      kind: TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate
-      values_J_per_mol: {1200: 792, 1500: 1350, 1800: 2052, 2000: 2600, 2228: 4775.9408}
+      kind: maximum envelope of TSIV Phi uncertainty (linearly interpolated between stated knots and multiplied by T) and the estimated ±5 kJ/mol fusion-enthalpy contribution dG = dH_fus(1 − T/Tm) below Tm; max avoids an unsupported independence assumption; formation-anchor uncertainty is separate
+      values_J_per_mol: {1200: 2307.002, 1500: 1633.752, 1800: 2052, 2000: 2600, 2228: 4775.9408}
     source:
       citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 2026, NiO(cr,l)
       source_record: TSIV-2026
@@ -8890,7 +8892,7 @@ rows:
     max_residual_log10_K: 0.000122840751112864
     flags: [supercooled TSIV liquid branch below 2090 K, caller-supplied parent activity; no activity model]
     uncertainty_band:
-      kind: TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate
+      kind: TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate; the estimated 40 kJ/mol fusion enthalpy has no stated numeric uncertainty, so no fusion term is added
       values_J_per_mol: {1200: 792, 1500: 1350, 1800: 2052, 2000: 2600, 2090: 3412.97}
     source:
       citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1334, CoO(cr,l)
@@ -8915,7 +8917,7 @@ rows:
     max_residual_log10_K: 1.26493985794506e-05
     flags: [estimated fusion enthalpy and liquid heat capacity from TSIV, caller-supplied parent activity; no activity model]
     uncertainty_band:
-      kind: TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate
+      kind: TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate; the estimated 40 kJ/mol fusion enthalpy has no stated numeric uncertainty, so no fusion term is added
       values_J_per_mol: {2090: 3412.97, 2500: 7875, 3000: 15000}
     source:
       citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1334, CoO(cr,l)
@@ -9066,7 +9068,7 @@ rows:
     uncertainty_band:
       kind: measured_G_app_difference_from_Pankratz_Bulletin_672
       comparison_record: data-src/published-thermo/nio-bulletin-672.json
-      method: absolute NASA minus Bulletin 672 Gibbs-energy difference; held at the last measured difference above the comparison limit
+      method: absolute NASA minus Bulletin 672 Gibbs-energy difference at common source knots; above the comparison limit, recompute the gap from both records at the last common measured temperature and hold that result
       values_J_per_mol: {1500: 6992.960, 1800: 12041.666, 2000: 15492.217, 2500: 15492.217, 3000: 15492.217}
     source_data: true
   - table: gas

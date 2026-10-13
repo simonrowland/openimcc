@@ -2698,8 +2698,20 @@ def test_nickel_cobalt_tsiv_liquid_fits_each_printed_node() -> None:
                     else (temperature - lower) / (upper - lower)
                 )
                 sigma = low_sigma + fraction * (high_sigma - low_sigma)
+                fusion_band = 0.0
+                if species == "NiO(l)" and interval_start < melt_k:
+                    fusion = source["fusion_enthalpy_kj_mol"]
+                    assert fusion["uncertainty"] == 5.0
+                    fusion_band = (
+                        float(fusion["uncertainty"])
+                        * 1000.0
+                        * (1.0 - temperature / melt_k)
+                    )
+                    assert "maximum" in band["kind"]
+                elif species == "CoO(l)":
+                    assert "no stated numeric uncertainty" in band["kind"]
                 assert band_values[temperature] == pytest.approx(
-                    temperature * sigma, abs=1.0e-9
+                    max(temperature * sigma, fusion_band), abs=0.001
                 )
 
 
@@ -3022,20 +3034,24 @@ def test_nio_gas_uncertainty_band_recomputes_from_bulletin_and_nasa() -> None:
         band = records[interval]["uncertainty_band"]["values_J_per_mol"]
         assert tuple(map(int, band)) == temperatures
         for temperature in temperatures:
-            if temperature <= 2000:
-                node = next(row for row in bulletin["nodes"] if row[0] == temperature)
-                bulletin_g = (
-                    float(bulletin["formation_enthalpy_298_kcal_mol"]) * 4184.0
-                    + float(node[3]) * 4184.0
-                    - temperature * float(node[2]) * 4.184
-                )
-            else:
-                bulletin_g = None
-            nasa_properties = build_gas_tables._nasa7_properties(nasa, temperature)
+            comparison_temperature = min(temperature, 2000)
+            node = next(
+                row for row in bulletin["nodes"]
+                if row[0] == comparison_temperature
+            )
+            bulletin_g = (
+                float(bulletin["formation_enthalpy_298_kcal_mol"]) * 4184.0
+                + float(node[3]) * 4184.0
+                - comparison_temperature * float(node[2]) * 4.184
+            )
+            nasa_properties = build_gas_tables._nasa7_properties(
+                nasa, comparison_temperature
+            )
             nasa_g = float(nasa["delta_f_H_298_15"]["value"]) + (
-                R_J_MOL_K * temperature * nasa_properties["h_rt"] - nasa_h298
-            ) - temperature * R_J_MOL_K * nasa_properties["s_R"]
-            gap = abs(nasa_g - bulletin_g) if bulletin_g is not None else 15492.217
+                R_J_MOL_K * comparison_temperature * nasa_properties["h_rt"]
+                - nasa_h298
+            ) - comparison_temperature * R_J_MOL_K * nasa_properties["s_R"]
+            gap = abs(nasa_g - bulletin_g)
             assert band[temperature] == pytest.approx(gap, abs=0.001)
 
 
@@ -3741,7 +3757,9 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
             else:
                 assert fitted_k / saha_k == pytest.approx(1.0, rel=0.02)
         elif element in {"Ni", "Co"}:
-            # Preserve the measured JANAF-to-NIST ionization comparison.
+            # Preserve the measured JANAF-to-NIST ionization comparison. Ni's
+            # 11.759 kJ/mol enthalpy excess and the inferred 51.8 J/(mol K)
+            # entropy contribution both matter to its large source ratio.
             # These are source offsets, not fit residuals or adjustments.
             expected = {
                 "Ni": {1500.0: 165.8964143, 2500.0: 259.9036526},
