@@ -302,6 +302,16 @@ source_notes:
         row is indexed; TSIV Table 1436 supplies MnO(g). MnO(l) is built by the
         same liquid_from_solid construction and input record as the redox pack,
         using the TSIV Table 1435 crystal function and measured melting point.
+      Ni: >-
+        Ni(g) and Ni+(g) use JANAF. NiO(l) uses the phase-paired estimated
+        liquid branch in TSIV Volume IV Table 2026 (tier 3), with the source's
+        stated Phi uncertainty; below 2228 K the same branch is labelled as
+        supercooled liquid. NiO activity is caller-supplied.
+      Co: >-
+        Co(g) and Co+(g) use JANAF. CoO(l) uses the phase-paired estimated
+        liquid branch in TSIV Volume IV Table 1334 (tier 3), with the source's
+        stated Phi uncertainty; below 2090 K the same branch is labelled as
+        supercooled liquid. CoO activity is caller-supplied.
       Zn: >-
         JANAF Zn(g), Zn+(g), and Zn-(g) rows are retained. The NASA Glenn Zn
         atom and cation cards are comparison-only; their G_app differences are
@@ -8761,6 +8771,226 @@ rows:
     branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
       supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
       continuation is used.
+  - table: condensate
+    species_name: NiO(l)
+    table_id: TSIV-2026
+    runtime_ref: TSIV-2026-SC-2228
+    source_path: data-src/published-thermo/tsiv-table-2026.json
+    source_sha256: 80123735094ca6c9d309953d094a4ad6f23345011a7cba7f18496d5147ce638b
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K: [1200, 2228]
+    source_fit_range_K: [1200, 2228]
+    max_residual_J_per_mol: 6.18669757677708
+    max_residual_log10_K: 0.000200571591865207
+    flags: [supercooled TSIV liquid branch below 2228 K, caller-supplied parent activity; no activity model]
+    uncertainty_band:
+      kind: TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate
+      values_J_per_mol: {1200: 792, 1500: 1350, 1800: 2052, 2000: 2600, 2228: 4775.9408}
+    source:
+      citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 2026, NiO(cr,l)
+      source_record: TSIV-2026
+      source_locator: Volume IV, Table 2026
+      source_url: https://www.chem.msu.ru/rus/tsiv/Ni/print-NiO_c.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Ni/print-NiO_c.html
+    source_locator: Volume IV, Table 2026
+    source_data: false
+  - table: condensate
+    species_name: NiO(l)
+    table_id: TSIV-2026
+    runtime_ref: TSIV-2026
+    source_path: data-src/published-thermo/tsiv-table-2026.json
+    source_sha256: 80123735094ca6c9d309953d094a4ad6f23345011a7cba7f18496d5147ce638b
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K: [2228, 3000]
+    source_fit_range_K: [2228, 3000]
+    max_residual_J_per_mol: 0.223964988370426
+    max_residual_log10_K: 4.52861745710443e-06
+    flags: [estimated fusion enthalpy and liquid heat capacity from TSIV, caller-supplied parent activity; no activity model]
+    uncertainty_band:
+      kind: TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate
+      values_J_per_mol: {2228: 4775.9408, 2500: 7875, 3000: 15000}
+    source:
+      citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 2026, NiO(cr,l)
+      source_record: TSIV-2026
+      source_locator: Volume IV, Table 2026
+      source_url: https://www.chem.msu.ru/rus/tsiv/Ni/print-NiO_c.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Ni/print-NiO_c.html
+    source_locator: Volume IV, Table 2026
+    source_data: true
+  - table: condensate
+    species_name: CoO(l)
+    table_id: TSIV-1334
+    runtime_ref: TSIV-1334-SC-2090
+    source_path: data-src/published-thermo/tsiv-table-1334.json
+    source_sha256: 36bc8f5b08f32b99cfd2e82c1d01579b0da607ef05f4af181fdbde1176f62bfb
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K: [1200, 2090]
+    source_fit_range_K: [1200, 2090]
+    max_residual_J_per_mol: 3.87746737326961
+    max_residual_log10_K: 0.000122840751112864
+    flags: [supercooled TSIV liquid branch below 2090 K, caller-supplied parent activity; no activity model]
+    uncertainty_band:
+      kind: TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate
+      values_J_per_mol: {1200: 792, 1500: 1350, 1800: 2052, 2000: 2600, 2090: 3412.97}
+    source:
+      citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1334, CoO(cr,l)
+      source_record: TSIV-1334
+      source_locator: Volume IV, Table 1334
+      source_url: https://www.chem.msu.ru/rus/tsiv/Co/print-CoO_c.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Co/print-CoO_c.html
+    source_locator: Volume IV, Table 1334
+    source_data: false
+  - table: condensate
+    species_name: CoO(l)
+    table_id: TSIV-1334
+    runtime_ref: TSIV-1334
+    source_path: data-src/published-thermo/tsiv-table-1334.json
+    source_sha256: 36bc8f5b08f32b99cfd2e82c1d01579b0da607ef05f4af181fdbde1176f62bfb
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K: [2090, 3000]
+    source_fit_range_K: [2090, 3000]
+    max_residual_J_per_mol: 0.629478044458665
+    max_residual_log10_K: 1.26493985794506e-05
+    flags: [estimated fusion enthalpy and liquid heat capacity from TSIV, caller-supplied parent activity; no activity model]
+    uncertainty_band:
+      kind: TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate
+      values_J_per_mol: {2090: 3412.97, 2500: 7875, 3000: 15000}
+    source:
+      citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1334, CoO(cr,l)
+      source_record: TSIV-1334
+      source_locator: Volume IV, Table 1334
+      source_url: https://www.chem.msu.ru/rus/tsiv/Co/print-CoO_c.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Co/print-CoO_c.html
+    source_locator: Volume IV, Table 1334
+    source_data: true
+  - table: gas
+    species_name: Ni+(g)
+    table_id: Ni-006
+    source_path: data-src/janaf/Ni-006.yaml
+    source_sha256: 734df7632e0bed865057d5dd270a2038e04e1684e4eaa8859bda2a2f84dcca45
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 1
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.23544461966958
+    max_residual_log10_K: 2.48199019019252e-05
+    source_url: https://janaf.nist.gov/tables/Ni-006.html
+    download_url: https://janaf.nist.gov/tables/Ni-006.txt
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Ni+(g)
+    table_id: Ni-006
+    source_path: data-src/janaf/Ni-006.yaml
+    source_sha256: 734df7632e0bed865057d5dd270a2038e04e1684e4eaa8859bda2a2f84dcca45
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 2
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.908463171683252
+    max_residual_log10_K: 4.74523202041009e-05
+    source_url: https://janaf.nist.gov/tables/Ni-006.html
+    download_url: https://janaf.nist.gov/tables/Ni-006.txt
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Ni-(g)
+    table_id: Ni-007
+    source_path: data-src/janaf/Ni-007.yaml
+    source_sha256: 41fe77dc5094420581229357326453c44bac4d8d103dfc006bafea68d00b8f5c
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 1
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.58422371721826
+    max_residual_log10_K: 2.9553478511676e-05
+    source_url: https://janaf.nist.gov/tables/Ni-007.html
+    download_url: https://janaf.nist.gov/tables/Ni-007.txt
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Ni-(g)
+    table_id: Ni-007
+    source_path: data-src/janaf/Ni-007.yaml
+    source_sha256: 41fe77dc5094420581229357326453c44bac4d8d103dfc006bafea68d00b8f5c
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 2
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.834495976334438
+    max_residual_log10_K: 3.65256810318682e-05
+    source_url: https://janaf.nist.gov/tables/Ni-007.html
+    download_url: https://janaf.nist.gov/tables/Ni-007.txt
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Co+(g)
+    table_id: Co-006
+    source_path: data-src/janaf/Co-006.yaml
+    source_sha256: c736fe03b5d54cd1c00e10253bd3be099d649f27908e60396dc353b2dd5c3afb
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 1
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 5.28612474480178
+    max_residual_log10_K: 0.000124536822065442
+    source_url: https://janaf.nist.gov/tables/Co-006.html
+    download_url: https://janaf.nist.gov/tables/Co-006.txt
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Co+(g)
+    table_id: Co-006
+    source_path: data-src/janaf/Co-006.yaml
+    source_sha256: c736fe03b5d54cd1c00e10253bd3be099d649f27908e60396dc353b2dd5c3afb
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 2
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.866498054936528
+    max_residual_log10_K: 3.23288073125693e-05
+    source_url: https://janaf.nist.gov/tables/Co-006.html
+    download_url: https://janaf.nist.gov/tables/Co-006.txt
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Co-(g)
+    table_id: Co-007
+    source_path: data-src/janaf/Co-007.yaml
+    source_sha256: cce89ff7e7e13cfc2e7dd90b754c994252f063e1a3772ff9d1bcc3d22668f0a8
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 1
+    T_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.5693432551343
+    max_residual_log10_K: 2.82663722168849e-05
+    source_url: https://janaf.nist.gov/tables/Co-007.html
+    download_url: https://janaf.nist.gov/tables/Co-007.txt
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+  - table: gas
+    species_name: Co-(g)
+    table_id: Co-007
+    source_path: data-src/janaf/Co-007.yaml
+    source_sha256: cce89ff7e7e13cfc2e7dd90b754c994252f063e1a3772ff9d1bcc3d22668f0a8
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 2
+    T_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.408910572179593
+    max_residual_log10_K: 1.42392529939368e-05
+    source_url: https://janaf.nist.gov/tables/Co-007.html
+    download_url: https://janaf.nist.gov/tables/Co-007.txt
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each

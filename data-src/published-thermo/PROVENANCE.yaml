@@ -33,6 +33,22 @@ records:
     source_locator: Volume V, Table 1603
     tier: 4
     selection_reason: No source-rated ZnO(l) function is available; the published crystal function reaches the estimated fusion range and feeds the required liquid_from_solid construction.
+  - record_id: TSIV-2026
+    path: data-src/published-thermo/tsiv-table-2026.json
+    source_sha256: 80123735094ca6c9d309953d094a4ad6f23345011a7cba7f18496d5147ce638b
+    publication: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 2026, NiO(cr,l)
+    source_url: https://www.chem.msu.ru/rus/tsiv/Ni/print-NiO_c.html
+    source_locator: Volume IV, Table 2026
+    tier: 3
+    selection_reason: The source prints the phase-paired NiO liquid function and stated uncertainty inputs; its direct estimated branch is selected over the tier-4 liquid_from_solid construction.
+  - record_id: TSIV-1334
+    path: data-src/published-thermo/tsiv-table-1334.json
+    source_sha256: 36bc8f5b08f32b99cfd2e82c1d01579b0da607ef05f4af181fdbde1176f62bfb
+    publication: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1334, CoO(cr,l)
+    source_url: https://www.chem.msu.ru/rus/tsiv/Co/print-CoO_c.html
+    source_locator: Volume IV, Table 1334
+    tier: 3
+    selection_reason: The source prints the phase-paired CoO liquid function and stated Phi uncertainty; its direct estimated branch is selected over the tier-4 liquid_from_solid construction.
   - record_id: P672
     path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc

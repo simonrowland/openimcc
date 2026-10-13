@@ -25,7 +25,6 @@ from openimcc.gas import (
     IMCC_GAS_CHANNEL_SPECIES,
     IMCC_GAS_INCOMPLETE_PARENT_SPECIES,
     IMCC_GAS_NO_JANAF_ROWS,
-    IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES,
     IMCC_GAS_UNAVAILABLE_SPECIES,
     IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS,
     IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES,
@@ -1264,16 +1263,6 @@ def test_unavailable_species_ledger_names_the_closing_source(
 ) -> None:
     assert set(IMCC_GAS_NO_JANAF_ROWS) == {"TeO", "AsO"}
     assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
-    assert IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES == {
-        "Ni": (
-            "public pack has Ni(g) but no NiO(g) or NiO(l); "
-            "external pack supplies both"
-        ),
-        "Co": (
-            "public pack has Co(g) but no CoO(g) or CoO(l); "
-            "external pack supplies both"
-        ),
-    }
     assert all(
         source.startswith("needs") or "; needs" in source
         for source in IMCC_GAS_UNAVAILABLE_SPECIES.values()
@@ -1282,7 +1271,7 @@ def test_unavailable_species_ledger_names_the_closing_source(
         f"{species}(g)" not in gas_pack.gas_df.index
         for species in IMCC_GAS_NO_JANAF_ROWS
     )
-    assert {"Mn(g)", "MnO(g)", "Mn+(g)", "Ni(g)", "Co(g)"} <= set(
+    assert {"Mn(g)", "MnO(g)", "Mn+(g)", "Ni(g)", "Ni+(g)", "Ni-(g)", "Co(g)", "Co+(g)", "Co-(g)"} <= set(
         gas_pack.gas_df.index
     )
     assert not {"NiO(g)", "CoO(g)"} & set(gas_pack.gas_df.index)
@@ -1356,7 +1345,7 @@ _TI_CHANNELS = ("Ti", "TiO", "TiO2")
 _CR_CHANNELS = ("Cr", "CrO", "CrO2", "CrO3")
 _VNB_CHANNELS = ("V", "VO", "VO2", "Nb", "NbO", "NbO2")
 _MN_CHANNELS = ("Mn", "MnO")
-_NICO_CHANNELS = ("Ni", "NiO", "Co", "CoO")
+_NICO_CHANNELS = ("Ni", "Co")
 _P_CHANNELS = ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10")
 _S_CHANNELS = (
     "S", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
@@ -1641,48 +1630,19 @@ def test_phosphorus_and_sulfur_channels_are_optional_and_refuse_without_parent(
             )
 
 
-@pytest.fixture
-def synthetic_mnnico_pack(
-    gas_pack: ImccGasDatapack, tmp_path: Path
-) -> ImccGasDatapack:
-    """Synthetic wiring fixture, not thermodynamic data.
-
-    It copies the public Fe(g), FeO(g), and FeO(l) rows under Ni/Co names so
-    the tests exercise optional-channel wiring with an external pack.
-    """
-    gas_df = pd.read_csv(gas_pack.gas_path)
-    oxide_df = pd.read_csv(gas_pack.oxide_path)
-    atomic_species = {f"{gas}(g)" for gas, _parent in _NICO_PARENT_PAIRS}
-    gas_df = gas_df.loc[~gas_df["species_name"].isin(atomic_species)]
-    atomic_gas_template = gas_df.loc[gas_df["species_name"] == "Fe(g)"].iloc[[0]]
-    monoxide_gas_template = gas_df.loc[gas_df["species_name"] == "FeO(g)"].iloc[[0]]
-    oxide_template = oxide_df.loc[oxide_df["species_name"] == "FeO(l)"].iloc[[0]]
-    gas_rows = [
-        atomic_gas_template.assign(species_name=f"{gas}(g)")
-        for gas, _parent in _NICO_PARENT_PAIRS
-    ]
-    gas_rows.extend(
-        monoxide_gas_template.assign(species_name=f"{parent}(g)")
-        for _gas, parent in _NICO_PARENT_PAIRS
-    )
-    oxide_rows = [
-        oxide_template.assign(species_name=f"{parent}(l)")
-        for _gas, parent in _NICO_PARENT_PAIRS
-    ]
-    gas_path = tmp_path / "synthetic-gas.csv"
-    oxide_path = tmp_path / "synthetic-condensate.csv"
-    pd.concat([gas_df, *gas_rows], ignore_index=True).to_csv(gas_path, index=False)
-    pd.concat([oxide_df, *oxide_rows], ignore_index=True).to_csv(
-        oxide_path, index=False
-    )
-    return load_gas_datapack(gas_path=gas_path, oxide_path=oxide_path)
-
-
-def test_public_pack_skips_nico_channels_and_explicit_requests_refuse(
+def test_public_pack_activates_nico_channels_with_caller_parents(
     gas_pack: ImccGasDatapack,
 ) -> None:
     parent_oxides = (*IMCC_PARENT_OXIDES, "NiO", "CoO")
     activities = {name: 1.0 for name in parent_oxides}
+    no_parent = evaluate_gas(
+        _quickstart_activities(2200.0),
+        2200.0,
+        1.0e-10,
+        gas_pack,
+    )
+    assert not set(_NICO_CHANNELS) & set(no_parent)
+
     result = evaluate_gas(
         activities,
         2200.0,
@@ -1690,20 +1650,22 @@ def test_public_pack_skips_nico_channels_and_explicit_requests_refuse(
         gas_pack,
         parent_oxides=parent_oxides,
     )
-    assert not set(_NICO_CHANNELS) & set(result)
+    assert set(_NICO_CHANNELS) <= set(result)
+    assert all(result.provenance_class[name] == "published_fitted" for name in _NICO_CHANNELS)
 
     for gas, parent in _NICO_PARENT_PAIRS:
+        assert f"{parent}(l)" in gas_pack.oxide_df.index
         with pytest.raises(ImccGasSpeciesNotFoundError) as exc:
             evaluate_gas(
-                {parent: 1.0},
+                {},
                 2200.0,
                 1.0e-10,
                 gas_pack,
-                parent_oxides=(parent,),
+                parent_oxides=(),
                 gas_species=(gas,),
             )
         assert exc.value.code == "imcc_gas_species_not_found"
-        assert f"{parent}(l)" in str(exc.value)
+        assert parent in str(exc.value)
 
 
 def test_public_mn_channels_use_the_mno_parent_and_janaf_ion(
@@ -1841,33 +1803,57 @@ def test_mn_evaporation_pressures_match_hand_mass_action_at_2000_k(
     assert result["MnO"] == pytest.approx(expected["MnO"], rel=1.0e-12)
 
 
-def test_external_pack_activates_nico_channels_with_data_free_scaling(
-    synthetic_mnnico_pack: ImccGasDatapack,
+def test_nickel_and_cobalt_evaporation_match_hand_mass_action_at_2000_k(
+    gas_pack: ImccGasDatapack,
 ) -> None:
-    activities = {parent: 1.0 for _gas, parent in _NICO_PARENT_PAIRS}
-    common = {
-        "activities": activities,
-        "T_K": 2200.0,
-        "datapack": synthetic_mnnico_pack,
-        "parent_oxides": tuple(activities),
-        "gas_species": _NICO_CHANNELS,
-        "allow_extrapolation": False,
-    }
-    low_fugacity = evaluate_gas(fO2=1.0e-10, **common)
-    high_fugacity = evaluate_gas(fO2=1.0e-6, **common)
-
-    assert tuple(low_fugacity) == _NICO_CHANNELS
-    assert all(
-        math.isfinite(low_fugacity[name]) and low_fugacity[name] > 0.0
-        for name in _NICO_CHANNELS
+    temperature = 2000.0
+    activity = 1.0e-3
+    fugacity = 1.0e-6
+    parent_oxides = ("NiO", "CoO")
+    activities = {parent: activity for parent in parent_oxides}
+    oxygen_gibbs = _janaf_gibbs(
+        temperature,
+        _nearest_interval_row(
+            gas_pack.gas_df, "O2(g)", temperature, allow_extrapolation=False
+        ),
     )
-    for gas, monoxide in _NICO_PARENT_PAIRS:
-        assert low_fugacity.provenance_class[gas] == "external_datapack"
-        assert low_fugacity.provenance_class[monoxide] == "external_datapack"
-        # MO(l) = M(g) + 1/2 O2: p(M) scales as fO2**(-1/2).
-        assert low_fugacity[gas] / high_fugacity[gas] == pytest.approx(100.0)
-        # MO(l) = MO(g): n_O2 = 0, so its pressure is fO2-independent.
-        assert low_fugacity[monoxide] == high_fugacity[monoxide]
+    expected = {}
+    for element, parent in (("Ni", "NiO"), ("Co", "CoO")):
+        parent_gibbs = _lamor_gibbs(
+            temperature,
+            _nearest_interval_row(
+                gas_pack.oxide_df,
+                f"{parent}(l)",
+                temperature,
+                allow_extrapolation=False,
+            ),
+        )
+        gas_gibbs = _janaf_gibbs(
+            temperature,
+            _nearest_interval_row(
+                gas_pack.gas_df,
+                f"{element}(g)",
+                temperature,
+                allow_extrapolation=False,
+            ),
+        )
+        delta_g = gas_gibbs + 0.5 * oxygen_gibbs - parent_gibbs
+        expected[element] = (
+            activity
+            * math.exp(-delta_g / (R_J_MOL_K * temperature))
+            * fugacity ** -0.5
+        )
+    result = evaluate_gas(
+        activities,
+        temperature,
+        fugacity,
+        gas_pack,
+        parent_oxides=parent_oxides,
+        gas_species=_NICO_CHANNELS,
+        include_ions=False,
+    )
+    assert result["Ni"] == pytest.approx(expected["Ni"], rel=1.0e-12)
+    assert result["Co"] == pytest.approx(expected["Co"], rel=1.0e-12)
 
 
 def test_external_p2o5_row_sets_phosphorus_provenance(

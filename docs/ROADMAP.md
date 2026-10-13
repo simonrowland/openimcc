@@ -41,8 +41,8 @@ screened using their caller-supplied parent activities. Se's positive ion
 source is unavailable, so its C3 screen is declined. B exceeds the threshold when
 its cation and available anions are combined; Cs is also above the threshold.
 Positive molecular ions and nonthermal electrons remain outside this
-calculation. Mn has a public but range-limited MnO(l) parent; Ni and Co still
-need external parent rows. P channels also need an external source-rated
+calculation. Mn has a public but range-limited MnO(l) parent. Ni and Co now
+have public TSIV liquid parents; P channels still need an external source-rated
 P2O5(l) row.
 
 | Element | Status | C1 | C2 | C3 | C4 | Validation | Reason |
@@ -85,8 +85,8 @@ P2O5(l) row.
 | Sn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | SnO(l) is selected over the later-starting SnO2(l) card as the tin parent; neutral Sn gas rows and the parent cover 1200-3000 K; a(SnO) is caller-supplied; the C3 screen at a(SnO)=1e-3 reached 3.515e-08 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
 | Te | gas-partial | no | yes | declined | yes | unvalidated | Te(g), Te2(g), TeO2(g), and the TeO2(l) parent cover 1200-3000 K; TeO2(l) is selected because Bulletin 672 prints a measured liquid branch; a(TeO2) is caller-supplied. This oxide-parent convention does not model telluride dissolution in reduced melts. |
 | In | gas-partial | no | yes | declined | yes | unvalidated | In2O3(l) uses its NASA liquid card from 2186 K with a labelled constant-Cp continuation to 1200 K; InO(g) and In2O(g) are included; a(In2O3) is caller-supplied. In+ is declined because its NASA card gives Kion/Saha ratios of 1.510e28 at 1500 K and 9.143e16 at 2500 K against NIST's 5.78636 eV ionisation energy. |
-| Ni | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Ni(g) has a public row; the NiO gas and NiO liquid parents are absent. |
-| Co | gas-partial | no | yes | not computed: p(E) needs a parent liquid row that is only available from an external private pack | no | unvalidated | Only Co(g) has a public row; the CoO gas and CoO liquid parents are absent. |
+| Ni | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Ni(g), NiO(l), and opt-in Ni+/Ni− cover 1200-3000 K; NiO(l) uses the estimated tier-3 liquid branch from TSIV Volume IV Table 2026, with a supercooled continuation below 2228 K; a(NiO) is caller-supplied; the joint C3 screen used a(NiO)=1e-3 and reached 1.606e-05 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
+| Co | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Co(g), CoO(l), and opt-in Co+/Co− cover 1200-3000 K; CoO(l) uses the estimated tier-3 liquid branch from TSIV Volume IV Table 1334, with a supercooled continuation below 2090 K; a(CoO) is caller-supplied; the joint C3 screen used a(CoO)=1e-3 and reached 3.058e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
 
 The C3 maximum share is the fitted or estimated pressure in the modeled
 charge states divided by total neutral gas pressure carrying that element,
@@ -207,9 +207,10 @@ are fitted from JANAF by the same generator, with maximum residuals of 6.88,
 1.55, 1.30 and 1.41 J/mol respectively (TiO2(l), Cr2O3(l), V2O3(l) and
 NbO2(l)); the Cr2O3(l) residual is 3.52e-5 log10 K. The caller-supplied Cr/V/Nb
 parents remain outside the eight-oxide melt basis.
-Mn(g), Ni(g) and Co(g) are also vendored and fitted. MnO(l) now supplies the
-Mn parent over 1673–2000 K; Ni and Co remain incomplete until their liquid
-parent records are available.
+Mn(g), Ni(g) and Co(g) are also vendored and fitted. MnO(l) supplies the Mn
+parent over 1673–2000 K. NiO(l) and CoO(l) use the published estimated liquid
+branches in TSIV Volume IV Tables 2026 and 1334, with supercooled coverage below
+their melt markers and opt-in Ni+/Ni− and Co+/Co− ion rows.
 `OPENIMCC_VAPOROCK_ROOT` remains an explicit comparison override; its legacy
 condensate table has none of these fitted parent rows, so a default call under
 it omits the Ti, Cr, V and Nb channels.

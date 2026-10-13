@@ -1,0 +1,19 @@
+{
+  "schema_version": "published_thermo_tables.v1",
+  "record_id": "TSIV-2026",
+  "publication": "Gurvich, Veyts and Medvedev, Thermodynamic Properties of Individual Substances, Volume IV, Table 2026, NiO(cr, l).",
+  "source_url": "https://www.chem.msu.ru/rus/tsiv/Ni/print-NiO_c.html",
+  "source_locator": "Volume IV, Table 2026",
+  "accuracy_class": "5-D",
+  "standard_state_reaction": "NiO(cr,l) = Ni(g) + O(g)",
+  "formation_enthalpy_298_kj_mol": {"value": -239.700, "uncertainty": 0.7},
+  "enthalpy_298_minus_H0_kj_mol": 6.736,
+  "entropy_298_j_mol_k": 37.89,
+  "fusion_temperature_K": {"value": 2228.0, "uncertainty": 20.0},
+  "fusion_enthalpy_kj_mol": {"value": 42.0, "uncertainty": 5.0, "estimated": true},
+  "liquid_heat_capacity_j_mol_k": {"value": 67.0, "uncertainty": 10.0, "estimated": true},
+  "liquid_F_coefficients": [203.332549055, 67.0, -1.1878],
+  "liquid_F_form": "F(T)=c0+c1*ln(x)+c2/x, x=T*1e-4; H(T)-H(0)=c1*T-c2*1e4 J/mol",
+  "phi_uncertainty_j_mol_k": {"298.15": 0.1, "1000": 0.5, "2000": 1.3, "3000": 5.0, "4000": 8.0},
+  "source_note": "The source labels the melt enthalpy and liquid heat capacity as estimates. The liquid branch is the selected phase-paired source function; its constant-Cp continuation below 2228 K represents supercooled NiO(l). F(T) values can be checked against the table's printed Phi column using the stated equation. Only thermodynamic values and metadata needed for verification are transcribed; page prose is not mirrored."
+}

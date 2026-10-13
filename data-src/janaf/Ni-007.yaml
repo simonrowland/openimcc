@@ -1,0 +1,4728 @@
+schema_version: literature_compilation.v1
+source_id: nist-janaf-4th
+source:
+  citation: Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition, J. Phys. Chem. Ref. Data Monograph 9 (1998)
+  database: NIST Standard Reference Database 13
+  doi: 10.18434/T42S31
+  url: https://janaf.nist.gov/
+  last_data_update: 1998
+  licence: 'Quoted from NIST SRD 13 (https://data.nist.gov/od/id/ECBCC1C1301D2ED9E04306570681B10735): "These data are public."
+    Quoted from https://www.nist.gov/copyrights-disclaimers: "With the exception of material marked as copyrighted, information
+    presented on NIST sites are considered public information and may be distributed or copied."'
+compilation_role:
+  kind: assessed_thermodynamic_functions
+  engine_reference_input: true
+  validation_measurement: false
+  scoring_eligible: false
+  battery_refusal: gibbs_table_not_runtime_observable
+  circularity_warning: Do not validate an engine against a compilation it consumes.
+extraction:
+  method: machine parse of NIST tab-delimited table download; source bytes cached unchanged
+  date: '2026-09-06'
+  user_agent: openimcc-janaf-vendor/1.0
+  source_sha256: 21d9c31d3edbc49a6440e18369022a0e30bdd83209c38056862d93ddc84dc82e
+  review_status: machine_transcribed_unreviewed
+table:
+  table_id: Ni-007
+  url: https://janaf.nist.gov/tables/Ni-007.html
+  download_url: https://janaf.nist.gov/tables/Ni-007.txt
+  index_entry:
+    formula: Ni-
+    formula_as_published: Ni-
+    formula_normalised: Ni
+    charge: -1
+    name: Nickel, Ion
+    state: g
+  title_as_published: Nickel, Ion (Ni-)  |  Ni1-(g)
+  standard_state_as_published: p° = 0.1 MPa (as published by JANAF)
+  units_as_published:
+    temperature: K
+    heat_capacity: J K^-1 mol^-1
+    entropy: J K^-1 mol^-1
+    negative_gibbs_enthalpy_function: J K^-1 mol^-1
+    enthalpy_increment: kJ mol^-1
+    formation_enthalpy: kJ mol^-1
+    formation_gibbs_energy: kJ mol^-1
+    log10_formation_equilibrium_constant: dimensionless
+  values:
+  - temperature:
+      value: 0.0
+      as_published: '0'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '0'
+        column: T(K)
+    heat_capacity:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '0'
+        column: Cp
+    entropy:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '0'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: null
+      as_published: INFINITE
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '0'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -6.207
+      as_published: '-6.207'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '0'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 316.54
+      as_published: '316.540'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '0'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '0'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '0'
+        column: log Kf
+  - temperature:
+      value: 100.0
+      as_published: '100'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '100'
+        column: T(K)
+    heat_capacity:
+      value: 20.786
+      as_published: '20.786'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '100'
+        column: Cp
+    entropy:
+      value: 151.833
+      as_published: '151.833'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 193.117
+      as_published: '193.117'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -4.128
+      as_published: '-4.128'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '100'
+        column: log Kf
+  - temperature:
+      value: 200.0
+      as_published: '200'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '200'
+        column: T(K)
+    heat_capacity:
+      value: 20.802
+      as_published: '20.802'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '200'
+        column: Cp
+    entropy:
+      value: 166.242
+      as_published: '166.242'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 176.49
+      as_published: '176.490'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -2.05
+      as_published: '-2.050'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '200'
+        column: log Kf
+  - temperature:
+      value: 250.0
+      as_published: '250'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '250'
+        column: T(K)
+    heat_capacity:
+      value: 20.87
+      as_published: '20.870'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '250'
+        column: Cp
+    entropy:
+      value: 170.89
+      as_published: '170.890'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '250'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 174.922
+      as_published: '174.922'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '250'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: -1.008
+      as_published: '-1.008'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '250'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '250'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '250'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: null
+      as_published: ''
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '250'
+        column: log Kf
+  - temperature:
+      value: 298.15
+      as_published: '298.15'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '298.15'
+        column: T(K)
+    heat_capacity:
+      value: 21.017
+      as_published: '21.017'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '298.15'
+        column: Cp
+    entropy:
+      value: 174.577
+      as_published: '174.577'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '298.15'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 174.577
+      as_published: '174.577'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '298.15'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '298.15'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 311.764
+      as_published: '311.764'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '298.15'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 274.874
+      as_published: '274.874'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '298.15'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -48.157
+      as_published: '-48.157'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '298.15'
+        column: log Kf
+  - temperature:
+      value: 300.0
+      as_published: '300'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '300'
+        column: T(K)
+    heat_capacity:
+      value: 21.025
+      as_published: '21.025'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '300'
+        column: Cp
+    entropy:
+      value: 174.707
+      as_published: '174.707'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 174.578
+      as_published: '174.578'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 0.039
+      as_published: '0.039'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 311.716
+      as_published: '311.716'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 274.646
+      as_published: '274.646'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -47.82
+      as_published: '-47.820'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '300'
+        column: log Kf
+  - temperature:
+      value: 350.0
+      as_published: '350'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '350'
+        column: T(K)
+    heat_capacity:
+      value: 21.265
+      as_published: '21.265'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '350'
+        column: Cp
+    entropy:
+      value: 177.965
+      as_published: '177.965'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '350'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 174.834
+      as_published: '174.834'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '350'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 1.096
+      as_published: '1.096'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '350'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 310.401
+      as_published: '310.401'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '350'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 268.57
+      as_published: '268.570'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '350'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -40.082
+      as_published: '-40.082'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '350'
+        column: log Kf
+  - temperature:
+      value: 400.0
+      as_published: '400'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '400'
+        column: T(K)
+    heat_capacity:
+      value: 21.564
+      as_published: '21.564'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '400'
+        column: Cp
+    entropy:
+      value: 180.824
+      as_published: '180.824'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 175.408
+      as_published: '175.408'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 2.166
+      as_published: '2.166'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 309.037
+      as_published: '309.037'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 262.687
+      as_published: '262.687'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -34.303
+      as_published: '-34.303'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '400'
+        column: log Kf
+  - temperature:
+      value: 450.0
+      as_published: '450'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '450'
+        column: T(K)
+    heat_capacity:
+      value: 21.886
+      as_published: '21.886'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '450'
+        column: Cp
+    entropy:
+      value: 183.382
+      as_published: '183.382'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '450'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 176.154
+      as_published: '176.154'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '450'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 3.253
+      as_published: '3.253'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '450'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 307.632
+      as_published: '307.632'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '450'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 256.977
+      as_published: '256.977'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '450'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -29.829
+      as_published: '-29.829'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '450'
+        column: log Kf
+  - temperature:
+      value: 500.0
+      as_published: '500'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '500'
+        column: T(K)
+    heat_capacity:
+      value: 22.202
+      as_published: '22.202'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '500'
+        column: Cp
+    entropy:
+      value: 185.705
+      as_published: '185.705'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 176.995
+      as_published: '176.995'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 4.355
+      as_published: '4.355'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 306.18
+      as_published: '306.180'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 251.427
+      as_published: '251.427'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -26.266
+      as_published: '-26.266'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '500'
+        column: log Kf
+  - temperature:
+      value: 600.0
+      as_published: '600'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '600'
+        column: T(K)
+    heat_capacity:
+      value: 22.737
+      as_published: '22.737'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '600'
+        column: Cp
+    entropy:
+      value: 189.802
+      as_published: '189.802'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 178.797
+      as_published: '178.797'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 6.603
+      as_published: '6.603'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 303.071
+      as_published: '303.071'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 240.763
+      as_published: '240.763'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -20.96
+      as_published: '-20.960'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '600'
+        column: log Kf
+  - temperature:
+      value: 700.0
+      as_published: '700'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '700'
+        column: T(K)
+    heat_capacity:
+      value: 23.099
+      as_published: '23.099'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '700'
+        column: Cp
+    entropy:
+      value: 193.337
+      as_published: '193.337'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 180.627
+      as_published: '180.627'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 8.896
+      as_published: '8.896'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 299.963
+      as_published: '299.963'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 230.634
+      as_published: '230.634'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -17.21
+      as_published: '-17.210'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '700'
+        column: log Kf
+  - temperature:
+      value: 800.0
+      as_published: '800'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '800'
+        column: T(K)
+    heat_capacity:
+      value: 23.297
+      as_published: '23.297'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '800'
+        column: Cp
+    entropy:
+      value: 196.436
+      as_published: '196.436'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 182.414
+      as_published: '182.414'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 11.217
+      as_published: '11.217'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 297.119
+      as_published: '297.119'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 220.923
+      as_published: '220.923'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -14.425
+      as_published: '-14.425'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '800'
+        column: log Kf
+  - temperature:
+      value: 900.0
+      as_published: '900'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '900'
+        column: T(K)
+    heat_capacity:
+      value: 23.367
+      as_published: '23.367'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '900'
+        column: Cp
+    entropy:
+      value: 199.185
+      as_published: '199.185'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 184.127
+      as_published: '184.127'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 13.552
+      as_published: '13.552'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 294.245
+      as_published: '294.245'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 211.571
+      as_published: '211.571'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -12.279
+      as_published: '-12.279'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '900'
+        column: log Kf
+  - temperature:
+      value: 1000.0
+      as_published: '1000'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1000'
+        column: T(K)
+    heat_capacity:
+      value: 23.348
+      as_published: '23.348'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1000'
+        column: Cp
+    entropy:
+      value: 201.646
+      as_published: '201.646'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 185.758
+      as_published: '185.758'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 15.888
+      as_published: '15.888'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 291.313
+      as_published: '291.313'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 202.542
+      as_published: '202.542'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -10.58
+      as_published: '-10.580'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1000'
+        column: log Kf
+  - temperature:
+      value: 1100.0
+      as_published: '1100'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1100'
+        column: T(K)
+    heat_capacity:
+      value: 23.274
+      as_published: '23.274'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1100'
+        column: Cp
+    entropy:
+      value: 203.869
+      as_published: '203.869'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 187.305
+      as_published: '187.305'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 18.219
+      as_published: '18.219'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 288.309
+      as_published: '288.309'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 193.809
+      as_published: '193.809'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -9.203
+      as_published: '-9.203'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1100'
+        column: log Kf
+  - temperature:
+      value: 1200.0
+      as_published: '1200'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1200'
+        column: T(K)
+    heat_capacity:
+      value: 23.165
+      as_published: '23.165'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1200'
+        column: Cp
+    entropy:
+      value: 205.889
+      as_published: '205.889'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 188.771
+      as_published: '188.771'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 20.541
+      as_published: '20.541'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 285.223
+      as_published: '285.223'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 185.354
+      as_published: '185.354'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -8.068
+      as_published: '-8.068'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1200'
+        column: log Kf
+  - temperature:
+      value: 1300.0
+      as_published: '1300'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1300'
+        column: T(K)
+    heat_capacity:
+      value: 23.04
+      as_published: '23.040'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1300'
+        column: Cp
+    entropy:
+      value: 207.738
+      as_published: '207.738'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 190.16
+      as_published: '190.160'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 22.852
+      as_published: '22.852'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 282.045
+      as_published: '282.045'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 177.16
+      as_published: '177.160'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -7.118
+      as_published: '-7.118'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1300'
+        column: log Kf
+  - temperature:
+      value: 1400.0
+      as_published: '1400'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1400'
+        column: T(K)
+    heat_capacity:
+      value: 22.908
+      as_published: '22.908'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1400'
+        column: Cp
+    entropy:
+      value: 209.441
+      as_published: '209.441'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 191.477
+      as_published: '191.477'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 25.149
+      as_published: '25.149'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 278.769
+      as_published: '278.769'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 169.214
+      as_published: '169.214'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -6.313
+      as_published: '-6.313'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1400'
+        column: log Kf
+  - temperature:
+      value: 1500.0
+      as_published: '1500'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1500'
+        column: T(K)
+    heat_capacity:
+      value: 22.776
+      as_published: '22.776'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1500'
+        column: Cp
+    entropy:
+      value: 211.017
+      as_published: '211.017'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 192.728
+      as_published: '192.728'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 27.433
+      as_published: '27.433'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 275.389
+      as_published: '275.389'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 161.506
+      as_published: '161.506'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -5.624
+      as_published: '-5.624'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1500'
+        column: log Kf
+  - temperature:
+      value: 1600.0
+      as_published: '1600'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1600'
+        column: T(K)
+    heat_capacity:
+      value: 22.648
+      as_published: '22.648'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1600'
+        column: Cp
+    entropy:
+      value: 212.483
+      as_published: '212.483'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 193.918
+      as_published: '193.918'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 29.705
+      as_published: '29.705'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 271.902
+      as_published: '271.902'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 154.027
+      as_published: '154.027'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -5.028
+      as_published: '-5.028'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1600'
+        column: log Kf
+  - temperature:
+      value: 1700.0
+      as_published: '1700'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1700'
+        column: T(K)
+    heat_capacity:
+      value: 22.526
+      as_published: '22.526'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1700'
+        column: Cp
+    entropy:
+      value: 213.852
+      as_published: '213.852'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 195.05
+      as_published: '195.050'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 31.963
+      as_published: '31.963'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 268.302
+      as_published: '268.302'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 146.769
+      as_published: '146.769'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.51
+      as_published: '-4.510'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1700'
+        column: log Kf
+  - temperature:
+      value: 1800.0
+      as_published: '1800'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1800'
+        column: T(K)
+    heat_capacity:
+      value: 22.411
+      as_published: '22.411'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1800'
+        column: Cp
+    entropy:
+      value: 215.136
+      as_published: '215.136'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 196.131
+      as_published: '196.131'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 34.21
+      as_published: '34.210'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 247.439
+      as_published: '247.439'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 140.441
+      as_published: '140.441'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -4.076
+      as_published: '-4.076'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1800'
+        column: log Kf
+  - temperature:
+      value: 1900.0
+      as_published: '1900'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1900'
+        column: T(K)
+    heat_capacity:
+      value: 22.304
+      as_published: '22.304'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1900'
+        column: Cp
+    entropy:
+      value: 216.345
+      as_published: '216.345'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 197.163
+      as_published: '197.163'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 36.446
+      as_published: '36.446'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 243.705
+      as_published: '243.705'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 134.599
+      as_published: '134.599'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.7
+      as_published: '-3.700'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '1900'
+        column: log Kf
+  - temperature:
+      value: 2000.0
+      as_published: '2000'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2000'
+        column: T(K)
+    heat_capacity:
+      value: 22.206
+      as_published: '22.206'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2000'
+        column: Cp
+    entropy:
+      value: 217.487
+      as_published: '217.487'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 198.151
+      as_published: '198.151'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 38.671
+      as_published: '38.671'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 239.961
+      as_published: '239.961'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 128.953
+      as_published: '128.953'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.368
+      as_published: '-3.368'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2000'
+        column: log Kf
+  - temperature:
+      value: 2100.0
+      as_published: '2100'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2100'
+        column: T(K)
+    heat_capacity:
+      value: 22.114
+      as_published: '22.114'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2100'
+        column: Cp
+    entropy:
+      value: 218.568
+      as_published: '218.568'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 199.098
+      as_published: '199.098'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 40.887
+      as_published: '40.887'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 236.207
+      as_published: '236.207'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 123.495
+      as_published: '123.495'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -3.072
+      as_published: '-3.072'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2100'
+        column: log Kf
+  - temperature:
+      value: 2200.0
+      as_published: '2200'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2200'
+        column: T(K)
+    heat_capacity:
+      value: 22.03
+      as_published: '22.030'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2200'
+        column: Cp
+    entropy:
+      value: 219.595
+      as_published: '219.595'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 200.006
+      as_published: '200.006'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 43.094
+      as_published: '43.094'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 232.444
+      as_published: '232.444'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 118.216
+      as_published: '118.216'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.807
+      as_published: '-2.807'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2200'
+        column: log Kf
+  - temperature:
+      value: 2300.0
+      as_published: '2300'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2300'
+        column: T(K)
+    heat_capacity:
+      value: 21.952
+      as_published: '21.952'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2300'
+        column: Cp
+    entropy:
+      value: 220.572
+      as_published: '220.572'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 200.88
+      as_published: '200.880'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 45.293
+      as_published: '45.293'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 228.674
+      as_published: '228.674'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 113.108
+      as_published: '113.108'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.569
+      as_published: '-2.569'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2300'
+        column: log Kf
+  - temperature:
+      value: 2400.0
+      as_published: '2400'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2400'
+        column: T(K)
+    heat_capacity:
+      value: 21.881
+      as_published: '21.881'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2400'
+        column: Cp
+    entropy:
+      value: 221.505
+      as_published: '221.505'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 201.72
+      as_published: '201.720'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 47.485
+      as_published: '47.485'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 224.896
+      as_published: '224.896'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 108.165
+      as_published: '108.165'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.354
+      as_published: '-2.354'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2400'
+        column: log Kf
+  - temperature:
+      value: 2500.0
+      as_published: '2500'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2500'
+        column: T(K)
+    heat_capacity:
+      value: 21.815
+      as_published: '21.815'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2500'
+        column: Cp
+    entropy:
+      value: 222.397
+      as_published: '222.397'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 202.529
+      as_published: '202.529'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 49.67
+      as_published: '49.670'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 221.111
+      as_published: '221.111'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 103.379
+      as_published: '103.379'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.16
+      as_published: '-2.160'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2500'
+        column: log Kf
+  - temperature:
+      value: 2600.0
+      as_published: '2600'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2600'
+        column: T(K)
+    heat_capacity:
+      value: 21.755
+      as_published: '21.755'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2600'
+        column: Cp
+    entropy:
+      value: 223.251
+      as_published: '223.251'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 203.31
+      as_published: '203.310'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 51.848
+      as_published: '51.848'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 217.32
+      as_published: '217.320'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 98.744
+      as_published: '98.744'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.984
+      as_published: '-1.984'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2600'
+        column: log Kf
+  - temperature:
+      value: 2700.0
+      as_published: '2700'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2700'
+        column: T(K)
+    heat_capacity:
+      value: 21.699
+      as_published: '21.699'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2700'
+        column: Cp
+    entropy:
+      value: 224.071
+      as_published: '224.071'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 204.064
+      as_published: '204.064'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 54.021
+      as_published: '54.021'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 213.522
+      as_published: '213.522'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 94.256
+      as_published: '94.256'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.823
+      as_published: '-1.823'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2700'
+        column: log Kf
+  - temperature:
+      value: 2800.0
+      as_published: '2800'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2800'
+        column: T(K)
+    heat_capacity:
+      value: 21.648
+      as_published: '21.648'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2800'
+        column: Cp
+    entropy:
+      value: 224.86
+      as_published: '224.860'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 204.792
+      as_published: '204.792'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 56.188
+      as_published: '56.188'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 209.72
+      as_published: '209.720'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 89.908
+      as_published: '89.908'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.677
+      as_published: '-1.677'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2800'
+        column: log Kf
+  - temperature:
+      value: 2900.0
+      as_published: '2900'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2900'
+        column: T(K)
+    heat_capacity:
+      value: 21.6
+      as_published: '21.600'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2900'
+        column: Cp
+    entropy:
+      value: 225.618
+      as_published: '225.618'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 205.497
+      as_published: '205.497'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 58.35
+      as_published: '58.350'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 205.913
+      as_published: '205.913'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 85.696
+      as_published: '85.696'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.544
+      as_published: '-1.544'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '2900'
+        column: log Kf
+  - temperature:
+      value: 3000.0
+      as_published: '3000'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3000'
+        column: T(K)
+    heat_capacity:
+      value: 21.556
+      as_published: '21.556'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3000'
+        column: Cp
+    entropy:
+      value: 226.35
+      as_published: '226.350'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 206.18
+      as_published: '206.180'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 60.508
+      as_published: '60.508'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 202.101
+      as_published: '202.101'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 81.616
+      as_published: '81.616'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.421
+      as_published: '-1.421'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3000'
+        column: log Kf
+  - temperature:
+      value: 3100.0
+      as_published: '3100'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3100'
+        column: T(K)
+    heat_capacity:
+      value: 21.516
+      as_published: '21.516'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3100'
+        column: Cp
+    entropy:
+      value: 227.056
+      as_published: '227.056'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 206.843
+      as_published: '206.843'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 62.662
+      as_published: '62.662'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: 198.285
+      as_published: '198.285'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 77.662
+      as_published: '77.662'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.309
+      as_published: '-1.309'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3100'
+        column: log Kf
+  - temperature:
+      value: 3200.0
+      as_published: '3200'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3200'
+        column: T(K)
+    heat_capacity:
+      value: 21.478
+      as_published: '21.478'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3200'
+        column: Cp
+    entropy:
+      value: 227.739
+      as_published: '227.739'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 207.485
+      as_published: '207.485'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 64.811
+      as_published: '64.811'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -182.37
+      as_published: '-182.370'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 79.021
+      as_published: '79.021'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.29
+      as_published: '-1.290'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3200'
+        column: log Kf
+  - temperature:
+      value: 3300.0
+      as_published: '3300'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3300'
+        column: T(K)
+    heat_capacity:
+      value: 21.443
+      as_published: '21.443'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3300'
+        column: Cp
+    entropy:
+      value: 228.399
+      as_published: '228.399'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 208.109
+      as_published: '208.109'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 66.958
+      as_published: '66.958'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -184.541
+      as_published: '-184.541'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 87.223
+      as_published: '87.223'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.381
+      as_published: '-1.381'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3300'
+        column: log Kf
+  - temperature:
+      value: 3400.0
+      as_published: '3400'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3400'
+        column: T(K)
+    heat_capacity:
+      value: 21.411
+      as_published: '21.411'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3400'
+        column: Cp
+    entropy:
+      value: 229.039
+      as_published: '229.039'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 208.715
+      as_published: '208.715'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 69.1
+      as_published: '69.100'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -186.714
+      as_published: '-186.714'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 95.491
+      as_published: '95.491'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.467
+      as_published: '-1.467'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3400'
+        column: log Kf
+  - temperature:
+      value: 3500.0
+      as_published: '3500'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3500'
+        column: T(K)
+    heat_capacity:
+      value: 21.38
+      as_published: '21.380'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3500'
+        column: Cp
+    entropy:
+      value: 229.659
+      as_published: '229.659'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 209.305
+      as_published: '209.305'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 71.24
+      as_published: '71.240'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -188.889
+      as_published: '-188.889'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 103.823
+      as_published: '103.823'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.549
+      as_published: '-1.549'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3500'
+        column: log Kf
+  - temperature:
+      value: 3600.0
+      as_published: '3600'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3600'
+        column: T(K)
+    heat_capacity:
+      value: 21.352
+      as_published: '21.352'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3600'
+        column: Cp
+    entropy:
+      value: 230.261
+      as_published: '230.261'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 209.878
+      as_published: '209.878'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 73.376
+      as_published: '73.376'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -191.069
+      as_published: '-191.069'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 112.217
+      as_published: '112.217'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.628
+      as_published: '-1.628'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3600'
+        column: log Kf
+  - temperature:
+      value: 3700.0
+      as_published: '3700'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3700'
+        column: T(K)
+    heat_capacity:
+      value: 21.326
+      as_published: '21.326'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3700'
+        column: Cp
+    entropy:
+      value: 230.845
+      as_published: '230.845'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 210.437
+      as_published: '210.437'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 75.51
+      as_published: '75.510'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -193.252
+      as_published: '-193.252'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 120.671
+      as_published: '120.671'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.704
+      as_published: '-1.704'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3700'
+        column: log Kf
+  - temperature:
+      value: 3800.0
+      as_published: '3800'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3800'
+        column: T(K)
+    heat_capacity:
+      value: 21.301
+      as_published: '21.301'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3800'
+        column: Cp
+    entropy:
+      value: 231.414
+      as_published: '231.414'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 210.982
+      as_published: '210.982'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 77.642
+      as_published: '77.642'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -195.44
+      as_published: '-195.440'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 129.185
+      as_published: '129.185'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.776
+      as_published: '-1.776'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3800'
+        column: log Kf
+  - temperature:
+      value: 3900.0
+      as_published: '3900'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3900'
+        column: T(K)
+    heat_capacity:
+      value: 21.278
+      as_published: '21.278'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3900'
+        column: Cp
+    entropy:
+      value: 231.967
+      as_published: '231.967'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 211.513
+      as_published: '211.513'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 79.77
+      as_published: '79.770'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -197.633
+      as_published: '-197.633'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 137.756
+      as_published: '137.756'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.845
+      as_published: '-1.845'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '3900'
+        column: log Kf
+  - temperature:
+      value: 4000.0
+      as_published: '4000'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4000'
+        column: T(K)
+    heat_capacity:
+      value: 21.257
+      as_published: '21.257'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4000'
+        column: Cp
+    entropy:
+      value: 232.505
+      as_published: '232.505'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 212.031
+      as_published: '212.031'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 81.897
+      as_published: '81.897'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -199.833
+      as_published: '-199.833'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 146.384
+      as_published: '146.384'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.912
+      as_published: '-1.912'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4000'
+        column: log Kf
+  - temperature:
+      value: 4100.0
+      as_published: '4100'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4100'
+        column: T(K)
+    heat_capacity:
+      value: 21.237
+      as_published: '21.237'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4100'
+        column: Cp
+    entropy:
+      value: 233.03
+      as_published: '233.030'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 212.537
+      as_published: '212.537'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 84.022
+      as_published: '84.022'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -202.039
+      as_published: '-202.039'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 155.067
+      as_published: '155.067'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -1.976
+      as_published: '-1.976'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4100'
+        column: log Kf
+  - temperature:
+      value: 4200.0
+      as_published: '4200'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4200'
+        column: T(K)
+    heat_capacity:
+      value: 21.218
+      as_published: '21.218'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4200'
+        column: Cp
+    entropy:
+      value: 233.541
+      as_published: '233.541'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 213.031
+      as_published: '213.031'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 86.145
+      as_published: '86.145'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -204.253
+      as_published: '-204.253'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 163.803
+      as_published: '163.803'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.037
+      as_published: '-2.037'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4200'
+        column: log Kf
+  - temperature:
+      value: 4300.0
+      as_published: '4300'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4300'
+        column: T(K)
+    heat_capacity:
+      value: 21.2
+      as_published: '21.200'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4300'
+        column: Cp
+    entropy:
+      value: 234.04
+      as_published: '234.040'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 213.513
+      as_published: '213.513'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 88.265
+      as_published: '88.265'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -206.475
+      as_published: '-206.475'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 172.593
+      as_published: '172.593'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.097
+      as_published: '-2.097'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4300'
+        column: log Kf
+  - temperature:
+      value: 4400.0
+      as_published: '4400'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4400'
+        column: T(K)
+    heat_capacity:
+      value: 21.183
+      as_published: '21.183'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4400'
+        column: Cp
+    entropy:
+      value: 234.528
+      as_published: '234.528'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 213.986
+      as_published: '213.986'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 90.385
+      as_published: '90.385'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -208.707
+      as_published: '-208.707'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 181.434
+      as_published: '181.434'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.154
+      as_published: '-2.154'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4400'
+        column: log Kf
+  - temperature:
+      value: 4500.0
+      as_published: '4500'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4500'
+        column: T(K)
+    heat_capacity:
+      value: 21.167
+      as_published: '21.167'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4500'
+        column: Cp
+    entropy:
+      value: 235.003
+      as_published: '235.003'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 214.447
+      as_published: '214.447'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 92.502
+      as_published: '92.502'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -210.948
+      as_published: '-210.948'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 190.326
+      as_published: '190.326'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.209
+      as_published: '-2.209'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4500'
+        column: log Kf
+  - temperature:
+      value: 4600.0
+      as_published: '4600'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4600'
+        column: T(K)
+    heat_capacity:
+      value: 21.152
+      as_published: '21.152'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4600'
+        column: Cp
+    entropy:
+      value: 235.468
+      as_published: '235.468'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 214.899
+      as_published: '214.899'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 94.618
+      as_published: '94.618'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -213.201
+      as_published: '-213.201'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 199.268
+      as_published: '199.268'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.263
+      as_published: '-2.263'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4600'
+        column: log Kf
+  - temperature:
+      value: 4700.0
+      as_published: '4700'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4700'
+        column: T(K)
+    heat_capacity:
+      value: 21.138
+      as_published: '21.138'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4700'
+        column: Cp
+    entropy:
+      value: 235.923
+      as_published: '235.923'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 215.342
+      as_published: '215.342'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 96.733
+      as_published: '96.733'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -215.465
+      as_published: '-215.465'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 208.259
+      as_published: '208.259'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.315
+      as_published: '-2.315'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4700'
+        column: log Kf
+  - temperature:
+      value: 4800.0
+      as_published: '4800'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4800'
+        column: T(K)
+    heat_capacity:
+      value: 21.125
+      as_published: '21.125'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4800'
+        column: Cp
+    entropy:
+      value: 236.368
+      as_published: '236.368'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 215.775
+      as_published: '215.775'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 98.846
+      as_published: '98.846'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -217.742
+      as_published: '-217.742'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 217.299
+      as_published: '217.299'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.365
+      as_published: '-2.365'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4800'
+        column: log Kf
+  - temperature:
+      value: 4900.0
+      as_published: '4900'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4900'
+        column: T(K)
+    heat_capacity:
+      value: 21.113
+      as_published: '21.113'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4900'
+        column: Cp
+    entropy:
+      value: 236.804
+      as_published: '236.804'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 216.2
+      as_published: '216.200'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 100.958
+      as_published: '100.958'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -220.033
+      as_published: '-220.033'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 226.386
+      as_published: '226.386'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.413
+      as_published: '-2.413'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '4900'
+        column: log Kf
+  - temperature:
+      value: 5000.0
+      as_published: '5000'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5000'
+        column: T(K)
+    heat_capacity:
+      value: 21.101
+      as_published: '21.101'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5000'
+        column: Cp
+    entropy:
+      value: 237.23
+      as_published: '237.230'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 216.616
+      as_published: '216.616'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 103.068
+      as_published: '103.068'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -222.339
+      as_published: '-222.339'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 235.52
+      as_published: '235.520'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.46
+      as_published: '-2.460'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5000'
+        column: log Kf
+  - temperature:
+      value: 5100.0
+      as_published: '5100'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5100'
+        column: T(K)
+    heat_capacity:
+      value: 21.09
+      as_published: '21.090'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5100'
+        column: Cp
+    entropy:
+      value: 237.648
+      as_published: '237.648'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5100'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 217.025
+      as_published: '217.025'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5100'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 105.178
+      as_published: '105.178'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -224.661
+      as_published: '-224.661'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 244.7
+      as_published: '244.700'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.506
+      as_published: '-2.506'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5100'
+        column: log Kf
+  - temperature:
+      value: 5200.0
+      as_published: '5200'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5200'
+        column: T(K)
+    heat_capacity:
+      value: 21.079
+      as_published: '21.079'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5200'
+        column: Cp
+    entropy:
+      value: 238.057
+      as_published: '238.057'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5200'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 217.425
+      as_published: '217.425'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5200'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 107.286
+      as_published: '107.286'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -227.0
+      as_published: '-227.000'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 253.926
+      as_published: '253.926'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.551
+      as_published: '-2.551'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5200'
+        column: log Kf
+  - temperature:
+      value: 5300.0
+      as_published: '5300'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5300'
+        column: T(K)
+    heat_capacity:
+      value: 21.069
+      as_published: '21.069'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5300'
+        column: Cp
+    entropy:
+      value: 238.459
+      as_published: '238.459'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5300'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 217.818
+      as_published: '217.818'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5300'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 109.394
+      as_published: '109.394'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -229.357
+      as_published: '-229.357'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 263.197
+      as_published: '263.197'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.594
+      as_published: '-2.594'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5300'
+        column: log Kf
+  - temperature:
+      value: 5400.0
+      as_published: '5400'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5400'
+        column: T(K)
+    heat_capacity:
+      value: 21.059
+      as_published: '21.059'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5400'
+        column: Cp
+    entropy:
+      value: 238.852
+      as_published: '238.852'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5400'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 218.204
+      as_published: '218.204'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5400'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 111.5
+      as_published: '111.500'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -231.733
+      as_published: '-231.733'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 272.513
+      as_published: '272.513'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.636
+      as_published: '-2.636'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5400'
+        column: log Kf
+  - temperature:
+      value: 5500.0
+      as_published: '5500'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5500'
+        column: T(K)
+    heat_capacity:
+      value: 21.05
+      as_published: '21.050'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5500'
+        column: Cp
+    entropy:
+      value: 239.239
+      as_published: '239.239'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5500'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 218.583
+      as_published: '218.583'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5500'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 113.606
+      as_published: '113.606'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -234.129
+      as_published: '-234.129'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 281.873
+      as_published: '281.873'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.677
+      as_published: '-2.677'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5500'
+        column: log Kf
+  - temperature:
+      value: 5600.0
+      as_published: '5600'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5600'
+        column: T(K)
+    heat_capacity:
+      value: 21.041
+      as_published: '21.041'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5600'
+        column: Cp
+    entropy:
+      value: 239.618
+      as_published: '239.618'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5600'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 218.955
+      as_published: '218.955'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5600'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 115.71
+      as_published: '115.710'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -236.548
+      as_published: '-236.548'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 291.276
+      as_published: '291.276'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.717
+      as_published: '-2.717'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5600'
+        column: log Kf
+  - temperature:
+      value: 5700.0
+      as_published: '5700'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5700'
+        column: T(K)
+    heat_capacity:
+      value: 21.033
+      as_published: '21.033'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5700'
+        column: Cp
+    entropy:
+      value: 239.99
+      as_published: '239.990'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5700'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 219.321
+      as_published: '219.321'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5700'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 117.814
+      as_published: '117.814'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -238.99
+      as_published: '-238.990'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 300.723
+      as_published: '300.723'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.756
+      as_published: '-2.756'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5700'
+        column: log Kf
+  - temperature:
+      value: 5800.0
+      as_published: '5800'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5800'
+        column: T(K)
+    heat_capacity:
+      value: 21.025
+      as_published: '21.025'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5800'
+        column: Cp
+    entropy:
+      value: 240.356
+      as_published: '240.356'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5800'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 219.681
+      as_published: '219.681'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5800'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 119.917
+      as_published: '119.917'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -241.456
+      as_published: '-241.456'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 310.213
+      as_published: '310.213'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.794
+      as_published: '-2.794'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5800'
+        column: log Kf
+  - temperature:
+      value: 5900.0
+      as_published: '5900'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5900'
+        column: T(K)
+    heat_capacity:
+      value: 21.018
+      as_published: '21.018'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5900'
+        column: Cp
+    entropy:
+      value: 240.715
+      as_published: '240.715'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5900'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 220.034
+      as_published: '220.034'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5900'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 122.019
+      as_published: '122.019'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -243.948
+      as_published: '-243.948'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 319.746
+      as_published: '319.746'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.831
+      as_published: '-2.831'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '5900'
+        column: log Kf
+  - temperature:
+      value: 6000.0
+      as_published: '6000'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '6000'
+        column: T(K)
+    heat_capacity:
+      value: 21.01
+      as_published: '21.010'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '6000'
+        column: Cp
+    entropy:
+      value: 241.068
+      as_published: '241.068'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '6000'
+        column: S
+    negative_gibbs_enthalpy_function:
+      value: 220.382
+      as_published: '220.382'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '6000'
+        column: -[G-H(Tr)]/T
+    enthalpy_increment:
+      value: 124.12
+      as_published: '124.120'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '6000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -246.467
+      as_published: '-246.467'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '6000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: 329.322
+      as_published: '329.322'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '6000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: -2.867
+      as_published: '-2.867'
+      locator:
+        table_id: Ni-007
+        url: https://janaf.nist.gov/tables/Ni-007.html
+        download_url: https://janaf.nist.gov/tables/Ni-007.txt
+        row_temperature_as_published: '6000'
+        column: log Kf
+  parse_ambiguities: []

@@ -333,7 +333,7 @@ def default_condensate_database_path() -> Path:
 # (a=1, b=2), Nb, NbO and NbO2 use n_gas=1 and n_O2=1, 1/2 and 0.
 # For caller-supplied MnO, NiO and CoO parents (a=1, b=1), the atomic and
 # monoxide channels use n_gas=1 and n_O2=1/2 and 0. MnO(l) and its gas products
-# use the public tables; NiO and CoO still require an external pack.
+# use the public tables, including the directly fitted TSIV liquid parents.
 # For caller-supplied P2O5(l) (a=2, b=5), n_gas=2/n_P and
 # n_O2=(5-n_gas*n_O)/2: P, P2, P4, PO, PO2, P4O6 and P4O10 use
 # (2, 5/2), (1, 5/2), (1/2, 5/2), (2, 3/2), (2, 1/2),
@@ -551,7 +551,7 @@ IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 # Channels that a default evaluate_gas call includes only when the active
 # datapack carries their gas row and their parent's standard-state row. The legacy
 # tables selected by OPENIMCC_VAPOROCK_ROOT have Ti gas rows but no TiO2(l)
-# row, while NiO and CoO parents remain external-pack-only. Optional channels
+# row. Optional channels
 # stay absent from a default call until an active pack supplies the parent
 # activity and both table rows. Original SF04 channels stay strict: a table
 # missing one of their rows is broken and the default call keeps refusing on it
@@ -731,17 +731,12 @@ def default_gas_channels(
 # These authority labels mirror the row-level classes in PROVENANCE.yaml. A
 # reaction is only as authoritative as its least-authoritative input row, so a
 # potassium channel inherits the K2O(l) estimated-systematic class while the
-# other retained channels retain their JANAF/Lamoreaux classes. The Na2O/K2O
-# gas rows are NASA/Gurvich fits. Mn/Ni/Co atomic rows are public JANAF fits;
-# the MnO row uses the published IVTAN fit, while NiO and CoO remain external.
-_EXTERNAL_PACK_GAS_SPECIES = frozenset({"NiO", "CoO"})
+# other retained channels retain their source row classes. The Na2O/K2O gas
+# rows are NASA/Gurvich fits; MnO uses IVTAN and NiO/CoO use TSIV.
 _GAS_PROVENANCE_AUTHORITY = {
-    species: (
-        "external_datapack"
-        if species in _EXTERNAL_PACK_GAS_SPECIES
-        else "janaf_fitted"
-    )
+    species: "janaf_fitted"
     for species in (*IMCC_GAS_CHANNEL_SPECIES, "Mn", "Ni", "Co")
+    if species not in {"NiO", "CoO"}
 }
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -803,7 +798,7 @@ _ION_GAS_SPECIES = (
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
     "Zn+", "Zn-", "Cd+", "Bi+",
-    "Mn+", "Ag+", "Ag-", "Mo+", "Mo-", "W+", "W-",
+    "Mn+", "Ni+", "Ni-", "Co+", "Co-", "Ag+", "Ag-", "Mo+", "Mo-", "W+", "W-",
     "Ba+", "Sr+", "Zr+", "Zr-",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
@@ -830,8 +825,8 @@ _GAS_PROVENANCE_AUTHORITY.update(
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
     "MnO": "liquid_from_solid_estimate",
-    "NiO": "external_datapack",
-    "CoO": "external_datapack",
+    "NiO": "published_fitted",
+    "CoO": "published_fitted",
     "P2O5": "external_datapack",
     "MgO": "janaf_fitted",
     "CaO": "janaf_fitted",
@@ -896,6 +891,8 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Cu2O": "Cu-020",
     "SnO": "NG-1848",
     "ZnO": "TSIV-1603",
+    "NiO": "TSIV-2026",
+    "CoO": "TSIV-1334",
     "CdO": "P672-T102",
     "Bi2O3": "P672-T82",
     "TeO2": "P672-TeO2-l",
@@ -1068,8 +1065,7 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # still lack a gas G(T) row in the vendored source set or require a model
 # convention not present in the layer. Na2O/K2O left this ledger when their
 # NASA/Gurvich gas rows joined the package. Mn/Ni/Co have retained optional
-# channels; callers can activate Mn with public MnO(l), while Ni and Co still
-# require external parent rows.
+# channels activated by caller-supplied parent activities.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
     "TeO": "needs a source; none was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN",
     "AsO": "needs a source; none was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN",
@@ -1092,6 +1088,8 @@ _GAS_IONIZATION_PAIRS = (
     ("Cd", "Cd+"),
     ("Bi", "Bi+"),
     ("Mn", "Mn+"),
+    ("Ni", "Ni+"),
+    ("Co", "Co+"),
     ("Ag", "Ag+"),
     ("Mo", "Mo+"),
     ("W", "W+"),
@@ -1130,23 +1128,12 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("Mo", "Mo-"),
     ("W", "W-"),
     ("Zr", "Zr-"),
+    ("Ni", "Ni-"),
+    ("Co", "Co-"),
 )
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
 IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {}
-
-# These retained channels are wired but cannot run from the public pack because
-# their gas and parent rows are absent from its source set.
-IMCC_GAS_PUBLIC_ONLY_PARENT_SPECIES: dict[str, str] = {
-    "Ni": (
-        "public pack has Ni(g) but no NiO(g) or NiO(l); "
-        "external pack supplies both"
-    ),
-    "Co": (
-        "public pack has Co(g) but no CoO(g) or CoO(l); "
-        "external pack supplies both"
-    ),
-}
 
 IMCC_GAS_UNAVAILABLE_SPECIES = {
     **IMCC_GAS_NO_JANAF_ROWS,
@@ -1820,36 +1807,6 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                                          'Mn-005': '6e2b4c4f4fee21fa925c34e7aac461d5a8d709f06159bd70c626c621596faa19',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'openimcc-janaf-vendor/1.0'}},
-    'Ni': {   'status': 'gas-partial',
-              'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': False},
-              'validation': 'unvalidated',
-              'reason': 'Only Ni(g) has a public row; the NiO gas and NiO liquid parents are '
-                        'absent.',
-              'c2_candidates': (),
-              'c3_ion_bound': {   'status': 'not computed',
-                                  'reason': 'not computed: p(E) needs a parent liquid row that is '
-                                            'only available from an external private pack',
-                                  'source_tables': {   'cation': 'Ni-006',
-                                                       'neutral': 'Ni-005',
-                                                       'electron': 'D-020'},
-                                  'upstream_sha256': {   'Ni-006': '1719b0562921ca8e79bc0250e34812eb331440e00864853629c025eedf92fd16',
-                                                         'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
-                                  'user_agent': 'openimcc-janaf-vendor/1.0'}},
-    'Co': {   'status': 'gas-partial',
-              'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': False},
-              'validation': 'unvalidated',
-              'reason': 'Only Co(g) has a public row; the CoO gas and CoO liquid parents are '
-                        'absent.',
-              'c2_candidates': (),
-              'c3_ion_bound': {   'status': 'not computed',
-                                  'reason': 'not computed: p(E) needs a parent liquid row that is '
-                                            'only available from an external private pack',
-                                  'source_tables': {   'cation': 'Co-006',
-                                                       'neutral': 'Co-005',
-                                                       'electron': 'D-020'},
-                                  'upstream_sha256': {   'Co-006': '28ba36fd244128e314eb794af7bf4aadcd3de6e87bfde3bc36ee43e6b033ee20',
-                                                         'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
-                                  'user_agent': 'openimcc-janaf-vendor/1.0'}},
     'Cs': {   'status': 'gas-partial',
               'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
               'validation': 'unvalidated',
@@ -2162,6 +2119,67 @@ for _element, _status in {
                 _status["cation"]: _status["cation_sha"],
                 "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
                 **({_status["anion"]: _status["anion_sha"]} if "anion" in _status else {}),
+            },
+            "user_agent": "neutral-source-vendor/1.0",
+        },
+    }
+
+for _element, _parent, _cation, _neutral, _anion, _hashes in (
+    (
+        "Ni", "NiO", "Ni-006", "Ni-005", "Ni-007",
+        {
+            "Ni-005": "1b86d14a543e9268d056860462f4604b8e987bfe66d78c17ea84ce7a85414cbf",
+            "Ni-006": "1719b0562921ca8e79bc0250e34812eb331440e00864853629c025eedf92fd16",
+            "Ni-007": "21d9c31d3edbc49a6440e18369022a0e30bdd83209c38056862d93ddc84dc82e",
+        },
+    ),
+    (
+        "Co", "CoO", "Co-006", "Co-005", "Co-007",
+        {
+            "Co-005": "10e4ec800f8f0015f6f7b5033449ffd21e60f9563b273738b128f0594afbfc2a",
+            "Co-006": "28ba36fd244128e314eb794af7bf4aadcd3de6e87bfde3bc36ee43e6b033ee20",
+            "Co-007": "9a13c2f52f861bb34cd4cd256b6954153f758eb2be5eb51cc12fcf55f0301b4a",
+        },
+    ),
+):
+    ELEMENT_STATUS[_element] = {
+        "status": "gas-complete-melt-pending",
+        "criteria": {
+            "C1": False,
+            "C2": True,
+            "C3": True,
+            "C4": True,
+        },
+        "validation": "unvalidated",
+        "reason": (
+            f"{_element}(g) and the TSIV Table {_parent} parent cover 1200-3000 K; "
+            f"the tier-3 {_parent}(l) source branch uses a({_parent}) supplied by "
+            "the caller, with a labelled supercooled branch below its melt marker. "
+            "The joint C3 screen passes at a(parent)=1e-3."
+        ),
+        "c2_candidates": (),
+        "c3_ion_bound": {
+            "status": "computed",
+            "max_ratio": 1.6063986960933917e-05 if _element == "Ni" else 3.0578166366744847e-06,
+            "isolated_bound": 0.00016854764619959103 if _element == "Ni" else 3.3102018564057046e-05,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 0.014961323427658832 if _element == "Ni" else 0.0021375904714789826,
+            "element_total_pressure_bar": 0.014961323427658832 if _element == "Ni" else 0.0021375904714789826,
+            "joint_ion_pressure_bar": 2.4033850446022664e-07 if _element == "Ni" else 6.5363597060852885e-09,
+            "electron_pressure_bar": 8.127941812279205e-05 if _element == "Ni" else 8.131486539410398e-05,
+            "K_ion": 4.250258995716842e-10 if _element == "Ni" else 2.3422511491170064e-12,
+            "parent_oxide": _parent,
+            "parent_activity": 1.0e-3,
+            "source_tables": {
+                "neutral": _neutral,
+                "cation": _cation,
+                "anion": _anion,
+                "electron": "D-020",
+            },
+            "upstream_sha256": {
+                **_hashes,
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
             },
             "user_agent": "neutral-source-vendor/1.0",
         },
@@ -2638,6 +2656,12 @@ def _source_model_flag(
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
+    supercooled = re.fullmatch(r"(TSIV-\d+)-SC-(\d+(?:\.\d+)?)", source_ref)
+    if phase == "l" and supercooled is not None:
+        return (
+            f"{row_name} uses the TSIV liquid function as a supercooled branch "
+            f"below {float(supercooled.group(2)):g} K"
+        )
     extension = _SOURCE_CP_EXTENSION_RE.search(source_ref)
     source_table = _source_table_identifier(source_ref)
     if phase == "l" and _liquid_from_solid_reference(source_ref) is not None:

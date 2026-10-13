@@ -399,24 +399,24 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
         "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W",
-        "Ba", "Sr", "Zr",
-        "Ba", "Sr", "Zr",
+        "Ba", "Sr", "Zr", "Ni", "Co",
     }
     caller_parent_oxides = {
         "Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2",
         "Li": "Li2O", "Rb": "Rb2O", "Pb": "PbO",
         "Mo": "MoO3", "W": "WO3",
-        "Ba": "BaO", "Sr": "SrO", "Zr": "ZrO2",
+        "Ba": "BaO", "Sr": "SrO", "Zr": "ZrO2", "Ni": "NiO", "Co": "CoO",
         "Cs": "Cs2O", "Cu": "Cu2O", "Sn": "SnO", "Ag": "Ag2O",
     }
     trace_elements = {"Li", "Rb", "Pb"}
-    new_trace_elements = {"Ga", "Ge", "B", "In", "Cu", "Mn", "Ba", "Sr", "Zr"}
+    new_trace_elements = {"Ga", "Ge", "B", "In", "Cu", "Mn", "Ba", "Sr", "Zr", "Ni", "Co"}
     new_trace_parents = {
         "Ga": "Ga2O3", "Ge": "GeO2", "B": "B2O3", "In": "In2O3",
         "Cu": "Cu2O", "Zn": "ZnO", "Cd": "CdO", "Bi": "Bi2O3",
         "Mn": "MnO",
         "Mo": "MoO3", "W": "WO3",
         "Ba": "BaO", "Sr": "SrO", "Zr": "ZrO2",
+        "Ni": "NiO", "Co": "CoO",
     }
     new_trace_elements.update({"Zn", "Cd", "Bi"})
     caller_parent_oxides.update(
@@ -426,7 +426,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     existing_caller_parent_oxides = {
         element: oxide
         for element, oxide in caller_parent_oxides.items()
-        if element not in trace_elements | {"Zn", "Cd", "Bi", "Ba", "Sr", "Zr"}
+        if element not in trace_elements | {"Zn", "Cd", "Bi", "Ba", "Sr", "Zr", "Ni", "Co"}
     }
     activities_by_temperature = {}
     trace_activities_by_temperature = {}
@@ -457,7 +457,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                     **activities,
                     caller_parent_oxides[element]: 1.0e-3,
                 }
-                for element in ("Cs", "Cu", "Sn", "Ag", "Mo", "W", "Ba", "Sr", "Zr")
+                for element in ("Cs", "Cu", "Sn", "Ag", "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co")
             },
         }
 
@@ -685,8 +685,10 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Ba": ("Ba+",),
         "Sr": ("Sr+",),
         "Zr": ("Zr+", "Zr-"),
+        "Ni": ("Ni+", "Ni-"),
+        "Co": ("Co+", "Co-"),
     }
-    for element in ("Ga", "Ge", "B", "Cu", "Zn", "Cd", "Bi", "Mn", "Ba", "Sr", "Zr"):
+    for element in ("Ga", "Ge", "B", "Cu", "Zn", "Cd", "Bi", "Mn", "Ba", "Sr", "Zr", "Ni", "Co"):
         current = {"max_ratio": -1.0, "isolated_bound": 0.0}
         for temperature in TEMPERATURES_K:
             activities = dict(activities_by_temperature[temperature])
@@ -813,13 +815,13 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
         "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W",
-        "Ba", "Sr", "Zr",
+        "Ba", "Sr", "Zr", "Ni", "Co",
     }
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
         if element in {
             "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In",
-            "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W", "Ba", "Sr", "Zr",
+            "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co",
         }:
             assert recorded["parent_activity"] == 1.0e-3
         assert recorded["temperature_K"] == result["temperature_K"], element
@@ -861,7 +863,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         for element, result in measured.items()
         if element not in {
                 "Ga", "Ge", "B", "In", "Cu", "Zn", "Cd", "Bi", "Mn", "Ag",
-                "Mo", "W", "Ba", "Sr", "Zr",
+                "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co",
         }
     }
     ratio_order = sorted(
@@ -940,7 +942,8 @@ def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
             assert record["table"]["table_id"] == table_id
             assert record["table"]["index_entry"]["state"] == "g"
             assert record["table"]["index_entry"]["charge"] == 1
-            assert extraction["user_agent"] == "openimcc-janaf-vendor/1.0"
+            expected_agent = "openimcc-janaf-vendor/1.0"
+            assert extraction["user_agent"] == expected_agent, table_id
             assert "source_cache_path" not in extraction
             digest = extraction["source_sha256"]
         assert digest == c3["upstream_sha256"][table_id]
@@ -1297,12 +1300,6 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         assert status["criteria"]["C2"] is c2
         ion_bound = measured_ions.get(element)
         c3 = ion_bound is not None and ion_bound["max_ratio"] < 1.0e-4
-        if element in {"Ni", "Co"}:
-            assert status["c3_ion_bound"]["status"] == "not computed"
-            assert status["c3_ion_bound"]["reason"] == (
-                "not computed: p(E) needs a parent liquid row that is only available "
-                "from an external private pack"
-            )
         if element == "O":
             assert status["status"] == "input (fO2 pinned)"
             assert status["criteria"]["C1"] is False

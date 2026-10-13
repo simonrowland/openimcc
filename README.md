@@ -85,8 +85,11 @@ Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
 CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
 As4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, Na2O, K2O, O and O2.
 The Mn channels use public Mn(g), MnO(g) and opt-in Mn+(g) rows with a
-caller-supplied MnO(l) activity. Ni and Co still require an external pack to
-provide their monoxide gas and liquid-parent rows.
+caller-supplied MnO(l) activity. Ni(g) and Co(g) use caller-supplied NiO(l) and
+CoO(l) activities. The liquid parents use the estimated phase-paired branches
+from TSIV Volume IV Tables 2026 and 1334 (tier 3); their functions are marked
+as supercooled below 2228 K and 2090 K, respectively. Ni+/Ni− and Co+/Co− are
+available only when ions are requested. No activity model is supplied.
 The sulfur channels activate only when the caller supplies `S2` fugacity as
 `a(S2) = f(S2)/p°` on JANAF's 1-bar `S2(g)` reference. OpenIMCC does not
 provide a sulfur melt-side activity model for pyrolysis temperatures.

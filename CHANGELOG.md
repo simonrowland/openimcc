@@ -315,9 +315,11 @@
   caller-supplied V2O3(l) and NbO2(l) parents. Transition-marked liquid nodes
   are omitted rather than assigned a phase branch; candidate liquid records
   remain vendored for source and transition coverage evidence.
-- Wired data-free Mn/Ni/Co and monoxide channels; they activate only when an
-  external pack provides their gas and parent rows, while the public pack has
-  no MnO(l), NiO(l) or CoO(l) parent rows.
+- Wired the Ni and Co channels to public TSIV liquid parents. NiO(l) and CoO(l)
+  use their estimated phase-paired functions from Volume IV Tables 2026 and
+  1334, with labelled supercooled branches below their 2228 K and 2090 K melt
+  markers; opt-in Ni+/Ni− and Co+/Co− use JANAF. Parent activities are supplied
+  by callers.
 - Added Na2O(g) and K2O(g) channels from the NIST evaluation using LH84
   formation anchors (entropy converted from LH84's 1 atm standard state to
   1 bar) and NASA/Gurvich heat-capacity shapes; the roughly

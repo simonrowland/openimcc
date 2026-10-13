@@ -309,6 +309,10 @@ TRACE_ION_NASA_SOURCES = (
 ION_GAS_YAML_SOURCES = (("Ca+(g)", "Ca-007", "Ca", 1, 0),)
 TRACE_ION_GAS_YAML_SOURCES = (
     ("Mn+(g)", "Mn-006", "Mn", 1, 0),
+    ("Ni+(g)", "Ni-006", "Ni", 1, 0),
+    ("Ni-(g)", "Ni-007", "Ni", 1, 0),
+    ("Co+(g)", "Co-006", "Co", 1, 0),
+    ("Co-(g)", "Co-007", "Co", 1, 0),
     ("Mo+(g)", "Mo-006", "Mo", 1, 0),
     ("Mo-(g)", "Mo-007", "Mo", 1, 0),
     ("W+(g)", "W-006", "W", 1, 0),
@@ -3356,6 +3360,82 @@ def _fit_published_condensate_row(
     return result
 
 
+def _tsiv_liquid_source_rows(record: dict[str, Any]) -> dict[float, dict[str, float]]:
+    """Evaluate the printed TSIV constant-Cp liquid branch at source nodes.
+
+    Premise: TSIV prints F°=-(G-H(0))/T and the liquid H-H(0) function in its
+    table; the compact coefficients below are transcribed from that branch.
+    Algebra: S=F+(H-H(0))/T, while H-H(298) is H-H(0) less the 298 K solid
+    anchor. Units are J/(mol K) for F/S and kJ/mol for Hinc. Sanity: at Tm
+    the liquid enthalpy is the solid value plus the printed fusion enthalpy.
+    Below Tm this function is a labelled supercooled-liquid continuation.
+    """
+    c0, cp, inverse = (float(value) for value in record["liquid_F_coefficients"])
+    h298_h0 = float(record["enthalpy_298_minus_H0_kj_mol"])
+    dfh = float(record["formation_enthalpy_298_kj_mol"]["value"])
+    fusion_temperature = float(record["fusion_temperature_K"]["value"])
+    temperatures = sorted(
+        {*map(float, range(1200, 3001, 100)), fusion_temperature}
+    )
+    rows = {}
+    for temperature in temperatures:
+        x = temperature * 1.0e-4
+        F = c0 + cp * math.log(x) + inverse / x
+        enthalpy_h0 = cp * temperature - inverse * 1.0e4
+        rows[temperature] = {
+            "temperature": temperature,
+            "heat_capacity": cp,
+            "entropy": F + enthalpy_h0 / temperature,
+            "enthalpy_increment": enthalpy_h0 / 1000.0 - h298_h0,
+            "formation_enthalpy": dfh,
+        }
+    return rows
+
+
+def _fit_tsiv_liquid_parent(
+    source_dir: Path, species: str, table_id: str, cation: str
+) -> list[dict[str, str]]:
+    """Fit a tier-3 TSIV liquid and its below-melt supercooled branch."""
+    record = _load_record(source_dir / f"tsiv-table-{table_id.split('-')[1]}.json")
+    if record.get("record_id") != table_id:
+        raise ValueError(f"{table_id}: source record identity mismatch")
+    source_rows = _tsiv_liquid_source_rows(record)
+    fusion_temperature = float(record["fusion_temperature_K"]["value"])
+    intervals = (
+        (1200.0, fusion_temperature, False),
+        (fusion_temperature, 3000.0, True),
+    )
+    fitted = []
+    for fit_min, fit_max, source_data in intervals:
+        fit_nodes = sorted(
+            temperature
+            for temperature in source_rows
+            if fit_min <= temperature <= fit_max
+        )
+        row = _fit_condensate_values(
+            f"{species}(l)",
+            table_id,
+            cation,
+            1,
+            1,
+            source_rows,
+            float(record["formation_enthalpy_298_kj_mol"]["value"]),
+            fit_t_min=fit_min,
+            fit_t_max=fit_max,
+            runtime_t_min=fit_min,
+            runtime_t_max=fit_max,
+            ref=(table_id if source_data else f"{table_id}-SC-{fusion_temperature:g}"),
+            fit_temperatures=fit_nodes,
+        )
+        if float(row["_max_residual_J_per_mol"]) > 10.0:
+            raise ValueError(
+                f"{species}(l): TSIV fit residual "
+                f"{row['_max_residual_J_per_mol']} J/mol exceeds 10"
+            )
+        fitted.append(row)
+    return fitted
+
+
 def build_condensate_rows(
     source_dir: Path,
     nasa_source_dir: Path | None = None,
@@ -3730,6 +3810,15 @@ def build_condensate_rows(
             2,
             published_source_dir,
         )
+    )
+    # The TSIV liquid branch is selected directly for NiO and CoO. Its
+    # below-melt portion is the same printed constant-Cp function continued
+    # as supercooled liquid; source coverage begins at the source melt marker.
+    rows.extend(
+        _fit_tsiv_liquid_parent(published_source_dir, "NiO", "TSIV-2026", "Ni")
+    )
+    rows.extend(
+        _fit_tsiv_liquid_parent(published_source_dir, "CoO", "TSIV-1334", "Co")
     )
     return rows
 
