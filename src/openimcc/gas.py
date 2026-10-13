@@ -1136,6 +1136,14 @@ IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {}
 IMCC_GAS_UNAVAILABLE_SPECIES = {
     **IMCC_GAS_NO_JANAF_ROWS,
     **IMCC_GAS_INCOMPLETE_PARENT_SPECIES,
+    "NiO": (
+        "needs gas-table selection: Bulletin 672 printed p. 274 and NASA Glenn "
+        "NG-0926 disagree by about 20-28 kJ/mol; the atomic Ni channel is in scope"
+    ),
+    "CoO": (
+        "needs a gas table: JANAF and NASA Glenn have no CoO(g) row; TSIV "
+        "Table 1335 was not transcribed for this atomic Co-channel change"
+    ),
 }
 
 IMCC_PARENT_OXIDES = (

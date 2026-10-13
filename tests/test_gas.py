@@ -579,8 +579,9 @@ def test_channel_coverage_ledger_is_closed() -> None:
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == 64 + len(build_gas_tables.TRACE_GAS_SPECIES)
-    assert unavailable == {"TeO", "AsO"}
-    assert implemented.isdisjoint(unavailable)
+    assert unavailable == {"TeO", "AsO", "NiO", "CoO"}
+    assert unavailable & implemented == {"NiO", "CoO"}
+    assert unavailable - implemented == {"TeO", "AsO"}
     assert in_domain.isdisjoint(extrapolated)
     assert not set(_P_CHANNELS) & (in_domain | extrapolated)
     assert (
@@ -588,6 +589,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
         | extrapolated
         | set(_P_CHANNELS)
         | build_gas_tables.TRACE_GAS_SPECIES
+        | (unavailable & implemented)
     ) == implemented
 
 
@@ -1269,7 +1271,7 @@ def test_unavailable_species_ledger_names_the_closing_source(
     )
     assert all(
         f"{species}(g)" not in gas_pack.gas_df.index
-        for species in IMCC_GAS_NO_JANAF_ROWS
+        for species in IMCC_GAS_UNAVAILABLE_SPECIES
     )
     assert {"Mn(g)", "MnO(g)", "Mn+(g)", "Ni(g)", "Ni+(g)", "Ni-(g)", "Co(g)", "Co+(g)", "Co-(g)"} <= set(
         gas_pack.gas_df.index
