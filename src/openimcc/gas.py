@@ -1960,7 +1960,7 @@ ELEMENT_STATUS["Ag"] = {
     "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
     "validation": "unvalidated",
     "reason": "Ag(g) and a tier-4 hypothetical Ag2O(l) caller-activity standard cover 1200-3000 K; NASA Glenn supplies opt-in Ag+(g) and Ag-(g). Ag2O decomposes near 500 K and has no measured liquid function; the Ag2O-parent convention does not represent reduced melts where silver dissolves largely as metal.",
-    "c2_candidates": (("NG-1090", "ScO"), ("NG-1092", "ScO2")),
+    "c2_candidates": (),
     "c3_ion_bound": {
         "max_ratio": 8.677635624166437e-09,
         "isolated_bound": 3.462457407497183e-09,

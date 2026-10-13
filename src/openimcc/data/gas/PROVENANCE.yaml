@@ -19,7 +19,7 @@ source_notes:
     retrieval_date: '2026-10-01'
     activity_policy: >-
       Li2O, Rb2O, PbO, Cs2O, Cu2O, SnO, Ga2O3, GeO2, B2O3, In2O3, TeO2, SeO2,
-      As2O3, MoO3, WO3, BaO, SrO, ZrO2, NiO, and CoO
+      As2O3, MoO3, WO3, BaO, SrO, ZrO2, NiO, CoO, Sc2O3, and UO2
       activities are supplied by the caller. OpenIMCC has no trace-element
       activity model; no activity coefficients are applied. Published silicate-
       melt activity-coefficient work is cited in README.md as context only and
@@ -9354,6 +9354,11 @@ rows:
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     retrieval_date: '2026-10-13'
     user_agent: neutral-source-vendor/1.0
+    uncertainty_band:
+      kind: measured_G_app_difference_from_Pankratz_Bulletin_672
+      comparison_record: data-src/published-thermo/pankratz-sc-u-comparison.json
+      method: Absolute NASA-minus-Bulletin 672 apparent-G difference including both 298.15 K formation anchors, evaluated at common source knots.
+      values_J_per_mol: {1800: 3414.033, 2000: 3389.842, 2500: 3308.339}
     source_data: true
   - table: gas
     species_name: UO(g)
@@ -9769,8 +9774,16 @@ rows:
     retrieval_date: '2026-10-13'
     user_agent: neutral-source-vendor/1.0
     note: NASA pure-liquid standard state at 1 atm. The constant-Cp continuation is
-      anchored to the liquid card at 2762 K; Bulletin 672 prints the Sc2O3 melting marker
-      at 2762 K.
+      anchored to the liquid card at 2762 K, the NASA card edge and Bulletin 672 melting
+      point. The Pankratz 33.650 kcal/mol (140.792 kJ/mol) fusion enthalpy exceeds the
+      NASA card-pair value of 126.999 kJ/mol by 13.793 kJ/mol; that enthalpy gap is
+      separate from the Gibbs band. The supercooled band is the NASA
+      liquid-versus-crystal apparent-G difference at each row endpoint.
+    uncertainty_band:
+      kind: supercooled_liquid_G_app_difference_from_NASA_crystal_card
+      method: Absolute Gibbs-energy difference between NG-1857 liquid and NG-1856 crystal cards at the row endpoints.
+      comparison_record: data-src/nasa-glenn/NG-1856.json
+      values_J_per_mol: {1200: 43880.638, 1500: 41680.163}
     runtime_ref: NG-1857-SC-CP
     T0_K: 2762.0
     Cp_l_J_molK: 199.998860261874
@@ -9805,8 +9818,14 @@ rows:
     retrieval_date: '2026-10-13'
     user_agent: neutral-source-vendor/1.0
     note: NASA pure-liquid standard state at 1 atm. The constant-Cp continuation is
-      anchored to the liquid card at 2762 K; Bulletin 672 prints the Sc2O3 melting marker
-      at 2762 K.
+      anchored to the liquid card at 2762 K, the NASA card edge and Bulletin 672 melting
+      point. The supercooled band is the NASA liquid-versus-crystal apparent-G difference
+      at each row endpoint.
+    uncertainty_band:
+      kind: supercooled_liquid_G_app_difference_from_NASA_crystal_card
+      method: Absolute Gibbs-energy difference between NG-1857 liquid and NG-1856 crystal cards at the row endpoints.
+      comparison_record: data-src/nasa-glenn/NG-1856.json
+      values_J_per_mol: {1500: 41680.163, 2000: 30004.547}
     runtime_ref: NG-1857-SC-CP
     T0_K: 2762.0
     Cp_l_J_molK: 199.998860261874
@@ -9841,8 +9860,14 @@ rows:
     retrieval_date: '2026-10-13'
     user_agent: neutral-source-vendor/1.0
     note: NASA pure-liquid standard state at 1 atm. The constant-Cp continuation is
-      anchored to the liquid card at 2762 K; Bulletin 672 prints the Sc2O3 melting marker
-      at 2762 K.
+      anchored to the liquid card at 2762 K, the NASA card edge and Bulletin 672 melting
+      point. The supercooled band is the NASA liquid-versus-crystal apparent-G difference
+      at each row endpoint.
+    uncertainty_band:
+      kind: supercooled_liquid_G_app_difference_from_NASA_crystal_card
+      method: Absolute Gibbs-energy difference between NG-1857 liquid and NG-1856 crystal cards at the row endpoints.
+      comparison_record: data-src/nasa-glenn/NG-1856.json
+      values_J_per_mol: {2000: 30004.547, 2500: 11540.141}
     runtime_ref: NG-1857-SC-CP
     T0_K: 2762.0
     Cp_l_J_molK: 199.998860261874
@@ -9877,8 +9902,14 @@ rows:
     retrieval_date: '2026-10-13'
     user_agent: neutral-source-vendor/1.0
     note: NASA pure-liquid standard state at 1 atm. The constant-Cp continuation is
-      anchored to the liquid card at 2762 K; Bulletin 672 prints the Sc2O3 melting marker
-      at 2762 K.
+      anchored to the liquid card at 2762 K, the NASA card edge and Bulletin 672 melting
+      point. The supercooled band is the NASA liquid-versus-crystal apparent-G difference
+      at each row endpoint.
+    uncertainty_band:
+      kind: supercooled_liquid_G_app_difference_from_NASA_crystal_card
+      method: Absolute Gibbs-energy difference between NG-1857 liquid and NG-1856 crystal cards at the row endpoints.
+      comparison_record: data-src/nasa-glenn/NG-1856.json
+      values_J_per_mol: {2500: 11540.141, 2762: 0.001}
     runtime_ref: NG-1857-SC-CP
     T0_K: 2762.0
     Cp_l_J_molK: 199.998860261874
@@ -9900,8 +9931,14 @@ rows:
     uncertainty_band:
       kind: measured_G_app_difference_from_Pankratz_Bulletin_672
       comparison_record: data-src/published-thermo/pankratz-sc-u-comparison.json
-      method: absolute difference of same-phase G(T)-H(298) values from NASA card and Bulletin 672
-      values_J_per_mol: {2762: 6194.365, 3000: 6714.931}
+      method: Absolute difference of same-phase apparent Gibbs energies, including each source's 298.15 K formation enthalpy.
+      values_J_per_mol: {2762: 5959.009, 3000: 6479.575}
+    fusion_enthalpy_comparison:
+      temperature_K: 2762
+      nasa_card_pair_J_per_mol: 126999
+      pankratz_Bulletin_672_kcal_per_mol: 33.650
+      pankratz_minus_nasa_J_per_mol: 13793
+      comparison_record: data-src/published-thermo/pankratz-sc-u-comparison.json
     source:
       citation: McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
         for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556;
@@ -10067,10 +10104,10 @@ rows:
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each
-    card's printed 298.15 K formation anchor. For liquid cards NG-1701 and
-    NG-2013 the card-G column uses H_card(T)-T*S_card(T), the liquid fitter's
-    basis; the header-anchored value remains labelled separately. JANAF uses
-    its printed dfH298+[H(T)-H(298.15 K)]-T*S(T) cells.
+    card's printed 298.15 K formation anchor. For NASA liquid cards NG-1701,
+    NG-2013, and NG-1857, the card-G comparison uses H_card(T)-T*S_card(T), the
+    liquid fitter's basis; header-anchored values are labelled separately where
+    recorded. JANAF uses its printed dfH298+[H(T)-H(298.15 K)]-T*S(T) cells.
   temperatures_K:
   - 1800
   - 2000
@@ -10091,43 +10128,43 @@ source_comparisons:
     pankratz_source_path: data-src/published-thermo/pankratz-sc-u-comparison.json
     selection: NASA Glenn provides the Sc gas and Sc2O3 parent within one adopted Gurvich compilation family; Bulletin 672 is comparison-only.
     values:
-    - {T_K: 2000, nasa_G_minus_H298_J_mol: -394305.165, pankratz_G_minus_H298_J_mol: -394090.960, nasa_minus_pankratz_J_mol: -214.205}
-    - {T_K: 2500, nasa_G_minus_H298_J_mol: -503095.679, pankratz_G_minus_H298_J_mol: -502822.660, nasa_minus_pankratz_J_mol: -273.019}
+    - {T_K: 2000, nasa_G_app_J_mol: -16604.906, pankratz_G_app_J_mol: -16275.760, nasa_minus_pankratz_J_mol: -329.146}
+    - {T_K: 2500, nasa_G_app_J_mol: -125395.420, pankratz_G_app_J_mol: -125007.460, nasa_minus_pankratz_J_mol: -387.960}
   - species_name: Sc2O3(cr)
     nasa_record_id: NG-1856
     pankratz_table_id: P672-Sc2O3-l
     pankratz_source_path: data-src/published-thermo/pankratz-sc-u-comparison.json
-    selection: Below the JANAF melting marker both sources are compared in the crystal phase; NASA Glenn is retained for the channel-wide adopted Gurvich gas and liquid family.
+    selection: Below the NASA card edge and Bulletin 672 melting point, both sources are compared in the crystal phase; NASA Glenn is retained for the channel-wide adopted Gurvich gas and liquid family.
     values:
-    - {T_K: 1800, nasa_G_minus_H298_J_mol: -338310.606, pankratz_G_minus_H298_J_mol: -336945.888, nasa_minus_pankratz_J_mol: -1364.718}
-    - {T_K: 2000, nasa_G_minus_H298_J_mol: -398564.132, pankratz_G_minus_H298_J_mol: -396559.520, nasa_minus_pankratz_J_mol: -2004.612}
-    - {T_K: 2500, nasa_G_minus_H298_J_mol: -561627.956, pankratz_G_minus_H298_J_mol: -557193.740, nasa_minus_pankratz_J_mol: -4434.216}
+    - {T_K: 1800, nasa_G_app_J_mol: -2246910.606, pankratz_G_app_J_mol: -2245770.368, nasa_minus_pankratz_J_mol: -1140.238}
+    - {T_K: 2000, nasa_G_app_J_mol: -2307164.132, pankratz_G_app_J_mol: -2305384.000, nasa_minus_pankratz_J_mol: -1780.132}
+    - {T_K: 2500, nasa_G_app_J_mol: -2470227.956, pankratz_G_app_J_mol: -2466018.220, nasa_minus_pankratz_J_mol: -4209.736}
   - species_name: Sc2O3(l)
     nasa_record_id: NG-1857
     pankratz_table_id: P672-Sc2O3-l
     pankratz_source_path: data-src/published-thermo/pankratz-sc-u-comparison.json
-    selection: Above the JANAF melting marker both sources use the liquid phase; the difference is retained as the measured source band.
+    selection: Above the NASA card edge and Bulletin 672 melting point both sources use the liquid phase; the apparent-G difference is retained as the measured source band. The 13.793 kJ/mol fusion-enthalpy gap (140.792 kJ/mol from Bulletin 672 and 126.999 kJ/mol from NASA) is recorded separately from this Gibbs band.
     values:
-    - {T_K: 2762, nasa_G_minus_H298_J_mol: -653492.244, pankratz_G_minus_H298_J_mol: -647297.879, nasa_minus_pankratz_J_mol: -6194.365}
-    - {T_K: 3000, nasa_G_minus_H298_J_mol: -751751.443, pankratz_G_minus_H298_J_mol: -745036.512, nasa_minus_pankratz_J_mol: -6714.931}
+    - {T_K: 2762, nasa_G_app_J_mol: -2562081.368, pankratz_G_app_J_mol: -2556122.359, nasa_minus_pankratz_J_mol: -5959.009}
+    - {T_K: 3000, nasa_G_app_J_mol: -2660340.567, pankratz_G_app_J_mol: -2653860.992, nasa_minus_pankratz_J_mol: -6479.575}
   - species_name: U(g)
     nasa_record_id: NG-1206
     pankratz_table_id: P672-U-g
     pankratz_source_path: data-src/published-thermo/pankratz-sc-u-comparison.json
     selection: NASA Glenn supplies the U gas and UO2 parent from the same compilation family; Bulletin 672 is comparison-only.
     values:
-    - {T_K: 1800, nasa_G_minus_H298_J_mol: -401435.116, pankratz_G_minus_H298_J_mol: -401217.149, nasa_minus_pankratz_J_mol: -217.967}
-    - {T_K: 2000, nasa_G_minus_H298_J_mol: -450775.278, pankratz_G_minus_H298_J_mol: -450533.120, nasa_minus_pankratz_J_mol: -242.158}
-    - {T_K: 2500, nasa_G_minus_H298_J_mol: -577276.341, pankratz_G_minus_H298_J_mol: -576952.680, nasa_minus_pankratz_J_mol: -323.661}
+    - {T_K: 1800, nasa_G_app_J_mol: 133564.884, pankratz_G_app_J_mol: 130150.851, nasa_minus_pankratz_J_mol: 3414.033}
+    - {T_K: 2000, nasa_G_app_J_mol: 84224.722, pankratz_G_app_J_mol: 80834.880, nasa_minus_pankratz_J_mol: 3389.842}
+    - {T_K: 2500, nasa_G_app_J_mol: -42276.341, pankratz_G_app_J_mol: -45584.680, nasa_minus_pankratz_J_mol: 3308.339}
   - species_name: UO2(cr)
     nasa_record_id: NG-1976
     pankratz_table_id: P672-UO2-c
     pankratz_source_path: data-src/published-thermo/pankratz-sc-u-comparison.json
     selection: NASA Glenn is selected with the U gas and liquid parent in the same compilation family; Bulletin 672 independently prints the crystal branch through 3000 K but no liquid formation table.
     values:
-    - {T_K: 2000, nasa_G_minus_H298_J_mol: -318443.138, pankratz_G_minus_H298_J_mol: -318670.176, nasa_minus_pankratz_J_mol: 227.038}
-    - {T_K: 2500, nasa_G_minus_H298_J_mol: -441424.388, pankratz_G_minus_H298_J_mol: -441150.500, nasa_minus_pankratz_J_mol: -273.888}
-    - {T_K: 3000, nasa_G_minus_H298_J_mol: -577578.767, pankratz_G_minus_H298_J_mol: -577027.992, nasa_minus_pankratz_J_mol: -550.775}
+    - {T_K: 2000, nasa_G_app_J_mol: -1403443.138, pankratz_G_app_J_mol: -1403162.976, nasa_minus_pankratz_J_mol: -280.162}
+    - {T_K: 2500, nasa_G_app_J_mol: -1526424.388, pankratz_G_app_J_mol: -1525643.300, nasa_minus_pankratz_J_mol: -781.088}
+    - {T_K: 3000, nasa_G_app_J_mol: -1662578.767, pankratz_G_app_J_mol: -1661520.792, nasa_minus_pankratz_J_mol: -1057.975}
   - species_name: NiO(g)
     selected_nasa_record_id: NG-0926
     comparison_record_id: P672-NiO-g

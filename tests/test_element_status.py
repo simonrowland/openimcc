@@ -168,11 +168,14 @@ def _assert_c2_candidate_coverage(
     evaluated_species: set[str],
 ) -> None:
     recorded_candidates = {
-        table_id: (element, species)
+        (table_id, element, species)
         for element, status in statuses.items()
         for table_id, species in status["c2_candidates"]
     }
-    assert source_candidates == recorded_candidates
+    assert {
+        (table_id, element, species)
+        for table_id, (element, species) in source_candidates.items()
+    } == recorded_candidates
     for element, status in statuses.items():
         for _table_id, species in status["c2_candidates"]:
             if species in evaluated_species:
@@ -1284,11 +1287,14 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
     measured_ions = _ion_bound_maxima()
     source_candidates = _neutral_oxide_sources()
     recorded_candidates = {
-        table_id: (element, species)
+        (table_id, element, species)
         for element, status in ELEMENT_STATUS.items()
         for table_id, species in status["c2_candidates"]
     }
-    assert source_candidates == recorded_candidates
+    assert {
+        (table_id, element, species)
+        for table_id, (element, species) in source_candidates.items()
+    } == recorded_candidates
     assert not any("+" in species for species in IMCC_GAS_CHANNEL_SPECIES)
 
     for element, status in ELEMENT_STATUS.items():

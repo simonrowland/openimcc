@@ -2925,43 +2925,20 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             source = json.loads(source_path.read_text(encoding="utf-8"))["tables"][
                 comparison["pankratz_table_id"]
             ]
-            if comparison["pankratz_table_id"] in {
-                "P672-Sc-g", "P672-Sc2O3-l", "P672-U-g", "P672-UO2-c"
-            }:
-                anchor = _nasa_record(
-                    "NG-1856" if comparison["species_name"].startswith("Sc2O3")
-                    else comparison["nasa_record_id"]
-                )
-                anchor_h298 = R_J_MOL_K * 298.15 * build_gas_tables._nasa7_properties(
-                    anchor, 298.15
-                )["h_rt"]
-                for value in comparison["values"]:
-                    temperature = float(value["T_K"])
-                    node = next(row for row in source["nodes"] if row[0] == temperature)
-                    pankratz_g_minus_h298 = -temperature * float(node[1]) * 4.184
-                    nasa = _nasa_record(comparison["nasa_record_id"])
-                    nasa_properties = build_gas_tables._nasa7_properties(nasa, temperature)
-                    nasa_g_minus_h298 = R_J_MOL_K * temperature * (
-                        nasa_properties["h_rt"] - nasa_properties["s_R"]
-                    ) - anchor_h298
-                    assert value["pankratz_G_minus_H298_J_mol"] == pytest.approx(
-                        pankratz_g_minus_h298, abs=0.001
-                    )
-                    assert value["nasa_G_minus_H298_J_mol"] == pytest.approx(
-                        nasa_g_minus_h298, abs=0.001
-                    )
-                    assert value["nasa_minus_pankratz_J_mol"] == pytest.approx(
-                        nasa_g_minus_h298 - pankratz_g_minus_h298, abs=0.001
-                    )
-                continue
             for value in comparison["values"]:
                 temperature = float(value["T_K"])
                 node = next(row for row in source["nodes"] if row[0] == temperature)
-                pankratz_g = (
-                    float(source["formation_enthalpy_298_kcal_mol"]) * 4184.0
-                    + float(node[3]) * 4184.0
-                    - temperature * float(node[2]) * 4.184
-                )
+                if len(node) == 2:
+                    pankratz_g = (
+                        float(source["formation_enthalpy_298_kcal_mol"]) * 4184.0
+                        - temperature * float(node[1]) * 4.184
+                    )
+                else:
+                    pankratz_g = (
+                        float(source["formation_enthalpy_298_kcal_mol"]) * 4184.0
+                        + float(node[3]) * 4184.0
+                        - temperature * float(node[2]) * 4.184
+                    )
                 formation_h = float(nasa["delta_f_H_298_15"]["value"])
                 card_h298 = (
                     R_J_MOL_K * 298.15
@@ -3087,6 +3064,99 @@ def test_sc2o3_source_disagreement_bands_recompute_from_published_nodes() -> Non
         }
         for temperature, value in values.items():
             assert float(value) == pytest.approx(differences[int(temperature)], abs=0.001)
+
+    liquid = _nasa_record("NG-1857")
+    crystal = _nasa_record("NG-1856")
+    melt = 2762.0
+    nasa_fusion = R_J_MOL_K * melt * (
+        build_gas_tables._nasa7_properties(liquid, melt)["h_rt"]
+        - build_gas_tables._nasa7_properties(crystal, melt)["h_rt"]
+    )
+    source = json.loads(
+        (PUBLISHED_DATA / "pankratz-sc-u-comparison.json").read_text(encoding="utf-8")
+    )["tables"]["P672-Sc2O3-l"]
+    pankratz_fusion_kcal = float(
+        re.search(r"fusion enthalpy ([0-9.]+) kcal/mol", source["source_note"])[1]
+    )
+    fusion = rows[0]["fusion_enthalpy_comparison"]
+    assert fusion["temperature_K"] == melt
+    assert fusion["nasa_card_pair_J_per_mol"] == pytest.approx(nasa_fusion, abs=0.5)
+    assert fusion["pankratz_Bulletin_672_kcal_per_mol"] == pankratz_fusion_kcal
+    assert fusion["pankratz_minus_nasa_J_per_mol"] == pytest.approx(
+        pankratz_fusion_kcal * 4184.0 - nasa_fusion, abs=0.5
+    )
+
+
+def test_u_g_source_disagreement_band_recomputes_from_vendored_records() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    comparison = next(
+        row for row in provenance["source_comparisons"]["rows"]
+        if row["species_name"] == "U(g)"
+    )
+    source = json.loads(
+        (PUBLISHED_DATA / "pankratz-sc-u-comparison.json").read_text(encoding="utf-8")
+    )["tables"]["P672-U-g"]
+    nasa = _nasa_record("NG-1206")
+    nasa_h298 = R_J_MOL_K * 298.15 * build_gas_tables._nasa7_properties(
+        nasa, 298.15
+    )["h_rt"]
+    band_rows = [
+        row for row in provenance["rows"]
+        if row["table"] == "gas" and row["species_name"] == "U(g)"
+    ]
+    assert len(band_rows) == 1
+    band = band_rows[0]["uncertainty_band"]
+    assert band["kind"] == "measured_G_app_difference_from_Pankratz_Bulletin_672"
+    comparison_values = {int(row["T_K"]): row for row in comparison["values"]}
+    recorded_band = {int(key): float(value) for key, value in band["values_J_per_mol"].items()}
+    assert recorded_band.keys() == comparison_values.keys()
+    for temperature, value in recorded_band.items():
+        node = next(row for row in source["nodes"] if row[0] == temperature)
+        pankratz_g = (
+            float(source["formation_enthalpy_298_kcal_mol"]) * 4184.0
+            - temperature * float(node[1]) * 4.184
+        )
+        properties = build_gas_tables._nasa7_properties(nasa, temperature)
+        nasa_g = (
+            float(nasa["delta_f_H_298_15"]["value"])
+            + R_J_MOL_K * temperature * properties["h_rt"]
+            - nasa_h298
+            - R_J_MOL_K * temperature * properties["s_R"]
+        )
+        assert value == pytest.approx(abs(nasa_g - pankratz_g), abs=0.001)
+        assert comparison_values[temperature]["nasa_minus_pankratz_J_mol"] == pytest.approx(
+            nasa_g - pankratz_g, abs=0.001
+        )
+
+
+def test_sc2o3_supercooled_bands_recompute_from_nasa_phase_cards() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    liquid = _nasa_record("NG-1857")
+    crystal = _nasa_record("NG-1856")
+    rows = [
+        row for row in provenance["rows"]
+        if row["table"] == "condensate"
+        and row["species_name"] == "Sc2O3(l)"
+        and row.get("extrapolation") is True
+    ]
+    assert len(rows) == 4
+    for row in rows:
+        band = row["uncertainty_band"]
+        assert band["kind"] == "supercooled_liquid_G_app_difference_from_NASA_crystal_card"
+        low, high = map(int, row["T_range_K"])
+        assert set(map(int, band["values_J_per_mol"])) == {low, high}
+        for temperature, value in band["values_J_per_mol"].items():
+            temperature = int(temperature)
+            liquid_properties = build_gas_tables._nasa7_properties(liquid, temperature)
+            crystal_properties = build_gas_tables._nasa7_properties(crystal, temperature)
+            difference = abs(
+                R_J_MOL_K * temperature
+                * (
+                    liquid_properties["h_rt"] - liquid_properties["s_R"]
+                    - crystal_properties["h_rt"] + crystal_properties["s_R"]
+                )
+            )
+            assert float(value) == pytest.approx(difference, abs=0.001)
 
 
 def test_nio_gas_uncertainty_band_recomputes_from_bulletin_and_nasa() -> None:
@@ -3370,7 +3440,7 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
     known_unbanded_mixed_source_channels = {
         **dict.fromkeys(
             ("Sc", "ScO", "ScO2", "U", "UO", "UO3"),
-            "NASA gas and parent liquid use the same adopted Gurvich compilation family.",
+            "NASA gas and parent agree to fit precision; NASA O2 is not vendored, so its thermal difference is unmeasured.",
         ),
         **dict.fromkeys(
             ("Bi", "Bi2", "BiO", "Te", "Te2", "Se", "Se2", "SeO",
