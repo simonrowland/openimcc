@@ -3024,6 +3024,44 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                     nasa_g - bulletin_g, abs=0.001
                 )
             continue
+        if comparison.get("janaf_table_id") == "Hf-006":
+            pankratz_record = json.loads(
+                (ROOT / comparison["pankratz_source_path"]).read_text(
+                    encoding="utf-8"
+                )
+            )["tables"][comparison["pankratz_table_id"]]
+            pankratz_nodes = {
+                int(row[0]): row for row in pankratz_record["thermal_nodes"]
+            }
+            janaf_nodes = build_gas_tables._janaf_text_source_rows(
+                JANAF_DATA, comparison["janaf_table_id"]
+            )
+            for value in comparison["values"]:
+                temperature = int(value["T_K"])
+                source = janaf_nodes[float(temperature)]
+                janaf_g = (
+                    janaf_nodes[298.15]["formation_enthalpy"]
+                    + source["enthalpy_increment"]
+                ) * 1000.0 - temperature * source["entropy"]
+                assert value["janaf_G_app_J_mol"] == pytest.approx(
+                    janaf_g, abs=0.001
+                )
+                if temperature == 3000:
+                    assert value["pankratz_G_app_J_mol"] is None
+                    assert value["janaf_minus_pankratz_J_mol"] is None
+                    continue
+                node = pankratz_nodes[temperature]
+                pankratz_g = (
+                    pankratz_record["formation_enthalpy_298_kcal_mol"]
+                    + node[3]
+                ) * 4184.0 - temperature * node[2] * 4.184
+                assert value["pankratz_G_app_J_mol"] == pytest.approx(
+                    pankratz_g, abs=0.001
+                )
+                assert value["janaf_minus_pankratz_J_mol"] == pytest.approx(
+                    janaf_g - pankratz_g, abs=0.001
+                )
+            continue
         nasa = _nasa_record(comparison["nasa_record_id"])
         if "pankratz_table_id" in comparison:
             source_path = ROOT / comparison.get(
@@ -4242,7 +4280,7 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     # Mn+ has no fine-structure level set in this spectroscopy-backed Saha
     # audit. Ag+ is checked against its NASA card and neutral-ionization
     # reaction, but no Ag level set is part of this audit.
-    assert atomic_pairs - {"Mn", "Ag"} == set(_SAHA_LEVELS)
+    assert atomic_pairs - {"Mn", "Ag", "Hf"} == set(_SAHA_LEVELS)
     k_b = 1.380649e-23
     h = 6.62607015e-34
     m_e = 9.1093837139e-31

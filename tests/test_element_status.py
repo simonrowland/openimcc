@@ -817,6 +817,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "O-007", "O-009", "Pb-005", "Pb-006", "Rb-005", "Rb-006",
         "B-005", "B-006", "B-007", "B-078", "B-079", "B-080",
         "B-093", "B-094", "B-096", "B-098", "Ga-005", "Ga-006", "Ga-007",
+        "Hf-006", "Hf-007", "Hf-008",
     }
     assert set(measured) == {
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
@@ -871,8 +872,8 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         element: result
         for element, result in measured.items()
         if element not in {
-                "Ga", "Ge", "B", "In", "Cu", "Zn", "Cd", "Bi", "Mn", "Ag",
-                "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co", "Sc",
+            "Ga", "Ge", "B", "In", "Cu", "Zn", "Cd", "Bi", "Mn", "Ag",
+            "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "Hf",
         }
     }
     ratio_order = sorted(
