@@ -3694,7 +3694,7 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
     assert all(known_unbanded_mixed_source_channels.values())
 
     known_unbanded_mixed_ionization_pairs = {
-        "Th": "Pankratz Th(g) and Burcat Th+(g) are deliberately combined for the audited ionization pair; no single-compilation Th/Th+ comparison is available.",
+        "Th": "Pankratz Th(g) and Burcat Th+(g) are deliberately combined for the audited ionization pair; Burcat's own Th(g) anchor sits 4.8 kJ/mol above Pankratz's, and that gap is pinned in the Th+ Saha cause test.",
     }
     assert set(known_unbanded_mixed_ionization_pairs) == {"Th"}
     assert all(known_unbanded_mixed_ionization_pairs.values())
