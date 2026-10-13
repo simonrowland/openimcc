@@ -629,7 +629,12 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             assert row["source_sha256"] == hashlib.sha256(
                 source_path.read_bytes()
             ).hexdigest()
-            assert row["method"] == "fitted"
+            expected_method = (
+                "fitted_burcat_nasa7_to_shomate"
+                if row["table_id"] == "Burcat-Th-plus"
+                else "fitted"
+            )
+            assert row["method"] == expected_method
             if species in nasa_atomic_ion_species:
                 assert row["authority"] == "nasa_glenn_fitted_ionisation"
                 source_record = _nasa_record(row["table_id"])
@@ -656,6 +661,12 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
                 assert row["source_path"] == (
                     "data-src/published-thermo/bismuth-ion-sources.json"
                 )
+            elif species == "Th+(g)":
+                assert row["authority"] == "published_fitted_ionisation"
+                assert row["source_path"] == (
+                    "data-src/published-thermo/burcat-th-plus.json"
+                )
+                assert row["source_locator"] == "Burcat Th+ card"
             else:
                 assert row["authority"] == "janaf_fitted_ionisation"
                 assert row["source_url"] == (

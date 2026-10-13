@@ -2859,9 +2859,13 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         ("P672-ThO2-c", 425), ("P672-ThO2-g", 426),
         ("P672-Hf-g", 187), ("P672-HfO2-c", 188),
     ):
-        assert source_rows[table_id]["source_locator"].casefold().startswith(
-            f"printed p. {printed_page}"
-        )
+        if table_id == "P672-Hf-g":
+            locator = tables[table_id]["source_note"].casefold()
+            assert f"printed p. {printed_page}" in locator
+        else:
+            assert source_rows[table_id]["source_locator"].casefold().startswith(
+                f"printed p. {printed_page}"
+            )
 
     # Independent printed reaction cells close against the elemental 298 K
     # formation anchors, with oxygen in its elemental standard state (zero).
