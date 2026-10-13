@@ -5,13 +5,15 @@
 - Added optional Hf(g) with caller-supplied HfO2(l) activity and opt-in Hf+
   and Hf- JANAF rows. Pankratz Bulletin 672 p. 188 supplies HfO2(cr), extended
   by the labelled constant-Cp rule and used in the tier-4 liquid construction.
+  Hong et al. (2018) supplies the measured HfO2 fusion enthalpy and melting point.
   The Hf gas/parent source-scale difference is banded; no HfO(g) or HfO2(g)
   table was found in the checked compilations.
 - Added optional Th, ThO, and ThO2 channels with caller-supplied ThO2(l)
   activity. Pankratz Bulletin 672 supplies the gas rows and ThO2 crystal;
   the liquid standard is a flagged tier-4 construction using the reviewed
-  fusion inputs and continued crystal heat capacity. No evaluated Th+ gas
-  function was located.
+  fusion inputs and continued crystal heat capacity. The opt-in Th+ row uses
+  the Burcat card based on Gurvich (1992); its NIST ASD Saha source offset is
+  recorded and banded in provenance.
 - Added optional Sc, ScO, ScO2, U, UO, UO2, and UO3 channels with caller-supplied
   Sc2O3(l) and UO2(l) activities, plus opt-in Sc+. NASA Glenn cards supply both
   gas and liquid functions. Sc2O3(l) is fitted directly from its liquid card

@@ -271,6 +271,26 @@ def test_trace_parent_continuations_are_flagged(
     assert runtime_ref in result.domain_flags[species]
 
 
+@pytest.mark.parametrize(("parent", "species", "extension_limit", "fusion_temperature"), (
+    ("ThO2", "Th", 2500.0, 3650.0),
+    ("HfO2", "Hf", 1800.0, 3073.15),
+))
+def test_liquid_from_solid_refs_emit_extension_and_supercooling_flags(
+    gas_pack: ImccGasDatapack,
+    parent: str,
+    species: str,
+    extension_limit: float,
+    fusion_temperature: float,
+) -> None:
+    result = evaluate_gas(
+        {parent: 1.0e-3}, 2800.0, 1.0e-8, gas_pack,
+        parent_oxides=(parent,), gas_species=(species,), allow_extrapolation=False,
+    )
+    flags = result.domain_flags[species]
+    assert f"crystal Cp was extended above {extension_limit:g} K" in flags
+    assert f"supercooled liquid_from_solid branch below the {fusion_temperature:g} K" in flags
+
+
 def test_explicit_vaporock_override_remains_supported(
     monkeypatch: pytest.MonkeyPatch,
     gas_pack: ImccGasDatapack,
@@ -2757,6 +2777,13 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         / "pankratz-bulletin-672.json"
     )
     tables = json.loads(source_path.read_text())["tables"]
+    hf_source_path = (
+        Path(__file__).resolve().parents[1]
+        / "data-src"
+        / "published-thermo"
+        / "pankratz-hf.json"
+    )
+    tables.update(json.loads(hf_source_path.read_text())["tables"])
     for table_id, record in tables.items():
         if not table_id.startswith("P672-"):
             continue
@@ -2805,8 +2832,32 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         ("P672-Sb2O3-c", -169.400),
         ("P672-Ag-g", 68.090),
         ("P672-Ag2O-c", -7.420),
+        ("P672-Th-g", 142.730),
+        ("P672-ThO-g", -6.077),
+        ("P672-ThO2-c", -293.120),
+        ("P672-ThO2-g", -118.670),
+        ("P672-Hf-g", 148.000),
+        ("P672-HfO2-c", -267.120),
     ):
         assert anchor(table_id) == pytest.approx(printed_delta_h, abs=0.0005)
+    for table_id, printed_page in (
+        ("P672-Th-g", 423), ("P672-ThO-g", 424),
+        ("P672-ThO2-c", 425), ("P672-ThO2-g", 426),
+        ("P672-Hf-g", 187), ("P672-HfO2-c", 188),
+    ):
+        assert f"printed p. {printed_page}" in tables[table_id]["source_note"]
+
+    # Independent printed reaction cells close against the elemental 298 K
+    # formation anchors, with oxygen in its elemental standard state (zero).
+    for product, reactant, printed_delta_h in (
+        ("P672-ThO-g", "P672-Th-g", -148.807),
+        ("P672-ThO2-g", "P672-Th-g", -261.400),
+        ("P672-ThO2-c", "P672-Th-g", -435.850),
+        ("P672-HfO2-c", "P672-Hf-g", -415.120),
+    ):
+        assert anchor(product) - anchor(reactant) == pytest.approx(
+            printed_delta_h, abs=0.0005
+        )
     for table_id, reaction_value, dimer_value in (
         ("P672-Te-g", "31.435", "38.330"),
         ("P672-Se-g", "39.600", "33.300"),

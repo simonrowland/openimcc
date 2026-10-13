@@ -1599,6 +1599,12 @@ def test_tho2_parent_fit_uses_reviewed_inputs_and_meets_node_gate() -> None:
     assert inputs["inputs"]["fusion_entropy"]["value"] == pytest.approx(
         61500.0 / 3650.0
     )
+    lower_corner = 51500.0 / 3670.0
+    upper_corner = 71500.0 / 3630.0
+    assert inputs["inputs"]["fusion_entropy"]["spread"] == pytest.approx(
+        max(abs(lower_corner - 61500.0 / 3650.0), abs(upper_corner - 61500.0 / 3650.0)),
+        abs=1.0e-9,
+    )
     rows, construction, alternate = build_gas_tables._fit_liquid_from_solid_parent(
         PUBLISHED_DATA, "ThO2", inputs
     )
@@ -1630,8 +1636,11 @@ def test_hfo2_parent_fit_uses_reviewed_inputs_and_meets_node_gate() -> None:
     source = build_gas_tables._published_table_record(PUBLISHED_DATA, "P672-HfO2-c")
     assert source["formation_enthalpy_298_kcal_mol"] == -267.12
     assert source["cp_equation_cal_mol_K"]["published_range_K"] == [298.15, 1800.0]
-    assert inputs["inputs"]["fusion_temperature"]["value"] == 3085.0
-    assert inputs["inputs"]["fusion_entropy"]["value"] == pytest.approx(3 * 9.334792572)
+    assert inputs["inputs"]["fusion_temperature"]["value"] == 3073.15
+    assert inputs["inputs"]["fusion_entropy"]["value"] == pytest.approx(61000 / 3073.15)
+    assert inputs["inputs"]["fusion_entropy"]["tier"] == 2
+    assert inputs["inputs"]["fusion_entropy"]["spread"] == pytest.approx(10000 / 3073.15)
+    assert inputs["inputs"]["liquid_heat_capacity"]["value"] == pytest.approx(20.961 * 4.184)
     rows, construction, alternate = build_gas_tables._fit_liquid_from_solid_parent(
         PUBLISHED_DATA, "HfO2", inputs
     )
@@ -3047,8 +3056,12 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                     janaf_g, abs=0.001
                 )
                 if temperature == 3000:
-                    assert value["pankratz_G_app_J_mol"] is None
-                    assert value["janaf_minus_pankratz_J_mol"] is None
+                    assert value["pankratz_G_app_J_mol"] == pytest.approx(
+                        -43497.881, abs=0.001
+                    )
+                    assert value["janaf_minus_pankratz_J_mol"] == pytest.approx(
+                        -1264.119, abs=0.001
+                    )
                     continue
                 node = pankratz_nodes[temperature]
                 pankratz_g = (
@@ -4109,6 +4122,16 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
 # Sn and Ge also list the low 1D2 level. Higher levels contribute below the
 # test tolerance at 2500 K.
 _SAHA_LEVELS = {
+    "Hf": (
+        6.825070,
+        ((5, 0.0), (7, 2356.68), (9, 4567.64), (1, 5521.77), (5, 5638.61), (3, 6572.54), (5, 8983.74), (7, 10508.88), (9, 10532.55), (3, 14017.81), (5, 14541.66)),
+        ((4, 0.0), (6, 3050.88), (4, 3644.65), (6, 4904.85), (8, 6344.34), (10, 8361.76), (6, 13485.56)),
+    ),  # NIST ASD IE; NIST Handbook Tables 5/6: https://physics.nist.gov/PhysRefData/Handbook/Tables/hafniumtable5.htm and hafniumtable6.htm.
+    "Th": (
+        6.30670,
+        ((5, 0.0), (7, 2869.259), (9, 4961.659), (1, 2558.057), (5, 3687.987), (3, 3865.475), (3, 5563.142), (5, 6362.396), (7, 7502.288), (9, 8800.251), (11, 9804.807), (5, 7280.124), (9, 7795.275), (11, 11197.031), (13, 14481.869)),
+        ((4, 0.0), (6, 1521.896), (4, 1859.938), (8, 4146.576), (10, 6213.490), (6, 4113.359), (6, 4490.262), (8, 8378.859), (8, 6168.356), (12, 10189.067), (10, 10572.041), (14, 13406.433), (2, 6244.294), (4, 8018.192), (6, 9061.103), (4, 6691.387), (6, 7331.485), (8, 9720.297), (10, 12488.287)),
+    ),  # NIST ASD IE; NIST Handbook Tables 5/6: https://physics.nist.gov/PhysRefData/Handbook/Tables/thoriumtable5.htm and thoriumtable6.htm.
     "Sc": (
         6.56149,
         (
@@ -4253,6 +4276,26 @@ _SAHA_LEVELS = {
 }
 
 
+def test_burcat_th_plus_card_composition_resolves_its_charge_label() -> None:
+    record = json.loads(
+        (ROOT / "data-src/published-thermo/burcat-th-plus.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert record["charge"] == 1
+    assert record["composition"] == {"Th": 1, "electron": -1}
+    assert record["header_cas_label"].endswith("(Th+4)")
+    assert record["delta_f_H_0_kJ_mol"] == pytest.approx(1187.153)
+    assert record["delta_f_H_298_15"]["value"] == pytest.approx(1193218.0)
+    thermal = build_gas_tables._nasa_card_thermal_rows(record, [298.15])[0]
+    assert thermal["enthalpy_increment"] == pytest.approx(0.0, abs=1.0e-9)
+    assert abs(
+        build_gas_tables.R_J_MOL_K * 298.15
+        * build_gas_tables._nasa7_properties(record, 298.15)["h_rt"]
+        - record["delta_f_H_298_15"]["value"]
+    ) < 21.0
+
+
 @pytest.mark.parametrize("element", tuple(_SAHA_LEVELS))
 def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     """Check every packaged atomic cation against the Saha equation.
@@ -4280,7 +4323,7 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     # Mn+ has no fine-structure level set in this spectroscopy-backed Saha
     # audit. Ag+ is checked against its NASA card and neutral-ionization
     # reaction, but no Ag level set is part of this audit.
-    assert atomic_pairs - {"Mn", "Ag", "Hf"} == set(_SAHA_LEVELS)
+    assert atomic_pairs - {"Mn", "Ag"} == set(_SAHA_LEVELS)
     k_b = 1.380649e-23
     h = 6.62607015e-34
     m_e = 9.1093837139e-31
@@ -4358,7 +4401,16 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
                 rel=0.001,
             )
             continue
-        if element == "Bi":
+        if element in {"Hf", "Th"}:
+            # Pin the measured JANAF/Burcat source offsets with NIST ASD
+            # partition functions and ionization energies; the ratios remain
+            # visible because both source pairs miss the 2% Saha gate.
+            expected = {
+                "Hf": {1500.0: 1.2358655503, 2500.0: 0.7944302178},
+                "Th": {1500.0: 4.4960411241, 2500.0: 2.5579593377},
+            }[element][temperature]
+            assert fitted_k / saha_k == pytest.approx(expected, rel=5e-5)
+        elif element == "Bi":
             # NBS Table 22's Bi+ enthalpy and Pankratz Table 80's Bi(g)
             # function differ by about 0.45 kJ/mol from the NIST ionization
             # energy after the electron-reference correction. Preserve that
@@ -4406,7 +4458,7 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
 
 
 _ATTACHMENT_LEVELS = {
-    # EAs are from NIST Chemistry WebBook SRD 69 records; Li, K, and O use
+    # Most EAs are from NIST Chemistry WebBook SRD 69 records; Li, K, and O use
     # Andersen et al., JPCRD 28 (1999), Table 3. Neutral levels through
     # 15000 cm^-1 are from NIST ASD (https://physics.nist.gov/asd); the linked
     # Handbook level tables are the cited NIST level outputs. Bound anion
@@ -4424,6 +4476,7 @@ _ATTACHMENT_LEVELS = {
         ((9, 0.0), (7, 415.933), (5, 704.007), (3, 888.132), (1, 978.074), (11, 6928.268), (9, 7376.764), (7, 7728.059), (5, 7985.784), (3, 8154.713), (9, 11976.238), (7, 12560.933), (5, 12968.553)),
         ((10, 0.0), (8, 540.0), (6, 930.0), (4, 1200.0)),
     ),  # WebBook C7439896; https://physics.nist.gov/PhysRefData/Handbook/Tables/irontable5.htm
+    "Hf": (0.1780, _SAHA_LEVELS["Hf"][1], ((6, 0.0),)),  # Tang et al. (2018), measured EA; NIST WebBook Hf atom page has no EA entry; https://doi.org/10.1103/PhysRevA.98.020501
     "Ga": (0.430, ((2, 0.0), (4, 826.19)), ((1, 0.0), (3, 220.0), (5, 580.0))),  # WebBook C7440553; https://physics.nist.gov/PhysRefData/Handbook/Tables/galliumtable5.htm
     "K": (0.501459, ((2, 0.0), (2, 12985.186), (4, 13042.896)), ((1, 0.0),)),  # NIST JPCRD Table 3; https://physics.nist.gov/PhysRefData/Handbook/Tables/potassiumtable5.htm
     "Li": (0.618049, ((2, 0.0), (2, 14903.622), (4, 14903.957)), ((1, 0.0),)),  # NIST JPCRD Table 3; https://physics.nist.gov/PhysRefData/Handbook/Tables/lithiumtable5.htm
@@ -4479,17 +4532,16 @@ def test_gas_table_atomic_anion_inventory() -> None:
     atomic = {f"{element}-(g)" for element in _ATOMIC_ANION_ELEMENTS}
     molecular = {f"{species}-(g)" for species in _UNCHECKED_MOLECULAR_ANIONS}
     assert packaged == atomic | molecular
-    # JANAF supplies Zn- and Hf-, but neither table has a ground-state
-    # attachment-level entry for its neutral. Ag- comes from NASA CEA, whose
-    # card supplies no JANAF attachment-level entry.
+    # JANAF supplies Zn-, while Hf- is audited with its measured affinity and
+    # ground level. Ag- comes from NASA CEA.
     assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic - {
-        "Zn-(g)", "Ag-(g)", "Hf-(g)"
+        "Zn-(g)", "Ag-(g)"
     }
 
 
 @pytest.mark.parametrize(
     "element",
-    ("Al", "B", "Co", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Mo", "Na", "Nb", "Ni", "O", "Pb", "Rb", "Si", "Ti", "V", "W", "Zr"),
+    ("Al", "B", "Co", "Cr", "Cs", "Cu", "Fe", "Ga", "Hf", "K", "Li", "Mo", "Na", "Nb", "Ni", "O", "Pb", "Rb", "Si", "Ti", "V", "W", "Zr"),
 )
 def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
     """Compare fitted attachment Kp with the NIST ground-state affinity.
@@ -4554,7 +4606,11 @@ def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
             * math.exp(affinity_eV * e_v / (k_b * temperature))
         )
         ratios.append(fitted_k / saha_k)
-    if element == "Ga":
+    if element == "Hf":
+        # JANAF's Hf-008 formation cell implies about 0.064 eV attachment,
+        # below the measured NIST 0.1780 eV affinity.
+        assert ratios == pytest.approx((0.1682162495, 0.2917159887), rel=5e-5)
+    elif element == "Ga":
         # JANAF implies EA 0.301/0.308 eV; current NIST EA is 0.430 eV.
         assert ratios == pytest.approx((0.369, 0.568), rel=0.02), element
     elif element in {"Mo", "W"}:

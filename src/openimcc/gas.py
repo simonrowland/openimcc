@@ -830,7 +830,7 @@ _ION_GAS_SPECIES = (
     "Na+", "K+", "Ca+", "e-",
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
     "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-",
-    "Li+", "Rb+", "Pb+", "Hf+", "Hf-",
+    "Li+", "Rb+", "Pb+", "Hf+", "Hf-", "Th+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
     "Zn+", "Zn-", "Cd+", "Bi+",
@@ -847,6 +847,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
         for species in _ION_GAS_SPECIES
     }
 )
+_GAS_PROVENANCE_AUTHORITY["Th+"] = "published_fitted_ionisation"
 _NASA_ION_GAS_SPECIES = frozenset({"Ge+", "BO-"})
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -943,6 +944,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "As2O3": "P672-As2O3",
     "Sb2O3": "P672-Sb2O3-c",
     "Ag2O": "P672-Ag2O-c",
+    "ThO2": "P672-ThO2-c",
     "HfO2": "P672-HfO2-c",
     "MnO": "MnO-liquid-construction",
 }
@@ -964,6 +966,7 @@ _PROVENANCE_AUTHORITY_RANK = {
     "nasa_glenn_fitted_ionisation": 3,
     "external_datapack": 2,
     "published_fitted": 2,
+    "published_fitted_ionisation": 2,
     "liquid_from_solid_estimate": 1,
     "nist_partition_fitted_ionisation": 3,
 }
@@ -1140,6 +1143,7 @@ _GAS_IONIZATION_PAIRS = (
     ("Zr", "Zr+"),
     ("Sc", "Sc+"),
     ("Hf", "Hf+"),
+    ("Th", "Th+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -2304,24 +2308,36 @@ ELEMENT_STATUS["U"] = {
 }
 ELEMENT_STATUS["Th"] = {
     "status": "gas-partial",
-    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
     "validation": "unvalidated",
-    "reason": "Pankratz Bulletin 672 Th(g), ThO(g), ThO2(g), and ThO2(cr) cover source nodes through 2500 K; the ThO2(l) activity standard is a tier-4 liquid_from_solid construction from the sourced crystal using OECD/NEA fusion inputs, with crystal Cp continued above the Pankratz limit; ThO2 is selected as the sole sourced oxide parent; a(ThO2) is caller-supplied. No evaluated Th+ gas function was located in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
+    "reason": "Pankratz Bulletin 672 Th(g), ThO(g), ThO2(g), and ThO2(cr) cover source nodes through 2500 K; the ThO2(l) activity standard is a tier-4 liquid_from_solid construction from the sourced crystal using OECD/NEA fusion inputs, with crystal Cp continued above the Pankratz limit; ThO2 is selected as the sole sourced oxide parent; a(ThO2) is caller-supplied. Burcat's Gurvich-based Th+ card is adopted as an opt-in tier-3 ion; its card composition TH 1 E -1 and HF0/HF298 consistency resolve the conflicting header CAS label as singly ionized Th. The NIST ASD Saha audit is outside the 2% gate (ratios 4.496 at 1500 K and 2.558 at 2500 K); C3 remains available with a maximum joint ion fraction 1.653e-15 at 2300 K and fO2=1e-10.",
     "c2_candidates": (("P672-ThO-g", "ThO"), ("P672-ThO2-g", "ThO2")),
     "c3_ion_bound": {
-        "status": "declined",
-        "reason": "No evaluated Th+ thermo function was located in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
+        "status": "available",
+        "reason": "Burcat's Gurvich-based Th+ card is an opt-in tier-3 ion. Its NIST ASD Saha ratios are 4.496 at 1500 K and 2.558 at 2500 K; Pankratz Th(g) has dfH298 597.2 kJ/mol versus Burcat's neutral 602.0 kJ/mol, and the selected Pankratz-neutral/Burcat-cation anchors differ from the NIST ionization energy by -12.486 kJ/mol. C3 uses that adopted pair.",
+        "source_tables": {"cation": "Burcat-Th-plus", "neutral": "P672-Th-g"},
+        "parent_activity": 1.0e-3,
+        "max_ratio": 1.6534253288851723e-15,
+        "temperature_K": 2300.0,
+        "fO2": 1e-10,
+        "neutral_pressure_bar": 2.1723092581101416e-18,
+        "element_total_pressure_bar": 2.2710124684330474e-09,
+        "joint_ion_pressure_bar": 3.7549495375212384e-24,
+        "electron_pressure_bar": 4.935841167923754e-06,
+        "K_ion": 8.531858178838494e-12,
+        "isolated_bound": 8.368401213697542e17,
+        "parent_oxide": "ThO2",
     },
 }
 ELEMENT_STATUS["Hf"] = {
     "status": "gas-complete-melt-pending",
     "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
     "validation": "unvalidated",
-    "reason": "JANAF Hf(g), Hf+, and Hf- are available; Pankratz Bulletin 672 supplies the HfO2(cr) elemental formation function through 1800 K. HfO2(l) is a tier-4 liquid_from_solid caller standard built from that crystal, with constant-Cp extension above the source limit; HfO2 is the selected parent because no lower oxide liquid is sourced. The source-scale comparison uses Pankratz Hf(g) over its shared range. The joint C3 screen at a(HfO2)=1e-3 reached 1.140e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. No HfO(g) or HfO2(g) function was found in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
+    "reason": "JANAF Hf(g), Hf+, and Hf- are available; Pankratz Bulletin 672 supplies the HfO2(cr) elemental formation function through 1800 K. HfO2(l) is a tier-4 liquid_from_solid caller standard built from that crystal, with constant-Cp extension above the source limit; HfO2 is the selected parent because no lower oxide liquid is sourced. The source-scale comparison uses Pankratz Hf(g) over its shared range. The joint C3 screen at a(HfO2)=1e-3 reached 1.140e-06 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. NIST ASD Saha and NIST WebBook attachment audits are separate and disclose the JANAF source offsets. No HfO(g) or HfO2(g) function was found in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
     "c2_candidates": (("Hf-006", "Hf"),),
     "c3_ion_bound": {
         "status": "available",
-        "reason": "JANAF Hf-007 and Hf-008 provide Hf+ and Hf- thermo functions; Hf+ is checked by the existing opt-in ion-bound calculation.",
+        "reason": "JANAF Hf-007 and Hf-008 provide Hf+ and Hf- thermo functions. The Hf-007 minus Hf-006 formation difference is 660.555 kJ/mol versus the NIST ASD 6.825070 eV ionization energy (658.519 kJ/mol), a 2.036 kJ/mol 298 K offset; NIST ASD Saha ratios are 1.236 at 1500 K and 0.794 at 2500 K, including the temperature-dependent function/population offset. The NIST WebBook Hf atom page has no EA entry, so Hf- attachment uses Tang et al.'s primary 0.1780(6) eV measurement; ratios are 0.168 and 0.292. These source offsets are separate from the joint C3 ion-bound screen.",
         "source_tables": {"cation": "Hf-007", "anion": "Hf-008", "neutral": "Hf-006"},
         "upstream_sha256": {
             "Hf-006": "54dc600c8f019494179e8e322a47a9d98eaba19c3b0f64278a4eea4c683c8e1b",
@@ -2334,16 +2350,15 @@ ELEMENT_STATUS["Hf"] = {
         "max_ratio": 1.1395960271219746e-06,
         "temperature_K": 2800.0,
         "fO2": 1e-4,
-        "neutral_pressure_bar": 7.714779833346246e-16,
-        "element_total_pressure_bar": 7.714779833346246e-16,
-        "joint_ion_pressure_bar": 8.791732448202112e-22,
-        "electron_pressure_bar": 8.131780113388637e-05,
+        "neutral_pressure_bar": 6.911572544115784e-16,
+        "element_total_pressure_bar": 6.911572544115784e-16,
+        "joint_ion_pressure_bar": 7.876400612439668e-22,
+        "electron_pressure_bar": 8.131780113388633e-05,
         "K_ion": 8.144468639954743e-11,
-        "isolated_bound": 153239842952038.62,
+        "isolated_bound": 334989542355903.25,
         "parent_oxide": "HfO2",
     },
 }
-
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #
@@ -2854,7 +2869,8 @@ def _liquid_from_solid_reference(
     source_ref: str,
 ) -> tuple[str, float | None] | None:
     """Read explicit liquid-from-solid metadata, retaining legacy table refs."""
-    match = _LIQUID_FROM_SOLID_REF_RE.fullmatch(source_ref)
+    base_ref = _SOURCE_CP_EXTENSION_RE.sub("", source_ref)
+    match = _LIQUID_FROM_SOLID_REF_RE.fullmatch(base_ref)
     if match is not None:
         return match["source"], float(match["temperature"])
     if "-LFS" in source_ref:
@@ -2877,7 +2893,8 @@ def _supercooled_liquid_from_solid_flag(
 
 def _source_table_identifier(source_ref: str) -> str:
     """Remove runtime construction suffixes while retaining the source ID."""
-    match = _LIQUID_FROM_SOLID_REF_RE.fullmatch(source_ref)
+    base_ref = _SOURCE_CP_EXTENSION_RE.sub("", source_ref)
+    match = _LIQUID_FROM_SOLID_REF_RE.fullmatch(base_ref)
     if match is not None:
         return match["source"]
     base = _SOURCE_CP_EXTENSION_RE.sub("", source_ref)

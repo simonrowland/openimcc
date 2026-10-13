@@ -15,6 +15,33 @@ source_notes:
       Some ion-table notes specify that adjustment only for conversion to the
       alternate convention that excludes the electron.
     ion_convention_reference: https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-1Vol1-Intro.pdf
+  ionization_and_attachment_audits:
+    Hf_plus:
+      sources: Hf-006/Hf-007; NIST ASD neutral/ion levels and ionization energy 6.825070 eV
+      gate: 2% Saha ratio
+      ratios: {1500_K: 1.2358655503, 2500_K: 0.7944302178}
+      cause: >-
+        The JANAF Hf-006/Hf-007 formation functions are not thermochemically
+        consistent with the NIST ASD spectroscopic Saha pair; the measured
+        ratios are disclosed without adjusting either source.
+    Th_plus:
+      sources: P672-Th-g/Burcat-Th-plus; NIST ASD neutral/ion levels and ionization energy 6.30670 eV
+      gate: 2% Saha ratio
+      ratios: {1500_K: 4.4960411241, 2500_K: 2.5579593377}
+      cause: >-
+        Pankratz Th(g) has dfH298 597.2 kJ/mol while Burcat's Gurvich-based
+        neutral card has 602.0 kJ/mol; the adopted Pankratz neutral/Burcat
+        cation pair therefore retains this source-vintage offset. Ratios are
+        measured comparisons, not coefficient adjustments.
+    Hf_minus:
+      sources: Hf-006/Hf-008; Tang et al. (2018) measured EA 0.1780(6) eV and NIST ASD levels
+      ratios: {1500_K: 0.1682162495, 2500_K: 0.2917159887}
+      cause: >-
+        The NIST WebBook Hf atom page has no atomic electron-affinity entry,
+        so the primary Tang et al. measurement is used. JANAF's formation
+        difference Hf-008 minus Hf-006 is -6.198 kJ/mol, equivalent to about
+        0.0642 eV, below the measured 0.1780 eV affinity;
+        the attachment ratios disclose this source offset.
   trace_parent_channels:
     retrieval_date: '2026-10-01'
     activity_policy: >-
@@ -10238,11 +10265,11 @@ rows:
   - table: condensate
     species_name: ThO2(l)
     table_id: P672-ThO2-c
-    runtime_ref: P672-ThO2-LFS
+    runtime_ref: LFS[P672-ThO2-c;Tf=3650]-CP-EXT-2500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 443a2f0775bada6250e562f52133736cd16e9549ccfef36458657ad3e96c2726
+    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -10251,14 +10278,14 @@ rows:
     fit_intervals_K: [[1200, 1600], [1600, 2000], [2000, 2400], [2400, 3000]]
     max_residual_J_per_mol: 0.0635463835205883
     max_residual_log10_K: 0.00000124967822117046
-    flags: [tier-4 hypothetical liquid_from_solid construction, tier-3 fusion-input and crystal-Cp carry-over estimates, constant-Cp crystal continuation above 2500 K, caller-supplied parent activity; no activity model]
+    flags: [tier-4 hypothetical liquid_from_solid construction, tier-1 fusion inputs and tier-3 crystal-Cp carry-over estimate, constant-Cp crystal continuation above 2500 K, caller-supplied parent activity; no activity model]
     uncertainty_band:
       kind: propagated OECD/NEA fusion-input uncertainty plus crystal-extension model spread
-      values_J_per_mol: {1200: 16534.957566, 1500: 13595.479102, 1800: 10982.491419, 2000: 9393.995699, 2500: 5875.343386, 3000: 2900.842372}
+      values_J_per_mol: {1200: 16535.650006, 1500: 13596.086754, 1800: 10983.014281, 2000: 9394.462036, 2500: 5875.668409, 3000: 2901.026081}
       method: sum the liquid_from_solid input spread and absolute Gibbs difference between the constant-last-Cp and published crystal-equation continuations; not supercooling energy or fit residual
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
-      source_record: Pankratz Bulletin 672 ThO2 formation/crystal table, printed p. 425; liquid construction inputs from OECD/NEA Chemical Thermodynamics of Thorium
+      source_record: Pankratz Bulletin 672 ThO2 formation/crystal table, printed p. 425; OECD/NEA Chemical Thermodynamics of Thorium, printed p. 117, for fusion inputs
       construction_input_record: data-src/liquid-from-solid-inputs.json rows.ThO2
       source_locator: printed p. 425
       source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
@@ -10289,7 +10316,7 @@ rows:
       method: Absolute JANAF Hf-006 minus Pankratz Bulletin 672 p. 187 G_app=dfH298+(H-H298)-T*S from the elemental 298.15 K anchor and printed thermal cells; above 2500 K, continue the Pankratz Hf(g) last Cp to evaluate the offset.
       values_J_per_mol: {1500: 999.148, 1800: 1039.984, 2000: 1066.304, 2500: 1147.760, 3000: 1264.119}
     source:
-      citation: Stull, D. R.; Prophet, H. (1971), JANAF Thermochemical Tables, 2nd ed., Table Hf-006
+      citation: Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed., Table Hf-006
       source_record: NIST-JANAF Hf(g), Hf-006
       source_locator: Table Hf-006, Hf(g)
       source_url: https://janaf.nist.gov/tables/Hf-006.html
@@ -10323,7 +10350,7 @@ rows:
       method: Absolute JANAF Hf-006 minus Pankratz Bulletin 672 p. 187 G_app=dfH298+(H-H298)-T*S from the elemental 298.15 K anchor and printed thermal cells.
       values_J_per_mol: {1200: 969.085, 1500: 999.148}
     source:
-      citation: Stull, D. R.; Prophet, H. (1971), JANAF Thermochemical Tables, 2nd ed., Table Hf-006
+      citation: Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed., Table Hf-006
       source_record: NIST-JANAF Hf(g), Hf-006
       source_locator: Table Hf-006, Hf(g)
       source_url: https://janaf.nist.gov/tables/Hf-006.html
@@ -10351,7 +10378,7 @@ rows:
     flags: [opt-in ion, electron included]
     uncertainty_band: {kind: not separately quantified by selected source}
     source:
-      citation: Stull, D. R.; Prophet, H. (1971), JANAF Thermochemical Tables, 2nd ed., Table Hf-007
+      citation: Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed., Table Hf-007
       source_record: NIST-JANAF Hf+, Hf-007
       source_locator: Table Hf-007, Hf+(g)
       source_url: https://janaf.nist.gov/tables/Hf-007.html
@@ -10379,7 +10406,7 @@ rows:
     flags: [opt-in ion]
     uncertainty_band: {kind: not separately quantified by selected source}
     source:
-      citation: Stull, D. R.; Prophet, H. (1971), JANAF Thermochemical Tables, 2nd ed., Table Hf-008
+      citation: Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed., Table Hf-008
       source_record: NIST-JANAF Hf-, Hf-008
       source_locator: Table Hf-008, Hf-(g)
       source_url: https://janaf.nist.gov/tables/Hf-008.html
@@ -10394,11 +10421,11 @@ rows:
   - table: condensate
     species_name: HfO2(l)
     table_id: P672-HfO2-c
-    runtime_ref: P672-HfO2-LFS
+    runtime_ref: LFS[P672-HfO2-c;Tf=3073.15]-CP-EXT-1800
     source_path: data-src/published-thermo/pankratz-hf.json
     source_sha256: fe6dc0f3c1fa1379465cd20b420ae65837366f56569abdb21c4dc338fc8a0c59
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 443a2f0775bada6250e562f52133736cd16e9549ccfef36458657ad3e96c2726
+    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -10407,10 +10434,10 @@ rows:
     fit_intervals_K: [[1200, 1600], [1600, 2000], [2000, 2400], [2400, 3000]]
     max_residual_J_per_mol: 0.0965558390598744
     max_residual_log10_K: 0.00000190421205283
-    flags: [tier-4 hypothetical liquid_from_solid construction, tier-3 fusion entropy and crystal-Cp carry-over estimates, constant-Cp crystal continuation above 1800 K, caller-supplied parent activity; no activity model]
+    flags: [tier-4 hypothetical liquid_from_solid construction, tier-2 measured fusion enthalpy and tier-3 crystal-Cp carry-over estimate, constant-Cp crystal continuation above 1800 K, caller-supplied parent activity; no activity model]
     uncertainty_band:
       kind: propagated fusion-input uncertainty plus crystal-extension model spread
-      values_J_per_mol: {1200: 8909.841977, 1500: 6534.451583, 1800: 4476.930640, 2000: 3254.692859, 2500: 639.734362, 3000: 1457.880368}
+      values_J_per_mol: {1200: 14869.299800, 1500: 11539.401247, 1800: 8527.364898, 2000: 6668.780104, 2500: 2462.944026, 3000: 1698.418653}
       method: Sum liquid_from_solid input spread and absolute Gibbs difference between constant-last-Cp and printed-equation crystal continuations; not supercooling energy or fit residual.
     source:
       citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
@@ -10423,6 +10450,30 @@ rows:
     extrapolation: true
     source_data: false
     source_limit_K: 1800
+  - table: gas
+    species_name: Th+(g)
+    table_id: Burcat-Th-plus
+    runtime_ref: Burcat-Th-plus
+    source_path: data-src/published-thermo/burcat-th-plus.json
+    source_sha256: 0df84d38cc867a490e60f4a8ea64eeb5f6557be6a811578e346d1e3145b17a0d
+    authority: published_fitted_ionisation
+    method: fitted_burcat_nasa7_to_shomate
+    tier: 3
+    T_range_K: [1200, 3000]
+    source_fit_range_K: [1200, 3000]
+    T_interval: 1
+    flags: [opt-in ion, card composition TH 1 E -1 identifies Th+ despite header CAS label Th+4, NIST ASD Saha offset disclosed]
+    uncertainty_band: {kind: not separately quantified by selected source}
+    source:
+      citation: Gurvich thermal table (1992), Th+ card as cited by the Burcat thermochemical database
+      source_record: Burcat-Th-plus; card HF0 1187.153 and HF298 1193.218 kJ/mol
+      source_locator: Th+ card, 298.15-6000 K
+      source_url: https://burcat.technion.ac.il/
+    source_url: https://burcat.technion.ac.il/
+    source_locator: Burcat Th+ card
+    extrapolation: false
+    source_data: true
+    source_limit_K: 6000
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each
@@ -10453,7 +10504,7 @@ source_comparisons:
     - {T_K: 1800, janaf_G_app_J_mol: 242263.800, pankratz_G_app_J_mol: 243303.784, janaf_minus_pankratz_J_mol: -1039.984}
     - {T_K: 2000, janaf_G_app_J_mol: 195816, pankratz_G_app_J_mol: 196882.304, janaf_minus_pankratz_J_mol: -1066.304}
     - {T_K: 2500, janaf_G_app_J_mol: 77103.500, pankratz_G_app_J_mol: 78251.260, janaf_minus_pankratz_J_mol: -1147.760}
-    - {T_K: 3000, janaf_G_app_J_mol: -44762, pankratz_G_app_J_mol: null, janaf_minus_pankratz_J_mol: null}
+    - {T_K: 3000, janaf_G_app_J_mol: -44762, pankratz_G_app_J_mol: -43497.881, janaf_minus_pankratz_J_mol: -1264.119}
   - species_name: Sc(g)
     nasa_record_id: NG-1087
     pankratz_table_id: P672-Sc-g

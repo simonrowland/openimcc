@@ -134,13 +134,20 @@ Pankratz Bulletin 672, printed pp. 423, 424, and 426; ThO2(cr) on p. 425 is the
 selected oxide parent because no other thorium oxide liquid row was located.
 ThO2(l) is a hypothetical supercooled tier-4 liquid_from_solid standard over
 1200–3000 K, using the reviewed 3650 K fusion inputs and constant-last-Cp
-crystal continuation above 2500 K. Th+ has no evaluated gas function in the
-checked JANAF, NASA, Pankratz, TSIV, NIST WebBook, OECD/NEA, or Burcat sources.
+crystal continuation above 2500 K. The opt-in Th+ row uses the Burcat card
+based on Gurvich's 1992 thermal table. Its composition TH 1, E -1 and HF0/HF298
+values identify singly ionized Th; the header CAS label “Th+4” conflicts with
+those card fields. Against NIST ASD levels and ionization energy, the Pankratz
+Th(g)/Burcat Th+ pair has Saha ratios 4.496 at 1500 K and 2.558 at 2500 K;
+this source offset is disclosed in provenance.
 Activities are caller-supplied and no activity coefficients are applied. The
 Hf(g) row uses JANAF Hf-006; opt-in Hf+ and Hf- use JANAF Hf-007 and Hf-008.
 Pankratz Bulletin 672 p. 188 supplies HfO2(cr) through 1800 K. HfO2(l) is a
-tier-4 construction with a labelled constant-Cp crystal continuation above
-1800 K. The Hf gas and oxide parent use different compilations, so the
+tier-4 construction using the measured Hong et al. (2018) fusion enthalpy
+61 +/- 10 kJ/mol and 3073.15 K melting point, with a labelled constant-Cp
+crystal continuation above 1800 K. Hf+ and Hf- are checked against NIST ASD
+levels, ionization energy, and electron affinity; their measured source ratios
+are recorded in provenance. The Hf gas and oxide parent use different compilations, so the
 apparent-G comparison is recorded as a source-scale band. No HfO(g) or
 HfO2(g) functions were found in the checked JANAF, NASA, Pankratz, TSIV,
 NIST WebBook, OECD/NEA, or Burcat sources. BaO(l), SrO(l), and ZrO2(l) use their
