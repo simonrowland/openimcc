@@ -1145,6 +1145,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
             "NG-0165", "NG-0166", "NG-0178", "NG-1168", "NG-1169",
             "NG-1181", "NG-1263", "NG-1264", "NG-1267", "NG-1269",
             "NG-1325", "NG-1917", "NG-2029",
+            "NG-0926",
         }
     )
     expected_by_limit = {}
@@ -1847,6 +1848,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "(WO3)2", "(WO3)3", "(WO3)4", "W3O8",
         "(WO3)5",
         "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
+        "NiO", "CoO",
     }
     assert trace_channels == set(build_gas_tables.TRACE_GAS_SPECIES)
 
@@ -1861,7 +1863,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
             name for name in (
                 "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
                 "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag",
-                "Mo", "W", "Ba", "Sr", "Zr",
+                "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co",
             )
             if name in parent_atoms
         )
