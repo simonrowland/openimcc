@@ -1,0 +1,35 @@
+{
+  "record_id": "Burcat-Th-plus",
+  "species": "Th+",
+  "formula": "Th+",
+  "phase": "gas",
+  "charge": 1,
+  "source": "Burcat thermochemical database, card based on Gurvich thermal table (1992)",
+  "header_cas_label": "16065-92-2 (Th+4)",
+  "composition": {"Th": 1, "electron": -1},
+  "delta_f_H_0_kJ_mol": 1187.153,
+  "delta_f_H_298_15": {"value": 1193218.0, "unit": "J/mol"},
+  "temperature_range_K": [298.15, 6000.0],
+  "intervals": [{
+    "T_min_K": {"value": 298.15},
+    "T_max_K": {"value": 1000.0},
+    "a_coefficients": [
+      {"value": 0.0}, {"value": 0.0}, {"value": 4.48050480}, {"value": -1.69455483e-2},
+      {"value": 4.90328546e-5}, {"value": -5.18696743e-8}, {"value": 1.89965576e-11}
+    ],
+    "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+    "b1": {"value": 142587.968},
+    "b2": {"value": 0.410442935}
+  }, {
+    "T_min_K": {"value": 1000.0},
+    "T_max_K": {"value": 6000.0},
+    "a_coefficients": [
+      {"value": 0.0}, {"value": 0.0}, {"value": 2.38266379}, {"value": 1.35667109e-3},
+      {"value": 4.01197712e-8}, {"value": -9.47802152e-11}, {"value": 1.00199468e-14}
+    ],
+    "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+    "b1": {"value": 142719.195},
+    "b2": {"value": 8.58429964}
+  }],
+  "source_note": "Transcribed numeric NASA-7 card coefficients. The header CAS note says Th+4, but its own composition is TH 1, E -1 and its HF0/HF298 values identify singly ionized Th+. The header label is retained as a noted source inconsistency, not interpreted as the card charge."
+}

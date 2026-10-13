@@ -319,6 +319,9 @@ TRACE_ION_GAS_NASA_SOURCES = (
     ("Cd+(g)", "NG-4071", "Cd", "Cd", 1, 0),
     ("Sc+(g)", "NG-1088", "ScE-1", "Sc", 1, 0),
 )
+TRACE_ION_GAS_BURCAT_SOURCES = (
+    ("Th+(g)", "Burcat-Th-plus", "Th+", "Th", 1, 0),
+)
 TRACE_ION_PUBLISHED_SOURCES = (("Bi+(g)", "NBS-T22-ASD-BiII", "Bi", 1, 0),)
 TRACE_ION_NASA_SOURCES = (
     ("Sn+(g)", "NG-1846", "Sn+", "Sn", 1, 0),
@@ -2937,6 +2940,17 @@ def build_rows(
             fit_t_max=FIT_T_MAX,
         )
         for source in TRACE_ION_GAS_NASA_SOURCES + TRACE_ION_NASA_SOURCES
+    )
+    rows.extend(
+        _fit_nasa_card_gas_row(
+            published_source_dir,
+            *source,
+            t_interval=1,
+            fit_t_min=1200.0,
+            fit_t_max=3000.0,
+            runtime_t_min=1200.0,
+        )
+        for source in TRACE_ION_GAS_BURCAT_SOURCES
     )
     rows.extend(
         _fit_janaf_text_row(
