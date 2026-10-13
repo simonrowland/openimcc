@@ -149,6 +149,7 @@ GAS_SOURCES = (
 # NASA CEA cards supply only rows JANAF does not list, plus PbO(l)'s missing
 # high-temperature tail.
 TRACE_JANAF_GAS_SOURCES = (
+    ("Hf(g)", "Hf-006", "Hf", 1, 0),
     ("Li(g)", "Li-005", "Li", 1, 0),
     ("LiO(g)", "Li-011", "Li", 1, 1),
     ("Li2O(g)", "Li-017", "Li", 2, 1),
@@ -248,6 +249,9 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("Sb2(g)", "P672-Sb2-g", "Sb2", "Sb", 2, 0, 2000.0),
     ("Sb4(g)", "P672-Sb4-g", "Sb4", "Sb", 4, 0, 2000.0),
     ("Sb4O6(g)", "P672-Sb4O6-g", "Sb4O6", "Sb", 4, 6, 1000.0),
+    ("Th(g)", "P672-Th-g", "Th", "Th", 1, 0, 2500.0),
+    ("ThO(g)", "P672-ThO-g", "ThO", "Th", 1, 1, 2500.0),
+    ("ThO2(g)", "P672-ThO2-g", "ThO2", "Th", 1, 2, 2500.0),
     ("MnO(g)", "TSIV-1436", "MnO", "Mn", 1, 1, 6000.0),
     ("CoO(g)", "TSIV-1335", "CoO", "Co", 1, 1, 3000.0),
 )
@@ -289,6 +293,8 @@ ION_GAS_TEXT_SOURCES = (
 # Positive monatomic ion rows are opt-in and are admitted by the same C3
 # source screen as the existing cations.
 TRACE_ION_GAS_TEXT_SOURCES = (
+    ("Hf+(g)", "Hf-007", "Hf", 1, 0),
+    ("Hf-(g)", "Hf-008", "Hf", 1, 0),
     ("Li+(g)", "Li-006", "Li", 1, 0),
     ("Rb+(g)", "Rb-006", "Rb", 1, 0),
     ("Pb+(g)", "Pb-006", "Pb", 1, 0),
@@ -1436,7 +1442,9 @@ def _fit_janaf_text_row(
 
 def _published_table_record(source_dir: Path, table_id: str) -> dict[str, Any]:
     """Read one transcribed record from its named published table bundle."""
-    if table_id.startswith("P672-"):
+    if table_id in {"P672-HfO2-c", "P672-Hf-g"}:
+        filename = "pankratz-hf.json"
+    elif table_id.startswith("P672-"):
         filename = "pankratz-bulletin-672.json"
     elif table_id.startswith("P696-"):
         filename = "pankratz-bulletin-696.json"
@@ -3254,6 +3262,32 @@ def _fit_liquid_from_solid_parent(
             )
             rows.append(row)
         return rows, construction, None
+    elif species in {"HfO2", "ThO2"}:
+        record = _published_table_record(published_source_dir, config["crystal_table_id"])
+        extension_limit = max(
+            float(value)
+            for value in config["inputs"]["fusion_temperature"].get(
+                "bounds_k", [config["inputs"]["fusion_temperature"]["value"]]
+            )
+        )
+        # Premise: the HfO2/ThO2 melting markers are above 3000 K, so the
+        # complete 1200-3000 K parent is a hypothetical supercooled liquid.
+        # Algebra: liquid_from_solid
+        # evaluates G_l(T)=G_c(Tfus)+(Tfus-T)*DeltaSfus+Cp_l*((T-Tfus)-T*ln(T/Tfus))
+        # with its formation anchor restored; the crystal H/S at fusion comes
+        # from the selected Pankratz oxide table. Unit check: each term is J/mol before conversion
+        # to the fitted kJ/mol basis. Sanity: the fusion correction cancels at
+        # Tfus, and no supercooling energy is used as an uncertainty band.
+        # Pankratz prints the crystal equation only through the source limit. Continue
+        # the crystal by its final Cp node; retain the printed-equation
+        # extrapolation as the alternate used to calculate the continuation
+        # band. The solid equation is J/mol-K after 4.184 conversion.
+        crystal = _pankratz_crystal_table(
+            record, extension_limit_k=extension_limit, extrapolate_cp=False
+        )
+        alternate = _pankratz_crystal_table(
+            record, extension_limit_k=extension_limit, extrapolate_cp=True
+        )
     elif species in {"SeO2", "As2O3", "Sb2O3", "Ag2O"}:
         record = _published_table_record(published_source_dir, config["crystal_table_id"])
         crystal = _pankratz_crystal_table(
@@ -3299,6 +3333,8 @@ def _fit_liquid_from_solid_parent(
             (2400.0, 3000.0),
         ),
         "Ag2O": ((1200.0, 1600.0), (1600.0, 2000.0), (2000.0, 2400.0), (2400.0, 3000.0)),
+        "ThO2": ((1200.0, 1600.0), (1600.0, 2000.0), (2000.0, 2400.0), (2400.0, 3000.0)),
+        "HfO2": ((1200.0, 1600.0), (1600.0, 2000.0), (2000.0, 2400.0), (2400.0, 3000.0)),
     }[species]
     fit = inputs["condensate_fit"]
     rows = []
@@ -3814,7 +3850,7 @@ def build_condensate_rows(
             )
         )
     liquid_inputs = _load_record(repository / "data-src/liquid-from-solid-inputs.json")
-    for species in ("ZnO", "CdO", "MnO", "SeO2", "As2O3", "Sb2O3", "Ag2O"):
+    for species in ("ZnO", "CdO", "MnO", "SeO2", "As2O3", "Sb2O3", "Ag2O", "ThO2", "HfO2"):
         fitted_rows, _construction, _alternate = _fit_liquid_from_solid_parent(
             published_source_dir, species, liquid_inputs["rows"][species]
         )

@@ -7537,6 +7537,36 @@
         "runtime_t_min": 1200.0,
         "runtime_t_max": 1600.0
       }
+    },
+    "HfO2": {
+      "formula": "HfO2",
+      "crystal_table_id": "P672-HfO2-c",
+      "family": null,
+      "metal_atoms": 1,
+      "total_atoms": 3,
+      "selection_reason": "Pankratz Bulletin 672 prints the HfO2(cr) formation function through 1800 K and no liquid branch. Use the source-supported Hf(IV) dioxide as the sole caller parent. No direct fusion-enthalpy measurement was available in the published high-temperature assessment, so the documented tier-3 per-atom fusion-entropy estimate is used inside the tier-4 liquid_from_solid construction.",
+      "inputs": {
+        "fusion_temperature": {"value": 3085.0, "tier": 1, "spread": 0.0, "bounds_k": [3085.0, 3085.0], "source": "Published high-temperature material property table gives the HfO2 melting point as 3085 K.", "references": ["https://ntrs.nasa.gov/api/citations/19720017897/downloads/19720017897.pdf"]},
+        "fusion_entropy": {"value": 28.004377717, "tier": 3, "spread": 0.0, "unit": "J mol^-1 K^-1", "source": "No direct HfO2 fusion enthalpy measurement is available in the published assessment. Apply the documented tier-3 per-atom mean, 9.334792572 J/(mol K), to the three atoms in HfO2; this is a construction input, not a measured fusion entropy.", "training_count": 48, "references": ["data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3", "https://doi.org/10.1038/s41598-018-32848-7"]},
+        "liquid_heat_capacity": {"value": 87.702824, "tier": 3, "spread": 5.26216944, "unit": "J mol^-1 K^-1", "source": "No HfO2 liquid Cp is selected. Carry the printed 1800 K crystal Cp, 20.961 cal/(mol K) x 4.184 J/cal, into the liquid estimate; use the existing 6% high-temperature Cp uncertainty recipe.", "references": ["https://ntrs.nasa.gov/api/citations/19720017897/downloads/19720017897.pdf", "https://doi.org/10.1038/s41598-018-32848-7"]}
+      },
+      "crystal_cp_extrapolation_band": {"method": "Difference in G_app between constant final-node Cp continuation and the printed Pankratz Cp equation continuation above the 1800 K source limit.", "source_limit_K": 1800.0, "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]},
+      "condensate_fit": {"table_id": "P672-HfO2-LFS", "ref": "P672-HfO2-LFS", "cation": "Hf", "cat_num": 1, "oxy_num": 2, "fit_t_min": 1200.0, "fit_t_max": 3000.0, "runtime_t_min": 1200.0, "runtime_t_max": 3000.0}
+    },
+    "ThO2": {
+      "formula": "ThO2",
+      "crystal_table_id": "P672-ThO2-c",
+      "family": null,
+      "metal_atoms": 1,
+      "total_atoms": 3,
+      "selection_reason": "Pankratz Bulletin 672 prints ThO2(cr) formation functions through 2500 K and no liquid branch. Use the source-supported Th(IV) dioxide as the sole parent, with a tier-4 liquid_from_solid caller standard; the OECD/NEA review supplies the melting and fusion-enthalpy inputs.",
+      "inputs": {
+        "fusion_temperature": {"value": 3650.0, "tier": 1, "spread": 20.0, "bounds_k": [3630.0, 3670.0], "source": "The OECD/NEA Chemical Thermodynamics of Thorium review accepts the measured ThO2 melting point as 3650 +/- 20 K.", "references": ["https://www.oecd-nea.org/science/pubs/2007/6254-chemical-thermodyn-11.pdf"]},
+        "fusion_entropy": {"value": 16.84931506849315, "tier": 1, "spread": 2.847372, "unit": "J mol^-1 K^-1", "source": "Derived from the OECD/NEA accepted fusion enthalpy 61.5 +/- 10.0 kJ/mol divided by 3650 K; the spread is the maximum endpoint deviation using both reported bounds Tfus=3650+/-20 K and Delta_fusH=61.5+/-10.0 kJ/mol.", "references": ["https://www.oecd-nea.org/science/pubs/2007/6254-chemical-thermodyn-11.pdf"]},
+        "liquid_heat_capacity": {"value": 90.08152, "tier": 3, "spread": 5.4048912, "unit": "J mol^-1 K^-1", "source": "No ThO2 liquid Cp is selected. Carry the printed 2500 K crystal Cp, 21.530 cal/(mol K) x 4.184 J/cal, into the liquid estimate; the OECD/NEA review estimates at least 6% uncertainty for the high-temperature Cp measurements, used here as the spread.", "references": ["https://www.oecd-nea.org/science/pubs/2007/6254-chemical-thermodyn-11.pdf", "https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]}
+      },
+      "crystal_cp_extrapolation_band": {"method": "Difference in G_app between constant final-node Cp continuation and the printed Pankratz Cp equation continuation above the 2500 K source limit.", "source_limit_K": 2500.0, "references": ["https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"]},
+      "condensate_fit": {"table_id": "P672-ThO2-LFS", "ref": "P672-ThO2-LFS", "cation": "Th", "cat_num": 1, "oxy_num": 2, "fit_t_min": 1200.0, "fit_t_max": 3000.0, "runtime_t_min": 1200.0, "runtime_t_max": 3000.0}
     }
   },
   "fusion_temperature_fallback": {

@@ -585,7 +585,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
     )
-    assert len(oxide_rows) == 40
+    assert len(oxide_rows) == 42
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -1583,6 +1583,112 @@ def test_pankratz_liquid_construction_inputs_and_band_are_independent() -> None:
     assert band[2000] == pytest.approx(10727.079668, abs=0.002)
 
 
+def test_tho2_parent_fit_uses_reviewed_inputs_and_meets_node_gate() -> None:
+    inputs_path = ROOT / "data-src" / "liquid-from-solid-inputs.json"
+    inputs = json.loads(inputs_path.read_text(encoding="utf-8"))["rows"]["ThO2"]
+    source = build_gas_tables._published_table_record(PUBLISHED_DATA, "P672-ThO2-c")
+    assert source["table"] == "Thorium dioxide formation table"
+    assert source["cp_equation_cal_mol_K"] == {
+        "a": 17.058,
+        "b_per_K": 0.001808,
+        "c_K2": 251300,
+        "equation": "Cp = a + b*T - c/T^2",
+        "published_range_K": [298.15, 2500.0],
+    }
+    assert inputs["inputs"]["fusion_temperature"]["value"] == 3650.0
+    assert inputs["inputs"]["fusion_entropy"]["value"] == pytest.approx(
+        61500.0 / 3650.0
+    )
+    rows, construction, alternate = build_gas_tables._fit_liquid_from_solid_parent(
+        PUBLISHED_DATA, "ThO2", inputs
+    )
+    assert alternate is not None
+    from tools.liquid_from_solid import liquid_from_solid
+    alternate_construction = liquid_from_solid("ThO2", alternate, inputs["inputs"])
+    assert [(int(row["T_min"]), int(row["T_max"])) for row in rows] == [
+        (1200, 1600), (1600, 2000), (2000, 2400), (2400, 3000),
+    ]
+    assert max(float(row["_max_residual_J_per_mol"]) for row in rows) < 10.0
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    band = next(
+        row["uncertainty_band"]["values_J_per_mol"]
+        for row in provenance["rows"]
+        if row["table"] == "condensate" and row["species_name"] == "ThO2(l)"
+    )
+    for temperature, value in band.items():
+        propagated = construction.input_spread_kj_mol(float(temperature)) * 1000.0
+        crystal_extension = abs(
+            construction.at(float(temperature)).gibbs_kj_mol
+            - alternate_construction.at(float(temperature)).gibbs_kj_mol
+        ) * 1000.0
+        assert value == pytest.approx(propagated + crystal_extension, abs=0.002)
+
+
+def test_hfo2_parent_fit_uses_reviewed_inputs_and_meets_node_gate() -> None:
+    inputs_path = ROOT / "data-src" / "liquid-from-solid-inputs.json"
+    inputs = json.loads(inputs_path.read_text(encoding="utf-8"))["rows"]["HfO2"]
+    source = build_gas_tables._published_table_record(PUBLISHED_DATA, "P672-HfO2-c")
+    assert source["formation_enthalpy_298_kcal_mol"] == -267.12
+    assert source["cp_equation_cal_mol_K"]["published_range_K"] == [298.15, 1800.0]
+    assert inputs["inputs"]["fusion_temperature"]["value"] == 3085.0
+    assert inputs["inputs"]["fusion_entropy"]["value"] == pytest.approx(3 * 9.334792572)
+    rows, construction, alternate = build_gas_tables._fit_liquid_from_solid_parent(
+        PUBLISHED_DATA, "HfO2", inputs
+    )
+    assert alternate is not None
+    from tools.liquid_from_solid import liquid_from_solid
+    alternate_construction = liquid_from_solid("HfO2", alternate, inputs["inputs"])
+    assert [(int(row["T_min"]), int(row["T_max"])) for row in rows] == [
+        (1200, 1600), (1600, 2000), (2000, 2400), (2400, 3000),
+    ]
+    assert max(float(row["_max_residual_J_per_mol"]) for row in rows) < 10.0
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    band = next(
+        row["uncertainty_band"]["values_J_per_mol"]
+        for row in provenance["rows"]
+        if row["table"] == "condensate" and row["species_name"] == "HfO2(l)"
+    )
+    for temperature, value in band.items():
+        propagated = construction.input_spread_kj_mol(float(temperature)) * 1000.0
+        crystal_extension = abs(
+            construction.at(float(temperature)).gibbs_kj_mol
+            - alternate_construction.at(float(temperature)).gibbs_kj_mol
+        ) * 1000.0
+        assert value == pytest.approx(propagated + crystal_extension, abs=0.002)
+
+
+def test_hf_mixed_source_band_matches_pankratz_apparent_gibbs_nodes() -> None:
+    comparison = build_gas_tables._published_table_record(PUBLISHED_DATA, "P672-Hf-g")
+    pankratz = {
+        int(row[0]): (148.0 + float(row[3])) * 4184.0
+        - int(row[0]) * float(row[2]) * 4.184
+        for row in comparison["thermal_nodes"]
+    }
+    janaf = build_gas_tables._janaf_text_source_rows(JANAF_DATA, "Hf-006")
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    rows = [
+        row for row in provenance["rows"]
+        if row["table"] == "gas" and row["species_name"] == "Hf(g)"
+    ]
+    assert len(rows) == 2
+    for row in rows:
+        band = row["uncertainty_band"]
+        for temperature, value in band["values_J_per_mol"].items():
+            temperature = int(temperature)
+            if temperature == 3000:
+                cp, entropy_2500, h_2500 = map(float, comparison["thermal_nodes"][-1][1:])
+                entropy = entropy_2500 + cp * math.log(3000.0 / 2500.0)
+                enthalpy = h_2500 + cp * (3000.0 - 2500.0) / 1000.0
+                pank_g = (148.0 + enthalpy) * 4184.0 - 3000.0 * entropy * 4.184
+                jan_g = (janaf[298.15]["formation_enthalpy"] + janaf[3000]["enthalpy_increment"]) * 1000.0 - 3000.0 * janaf[3000]["entropy"]
+                gap = abs(jan_g - pank_g)
+            else:
+                source = janaf[temperature]
+                jan_g = (janaf[298.15]["formation_enthalpy"] + source["enthalpy_increment"]) * 1000.0 - temperature * source["entropy"]
+                gap = abs(jan_g - pankratz[temperature])
+            assert value == pytest.approx(gap, abs=0.001)
+
+
 def test_constructed_parent_fit_nodes_are_only_self_fit_checks() -> None:
     rows = build_gas_tables.build_condensate_rows(JANAF_DATA)
     selected = [
@@ -1594,7 +1700,7 @@ def test_constructed_parent_fit_nodes_are_only_self_fit_checks() -> None:
             "Li2O(l)", "Rb2O(l)", "PbO(l)",
             "Cs2O(l)", "Cu2O(l)", "SnO(l)", "K2O(l)",
             "ZnO(l)", "CdO(l)", "Bi2O3(l)",
-            "MnO(l)", "TeO2(l)", "Sb2O3(l)", "Ag2O(l)",
+            "MnO(l)", "TeO2(l)", "Sb2O3(l)", "Ag2O(l)", "ThO2(l)", "HfO2(l)",
         }
     ]
     direct_fits = [
@@ -1796,6 +1902,8 @@ def test_constructed_condensate_bands_match_liquid_construction_inputs() -> None
         "SeO2(l)": "crystal-Cp extrapolation parameters",
         "CdO(l)": "crystal-Cp extrapolation parameters",
         "ZnO(l)": "TSIV uncertainties and crystal-Cp extension parameters",
+        "ThO2(l)": "reviewed fusion inputs and crystal-Cp extension parameters",
+        "HfO2(l)": "reviewed fusion inputs and crystal-Cp extension parameters",
     }
     seen_other_forms: set[str] = set()
     for row in constructed:
@@ -1860,7 +1968,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "(WO3)5",
         "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
         "NiO", "CoO",
-        "Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3",
+        "Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf",
     }
     assert trace_channels == set(build_gas_tables.TRACE_GAS_SPECIES)
 
@@ -1875,7 +1983,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
             name for name in (
                 "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
                 "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag",
-                "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "U",
+                "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "U", "Th", "Hf",
             )
             if name in parent_atoms
         )
@@ -1972,7 +2080,7 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
             if (
                 row.get("extrapolation") is True
                 and row["species_name"] not in {
-                    "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)", "TeO2(l)", "SeO2(l)", "As2O3(l)", "Sb2O3(l)", "Ag2O(l)", "UO2(l)"
+                    "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)", "TeO2(l)", "SeO2(l)", "As2O3(l)", "Sb2O3(l)", "Ag2O(l)", "UO2(l)", "ThO2(l)", "HfO2(l)"
                 }
             ):
                 continue
@@ -3464,6 +3572,8 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
             ("Mn", "Rb", "Cs", "CsO", "Cs2O", "Zn", "Cd"),
             "No single-compilation table is vendored for the gas and runtime parent.",
         ),
+        "Th": "Pankratz supplies both the selected Th gas and ThO2 crystal; JANAF O2 remains the shared gas reference.",
+        "ThO": "Pankratz supplies both the selected ThO gas and ThO2 crystal; JANAF O2 remains the shared gas reference.",
     }
 
     def compilation(row: dict) -> str:
@@ -4316,7 +4426,7 @@ _ATTACHMENT_LEVELS = {
 _ATOMIC_ANION_ELEMENTS = (
     "Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb",
     "O", "Pb", "Rb", "Si", "Ti", "V", "Zn", "Ag", "Mo", "W", "Zr",
-    "Ni", "Co",
+    "Ni", "Co", "Hf",
 )
 _UNCHECKED_MOLECULAR_ANIONS = ("AlO", "AlO2", "BO", "BO2", "KO", "LiO", "NaO", "O2")
 
@@ -4331,11 +4441,11 @@ def test_gas_table_atomic_anion_inventory() -> None:
     atomic = {f"{element}-(g)" for element in _ATOMIC_ANION_ELEMENTS}
     molecular = {f"{species}-(g)" for species in _UNCHECKED_MOLECULAR_ANIONS}
     assert packaged == atomic | molecular
-    # JANAF supplies Zn-, but the neutral zinc atom has no bound anion term
-    # listed for a ground-state attachment comparison. Ag- comes from NASA CEA,
-    # whose card supplies no JANAF attachment-level entry.
+    # JANAF supplies Zn- and Hf-, but neither table has a ground-state
+    # attachment-level entry for its neutral. Ag- comes from NASA CEA, whose
+    # card supplies no JANAF attachment-level entry.
     assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic - {
-        "Zn-(g)", "Ag-(g)"
+        "Zn-(g)", "Ag-(g)", "Hf-(g)"
     }
 
 

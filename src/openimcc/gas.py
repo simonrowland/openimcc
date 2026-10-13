@@ -552,6 +552,13 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "UO": ("UO2", 1, 0.5),
     "UO2": ("UO2", 1, 0.0),
     "UO3": ("UO2", 1, -0.5),
+    # ThO2(l) provides one Th and two O atoms: Th, ThO, and ThO2 balance
+    # with 1, 1/2, and 0 O2 respectively. Coefficients are per parent mole.
+    "Th": ("ThO2", 1, 1.0),
+    "ThO": ("ThO2", 1, 0.5),
+    "ThO2": ("ThO2", 1, 0.0),
+    # HfO2(l) is the caller-supplied parent: Hf(g) balances with one O2.
+    "Hf": ("HfO2", 1, 1.0),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -679,6 +686,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "SnO2",
         "Sc", "ScO", "ScO2",
         "U", "UO", "UO2", "UO3",
+        "Th", "ThO", "ThO2",
+        "Hf",
     }
 )
 
@@ -811,13 +820,17 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "UO": "nasa_glenn_fitted",
         "UO2": "nasa_glenn_fitted",
         "UO3": "nasa_glenn_fitted",
+        "Th": "published_fitted",
+        "ThO": "published_fitted",
+        "ThO2": "published_fitted",
+        "Hf": "janaf_fitted",
     }
 )
 _ION_GAS_SPECIES = (
     "Na+", "K+", "Ca+", "e-",
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
     "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-",
-    "Li+", "Rb+", "Pb+",
+    "Li+", "Rb+", "Pb+", "Hf+", "Hf-",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
     "Zn+", "Zn-", "Cd+", "Bi+",
@@ -889,6 +902,8 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "WO3": "janaf_fitted",
     "Sc2O3": "nasa_glenn_fitted",
     "UO2": "nasa_glenn_fitted",
+    "ThO2": "liquid_from_solid_estimate",
+    "HfO2": "liquid_from_solid_estimate",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -928,6 +943,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "As2O3": "P672-As2O3",
     "Sb2O3": "P672-Sb2O3-c",
     "Ag2O": "P672-Ag2O-c",
+    "HfO2": "P672-HfO2-c",
     "MnO": "MnO-liquid-construction",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
@@ -1123,6 +1139,7 @@ _GAS_IONIZATION_PAIRS = (
     ("Sr", "Sr+"),
     ("Zr", "Zr+"),
     ("Sc", "Sc+"),
+    ("Hf", "Hf+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -1157,6 +1174,7 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("Zr", "Zr-"),
     ("Ni", "Ni-"),
     ("Co", "Co-"),
+    ("Hf", "Hf-"),
 )
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
@@ -2282,6 +2300,40 @@ ELEMENT_STATUS["U"] = {
     "c3_ion_bound": {
         "status": "declined",
         "reason": "No evaluated U+ thermo function was located in the checked JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat sources.",
+    },
+}
+ELEMENT_STATUS["Th"] = {
+    "status": "gas-partial",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": "Pankratz Bulletin 672 Th(g), ThO(g), ThO2(g), and ThO2(cr) cover source nodes through 2500 K; the ThO2(l) activity standard is a tier-4 liquid_from_solid construction from the sourced crystal using OECD/NEA fusion inputs, with crystal Cp continued above the Pankratz limit; ThO2 is selected as the sole sourced oxide parent; a(ThO2) is caller-supplied. No evaluated Th+ gas function was located in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
+    "c2_candidates": (("P672-ThO-g", "ThO"), ("P672-ThO2-g", "ThO2")),
+    "c3_ion_bound": {
+        "status": "declined",
+        "reason": "No evaluated Th+ thermo function was located in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
+    },
+}
+ELEMENT_STATUS["Hf"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+    "validation": "unvalidated",
+    "reason": "JANAF Hf(g), Hf+, and Hf- are available; Pankratz Bulletin 672 supplies the HfO2(cr) elemental formation function through 1800 K. HfO2(l) is a tier-4 liquid_from_solid caller standard built from that crystal, with constant-Cp extension above the source limit; HfO2 is the selected parent because no lower oxide liquid is sourced. The source-scale comparison uses Pankratz Hf(g) over its shared range. No HfO(g) or HfO2(g) function was found in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
+    "c2_candidates": (("Hf-006", "Hf"),),
+    "c3_ion_bound": {
+        "status": "available",
+        "reason": "JANAF Hf-007 and Hf-008 provide Hf+ and Hf- thermo functions; Hf+ is checked by the existing opt-in ion-bound calculation.",
+        "source_tables": {"cation": "Hf-007", "anion": "Hf-008", "neutral": "Hf-006"},
+        "parent_activity": 0.001,
+        "max_ratio": 9.767953004773076e-06,
+        "temperature_K": 3000.0,
+        "fO2": 1e-12,
+        "neutral_pressure_bar": 7.574896330553065e-06,
+        "element_total_pressure_bar": 7.574896330553065e-06,
+        "joint_ion_pressure_bar": 7.399123137287036e-11,
+        "electron_pressure_bar": 6.197496378963256e-05,
+        "K_ion": 6.001744621338756e-10,
+        "isolated_bound": 153239842952038.62,
+        "parent_oxide": "HfO2",
     },
 }
 
@@ -3580,7 +3632,7 @@ _ATOMIC_MASS_G_MOL = {
     "As": 74.921595, "Se": 78.971, "Te": 127.60,
     "Mo": 95.95, "W": 183.84,
     "Ba": 137.327, "Sr": 87.62, "Zr": 91.224,
-    "Sc": 44.955908, "U": 238.02891,
+    "Sc": 44.955908, "U": 238.02891, "Th": 232.0377, "Hf": 178.49,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,

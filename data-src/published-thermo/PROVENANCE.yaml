@@ -97,9 +97,26 @@ records:
     source_locator: Printed pp. 363-365 and 448-450
     tier: 1
     selection_reason: Comparison-only Sc(g), Sc2O3(l), U(g), and UO2(cr) nodes provide independent apparent-Gibbs checks against the selected NASA Glenn cards; the Sc2O3 liquid disagreement is carried as a band.
+  - record_id: P672-HfO2-c
+    path: data-src/published-thermo/pankratz-hf.json
+    source_sha256: fe6dc0f3c1fa1379465cd20b420ae65837366f56569abdb21c4dc338fc8a0c59
+    publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: HfO2(c) formation table, printed p. 188
+    tier: 3
+    selection_reason: The formation table provides HfO2(cr) to 1800 K; its elemental anchor and crystal function supply the required tier-4 liquid_from_solid caller parent with the documented extension rule. The Hf(g) function is comparison-only and JANAF is retained.
+    tables:
+      P672-HfO2-c:
+        source_locator: HfO2(c) formation table, printed p. 188
+        tier: 3
+        selection_reason: Selected crystal source for the HfO2(l) construction.
+      P672-Hf-g:
+        source_locator: Hf(g) formation table, printed p. 187
+        tier: 1
+        selection_reason: Comparison-only Hf(g) apparent-G values quantify the JANAF versus Bulletin 672 difference; JANAF remains selected by the primary authority rail.
   - record_id: P672
     path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
+    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     tables:
@@ -135,6 +152,22 @@ records:
         source_locator: UO2 formation and melt data, printed pp. 449-450
         tier: 1
         selection_reason: Comparison-only crystal values bound the selected NASA Glenn UO2 phase-pair card; Bulletin 672 prints no liquid formation function.
+      P672-Th-g:
+        source_locator: Thorium gas table, printed p. 423
+        tier: 3
+        selection_reason: JANAF and NASA Glenn provide no Th(g) gas card; the published Bureau of Mines evaluation supplies elemental-reference H/S/Cp nodes through 2500 K, with the continuation separately flagged.
+      P672-ThO-g:
+        source_locator: ThO gas table, printed p. 424
+        tier: 3
+        selection_reason: JANAF and NASA Glenn provide no ThO(g) gas card; the published table supplies elemental-reference functions through 2500 K, with the continuation separately flagged.
+      P672-ThO2-c:
+        source_locator: ThO2 formation/crystal table, printed p. 425
+        tier: 1
+        selection_reason: The published Th(IV) dioxide crystal formation function is the sole sourced oxide parent; the same compilation family supplies the neutral gas rows.
+      P672-ThO2-g:
+        source_locator: ThO2 gas table, printed p. 426
+        tier: 3
+        selection_reason: JANAF and NASA Glenn provide no ThO2(g) gas card; the published table supplies elemental-reference functions through 2500 K, with the continuation separately flagged.
       P672-Se-g:
         source_locator: Selenium gas table, printed pp. 80-81
         tier: 3

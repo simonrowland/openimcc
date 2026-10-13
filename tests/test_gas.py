@@ -200,7 +200,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
         + 1  # Sc+ has an additional interval row.
     )
-    assert len(gas_pack.oxide_df) == 113
+    assert len(gas_pack.oxide_df) == 121
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -2331,6 +2331,7 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
         "MnO(l)",
         "MoO3(l)", "WO3(l)", "BaO(l)", "SrO(l)", "ZrO2(l)",
         "Sc2O3(l)", "UO2(l)",
+        "HfO2(l)",
     }
     return replace(
         pack,
@@ -2364,7 +2365,8 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "MoO3": 1.0e-3, "WO3": 1.0e-3,
         "BaO": 1.0e-3, "SrO": 1.0e-3, "ZrO2": 1.0e-3,
         "NiO": 1.0e-3, "CoO": 1.0e-3,
-        "Sc2O3": 1.0e-3, "UO2": 1.0e-3,
+        "Sc2O3": 1.0e-3, "UO2": 1.0e-3, "ThO2": 1.0e-3,
+        "HfO2": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2401,7 +2403,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
             reason = missing_rows.omitted_channels[species]
             assert (
                 _SF04_REACTIONS[species][0] + "(l)" in reason
-                or species in {"Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3"}
+                or species in {"Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf"}
                 and f"missing from active table: {species}(g)" in reason
             )
 
@@ -2571,7 +2573,7 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
             float(record["formation_enthalpy_298_kj_mol"]["value"])
             + source["enthalpy_increment"]
         ) * 1000.0 - temperature * source["entropy"]
-    if table_id in {"P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS", "P672-Ag2O-LFS"}:
+    if table_id in {"P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS", "P672-Ag2O-LFS", "P672-HfO2-LFS"}:
         repository = Path(__file__).resolve().parents[1]
         source_dir = repository / "data-src" / "published-thermo"
         config = json.loads(
@@ -2579,9 +2581,9 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
                 encoding="utf-8"
             )
         )["rows"][
-            {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3", "P672-Ag2O-LFS": "Ag2O"}[table_id]
+            {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3", "P672-Ag2O-LFS": "Ag2O", "P672-HfO2-LFS": "HfO2"}[table_id]
         ]
-        species = {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3", "P672-Ag2O-LFS": "Ag2O"}[table_id]
+        species = {"P672-SeO2-LFS": "SeO2", "P672-As2O3-LFS": "As2O3", "P672-Sb2O3-LFS": "Sb2O3", "P672-Ag2O-LFS": "Ag2O", "P672-HfO2-LFS": "HfO2"}[table_id]
         _rows, construction, _alternate = build_gas_tables._fit_liquid_from_solid_parent(
             source_dir, species, config
         )
@@ -2591,7 +2593,10 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
         if (
             table_id.startswith(("P672-", "P696-"))
             or table_id in {"TSIV-1335", "TSIV-1436"}
-        ) and table_id != "P672-T102":
+        ) and table_id not in {
+            "P672-T102", "P672-SeO2-LFS", "P672-As2O3-LFS",
+            "P672-Sb2O3-LFS", "P672-Ag2O-LFS", "P672-ThO2-LFS", "P672-HfO2-LFS",
+        }:
             record = build_gas_tables._published_table_record(source_dir, table_id)
             if record.get("phase") == "liquid":
                 nodes = {
@@ -2617,7 +2622,7 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
             return (reference + node["enthalpy_increment"]) * 1000.0 - (
                 temperature * node["entropy"]
             )
-        if table_id in {"TSIV-1603", "P672-T102", "P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS", "P672-Ag2O-LFS"}:
+        if table_id in {"TSIV-1603", "P672-T102", "P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS", "P672-Ag2O-LFS", "P672-ThO2-LFS", "P672-HfO2-LFS"}:
             repository = Path(__file__).resolve().parents[1]
             species = {
                 "TSIV-1603": "ZnO",
@@ -2626,6 +2631,8 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
                 "P672-As2O3-LFS": "As2O3",
                 "P672-Sb2O3-LFS": "Sb2O3",
                 "P672-Ag2O-LFS": "Ag2O",
+                "P672-ThO2-LFS": "ThO2",
+                "P672-HfO2-LFS": "HfO2",
             }[table_id]
             config = json.loads(
                 (repository / "data-src" / "liquid-from-solid-inputs.json").read_text(
@@ -2698,6 +2705,10 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("UO", "UO2", "NG-1224", "NG-1977"),
         ("UO2", "UO2", "NG-1230", "NG-1977"),
         ("UO3", "UO2", "NG-1235", "NG-1977"),
+        ("Th", "ThO2", "P672-Th-g", "P672-ThO2-LFS"),
+        ("ThO", "ThO2", "P672-ThO-g", "P672-ThO2-LFS"),
+        ("ThO2", "ThO2", "P672-ThO2-g", "P672-ThO2-LFS"),
+        ("Hf", "HfO2", "Hf-006", "P672-HfO2-LFS"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]

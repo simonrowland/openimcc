@@ -1,0 +1,41 @@
+{
+  "schema_version": "published_thermo.v1",
+  "publication": "Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672, printed page 188",
+  "tables": {
+    "P672-Hf-g": {
+      "table": "Hafnium gas formation comparison",
+      "species": "Hf(g)",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 148.0,
+      "thermal_nodes": [[1200, 6.596, 52.259, 5.108], [1500, 7.026, 53.781, 7.156], [1800, 7.260, 55.085, 9.304], [2000, 7.338, 55.854, 10.764], [2500, 7.415, 57.501, 14.455]],
+      "apparent_gibbs_kcal_mol": [[1200, 90.397], [1500, 74.4235], [1800, 58.159], [2000, 47.052], [2500, 18.7025]],
+      "source_note": "Comparison-only Hf(g) thermal cells transcribed from printed p. 187. Calculate G_app=dfH298+(H-H298)-T*S using the 148.000 kcal/mol elemental anchor, H-H298 in kcal/mol, and S in cal/(mol K); JANAF Hf-006 remains selected."
+    },
+    "P672-HfO2-c": {
+      "table": "Hafnium dioxide formation table",
+      "species": "HfO2(cr)",
+      "formula": "HfO2",
+      "phase": "crystal",
+      "formation_enthalpy_298_kcal_mol": -267.12,
+      "cp_equation_cal_mol_K": {
+        "a": 17.014,
+        "b_per_K": 0.00234,
+        "c_K2": 294400.0,
+        "equation": "Cp = a + b*T - c/T^2",
+        "published_range_K": [298.15, 1800.0]
+      },
+      "nodes": [
+        [298.15, 14.4, 14.18, 0.0],
+        [1200, 19.634, 38.448, 16.223],
+        [1300, 19.836, 40.028, 18.197],
+        [1400, 20.034, 41.505, 20.190],
+        [1500, 20.236, 42.894, 22.204],
+        [1600, 20.453, 44.207, 24.238],
+        [1700, 20.691, 45.454, 26.295],
+        [1800, 20.961, 46.644, 28.377]
+      ],
+      "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+      "source_note": "HfO2(c) elemental formation table from Hf(c)+O2(g); -267.120 kcal/mol is the 298.15 K anchor. Crystal nodes extend through 1800 K; no liquid branch is printed. Sources named on page: Kornilov (formation enthalpy), Todd (low-temperature data), Orr (high-temperature data)."
+    }
+  }
+}
