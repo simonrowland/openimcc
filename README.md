@@ -137,9 +137,13 @@ ThO2(l) is a hypothetical supercooled tier-4 liquid_from_solid standard over
 crystal continuation above 2500 K. The opt-in Th+ row uses the Burcat card
 based on Gurvich's 1992 thermal table. Its composition TH 1, E -1 and HF0/HF298
 values identify singly ionized Th; the header CAS label “Th+4” conflicts with
-those card fields. Against NIST ASD levels and ionization energy, the Pankratz
-Th(g)/Burcat Th+ pair has Saha ratios 4.496 at 1500 K and 2.558 at 2500 K;
-this source offset is disclosed in provenance.
+those card fields. The Pankratz neutral/Burcat cation pair combines sources.
+On the selected 597.2 kJ/mol neutral anchor, its ionization energy is 12.486
+kJ/mol below NIST ASD. This contributes +12.486 kJ/mol to RT ln(K_pair/K_Saha);
+the remaining thermal-function and level-population terms contribute +6.261
+kJ/mol at 1500 K and +7.037 kJ/mol at 2500 K, producing ratios 4.496 and
+2.558. Separately, the Pankratz neutral anchor is 4.8 kJ/mol below Burcat's
+602.0 kJ/mol neutral anchor.
 Activities are caller-supplied and no activity coefficients are applied. The
 Hf(g) row uses JANAF Hf-006; opt-in Hf+ and Hf- use JANAF Hf-007 and Hf-008.
 Pankratz Bulletin 672 p. 188 supplies HfO2(cr) through 1800 K. HfO2(l) is a

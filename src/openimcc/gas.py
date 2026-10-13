@@ -2314,7 +2314,7 @@ ELEMENT_STATUS["Th"] = {
     "c2_candidates": (("P672-ThO-g", "ThO"), ("P672-ThO2-g", "ThO2")),
     "c3_ion_bound": {
         "status": "available",
-        "reason": "Burcat's Gurvich-based Th+ card is an opt-in tier-3 ion. Its NIST ASD Saha ratios are 4.496 at 1500 K and 2.558 at 2500 K; Pankratz Th(g) has dfH298 597.2 kJ/mol versus Burcat's neutral 602.0 kJ/mol, and the selected Pankratz-neutral/Burcat-cation anchors differ from the NIST ionization energy by -12.486 kJ/mol. C3 uses that adopted pair.",
+        "reason": "Burcat's Gurvich-based Th+ card is an opt-in tier-3 ion. On the selected 597.2 kJ/mol Pankratz Th(g) neutral anchor, the selected Pankratz-neutral/Burcat-cation ionization energy is 12.486 kJ/mol below the NIST ASD value. That contributes +12.486 kJ/mol to RT ln(K_pair/K_Saha); the remaining thermal-function and level-population contribution is +6.261 kJ/mol at 1500 K and +7.037 kJ/mol at 2500 K, giving ratios 4.496 and 2.558. Separately, the Pankratz neutral anchor is 4.8 kJ/mol below Burcat's 602.0 kJ/mol neutral anchor. C3 uses that adopted pair.",
         "source_tables": {"cation": "Burcat-Th-plus", "neutral": "P672-Th-g"},
         "parent_activity": 1.0e-3,
         "max_ratio": 1.6534253288851723e-15,

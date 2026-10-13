@@ -3693,6 +3693,19 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
     assert unbanded_mixed == set(known_unbanded_mixed_source_channels)
     assert all(known_unbanded_mixed_source_channels.values())
 
+    known_unbanded_mixed_ionization_pairs = {
+        "Th": "Pankratz Th(g) and Burcat Th+(g) are deliberately combined for the audited ionization pair; no single-compilation Th/Th+ comparison is available.",
+    }
+    assert set(known_unbanded_mixed_ionization_pairs) == {"Th"}
+    assert all(known_unbanded_mixed_ionization_pairs.values())
+    selected_gas = load_gas_datapack().gas_df
+    assert set(np.atleast_1d(selected_gas.loc["Th(g)", "Ref"])) == {
+        "P672-Th-g", "P672-Th-g-CP-EXT-2500"
+    }
+    assert set(np.atleast_1d(selected_gas.loc["Th+(g)", "Ref"])) == {
+        "Burcat-Th-plus"
+    }
+
 
 def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
     """Cluster bands follow the runtime liquid parent at every row knot."""
@@ -4136,7 +4149,7 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
 _SAHA_LEVELS = {
     "Hf": (
         6.825070,
-        ((5, 0.0), (7, 2356.68), (9, 4567.64), (1, 5521.77), (5, 5638.61), (3, 6572.54), (5, 8983.74), (7, 10508.88), (9, 10532.55), (3, 14017.81), (5, 14541.66)),
+        ((5, 0.0), (7, 2356.68), (9, 4567.64), (1, 5521.77), (5, 5638.61), (3, 6572.54), (5, 8983.74), (5, 10508.88), (9, 10532.55), (3, 14017.81), (7, 14541.66)),
         ((4, 0.0), (6, 3050.88), (4, 3644.65), (6, 4904.85), (8, 6344.34), (10, 8361.76), (6, 13485.56)),
     ),  # NIST ASD IE; NIST Handbook Tables 5/6: https://physics.nist.gov/PhysRefData/Handbook/Tables/hafniumtable5.htm and hafniumtable6.htm.
     "Th": (
@@ -4418,10 +4431,32 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
             # partition functions and ionization energies; the ratios remain
             # visible because both source pairs miss the 2% Saha gate.
             expected = {
-                "Hf": {1500.0: 1.2358655503, 2500.0: 0.7944302178},
+                "Hf": {1500.0: 1.2358482922, 2500.0: 0.7939976229},
                 "Th": {1500.0: 4.4960411241, 2500.0: 2.5579593377},
             }[element][temperature]
             assert fitted_k / saha_k == pytest.approx(expected, rel=5e-5)
+            if element == "Th":
+                selected_anchor_offset_kj_mol = (
+                    1193.218 - 597.2 - 6.30670 * 96.4853321
+                )
+                assert selected_anchor_offset_kj_mol == pytest.approx(
+                    -12.486, abs=0.001
+                )
+                assert 597.2 - 602.0 == pytest.approx(-4.8, abs=0.001)
+                # The selected-anchor ionization offset contributes +12.486
+                # kJ/mol to RT ln(K_pair/K_Saha); pin the remaining thermal
+                # function and level-population contribution independently.
+                cause_residual_kj_mol = (
+                    R_J_MOL_K * temperature * math.log(fitted_k / saha_k)
+                    / 1000.0
+                    - 12.486
+                )
+                expected_residual = {1500.0: 6.261, 2500.0: 7.037}[
+                    temperature
+                ]
+                assert cause_residual_kj_mol == pytest.approx(
+                    expected_residual, abs=0.001
+                )
         elif element == "Bi":
             # NBS Table 22's Bi+ enthalpy and Pankratz Table 80's Bi(g)
             # function differ by about 0.45 kJ/mol from the NIST ionization
@@ -4621,7 +4656,7 @@ def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
     if element == "Hf":
         # JANAF's Hf-008 formation cell implies about 0.064 eV attachment,
         # below the measured NIST 0.1780 eV affinity.
-        assert ratios == pytest.approx((0.1682162495, 0.2917159887), rel=5e-5)
+        assert ratios == pytest.approx((0.1682139004, 0.2915571392), rel=5e-5)
     elif element == "Ga":
         # JANAF implies EA 0.301/0.308 eV; current NIST EA is 0.430 eV.
         assert ratios == pytest.approx((0.369, 0.568), rel=0.02), element

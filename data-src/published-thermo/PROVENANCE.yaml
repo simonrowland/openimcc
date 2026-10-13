@@ -25,6 +25,13 @@ records:
     source_locator: Table 264
     tier: 3
     selection_reason: Published temperature functions provide direct ZnO(g) coverage through 3000 K with a compatible gas reference state.
+  - record_id: Burcat-Th-plus
+    path: data-src/published-thermo/burcat-th-plus.json
+    source_sha256: 0df84d38cc867a490e60f4a8ea64eeb5f6557be6a811578e346d1e3145b17a0d
+    publication: Burcat thermochemical database, card based on Gurvich thermal table (1992), Th+
+    source_locator: BURCAT.THR.txt lines 35622-35628
+    tier: 3
+    selection_reason: The card's TH 1, E -1 composition and HF0/HF298 values identify singly ionized thorium despite the conflicting Th+4 header label; the adopted mixed-compilation Th(g)/Th+(g) ionization pair is disclosed in the Saha audit.
   - record_id: TSIV-1603
     path: data-src/published-thermo/tsiv-table-1603.json
     source_sha256: 8989bd90414e47d5aea02104d9915a17fa4e8d8c9847516ef6adda58a4e6d8ec
