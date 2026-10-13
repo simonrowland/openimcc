@@ -2779,42 +2779,70 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
 
 
 def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
-    """Cluster bands are n times the absolute NASA/JANAF parent card-G gap."""
+    """Cluster bands follow the runtime liquid parent at every row knot."""
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     comparisons = {
         row["species_name"]: row
         for row in provenance["source_comparisons"]["rows"]
     }
-    gas_rows = {
-        row["species_name"]: row
-        for row in provenance["rows"]
+    gas_rows = [
+        row for row in provenance["rows"]
         if row["table"] == "gas"
+        and row.get("uncertainty_band", {}).get("kind")
+        == "mixed_source_parent_scale_inconsistency"
+    ]
+    runtime_parents = pd.read_csv(GAS_DATA / "condensate.csv").set_index(
+        "species_name", drop=False
+    )
+    knots = (1200, 1500, 1800, 2000, 2500, 3000)
+    cluster_pattern = re.compile(r"^\((MoO3|WO3)\)([2-5])\(g\)$")
+    assert len(gas_rows) == 10
+    assert {row["species_name"] for row in gas_rows} == {
+        "(MoO3)2(g)", "(MoO3)3(g)", "(MoO3)4(g)", "(MoO3)5(g)",
+        "(WO3)5(g)",
     }
-    for parent, clusters in {
-        "MoO3(l)": (2, 3, 4, 5),
-        "WO3(l)": (5,),
-    }.items():
+    seen = set()
+    for row in gas_rows:
+        match = cluster_pattern.fullmatch(row["species_name"])
+        assert match is not None
+        parent_formula, number = match.groups()
+        parent = f"{parent_formula}(l)"
+        n = int(number)
+        identity = (row["species_name"], row["T_interval"])
+        assert identity not in seen
+        seen.add(identity)
         comparison = comparisons[parent]
         card = _nasa_record(comparison["nasa_record_id"])
-        for n in clusters:
-            species = f"({parent[:-3]}){n}(g)"
-            band = gas_rows[species]["uncertainty_band"]
-            assert band["basis"] == "card_G_parent_scale_inconsistency"
-            assert band["per_formula"] == "cluster formula"
-            assert band["factor_from_parent_formula"] == n
-            for value in comparison["values"]:
-                temperature = float(value["T_K"])
-                props = build_gas_tables._nasa7_properties(card, temperature)
-                nasa_card_g = R_J_MOL_K * temperature * (
-                    props["h_rt"] - props["s_R"]
-                )
-                janaf_g = _janaf_apparent_gibbs(
-                    comparison["janaf_table_id"], temperature
-                )
-                expected = n * abs(nasa_card_g - janaf_g)
-                assert band["values_J_per_mol"][int(temperature)] == pytest.approx(
-                    expected, abs=0.002
-                )
+        card_low = float(card["intervals"][0]["T_min_K"]["value"])
+        card_high = float(card["intervals"][-1]["T_max_K"]["value"])
+        row_low, row_high = map(float, row["T_range_K"])
+        row_knots = {t for t in knots if row_low <= t <= row_high}
+        undefined = {t for t in row_knots if not card_low <= t <= card_high}
+        expected_knots = row_knots - undefined
+        band = row["uncertainty_band"]
+        assert band["basis"] == "card_G_parent_scale_inconsistency"
+        assert band["per_formula"] == "cluster formula"
+        assert band["factor_from_parent_formula"] == n
+        assert set(map(int, band["values_J_per_mol"])) == expected_knots
+        assert set(band.get("undefined_temperatures_K", [])) == undefined
+        if row["species_name"] == "(WO3)5(g)" and row["T_interval"] == 1:
+            assert band["pressure_shift_at_2000_K"] == "+1.34 dex"
+        if undefined:
+            assert "no card extrapolation is used" in band["undefined_reason"]
+        for temperature in expected_knots:
+            props = build_gas_tables._nasa7_properties(card, temperature)
+            nasa_card_g = R_J_MOL_K * temperature * (
+                props["h_rt"] - props["s_R"]
+            )
+            parent_row = _nearest_interval_row(
+                runtime_parents, parent, temperature, allow_extrapolation=True
+            )
+            runtime_parent_g = _lamor_gibbs(temperature, parent_row)
+            expected = n * abs(nasa_card_g - runtime_parent_g)
+            assert band["values_J_per_mol"][temperature] == pytest.approx(
+                expected, abs=0.002
+            )
+    assert len(seen) == 10
 
 
 def _janaf_log10_kf(table_id: str, temperature: float) -> float:

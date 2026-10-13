@@ -63,6 +63,13 @@ source_notes:
       0.936824, 1.881118, 2.151220 at 1500, 2500, and 3000 K. These retained
       JANAF ion rows differ from the spectroscopic partition calculation;
       ratios are pinned in tests rather than covered by a widened tolerance.
+      W-006/W-005 imply a 0 K ionization enthalpy of 770.396 kJ/mol, from
+      1620.178 minus 849.782 kJ/mol, versus the NIST IE 7.86403 eV =
+      758.764 kJ/mol: 11.632 kJ/mol (0.121 eV) higher. JANAF's ionization
+      entropy is about 12 J/(mol K) larger than the NIST ASD partition
+      functions give; that entropy term grows with T and carries the fitted/
+      Saha ratio from 0.937 at 1500 K to 2.15 at 3000 K. The full ASD level
+      list changes the ratio by <0.004.
       Sources: https://physics.nist.gov/PhysRefData/Handbook/Tables/molybdenumtable5.htm,
       https://physics.nist.gov/PhysRefData/Handbook/Tables/molybdenumtable6.htm,
       https://physics.nist.gov/PhysRefData/Handbook/Tables/tungstentable5_a.htm,
@@ -7592,10 +7599,13 @@ rows:
       units: J/mol
       per_formula: cluster formula
       factor_from_parent_formula: 2
-      method: n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G
+      method: n_cluster times absolute NASA-liquid-card-G minus runtime MoO3(l) Gibbs energy; runtime held-Cp continuation is used above 2000 K
       values_J_per_mol:
+        1500: 1741.369
         1800: 1860.586
-        2000: 1939.972
+        2000: 1939.973
+        2500: 2125.958
+        3000: 2302.221
   - table: gas
     species_name: (MoO3)2(g)
     table_id: NG-0831
@@ -7625,10 +7635,10 @@ rows:
       units: J/mol
       per_formula: cluster formula
       factor_from_parent_formula: 2
-      method: n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G
+      method: n_cluster times absolute NASA-liquid-card-G minus runtime MoO3(l) Gibbs energy; runtime held-Cp continuation is used above 2000 K
       values_J_per_mol:
-        1800: 1860.586
-        2000: 1939.972
+        1200: 1615.378
+        1500: 1741.369
   - table: gas
     species_name: (MoO3)3(g)
     table_id: NG-0832
@@ -7655,10 +7665,13 @@ rows:
       units: J/mol
       per_formula: cluster formula
       factor_from_parent_formula: 3
-      method: n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G
+      method: n_cluster times absolute NASA-liquid-card-G minus runtime MoO3(l) Gibbs energy; runtime held-Cp continuation is used above 2000 K
       values_J_per_mol:
+        1500: 2612.054
         1800: 2790.880
-        2000: 2909.958
+        2000: 2909.959
+        2500: 3188.938
+        3000: 3453.332
   - table: gas
     species_name: (MoO3)3(g)
     table_id: NG-0832
@@ -7688,10 +7701,10 @@ rows:
       units: J/mol
       per_formula: cluster formula
       factor_from_parent_formula: 3
-      method: n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G
+      method: n_cluster times absolute NASA-liquid-card-G minus runtime MoO3(l) Gibbs energy; runtime held-Cp continuation is used above 2000 K
       values_J_per_mol:
-        1800: 2790.880
-        2000: 2909.958
+        1200: 2423.067
+        1500: 2612.054
   - table: gas
     species_name: (MoO3)4(g)
     table_id: NG-0833
@@ -7718,10 +7731,13 @@ rows:
       units: J/mol
       per_formula: cluster formula
       factor_from_parent_formula: 4
-      method: n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G
+      method: n_cluster times absolute NASA-liquid-card-G minus runtime MoO3(l) Gibbs energy; runtime held-Cp continuation is used above 2000 K
       values_J_per_mol:
+        1500: 3482.739
         1800: 3721.173
         2000: 3879.945
+        2500: 4251.917
+        3000: 4604.443
   - table: gas
     species_name: (MoO3)4(g)
     table_id: NG-0833
@@ -7751,10 +7767,10 @@ rows:
       units: J/mol
       per_formula: cluster formula
       factor_from_parent_formula: 4
-      method: n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G
+      method: n_cluster times absolute NASA-liquid-card-G minus runtime MoO3(l) Gibbs energy; runtime held-Cp continuation is used above 2000 K
       values_J_per_mol:
-        1800: 3721.173
-        2000: 3879.945
+        1200: 3230.757
+        1500: 3482.739
   - table: gas
     species_name: (MoO3)5(g)
     table_id: NG-0834
@@ -7781,10 +7797,13 @@ rows:
       units: J/mol
       per_formula: cluster formula
       factor_from_parent_formula: 5
-      method: n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G
+      method: n_cluster times absolute NASA-liquid-card-G minus runtime MoO3(l) Gibbs energy; runtime held-Cp continuation is used above 2000 K
       values_J_per_mol:
+        1500: 4353.423
         1800: 4651.466
         2000: 4849.931
+        2500: 5314.896
+        3000: 5755.553
   - table: gas
     species_name: (MoO3)5(g)
     table_id: NG-0834
@@ -7814,10 +7833,10 @@ rows:
       units: J/mol
       per_formula: cluster formula
       factor_from_parent_formula: 5
-      method: n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G
+      method: n_cluster times absolute NASA-liquid-card-G minus runtime MoO3(l) Gibbs energy; runtime held-Cp continuation is used above 2000 K
       values_J_per_mol:
-        1800: 4651.466
-        2000: 4849.931
+        1200: 4038.446
+        1500: 4353.423
   - table: gas
     species_name: Mo+(g)
     table_id: Mo-006
@@ -7994,7 +8013,7 @@ rows:
   - {"table":"gas","species_name":"(WO3)3(g)","table_id":"O-093","source_path":"data-src/janaf/O-093.yaml","source_sha256":"db825ddfcecc4691773bec9a1502c427837459a70359e97b4b78306f5c30d18c","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.44073546444997,"max_residual_log10_K":3.13561787273717e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-093.html","download_url":"https://janaf.nist.gov/tables/O-093.txt","upstream_source_sha256":"f6e6d16a11240da51032aa9ae2885dc9ec0ee74df974eb08abdac421de5bb9a6","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"gas","species_name":"(WO3)4(g)","table_id":"O-096","source_path":"data-src/janaf/O-096.yaml","source_sha256":"a1221fb06f9aaa962871158e7db4329c326d20919fc2af1b0d690355ce275df4","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.40461229160428,"max_residual_log10_K":3.2634635593372e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-096.html","download_url":"https://janaf.nist.gov/tables/O-096.txt","upstream_source_sha256":"40420b9f365b697a7494d890aeae2a33551b76482d355b8101783b9eb31a0331","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"gas","species_name":"W3O8(g)","table_id":"O-092","source_path":"data-src/janaf/O-092.yaml","source_sha256":"c5e579bafeeebcc44b72dfdaab3a16612489920a28bca96ef1ceeb69fd6def1d","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.50293022440746,"max_residual_log10_K":3.56834029140279e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/O-092.html","download_url":"https://janaf.nist.gov/tables/O-092.txt","upstream_source_sha256":"64e4ead9fde896fc3519c1da31d4c296289a4fc1314fd49c586207f546ecde79","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
-  - {"table":"gas","species_name":"(WO3)5(g)","table_id":"NG-1258","source_path":"data-src/nasa-glenn/NG-1258.json","source_sha256":"f86ac9b62c8264286de99408d385a17e52f24df2e423e95b5c3d34eedda6b4aa","authority":"nasa_glenn_fitted","method":"fitted","max_residual_J_per_mol":0.00374436099082232,"max_residual_log10_K":9.77907647962393e-08,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_locator":"thermo.inp lines 10859-10866","upstream_source_sha256":"fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363","source_record":"data-src/nasa-glenn/NG-1258.json","source_url":"https://www.grc.nasa.gov/www/CEAWeb/","retrieval_date":"2026-10-12","user_agent":"neutral-source-vendor/1.0", "uncertainty_band": {"kind": "mixed_source_parent_scale_inconsistency", "basis": "card_G_parent_scale_inconsistency", "units": "J/mol", "per_formula": "cluster formula", "factor_from_parent_formula": 5, "method": "n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G", "values_J_per_mol": {2000: 51199.238, 2500: 63515.104, 3000: 74407.632}}}
+  - {"table":"gas","species_name":"(WO3)5(g)","table_id":"NG-1258","source_path":"data-src/nasa-glenn/NG-1258.json","source_sha256":"f86ac9b62c8264286de99408d385a17e52f24df2e423e95b5c3d34eedda6b4aa","authority":"nasa_glenn_fitted","method":"fitted","max_residual_J_per_mol":0.00374436099082232,"max_residual_log10_K":9.77907647962393e-08,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_locator":"thermo.inp lines 10859-10866","upstream_source_sha256":"fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363","source_record":"data-src/nasa-glenn/NG-1258.json","source_url":"https://www.grc.nasa.gov/www/CEAWeb/","retrieval_date":"2026-10-12","user_agent":"neutral-source-vendor/1.0", "uncertainty_band": {"kind": "mixed_source_parent_scale_inconsistency", "basis": "card_G_parent_scale_inconsistency", "units": "J/mol", "per_formula": "cluster formula", "factor_from_parent_formula": 5, "method": "n_cluster times absolute NASA-liquid-card-G minus runtime WO3(l) Gibbs energy", "undefined_temperatures_K": [1500], "undefined_reason": "NASA liquid card NG-2013 is defined only from 1747 K; no card extrapolation is used.", "pressure_shift_at_2000_K": "+1.34 dex", "values_J_per_mol": {1800: 45800.076, 2000: 51199.246, 2500: 63515.258, 3000: 74407.447}}}
   - {"table":"gas","species_name":"W(g)","table_id":"W-005","source_path":"data-src/janaf/W-005.yaml","source_sha256":"32556e7fb4922aa7abd32c019042bc3a27924379519d979c7c17ce34579e7d06","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.15272345172707,"max_residual_log10_K":6.33374071642633e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/W-005.html","download_url":"https://janaf.nist.gov/tables/W-005.txt","upstream_source_sha256":"fdf2523b89b49953a092eb84a71fd967244fe4a1124be77daa227c1f9fa8fa0e","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"gas","species_name":"WO(g)","table_id":"O-027","source_path":"data-src/janaf/O-027.yaml","source_sha256":"320b7bf1af6507816704ef10bb8eb3edbd536c500d46fd845f094495bcc3a382","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.764091744204052,"max_residual_log10_K":3.89889524751858e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-027.html","download_url":"https://janaf.nist.gov/tables/O-027.txt","upstream_source_sha256":"a7b478fbb89b4bf1fbd560c7c8a1400aa8f67b406db3e6dd5d380f037254b722","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"gas","species_name":"WO2(g)","table_id":"O-048","source_path":"data-src/janaf/O-048.yaml","source_sha256":"d69db317ded6fd9395aeda69c86dd5551db3580ff0e721a434ae662f3cff0fc0","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.737824560666922,"max_residual_log10_K":5.0556737920899e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-048.html","download_url":"https://janaf.nist.gov/tables/O-048.txt","upstream_source_sha256":"8df6c1b4022b439cd93fee827e08d65c62d133ade8355a3325dc7f18f9b86d93","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
@@ -8003,7 +8022,7 @@ rows:
   - {"table":"gas","species_name":"(WO3)3(g)","table_id":"O-093","source_path":"data-src/janaf/O-093.yaml","source_sha256":"db825ddfcecc4691773bec9a1502c427837459a70359e97b4b78306f5c30d18c","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.08473045565188,"max_residual_log10_K":4.11083136120394e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-093.html","download_url":"https://janaf.nist.gov/tables/O-093.txt","upstream_source_sha256":"f6e6d16a11240da51032aa9ae2885dc9ec0ee74df974eb08abdac421de5bb9a6","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"gas","species_name":"(WO3)4(g)","table_id":"O-096","source_path":"data-src/janaf/O-096.yaml","source_sha256":"a1221fb06f9aaa962871158e7db4329c326d20919fc2af1b0d690355ce275df4","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":1.00658079795539,"max_residual_log10_K":7.16672423175761e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-096.html","download_url":"https://janaf.nist.gov/tables/O-096.txt","upstream_source_sha256":"40420b9f365b697a7494d890aeae2a33551b76482d355b8101783b9eb31a0331","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"gas","species_name":"W3O8(g)","table_id":"O-092","source_path":"data-src/janaf/O-092.yaml","source_sha256":"c5e579bafeeebcc44b72dfdaab3a16612489920a28bca96ef1ceeb69fd6def1d","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.619029065594077,"max_residual_log10_K":3.96367855687508e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/O-092.html","download_url":"https://janaf.nist.gov/tables/O-092.txt","upstream_source_sha256":"64e4ead9fde896fc3519c1da31d4c296289a4fc1314fd49c586207f546ecde79","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
-  - {"table":"gas","species_name":"(WO3)5(g)","table_id":"NG-1258","source_path":"data-src/nasa-glenn/NG-1258.json","source_sha256":"f86ac9b62c8264286de99408d385a17e52f24df2e423e95b5c3d34eedda6b4aa","authority":"nasa_glenn_fitted","method":"fitted","max_residual_J_per_mol":1.01572940405458,"max_residual_log10_K":9.02071740584459e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_locator":"thermo.inp lines 10859-10866","upstream_source_sha256":"fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363","source_record":"data-src/nasa-glenn/NG-1258.json","source_url":"https://www.grc.nasa.gov/www/CEAWeb/","retrieval_date":"2026-10-12","user_agent":"neutral-source-vendor/1.0", "uncertainty_band": {"kind": "mixed_source_parent_scale_inconsistency", "basis": "card_G_parent_scale_inconsistency", "units": "J/mol", "per_formula": "cluster formula", "factor_from_parent_formula": 5, "method": "n_cluster times absolute NASA-liquid-card-G minus JANAF-liquid-G", "values_J_per_mol": {2000: 51199.238, 2500: 63515.104, 3000: 74407.632}}}
+  - {"table":"gas","species_name":"(WO3)5(g)","table_id":"NG-1258","source_path":"data-src/nasa-glenn/NG-1258.json","source_sha256":"f86ac9b62c8264286de99408d385a17e52f24df2e423e95b5c3d34eedda6b4aa","authority":"nasa_glenn_fitted","method":"fitted","max_residual_J_per_mol":1.01572940405458,"max_residual_log10_K":9.02071740584459e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_locator":"thermo.inp lines 10859-10866","upstream_source_sha256":"fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363","source_record":"data-src/nasa-glenn/NG-1258.json","source_url":"https://www.grc.nasa.gov/www/CEAWeb/","retrieval_date":"2026-10-12","user_agent":"neutral-source-vendor/1.0", "uncertainty_band": {"kind": "mixed_source_parent_scale_inconsistency", "basis": "card_G_parent_scale_inconsistency", "units": "J/mol", "per_formula": "cluster formula", "factor_from_parent_formula": 5, "method": "n_cluster times absolute NASA-liquid-card-G minus runtime WO3(l) Gibbs energy", "undefined_temperatures_K": [1200, 1500], "undefined_reason": "NASA liquid card NG-2013 is defined only from 1747 K; no card extrapolation is used.", "values_J_per_mol": {}}}
   - {"table":"gas","species_name":"W+(g)","table_id":"W-006","source_path":"data-src/janaf/W-006.yaml","source_sha256":"7b44053aad18dd31e160daff04ab5d86e5425c082fb51d67be75e9bb7c8847d2","authority":"janaf_fitted_ionisation","method":"fitted","max_residual_J_per_mol":1.39998202165589,"max_residual_log10_K":3.35305703635248e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/W-006.html","download_url":"https://janaf.nist.gov/tables/W-006.txt","upstream_source_sha256":"f16518d3b08afc18b91a7da69c615429ebbeb690eabf451d4556929a1ced90b6","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"gas","species_name":"W-(g)","table_id":"W-007","source_path":"data-src/janaf/W-007.yaml","source_sha256":"a5bdbdc27e81463b7bfeb13fb722c7d75375f1845df1895c574cf52b701562f0","authority":"janaf_fitted_ionisation","method":"fitted","max_residual_J_per_mol":1.27051591302734,"max_residual_log10_K":2.7651518983094e-05,"T_interval":1,"T_range_K":[1500,3000],"source_fit_range_K":[1500,3000],"source_url":"https://janaf.nist.gov/tables/W-007.html","download_url":"https://janaf.nist.gov/tables/W-007.txt","upstream_source_sha256":"70233b28f81bdd93b07d1104076c4e4a903a6d67f0bae85cc0def3d3cef3c2e0","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"gas","species_name":"W+(g)","table_id":"W-006","source_path":"data-src/janaf/W-006.yaml","source_sha256":"7b44053aad18dd31e160daff04ab5d86e5425c082fb51d67be75e9bb7c8847d2","authority":"janaf_fitted_ionisation","method":"fitted","max_residual_J_per_mol":0.734977510757744,"max_residual_log10_K":3.49004873588962e-05,"T_interval":2,"T_range_K":[1200,1500],"source_fit_range_K":[500,1500],"source_url":"https://janaf.nist.gov/tables/W-006.html","download_url":"https://janaf.nist.gov/tables/W-006.txt","upstream_source_sha256":"f16518d3b08afc18b91a7da69c615429ebbeb690eabf451d4556929a1ced90b6","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}

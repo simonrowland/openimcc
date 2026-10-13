@@ -164,8 +164,11 @@ WO3(l) card NG-2013. Their liquid-fitter card-G differences from JANAF are
 definitions, and the JANAF parent rows remain selected. The NASA-only clusters
 (MoO3)2–5(g) are paired with JANAF MoO3(l), and (WO3)5(g) with JANAF WO3(l).
 Their provenance bands report n times the absolute parent card-G scale gap in
-J per mole of cluster formula, at each comparison temperature; at 2000 K this
-is 1.940–4.850 kJ/mol for the Mo clusters and 51.199 kJ/mol for the W pentamer.
+J per mole of cluster formula, at each defined comparison temperature; at 2000 K this
+is 1.940–4.850 kJ/mol for the Mo clusters and 51.199 kJ/mol for the W pentamer,
+a +1.34 dex pressure shift. The WO3(l) card is undefined below 1747 K, so the
+W pentamer band is explicitly undefined at 1200 and 1500 K rather than
+extrapolating that card.
 
 Where the JANAF and NASA Cu2O(l) functions overlap, compare
 `G_app = dfH298 + (H-H298) - T·S`, using the crystal anchor for the NASA card.
@@ -343,7 +346,12 @@ balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
 `Zn+`, `Cd+`, `Bi+`, `Mn+`, `Mo+`, and `W+`,
 `Ga-`, `B-`, `BO-`, `BO2-`, `Cu-`, `Mo-`, `W-`, and every available JANAF-supported negative ion
 whose neutral is present. In+ is retained in the source ledger but declined
-after its NASA card failed the NIST Saha check. Cu+ is declined because its
+after its NASA card failed the NIST Saha check. JANAF W-006/W-005 imply a 0 K
+ionization enthalpy of 770.396 kJ/mol versus NIST IE 7.86403 eV = 758.764
+kJ/mol (11.632 kJ/mol, 0.121 eV higher), while their ionization entropy is
+about 12 J/(mol K) above the NIST ASD partition functions; that growing
+entropy term carries the fitted/Saha ratio from 0.937 at 1500 K to 2.15 at
+3000 K, and the full ASD level list changes it by <0.004. Cu+ is declined because its
 JANAF Cu-006 entropy yields fitted/Saha ratios 1666.15 and 1656.61 at 1500 and
 2500 K; the anomalous entropy is present in the published Cu-006 table. Cu-
 is available on the opt-in ion path. For Cu + e- = Cu-,
