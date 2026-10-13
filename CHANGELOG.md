@@ -10,8 +10,8 @@
   The Sc2O3 liquid branch differs from Bulletin 672 by its apparent-G difference,
   including both formation anchors; the 13.792 kJ/mol fusion-enthalpy gap (140.792 kJ/mol
   from Bulletin 672 versus 126.999 kJ/mol from the NASA cards) is recorded separately,
-  not as a Gibbs band. Its four supercooled continuation rows
-  carry the NASA liquid-versus-crystal apparent-G separation. U(g)'s apparent-G gap
+  not as a Gibbs band. The NASA liquid-versus-crystal apparent-G separation is recorded
+  as a comparison. U(g)'s apparent-G gap
   against Bulletin 672 is disclosed from both source records. No evaluated U+ thermo
   function was located.
 - Added computed source-gap disclosures for the Na2O(g) parent and gas anchors

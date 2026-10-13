@@ -3130,7 +3130,7 @@ def test_u_g_source_disagreement_band_recomputes_from_vendored_records() -> None
         )
 
 
-def test_sc2o3_supercooled_bands_recompute_from_nasa_phase_cards() -> None:
+def test_sc2o3_liquid_crystal_comparison_recomputes_from_nasa_phase_cards() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     liquid = _nasa_record("NG-1857")
     crystal = _nasa_record("NG-1856")
@@ -3141,23 +3141,28 @@ def test_sc2o3_supercooled_bands_recompute_from_nasa_phase_cards() -> None:
         and row.get("extrapolation") is True
     ]
     assert len(rows) == 4
-    for row in rows:
-        band = row["uncertainty_band"]
-        assert band["kind"] == "supercooled_liquid_G_app_difference_from_NASA_crystal_card"
-        low, high = map(int, row["T_range_K"])
-        assert set(map(int, band["values_J_per_mol"])) == {low, high}
-        for temperature, value in band["values_J_per_mol"].items():
-            temperature = int(temperature)
-            liquid_properties = build_gas_tables._nasa7_properties(liquid, temperature)
-            crystal_properties = build_gas_tables._nasa7_properties(crystal, temperature)
-            difference = abs(
-                R_J_MOL_K * temperature
-                * (
-                    liquid_properties["h_rt"] - liquid_properties["s_R"]
-                    - crystal_properties["h_rt"] + crystal_properties["s_R"]
-                )
+    comparisons = [
+        row["liquid_crystal_G_comparison"]
+        for row in rows
+        if "liquid_crystal_G_comparison" in row
+    ]
+    assert len(comparisons) == 1
+    comparison = comparisons[0]
+    assert comparison["label"].startswith("COMPARISON")
+    values = comparison["absolute_difference_J_per_mol"]
+    assert set(map(int, values)) == {1200, 1500, 2000, 2500, 2762}
+    for temperature, value in values.items():
+        temperature = int(temperature)
+        liquid_properties = build_gas_tables._nasa7_properties(liquid, temperature)
+        crystal_properties = build_gas_tables._nasa7_properties(crystal, temperature)
+        difference = abs(
+            R_J_MOL_K * temperature
+            * (
+                liquid_properties["h_rt"] - liquid_properties["s_R"]
+                - crystal_properties["h_rt"] + crystal_properties["s_R"]
             )
-            assert float(value) == pytest.approx(difference, abs=0.001)
+        )
+        assert float(value) == pytest.approx(difference, abs=0.001)
 
 
 def test_nio_gas_uncertainty_band_recomputes_from_bulletin_and_nasa() -> None:

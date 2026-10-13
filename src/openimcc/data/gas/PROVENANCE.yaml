@@ -9777,13 +9777,12 @@ rows:
       anchored to the liquid card at 2762 K, the NASA card edge and Bulletin 672 melting
       point. The Pankratz 33.650 kcal/mol (140.792 kJ/mol) fusion enthalpy exceeds the
       NASA card-pair value of 126.999 kJ/mol by 13.792 kJ/mol; that enthalpy gap is
-      separate from the Gibbs band. The supercooled band is the NASA
-      liquid-versus-crystal apparent-G difference at each row endpoint.
-    uncertainty_band:
-      kind: supercooled_liquid_G_app_difference_from_NASA_crystal_card
-      method: Absolute Gibbs-energy difference between NG-1857 liquid and NG-1856 crystal cards at the row endpoints.
-      comparison_record: data-src/nasa-glenn/NG-1856.json
-      values_J_per_mol: {1200: 43880.638, 1500: 41680.163}
+      separate from the liquid-crystal Gibbs comparison.
+    liquid_crystal_G_comparison:
+      label: COMPARISON — NASA liquid-minus-crystal apparent-G separation; not an uncertainty
+      liquid_record: data-src/nasa-glenn/NG-1857.json
+      crystal_record: data-src/nasa-glenn/NG-1856.json
+      absolute_difference_J_per_mol: {1200: 43880.638, 1500: 41680.163, 2000: 30004.547, 2500: 11540.141, 2762: 0.001}
     runtime_ref: NG-1857-SC-CP
     T0_K: 2762.0
     Cp_l_J_molK: 199.998860261874
@@ -9819,13 +9818,7 @@ rows:
     user_agent: neutral-source-vendor/1.0
     note: NASA pure-liquid standard state at 1 atm. The constant-Cp continuation is
       anchored to the liquid card at 2762 K, the NASA card edge and Bulletin 672 melting
-      point. The supercooled band is the NASA liquid-versus-crystal apparent-G difference
-      at each row endpoint.
-    uncertainty_band:
-      kind: supercooled_liquid_G_app_difference_from_NASA_crystal_card
-      method: Absolute Gibbs-energy difference between NG-1857 liquid and NG-1856 crystal cards at the row endpoints.
-      comparison_record: data-src/nasa-glenn/NG-1856.json
-      values_J_per_mol: {1500: 41680.163, 2000: 30004.547}
+      point. The liquid-crystal Gibbs comparison is recorded separately.
     runtime_ref: NG-1857-SC-CP
     T0_K: 2762.0
     Cp_l_J_molK: 199.998860261874
@@ -9861,13 +9854,7 @@ rows:
     user_agent: neutral-source-vendor/1.0
     note: NASA pure-liquid standard state at 1 atm. The constant-Cp continuation is
       anchored to the liquid card at 2762 K, the NASA card edge and Bulletin 672 melting
-      point. The supercooled band is the NASA liquid-versus-crystal apparent-G difference
-      at each row endpoint.
-    uncertainty_band:
-      kind: supercooled_liquid_G_app_difference_from_NASA_crystal_card
-      method: Absolute Gibbs-energy difference between NG-1857 liquid and NG-1856 crystal cards at the row endpoints.
-      comparison_record: data-src/nasa-glenn/NG-1856.json
-      values_J_per_mol: {2000: 30004.547, 2500: 11540.141}
+      point. The liquid-crystal Gibbs comparison is recorded separately.
     runtime_ref: NG-1857-SC-CP
     T0_K: 2762.0
     Cp_l_J_molK: 199.998860261874
@@ -9903,13 +9890,7 @@ rows:
     user_agent: neutral-source-vendor/1.0
     note: NASA pure-liquid standard state at 1 atm. The constant-Cp continuation is
       anchored to the liquid card at 2762 K, the NASA card edge and Bulletin 672 melting
-      point. The supercooled band is the NASA liquid-versus-crystal apparent-G difference
-      at each row endpoint.
-    uncertainty_band:
-      kind: supercooled_liquid_G_app_difference_from_NASA_crystal_card
-      method: Absolute Gibbs-energy difference between NG-1857 liquid and NG-1856 crystal cards at the row endpoints.
-      comparison_record: data-src/nasa-glenn/NG-1856.json
-      values_J_per_mol: {2500: 11540.141, 2762: 0.001}
+      point. The liquid-crystal Gibbs comparison is recorded separately.
     runtime_ref: NG-1857-SC-CP
     T0_K: 2762.0
     Cp_l_J_molK: 199.998860261874
