@@ -1265,6 +1265,8 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Ba": "BaO",
         "Sr": "SrO",
         "Zr": "ZrO2",
+        "Ni": "NiO",
+        "Co": "CoO",
     }
     gas_parent_by_element = {"S": "S2"}
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")

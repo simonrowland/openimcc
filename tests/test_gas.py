@@ -121,6 +121,7 @@ _ION_GAS_SPECIES = {
     "Mn+", "Ag+", "Ag-",
     "Mo+", "Mo-", "W+", "W-",
     "Ba+", "Sr+", "Zr+", "Zr-",
+    "Ni+", "Ni-", "Co+", "Co-",
 }
 
 
@@ -200,7 +201,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 100
+    assert len(gas_pack.oxide_df) == 104
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -972,6 +973,7 @@ def test_non_na_gas_channels_match_the_base_na2o_row_bit_for_bit(
             (*IMCC_GAS_CHANNEL_SPECIES, *_CR_CHANNELS, *_VNB_CHANNELS)
         )
         if not name.startswith("Na")
+        and f"{name}(g)" in gas_pack.gas_df.index
         and (
             _SF04_REACTIONS[name][0] is None
             or f"{_SF04_REACTIONS[name][0]}(l)" in gas_pack.oxide_df.index
@@ -1021,7 +1023,6 @@ def test_negative_fugacity_refuses_with_bar_relative_hint(
 
 def test_full_workbook_grid_runs_for_in_domain_channels(
     gas_pack: ImccGasDatapack,
-    synthetic_mnnico_pack: ImccGasDatapack,
     unit_activities: dict[str, float],
 ) -> None:
     for species in IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES:
@@ -1035,7 +1036,6 @@ def test_full_workbook_grid_runs_for_in_domain_channels(
             elif species in _MN_CHANNELS:
                 activities = {**unit_activities, "MnO": 1.0}
             elif species in _NICO_CHANNELS:
-                datapack = synthetic_mnnico_pack
                 activities = {
                     **unit_activities,
                     "NiO": 1.0,
@@ -1360,6 +1360,7 @@ _PRE_GATED_CHANNELS = tuple(
     and species not in _VNB_CHANNELS
     and species not in _MN_CHANNELS
     and species not in _NICO_CHANNELS
+    and species not in {"NiO", "CoO"}
     and species not in _PS_CHANNELS
     and species not in build_gas_tables.TRACE_GAS_SPECIES
 )

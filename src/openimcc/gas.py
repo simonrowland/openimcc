@@ -1029,9 +1029,7 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
     "Mn",
     "MnO",
     "Ni",
-    "NiO",
     "Co",
-    "CoO",
     "S",
     "S2",
     "S3",
@@ -2142,6 +2140,13 @@ for _element, _parent, _cation, _neutral, _anion, _hashes in (
         },
     ),
 ):
+    _tsiv_table = "2026" if _element == "Ni" else "1334"
+    _melt_temperature = 2228 if _element == "Ni" else 2090
+    _max_ratio = (
+        1.6063986960933917e-05
+        if _element == "Ni"
+        else 3.0578166366744847e-06
+    )
     ELEMENT_STATUS[_element] = {
         "status": "gas-complete-melt-pending",
         "criteria": {
@@ -2152,10 +2157,13 @@ for _element, _parent, _cation, _neutral, _anion, _hashes in (
         },
         "validation": "unvalidated",
         "reason": (
-            f"{_element}(g) and the TSIV Table {_parent} parent cover 1200-3000 K; "
-            f"the tier-3 {_parent}(l) source branch uses a({_parent}) supplied by "
-            "the caller, with a labelled supercooled branch below its melt marker. "
-            "The joint C3 screen passes at a(parent)=1e-3."
+            f"{_element}(g), {_parent}(l), and opt-in {_element}+/{_element}− cover "
+            f"1200-3000 K; {_parent}(l) uses the estimated tier-3 liquid branch "
+            f"from TSIV Volume IV Table {_tsiv_table}, with a supercooled "
+            f"continuation below {_melt_temperature} K; a({_parent}) is "
+            f"caller-supplied; the joint C3 screen used a({_parent})=1e-3 and "
+            f"reached {_max_ratio:.3e} at 2800 K and fO2=1e-4 within the "
+            "<=1-bar neutral-pressure domain."
         ),
         "c2_candidates": (),
         "c3_ion_bound": {
