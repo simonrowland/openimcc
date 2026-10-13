@@ -2307,7 +2307,7 @@ ELEMENT_STATUS["U"] = {
     },
 }
 ELEMENT_STATUS["Th"] = {
-    "status": "gas-partial",
+    "status": "gas-complete-melt-pending",
     "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
     "validation": "unvalidated",
     "reason": "Pankratz Bulletin 672 Th(g), ThO(g), ThO2(g), and ThO2(cr) cover source nodes through 2500 K; the ThO2(l) activity standard is a tier-4 liquid_from_solid construction from the sourced crystal using OECD/NEA fusion inputs, with crystal Cp continued above the Pankratz limit; ThO2 is selected as the sole sourced oxide parent; a(ThO2) is caller-supplied. Burcat's Gurvich-based Th+ card is adopted as an opt-in tier-3 ion; its card composition TH 1 E -1 and HF0/HF298 consistency resolve the conflicting header CAS label as singly ionized Th. The NIST ASD Saha audit is outside the 2% gate (ratios 4.496 at 1500 K and 2.558 at 2500 K); C3 remains available with a maximum joint ion fraction 1.653e-15 at 2300 K and fO2=1e-10.",

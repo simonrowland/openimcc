@@ -58,6 +58,7 @@ _ION_GAS_PROVENANCE_SPECIES = tuple(
         *build_gas_tables.ION_GAS_YAML_SOURCES,
         *build_gas_tables.TRACE_ION_GAS_TEXT_SOURCES,
         *build_gas_tables.TRACE_ION_GAS_NASA_SOURCES,
+        *build_gas_tables.TRACE_ION_GAS_BURCAT_SOURCES,
         *build_gas_tables.TRACE_ION_PUBLISHED_SOURCES,
         *build_gas_tables.TRACE_ION_NASA_SOURCES,
         *build_gas_tables.TRACE_ION_GAS_YAML_SOURCES,

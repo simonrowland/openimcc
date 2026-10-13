@@ -46,14 +46,14 @@ GAS_DATA = ROOT / "src/openimcc/data/gas"
 PACK_DIR = ROOT / "src/openimcc/data/packs"
 TABLE_FILES = ("gas-shomate.csv", "condensate.csv")
 PACKAGED_GAS_TABLE_DIGEST = (
-    "7fa5630e0e49da810695aac2a3a45b9a468b9ae6616814d8e57ca518d888fc91"
+    "05e7b5416cfd9f418b630b10c763966312a81e6823a0e2cda7a4a93b42544aa7"
 )
 PACKAGED_CONDENSATE_TABLE_DIGEST = (
-    "2ad29ef69946b3f02db6f0be562e6621c96b89f833104add553963fb9920f20c"
+    "c521b20c993a3c80a861d7b4fff1c9e59e1ab83b92551f9c9faa7f23f03c0f94"
 )
 PACKAGED_ENGINE_BINDING_DIGESTS = {
-    "v1": "65837ee7c2b8b4c00d0617e3bdc7c23b40fc29bcecbdfa499bdae403a66ee875",
-    "ext": "130db2cf094b91c806df502d98cc9860aa86be18ac292ce57d8af151157938ea",
+    "v1": "b38a75d184e15fcd2faf0b45ff8d85f21684a70d4720e7c653912fd7b2557062",
+    "ext": "a271c1ed2febb024a217a878fafce8477dc2d75d07b62c0f572477714192aa4f",
 }
 V1_COMPOSITION = {
     "SiO2": 0.45,

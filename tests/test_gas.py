@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+import yaml
 
 from openimcc import evaluate
 from tools import build_gas_tables
@@ -120,7 +121,7 @@ _ION_GAS_SPECIES = {
     "Mo+", "Mo-", "W+", "W-",
     "Ba+", "Sr+", "Zr+", "Zr-",
     "Ni+", "Ni-", "Co+", "Co-",
-    "Hf+", "Hf-",
+    "Hf+", "Hf-", "Th+",
 }
 
 
@@ -468,6 +469,8 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         f"{species}(g)" for species in public_gas_channels
     } | {f"{species}(g)" for species in _ION_GAS_SPECIES} | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
+    } | {
+        source[0] for source in build_gas_tables.TRACE_ION_GAS_BURCAT_SOURCES
     }
     high_rows = gas_pack.gas_df.loc[
         gas_pack.gas_df["T_interval"].astype(int) == 1
@@ -2840,12 +2843,25 @@ def test_pankratz_298_k_anchors_reproduce_independent_reaction_table_cells() -> 
         ("P672-HfO2-c", -267.120),
     ):
         assert anchor(table_id) == pytest.approx(printed_delta_h, abs=0.0005)
+    provenance = yaml.safe_load(
+        (
+            Path(__file__).resolve().parents[1]
+            / "src/openimcc/data/gas/PROVENANCE.yaml"
+        ).read_text()
+    )
+    source_rows = {
+        row["table_id"]: row
+        for row in provenance["rows"]
+        if row.get("table_id")
+    }
     for table_id, printed_page in (
         ("P672-Th-g", 423), ("P672-ThO-g", 424),
         ("P672-ThO2-c", 425), ("P672-ThO2-g", 426),
         ("P672-Hf-g", 187), ("P672-HfO2-c", 188),
     ):
-        assert f"printed p. {printed_page}" in tables[table_id]["source_note"]
+        assert source_rows[table_id]["source_locator"].casefold().startswith(
+            f"printed p. {printed_page}"
+        )
 
     # Independent printed reaction cells close against the elemental 298 K
     # formation anchors, with oxygen in its elemental standard state (zero).
