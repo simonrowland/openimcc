@@ -530,6 +530,16 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "(WO3)4": ("WO3", 0.25, 0.0),
     "(WO3)5": ("WO3", 0.2, 0.0),
     "W3O8": ("WO3", 1 / 3, 1 / 6),
+    # JANAF BaO, SrO and ZrO2 liquid parents. Premise: balance one mole of
+    # parent oxide; n_gas=a/c and n_O2=(b-n_gas*d)/2. The dimensionless
+    # tuples close metal and oxygen atoms independently.
+    "Ba": ("BaO", 1, 0.5),
+    "BaO": ("BaO", 1, 0.0),
+    "Sr": ("SrO", 1, 0.5),
+    "SrO": ("SrO", 1, 0.0),
+    "Zr": ("ZrO2", 1, 1.0),
+    "ZrO": ("ZrO2", 1, 0.5),
+    "ZrO2": ("ZrO2", 1, 0.0),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -566,6 +576,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "(MoO3)2", "(MoO3)3", "(MoO3)4", "(MoO3)5",
         "W", "WO", "WO2", "WO3",
         "(WO3)2", "(WO3)3", "(WO3)4", "(WO3)5", "W3O8",
+        "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
         "V",
         "VO",
         "VO2",
@@ -793,6 +804,7 @@ _ION_GAS_SPECIES = (
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
     "Zn+", "Zn-", "Cd+", "Bi+",
     "Mn+", "Ag+", "Ag-", "Mo+", "Mo-", "W+", "W-",
+    "Ba+", "Sr+", "Zr+", "Zr-",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -836,6 +848,9 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Li2O": "janaf_fitted",
     "Rb2O": "nasa_glenn_fitted",
     "PbO": "janaf_fitted",
+    "BaO": "janaf_fitted",
+    "SrO": "janaf_fitted",
+    "ZrO2": "janaf_fitted",
     "B2O3": "janaf_fitted",
     "Ga2O3": "nasa_glenn_fitted",
     "GeO2": "nasa_glenn_fitted",
@@ -1080,6 +1095,9 @@ _GAS_IONIZATION_PAIRS = (
     ("Ag", "Ag+"),
     ("Mo", "Mo+"),
     ("W", "W+"),
+    ("Ba", "Ba+"),
+    ("Sr", "Sr+"),
+    ("Zr", "Zr+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -1111,6 +1129,7 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("Ag", "Ag-"),
     ("Mo", "Mo-"),
     ("W", "W-"),
+    ("Zr", "Zr-"),
 )
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
@@ -2045,6 +2064,108 @@ ELEMENT_STATUS["W"] = {
         "user_agent": "openimcc-janaf-vendor/1.0",
     },
 }
+
+for _element, _status in {
+    "Ba": {
+        "max_ratio": 0.02125275443238247,
+        "isolated_bound": 5.214371321920937,
+        "temperature_K": 3000.0,
+        "neutral_pressure_bar": 0.1996779176106899,
+        "element_total_pressure_bar": 0.19995712025311724,
+        "joint_ion_pressure_bar": 0.0042496395737458715,
+        "electron_pressure_bar": 6.23714928342102e-05,
+        "K_ion": 1.3274195133517194e-06,
+        "parent_oxide": "BaO",
+        "cation": "Ba-006",
+        "neutral": "Ba-005",
+        "cation_sha": "f803f83975a93a065d02f8c5d60e602beb36dd375be8260f10cb8a0234e4d662",
+        "neutral_sha": "a276bdbc4dbc6022da2aab69e8c82761369806d9baa1e082637f6dd842af7548",
+        "c2": (("Ba-037", "BaO"),),
+        "fO2": 1e-12,
+    },
+    "Sr": {
+        "max_ratio": 0.002851416596136648,
+        "isolated_bound": 0.44153951926914414,
+        "temperature_K": 3000.0,
+        "neutral_pressure_bar": 0.46929579797517745,
+        "element_total_pressure_bar": 0.46930252329165384,
+        "joint_ion_pressure_bar": 0.0013381770035226276,
+        "electron_pressure_bar": 6.209955563495205e-05,
+        "K_ion": 1.770742411038214e-07,
+        "parent_oxide": "SrO",
+        "cation": "Sr-007",
+        "neutral": "Sr-006",
+        "cation_sha": "c409276dff239cf08f53e5c4e0eaabfbcbfbe74a28b4ee7ad60b077fca36fecf",
+        "neutral_sha": "3129e5c71c8c76df78513225c90e1696c6db122f02c436047b82b03b24325f27",
+        "c2": (("O-016", "SrO"),),
+        "fO2": 1e-12,
+    },
+    "Zr": {
+        "max_ratio": 8.218928935254986e-06,
+        "isolated_bound": 28884129582391.32,
+        "temperature_K": 3000.0,
+        "neutral_pressure_bar": 8.88327204454771e-05,
+        "element_total_pressure_bar": 0.0002746622544882414,
+        "joint_ion_pressure_bar": 2.2574295508357763e-09,
+        "electron_pressure_bar": 6.197496397574237e-05,
+        "K_ion": 1.510804645734725e-09,
+        "parent_oxide": "ZrO2",
+        "cation": "Zr-007",
+        "neutral": "Zr-006",
+        "cation_sha": "8540f2d728b5d72715407f7ce84120eb9a6cb8c14addaebf267a768743e79f78",
+        "neutral_sha": "29e24aea81a83cfeb75ebf91580fe0c14c50459a3b448270990c547805d9e32b",
+        "c2": (("O-028", "ZrO"), ("O-055", "ZrO2")),
+        "fO2": 1e-12,
+        "anion": "Zr-008",
+        "anion_sha": "da6964825dd3ca69ba3d6dfc1aa3a9c72ed794641640a72d058be090dff5d032",
+    },
+}.items():
+    ELEMENT_STATUS[_element] = {
+        "status": (
+            "gas-complete-melt-pending"
+            if _status["max_ratio"] < 1e-4
+            else "gas-partial"
+        ),
+        "criteria": {"C1": False, "C2": True, "C3": _status["max_ratio"] < 1e-4, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            f'{_element}(g), its JANAF oxide gas channels, and the printed '
+            f'{_status["parent_oxide"]}(l) liquid branch cover 1200-3000 K; '
+            f'{_status["parent_oxide"]} is the selected parent because JANAF prints its liquid function; '
+            f'caller supplies a({_status["parent_oxide"]}); the C3 screen at '
+            f'a({_status["parent_oxide"]})=1e-3 reached {_status["max_ratio"]:.3e} at '
+            f'{_status["temperature_K"]:.0f} K and fO2={_status["fO2"]:.0e} '
+            'within the <=1-bar neutral-pressure domain.'
+            + (" ZrO(g) JANAF is retained despite its documented NASA G_app difference." if _element == "Zr" else "")
+        ),
+        "c2_candidates": _status["c2"],
+        "c3_ion_bound": {
+            "status": "computed",
+            "max_ratio": _status["max_ratio"],
+            "isolated_bound": _status["isolated_bound"],
+            "temperature_K": _status["temperature_K"],
+            "fO2": _status["fO2"],
+            "neutral_pressure_bar": _status["neutral_pressure_bar"],
+            "element_total_pressure_bar": _status["element_total_pressure_bar"],
+            "joint_ion_pressure_bar": _status["joint_ion_pressure_bar"],
+            "electron_pressure_bar": _status["electron_pressure_bar"],
+            "K_ion": _status["K_ion"],
+            "parent_oxide": _status["parent_oxide"],
+            "parent_activity": 1e-3,
+            "source_tables": {
+                "neutral": _status["neutral"], "cation": _status["cation"],
+                "electron": "D-020",
+                **({"anion": _status["anion"]} if "anion" in _status else {}),
+            },
+            "upstream_sha256": {
+                _status["neutral"]: _status["neutral_sha"],
+                _status["cation"]: _status["cation_sha"],
+                "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+                **({_status["anion"]: _status["anion_sha"]} if "anion" in _status else {}),
+            },
+            "user_agent": "neutral-source-vendor/1.0",
+        },
+    }
 
 # --------------------------------------------------------------------------- #
 # Data pack
@@ -3334,6 +3455,7 @@ _ATOMIC_MASS_G_MOL = {
     "Zn": 65.38, "Cd": 112.411, "Bi": 208.9804,
     "As": 74.921595, "Se": 78.971, "Te": 127.60,
     "Mo": 95.95, "W": 183.84,
+    "Ba": 137.327, "Sr": 87.62, "Zr": 91.224,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,

@@ -74,7 +74,7 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag channels:
+and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
@@ -83,7 +83,7 @@ Ga, GaO, Ga2O,
 Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
 CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
-As4O6, Ag, Na2O, K2O, O and O2.
+As4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, Na2O, K2O, O and O2.
 The Mn channels use public Mn(g), MnO(g) and opt-in Mn+(g) rows with a
 caller-supplied MnO(l) activity. Ni and Co still require an external pack to
 provide their monoxide gas and liquid-parent rows.
@@ -97,10 +97,11 @@ until an external pack supplies a source-rated `P2O5(l)` standard state and the
 caller supplies `a(P2O5)` on that reference. OpenIMCC does not provide a
 melt-side P2O5 activity model for pyrolysis temperatures.
 
-Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, As, Sb, Ag, Mo, and W channels activate when the caller
+Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, As, Sb, Ag, Mo, W, Ba, Sr,
+and Zr channels activate when the caller
 supplies their parent activity (`Li2O`, `Rb2O`, `PbO`, `Cs2O`, `Cu2O`, `SnO`,
 `Ga2O3`, `GeO2`, `B2O3`, `In2O3`, `TeO2`, `SeO2`, `As2O3`, `Sb2O3`, `Ag2O`,
-`MoO3`, or `WO3`) in the
+`MoO3`, `WO3`, `BaO`, `SrO`, or `ZrO2`) in the
 `evaluate_gas` mapping. Activities are caller-supplied; openimcc has no
 trace-element activity model and applies no activity coefficients. As(g), As2(g),
 and As4(g) are constant-Cp continuation above 1200 K; As4O6(g) is continuation
@@ -112,6 +113,13 @@ through 2000 K, then a labelled constant-Cp continuation. WO3(l) uses the
 JANAF O-066 liquid cells through 3000 K, including its printed supercooled
 cells below the 1745 K II/liquid marker. These parent activities are supplied
 by the caller on their 1-bar liquid standard states.
+BaO(l), SrO(l), and ZrO2(l) use their printed JANAF liquid branches. JANAF
+marks crystal/liquid transitions at 2286 K, 2938 K, and 2950 K respectively;
+the printed supercooled BaO cells below 2286 K are retained as source data.
+BaO and SrO are selected over other oxidation states because those are the
+available JANAF liquid parent rows. ZrO(g)'s JANAF G_app is retained despite
+its disagreement with the NASA Glenn card; the temperature differences are
+recorded in gas provenance.
 The oxide-parent convention does not represent telluride dissolution in
 reduced melts. SeO2(l) is a flagged tier-4 construction from the Pankratz
 crystal function and the OECD/NEA reviewed fusion inputs; its liquid heat

@@ -121,6 +121,7 @@ _ION_GAS_SPECIES = {
     "Zn+", "Zn-", "Cd+", "Bi+",
     "Mn+", "Ag+", "Ag-",
     "Mo+", "Mo-", "W+", "W-",
+    "Ba+", "Sr+", "Zr+", "Zr-",
 }
 
 
@@ -200,7 +201,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert len(gas_pack.oxide_df) == 88
+    assert len(gas_pack.oxide_df) == 100
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -2335,7 +2336,7 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
         "Sb2O3(l)",
         "Ag2O(l)",
         "MnO(l)",
-        "MoO3(l)", "WO3(l)",
+        "MoO3(l)", "WO3(l)", "BaO(l)", "SrO(l)", "ZrO2(l)",
     }
     return replace(
         pack,
@@ -2368,6 +2369,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Sb2O3": 1.0e-3,
         "Ag2O": 1.0e-3,
         "MoO3": 1.0e-3, "WO3": 1.0e-3,
+        "BaO": 1.0e-3, "SrO": 1.0e-3, "ZrO2": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2649,6 +2651,13 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("Ag", "Ag2O", "NG-0074", "P672-Ag2O-LFS"),
         ("MoO2", "MoO3", "Mo-010", "Mo-015"),
         ("WO2", "WO3", "O-048", "O-066"),
+        ("Ba", "BaO", "Ba-005", "Ba-035"),
+        ("BaO", "BaO", "Ba-037", "Ba-035"),
+        ("Sr", "SrO", "Sr-006", "O-014"),
+        ("SrO", "SrO", "O-016", "O-014"),
+        ("Zr", "ZrO2", "Zr-006", "O-053"),
+        ("ZrO", "ZrO2", "O-028", "O-053"),
+        ("ZrO2", "ZrO2", "O-055", "O-053"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]

@@ -589,7 +589,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
     )
-    assert len(oxide_rows) == 33
+    assert len(oxide_rows) == 36
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -611,6 +611,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     split_ion_species = nasa_ion_species | {
         "Zn+(g)", "Zn-(g)", "Bi+(g)", "Mn+(g)",
         "Mo+(g)", "Mo-(g)", "W+(g)", "W-(g)",
+        "Ba+(g)", "Sr+(g)", "Zr+(g)", "Zr-(g)",
     }
     nasa_atomic_ion_species = {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
@@ -1144,6 +1145,9 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
             "NG-1245", "NG-1246", "NG-1247", "NG-1249", "NG-1251",
             "NG-1253", "NG-1255", "NG-1256", "NG-1257", "NG-1258",
             "NG-1701", "NG-2013",
+            "NG-0165", "NG-0166", "NG-0178", "NG-1168", "NG-1169",
+            "NG-1181", "NG-1263", "NG-1264", "NG-1267", "NG-1269",
+            "NG-1325", "NG-1917", "NG-2029",
         }
     )
     expected_by_limit = {}
@@ -1845,6 +1849,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "(MoO3)4", "(MoO3)5", "W", "WO", "WO2", "WO3",
         "(WO3)2", "(WO3)3", "(WO3)4", "W3O8",
         "(WO3)5",
+        "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
     }
     assert trace_channels == set(build_gas_tables.TRACE_GAS_SPECIES)
 
@@ -1859,7 +1864,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
             name for name in (
                 "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
                 "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag",
-                "Mo", "W",
+                "Mo", "W", "Ba", "Sr", "Zr",
             )
             if name in parent_atoms
         )
@@ -2565,6 +2570,71 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
         )
 
 
+def test_ba_sr_zr_janaf_liquids_fit_each_printed_node() -> None:
+    """Direct liquid fits stay below the 10 J/mol gate on every source node."""
+    from openimcc.gas import _lamor_gibbs
+
+    pack = load_gas_datapack()
+    source_by_parent = {
+        "BaO(l)": "Ba-035",
+        "SrO(l)": "O-014",
+        "ZrO2(l)": "O-053",
+    }
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    recorded = {
+        (row["species_name"], tuple(row["T_range_K"])): row
+        for row in provenance["rows"]
+        if row["table"] == "condensate"
+    }
+    for species, table_id in source_by_parent.items():
+        source_rows = _complete_rows(table_id)
+        source_rows.extend(
+            build_gas_tables._recover_thermal_transition_rows(
+                _record(table_id)["table"]
+            )
+        )
+        nodes = sorted({
+            row["temperature"] for row in source_rows
+            if 1200.0 <= row["temperature"] <= 3000.0
+        })
+        intervals = sorted(
+            pack.oxide_df.loc[species, "T_min"].astype(float).unique().tolist()
+        )
+        assert intervals == [1200.0, 1500.0, 2000.0, 2500.0]
+        for start in intervals:
+            row = pack.oxide_df.loc[[species]]
+            row = row.loc[row["T_min"].astype(float) == start].iloc[0]
+            fit_end = float(row["T_max"])
+            in_interval = [T for T in nodes if start <= T <= fit_end]
+            assert in_interval
+            residuals = [
+                abs(_lamor_gibbs(T, row) - _janaf_apparent_gibbs(table_id, T))
+                for T in in_interval
+            ]
+            assert max(residuals) < 10.0
+            provenance_row = recorded[(species, (start, fit_end))]
+            assert provenance_row["max_residual_J_per_mol"] < 10.0
+            assert provenance_row["max_residual_J_per_mol"] == pytest.approx(
+                max(residuals), abs=1e-5
+            )
+
+
+def test_ba_sr_zr_janaf_298_k_formation_anchors_are_pinned() -> None:
+    expected_kj_mol = {
+        "Ba-005": 179.075, "Ba-006": 688.126, "Ba-037": -123.846,
+        "Ba-035": -491.627, "Sr-006": 164.000, "Sr-007": 719.666,
+        "O-016": -13.389, "O-014": -517.292, "Zr-006": 610.027,
+        "Zr-007": 1277.880, "O-028": 58.576, "O-055": -286.186,
+        "O-053": -1023.155,
+    }
+    for table_id, expected in expected_kj_mol.items():
+        anchor = next(
+            row for row in _record(table_id)["table"]["values"]
+            if _value(row, "temperature") == 298.15
+        )
+        assert _value(anchor, "formation_enthalpy") == pytest.approx(expected)
+
+
 def test_no_fitted_row_consumes_a_parse_ambiguous_source_row() -> None:
     consumed_ambiguous_rows = set()
     for table_id in (*GAS_TABLE_IDS.values(), *FITTED_CONDENSATE_TABLE_IDS.values()):
@@ -2656,7 +2726,18 @@ def _janaf_apparent_gibbs(table_id: str, T: float) -> float:
     """G_app = dfH(298) + [H(T) - H(298)] - T*S(T), in J/mol, from JANAF cells."""
     rows = _complete_rows(table_id)
     reference = next(row for row in rows if row["temperature"] == 298.15)
-    row = next(row for row in rows if row["temperature"] == T)
+    row = next((row for row in rows if row["temperature"] == T), None)
+    if row is None:
+        # Some printed source rows have parse-ambiguous formation columns but
+        # complete thermal cells. Keep their printed H/S nodes on the species'
+        # independently parsed 298 K formation anchor.
+        recovered = build_gas_tables._recover_thermal_transition_rows(
+            _record(table_id)["table"]
+        )
+        source = next(row for row in recovered if row["temperature"] == T)
+        return (
+            reference["formation_enthalpy"] + source["enthalpy_increment"]
+        ) * 1000.0 - T * source["entropy"]
     return (
         reference["formation_enthalpy"] + row["enthalpy_increment"]
     ) * 1000.0 - T * row["entropy"]
@@ -2671,6 +2752,9 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
         "Mo(g)", "Mo+(g)", "Mo-(g)", "MoO(g)", "MoO2(g)", "MoO3(g)",
         "MoO3(l)", "W(g)", "W+(g)", "W-(g)", "WO(g)", "WO2(g)",
         "WO3(g)", "WO3(l)", "(WO3)2(g)", "(WO3)3(g)", "(WO3)4(g)",
+        "Ba(g)", "Ba+(g)", "BaO(g)", "BaO(l)", "Sr(g)", "Sr+(g)",
+        "SrO(g)", "SrO(l)", "Zr(g)", "Zr+(g)", "ZrO(g)",
+        "ZrO2(g)", "ZrO2(l)",
     } <= compared_species
     for comparison in comparisons["rows"]:
         if "janaf_298K_element_reference_table" in comparison:
@@ -2741,7 +2825,9 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             card_g = R_J_MOL_K * temperature * (
                 nasa_properties["h_rt"] - nasa_properties["s_R"]
             )
-            if comparison["nasa_record_id"] in {"NG-1701", "NG-2013"}:
+            if comparison["nasa_record_id"] in {
+                "NG-1701", "NG-2013", "NG-1325", "NG-1917", "NG-2029"
+            }:
                 nasa_g = card_g
                 header_g = formation_h + (
                     R_J_MOL_K * temperature * nasa_properties["h_rt"]
@@ -2766,11 +2852,17 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             )
             comparison_g = (
                 value["nasa_header_anchored_G_app_J_mol"]
-                if comparison["nasa_record_id"] in {"NG-1701", "NG-2013"}
+                if comparison["nasa_record_id"] in {
+                    "NG-1701", "NG-2013", "NG-1325", "NG-1917", "NG-2029"
+                }
                 else value["nasa_G_app_J_mol"]
             )
             assert comparison_g == pytest.approx(
-                nasa_g if comparison["nasa_record_id"] not in {"NG-1701", "NG-2013"} else header_g,
+                nasa_g
+                if comparison["nasa_record_id"] not in {
+                    "NG-1701", "NG-2013", "NG-1325", "NG-1917", "NG-2029"
+                }
+                else header_g,
                 abs=0.001,
             )
             assert value["nasa_minus_janaf_J_mol"] == pytest.approx(
@@ -3122,6 +3214,9 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
         "Zn": 65.39,
         "Mo": 95.94,
         "W": 183.84,
+        "Ba": 137.327,
+        "Sr": 87.62,
+        "Zr": 91.224,
     }
     for record in records:
         formula = record["formula"]
@@ -3151,6 +3246,9 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
         "NG-0831", "NG-0832", "NG-0833", "NG-0834", "NG-1701",
         "NG-1245", "NG-1246", "NG-1247", "NG-1249", "NG-1251", "NG-1253",
         "NG-1255", "NG-1256", "NG-1257", "NG-1258", "NG-2013",
+        "NG-0165", "NG-0166", "NG-0178", "NG-1168", "NG-1169",
+        "NG-1181", "NG-1263", "NG-1264", "NG-1267", "NG-1269",
+        "NG-1325", "NG-1917", "NG-2029",
     )
     manifest = yaml.safe_load(
         (NASA_DATA / "PROVENANCE.yaml").read_text(encoding="utf-8")
@@ -3186,6 +3284,11 @@ def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
             "NG-1249": 10784, "NG-1251": 10803, "NG-1253": 10819,
             "NG-1255": 10835, "NG-1256": 10843, "NG-1257": 10851,
             "NG-1258": 10859, "NG-2013": 15372,
+            "NG-0165": 1419, "NG-0166": 1430, "NG-0178": 1529,
+            "NG-1168": 9983, "NG-1169": 9994, "NG-1181": 10111,
+            "NG-1263": 10911, "NG-1264": 10922, "NG-1267": 10952,
+            "NG-1269": 10974, "NG-1325": 11320, "NG-1917": 14790,
+            "NG-2029": 15461,
         }
         assert locator["name_line"] == expected_name_lines.get(
             table_id, int(table_id.removeprefix("NG-")) + 1
@@ -3298,7 +3401,7 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     # Mn+ has no fine-structure level set in this spectroscopy-backed Saha
     # audit. Ag+ is checked against its NASA card and neutral-ionization
     # reaction, but no Ag level set is part of this audit.
-    assert atomic_pairs - {"Mn", "Ag"} == set(_SAHA_LEVELS)
+    assert atomic_pairs - {"Mn", "Ag", "Ba", "Sr", "Zr"} == set(_SAHA_LEVELS)
     k_b = 1.380649e-23
     h = 6.62607015e-34
     m_e = 9.1093837139e-31
@@ -3449,7 +3552,7 @@ _ATTACHMENT_LEVELS = {
 
 _ATOMIC_ANION_ELEMENTS = (
     "Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb",
-    "O", "Pb", "Rb", "Si", "Ti", "V", "Zn", "Ag", "Mo", "W",
+    "O", "Pb", "Rb", "Si", "Ti", "V", "Zn", "Ag", "Mo", "W", "Zr",
 )
 _UNCHECKED_MOLECULAR_ANIONS = ("AlO", "AlO2", "BO", "BO2", "KO", "LiO", "NaO", "O2")
 
@@ -3468,7 +3571,7 @@ def test_gas_table_atomic_anion_inventory() -> None:
     # listed for a ground-state attachment comparison. Ag- comes from NASA CEA,
     # whose card supplies no JANAF attachment-level entry.
     assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic - {
-        "Zn-(g)", "Ag-(g)"
+        "Zn-(g)", "Ag-(g)", "Zr-(g)"
     }
 
 
@@ -5181,9 +5284,9 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
 
     # D-020 was already vendored, but its electron gas row is newly included in
     # the packaged fit and therefore joins the source-node residual audit.
-    assert checked_rows == 155
-    assert checked_nodes == 1970
-    assert checked_nodes * 3 == 5910
+    assert checked_rows == 177
+    assert checked_nodes == 2188
+    assert checked_nodes * 3 == 6564
     assert overall_max["Cp_J_molK"] == pytest.approx(0.1287393152, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0136965061, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0088595244, abs=1e-9)

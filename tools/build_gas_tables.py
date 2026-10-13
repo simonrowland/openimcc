@@ -186,6 +186,13 @@ TRACE_JANAF_YAML_GAS_SOURCES = (
     ("(WO3)3(g)", "O-093", "W", 3, 9),
     ("(WO3)4(g)", "O-096", "W", 4, 12),
     ("W3O8(g)", "O-092", "W", 3, 8),
+    ("Ba(g)", "Ba-005", "Ba", 1, 0),
+    ("BaO(g)", "Ba-037", "Ba", 1, 1),
+    ("Sr(g)", "Sr-006", "Sr", 1, 0),
+    ("SrO(g)", "O-016", "Sr", 1, 1),
+    ("Zr(g)", "Zr-006", "Zr", 1, 0),
+    ("ZrO(g)", "O-028", "Zr", 1, 1),
+    ("ZrO2(g)", "O-055", "Zr", 1, 2),
 )
 TRACE_NASA_GAS_SOURCES = (
     ("Ag(g)", "NG-0074", "Ag", "Ag", 1, 0),
@@ -306,6 +313,10 @@ TRACE_ION_GAS_YAML_SOURCES = (
     ("Mo-(g)", "Mo-007", "Mo", 1, 0),
     ("W+(g)", "W-006", "W", 1, 0),
     ("W-(g)", "W-007", "W", 1, 0),
+    ("Ba+(g)", "Ba-006", "Ba", 1, 0),
+    ("Sr+(g)", "Sr-007", "Sr", 1, 0),
+    ("Zr+(g)", "Zr-007", "Zr", 1, 0),
+    ("Zr-(g)", "Zr-008", "Zr", 1, 0),
 )
 
 LOW_T_GAS_SPECIES = frozenset(
@@ -2356,6 +2367,18 @@ def _fit_janaf_parent_liquid(
             for field in ("heat_capacity", "entropy", "enthalpy_increment")
         )
     }
+    if table_id in {"Ba-035", "O-014", "O-053"}:
+        # The official tables print thermal cells for the 2300 K BaO row and
+        # the 3000 K SrO/ZrO2 rows, but concatenate formation columns into a
+        # malformed final field. Preserve those printed thermal nodes using
+        # the existing recovery rule; the 298 K formation anchor stays pinned
+        # to its separately parsed JANAF cell.
+        source_rows.update(
+            {
+                float(row["temperature"]): row
+                for row in _recover_thermal_transition_rows(table)
+            }
+        )
     reference = next(
         _value(row, "formation_enthalpy")
         for row in table["values"]
@@ -3385,6 +3408,57 @@ def build_condensate_rows(
             (
                 (1200.0, 1500.0, (1200, 1300, 1400, 1500), False),
                 (1500.0, 2000.0, (1500, 1600, 1700, 1900, 2000), False),
+                (2000.0, 2500.0, None, False),
+                (2500.0, 3000.0, None, False),
+            ),
+        )
+    )
+    # These oxide parents use their JANAF liquid formation tables directly.
+    # The printed branches include metastable liquid values below each melt
+    # marker; they remain source data and are not replaced by a construction.
+    rows.extend(
+        _fit_janaf_parent_liquid(
+            source_dir,
+            "BaO(l)",
+            "Ba-035",
+            "Ba",
+            1,
+            1,
+            (
+                (1200.0, 1500.0, None, False),
+                (1500.0, 2000.0, None, False),
+                (2000.0, 2500.0, None, False),
+                (2500.0, 3000.0, None, False),
+            ),
+        )
+    )
+    rows.extend(
+        _fit_janaf_parent_liquid(
+            source_dir,
+            "SrO(l)",
+            "O-014",
+            "Sr",
+            1,
+            1,
+            (
+                (1200.0, 1500.0, None, False),
+                (1500.0, 2000.0, None, False),
+                (2000.0, 2500.0, None, False),
+                (2500.0, 3000.0, None, False),
+            ),
+        )
+    )
+    rows.extend(
+        _fit_janaf_parent_liquid(
+            source_dir,
+            "ZrO2(l)",
+            "O-053",
+            "Zr",
+            1,
+            2,
+            (
+                (1200.0, 1500.0, None, False),
+                (1500.0, 2000.0, None, False),
                 (2000.0, 2500.0, None, False),
                 (2500.0, 3000.0, None, False),
             ),

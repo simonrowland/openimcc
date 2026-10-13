@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added optional Ba, Sr, and Zr gas channels with caller-supplied BaO(l),
+  SrO(l), and ZrO2(l) activities, plus opt-in Ba+, Sr+, Zr+, and JANAF Zr-.
+  JANAF supplies the gas and liquid branches; the three liquid fits reproduce
+  their printed nodes within the 10 J/mol gate. The printed supercooled BaO
+  liquid cells below its 2286 K marker are retained. NASA comparisons are
+  recorded on G_app, including the ZrO(g) disagreement; JANAF remains selected.
 - Added optional Mo, MoO, MoO2, MoO3, and (MoO3)2–5 gas channels with
   caller-supplied MoO3(l) activity, plus opt-in Mo+ and Mo−. JANAF supplies the
   monomers, ions, and parent liquid through 2000 K; NASA Glenn supplies the

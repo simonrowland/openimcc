@@ -19,7 +19,7 @@ source_notes:
     retrieval_date: '2026-10-01'
     activity_policy: >-
       Li2O, Rb2O, PbO, Cs2O, Cu2O, SnO, Ga2O3, GeO2, B2O3, In2O3, TeO2, SeO2,
-      As2O3, MoO3, and WO3
+      As2O3, MoO3, WO3, BaO, SrO, and ZrO2
       activities are supplied by the caller. OpenIMCC has no trace-element
       activity model; no activity coefficients are applied. Published silicate-
       melt activity-coefficient work is cited in README.md as context only and
@@ -84,6 +84,22 @@ source_notes:
       affinities, not fit residuals; values are asserted in tests.
       Sources: https://webbook.nist.gov/cgi/cbook.cgi?ID=C7439987&Mask=267,
       https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440337&Mask=267.
+    ba_strontium_zirconium_anchors_and_parents: >-
+      Every JANAF gas and ion fit uses that species table's 298.15 K
+      formation_enthalpy cell on its printed elemental reference states:
+      Ba-005 179.075, Ba-006 688.126, Ba-037 -123.846, Sr-006 164.000,
+      Sr-007 719.666, O-016 -13.389, Zr-006 610.027, Zr-007 1277.880,
+      O-028 58.576, and O-055 -286.186 kJ/mol. The parent liquid anchors
+      are the 298.15 K formation_enthalpy cells in Ba-035 (-491.627), O-014
+      (-517.292), and O-053 (-1023.155 kJ/mol). The liquid rows fit the
+      printed JANAF cells. BaO-035 cells below its 2286 K crystal/liquid marker
+      are printed supercooled liquid-table data; its glass join is 1600 K.
+      O-014's printed cells below its 2938 K melt marker are supercooled data;
+      its glass join is 2000.010 K. O-053's printed cells below its 2950 K
+      melt marker are supercooled data; its glass join is 2000 K. BaO, SrO,
+      and ZrO2 are selected as parents because each has a JANAF liquid table;
+      no alternate oxide liquid is offered. Caller-supplied activities are
+      required; no activity model or gamma values are included.
     nasa_cards:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
@@ -8031,6 +8047,720 @@ rows:
   - {"table":"condensate","species_name":"WO3(l)","table_id":"O-066","source_path":"data-src/janaf/O-066.yaml","source_sha256":"a2df28caa4038366de66b6d79874f35bd76faf97fe54c2926aa879c37526bc8a","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":4.65661287307739e-10,"max_residual_log10_K":1.62154498576892e-14,"T_range_K":[1500,2000],"source_locator":"JANAF O-066, liquid branch; source table text marks II <--> LIQUID at 1745 K.","branch_decision":"O-066 prints these supercooled liquid cells below its 1745 K II <--> LIQUID marker; they are retained as source data.","source_url":"https://janaf.nist.gov/tables/O-066.html","download_url":"https://janaf.nist.gov/tables/O-066.txt","upstream_source_sha256":"3eaa6e4a2b2ebce41ce61d4955ea292dfe133ffa4a057b3bc014a56a2d3b33cc","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"condensate","species_name":"WO3(l)","table_id":"O-066","source_path":"data-src/janaf/O-066.yaml","source_sha256":"a2df28caa4038366de66b6d79874f35bd76faf97fe54c2926aa879c37526bc8a","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.017801312264055,"max_residual_log10_K":4.04272619097953e-07,"T_range_K":[2000,2500],"source_locator":"JANAF O-066, liquid branch; source table text marks II <--> LIQUID at 1745 K.","source_url":"https://janaf.nist.gov/tables/O-066.html","download_url":"https://janaf.nist.gov/tables/O-066.txt","upstream_source_sha256":"3eaa6e4a2b2ebce41ce61d4955ea292dfe133ffa4a057b3bc014a56a2d3b33cc","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
   - {"table":"condensate","species_name":"WO3(l)","table_id":"O-066","source_path":"data-src/janaf/O-066.yaml","source_sha256":"a2df28caa4038366de66b6d79874f35bd76faf97fe54c2926aa879c37526bc8a","authority":"janaf_fitted","method":"fitted","max_residual_J_per_mol":0.344668519217521,"max_residual_log10_K":6.42974479494244e-06,"T_range_K":[2500,3000],"source_locator":"JANAF O-066, liquid branch; source table text marks II <--> LIQUID at 1745 K.","source_url":"https://janaf.nist.gov/tables/O-066.html","download_url":"https://janaf.nist.gov/tables/O-066.txt","upstream_source_sha256":"3eaa6e4a2b2ebce41ce61d4955ea292dfe133ffa4a057b3bc014a56a2d3b33cc","retrieval_date":"2026-10-12","user_agent":"openimcc-janaf-vendor/1.0"}
+  - table: gas
+    species_name: Ba(g)
+    table_id: Ba-005
+    source_path: data-src/janaf/Ba-005.yaml
+    source_sha256: f7c7421334f12681fef5717d8500bad14ae111fb40664476e9a16c8091af98f4
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.62269801355433
+    max_residual_log10_K: 3.39037566447815e-05
+    source_url: https://janaf.nist.gov/tables/Ba-005.html
+    download_url: https://janaf.nist.gov/tables/Ba-005.txt
+    upstream_source_sha256: a276bdbc4dbc6022da2aab69e8c82761369806d9baa1e082637f6dd842af7548
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: BaO(g)
+    table_id: Ba-037
+    source_path: data-src/janaf/Ba-037.yaml
+    source_sha256: c88c768e5f744413b3ba75683f7a8102f7c83784ce1983f2dfb059858a66fa8e
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.23699830484111
+    max_residual_log10_K: 3.68930798755376e-05
+    source_url: https://janaf.nist.gov/tables/Ba-037.html
+    download_url: https://janaf.nist.gov/tables/Ba-037.txt
+    upstream_source_sha256: 5ee32f1bf0c0096f08de1463e742d038eafe0bf2de6be9aeb3b403eaa5b165e5
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Sr(g)
+    table_id: Sr-006
+    source_path: data-src/janaf/Sr-006.yaml
+    source_sha256: 83683445b1641a9fe259c7ff74a70dab07c2f9df970009f25dcc71d516578406
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.64271311077755
+    max_residual_log10_K: 2.86016175323357e-05
+    source_url: https://janaf.nist.gov/tables/Sr-006.html
+    download_url: https://janaf.nist.gov/tables/Sr-006.txt
+    upstream_source_sha256: 3129e5c71c8c76df78513225c90e1696c6db122f02c436047b82b03b24325f27
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: SrO(g)
+    table_id: O-016
+    source_path: data-src/janaf/O-016.yaml
+    source_sha256: 82399cb7d695abe0ec801c253553b9786fcb70c3346aa38a565632ffcf739e72
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.72830715577584
+    max_residual_log10_K: 3.22413355100402e-05
+    source_url: https://janaf.nist.gov/tables/O-016.html
+    download_url: https://janaf.nist.gov/tables/O-016.txt
+    upstream_source_sha256: 393645ea03d5120f003e00e105dd48bfee752fc4e5de570d82d9040ead7caa63
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Zr(g)
+    table_id: Zr-006
+    source_path: data-src/janaf/Zr-006.yaml
+    source_sha256: f974735de1b133e6c74bfaf8adace9c73e3fd85b02b3c3e9f3bb15d61ad77097
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.31405635783449
+    max_residual_log10_K: 2.64473248438487e-05
+    source_url: https://janaf.nist.gov/tables/Zr-006.html
+    download_url: https://janaf.nist.gov/tables/Zr-006.txt
+    upstream_source_sha256: 29e24aea81a83cfeb75ebf91580fe0c14c50459a3b448270990c547805d9e32b
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: ZrO(g)
+    table_id: O-028
+    source_path: data-src/janaf/O-028.yaml
+    source_sha256: 09036f20561133ceb823b18acda63a493f81bed2953cc27efef64a84687b39e5
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.13190933142323
+    max_residual_log10_K: 2.27398930882973e-05
+    source_url: https://janaf.nist.gov/tables/O-028.html
+    download_url: https://janaf.nist.gov/tables/O-028.txt
+    upstream_source_sha256: a7c55ab89ee3ace14d901d1973305d89a79c102555a7adbd565f4dac1ed689ec
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: ZrO2(g)
+    table_id: O-055
+    source_path: data-src/janaf/O-055.yaml
+    source_sha256: 790e6ad7ab77ac7302c3f2c7b4ba7a55b82adfa29b70889f97141da351c883c3
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.38910645607393
+    max_residual_log10_K: 3.81884520710142e-05
+    source_url: https://janaf.nist.gov/tables/O-055.html
+    download_url: https://janaf.nist.gov/tables/O-055.txt
+    upstream_source_sha256: 3f992471328c6b6ab36c802d3445b9a13f62026643cc3dfdc78e948deaf823a6
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Ba(g)
+    table_id: Ba-005
+    source_path: data-src/janaf/Ba-005.yaml
+    source_sha256: f7c7421334f12681fef5717d8500bad14ae111fb40664476e9a16c8091af98f4
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.575910219253274
+    max_residual_log10_K: 4.55235350805339e-05
+    source_url: https://janaf.nist.gov/tables/Ba-005.html
+    download_url: https://janaf.nist.gov/tables/Ba-005.txt
+    upstream_source_sha256: a276bdbc4dbc6022da2aab69e8c82761369806d9baa1e082637f6dd842af7548
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: BaO(g)
+    table_id: Ba-037
+    source_path: data-src/janaf/Ba-037.yaml
+    source_sha256: c88c768e5f744413b3ba75683f7a8102f7c83784ce1983f2dfb059858a66fa8e
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.809154185873922
+    max_residual_log10_K: 8.23360510904592e-05
+    source_url: https://janaf.nist.gov/tables/Ba-037.html
+    download_url: https://janaf.nist.gov/tables/Ba-037.txt
+    upstream_source_sha256: 5ee32f1bf0c0096f08de1463e742d038eafe0bf2de6be9aeb3b403eaa5b165e5
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Sr(g)
+    table_id: Sr-006
+    source_path: data-src/janaf/Sr-006.yaml
+    source_sha256: 83683445b1641a9fe259c7ff74a70dab07c2f9df970009f25dcc71d516578406
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.800937338965014
+    max_residual_log10_K: 4.25756543468055e-05
+    source_url: https://janaf.nist.gov/tables/Sr-006.html
+    download_url: https://janaf.nist.gov/tables/Sr-006.txt
+    upstream_source_sha256: 3129e5c71c8c76df78513225c90e1696c6db122f02c436047b82b03b24325f27
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: SrO(g)
+    table_id: O-016
+    source_path: data-src/janaf/O-016.yaml
+    source_sha256: 82399cb7d695abe0ec801c253553b9786fcb70c3346aa38a565632ffcf739e72
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.796233534667408
+    max_residual_log10_K: 5.1987699972298e-05
+    source_url: https://janaf.nist.gov/tables/O-016.html
+    download_url: https://janaf.nist.gov/tables/O-016.txt
+    upstream_source_sha256: 393645ea03d5120f003e00e105dd48bfee752fc4e5de570d82d9040ead7caa63
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Zr(g)
+    table_id: Zr-006
+    source_path: data-src/janaf/Zr-006.yaml
+    source_sha256: f974735de1b133e6c74bfaf8adace9c73e3fd85b02b3c3e9f3bb15d61ad77097
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.701495855522808
+    max_residual_log10_K: 3.57505139784092e-05
+    source_url: https://janaf.nist.gov/tables/Zr-006.html
+    download_url: https://janaf.nist.gov/tables/Zr-006.txt
+    upstream_source_sha256: 29e24aea81a83cfeb75ebf91580fe0c14c50459a3b448270990c547805d9e32b
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: ZrO(g)
+    table_id: O-028
+    source_path: data-src/janaf/O-028.yaml
+    source_sha256: 09036f20561133ceb823b18acda63a493f81bed2953cc27efef64a84687b39e5
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.729594288743101
+    max_residual_log10_K: 3.46448644736755e-05
+    source_url: https://janaf.nist.gov/tables/O-028.html
+    download_url: https://janaf.nist.gov/tables/O-028.txt
+    upstream_source_sha256: a7c55ab89ee3ace14d901d1973305d89a79c102555a7adbd565f4dac1ed689ec
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: ZrO2(g)
+    table_id: O-055
+    source_path: data-src/janaf/O-055.yaml
+    source_sha256: 790e6ad7ab77ac7302c3f2c7b4ba7a55b82adfa29b70889f97141da351c883c3
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    max_residual_J_per_mol: 0.413053391384892
+    max_residual_log10_K: 3.02040402128672e-05
+    source_url: https://janaf.nist.gov/tables/O-055.html
+    download_url: https://janaf.nist.gov/tables/O-055.txt
+    upstream_source_sha256: 3f992471328c6b6ab36c802d3445b9a13f62026643cc3dfdc78e948deaf823a6
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Ba+(g)
+    table_id: Ba-006
+    source_path: data-src/janaf/Ba-006.yaml
+    source_sha256: c005575e164a18d2937f89007fa9cf7395966561d483db57522bc29029dfb21b
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.17961006599944
+    max_residual_log10_K: 2.57392359036525e-05
+    source_url: https://janaf.nist.gov/tables/Ba-006.html
+    download_url: https://janaf.nist.gov/tables/Ba-006.txt
+    upstream_source_sha256: f803f83975a93a065d02f8c5d60e602beb36dd375be8260f10cb8a0234e4d662
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Sr+(g)
+    table_id: Sr-007
+    source_path: data-src/janaf/Sr-007.yaml
+    source_sha256: d45fefdc61e892dbb261925a4716b554aa469dd2b1d0d7da7ea4c653457a43af
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.25742118572816
+    max_residual_log10_K: 3.64887003044919e-05
+    source_url: https://janaf.nist.gov/tables/Sr-007.html
+    download_url: https://janaf.nist.gov/tables/Sr-007.txt
+    upstream_source_sha256: c409276dff239cf08f53e5c4e0eaabfbcbfbe74a28b4ee7ad60b077fca36fecf
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Zr+(g)
+    table_id: Zr-007
+    source_path: data-src/janaf/Zr-007.yaml
+    source_sha256: 6041a735b33e44379015957dcc594dbbb5ac943b8ed71b7a81899beddf0d7b76
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.20240556332283
+    max_residual_log10_K: 2.9907616869817e-05
+    source_url: https://janaf.nist.gov/tables/Zr-007.html
+    download_url: https://janaf.nist.gov/tables/Zr-007.txt
+    upstream_source_sha256: 8540f2d728b5d72715407f7ce84120eb9a6cb8c14addaebf267a768743e79f78
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Zr-(g)
+    table_id: Zr-008
+    source_path: data-src/janaf/Zr-008.yaml
+    source_sha256: 5202e29244c3498ec866e6d6934b41c02cf1f613dde70b22c1b8220122a74cde
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 1.62180431967136
+    max_residual_log10_K: 3.35836921172061e-05
+    source_url: https://janaf.nist.gov/tables/Zr-008.html
+    download_url: https://janaf.nist.gov/tables/Zr-008.txt
+    upstream_source_sha256: da6964825dd3ca69ba3d6dfc1aa3a9c72ed794641640a72d058be090dff5d032
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Ba+(g)
+    table_id: Ba-006
+    source_path: data-src/janaf/Ba-006.yaml
+    source_sha256: c005575e164a18d2937f89007fa9cf7395966561d483db57522bc29029dfb21b
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 1000
+    - 1500
+    max_residual_J_per_mol: 0.625638564873952
+    max_residual_log10_K: 2.51379747161566e-05
+    source_url: https://janaf.nist.gov/tables/Ba-006.html
+    download_url: https://janaf.nist.gov/tables/Ba-006.txt
+    upstream_source_sha256: f803f83975a93a065d02f8c5d60e602beb36dd375be8260f10cb8a0234e4d662
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Sr+(g)
+    table_id: Sr-007
+    source_path: data-src/janaf/Sr-007.yaml
+    source_sha256: d45fefdc61e892dbb261925a4716b554aa469dd2b1d0d7da7ea4c653457a43af
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 1000
+    - 1500
+    max_residual_J_per_mol: 0.758058076491579
+    max_residual_log10_K: 3.04585519980899e-05
+    source_url: https://janaf.nist.gov/tables/Sr-007.html
+    download_url: https://janaf.nist.gov/tables/Sr-007.txt
+    upstream_source_sha256: c409276dff239cf08f53e5c4e0eaabfbcbfbe74a28b4ee7ad60b077fca36fecf
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Zr+(g)
+    table_id: Zr-007
+    source_path: data-src/janaf/Zr-007.yaml
+    source_sha256: 6041a735b33e44379015957dcc594dbbb5ac943b8ed71b7a81899beddf0d7b76
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 1000
+    - 1500
+    max_residual_J_per_mol: 0.695457676425576
+    max_residual_log10_K: 2.5947337200724e-05
+    source_url: https://janaf.nist.gov/tables/Zr-007.html
+    download_url: https://janaf.nist.gov/tables/Zr-007.txt
+    upstream_source_sha256: 8540f2d728b5d72715407f7ce84120eb9a6cb8c14addaebf267a768743e79f78
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: gas
+    species_name: Zr-(g)
+    table_id: Zr-008
+    source_path: data-src/janaf/Zr-008.yaml
+    source_sha256: 5202e29244c3498ec866e6d6934b41c02cf1f613dde70b22c1b8220122a74cde
+    authority: janaf_fitted_ionisation
+    method: fitted
+    T_interval: 2
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 1000
+    - 1500
+    max_residual_J_per_mol: 1.03760871506529
+    max_residual_log10_K: 3.61320396383376e-05
+    source_url: https://janaf.nist.gov/tables/Zr-008.html
+    download_url: https://janaf.nist.gov/tables/Zr-008.txt
+    upstream_source_sha256: da6964825dd3ca69ba3d6dfc1aa3a9c72ed794641640a72d058be090dff5d032
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+  - table: condensate
+    species_name: BaO(l)
+    table_id: Ba-035
+    source_path: data-src/janaf/Ba-035.yaml
+    source_sha256: b2272ef791a95c4074ff7cc8ab4f8cd3d673686b9ad5b7e9568d5595080720c6
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_rows: 4
+    max_residual_J_per_mol: 2.3283064365387e-10
+    max_residual_log10_K: 9.35506722558994e-15
+    source_url: https://janaf.nist.gov/tables/Ba-035.html
+    download_url: https://janaf.nist.gov/tables/Ba-035.txt
+    upstream_source_sha256: abb1faf911bf78d7c6597d75e4a1abe683c439833e13ceb79c61adf99a6f8be9
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: BaO(l)
+    table_id: Ba-035
+    source_path: data-src/janaf/Ba-035.yaml
+    source_sha256: b2272ef791a95c4074ff7cc8ab4f8cd3d673686b9ad5b7e9568d5595080720c6
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 1500
+    - 2000
+    source_rows: 6
+    max_residual_J_per_mol: 1.10330667369999
+    max_residual_log10_K: 3.20165009286618e-05
+    source_url: https://janaf.nist.gov/tables/Ba-035.html
+    download_url: https://janaf.nist.gov/tables/Ba-035.txt
+    upstream_source_sha256: abb1faf911bf78d7c6597d75e4a1abe683c439833e13ceb79c61adf99a6f8be9
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: BaO(l)
+    table_id: Ba-035
+    source_path: data-src/janaf/Ba-035.yaml
+    source_sha256: b2272ef791a95c4074ff7cc8ab4f8cd3d673686b9ad5b7e9568d5595080720c6
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 2000
+    - 2500
+    source_rows: 6
+    max_residual_J_per_mol: 0.0442365830531344
+    max_residual_log10_K: 1.00462475659937e-06
+    source_url: https://janaf.nist.gov/tables/Ba-035.html
+    download_url: https://janaf.nist.gov/tables/Ba-035.txt
+    upstream_source_sha256: abb1faf911bf78d7c6597d75e4a1abe683c439833e13ceb79c61adf99a6f8be9
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: BaO(l)
+    table_id: Ba-035
+    source_path: data-src/janaf/Ba-035.yaml
+    source_sha256: b2272ef791a95c4074ff7cc8ab4f8cd3d673686b9ad5b7e9568d5595080720c6
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 2500
+    - 3000
+    source_rows: 6
+    max_residual_J_per_mol: 0.258209171937779
+    max_residual_log10_K: 4.81685707103288e-06
+    source_url: https://janaf.nist.gov/tables/Ba-035.html
+    download_url: https://janaf.nist.gov/tables/Ba-035.txt
+    upstream_source_sha256: abb1faf911bf78d7c6597d75e4a1abe683c439833e13ceb79c61adf99a6f8be9
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: SrO(l)
+    table_id: O-014
+    source_path: data-src/janaf/O-014.yaml
+    source_sha256: c7eb8de5a72b2805c6cc2f09f9a3647234dd9f760cdd23f8035bd2db779a8498
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_rows: 4
+    max_residual_J_per_mol: 1.16415321826935e-10
+    max_residual_log10_K: 5.06732808052789e-15
+    source_url: https://janaf.nist.gov/tables/O-014.html
+    download_url: https://janaf.nist.gov/tables/O-014.txt
+    upstream_source_sha256: 5079ca914bd2d58042b52d5358ee3666dc29afb70540e451c9a3b8596a0b3d8e
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: SrO(l)
+    table_id: O-014
+    source_path: data-src/janaf/O-014.yaml
+    source_sha256: c7eb8de5a72b2805c6cc2f09f9a3647234dd9f760cdd23f8035bd2db779a8498
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 1500
+    - 2000
+    source_rows: 6
+    max_residual_J_per_mol: 0.0627364979591221
+    max_residual_log10_K: 1.82053023057152e-06
+    source_url: https://janaf.nist.gov/tables/O-014.html
+    download_url: https://janaf.nist.gov/tables/O-014.txt
+    upstream_source_sha256: 5079ca914bd2d58042b52d5358ee3666dc29afb70540e451c9a3b8596a0b3d8e
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: SrO(l)
+    table_id: O-014
+    source_path: data-src/janaf/O-014.yaml
+    source_sha256: c7eb8de5a72b2805c6cc2f09f9a3647234dd9f760cdd23f8035bd2db779a8498
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 2000
+    - 2500
+    source_rows: 6
+    max_residual_J_per_mol: 0.349559369147755
+    max_residual_log10_K: 7.93858752086287e-06
+    source_url: https://janaf.nist.gov/tables/O-014.html
+    download_url: https://janaf.nist.gov/tables/O-014.txt
+    upstream_source_sha256: 5079ca914bd2d58042b52d5358ee3666dc29afb70540e451c9a3b8596a0b3d8e
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: SrO(l)
+    table_id: O-014
+    source_path: data-src/janaf/O-014.yaml
+    source_sha256: c7eb8de5a72b2805c6cc2f09f9a3647234dd9f760cdd23f8035bd2db779a8498
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 2500
+    - 3000
+    source_rows: 6
+    max_residual_J_per_mol: 0.346065428690054
+    max_residual_log10_K: 6.45580362643883e-06
+    source_url: https://janaf.nist.gov/tables/O-014.html
+    download_url: https://janaf.nist.gov/tables/O-014.txt
+    upstream_source_sha256: 5079ca914bd2d58042b52d5358ee3666dc29afb70540e451c9a3b8596a0b3d8e
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: ZrO2(l)
+    table_id: O-053
+    source_path: data-src/janaf/O-053.yaml
+    source_sha256: 413e6d9b19fc837441c884faeea6871d8e0691dcef7ac041710200cb65a038a6
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_rows: 4
+    max_residual_J_per_mol: 2.3283064365387e-10
+    max_residual_log10_K: 1.01346561610558e-14
+    source_url: https://janaf.nist.gov/tables/O-053.html
+    download_url: https://janaf.nist.gov/tables/O-053.txt
+    upstream_source_sha256: c13a6083aed93a2fe25c5d4d0352e9ce5bc1b5c8a8b6cfe59a97c99c9081c6ae
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: ZrO2(l)
+    table_id: O-053
+    source_path: data-src/janaf/O-053.yaml
+    source_sha256: 413e6d9b19fc837441c884faeea6871d8e0691dcef7ac041710200cb65a038a6
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 1500
+    - 2000
+    source_rows: 6
+    max_residual_J_per_mol: 0.382755295140669
+    max_residual_log10_K: 1.11070526032671e-05
+    source_url: https://janaf.nist.gov/tables/O-053.html
+    download_url: https://janaf.nist.gov/tables/O-053.txt
+    upstream_source_sha256: c13a6083aed93a2fe25c5d4d0352e9ce5bc1b5c8a8b6cfe59a97c99c9081c6ae
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: ZrO2(l)
+    table_id: O-053
+    source_path: data-src/janaf/O-053.yaml
+    source_sha256: 413e6d9b19fc837441c884faeea6871d8e0691dcef7ac041710200cb65a038a6
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 2000
+    - 2500
+    source_rows: 6
+    max_residual_J_per_mol: 0.229583247564733
+    max_residual_log10_K: 5.21389745198384e-06
+    source_url: https://janaf.nist.gov/tables/O-053.html
+    download_url: https://janaf.nist.gov/tables/O-053.txt
+    upstream_source_sha256: c13a6083aed93a2fe25c5d4d0352e9ce5bc1b5c8a8b6cfe59a97c99c9081c6ae
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
+  - table: condensate
+    species_name: ZrO2(l)
+    table_id: O-053
+    source_path: data-src/janaf/O-053.yaml
+    source_sha256: 413e6d9b19fc837441c884faeea6871d8e0691dcef7ac041710200cb65a038a6
+    authority: janaf_fitted
+    method: fitted
+    T_range_K:
+    - 2500
+    - 3000
+    source_rows: 6
+    max_residual_J_per_mol: 0.262306306278333
+    max_residual_log10_K: 4.89328855629409e-06
+    source_url: https://janaf.nist.gov/tables/O-053.html
+    download_url: https://janaf.nist.gov/tables/O-053.txt
+    upstream_source_sha256: c13a6083aed93a2fe25c5d4d0352e9ce5bc1b5c8a8b6cfe59a97c99c9081c6ae
+    retrieval_date: '2026-10-12'
+    user_agent: openimcc-janaf-vendor/1.0
+    branch_decision: Fit the printed JANAF liquid-branch thermal nodes directly, including
+      supercooled liquid-table cells below the crystal/liquid marker; no constant-Cp
+      continuation is used.
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each
@@ -8461,6 +9191,255 @@ source_comparisons:
       nasa_minus_janaf_J_mol: -44561.962
       nasa_card_G_app_J_mol: -1545373.526
       card_G_nasa_minus_janaf_J_mol: -14881.526
+  - species_name: Ba(g)
+    janaf_table_id: Ba-005
+    nasa_record_id: NG-0165
+    janaf_298K_element_reference_table: Ba-005
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -163558.2
+      nasa_G_app_J_mol: -157675.553
+      nasa_minus_janaf_J_mol: 5882.647
+    - T_K: 2000
+      janaf_G_app_J_mol: -205499.0
+      nasa_G_app_J_mol: -199698.314
+      nasa_minus_janaf_J_mol: 5800.686
+    - T_K: 2500
+      janaf_G_app_J_mol: -312901.0
+      nasa_G_app_J_mol: -307513.734
+      nasa_minus_janaf_J_mol: 5387.266
+    - T_K: 3000
+      janaf_G_app_J_mol: -424218.0
+      nasa_G_app_J_mol: -419364.749
+      nasa_minus_janaf_J_mol: 4853.251
+  - species_name: Ba+(g)
+    janaf_table_id: Ba-006
+    nasa_record_id: NG-0166
+    janaf_298K_element_reference_table: Ba-006
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: 334207.4
+      nasa_G_app_J_mol: 340149.749
+      nasa_minus_janaf_J_mol: 5942.349
+    - T_K: 2000
+      janaf_G_app_J_mol: 290617.0
+      nasa_G_app_J_mol: 296558.713
+      nasa_minus_janaf_J_mol: 5941.713
+    - T_K: 2500
+      janaf_G_app_J_mol: 178978.0
+      nasa_G_app_J_mol: 184937.63
+      nasa_minus_janaf_J_mol: 5959.63
+    - T_K: 3000
+      janaf_G_app_J_mol: 64070.0
+      nasa_G_app_J_mol: 70069.803
+      nasa_minus_janaf_J_mol: 5999.803
+  - species_name: BaO(g)
+    janaf_table_id: Ba-037
+    nasa_record_id: NG-0178
+    janaf_298K_element_reference_table: Ba-037
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -609346.4
+      nasa_G_app_J_mol: -603445.344
+      nasa_minus_janaf_J_mol: 5901.056
+    - T_K: 2000
+      janaf_G_app_J_mol: -669819.0
+      nasa_G_app_J_mol: -663924.785
+      nasa_minus_janaf_J_mol: 5894.215
+    - T_K: 2500
+      janaf_G_app_J_mol: -824201.5
+      nasa_G_app_J_mol: -818315.896
+      nasa_minus_janaf_J_mol: 5885.604
+    - T_K: 3000
+      janaf_G_app_J_mol: -982576.0
+      nasa_G_app_J_mol: -976654.116
+      nasa_minus_janaf_J_mol: 5921.884
+  - species_name: Sr(g)
+    janaf_table_id: Sr-006
+    nasa_record_id: NG-1168
+    janaf_298K_element_reference_table: Sr-006
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -168405.8
+      nasa_G_app_J_mol: -171881.46
+      nasa_minus_janaf_J_mol: -3475.66
+    - T_K: 2000
+      janaf_G_app_J_mol: -209035.0
+      nasa_G_app_J_mol: -212509.028
+      nasa_minus_janaf_J_mol: -3474.028
+    - T_K: 2500
+      janaf_G_app_J_mol: -312383.0
+      nasa_G_app_J_mol: -315849.105
+      nasa_minus_janaf_J_mol: -3466.105
+    - T_K: 3000
+      janaf_G_app_J_mol: -417993.0
+      nasa_G_app_J_mol: -421437.268
+      nasa_minus_janaf_J_mol: -3444.268
+  - species_name: Sr+(g)
+    janaf_table_id: Sr-007
+    nasa_record_id: NG-1169
+    janaf_298K_element_reference_table: Sr-007
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: 376886.0
+      nasa_G_app_J_mol: 373389.145
+      nasa_minus_janaf_J_mol: -3496.855
+    - T_K: 2000
+      janaf_G_app_J_mol: 335107.0
+      nasa_G_app_J_mol: 331609.641
+      nasa_minus_janaf_J_mol: -3497.359
+    - T_K: 2500
+      janaf_G_app_J_mol: 228904.0
+      nasa_G_app_J_mol: 225405.725
+      nasa_minus_janaf_J_mol: -3498.275
+    - T_K: 3000
+      janaf_G_app_J_mol: 120539.0
+      nasa_G_app_J_mol: 117044.684
+      nasa_minus_janaf_J_mol: -3494.316
+  - species_name: SrO(g)
+    janaf_table_id: O-016
+    nasa_record_id: NG-1181
+    janaf_298K_element_reference_table: O-016
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -489706.4
+      nasa_G_app_J_mol: -490538.467
+      nasa_minus_janaf_J_mol: -832.067
+    - T_K: 2000
+      janaf_G_app_J_mol: -549436.0
+      nasa_G_app_J_mol: -550229.168
+      nasa_minus_janaf_J_mol: -793.168
+    - T_K: 2500
+      janaf_G_app_J_mol: -702902.0
+      nasa_G_app_J_mol: -703552.355
+      nasa_minus_janaf_J_mol: -650.355
+    - T_K: 3000
+      janaf_G_app_J_mol: -862096.0
+      nasa_G_app_J_mol: -862558.097
+      nasa_minus_janaf_J_mol: -462.097
+  - species_name: Zr(g)
+    janaf_table_id: Zr-006
+    nasa_record_id: NG-1263
+    janaf_298K_element_reference_table: Zr-006
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: 237227.8
+      nasa_G_app_J_mol: 226282.035
+      nasa_minus_janaf_J_mol: -10945.765
+    - T_K: 2000
+      janaf_G_app_J_mol: 191112.0
+      nasa_G_app_J_mol: 180046.086
+      nasa_minus_janaf_J_mol: -11065.914
+    - T_K: 2500
+      janaf_G_app_J_mol: 73213.5
+      nasa_G_app_J_mol: 61966.337
+      nasa_minus_janaf_J_mol: -11247.163
+    - T_K: 3000
+      janaf_G_app_J_mol: -47935.0
+      nasa_G_app_J_mol: -59229.123
+      nasa_minus_janaf_J_mol: -11294.123
+  - species_name: Zr+(g)
+    janaf_table_id: Zr-007
+    nasa_record_id: NG-1264
+    janaf_298K_element_reference_table: Zr-007
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: 899107.2
+      nasa_G_app_J_mol: 867459.243
+      nasa_minus_janaf_J_mol: -31647.957
+    - T_K: 2000
+      janaf_G_app_J_mol: 852089.0
+      nasa_G_app_J_mol: 820429.063
+      nasa_minus_janaf_J_mol: -31659.937
+    - T_K: 2500
+      janaf_G_app_J_mol: 732178.0
+      nasa_G_app_J_mol: 700463.157
+      nasa_minus_janaf_J_mol: -31714.843
+    - T_K: 3000
+      janaf_G_app_J_mol: 609427.0
+      nasa_G_app_J_mol: 577617.394
+      nasa_minus_janaf_J_mol: -31809.606
+  - species_name: ZrO(g)
+    janaf_table_id: O-028
+    nasa_record_id: NG-1267
+    janaf_298K_element_reference_table: O-028
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -413839.6
+      nasa_G_app_J_mol: -401871.093
+      nasa_minus_janaf_J_mol: 11968.507
+    - T_K: 2000
+      janaf_G_app_J_mol: -474008.0
+      nasa_G_app_J_mol: -463510.35
+      nasa_minus_janaf_J_mol: 10497.65
+    - T_K: 2500
+      janaf_G_app_J_mol: -628787.0
+      nasa_G_app_J_mol: -621000.745
+      nasa_minus_janaf_J_mol: 7786.255
+    - T_K: 3000
+      janaf_G_app_J_mol: -788623.0
+      nasa_G_app_J_mol: -782591.988
+      nasa_minus_janaf_J_mol: 6031.012
+  - species_name: ZrO2(g)
+    janaf_table_id: O-055
+    nasa_record_id: NG-1269
+    janaf_298K_element_reference_table: O-055
+    values:
+    - T_K: 1800
+      janaf_G_app_J_mol: -869774.0
+      nasa_G_app_J_mol: -900632.483
+      nasa_minus_janaf_J_mol: -30858.483
+    - T_K: 2000
+      janaf_G_app_J_mol: -944449.0
+      nasa_G_app_J_mol: -975308.232
+      nasa_minus_janaf_J_mol: -30859.232
+    - T_K: 2500
+      janaf_G_app_J_mol: -1135967.0
+      nasa_G_app_J_mol: -1166840.54
+      nasa_minus_janaf_J_mol: -30873.54
+    - T_K: 3000
+      janaf_G_app_J_mol: -1333309.0
+      nasa_G_app_J_mol: -1364245.151
+      nasa_minus_janaf_J_mol: -30936.151
+  - species_name: BaO(l)
+    janaf_table_id: Ba-035
+    nasa_record_id: NG-1325
+    janaf_298K_element_reference_table: Ba-035
+    values:
+    - T_K: 2500
+      janaf_G_app_J_mol: -902429.0
+      nasa_header_anchored_G_app_J_mol: -899060.443
+      nasa_minus_janaf_J_mol: 3368.557
+      nasa_card_G_app_J_mol: -896715.742
+      card_G_nasa_minus_janaf_J_mol: 5713.258
+    - T_K: 3000
+      janaf_G_app_J_mol: -1014398.0
+      nasa_header_anchored_G_app_J_mol: -1009867.278
+      nasa_minus_janaf_J_mol: 4530.722
+      nasa_card_G_app_J_mol: -1007522.578
+      card_G_nasa_minus_janaf_J_mol: 6875.422
+  - species_name: SrO(l)
+    janaf_table_id: O-014
+    nasa_record_id: NG-1917
+    janaf_298K_element_reference_table: O-014
+    values:
+    - T_K: 3000
+      janaf_G_app_J_mol: -986860.0
+      nasa_header_anchored_G_app_J_mol: -999387.201
+      nasa_minus_janaf_J_mol: -12527.201
+      nasa_card_G_app_J_mol: -981003.222
+      card_G_nasa_minus_janaf_J_mol: 5856.778
+  - species_name: ZrO2(l)
+    janaf_table_id: O-053
+    nasa_record_id: NG-2029
+    janaf_298K_element_reference_table: O-053
+    values:
+    - T_K: 3000
+      janaf_G_app_J_mol: -1552918.0
+      nasa_header_anchored_G_app_J_mol: -1609445.386
+      nasa_minus_janaf_J_mol: -56527.386
+      nasa_card_G_app_J_mol: -1561853.51
+      card_G_nasa_minus_janaf_J_mol: -8935.51
 certification_items:
   - authority: lh84_evaluated_with_nasa_cp
     species_name: Na2O(g)

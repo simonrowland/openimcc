@@ -27,14 +27,16 @@ meet that bound. `evaluate_gas(..., include_ions=True)` solves charge balance
 on the full default neutral set, adds fitted Na+, K+, Ca+ and e−, and includes
 every available JANAF-supported anion whose neutral is present. Caller-supplied
 trace-parent activities enable Li+, Rb+, Pb+, Cs+, Cu+, Sn+, Cs2O+, Ga+, Ge+,
-B+, Zn+, Cd+, Bi+, Mn+, Zn−, Ga−, B−, BO− and BO2−. Zn− uses its JANAF row; BO−
+B+, Zn+, Cd+, Bi+, Mn+, Ba+, Sr+, Zr+, Zr−, Zn−, Ga−, B−, BO− and BO2−. Zn− and
+Zr− use JANAF rows; BO−
 uses a NASA CEA card because JANAF has no BO−
 table. In+ remains in the source ledger but is declined after its fitted
 Kion/Saha ratios (1.510e28 at 1500 K and 9.143e16 at 2500 K) fail the NIST
 5.78636 eV ionisation-energy check. The default result remains neutral-only.
 Na and K remain `complete-except-ions` because their bounded shares exceed
-1e-4 while ions are opt-in; Ca, Li, Rb, Pb, Ga, Ge, Zn, Cd, Bi and Mn remain
-below the C3 threshold on their recorded activity screens. Mo and W are also
+1e-4 while ions are opt-in; Ca, Li, Rb, Pb, Ga, Ge, Zn, Cd, Bi, Mn, Ba and Sr remain
+below the C3 threshold on their recorded activity screens. Zr is below the
+threshold; Mo and W are also
 screened using their caller-supplied parent activities. Se's positive ion
 source is unavailable, so its C3 screen is declined. B exceeds the threshold when
 its cation and available anions are combined; Cs is also above the threshold.
@@ -54,6 +56,9 @@ P2O5(l) row.
 | Ag | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Ag(g) and a tier-4 hypothetical Ag2O(l) caller-activity standard cover 1200-3000 K; NASA Glenn supplies opt-in Ag+(g) and Ag-(g). Ag2O decomposes near 500 K and has no measured liquid function; the Ag2O-parent convention does not represent reduced melts where silver dissolves largely as metal. |
 | Mo | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | MoO3(l), JANAF Mo monomers and ions, and NASA Glenn Mo oxide clusters cover 1200-3000 K; MoO3(l) uses its JANAF liquid branch through 2000 K and a labelled constant-Cp continuation above it; a(MoO3) is caller-supplied; the C3 screen at a(MoO3)=1e-3 reached 1.192e-09 at 2600 K and fO2=1e-6 within the <=1-bar neutral-pressure domain. |
 | W | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | WO3(l), JANAF W monomers, oxide clusters and ions, and NASA Glenn (WO3)5(g) cover 1200-3000 K; O-066 prints the liquid values below its 1745 K marker as supercooled source data; a(WO3) is caller-supplied; the C3 screen at a(WO3)=1e-3 reached 6.594e-13 at 2300 K and fO2=1e-10 within the <=1-bar neutral-pressure domain. |
+| Ba | gas-partial | no | yes | no | yes | unvalidated | Ba(g), its JANAF oxide gas channels, and the printed BaO(l) liquid branch cover 1200-3000 K; BaO is the selected parent because JANAF prints its liquid function; caller supplies a(BaO); the C3 screen at a(BaO)=1e-3 reached 2.125e-02 at 3000 K and fO2=1e-12 within the <=1-bar neutral-pressure domain. |
+| Sr | gas-partial | no | yes | no | yes | unvalidated | Sr(g), its JANAF oxide gas channels, and the printed SrO(l) liquid branch cover 1200-3000 K; SrO is the selected parent because JANAF prints its liquid function; caller supplies a(SrO); the C3 screen at a(SrO)=1e-3 reached 2.851e-03 at 3000 K and fO2=1e-12 within the <=1-bar neutral-pressure domain. |
+| Zr | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Zr(g), its JANAF oxide gas channels, and the printed ZrO2(l) liquid branch cover 1200-3000 K; ZrO2 is the selected parent because JANAF prints its liquid function; caller supplies a(ZrO2); the C3 screen at a(ZrO2)=1e-3 reached 8.219e-06 at 3000 K and fO2=1e-12 within the <=1-bar neutral-pressure domain. ZrO(g) JANAF is retained despite its documented NASA G_app difference. |
 | Mn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Mn(g), MnO(g), MnO(l), and opt-in Mn+ are available; MnO(l) is a tier-4 liquid_from_solid construction fitted over 1200-3000 K and supercooled below measured Tm 2120 ± 20 K; a(MnO) is caller-supplied; the joint C3 screen used a(MnO)=1e-3 and reached 1.621e-07 at 2800 K and fO2=1e-4, within the fitted interval and the <=1-bar neutral-pressure domain. |
 | O | input (fO2 pinned) | n/a | yes | n/a | n/a | unvalidated | O is input (fO2 pinned), so C1, C3 and C4 do not apply. |
 | P | gas-partial | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | no | unvalidated | JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) function was found and JANAF lists P4O10(cr) only. Channels need an external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); OpenIMCC provides no pyrolysis-temperature melt activity model. |
