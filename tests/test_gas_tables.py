@@ -3055,6 +3055,186 @@ def test_nio_gas_uncertainty_band_recomputes_from_bulletin_and_nasa() -> None:
             assert band[temperature] == pytest.approx(gap, abs=0.001)
 
 
+def test_ni_co_mixed_source_parent_bands_recompute_from_compilations() -> None:
+    """The disclosure bands follow the independent gas compilation values.
+
+    Premise: the same TSIV liquid parent appears on both sides of each source
+    comparison and cancels, leaving the selected gas G_app minus its TSIV
+    counterpart. JANAF/NASA use 1 bar; TSIV uses 1 atm, with no conversion in
+    these stored bands because the runtime source values retain those printed
+    conventions. Algebra: G_app = dfH298 + (H(T)-H(298.15))-T*S(T). The TSIV
+    Phi equation is checked against each printed knot; its tabulated H/S nodes
+    supply G_app. Unit check: all gaps are J/mol. Sanity: the 2000 K gaps are
+    about 5.9, 9.5, and 2.5 kJ/mol for Ni, NiO, and Co respectively.
+    """
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    gas_rows = [
+        row for row in provenance["rows"]
+        if row["table"] == "gas" and row["species_name"] in {
+            "Ni(g)", "NiO(g)", "Co(g)"
+        }
+    ]
+    source_rows = {
+        "Ni(g)": ("tsiv-table-2023.json", "janaf", "Ni-005"),
+        "Co(g)": ("tsiv-table-1332.json", "janaf", "Co-005"),
+        "NiO(g)": ("tsiv-table-2027.json", "nasa", "NG-0926"),
+    }
+    knots = (1200, 1500, 1800, 2000, 2500, 3000)
+    published_provenance = yaml.safe_load(
+        (PUBLISHED_DATA / "PROVENANCE.yaml").read_text(encoding="utf-8")
+    )
+
+    for species, (tsiv_filename, selected_kind, selected_id) in source_rows.items():
+        tsiv_path = PUBLISHED_DATA / tsiv_filename
+        tsiv = json.loads(tsiv_path.read_text(encoding="utf-8"))
+        source_metadata = next(
+            item for item in published_provenance["records"]
+            if item["record_id"] == tsiv["record_id"]
+        )
+        assert source_metadata["path"] == f"data-src/published-thermo/{tsiv_filename}"
+        assert source_metadata["source_sha256"] == hashlib.sha256(
+            tsiv_path.read_bytes()
+        ).hexdigest()
+        tsiv_nodes = {float(row[0]): row for row in tsiv["nodes"]}
+        h298_h0 = float(tsiv_nodes[298.15][4])
+
+        def tsiv_g(temperature: float) -> float:
+            node = tsiv_nodes[float(temperature)]
+            # TSIV tabulates H-H(0); subtract its 298 K value to get H-H(298).
+            return (
+                float(tsiv["formation_enthalpy_298_kj_mol"]["value"])
+                + float(node[4]) - h298_h0
+            ) * 1000.0 - temperature * float(node[3])
+
+        def tsiv_phi(temperature: float) -> float:
+            function = next(
+                item for item in tsiv["phi_functions"]
+                if float(item["T_range_K"][0]) <= temperature
+                <= float(item["T_range_K"][1])
+            )
+            c = list(map(float, function["coefficients"]))
+            x = temperature * 1.0e-4
+            return (
+                c[0] + c[1] * math.log(x) + c[2] / x**2 + c[3] / x
+                + c[4] * x + c[5] * x**2 + c[6] * x**3
+            )
+
+        if selected_kind == "janaf":
+            selected_g = lambda temperature: _janaf_apparent_gibbs(
+                selected_id, temperature
+            )
+        else:
+            card = _nasa_record(selected_id)
+            card_h298 = R_J_MOL_K * 298.15 * build_gas_tables._nasa7_properties(
+                card, 298.15
+            )["h_rt"]
+
+            def selected_g(temperature: float) -> float:
+                properties = build_gas_tables._nasa7_properties(card, temperature)
+                return float(card["delta_f_H_298_15"]["value"]) + (
+                    R_J_MOL_K * temperature * properties["h_rt"] - card_h298
+                ) - temperature * R_J_MOL_K * properties["s_R"]
+
+        rows = [row for row in gas_rows if row["species_name"] == species]
+        assert len(rows) == 2
+        for row in rows:
+            low, high = map(float, row["T_range_K"])
+            row_knots = tuple(t for t in knots if low <= t <= high)
+            regular = row.get("uncertainty_band", {})
+            bands = [regular, *row.get("additional_uncertainty_bands", [])]
+            band = next(
+                item for item in bands
+                if item.get("kind") == "mixed_source_parent_scale_inconsistency"
+            )
+            assert band["comparison_record"] == tsiv["record_id"]
+            assert set(map(int, band["values_J_per_mol"])) == set(row_knots)
+            assert "1 bar" in band["standard_state_note"]
+            assert "1 atm" in band["standard_state_note"]
+            for temperature in row_knots:
+                # Phi fits are printed to limited precision; the source table
+                # H/S nodes remain the values used in the Gibbs comparison.
+                assert tsiv_phi(temperature) == pytest.approx(
+                    float(tsiv_nodes[float(temperature)][2]), abs=0.01
+                )
+                gap = abs(selected_g(temperature) - tsiv_g(temperature))
+                assert band["values_J_per_mol"][temperature] == pytest.approx(
+                    gap, abs=0.001
+                )
+
+
+def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
+    """Every channel pair is sourced from provenance and has an explicit outcome."""
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    gas_rows = [row for row in provenance["rows"] if row["table"] == "gas"]
+    parent_rows = [
+        row for row in provenance["rows"] if row["table"] == "condensate"
+    ]
+    oxygen_rows = [
+        row for row in gas_rows if row["species_name"] == "O2(g)"
+    ]
+
+    # Existing, reviewed channels with a mixed compilation pair but no band;
+    # this fix round only adds the three Ni/Co disclosures.
+    known_unbanded_mixed_source_channels = (
+        "SiO", "SiO2", "Si", "Si2", "Si3", "K", "K2", "KO",
+        "Na2O", "K2O", "Mn", "MnO", "Rb", "RbO",
+        "PbO2", "Ga", "GaO", "Ga2O", "Ge", "GeO", "In", "InO",
+        "In2O", "Cs", "CsO", "Cs2O", "Sn", "SnO2", "Zn", "ZnO",
+        "Cd", "CdO", "Bi", "Bi2", "BiO", "Te", "Te2", "Se", "Se2",
+        "SeO", "As", "As2", "As4", "Sb", "Sb2", "Sb4", "Ag",
+    )
+
+    def compilation(row: dict) -> str:
+        source = " ".join(
+            str(row.get(key, ""))
+            for key in ("source_path", "authority", "table_id", "source_table_id")
+        ).lower()
+        if "janaf" in source:
+            return "JANAF"
+        if "nasa" in source:
+            return "NASA"
+        if "tsiv" in source or "ivtan" in source:
+            return "TSIV"
+        if "pankratz" in source or "bulletin" in source or "p672" in source:
+            return "Pankratz"
+        if any(label in source for label in ("construction", "estimated", "lam1987")):
+            return "construction"
+        return "other"
+
+    unbanded_mixed = set()
+    for species, (parent, _n_gas, n_o2) in _SF04_REACTIONS.items():
+        if not parent:
+            continue
+        rows = [row for row in gas_rows if row["species_name"] == f"{species}(g)"]
+        parents = [
+            row for row in parent_rows
+            if row["species_name"].startswith(f"{parent}(")
+        ]
+        if not rows or not parents:
+            continue
+        parent_compilations = {compilation(row) for row in parents}
+        gas_compilations = {compilation(row) for row in rows}
+        pair_compilations = gas_compilations | parent_compilations
+        if n_o2 and oxygen_rows:
+            pair_compilations |= {compilation(row) for row in oxygen_rows}
+        if len(pair_compilations) <= 1:
+            continue
+        disclosed = all(
+            any(
+                band.get("kind") == "mixed_source_parent_scale_inconsistency"
+                for band in [
+                    row.get("uncertainty_band", {}),
+                    *row.get("additional_uncertainty_bands", []),
+                ]
+            )
+            for row in rows
+        )
+        if not disclosed:
+            unbanded_mixed.add(species)
+
+    assert unbanded_mixed <= set(known_unbanded_mixed_source_channels)
+
+
 def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
     """Cluster bands follow the runtime liquid parent at every row knot."""
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
@@ -3065,6 +3245,7 @@ def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
     gas_rows = [
         row for row in provenance["rows"]
         if row["table"] == "gas"
+        and row["species_name"].startswith("(")
         and row.get("uncertainty_band", {}).get("kind")
         == "mixed_source_parent_scale_inconsistency"
     ]

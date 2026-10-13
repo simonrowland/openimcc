@@ -57,6 +57,30 @@ records:
     source_locator: Volume IV, Table 1335
     tier: 3
     selection_reason: The source prints CoO(g) H/S/Cp functions through 3000 K and an elemental-reference 298.15 K formation anchor; no JANAF or NASA CoO(g) table is available.
+  - record_id: TSIV-2023
+    path: data-src/published-thermo/tsiv-table-2023.json
+    source_sha256: 6ff75fced774cc4f009ce8230b7f0c7955f3c3d45e071ecae252f0f8834d4168
+    publication: Gurvich, Veyts and Medvedev, Thermodynamic Properties of Individual Substances, Volume IV, Table 2023, Ni(g)
+    source_url: https://www.chem.msu.ru/rus/tsiv/Ni/Ni.html
+    source_locator: Volume IV, Table 2023
+    tier: 3
+    selection_reason: Comparison-only TSIV Ni(g) data quantify the source-scale difference from the selected JANAF Ni(g) row; the published table's 1 atm convention is retained in the comparison.
+  - record_id: TSIV-1332
+    path: data-src/published-thermo/tsiv-table-1332.json
+    source_sha256: a14c9f8cbfa6e02f5de2e728cb3d53ef4fc81f40958bd31b616abad1e39e6398
+    publication: Gurvich, Veyts and Medvedev, Thermodynamic Properties of Individual Substances, Volume IV, Table 1332, Co(g)
+    source_url: https://www.chem.msu.ru/rus/tsiv/Co/Co.html
+    source_locator: Volume IV, Table 1332
+    tier: 3
+    selection_reason: Comparison-only TSIV Co(g) data quantify the source-scale difference from the selected JANAF Co(g) row; the published table's 1 atm convention is retained in the comparison.
+  - record_id: TSIV-2027
+    path: data-src/published-thermo/tsiv-table-2027.json
+    source_sha256: 383b61646e809e222f58ca00fdc5da3b6c69ff99a6c7fec977e27d618df26311
+    publication: Gurvich, Veyts and Medvedev, Thermodynamic Properties of Individual Substances, Volume IV, Table 2027, NiO(g)
+    source_url: https://www.chem.msu.ru/rus/tsiv/Ni/ivtan0005.html
+    source_locator: Volume IV, Table 2027
+    tier: 3
+    selection_reason: Comparison-only TSIV NiO(g) data quantify the source-scale difference from NASA Glenn NG-0926; the published table's 1 atm convention is retained in the comparison.
   - record_id: P672-NiO-g
     path: data-src/published-thermo/nio-bulletin-672.json
     source_sha256: 01b1948e51e61b3694aeb2ca39fe61aeb095e304ec30dfaa0de55f53a88ef463

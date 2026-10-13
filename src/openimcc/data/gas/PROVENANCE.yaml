@@ -841,6 +841,14 @@ rows:
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.4904846388381
     max_residual_log10_K: 3.16616749460394e-05
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: absolute_gas_G_app_difference
+      comparison_record: TSIV-2023
+      units: J/mol
+      method: absolute JANAF Ni(g) minus TSIV Table 2023 Ni(g) apparent Gibbs energy at common table nodes; the NiO(l) parent is common and cancels
+      standard_state_note: JANAF is 1 bar and TSIV is 1 atm; no pressure correction is applied, matching the shipped source values. The separate gas shift is -T*R*ln(1.01325) per mole when converting TSIV 1 atm to 1 bar.
+      values_J_per_mol: {1500: 5953.000, 1800: 5922.400, 2000: 5901.000, 2500: 5845.000, 3000: 5791.000}
   - table: gas
     species_name: Co(g)
     table_id: Co-005
@@ -851,6 +859,14 @@ rows:
     T_range_K: [1500, 3000]
     max_residual_J_per_mol: 1.67559942801017
     max_residual_log10_K: 3.64677599993883e-05
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: absolute_gas_G_app_difference
+      comparison_record: TSIV-1332
+      units: J/mol
+      method: absolute JANAF Co(g) minus TSIV Table 1332 Co(g) apparent Gibbs energy at common table nodes; the CoO(l) parent is common and cancels
+      standard_state_note: JANAF is 1 bar and TSIV is 1 atm; no pressure correction is applied, matching the shipped source values. The separate gas shift is -T*R*ln(1.01325) per mole when converting TSIV 1 atm to 1 bar.
+      values_J_per_mol: {1500: 2511.000, 1800: 2479.800, 2000: 2456.000, 2500: 2403.500, 3000: 2349.000}
   - table: gas
     species_name: Na2O(g)
     table_id: NG-0905
@@ -1829,6 +1845,14 @@ rows:
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.634284023719374
     max_residual_log10_K: 4.14136884301395e-05
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: absolute_gas_G_app_difference
+      comparison_record: TSIV-2023
+      units: J/mol
+      method: absolute JANAF Ni(g) minus TSIV Table 2023 Ni(g) apparent Gibbs energy at common table nodes; the NiO(l) parent is common and cancels
+      standard_state_note: JANAF is 1 bar and TSIV is 1 atm; no pressure correction is applied, matching the shipped source values. The separate gas shift is -T*R*ln(1.01325) per mole when converting TSIV 1 atm to 1 bar.
+      values_J_per_mol: {1200: 5985.400, 1500: 5953.000}
   - table: gas
     species_name: Co(g)
     table_id: Co-005
@@ -1840,6 +1864,14 @@ rows:
     T_range_K: [500, 1500]
     max_residual_J_per_mol: 0.804645670723403
     max_residual_log10_K: 4.66995069966642e-05
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: absolute_gas_G_app_difference
+      comparison_record: TSIV-1332
+      units: J/mol
+      method: absolute JANAF Co(g) minus TSIV Table 1332 Co(g) apparent Gibbs energy at common table nodes; the CoO(l) parent is common and cancels
+      standard_state_note: JANAF is 1 bar and TSIV is 1 atm; no pressure correction is applied, matching the shipped source values. The separate gas shift is -T*R*ln(1.01325) per mole when converting TSIV 1 atm to 1 bar.
+      values_J_per_mol: {1200: 2545.000, 1500: 2511.000}
   - table: condensate
     species_name: SiO2(cr)
     source_table_id: LH87 Table 2
@@ -9070,6 +9102,14 @@ rows:
       comparison_record: data-src/published-thermo/nio-bulletin-672.json
       method: absolute NASA minus Bulletin 672 Gibbs-energy difference at common source knots; above the comparison limit, recompute the gap from both records at the last common measured temperature and hold that result
       values_J_per_mol: {1500: 6992.960, 1800: 12041.666, 2000: 15492.217, 2500: 15492.217, 3000: 15492.217}
+    additional_uncertainty_bands:
+    - kind: mixed_source_parent_scale_inconsistency
+      basis: absolute_gas_G_app_difference
+      comparison_record: TSIV-2027
+      units: J/mol
+      method: absolute NASA NG-0926 minus TSIV Table 2027 NiO(g) apparent Gibbs energy at common table nodes; the NiO(l) parent is common and cancels
+      standard_state_note: NASA is 1 bar and TSIV is 1 atm; no pressure correction is applied, matching the shipped source values. The separate gas shift is -T*R*ln(1.01325) per mole when converting TSIV 1 atm to 1 bar.
+      values_J_per_mol: {1500: 8265.040, 1800: 8865.330, 2000: 9487.697, 2500: 11912.625, 3000: 15683.556}
     source_data: true
   - table: gas
     species_name: NiO(g)
@@ -9094,6 +9134,14 @@ rows:
       comparison_record: data-src/published-thermo/nio-bulletin-672.json
       method: absolute NASA minus Bulletin 672 Gibbs-energy difference at common source knots
       values_J_per_mol: {1200: 2261.991, 1300: 3820.102, 1400: 5391.900, 1500: 6992.960}
+    additional_uncertainty_bands:
+    - kind: mixed_source_parent_scale_inconsistency
+      basis: absolute_gas_G_app_difference
+      comparison_record: TSIV-2027
+      units: J/mol
+      method: absolute NASA NG-0926 minus TSIV Table 2027 NiO(g) apparent Gibbs energy at common table nodes; the NiO(l) parent is common and cancels
+      standard_state_note: NASA is 1 bar and TSIV is 1 atm; no pressure correction is applied, matching the shipped source values. The separate gas shift is -T*R*ln(1.01325) per mole when converting TSIV 1 atm to 1 bar.
+      values_J_per_mol: {1200: 7999.975, 1500: 8265.040}
     source_data: true
   - table: gas
     species_name: CoO(g)

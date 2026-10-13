@@ -1,0 +1,27 @@
+{
+  "schema_version": "published_thermo_tables.v1",
+  "record_id": "TSIV-1332",
+  "publication": "Gurvich, Veyts and Medvedev, Thermodynamic Properties of Individual Substances, Volume IV, Table 1332, Co(g).",
+  "source_url": "https://www.chem.msu.ru/rus/tsiv/Co/Co.html",
+  "source_locator": "Volume IV, Table 1332",
+  "species": "Co(g)",
+  "accuracy_class": "1",
+  "standard_state": "ideal gas, 1 atm",
+  "formation_enthalpy_298_kj_mol": {"value": 424.0, "uncertainty": 3.0},
+  "nodes": [
+    [298.15, 23.024, 158.078, 179.408, 6.360],
+    [1200, 26.480, 190.156, 214.822, 29.599],
+    [1500, 26.673, 195.704, 220.754, 37.576],
+    [1800, 26.715, 200.297, 225.624, 45.588],
+    [2000, 26.666, 202.973, 228.436, 50.927],
+    [2500, 26.424, 208.681, 234.362, 64.202],
+    [3000, 26.244, 213.374, 239.161, 77.362]
+  ],
+  "node_columns": ["T_K", "Cp_J_mol_K", "F_J_mol_K", "S_J_mol_K", "H_minus_H0_kj_mol"],
+  "phi_functions": [
+    {"T_range_K": [298.15, 1500], "coefficients": [239.761535645, 25.1426887512, -0.00141065218486, 0.225884646177, 23.9123268127, -82.828338623, 140.933166504]},
+    {"T_range_K": [1500, 10000], "coefficients": [265.357421875, 39.9881362915, -0.0471192523837, 2.09907531738, -41.7894515991, 26.5914611816, -6.22668266296]}
+  ],
+  "phi_function_form": "c0 + c1*ln(x) + c2*x^-2 + c3*x^-1 + c4*x + c5*x^2 + c6*x^3; x=T*1e-4",
+  "source_note": "Only the thermodynamic nodes needed to compare the cited gas rows are transcribed from the printed table. The web page is an access route; no page text or layout is reproduced."
+}

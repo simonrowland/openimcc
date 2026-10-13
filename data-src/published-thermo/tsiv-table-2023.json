@@ -1,0 +1,27 @@
+{
+  "schema_version": "published_thermo_tables.v1",
+  "record_id": "TSIV-2023",
+  "publication": "Gurvich, Veyts and Medvedev, Thermodynamic Properties of Individual Substances, Volume IV, Table 2023, Ni(g).",
+  "source_url": "https://www.chem.msu.ru/rus/tsiv/Ni/Ni.html",
+  "source_locator": "Volume IV, Table 2023",
+  "species": "Ni(g)",
+  "accuracy_class": "1",
+  "standard_state": "ideal gas, 1 atm",
+  "formation_enthalpy_298_kj_mol": {"value": 424.0, "uncertainty": 2.0},
+  "nodes": [
+    [298.15, 23.360, 159.192, 182.082, 6.825],
+    [1200, 24.538, 191.932, 216.101, 29.003],
+    [1500, 24.012, 197.330, 221.520, 36.286],
+    [1800, 23.524, 201.735, 225.854, 43.415],
+    [2000, 23.245, 204.272, 228.318, 48.091],
+    [2500, 22.725, 209.615, 233.444, 59.573],
+    [3000, 22.441, 213.941, 237.559, 70.856]
+  ],
+  "node_columns": ["T_K", "Cp_J_mol_K", "F_J_mol_K", "S_J_mol_K", "H_minus_H0_kj_mol"],
+  "phi_functions": [
+    {"T_range_K": [298.15, 1500], "coefficients": [225.160858154, 18.8272972107, 0.000272941892035, -0.0749682486057, 87.041015625, -261.142333984, 353.774536133]},
+    {"T_range_K": [1500, 10000], "coefficients": [258.091064453, 32.9592285156, -0.0241950601339, 1.06059217453, -30.7630729675, 17.6113204956, -3.31097507477]}
+  ],
+  "phi_function_form": "c0 + c1*ln(x) + c2*x^-2 + c3*x^-1 + c4*x + c5*x^2 + c6*x^3; x=T*1e-4",
+  "source_note": "Only the thermodynamic nodes needed to compare the cited gas rows are transcribed from the printed table. The web page is an access route; no page text or layout is reproduced."
+}

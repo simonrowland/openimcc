@@ -1,0 +1,27 @@
+{
+  "schema_version": "published_thermo_tables.v1",
+  "record_id": "TSIV-2027",
+  "publication": "Gurvich, Veyts and Medvedev, Thermodynamic Properties of Individual Substances, Volume IV, Table 2027, NiO(g).",
+  "source_url": "https://www.chem.msu.ru/rus/tsiv/Ni/ivtan0005.html",
+  "source_locator": "Volume IV, Table 2027",
+  "species": "NiO(g)",
+  "accuracy_class": "3-E",
+  "standard_state": "ideal gas, 1 atm",
+  "formation_enthalpy_298_kj_mol": {"value": 288.863, "uncertainty": 10.2},
+  "nodes": [
+    [298.15, 31.809, 199.812, 230.780, 9.233],
+    [1200, 40.269, 245.212, 280.279, 42.080],
+    [1500, 43.232, 253.180, 289.584, 54.606],
+    [1800, 45.971, 259.938, 297.713, 67.995],
+    [2000, 47.625, 263.965, 302.643, 77.357],
+    [2500, 51.668, 272.832, 313.700, 102.169],
+    [3000, 56.372, 280.475, 323.523, 129.143]
+  ],
+  "node_columns": ["T_K", "Cp_J_mol_K", "F_J_mol_K", "S_J_mol_K", "H_minus_H0_kj_mol"],
+  "phi_functions": [
+    {"T_range_K": [298.15, 1500], "coefficients": [316.243347168, 34.7081756592, -0.00144247617573, 0.211361467838, -1.75169897079, 82.8255767822, -48.3324050903]},
+    {"T_range_K": [1500, 6000], "coefficients": [334.144897461, 43.8637695313, -0.00138596096076, 0.879908561707, -37.3387908936, 99.433303833, -56.6907501221]}
+  ],
+  "phi_function_form": "c0 + c1*ln(x) + c2*x^-2 + c3*x^-1 + c4*x + c5*x^2 + c6*x^3; x=T*1e-4",
+  "source_note": "Only the thermodynamic nodes needed to compare the cited gas rows are transcribed from the printed table. The web page is an access route; no page text or layout is reproduced."
+}
