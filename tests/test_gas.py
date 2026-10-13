@@ -113,8 +113,6 @@ _ION_GAS_SPECIES = {
     "Na+", "K+", "Ca+", "e-",
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
     "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-", "Cs-", "Cu-",
-    "Li+", "Rb+", "Pb+",
-    "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Li+", "Rb+", "Pb+", "Cs+", "Sn+", "Cs2O+",
     "Ga+", "Ge+", "B+", "Ga-", "B-", "BO-", "BO2-",
     "Zn+", "Zn-", "Cd+", "Bi+",
@@ -2308,7 +2306,10 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     }
-    trace_gas |= {"Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)", "Mn(g)"}
+    trace_gas |= {
+        "Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)", "Mn(g)",
+        "Ni(g)", "Co(g)", "Ni-(g)", "Co-(g)",
+    }
     trace_gas |= {
         "Li-(g)", "LiO-(g)", "Rb-(g)", "Pb-(g)",
         *(source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES),
@@ -2337,15 +2338,14 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
 def test_default_trace_channels_are_optional_and_report_missing_rows(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    trace_gases = set(build_gas_tables.TRACE_GAS_SPECIES) | {"Mn"}
+    trace_gases = set(build_gas_tables.TRACE_GAS_SPECIES) | {
+        "Mn", "Ni", "Co", "NiO", "CoO"
+    }
     parents = {
         "MnO": 1.0e-3,
         "Li2O": 1.0e-3, "Rb2O": 1.0e-3, "PbO": 1.0e-3,
         "Ga2O3": 1.0e-3, "GeO2": 1.0e-3, "B2O3": 1.0e-3,
         "In2O3": 1.0e-3,
-        "Li2O": 1.0e-3,
-        "Rb2O": 1.0e-3,
-        "PbO": 1.0e-3,
         "Cs2O": 1.0e-3,
         "Cu2O": 1.0e-3,
         "SnO": 1.0e-3,
@@ -2359,6 +2359,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Ag2O": 1.0e-3,
         "MoO3": 1.0e-3, "WO3": 1.0e-3,
         "BaO": 1.0e-3, "SrO": 1.0e-3, "ZrO2": 1.0e-3,
+        "NiO": 1.0e-3, "CoO": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2391,9 +2392,10 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     assert set(missing_rows.omitted_channels) == trace_gases
     for species in trace_gases:
         assert f"{species}(g)" in missing_rows.omitted_channels[species]
-        assert _SF04_REACTIONS[species][0] + "(l)" in (
-            missing_rows.omitted_channels[species]
-        )
+        if species not in {"Ni", "Co", "NiO", "CoO"}:
+            assert _SF04_REACTIONS[species][0] + "(l)" in (
+                missing_rows.omitted_channels[species]
+            )
 
     trace_species = tuple(sorted(trace_gases))
     trace_ions = evaluate_gas(
@@ -2413,7 +2415,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Mo+", "Mo-", "W+", "W-",
         "Ag+",
         "Ag-",
-        "Mo+", "Mo-", "W+", "W-",
+        "Ba+", "Sr+", "Zr+", "Zr-", "Ni+", "Ni-", "Co+", "Co-",
     }
     assert expected_ions <= set(trace_ions)
     assert "In+" not in trace_ions
@@ -2430,6 +2432,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     for species in (
         "Ga", "Ge", "B", "In", "Mo", "MoO3", "(MoO3)5",
         "W", "W3O8", "(WO3)5",
+        "Ba", "Sr", "Zr", "Ni", "Co",
     ):
         with pytest.raises(ImccGasSpeciesNotFoundError):
             evaluate_gas(
@@ -2534,6 +2537,16 @@ def _trace_janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
 
 
 def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
+    if table_id in {"TSIV-1334", "TSIV-2026"}:
+        source_dir = Path(__file__).resolve().parents[1] / "data-src" / "published-thermo"
+        record = build_gas_tables._load_record(
+            source_dir / f"tsiv-table-{table_id.split('-')[1]}.json"
+        )
+        source = build_gas_tables._tsiv_liquid_source_rows(record)[temperature]
+        return (
+            float(record["formation_enthalpy_298_kj_mol"]["value"])
+            + source["enthalpy_increment"]
+        ) * 1000.0 - temperature * source["entropy"]
     if table_id in {"P672-SeO2-LFS", "P672-As2O3-LFS", "P672-Sb2O3-LFS", "P672-Ag2O-LFS"}:
         repository = Path(__file__).resolve().parents[1]
         source_dir = repository / "data-src" / "published-thermo"
@@ -2551,7 +2564,10 @@ def _trace_source_apparent_gibbs(table_id: str, temperature: float) -> float:
         return construction.at(temperature).gibbs_kj_mol * 1000.0
     if not table_id.startswith("NG-"):
         source_dir = Path(__file__).resolve().parents[1] / "data-src" / "published-thermo"
-        if table_id.startswith(("P672-", "P696-")) and table_id != "P672-T102":
+        if (
+            table_id.startswith(("P672-", "P696-"))
+            or table_id in {"TSIV-1335", "TSIV-1436"}
+        ) and table_id != "P672-T102":
             record = build_gas_tables._published_table_record(source_dir, table_id)
             if record.get("phase") == "liquid":
                 nodes = {
@@ -2647,6 +2663,10 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("Zr", "ZrO2", "Zr-006", "O-053"),
         ("ZrO", "ZrO2", "O-028", "O-053"),
         ("ZrO2", "ZrO2", "O-055", "O-053"),
+        ("Ni", "NiO", "Ni-005", "TSIV-2026"),
+        ("NiO", "NiO", "NG-0926", "TSIV-2026"),
+        ("Co", "CoO", "Co-005", "TSIV-1334"),
+        ("CoO", "CoO", "TSIV-1335", "TSIV-1334"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]

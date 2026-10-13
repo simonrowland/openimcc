@@ -1,0 +1,24 @@
+{
+  "schema_version": "published_thermo_tables.v1",
+  "publication": "Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672.",
+  "source_url": "https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf",
+  "table": "Nickel Oxide gas table, printed p. 274",
+  "species": "NiO(g)",
+  "formula": "NiO",
+  "formation_enthalpy_298_kcal_mol": 74.000,
+  "nodes": [
+    [298.15, 8.090, 57.660, 0.000],
+    [1200, 9.950, 70.570, 8.560],
+    [1300, 9.940, 71.370, 9.560],
+    [1400, 9.910, 72.100, 10.550],
+    [1500, 9.880, 72.780, 11.540],
+    [1600, 9.850, 73.420, 12.530],
+    [1700, 9.820, 74.020, 13.510],
+    [1728, 9.812, 74.180, 13.785],
+    [1800, 9.790, 74.580, 14.490],
+    [1900, 9.760, 75.110, 15.470],
+    [2000, 9.730, 75.610, 16.440]
+  ],
+  "node_columns": ["T_K", "Cp_cal_mol_K", "S_cal_mol_K", "H_minus_H298_kcal_mol"],
+  "source_note": "Pankratz Bulletin 672, nickel oxide gas formation table, printed p. 274. The 74.000 kcal/mol 298.15 K anchor is the printed elemental-reference formation enthalpy for Ni(c,l)+0.5 O2(g)=NiO(g); the listed thermal Cp, entropy, and H-H298 nodes are transcribed through the table's 2000 K limit. Above the 1728 K Ni metal melt, use the elemental 298 K anchor with the printed species thermal functions."
+}

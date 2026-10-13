@@ -408,7 +408,6 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Ba": "BaO", "Sr": "SrO", "Zr": "ZrO2", "Ni": "NiO", "Co": "CoO",
         "Cs": "Cs2O", "Cu": "Cu2O", "Sn": "SnO", "Ag": "Ag2O",
     }
-    trace_elements = {"Li", "Rb", "Pb"}
     new_trace_elements = {"Ga", "Ge", "B", "In", "Cu", "Mn", "Ba", "Sr", "Zr", "Ni", "Co"}
     new_trace_parents = {
         "Ga": "Ga2O3", "Ge": "GeO2", "B": "B2O3", "In": "In2O3",
@@ -1206,7 +1205,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
     expected_elements = {
         "O", "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K",
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Ga", "Ge", "B", "In",
-        "Cr", "V", "Nb", "Li", "Rb", "Pb", "Cs", "Cu", "Sn",
+        "Cs", "Cu", "Sn",
         "Mn", "Ni", "Co", "P", "S",
         "Zn", "Cd", "Bi", "Te", "Se", "As", "Sb", "Ag", "Mo", "W",
         "Ba", "Sr", "Zr",
@@ -1235,6 +1234,8 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Ba": "BaO",
         "Sr": "SrO",
         "Zr": "ZrO2",
+        "Ni": "NiO",
+        "Co": "CoO",
     }
     liquid_by_element = {
         **parent_by_element,

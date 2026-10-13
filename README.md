@@ -74,7 +74,7 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr channels:
+and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
@@ -83,13 +83,16 @@ Ga, GaO, Ga2O,
 Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
 CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
-As4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, Na2O, K2O, O and O2.
+As4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, NiO, CoO, Na2O, K2O, O and O2.
 The Mn channels use public Mn(g), MnO(g) and opt-in Mn+(g) rows with a
-caller-supplied MnO(l) activity. Ni(g) and Co(g) use caller-supplied NiO(l) and
-CoO(l) activities. The liquid parents use the estimated phase-paired branches
-from TSIV Volume IV Tables 2026 and 1334 (tier 3); their functions are marked
-as supercooled below 2228 K and 2090 K, respectively. Ni+/Ni− and Co+/Co− are
-available only when ions are requested. No activity model is supplied.
+caller-supplied MnO(l) activity. Ni(g), NiO(g), Co(g), and CoO(g) use
+caller-supplied NiO(l) and CoO(l) activities. The liquid parents use the
+estimated phase-paired branches from TSIV Volume IV Tables 2026 and 1334
+(tier 3), with labelled liquid-function continuations below their 2228 K and
+2090 K source limits. NiO(g) uses the tier-2 NASA Glenn card; its disagreement
+with Bulletin 672 is carried as a measured source band. CoO(g) uses TSIV
+Volume IV Table 1335 (accuracy class 4-F). Ni+/Ni− and Co+/Co− are available
+only when ions are requested. No activity model is supplied.
 The sulfur channels activate only when the caller supplies `S2` fugacity as
 `a(S2) = f(S2)/p°` on JANAF's 1-bar `S2(g)` reference. OpenIMCC does not
 provide a sulfur melt-side activity model for pyrolysis temperatures.
@@ -117,8 +120,9 @@ JANAF O-066 liquid cells through 3000 K, including its printed supercooled
 cells below the 1745 K II/liquid marker. These parent activities are supplied
 by the caller on their 1-bar liquid standard states.
 BaO(l), SrO(l), and ZrO2(l) use their printed JANAF liquid branches. JANAF
-marks crystal/liquid transitions at 2286 K, 2938 K, and 2950 K respectively;
-the printed supercooled BaO cells below 2286 K are retained as source data.
+marks crystal/liquid transitions at 2286 K, 2938 K, and 2950 K respectively.
+Ba-035's glass cells below 1600.010 K and its printed supercooled-liquid cells
+from 1700 through 2200 K are retained as source data.
 BaO and SrO are selected over other oxidation states because those are the
 available JANAF liquid parent rows. ZrO(g)'s JANAF G_app is retained despite
 its disagreement with the NASA Glenn card; the temperature differences are

@@ -732,7 +732,7 @@ def default_gas_channels(
 # reaction is only as authoritative as its least-authoritative input row, so a
 # potassium channel inherits the K2O(l) estimated-systematic class while the
 # other retained channels retain their source row classes. The Na2O/K2O gas
-# rows are NASA/Gurvich fits; MnO uses IVTAN and NiO/CoO use TSIV.
+# rows are NASA/Gurvich fits; MnO and CoO(g) use published IVTAN tables.
 _GAS_PROVENANCE_AUTHORITY = {
     species: "janaf_fitted"
     for species in (*IMCC_GAS_CHANNEL_SPECIES, "Mn", "Ni", "Co")
@@ -788,6 +788,8 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Sb4O6": "published_fitted",
         "Ag": "nasa_glenn_fitted",
         "MnO": "published_fitted",
+        "NiO": "nasa_glenn_fitted",
+        "CoO": "published_fitted",
     }
 )
 _ION_GAS_SPECIES = (
@@ -1136,14 +1138,6 @@ IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {}
 IMCC_GAS_UNAVAILABLE_SPECIES = {
     **IMCC_GAS_NO_JANAF_ROWS,
     **IMCC_GAS_INCOMPLETE_PARENT_SPECIES,
-    "NiO": (
-        "needs gas-table selection: Bulletin 672 printed p. 274 and NASA Glenn "
-        "NG-0926 disagree by about 20-28 kJ/mol; the atomic Ni channel is in scope"
-    ),
-    "CoO": (
-        "needs a gas table: JANAF and NASA Glenn have no CoO(g) row; TSIV "
-        "Table 1335 was not transcribed for this atomic Co-channel change"
-    ),
 }
 
 IMCC_PARENT_OXIDES = (
@@ -2098,7 +2092,12 @@ for _element, _status in {
             f'caller supplies a({_status["parent_oxide"]}); the C3 screen at '
             f'a({_status["parent_oxide"]})=1e-3 reached {_status["max_ratio"]:.3e} at '
             f'{_status["temperature_K"]:.0f} K and fO2={_status["fO2"]:.0e} '
-            'within the <=1-bar neutral-pressure domain.'
+            'within the <=1-bar neutral-pressure domain'
+            + (
+                "; above the 1e-4 C3 threshold."
+                if _status["max_ratio"] >= 1.0e-4
+                else "; below the 1e-4 C3 threshold."
+            )
             + (" ZrO(g) JANAF is retained despite its documented NASA G_app difference." if _element == "Zr" else "")
         ),
         "c2_candidates": _status["c2"],
@@ -2151,9 +2150,9 @@ for _element, _parent, _cation, _neutral, _anion, _hashes in (
     _tsiv_table = "2026" if _element == "Ni" else "1334"
     _melt_temperature = 2228 if _element == "Ni" else 2090
     _max_ratio = (
-        1.6063986960933917e-05
+        1.6031812707630546e-05
         if _element == "Ni"
-        else 3.0578166366744847e-06
+        else 3.0268368928067777e-06
     )
     ELEMENT_STATUS[_element] = {
         "status": "gas-complete-melt-pending",
@@ -2165,23 +2164,35 @@ for _element, _parent, _cation, _neutral, _anion, _hashes in (
         },
         "validation": "unvalidated",
         "reason": (
-            f"{_element}(g), {_parent}(l), and opt-in {_element}+/{_element}− cover "
-            f"1200-3000 K; {_parent}(l) uses the estimated tier-3 liquid branch "
-            f"from TSIV Volume IV Table {_tsiv_table}, with a supercooled "
-            f"continuation below {_melt_temperature} K; a({_parent}) is "
+            f"{_element}(g), {_parent}(g), {_parent}(l), and opt-in "
+            f"{_element}+/{_element}− cover "
+            + (
+                "1200-3000 K; NiO(g) uses the tier-2 NASA Glenn NG-0926 card "
+                "selected over tier-3 Bulletin 672, with their measured G_app "
+                "difference carried as a band; "
+                if _element == "Ni"
+                else "1200-3000 K; CoO(g) uses TSIV Volume IV Table 1335 "
+                "(accuracy class 4-F); "
+            )
+            + f"{_parent}(l) uses the estimated tier-3 liquid branch "
+            f"from TSIV Volume IV Table {_tsiv_table}, with a labelled "
+            f"continuation below its {_melt_temperature} K source limit; a({_parent}) is "
             f"caller-supplied; the joint C3 screen used a({_parent})=1e-3 and "
             f"reached {_max_ratio:.3e} at 2800 K and fO2=1e-4 within the "
-            "<=1-bar neutral-pressure domain."
+            "<=1-bar neutral-pressure domain, below the 1e-4 C3 threshold."
         ),
-        "c2_candidates": (),
+        "c2_candidates": (
+            (("NG-0926", "NiO"),) if _element == "Ni"
+            else (("TSIV-1335", "CoO"),)
+        ),
         "c3_ion_bound": {
             "status": "computed",
-            "max_ratio": 1.6063986960933917e-05 if _element == "Ni" else 3.0578166366744847e-06,
+            "max_ratio": 1.6031812707630546e-05 if _element == "Ni" else 3.0268368928067777e-06,
             "isolated_bound": 0.00016854764619959103 if _element == "Ni" else 3.3102018564057046e-05,
             "temperature_K": 2800.0,
             "fO2": 1.0e-4,
             "neutral_pressure_bar": 0.014961323427658832 if _element == "Ni" else 0.0021375904714789826,
-            "element_total_pressure_bar": 0.014961323427658832 if _element == "Ni" else 0.0021375904714789826,
+            "element_total_pressure_bar": 0.014991349315467773 if _element == "Ni" else 0.0021594687581678014,
             "joint_ion_pressure_bar": 2.4033850446022664e-07 if _element == "Ni" else 6.5363597060852885e-09,
             "electron_pressure_bar": 8.127941812279205e-05 if _element == "Ni" else 8.131486539410398e-05,
             "K_ion": 4.250258995716842e-10 if _element == "Ni" else 2.3422511491170064e-12,

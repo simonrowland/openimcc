@@ -5,8 +5,9 @@
 - Added optional Ba, Sr, and Zr gas channels with caller-supplied BaO(l),
   SrO(l), and ZrO2(l) activities, plus opt-in Ba+, Sr+, Zr+, and JANAF Zr-.
   JANAF supplies the gas and liquid branches; the three liquid fits reproduce
-  their printed nodes within the 10 J/mol gate. The printed supercooled BaO
-  liquid cells below its 2286 K marker are retained. NASA comparisons are
+  their printed nodes within the 10 J/mol gate. Ba-035's glass cells below
+  1600.010 K and printed supercooled-liquid cells from 1700 through 2200 K are
+  retained. NASA comparisons are
   recorded on G_app, including the ZrO(g) disagreement; JANAF remains selected.
 - Added optional Mo, MoO, MoO2, MoO3, and (MoO3)2–5 gas channels with
   caller-supplied MoO3(l) activity, plus opt-in Mo+ and Mo−. JANAF supplies the
@@ -317,9 +318,11 @@
   remain vendored for source and transition coverage evidence.
 - Wired the Ni and Co channels to public TSIV liquid parents. NiO(l) and CoO(l)
   use their estimated phase-paired functions from Volume IV Tables 2026 and
-  1334, with labelled supercooled branches below their 2228 K and 2090 K melt
-  markers; opt-in Ni+/Ni− and Co+/Co− use JANAF. Parent activities are supplied
-  by callers.
+  1334, with labelled liquid-function continuations below their 2228 K and
+  2090 K source limits. Added optional NiO(g) from the tier-2 NASA Glenn card
+  with a measured Bulletin 672 disagreement band, and CoO(g) from TSIV Table
+  1335 (accuracy class 4-F). Opt-in Ni+/Ni− and Co+/Co− use JANAF; parent
+  activities are supplied by callers.
 - Added Na2O(g) and K2O(g) channels from the NIST evaluation using LH84
   formation anchors (entropy converted from LH84's 1 atm standard state to
   1 bar) and NASA/Gurvich heat-capacity shapes; the roughly

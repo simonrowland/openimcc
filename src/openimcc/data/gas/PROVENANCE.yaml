@@ -19,7 +19,7 @@ source_notes:
     retrieval_date: '2026-10-01'
     activity_policy: >-
       Li2O, Rb2O, PbO, Cs2O, Cu2O, SnO, Ga2O3, GeO2, B2O3, In2O3, TeO2, SeO2,
-      As2O3, MoO3, WO3, BaO, SrO, and ZrO2
+      As2O3, MoO3, WO3, BaO, SrO, ZrO2, NiO, and CoO
       activities are supplied by the caller. OpenIMCC has no trace-element
       activity model; no activity coefficients are applied. Published silicate-
       melt activity-coefficient work is cited in README.md as context only and
@@ -92,14 +92,63 @@ source_notes:
       O-028 58.576, and O-055 -286.186 kJ/mol. The parent liquid anchors
       are the 298.15 K formation_enthalpy cells in Ba-035 (-491.627), O-014
       (-517.292), and O-053 (-1023.155 kJ/mol). The liquid rows fit the
-      printed JANAF cells. BaO-035 cells below its 2286 K crystal/liquid marker
-      are printed supercooled liquid-table data; its glass join is 1600 K.
-      O-014's printed cells below its 2938 K melt marker are supercooled data;
-      its glass join is 2000.010 K. O-053's printed cells below its 2950 K
-      melt marker are supercooled data; its glass join is 2000 K. BaO, SrO,
+      printed JANAF cells. Ba-035 prints glass cells below its 1600.010 K glass
+      join and supercooled-liquid cells from 1700 through 2200 K below its
+      2286 K crystal/liquid marker. O-014 prints glass cells below its 2000.010 K
+      glass join and supercooled-liquid cells below its 2938 K melt marker.
+      O-053 prints glass cells below its 2000 K glass join and
+      supercooled-liquid cells below its 2950 K melt marker. BaO, SrO,
       and ZrO2 are selected as parents because each has a JANAF liquid table;
       no alternate oxide liquid is offered. Caller-supplied activities are
       required; no activity model or gamma values are included.
+    ba_strontium_zirconium_spectroscopic_checks: >-
+      Saha partition functions use the low terms listed in NIST Atomic Spectra
+      Database Handbook tables 5/6, including Ba I 6s5d 3D levels at 9033.966,
+      9215.501, and 9596.533 cm-1 and every listed Zr I/II term below
+      20,000 cm-1. The first omitted Zr II manifold starts at 27,983.864 cm-1.
+      NIST ionization energies are Ba 5.211664 eV, Sr 5.6948672 eV, and Zr
+      6.63412 eV. JANAF fitted/Saha ratios at 1500, 2500, and 3000 K are Ba
+      0.999607, 0.999722, 0.999631 and Sr 1.000162, 1.000076, 1.000043;
+      these agree within 2%. Zr ratios are 0.187223, 0.380302, and 0.454302.
+      Zr JANAF ion/neutral 298 K anchors imply 667.853 kJ/mol, about 27.7
+      kJ/mol above the NIST 6.63412 eV ionization energy; the rising ratio is
+      the Boltzmann response to that formation-anchor offset, not a missing
+      partition term. Zr- attachment ratios against NIST EA 0.427 eV are
+      0.897178, 0.963296, and 0.972007 at 1500, 2500, and 3000 K. Their
+      temperature dependence is a JANAF versus spectroscopic partition-entropy
+      difference. All measured ratios are pinned in tests.
+      Sources: https://physics.nist.gov/PhysRefData/Handbook/Tables/bariumtable5_a.htm,
+      https://physics.nist.gov/PhysRefData/Handbook/Tables/bariumtable6_a.htm,
+      https://physics.nist.gov/PhysRefData/Handbook/Tables/strontiumtable5_a.htm,
+      https://physics.nist.gov/PhysRefData/Handbook/Tables/strontiumtable6_a.htm,
+      https://physics.nist.gov/PhysRefData/Handbook/Tables/zirconiumtable5_a.htm,
+      https://physics.nist.gov/PhysRefData/Handbook/Tables/zirconiumtable6_a.htm,
+      https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440677&Mask=61.
+    nickel_cobalt_ion_checks: >-
+      Ni+ and Co+ are in the same NIST-level Saha audit. Their measured JANAF
+      fitted/Saha ratios are Ni 165.896 and 259.904 and Co 1.139494 and
+      1.293826 at 1500 and 2500 K. Ni-006 minus Ni-005 gives an ionization
+      enthalpy of 748.888 kJ/mol, 11.759 kJ/mol above NIST's 7.6398 eV;
+      ratios imply about 14.0 kJ/mol and 51.8 J/(mol K) source offsets over
+      this range, so both the enthalpy anchor and JANAF partition entropy
+      contribute. Co-006 minus Co-005 gives 764.921 kJ/mol, 4.520 kJ/mol above
+      NIST's 7.8810 eV; ratios imply about 4.0 kJ/mol and 3.7 J/(mol K).
+      These retained source offsets are pinned in tests. Ni- and Co- are also
+      checked against NIST electron affinities
+      1.15717 and 0.66330 eV using the measured Ni- 2D fine-structure splitting
+      1470 cm-1 and Co- 3F levels at 920.9 and 1550.3 cm-1. JANAF attachment
+      ratios are Ni 0.990922 and 0.994559 and Co 0.983859 and 0.990241 at
+      1500 and 2500 K. JANAF enthalpy differences imply affinities 6.7 kJ/mol
+      (Ni) and 6.0 kJ/mol (Co) above the NIST values; corresponding entropy
+      offsets nearly cancel these anchor differences, leaving the small
+      measured Gibbs residuals. All ratios are pinned, not absorbed into the
+      spectroscopy tolerance. Sources:
+      https://physics.nist.gov/PhysRefData/Handbook/Tables/nickeltable5_a.htm,
+      https://physics.nist.gov/PhysRefData/Handbook/Tables/nickeltable6_a.htm,
+      https://physics.nist.gov/PhysRefData/Handbook/Tables/cobalttable5_a.htm,
+      https://physics.nist.gov/PhysRefData/Handbook/Tables/cobalttable6_a.htm,
+      https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440020&Mask=267,
+      https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440484&Mask=267.
     nasa_cards:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn Coefficients
@@ -303,15 +352,20 @@ source_notes:
         same liquid_from_solid construction and input record as the redox pack,
         using the TSIV Table 1435 crystal function and measured melting point.
       Ni: >-
-        Ni(g) and Ni+(g) use JANAF. NiO(l) uses the phase-paired estimated
-        liquid branch in TSIV Volume IV Table 2026 (tier 3), with the source's
-        stated Phi uncertainty; below 2228 K the same branch is labelled as
-        supercooled liquid. NiO activity is caller-supplied.
+        Ni(g) and Ni+(g) use JANAF. NiO(g) uses the tier-2 NASA Glenn NG-0926
+        card selected over tier-3 Bulletin 672; the measured G_app difference
+        from Bulletin 672 is banded over their common range. NiO(l) uses the
+        phase-paired estimated liquid branch in TSIV Volume IV Table 2026
+        (tier 3), with the source's stated Phi uncertainty. Below its 2228 K
+        source limit, the fitted branch is a labelled continuation, not printed
+        source data. NiO activity is caller-supplied.
       Co: >-
-        Co(g) and Co+(g) use JANAF. CoO(l) uses the phase-paired estimated
-        liquid branch in TSIV Volume IV Table 1334 (tier 3), with the source's
-        stated Phi uncertainty; below 2090 K the same branch is labelled as
-        supercooled liquid. CoO activity is caller-supplied.
+        Co(g) and Co+(g) use JANAF. CoO(g) uses TSIV Volume IV Table 1335
+        (accuracy class 4-F). CoO(l) uses the phase-paired estimated liquid
+        branch in TSIV Volume IV Table 1334 (tier 3), with the source's stated
+        Phi uncertainty. Below its 2090 K source limit, the fitted branch is a
+        labelled continuation, not printed source data. CoO activity is
+        caller-supplied.
       Zn: >-
         JANAF Zn(g), Zn+(g), and Zn-(g) rows are retained. The NASA Glenn Zn
         atom and cation cards are comparison-only; their G_app differences are
@@ -8991,6 +9045,98 @@ rows:
     download_url: https://janaf.nist.gov/tables/Co-007.txt
     user_agent: neutral-source-vendor/1.0
     source_data: true
+  - table: gas
+    species_name: NiO(g)
+    table_id: NG-0926
+    source_path: data-src/nasa-glenn/NG-0926.json
+    source_sha256: 4887db7773256e727fff229e8bbead7d0d4ba1d55f28a5b914e41c3ad9a816b4
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    max_residual_J_per_mol: 0.00015356321819126606
+    max_residual_log10_K: 4.010581401820905e-09
+    source_locator: thermo.inp lines 7912-7919
+    source_record: data-src/nasa-glenn/NG-0926.json
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    retrieval_date: '2026-10-13'
+    user_agent: neutral-source-vendor/1.0
+    uncertainty_band:
+      kind: measured_G_app_difference_from_Pankratz_Bulletin_672
+      comparison_record: data-src/published-thermo/nio-bulletin-672.json
+      method: absolute NASA minus Bulletin 672 Gibbs-energy difference; held at the last measured difference above the comparison limit
+      values_J_per_mol: {1500: 6992.960, 1800: 12041.666, 2000: 15492.217, 2500: 15492.217, 3000: 15492.217}
+    source_data: true
+  - table: gas
+    species_name: NiO(g)
+    table_id: NG-0926
+    source_path: data-src/nasa-glenn/NG-0926.json
+    source_sha256: 4887db7773256e727fff229e8bbead7d0d4ba1d55f28a5b914e41c3ad9a816b4
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    max_residual_J_per_mol: 0.006832180020865053
+    max_residual_log10_K: 2.8693110319780667e-07
+    source_locator: thermo.inp lines 7912-7919
+    source_record: data-src/nasa-glenn/NG-0926.json
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    retrieval_date: '2026-10-13'
+    user_agent: neutral-source-vendor/1.0
+    uncertainty_band:
+      kind: measured_G_app_difference_from_Pankratz_Bulletin_672
+      comparison_record: data-src/published-thermo/nio-bulletin-672.json
+      method: absolute NASA minus Bulletin 672 Gibbs-energy difference at common source knots
+      values_J_per_mol: {1200: 2261.991, 1300: 3820.102, 1400: 5391.900, 1500: 6992.960}
+    source_data: true
+  - table: gas
+    species_name: CoO(g)
+    table_id: TSIV-1335
+    source_path: data-src/published-thermo/tsiv-table-1335.json
+    source_sha256: 6c1619c6ed0b8ea02db48afd75ad1ade4575c7ce09a2078ca117cc1494ff3a00
+    authority: published_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    max_residual_J_per_mol: 1.6220839501474984
+    max_residual_log10_K: 3.258742956047344e-05
+    source_locator: Volume IV, Table 1335
+    source:
+      citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1335, CoO(g)
+      source_record: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1335, CoO(g)
+      source_locator: Volume IV, Table 1335
+      source_url: https://www.chem.msu.ru/rus/tsiv/Co/ivtan0005.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Co/ivtan0005.html
+    uncertainty_band:
+      kind: not numerically quantified by source; TSIV accuracy class 4-F
+    source_data: true
+  - table: gas
+    species_name: CoO(g)
+    table_id: TSIV-1335
+    source_path: data-src/published-thermo/tsiv-table-1335.json
+    source_sha256: 6c1619c6ed0b8ea02db48afd75ad1ade4575c7ce09a2078ca117cc1494ff3a00
+    authority: published_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    max_residual_J_per_mol: 0.41429419384803623
+    max_residual_log10_K: 1.8033404616677282e-05
+    source_locator: Volume IV, Table 1335
+    source:
+      citation: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1335, CoO(g)
+      source_record: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1335, CoO(g)
+      source_locator: Volume IV, Table 1335
+      source_url: https://www.chem.msu.ru/rus/tsiv/Co/ivtan0005.html
+    source_url: https://www.chem.msu.ru/rus/tsiv/Co/ivtan0005.html
+    uncertainty_band:
+      kind: not numerically quantified by source; TSIV accuracy class 4-F
+    source_data: true
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each
@@ -9003,13 +9149,29 @@ source_comparisons:
   - 2000
   - 2500
   - 3000
-  selection: NIST-JANAF is retained for every paired species; NASA values are recorded
-    for comparison.
+  selection: NIST-JANAF is retained for paired JANAF/NASA species; for NiO(g),
+    the tier-2 NASA Glenn card is selected over the tier-3 Bulletin 672 table.
   standard_state_note: The compared gases use the 1 bar ideal-gas reference. The JANAF
-    parent liquids MoO3(l) (Mo-015) and WO3(l) (O-066) are retained; NG-1701 and
-    NG-2013 use the NASA CEA pure-liquid 1 atm reference, with no pressure correction.
-    B2O3(l) likewise compares JANAF 1 bar with the NASA CEA 1 atm pure-liquid reference.
+    parent liquids MoO3(l) (Mo-015), WO3(l) (O-066), BaO(l) (Ba-035), SrO(l)
+    (O-014), and ZrO2(l) (O-053) are 1 bar standards. Their NASA CEA comparison
+    cards NG-1701, NG-2013, NG-1325, NG-1917, and NG-2029 use pure-liquid 1 atm
+    standards, with no pressure correction; the same 1 bar versus 1 atm pairing
+    applies to the compared B2O3(l) rows.
   rows:
+  - species_name: NiO(g)
+    selected_nasa_record_id: NG-0926
+    comparison_record_id: P672-NiO-g
+    selection: Tier-2 NASA Glenn is selected over the tier-3 Bulletin 672 table;
+      the measured Gibbs-energy gap is retained as the runtime uncertainty band.
+    values:
+    - T_K: 1800
+      bulletin_672_G_app_J_mol: -191434.736
+      nasa_G_app_J_mol: -179393.070
+      nasa_minus_bulletin_672_J_mol: 12041.666
+    - T_K: 2000
+      bulletin_672_G_app_J_mol: -254303.520
+      nasa_G_app_J_mol: -238811.303
+      nasa_minus_bulletin_672_J_mol: 15492.217
   - species_name: Ga(g)
     janaf_table_id: Ga-005
     nasa_record_id: NG-4940

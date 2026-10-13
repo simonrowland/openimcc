@@ -578,10 +578,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         current = oxide_rows.get(row["species_name"])
         if current is None or row["T_range_K"][1] > current["T_range_K"][1]:
             oxide_rows[row["species_name"]] = row
-    public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES) - {
-        "NiO",
-        "CoO",
-    }
+    public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES)
     assert set(gas_rows) == {f"{name}(g)" for name in public_gas_channels}
     assert set(low_gas_rows) == (
         build_gas_tables.LOW_T_GAS_SPECIES
@@ -919,7 +916,7 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
         )
         for interval, runtime_range, source_range in (
             (1, [1500, 3000], [1500, 3000]),
-            (2, [1200, 1500], [500, 1500]),
+            (2, [1200, 1500], [1200, 1500] if species_name == "NiO(g)" else [500, 1500]),
         ):
             record = next(
                 row for row in gas_records
@@ -1025,7 +1022,7 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
         record = _nasa_record(table_id)
         for interval, t_min, t_max in (
             (1, 1500.0, 3000.0),
-            (2, 500.0, 1500.0),
+            (2, 1200.0 if species_name == "NiO(g)" else 500.0, 1500.0),
         ):
             row = _gas_row_for_interval(pack, species_name.removesuffix("(g)"), interval)
             residuals = []
@@ -2859,6 +2856,40 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             assert comparison["janaf_298K_element_reference_table"] == (
                 comparison["janaf_table_id"]
             )
+        if comparison["species_name"] == "NiO(g)":
+            nasa = _nasa_record(comparison["selected_nasa_record_id"])
+            bulletin = json.loads(
+                (PUBLISHED_DATA / "nio-bulletin-672.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            nasa_h298 = R_J_MOL_K * 298.15 * build_gas_tables._nasa7_properties(
+                nasa, 298.15
+            )["h_rt"]
+            for value in comparison["values"]:
+                temperature = float(value["T_K"])
+                node = next(row for row in bulletin["nodes"] if row[0] == temperature)
+                bulletin_g = (
+                    float(bulletin["formation_enthalpy_298_kcal_mol"]) * 4184.0
+                    + float(node[3]) * 4184.0
+                    - temperature * float(node[2]) * 4.184
+                )
+                nasa_properties = build_gas_tables._nasa7_properties(
+                    nasa, temperature
+                )
+                nasa_g = float(nasa["delta_f_H_298_15"]["value"]) + (
+                    R_J_MOL_K * temperature * nasa_properties["h_rt"] - nasa_h298
+                ) - temperature * R_J_MOL_K * nasa_properties["s_R"]
+                assert value["bulletin_672_G_app_J_mol"] == pytest.approx(
+                    bulletin_g, abs=0.001
+                )
+                assert value["nasa_G_app_J_mol"] == pytest.approx(
+                    nasa_g, abs=0.001
+                )
+                assert value["nasa_minus_bulletin_672_J_mol"] == pytest.approx(
+                    nasa_g - bulletin_g, abs=0.001
+                )
+            continue
         nasa = _nasa_record(comparison["nasa_record_id"])
         if "pankratz_table_id" in comparison:
             source = json.loads(
@@ -2966,6 +2997,44 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             assert value["nasa_minus_janaf_J_mol"] == pytest.approx(
                 comparison_g - janaf_g, abs=0.001
             )
+
+
+def test_nio_gas_uncertainty_band_recomputes_from_bulletin_and_nasa() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    bulletin = json.loads(
+        (PUBLISHED_DATA / "nio-bulletin-672.json").read_text(encoding="utf-8")
+    )
+    nasa = _nasa_record("NG-0926")
+    nasa_h298 = R_J_MOL_K * 298.15 * build_gas_tables._nasa7_properties(
+        nasa, 298.15
+    )["h_rt"]
+    records = {
+        row["T_interval"]: row
+        for row in provenance["rows"]
+        if row["table"] == "gas" and row["species_name"] == "NiO(g)"
+    }
+    for interval, temperatures in {
+        1: (1500, 1800, 2000, 2500, 3000),
+        2: (1200, 1300, 1400, 1500),
+    }.items():
+        band = records[interval]["uncertainty_band"]["values_J_per_mol"]
+        assert tuple(map(int, band)) == temperatures
+        for temperature in temperatures:
+            if temperature <= 2000:
+                node = next(row for row in bulletin["nodes"] if row[0] == temperature)
+                bulletin_g = (
+                    float(bulletin["formation_enthalpy_298_kcal_mol"]) * 4184.0
+                    + float(node[3]) * 4184.0
+                    - temperature * float(node[2]) * 4.184
+                )
+            else:
+                bulletin_g = None
+            nasa_properties = build_gas_tables._nasa7_properties(nasa, temperature)
+            nasa_g = float(nasa["delta_f_H_298_15"]["value"]) + (
+                R_J_MOL_K * temperature * nasa_properties["h_rt"] - nasa_h298
+            ) - temperature * R_J_MOL_K * nasa_properties["s_R"]
+            gap = abs(nasa_g - bulletin_g) if bulletin_g is not None else 15492.217
+            assert band[temperature] == pytest.approx(gap, abs=0.001)
 
 
 def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
@@ -3490,6 +3559,44 @@ _SAHA_LEVELS = {
          (10, 6147.085), (6, 7420.261), (4, 8711.274), (6, 11301.024),
          (8, 13411.939), (10, 14857.160)),
     ),
+    # NIST Handbook tables 5/6: Ba I/II and Sr I/II terms below 25,000 cm-1.
+    "Ba": (
+        5.211664,
+        ((1, 0.0), (3, 9033.966), (5, 9215.501), (7, 9596.533),
+         (5, 11395.350), (1, 12266.024), (3, 12636.623), (5, 13514.745),
+         (3, 18060.261), (9, 22064.645), (7, 22947.423), (9, 23757.049),
+         (5, 23074.387), (3, 24192.033), (5, 24531.513), (7, 24979.834)),
+        ((2, 0.0), (4, 4873.852), (6, 5674.807), (2, 20261.561),
+         (4, 21952.404)),
+    ),
+    "Sr": (
+        5.6948672,
+        ((1, 0.0), (1, 14317.520), (3, 14504.351), (5, 14898.563),
+         (3, 18159.056), (5, 18218.795), (7, 18319.267), (5, 20149.700),
+         (3, 21698.482)),
+        ((2, 0.0), (4, 14555.90), (6, 14836.24), (2, 23715.19),
+         (4, 24516.65)),
+    ),
+    # NIST Handbook tables 5/6: all listed Zr I/II terms below 20,000 cm-1;
+    # the next Zr II manifold begins at 27,984 cm-1.
+    "Zr": (
+        6.63412,
+        ((5, 0.0), (7, 570.41), (9, 1240.84), (5, 4186.11), (1, 4196.85),
+         (3, 4376.28), (3, 4870.53), (5, 5023.41), (7, 5249.07),
+         (9, 5540.54), (11, 5888.93), (5, 5101.68), (9, 8057.30),
+         (11, 10885.36), (13, 11016.65), (7, 11258.38), (5, 11640.72),
+         (7, 11956.33), (9, 12342.37), (7, 12503.44), (9, 12760.66),
+         (11, 12772.78), (1, 13141.76), (3, 14123.01), (5, 14348.78),
+         (7, 14697.03), (5, 14783.54), (7, 15201.26), (9, 15720.36),
+         (11, 16316.96), (13, 16978.29), (5, 16296.51), (7, 16843.93),
+         (9, 17556.26), (3, 16786.93), (5, 17059.61), (7, 17422.17),
+         (9, 17833.73), (11, 18276.92), (1, 18976.36), (3, 19096.53),
+         (5, 19323.84), (7, 19625.58), (9, 19833.78)),
+        ((4, 0.0), (6, 314.673), (8, 763.428), (10, 1322.730),
+         (4, 2572.372), (6, 2895.097), (8, 3299.732), (10, 3757.732),
+         (4, 4248.165), (6, 4505.496), (2, 5724.150), (4, 6111.529),
+         (6, 5752.868), (8, 6467.509)),
+    ),
 }
 
 
@@ -3520,7 +3627,7 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     # Mn+ has no fine-structure level set in this spectroscopy-backed Saha
     # audit. Ag+ is checked against its NASA card and neutral-ionization
     # reaction, but no Ag level set is part of this audit.
-    assert atomic_pairs - {"Mn", "Ag", "Ba", "Sr", "Zr"} == set(_SAHA_LEVELS)
+    assert atomic_pairs - {"Mn", "Ag"} == set(_SAHA_LEVELS)
     k_b = 1.380649e-23
     h = 6.62607015e-34
     m_e = 9.1093837139e-31
@@ -3533,7 +3640,9 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
             for weight, energy in levels
         )
 
-    temperatures = (1500.0, 2500.0, 3000.0) if element in {"Mo", "W"} else (
+    temperatures = (1500.0, 2500.0, 3000.0) if element in {
+        "Mo", "W", "Ba", "Sr", "Zr"
+    } else (
         1500.0, 2500.0
     )
     for temperature in temperatures:
@@ -3618,6 +3727,17 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
                       3000.0: 2.1512200673},
             }[element][temperature]
             assert fitted_k / saha_k == pytest.approx(expected, rel=5e-5)
+        elif element in {"Ba", "Sr", "Zr"}:
+            if element == "Zr":
+                # The nearly temperature-independent ~20 kJ/mol deficit is
+                # an JANAF ionization-anchor offset, not missing partition
+                # entropy. Preserve the measured ratio rather than weakening
+                # the 2% spectroscopy gate for Ba and Sr.
+                expected = {1500.0: 0.1872233437, 2500.0: 0.3803023410,
+                            3000.0: 0.4543017938}[temperature]
+                assert fitted_k / saha_k == pytest.approx(expected, rel=5e-5)
+            else:
+                assert fitted_k / saha_k == pytest.approx(1.0, rel=0.02)
         elif element in {"Ni", "Co"}:
             # Preserve the measured JANAF-to-NIST ionization comparison.
             # These are source offsets, not fit residuals or adjustments.
@@ -3674,6 +3794,15 @@ _ATTACHMENT_LEVELS = {
     ),  # WebBook C7440622; https://physics.nist.gov/PhysRefData/Handbook/Tables/vanadiumtable5.htm; V- FS from Fu et al. 2016
     "Mo": (0.74942, ((7, 0.0),), ((6, 0.0),)),  # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7439987&Mask=267; Bilodeau et al. 1998
     "W": (0.816265, ((1, 0.0),), ((2, 0.0),)),  # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7440337&Mask=267; Lindahl et al. 2010
+    # Zr- 4F fine structure from Fu et al., J. Chem. Phys. 147, 064306 (2017), Table I.
+    "Zr": (0.427, _SAHA_LEVELS["Zr"][1],
+           ((4, 0.0), (6, 251.0), (8, 579.6), (10, 971.7))),
+    # Ni- and Co- fine structure from Leopold and Lineberger, J. Chem. Phys.
+    # 71 (1979), 4290-4297; neutral levels reuse the NIST Handbook arrays
+    # audited above. Electron affinities use the NIST WebBook evaluations.
+    "Ni": (1.15717, _SAHA_LEVELS["Ni"][1], ((6, 0.0), (4, 1470.0))),
+    "Co": (0.66330, _SAHA_LEVELS["Co"][1],
+           ((9, 0.0), (7, 920.9), (5, 1550.3))),
 }
 
 
@@ -3697,16 +3826,15 @@ def test_gas_table_atomic_anion_inventory() -> None:
     assert packaged == atomic | molecular
     # JANAF supplies Zn-, but the neutral zinc atom has no bound anion term
     # listed for a ground-state attachment comparison. Ag- comes from NASA CEA,
-    # whose card supplies no JANAF attachment-level entry. Ni-/Co- are retained
-    # JANAF channels, without an independent anion partition set for this check.
+    # whose card supplies no JANAF attachment-level entry.
     assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic - {
-        "Zn-(g)", "Ag-(g)", "Zr-(g)", "Ni-(g)", "Co-(g)"
+        "Zn-(g)", "Ag-(g)"
     }
 
 
 @pytest.mark.parametrize(
     "element",
-    ("Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Mo", "Na", "Nb", "O", "Pb", "Rb", "Si", "Ti", "V", "W"),
+    ("Al", "B", "Co", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Mo", "Na", "Nb", "Ni", "O", "Pb", "Rb", "Si", "Ti", "V", "W", "Zr"),
 )
 def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
     """Compare fitted attachment Kp with the NIST ground-state affinity.
@@ -3742,7 +3870,10 @@ def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
         )
 
     ratios = []
-    for temperature in (1500.0, 2500.0):
+    temperatures = (1500.0, 2500.0, 3000.0) if element == "Zr" else (
+        1500.0, 2500.0
+    )
+    for temperature in temperatures:
         anion = _nearest_interval_row(
             pack.gas_df, attachment, temperature, allow_extrapolation=False
         )
@@ -3775,6 +3906,21 @@ def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
         expected = {
             "Mo": (0.9737712359, 0.9782649482),
             "W": (1.7760941297, 1.1437305022),
+        }[element]
+        assert ratios == pytest.approx(expected, rel=5e-5), element
+    elif element == "Zr":
+        # The 0.427 eV NIST WebBook affinity and measured Zr- fine structure
+        # are used. JANAF's fitted ratio changes with T, showing a partition-
+        # entropy mismatch rather than a constant EA/formation-anchor offset.
+        assert ratios == pytest.approx(
+            (0.8971777200, 0.9632959954, 0.9720072362), rel=5e-5
+        ), element
+    elif element in {"Ni", "Co"}:
+        # NIST WebBook affinities plus measured anion fine structure give
+        # close attachment closure; pin their remaining source offsets.
+        expected = {
+            "Ni": (0.9909216236, 0.9945586334),
+            "Co": (0.9838592042, 0.9902409117),
         }[element]
         assert ratios == pytest.approx(expected, rel=5e-5), element
     else:

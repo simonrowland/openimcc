@@ -49,6 +49,22 @@ records:
     source_locator: Volume IV, Table 1334
     tier: 3
     selection_reason: The source prints the phase-paired CoO liquid function and stated Phi uncertainty; its direct estimated branch is selected over the tier-4 liquid_from_solid construction.
+  - record_id: TSIV-1335
+    path: data-src/published-thermo/tsiv-table-1335.json
+    source_sha256: 6c1619c6ed0b8ea02db48afd75ad1ade4575c7ce09a2078ca117cc1494ff3a00
+    publication: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1335, CoO(g)
+    source_url: https://www.chem.msu.ru/rus/tsiv/Co/ivtan0005.html
+    source_locator: Volume IV, Table 1335
+    tier: 3
+    selection_reason: The source prints CoO(g) H/S/Cp functions through 3000 K and an elemental-reference 298.15 K formation anchor; no JANAF or NASA CoO(g) table is available.
+  - record_id: P672-NiO-g
+    path: data-src/published-thermo/nio-bulletin-672.json
+    source_sha256: 01b1948e51e61b3694aeb2ca39fe61aeb095e304ec30dfaa0de55f53a88ef463
+    publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Nickel oxide gas table, printed p. 274
+    tier: 3
+    selection_reason: Retained as the independent measured comparison source for the selected tier-2 NASA Glenn NiO(g) card; it bounds the source disagreement on their common range.
   - record_id: P672
     path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc

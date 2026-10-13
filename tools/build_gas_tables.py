@@ -195,6 +195,7 @@ TRACE_JANAF_YAML_GAS_SOURCES = (
     ("ZrO2(g)", "O-055", "Zr", 1, 2),
 )
 TRACE_NASA_GAS_SOURCES = (
+    ("NiO(g)", "NG-0926", "NiO", "Ni", 1, 1),
     ("Ag(g)", "NG-0074", "Ag", "Ag", 1, 0),
     ("RbO(g)", "NG-1329", "RbO", "Rb", 1, 1),
     ("Rb2O(g)", "NG-1352", "Rb2O", "Rb", 2, 1),
@@ -239,6 +240,7 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("Sb4(g)", "P672-Sb4-g", "Sb4", "Sb", 4, 0, 2000.0),
     ("Sb4O6(g)", "P672-Sb4O6-g", "Sb4O6", "Sb", 4, 6, 1000.0),
     ("MnO(g)", "TSIV-1436", "MnO", "Mn", 1, 1, 6000.0),
+    ("CoO(g)", "TSIV-1335", "CoO", "Co", 1, 1, 3000.0),
 )
 TRACE_GAS_SPECIES = frozenset(
     {source[0].removesuffix("(g)") for source in TRACE_JANAF_GAS_SOURCES}
@@ -1423,10 +1425,12 @@ def _published_table_record(source_dir: Path, table_id: str) -> dict[str, Any]:
         filename = "tsiv-table-1603.json"
     elif table_id == "TSIV-1436":
         filename = "tsiv-table-1436.json"
+    elif table_id == "TSIV-1335":
+        filename = "tsiv-table-1335.json"
     else:
         raise ValueError(f"{table_id}: unsupported published source record")
     record = _load_record(source_dir / filename)
-    if table_id in {"IVTAN-264", "TSIV-1603", "TSIV-1436"}:
+    if table_id in {"IVTAN-264", "TSIV-1603", "TSIV-1436", "TSIV-1335"}:
         return record
     try:
         return record["tables"][table_id]
@@ -1462,7 +1466,7 @@ def _published_gas_source_rows(
             }
         reference = float(record["formation_enthalpy_298_kj_mol"])
         source_limit = 3000.0
-    elif table_id == "TSIV-1436":
+    elif table_id in {"TSIV-1436", "TSIV-1335"}:
         h298_minus_h0 = float(record["enthalpy_298_minus_H0_kj_mol"])
         for temperature, cp, entropy, enthalpy in record["nodes"]:
             rows[float(temperature)] = {
