@@ -884,6 +884,19 @@ rows:
       to 1 bar (+R ln 1.01325 = +0.109443 J/(mol K)); only the Cp(T) shape
       comes from the NASA Glenn card. Certification item: the card's
       Gurvich-derived dfH298 differs from LH84 by about 15 kJ/mol.
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: parent_scale_liquid_G
+      units: J/mol
+      method: absolute LH84 Table 2 liquid minus JANAF Na-013 apparent Gibbs energy from source records
+      values_J_per_mol: {1500: 9380.217, 1800: 20400.186, 2000: 25568.686, 2500: 29225.921, 3000: 17668.423}
+    additional_uncertainty_bands:
+    - kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      method: absolute NASA NG-0905 card Gibbs energy minus LH84 Table 4 anchored Gibbs energy, evaluated on the card Cp shape
+      standard_state_note: LH84 entropy is converted from 1 atm to 1 bar; both gas values are compared at 1 bar.
+      values_J_per_mol: {1500: 629.851, 1800: 3796.105, 2000: 5906.941, 2500: 11184.030, 3000: 16461.120}
     source:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn
@@ -912,6 +925,13 @@ rows:
       to 1 bar (+R ln 1.01325 = +0.109443 J/(mol K)); only the Cp(T) shape
       comes from the NASA Glenn card. Certification item: the card's
       Gurvich-derived dfH298 differs from LH84 by about 15 kJ/mol.
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      method: absolute NASA NG-0760 card Gibbs energy minus LH84 Table 4 anchored Gibbs energy, evaluated on the card Cp shape
+      standard_state_note: LH84 entropy is converted from 1 atm to 1 bar; both gas values are compared at 1 bar.
+      values_J_per_mol: {1500: 18967.910, 1800: 19667.504, 2000: 20133.900, 2500: 21299.890, 3000: 22465.880}
     source:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn
@@ -946,6 +966,19 @@ rows:
       to 1 bar, +R ln 1.01325 = +0.109443 J/(mol K)); NASA Glenn NG-0905 supplies the piecewise Cp(T) shape. The
       row uses the 300-1000 K card below 1000 K and the 1000-6000 K card above
       it. NASA's own dfH298 remains a certification item, as for interval 1.
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: parent_scale_liquid_G
+      units: J/mol
+      method: absolute LH84 Table 2 liquid minus JANAF Na-013 apparent Gibbs energy from source records
+      values_J_per_mol: {1500: 9380.217}
+    additional_uncertainty_bands:
+    - kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      method: absolute NASA NG-0905 card Gibbs energy minus LH84 Table 4 anchored Gibbs energy, evaluated on the card Cp shape
+      standard_state_note: LH84 entropy is converted from 1 atm to 1 bar; both gas values are compared at 1 bar.
+      values_J_per_mol: {1500: 629.851}
     source:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn
@@ -980,6 +1013,13 @@ rows:
       to 1 bar, +R ln 1.01325 = +0.109443 J/(mol K)); NASA Glenn NG-0760 supplies the piecewise Cp(T) shape. The
       row uses the 300-1000 K card below 1000 K and the 1000-6000 K card above
       it. NASA's own dfH298 remains a certification item, as for interval 1.
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      method: absolute NASA NG-0760 card Gibbs energy minus LH84 Table 4 anchored Gibbs energy, evaluated on the card Cp shape
+      standard_state_note: LH84 entropy is converted from 1 atm to 1 bar; both gas values are compared at 1 bar.
+      values_J_per_mol: {1500: 18967.910}
     source:
       citation: >-
         McBride, B. J.; Zehe, M. J.; Gordon, S. (2002), NASA Glenn

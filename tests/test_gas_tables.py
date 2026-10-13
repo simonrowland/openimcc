@@ -3162,6 +3162,124 @@ def test_ni_co_mixed_source_parent_bands_recompute_from_compilations() -> None:
                 )
 
 
+def test_na_k_gas_anchor_and_parent_scale_bands_recompute() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    gas_rows = [
+        row for row in provenance["rows"]
+        if row["table"] == "gas" and row["species_name"] in {"Na2O(g)", "K2O(g)"}
+    ]
+    lh84 = yaml.safe_load((LH84_DATA / "lh84.yaml").read_text(encoding="utf-8"))
+    lh84_rows = {row["species_name"]: row for row in lh84["rows"]}
+    temperatures = (1500, 1800, 2000, 2500, 3000)
+
+    na_janaf = _record("Na-013")
+    na_source_nodes = _complete_rows("Na-013")
+    na_reference = next(row for row in na_source_nodes if row["temperature"] == 298.15)
+    na_thermal_nodes = build_gas_tables._recover_thermal_transition_rows(
+        na_janaf["table"]
+    )
+
+    def janaf_na_g(temperature: float) -> float:
+        row = next(
+            (row for row in na_source_nodes if row["temperature"] == temperature),
+            None,
+        )
+        if row is None:
+            row = next(
+                row for row in na_thermal_nodes if row["temperature"] == temperature
+            )
+        return (
+            na_reference["formation_enthalpy"] + row["enthalpy_increment"]
+        ) * 1000.0 - temperature * row["entropy"]
+
+    def nasa_card_g(record_id: str, temperature: float) -> float:
+        card = _nasa_record(record_id)
+        properties = build_gas_tables._nasa7_properties(card, temperature)
+        card_h298 = R_J_MOL_K * 298.15 * build_gas_tables._nasa7_properties(
+            card, 298.15
+        )["h_rt"]
+        return float(card["delta_f_H_298_15"]["value"]) + (
+            R_J_MOL_K * temperature * properties["h_rt"] - card_h298
+        ) - temperature * R_J_MOL_K * properties["s_R"]
+
+    def lh84_anchored_card_g(species: str, record_id: str, temperature: float) -> float:
+        card = _nasa_record(record_id)
+        anchor = lh84_rows[species]
+        at_temperature = build_gas_tables._nasa7_properties(card, temperature)
+        at_298 = build_gas_tables._nasa7_properties(card, 298.15)
+        h_increment = R_J_MOL_K * (
+            temperature * at_temperature["h_rt"] - 298.15 * at_298["h_rt"]
+        )
+        entropy = R_J_MOL_K * (
+            anchor["S_over_R"]["value"]
+            + at_temperature["s_R"] - at_298["s_R"]
+            + math.log(1.01325)
+        )
+        return (
+            R_J_MOL_K * 1000.0 * anchor["dfH_over_R_kK"]["value"]
+            + h_increment - temperature * entropy
+        )
+
+    na_liquid_row = next(
+        row for row in provenance["rows"]
+        if row["table"] == "condensate"
+        and row["species_name"] == "Na2O(l)"
+        and row.get("supersedes")
+    )
+    lh84_liquid = na_liquid_row["supersedes"]
+    liquid_coefficients = lh84_liquid["dG_coefficients"]
+
+    def lh84_na_liquid_g(temperature: float) -> float:
+        tau = temperature / 1000.0
+        polynomial = sum(
+            coefficient * tau**power
+            for power, coefficient in enumerate(liquid_coefficients)
+        )
+        return (
+            -R_J_MOL_K * temperature * polynomial
+            + R_J_MOL_K * lh84_liquid["dH298_R"] * 1000.0
+        )
+
+    expected = {
+        "Na2O(g)": {
+            "parent_scale_liquid_G": lambda temperature: abs(
+                lh84_na_liquid_g(temperature) - janaf_na_g(temperature)
+            ),
+            "card_G_parent_scale_inconsistency": lambda temperature: abs(
+                nasa_card_g("NG-0905", temperature)
+                - lh84_anchored_card_g("Na2O(g)", "NG-0905", temperature)
+            ),
+        },
+        "K2O(g)": {
+            "card_G_parent_scale_inconsistency": lambda temperature: abs(
+                nasa_card_g("NG-0760", temperature)
+                - lh84_anchored_card_g("K2O(g)", "NG-0760", temperature)
+            ),
+        },
+    }
+    assert len(gas_rows) == 4
+    assert {row["species_name"] for row in gas_rows} == set(expected)
+    seen = set()
+    for row in gas_rows:
+        species = row["species_name"]
+        interval = tuple(map(int, row["T_range_K"]))
+        band_types = expected[species]
+        bands = [
+            row.get("uncertainty_band", {}),
+            *row.get("additional_uncertainty_bands", []),
+        ]
+        row_knots = tuple(t for t in temperatures if interval[0] <= t <= interval[1])
+        for band_type, calculate in band_types.items():
+            band = next(item for item in bands if item.get("basis") == band_type)
+            assert set(map(int, band["values_J_per_mol"])) == set(row_knots)
+            for temperature in row_knots:
+                assert band["values_J_per_mol"][temperature] == pytest.approx(
+                    calculate(temperature), abs=0.001
+                )
+                seen.add((species, band_type, temperature))
+    assert len(seen) == 15
+
+
 def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
     """Every channel pair is sourced from provenance and has an explicit outcome."""
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
@@ -3173,21 +3291,32 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
         row for row in gas_rows if row["species_name"] == "O2(g)"
     ]
 
-    # Existing, reviewed channels with a mixed compilation pair but no band;
-    # this fix round only adds the three Ni/Co disclosures.
-    known_unbanded_mixed_source_channels = (
-        "SiO", "SiO2", "Si", "Si2", "Si3", "K", "K2", "KO",
-        "Na2O", "K2O", "Mn", "MnO", "Rb", "RbO",
-        "PbO2", "Ga", "GaO", "Ga2O", "Ge", "GeO", "In", "InO",
-        "In2O", "Cs", "CsO", "Cs2O", "Sn", "SnO2", "Zn", "ZnO",
-        "Cd", "CdO", "Bi", "Bi2", "BiO", "Te", "Te2", "Se", "Se2",
-        "SeO", "As", "As2", "As4", "Sb", "Sb2", "Sb4", "Ag",
-    )
+    known_unbanded_mixed_source_channels = {
+        **dict.fromkeys(
+            ("Bi", "Bi2", "BiO", "Te", "Te2", "Se", "Se2", "SeO",
+             "As", "As2", "As4", "Sb", "Sb2", "Sb4", "Ag"),
+            "The residual is the 1 atm versus 1 bar standard-state shift only.",
+        ),
+        "Ga": "JANAF Ga(g) versus the NASA parent changes log10 K by at most 0.0023 dex.",
+        "PbO2": "The all-NASA comparison changes log10 K by at most 0.0010 dex.",
+        **dict.fromkeys(
+            ("RbO", "GaO", "Ga2O", "Ge", "GeO", "In", "InO", "In2O",
+             "Sn", "SnO2"),
+            "NASA gas and parent agree to fit precision; NASA O2 is not vendored, so its thermal difference is unmeasured.",
+        ),
+        **dict.fromkeys(
+            ("Mn", "Rb", "Cs", "CsO", "Cs2O", "Zn", "Cd"),
+            "No single-compilation table is vendored for the gas and runtime parent.",
+        ),
+    }
 
     def compilation(row: dict) -> str:
         source = " ".join(
             str(row.get(key, ""))
-            for key in ("source_path", "authority", "table_id", "source_table_id")
+            for key in (
+                "source_path", "authority", "table_id", "source_table_id",
+                "source",
+            )
         ).lower()
         if "janaf" in source:
             return "JANAF"
@@ -3208,7 +3337,7 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
         rows = [row for row in gas_rows if row["species_name"] == f"{species}(g)"]
         parents = [
             row for row in parent_rows
-            if row["species_name"].startswith(f"{parent}(")
+            if row["species_name"] == f"{parent}(l)"
         ]
         if not rows or not parents:
             continue
@@ -3232,7 +3361,8 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
         if not disclosed:
             unbanded_mixed.add(species)
 
-    assert unbanded_mixed <= set(known_unbanded_mixed_source_channels)
+    assert unbanded_mixed == set(known_unbanded_mixed_source_channels)
+    assert all(known_unbanded_mixed_source_channels.values())
 
 
 def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:

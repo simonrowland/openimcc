@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added computed source-gap disclosures for the Na2O(g) parent and gas anchors
+  and the K2O(g) gas anchor. The compilation-pair check now uses each runtime
+  liquid parent and records the remaining named exceptions with reasons.
 - Added optional Ba, Sr, and Zr gas channels with caller-supplied BaO(l),
   SrO(l), and ZrO2(l) activities, plus opt-in Ba+, Sr+, Zr+, and JANAF Zr-.
   JANAF supplies the gas and liquid branches; the three liquid fits reproduce

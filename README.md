@@ -474,6 +474,9 @@ enthalpy and entropy anchors use Table 4 of [Lamoreaux and Hildenbrand
 enthalpies differ by about 15 kJ/mol, so `PROVENANCE.yaml` records the
 `lh84_evaluated_with_nasa_cp` certification item and marks both rows as pending
 KEMS certification.
+At 2000 K, the NASA-card gas-anchor gaps are 0.154 dex for Na2O(g) and
+0.526 dex for K2O(g), with a further 0.668 dex Na2O(g) parent-scale gap to the
+LH84 Table 2 liquid.
 
 For the README basalt above, the new-channel magnitude is:
 
