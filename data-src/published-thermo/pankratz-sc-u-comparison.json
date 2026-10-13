@@ -1,0 +1,49 @@
+{
+  "schema_version": "published_thermo_tables.v1",
+  "publication": "Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672.",
+  "source_url": "https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf",
+  "tables": {
+    "P672-Sc-g": {
+      "table": "Sc gas table, printed p. 363",
+      "species": "Sc(g)",
+      "formula": "Sc",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 90.300,
+      "nodes": [[2000, 47.095], [2500, 48.071]],
+      "node_columns": ["T_K", "gibbs_function_cal_mol_K"],
+      "source_note": "Printed p. 363, Sc(g) formation table from Sc(c,l). The listed values are the printed -(G-H298)/T Gibbs functions at the common comparison knots."
+    },
+    "P672-Sc2O3-l": {
+      "table": "Sc2O3 formation and liquid table, printed pp. 364-365",
+      "species": "Sc2O3(l)",
+      "formula": "Sc2O3",
+      "phase": "liquid",
+      "formation_enthalpy_298_kcal_mol": -456.220,
+      "fusion_temperature_K": 2762.0,
+      "nodes": [[1800, 44.740], [2000, 47.390], [2500, 53.269], [2762, 56.013], [3000, 59.356]],
+      "node_columns": ["T_K", "gibbs_function_cal_mol_K"],
+      "source_note": "Printed pp. 364-365, Sc2O3 formation table from 2Sc(c,l)+1.5O2(g). The source prints its Sc2O3 melt at 2762 K with fusion enthalpy 33.650 kcal/mol and a liquid branch through 3000 K. The 298.15 K formation anchor is -456.220 kcal/mol."
+    },
+    "P672-U-g": {
+      "table": "U gas table, printed p. 448",
+      "species": "U(g)",
+      "formula": "U",
+      "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 127.000,
+      "nodes": [[1800, 53.274], [2000, 53.840], [2500, 55.158]],
+      "node_columns": ["T_K", "gibbs_function_cal_mol_K"],
+      "source_note": "Printed p. 448, U(g) formation table from U(c,l). The printed 298.15 K formation anchor is 127.000 kcal/mol; thermal nodes are transcribed from the table."
+    },
+    "P672-UO2-c": {
+      "table": "UO2 formation table, printed p. 449",
+      "species": "UO2(cr)",
+      "formula": "UO2",
+      "phase": "crystal",
+      "formation_enthalpy_298_kcal_mol": -259.200,
+      "fusion_temperature_K": 3115.0,
+      "nodes": [[2000, 38.082], [2500, 42.175], [3000, 45.971]],
+      "node_columns": ["T_K", "gibbs_function_cal_mol_K"],
+      "source_note": "Printed p. 449, UO2(cr) formation table from U(c,l)+O2(g), with crystal formation nodes through 3000 K. The source reports the 3115 K melt and 18.176 kcal/mol fusion enthalpy; printed p. 450 gives Cp(l)=31.440 cal/(mol K) but no liquid formation table. The 298.15 K formation anchor is -259.200 kcal/mol."
+    }
+  }
+}

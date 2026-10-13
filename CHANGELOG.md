@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added optional Sc, ScO, ScO2, U, UO, UO2, and UO3 channels with caller-supplied
+  Sc2O3(l) and UO2(l) activities, plus opt-in Sc+. NASA Glenn cards supply both
+  gas and liquid functions. Sc2O3(l) is fitted directly from its liquid card
+  above 2762 K and uses labelled constant-Cp continuation below it; UO2(l) uses
+  the labelled continuation from its 3123 K liquid card throughout 1200–3000 K.
+  The Sc2O3 liquid branch differs from Bulletin 672, with the G_app difference
+  recorded as a band. No evaluated U+ thermo function was located.
 - Added computed source-gap disclosures for the Na2O(g) parent and gas anchors
   and the K2O(g) gas anchor. The compilation-pair check now uses each runtime
   liquid parent and records the remaining named exceptions with reasons.

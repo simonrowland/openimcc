@@ -540,6 +540,18 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Zr": ("ZrO2", 1, 1.0),
     "ZrO": ("ZrO2", 1, 0.5),
     "ZrO2": ("ZrO2", 1, 0.0),
+    # NASA/Gurvich single-family channels. For Sc2O3, (n_g,n_O2) is
+    # (2, 3/2), (2, 1/2), and (2, -1/2) for Sc, ScO, ScO2. For UO2 it is
+    # (1, 1), (1, 1/2), (1, 0), and (1, -1/2) for U, UO, UO2, UO3.
+    # Negative n_O2 means oxygen is a reactant; UO2(l)+1/2 O2(g)=UO3(g),
+    # so the UO3 pressure rises with fO2.
+    "Sc": ("Sc2O3", 2, 1.5),
+    "ScO": ("Sc2O3", 2, 0.5),
+    "ScO2": ("Sc2O3", 2, -0.5),
+    "U": ("UO2", 1, 1.0),
+    "UO": ("UO2", 1, 0.5),
+    "UO2": ("UO2", 1, 0.0),
+    "UO3": ("UO2", 1, -0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -665,6 +677,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Sn",
         "SnO",
         "SnO2",
+        "Sc", "ScO", "ScO2",
+        "U", "UO", "UO2", "UO3",
     }
 )
 
@@ -790,6 +804,13 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "MnO": "published_fitted",
         "NiO": "nasa_glenn_fitted",
         "CoO": "published_fitted",
+        "Sc": "nasa_glenn_fitted",
+        "ScO": "nasa_glenn_fitted",
+        "ScO2": "nasa_glenn_fitted",
+        "U": "nasa_glenn_fitted",
+        "UO": "nasa_glenn_fitted",
+        "UO2": "nasa_glenn_fitted",
+        "UO3": "nasa_glenn_fitted",
     }
 )
 _ION_GAS_SPECIES = (
@@ -801,7 +822,7 @@ _ION_GAS_SPECIES = (
     "Cs-", "Cu-", "Cs+", "Sn+", "Cs2O+",
     "Zn+", "Zn-", "Cd+", "Bi+",
     "Mn+", "Ni+", "Ni-", "Co+", "Co-", "Ag+", "Ag-", "Mo+", "Mo-", "W+", "W-",
-    "Ba+", "Sr+", "Zr+", "Zr-",
+    "Ba+", "Sr+", "Zr+", "Zr-", "Sc+",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -823,6 +844,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Bi+": "nist_partition_fitted_ionisation",
         "Ag+": "nasa_glenn_fitted_ionisation",
         "Ag-": "nasa_glenn_fitted_ionisation",
+        "Sc+": "nasa_glenn_fitted_ionisation",
     }
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
@@ -865,6 +887,8 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Ag2O": "liquid_from_solid_estimate",
     "MoO3": "janaf_fitted",
     "WO3": "janaf_fitted",
+    "Sc2O3": "nasa_glenn_fitted",
+    "UO2": "nasa_glenn_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -899,6 +923,8 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Bi2O3": "P672-T82",
     "TeO2": "P672-TeO2-l",
     "SeO2": "P672-SeO2",
+    "Sc2O3": "NG-1857",
+    "UO2": "NG-1977",
     "As2O3": "P672-As2O3",
     "Sb2O3": "P672-Sb2O3-c",
     "Ag2O": "P672-Ag2O-c",
@@ -1096,6 +1122,7 @@ _GAS_IONIZATION_PAIRS = (
     ("Ba", "Ba+"),
     ("Sr", "Sr+"),
     ("Zr", "Zr+"),
+    ("Sc", "Sc+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -1933,7 +1960,7 @@ ELEMENT_STATUS["Ag"] = {
     "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
     "validation": "unvalidated",
     "reason": "Ag(g) and a tier-4 hypothetical Ag2O(l) caller-activity standard cover 1200-3000 K; NASA Glenn supplies opt-in Ag+(g) and Ag-(g). Ag2O decomposes near 500 K and has no measured liquid function; the Ag2O-parent convention does not represent reduced melts where silver dissolves largely as metal.",
-    "c2_candidates": (),
+    "c2_candidates": (("NG-1090", "ScO"), ("NG-1092", "ScO2")),
     "c3_ion_bound": {
         "max_ratio": 8.677635624166437e-09,
         "isolated_bound": 3.462457407497183e-09,
@@ -2211,6 +2238,52 @@ for _element, _parent, _cation, _neutral, _anion, _hashes in (
             "user_agent": "neutral-source-vendor/1.0",
         },
     }
+
+ELEMENT_STATUS["Sc"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
+    "validation": "unvalidated",
+    "reason": "NASA Glenn Sc(g), ScO(g), ScO2(g), Sc+(g), and Sc2O3(l) cover 1200-3000 K; Sc2O3(l) uses its liquid card from 2762 K with a labelled constant-Cp continuation below; Sc2O3 is selected because it is the sourced liquid parent; a(Sc2O3) is caller-supplied; the joint C3 screen at a(Sc2O3)=1e-3 reached 1.929e-09 at 2300 K and fO2=1e-10 within the <=1-bar neutral-pressure domain, below the 1e-4 threshold.",
+    "c2_candidates": (
+        ("NG-1090", "ScO"), ("NG-1092", "ScO2"),
+    ),
+    "c3_ion_bound": {
+        "status": "computed",
+        "parent_oxide": "Sc2O3",
+        "parent_activity": 1.0e-3,
+        "source_tables": {"neutral": "NG-1087", "cation": "NG-1088", "electron": "D-020"},
+        "max_ratio": 1.928791710917186e-09,
+        "isolated_bound": 27406969.099476915,
+        "temperature_K": 2300.0,
+        "fO2": 1e-10,
+        "neutral_pressure_bar": 2.1043533268879577e-10,
+        "element_total_pressure_bar": 2.6727435360753636e-08,
+        "joint_ion_pressure_bar": 5.15516557778965e-17,
+        "electron_pressure_bar": 4.935841167942117e-06,
+        "K_ion": 1.2091637920919846e-12,
+        "electron_source_terms": {},
+        "electron_source_terms_3000K": {},
+        "upstream_sha256": {
+            "NG-1087": "e2bf9fcbdcd866dfbc3305a6d05a756100f0b36d41b63559e4687fe542b6ffcf",
+            "NG-1088": "9c6bde0ea24a3a0b5c33ecb64263c6172ac8df9cef175aa9106e7a04f0672181",
+            "D-020": "c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd",
+        },
+        "user_agent": "neutral-source-vendor/1.0",
+    },
+}
+ELEMENT_STATUS["U"] = {
+    "status": "gas-partial",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": "NASA Glenn U(g), UO(g), UO2(g), UO3(g), and UO2(l) cover 1200-3000 K; the UO2(l) row is a labelled supercooled continuation from its 3123 K liquid card throughout this runtime range; UO2 is selected because it is the sourced liquid parent; a(UO2) is caller-supplied; UO3 formation consumes 1/2 O2. No evaluated U+ thermo function was located in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
+    "c2_candidates": (
+        ("NG-1224", "UO"), ("NG-1230", "UO2"), ("NG-1235", "UO3"),
+    ),
+    "c3_ion_bound": {
+        "status": "declined",
+        "reason": "No evaluated U+ thermo function was located in the checked JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat sources.",
+    },
+}
 
 # --------------------------------------------------------------------------- #
 # Data pack

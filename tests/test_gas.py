@@ -2327,6 +2327,7 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
         "Ag2O(l)",
         "MnO(l)",
         "MoO3(l)", "WO3(l)", "BaO(l)", "SrO(l)", "ZrO2(l)",
+        "Sc2O3(l)", "UO2(l)",
     }
     return replace(
         pack,
@@ -2360,6 +2361,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "MoO3": 1.0e-3, "WO3": 1.0e-3,
         "BaO": 1.0e-3, "SrO": 1.0e-3, "ZrO2": 1.0e-3,
         "NiO": 1.0e-3, "CoO": 1.0e-3,
+        "Sc2O3": 1.0e-3, "UO2": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2393,8 +2395,11 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     for species in trace_gases:
         assert f"{species}(g)" in missing_rows.omitted_channels[species]
         if species not in {"Ni", "Co", "NiO", "CoO"}:
-            assert _SF04_REACTIONS[species][0] + "(l)" in (
-                missing_rows.omitted_channels[species]
+            reason = missing_rows.omitted_channels[species]
+            assert (
+                _SF04_REACTIONS[species][0] + "(l)" in reason
+                or species in {"Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3"}
+                and f"missing from active table: {species}(g)" in reason
             )
 
     trace_species = tuple(sorted(trace_gases))
@@ -2416,10 +2421,13 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Ag+",
         "Ag-",
         "Ba+", "Sr+", "Zr+", "Zr-", "Ni+", "Ni-", "Co+", "Co-",
+        "Sc+",
     }
     assert expected_ions <= set(trace_ions)
     assert "In+" not in trace_ions
-    nasa_ions = {"Ge+", "BO-", "Cd+", "Ag+", "Ag-"}
+    assert "Sc+" in trace_ions
+    assert "U+" not in trace_ions
+    nasa_ions = {"Ge+", "BO-", "Cd+", "Ag+", "Ag-", "Sc+"}
     for species in expected_ions:
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == (
@@ -2439,6 +2447,19 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
                 {}, 2000.0, 1.0e-8, gas_pack,
                 gas_species=(species,), allow_extrapolation=False,
             )
+
+    for element, parent in (("Sc", "Sc2O3"), ("U", "UO2")):
+        with pytest.raises(ImccGasSpeciesNotFoundError) as refusal:
+            evaluate_gas(
+                _quickstart_activities(2000.0, allow_extrapolation=True),
+                2000.0,
+                1.0e-8,
+                gas_pack,
+                gas_species=(element,),
+                allow_extrapolation=True,
+            )
+        assert refusal.value.code == "imcc_gas_species_not_found"
+        assert parent in str(refusal.value)
     expected_trace_ions = {
         "Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-",
         "Cs+", "Sn+", "Cs2O+",
@@ -2667,6 +2688,20 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("NiO", "NiO", "NG-0926", "TSIV-2026"),
         ("Co", "CoO", "Co-005", "TSIV-1334"),
         ("CoO", "CoO", "TSIV-1335", "TSIV-1334"),
+        ("Sc", "Sc2O3", "NG-1087", "NG-1857"),
+        ("ScO", "Sc2O3", "NG-1090", "NG-1857"),
+        ("ScO2", "Sc2O3", "NG-1092", "NG-1857"),
+        ("U", "UO2", "NG-1206", "NG-1977"),
+        ("UO", "UO2", "NG-1224", "NG-1977"),
+        ("UO2", "UO2", "NG-1230", "NG-1977"),
+        ("UO3", "UO2", "NG-1235", "NG-1977"),
+        ("Sc", "Sc2O3", "NG-1087", "NG-1857"),
+        ("ScO", "Sc2O3", "NG-1090", "NG-1857"),
+        ("ScO2", "Sc2O3", "NG-1092", "NG-1857"),
+        ("U", "UO2", "NG-1206", "NG-1977"),
+        ("UO", "UO2", "NG-1224", "NG-1977"),
+        ("UO2", "UO2", "NG-1230", "NG-1977"),
+        ("UO3", "UO2", "NG-1235", "NG-1977"),
     )
     for gas_species, parent, gas_table, parent_table in cases:
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]

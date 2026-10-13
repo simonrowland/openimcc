@@ -217,6 +217,15 @@ TRACE_NASA_GAS_SOURCES = (
     ("(MoO3)4(g)", "NG-0833", "Mo4O12", "Mo", 4, 12),
     ("(MoO3)5(g)", "NG-0834", "Mo5O15", "Mo", 5, 15),
     ("(WO3)5(g)", "NG-1258", "W5O15", "W", 5, 15),
+    # Sc and U have no JANAF tables in the surveyed corpus. NASA Glenn's
+    # Gurvich-adopted cards supply both gas and parent-liquid functions.
+    ("Sc(g)", "NG-1087", "Sc", "Sc", 1, 0),
+    ("ScO(g)", "NG-1090", "ScO", "Sc", 1, 1),
+    ("ScO2(g)", "NG-1092", "ScO2", "Sc", 1, 2),
+    ("U(g)", "NG-1206", "U", "U", 1, 0),
+    ("UO(g)", "NG-1224", "UO", "U", 1, 1),
+    ("UO2(g)", "NG-1230", "UO2", "U", 1, 2),
+    ("UO3(g)", "NG-1235", "UO3", "U", 1, 3),
 )
 TRACE_PUBLISHED_GAS_SOURCES = (
     ("ZnO(g)", "IVTAN-264", "ZnO", "Zn", 1, 1, 3000.0),
@@ -302,6 +311,7 @@ TRACE_ION_GAS_NASA_SOURCES = (
     ("BO-(g)", "NG-1074", "BO", "B", 1, 1),
     ("Ge+(g)", "NG-5197", "Ge", "Ge", 1, 0),
     ("Cd+(g)", "NG-4071", "Cd", "Cd", 1, 0),
+    ("Sc+(g)", "NG-1088", "ScE-1", "Sc", 1, 0),
 )
 TRACE_ION_PUBLISHED_SOURCES = (("Bi+(g)", "NBS-T22-ASD-BiII", "Bi", 1, 0),)
 TRACE_ION_NASA_SOURCES = (
@@ -457,12 +467,23 @@ CONDENSATE_SOURCES = (
 # table and use the published NASA CEA liquid cards.
 TRACE_CONDENSATE_SOURCES = (("B2O3(l)", "B-096", "B", 2, 3),)
 TRACE_NASA_CONDENSATE_SOURCES = (
-    ("Ga2O3(l)", "NG-12403", "Ga2O3", "Ga", 2, 3, 2080.0, ((2080.0, 3000.0),)),
+    ("Ga2O3(l)", "NG-12403", "Ga2O3", "Ga", 2, 3, 2080.0, ((1200.0, 2080.0),), ((2080.0, 3000.0),)),
     (
         "GeO2(l)", "NG-12434", "GeO2", "Ge", 1, 2, 1388.0,
-        ((1388.0, 2400.0), (2400.0, 3000.0)),
+        ((1200.0, 1388.0),), ((1388.0, 2400.0), (2400.0, 3000.0)),
     ),
-    ("In2O3(l)", "NG-12662", "In2O3", "In", 2, 3, 2186.0, ((2186.0, 3000.0),)),
+    ("In2O3(l)", "NG-12662", "In2O3", "In", 2, 3, 2186.0, ((1200.0, 2186.0),), ((2186.0, 3000.0),)),
+    # NASA liquid cards use their crystal formation enthalpy as the shared
+    # 298 K anchor. The liquid H/S polynomial is fitted directly above its
+    # boundary; the existing constant-Cp continuation extends it below.
+    ("Sc2O3(l)", "NG-1857", "Sc2O3", "Sc", 2, 3, 2762.0,
+     ((1200.0, 1500.0), (1500.0, 2000.0), (2000.0, 2500.0), (2500.0, 2762.0)),
+     ((2762.0, 3000.0),)),
+    # The UO2 liquid card begins above the runtime ceiling. The empty direct
+    # interval list keeps the entire 1200-3000 K row on the labelled
+    # supercooled continuation from the card's 3123 K liquid anchor.
+    ("UO2(l)", "NG-1977", "UO2", "U", 1, 2, 3123.0,
+     ((1200.0, 1500.0), (1500.0, 2000.0), (2000.0, 2500.0), (2500.0, 3000.0)), ()),
 )
 
 # O-063 V2O3(l): the 1500 K Cp cell is glass-side; both 1600 K lines are
@@ -2099,7 +2120,7 @@ def _fit_nasa_card_condensate_row(
     if (
         record.get("record_id") != table_id
         or record.get("formula") != formula
-        or record.get("phase") != "liquid"
+        or record.get("phase") not in {"liquid", "L"}
     ):
         raise ValueError(f"{table_id}: NASA record identity does not match {species_name}")
     temperatures = [
@@ -2482,7 +2503,7 @@ def _fit_supercooled_liquid_row(
         if (
             record.get("record_id") != table_id
             or record.get("formula") != formula
-            or record.get("phase") != "liquid"
+            or record.get("phase") not in {"liquid", "L"}
         ):
             raise ValueError(f"{table_id}: NASA liquid record does not match {formula}")
         properties = _nasa7_properties(record, T0)
@@ -3698,21 +3719,24 @@ def build_condensate_rows(
         cat_num,
         oxy_num,
         source_t_min,
+        continuation_intervals,
         fit_intervals,
     ) in TRACE_NASA_CONDENSATE_SOURCES:
-        rows.append(
-            _fit_supercooled_liquid_row(
-                source_dir,
-                species_name,
-                table_id,
-                cation,
-                cat_num,
-                oxy_num,
-                source_t_min,
-                source_t_min,
-                nasa_source_dir=nasa_source_dir,
+        for runtime_t_min, runtime_t_max in continuation_intervals:
+            rows.append(
+                _fit_supercooled_liquid_row(
+                    source_dir,
+                    species_name,
+                    table_id,
+                    cation,
+                    cat_num,
+                    oxy_num,
+                    source_t_min,
+                    runtime_t_max,
+                    runtime_t_min=runtime_t_min,
+                    nasa_source_dir=nasa_source_dir,
+                )
             )
-        )
         for fit_t_min, fit_t_max in fit_intervals:
             rows.append(
                 _fit_nasa_card_condensate_row(

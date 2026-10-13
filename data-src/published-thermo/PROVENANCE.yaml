@@ -89,6 +89,14 @@ records:
     source_locator: Nickel oxide gas table, printed p. 274
     tier: 3
     selection_reason: Retained as the independent measured comparison source for the selected tier-2 NASA Glenn NiO(g) card; it bounds the source disagreement on their common range.
+  - record_id: P672-Sc-U-comparison
+    path: data-src/published-thermo/pankratz-sc-u-comparison.json
+    source_sha256: 7096e595550cd06c9cc7c35b909dd17acbd4c54838c6fca9589b40f3a4b901d0
+    publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Printed pp. 363-365 and 448-450
+    tier: 1
+    selection_reason: Comparison-only Sc(g), Sc2O3(l), U(g), and UO2(cr) nodes provide independent apparent-Gibbs checks against the selected NASA Glenn cards; the Sc2O3 liquid disagreement is carried as a band.
   - record_id: P672
     path: data-src/published-thermo/pankratz-bulletin-672.json
     source_sha256: 9eab817fd4046e5f05eaa69a21d9ed7b369cc2eb1b65bb9d7624242dde8df9bc
@@ -111,6 +119,22 @@ records:
         source_locator: Table 102, CdO(cr)
         tier: 4
         selection_reason: CdO(l) has no stable 1-bar source row; the published crystal Cp function is extended above 1500 K to the estimated fusion range for the required liquid_from_solid construction.
+      P672-Sc-g:
+        source_locator: Sc gas table, printed p. 363
+        tier: 3
+        selection_reason: Comparison-only values bound the selected NASA Glenn Sc(g) function by apparent Gibbs energy on the shared range.
+      P672-Sc2O3-l:
+        source_locator: Sc2O3 formation and liquid table, printed pp. 364-365
+        tier: 1
+        selection_reason: The independent liquid branch and its different fusion enthalpy are retained as a measured disagreement band against the selected NASA Glenn phase-pair card.
+      P672-U-g:
+        source_locator: U gas table, printed p. 448
+        tier: 3
+        selection_reason: Comparison-only values bound the selected NASA Glenn U(g) function by apparent Gibbs energy on the shared range.
+      P672-UO2-c:
+        source_locator: UO2 formation and melt data, printed pp. 449-450
+        tier: 1
+        selection_reason: Comparison-only crystal values bound the selected NASA Glenn UO2 phase-pair card; Bulletin 672 prints no liquid formation function.
       P672-Se-g:
         source_locator: Selenium gas table, printed pp. 80-81
         tier: 3

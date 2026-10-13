@@ -585,7 +585,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
     )
-    assert len(oxide_rows) == 38
+    assert len(oxide_rows) == 40
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -608,6 +608,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         "Zn+(g)", "Zn-(g)", "Bi+(g)", "Mn+(g)",
         "Mo+(g)", "Mo-(g)", "W+(g)", "W-(g)",
         "Ba+(g)", "Sr+(g)", "Zr+(g)", "Zr-(g)",
+        "Sc+(g)",
         "Ni+(g)", "Ni-(g)", "Co+(g)", "Co-(g)",
     }
     nasa_atomic_ion_species = {
@@ -633,8 +634,14 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
                 source_record = _nasa_record(row["table_id"])
                 assert row["source"]["source_record"].endswith(row["table_id"])
                 locator = source_record["source_locator"]
-                assert row["source"]["source_locator"] == (
+                expected_locator = (
                     f"thermo.inp lines {locator['name_line']}-{locator['end_line']}"
+                    if isinstance(locator, dict)
+                    else locator
+                )
+                assert (
+                    row["source"]["source_locator"] == expected_locator
+                    or row["source"]["source_locator"] == locator
                 )
                 assert row["source"]["upstream_source_sha256"] == (
                     "fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363"
@@ -1459,6 +1466,7 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         _cat_num,
         _oxy_num,
         _source_t_min,
+        _continuation_intervals,
         fit_intervals,
     ) in build_gas_tables.TRACE_NASA_CONDENSATE_SOURCES:
         record = _nasa_record(table_id)
@@ -2863,7 +2871,7 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
         "WO3(g)", "WO3(l)", "(WO3)2(g)", "(WO3)3(g)", "(WO3)4(g)",
         "Ba(g)", "Ba+(g)", "BaO(g)", "BaO(l)", "Sr(g)", "Sr+(g)",
         "SrO(g)", "SrO(l)", "Zr(g)", "Zr+(g)", "ZrO(g)",
-        "ZrO2(g)", "ZrO2(l)",
+        "ZrO2(g)", "ZrO2(l)", "Sc(g)", "Sc2O3(cr)", "Sc2O3(l)", "U(g)", "UO2(cr)",
     } <= compared_species
     for comparison in comparisons["rows"]:
         if "janaf_298K_element_reference_table" in comparison:
@@ -2906,11 +2914,42 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             continue
         nasa = _nasa_record(comparison["nasa_record_id"])
         if "pankratz_table_id" in comparison:
-            source = json.loads(
-                (PUBLISHED_DATA / "pankratz-bulletin-672.json").read_text(
-                    encoding="utf-8"
+            source_path = ROOT / comparison.get(
+                "pankratz_source_path",
+                "data-src/published-thermo/pankratz-bulletin-672.json",
+            )
+            source = json.loads(source_path.read_text(encoding="utf-8"))["tables"][
+                comparison["pankratz_table_id"]
+            ]
+            if comparison["pankratz_table_id"] in {
+                "P672-Sc-g", "P672-Sc2O3-l", "P672-U-g", "P672-UO2-c"
+            }:
+                anchor = _nasa_record(
+                    "NG-1856" if comparison["species_name"].startswith("Sc2O3")
+                    else comparison["nasa_record_id"]
                 )
-            )["tables"][comparison["pankratz_table_id"]]
+                anchor_h298 = R_J_MOL_K * 298.15 * build_gas_tables._nasa7_properties(
+                    anchor, 298.15
+                )["h_rt"]
+                for value in comparison["values"]:
+                    temperature = float(value["T_K"])
+                    node = next(row for row in source["nodes"] if row[0] == temperature)
+                    pankratz_g_minus_h298 = -temperature * float(node[1]) * 4.184
+                    nasa = _nasa_record(comparison["nasa_record_id"])
+                    nasa_properties = build_gas_tables._nasa7_properties(nasa, temperature)
+                    nasa_g_minus_h298 = R_J_MOL_K * temperature * (
+                        nasa_properties["h_rt"] - nasa_properties["s_R"]
+                    ) - anchor_h298
+                    assert value["pankratz_G_minus_H298_J_mol"] == pytest.approx(
+                        pankratz_g_minus_h298, abs=0.001
+                    )
+                    assert value["nasa_G_minus_H298_J_mol"] == pytest.approx(
+                        nasa_g_minus_h298, abs=0.001
+                    )
+                    assert value["nasa_minus_pankratz_J_mol"] == pytest.approx(
+                        nasa_g_minus_h298 - pankratz_g_minus_h298, abs=0.001
+                    )
+                continue
             for value in comparison["values"]:
                 temperature = float(value["T_K"])
                 node = next(row for row in source["nodes"] if row[0] == temperature)
@@ -2925,7 +2964,11 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                     * build_gas_tables._nasa7_properties(nasa, 298.15)["h_rt"]
                 )
                 nasa_properties = build_gas_tables._nasa7_properties(nasa, temperature)
-                if comparison["nasa_record_id"] == "NG-0074":
+                if nasa.get("phase") in {"liquid", "L"}:
+                    nasa_g = R_J_MOL_K * temperature * (
+                        nasa_properties["h_rt"] - nasa_properties["s_R"]
+                    )
+                elif comparison["nasa_record_id"] == "NG-0074":
                     nasa_g = R_J_MOL_K * temperature * nasa_properties["h_rt"] - (
                         temperature * R_J_MOL_K * nasa_properties["s_R"]
                     )
@@ -3011,6 +3054,35 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             assert value["nasa_minus_janaf_J_mol"] == pytest.approx(
                 comparison_g - janaf_g, abs=0.001
             )
+
+
+def test_sc2o3_source_disagreement_bands_recompute_from_published_nodes() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    comparison = next(
+        row for row in provenance["source_comparisons"]["rows"]
+        if row["species_name"] == "Sc2O3(l)"
+    )
+    differences = {
+        int(row["T_K"]): abs(float(row["nasa_minus_pankratz_J_mol"]))
+        for row in comparison["values"]
+    }
+    rows = [
+        row for row in provenance["rows"]
+        if row["table"] == "condensate"
+        and row["species_name"] == "Sc2O3(l)"
+        and row.get("uncertainty_band", {}).get("kind")
+        == "measured_G_app_difference_from_Pankratz_Bulletin_672"
+    ]
+    assert len(rows) == 1
+    for row in rows:
+        values = row["uncertainty_band"]["values_J_per_mol"]
+        low, high = map(int, row["T_range_K"])
+        assert set(map(int, values)) == {
+            temperature for temperature in differences
+            if low <= temperature <= high
+        }
+        for temperature, value in values.items():
+            assert float(value) == pytest.approx(differences[int(temperature)], abs=0.001)
 
 
 def test_nio_gas_uncertainty_band_recomputes_from_bulletin_and_nasa() -> None:
@@ -4910,7 +4982,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
                     source, source_t0
                 )
                 source_cp = R_J_MOL_K * source_at_t0["cp_R"]
-                assert source["phase"] == "liquid"
+                assert source["phase"] in {"liquid", "L"}
                 assert entry["source_path"] == (
                     f"data-src/nasa-glenn/{entry['table_id']}.json"
                 )
@@ -5900,7 +5972,7 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
 
     # D-020 was already vendored, but its electron gas row is newly included in
     # the packaged fit and therefore joins the source-node residual audit.
-    assert checked_rows == 185
+    assert checked_rows == 201
     assert checked_nodes == 2268
     assert checked_nodes * 3 == 6804
     assert overall_max["Cp_J_molK"] == pytest.approx(0.7432227428, abs=1e-9)
