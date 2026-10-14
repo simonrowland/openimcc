@@ -3077,6 +3077,7 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
         "SrO(g)", "SrO(l)", "Zr(g)", "Zr+(g)", "ZrO(g)",
         "ZrO2(g)", "ZrO2(l)", "Sc(g)", "Sc2O3(cr)", "Sc2O3(l)", "U(g)", "UO2(cr)",
         "La(g)", "Nd(g)", "Sm(g)", "Eu(g)", "Gd(g)",
+        "Tb(g)", "Dy(g)", "Ho(g)", "Er(g)", "Tm(g)", "Yb(g)", "Lu(g)",
     } <= compared_species
     expected_pankratz = {
         "La(g)": {
@@ -3104,6 +3105,13 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             "formation_enthalpy_298_kcal_mol": 95.000,
             "nodes": [[1800, 6.108, 57.517, 9.087], [2000, 6.337, 58.172, 10.331]],
         },
+        "Tb(g)": {"table": "Terbium gas formation table, printed p. 410 (PDF p. 418)", "formation_enthalpy_298_kcal_mol": 92.900, "nodes": [[1800, 6.997, 59.501, 9.421], [2000, 7.123, 60.244, 10.833]]},
+        "Dy(g)": {"table": "Dysprosium gas formation table, printed p. 135 (PDF p. 143)", "formation_enthalpy_298_kcal_mol": 69.400, "nodes": [[1800, 5.822, 56.031, 7.887], [2000, 5.982, 56.653, 9.068]]},
+        "Ho(g)": {"table": "Holmium gas formation table, printed p. 194 (PDF p. 202)", "formation_enthalpy_298_kcal_mol": 71.900, "nodes": [[1800, 5.466, 55.783, 7.657], [2000, 5.616, 56.367, 8.765]]},
+        "Er(g)": {"table": "Erbium gas formation table, printed p. 139 (PDF p. 147)", "formation_enthalpy_298_kcal_mol": 75.800, "nodes": [[1800, 6.351, 55.583, 7.918], [2000, 6.971, 56.283, 9.249]]},
+        "Tm(g)": {"table": "Thulium gas formation table, printed p. 444 (PDF p. 452)", "formation_enthalpy_298_kcal_mol": 55.500, "nodes": [[1800, 5.047, 54.356, 7.480], [2000, 5.112, 54.891, 8.496]]},
+        "Yb(g)": {"table": "Ytterbium gas formation table, printed p. 477 (PDF p. 485)", "formation_enthalpy_298_kcal_mol": 36.350, "nodes": [[1800, 4.969, 50.284, 7.461], [2000, 4.973, 50.807, 8.455]]},
+        "Lu(g)": {"table": "Lutetium gas formation table, printed p. 222 (PDF p. 230)", "formation_enthalpy_298_kcal_mol": 102.200, "nodes": [[1800, 6.209, 54.473, 8.976], [2000, 6.150, 55.124, 10.211]]},
     }
     for comparison in comparisons["rows"]:
         if "janaf_298K_element_reference_table" in comparison:
@@ -3140,7 +3148,10 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                     pank_g, abs=0.001
                 )
             continue
-        if comparison["species_name"] in {"Nd(g)", "Sm(g)", "Eu(g)", "Gd(g)"}:
+        if comparison["species_name"] in {
+            "Nd(g)", "Sm(g)", "Eu(g)", "Gd(g)",
+            "Tb(g)", "Dy(g)", "Ho(g)", "Er(g)", "Tm(g)", "Yb(g)", "Lu(g)",
+        }:
             source = json.loads(
                 (ROOT / comparison["pankratz_source_path"]).read_text(
                     encoding="utf-8"
