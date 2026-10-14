@@ -3974,3 +3974,53 @@ def test_la_channels_use_caller_parent_and_hand_mass_action(
         ) / 2.0
         hand = 10.0**hand_log10_pressure
         assert result[species] == pytest.approx(hand, rel=2e-12)
+
+
+@pytest.mark.parametrize(
+    ("parent", "species", "n_gas", "n_oxygen"),
+    [
+        ("Ce2O3", "Ce", 2, 1.5), ("Ce2O3", "CeO", 2, 0.5),
+        ("Pr2O3", "Pr", 2, 1.5), ("Pr2O3", "PrO", 2, 0.5),
+        ("Nd2O3", "Nd", 2, 1.5), ("Nd2O3", "NdO", 2, 0.5),
+    ],
+)
+def test_rare_earth_channels_match_hand_mass_action(
+    gas_pack: ImccGasDatapack,
+    parent: str,
+    species: str,
+    n_gas: int,
+    n_oxygen: float,
+) -> None:
+    temperature = 2000.0
+    activity = 1.0e-3
+    oxygen_fugacity = 1.0e-4
+    result = evaluate_gas(
+        {parent: activity}, temperature, oxygen_fugacity, gas_pack,
+        parent_oxides=(parent,), gas_species=(species,),
+    )
+    parent_g = species_thermo(parent, "l", temperature, gas_pack).G_J_mol
+    gas_g = species_thermo(species, "g", temperature, gas_pack).G_J_mol
+    oxygen_g = species_thermo("O2", "g", temperature, gas_pack).G_J_mol
+    delta_g = n_gas * gas_g + n_oxygen * oxygen_g - parent_g
+    log10_k = -delta_g / (R_J_MOL_K * temperature * math.log(10.0))
+    log10_pressure = (
+        log10_k + math.log10(activity)
+        - n_oxygen * math.log10(oxygen_fugacity)
+    ) / n_gas
+    assert result[species] == pytest.approx(10.0**log10_pressure, rel=2e-12)
+
+
+def test_cerium_dioxide_channel_uses_caller_supplied_ceo2_liquid(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    temperature = 2000.0
+    activity = 1.0e-3
+    result = evaluate_gas(
+        {"CeO2": activity}, temperature, 1.0e-4, gas_pack,
+        parent_oxides=("CeO2",), gas_species=("CeO2",),
+    )
+    parent_g = species_thermo("CeO2", "l", temperature, gas_pack).G_J_mol
+    gas_g = species_thermo("CeO2", "g", temperature, gas_pack).G_J_mol
+    expected = activity * math.exp(-(gas_g - parent_g) / (R_J_MOL_K * temperature))
+    assert result["CeO2"] == pytest.approx(expected, rel=2e-12)
+    assert "supercooled continuation below 3083 K" in result.domain_flags["CeO2"]

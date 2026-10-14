@@ -6,6 +6,11 @@
   activity. Konings Part 1 Table 42 and Part 2 Tables 88–89 supply the gas and
   phase-chain functions; the printed constant-Cp liquid branch is flagged as
   supercooled below its 2577 K fusion marker.
+- Added optional Ce, CeO, CeO2, Pr, PrO, Nd, and NdO channels with caller-supplied
+  liquid parent activities. Konings Tables 42, 88, and 89 provide the elemental,
+  oxide-gas, and sesquioxide functions. CeO2(g) uses CeO2(l), the same-oxidation-
+  state liquid in Table 88; PrO2 and PrO1.833 remain crystal-only because they
+  decompose and have no liquid parent. Supercooled liquid branches are flagged.
 - Added optional Hf(g) with caller-supplied HfO2(l) activity and opt-in Hf+
   and Hf- JANAF rows. Pankratz Bulletin 672 p. 188 supplies HfO2(cr), extended
   by the labelled constant-Cp rule and used in the tier-4 liquid construction.

@@ -1,0 +1,15 @@
+{
+  "schema_version": "konings-cp.v1",
+  "citation": "Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41; Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Tables 88–89, article pp. 013101-83–85.",
+  "gases": {
+    "Nd(g)": {"dfH298_kJ_mol":325.6,"dfH_unc_kJ_mol":2.0,"S298_J_mol_K":189.411,"S_unc_J_mol_K":0.050,"segments":[[298.15,1800,[15.0901,30.3191e-3,-23.6204e-6,6.9105e-9,0,-1.0781e4],[0,1,2,3,4,-2]],[1800,4000,[-149.6154,110.5297e-3,-18.4217e-6,0.7778e-9,0,1.2716e8],[0,1,2,3,4,-2]]]},
+    "NdO(g)": {"dfH298_kJ_mol":-120,"dfH_unc_kJ_mol":8,"S298_J_mol_K":242.817,"S_unc_J_mol_K":0.05,"segments":[[298.15,1100,[-9.80368,1.88146e-1,-1.90285e-4,6.23079e-8,5.70945e5],[0,1,2,3,-2]],[1100,4000,[57.65812,-9.784651e-3,2.76479e-6,-2.18778e-10,4.42849e5],[0,1,2,3,-2]]]}
+  },
+  "condensates": {
+    "Nd2O3(l)": {"formula":{"Nd":2,"O":3},"dfH298_kJ_mol":-1806.9,"dfH_unc_kJ_mol":3.0,"S298_J_mol_K":158.7,"S_unc_J_mol_K":1.0,"fusion_temperature_K":2577,"fusion_temperature_unc_K":15,"fusion_enthalpy_kJ_mol":88,"fusion_enthalpy_unc_kJ_mol":10,"liquid_Cp_J_mol_K":160,"phases":[
+      {"name":"A","range_K":[298.15,2379],"coefficients":[117.1079,28.13655e-3,0,0,-1.25845e6],"powers":[0,1,2,3,-2]},
+      {"name":"H","range_K":[2379,2477],"transition_from_previous":{"temperature_K":2379,"temperature_unc_K":30,"enthalpy_kJ_mol":29,"enthalpy_unc_kJ_mol":8},"coefficients":[145,0,0,0,0],"powers":[0,1,2,3,-2]},
+      {"name":"X","range_K":[2477,2577],"transition_from_previous":{"temperature_K":2477,"temperature_unc_K":30,"enthalpy_kJ_mol":20,"enthalpy_unc_kJ_mol":5},"coefficients":[145,0,0,0,0],"powers":[0,1,2,3,-2]},
+      {"name":"liquid","range_K":[2577,4000],"transition_from_previous":{"temperature_K":2577,"temperature_unc_K":15,"enthalpy_kJ_mol":88,"enthalpy_unc_kJ_mol":10},"coefficients":[160,0,0,0,0],"powers":[0,1,2,3,-2]}],"flags":["Runtime Nd2O3 liquid branch is supercooled below 2577 K; source_data=false there."]}
+  }
+}

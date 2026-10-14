@@ -1,0 +1,15 @@
+{
+  "schema_version": "konings-cp.v1",
+  "citation": "Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41; Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Tables 88–89, article pp. 013101-83–85.",
+  "gases": {
+    "Pr(g)": {"dfH298_kJ_mol":356.6,"dfH_unc_kJ_mol":3.0,"S298_J_mol_K":189.812,"S_unc_J_mol_K":0.050,"segments":[[298.15,1500,[13.5354,27.7151e-3,-19.1191e-6,6.7540e-9,0,9.6263e4],[0,1,2,3,4,-2]],[1500,4000,[-96.6720,110.9598e-3,-28.7433e-6,2.4468e-9,0,48.5424e6],[0,1,2,3,4,-2]]]},
+    "PrO(g)": {"dfH298_kJ_mol":-145.5,"dfH_unc_kJ_mol":8,"S298_J_mol_K":244.367,"S_unc_J_mol_K":0.05,"segments":[[298.15,1200,[22.98903,20.3103e-3,2.02961e-5,-1.46500e-8,2.72239e5],[0,1,2,3,-2]],[1200,4000,[84.67666,-2.85857e-2,8.73036e-6,-8.4566e-10,-1.44324e7],[0,1,2,3,-2]]]}
+  },
+  "condensates": {
+    "Pr2O3(l)": {"formula":{"Pr":2,"O":3},"dfH298_kJ_mol":-1809.9,"dfH_unc_kJ_mol":3.0,"S298_J_mol_K":152.7,"S_unc_J_mol_K":0.3,"fusion_temperature_K":2583,"fusion_temperature_unc_K":25,"fusion_enthalpy_kJ_mol":88,"fusion_enthalpy_unc_kJ_mol":10,"liquid_Cp_J_mol_K":157,"phases":[
+      {"name":"A","range_K":[298.15,2310],"coefficients":[121.6594,25.5611e-3,0,0,-9.8942e5],"powers":[0,1,2,3,-2]},
+      {"name":"H","range_K":[2310,2397],"transition_from_previous":{"temperature_K":2310,"temperature_unc_K":30,"enthalpy_kJ_mol":28,"enthalpy_unc_kJ_mol":8},"coefficients":[145,0,0,0,0],"powers":[0,1,2,3,-2]},
+      {"name":"X","range_K":[2397,2583],"transition_from_previous":{"temperature_K":2397,"temperature_unc_K":30,"enthalpy_kJ_mol":19,"enthalpy_unc_kJ_mol":5},"coefficients":[145,0,0,0,0],"powers":[0,1,2,3,-2]},
+      {"name":"liquid","range_K":[2583,4000],"transition_from_previous":{"temperature_K":2583,"temperature_unc_K":25,"enthalpy_kJ_mol":88,"enthalpy_unc_kJ_mol":10},"coefficients":[157,0,0,0,0],"powers":[0,1,2,3,-2]}],"flags":["PrO2 and PrO1.833 are crystal-only and decompose; neither is a liquid parent.","Runtime Pr2O3 liquid branch is supercooled below 2583 K; source_data=false there."]}
+  }
+}

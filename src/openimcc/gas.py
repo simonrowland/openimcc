@@ -563,6 +563,15 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     # fixes the per-La2O3 gas coefficient at 2 and the O2 coefficients above.
     "La": ("La2O3", 2, 1.5),
     "LaO": ("La2O3", 2, 0.5),
+    # Cerium's monoxide shares the sesquioxide parent; CeO2(g) uses the
+    # source-paired CeO2(l) parent and therefore has no oxygen term.
+    "Ce": ("Ce2O3", 2, 1.5),
+    "CeO": ("Ce2O3", 2, 0.5),
+    "CeO2": ("CeO2", 1, 0.0),
+    "Pr": ("Pr2O3", 2, 1.5),
+    "PrO": ("Pr2O3", 2, 0.5),
+    "Nd": ("Nd2O3", 2, 1.5),
+    "NdO": ("Nd2O3", 2, 0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -692,7 +701,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "U", "UO", "UO2", "UO3",
         "Th", "ThO", "ThO2",
         "Hf",
-        "La", "LaO",
+        "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
     }
 )
 
@@ -2378,6 +2387,40 @@ ELEMENT_STATUS["La"] = {
         "parent_activity": 1.0e-3,
     },
 }
+for _element, _parent, _products, _fusion, _note in (
+    ("Ce", "Ce2O3", "Ce(g), CeO(g), CeO2(g)", 2512, "CeO2(l) additionally supplies the same-state parent for CeO2(g) below its 3083 K fusion marker."),
+    ("Pr", "Pr2O3", "Pr(g), PrO(g)", 2583, "PrO2 and PrO1.833 are crystal-only and decompose; neither supplies a liquid parent."),
+    ("Nd", "Nd2O3", "Nd(g), NdO(g)", 2577, ""),
+):
+    _ion_routes = "JANAF, NASA Glenn, Pankratz Bulletins 672/677/696, NIST WebBook, and Burcat"
+    _liquid_note = (
+        f" The {_parent} liquid branch is supercooled below {_fusion} K."
+        if _element != "Ce" else
+        " The Ce2O3 and CeO2 liquid branches are supercooled below 2512 K and 3083 K."
+    )
+    ELEMENT_STATUS[_element] = {
+        "status": "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            f"Konings Part 1 Table 42 and Part 2 Tables 88–89 provide {_products} "
+            f"and the {_parent} liquid parent through 3000 K.{_liquid_note} "
+            f"{_note + ' ' if _note else ''}Activities are caller-supplied. "
+            f"No ion thermal function was selected after checking {_ion_routes}."
+        ),
+        "c2_candidates": tuple(
+            (f"Konings-Table89-{species}", species)
+            for species in (("CeO", "CeO2") if _element == "Ce" else
+                            (f"{_element}O",))
+        ),
+        "c3_ion_bound": {
+            "status": "declined",
+            "reason": f"No {_element}+ or {_element}− temperature-dependent ideal-gas thermal function was selected in the checked sources.",
+            "source_tables": {"konings": "Part 1 Table 42; Part 2 Tables 88–89", "routes_checked": _ion_routes},
+            "parent_oxide": _parent,
+            "parent_activity": 1.0e-3,
+        },
+    }
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #

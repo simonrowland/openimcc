@@ -126,6 +126,13 @@ def _neutral_oxide_sources(
             result[table_id] = (cation, species_name.removesuffix("(g)"))
         if (ROOT / "data-src/konings/la.json").exists():
             result["Konings-Table89-LaO"] = ("La", "LaO")
+        if (ROOT / "data-src/konings/ce.json").exists():
+            result["Konings-Table89-CeO"] = ("Ce", "CeO")
+            result["Konings-Table89-CeO2"] = ("Ce", "CeO2")
+        if (ROOT / "data-src/konings/pr.json").exists():
+            result["Konings-Table89-PrO"] = ("Pr", "PrO")
+        if (ROOT / "data-src/konings/nd.json").exists():
+            result["Konings-Table89-NdO"] = ("Nd", "NdO")
     return result
 
 
@@ -1234,7 +1241,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Cs", "Cu", "Sn",
         "Mn", "Ni", "Co", "P", "S",
         "Zn", "Cd", "Bi", "Te", "Se", "As", "Sb", "Ag", "Mo", "W",
-        "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La",
+        "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La", "Ce", "Pr", "Nd",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1267,6 +1274,9 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Th": "ThO2",
         "Hf": "HfO2",
         "La": "La2O3",
+        "Ce": "Ce2O3",
+        "Pr": "Pr2O3",
+        "Nd": "Nd2O3",
     }
     liquid_by_element = {
         **parent_by_element,

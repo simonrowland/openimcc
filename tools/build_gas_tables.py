@@ -50,6 +50,13 @@ LOW_FIT_MINIMUM_ROWS = SHOMATE_CP_PARAMETER_COUNT + LOW_FIT_NODE_MARGIN
 # the package it builds data for.
 R_J_MOL_K = 8.314462618
 KONINGS_SOURCE_DIR = Path(__file__).resolve().parents[1] / "data-src/konings"
+KONINGS_BATCH_ELEMENTS = ("La", "Ce", "Pr", "Nd")
+KONINGS_GAS_SPECIES = {
+    "La": (("La(g)", 0), ("LaO(g)", 1)),
+    "Ce": (("Ce(g)", 0), ("CeO(g)", 1), ("CeO2(g)", 2)),
+    "Pr": (("Pr(g)", 0), ("PrO(g)", 1)),
+    "Nd": (("Nd(g)", 0), ("NdO(g)", 1)),
+}
 # ln(1.01325): converts a 1 atm standard-state entropy (S/R) to 1 bar.
 LH84_ATM_TO_BAR_S_R = math.log(1.01325)
 RUNTIME_COLUMNS = (
@@ -1560,10 +1567,11 @@ def _konings_condensate_rows(record: dict[str, Any], species: str, cation: str,
         return result
 
     rows = []
-    # Four intervals are the established liquid-fit convention; split at
-    # source phase boundaries so the ten-joule source-node gate is met.
-    for lo, hi in ((1200.0, 1800.0), (1800.0, 2300.0),
-                   (2300.0, 2500.0), (2500.0, Tf), (Tf, 3000.0)):
+    pending = [(1200.0, min(Tf, 3000.0))]
+    if Tf < 3000.0:
+        pending.append((Tf, 3000.0))
+    while pending:
+        lo, hi = pending.pop(0)
         nodes = [lo, *np.arange(lo + 100.0, hi, 100.0).tolist(), hi]
         fit = _fit_condensate_values(species, f"Konings-{species}", cation,
                                      cat_num, oxy_num, source_rows(nodes),
@@ -1573,10 +1581,19 @@ def _konings_condensate_rows(record: dict[str, Any], species: str, cation: str,
                                      fit_temperatures=nodes)
         residual = float(fit["_max_residual_J_per_mol"])
         if residual > 10.0:
-            raise ValueError(f"{species}: source-node residual {residual:g} J/mol exceeds 10")
+            midpoint = round(((lo + hi) / 2.0) / 100.0) * 100.0
+            if midpoint <= lo or midpoint >= hi:
+                midpoint = (lo + hi) / 2.0
+            if midpoint <= lo or midpoint >= hi:
+                raise ValueError(
+                    f"{species}: source-node residual {residual:g} J/mol "
+                    "exceeds 10 at the minimum interval width"
+                )
+            pending[0:0] = [(lo, midpoint), (midpoint, hi)]
+            continue
         fit["Ref"] = f"Konings-Table88-Tf{Tf:g}"
         rows.append(fit)
-    return rows
+    return sorted(rows, key=lambda row: float(row["T_min"]))
 
 
 def _konings_condensate_uncertainty_j_mol(item: dict[str, Any], temperature: float) -> float:
@@ -2915,7 +2932,11 @@ def build_rows(
     nasa_source_dir = nasa_source_dir or repository / "data-src/nasa-glenn"
     lh84_source_dir = lh84_source_dir or repository / "data-src/lh84"
     published_source_dir = repository / "data-src/published-thermo"
-    konings_record = _load_record(KONINGS_SOURCE_DIR / "la.json")
+    konings_records = {
+        element: _load_record(KONINGS_SOURCE_DIR / f"{element.lower()}.json")
+        for element in KONINGS_BATCH_ELEMENTS
+        if (KONINGS_SOURCE_DIR / f"{element.lower()}.json").is_file()
+    }
     rows = [_fit_row(source_dir, *source) for source in GAS_SOURCES]
     rows.extend(
         _fit_nasa_row(
@@ -2979,17 +3000,21 @@ def build_rows(
     # Konings Part 1/2 are polynomial records rather than tabulated nodes;
     # integrate their Cp functions to the shared 100 K node grid before using
     # the established Shomate fitter. The low fit is exposed only from 1200 K.
-    rows.extend(
-        _fit_konings_gas_row(konings_record, species, "La", 1, oxy_num,
-                             interval=1, fit_t_min=1500.0, fit_t_max=3000.0)
-        for species, oxy_num in (("La(g)", 0), ("LaO(g)", 1))
-    )
-    rows.extend(
-        _fit_konings_gas_row(konings_record, species, "La", 1, oxy_num,
-                             interval=2, fit_t_min=500.0, fit_t_max=1500.0,
-                             runtime_t_min=1200.0)
-        for species, oxy_num in (("La(g)", 0), ("LaO(g)", 1))
-    )
+    for element, species_rows in KONINGS_GAS_SPECIES.items():
+        if element not in konings_records:
+            continue
+        record = konings_records[element]
+        rows.extend(
+            _fit_konings_gas_row(record, species, element, 1, oxy_num,
+                                 interval=1, fit_t_min=1500.0, fit_t_max=3000.0)
+            for species, oxy_num in species_rows
+        )
+        rows.extend(
+            _fit_konings_gas_row(record, species, element, 1, oxy_num,
+                                 interval=2, fit_t_min=500.0, fit_t_max=1500.0,
+                                 runtime_t_min=1200.0)
+            for species, oxy_num in species_rows
+        )
     rows.extend(
         _fit_row(
             source_dir,
@@ -3701,9 +3726,20 @@ def build_condensate_rows(
     repository = Path(__file__).resolve().parents[1]
     nasa_source_dir = nasa_source_dir or repository / "data-src/nasa-glenn"
     published_source_dir = published_source_dir or repository / "data-src/published-thermo"
-    konings_record = _load_record(KONINGS_SOURCE_DIR / "la.json")
     rows = []
-    rows.extend(_konings_condensate_rows(konings_record, "La2O3(l)", "La", 2, 3))
+    for element in KONINGS_BATCH_ELEMENTS:
+        source_path = KONINGS_SOURCE_DIR / f"{element.lower()}.json"
+        if not source_path.is_file():
+            continue
+        konings_record = _load_record(
+            source_path
+        )
+        for species, item in konings_record["condensates"].items():
+            formula = item["formula"]
+            rows.extend(_konings_condensate_rows(
+                konings_record, species, element, int(formula[element]),
+                int(formula["O"]),
+            ))
     for source in CONDENSATE_SOURCES:
         if source[1] == "Na-013":
             rows.append(

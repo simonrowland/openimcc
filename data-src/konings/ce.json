@@ -1,0 +1,19 @@
+{
+  "schema_version": "konings-cp.v1",
+  "citation": "Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41; Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Tables 88–89, article pp. 013101-83–85.",
+  "gases": {
+    "Ce(g)": {"dfH298_kJ_mol":424.8,"dfH_unc_kJ_mol":3.0,"S298_J_mol_K":191.772,"S_unc_J_mol_K":0.050,"segments":[[298.15,1550,[9.9057,27.3984e-3,19.3127e-6,-28.4041e-9,7.9647e-12,3.5592e5],[0,1,2,3,4,-2]],[1550,4000,[97.3205,-46.9135e-3,13.1383e-6,-1.2339e-9,0,-2.9923e7],[0,1,2,3,4,-2]]]},
+    "CeO(g)": {"dfH298_kJ_mol":-132,"dfH_unc_kJ_mol":8,"S298_J_mol_K":246.099,"S_unc_J_mol_K":0.10,"segments":[[298.15,1300,[22.01944,55.5050e-3,-4.314095e-5,1.089494e-8,-4.23189e4],[0,1,2,3,-2]],[1300,4000,[62.79967,-1.753953e-2,5.431417e-6,-4.87485e-10,-4.947446e6],[0,1,2,3,-2]]]},
+    "CeO2(g)": {"dfH298_kJ_mol":-538,"dfH_unc_kJ_mol":20,"S298_J_mol_K":274.417,"S_unc_J_mol_K":3.0,"segments":[[298.15,900,[37.7646,55.1209e-3,-57.1816e-6,21.2692e-9,-2.6077e5],[0,1,2,3,-2]],[900,4000,[55.9864,2.90431e-3,-1.4361e-6,0.25254e-9,-1.11908e6],[0,1,2,3,-2]]]}
+  },
+  "condensates": {
+    "Ce2O3(l)": {"formula":{"Ce":2,"O":3},"dfH298_kJ_mol":-1799.8,"dfH_unc_kJ_mol":1.8,"S298_J_mol_K":148.1,"S_unc_J_mol_K":0.4,"fusion_temperature_K":2512,"fusion_temperature_unc_K":50,"fusion_enthalpy_kJ_mol":85,"fusion_enthalpy_unc_kJ_mol":10,"liquid_Cp_J_mol_K":157,"phases":[
+      {"name":"A","range_K":[298.15,2392],"coefficients":[113.736,28.4344e-3,0,0,-6.41205e5],"powers":[0,1,2,3,-2],"transition_from_previous":null},
+      {"name":"H","range_K":[2392,2406],"transition_from_previous":{"temperature_K":2392,"temperature_unc_K":30,"enthalpy_kJ_mol":28,"enthalpy_unc_kJ_mol":8},"coefficients":[145,0,0,0,0],"powers":[0,1,2,3,-2]},
+      {"name":"X","range_K":[2406,2512],"transition_from_previous":{"temperature_K":2406,"temperature_unc_K":30,"enthalpy_kJ_mol":19,"enthalpy_unc_kJ_mol":5},"coefficients":[145,0,0,0,0],"powers":[0,1,2,3,-2]},
+      {"name":"liquid","range_K":[2512,4000],"transition_from_previous":{"temperature_K":2512,"temperature_unc_K":50,"enthalpy_kJ_mol":85,"enthalpy_unc_kJ_mol":10},"coefficients":[157,0,0,0,0],"powers":[0,1,2,3,-2]}],"flags":["Ce2O3 Table 88 selected formation anchor is −1799.8±1.8 kJ/mol; do not use the Table 6 footer value.","Runtime liquid branch is supercooled below 2512 K; source_data=false there."]},
+    "CeO2(l)": {"formula":{"Ce":1,"O":2},"dfH298_kJ_mol":-1090.4,"dfH_unc_kJ_mol":1.0,"S298_J_mol_K":62.29,"S_unc_J_mol_K":0.07,"fusion_temperature_K":3083,"fusion_temperature_unc_K":50,"fusion_enthalpy_kJ_mol":69,"fusion_enthalpy_unc_kJ_mol":5,"liquid_Cp_J_mol_K":120,"phases":[
+      {"name":"crystal","range_K":[298.15,3083],"coefficients":[74.4814,5.83682e-3,0,0,-1.29710e6],"powers":[0,1,2,3,-2],"transition_from_previous":null},
+      {"name":"liquid","range_K":[3083,4000],"transition_from_previous":{"temperature_K":3083,"temperature_unc_K":50,"enthalpy_kJ_mol":69,"enthalpy_unc_kJ_mol":5},"coefficients":[120,0,0,0,0],"powers":[0,1,2,3,-2]}],"flags":["CeO2(l) is the same-oxidation-state liquid parent selected for CeO2(g); its source family is Table 88.","Runtime liquid branch is supercooled below 3083 K; source_data=false there."]}
+  }
+}
