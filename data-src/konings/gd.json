@@ -1,0 +1,23 @@
+{
+  "schema_version": "konings-cp.v1",
+  "citation": "Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41; Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, and Table 89, article p. 013101-85.",
+  "gases": {
+    "Gd(g)": {"dfH298_kJ_mol":406.9,"dfH_unc_kJ_mol":2.0,"S298_J_mol_K":194.318,"S_unc_J_mol_K":0.050,"segments":[[298.15,1600,[26.211,10.2574e-3,-25.8445e-6,17.6452e-9,-3.6474e-12,1.2253e4],[0,1,2,3,4,-2]],[1600,4000,[3.1528,11.8438e-3,-1.4206e-6,0.4169e-9,-5.5561e-14,12.8699e6],[0,1,2,3,4,-2]]]},
+    "GdO(g)": {"dfH298_kJ_mol":-68.0,"dfH_unc_kJ_mol":8.0,"S298_J_mol_K":253.495,"S_unc_J_mol_K":0.030,"segments":[[298.15,1300,[21.26451,4.09137e-2,-3.01655e-5,7.50616e-9,6.83276e4],[0,1,2,3,-2]],[1300,4000,[51.77714,-1.00325e-2,2.57810e-6,-1.11668e-10,-4.8038e6],[0,1,2,3,-2]]]}
+  },
+  "condensates": {
+    "Gd2O3(l)": {
+      "formula":{"Gd":2,"O":3},"dfH298_kJ_mol":-1819.7,"dfH_unc_kJ_mol":3.6,"S298_J_mol_K":150.6,"S_unc_J_mol_K":0.2,
+      "fusion_temperature_K":2693,"fusion_temperature_unc_K":15,"fusion_enthalpy_kJ_mol":92,"fusion_enthalpy_unc_kJ_mol":10,"liquid_Cp_J_mol_K":140,
+      "phases":[
+        {"name":"C","range_K":[298.15,1473],"coefficients":[114.8086,17.2911e-3,0,0,-1.28397e6],"powers":[0,1,2,3,-2]},
+        {"name":"B","range_K":[1473,2430],"transition_from_previous":{"temperature_K":1473,"enthalpy_kJ_mol":9,"enthalpy_unc_kJ_mol":2,"temperature_unc_K":null},"coefficients":[114.6104,15.2344e-3,0,0,-1.24917e6],"powers":[0,1,2,3,-2]},
+        {"name":"A","range_K":[2430,2470],"transition_from_previous":{"temperature_K":2430,"temperature_unc_K":30,"enthalpy_kJ_mol":6.3,"enthalpy_unc_kJ_mol":3.3},"coefficients":[142,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"H","range_K":[2470,2538],"transition_from_previous":{"temperature_K":2470,"temperature_unc_K":30,"enthalpy_kJ_mol":34.7,"enthalpy_unc_kJ_mol":3.3},"coefficients":[130,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"X","range_K":[2538,2693],"transition_from_previous":{"temperature_K":2538,"temperature_unc_K":20,"enthalpy_kJ_mol":20,"enthalpy_unc_kJ_mol":5},"coefficients":[130,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"liquid","range_K":[2693,4000],"transition_from_previous":{"temperature_K":2693,"temperature_unc_K":15,"enthalpy_kJ_mol":92,"enthalpy_unc_kJ_mol":10},"coefficients":[140,0,0,0,0],"powers":[0,1,2,3,-2]}
+      ],
+      "flags":["Table 88 prints the C Cp polynomial through 2000 K, but the 1473 K C→B transition cuts C's use at 1473 K; the B polynomial begins at 298 K but has no 298.15 K anchor, so it is used only above 1473 K.","The C→B transition temperature has no printed uncertainty; none is added to the propagated band.","Runtime 1200–2693 K is a supercooled continuation of the printed constant-Cp liquid; source_data=false below fusion."]
+    }
+  }
+}
