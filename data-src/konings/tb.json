@@ -1,0 +1,21 @@
+{
+  "schema_version": "konings-cp.v1",
+  "citation": "Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41; Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, and Table 89, article p. 013101-85.",
+  "gases": {
+    "Tb(g)": {"dfH298_kJ_mol":392.9,"dfH_unc_kJ_mol":2.0,"S298_J_mol_K":202.098,"S_unc_J_mol_K":0.050,"segments":[[298.15,1000,[34.5521,-40.4758e-3,50.3759e-6,-18.6192e-9,0,3.6727e4],[0,1,2,3,4,-2]],[1000,4000,[7.4106,21.1587e-3,-6.1418e-6,0.5744e-9,0,2.8678e6],[0,1,2,3,4,-2]]]},
+    "TbO(g)": {"dfH298_kJ_mol":-84.7,"dfH_unc_kJ_mol":10.0,"S298_J_mol_K":245.758,"S_unc_J_mol_K":0.10,"segments":[[298.15,1400,[30.97785,3.25225e-2,-1.96568e-5,4.14576e-9,-1.18135e4],[0,1,2,3,-2]],[1400,4000,[64.48191,-8.31957e-3,8.83659e-7,2.70508e-11,-1.04723e7],[0,1,2,3,-2]]]}
+  },
+  "condensates": {
+    "Tb2O3(l)": {
+      "formula":{"Tb":2,"O":3},"dfH298_kJ_mol":-1865.2,"dfH_unc_kJ_mol":6.0,"S298_J_mol_K":159.2,"S_unc_J_mol_K":3.0,
+      "fusion_temperature_K":2682,"fusion_temperature_unc_K":15,"fusion_enthalpy_kJ_mol":83,"fusion_enthalpy_unc_kJ_mol":8,"liquid_Cp_J_mol_K":182,
+      "phases":[
+        {"name":"C","range_K":[298.15,1823],"coefficients":[120.6682,22.17194e-3,0,0,-1.00261e6],"powers":[0,1,2,3,-2]},
+        {"name":"B","range_K":[1823,2488],"transition_from_previous":{"temperature_K":1823,"temperature_unc_K":30,"enthalpy_kJ_mol":12,"enthalpy_unc_kJ_mol":4},"coefficients":[152,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"H","range_K":[2488,2682],"transition_from_previous":{"temperature_K":2488,"temperature_unc_K":30,"enthalpy_kJ_mol":55,"enthalpy_unc_kJ_mol":8},"coefficients":[170,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"liquid","range_K":[2682,4000],"transition_from_previous":{"temperature_K":2682,"temperature_unc_K":15,"enthalpy_kJ_mol":83,"enthalpy_unc_kJ_mol":8},"coefficients":[182,0,0,0,0],"powers":[0,1,2,3,-2]}
+      ],
+      "flags":["Table 88 gives the C→B→H→liquid chain; the absent A phase is not a zero-width interval.","Runtime 1200–2682 K continues the printed constant-Cp liquid below fusion; source_data=false below fusion."]
+    }
+  }
+}

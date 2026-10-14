@@ -1,0 +1,21 @@
+{
+  "schema_version": "konings-cp.v1",
+  "citation": "Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41; Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, and Table 89, article p. 013101-85.",
+  "gases": {
+    "Dy(g)": {"dfH298_kJ_mol":285.7,"dfH_unc_kJ_mol":3.0,"S298_J_mol_K":195.903,"S_unc_J_mol_K":0.050,"segments":[[298.15,1000,[19.8634,5.4775e-3,-12.7968e-6,12.5883e-9,-3.6294e-12,1.0854e4],[0,1,2,3,4,-2]],[1000,4000,[7.2919,19.7261e-3,-11.7807e-6,4.4305e-9,-0.4911e-12,2.3371e6],[0,1,2,3,4,-2]]]},
+    "DyO(g)": {"dfH298_kJ_mol":-71.0,"dfH_unc_kJ_mol":20.0,"S298_J_mol_K":242.208,"S_unc_J_mol_K":0.10,"segments":[[298.15,1300,[19.08366,6.17856e-2,-3.7479e-5,7.29509e-9,2.19805e4],[0,1,2,3,-2]],[1300,4000,[68.49712,-1.13191e-2,1.99999e-6,-4.18797e-11,-8.39005e6],[0,1,2,3,-2]]]}
+  },
+  "condensates": {
+    "Dy2O3(l)": {
+      "formula":{"Dy":2,"O":3},"dfH298_kJ_mol":-1863.4,"dfH_unc_kJ_mol":5.0,"S298_J_mol_K":149.8,"S_unc_J_mol_K":0.15,
+      "fusion_temperature_K":2680,"fusion_temperature_unc_K":15,"fusion_enthalpy_kJ_mol":83,"fusion_enthalpy_unc_kJ_mol":8,"liquid_Cp_J_mol_K":188,
+      "phases":[
+        {"name":"C","range_K":[298.15,2223],"coefficients":[121.2302,15.27609e-3,0,0,-8.4580e5],"powers":[0,1,2,3,-2]},
+        {"name":"B","range_K":[2223,2488],"transition_from_previous":{"temperature_K":2223,"temperature_unc_K":30,"enthalpy_kJ_mol":14,"enthalpy_unc_kJ_mol":5},"coefficients":[155,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"H","range_K":[2488,2680],"transition_from_previous":{"temperature_K":2488,"temperature_unc_K":30,"enthalpy_kJ_mol":55,"enthalpy_unc_kJ_mol":8},"coefficients":[173,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"liquid","range_K":[2680,4000],"transition_from_previous":{"temperature_K":2680,"temperature_unc_K":15,"enthalpy_kJ_mol":83,"enthalpy_unc_kJ_mol":8},"coefficients":[188,0,0,0,0],"powers":[0,1,2,3,-2]}
+      ],
+      "flags":["Table 88 gives the C→B→H→liquid chain; the absent A phase is not a zero-width interval. The separate 1590 K solid transition is not fusion; Table 88 selects the 2223 K C→B phase marker.","DyO(g) carries the published ±20 kJ/mol formation enthalpy uncertainty into the uncertainty band.","Runtime 1200–2680 K continues the printed constant-Cp liquid below fusion; source_data=false below fusion."]
+    }
+  }
+}
