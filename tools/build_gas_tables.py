@@ -299,6 +299,15 @@ TRACE_GAS_SPECIES = frozenset(
     | {source[0].removesuffix("(g)") for source in TRACE_NASA_GAS_SOURCES}
     | {source[0].removesuffix("(g)") for source in TRACE_PUBLISHED_GAS_SOURCES}
 )
+HALOGEN_GAS_SPECIES = frozenset(
+    source[0].removesuffix("(g)")
+    for source in (
+        *TRACE_JANAF_GAS_SOURCES,
+        *TRACE_JANAF_YAML_GAS_SOURCES,
+        *TRACE_NASA_GAS_SOURCES,
+    )
+    if source[1] in HALOGEN_JANAF_TABLES | HALOGEN_NASA_TABLES
+)
 TRACE_NASA_COMPARISON_SOURCES = (("NG-10887", "Zn"), ("NG-10898", "Zn+"), ("NG-0074", "Ag"))
 
 # Charge-balance rows are appended after every neutral row so the established

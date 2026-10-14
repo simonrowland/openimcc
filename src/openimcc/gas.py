@@ -851,6 +851,8 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "(WO3)5": "nasa_glenn_fitted",
         "Na2O": "nasa_glenn_fitted",
         "K2O": "nasa_glenn_fitted",
+        "NaI": "nasa_glenn_fitted",
+        "(NaI)2": "nasa_glenn_fitted",
         "RbO": "nasa_glenn_fitted",
         "Rb2O": "nasa_glenn_fitted",
         "PbO2": "nasa_glenn_fitted",
@@ -2539,6 +2541,36 @@ for _element, _parent, _products, _fusion, _note in (
             "source_tables": {"konings": "Part 1 Table 42; Part 2 Tables 88–89", "routes_checked": _ion_routes},
             "parent_oxide": _parent,
             "parent_activity": 1.0e-3,
+        },
+    }
+
+# Halogen gas-only channels use the gas-parent activity path; no oxide parent
+# or melt model is provided for elemental Br or I.
+for _element, _parent, _species in (
+    ("Br", "Br2", "Br2(g), Br(g), NaBr(g), (NaBr)2(g), KBr(g), and (KBr)2(g)"),
+    ("I", "I2", "I2(g), I(g), NaI(g), (NaI)2(g), KI(g), and (KI)2(g)"),
+):
+    ELEMENT_STATUS[_element] = {
+        "status": "gas-complete-melt-pending",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            f"JANAF and NASA Glenn { _species } cover 1200-3000 K; callers supply "
+            f"a({_parent})=f({_parent})/p° on the 1-bar gas reference. "
+            "No ion channel or halogen dissolution model is included."
+        ),
+        "c2_candidates": (),
+        "c3_ion_bound": {
+            "status": "not computed",
+            "reason": (
+                "not computed: ionized bromine channels are outside this neutral "
+                "gas-only change"
+                if _element == "Br"
+                else "not computed: ionized iodine channels are outside this neutral "
+                "gas-only change"
+            ),
+            "source_tables": {"selected": "JANAF; NASA Glenn for NaI gases"},
+            "parent_activity": None,
         },
     }
 # --------------------------------------------------------------------------- #

@@ -201,8 +201,13 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + len(build_gas_tables.TRACE_ION_GAS_YAML_SOURCES)
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
+        - len(build_gas_tables.HALOGEN_GAS_SPECIES)
         + 1  # Sc+ has an additional interval row.
         + 2 * len(_RARE_EARTH_CHANNELS)
+        + sum(
+            source[1] in build_gas_tables.HALOGEN_JANAF_TABLES
+            for source in build_gas_tables.GAS_SOURCES
+        )
     )
     assert len(gas_pack.oxide_df) == 165
 
@@ -480,20 +485,24 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     low_rows = gas_pack.gas_df.loc[
         gas_pack.gas_df["T_interval"].astype(int) == 2
     ]
+    low_trace_species = (
+        build_gas_tables.TRACE_GAS_SPECIES - build_gas_tables.HALOGEN_GAS_SPECIES
+    )
     assert len(low_rows) == (
         len(build_gas_tables.LOW_T_GAS_SPECIES)
         + 2
-        + len(build_gas_tables.TRACE_GAS_SPECIES)
+        + len(low_trace_species)
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_GAS_YAML_SOURCES)
         + 3
+        # Halogen rows use one 1200-3000 K interval and have no low interval.
         + len(_RARE_EARTH_CHANNELS)
     )
     assert set(low_rows.index) == {
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
     } | {"Na2O(g)", "K2O(g)"} | {
-        f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
+        f"{species}(g)" for species in low_trace_species
     } | {
         f"{species}(g)" for species in _RARE_EARTH_CHANNELS
     } | {
@@ -527,6 +536,9 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     }
     ordinary_high_rows = neutral_high_rows.loc[
         ~neutral_high_rows.index.isin(reviewed_trace_species)
+        & ~neutral_high_rows.index.isin(
+            tuple(f"{species}(g)" for species in build_gas_tables.HALOGEN_GAS_SPECIES)
+        )
     ]
     assert (ordinary_high_rows["T_min"] == 1500).all()
     for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
@@ -2527,11 +2539,16 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
 def test_default_trace_channels_are_optional_and_report_missing_rows(
     gas_pack: ImccGasDatapack,
 ) -> None:
+    import openimcc.gas as gas_module
+
+    halogen_gases = build_gas_tables.HALOGEN_GAS_SPECIES
     trace_gases = set(build_gas_tables.TRACE_GAS_SPECIES) | {
         "Mn", "Ni", "Co", "NiO", "CoO"
-    }
+    } | halogen_gases
     parents = {
         "MnO": 1.0e-3,
+        "Na2O": 1.0e-3,
+        "K2O": 1.0e-3,
         "Li2O": 1.0e-3, "Rb2O": 1.0e-3, "PbO": 1.0e-3,
         "Ga2O3": 1.0e-3, "GeO2": 1.0e-3, "B2O3": 1.0e-3,
         "In2O3": 1.0e-3,
@@ -2551,6 +2568,8 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "NiO": 1.0e-3, "CoO": 1.0e-3,
         "Sc2O3": 1.0e-3, "UO2": 1.0e-3, "ThO2": 1.0e-3,
         "HfO2": 1.0e-3,
+        "Br2": 1.0e-3,
+        "I2": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)
@@ -2585,6 +2604,12 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         assert f"{species}(g)" in missing_rows.omitted_channels[species]
         if species not in {"Ni", "Co", "NiO", "CoO"}:
             reason = missing_rows.omitted_channels[species]
+            if species in build_gas_tables.HALOGEN_GAS_SPECIES:
+                parent_gas = gas_module._GAS_PHASE_PARENT_ROWS.get(
+                    gas_module._SF04_REACTIONS[species][0]
+                )
+                assert parent_gas is None or parent_gas in reason
+                continue
             assert (
                 _SF04_REACTIONS[species][0] + "(l)" in reason
                 or species in {"Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf"}
@@ -3492,14 +3517,13 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
 
 
 def test_alkali_halides_use_half_oxygen_per_alkali_in_balance_metadata() -> None:
-    metadata = oxygen_balance_species_metadata(
-        {"NaBr": "Na2O", "(NaBr)2": "Na2O"},
-        pO2_exponents={"NaBr": -0.25, "(NaBr)2": -0.5},
-    )
-    assert metadata["NaBr"].parent_oxygen_demand == 0.5
-    assert metadata["(NaBr)2"].parent_oxygen_demand == 1.0
-    assert metadata["NaBr"].pO2_exponent == -0.25
-    assert metadata["(NaBr)2"].pO2_exponent == -0.5
+    import openimcc.gas as gas_module
+
+    for species, (_oxide, n_oxide, n_o2) in gas_module._ALKALI_HALIDE_REACTION_OXIDES.items():
+        atoms = gas_module._formula_atoms(species)
+        alkali_atoms = atoms.get("Na", 0) + atoms.get("K", 0)
+        assert n_oxide == pytest.approx(alkali_atoms / 2.0)
+        assert n_o2 == pytest.approx(alkali_atoms / 4.0)
 
 
 def test_oxygen_balance_molar_masses_sum_repeated_formula_tokens() -> None:
