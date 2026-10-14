@@ -133,6 +133,12 @@ def _neutral_oxide_sources(
             result["Konings-Table89-PrO"] = ("Pr", "PrO")
         if (ROOT / "data-src/konings/nd.json").exists():
             result["Konings-Table89-NdO"] = ("Nd", "NdO")
+        if (ROOT / "data-src/konings/sm.json").exists():
+            result["Konings-Table89-SmO"] = ("Sm", "SmO")
+        if (ROOT / "data-src/konings/eu.json").exists():
+            result["Konings-Table89-EuO"] = ("Eu", "EuO")
+        if (ROOT / "data-src/konings/gd.json").exists():
+            result["Konings-Table89-GdO"] = ("Gd", "GdO")
     return result
 
 
@@ -430,6 +436,9 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Ce": "Ce2O3",
         "Pr": "Pr2O3",
         "Nd": "Nd2O3",
+        "Sm": "Sm2O3",
+        "Eu": "Eu2O3",
+        "Gd": "Gd2O3",
         "Th": "ThO2",
     }
     new_trace_elements = {"Ga", "Ge", "B", "In", "Cu", "Mn", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "Hf", "Th"}
@@ -1252,7 +1261,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Cs", "Cu", "Sn",
         "Mn", "Ni", "Co", "P", "S",
         "Zn", "Cd", "Bi", "Te", "Se", "As", "Sb", "Ag", "Mo", "W",
-        "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La", "Ce", "Pr", "Nd",
+        "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1288,6 +1297,9 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Ce": "Ce2O3",
         "Pr": "Pr2O3",
         "Nd": "Nd2O3",
+        "Sm": "Sm2O3",
+        "Eu": "Eu2O3",
+        "Gd": "Gd2O3",
     }
     liquid_by_element = {
         **parent_by_element,

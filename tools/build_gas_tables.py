@@ -50,12 +50,15 @@ LOW_FIT_MINIMUM_ROWS = SHOMATE_CP_PARAMETER_COUNT + LOW_FIT_NODE_MARGIN
 # the package it builds data for.
 R_J_MOL_K = 8.314462618
 KONINGS_SOURCE_DIR = Path(__file__).resolve().parents[1] / "data-src/konings"
-KONINGS_BATCH_ELEMENTS = ("La", "Ce", "Pr", "Nd")
+KONINGS_BATCH_ELEMENTS = ("La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd")
 KONINGS_GAS_SPECIES = {
     "La": (("La(g)", 0), ("LaO(g)", 1)),
     "Ce": (("Ce(g)", 0), ("CeO(g)", 1), ("CeO2(g)", 2)),
     "Pr": (("Pr(g)", 0), ("PrO(g)", 1)),
     "Nd": (("Nd(g)", 0), ("NdO(g)", 1)),
+    "Sm": (("Sm(g)", 0), ("SmO(g)", 1)),
+    "Eu": (("Eu(g)", 0), ("EuO(g)", 1)),
+    "Gd": (("Gd(g)", 0), ("GdO(g)", 1)),
 }
 # ln(1.01325): converts a 1 atm standard-state entropy (S/R) to 1 bar.
 LH84_ATM_TO_BAR_S_R = math.log(1.01325)
@@ -1615,7 +1618,8 @@ def _konings_condensate_uncertainty_j_mol(item: dict[str, Any], temperature: flo
     anchor and constant liquid Cp. Unit check: each term is J/mol/K. Sanity:
     at T=Ttrs, the ΔH sensitivity vanishes, while the temperature sensitivity
     retains the Cp discontinuity and transition-entropy contribution.
-    The band sums absolute contributions and excludes supercooling energy.
+    The band sums absolute contributions and excludes supercooling energy;
+    an unreported transition-temperature uncertainty contributes no term.
     """
     T = float(temperature)
     phases = item["phases"]
@@ -1632,7 +1636,8 @@ def _konings_condensate_uncertainty_j_mol(item: dict[str, Any], temperature: flo
                 branch["coefficients"], branch["powers"], strict=True
             ))
         dGdT = cp_at(before, transition) - cp_at(after, transition) + dh * T / transition**2
-        bound += float(step["temperature_unc_K"]) * abs(dGdT)
+        if step.get("temperature_unc_K") is not None:
+            bound += float(step["temperature_unc_K"]) * abs(dGdT)
     return bound
 
 

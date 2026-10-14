@@ -730,7 +730,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             assert row["authority"] == "janaf_fitted"
             assert source["source"]["doi"] == "10.18434/T42S31"
 
-    for species in ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"):
+    for species in ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO", "Sm", "SmO", "Eu", "EuO", "Gd", "GdO"):
         record_path = ROOT / f"data-src/konings/{species[:2].lower()}.json"
         record = json.loads(record_path.read_text(encoding="utf-8"))
         for row in (gas_rows[f"{species}(g)"], low_gas_rows[species]):
@@ -3061,7 +3061,7 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
         "Ba(g)", "Ba+(g)", "BaO(g)", "BaO(l)", "Sr(g)", "Sr+(g)",
         "SrO(g)", "SrO(l)", "Zr(g)", "Zr+(g)", "ZrO(g)",
         "ZrO2(g)", "ZrO2(l)", "Sc(g)", "Sc2O3(cr)", "Sc2O3(l)", "U(g)", "UO2(cr)",
-        "La(g)", "Nd(g)",
+        "La(g)", "Nd(g)", "Sm(g)", "Eu(g)", "Gd(g)",
     } <= compared_species
     expected_pankratz = {
         "La(g)": {
@@ -3073,6 +3073,21 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
             "table": "Neodymium gas formation table, printed p. 267 (PDF p. 275)",
             "formation_enthalpy_298_kcal_mol": 78.300,
             "nodes": [[1800, 7.391, 56.836, 10.132], [2000, 7.480, 57.619, 11.619]],
+        },
+        "Sm(g)": {
+            "table": "Samarium gas formation table, printed p. 393 (PDF p. 401)",
+            "formation_enthalpy_298_kcal_mol": 49.400,
+            "nodes": [[1800, 6.490, 56.687, 10.691], [2000, 6.323, 57.362, 11.972]],
+        },
+        "Eu(g)": {
+            "table": "Europium gas formation table, printed p. 142 (PDF p. 150)",
+            "formation_enthalpy_298_kcal_mol": 41.900,
+            "nodes": [[1800, 4.968, 54.034, 7.469], [2000, 4.968, 54.568, 8.479]],
+        },
+        "Gd(g)": {
+            "table": "Gadolinium gas formation table, printed p. 166 (PDF p. 174)",
+            "formation_enthalpy_298_kcal_mol": 95.000,
+            "nodes": [[1800, 6.108, 57.517, 9.087], [2000, 6.337, 58.172, 10.331]],
         },
     }
     for comparison in comparisons["rows"]:
@@ -3110,17 +3125,18 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                     pank_g, abs=0.001
                 )
             continue
-        if comparison["species_name"] == "Nd(g)":
+        if comparison["species_name"] in {"Nd(g)", "Sm(g)", "Eu(g)", "Gd(g)"}:
             source = json.loads(
                 (ROOT / comparison["pankratz_source_path"]).read_text(
                     encoding="utf-8"
                 )
             )["tables"][comparison["pankratz_table_id"]]
-            assert source["table"] == expected_pankratz["Nd(g)"]["table"]
-            assert source["formation_enthalpy_298_kcal_mol"] == expected_pankratz[
-                "Nd(g)"
-            ]["formation_enthalpy_298_kcal_mol"]
-            assert source["nodes"] == expected_pankratz["Nd(g)"]["nodes"]
+            expected = expected_pankratz[comparison["species_name"]]
+            assert source["table"] == expected["table"]
+            assert source["formation_enthalpy_298_kcal_mol"] == expected[
+                "formation_enthalpy_298_kcal_mol"
+            ]
+            assert source["nodes"] == expected["nodes"]
             konings = json.loads(
                 (
                     ROOT / "data-src/konings/"
@@ -3797,6 +3813,12 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
         "PrO": "Konings supplies both the selected PrO gas and Pr2O3 liquid; JANAF O2 remains the shared gas reference.",
         "Nd": "Konings supplies both the selected Nd gas and Nd2O3 liquid; JANAF O2 remains the shared gas reference.",
         "NdO": "Konings supplies both the selected NdO gas and Nd2O3 liquid; JANAF O2 remains the shared gas reference.",
+        "Sm": "Konings supplies both the selected Sm gas and Sm2O3 liquid; JANAF O2 remains the shared gas reference.",
+        "SmO": "Konings supplies both the selected SmO gas and Sm2O3 liquid; JANAF O2 remains the shared gas reference.",
+        "Eu": "Konings supplies both the selected Eu gas and Eu2O3 liquid; JANAF O2 remains the shared gas reference.",
+        "EuO": "Konings supplies both the selected EuO gas and Eu2O3 liquid; JANAF O2 remains the shared gas reference.",
+        "Gd": "Konings supplies both the selected Gd gas and Gd2O3 liquid; JANAF O2 remains the shared gas reference.",
+        "GdO": "Konings supplies both the selected GdO gas and Gd2O3 liquid; JANAF O2 remains the shared gas reference.",
     }
 
     def compilation(row: dict) -> str:
@@ -6787,6 +6809,57 @@ def test_konings_batch_integrates_and_fits_with_residual_gates() -> None:
                 assert row["source_data"] is (
                     float(row["T_range_K"][0]) >= fusion
                 )
+
+
+def test_sm_c_to_b_transition_closes_on_the_printed_enthalpy_band() -> None:
+    record = build_gas_tables._load_record(ROOT / "data-src/konings/sm.json")
+    condensate = record["condensates"]["Sm2O3(l)"]
+    c_phase = condensate["non_anchor_crystal_phase"]
+    assert c_phase["S298_J_mol_K"] is None
+    assert condensate["S298_J_mol_K"] == 150.6
+    anchor = condensate["phases"][0]
+    assert anchor["name"] == "B"
+
+    # Premise: Table 88 independently anchors B at 298.15 K and prints the
+    # C->B transition enthalpy at 900 K. Algebra: compare each phase's printed
+    # dfH298 plus integrated Cp to 900 K. Unit check: convert J to kJ before
+    # comparison. Sanity: the residual must fit the printed ±3 kJ/mol band.
+    c_increment = build_gas_tables._konings_integral(
+        c_phase["heat_capacity_coefficients"],
+        c_phase["heat_capacity_powers"], 298.15, 900.0,
+    )[0] / 1000.0
+    b_increment = build_gas_tables._konings_integral(
+        anchor["coefficients"], anchor["powers"], 298.15, 900.0,
+    )[0] / 1000.0
+    c_to_b_at_900 = (
+        condensate["dfH298_kJ_mol"] + b_increment
+        - c_phase["dfH298_kJ_mol"] - c_increment
+    )
+    transition = c_phase["transition_to_anchor"]
+    assert c_to_b_at_900 == pytest.approx(3.526766948691147, abs=1e-9)
+    assert abs(c_to_b_at_900 - transition["enthalpy_kJ_mol"]) <= transition[
+        "enthalpy_unc_kJ_mol"
+    ]
+
+
+def test_eu_oxide_parent_selection_and_euo_table_cp_sign() -> None:
+    record = build_gas_tables._load_record(ROOT / "data-src/konings/eu.json")
+    euo = next(
+        item for item in record["non_parent_condensed_species"]
+        if item["species"] == "EuO(cr)"
+    )
+    assert euo["phase"] == "crystal only"
+    assert euo["heat_capacity_coefficients"] == [46.5453, 7.360e-3, 0, 0, 1.42047e4]
+    assert euo["heat_capacity_powers"] == [0, 1, 2, 3, -2]
+    assert euo["heat_capacity_coefficients"][1] > 0
+    assert euo["heat_capacity_coefficients"][4] > 0
+    assert "No liquid row is printed." in euo["flags"]
+    eu3o4 = next(
+        item for item in record["non_parent_condensed_species"]
+        if item["species"] == "Eu3O4(cr)"
+    )
+    assert eu3o4["phase"] == "crystal only"
+    assert "Eu2O3(l)" in record["condensates"]
 
     # Part 2 Table 30 reports D0(LaO)=796±8 kJ/mol. The Table 42/89
     # elemental anchors and JANAF oxygen atom give the independent reaction

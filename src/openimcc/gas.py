@@ -572,6 +572,18 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "PrO": ("Pr2O3", 2, 0.5),
     "Nd": ("Nd2O3", 2, 1.5),
     "NdO": ("Nd2O3", 2, 0.5),
+    # Premise: one mole of Sm2O3 supplies 2 Sm and 3 O atoms. Algebra: 2 Sm
+    # leaves 3/2 O2; 2 SmO leaves 2 O atoms, or 1/2 O2. Unit check: reaction
+    # coefficients are mol/mol parent. Sanity: both sides have 2 Sm and 3 O.
+    "Sm": ("Sm2O3", 2, 1.5),
+    "SmO": ("Sm2O3", 2, 0.5),
+    # Premise: Eu2O3 and Gd2O3 each supply 2 metal and 3 oxygen atoms. The
+    # 2 E(g) and 2 EO(g) products leave 3/2 and 1/2 O2 respectively; these
+    # dimensionless per-formula coefficients close both atom balances.
+    "Eu": ("Eu2O3", 2, 1.5),
+    "EuO": ("Eu2O3", 2, 0.5),
+    "Gd": ("Gd2O3", 2, 1.5),
+    "GdO": ("Gd2O3", 2, 0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -930,6 +942,9 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "CeO2": "published_fitted",
     "Pr2O3": "published_fitted",
     "Nd2O3": "published_fitted",
+    "Sm2O3": "published_fitted",
+    "Eu2O3": "published_fitted",
+    "Gd2O3": "published_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -977,6 +992,9 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "CeO2": "Konings-Table88-Tf3083",
     "Pr2O3": "Konings-Table88-Tf2583",
     "Nd2O3": "Konings-Table88-Tf2577",
+    "Sm2O3": "Konings-Table88-Tf2613",
+    "Eu2O3": "Konings-Table88-Tf2622",
+    "Gd2O3": "Konings-Table88-Tf2693",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
     "MgO": "LH87 Table 2",
@@ -2407,6 +2425,9 @@ for _element, _parent, _products, _fusion, _note in (
     ("Ce", "Ce2O3", "Ce(g), CeO(g), CeO2(g)", 2512, "CeO2(l) additionally supplies the same-state parent for CeO2(g) below its 3083 K fusion marker."),
     ("Pr", "Pr2O3", "Pr(g), PrO(g)", 2583, "PrO2 and PrO1.833 are crystal-only and decompose; neither supplies a liquid parent."),
     ("Nd", "Nd2O3", "Nd(g), NdO(g)", 2577, ""),
+    ("Sm", "Sm2O3", "Sm(g), SmO(g)", 2613, "The complete B-form 298.15 K anchor is used because the C-form entropy is not tabulated."),
+    ("Eu", "Eu2O3", "Eu(g), EuO(g)", 2622, "EuO(cr) and Eu3O4(cr) are crystal-only; the Eu2O3 parent convention does not represent Eu2+ melt speciation."),
+    ("Gd", "Gd2O3", "Gd(g), GdO(g)", 2693, "The C-form Cp range is cut at the 1473 K C→B transition; the B form has no separate 298.15 K anchor."),
 ):
     _ion_routes = "JANAF, NASA Glenn, Pankratz Bulletins 672/677/696, NIST WebBook, and Burcat"
     _liquid_note = (

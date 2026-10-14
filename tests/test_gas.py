@@ -1385,7 +1385,7 @@ _S_CHANNELS = (
     "SO", "SO2", "SO3", "SSO",
 )
 _PS_CHANNELS = _P_CHANNELS + _S_CHANNELS
-_RARE_EARTH_CHANNELS = ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO")
+_RARE_EARTH_CHANNELS = ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO", "Sm", "SmO", "Eu", "EuO", "Gd", "GdO")
 _NICO_PARENT_PAIRS = (("Ni", "NiO"), ("Co", "CoO"))
 _PRE_GATED_CHANNELS = tuple(
     species
@@ -3990,6 +3990,9 @@ def test_la_channels_use_caller_parent_and_hand_mass_action(
         ("Ce2O3", "Ce", 2, 1.5), ("Ce2O3", "CeO", 2, 0.5),
         ("Pr2O3", "Pr", 2, 1.5), ("Pr2O3", "PrO", 2, 0.5),
         ("Nd2O3", "Nd", 2, 1.5), ("Nd2O3", "NdO", 2, 0.5),
+        ("Sm2O3", "Sm", 2, 1.5), ("Sm2O3", "SmO", 2, 0.5),
+        ("Eu2O3", "Eu", 2, 1.5), ("Eu2O3", "EuO", 2, 0.5),
+        ("Gd2O3", "Gd", 2, 1.5), ("Gd2O3", "GdO", 2, 0.5),
     ],
 )
 def test_rare_earth_channels_match_hand_mass_action(

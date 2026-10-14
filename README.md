@@ -74,7 +74,7 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd channels:
+and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd/Sm/Eu/Gd channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
@@ -84,7 +84,7 @@ Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
 CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
 As4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, NiO, CoO, Sc, ScO, ScO2, U, UO,
-UO2, UO3, Th, ThO, ThO2, Hf, La, LaO, Ce, CeO, CeO2, Pr, PrO, Nd, NdO,
+UO2, UO3, Th, ThO, ThO2, Hf, La, LaO, Ce, CeO, CeO2, Pr, PrO, Nd, NdO, Sm, SmO, Eu, EuO, Gd, GdO,
 Na2O, K2O, O and O2.
 La(g) and LaO(g) use the caller-supplied La2O3(l) activity; the selected
 La2O3 liquid branch comes from Konings et al. Table 88, with its printed
@@ -95,6 +95,12 @@ Konings Tables 88–89 by its matching oxidation state. Its liquid branch is
 flagged as supercooled below 3083 K. PrO2 and PrO1.833 are crystal rows that
 decompose and provide no liquid parent. Parent activities are supplied by the
 caller; the gas layer applies no activity model or activity coefficients.
+Sm(g) and SmO(g) use caller-supplied Sm2O3(l), selected because Konings Table
+88 provides their liquid functions. Sm uses the complete B-form anchor because
+the C form has no printed S298. Eu uses Eu2O3(l) as its parent; EuO(cr) and
+Eu3O4(cr) have no liquid rows, and this oxide-parent convention does not
+represent Eu2+ melt speciation. Gd uses the C branch only through its 1473 K
+transition to B; the B branch has no independent 298.15 K anchor.
 The Mn channels use public Mn(g), MnO(g) and opt-in Mn+(g) rows with a
 caller-supplied MnO(l) activity. Ni(g), NiO(g), Co(g), and CoO(g) use
 caller-supplied NiO(l) and CoO(l) activities. The liquid parents use the

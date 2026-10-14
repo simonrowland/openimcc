@@ -16,6 +16,16 @@
   oxide-gas, and sesquioxide functions. CeO2(g) uses CeO2(l), the same-oxidation-
   state liquid in Table 88; PrO2 and PrO1.833 remain crystal-only because they
   decompose and have no liquid parent. Supercooled liquid branches are flagged.
+- Added optional Sm(g) and SmO(g) channels with caller-supplied Sm2O3(l)
+  activity. Konings Part 1 Table 42 and Part 2 Tables 88–89 supply the gas and
+  phase-chain functions; the complete B-form anchor is used because the C-form
+  entropy is not tabulated, and the printed liquid branch is flagged as
+  supercooled below 2613 K.
+- Added optional Eu(g), EuO(g), Gd(g), and GdO(g) channels with caller-supplied
+  sesquioxide liquid activities. Eu2O3 uses its printed C-to-B step; the EuO
+  and Eu3O4 records remain crystal-only, and the oxide-parent convention does
+  not represent Eu2+ melt speciation. Gd's C branch ends at its 1473 K
+  transition and its unanchored B Cp function continues above that point.
 - Added optional Hf(g) with caller-supplied HfO2(l) activity and opt-in Hf+
   and Hf- JANAF rows. Pankratz Bulletin 672 p. 188 supplies HfO2(cr), extended
   by the labelled constant-Cp rule and used in the tier-4 liquid construction.
