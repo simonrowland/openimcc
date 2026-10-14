@@ -3903,8 +3903,8 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
         ),
         "Ga": "JANAF Ga(g) versus the NASA parent changes log10 K by at most 0.0023 dex.",
         "PbO2": "The all-NASA comparison changes log10 K by at most 0.0010 dex.",
-        "NaI": "NASA Glenn NG-0893 is the only selected NaI gas record; it pairs its 1-atm gas standard with JANAF 1-bar Na2O(l), I2(g), and O2(g), and no JANAF NaI product exists for a computed comparison band.",
-        "(NaI)2": "NASA Glenn NG-0904 is the only selected (NaI)2 gas record; it pairs its 1-atm gas standard with JANAF 1-bar Na2O(l), I2(g), and O2(g), and no JANAF (NaI)2 product exists for a computed comparison band.",
+        "NaI": "NASA Glenn NG-0893 is the only selected NaI gas record; it pairs with JANAF Na2O(l), I2(g), and O2(g) (all 1 bar), and no JANAF NaI product exists for a computed comparison band.",
+        "(NaI)2": "NASA Glenn NG-0904 is the only selected (NaI)2 gas record; it pairs with JANAF Na2O(l), I2(g), and O2(g) (all 1 bar), and no JANAF (NaI)2 product exists for a computed comparison band.",
         **dict.fromkeys(
             ("RbO", "GaO", "Ga2O", "Ge", "GeO", "In", "InO", "In2O",
              "Sn", "SnO2"),

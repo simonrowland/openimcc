@@ -2547,15 +2547,15 @@ for _element, _parent, _products, _fusion, _note in (
 # Halogen gas-only channels use the gas-parent activity path; no oxide parent
 # or melt model is provided for elemental Br or I.
 for _element, _parent, _species in (
-    ("Br", "Br2", "Br2(g), Br(g), NaBr(g), (NaBr)2(g), KBr(g), and (KBr)2(g)"),
-    ("I", "I2", "I2(g), I(g), NaI(g), (NaI)2(g), KI(g), and (KI)2(g)"),
+    ("Br", "Br2", "JANAF Br2(g), Br(g), NaBr(g), (NaBr)2(g), KBr(g), and (KBr)2(g)"),
+    ("I", "I2", "JANAF I2(g), I(g), KI(g), and (KI)2(g) and NASA Glenn NaI(g) and (NaI)2(g)"),
 ):
     ELEMENT_STATUS[_element] = {
         "status": "gas-complete-melt-pending",
         "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
         "validation": "unvalidated",
         "reason": (
-            f"JANAF and NASA Glenn { _species } cover 1200-3000 K; callers supply "
+            f"{_species} cover 1200-3000 K; callers supply "
             f"a({_parent})=f({_parent})/p° on the 1-bar gas reference. "
             "No ion channel or halogen dissolution model is included."
         ),
