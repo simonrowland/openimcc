@@ -584,6 +584,23 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "EuO": ("Eu2O3", 2, 0.5),
     "Gd": ("Gd2O3", 2, 1.5),
     "GdO": ("Gd2O3", 2, 0.5),
+    # Premise: E2O3 supplies two E and three O atoms. The monoxide leaves
+    # one O atom per parent for 1/2 O2; the element leaves 3/2 O2. Coefficients
+    # are mol/mol parent and independently balance both atom counts.
+    "Tb": ("Tb2O3", 2, 1.5),
+    "TbO": ("Tb2O3", 2, 0.5),
+    "Dy": ("Dy2O3", 2, 1.5),
+    "DyO": ("Dy2O3", 2, 0.5),
+    "Ho": ("Ho2O3", 2, 1.5),
+    "HoO": ("Ho2O3", 2, 0.5),
+    "Er": ("Er2O3", 2, 1.5),
+    "ErO": ("Er2O3", 2, 0.5),
+    "Tm": ("Tm2O3", 2, 1.5),
+    "TmO": ("Tm2O3", 2, 0.5),
+    "Yb": ("Yb2O3", 2, 1.5),
+    "YbO": ("Yb2O3", 2, 0.5),
+    "Lu": ("Lu2O3", 2, 1.5),
+    "LuO": ("Lu2O3", 2, 0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -715,6 +732,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Hf",
         "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
         "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+        "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
+        "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
     }
 )
 
@@ -859,6 +878,8 @@ _GAS_PROVENANCE_AUTHORITY.update(
         for species in (
             "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
             "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+            "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
+            "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         )
     }
 )
@@ -949,6 +970,13 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Sm2O3": "published_fitted",
     "Eu2O3": "published_fitted",
     "Gd2O3": "published_fitted",
+    "Tb2O3": "published_fitted",
+    "Dy2O3": "published_fitted",
+    "Ho2O3": "published_fitted",
+    "Er2O3": "published_fitted",
+    "Tm2O3": "published_fitted",
+    "Yb2O3": "published_fitted",
+    "Lu2O3": "published_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -999,6 +1027,13 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Sm2O3": "Konings-Table88-Tf2613",
     "Eu2O3": "Konings-Table88-Tf2622",
     "Gd2O3": "Konings-Table88-Tf2693",
+    "Tb2O3": "Konings-Table88-Tf2682",
+    "Dy2O3": "Konings-Table88-Tf2680",
+    "Ho2O3": "Konings-Table88-Tf2686",
+    "Er2O3": "Konings-Table88-Tf2690",
+    "Tm2O3": "Konings-Table88-Tf2682",
+    "Yb2O3": "Konings-Table88-Tf2707",
+    "Lu2O3": "Konings-Table88-Tf2762",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
     "MgO": "LH87 Table 2",
@@ -2432,6 +2467,13 @@ for _element, _parent, _products, _fusion, _note in (
     ("Sm", "Sm2O3", "Sm(g), SmO(g)", 2613, "The complete B-form 298.15 K anchor is used because the C-form entropy is not tabulated."),
     ("Eu", "Eu2O3", "Eu(g), EuO(g)", 2622, "EuO(cr) and Eu3O4(cr) are crystal-only; the Eu2O3 parent convention does not represent Eu2+ melt speciation."),
     ("Gd", "Gd2O3", "Gd(g), GdO(g)", 2693, "The C-form Cp range is cut at the 1473 K C→B transition; the B form has no separate 298.15 K anchor."),
+    ("Tb", "Tb2O3", "Tb(g), TbO(g)", 2682, "The C→B→H liquid chain has no A phase; TbO2(cr) decomposes and is not offered as a parent."),
+    ("Dy", "Dy2O3", "Dy(g), DyO(g)", 2680, "The C→B→H liquid chain has no A phase; DyO(g) retains its ±20 kJ/mol formation uncertainty."),
+    ("Ho", "Ho2O3", "Ho(g), HoO(g)", 2686, "The C→B→H liquid chain has no A phase."),
+    ("Er", "Er2O3", "Er(g), ErO(g)", 2690, "The C→H liquid chain has no B phase."),
+    ("Tm", "Tm2O3", "Tm(g), TmO(g)", 2682, "The C→H liquid chain has no B phase; 1680 K is a solid transition, not fusion."),
+    ("Yb", "Yb2O3", "Yb(g), YbO(g)", 2707, "The C→H liquid chain has no B phase; 1365 K is a solid transition, not fusion. Reduced melts may contain Yb2+; this channel uses caller-supplied Yb2O3 activity without a speciation model."),
+    ("Lu", "Lu2O3", "Lu(g), LuO(g)", 2762, "The selected source chain is crystal→liquid with no high polymorph."),
 ):
     _ion_routes = "JANAF, NASA Glenn, Pankratz Bulletins 672/677/696, NIST WebBook, and Burcat"
     _liquid_note = (
@@ -2456,7 +2498,7 @@ for _element, _parent, _products, _fusion, _note in (
         ),
         "c3_ion_bound": {
             "status": "declined",
-            "reason": f"No {_element}+ or {_element}− temperature-dependent ideal-gas thermal function was selected in the checked sources.",
+            "reason": f"No {_element}+ or {_element}− temperature-dependent ideal-gas thermal function is available in the checked sources.",
             "source_tables": {"konings": "Part 1 Table 42; Part 2 Tables 88–89", "routes_checked": _ion_routes},
             "parent_oxide": _parent,
             "parent_activity": 1.0e-3,

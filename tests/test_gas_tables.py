@@ -588,9 +588,11 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         | {
             "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
             "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+            "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
+            "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
     )
-    assert len(oxide_rows) == 50
+    assert len(oxide_rows) == 57
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -733,7 +735,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             assert row["authority"] == "janaf_fitted"
             assert source["source"]["doi"] == "10.18434/T42S31"
 
-    for species in ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO", "Sm", "SmO", "Eu", "EuO", "Gd", "GdO"):
+    for species in ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO", "Sm", "SmO", "Eu", "EuO", "Gd", "GdO", "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO", "Tm", "TmO", "Yb", "YbO", "Lu", "LuO"):
         record_path = ROOT / f"data-src/konings/{species[:2].lower()}.json"
         record = json.loads(record_path.read_text(encoding="utf-8"))
         for row in (gas_rows[f"{species}(g)"], low_gas_rows[species]):
@@ -2363,6 +2365,8 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
             or species in {
                 "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
                 "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+                "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
+                "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
             }
         ):
             continue
@@ -3834,6 +3838,10 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
         "EuO": "Konings supplies both the selected EuO gas and Eu2O3 liquid; JANAF O2 remains the shared gas reference.",
         "Gd": "Konings supplies both the selected Gd gas and Gd2O3 liquid; JANAF O2 remains the shared gas reference.",
         "GdO": "Konings supplies both the selected GdO gas and Gd2O3 liquid; JANAF O2 remains the shared gas reference.",
+        **{
+            species: f"Konings supplies both the selected {species} gas and {species[:2]}2O3 liquid; JANAF O2 remains the shared gas reference."
+            for species in ("Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO", "Tm", "TmO", "Yb", "YbO", "Lu", "LuO")
+        },
     }
 
     def compilation(row: dict) -> str:
@@ -6027,6 +6035,8 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
         } | build_gas_tables.TRACE_GAS_SPECIES | {
             "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
             "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+            "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
+            "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }:
             continue
         if (
@@ -6249,6 +6259,8 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     } - build_gas_tables.TRACE_GAS_SPECIES - {
         "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
         "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+        "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
+        "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
     }
     assert max(maxima[species] for species in existing) < 300.0
     # The omitted O-063 and Nb-013 source nodes make the V/Nb interpolation
@@ -6776,7 +6788,11 @@ def test_konings_batch_integrates_and_fits_with_residual_gates() -> None:
             ):
                 fitted = build_gas_tables._fit_konings_gas_row(
                     record, species, element, 1, oxy_num, interval=interval,
-                    fit_t_min=lo, fit_t_max=hi, runtime_t_min=runtime_lo,
+                    fit_t_min=(
+                        build_gas_tables.KONINGS_LOW_FIT_START_K.get(species, lo)
+                        if interval == 2 else lo
+                    ),
+                    fit_t_max=hi, runtime_t_min=runtime_lo,
                 )
                 assert float(fitted["_max_residual_J_per_mol"]) <= 10
                 matching = next(

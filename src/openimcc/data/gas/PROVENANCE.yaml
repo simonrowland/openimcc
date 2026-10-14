@@ -10795,6 +10795,1560 @@ rows:
   - {table: condensate, species_name: Gd2O3(l), tier: 3, table_id: Konings-Table88-Tf2693, runtime_ref: Konings-Table88-Tf2693, source_path: data-src/konings/gd.json, source_sha256: 4bb144a4e330e051709d42d4d938bd5c7984b185142eb74bef92f320028f9752, authority: published_fitted, method: integrated_phase_chain_and_supercooled_liquid, T_range_K: [1200, 1900], source_fit_range_K: [1200, 1900], max_residual_J_per_mol: 6.58425546623766, flags: [C Cp is cut at the 1473 K C-to-B transition; B has no 298.15 K anchor; constant-Cp liquid branch supercooled below 2693 K; caller-supplied activity], uncertainty_band: {kind: propagated printed phase-chain uncertainty, method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual, units: J/mol, values_J_per_mol: {1200: 16796.319564, 1500: 14145.580881, 1800: 12236.186394, 1900: 11599.721565}}, source: {citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, source_locator: Table 88 Gd2O3}, extrapolation: true, source_data: false, extrapolation_source_limit_K: 2693}
   - {table: condensate, species_name: Gd2O3(l), tier: 3, table_id: Konings-Table88-Tf2693, runtime_ref: Konings-Table88-Tf2693, source_path: data-src/konings/gd.json, source_sha256: 4bb144a4e330e051709d42d4d938bd5c7984b185142eb74bef92f320028f9752, authority: published_fitted, method: integrated_phase_chain_and_supercooled_liquid, T_range_K: [1900, 2693], source_fit_range_K: [1900, 2693], max_residual_J_per_mol: 2.13942510541528, flags: [C Cp is cut at the 1473 K C-to-B transition; B has no 298.15 K anchor; constant-Cp liquid branch supercooled below 2693 K; caller-supplied activity], uncertainty_band: {kind: propagated printed phase-chain uncertainty, method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual, units: J/mol, values_J_per_mol: {1900: 11599.721565, 2000: 10963.256735, 2500: 8051.21799, 2693: 8473.464002}}, source: {citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, source_locator: Table 88 Gd2O3}, extrapolation: true, source_data: false, extrapolation_source_limit_K: 2693}
   - {table: condensate, species_name: Gd2O3(l), tier: 3, table_id: Konings-Table88-Tf2693, runtime_ref: Konings-Table88-Tf2693, source_path: data-src/konings/gd.json, source_sha256: 4bb144a4e330e051709d42d4d938bd5c7984b185142eb74bef92f320028f9752, authority: published_fitted, method: integrated_phase_chain_and_supercooled_liquid, T_range_K: [2693, 3000], source_fit_range_K: [2693, 3000], max_residual_J_per_mol: 5.587935e-09, flags: [C Cp is cut at the 1473 K C-to-B transition; B has no 298.15 K anchor; printed liquid Cp branch; caller-supplied activity], uncertainty_band: {kind: propagated printed phase-chain uncertainty, method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual, units: J/mol, values_J_per_mol: {2693: 8473.464002, 3000: 11663.26704}}, source: {citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, source_locator: Table 88 Gd2O3}, extrapolation: false, source_data: true, source_limit_K: 4000}
+  - table: gas
+    species_name: Tb(g)
+    table_id: Konings-Tb(g)
+    source_path: data-src/konings/tb.json
+    source_sha256: d75d50b4dc4d9f99cc40b7400ecd5c4c52c763b1b6ece30609e20479d53ea7bc
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 1.74622982740402e-10
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 2075.0
+        1800: 2090.0
+        2000: 2100.0
+        2500: 2125.0
+        3000: 2150.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Tb(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Tb(g)
+    table_id: Konings-Tb(g)
+    source_path: data-src/konings/tb.json
+    source_sha256: d75d50b4dc4d9f99cc40b7400ecd5c4c52c763b1b6ece30609e20479d53ea7bc
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.197810626821592
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 2060.0
+        1500: 2075.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Tb(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: TbO(g)
+    table_id: Konings-TbO(g)
+    source_path: data-src/konings/tb.json
+    source_sha256: d75d50b4dc4d9f99cc40b7400ecd5c4c52c763b1b6ece30609e20479d53ea7bc
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 2.3283064365387e-10
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 10150.0
+        1800: 10180.0
+        2000: 10200.0
+        2500: 10250.0
+        3000: 10300.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 TbO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: TbO(g)
+    table_id: Konings-TbO(g)
+    source_path: data-src/konings/tb.json
+    source_sha256: d75d50b4dc4d9f99cc40b7400ecd5c4c52c763b1b6ece30609e20479d53ea7bc
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.209080488712061
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 10120.0
+        1500: 10150.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 TbO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: condensate
+    species_name: Tb2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2682
+    runtime_ref: Konings-Table88-Tf2682
+    source_path: data-src/konings/tb.json
+    source_sha256: d75d50b4dc4d9f99cc40b7400ecd5c4c52c763b1b6ece30609e20479d53ea7bc
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1200
+    - 1900
+    source_fit_range_K:
+    - 1200
+    - 1900
+    max_residual_J_per_mol: 3.01585241267458
+    flags:
+    - Table 88 C→B→H→liquid chain; no A phase.
+    - constant-Cp liquid branch supercooled below 2682 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1200: 20170.44218275955
+        1500: 18557.158042231196
+        1800: 16943.873901702846
+        1900: 16744.017074461448
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Tb2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2682.0
+  - table: condensate
+    species_name: Tb2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2682
+    runtime_ref: Konings-Table88-Tf2682
+    source_path: data-src/konings/tb.json
+    source_sha256: d75d50b4dc4d9f99cc40b7400ecd5c4c52c763b1b6ece30609e20479d53ea7bc
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1900
+    - 2682
+    source_fit_range_K:
+    - 1900
+    - 2682
+    max_residual_J_per_mol: 1.14483882905915
+    flags:
+    - Table 88 C→B→H→liquid chain; no A phase.
+    - constant-Cp liquid branch supercooled below 2682 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1900: 16744.017074461448
+        2000: 16645.092776018737
+        2500: 16480.40552766122
+        2682: 17567.806517448207
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Tb2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2682.0
+  - table: condensate
+    species_name: Tb2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2682
+    runtime_ref: Konings-Table88-Tf2682
+    source_path: data-src/konings/tb.json
+    source_sha256: d75d50b4dc4d9f99cc40b7400ecd5c4c52c763b1b6ece30609e20479d53ea7bc
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 2682
+    - 3000
+    source_fit_range_K:
+    - 2682
+    - 3000
+    max_residual_J_per_mol: 7.45058059692383e-09
+    flags:
+    - Table 88 C→B→H→liquid chain; no A phase.
+    - constant-Cp liquid branch supercooled below 2682 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        2682: 17567.806517448207
+        3000: 21364.862606813946
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Tb2O3
+    extrapolation: false
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Dy(g)
+    table_id: Konings-Dy(g)
+    source_path: data-src/konings/dy.json
+    source_sha256: 97a8d36e514b43579ffd4736c96281e704d18dc73ecceca4ae9ab1690d39beb5
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 0.0345492474734783
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 3075.0
+        1800: 3090.0
+        2000: 3100.0
+        2500: 3125.0
+        3000: 3150.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Dy(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Dy(g)
+    table_id: Konings-Dy(g)
+    source_path: data-src/konings/dy.json
+    source_sha256: 97a8d36e514b43579ffd4736c96281e704d18dc73ecceca4ae9ab1690d39beb5
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.0642304339562543
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 3060.0
+        1500: 3075.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Dy(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: DyO(g)
+    table_id: Konings-DyO(g)
+    source_path: data-src/konings/dy.json
+    source_sha256: 97a8d36e514b43579ffd4736c96281e704d18dc73ecceca4ae9ab1690d39beb5
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 2.3283064365387e-10
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 20150.0
+        1800: 20180.0
+        2000: 20200.0
+        2500: 20250.0
+        3000: 20300.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 DyO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: DyO(g)
+    table_id: Konings-DyO(g)
+    source_path: data-src/konings/dy.json
+    source_sha256: 97a8d36e514b43579ffd4736c96281e704d18dc73ecceca4ae9ab1690d39beb5
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.0542320472304709
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 20120.0
+        1500: 20150.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 DyO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: condensate
+    species_name: Dy2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2680
+    runtime_ref: Konings-Table88-Tf2680
+    source_path: data-src/konings/dy.json
+    source_sha256: 97a8d36e514b43579ffd4736c96281e704d18dc73ecceca4ae9ab1690d39beb5
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1200
+    - 1900
+    source_fit_range_K:
+    - 1200
+    - 1900
+    max_residual_J_per_mol: 2.10320091387257
+    flags:
+    - Table 88 C→B→H→liquid chain; no A phase; 1590 K is a solid transition, not fusion.
+    - constant-Cp liquid branch supercooled below 2680 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1200: 16379.984830931098
+        1500: 13853.618751012109
+        1800: 11361.235740819113
+        1900: 10530.441404088115
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Dy2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2680.0
+  - table: condensate
+    species_name: Dy2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2680
+    runtime_ref: Konings-Table88-Tf2680
+    source_path: data-src/konings/dy.json
+    source_sha256: 97a8d36e514b43579ffd4736c96281e704d18dc73ecceca4ae9ab1690d39beb5
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1900
+    - 2680
+    source_fit_range_K:
+    - 1900
+    - 2680
+    max_residual_J_per_mol: 0.898731231689453
+    flags:
+    - Table 88 C→B→H→liquid chain; no A phase; 1590 K is a solid transition, not fusion.
+    - constant-Cp liquid branch supercooled below 2680 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1900: 10530.441404088115
+        2000: 9699.647067357117
+        2500: 7121.673505200991
+        2680: 7689.475563833111
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Dy2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2680.0
+  - table: condensate
+    species_name: Dy2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2680
+    runtime_ref: Konings-Table88-Tf2680
+    source_path: data-src/konings/dy.json
+    source_sha256: 97a8d36e514b43579ffd4736c96281e704d18dc73ecceca4ae9ab1690d39beb5
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 2680
+    - 3000
+    source_fit_range_K:
+    - 2680
+    - 3000
+    max_residual_J_per_mol: 3.25962901115417e-09
+    flags:
+    - Table 88 C→B→H→liquid chain; no A phase; 1590 K is a solid transition, not fusion.
+    - constant-Cp liquid branch supercooled below 2680 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        2680: 7689.475563833111
+        3000: 10609.349207039802
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Dy2O3
+    extrapolation: false
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Ho(g)
+    table_id: Konings-Ho(g)
+    source_path: data-src/konings/ho.json
+    source_sha256: 485260d1964531e0d9b321eeea510436a26a32c73e870245125c27d58bc81290
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 0.264392144221347
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 5075.0
+        1800: 5090.0
+        2000: 5100.0
+        2500: 5125.0
+        3000: 5150.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Ho(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Ho(g)
+    table_id: Konings-Ho(g)
+    source_path: data-src/konings/ho.json
+    source_sha256: 485260d1964531e0d9b321eeea510436a26a32c73e870245125c27d58bc81290
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 1200
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.000803570030257106
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 5060.0
+        1500: 5075.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Ho(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: HoO(g)
+    table_id: Konings-HoO(g)
+    source_path: data-src/konings/ho.json
+    source_sha256: 485260d1964531e0d9b321eeea510436a26a32c73e870245125c27d58bc81290
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 2.3283064365387e-10
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 10150.0
+        1800: 10180.0
+        2000: 10200.0
+        2500: 10250.0
+        3000: 10300.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 HoO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: HoO(g)
+    table_id: Konings-HoO(g)
+    source_path: data-src/konings/ho.json
+    source_sha256: 485260d1964531e0d9b321eeea510436a26a32c73e870245125c27d58bc81290
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.833452244696673
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 10120.0
+        1500: 10150.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 HoO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: condensate
+    species_name: Ho2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2686
+    runtime_ref: Konings-Table88-Tf2686
+    source_path: data-src/konings/ho.json
+    source_sha256: 485260d1964531e0d9b321eeea510436a26a32c73e870245125c27d58bc81290
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1200
+    - 1900
+    source_fit_range_K:
+    - 1200
+    - 1900
+    max_residual_J_per_mol: 4.14933611452579
+    flags:
+    - Table 88 C→B→H→liquid chain; no A phase.
+    - constant-Cp liquid branch supercooled below 2686 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1200: 20321.689186289863
+        1500: 17952.325971815033
+        1800: 15662.0782087519
+        1900: 14923.352440116492
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Ho2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2686.0
+  - table: condensate
+    species_name: Ho2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2686
+    runtime_ref: Konings-Table88-Tf2686
+    source_path: data-src/konings/ho.json
+    source_sha256: 485260d1964531e0d9b321eeea510436a26a32c73e870245125c27d58bc81290
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1900
+    - 2686
+    source_fit_range_K:
+    - 1900
+    - 2686
+    max_residual_J_per_mol: 1.44418363505974
+    flags:
+    - Table 88 C→B→H→liquid chain; no A phase.
+    - constant-Cp liquid branch supercooled below 2686 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1900: 14923.352440116492
+        2000: 14184.626671481086
+        2500: 10490.997828304062
+        2686: 10305.977487664954
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Ho2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2686.0
+  - table: condensate
+    species_name: Ho2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2686
+    runtime_ref: Konings-Table88-Tf2686
+    source_path: data-src/konings/ho.json
+    source_sha256: 485260d1964531e0d9b321eeea510436a26a32c73e870245125c27d58bc81290
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 2686
+    - 3000
+    source_fit_range_K:
+    - 2686
+    - 3000
+    max_residual_J_per_mol: 5.58793544769287e-09
+    flags:
+    - Table 88 C→B→H→liquid chain; no A phase.
+    - constant-Cp liquid branch supercooled below 2686 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        2686: 10305.977487664954
+        3000: 13035.279918510596
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Ho2O3
+    extrapolation: false
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Er(g)
+    table_id: Konings-Er(g)
+    source_path: data-src/konings/er.json
+    source_sha256: ea64d54bc986a26ab5ad985081f5347d4e12d0442e2b578621ca992e3bff2668
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 0.123535897117108
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 3075.0
+        1800: 3090.0
+        2000: 3100.0
+        2500: 3125.0
+        3000: 3150.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Er(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Er(g)
+    table_id: Konings-Er(g)
+    source_path: data-src/konings/er.json
+    source_sha256: ea64d54bc986a26ab5ad985081f5347d4e12d0442e2b578621ca992e3bff2668
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.0525299292057753
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 3060.0
+        1500: 3075.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Er(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: ErO(g)
+    table_id: Konings-ErO(g)
+    source_path: data-src/konings/er.json
+    source_sha256: ea64d54bc986a26ab5ad985081f5347d4e12d0442e2b578621ca992e3bff2668
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 1.16415321826935e-10
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 8150.0
+        1800: 8180.0
+        2000: 8200.0
+        2500: 8250.0
+        3000: 8300.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 ErO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: ErO(g)
+    table_id: Konings-ErO(g)
+    source_path: data-src/konings/er.json
+    source_sha256: ea64d54bc986a26ab5ad985081f5347d4e12d0442e2b578621ca992e3bff2668
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.0397133550723083
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 8120.0
+        1500: 8150.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 ErO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: condensate
+    species_name: Er2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2690
+    runtime_ref: Konings-Table88-Tf2690
+    source_path: data-src/konings/er.json
+    source_sha256: ea64d54bc986a26ab5ad985081f5347d4e12d0442e2b578621ca992e3bff2668
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1200
+    - 1900
+    source_fit_range_K:
+    - 1200
+    - 1900
+    max_residual_J_per_mol: 0.522581554017961
+    flags:
+    - Table 88 C→H→liquid chain; no B phase.
+    - constant-Cp liquid branch supercooled below 2690 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1200: 12275.083678332912
+        1500: 11198.527102878148
+        1800: 10129.040910640862
+        1900: 9772.545513228433
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Er2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2690.0
+  - table: condensate
+    species_name: Er2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2690
+    runtime_ref: Konings-Table88-Tf2690
+    source_path: data-src/konings/er.json
+    source_sha256: ea64d54bc986a26ab5ad985081f5347d4e12d0442e2b578621ca992e3bff2668
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1900
+    - 2690
+    source_fit_range_K:
+    - 1900
+    - 2690
+    max_residual_J_per_mol: 0.477384743280709
+    flags:
+    - Table 88 C→H→liquid chain; no B phase.
+    - constant-Cp liquid branch supercooled below 2690 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1900: 9772.545513228433
+        2000: 9416.050115816006
+        2500: 7633.573128753864
+        2690: 7555.128642779786
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Er2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2690.0
+  - table: condensate
+    species_name: Er2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2690
+    runtime_ref: Konings-Table88-Tf2690
+    source_path: data-src/konings/er.json
+    source_sha256: ea64d54bc986a26ab5ad985081f5347d4e12d0442e2b578621ca992e3bff2668
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 2690
+    - 3000
+    source_fit_range_K:
+    - 2690
+    - 3000
+    max_residual_J_per_mol: 8.38190317153931e-09
+    flags:
+    - Table 88 C→H→liquid chain; no B phase.
+    - constant-Cp liquid branch supercooled below 2690 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        2690: 7555.128642779786
+        3000: 8823.843467836185
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Er2O3
+    extrapolation: false
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Tm(g)
+    table_id: Konings-Tm(g)
+    source_path: data-src/konings/tm.json
+    source_sha256: f7805811acc1b8ea25366b5edb5dd81a794ceb6b5d3009cc21c77d343c2197f7
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 0.0550762787461281
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 1575.0
+        1800: 1590.0
+        2000: 1600.0
+        2500: 1625.0
+        3000: 1650.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Tm(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Tm(g)
+    table_id: Konings-Tm(g)
+    source_path: data-src/konings/tm.json
+    source_sha256: f7805811acc1b8ea25366b5edb5dd81a794ceb6b5d3009cc21c77d343c2197f7
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.0236947151133791
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 1560.0
+        1500: 1575.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Tm(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: TmO(g)
+    table_id: Konings-TmO(g)
+    source_path: data-src/konings/tm.json
+    source_sha256: f7805811acc1b8ea25366b5edb5dd81a794ceb6b5d3009cc21c77d343c2197f7
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 0.0438667628914118
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 8225.0
+        1800: 8270.0
+        2000: 8300.0
+        2500: 8375.0
+        3000: 8450.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 TmO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: TmO(g)
+    table_id: Konings-TmO(g)
+    source_path: data-src/konings/tm.json
+    source_sha256: f7805811acc1b8ea25366b5edb5dd81a794ceb6b5d3009cc21c77d343c2197f7
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 1.74622982740402e-10
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 8180.0
+        1500: 8225.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 TmO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: condensate
+    species_name: Tm2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2682
+    runtime_ref: Konings-Table88-Tf2682
+    source_path: data-src/konings/tm.json
+    source_sha256: f7805811acc1b8ea25366b5edb5dd81a794ceb6b5d3009cc21c77d343c2197f7
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1200
+    - 1900
+    source_fit_range_K:
+    - 1200
+    - 1900
+    max_residual_J_per_mol: 1.41492272168398
+    flags:
+    - Table 88 C→H→liquid chain; no B phase; 1680 K is a solid transition, not fusion.
+    - constant-Cp liquid branch supercooled below 2682 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1200: 13563.932241938248
+        1500: 12278.391549443639
+        1800: 10992.85085694903
+        1900: 10564.33729278416
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Tm2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2682.0
+  - table: condensate
+    species_name: Tm2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2682
+    runtime_ref: Konings-Table88-Tf2682
+    source_path: data-src/konings/tm.json
+    source_sha256: f7805811acc1b8ea25366b5edb5dd81a794ceb6b5d3009cc21c77d343c2197f7
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1900
+    - 2682
+    source_fit_range_K:
+    - 1900
+    - 2682
+    max_residual_J_per_mol: 0.686254152096808
+    flags:
+    - Table 88 C→H→liquid chain; no B phase; 1680 K is a solid transition, not fusion.
+    - constant-Cp liquid branch supercooled below 2682 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1900: 10564.33729278416
+        2000: 10135.823728619287
+        2500: 7993.255907794939
+        2682: 7576.576058727396
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Tm2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2682.0
+  - table: condensate
+    species_name: Tm2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2682
+    runtime_ref: Konings-Table88-Tf2682
+    source_path: data-src/konings/tm.json
+    source_sha256: f7805811acc1b8ea25366b5edb5dd81a794ceb6b5d3009cc21c77d343c2197f7
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 2682
+    - 3000
+    source_fit_range_K:
+    - 2682
+    - 3000
+    max_residual_J_per_mol: 3.25962901115417e-09
+    flags:
+    - Table 88 C→H→liquid chain; no B phase; 1680 K is a solid transition, not fusion.
+    - constant-Cp liquid branch supercooled below 2682 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        2682: 7576.576058727396
+        3000: 9339.742715284372
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Tm2O3
+    extrapolation: false
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Yb(g)
+    table_id: Konings-Yb(g)
+    source_path: data-src/konings/yb.json
+    source_sha256: 4e3819b4c9317c8dbc045affe39b54912659098bd26444438f11ea245637b1a6
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 0.011431994906161
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 1075.0
+        1800: 1090.0
+        2000: 1100.0
+        2500: 1125.0
+        3000: 1150.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Yb(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Yb(g)
+    table_id: Konings-Yb(g)
+    source_path: data-src/konings/yb.json
+    source_sha256: 4e3819b4c9317c8dbc045affe39b54912659098bd26444438f11ea245637b1a6
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.00289280683500692
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 1060.0
+        1500: 1075.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Yb(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: YbO(g)
+    table_id: Konings-YbO(g)
+    source_path: data-src/konings/yb.json
+    source_sha256: 4e3819b4c9317c8dbc045affe39b54912659098bd26444438f11ea245637b1a6
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 1.16415321826935e-10
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 10150.0
+        1800: 10180.0
+        2000: 10200.0
+        2500: 10250.0
+        3000: 10300.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 YbO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: YbO(g)
+    table_id: Konings-YbO(g)
+    source_path: data-src/konings/yb.json
+    source_sha256: 4e3819b4c9317c8dbc045affe39b54912659098bd26444438f11ea245637b1a6
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.453768314211629
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 10120.0
+        1500: 10150.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 YbO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: condensate
+    species_name: Yb2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2707
+    runtime_ref: Konings-Table88-Tf2707
+    source_path: data-src/konings/yb.json
+    source_sha256: 4e3819b4c9317c8dbc045affe39b54912659098bd26444438f11ea245637b1a6
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1200
+    - 2000
+    source_fit_range_K:
+    - 1200
+    - 2000
+    max_residual_J_per_mol: 7.18479137774557
+    flags:
+    - Table 88 C→H→liquid chain; no B phase; 1365 K is a solid transition, not fusion; reduced melt may contain Yb2+.
+    - constant-Cp liquid branch supercooled below 2707 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1200: 13805.445780939623
+        1500: 12524.63386726792
+        1800: 11243.82195359622
+        1900: 10816.884649038986
+        2000: 10389.947344481752
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Yb2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2707.0
+  - table: condensate
+    species_name: Yb2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2707
+    runtime_ref: Konings-Table88-Tf2707
+    source_path: data-src/konings/yb.json
+    source_sha256: 4e3819b4c9317c8dbc045affe39b54912659098bd26444438f11ea245637b1a6
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 2000
+    - 2707
+    source_fit_range_K:
+    - 2000
+    - 2707
+    max_residual_J_per_mol: 0.541132098995149
+    flags:
+    - Table 88 C→H→liquid chain; no B phase; 1365 K is a solid transition, not fusion; reduced melt may contain Yb2+.
+    - constant-Cp liquid branch supercooled below 2707 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        2000: 10389.947344481752
+        2500: 8255.260821695581
+        2707: 7445.933053811421
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Yb2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2707.0
+  - table: condensate
+    species_name: Yb2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2707
+    runtime_ref: Konings-Table88-Tf2707
+    source_path: data-src/konings/yb.json
+    source_sha256: 4e3819b4c9317c8dbc045affe39b54912659098bd26444438f11ea245637b1a6
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 2707
+    - 3000
+    source_fit_range_K:
+    - 2707
+    - 3000
+    max_residual_J_per_mol: 2.3283064365387e-09
+    flags:
+    - Table 88 C→H→liquid chain; no B phase; 1365 K is a solid transition, not fusion; reduced melt may contain Yb2+.
+    - constant-Cp liquid branch supercooled below 2707 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        2707: 7445.933053811421
+        3000: 9017.248609085971
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Yb2O3
+    extrapolation: false
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Lu(g)
+    table_id: Konings-Lu(g)
+    source_path: data-src/konings/lu.json
+    source_sha256: a5a21b00ee36620ccbcb322ba0425b14b5bae97a7801a1df5b79efe81221c807
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 0.00478026230121031
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 3075.0
+        1800: 3090.0
+        2000: 3100.0
+        2500: 3125.0
+        3000: 3150.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Lu(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: Lu(g)
+    table_id: Konings-Lu(g)
+    source_path: data-src/konings/lu.json
+    source_sha256: a5a21b00ee36620ccbcb322ba0425b14b5bae97a7801a1df5b79efe81221c807
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.0836615790612996
+    flags:
+    - elemental 298.15 K reference state; Konings Part 1 Table 42
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 3060.0
+        1500: 3075.0
+    source:
+      citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
+      source_locator: Table 42 Lu(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: LuO(g)
+    table_id: Konings-LuO(g)
+    source_path: data-src/konings/lu.json
+    source_sha256: a5a21b00ee36620ccbcb322ba0425b14b5bae97a7801a1df5b79efe81221c807
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1500
+    - 3000
+    source_fit_range_K:
+    - 1500
+    - 3000
+    T_interval: 1
+    max_residual_J_per_mol: 1.16415321826935e-10
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1500: 10045.0
+        1800: 10054.0
+        2000: 10060.0
+        2500: 10075.0
+        3000: 10090.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 LuO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: LuO(g)
+    table_id: Konings-LuO(g)
+    source_path: data-src/konings/lu.json
+    source_sha256: a5a21b00ee36620ccbcb322ba0425b14b5bae97a7801a1df5b79efe81221c807
+    authority: published_fitted
+    method: integrated_printed_Cp_then_fitted
+    T_range_K:
+    - 1200
+    - 1500
+    source_fit_range_K:
+    - 500
+    - 1500
+    T_interval: 2
+    max_residual_J_per_mol: 0.119530895957723
+    flags:
+    - oxide gas from Konings Part 2 Table 89; elemental 298.15 K reference state
+    uncertainty_band:
+      kind: propagated source-reported ΔfH°298 and S°298 uncertainties
+      method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
+      units: J/mol
+      values_J_per_mol:
+        1200: 10036.0
+        1500: 10045.0
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
+      source_locator: Table 89 LuO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: condensate
+    species_name: Lu2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2762
+    runtime_ref: Konings-Table88-Tf2762
+    source_path: data-src/konings/lu.json
+    source_sha256: a5a21b00ee36620ccbcb322ba0425b14b5bae97a7801a1df5b79efe81221c807
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 1200
+    - 2000
+    source_fit_range_K:
+    - 1200
+    - 2000
+    max_residual_J_per_mol: 5.47679044026881
+    flags:
+    - Table 88 crystal→liquid chain; no high polymorph.
+    - constant-Cp liquid branch supercooled below 2762 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        1200: 13632.86384616873
+        1500: 12652.351072994363
+        1800: 11671.838299819996
+        1900: 11345.000708761872
+        2000: 11018.16311770375
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Lu2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2762.0
+  - table: condensate
+    species_name: Lu2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2762
+    runtime_ref: Konings-Table88-Tf2762
+    source_path: data-src/konings/lu.json
+    source_sha256: a5a21b00ee36620ccbcb322ba0425b14b5bae97a7801a1df5b79efe81221c807
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 2000
+    - 2762
+    source_fit_range_K:
+    - 2000
+    - 2762
+    max_residual_J_per_mol: 0.733411437366158
+    flags:
+    - Table 88 crystal→liquid chain; no high polymorph.
+    - constant-Cp liquid branch supercooled below 2762 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        2000: 11018.16311770375
+        2500: 9383.975162413139
+        2762: 8527.660673840857
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Lu2O3
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 2762.0
+  - table: condensate
+    species_name: Lu2O3(l)
+    tier: 3
+    table_id: Konings-Table88-Tf2762
+    runtime_ref: Konings-Table88-Tf2762
+    source_path: data-src/konings/lu.json
+    source_sha256: a5a21b00ee36620ccbcb322ba0425b14b5bae97a7801a1df5b79efe81221c807
+    authority: published_fitted
+    method: integrated_phase_chain_and_supercooled_liquid
+    T_range_K:
+    - 2762
+    - 3000
+    source_fit_range_K:
+    - 2762
+    - 3000
+    max_residual_J_per_mol: 1.86264514923096e-09
+    flags:
+    - Table 88 crystal→liquid chain; no high polymorph.
+    - constant-Cp liquid branch supercooled below 2762 K; caller-supplied activity
+    uncertainty_band:
+      kind: propagated printed phase-chain uncertainty
+      method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual
+      units: J/mol
+      values_J_per_mol:
+        2762: 8527.660673840857
+        3000: 9473.176055782915
+    source:
+      citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84
+      source_locator: Table 88 Lu2O3
+    extrapolation: false
+    source_data: true
+    source_limit_K: 4000
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each

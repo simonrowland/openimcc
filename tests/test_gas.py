@@ -1385,7 +1385,7 @@ _S_CHANNELS = (
     "SO", "SO2", "SO3", "SSO",
 )
 _PS_CHANNELS = _P_CHANNELS + _S_CHANNELS
-_RARE_EARTH_CHANNELS = ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO", "Sm", "SmO", "Eu", "EuO", "Gd", "GdO")
+_RARE_EARTH_CHANNELS = ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO", "Sm", "SmO", "Eu", "EuO", "Gd", "GdO", "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO", "Tm", "TmO", "Yb", "YbO", "Lu", "LuO")
 _NICO_PARENT_PAIRS = (("Ni", "NiO"), ("Co", "CoO"))
 _PRE_GATED_CHANNELS = tuple(
     species
@@ -3993,6 +3993,13 @@ def test_la_channels_use_caller_parent_and_hand_mass_action(
         ("Sm2O3", "Sm", 2, 1.5), ("Sm2O3", "SmO", 2, 0.5),
         ("Eu2O3", "Eu", 2, 1.5), ("Eu2O3", "EuO", 2, 0.5),
         ("Gd2O3", "Gd", 2, 1.5), ("Gd2O3", "GdO", 2, 0.5),
+        ("Tb2O3", "Tb", 2, 1.5), ("Tb2O3", "TbO", 2, 0.5),
+        ("Dy2O3", "Dy", 2, 1.5), ("Dy2O3", "DyO", 2, 0.5),
+        ("Ho2O3", "Ho", 2, 1.5), ("Ho2O3", "HoO", 2, 0.5),
+        ("Er2O3", "Er", 2, 1.5), ("Er2O3", "ErO", 2, 0.5),
+        ("Tm2O3", "Tm", 2, 1.5), ("Tm2O3", "TmO", 2, 0.5),
+        ("Yb2O3", "Yb", 2, 1.5), ("Yb2O3", "YbO", 2, 0.5),
+        ("Lu2O3", "Lu", 2, 1.5), ("Lu2O3", "LuO", 2, 0.5),
     ],
 )
 def test_rare_earth_channels_match_hand_mass_action(
@@ -4019,6 +4026,32 @@ def test_rare_earth_channels_match_hand_mass_action(
         - n_oxygen * math.log10(oxygen_fugacity)
     ) / n_gas
     assert result[species] == pytest.approx(10.0**log10_pressure, rel=2e-12)
+
+
+def test_rare_earth_channels_require_the_caller_parent(
+    gas_pack: ImccGasDatapack, tmp_path: Path
+) -> None:
+    pairs = tuple(
+        (element, f"{element}2O3", species)
+        for element in ("Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu")
+        for species in (element, f"{element}O")
+    )
+    oxide_df = pd.read_csv(gas_pack.oxide_path)
+    missing_parents = {f"{parent}(l)" for _, parent, _ in pairs}
+    oxide_path = tmp_path / "condensate-without-rare-earth-parents.csv"
+    oxide_df.loc[~oxide_df["species_name"].isin(missing_parents)].to_csv(
+        oxide_path, index=False
+    )
+    pack_without_parents = load_gas_datapack(
+        gas_path=gas_pack.gas_path, oxide_path=oxide_path
+    )
+    for _element, parent, species in pairs:
+        with pytest.raises(ImccGasSpeciesNotFoundError) as exc:
+            evaluate_gas(
+                {parent: 1.0e-3}, 2000.0, 1.0e-4, pack_without_parents,
+                parent_oxides=(parent,), gas_species=(species,),
+            )
+        assert exc.value.code == "imcc_gas_species_not_found"
 
 
 def test_cerium_dioxide_channel_uses_caller_supplied_ceo2_liquid(

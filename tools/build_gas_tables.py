@@ -50,7 +50,7 @@ LOW_FIT_MINIMUM_ROWS = SHOMATE_CP_PARAMETER_COUNT + LOW_FIT_NODE_MARGIN
 # the package it builds data for.
 R_J_MOL_K = 8.314462618
 KONINGS_SOURCE_DIR = Path(__file__).resolve().parents[1] / "data-src/konings"
-KONINGS_BATCH_ELEMENTS = ("La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd")
+KONINGS_BATCH_ELEMENTS = ("La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu")
 KONINGS_GAS_SPECIES = {
     "La": (("La(g)", 0), ("LaO(g)", 1)),
     "Ce": (("Ce(g)", 0), ("CeO(g)", 1), ("CeO2(g)", 2)),
@@ -59,7 +59,18 @@ KONINGS_GAS_SPECIES = {
     "Sm": (("Sm(g)", 0), ("SmO(g)", 1)),
     "Eu": (("Eu(g)", 0), ("EuO(g)", 1)),
     "Gd": (("Gd(g)", 0), ("GdO(g)", 1)),
+    "Tb": (("Tb(g)", 0), ("TbO(g)", 1)),
+    "Dy": (("Dy(g)", 0), ("DyO(g)", 1)),
+    "Ho": (("Ho(g)", 0), ("HoO(g)", 1)),
+    "Er": (("Er(g)", 0), ("ErO(g)", 1)),
+    "Tm": (("Tm(g)", 0), ("TmO(g)", 1)),
+    "Yb": (("Yb(g)", 0), ("YbO(g)", 1)),
+    "Lu": (("Lu(g)", 0), ("LuO(g)", 1)),
 }
+# Ho(g)'s printed first and second Cp intervals meet at 1000 K. The 1000–1500
+# fit still exceeds the on-node gate, so fit the requested low runtime interval
+# directly; the 1500–3000 interval remains the established high fit.
+KONINGS_LOW_FIT_START_K = {"Ho(g)": 1200.0}
 # ln(1.01325): converts a 1 atm standard-state entropy (S/R) to 1 bar.
 LH84_ATM_TO_BAR_S_R = math.log(1.01325)
 RUNTIME_COLUMNS = (
@@ -3023,7 +3034,12 @@ def build_rows(
             rows.extend(
                 _fit_konings_gas_row(
                     konings_records[element], species, element, 1, oxy_num,
-                    interval=interval, fit_t_min=lo, fit_t_max=hi,
+                    interval=interval,
+                    fit_t_min=(
+                        KONINGS_LOW_FIT_START_K.get(species, lo)
+                        if interval == 2 else lo
+                    ),
+                    fit_t_max=hi,
                     runtime_t_min=runtime_lo,
                 )
                 for species, oxy_num in species_rows

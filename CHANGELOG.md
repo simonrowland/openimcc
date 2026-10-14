@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added optional Tb, Dy, Ho, Er, Tm, Yb, and Lu element and monoxide gas
+  channels with caller-supplied E2O3(l) activities. Konings Tables 42, 88, and
+  89 supply the gas and parent functions. Printed liquid Cp branches are
+  flagged below fusion; the distinct polymorph chains and solid transitions
+  are retained, and Yb2+ melt speciation is not modeled.
 - Aligned the TSIV Table 2026 NiO 298.15 K enthalpy and entropy anchors with the
   tabulated function row (6.720 kJ/mol, 37.820 J/(mol K)); the same page's
   constants table prints 6.736 and 37.89, a source-internal difference; regenerated optional NiO(l) coefficients,
