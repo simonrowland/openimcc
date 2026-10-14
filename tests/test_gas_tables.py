@@ -3029,8 +3029,20 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
         "Ba(g)", "Ba+(g)", "BaO(g)", "BaO(l)", "Sr(g)", "Sr+(g)",
         "SrO(g)", "SrO(l)", "Zr(g)", "Zr+(g)", "ZrO(g)",
         "ZrO2(g)", "ZrO2(l)", "Sc(g)", "Sc2O3(cr)", "Sc2O3(l)", "U(g)", "UO2(cr)",
-        "La(g)", "Ce(g)", "Pr(g)", "Nd(g)",
+        "La(g)", "Nd(g)",
     } <= compared_species
+    expected_pankratz = {
+        "La(g)": {
+            "table": "Lanthanum gas formation table, printed p. 213 (PDF p. 221)",
+            "formation_enthalpy_298_kcal_mol": 103.000,
+            "nodes": [[1800, 7.658, 55.660, 10.616], [2000, 7.648, 56.467, 12.146]],
+        },
+        "Nd(g)": {
+            "table": "Neodymium gas formation table, printed p. 267 (PDF p. 275)",
+            "formation_enthalpy_298_kcal_mol": 78.300,
+            "nodes": [[1800, 7.391, 56.836, 10.132], [2000, 7.480, 57.619, 11.619]],
+        },
+    }
     for comparison in comparisons["rows"]:
         if "janaf_298K_element_reference_table" in comparison:
             assert comparison["janaf_298K_element_reference_table"] == (
@@ -3042,6 +3054,11 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                     encoding="utf-8"
                 )
             )["tables"][comparison["pankratz_table_id"]]
+            assert source["table"] == expected_pankratz["La(g)"]["table"]
+            assert source["formation_enthalpy_298_kcal_mol"] == expected_pankratz[
+                "La(g)"
+            ]["formation_enthalpy_298_kcal_mol"]
+            assert source["nodes"] == expected_pankratz["La(g)"]["nodes"]
             for value in comparison["values"]:
                 temperature = int(value["T_K"])
                 nodes = {int(row[0]): row for row in source["nodes"]}
@@ -3061,12 +3078,17 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                     pank_g, abs=0.001
                 )
             continue
-        if comparison["species_name"] in {"Ce(g)", "Pr(g)", "Nd(g)"}:
+        if comparison["species_name"] == "Nd(g)":
             source = json.loads(
                 (ROOT / comparison["pankratz_source_path"]).read_text(
                     encoding="utf-8"
                 )
             )["tables"][comparison["pankratz_table_id"]]
+            assert source["table"] == expected_pankratz["Nd(g)"]["table"]
+            assert source["formation_enthalpy_298_kcal_mol"] == expected_pankratz[
+                "Nd(g)"
+            ]["formation_enthalpy_298_kcal_mol"]
+            assert source["nodes"] == expected_pankratz["Nd(g)"]["nodes"]
             konings = json.loads(
                 (
                     ROOT / "data-src/konings/"
@@ -6646,6 +6668,33 @@ def test_konings_batch_integrates_and_fits_with_residual_gates() -> None:
     assert entropy == pytest.approx(162 * math.log(2))
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     root = Path(__file__).resolve().parents[1]
+    la_record = build_gas_tables._load_record(root / "data-src/konings/la.json")
+    la_phase = la_record["condensates"]["La2O3(l)"]["phases"][0]
+    assert la_phase["continuation_after_K"] == 1800
+    la_rows = build_gas_tables._konings_condensate_rows(
+        la_record, "La2O3(l)", "La", 2, 3
+    )
+    la_without_continuation = {
+        **la_record,
+        "condensates": {
+            **la_record["condensates"],
+            "La2O3(l)": {
+                **la_record["condensates"]["La2O3(l)"],
+                "phases": [
+                    {
+                        key: value
+                        for key, value in phase.items()
+                        if key != "continuation_after_K"
+                    }
+                    for phase in la_record["condensates"]["La2O3(l)"]["phases"]
+                ],
+            },
+        },
+    }
+    la_rows_without_continuation = build_gas_tables._konings_condensate_rows(
+        la_without_continuation, "La2O3(l)", "La", 2, 3
+    )
+    assert la_rows != la_rows_without_continuation
     for element in build_gas_tables.KONINGS_BATCH_ELEMENTS:
         record = build_gas_tables._load_record(
             root / f"data-src/konings/{element.lower()}.json"
@@ -6668,10 +6717,12 @@ def test_konings_batch_integrates_and_fits_with_residual_gates() -> None:
                 assert matching["max_residual_J_per_mol"] == pytest.approx(
                     float(fitted["_max_residual_J_per_mol"]), abs=1e-12
                 )
+                range_low, range_high = map(float, matching["T_range_K"])
                 gas_item = record["gases"][species]
                 for knot, value in matching["uncertainty_band"][
                     "values_J_per_mol"
                 ].items():
+                    assert range_low <= float(knot) <= range_high
                     expected_band = (
                         float(gas_item["dfH_unc_kJ_mol"]) * 1000.0
                         + float(knot) * float(gas_item["S_unc_J_mol_K"])

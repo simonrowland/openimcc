@@ -1540,8 +1540,17 @@ def _konings_condensate_rows(record: dict[str, Any], species: str, cation: str,
             step = phase["transition_from_previous"]
             transition = float(step["temperature_K"])
             if transition > T:
-                dh, ds = _konings_integral(current["coefficients"], current["powers"], T, transition)
-                H += dh; S += ds; T = transition
+                continuation_after = current.get("continuation_after_K")
+                if continuation_after is not None:
+                    continuation_start = max(T, float(continuation_after))
+                    if transition > continuation_start:
+                        dh, ds = _konings_integral(
+                            current["coefficients"], current["powers"],
+                            continuation_start, transition,
+                        )
+                        H += dh
+                        S += ds
+                T = transition
             H += float(step["enthalpy_kJ_mol"]) * 1000.0
             S += float(step["enthalpy_kJ_mol"]) * 1000.0 / transition
         current = phase

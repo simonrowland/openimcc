@@ -10522,7 +10522,7 @@ rows:
       kind: propagated source-reported ΔfH°298 and S°298 uncertainties
       method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
       units: J/mol
-      values_J_per_mol: {1200: 3060, 1500: 3075, 2000: 3100}
+      values_J_per_mol: {1200: 3060, 1500: 3075}
     source:
       citation: Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41
       source_record: La(g), ΔfH°298, S°298 and Cp segments
@@ -10568,7 +10568,7 @@ rows:
       kind: propagated source-reported ΔfH°298 and S°298 uncertainties
       method: linear worst-case bound |δG| ≤ σ(ΔfH°298) + T σ(S°298); Cp uncertainty is not reported
       units: J/mol
-      values_J_per_mol: {1200: 8036, 1500: 8045, 2000: 8060}
+      values_J_per_mol: {1200: 8036, 1500: 8045}
     source:
       citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 89, article p. 013101-85
       source_record: LaO(g), ΔfH°298, S°298 and Cp segments
@@ -10587,7 +10587,7 @@ rows:
     T_range_K: [1200, 1900]
     source_fit_range_K: [1200, 1900]
     max_residual_J_per_mol: 2.81236982205883
-    flags: [A-to-H Cp continuation beyond 1800 K is labelled; supercooled constant-Cp liquid below 2577 K; parent activity caller-supplied]
+    flags: [printed La2O3(A) Cp polynomial continued from 1800 K to the 2313 K A-to-H transition; supercooled constant-Cp liquid below 2577 K; parent activity caller-supplied]
     uncertainty_band:
       kind: propagated printed formation, transition, fusion and temperature uncertainties
       method: linear worst-case sum of |∂G/∂q|σq for Table 88 ΔfH298, transition enthalpies and temperatures, ΔfusH, Tfus, and S298; exclude supercooling energy and fit residual
@@ -10612,7 +10612,7 @@ rows:
     T_range_K: [1900, 2577]
     source_fit_range_K: [1900, 2577]
     max_residual_J_per_mol: 0.518375841435045
-    flags: [A-to-H Cp continuation beyond 1800 K is labelled; supercooled constant-Cp liquid below 2577 K; parent activity caller-supplied]
+    flags: [printed La2O3(A) Cp polynomial continued from 1800 K to the 2313 K A-to-H transition; supercooled constant-Cp liquid below 2577 K; parent activity caller-supplied]
     uncertainty_band: {kind: propagated printed phase-chain uncertainty, method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual, units: J/mol, values_J_per_mol: {1900: 8748.295142, 2000: 8057.995469, 2500: 5892.758042, 2577: 6016.844130}}
     source: {citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, source_locator: Table 88 La2O3}
     extrapolation: true
@@ -10630,7 +10630,7 @@ rows:
     T_range_K: [2577, 3000]
     source_fit_range_K: [2577, 3000]
     max_residual_J_per_mol: 0.0144415171816945
-    flags: [La2O3(A) Cp extension to 2313 K is labelled; liquid Cp is printed; parent activity caller-supplied]
+    flags: [printed La2O3(A) Cp polynomial continued from 1800 K to the 2313 K A-to-H transition in the anchor; liquid Cp is printed; parent activity caller-supplied]
     uncertainty_band: {kind: propagated printed phase-chain uncertainty, method: linear worst-case sum of |∂G/∂q|σq; excludes supercooling energy and fit residual, units: J/mol, values_J_per_mol: {2577: 6016.844130, 3000: 9981.398945}}
     source: {citation: Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, source_locator: Table 88 La2O3}
     extrapolation: false
@@ -10692,26 +10692,6 @@ source_comparisons:
     - {T_K: 2000, konings_G_app_J_mol: 12562.427, pankratz_G_app_J_mol: 9255.008, konings_minus_pankratz_J_mol: 3307.419}
     - {T_K: 2500, konings_G_app_J_mol: -107502.901, pankratz_G_app_J_mol: -110725.396, konings_minus_pankratz_J_mol: 3222.495}
     - {T_K: 3000, konings_G_app_J_mol: -230850.644, pankratz_G_app_J_mol: -233927.404, konings_minus_pankratz_J_mol: 3076.761}
-  - species_name: Ce(g)
-    konings_table_id: Konings-Part1-Table42-Ce
-    pankratz_table_id: P672-Ce-g
-    pankratz_source_path: data-src/published-thermo/pankratz-ree-comparison.json
-    selection: Konings remains selected as the evaluated-family rail. Compare G_app from each elemental 298.15 K formation anchor; continue the printed Pankratz final Cp above its 2000 K table limit solely for the 2500 and 3000 K comparison.
-    values:
-    - {T_K: 1800, konings_G_app_J_mol: 28578.379, pankratz_G_app_J_mol: 26559.195, konings_minus_pankratz_J_mol: 2019.184}
-    - {T_K: 2000, konings_G_app_J_mol: -21636.374, pankratz_G_app_J_mol: -23631.232, konings_minus_pankratz_J_mol: 1994.858}
-    - {T_K: 2500, konings_G_app_J_mol: -150402.225, pankratz_G_app_J_mol: -152357.717, konings_minus_pankratz_J_mol: 1955.491}
-    - {T_K: 3000, konings_G_app_J_mol: -283009.592, pankratz_G_app_J_mol: -284981.888, konings_minus_pankratz_J_mol: 1972.296}
-  - species_name: Pr(g)
-    konings_table_id: Konings-Part1-Table42-Pr
-    pankratz_table_id: P672-Pr-g
-    pankratz_source_path: data-src/published-thermo/pankratz-ree-comparison.json
-    selection: Konings remains selected as the evaluated-family rail. Compare G_app from each elemental 298.15 K formation anchor; continue the printed Pankratz final Cp above its 2000 K table limit solely for the 2500 and 3000 K comparison.
-    values:
-    - {T_K: 1800, konings_G_app_J_mol: -29052.983, pankratz_G_app_J_mol: -28770.858, konings_minus_pankratz_J_mol: -282.125}
-    - {T_K: 2000, konings_G_app_J_mol: -77307.833, pankratz_G_app_J_mol: -76253.400, konings_minus_pankratz_J_mol: -1054.433}
-    - {T_K: 2500, konings_G_app_J_mol: -201546.256, pankratz_G_app_J_mol: -197276.658, konings_minus_pankratz_J_mol: -4269.598}
-    - {T_K: 3000, konings_G_app_J_mol: -330485.016, pankratz_G_app_J_mol: -321079.224, konings_minus_pankratz_J_mol: -9405.792}
   - species_name: Nd(g)
     konings_table_id: Konings-Part1-Table42-Nd
     pankratz_table_id: P672-Nd-g
