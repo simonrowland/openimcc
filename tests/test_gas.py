@@ -209,7 +209,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
             for source in build_gas_tables.GAS_SOURCES
         )
     )
-    assert len(gas_pack.oxide_df) == 165
+    assert len(gas_pack.oxide_df) == 169
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -2567,7 +2567,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "BaO": 1.0e-3, "SrO": 1.0e-3, "ZrO2": 1.0e-3,
         "NiO": 1.0e-3, "CoO": 1.0e-3,
         "Sc2O3": 1.0e-3, "UO2": 1.0e-3, "ThO2": 1.0e-3,
-        "HfO2": 1.0e-3,
+        "HfO2": 1.0e-3, "Y2O3": 1.0e-3,
         "Br2": 1.0e-3,
         "I2": 1.0e-3,
     }
@@ -2612,7 +2612,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
                 continue
             assert (
                 _SF04_REACTIONS[species][0] + "(l)" in reason
-                or species in {"Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf"}
+                or species in {"Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf", "Y", "YO"}
                 and f"missing from active table: {species}(g)" in reason
             )
 

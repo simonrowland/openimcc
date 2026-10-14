@@ -2512,7 +2512,7 @@ ELEMENT_STATUS["Y"] = {
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
     "validation": "unvalidated",
     "reason": "Pankratz Bulletin 672 supplies Y(g) and the Y2O3(cr) elemental formation table; Pedley and Marshall (1983) supplies the selected YO(g) assessment and thermal functions. Y2O3(l) is the required tier-4 liquid_from_solid construction from the Pankratz crystal, using the measured 2712 K melting point. The 119 +/- 10 kJ/mol cubic-crystal-to-liquid step includes the 0.310 kcal/mol transition already present in the crystal function; that 1.297 kJ/mol is subtracted before applying the measured fusion input. Values above the Pankratz crystal range are flagged; activities are caller-supplied. No Y+ temperature-dependent gas function was found in the checked JANAF, NASA Glenn, Pankratz 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat routes, so C3 is declined.",
-    "c2_candidates": (("P672-Y-g", "Y"), ("PM83-YO", "YO")),
+    "c2_candidates": (("PM83-YO", "YO"),),
     "c3_ion_bound": {
         "status": "declined",
         "reason": "No Y+(g) temperature-dependent ideal-gas function was located in JANAF, NASA Glenn, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
@@ -3947,7 +3947,7 @@ _ATOMIC_MASS_G_MOL = {
     "As": 74.921595, "Se": 78.971, "Te": 127.60,
     "Mo": 95.95, "W": 183.84,
     "Ba": 137.327, "Sr": 87.62, "Zr": 91.224,
-    "Sc": 44.955908, "U": 238.02891, "Th": 232.0377, "Hf": 178.49,
+    "Sc": 44.955908, "Y": 88.90584, "U": 238.02891, "Th": 232.0377, "Hf": 178.49,
     "La": 138.90547, "Ce": 140.116, "Pr": 140.90766, "Nd": 144.242,
     "Sm": 150.36, "Eu": 151.964, "Gd": 157.25,
     "Tb": 158.92535, "Dy": 162.500, "Ho": 164.93033,

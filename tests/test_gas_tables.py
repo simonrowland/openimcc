@@ -2004,6 +2004,7 @@ def test_constructed_condensate_bands_match_liquid_construction_inputs() -> None
         "ZnO(l)": "TSIV uncertainties and crystal-Cp extension parameters",
         "ThO2(l)": "reviewed fusion inputs and crystal-Cp extension parameters",
         "HfO2(l)": "reviewed fusion inputs and crystal-Cp extension parameters",
+        "Y2O3(l)": "measured fusion input and crystal-Cp extension parameters",
     }
     seen_other_forms: set[str] = set()
     for row in constructed:
@@ -2069,6 +2070,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
         "NiO", "CoO",
         "Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf",
+        "Y", "YO",
     }
     assert trace_channels == (
         set(build_gas_tables.TRACE_GAS_SPECIES)
@@ -2084,7 +2086,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         gas_atoms = atom_counts(species)
         element = next(
             name for name in (
-                "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
+                "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "Y",
                 "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag",
                 "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "U", "Th", "Hf",
             )
@@ -2198,7 +2200,7 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
                 and row["species_name"] not in {
                     "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)", "TeO2(l)",
                     "SeO2(l)", "As2O3(l)", "Sb2O3(l)", "Ag2O(l)",
-                    "UO2(l)", "ThO2(l)", "HfO2(l)", "CeO2(l)",
+                    "UO2(l)", "ThO2(l)", "HfO2(l)", "CeO2(l)", "Y2O3(l)",
                 }
             ):
                 continue
