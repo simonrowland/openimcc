@@ -1,0 +1,23 @@
+{
+  "schema_version": "konings-cp.v1",
+  "citation": "Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41; Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, and Table 89, article p. 013101-85.",
+  "gases": {
+    "Sm(g)": {"dfH298_kJ_mol":205.4,"dfH_unc_kJ_mol":2.0,"S298_J_mol_K":183.047,"S_unc_J_mol_K":0.050,"segments":[[298.15,1600,[28.2240,4.02777e-3,4.4314e-6,-9.0911e-9,2.9585e-12,6.7438e4],[0,1,2,3,4,-2]],[1600,4000,[118.0668,-82.4050e-3,25.0125e-6,-2.2173e-9,0,-3.3223e7],[0,1,2,3,4,-2]]]},
+    "SmO(g)": {"dfH298_kJ_mol":-105.3,"dfH_unc_kJ_mol":8.0,"S298_J_mol_K":246.592,"S_unc_J_mol_K":0.10,"segments":[[298.15,1400,[28.65158,4.58171e-2,-3.44081e-5,7.99213e-9,-4.99673e4],[0,1,2,3,-2]],[1400,4000,[70.5862,-2.02158e-2,4.6805e-6,-2.43006e-10,-6.91999e6],[0,1,2,3,-2]]]}
+  },
+  "condensates": {
+    "Sm2O3(l)": {
+      "formula":{"Sm":2,"O":3},"dfH298_kJ_mol":-1823.0,"dfH_unc_kJ_mol":4.0,"S298_J_mol_K":150.6,"S_unc_J_mol_K":0.3,
+      "fusion_temperature_K":2613,"fusion_temperature_unc_K":15,"fusion_enthalpy_kJ_mol":89,"fusion_enthalpy_unc_kJ_mol":10,"liquid_Cp_J_mol_K":179,
+      "non_anchor_crystal_phase":{"name":"C","range_K":[298.15,900],"dfH298_kJ_mol":-1826.8,"dfH_unc_kJ_mol":4.8,"S298_J_mol_K":null,"heat_capacity_coefficients":[132.4358,18.7799e-3,0,0,-2.40860e6],"heat_capacity_powers":[0,1,2,3,-2],"transition_to_anchor":{"temperature_K":900,"enthalpy_kJ_mol":6,"enthalpy_unc_kJ_mol":3,"to":"B"}},
+      "phases":[
+        {"name":"B","range_K":[298.15,2190],"coefficients":[129.7953,19.03114e-3,0,0,-1.86227e6],"powers":[0,1,2,3,-2]},
+        {"name":"A","range_K":[2190,2395],"transition_from_previous":{"temperature_K":2190,"temperature_unc_K":20,"enthalpy_kJ_mol":7,"enthalpy_unc_kJ_mol":3},"coefficients":[140,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"H","range_K":[2395,2533],"transition_from_previous":{"temperature_K":2395,"temperature_unc_K":20,"enthalpy_kJ_mol":32,"enthalpy_unc_kJ_mol":8},"coefficients":[165,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"X","range_K":[2533,2613],"transition_from_previous":{"temperature_K":2533,"temperature_unc_K":30,"enthalpy_kJ_mol":20,"enthalpy_unc_kJ_mol":5},"coefficients":[165,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"liquid","range_K":[2613,4000],"transition_from_previous":{"temperature_K":2613,"temperature_unc_K":15,"enthalpy_kJ_mol":89,"enthalpy_unc_kJ_mol":10},"coefficients":[179,0,0,0,0],"powers":[0,1,2,3,-2]}
+      ],
+      "flags":["The selected 298.15 K anchor is the fully specified B form (dfH298 and S298); the C form has no printed S298 and is not used to anchor this chain.","Table 88 reports C→B at 900 K with ΔtrsH=6±3 kJ/mol; that step does not replace the independent B-form 298.15 K anchor.","Runtime 1200–2613 K is a supercooled continuation of the printed constant-Cp liquid; source_data=false below fusion."]
+    }
+  }
+}
