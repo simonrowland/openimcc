@@ -2229,7 +2229,7 @@ for _element, _parent, _cation, _neutral, _anion, _hashes in (
     _tsiv_table = "2026" if _element == "Ni" else "1334"
     _melt_temperature = 2228 if _element == "Ni" else 2090
     _max_ratio = (
-        1.6031812707630546e-05
+        1.6031810894215375e-05
         if _element == "Ni"
         else 3.0268368928067777e-06
     )
@@ -2266,14 +2266,14 @@ for _element, _parent, _cation, _neutral, _anion, _hashes in (
         ),
         "c3_ion_bound": {
             "status": "computed",
-            "max_ratio": 1.6031812707630546e-05 if _element == "Ni" else 3.0268368928067777e-06,
-            "isolated_bound": 0.00016854764619959103 if _element == "Ni" else 3.3102018564057046e-05,
+            "max_ratio": 1.6031810894215375e-05 if _element == "Ni" else 3.0268368928067777e-06,
+            "isolated_bound": 0.00016848973710661597 if _element == "Ni" else 3.3102018564057046e-05,
             "temperature_K": 2800.0,
             "fO2": 1.0e-4,
-            "neutral_pressure_bar": 0.014961323427658832 if _element == "Ni" else 0.0021375904714789826,
-            "element_total_pressure_bar": 0.014991349315467773 if _element == "Ni" else 0.0021594687581678014,
-            "joint_ion_pressure_bar": 2.4033850446022664e-07 if _element == "Ni" else 6.5363597060852885e-09,
-            "electron_pressure_bar": 8.127941812279205e-05 if _element == "Ni" else 8.131486539410398e-05,
+            "neutral_pressure_bar": 0.014971609461365306 if _element == "Ni" else 0.0021375904714789826,
+            "element_total_pressure_bar": 0.01500165599221954 if _element == "Ni" else 0.0021594687581678014,
+            "joint_ion_pressure_bar": 2.405037119673366e-07 if _element == "Ni" else 6.5363597060852885e-09,
+            "electron_pressure_bar": 8.12793917760601e-05 if _element == "Ni" else 8.131486539410398e-05,
             "K_ion": 4.250258995716842e-10 if _element == "Ni" else 2.3422511491170064e-12,
             "parent_oxide": _parent,
             "parent_activity": 1.0e-3,

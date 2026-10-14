@@ -2893,6 +2893,38 @@ def test_nickel_cobalt_janaf_298_k_anchors_are_pinned() -> None:
         assert _value(anchor, "formation_enthalpy") == pytest.approx(expected)
 
 
+def test_tsiv_298_15_k_summary_anchors_match_printed_rows() -> None:
+    """Keep each stored TSIV H-H(0)/S anchor tied to its printed 298 K cells."""
+    for source_path in sorted(PUBLISHED_DATA.glob("tsiv-table-*.json")):
+        record = json.loads(source_path.read_text(encoding="utf-8"))
+        anchors = {
+            "enthalpy_298_minus_H0_kj_mol": record.get(
+                "enthalpy_298_minus_H0_kj_mol"
+            ),
+            "entropy_298_j_mol_k": record.get("entropy_298_j_mol_k"),
+        }
+        anchors = {key: value for key, value in anchors.items() if value is not None}
+        if not anchors:
+            continue
+
+        printed = record.get("printed_298_15K_anchor_cells")
+        if printed is None:
+            table_rows = record.get("nodes", record.get("crystal_nodes", []))
+            row = next((values for values in table_rows if values[0] == 298.15), None)
+            assert row is not None, f"{record['record_id']} lacks its printed 298.15 K row"
+            printed = {}
+            if "enthalpy_298_minus_H0_kj_mol" in anchors:
+                printed["enthalpy_298_minus_H0_kj_mol"] = row[-1]
+            if "entropy_298_j_mol_k" in anchors:
+                printed["entropy_298_j_mol_k"] = row[2]
+
+        assert printed.keys() >= anchors.keys(), record["record_id"]
+        for key, value in anchors.items():
+            assert value == pytest.approx(printed[key]), (
+                f"{record['record_id']} {key} differs from its printed 298.15 K row"
+            )
+
+
 def test_ba_sr_zr_janaf_298_k_formation_anchors_are_pinned() -> None:
     expected_kj_mol = {
         "Ba-005": 179.075, "Ba-006": 688.126, "Ba-037": -123.846,
