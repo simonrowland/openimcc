@@ -1,0 +1,21 @@
+{
+  "schema_version": "konings-cp.v1",
+  "citation": "Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41; Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, and Table 89, article p. 013101-85.",
+  "gases": {
+    "La(g)": {"dfH298_kJ_mol":434.5,"dfH_unc_kJ_mol":3.0,"S298_J_mol_K":182.383,"S_unc_J_mol_K":0.050,"segments":[[298.15,1200,[25.8201,-2.1360e-3,12.5913e-6,-5.6642e-9,0,-3.0747e5],[0,1,2,3,4,-2]],[1200,4000,[50.9965,-16.3238e-3,4.8301e-6,-0.4063e-9,0,-9.0345e6],[0,1,2,3,4,-2]]]},
+    "LaO(g)": {"dfH298_kJ_mol":-119,"dfH_unc_kJ_mol":8,"S298_J_mol_K":239.594,"S_unc_J_mol_K":0.03,"segments":[[298.15,1200,[28.0550,21.9688e-3,-1.925691e-5,6.083418e-9,-1.145313e5],[0,1,2,3,-2]],[1200,4000,[41.7593,-6.82858e-3,3.529957e-6,-2.81197e-10,-1.500459e6],[0,1,2,3,-2]]]}
+  },
+  "condensates": {
+    "La2O3(l)": {
+      "formula":{"La":2,"O":3},"dfH298_kJ_mol":-1791.6,"dfH_unc_kJ_mol":2.0,"S298_J_mol_K":127.32,"S_unc_J_mol_K":0.84,
+      "fusion_temperature_K":2577,"fusion_temperature_unc_K":15,"fusion_enthalpy_kJ_mol":78,"fusion_enthalpy_unc_kJ_mol":10,"liquid_Cp_J_mol_K":162,
+      "phases":[
+        {"name":"A","range_K":[298.15,1800],"coefficients":[120.6805,13.42414e-3,0,0,-14.13668e5],"powers":[0,1,2,3,-2],"continuation_after_K":1800},
+        {"name":"H","range_K":[2313,2386],"transition_from_previous":{"temperature_K":2313,"temperature_unc_K":30,"enthalpy_kJ_mol":23,"enthalpy_unc_kJ_mol":5},"coefficients":[150,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"X","range_K":[2386,2577],"transition_from_previous":{"temperature_K":2386,"temperature_unc_K":30,"enthalpy_kJ_mol":17,"enthalpy_unc_kJ_mol":5},"coefficients":[150,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"liquid","range_K":[2577,4000],"transition_from_previous":{"temperature_K":2577,"temperature_unc_K":15,"enthalpy_kJ_mol":78,"enthalpy_unc_kJ_mol":10},"coefficients":[162,0,0,0,0],"powers":[0,1,2,3,-2]}
+      ],
+      "flags":["La2O3(A) source Cp ends at 1800 K; constant-last-Cp extension to the printed A→H marker at 2313±30 K.","H→X table marker is 2386±30 K; the article prose also prints 2383±30 K.","Runtime 1200–2577 K is a supercooled continuation of the printed constant-Cp liquid; source_data=false below fusion."]
+    }
+  }
+}

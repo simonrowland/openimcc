@@ -124,6 +124,8 @@ def _neutral_oxide_sources(
             if "O" not in species_name.removesuffix("(g)"):
                 continue
             result[table_id] = (cation, species_name.removesuffix("(g)"))
+        if (ROOT / "data-src/konings/la.json").exists():
+            result["Konings-Table89-LaO"] = ("La", "LaO")
     return result
 
 
@@ -1068,7 +1070,8 @@ def _c4_rows_cover_domain(
             elif source["authority"] == "published_fitted":
                 if (
                     source["method"] not in {
-                        "fitted", "generated_constant_cp_extrapolation_fit"
+                        "fitted", "generated_constant_cp_extrapolation_fit",
+                        "integrated_printed_Cp_then_fitted",
                     }
                     or not source.get("source", {}).get("citation")
                 ):
@@ -1137,7 +1140,10 @@ def _c4_rows_cover_domain(
             if source["authority"] == "liquid_from_solid_estimate":
                 if source["method"] != "liquid_from_solid_construction":
                     return False
-            elif source["method"] != "generated_constant_cp_extrapolation_fit":
+            elif source["method"] not in {
+                "generated_constant_cp_extrapolation_fit",
+                "integrated_phase_chain_and_supercooled_liquid",
+            }:
                 return False
             if source["authority"] == "nasa_glenn_fitted":
                 if "NASA pure-liquid standard state at 1 atm" not in source.get(
@@ -1187,7 +1193,9 @@ def _c4_rows_cover_domain(
                     return False
         elif source["authority"] == "nasa_glenn_fitted":
             if (
-                source["method"] != "fitted"
+                source["method"] not in {
+                    "fitted", "integrated_phase_chain_and_supercooled_liquid"
+                }
                 or "NASA pure-liquid standard state at 1 atm"
                 not in source.get("note", "")
             ):
@@ -1226,7 +1234,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Cs", "Cu", "Sn",
         "Mn", "Ni", "Co", "P", "S",
         "Zn", "Cd", "Bi", "Te", "Se", "As", "Sb", "Ag", "Mo", "W",
-        "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf",
+        "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1258,6 +1266,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Sc": "Sc2O3",
         "Th": "ThO2",
         "Hf": "HfO2",
+        "La": "La2O3",
     }
     liquid_by_element = {
         **parent_by_element,

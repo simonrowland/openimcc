@@ -559,6 +559,10 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "ThO2": ("ThO2", 1, 0.0),
     # HfO2(l) is the caller-supplied parent: Hf(g) balances with one O2.
     "Hf": ("HfO2", 1, 1.0),
+    # La2O3(l) -> 2La(g)+3/2O2 and -> 2LaO(g)+1/2O2; atom balance
+    # fixes the per-La2O3 gas coefficient at 2 and the O2 coefficients above.
+    "La": ("La2O3", 2, 1.5),
+    "LaO": ("La2O3", 2, 0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -688,6 +692,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "U", "UO", "UO2", "UO3",
         "Th", "ThO", "ThO2",
         "Hf",
+        "La", "LaO",
     }
 )
 
@@ -2359,6 +2364,20 @@ ELEMENT_STATUS["Hf"] = {
         "parent_oxide": "HfO2",
     },
 }
+ELEMENT_STATUS["La"] = {
+    "status": "gas-partial",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": "Konings Part 1 Table 42 and Part 2 Tables 88–89 provide La(g), LaO(g), and the La2O3(l) phase chain through 3000 K. The table's constant-Cp liquid branch is supercooled below 2577 K, and La2O3 is the selected parent because it is the sourced liquid oxide; a(La2O3) is caller-supplied. No ion thermal function was selected for this batch, so C3 is declined.",
+    "c2_candidates": (("Konings-Table89-LaO", "LaO"),),
+    "c3_ion_bound": {
+        "status": "declined",
+        "reason": "No La+ or La− thermal function is present in the selected Konings tables, NIST-JANAF index, NASA Glenn thermo.inp corpus, or local Pankratz Bulletins 672/677/696 records. The NIST Chemistry WebBook La+ page contains reaction thermochemistry, not a temperature-dependent ideal-gas function. Burcat was searched by species name; no La+ or La− card was located.",
+        "source_tables": {"konings": "Part 1 Table 42; Part 2 Tables 88–89", "janaf": "name index", "nasa": "thermo.inp inventory", "pankratz": "Bulletin 672 p. 213; Bulletins 677 and 696 inventory", "nist_webbook": "La+ species page", "burcat": "species search"},
+        "parent_oxide": "La2O3",
+        "parent_activity": 1.0e-3,
+    },
+}
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #
@@ -2830,6 +2849,12 @@ def _source_model_flag(
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
+    konings_liquid = re.fullmatch(r"Konings-Table88-Tf(\d+(?:\.\d+)?)", source_ref)
+    if phase == "l" and konings_liquid is not None and T < float(konings_liquid[1]):
+        return (
+            f"{row_name} uses the printed constant-Cp liquid branch as a "
+            f"supercooled continuation below {float(konings_liquid[1]):g} K"
+        )
     supercooled = re.fullmatch(r"(TSIV-\d+)-SC-(\d+(?:\.\d+)?)", source_ref)
     if phase == "l" and supercooled is not None:
         return (

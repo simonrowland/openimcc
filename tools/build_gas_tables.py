@@ -49,6 +49,7 @@ LOW_FIT_MINIMUM_ROWS = SHOMATE_CP_PARAMETER_COUNT + LOW_FIT_NODE_MARGIN
 # Same value as openimcc.gas.R_J_MOL_K; kept local so the tool does not import
 # the package it builds data for.
 R_J_MOL_K = 8.314462618
+KONINGS_SOURCE_DIR = Path(__file__).resolve().parents[1] / "data-src/konings"
 # ln(1.01325): converts a 1 atm standard-state entropy (S/R) to 1 bar.
 LH84_ATM_TO_BAR_S_R = math.log(1.01325)
 RUNTIME_COLUMNS = (
@@ -1443,6 +1444,172 @@ def _fit_janaf_text_row(
     }
 
 
+def _konings_integral(coefficients: Sequence[float], powers: Sequence[float],
+                      lower_k: float, upper_k: float) -> tuple[float, float]:
+    """Integrate a printed Konings Cp polynomial to enthalpy and entropy.
+
+    Premise: the tables define Cp as a sum c_i*T**p_i. Algebra: integrate
+    Cp dT for H and Cp/T dT for S; powers −1 in Cp require logarithms.
+    Unit check: coefficients use the printed J/mol/K basis, so H is J/mol
+    and S is J/mol/K. Sanity: for constant Cp, the result is Cp*ΔT and
+    Cp*ln(T2/T1), respectively.
+    """
+    h = s = 0.0
+    for coefficient, power in zip(coefficients, powers, strict=True):
+        coefficient, power = float(coefficient), int(power)
+        if power == -1:
+            h += coefficient * math.log(upper_k / lower_k)
+        else:
+            h += coefficient * (upper_k ** (power + 1) - lower_k ** (power + 1)) / (power + 1)
+        if power == 0:
+            s += coefficient * math.log(upper_k / lower_k)
+        else:
+            s += coefficient * (upper_k**power - lower_k**power) / power
+    return h, s
+
+
+def _konings_source_rows(record: dict[str, Any], species: str,
+                         temperatures: Sequence[float]) -> tuple[list[dict[str, float]], float]:
+    """Convert one published polynomial record to the existing node shape."""
+    item = record["gases"][species]
+    segments = item["segments"]
+    reference_t = NASA_STANDARD_T_K
+    reference_h = float(item["dfH298_kJ_mol"])
+    reference_s = float(item["S298_J_mol_K"])
+    rows = []
+    for temperature in temperatures:
+        T = float(temperature)
+        h = s = 0.0
+        for lower, upper, coefficients, powers in segments:
+            lo = max(reference_t, float(lower))
+            hi = min(T, float(upper))
+            if hi > lo:
+                dh, ds = _konings_integral(coefficients, powers, lo, hi)
+                h += dh
+                s += ds
+        active = next((seg for seg in segments if float(seg[0]) <= T <= float(seg[1])), segments[-1])
+        cp = sum(float(c) * T ** int(p) for c, p in zip(active[2], active[3], strict=True))
+        rows.append({"temperature": T, "heat_capacity": cp,
+                     "entropy": reference_s + s,
+                     "enthalpy_increment": h / 1000.0})
+    return rows, reference_h
+
+
+def _fit_konings_gas_row(record: dict[str, Any], species: str, cation: str,
+                         cat_num: int, oxy_num: int, *, interval: int,
+                         fit_t_min: float, fit_t_max: float,
+                         runtime_t_min: float | None = None) -> dict[str, str]:
+    nodes = np.arange(fit_t_min, fit_t_max + 50.0, 100.0)
+    source_rows, reference = _konings_source_rows(record, species, nodes)
+    fit = _fit_shomate_values(source_rows, reference)
+    number = lambda value: format(float(value), ".15g")
+    return {"species_name": species, "state": "g", "T_interval": str(interval),
+            "cation": cation, "cat_num": str(cat_num), "oxy_num": str(oxy_num),
+            "T_min": number(fit_t_min if runtime_t_min is None else runtime_t_min),
+            "T_max": number(fit_t_max), **{key: number(fit[key]) for key in "ABCDEFG"},
+            "H": "0", "Ref": f"Konings-{species}",
+            "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
+            "_max_residual_log10_K": number(fit["max_residual_log10_K"])}
+
+
+def _konings_condensate_rows(record: dict[str, Any], species: str, cation: str,
+                             cat_num: int, oxy_num: int) -> list[dict[str, str]]:
+    item = record["condensates"][species]
+    Tf = float(item["fusion_temperature_K"])
+    phases = item["phases"]
+    # Integrate each printed solid phase and its transition increment to Tf,
+    # then extend the printed liquid's constant Cp below Tf as a supercooled
+    # branch. The liquid anchor is the selected elemental dfH298 plus the
+    # accumulated source H/S; no supercooling energy enters the uncertainty.
+    T = NASA_STANDARD_T_K
+    H = 0.0
+    S = float(item["S298_J_mol_K"])
+    current = phases[0]
+    for phase in phases:
+        if phase["name"] == "liquid":
+            break
+        start, end = map(float, phase["range_K"])
+        if phase is not phases[0]:
+            step = phase["transition_from_previous"]
+            transition = float(step["temperature_K"])
+            if transition > T:
+                dh, ds = _konings_integral(current["coefficients"], current["powers"], T, transition)
+                H += dh; S += ds; T = transition
+            H += float(step["enthalpy_kJ_mol"]) * 1000.0
+            S += float(step["enthalpy_kJ_mol"]) * 1000.0 / transition
+        current = phase
+        if end > T:
+            dh, ds = _konings_integral(phase["coefficients"], phase["powers"], T, end)
+            H += dh; S += ds; T = end
+    liquid = phases[-1]
+    cp_liquid = float(item["liquid_Cp_J_mol_K"])
+    # Fusion enthalpy is printed separately; include it exactly once.
+    fusion = liquid["transition_from_previous"]
+    H += float(fusion["enthalpy_kJ_mol"]) * 1000.0
+    S += float(fusion["enthalpy_kJ_mol"]) * 1000.0 / Tf
+    Hf = H
+    Sf = S
+
+    def source_rows(nodes: Sequence[float]) -> dict[float, dict[str, float]]:
+        result = {}
+        for value in nodes:
+            t = float(value)
+            result[t] = {"temperature": t, "heat_capacity": cp_liquid,
+                         "entropy": Sf + cp_liquid * math.log(t / Tf),
+                         "enthalpy_increment": (Hf + cp_liquid * (t - Tf)) / 1000.0}
+        return result
+
+    rows = []
+    # Four intervals are the established liquid-fit convention; split at
+    # source phase boundaries so the ten-joule source-node gate is met.
+    for lo, hi in ((1200.0, 1800.0), (1800.0, 2300.0),
+                   (2300.0, 2500.0), (2500.0, Tf), (Tf, 3000.0)):
+        nodes = [lo, *np.arange(lo + 100.0, hi, 100.0).tolist(), hi]
+        fit = _fit_condensate_values(species, f"Konings-{species}", cation,
+                                     cat_num, oxy_num, source_rows(nodes),
+                                     float(item["dfH298_kJ_mol"]),
+                                     fit_t_min=lo, fit_t_max=hi,
+                                     runtime_t_min=lo, runtime_t_max=hi,
+                                     fit_temperatures=nodes)
+        residual = float(fit["_max_residual_J_per_mol"])
+        if residual > 10.0:
+            raise ValueError(f"{species}: source-node residual {residual:g} J/mol exceeds 10")
+        fit["Ref"] = f"Konings-Table88-Tf{Tf:g}"
+        rows.append(fit)
+    return rows
+
+
+def _konings_condensate_uncertainty_j_mol(item: dict[str, Any], temperature: float) -> float:
+    """Propagate printed La2O3 formation/step/fusion uncertainties to G(T).
+
+    Premise: every phase step adds ΔH at Ttrs and ΔS=ΔH/Ttrs; algebra gives
+    |∂G/∂ΔH|=|1−T/Ttrs|. For a transition-temperature uncertainty, differentiate
+    the step plus adjacent Cp branches: dG/dTtrs = Cp(before)-Cp(after) +
+    T*ΔH/Ttrs². Fusion-T uses the same derivative for the solid-to-liquid
+    anchor and constant liquid Cp. Unit check: each term is J/mol/K. Sanity:
+    at T=Ttrs, the ΔH sensitivity vanishes, while the temperature sensitivity
+    retains the Cp discontinuity and transition-entropy contribution.
+    The band sums absolute contributions and excludes supercooling energy.
+    """
+    T = float(temperature)
+    phases = item["phases"]
+    bound = float(item["dfH_unc_kJ_mol"]) * 1000.0 + T * float(item["S_unc_J_mol_K"])
+    for index, phase in enumerate(phases[1:]):
+        step = phase["transition_from_previous"]
+        transition = float(step["temperature_K"])
+        dh = float(step["enthalpy_kJ_mol"]) * 1000.0
+        bound += float(step["enthalpy_unc_kJ_mol"]) * 1000.0 * abs(1.0 - T / transition)
+        before = phases[index]
+        after = phase
+        def cp_at(branch: dict[str, Any], at: float) -> float:
+            return sum(float(c) * at ** int(p) for c, p in zip(
+                branch["coefficients"], branch["powers"], strict=True
+            ))
+        dGdT = cp_at(before, transition) - cp_at(after, transition) + dh * T / transition**2
+        bound += float(step["temperature_unc_K"]) * abs(dGdT)
+    return bound
+
+
 def _published_table_record(source_dir: Path, table_id: str) -> dict[str, Any]:
     """Read one transcribed record from its named published table bundle."""
     if table_id in {"P672-HfO2-c", "P672-Hf-g"}:
@@ -2748,6 +2915,7 @@ def build_rows(
     nasa_source_dir = nasa_source_dir or repository / "data-src/nasa-glenn"
     lh84_source_dir = lh84_source_dir or repository / "data-src/lh84"
     published_source_dir = repository / "data-src/published-thermo"
+    konings_record = _load_record(KONINGS_SOURCE_DIR / "la.json")
     rows = [_fit_row(source_dir, *source) for source in GAS_SOURCES]
     rows.extend(
         _fit_nasa_row(
@@ -2807,6 +2975,20 @@ def build_rows(
             fit_t_max=FIT_T_MAX,
         )
         for source in TRACE_JANAF_GAS_SOURCES
+    )
+    # Konings Part 1/2 are polynomial records rather than tabulated nodes;
+    # integrate their Cp functions to the shared 100 K node grid before using
+    # the established Shomate fitter. The low fit is exposed only from 1200 K.
+    rows.extend(
+        _fit_konings_gas_row(konings_record, species, "La", 1, oxy_num,
+                             interval=1, fit_t_min=1500.0, fit_t_max=3000.0)
+        for species, oxy_num in (("La(g)", 0), ("LaO(g)", 1))
+    )
+    rows.extend(
+        _fit_konings_gas_row(konings_record, species, "La", 1, oxy_num,
+                             interval=2, fit_t_min=500.0, fit_t_max=1500.0,
+                             runtime_t_min=1200.0)
+        for species, oxy_num in (("La(g)", 0), ("LaO(g)", 1))
     )
     rows.extend(
         _fit_row(
@@ -3519,7 +3701,9 @@ def build_condensate_rows(
     repository = Path(__file__).resolve().parents[1]
     nasa_source_dir = nasa_source_dir or repository / "data-src/nasa-glenn"
     published_source_dir = published_source_dir or repository / "data-src/published-thermo"
+    konings_record = _load_record(KONINGS_SOURCE_DIR / "la.json")
     rows = []
+    rows.extend(_konings_condensate_rows(konings_record, "La2O3(l)", "La", 2, 3))
     for source in CONDENSATE_SOURCES:
         if source[1] == "Na-013":
             rows.append(

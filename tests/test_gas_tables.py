@@ -1692,7 +1692,7 @@ def test_hf_mixed_source_band_matches_pankratz_apparent_gibbs_nodes() -> None:
         if row["table"] == "gas" and row["species_name"] == "Hf(g)"
     ]
     assert len(rows) == 2
-    for row in rows:
+    for row, fitted in zip(rows, condensates, strict=True):
         band = row["uncertainty_band"]
         for temperature, value in band["values_J_per_mol"].items():
             temperature = int(temperature)
@@ -3637,6 +3637,8 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
         ),
         "Th": "Pankratz supplies both the selected Th gas and ThO2 crystal; JANAF O2 remains the shared gas reference.",
         "ThO": "Pankratz supplies both the selected ThO gas and ThO2 crystal; JANAF O2 remains the shared gas reference.",
+        "La": "Konings supplies both the selected La gas and La2O3 liquid; JANAF O2 remains the shared gas reference.",
+        "LaO": "Konings supplies both the selected LaO gas and La2O3 liquid; JANAF O2 remains the shared gas reference.",
     }
 
     def compilation(row: dict) -> str:
@@ -3655,6 +3657,8 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
             return "TSIV"
         if "pankratz" in source or "bulletin" in source or "p672" in source:
             return "Pankratz"
+        if "konings" in source:
+            return "Konings"
         if any(label in source for label in ("construction", "estimated", "lam1987")):
             return "construction"
         return "other"
@@ -6526,3 +6530,55 @@ def test_janaf_gate_rejects_both_previously_incorrect_parent_liquid_rows(
         _assert_lam_parent_source_exception(
             "Al2O3(l)", replace(pack, oxide_df=al_mutated)
         )
+
+
+def test_konings_la_polynomials_integrate_and_fit_with_residual_gates() -> None:
+    record = build_gas_tables._load_record(
+        Path(__file__).resolve().parents[1] / "data-src/konings/la.json"
+    )
+    cp, entropy = build_gas_tables._konings_integral([162], [0], 1000, 2000)
+    assert cp == 162000
+    assert entropy == pytest.approx(162 * math.log(2))
+    for species, oxy_num in (("La(g)", 0), ("LaO(g)", 1)):
+        for interval, lo, hi, runtime_lo in (
+            (1, 1500, 3000, None), (2, 500, 1500, 1200)
+        ):
+            row = build_gas_tables._fit_konings_gas_row(
+                record, species, "La", 1, oxy_num, interval=interval,
+                fit_t_min=lo, fit_t_max=hi, runtime_t_min=runtime_lo,
+            )
+            assert float(row["_max_residual_J_per_mol"]) <= 10
+    condensates = build_gas_tables._konings_condensate_rows(
+        record, "La2O3(l)", "La", 2, 3
+    )
+    assert [(row["T_min"], row["T_max"]) for row in condensates] == [
+        ("1200", "1800"), ("1800", "2300"),
+        ("2300", "2500"), ("2500", "2577"), ("2577", "3000"),
+    ]
+    assert max(float(row["_max_residual_J_per_mol"]) for row in condensates) <= 10
+
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    rows = [
+        row for row in provenance["rows"]
+        if row["table"] == "condensate" and row["species_name"] == "La2O3(l)"
+    ]
+    assert len(rows) == len(condensates)
+    for row, fitted in zip(rows, condensates, strict=True):
+        band = row["uncertainty_band"]["values_J_per_mol"]
+        for knot, value in band.items():
+            assert float(value) == pytest.approx(
+                build_gas_tables._konings_condensate_uncertainty_j_mol(
+                    record["condensates"]["La2O3(l)"], float(knot)
+                ), abs=1e-5
+            )
+        assert row["max_residual_J_per_mol"] == pytest.approx(
+            float(fitted["_max_residual_J_per_mol"]), abs=1e-12
+        )
+        assert row["source_data"] is (float(row["T_range_K"][0]) >= 2577)
+
+    # Table 30 reports D0(LaO)=796±8 kJ/mol. The table-anchored
+    # reaction ΔfH relation is 434.5 + ΔfH(O) - (-119) kJ/mol;
+    # the independent value is within the combined stated La/LaO band.
+    oxygen_atom_dfh_kj_mol = 249.173
+    derived_d0 = 434.5 + oxygen_atom_dfh_kj_mol - (-119.0)
+    assert abs(derived_d0 - 796.0) <= math.hypot(3.0, 8.0)

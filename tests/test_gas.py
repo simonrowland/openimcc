@@ -3948,3 +3948,29 @@ def test_sf04_pack_reproduces_base_default_and_default_keeps_other_channels(
         assert {name: current.provenance_class[name] for name in unchanged} == {
             name: base.provenance_class[name] for name in unchanged
         }
+
+
+def test_la_channels_use_caller_parent_and_hand_mass_action(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    temperature = 2000.0
+    activity = 1.0e-3
+    oxygen_fugacity = 1.0e-4
+    result = evaluate_gas(
+        {"La2O3": activity}, temperature, oxygen_fugacity, gas_pack,
+        parent_oxides=("La2O3",), gas_species=("La", "LaO"),
+    )
+    assert tuple(result) == ("La", "LaO")
+    assert "supercooled continuation below 2577 K" in result.domain_flags["La"]
+    parent_g = species_thermo("La2O3", "l", temperature, gas_pack).G_J_mol
+    oxygen_g = species_thermo("O2", "g", temperature, gas_pack).G_J_mol
+    for species, n_oxygen in (("La", 1.5), ("LaO", 0.5)):
+        gas_g = species_thermo(species, "g", temperature, gas_pack).G_J_mol
+        delta_g = 2.0 * gas_g + n_oxygen * oxygen_g - parent_g
+        log10_k = -delta_g / (R_J_MOL_K * temperature * math.log(10.0))
+        hand_log10_pressure = (
+            log10_k + math.log10(activity)
+            - n_oxygen * math.log10(oxygen_fugacity)
+        ) / 2.0
+        hand = 10.0**hand_log10_pressure
+        assert result[species] == pytest.approx(hand, rel=2e-12)

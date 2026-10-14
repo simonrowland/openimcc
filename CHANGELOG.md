@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added optional La(g) and LaO(g) channels with caller-supplied La2O3(l)
+  activity. Konings Part 1 Table 42 and Part 2 Tables 88–89 supply the gas and
+  phase-chain functions; the printed constant-Cp liquid branch is flagged as
+  supercooled below its 2577 K fusion marker.
 - Added optional Hf(g) with caller-supplied HfO2(l) activity and opt-in Hf+
   and Hf- JANAF rows. Pankratz Bulletin 672 p. 188 supplies HfO2(cr), extended
   by the labelled constant-Cp rule and used in the tier-4 liquid construction.
