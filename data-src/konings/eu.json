@@ -1,0 +1,27 @@
+{
+  "schema_version": "konings-cp.v1",
+  "citation": "Konings & Beneš, J. Phys. Chem. Ref. Data 39, 043102 (2010), Part 1, Table 42, article p. 043102-41; Konings et al., J. Phys. Chem. Ref. Data 43, 013101 (2014), Part 2, Table 88, article pp. 013101-83–84, and Table 89, article p. 013101-85.",
+  "gases": {
+    "Eu(g)": {"dfH298_kJ_mol":178.2,"dfH_unc_kJ_mol":3.0,"S298_J_mol_K":188.799,"S_unc_J_mol_K":0.050,"segments":[[298.15,1000,[20.786,0,0,0,0,0],[0,1,2,3,4,-2]],[1000,4000,[-9.6198,49.9591e-3,-32.7777e-6,9.3328e-9,-0.8582e-12,4.7502e6],[0,1,2,3,4,-2]]]},
+    "EuO(g)": {"dfH298_kJ_mol":-56.5,"dfH_unc_kJ_mol":8.0,"S298_J_mol_K":253.419,"S_unc_J_mol_K":0.10,"segments":[[298.15,1700,[33.8838,7.70507e-3,-7.38219e-6,3.41476e-9,-2.52934e5],[0,1,2,3,-2]],[1700,4000,[-79.4911,9.34647e-2,-2.23194e-5,1.8699e-9,5.2756e7],[0,1,2,3,-2]]] }
+  },
+  "non_parent_condensed_species": [
+    {"species":"EuO(cr)","dfH298_kJ_mol":-593.2,"dfH_unc_kJ_mol":5.0,"S298_J_mol_K":83.6,"S_unc_J_mol_K":0.8,"range_K":[419,1724],"heat_capacity_coefficients":[46.5453,7.360e-3,0,0,1.42047e4],"heat_capacity_powers":[0,1,2,3,-2],"phase":"crystal only","flags":["Fit Table 88 columns: the 7.360e-3 coefficient multiplies T; E is positive 1.42047e4 and multiplies T^-2.","No liquid row is printed."]},
+    {"species":"Eu3O4(cr)","dfH298_kJ_mol":-2276,"dfH_unc_kJ_mol":10,"S298_J_mol_K":315,"S_unc_J_mol_K":4,"range_K":[298.15,2000],"heat_capacity_coefficients":[182.464,26.108e-3,0,0,0],"heat_capacity_powers":[0,1,2,3,-2],"phase":"crystal only","flags":["No liquid row is printed."]}
+  ],
+  "condensates": {
+    "Eu2O3(l)": {
+      "formula":{"Eu":2,"O":3},"dfH298_kJ_mol":-1662.5,"dfH_unc_kJ_mol":6.0,"S298_J_mol_K":135.4,"S_unc_J_mol_K":2.0,
+      "fusion_temperature_K":2622,"fusion_temperature_unc_K":20,"fusion_enthalpy_kJ_mol":89,"fusion_enthalpy_unc_kJ_mol":10,"liquid_Cp_J_mol_K":156,
+      "phases":[
+        {"name":"C","range_K":[298.15,1350],"coefficients":[136.2978,14.9877e-3,0,0,-1.4993e6],"powers":[0,1,2,3,-2]},
+        {"name":"B","range_K":[1350,2327],"transition_from_previous":{"temperature_K":1350,"temperature_unc_K":15,"enthalpy_kJ_mol":9,"enthalpy_unc_kJ_mol":3},"coefficients":[133.3906,16.6443e-3,0,0,-1.42435e6],"powers":[0,1,2,3,-2]},
+        {"name":"A","range_K":[2327,2427],"transition_from_previous":{"temperature_K":2327,"temperature_unc_K":30,"enthalpy_kJ_mol":7,"enthalpy_unc_kJ_mol":2},"coefficients":[141,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"H","range_K":[2427,2557],"transition_from_previous":{"temperature_K":2427,"temperature_unc_K":30,"enthalpy_kJ_mol":33,"enthalpy_unc_kJ_mol":8},"coefficients":[144,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"X","range_K":[2557,2622],"transition_from_previous":{"temperature_K":2557,"temperature_unc_K":30,"enthalpy_kJ_mol":21,"enthalpy_unc_kJ_mol":5},"coefficients":[144,0,0,0,0],"powers":[0,1,2,3,-2]},
+        {"name":"liquid","range_K":[2622,4000],"transition_from_previous":{"temperature_K":2622,"temperature_unc_K":20,"enthalpy_kJ_mol":89,"enthalpy_unc_kJ_mol":10},"coefficients":[156,0,0,0,0],"powers":[0,1,2,3,-2]}
+      ],
+      "flags":["Use the Table 88 C→B transition at 1350±15 K with ΔtrsH=9±3 kJ/mol; the 298 K solution-calorimetry difference is not this transition.","EuO(cr) is a crystal without a source liquid row; Eu3O4 is also crystal-only. Eu2O3(l) is the selected channel parent, and this oxide-parent convention does not represent Eu2+ melt speciation.","Runtime 1200–2622 K is a supercooled continuation of the printed constant-Cp liquid; source_data=false below fusion."]
+    }
+  }
+}
