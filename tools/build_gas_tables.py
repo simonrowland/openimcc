@@ -267,6 +267,8 @@ TRACE_NASA_GAS_SOURCES = (
 )
 HALOGEN_NASA_TABLES = frozenset({"NG-0893", "NG-0904"})
 TRACE_PUBLISHED_GAS_SOURCES = (
+    ("Y(g)", "P672-Y-g", "Y", "Y", 1, 0, 2500.0),
+    ("YO(g)", "PM83-YO", "YO", "Y", 1, 1, 1500.0),
     ("ZnO(g)", "IVTAN-264", "ZnO", "Zn", 1, 1, 3000.0),
     ("Bi(g)", "P672-T80", "Bi", "Bi", 1, 0, 1800.0),
     ("Bi2(g)", "P672-T81", "Bi2", "Bi", 2, 0, 1800.0),
@@ -1682,6 +1684,8 @@ def _konings_condensate_uncertainty_j_mol(item: dict[str, Any], temperature: flo
 
 def _published_table_record(source_dir: Path, table_id: str) -> dict[str, Any]:
     """Read one transcribed record from its named published table bundle."""
+    if table_id == "PM83-YO":
+        return _load_record(source_dir / "pedley-marshall-1983-yo.json")
     if table_id in {"P672-HfO2-c", "P672-Hf-g"}:
         filename = "pankratz-hf.json"
     elif table_id.startswith("P672-"):
@@ -1755,7 +1759,7 @@ def _published_gas_source_rows(
                 "enthalpy_increment": float(enthalpy) * 4.184,
             }
         reference = float(record["formation_enthalpy_298_kcal_mol"]) * 4.184
-        source_limit = max(rows)
+        source_limit = float(record.get("source_limit_K", max(rows)))
     return rows, reference, source_limit
 
 
@@ -3393,6 +3397,12 @@ def _pankratz_crystal_table(
     source equation is cal/(mol K); convert H and Cp by 4.184 and H to kJ.
     Sanity: the extension begins at the source's final H/S/Cp node.
     """
+    source_limit = record.get("source_limit_K")
+    source_nodes = record["nodes"]
+    if source_limit is not None:
+        source_nodes = [
+            node for node in source_nodes if float(node[0]) <= float(source_limit)
+        ]
     values = [
         {
             "temperature": float(t),
@@ -3405,12 +3415,12 @@ def _pankratz_crystal_table(
                 else {}
             ),
         }
-        for t, cp, entropy, h in record["nodes"]
+        for t, cp, entropy, h in source_nodes
     ]
     t0, cp0, s0, h0 = values[-1]["temperature"], None, None, None
-    cp0 = float(record["nodes"][-1][1])
-    s0 = float(record["nodes"][-1][2])
-    h0 = float(record["nodes"][-1][3])
+    cp0 = float(source_nodes[-1][1])
+    s0 = float(source_nodes[-1][2])
+    h0 = float(source_nodes[-1][3])
     equation = record["cp_equation_cal_mol_K"]
     a, b, c = float(equation["a"]), float(equation["b_per_K"]), float(equation["c_K2"])
     t = float(extension_limit_k)
@@ -3590,7 +3600,7 @@ def _fit_liquid_from_solid_parent(
         alternate = _pankratz_crystal_table(
             record, extension_limit_k=extension_limit, extrapolate_cp=True
         )
-    elif species in {"SeO2", "As2O3", "Sb2O3", "Ag2O"}:
+    elif species in {"SeO2", "As2O3", "Sb2O3", "Ag2O", "Y2O3"}:
         record = _published_table_record(published_source_dir, config["crystal_table_id"])
         crystal = _pankratz_crystal_table(
             record,
@@ -3637,6 +3647,7 @@ def _fit_liquid_from_solid_parent(
         "Ag2O": ((1200.0, 1600.0), (1600.0, 2000.0), (2000.0, 2400.0), (2400.0, 3000.0)),
         "ThO2": ((1200.0, 1600.0), (1600.0, 2000.0), (2000.0, 2400.0), (2400.0, 3000.0)),
         "HfO2": ((1200.0, 1600.0), (1600.0, 2000.0), (2000.0, 2400.0), (2400.0, 3000.0)),
+        "Y2O3": ((1200.0, 1600.0), (1600.0, 2000.0), (2000.0, 2400.0), (2400.0, 3000.0)),
     }[species]
     fit = inputs["condensate_fit"]
     rows = []
@@ -4165,7 +4176,7 @@ def build_condensate_rows(
             )
         )
     liquid_inputs = _load_record(repository / "data-src/liquid-from-solid-inputs.json")
-    for species in ("ZnO", "CdO", "MnO", "SeO2", "As2O3", "Sb2O3", "Ag2O", "ThO2", "HfO2"):
+    for species in ("ZnO", "CdO", "MnO", "SeO2", "As2O3", "Sb2O3", "Ag2O", "ThO2", "HfO2", "Y2O3"):
         fitted_rows, _construction, _alternate = _fit_liquid_from_solid_parent(
             published_source_dir, species, liquid_inputs["rows"][species]
         )

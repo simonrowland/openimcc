@@ -471,6 +471,21 @@ source_notes:
         672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN. As+(g) had
         no source in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or
         Gurvich/IVTAN routes.
+      Y: >-
+        Pankratz Bulletin 672 Table 104 supplies Y(g) and Table 105 supplies
+        the elemental-reference Y2O3(cr) function. Pedley and Marshall (1983)
+        Table 5 selects ΔfH°298(YO) = -46 +/- 10 kJ/mol, and Tables 9 and 11
+        supply its thermal function. The required Y2O3(l) parent is a tier-4
+        liquid_from_solid construction. Its 2712 K melting point is from the
+        high-temperature phase-equilibrium literature. Kapush et al.'s
+        119 +/- 10 kJ/mol cubic-crystal-to-liquid step includes the 0.310
+        kcal/mol 1330 K transition already present in the Pankratz crystal
+        function; that transition is subtracted before using the remaining
+        enthalpy as the fusion input. The crystal table identifies values above
+        1900 K as extrapolated. Y2O3 activity is caller supplied. JANAF, NASA,
+        Pankratz 672/677/696, TSIV, NIST WebBook, OECD/NEA and Burcat routes
+        were checked for Y+; no temperature-dependent Y+(g) function was
+        located, so C3 is declined.
     measured_continuation_bands: >-
       Gas continuation bands are maximum held-Cp errors measured by truncating
       published JANAF gas tables at the matching source-node limit. The
@@ -5517,7 +5532,7 @@ rows:
     table_id: P672-T80
     runtime_ref: P672-T80-CP-EXT-1800
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -5557,7 +5572,7 @@ rows:
     table_id: P672-T81
     runtime_ref: P672-T81-CP-EXT-1800
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -5767,7 +5782,7 @@ rows:
     table_id: P672-T80
     runtime_ref: P672-T80
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -5798,7 +5813,7 @@ rows:
     table_id: P672-T81
     runtime_ref: P672-T81
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -6137,7 +6152,7 @@ rows:
     source_path: data-src/published-thermo/tsiv-table-1603.json
     source_sha256: 8989bd90414e47d5aea02104d9915a17fa4e8d8c9847516ef6adda58a4e6d8ec
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6178,7 +6193,7 @@ rows:
     source_path: data-src/published-thermo/tsiv-table-1603.json
     source_sha256: 8989bd90414e47d5aea02104d9915a17fa4e8d8c9847516ef6adda58a4e6d8ec
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6217,9 +6232,9 @@ rows:
     table_id: P672-T102
     runtime_ref: P672-T102-LFS-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6260,9 +6275,9 @@ rows:
     table_id: P672-T102
     runtime_ref: P672-T102-LFS-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6303,7 +6318,7 @@ rows:
     table_id: P672-T82
     runtime_ref: P672-T82-CP-EXT-1300
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
@@ -6344,7 +6359,7 @@ rows:
     table_id: P672-T82
     runtime_ref: P672-T82-CP-EXT-1300
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
@@ -6381,7 +6396,7 @@ rows:
     table_id: P672-Te-g
     runtime_ref: P672-Te-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -6410,7 +6425,7 @@ rows:
     table_id: P672-Te-g
     runtime_ref: P672-Te-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -6435,7 +6450,7 @@ rows:
     table_id: P672-Te2-g
     runtime_ref: P672-Te2-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -6464,7 +6479,7 @@ rows:
     table_id: P672-Te2-g
     runtime_ref: P672-Te2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -6489,7 +6504,7 @@ rows:
     table_id: P672-TeO2-g
     runtime_ref: P672-TeO2-g-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6518,7 +6533,7 @@ rows:
     table_id: P672-TeO2-g
     runtime_ref: P672-TeO2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 2
@@ -6543,7 +6558,7 @@ rows:
     table_id: P672-TeO2-l
     runtime_ref: P672-TeO2-l
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 1
@@ -6566,7 +6581,7 @@ rows:
     table_id: P672-TeO2-l
     runtime_ref: P672-TeO2-l-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 1
@@ -6594,7 +6609,7 @@ rows:
     table_id: P672-Se-g
     runtime_ref: P672-Se-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -6619,7 +6634,7 @@ rows:
     table_id: P672-Se-g
     runtime_ref: P672-Se-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -6648,7 +6663,7 @@ rows:
     table_id: P672-Se2-g
     runtime_ref: P672-Se2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -6673,7 +6688,7 @@ rows:
     table_id: P672-Se2-g
     runtime_ref: P672-Se2-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -6702,7 +6717,7 @@ rows:
     table_id: P672-SeO-g
     runtime_ref: P672-SeO-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 2
@@ -6726,7 +6741,7 @@ rows:
     table_id: P672-SeO-g
     runtime_ref: P672-SeO-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6755,7 +6770,7 @@ rows:
     table_id: P672-SeO2-g
     runtime_ref: P672-SeO2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 2
@@ -6779,7 +6794,7 @@ rows:
     table_id: P672-SeO2-g
     runtime_ref: P672-SeO2-g-CP-EXT-1500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -6808,9 +6823,9 @@ rows:
     table_id: P672-SeO2
     runtime_ref: P672-SeO2-LFS-CP-EXT-602
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6838,9 +6853,9 @@ rows:
     table_id: P672-SeO2
     runtime_ref: P672-SeO2-LFS-CP-EXT-602
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -6966,7 +6981,7 @@ rows:
     source_path: data-src/crystal-thermochemistry.json
     source_sha256: b0c87afeaf0a53ec159a23e45d59d6a2eee023e810402f16504a51eac32bf22d
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7001,7 +7016,7 @@ rows:
     table_id: P672-As-g
     runtime_ref: P672-As-g-CP-EXT-1200
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -7030,7 +7045,7 @@ rows:
     table_id: P672-As-g
     runtime_ref: P672-As-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -7059,7 +7074,7 @@ rows:
     table_id: P672-As2-g
     runtime_ref: P672-As2-g-CP-EXT-1200
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7085,7 +7100,7 @@ rows:
     table_id: P672-As2-g
     runtime_ref: P672-As2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7111,7 +7126,7 @@ rows:
     table_id: P672-As4-g
     runtime_ref: P672-As4-g-CP-EXT-1200
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7137,7 +7152,7 @@ rows:
     table_id: P672-As4-g
     runtime_ref: P672-As4-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7163,12 +7178,12 @@ rows:
     table_id: P672-As4O6-g
     runtime_ref: P672-As4O6-g-CP-EXT-1000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
     T_range_K: [1500, 3000]
-    max_residual_J_per_mol: 9.31322574615479e-10
+    max_residual_J_per_mol: 3.72529029846191e-09
     max_residual_log10_K: 1.80171665085436e-14
     source_fit_range_K: [1500, 3000]
     flags: [constant-Cp continuation above 1000 K]
@@ -7189,7 +7204,7 @@ rows:
     table_id: P672-As4O6-g
     runtime_ref: P672-As4O6-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7215,9 +7230,9 @@ rows:
     table_id: P672-As2O3
     runtime_ref: P672-As2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7245,9 +7260,9 @@ rows:
     table_id: P672-As2O3
     runtime_ref: P672-As2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7275,9 +7290,9 @@ rows:
     table_id: P672-Sb2O3-c
     runtime_ref: P672-Sb2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7301,9 +7316,9 @@ rows:
     table_id: P672-Sb2O3-c
     runtime_ref: P672-Sb2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7327,9 +7342,9 @@ rows:
     table_id: P672-Sb2O3-c
     runtime_ref: P672-Sb2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7353,9 +7368,9 @@ rows:
     table_id: P672-Sb2O3-c
     runtime_ref: P672-Sb2O3-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7379,7 +7394,7 @@ rows:
     table_id: P672-Sb-g
     runtime_ref: P672-Sb-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7401,7 +7416,7 @@ rows:
     table_id: P672-Sb-g
     runtime_ref: P672-Sb-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -7422,7 +7437,7 @@ rows:
     table_id: P672-Sb2-g
     runtime_ref: P672-Sb2-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7444,7 +7459,7 @@ rows:
     table_id: P672-Sb2-g
     runtime_ref: P672-Sb2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -7465,7 +7480,7 @@ rows:
     table_id: P672-Sb4-g
     runtime_ref: P672-Sb4-g-CP-EXT-2000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7487,7 +7502,7 @@ rows:
     table_id: P672-Sb4-g
     runtime_ref: P672-Sb4-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -7508,7 +7523,7 @@ rows:
     table_id: P672-Sb4O6-g
     runtime_ref: P672-Sb4O6-g-CP-EXT-1000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7530,7 +7545,7 @@ rows:
     table_id: P672-Sb4O6-g
     runtime_ref: P672-Sb4O6-g-CP-EXT-1000
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 2
@@ -7666,9 +7681,9 @@ rows:
     table_id: P672-Ag2O-c
     runtime_ref: P672-Ag2O-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7693,9 +7708,9 @@ rows:
     table_id: P672-Ag2O-c
     runtime_ref: P672-Ag2O-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7717,9 +7732,9 @@ rows:
     table_id: P672-Ag2O-c
     runtime_ref: P672-Ag2O-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -7741,9 +7756,9 @@ rows:
     table_id: P672-Ag2O-c
     runtime_ref: P672-Ag2O-LFS
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -10288,7 +10303,7 @@ rows:
     table_id: P672-Th-g
     runtime_ref: P672-Th-g-CP-EXT-2500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -10314,7 +10329,7 @@ rows:
     table_id: P672-ThO-g
     runtime_ref: P672-ThO-g-CP-EXT-2500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -10340,7 +10355,7 @@ rows:
     table_id: P672-ThO2-g
     runtime_ref: P672-ThO2-g-CP-EXT-2500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: generated_constant_cp_extrapolation_fit
     tier: 3
@@ -10366,7 +10381,7 @@ rows:
     table_id: P672-Th-g
     runtime_ref: P672-Th-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -10391,7 +10406,7 @@ rows:
     table_id: P672-ThO-g
     runtime_ref: P672-ThO-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -10416,7 +10431,7 @@ rows:
     table_id: P672-ThO2-g
     runtime_ref: P672-ThO2-g
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     authority: published_fitted
     method: fitted
     tier: 3
@@ -10441,9 +10456,9 @@ rows:
     table_id: P672-ThO2-c
     runtime_ref: LFS[P672-ThO2-c;Tf=3650]-CP-EXT-2500
     source_path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 459dc50fc55adc266c28739b3eed344781e91f2f00b16facf99585e731741135
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -10599,7 +10614,7 @@ rows:
     source_path: data-src/published-thermo/pankratz-hf.json
     source_sha256: fe6dc0f3c1fa1379465cd20b420ae65837366f56569abdb21c4dc338fc8a0c59
     construction_inputs_path: data-src/liquid-from-solid-inputs.json
-    construction_inputs_sha256: 54c6823a8246601b3912b15b55ae08412cc0104eab15786a1bfef2abeeb80444
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
     authority: liquid_from_solid_estimate
     method: liquid_from_solid_construction
     tier: 4
@@ -12495,7 +12510,7 @@ rows:
     source_fit_range_K:
     - 2762
     - 3000
-    max_residual_J_per_mol: 1.86264514923096e-09
+    max_residual_J_per_mol: 1.16415321826935e-09
     flags:
     - Table 88 crystal→liquid chain; no high polymorph.
     - constant-Cp liquid branch supercooled below 2762 K; caller-supplied activity
@@ -12512,6 +12527,358 @@ rows:
     extrapolation: false
     source_data: true
     source_limit_K: 4000
+  - table: gas
+    species_name: Y(g)
+    table_id: P672-Y-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 7.59298575291177
+    max_residual_log10_K: 0.000175421152015582
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags:
+    - constant-Cp continuation above the last printed 2500 K node
+    - elemental 298.15 K reference state
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Table 104, Y(g)
+      source_locator: Table 104, Y(g)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 104, Y(g)
+    source_data: false
+    extrapolation_source_limit_K: 2500
+  - table: gas
+    species_name: Y(g)
+    table_id: P672-Y-g
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 2.90164622076554
+    max_residual_log10_K: 0.000101042324281689
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags:
+    - elemental 298.15 K reference state
+    uncertainty_band:
+      kind: not separately quantified by selected source
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Table 104, Y(g)
+      source_locator: Table 104, Y(g)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 104, Y(g)
+    source_data: true
+    source_limit_K: 2500
+  - table: gas
+    species_name: YO(g)
+    table_id: PM83-YO
+    source_path: data-src/published-thermo/pedley-marshall-1983-yo.json
+    source_sha256: a34e1c621a722266ecd99d857b5dd7a9a981945b64587f36c8c6f786a395df32
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K:
+    - 1500
+    - 3000
+    max_residual_J_per_mol: 3.61357500951272
+    max_residual_log10_K: 7.67007693070642e-05
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags:
+    - "Table 5 selected \u0394fH\xB0298 = -46 +/- 10 kJ/mol; Tables 9 and 11 thermal functions"
+    uncertainty_band:
+      kind: propagated source-reported formation-enthalpy uncertainty
+      method: constant +/-10 kJ/mol elemental-reference formation uncertainty; thermal functions derived from printed Tables 9
+        and 11
+      units: J/mol
+      values_J_per_mol:
+        1500: 10000
+        2000: 10000
+        2500: 10000
+        3000: 10000
+    source:
+      citation: Pedley, J. B. and Marshall, E. M. (1983), J. Phys. Chem. Ref. Data 12(4), Table 5 p. 983, Tables 9 and 11 pp. 995-996 and 1006-1007
+      source_record: Tables 5, 9 and 11, YO(g)
+      source_locator: Tables 5, 9 and 11, YO(g)
+      source_url: https://srd.nist.gov/jpcrdreprint/1.555698.pdf
+    source_url: https://srd.nist.gov/jpcrdreprint/1.555698.pdf
+    source_locator: Tables 5, 9 and 11, YO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: gas
+    species_name: YO(g)
+    table_id: PM83-YO
+    source_path: data-src/published-thermo/pedley-marshall-1983-yo.json
+    source_sha256: a34e1c621a722266ecd99d857b5dd7a9a981945b64587f36c8c6f786a395df32
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K:
+    - 1200
+    - 1500
+    max_residual_J_per_mol: 0.538285389367957
+    max_residual_log10_K: 2.00832818180102e-05
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags:
+    - "Table 5 selected \u0394fH\xB0298 = -46 +/- 10 kJ/mol; Tables 9 and 11 thermal functions"
+    uncertainty_band:
+      kind: propagated source-reported formation-enthalpy uncertainty
+      method: constant +/-10 kJ/mol elemental-reference formation uncertainty; thermal functions derived from printed Tables 9
+        and 11
+      units: J/mol
+      values_J_per_mol:
+        1200: 10000
+        1500: 10000
+    source:
+      citation: Pedley, J. B. and Marshall, E. M. (1983), J. Phys. Chem. Ref. Data 12(4), Table 5 p. 983, Tables 9 and 11 pp. 995-996 and 1006-1007
+      source_record: Tables 5, 9 and 11, YO(g)
+      source_locator: Tables 5, 9 and 11, YO(g)
+      source_url: https://srd.nist.gov/jpcrdreprint/1.555698.pdf
+    source_url: https://srd.nist.gov/jpcrdreprint/1.555698.pdf
+    source_locator: Tables 5, 9 and 11, YO(g)
+    source_data: true
+    source_limit_K: 4000
+  - table: condensate
+    species_name: Y2O3(l)
+    table_id: P672-Y2O3-c
+    runtime_ref: LFS[P672-Y2O3-c;Tf=2712]-CP-EXT-1900
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K:
+    - 1200
+    - 1600
+    source_fit_range_K: [1200, 1600]
+    fit_intervals_K:
+    - - 1200
+      - 1600
+    - - 1600
+      - 2000
+    - - 2000
+      - 2400
+    - - 2400
+      - 3000
+    max_residual_J_per_mol: 3.25962901115417e-09
+    max_residual_log10_K: 5.06732808052789e-14
+    flags:
+    - tier-4 liquid_from_solid construction
+    - tier-2 measured fusion enthalpy corrected for the crystal-table 1330 K transition plus tier-3 crystal-Cp carry-over estimate
+    - constant-Cp crystal continuation above 1900 K; Pankratz table flags values above 1900 K as extrapolated
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: propagated measured fusion-input uncertainty plus liquid-Cp estimate
+      method: liquid_from_solid input-spread recipe at each knot; includes the measured +/-10 kJ/mol fusion-enthalpy uncertainty
+        and 6% liquid-Cp spread, and excludes fit residual and supercooling energy
+      units: J/mol
+      values_J_per_mol:
+        1200: 9794.503252
+        1500: 7028.516259
+        1800: 4740.209692
+        2000: 3439.248209
+        2400: 1298.1411
+        2712: 0.0
+        3000: 1178.805849
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Y2O3(cr) formation table, printed p. 475; Kapush et al. (2017) measured cubic-crystal-to-liquid enthalpy
+        step; Fyhrie et al. (2019) phase-step interpretation
+      construction_input_record: data-src/liquid-from-solid-inputs.json rows.Y2O3
+      source_locator: Table 105, Y2O3(cr)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 105, Y2O3(cr); fusion inputs from cited literature
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1900
+  - table: condensate
+    species_name: Y2O3(l)
+    table_id: P672-Y2O3-c
+    runtime_ref: LFS[P672-Y2O3-c;Tf=2712]-CP-EXT-1900
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K:
+    - 1600
+    - 2000
+    source_fit_range_K: [1600, 2000]
+    fit_intervals_K:
+    - - 1200
+      - 1600
+    - - 1600
+      - 2000
+    - - 2000
+      - 2400
+    - - 2400
+      - 3000
+    max_residual_J_per_mol: 1.86264514923096e-09
+    max_residual_log10_K: 8.51311117528685e-14
+    flags:
+    - tier-4 liquid_from_solid construction
+    - tier-2 measured fusion enthalpy corrected for the crystal-table 1330 K transition plus tier-3 crystal-Cp carry-over estimate
+    - constant-Cp crystal continuation above 1900 K; Pankratz table flags values above 1900 K as extrapolated
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: propagated measured fusion-input uncertainty plus liquid-Cp estimate
+      method: liquid_from_solid input-spread recipe at each knot; includes the measured +/-10 kJ/mol fusion-enthalpy uncertainty
+        and 6% liquid-Cp spread, and excludes fit residual and supercooling energy
+      units: J/mol
+      values_J_per_mol:
+        1200: 9794.503252
+        1500: 7028.516259
+        1800: 4740.209692
+        2000: 3439.248209
+        2400: 1298.1411
+        2712: 0.0
+        3000: 1178.805849
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Y2O3(cr) formation table, printed p. 475; Kapush et al. (2017) measured cubic-crystal-to-liquid enthalpy
+        step; Fyhrie et al. (2019) phase-step interpretation
+      construction_input_record: data-src/liquid-from-solid-inputs.json rows.Y2O3
+      source_locator: Table 105, Y2O3(cr)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 105, Y2O3(cr); fusion inputs from cited literature
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1900
+  - table: condensate
+    species_name: Y2O3(l)
+    table_id: P672-Y2O3-c
+    runtime_ref: LFS[P672-Y2O3-c;Tf=2712]-CP-EXT-1900
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K:
+    - 2000
+    - 2400
+    source_fit_range_K: [2000, 2400]
+    fit_intervals_K:
+    - - 1200
+      - 1600
+    - - 1600
+      - 2000
+    - - 2000
+      - 2400
+    - - 2400
+      - 3000
+    max_residual_J_per_mol: 9.31322574615479e-10
+    max_residual_log10_K: 8.10772492884462e-14
+    flags:
+    - tier-4 liquid_from_solid construction
+    - tier-2 measured fusion enthalpy corrected for the crystal-table 1330 K transition plus tier-3 crystal-Cp carry-over estimate
+    - constant-Cp crystal continuation above 1900 K; Pankratz table flags values above 1900 K as extrapolated
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: propagated measured fusion-input uncertainty plus liquid-Cp estimate
+      method: liquid_from_solid input-spread recipe at each knot; includes the measured +/-10 kJ/mol fusion-enthalpy uncertainty
+        and 6% liquid-Cp spread, and excludes fit residual and supercooling energy
+      units: J/mol
+      values_J_per_mol:
+        1200: 9794.503252
+        1500: 7028.516259
+        1800: 4740.209692
+        2000: 3439.248209
+        2400: 1298.1411
+        2712: 0.0
+        3000: 1178.805849
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Y2O3(cr) formation table, printed p. 475; Kapush et al. (2017) measured cubic-crystal-to-liquid enthalpy
+        step; Fyhrie et al. (2019) phase-step interpretation
+      construction_input_record: data-src/liquid-from-solid-inputs.json rows.Y2O3
+      source_locator: Table 105, Y2O3(cr)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 105, Y2O3(cr); fusion inputs from cited literature
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1900
+  - table: condensate
+    species_name: Y2O3(l)
+    table_id: P672-Y2O3-c
+    runtime_ref: LFS[P672-Y2O3-c;Tf=2712]-CP-EXT-1900
+    source_path: data-src/published-thermo/pankratz-bulletin-672.json
+    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
+    construction_inputs_path: data-src/liquid-from-solid-inputs.json
+    construction_inputs_sha256: d525c86d4861fc766c1293523248b9eb3aff0edb568294fd1d517ff56413599c
+    authority: liquid_from_solid_estimate
+    method: liquid_from_solid_construction
+    tier: 4
+    T_range_K:
+    - 2400
+    - 3000
+    source_fit_range_K: [2400, 3000]
+    fit_intervals_K:
+    - - 1200
+      - 1600
+    - - 1600
+      - 2000
+    - - 2000
+      - 2400
+    - - 2400
+      - 3000
+    max_residual_J_per_mol: 0.144605168141425
+    max_residual_log10_K: 2.85176057114989e-06
+    flags:
+    - tier-4 liquid_from_solid construction
+    - tier-2 measured fusion enthalpy corrected for the crystal-table 1330 K transition plus tier-3 crystal-Cp carry-over estimate
+    - constant-Cp crystal continuation above 1900 K; Pankratz table flags values above 1900 K as extrapolated
+    - caller-supplied parent activity; no activity model
+    uncertainty_band:
+      kind: propagated measured fusion-input uncertainty plus liquid-Cp estimate
+      method: liquid_from_solid input-spread recipe at each knot; includes the measured +/-10 kJ/mol fusion-enthalpy uncertainty
+        and 6% liquid-Cp spread, and excludes fit residual and supercooling energy
+      units: J/mol
+      values_J_per_mol:
+        1200: 9794.503252
+        1500: 7028.516259
+        1800: 4740.209692
+        2000: 3439.248209
+        2400: 1298.1411
+        2712: 0.0
+        3000: 1178.805849
+    source:
+      citation: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
+      source_record: Y2O3(cr) formation table, printed p. 475; Kapush et al. (2017) measured cubic-crystal-to-liquid enthalpy
+        step; Fyhrie et al. (2019) phase-step interpretation
+      construction_input_record: data-src/liquid-from-solid-inputs.json rows.Y2O3
+      source_locator: Table 105, Y2O3(cr)
+      source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    source_locator: Table 105, Y2O3(cr); fusion inputs from cited literature
+    extrapolation: true
+    source_data: false
+    extrapolation_source_limit_K: 1900
+
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each

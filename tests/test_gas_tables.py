@@ -591,12 +591,13 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         - {"Br2", "Br", "I2", "I", "NaBr", "(NaBr)2", "KBr", "(KBr)2", "KI", "(KI)2", "NaI", "(NaI)2"}
         | {
             "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
+            "Y", "YO",
             "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
             "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
     )
-    assert len(oxide_rows) == 57
+    assert len(oxide_rows) == 58
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -2308,7 +2309,7 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         )
     } | {
         f"{species}(g)" for species in (
-            "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
+            "Y", "YO", "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
             "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
             "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
@@ -2442,6 +2443,7 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
             species in ion_species
             or species in build_gas_tables.TRACE_GAS_SPECIES
             or species in {
+                "Y", "YO",
                 "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
                 "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
                 "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
@@ -3918,6 +3920,8 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
         "ThO": "Pankratz supplies both the selected ThO gas and ThO2 crystal; JANAF O2 remains the shared gas reference.",
         "La": "Konings supplies both the selected La gas and La2O3 liquid; JANAF O2 remains the shared gas reference.",
         "LaO": "Konings supplies both the selected LaO gas and La2O3 liquid; JANAF O2 remains the shared gas reference.",
+        "Y": "Pankratz supplies both the selected Y gas and Y2O3 crystal used by the required liquid_from_solid parent construction; JANAF O2 remains the shared gas reference.",
+        "YO": "Pedley and Marshall supplies YO(g); Y2O3(l) is the required tier-4 liquid_from_solid construction from Pankratz crystal data. No same-family Y2O3 parent function exists to compute a compilation-pair band; the family mismatch and the parent's uncertainty band are documented in channel provenance.",
         "Ce": "Konings supplies both the selected Ce gas and Ce2O3 liquid; JANAF O2 remains the shared gas reference.",
         "CeO": "Konings supplies both the selected CeO gas and Ce2O3 liquid; JANAF O2 remains the shared gas reference.",
         "Pr": "Konings supplies both the selected Pr gas and Pr2O3 liquid; JANAF O2 remains the shared gas reference.",
@@ -4007,6 +4011,8 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
     }
     assert set(known_unbanded_mixed_ionization_pairs) == {"Th"}
     assert all(known_unbanded_mixed_ionization_pairs.values())
+
+
     selected_gas = load_gas_datapack().gas_df
     assert set(np.atleast_1d(selected_gas.loc["Th(g)", "Ref"])) == {
         "P672-Th-g", "P672-Th-g-CP-EXT-2500"
@@ -4014,6 +4020,29 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
     assert set(np.atleast_1d(selected_gas.loc["Th+(g)", "Ref"])) == {
         "Burcat-Th-plus"
     }
+
+
+def test_yttrium_source_anchors_and_dissociation_closure() -> None:
+    published_dir = ROOT / "data-src" / "published-thermo"
+    yttrium = build_gas_tables._published_table_record(
+        published_dir, "P672-Y-g"
+    )
+    oxide = build_gas_tables._published_table_record(
+        published_dir, "P672-Y2O3-c"
+    )
+    monoxide = build_gas_tables._published_table_record(
+        published_dir, "PM83-YO"
+    )
+
+    assert yttrium["formation_enthalpy_298_kcal_mol"] == pytest.approx(100.700)
+    assert oxide["formation_enthalpy_298_kcal_mol"] == pytest.approx(-455.380)
+    assert monoxide["formation_enthalpy_298_kcal_mol"] == pytest.approx(-11.0)
+    assert monoxide["formation_enthalpy_unc_kcal_mol"] == pytest.approx(2.5)
+
+    # PM83 Table 5's D0(YO) closes its elemental formation anchor
+    # against the Pankratz Y(g) anchor and JANAF O(g), O-002.
+    closure_kj_mol = 100.700 * 4.184 + 249.18 - 715.0
+    assert closure_kj_mol == pytest.approx(-46.0, abs=10.0)
 
 
 def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
@@ -6137,6 +6166,7 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             "Co",
             "CoO",
         } | build_gas_tables.TRACE_GAS_SPECIES | {
+            "Y", "YO",
             "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
             "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
             "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
@@ -6361,6 +6391,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         "SO3",
         "SSO",
     } - build_gas_tables.TRACE_GAS_SPECIES - {
+        "Y", "YO",
         "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
         "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
         "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",

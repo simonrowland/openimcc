@@ -559,6 +559,9 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "ThO2": ("ThO2", 1, 0.0),
     # HfO2(l) is the caller-supplied parent: Hf(g) balances with one O2.
     "Hf": ("HfO2", 1, 1.0),
+    # Y2O3(l) -> 2Y(g)+3/2O2(g), and -> 2YO(g)+1/2O2(g).
+    "Y": ("Y2O3", 2, 1.5),
+    "YO": ("Y2O3", 2, 0.5),
     # La2O3(l) -> 2La(g)+3/2O2 and -> 2LaO(g)+1/2O2; atom balance
     # fixes the per-La2O3 gas coefficient at 2 and the O2 coefficients above.
     "La": ("La2O3", 2, 1.5),
@@ -753,6 +756,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "U", "UO", "UO2", "UO3",
         "Th", "ThO", "ThO2",
         "Hf",
+        "Y", "YO",
         "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
         "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
         "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
@@ -904,6 +908,8 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "ThO": "published_fitted",
         "ThO2": "published_fitted",
         "Hf": "janaf_fitted",
+        "Y": "published_fitted",
+        "YO": "published_fitted",
     }
 )
 _GAS_PROVENANCE_AUTHORITY.update(
@@ -996,6 +1002,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "UO2": "nasa_glenn_fitted",
     "ThO2": "liquid_from_solid_estimate",
     "HfO2": "liquid_from_solid_estimate",
+    "Y2O3": "liquid_from_solid_estimate",
     "La2O3": "published_fitted",
     "Ce2O3": "published_fitted",
     "CeO2": "published_fitted",
@@ -1052,6 +1059,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Ag2O": "P672-Ag2O-c",
     "ThO2": "P672-ThO2-c",
     "HfO2": "P672-HfO2-c",
+    "Y2O3": "P672-Y2O3-c",
     "MnO": "MnO-liquid-construction",
     "La2O3": "Konings-Table88-Tf2577",
     "Ce2O3": "Konings-Table88-Tf2512",
@@ -2496,6 +2504,20 @@ ELEMENT_STATUS["La"] = {
         "reason": "No La+ or La− thermal function is present in the selected Konings tables, NIST-JANAF index, NASA Glenn thermo.inp corpus, or local Pankratz Bulletins 672/677/696 records. The NIST Chemistry WebBook La+ page contains reaction thermochemistry, not a temperature-dependent ideal-gas function. Burcat was searched by species name; no La+ or La− card was located.",
         "source_tables": {"konings": "Part 1 Table 42; Part 2 Tables 88–89", "janaf": "name index", "nasa": "thermo.inp inventory", "pankratz": "Bulletin 672 p. 213; Bulletins 677 and 696 inventory", "nist_webbook": "La+ species page", "burcat": "species search"},
         "parent_oxide": "La2O3",
+        "parent_activity": 1.0e-3,
+    },
+}
+ELEMENT_STATUS["Y"] = {
+    "status": "gas-partial",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": "Pankratz Bulletin 672 supplies Y(g) and the Y2O3(cr) elemental formation table; Pedley and Marshall (1983) supplies the selected YO(g) assessment and thermal functions. Y2O3(l) is the required tier-4 liquid_from_solid construction from the Pankratz crystal, using the measured 2712 K melting point. The 119 +/- 10 kJ/mol cubic-crystal-to-liquid step includes the 0.310 kcal/mol transition already present in the crystal function; that 1.297 kJ/mol is subtracted before applying the measured fusion input. Values above the Pankratz crystal range are flagged; activities are caller-supplied. No Y+ temperature-dependent gas function was found in the checked JANAF, NASA Glenn, Pankratz 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat routes, so C3 is declined.",
+    "c2_candidates": (("P672-Y-g", "Y"), ("PM83-YO", "YO")),
+    "c3_ion_bound": {
+        "status": "declined",
+        "reason": "No Y+(g) temperature-dependent ideal-gas function was located in JANAF, NASA Glenn, Pankratz Bulletins 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat.",
+        "source_tables": {"routes_checked": "JANAF; NASA Glenn/CEA; Pankratz 672/677/696; TSIV/IVTAN; NIST WebBook; OECD/NEA; Burcat"},
+        "parent_oxide": "Y2O3",
         "parent_activity": 1.0e-3,
     },
 }
