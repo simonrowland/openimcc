@@ -3091,7 +3091,7 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
         "Eu(g)": {
             "table": "Europium gas formation table, printed p. 142 (PDF p. 150)",
             "formation_enthalpy_298_kcal_mol": 41.900,
-            "nodes": [[1800, 4.968, 54.034, 7.469], [2000, 4.968, 54.568, 8.479]],
+            "nodes": [[1800, 5.019, 54.034, 7.469], [2000, 5.095, 54.568, 8.479]],
         },
         "Gd(g)": {
             "table": "Gadolinium gas formation table, printed p. 166 (PDF p. 174)",
@@ -3146,6 +3146,12 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                 "formation_enthalpy_298_kcal_mol"
             ]
             assert source["nodes"] == expected["nodes"]
+            printed_cp_by_temperature = {
+                int(node[0]): float(node[1]) for node in expected["nodes"]
+            }
+            for node in source["nodes"]:
+                assert float(node[1]) == printed_cp_by_temperature[int(node[0])]
+            assert source["continuation"]["Cp_cal_mol_K"] == source["nodes"][-1][1]
             konings = json.loads(
                 (
                     ROOT / "data-src/konings/"
