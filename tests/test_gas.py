@@ -54,6 +54,7 @@ from openimcc.gas import (
     _default_reactions,
     _janaf_gibbs,
     _lamor_gibbs,
+    _oxide_row_for_T,
     _nearest_interval_row,
     _SF04_REACTIONS,
 )
@@ -1597,6 +1598,157 @@ def test_sulfur_pressures_match_hand_calculated_janaf_cells(
         )
     )
     assert gap_298 == pytest.approx(-9556.67, abs=0.1)
+
+
+def test_halogen_pressures_match_hand_calculated_source_cells(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    """Use JANAF G cells and NASA NaI cards with the specified reaction balances."""
+    janaf_products = {
+        "Br2": "Br-040", "Br": "Br-001", "I2": "I-027", "I": "I-001",
+        "NaBr": "Br-030", "(NaBr)2": "Br-064", "KBr": "Br-018",
+        "(KBr)2": "Br-055", "KI": "I-007", "(KI)2": "I-028",
+    }
+    halides = {
+        "NaBr": ("Na2O", "Br-030", "Br-040", 0.5, 0.5, 0.25),
+        "(NaBr)2": ("Na2O", "Br-064", "Br-040", 1.0, 1.0, 0.5),
+        "KBr": ("K2O", "Br-018", "Br-040", 0.5, 0.5, 0.25),
+        "(KBr)2": ("K2O", "Br-055", "Br-040", 1.0, 1.0, 0.5),
+        "NaI": ("Na2O", "NG-0893", "I-027", 0.5, 0.5, 0.25),
+        "(NaI)2": ("Na2O", "NG-0904", "I-027", 1.0, 1.0, 0.5),
+        "KI": ("K2O", "I-007", "I-027", 0.5, 0.5, 0.25),
+        "(KI)2": ("K2O", "I-028", "I-027", 1.0, 1.0, 0.5),
+    }
+    species = (*janaf_products, *halides)
+    parent_activities = {"Br2": 2.0e-3, "I2": 3.0e-3, "Na2O": 2.0e-4, "K2O": 3.0e-5}
+    for temperature in (1800.0, 2200.0):
+        g_o2 = _janaf_apparent_gibbs("O-029", temperature)
+        for f_o2 in (1.0e-10, 1.0e-6):
+            result = evaluate_gas(
+                parent_activities,
+                temperature,
+                f_o2,
+                gas_pack,
+                parent_oxides=(*IMCC_PARENT_OXIDES, "Br2", "I2"),
+                gas_species=species,
+                allow_extrapolation=False,
+            )
+            for gas, table_id in janaf_products.items():
+                if gas in {"Br2", "I2"}:
+                    assert result[gas] == parent_activities[gas]
+                elif gas in {"Br", "I"}:
+                    parent = "Br-040" if gas == "Br" else "I-027"
+                    n_parent = 0.5
+                    delta_g = _janaf_apparent_gibbs(table_id, temperature) - n_parent * _janaf_apparent_gibbs(parent, temperature)
+                    parent_activity = parent_activities["Br2" if parent == "Br-040" else "I2"]
+                    expected = math.exp(-delta_g / (R_J_MOL_K * temperature)) * parent_activity**n_parent
+                    assert result[gas] == pytest.approx(expected, rel=1.5e-3)
+            for gas, (oxide, product, parent, n_oxide, n_parent, n_o2) in halides.items():
+                if product.startswith("NG-"):
+                    card = build_gas_tables._load_record(
+                        Path(__file__).resolve().parents[1] / "data-src" / "nasa-glenn" / f"{product}.json"
+                    )
+                    props = build_gas_tables._nasa7_properties(card, temperature)
+                    props_298 = build_gas_tables._nasa7_properties(card, 298.15)
+                    h_298 = R_J_MOL_K * 298.15 * props_298["h_rt"]
+                    g_product = float(card["delta_f_H_298_15"]["value"]) + (R_J_MOL_K * temperature * props["h_rt"] - h_298) - temperature * R_J_MOL_K * props["s_R"]
+                else:
+                    g_product = _janaf_apparent_gibbs(product, temperature)
+                if oxide == "Na2O":
+                    g_oxide = _janaf_apparent_gibbs("Na-013", temperature)
+                else:
+                    oxide_row = _oxide_row_for_T(
+                        gas_pack.oxide_df, "K2O(l)", temperature,
+                        allow_extrapolation=False,
+                    )
+                    g_oxide = _lamor_gibbs(temperature, oxide_row)
+                delta_g = (
+                    g_product + n_o2 * g_o2
+                    - n_oxide * g_oxide
+                    - n_parent * _janaf_apparent_gibbs(parent, temperature)
+                )
+                expected = (
+                    math.exp(-delta_g / (R_J_MOL_K * temperature))
+                    * parent_activities[oxide] ** n_oxide
+                    * parent_activities["Br2" if "Br" in gas else "I2"] ** n_parent
+                    / f_o2**n_o2
+                )
+                assert result[gas] == pytest.approx(expected, rel=2e-3)
+
+
+def test_halogen_activity_and_fugacity_powers_and_optional_family(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    parents = (*IMCC_PARENT_OXIDES, "Br2", "I2")
+    activities = {**_quickstart_activities(2000.0), "Br2": 1.0e-3, "I2": 2.0e-3}
+    species = ("Br2", "Br", "NaBr", "(NaBr)2", "KBr", "(KBr)2", "I2", "I", "NaI", "(NaI)2", "KI", "(KI)2")
+    low = evaluate_gas(activities, 2000.0, 1.0e-10, gas_pack, parent_oxides=parents, gas_species=species)
+    high = evaluate_gas(activities, 2000.0, 1.0e-6, gas_pack, parent_oxides=parents, gas_species=species)
+    for gas in species:
+        exponent = 0.0 if gas in {"Br2", "Br", "I2", "I"} else -0.25 if gas in {"NaBr", "KBr", "NaI", "KI"} else -0.5
+        assert high[gas] / low[gas] == pytest.approx(1.0e-6**exponent / 1.0e-10**exponent, rel=1e-12)
+    assert low["Br"] == pytest.approx(
+        evaluate_gas({**activities, "Na2O": activities["Na2O"] * 10}, 2000.0, 1.0e-10, gas_pack, parent_oxides=parents, gas_species=("Br",))["Br"],
+        rel=0.0,
+    )
+    assert low["NaBr"] == pytest.approx(
+        evaluate_gas({**activities, "Br2": activities["Br2"] * 2}, 2000.0, 1.0e-10, gas_pack, parent_oxides=parents, gas_species=("NaBr",))["NaBr"] / 2**0.5,
+        rel=1e-12,
+    )
+    halide_powers = {
+        "NaBr": ("Na2O", 0.5, "Br2", 0.5),
+        "(NaBr)2": ("Na2O", 1.0, "Br2", 1.0),
+        "KBr": ("K2O", 0.5, "Br2", 0.5),
+        "(KBr)2": ("K2O", 1.0, "Br2", 1.0),
+        "NaI": ("Na2O", 0.5, "I2", 0.5),
+        "(NaI)2": ("Na2O", 1.0, "I2", 1.0),
+        "KI": ("K2O", 0.5, "I2", 0.5),
+        "(KI)2": ("K2O", 1.0, "I2", 1.0),
+    }
+    for gas, (oxide, n_oxide, parent, n_parent) in halide_powers.items():
+        oxide_scaled = evaluate_gas(
+            {**activities, oxide: activities[oxide] * 4.0},
+            2000.0, 1.0e-10, gas_pack, parent_oxides=parents,
+            gas_species=(gas,),
+        )[gas]
+        parent_scaled = evaluate_gas(
+            {**activities, parent: activities[parent] * 2.0},
+            2000.0, 1.0e-10, gas_pack, parent_oxides=parents,
+            gas_species=(gas,),
+        )[gas]
+        assert oxide_scaled / low[gas] == pytest.approx(4.0**n_oxide, rel=1e-12)
+        assert parent_scaled / low[gas] == pytest.approx(2.0**n_parent, rel=1e-12)
+    default = evaluate_gas(_quickstart_activities(2000.0), 2000.0, 1.0e-8, gas_pack)
+    assert not set(species) & set(default)
+    with pytest.raises(ImccGasSpeciesNotFoundError, match="Br2"):
+        evaluate_gas(_quickstart_activities(2000.0), 2000.0, 1.0e-8, gas_pack, gas_species=("NaBr",))
+    zero_na = evaluate_gas(
+        {**activities, "Na2O": 0.0}, 2000.0, 1.0e-8, gas_pack,
+        parent_oxides=parents, gas_species=("Br", "Br2", "NaBr"),
+    )
+    assert zero_na["NaBr"] == 0.0
+    assert math.isfinite(zero_na["Br"]) and math.isfinite(zero_na["Br2"])
+
+
+def test_halogen_oxygen_balance_only_changes_when_parent_is_supplied(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = _quickstart_activities(1800.0, allow_extrapolation=True)
+    root_without, result_without, _ = evaluate_gas_oxygen_balance(
+        activities, 1800.0, gas_pack
+    )
+    repeated_root, repeated_result, _ = evaluate_gas_oxygen_balance(
+        dict(activities), 1800.0, gas_pack
+    )
+    assert root_without.hex() == repeated_root.hex()
+    assert dict(result_without) == dict(repeated_result)
+    root_with, result_with, _ = evaluate_gas_oxygen_balance(
+        {**activities, "Br2": 1.0e-2}, 1800.0, gas_pack,
+        parent_oxides=(*IMCC_PARENT_OXIDES, "Br2"),
+    )
+    assert root_with != root_without
+    assert result_with["Br2"] == pytest.approx(1.0e-2)
+    assert result_with["NaBr"] > 0.0
 
 
 def test_sulfur_channels_have_the_declared_fugacity_exponents(
@@ -3325,14 +3477,29 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
     })
     assert tuple(metadata) == tuple(name for name, _ in channels)
     for name, (parent, n_gas, n_o2) in channels:
+        if name in gas_module._ALKALI_HALIDE_REACTION_OXIDES:
+            continue  # evaluate_gas_oxygen_balance supplies the side-oxide demand.
         expected = (
             n_o2
-            if parent == "S2"
+            if parent in gas_module._GAS_PHASE_PARENT_ROWS
             else -n_o2 / n_gas
             if parent
             else (1.0 if name == "O2" else 0.5)
         )
         assert metadata[name].pO2_exponent == pytest.approx(expected, abs=1e-12)
+        if parent in gas_module._GAS_PHASE_PARENT_ROWS:
+            assert metadata[name].parent_oxygen_demand == 0.0
+
+
+def test_alkali_halides_use_half_oxygen_per_alkali_in_balance_metadata() -> None:
+    metadata = oxygen_balance_species_metadata(
+        {"NaBr": "Na2O", "(NaBr)2": "Na2O"},
+        pO2_exponents={"NaBr": -0.25, "(NaBr)2": -0.5},
+    )
+    assert metadata["NaBr"].parent_oxygen_demand == 0.5
+    assert metadata["(NaBr)2"].parent_oxygen_demand == 1.0
+    assert metadata["NaBr"].pO2_exponent == -0.25
+    assert metadata["(NaBr)2"].pO2_exponent == -0.5
 
 
 def test_oxygen_balance_molar_masses_sum_repeated_formula_tokens() -> None:

@@ -216,6 +216,19 @@ TRACE_JANAF_YAML_GAS_SOURCES = (
     ("Zr(g)", "Zr-006", "Zr", 1, 0),
     ("ZrO(g)", "O-028", "Zr", 1, 1),
     ("ZrO2(g)", "O-055", "Zr", 1, 2),
+    ("Br2(g)", "Br-040", "Br", 2, 0),
+    ("Br(g)", "Br-001", "Br", 1, 0),
+    ("I2(g)", "I-027", "I", 2, 0),
+    ("I(g)", "I-001", "I", 1, 0),
+    ("NaBr(g)", "Br-030", "Na", 1, 0),
+    ("(NaBr)2(g)", "Br-064", "Na", 2, 0),
+    ("KBr(g)", "Br-018", "K", 1, 0),
+    ("(KBr)2(g)", "Br-055", "K", 2, 0),
+    ("KI(g)", "I-007", "K", 1, 0),
+    ("(KI)2(g)", "I-028", "K", 2, 0),
+)
+HALOGEN_JANAF_TABLES = frozenset(
+    {"Br-040", "Br-001", "I-027", "I-001", "Br-030", "Br-064", "Br-018", "Br-055", "I-007", "I-028"}
 )
 TRACE_NASA_GAS_SOURCES = (
     ("NiO(g)", "NG-0926", "NiO", "Ni", 1, 1),
@@ -249,7 +262,10 @@ TRACE_NASA_GAS_SOURCES = (
     ("UO(g)", "NG-1224", "UO", "U", 1, 1),
     ("UO2(g)", "NG-1230", "UO2", "U", 1, 2),
     ("UO3(g)", "NG-1235", "UO3", "U", 1, 3),
+    ("NaI(g)", "NG-0893", "NaI", "Na", 1, 0),
+    ("(NaI)2(g)", "NG-0904", "Na2I2", "Na", 2, 0),
 )
+HALOGEN_NASA_TABLES = frozenset({"NG-0893", "NG-0904"})
 TRACE_PUBLISHED_GAS_SOURCES = (
     ("ZnO(g)", "IVTAN-264", "ZnO", "Zn", 1, 1, 3000.0),
     ("Bi(g)", "P672-T80", "Bi", "Bi", 1, 0, 1800.0),
@@ -838,6 +854,9 @@ def _validate_record_identity(
         "O9W3": "(WO3)3",
         "O12W4": "(WO3)4",
         "O8W3": "W3O8",
+        "Br2Na2": "(NaBr)2",
+        "Br2K2": "(KBr)2",
+        "I2K2": "(KI)2",
     }.get(
         formula, formula
     )
@@ -3054,6 +3073,7 @@ def build_rows(
         )
         for source in TRACE_JANAF_YAML_GAS_SOURCES
         if not source[0].startswith(("Mo", "W"))
+        and source[1] not in HALOGEN_JANAF_TABLES
     )
     rows.extend(
         _fit_nasa_card_gas_row(
@@ -3064,6 +3084,7 @@ def build_rows(
             fit_t_max=FIT_T_MAX,
         )
         for source in TRACE_NASA_GAS_SOURCES
+        if source[1] not in HALOGEN_NASA_TABLES
     )
     for source in TRACE_PUBLISHED_GAS_SOURCES:
         split_temperature = (
@@ -3107,7 +3128,7 @@ def build_rows(
         for source in TRACE_JANAF_GAS_SOURCES
     )
     for source in TRACE_JANAF_YAML_GAS_SOURCES:
-        if source[0].startswith(("Mo", "W")):
+        if source[0].startswith(("Mo", "W")) or source[1] in HALOGEN_JANAF_TABLES:
             continue
         low_row = _fit_row(
             source_dir,
@@ -3129,6 +3150,7 @@ def build_rows(
             runtime_t_min=1200.0,
         )
         for source in TRACE_NASA_GAS_SOURCES
+        if source[1] not in HALOGEN_NASA_TABLES
     )
     for source in TRACE_PUBLISHED_GAS_SOURCES:
         split_temperature = (
@@ -3255,6 +3277,27 @@ def build_rows(
             (1, FIT_T_MIN, FIT_T_MAX, FIT_T_MIN),
             (2, 1200.0, 1500.0, 1200.0),
         )
+    )
+    rows.extend(
+        _fit_row(
+            source_dir,
+            *source,
+            fit_t_min=1200.0,
+            fit_t_max=3000.0,
+            minimum_rows=19,
+        )
+        for source in TRACE_JANAF_YAML_GAS_SOURCES
+        if source[1] in HALOGEN_JANAF_TABLES
+    )
+    rows.extend(
+        _fit_nasa_card_gas_row(
+            nasa_source_dir,
+            *source,
+            fit_t_min=1200.0,
+            fit_t_max=3000.0,
+        )
+        for source in TRACE_NASA_GAS_SOURCES
+        if source[1] in HALOGEN_NASA_TABLES
     )
     return rows
 

@@ -601,11 +601,34 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "YbO": ("Yb2O3", 2, 0.5),
     "Lu": ("Lu2O3", 2, 1.5),
     "LuO": ("Lu2O3", 2, 0.5),
+    # Appended halogen families use X2(g) as their gas-parent activity.
+    "Br2": ("Br2", 1, 0.0),
+    "Br": ("Br2", 0.5, 0.0),
+    "I2": ("I2", 1, 0.0),
+    "I": ("I2", 0.5, 0.0),
+    "NaBr": ("Br2", 0.5, 0.25),
+    "(NaBr)2": ("Br2", 1.0, 0.5),
+    "KBr": ("Br2", 0.5, 0.25),
+    "(KBr)2": ("Br2", 1.0, 0.5),
+    "NaI": ("I2", 0.5, 0.25),
+    "(NaI)2": ("I2", 1.0, 0.5),
+    "KI": ("I2", 0.5, 0.25),
+    "(KI)2": ("I2", 1.0, 0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
 # from the JANAF gas table; all other parent keys keep the liquid lookup.
-_GAS_PHASE_PARENT_ROWS = {"S2": "S2(g)"}
+_GAS_PHASE_PARENT_ROWS = {"S2": "S2(g)", "Br2": "Br2(g)", "I2": "I2(g)"}
+_ALKALI_HALIDE_REACTION_OXIDES = {
+    "NaBr": ("Na2O", 0.5, 0.25),
+    "(NaBr)2": ("Na2O", 1.0, 0.5),
+    "KBr": ("K2O", 0.5, 0.25),
+    "(KBr)2": ("K2O", 1.0, 0.5),
+    "NaI": ("Na2O", 0.5, 0.25),
+    "(NaI)2": ("Na2O", 1.0, 0.5),
+    "KI": ("K2O", 0.5, 0.25),
+    "(KI)2": ("K2O", 1.0, 0.5),
+}
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 
@@ -734,6 +757,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
         "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
         "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
+        "Br2", "Br", "I2", "I", "NaBr", "(NaBr)2", "KBr", "(KBr)2",
+        "NaI", "(NaI)2", "KI", "(KI)2",
     }
 )
 
@@ -765,6 +790,9 @@ def _default_reactions(
         oxide = reaction[0]
         if oxide and oxide not in parents:
             continue
+        side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(name)
+        if side_reactant and side_reactant[0] not in parents:
+            continue
         if name in _DATAPACK_OPTIONAL_CHANNELS:
             missing_rows = []
             gas_row = f"{name}(g)"
@@ -775,6 +803,10 @@ def _default_reactions(
             parent_rows = gas_rows if gas_parent_row else oxide_rows
             if oxide_row != gas_row and oxide_row not in parent_rows:
                 missing_rows.append(oxide_row)
+            if side_reactant:
+                side_row = f"{side_reactant[0]}(l)"
+                if side_row not in oxide_rows:
+                    missing_rows.append(side_row)
             if missing_rows:
                 omitted[name] = (
                     "missing from active table: " + ", ".join(missing_rows)
@@ -1088,15 +1120,20 @@ def gas_species_provenance(species: str) -> dict[str, str | None]:
         if oxide in _GAS_PHASE_PARENT_ROWS
         else _OXIDE_PROVENANCE_AUTHORITY.get(oxide)
     )
+    condensate_authority = oxide_authority
     authorities = [gas_authority]
     if oxide_authority is not None:
         authorities.append(oxide_authority)
+    side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(species)
+    if side_reactant is not None:
+        condensate_authority = _OXIDE_PROVENANCE_AUTHORITY[side_reactant[0]]
+        authorities.append(condensate_authority)
     authority = min(authorities, key=_PROVENANCE_AUTHORITY_RANK.__getitem__)
     return {
         "species_name": species,
         "authority": authority,
         "gas_authority": gas_authority,
-        "condensate_authority": oxide_authority,
+        "condensate_authority": condensate_authority,
     }
 
 
@@ -3396,7 +3433,9 @@ def evaluate_gas(
         Parent activities. Either a dict keyed by parent name, or a vector
         aligned with ``parent_oxides`` (default IMCC order). Condensed parents
         use their pure-liquid standard state; sulfur channels use caller-supplied
-        ``S2`` fugacity relative to JANAF's 1-bar gas standard.
+        ``S2`` fugacity relative to JANAF's 1-bar gas standard. Halogen channels
+        similarly accept ``Br2`` and ``I2`` fugacity ratios; their alkali-halide
+        products also use the caller's ``Na2O`` or ``K2O`` liquid activity.
     T_K:
         Temperature in Kelvin. Must be finite and positive on this path.
     fO2:
@@ -3407,7 +3446,8 @@ def evaluate_gas(
         Loaded JANAF + condensate thermodynamic tables.
     parent_oxides:
         Ordered parent names. Defaults to the IMCC-SF04 8-oxide basis; callers
-        may add ``P2O5`` or ``S2`` when supplying those parent activities.
+        may add ``P2O5``, ``S2``, ``Br2``, or ``I2`` when supplying those
+        parent activities.
     allow_extrapolation:
         If True (default), evaluate finite temperatures outside the selected
         row and return a per-species ``domain_flags`` entry.  If False, refuse
@@ -3478,6 +3518,10 @@ def evaluate_gas(
     Here ΔG° = G°(species) - n_S2*G°(S2) - n_O2*G°(O2), and
     p̃_gas = K° * a(S2)^n_S2 * fO2^n_O2. The caller supplies
     a(S2)=f(S2)/p° on the JANAF 1-bar gas reference.
+
+        Halogen alkali-halide rows use ``n_oxide*oxide(l) + n_X2*X2(g) =
+        gas(g) + n_O2*O2(g)``. Their activity power is the reaction
+        coefficient, and their oxygen-fugacity power is ``-n_O2``.
 
     The returned mapping reports those p̃_gas values as bar.  For the special
     retained species O2, p̃_O2 = fO2 by definition. For n_O2 = 0 the oxygen
@@ -3585,6 +3629,20 @@ def evaluate_gas(
             raise ValueError(
                 f"activity of {oxide!r} must be finite and >= 0, got {a_used}"
             )
+        side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(gas_name)
+        if side_reactant:
+            side_oxide, _n_oxide, _n_O2 = side_reactant
+            if side_oxide not in act:
+                raise ImccGasSpeciesNotFoundError(
+                    f"gas channel {gas_name!r} needs parent activity "
+                    f"{side_oxide!r}, which is not in parent_oxides"
+                )
+            side_activity = act[side_oxide]
+            if not math.isfinite(side_activity) or side_activity < 0.0:
+                raise ValueError(
+                    f"activity of {side_oxide!r} must be finite and >= 0, "
+                    f"got {side_activity}"
+                )
 
     # G°(O2, T) is needed only for reactions that produce or consume O2.
     needs_O2_row = any(n_O2 != 0.0 for _, (_, _, n_O2) in reactions)
@@ -3694,7 +3752,35 @@ def evaluate_gas(
             G_oxide = 0.0
             a_oxide = 1.0
 
-        if oxide in _GAS_PHASE_PARENT_ROWS:
+        side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(gas_name)
+        if side_reactant:
+            # Halide rows balance an oxide liquid and an elemental X2 gas
+            # parent. This isolated side-table path preserves both established
+            # mass-action branches and uses the product-side O2 exponent.
+            side_oxide, n_oxide, side_n_O2 = side_reactant
+            side_name = f"{side_oxide}(l)"
+            side_row = _oxide_row_for_T(
+                datapack.oxide_df,
+                side_name,
+                T,
+                allow_extrapolation=allow_extrapolation,
+            )
+            G_side_oxide = _lamor_gibbs(T, side_row)
+            flag = _outside_interval_flag(side_name, T, side_row)
+            if flag is not None:
+                flags.append(flag)
+            flag = _source_model_flag(side_name, T, side_row, phase="l")
+            if flag is not None:
+                flags.append(flag)
+            dG = G_gas + side_n_O2 * G_O2 - n_oxide * G_side_oxide - n_gas * G_oxide
+            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            p_gas = (
+                Kp
+                * act[side_oxide] ** n_oxide
+                * a_oxide**n_gas
+                / p_O2**side_n_O2
+            )
+        elif oxide in _GAS_PHASE_PARENT_ROWS:
             # Sulfur tuple: n_S2 S2(g) + n_O2 O2(g) = gas(g).
             # Kp = p_gas / (a_S2**n_S2 * fO2**n_O2), with ΔG° formed from
             # the same balanced reaction; a_S2 is caller-supplied f(S2)/p°.
@@ -3812,6 +3898,7 @@ _ATOMIC_MASS_G_MOL = {
     "Sm": 150.36, "Eu": 151.964, "Gd": 157.25,
     "Tb": 158.92535, "Dy": 162.500, "Ho": 164.93033,
     "Er": 167.259, "Tm": 168.93422, "Yb": 173.045, "Lu": 174.9668,
+    "Br": 79.904, "I": 126.90447,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,
@@ -4080,7 +4167,10 @@ def evaluate_gas_oxygen_balance(
     Existing equilibria give ``p_i ∝ pO2**k_i``. For condensed-parent
     reactions, the signed oxygen coefficient is ``-2 nO2/n_gas`` and
     ``k_i = -nO2/n_gas``. For the S2(g)-parent reactions, they are ``2 nO2``
-    and ``k_i = nO2``. In both cases their product is nonnegative, so
+    and ``k_i = nO2``. Alkali halides use an explicit side-oxide demand of
+    one-half O per alkali atom and product-side exponent
+    ``(n_O - n_alkali/2)/2``. Their signed oxygen coefficient and pressure
+    exponent have matching signs, so
     ``dF/dlog10(pO2) = ln(10) sum_i C_i k_i pO2**k_i >= 0``. Parentless O and
     O2 terms have positive coefficients and exponents 1/2 and 1. F is strictly
     increasing when an oxygen-bearing channel exists, so a sign-changing
@@ -4106,7 +4196,18 @@ def evaluate_gas_oxygen_balance(
     })
     for species, (parent, n_gas, n_O2) in channels:
         data = species_data[species]
-        if parent in _GAS_PHASE_PARENT_ROWS:
+        side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(species)
+        if side_reactant:
+            _oxide, n_oxide, n_O2 = side_reactant
+            data = data._replace(
+                parent_oxygen_demand=n_oxide,
+                pO2_exponent=(0.0 - n_oxide) / 2.0,
+            )
+            species_data[species] = data
+            exponent = -n_O2
+        elif parent in _GAS_PHASE_PARENT_ROWS:
+            data = data._replace(parent_oxygen_demand=0.0)
+            species_data[species] = data
             exponent = n_O2
         else:
             exponent = (
