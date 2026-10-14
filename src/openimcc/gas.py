@@ -714,6 +714,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Th", "ThO", "ThO2",
         "Hf",
         "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
+        "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
     }
 )
 
@@ -855,7 +856,10 @@ _GAS_PROVENANCE_AUTHORITY.update(
 _GAS_PROVENANCE_AUTHORITY.update(
     {
         species: "published_fitted"
-        for species in ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO")
+        for species in (
+            "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
+            "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+        )
     }
 )
 _ION_GAS_SPECIES = (
@@ -3763,6 +3767,7 @@ _ATOMIC_MASS_G_MOL = {
     "Ba": 137.327, "Sr": 87.62, "Zr": 91.224,
     "Sc": 44.955908, "U": 238.02891, "Th": 232.0377, "Hf": 178.49,
     "La": 138.90547, "Ce": 140.116, "Pr": 140.90766, "Nd": 144.242,
+    "Sm": 150.36, "Eu": 151.964, "Gd": 157.25,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,

@@ -585,9 +585,12 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         build_gas_tables.LOW_T_GAS_SPECIES
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
-        | {"La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"}
+        | {
+            "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
+            "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+        }
     )
-    assert len(oxide_rows) == 47
+    assert len(oxide_rows) == 50
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -2225,7 +2228,10 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
     } | {"Na2O(g)", "K2O(g)"} | {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
     } | {
-        f"{species}(g)" for species in ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO")
+        f"{species}(g)" for species in (
+            "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
+            "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+        )
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
@@ -2354,7 +2360,10 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
         if (
             species in ion_species
             or species in build_gas_tables.TRACE_GAS_SPECIES
-            or species in {"La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"}
+            or species in {
+                "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
+                "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+            }
         ):
             continue
         interval = values[2]
@@ -6010,7 +6019,8 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             "Co",
             "CoO",
         } | build_gas_tables.TRACE_GAS_SPECIES | {
-            "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"
+            "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
+            "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
         }:
             continue
         if (
@@ -6231,7 +6241,8 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         "SO3",
         "SSO",
     } - build_gas_tables.TRACE_GAS_SPECIES - {
-        "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"
+        "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
+        "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
     }
     assert max(maxima[species] for species in existing) < 300.0
     # The omitted O-063 and Nb-013 source nodes make the V/Nb interpolation
