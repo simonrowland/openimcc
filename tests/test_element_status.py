@@ -142,6 +142,10 @@ def _evaluated_public_c2_species(
     pack = load_gas_datapack()
     evaluated = set()
     for element, species in source_candidates.values():
+        if element == "Ce" and species == "CeO2":
+            parent_oxide = "CeO2"
+        else:
+            parent_oxide = None
         if element in {"P", "S"} and f"{species}(g)" in pack.gas_df.index:
             # Their C2 evidence is the public gas row; callers supply P2O5/S2
             # activities, and the P2O5 parent standard is tracked separately.
@@ -150,7 +154,7 @@ def _evaluated_public_c2_species(
         ion_bound = ELEMENT_STATUS[element].get("c3_ion_bound")
         if ion_bound is None:
             continue
-        parent_oxide = ion_bound.get("parent_oxide")
+        parent_oxide = parent_oxide or ion_bound.get("parent_oxide")
         if parent_oxide is None and species in gas_module._SF04_REACTIONS:
             parent_oxide = gas_module._SF04_REACTIONS[species][0]
         if parent_oxide is None:
@@ -422,6 +426,10 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Cs": "Cs2O", "Cu": "Cu2O", "Sn": "SnO", "Ag": "Ag2O",
         "Sc": "Sc2O3",
         "Hf": "HfO2",
+        "La": "La2O3",
+        "Ce": "Ce2O3",
+        "Pr": "Pr2O3",
+        "Nd": "Nd2O3",
         "Th": "ThO2",
     }
     new_trace_elements = {"Ga", "Ge", "B", "In", "Cu", "Mn", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "Hf", "Th"}
@@ -1216,7 +1224,10 @@ def _c4_rows_cover_domain(
                 return False
         elif source["authority"] in {"published_fitted", "liquid_from_solid_estimate"}:
             if (
-                source["method"] != "fitted"
+                source["method"] not in {
+                    "fitted",
+                    "integrated_phase_chain_and_supercooled_liquid",
+                }
                 or not source.get("source", {}).get("citation")
             ):
                 return False

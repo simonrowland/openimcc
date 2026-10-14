@@ -3000,21 +3000,20 @@ def build_rows(
     # Konings Part 1/2 are polynomial records rather than tabulated nodes;
     # integrate their Cp functions to the shared 100 K node grid before using
     # the established Shomate fitter. The low fit is exposed only from 1200 K.
-    for element, species_rows in KONINGS_GAS_SPECIES.items():
-        if element not in konings_records:
-            continue
-        record = konings_records[element]
-        rows.extend(
-            _fit_konings_gas_row(record, species, element, 1, oxy_num,
-                                 interval=1, fit_t_min=1500.0, fit_t_max=3000.0)
-            for species, oxy_num in species_rows
-        )
-        rows.extend(
-            _fit_konings_gas_row(record, species, element, 1, oxy_num,
-                                 interval=2, fit_t_min=500.0, fit_t_max=1500.0,
-                                 runtime_t_min=1200.0)
-            for species, oxy_num in species_rows
-        )
+    for interval, lo, hi, runtime_lo in (
+        (1, 1500.0, 3000.0, None), (2, 500.0, 1500.0, 1200.0)
+    ):
+        for element, species_rows in KONINGS_GAS_SPECIES.items():
+            if element not in konings_records:
+                continue
+            rows.extend(
+                _fit_konings_gas_row(
+                    konings_records[element], species, element, 1, oxy_num,
+                    interval=interval, fit_t_min=lo, fit_t_max=hi,
+                    runtime_t_min=runtime_lo,
+                )
+                for species, oxy_num in species_rows
+            )
     rows.extend(
         _fit_row(
             source_dir,

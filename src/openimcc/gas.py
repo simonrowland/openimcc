@@ -840,6 +840,12 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Hf": "janaf_fitted",
     }
 )
+_GAS_PROVENANCE_AUTHORITY.update(
+    {
+        species: "published_fitted"
+        for species in ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO")
+    }
+)
 _ION_GAS_SPECIES = (
     "Na+", "K+", "Ca+", "e-",
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
@@ -919,6 +925,11 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "UO2": "nasa_glenn_fitted",
     "ThO2": "liquid_from_solid_estimate",
     "HfO2": "liquid_from_solid_estimate",
+    "La2O3": "published_fitted",
+    "Ce2O3": "published_fitted",
+    "CeO2": "published_fitted",
+    "Pr2O3": "published_fitted",
+    "Nd2O3": "published_fitted",
 }
 # Mirrors the source table identifiers recorded for packaged rows in
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
@@ -961,6 +972,11 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "ThO2": "P672-ThO2-c",
     "HfO2": "P672-HfO2-c",
     "MnO": "MnO-liquid-construction",
+    "La2O3": "Konings-Table88-Tf2577",
+    "Ce2O3": "Konings-Table88-Tf2512",
+    "CeO2": "Konings-Table88-Tf3083",
+    "Pr2O3": "Konings-Table88-Tf2583",
+    "Nd2O3": "Konings-Table88-Tf2577",
 }
 _LAM1987_SOURCE_TABLE_IDS = {
     "MgO": "LH87 Table 2",
@@ -3725,6 +3741,7 @@ _ATOMIC_MASS_G_MOL = {
     "Mo": 95.95, "W": 183.84,
     "Ba": 137.327, "Sr": 87.62, "Zr": 91.224,
     "Sc": 44.955908, "U": 238.02891, "Th": 232.0377, "Hf": 178.49,
+    "La": 138.90547, "Ce": 140.116, "Pr": 140.90766, "Nd": 144.242,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,

@@ -585,8 +585,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         build_gas_tables.LOW_T_GAS_SPECIES
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
+        | {"La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"}
     )
-    assert len(oxide_rows) == 42
+    assert len(oxide_rows) == 47
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -728,6 +729,21 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             assert row["source_sha256"] == source["extraction"]["source_sha256"]
             assert row["authority"] == "janaf_fitted"
             assert source["source"]["doi"] == "10.18434/T42S31"
+
+    for species in ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"):
+        record_path = ROOT / f"data-src/konings/{species[:2].lower()}.json"
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        for row in (gas_rows[f"{species}(g)"], low_gas_rows[species]):
+            assert row["authority"] == "published_fitted"
+            assert row["method"] == "integrated_printed_Cp_then_fitted"
+            assert row["source_path"] == record_path.relative_to(ROOT).as_posix()
+            assert row["source_sha256"] == hashlib.sha256(
+                record_path.read_bytes()
+            ).hexdigest()
+            assert row["source"]["citation"].startswith("Konings")
+            assert row["max_residual_J_per_mol"] <= 10.0
+        assert gas_rows[f"{species}(g)"]["T_range_K"] == [1500, 3000]
+        assert low_gas_rows[species]["T_range_K"] == [1200, 1500]
 
     for species, table_id in NASA_TABLE_IDS.items():
         source_path = NASA_DATA / f"{table_id}.json"
@@ -1692,7 +1708,7 @@ def test_hf_mixed_source_band_matches_pankratz_apparent_gibbs_nodes() -> None:
         if row["table"] == "gas" and row["species_name"] == "Hf(g)"
     ]
     assert len(rows) == 2
-    for row, fitted in zip(rows, condensates, strict=True):
+    for row in rows:
         band = row["uncertainty_band"]
         for temperature, value in band["values_J_per_mol"].items():
             temperature = int(temperature)
@@ -2101,7 +2117,9 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
             if (
                 row.get("extrapolation") is True
                 and row["species_name"] not in {
-                    "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)", "TeO2(l)", "SeO2(l)", "As2O3(l)", "Sb2O3(l)", "Ag2O(l)", "UO2(l)", "ThO2(l)", "HfO2(l)"
+                    "ZnO(l)", "CdO(l)", "Bi2O3(l)", "MnO(l)", "TeO2(l)",
+                    "SeO2(l)", "As2O3(l)", "Sb2O3(l)", "Ag2O(l)",
+                    "UO2(l)", "ThO2(l)", "HfO2(l)", "CeO2(l)",
                 }
             ):
                 continue
@@ -2206,6 +2224,8 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
     } | {"Na2O(g)", "K2O(g)"} | {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
+    } | {
+        f"{species}(g)" for species in ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO")
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
@@ -2331,7 +2351,11 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
     for line in lines[1:]:
         values = next(csv.reader([line.decode("utf-8")]))
         species = values[0].removesuffix("(g)")
-        if species in ion_species or species in build_gas_tables.TRACE_GAS_SPECIES:
+        if (
+            species in ion_species
+            or species in build_gas_tables.TRACE_GAS_SPECIES
+            or species in {"La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"}
+        ):
             continue
         interval = values[2]
         intervals.append(interval)
@@ -3005,12 +3029,86 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
         "Ba(g)", "Ba+(g)", "BaO(g)", "BaO(l)", "Sr(g)", "Sr+(g)",
         "SrO(g)", "SrO(l)", "Zr(g)", "Zr+(g)", "ZrO(g)",
         "ZrO2(g)", "ZrO2(l)", "Sc(g)", "Sc2O3(cr)", "Sc2O3(l)", "U(g)", "UO2(cr)",
+        "La(g)", "Ce(g)", "Pr(g)", "Nd(g)",
     } <= compared_species
     for comparison in comparisons["rows"]:
         if "janaf_298K_element_reference_table" in comparison:
             assert comparison["janaf_298K_element_reference_table"] == (
                 comparison["janaf_table_id"]
             )
+        if comparison["species_name"] == "La(g)":
+            source = json.loads(
+                (ROOT / comparison["pankratz_source_path"]).read_text(
+                    encoding="utf-8"
+                )
+            )["tables"][comparison["pankratz_table_id"]]
+            for value in comparison["values"]:
+                temperature = int(value["T_K"])
+                nodes = {int(row[0]): row for row in source["nodes"]}
+                if temperature <= 2000:
+                    node = nodes[temperature]
+                    entropy, enthalpy = float(node[2]), float(node[3])
+                else:
+                    cp, entropy_2000, enthalpy_2000 = map(
+                        float, nodes[2000][1:]
+                    )
+                    entropy = entropy_2000 + cp * math.log(temperature / 2000)
+                    enthalpy = enthalpy_2000 + cp * (temperature - 2000) / 1000
+                pank_g = (
+                    float(source["formation_enthalpy_298_kcal_mol"]) + enthalpy
+                ) * 4184 - temperature * entropy * 4.184
+                assert value["pankratz_G_app_J_mol"] == pytest.approx(
+                    pank_g, abs=0.001
+                )
+            continue
+        if comparison["species_name"] in {"Ce(g)", "Pr(g)", "Nd(g)"}:
+            source = json.loads(
+                (ROOT / comparison["pankratz_source_path"]).read_text(
+                    encoding="utf-8"
+                )
+            )["tables"][comparison["pankratz_table_id"]]
+            konings = json.loads(
+                (
+                    ROOT / "data-src/konings/"
+                    / f"{comparison['species_name'][:2].lower()}.json"
+                ).read_text(
+                    encoding="utf-8"
+                )
+            )
+            species = comparison["species_name"]
+            for value in comparison["values"]:
+                temperature = int(value["T_K"])
+                node = next(
+                    row for row in source["nodes"]
+                    if row[0] == min(temperature, 2000)
+                )
+                if temperature > 2000:
+                    cp, entropy, enthalpy = map(float, node[1:])
+                    entropy += cp * math.log(temperature / 2000)
+                    enthalpy += cp * (temperature - 2000) / 1000
+                else:
+                    _, _, entropy, enthalpy = map(float, node)
+                pank_g = (
+                    float(source["formation_enthalpy_298_kcal_mol"]) + enthalpy
+                ) * 4184 - temperature * entropy * 4.184
+                rows, formation = build_gas_tables._konings_source_rows(
+                    konings, species, [temperature]
+                )
+                konings_g = (
+                    formation * 1000
+                    + rows[0]["enthalpy_increment"] * 1000
+                    - temperature * rows[0]["entropy"]
+                )
+                assert value["pankratz_G_app_J_mol"] == pytest.approx(
+                    pank_g, abs=0.001
+                )
+                assert value["konings_G_app_J_mol"] == pytest.approx(
+                    konings_g, abs=0.001
+                )
+                assert value["konings_minus_pankratz_J_mol"] == pytest.approx(
+                    konings_g - pank_g, abs=0.001
+                )
+            continue
         if comparison["species_name"] == "NiO(g)":
             nasa = _nasa_record(comparison["selected_nasa_record_id"])
             bulletin = json.loads(
@@ -5835,7 +5933,9 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             "NiO",
             "Co",
             "CoO",
-        } | build_gas_tables.TRACE_GAS_SPECIES:
+        } | build_gas_tables.TRACE_GAS_SPECIES | {
+            "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"
+        }:
             continue
         if (
             _SF04_REACTIONS[species][0]
@@ -6054,7 +6154,9 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         "SO2",
         "SO3",
         "SSO",
-    } - build_gas_tables.TRACE_GAS_SPECIES
+    } - build_gas_tables.TRACE_GAS_SPECIES - {
+        "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO"
+    }
     assert max(maxima[species] for species in existing) < 300.0
     # The omitted O-063 and Nb-013 source nodes make the V/Nb interpolation
     # comparison slightly looser than the established channels.

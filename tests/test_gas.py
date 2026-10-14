@@ -201,8 +201,9 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
         + 1  # Sc+ has an additional interval row.
+        + 2 * len(_RARE_EARTH_CHANNELS)
     )
-    assert len(gas_pack.oxide_df) == 121
+    assert len(gas_pack.oxide_df) == 135
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -486,11 +487,14 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_GAS_YAML_SOURCES)
         + 3
+        + len(_RARE_EARTH_CHANNELS)
     )
     assert set(low_rows.index) == {
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
     } | {"Na2O(g)", "K2O(g)"} | {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
+    } | {
+        f"{species}(g)" for species in _RARE_EARTH_CHANNELS
     } | {
         source[0]
         for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
@@ -537,7 +541,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     assert (split_ion_rows.loc[split_ion_rows["T_interval"] == 2, "T_max"] == 1500).all()
     trace_low_species = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
-    } | split_ion_names
+    } | split_ion_names | {f"{species}(g)" for species in _RARE_EARTH_CHANNELS}
     legacy_low_rows = low_rows.loc[~low_rows.index.isin(trace_low_species)]
     trace_low_rows = low_rows.loc[low_rows.index.isin(trace_low_species)]
     assert (legacy_low_rows["T_min"] == build_gas_tables.LOW_FIT_T_MIN).all()
@@ -602,6 +606,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == (
         64
+        + len(_RARE_EARTH_CHANNELS)
         + len(build_gas_tables.TRACE_GAS_SPECIES)
         - len({"NiO", "CoO"} & build_gas_tables.TRACE_GAS_SPECIES)
     )
@@ -614,6 +619,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
         in_domain
         | extrapolated
         | set(_P_CHANNELS)
+        | set(_RARE_EARTH_CHANNELS)
         | build_gas_tables.TRACE_GAS_SPECIES
         | (unavailable & implemented)
     ) == implemented
@@ -1379,6 +1385,7 @@ _S_CHANNELS = (
     "SO", "SO2", "SO3", "SSO",
 )
 _PS_CHANNELS = _P_CHANNELS + _S_CHANNELS
+_RARE_EARTH_CHANNELS = ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO")
 _NICO_PARENT_PAIRS = (("Ni", "NiO"), ("Co", "CoO"))
 _PRE_GATED_CHANNELS = tuple(
     species
@@ -1389,6 +1396,7 @@ _PRE_GATED_CHANNELS = tuple(
     and species not in _NICO_CHANNELS
     and species not in {"NiO", "CoO"}
     and species not in _PS_CHANNELS
+    and species not in _RARE_EARTH_CHANNELS
     and species not in build_gas_tables.TRACE_GAS_SPECIES
 )
 _SF04_CHANNELS = tuple(
