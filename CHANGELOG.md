@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-- Corrected the TSIV Table 2026 NiO 298.15 K enthalpy and entropy anchors to
-  6.720 kJ/mol and 37.820 J/(mol K); regenerated optional NiO(l) coefficients,
+- Aligned the TSIV Table 2026 NiO 298.15 K enthalpy and entropy anchors with the
+  tabulated function row (6.720 kJ/mol, 37.820 J/(mol K)); the same page's
+  constants table prints 6.736 and 37.89, a source-internal difference; regenerated optional NiO(l) coefficients,
   which change by approximately 16 J/mol, and refreshed the derived Ni ion
   status estimates. Corrected the Pankratz Se(g) locator to printed page 367.
 - Added optional La(g) and LaO(g) channels with caller-supplied La2O3(l)

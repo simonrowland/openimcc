@@ -48,6 +48,7 @@ records:
     source_locator: Volume IV, Table 2026
     tier: 3
     selection_reason: The source prints the phase-paired NiO liquid function and stated uncertainty inputs; its direct estimated branch is selected over the tier-4 liquid_from_solid construction.
+    anchor_note: The same page prints two 298.15 K anchor pairs that differ. The constants table gives H(298.15)-H(0) = 6.736 kJ/mol and S(298.15) = 37.89 J/(mol K); the tabulated function row at 298.15 K gives 6.720 kJ/mol and 37.820 J/(mol K). The record stores the tabulated-row values because the fitter subtracts this anchor from the tabulated H-H(0) column, so H-H(298.15) is zero at 298.15 K only with the matching row value. The 0.016 kJ/mol difference is a source-internal inconsistency, about 0.0004 dex at 2000 K.
   - record_id: TSIV-1334
     path: data-src/published-thermo/tsiv-table-1334.json
     source_sha256: 0ec12a2ad174adb1769015c2755f25d89633e2d7ec3ae85acab1aca6ab7c78c7
