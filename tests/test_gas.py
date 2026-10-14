@@ -203,7 +203,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 1  # Sc+ has an additional interval row.
         + 2 * len(_RARE_EARTH_CHANNELS)
     )
-    assert len(gas_pack.oxide_df) == 144
+    assert len(gas_pack.oxide_df) == 165
 
 
 _MAJOR_PARENT_CONTINUATIONS = (

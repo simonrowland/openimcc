@@ -2233,6 +2233,8 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         f"{species}(g)" for species in (
             "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
             "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
+            "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
+            "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         )
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
