@@ -1362,7 +1362,10 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         if (
             row["table"] not in {"gas", "condensate"}
             or band is None
-            or band.get("kind") != "held_Cp_continuation_envelope"
+            or (
+                band.get("kind") != "held_Cp_continuation_envelope"
+                and "44 published NASA Glenn cards" not in band.get("method", "")
+            )
         ):
             continue
         limit = float(row["extrapolation_source_limit_K"])
