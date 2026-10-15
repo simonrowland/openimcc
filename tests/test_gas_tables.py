@@ -1597,14 +1597,13 @@ def test_burcat_metal_absolute_k_matches_runtime_and_is_continuous(
     (("Hg", 629.88, 0.02), ("Au", 3129.0, 0.5), ("Pd", 3236.0, 0.05)),
 )
 def test_burcat_metal_boiling_pressure_is_near_one_bar(
-    sf04_gas_pack: ImccGasDatapack,
     element: str,
     temperature: float,
     relative_tolerance: float,
 ) -> None:
     """Boiling-point check: unit metal activity gives p near the 1-bar scale."""
     pressure = evaluate_gas(
-        {element: 1.0}, temperature, 1.0, sf04_gas_pack, gas_species=(element,)
+        {element: 1.0}, temperature, 1.0, load_gas_datapack(), gas_species=(element,)
     )[element]
     assert pressure == pytest.approx(1.0, rel=relative_tolerance)
 
