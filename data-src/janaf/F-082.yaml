@@ -1,0 +1,1026 @@
+schema_version: literature_compilation.v1
+source_id: nist-janaf-4th
+source:
+  citation: Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition, J. Phys.
+    Chem. Ref. Data Monograph 9 (1998)
+  database: NIST Standard Reference Database 13
+  doi: 10.18434/T42S31
+  url: https://janaf.nist.gov/
+  last_data_update: 1998
+compilation_role:
+  kind: assessed_thermodynamic_functions
+  engine_reference_input: true
+  validation_measurement: false
+  scoring_eligible: false
+  battery_refusal: gibbs_table_not_runtime_observable
+  circularity_warning: Do not validate an engine against a compilation it consumes.
+extraction:
+  method: machine parse of NIST tab-delimited table download; source bytes cached
+    unchanged
+  date: '2026-09-06'
+  source_sha256: 424ac12bee332a6cc8dd5278fe8bfd60b77adbea94860a0bb0af041ed3f9fedd
+  review_status: machine_transcribed_unreviewed
+  user_agent: openimcc-janaf-vendor/1.0
+table:
+  table_id: F-082
+  url: https://janaf.nist.gov/tables/F-082.html
+  download_url: https://janaf.nist.gov/tables/F-082.txt
+  index_entry:
+    formula: F2Na2
+    formula_as_published: F2Na2
+    formula_normalised: F2Na2
+    charge: 0
+    name: Sodium Fluoride ((NaF)2)
+    state: g
+  title_as_published: Sodium Fluoride ((NaF)2)  |  F2Na2(g)
+  standard_state_as_published: p° = 0.1 MPa (as published by JANAF)
+  units_as_published:
+    temperature: K
+    heat_capacity: J K^-1 mol^-1
+    entropy: J K^-1 mol^-1
+    negative_gibbs_enthalpy_function: J K^-1 mol^-1
+    enthalpy_increment: kJ mol^-1
+    formation_enthalpy: kJ mol^-1
+    formation_gibbs_energy: kJ mol^-1
+    log10_formation_equilibrium_constant: dimensionless
+  values:
+  - temperature:
+      value: 298.15
+      as_published: '298.15'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '298.15'
+        column: T(K)
+    heat_capacity:
+      value: 70.821
+      as_published: '70.821'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '298.15'
+        column: Cp
+    entropy:
+      value: 287.366
+      as_published: '287.366'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '298.15'
+        column: S
+    enthalpy_increment:
+      value: 0.0
+      as_published: '0.'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '298.15'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -846.423
+      as_published: '-846.423'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '298.15'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -840.957
+      as_published: '-840.957'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '298.15'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 147.332
+      as_published: '147.332'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '298.15'
+        column: log Kf
+  - temperature:
+      value: 1200.0
+      as_published: '1200'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1200'
+        column: T(K)
+    heat_capacity:
+      value: 82.23
+      as_published: '82.230'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1200'
+        column: Cp
+    entropy:
+      value: 396.81
+      as_published: '396.810'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1200'
+        column: S
+    enthalpy_increment:
+      value: 71.902
+      as_published: '71.902'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1058.7
+      as_published: '-1058.700'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -794.979
+      as_published: '-794.979'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 34.605
+      as_published: '34.605'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1200'
+        column: log Kf
+  - temperature:
+      value: 1300.0
+      as_published: '1300'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1300'
+        column: T(K)
+    heat_capacity:
+      value: 82.364
+      as_published: '82.364'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1300'
+        column: Cp
+    entropy:
+      value: 403.398
+      as_published: '403.398'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1300'
+        column: S
+    enthalpy_increment:
+      value: 80.132
+      as_published: '80.132'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1058.397
+      as_published: '-1058.397'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -773.014
+      as_published: '-773.014'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 31.06
+      as_published: '31.060'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1300'
+        column: log Kf
+  - temperature:
+      value: 1400.0
+      as_published: '1400'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1400'
+        column: T(K)
+    heat_capacity:
+      value: 82.47
+      as_published: '82.470'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1400'
+        column: Cp
+    entropy:
+      value: 409.505
+      as_published: '409.505'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1400'
+        column: S
+    enthalpy_increment:
+      value: 88.374
+      as_published: '88.374'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1058.103
+      as_published: '-1058.103'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -751.073
+      as_published: '-751.073'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 28.023
+      as_published: '28.023'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1400'
+        column: log Kf
+  - temperature:
+      value: 1500.0
+      as_published: '1500'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1500'
+        column: T(K)
+    heat_capacity:
+      value: 82.556
+      as_published: '82.556'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1500'
+        column: Cp
+    entropy:
+      value: 415.198
+      as_published: '415.198'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1500'
+        column: S
+    enthalpy_increment:
+      value: 96.625
+      as_published: '96.625'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1057.819
+      as_published: '-1057.819'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -729.152
+      as_published: '-729.152'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 25.391
+      as_published: '25.391'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1500'
+        column: log Kf
+  - temperature:
+      value: 1600.0
+      as_published: '1600'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1600'
+        column: T(K)
+    heat_capacity:
+      value: 82.627
+      as_published: '82.627'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1600'
+        column: Cp
+    entropy:
+      value: 420.529
+      as_published: '420.529'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1600'
+        column: S
+    enthalpy_increment:
+      value: 104.885
+      as_published: '104.885'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1057.546
+      as_published: '-1057.546'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -707.25
+      as_published: '-707.250'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 23.089
+      as_published: '23.089'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1600'
+        column: log Kf
+  - temperature:
+      value: 1700.0
+      as_published: '1700'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1700'
+        column: T(K)
+    heat_capacity:
+      value: 82.686
+      as_published: '82.686'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1700'
+        column: Cp
+    entropy:
+      value: 425.54
+      as_published: '425.540'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1700'
+        column: S
+    enthalpy_increment:
+      value: 113.15
+      as_published: '113.150'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1057.283
+      as_published: '-1057.283'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -685.365
+      as_published: '-685.365'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 21.059
+      as_published: '21.059'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1700'
+        column: log Kf
+  - temperature:
+      value: 1800.0
+      as_published: '1800'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1800'
+        column: T(K)
+    heat_capacity:
+      value: 82.735
+      as_published: '82.735'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1800'
+        column: Cp
+    entropy:
+      value: 430.267
+      as_published: '430.267'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1800'
+        column: S
+    enthalpy_increment:
+      value: 121.422
+      as_published: '121.422'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1057.03
+      as_published: '-1057.030'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -663.494
+      as_published: '-663.494'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 19.254
+      as_published: '19.254'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1800'
+        column: log Kf
+  - temperature:
+      value: 1900.0
+      as_published: '1900'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1900'
+        column: T(K)
+    heat_capacity:
+      value: 82.777
+      as_published: '82.777'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1900'
+        column: Cp
+    entropy:
+      value: 434.742
+      as_published: '434.742'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1900'
+        column: S
+    enthalpy_increment:
+      value: 129.697
+      as_published: '129.697'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1056.785
+      as_published: '-1056.785'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -641.638
+      as_published: '-641.638'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 17.64
+      as_published: '17.640'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '1900'
+        column: log Kf
+  - temperature:
+      value: 2000.0
+      as_published: '2000'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2000'
+        column: T(K)
+    heat_capacity:
+      value: 82.812
+      as_published: '82.812'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2000'
+        column: Cp
+    entropy:
+      value: 438.989
+      as_published: '438.989'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2000'
+        column: S
+    enthalpy_increment:
+      value: 137.977
+      as_published: '137.977'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1056.547
+      as_published: '-1056.547'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -619.794
+      as_published: '-619.794'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 16.187
+      as_published: '16.187'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2000'
+        column: log Kf
+  - temperature:
+      value: 2100.0
+      as_published: '2100'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2100'
+        column: T(K)
+    heat_capacity:
+      value: 82.843
+      as_published: '82.843'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2100'
+        column: Cp
+    entropy:
+      value: 443.03
+      as_published: '443.030'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2100'
+        column: S
+    enthalpy_increment:
+      value: 146.26
+      as_published: '146.260'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2100'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1056.313
+      as_published: '-1056.313'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2100'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -597.963
+      as_published: '-597.963'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2100'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 14.874
+      as_published: '14.874'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2100'
+        column: log Kf
+  - temperature:
+      value: 2200.0
+      as_published: '2200'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2200'
+        column: T(K)
+    heat_capacity:
+      value: 82.87
+      as_published: '82.870'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2200'
+        column: Cp
+    entropy:
+      value: 446.884
+      as_published: '446.884'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2200'
+        column: S
+    enthalpy_increment:
+      value: 154.545
+      as_published: '154.545'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2200'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1056.081
+      as_published: '-1056.081'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2200'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -576.142
+      as_published: '-576.142'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2200'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 13.679
+      as_published: '13.679'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2200'
+        column: log Kf
+  - temperature:
+      value: 2300.0
+      as_published: '2300'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2300'
+        column: T(K)
+    heat_capacity:
+      value: 82.893
+      as_published: '82.893'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2300'
+        column: Cp
+    entropy:
+      value: 450.569
+      as_published: '450.569'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2300'
+        column: S
+    enthalpy_increment:
+      value: 162.833
+      as_published: '162.833'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2300'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1055.85
+      as_published: '-1055.850'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2300'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -554.331
+      as_published: '-554.331'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2300'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 12.589
+      as_published: '12.589'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2300'
+        column: log Kf
+  - temperature:
+      value: 2400.0
+      as_published: '2400'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2400'
+        column: T(K)
+    heat_capacity:
+      value: 82.913
+      as_published: '82.913'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2400'
+        column: Cp
+    entropy:
+      value: 454.097
+      as_published: '454.097'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2400'
+        column: S
+    enthalpy_increment:
+      value: 171.124
+      as_published: '171.124'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2400'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1055.617
+      as_published: '-1055.617'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2400'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -532.531
+      as_published: '-532.531'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2400'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 11.59
+      as_published: '11.590'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2400'
+        column: log Kf
+  - temperature:
+      value: 2500.0
+      as_published: '2500'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2500'
+        column: T(K)
+    heat_capacity:
+      value: 82.931
+      as_published: '82.931'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2500'
+        column: Cp
+    entropy:
+      value: 457.482
+      as_published: '457.482'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2500'
+        column: S
+    enthalpy_increment:
+      value: 179.416
+      as_published: '179.416'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2500'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1055.38
+      as_published: '-1055.380'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2500'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -510.741
+      as_published: '-510.741'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2500'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 10.671
+      as_published: '10.671'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2500'
+        column: log Kf
+  - temperature:
+      value: 2600.0
+      as_published: '2600'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2600'
+        column: T(K)
+    heat_capacity:
+      value: 82.947
+      as_published: '82.947'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2600'
+        column: Cp
+    entropy:
+      value: 460.735
+      as_published: '460.735'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2600'
+        column: S
+    enthalpy_increment:
+      value: 187.71
+      as_published: '187.710'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2600'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1055.138
+      as_published: '-1055.138'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2600'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -488.96
+      as_published: '-488.960'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2600'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 9.823
+      as_published: '9.823'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2600'
+        column: log Kf
+  - temperature:
+      value: 2700.0
+      as_published: '2700'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2700'
+        column: T(K)
+    heat_capacity:
+      value: 82.962
+      as_published: '82.962'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2700'
+        column: Cp
+    entropy:
+      value: 463.866
+      as_published: '463.866'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2700'
+        column: S
+    enthalpy_increment:
+      value: 196.005
+      as_published: '196.005'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2700'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1054.89
+      as_published: '-1054.890'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2700'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -467.189
+      as_published: '-467.189'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2700'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 9.038
+      as_published: '9.038'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2700'
+        column: log Kf
+  - temperature:
+      value: 2800.0
+      as_published: '2800'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2800'
+        column: T(K)
+    heat_capacity:
+      value: 82.974
+      as_published: '82.974'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2800'
+        column: Cp
+    entropy:
+      value: 466.883
+      as_published: '466.883'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2800'
+        column: S
+    enthalpy_increment:
+      value: 204.302
+      as_published: '204.302'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2800'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1054.634
+      as_published: '-1054.634'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2800'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -445.427
+      as_published: '-445.427'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2800'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 8.31
+      as_published: '8.310'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2800'
+        column: log Kf
+  - temperature:
+      value: 2900.0
+      as_published: '2900'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2900'
+        column: T(K)
+    heat_capacity:
+      value: 82.986
+      as_published: '82.986'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2900'
+        column: Cp
+    entropy:
+      value: 469.795
+      as_published: '469.795'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2900'
+        column: S
+    enthalpy_increment:
+      value: 212.6
+      as_published: '212.600'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2900'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1054.37
+      as_published: '-1054.370'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2900'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -423.674
+      as_published: '-423.674'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2900'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 7.631
+      as_published: '7.631'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '2900'
+        column: log Kf
+  - temperature:
+      value: 3000.0
+      as_published: '3000'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '3000'
+        column: T(K)
+    heat_capacity:
+      value: 82.996
+      as_published: '82.996'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '3000'
+        column: Cp
+    entropy:
+      value: 472.608
+      as_published: '472.608'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '3000'
+        column: S
+    enthalpy_increment:
+      value: 220.899
+      as_published: '220.899'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '3000'
+        column: H-H(Tr)
+    formation_enthalpy:
+      value: -1054.1
+      as_published: '-1054.100'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '3000'
+        column: delta-f H
+    formation_gibbs_energy:
+      value: -401.93
+      as_published: '-401.930'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '3000'
+        column: delta-f G
+    log10_formation_equilibrium_constant:
+      value: 6.998
+      as_published: '6.998'
+      locator:
+        table_id: F-082
+        row_temperature_as_published: '3000'
+        column: log Kf

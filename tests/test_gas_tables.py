@@ -588,7 +588,11 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         build_gas_tables.LOW_T_GAS_SPECIES
         | {"Na2O", "K2O"}
         | build_gas_tables.TRACE_GAS_SPECIES
-        - {"Br2", "Br", "I2", "I", "NaBr", "(NaBr)2", "KBr", "(KBr)2", "KI", "(KI)2", "NaI", "(NaI)2"}
+        - {
+            "Br2", "Br", "I2", "I", "NaBr", "(NaBr)2", "KBr", "(KBr)2", "KI", "(KI)2", "NaI", "(NaI)2",
+            "Cl2", "Cl", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
+            "F2", "F", "NaF", "(NaF)2", "KF", "(KF)2",
+        }
         | {
             "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
             "Y", "YO",
@@ -1247,6 +1251,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         "NG-1224", "NG-1230", "NG-1235", "NG-1856", "NG-1857",
         "NG-1976", "NG-1977",
         "NG-0893", "NG-0901", "NG-0904",
+            "NG-0494", "NG-0567",
         }
     )
     expected_by_limit = {}
@@ -6726,9 +6731,9 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
 
     # D-020 was already vendored, but its electron gas row is newly included in
     # the packaged fit and therefore joins the source-node residual audit.
-    assert checked_rows == 195
-    assert checked_nodes == 2458
-    assert checked_nodes * 3 == 7374
+    assert checked_rows == 207
+    assert checked_nodes == 2686
+    assert checked_nodes * 3 == 8058
     assert overall_max["Cp_J_molK"] == pytest.approx(0.7432227428, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0345525573, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0832967405, abs=1e-9)
@@ -7093,7 +7098,9 @@ def test_nabr_dimer_source_comparison_band_recomputes() -> None:
 def test_halogen_janaf_formation_cells_close_to_printed_log_kf() -> None:
     table_ids = (
         "Br-040", "Br-001", "I-027", "I-001", "Br-030", "Br-064",
-        "Br-018", "Br-055", "I-007", "I-028",
+        "Br-018", "Br-055", "I-007", "I-028", "Cl-073", "Cl-001",
+        "Cl-056", "Cl-098", "Cl-039", "Cl-091", "F-054", "F-001",
+        "F-036", "F-082", "F-020", "F-069",
     )
     for table_id in table_ids:
         source = _record(table_id)
@@ -7107,3 +7114,33 @@ def test_halogen_janaf_formation_cells_close_to_printed_log_kf() -> None:
                 R_J_MOL_K * temperature * math.log(10.0)
             )
             assert derived_log_kf == pytest.approx(log_kf, abs=0.002)
+
+
+def test_chlorine_and_fluorine_parent_nasa_cards_cross_check_janaf() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    comparisons = {
+        row["species_name"]: row
+        for row in provenance["source_comparisons"]["rows"]
+        if row["species_name"] in {"Cl2(g)", "F2(g)"}
+    }
+    for species, janaf_id, nasa_id in (
+        ("Cl2(g)", "Cl-073", "NG-0494"),
+        ("F2(g)", "F-054", "NG-0567"),
+    ):
+        comparison = comparisons[species]
+        assert comparison["janaf_table_id"] == janaf_id
+        assert comparison["nasa_record_id"] == nasa_id
+        card = _nasa_record(nasa_id)
+        at_298 = build_gas_tables._nasa7_properties(card, 298.15)
+        for value in comparison["values"]:
+            temperature = float(value["T_K"])
+            props = build_gas_tables._nasa7_properties(card, temperature)
+            nasa_g = float(card["delta_f_H_298_15"]["value"]) + R_J_MOL_K * (
+                temperature * props["h_rt"] - 298.15 * at_298["h_rt"]
+            ) - temperature * R_J_MOL_K * props["s_R"]
+            janaf_g = _janaf_apparent_gibbs(janaf_id, temperature)
+            assert value["janaf_G_app_J_mol"] == pytest.approx(janaf_g, abs=0.001)
+            assert value["nasa_G_app_J_mol"] == pytest.approx(nasa_g, abs=0.001)
+            assert value["nasa_minus_janaf_J_mol"] == pytest.approx(
+                nasa_g - janaf_g, abs=0.001
+            )

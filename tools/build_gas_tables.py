@@ -226,9 +226,26 @@ TRACE_JANAF_YAML_GAS_SOURCES = (
     ("(KBr)2(g)", "Br-055", "K", 2, 0),
     ("KI(g)", "I-007", "K", 1, 0),
     ("(KI)2(g)", "I-028", "K", 2, 0),
+    ("Cl2(g)", "Cl-073", "Cl", 2, 0),
+    ("Cl(g)", "Cl-001", "Cl", 1, 0),
+    ("NaCl(g)", "Cl-056", "Na", 1, 0),
+    ("(NaCl)2(g)", "Cl-098", "Na", 2, 0),
+    ("KCl(g)", "Cl-039", "K", 1, 0),
+    ("(KCl)2(g)", "Cl-091", "K", 2, 0),
+    ("F2(g)", "F-054", "F", 2, 0),
+    ("F(g)", "F-001", "F", 1, 0),
+    ("NaF(g)", "F-036", "Na", 1, 0),
+    ("(NaF)2(g)", "F-082", "Na", 2, 0),
+    ("KF(g)", "F-020", "K", 1, 0),
+    ("(KF)2(g)", "F-069", "K", 2, 0),
 )
 HALOGEN_JANAF_TABLES = frozenset(
-    {"Br-040", "Br-001", "I-027", "I-001", "Br-030", "Br-064", "Br-018", "Br-055", "I-007", "I-028"}
+    {
+        "Br-040", "Br-001", "I-027", "I-001", "Br-030", "Br-064",
+        "Br-018", "Br-055", "I-007", "I-028", "Cl-073", "Cl-001",
+        "Cl-056", "Cl-098", "Cl-039", "Cl-091", "F-054", "F-001",
+        "F-036", "F-082", "F-020", "F-069",
+    }
 )
 TRACE_NASA_GAS_SOURCES = (
     ("NiO(g)", "NG-0926", "NiO", "Ni", 1, 1),
@@ -868,6 +885,10 @@ def _validate_record_identity(
         "Br2Na2": "(NaBr)2",
         "Br2K2": "(KBr)2",
         "I2K2": "(KI)2",
+        "Cl2Na2": "(NaCl)2",
+        "Cl2K2": "(KCl)2",
+        "F2Na2": "(NaF)2",
+        "F2K2": "(KF)2",
     }.get(
         formula, formula
     )
@@ -884,7 +905,9 @@ def _validate_record_identity(
         )
     # JANAF labels the O2 reference record ``ref`` even though the runtime
     # emits that standard gaseous reference row as O2(g).
-    source_phase = "g" if formula == "O2" and phase == "ref" else phase
+    source_phase = (
+        "g" if formula in {"O2", "Cl2", "F2"} and phase == "ref" else phase
+    )
     if source_phase != expected_phase or expected_state != expected_phase:
         raise ValueError(
             f"{table_id}: record phase {phase!r} does not match emitted "

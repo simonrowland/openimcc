@@ -18,18 +18,24 @@ source_notes:
   halogen_gas_parent_channels:
     reference_states: >-
       Br2(g), Br(g), I2(g), I(g), NaBr(g), (NaBr)2(g), KBr(g), (KBr)2(g),
-      KI(g), and (KI)2(g) use the elemental-reference 298.15 K formation
-      enthalpy printed in their respective JANAF table: Br-040, Br-001,
-      I-027, I-001, Br-030, Br-064, Br-018, Br-055, I-007, and I-028.
+      KI(g), (KI)2(g), Cl2(g), Cl(g), NaCl(g), (NaCl)2(g), KCl(g),
+      (KCl)2(g), F2(g), F(g), NaF(g), (NaF)2(g), KF(g), and (KF)2(g) use
+      the elemental-reference 298.15 K formation enthalpy printed in their
+      respective JANAF table: Br-040, Br-001, I-027, I-001, Br-030, Br-064,
+      Br-018, Br-055, I-007, I-028, Cl-073, Cl-001, Cl-056, Cl-098, Cl-039,
+      Cl-091, F-054, F-001, F-036, F-082, F-020, and F-069.
       NaI(g) and (NaI)2(g) use the elemental-reference formation enthalpy in
       NASA Glenn cards NG-0893 and NG-0904. The Br2 and I2 caller activities
-      use the JANAF 1-bar gas standard; Na2O(l) is from Na-013 and K2O(l) is
-      the existing K-012 liquid_from_solid estimate. O2(g) is O-029.
+      and new Cl2 and F2 caller activities use the JANAF 1-bar gas standard;
+      Na2O(l) is from Na-013 and K2O(l) is the existing K-012
+      liquid_from_solid estimate. O2(g) is O-029.
     selection: >-
       JANAF is selected for every available halogen product table. NASA Glenn
       supplies NaI(g) and (NaI)2(g), for which no JANAF product table is
       available. NG-0901 is vendored only to compare (NaBr)2(g); the selected
-      runtime product remains JANAF Br-064.
+      runtime product remains JANAF Br-064. NASA NG-0494/NG-0567 and the
+      alkali-halide cards are cross-checks for the selected chlorine and
+      fluorine JANAF rows.
     closure: >-
       Tests compare each new JANAF table's printed formation Gibbs energy
       against its own log Kf cells and independently calculate channel
@@ -2128,6 +2134,174 @@ rows:
     T_range_K: [1200, 3000]
     max_residual_J_per_mol: 2.02837400138378e-05
     max_residual_log10_K: 6.2323127678037e-10
+  - table: gas
+    species_name: Cl2(g)
+    table_id: Cl-073
+    source_path: data-src/janaf/Cl-073.yaml
+    source_sha256: 88452660574fca74e6071bb052f593cc17de14ae8b94582e10108b33d7ac64cc
+    upstream_source_sha256: a9d15f46ae04f5ce907b2bfd9a81bbb1b7b30565ce7d4a82cf7291bb2abc1632
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.30165871034842
+    max_residual_log10_K: 3.77724147801203e-05
+  - table: gas
+    species_name: Cl(g)
+    table_id: Cl-001
+    source_path: data-src/janaf/Cl-001.yaml
+    source_sha256: 152b27e7241b9680d15ce5ca046c96422d620f52d3a895096c8c90afee2cb56e
+    upstream_source_sha256: 71bd927241f0c0c59b216b82179f844b2e3047823a4f50df14d6f74d396e36e3
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.38488162134308
+    max_residual_log10_K: 2.41124601741732e-05
+  - table: gas
+    species_name: NaCl(g)
+    table_id: Cl-056
+    source_path: data-src/janaf/Cl-056.yaml
+    source_sha256: 63c09445016435acd2eabe9d5b7335284edeb57ed4d639b7a5a3382970a62090
+    upstream_source_sha256: 6d74c2d54489222468bd6652950616f1851f90ba762509043286753921ab9156
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.62054037256166
+    max_residual_log10_K: 3.49158980159385e-05
+  - table: gas
+    species_name: (NaCl)2(g)
+    table_id: Cl-098
+    source_path: data-src/janaf/Cl-098.yaml
+    source_sha256: d79e5fd1a17fe10e7a7927023b99629bc09909b2efa281535ef768bc2181754e
+    upstream_source_sha256: 3d88ccb166e0a5c1d6b9883b6f06f974f27e8af0b132c47e6998951a1cec05ca
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.22395971883088
+    max_residual_log10_K: 2.28328024990942e-05
+  - table: gas
+    species_name: KCl(g)
+    table_id: Cl-039
+    source_path: data-src/janaf/Cl-039.yaml
+    source_sha256: 3d139fab90e8ff163ea80a6c928da0ec5a746c006aad472e45a4895b9eb6ac6f
+    upstream_source_sha256: 495c70e88c7ddbde0bd896d8a6571232192e4b016d27afd6c772505c6714c62c
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.35919604683295
+    max_residual_log10_K: 2.36652433269847e-05
+  - table: gas
+    species_name: (KCl)2(g)
+    table_id: Cl-091
+    source_path: data-src/janaf/Cl-091.yaml
+    source_sha256: df6d314fe2ef26cb00f4b34a4bd25e5f28e0c8741a4d61d68cd9fc9edd631287
+    upstream_source_sha256: 6b3acbd3612a09e81d6207a365652b325d3104d55353756a0cf574c02279fc86
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.43967328267172
+    max_residual_log10_K: 3.53683907016234e-05
+  - table: gas
+    species_name: F2(g)
+    table_id: F-054
+    source_path: data-src/janaf/F-054.yaml
+    source_sha256: fb28527069330136b7e8064bb9c7301ba50aac55330d1a755233061e73c4539a
+    upstream_source_sha256: 6f0f2a74b1de477739338d46360dc009d0733ea19bc4c65a950a21933a0fe6be
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.960185445495881
+    max_residual_log10_K: 2.27299596155855e-05
+  - table: gas
+    species_name: F(g)
+    table_id: F-001
+    source_path: data-src/janaf/F-001.yaml
+    source_sha256: e9cf86c649f107c2d28905446d3066f211154efbad3eb4916d49e0096c9945b0
+    upstream_source_sha256: a670b87bbc01a9abb87dfccfc8dc7814310d08b8b343270f6fb7b7a49a8f90ad
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.908492401358671
+    max_residual_log10_K: 2.15699304435741e-05
+  - table: gas
+    species_name: NaF(g)
+    table_id: F-036
+    source_path: data-src/janaf/F-036.yaml
+    source_sha256: e48dc0eed99625d8bfa1e57f47b45689849f391aacb2176bb096bed742181090
+    upstream_source_sha256: 696d5c61ae29ebeea967bf3e672ec3e610328631c1d27b2f16fc6c2835bf9fb5
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.854167678626254
+    max_residual_log10_K: 2.28459515884771e-05
+  - table: gas
+    species_name: (NaF)2(g)
+    table_id: F-082
+    source_path: data-src/janaf/F-082.yaml
+    source_sha256: 5bfdb39073781fae2176e6070e5d1b1ea61b6de57f651e2cf17a7ae5b65ce4b8
+    upstream_source_sha256: 424ac12bee332a6cc8dd5278fe8bfd60b77adbea94860a0bb0af041ed3f9fedd
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.2938436565455
+    max_residual_log10_K: 3.75456322514699e-05
+  - table: gas
+    species_name: KF(g)
+    table_id: F-020
+    source_path: data-src/janaf/F-020.yaml
+    source_sha256: 1bb95490ae14f78c2be165d00628f56870a2371eff7088e54c48187e996504cd
+    upstream_source_sha256: 493e748a3e8795ec49852320754b8e8919d567a6cd7ced9112091af2aa427047
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.46474497288
+    max_residual_log10_K: 3.80226813509182e-05
+  - table: gas
+    species_name: (KF)2(g)
+    table_id: F-069
+    source_path: data-src/janaf/F-069.yaml
+    source_sha256: 5a3cc234440971e2a1eb8303041b2ea7367f103f44086c4c1d7dce2f223bdb99
+    upstream_source_sha256: cd5c27ced34766d00a83e0a90fa88235b602c820200912c74229fb4c3d895d32
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.33729020832106
+    max_residual_log10_K: 2.79406034934723e-05
   - table: condensate
     species_name: SiO2(cr)
     source_table_id: LH87 Table 2
@@ -13756,6 +13930,22 @@ source_comparisons:
     - {T_K: 2000, janaf_G_app_J_mol: -1357013.0, nasa_G_app_J_mol: -1355854.733, nasa_minus_janaf_J_mol: 1158.267}
     - {T_K: 2500, janaf_G_app_J_mol: -1614665.5, nasa_G_app_J_mol: -1614604.638, nasa_minus_janaf_J_mol: 60.862}
     - {T_K: 3000, janaf_G_app_J_mol: -1880682.0, nasa_G_app_J_mol: -1881720.975, nasa_minus_janaf_J_mol: -1038.975}
+  - species_name: Cl2(g)
+    janaf_table_id: Cl-073
+    nasa_record_id: NG-0494
+    janaf_298K_element_reference_table: Cl-073
+    selection: JANAF selected; NASA Glenn is an elemental-reference cross-check.
+    values:
+    - {T_K: 1800, janaf_G_app_J_mol: -464343.0, nasa_G_app_J_mol: -464346.7866556352, nasa_minus_janaf_J_mol: -3.7866556352}
+    - {T_K: 2200, janaf_G_app_J_mol: -581533.4, nasa_G_app_J_mol: -581540.1557021794, nasa_minus_janaf_J_mol: -6.7557021794}
+  - species_name: F2(g)
+    janaf_table_id: F-054
+    nasa_record_id: NG-0567
+    janaf_298K_element_reference_table: F-054
+    selection: JANAF selected; NASA Glenn is an elemental-reference cross-check.
+    values:
+    - {T_K: 1800, janaf_G_app_J_mol: -425282.2, nasa_G_app_J_mol: -425295.1889045526, nasa_minus_janaf_J_mol: -12.9889045525}
+    - {T_K: 2200, janaf_G_app_J_mol: -533618.8, nasa_G_app_J_mol: -533641.5759638244, nasa_minus_janaf_J_mol: -22.7759638245}
 certification_items:
   - authority: lh84_evaluated_with_nasa_cp
     species_name: Na2O(g)

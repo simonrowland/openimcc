@@ -617,11 +617,26 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "(NaI)2": ("I2", 1.0, 0.5),
     "KI": ("I2", 0.5, 0.25),
     "(KI)2": ("I2", 1.0, 0.5),
+    "Cl2": ("Cl2", 1, 0.0),
+    "Cl": ("Cl2", 0.5, 0.0),
+    "NaCl": ("Cl2", 0.5, 0.25),
+    "(NaCl)2": ("Cl2", 1.0, 0.5),
+    "KCl": ("Cl2", 0.5, 0.25),
+    "(KCl)2": ("Cl2", 1.0, 0.5),
+    "F2": ("F2", 1, 0.0),
+    "F": ("F2", 0.5, 0.0),
+    "NaF": ("F2", 0.5, 0.25),
+    "(NaF)2": ("F2", 1.0, 0.5),
+    "KF": ("F2", 0.5, 0.25),
+    "(KF)2": ("F2", 1.0, 0.5),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
 # from the JANAF gas table; all other parent keys keep the liquid lookup.
-_GAS_PHASE_PARENT_ROWS = {"S2": "S2(g)", "Br2": "Br2(g)", "I2": "I2(g)"}
+_GAS_PHASE_PARENT_ROWS = {
+    "S2": "S2(g)", "Br2": "Br2(g)", "I2": "I2(g)",
+    "Cl2": "Cl2(g)", "F2": "F2(g)",
+}
 _ALKALI_HALIDE_REACTION_OXIDES = {
     "NaBr": ("Na2O", 0.5, 0.25),
     "(NaBr)2": ("Na2O", 1.0, 0.5),
@@ -631,6 +646,14 @@ _ALKALI_HALIDE_REACTION_OXIDES = {
     "(NaI)2": ("Na2O", 1.0, 0.5),
     "KI": ("K2O", 0.5, 0.25),
     "(KI)2": ("K2O", 1.0, 0.5),
+    "NaCl": ("Na2O", 0.5, 0.25),
+    "(NaCl)2": ("Na2O", 1.0, 0.5),
+    "KCl": ("K2O", 0.5, 0.25),
+    "(KCl)2": ("K2O", 1.0, 0.5),
+    "NaF": ("Na2O", 0.5, 0.25),
+    "(NaF)2": ("Na2O", 1.0, 0.5),
+    "KF": ("K2O", 0.5, 0.25),
+    "(KF)2": ("K2O", 1.0, 0.5),
 }
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
@@ -763,6 +786,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         "Br2", "Br", "I2", "I", "NaBr", "(NaBr)2", "KBr", "(KBr)2",
         "NaI", "(NaI)2", "KI", "(KI)2",
+        "Cl2", "Cl", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
+        "F2", "F", "NaF", "(NaF)2", "KF", "(KF)2",
     }
 )
 
@@ -2574,6 +2599,8 @@ for _element, _parent, _products, _fusion, _note in (
 for _element, _parent, _species in (
     ("Br", "Br2", "JANAF Br2(g), Br(g), NaBr(g), (NaBr)2(g), KBr(g), and (KBr)2(g)"),
     ("I", "I2", "JANAF I2(g), I(g), KI(g), and (KI)2(g) and NASA Glenn NaI(g) and (NaI)2(g)"),
+    ("Cl", "Cl2", "JANAF Cl2(g), Cl(g), NaCl(g), (NaCl)2(g), KCl(g), and (KCl)2(g)"),
+    ("F", "F2", "JANAF F2(g), F(g), NaF(g), (NaF)2(g), KF(g), and (KF)2(g)"),
 ):
     ELEMENT_STATUS[_element] = {
         "status": "gas-complete-melt-pending",
@@ -2593,8 +2620,16 @@ for _element, _parent, _species in (
                 if _element == "Br"
                 else "not computed: ionized iodine channels are outside this neutral "
                 "gas-only change"
+                if _element == "I"
+                else f"not computed: ionized {_element.lower()} channels are outside this neutral gas-only change"
             ),
-            "source_tables": {"selected": "JANAF; NASA Glenn for NaI gases"},
+            "source_tables": {
+                "selected": (
+                    "JANAF; NASA Glenn for NaI gases"
+                    if _element == "I"
+                    else "JANAF"
+                )
+            },
             "parent_activity": None,
         },
     }
@@ -3491,8 +3526,9 @@ def evaluate_gas(
         aligned with ``parent_oxides`` (default IMCC order). Condensed parents
         use their pure-liquid standard state; sulfur channels use caller-supplied
         ``S2`` fugacity relative to JANAF's 1-bar gas standard. Halogen channels
-        similarly accept ``Br2`` and ``I2`` fugacity ratios; their alkali-halide
-        products also use the caller's ``Na2O`` or ``K2O`` liquid activity.
+        similarly accept ``Br2``, ``I2``, ``Cl2``, and ``F2`` fugacity ratios;
+        their alkali-halide products also use the caller's ``Na2O`` or ``K2O``
+        liquid activity.
     T_K:
         Temperature in Kelvin. Must be finite and positive on this path.
     fO2:
@@ -3503,7 +3539,7 @@ def evaluate_gas(
         Loaded JANAF + condensate thermodynamic tables.
     parent_oxides:
         Ordered parent names. Defaults to the IMCC-SF04 8-oxide basis; callers
-        may add ``P2O5``, ``S2``, ``Br2``, or ``I2`` when supplying those
+        may add ``P2O5``, ``S2``, ``Br2``, ``I2``, ``Cl2``, or ``F2`` when supplying those
         parent activities.
     allow_extrapolation:
         If True (default), evaluate finite temperatures outside the selected
@@ -3955,7 +3991,7 @@ _ATOMIC_MASS_G_MOL = {
     "Sm": 150.36, "Eu": 151.964, "Gd": 157.25,
     "Tb": 158.92535, "Dy": 162.500, "Ho": 164.93033,
     "Er": 167.259, "Tm": 168.93422, "Yb": 173.045, "Lu": 174.9668,
-    "Br": 79.904, "I": 126.90447,
+    "Br": 79.904, "I": 126.90447, "Cl": 35.45, "F": 18.998403163,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,
