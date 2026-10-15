@@ -4387,10 +4387,17 @@ def evaluate_gas_oxygen_balance(
     ``imposed_parents`` names external gas reservoirs such as ``("N2",)`` or
     ``("C",)`` for a nitrogen or CO2 sweep. Their species remain in the
     returned pressure map but are excluded from the melt-derived oxygen
-    balance. The default is no imposed reservoirs.
+    balance. Names whose activity was not supplied are ignored. The default is
+    no imposed reservoirs; a bare string is rejected because it is not a
+    sequence of parent keys.
+
+    A dict-only S2 activity can return S2 species while those species remain
+    excluded from oxygen demand, matching the existing parent-list behavior.
     """
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
+    if isinstance(imposed_parents, str):
+        raise TypeError("imposed_parents must be a sequence of parent-key strings")
     imposed = frozenset(imposed_parents or ())
     unknown_imposed = imposed - (_GAS_PHASE_PARENT_ROWS.keys() | _CONDENSED_PARENT_ROWS.keys())
     if unknown_imposed:
@@ -4407,7 +4414,7 @@ def evaluate_gas_oxygen_balance(
         available_parents.extend(
             parent
             for parent in activities
-            if parent in _REACTION_PARENT_OXIDES and parent not in available_parents
+            if parent in ("H2", "C", "N2") and parent not in available_parents
         )
     channels, _omitted_channels = _default_reactions(
         tuple(available_parents), datapack
@@ -4415,6 +4422,8 @@ def evaluate_gas_oxygen_balance(
     balance_channels = tuple(
         (species, reaction)
         for species, reaction in channels
+        # An imposed reservoir only removes a balance channel when its activity
+        # was supplied and the channel was therefore constructed above.
         if reaction[0] not in imposed and _side_parent(species) not in imposed
     )
     species_data = oxygen_balance_species_metadata({

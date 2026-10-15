@@ -1929,6 +1929,47 @@ def test_new_element_families_are_optional_and_imposable_in_oxygen_balance(
         assert carrier in pressures and carrier in imposed_pressures
 
 
+def test_oxygen_balance_preserves_legacy_dict_only_parent_contract(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(TypeError, match="sequence of parent-key strings"):
+        evaluate_gas_oxygen_balance(
+            _quickstart_activities(1800.0),
+            1800.0,
+            gas_pack,
+            imposed_parents="C",
+        )
+
+    activities = _quickstart_activities(1800.0, allow_extrapolation=True)
+    baseline_root_hex = "0x1.3d1fbf75274c6p-18"
+
+    for extra in (
+        {"S2": 1.0e-3},
+        {"Br2": 1.0e-4, "I2": 1.0e-4},
+    ):
+        root, _, _ = evaluate_gas_oxygen_balance(
+            {**activities, **extra}, 1800.0, gas_pack
+        )
+        assert root.hex() == baseline_root_hex
+
+    root, _, _ = evaluate_gas_oxygen_balance(
+        {**activities, "Cl2": 1.0e-4, "F2": 1.0e-4},
+        1800.0,
+        gas_pack,
+    )
+    assert root.hex() == baseline_root_hex
+
+    root, pressures, _ = evaluate_gas_oxygen_balance(
+        activities,
+        1800.0,
+        gas_pack,
+        parent_oxides=("SiO2", "MgO"),
+    )
+    assert root.hex() == "0x1.bfa86c0523f92p-25"
+    assert len(pressures) == 9
+    assert "Na" not in pressures
+
+
 def test_halogen_oxygen_balance_only_changes_when_parent_is_supplied(
     gas_pack: ImccGasDatapack,
 ) -> None:
