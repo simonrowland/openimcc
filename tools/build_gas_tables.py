@@ -2275,7 +2275,7 @@ def _fit_condensate_values(
     # Transition intervals can contain fewer than five published nodes. Fit
     # only as many polynomial terms as those independent source nodes support;
     # regular grid fits keep the historical quartic path byte-for-byte.
-    degree = min(4, len(temperatures) - 1)
+    degree = 4 if fit_temperatures is None else min(4, len(temperatures) - 1)
     fit_design = np.column_stack([tau**power for power in range(degree + 1)])
     fitted_coefficients = np.linalg.lstsq(
         fit_design, phi / R_J_MOL_K, rcond=None
