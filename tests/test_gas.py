@@ -208,8 +208,9 @@ def test_default_tables_are_packaged_and_load_without_environment(
             source[1] in build_gas_tables.HALOGEN_JANAF_TABLES
             for source in build_gas_tables.GAS_SOURCES
         )
+        + 6  # Two gas fit intervals for each metal-vapour channel.
     )
-    assert len(gas_pack.oxide_df) == 181
+    assert len(gas_pack.oxide_df) == 187
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -498,6 +499,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         + 3
         # Halogen rows use one 1200-3000 K interval and have no low interval.
         + len(_RARE_EARTH_CHANNELS)
+        + 3
     )
     assert set(low_rows.index) == {
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
@@ -505,7 +507,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         f"{species}(g)" for species in low_trace_species
     } | {
         f"{species}(g)" for species in _RARE_EARTH_CHANNELS
-    } | {
+    } | {f"{species}(g)" for species in ("Hg", "Au", "Pd")} | {
         source[0]
         for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
@@ -555,6 +557,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     trace_low_species = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
     } | split_ion_names | {f"{species}(g)" for species in _RARE_EARTH_CHANNELS}
+    trace_low_species |= {"Hg(g)", "Au(g)", "Pd(g)"}
     legacy_low_rows = low_rows.loc[~low_rows.index.isin(trace_low_species)]
     trace_low_rows = low_rows.loc[low_rows.index.isin(trace_low_species)]
     assert (legacy_low_rows["T_min"] == build_gas_tables.LOW_FIT_T_MIN).all()
@@ -619,6 +622,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == (
         64
+        + 3
         + len(_RARE_EARTH_CHANNELS)
         + len(build_gas_tables.TRACE_GAS_SPECIES)
         - len({"NiO", "CoO"} & build_gas_tables.TRACE_GAS_SPECIES)
@@ -633,6 +637,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
         | extrapolated
         | set(_P_CHANNELS)
         | set(_RARE_EARTH_CHANNELS)
+        | {"Hg", "Au", "Pd"}
         | build_gas_tables.TRACE_GAS_SPECIES
         | (unavailable & implemented)
     ) == implemented
@@ -1411,6 +1416,7 @@ _PRE_GATED_CHANNELS = tuple(
     and species not in _PS_CHANNELS
     and species not in _RARE_EARTH_CHANNELS
     and species not in build_gas_tables.TRACE_GAS_SPECIES
+    and species not in {"Hg", "Au", "Pd"}
 )
 _SF04_CHANNELS = tuple(
     species for species in _PRE_GATED_CHANNELS if species not in _TI_CHANNELS
@@ -4031,7 +4037,7 @@ def test_metal_vapour_parent_activity_and_oxygen_root(
     metal_g = species_thermo(element, "g", temperature, gas_pack).G_J_mol
     parent_g = species_thermo(
         parent_row.removesuffix("(cr)").removesuffix("(l)"),
-        "s" if parent_row.endswith("(cr)") else "l",
+        "cr" if parent_row.endswith("(cr)") else "l",
         temperature,
         gas_pack,
     ).G_J_mol

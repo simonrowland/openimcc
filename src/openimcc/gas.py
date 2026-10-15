@@ -1179,6 +1179,9 @@ _OXIDE_PROVENANCE_AUTHORITY = {
 # table is K-012 by default and LAM1984 in sf04-published.
 _OXIDE_SOURCE_TABLE_IDS = {
     "C": "C-002",
+    "Hg": "BU-2586",
+    "Au": "BU-0055",
+    "Pd": "BU-3111",
     "Na2O": "Na-013",
     "MgO": "Mg-009",
     "CaO": "Ca-028",
@@ -3769,6 +3772,8 @@ def species_thermo(
         source_table_id = source_ref.removesuffix(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
     elif phase != "g" and source_ref == "K-012":
         source_table_id = source_ref
+    elif phase != "g" and source_ref.startswith("BU-"):
+        source_table_id = source_ref.split("-METAL-", 1)[0]
     elif phase != "g" and source_ref == "LAM1984":
         source_table_id = None
     elif phase != "g" and ("-LFS" in source_ref or _SOURCE_CP_EXTENSION_RE.search(source_ref)):
@@ -4605,8 +4610,8 @@ def evaluate_gas_oxygen_balance(
 
     Every supplied non-oxide gas parent and condensed parent contributes its
     oxygen-carrying species to the melt-derived oxygen demand unless named in
-    ``imposed_parents``. Metal vapours carry no oxygen. Parent oxides omitted from an explicit
-    ``parent_oxides`` sequence remain excluded.
+    ``imposed_parents``. Metal vapours carry no oxygen. Parent oxides omitted
+    from an explicit ``parent_oxides`` sequence remain excluded.
     """
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES

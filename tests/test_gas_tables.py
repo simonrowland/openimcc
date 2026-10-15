@@ -633,8 +633,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
+        | {"Hg", "Au", "Pd"}
     )
-    assert len(oxide_rows) == 62
+    assert len(oxide_rows) == 65
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -2509,7 +2510,10 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
             ):
                 continue
             name = row["species_name"]
-            expected_oxide[name.removesuffix("(l)")] = row["authority"]
+            runtime_name = name.removesuffix("(l)")
+            if runtime_name in {"Au(cr)", "Pd(cr)"}:
+                runtime_name = runtime_name.removesuffix("(cr)")
+            expected_oxide[runtime_name] = row["authority"]
             expected_table_ids[name] = row.get(
                 "source_table_id",
                 row.get("table_id", (row.get("source") or {}).get("table_id")),
@@ -2624,7 +2628,7 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
-    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
+    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"} | {"Hg(g)", "Au(g)", "Pd(g)"}
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
         table_id = GAS_TABLE_IDS[species]
         row = _gas_row_for_interval(pack, species, 2)
@@ -2749,6 +2753,7 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
             species in ion_species
             or species in build_gas_tables.TRACE_GAS_SPECIES
             or species in {
+                "Hg", "Au", "Pd",
                 "Y", "YO",
                 "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
                 "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
@@ -6723,6 +6728,9 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     assert checked == 236
     existing = set(_SF04_REACTIONS) - {
         "O2",
+        "Hg",
+        "Au",
+        "Pd",
         *NASA_TABLE_IDS,
         "V",
         "VO",
