@@ -5665,6 +5665,7 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
             _assert_fit_gibbs_matches(
                 _condensate_gibbs, packaged_row, generated_row
             )
+
     research_payload = subprocess.run(
         [
             "git",
@@ -5726,6 +5727,17 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
         _assert_fit_gibbs_matches(
             _condensate_gibbs, packaged_row, regenerated_row
         )
+
+
+def test_source_liquid_marker_metadata_matches_vendored_tables(
+    tmp_path: Path,
+) -> None:
+    generated = tmp_path / "source-liquid-markers.json"
+    markers = build_gas_tables.build_source_liquid_markers(JANAF_DATA)
+    build_gas_tables.write_source_liquid_markers(markers, generated)
+    assert generated.read_bytes() == (
+        GAS_DATA / "source-liquid-markers.json"
+    ).read_bytes()
 
 
 def _shomate_g(row: dict[str, str], T: float) -> float:

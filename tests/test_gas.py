@@ -2959,7 +2959,10 @@ def test_caller_supplied_cr2o3_activity_returns_positive_cr_pressures(
     assert set(result) == set(_CR_CHANNELS)
     for species in _CR_CHANNELS:
         assert math.isfinite(result[species]) and result[species] > 0.0
-        assert result.domain_flags[species] is None
+        assert "source-tabulated supercooled liquid branch" in (
+            result.domain_flags[species] or ""
+        )
+        assert "2603 K fusion marker" in result.domain_flags[species]
         assert result.provenance_class[species] == "janaf_fitted"
 
 
@@ -3017,7 +3020,15 @@ def test_caller_supplied_v2o3_and_nbo2_activities_return_positive_pressures(
                 math.isfinite(result[name]) and result[name] > 0.0
                 for name in species
             )
-            assert all(result.domain_flags[name] is None for name in species)
+            for name in species:
+                marker = 2340.0 if name in {"V", "VO", "VO2"} else 2175.0
+                if temperature < marker:
+                    assert "source-tabulated supercooled liquid branch" in (
+                        result.domain_flags[name] or ""
+                    )
+                    assert f"{marker:g} K fusion marker" in result.domain_flags[name]
+                else:
+                    assert result.domain_flags[name] is None
 
 
 def test_vanadium_and_niobium_channels_match_printed_janaf_gibbs(
@@ -4815,7 +4826,10 @@ def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> N
         {"V2O3": 1.0}, 1700.0, 1.0e-10, pack,
         gas_species=("V",), allow_extrapolation=False,
     )
-    assert at_1700_v.domain_flags["V"] is None
+    assert "source-tabulated supercooled liquid branch" in (
+        at_1700_v.domain_flags["V"] or ""
+    )
+    assert "2340 K fusion marker" in at_1700_v.domain_flags["V"]
 
     without_extensions = replace(
         pack,

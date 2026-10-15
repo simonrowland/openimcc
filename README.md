@@ -666,17 +666,20 @@ buffer offset such as ΔIW.
 `allow_extrapolation=False` to refuse them.
 
 Gas result flags identify held-Cp `-SC-CP` continuations and source-tabulated
-liquid branches below their recorded fusion or glass markers. The source rows
-flagged for the latter are FeO (1650 K), TiO2 (2130 K), Na2O (1405.2 K), WO3
-(1745 K), BaO (2286 K), SrO (2938 K), and ZrO2 (2950 K). The Na2O flag applies
-to both its 1200–1500 K and 1500–3000 K fitted intervals. Gas tables begin at
-1200 K; no held-Cp segment is defined below that temperature.
+liquid branches below their recorded fusion markers, and source-tabulated glass
+cells below their recorded glass/liquid joins. The source-liquid flags cover
+FeO (1650 K), TiO2 (2130 K), Na2O (1405.2 K), WO3 (1745 K), BaO (2286 K), SrO
+(2938 K), ZrO2 (2950 K), Li2O (1843 K), Cu2O (1516.7 K), NbO2 (2175 K), Cr2O3
+(2603 K), V2O3 (2340 K), MgO (3105 K), and CaO (3200 K). The Na2O flag applies
+only to its 1200–1500 K fitted interval; its 1500–3000 K interval starts above
+the fusion marker. Gas tables begin at 1200 K; no held-Cp segment is defined
+below that temperature.
 
 The melt `evaluate` API also reports a `temperature-domain-extension` notice
 when an allowed evaluation falls below an active association row's declared
 temperature domain. It identifies the continued ΔrCp = 0 assumption, the
-1700–3000 K SF04 association-constant exercise interval, and the unavailable
-uncertainty band; it does not alter the calculated activities.
+declared domains of the active rows below their lower bounds, and the
+unavailable uncertainty band; it does not alter the calculated activities.
 
 ### Oxygen-balance (Knudsen) effusion
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import json
 import math
 import os
 import re
@@ -22,6 +23,7 @@ from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
+from functools import lru_cache
 from importlib import resources
 from numbers import Number
 from pathlib import Path
@@ -49,16 +51,6 @@ _SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
 _LIQUID_FROM_SOLID_REF_RE = re.compile(
     r"^LFS\[(?P<source>[^;\]]+);Tf=(?P<temperature>[0-9]+(?:\.[0-9]+)?)\]$"
 )
-_SOURCE_SUPERCOOLED_LIQUID_MARKERS_K = {
-    "FeO(l)": ("Fe-019", 1650.0),
-    "TiO2(l)": ("O-044", 2130.0),
-    "Na2O(l)": ("Na-013", 1405.2),
-    "WO3(l)": ("O-066", 1745.0),
-    "BaO(l)": ("Ba-035", 2286.0),
-    "SrO(l)": ("O-014", 2938.0),
-    "ZrO2(l)": ("O-053", 2950.0),
-}
-
 BAR = 1.0
 """Numerical value of the JANAF gas standard pressure p° = 1 bar.
 
@@ -125,6 +117,7 @@ _CONDENSATE_TABLE_RELPATH = Path("data") / "condensate-thermo-data.csv"
 _PACKAGED_DATA_PACKAGE = "openimcc.data.gas"
 _PACKAGED_GAS_NAME = "gas-shomate.csv"
 _PACKAGED_CONDENSATE_NAME = "condensate.csv"
+_PACKAGED_SOURCE_LIQUID_MARKERS_NAME = "source-liquid-markers.json"
 _GAS_TABLE_SCHEMA = frozenset(
     {
         "species_name", "state", "T_interval", "cation", "cat_num", "oxy_num",
@@ -3658,6 +3651,25 @@ def _source_model_flag(
             f"{source_table}; its crystal Cp was extended above {limit:g} K "
             "to the estimated fusion temperature"
         )
+    source_marker = _source_supercooled_liquid_markers().get(row_name)
+    if (
+        phase == "l"
+        and source_marker is not None
+        and source_ref in {source_marker["table_id"], "JANAF"}
+        and not source_ref.endswith(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
+        and T < source_marker["fusion_temperature_K"]
+    ):
+        glass_join = source_marker["glass_join_temperature_K"]
+        if glass_join is not None and T < glass_join:
+            return (
+                f"{row_name} uses source-tabulated glass cells below the "
+                f"{glass_join:g} K glass/liquid join ({source_marker['table_id']})"
+            )
+        return (
+            f"{row_name} uses a source-tabulated supercooled liquid branch "
+            f"below the {source_marker['fusion_temperature_K']:g} K fusion "
+            f"marker ({source_marker['table_id']})"
+        )
     if extension is not None and T > float(extension["limit"]):
         limit = float(extension["limit"])
         return (
@@ -3665,6 +3677,42 @@ def _source_model_flag(
             f"{limit:g} K from {source_table}"
         )
     return None
+
+
+@lru_cache(maxsize=1)
+def _source_supercooled_liquid_markers() -> dict[str, dict[str, object]]:
+    resource = _packaged_resource(_PACKAGED_SOURCE_LIQUID_MARKERS_NAME)
+    metadata = json.loads(resource.read_text(encoding="utf-8"))
+    if metadata.get("schema") != "openimcc.source-liquid-markers.v1":
+        raise ValueError("unsupported source-liquid marker metadata schema")
+    return metadata["rows"]
+
+
+def _derived_source_supercooled_liquid_markers(
+    datapack: ImccGasDatapack,
+) -> dict[str, dict[str, object]]:
+    """Select packaged source liquids with runtime rows below fusion."""
+    derived = {}
+    for species, marker in _source_supercooled_liquid_markers().items():
+        if species not in datapack.oxide_df.index:
+            continue
+        rows = datapack.oxide_df.loc[species]
+        if getattr(rows, "ndim", 1) == 1:
+            species_rows = [rows]
+        else:
+            species_rows = [row for _, row in rows.iterrows()]
+        for row in species_rows:
+            source_ref = str(row["Ref"])
+            if source_ref not in {marker["table_id"], "JANAF"}:
+                continue
+            if _liquid_from_solid_reference(source_ref) is not None:
+                continue
+            if source_ref.endswith(_SUPERCOOLED_EXTENSION_REF_SUFFIX):
+                continue
+            if float(row["T_min"]) < float(marker["fusion_temperature_K"]):
+                derived[species] = marker
+                break
+    return derived
 
 
 def _liquid_from_solid_reference(

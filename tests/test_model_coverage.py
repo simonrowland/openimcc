@@ -127,12 +127,33 @@ def test_below_domain_extrapolation_reports_extension_notice() -> None:
     )
     assert len(extension_notices) == 1
     assert "ΔrCp = 0" in extension_notices[0]
-    assert "1700–3000 K" in extension_notices[0]
+    assert "declared domains 1700–3000 K" in extension_notices[0]
     assert "uncertainty band unavailable" in extension_notices[0]
     assert not any(
         notice.startswith("temperature-domain-extension:")
         for notice in inside.labels.notices
     )
+
+
+def test_below_domain_notice_names_active_sp_row_domain() -> None:
+    pack = load_datapack(
+        Path("src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json")
+    )
+    result = evaluate(
+        {"FeO": 0.5, "S": 0.5},
+        300.0,
+        pack,
+        enable_sp_extension=True,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    extension_notices = tuple(
+        notice
+        for notice in result.labels.notices
+        if notice.startswith("temperature-domain-extension:")
+    )
+    assert len(extension_notices) == 1
+    assert "declared domains 400–1500 K" in extension_notices[0]
 
 
 def test_numeric_parsers_report_invalid_types() -> None:

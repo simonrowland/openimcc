@@ -1332,11 +1332,20 @@ def evaluate(
             & (T_K < np.asarray(kernel_pack.domains, dtype=float)[:, 0])
         )
         if below_domain_rows.size:
+            active_domains = sorted(
+                {
+                    tuple(float(bound) for bound in kernel_pack.domains[index])
+                    for index in below_domain_rows
+                }
+            )
+            domain_text = " and ".join(
+                f"{low:g}–{high:g} K" for low, high in active_domains
+            )
             notices.append(
                 "temperature-domain-extension: active SF04 association rows "
                 "are evaluated below their declared low-temperature domain "
-                "using ΔrCp = 0; the SF04 association-constant exercise "
-                "interval is 1700–3000 K; uncertainty band unavailable"
+                f"using ΔrCp = 0; the active rows have declared domains "
+                f"{domain_text}; uncertainty band unavailable"
             )
 
     adapter_labels = ImccAdapterLabels(

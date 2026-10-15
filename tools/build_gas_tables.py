@@ -4567,6 +4567,80 @@ def build_condensate_rows(
     return rows
 
 
+def build_source_liquid_markers(
+    source_dir: Path,
+    provenance_path: Path | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Extract phase-transition markers for source-backed condensate liquids."""
+    repository = Path(__file__).resolve().parents[1]
+    provenance_path = provenance_path or (
+        repository / "src/openimcc/data/gas/PROVENANCE.yaml"
+    )
+    provenance = _load_record(provenance_path)
+    markers: dict[str, dict[str, Any]] = {}
+    source_records = {}
+    for row in provenance.get("rows", []):
+        if row.get("table") != "condensate":
+            continue
+        source_path = row.get("source_path")
+        source = row.get("source") or {}
+        table_id = row.get("table_id") or source.get("table_id")
+        if not table_id or not (
+            (source_path or "").startswith("data-src/janaf/")
+            or row.get("authority") == "janaf_transcribed"
+        ):
+            continue
+        source_records.setdefault(row["species_name"], table_id)
+
+    for species_name, table_id in sorted(source_records.items()):
+        source_file = next(
+            (source_dir / f"{table_id}{suffix}" for suffix in (".yaml", ".json")
+             if (source_dir / f"{table_id}{suffix}").is_file()),
+            None,
+        )
+        if source_file is None:
+            continue
+        record = _load_record(source_file)
+        table = record.get("table", record)
+        joins: dict[str, tuple[float, int]] = {}
+        for ambiguity in table.get("parse_ambiguities", []):
+            raw_line = str(ambiguity.get("raw_line", ""))
+            cells = raw_line.split("\t")
+            if not cells:
+                continue
+            label = cells[-1].strip().upper()
+            if "<--> LIQUID" not in label:
+                continue
+            try:
+                temperature = float(cells[0])
+            except ValueError:
+                continue
+            kind = "glass_join" if label.startswith("GLASS") else "fusion"
+            joins[kind] = (temperature, int(ambiguity["line_number"]))
+        if "fusion" not in joins:
+            continue
+        fusion, fusion_line = joins["fusion"]
+        glass = joins.get("glass_join")
+        markers[species_name] = {
+            "table_id": table_id,
+            "fusion_temperature_K": fusion,
+            "fusion_line": fusion_line,
+            "glass_join_temperature_K": glass[0] if glass else None,
+            "glass_join_line": glass[1] if glass else None,
+        }
+    return markers
+
+
+def write_source_liquid_markers(
+    markers: dict[str, dict[str, Any]], output: Path
+) -> None:
+    output.write_text(
+        json.dumps({"schema": "openimcc.source-liquid-markers.v1", "rows": markers},
+                   indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _fit_k2o_from_solid(source_dir: Path) -> list[dict[str, str]]:
     """Fit K2O(l) from its crystal row and the recorded liquid input ladder."""
     from tools.liquid_from_solid import liquid_from_solid
@@ -4724,14 +4798,28 @@ def main() -> None:
             "packaged default, so a scratch --output never edits the package"
         ),
     )
+    parser.add_argument(
+        "--source-liquid-markers-output",
+        type=Path,
+        default=None,
+        help="JSON output for condensate phase-transition markers",
+    )
     args = parser.parse_args()
     if args.condensate_output is None and args.output == packaged_gas:
         args.condensate_output = repository / "src/openimcc/data/gas/condensate.csv"
+    if args.source_liquid_markers_output is None and args.output == packaged_gas:
+        args.source_liquid_markers_output = (
+            repository / "src/openimcc/data/gas/source-liquid-markers.json"
+        )
     rows = build_rows(args.source_dir, args.nasa_source_dir, args.lh84_source_dir)
     write_csv(rows, args.output)
     condensate_rows = build_condensate_rows(args.source_dir, args.nasa_source_dir)
     if args.condensate_output is not None:
         merge_condensate_csv(condensate_rows, args.condensate_output)
+    if args.source_liquid_markers_output is not None:
+        markers = build_source_liquid_markers(args.source_dir)
+        args.source_liquid_markers_output.parent.mkdir(parents=True, exist_ok=True)
+        write_source_liquid_markers(markers, args.source_liquid_markers_output)
     for row in [*rows, *condensate_rows]:
         print(
             f"{row['species_name']}: {row['_max_residual_J_per_mol']} J/mol, "

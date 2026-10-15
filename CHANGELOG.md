@@ -3,11 +3,13 @@
 ## Unreleased
 
 - Added a caller-visible melt notice for allowed temperatures below active
-  association-row domains. It records the ΔrCp = 0 continuation, the
-  1700–3000 K exercise interval, and that the uncertainty band is unavailable.
+  association-row domains. It records the ΔrCp = 0 continuation, the declared
+  domains of active rows below their lower bounds, and that the uncertainty
+  band is unavailable.
 - Flagged source-tabulated supercooled liquid branches below their recorded
-  fusion or glass markers: FeO, TiO2, Na2O, WO3, BaO, SrO, and ZrO2.
-- Restored the runtime liquid-from-solid construction flag for K2O's JANAF
+  fusion markers and glass cells below their glass/liquid joins: FeO, TiO2,
+  Na2O, WO3, BaO, SrO, ZrO2, Li2O, Cu2O, NbO2, Cr2O3, V2O3, MgO, and CaO.
+- Added the runtime liquid-from-solid construction flag for K2O's JANAF
   K-012 reference.
 - Unified oxygen-balance demand for every supplied gas parent and condensed
   parent C unless named in `imposed_parents`. Dict-only S2 and halogen calls
