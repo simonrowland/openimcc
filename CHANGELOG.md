@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a caller-visible melt notice for allowed temperatures below active
+  association-row domains. It records the ΔrCp = 0 continuation, the
+  1700–3000 K exercise interval, and that the uncertainty band is unavailable.
 - Unified oxygen-balance demand for every supplied gas parent and condensed
   parent C unless named in `imposed_parents`. Dict-only S2 and halogen calls
   now include their oxygen-carrying species in the demand.

@@ -251,11 +251,13 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
     if expected_edge:
         family = alkali_oxide.removesuffix("2O")
         assert f"the {family} silicate ladder has exhausted its acidic sink" in edge_flags[0]
-    assert result.labels.notices == (
+    assert result.labels.notices[0] == (
         "K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS "
         "pressures (case 4: −1.20 to −1.26 dex); see "
-        "https://github.com/simonrowland/openimcc",
+        "https://github.com/simonrowland/openimcc"
     )
+    assert result.labels.notices[1].startswith("temperature-domain-extension:")
+    assert len(result.labels.notices) == 2
 
 
 @pytest.mark.parametrize(
@@ -318,7 +320,9 @@ def test_alkali_notice_uses_loaded_pack_identity(
         allow_out_of_envelope=True,
     )
 
-    assert result.labels.notices == (expected_notice,)
+    assert result.labels.notices[0] == expected_notice
+    assert result.labels.notices[1].startswith("temperature-domain-extension:")
+    assert len(result.labels.notices) == 2
 
 
 def test_alkali_notice_reports_unmeasured_pack_identity() -> None:
@@ -336,11 +340,13 @@ def test_alkali_notice_reports_unmeasured_pack_identity() -> None:
         allow_out_of_envelope=True,
     )
 
-    assert result.labels.notices == (
+    assert result.labels.notices[0] == (
         "K predictions against Hastie 1981 KEMS pressures (case 4) have "
         "not been evaluated for this IMCC-SF04-RE pack; see "
-        "https://github.com/simonrowland/openimcc",
+        "https://github.com/simonrowland/openimcc"
     )
+    assert result.labels.notices[1].startswith("temperature-domain-extension:")
+    assert len(result.labels.notices) == 2
 
 
 def test_species_coverage_threshold_uses_published_binary_and_validated_rows() -> None:

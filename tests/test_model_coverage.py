@@ -111,6 +111,30 @@ def _uniform(pack: ImccLoadedDatapack) -> dict[str, float]:
     return {name: 0.125 for name in pack.parent_oxides[:8]}
 
 
+def test_below_domain_extrapolation_reports_extension_notice() -> None:
+    pack = load_datapack(BASE_DATAPACK)
+    below = evaluate(
+        _uniform(pack), 1600.0, pack, allow_extrapolation=True
+    )
+    inside = evaluate(
+        _uniform(pack), 1800.0, pack, allow_extrapolation=True
+    )
+
+    extension_notices = tuple(
+        notice
+        for notice in below.labels.notices
+        if notice.startswith("temperature-domain-extension:")
+    )
+    assert len(extension_notices) == 1
+    assert "ΔrCp = 0" in extension_notices[0]
+    assert "1700–3000 K" in extension_notices[0]
+    assert "uncertainty band unavailable" in extension_notices[0]
+    assert not any(
+        notice.startswith("temperature-domain-extension:")
+        for notice in inside.labels.notices
+    )
+
+
 def test_numeric_parsers_report_invalid_types() -> None:
     with pytest.raises(TypeError, match="cannot parse"):
         model._as_fraction(object())

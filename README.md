@@ -666,6 +666,12 @@ buffer offset such as ΔIW.
 `evaluate_gas` predicts and flags out-of-domain temperatures by default; pass
 `allow_extrapolation=False` to refuse them.
 
+The melt `evaluate` API also reports a `temperature-domain-extension` notice
+when an allowed evaluation falls below an active association row's declared
+temperature domain. It identifies the continued ΔrCp = 0 assumption, the
+1700–3000 K SF04 association-constant exercise interval, and the unavailable
+uncertainty band; it does not alter the calculated activities.
+
 ### Oxygen-balance (Knudsen) effusion
 
 `evaluate_gas_oxygen_balance(activities, T, datapack)` solves the oxygen

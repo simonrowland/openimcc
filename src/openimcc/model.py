@@ -1314,15 +1314,30 @@ def evaluate(
             f"the {family} ladder has exhausted its acidic sink"
         )
 
-    notices = (
-        (_alkali_bias_notice(model_id, binding_digest),)
-        if any(
-            vector[parent_oxides.index(name)] > 0.0
-            for name in ("Na2O", "K2O")
-            if name in parent_oxides
+    notices = []
+    if any(
+        vector[parent_oxides.index(name)] > 0.0
+        for name in ("Na2O", "K2O")
+        if name in parent_oxides
+    ):
+        notices.append(_alkali_bias_notice(model_id, binding_digest))
+
+    if result.extrapolated:
+        active_parent = vector > 0.0
+        active_complex = ~np.any(
+            (kernel_pack.nu > 0.0) & (~active_parent[:, None]), axis=0
         )
-        else ()
-    )
+        below_domain_rows = np.flatnonzero(
+            active_complex
+            & (T_K < np.asarray(kernel_pack.domains, dtype=float)[:, 0])
+        )
+        if below_domain_rows.size:
+            notices.append(
+                "temperature-domain-extension: active SF04 association rows "
+                "are evaluated below their declared low-temperature domain "
+                "using ΔrCp = 0; the SF04 association-constant exercise "
+                "interval is 1700–3000 K; uncertainty band unavailable"
+            )
 
     adapter_labels = ImccAdapterLabels(
         identity=identity,
@@ -1334,7 +1349,7 @@ def evaluate(
         ),
         acid_sink_ratio=acid_sink_ratio,
         flags=tuple(flags),
-        notices=notices,
+        notices=tuple(notices),
         inactive_rows=inactive_rows,
     )
 
