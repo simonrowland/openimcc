@@ -7,6 +7,8 @@ import math
 import pytest
 
 from openimcc import evaluate
+from openimcc.kernel import ImccNonconvergenceError, ImccRefusal
+from openimcc import model
 
 
 CASES = (
@@ -66,6 +68,8 @@ def test_depleted_melt_cold_start_converges(
     result = evaluate(composition, temperature)
 
     assert result.convergence.residual_inf <= 1.0e-12
+    assert result.convergence.solver_path == "composition-continuation"
+    assert result.convergence.continuation_stages > 0
     assert math.isclose(
         result.parent_activity[result.parent_oxides.index("SiO2")],
         expected_silica_activity,
@@ -87,5 +91,99 @@ def test_evaluate_accepts_a_validated_warm_start() -> None:
     assert warm.convergence.residual_inf <= 1.0e-12
     assert all(math.isfinite(value) for value in warm.parent_activity)
 
-    with pytest.raises(ValueError, match="y_init"):
-        evaluate(composition, temperature, y_init=[0.0])
+    invalid_seeds = (
+        [0.0],
+        [float("nan")] * len(y_init),
+        [-201.0] * len(y_init),
+        [101.0] * len(y_init),
+    )
+    for seed in invalid_seeds:
+        with pytest.raises(ImccRefusal, match="y_init"):
+            evaluate(composition, temperature, y_init=seed)
+
+
+def test_non_silica_trace_parent_uses_composition_continuation() -> None:
+    composition = {
+        "SiO2": 197.0,
+        "MgO": 1.0e-12
+        * (197.0 + 175.85 + 2014.86 + 1360.0 + 192.88 + 5.3 + 8.96),
+        "FeO": 175.85,
+        "CaO": 2014.86,
+        "Al2O3": 1360.0,
+        "TiO2": 192.88,
+        "Na2O": 5.3,
+        "K2O": 8.96,
+    }
+
+    result = evaluate(
+        composition,
+        2400.65,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.convergence.solver_path == "composition-continuation"
+    assert result.convergence.continuation_stages > 0
+    assert result.convergence.residual_inf <= 1.0e-12
+
+
+def test_failed_composition_continuation_preserves_original_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+    diagnostics = {
+        "iterations": 17,
+        "residual_inf": 0.25,
+        "residual_l2": 0.4,
+        "final_y": [0.0] * 8,
+        "solver_path": "failed",
+        "continuation_stages": 2,
+        "scipy_message": "fixture failure",
+    }
+
+    def refuse(*_args: object, **_kwargs: object) -> None:
+        nonlocal calls
+        calls += 1
+        raise ImccNonconvergenceError("fixture refuses", diagnostics)
+
+    monkeypatch.setattr(model, "solve_imcc_sf04", refuse)
+    composition, temperature, _expected = CASES[0]
+    with pytest.raises(ImccNonconvergenceError, match="fixture refuses") as caught:
+        evaluate(composition, temperature)
+
+    assert calls == 8
+    assert caught.value.diagnostics == diagnostics
+
+
+def test_none_warm_start_is_bit_identical_to_omitted_default() -> None:
+    composition = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    omitted = evaluate(composition, 1800.0)
+    explicit = evaluate(composition, 1800.0, y_init=None)
+
+    for name in (
+        "parent_mol",
+        "parent_x",
+        "parent_x_star",
+        "parent_activity",
+        "parent_gamma",
+        "complex_x",
+        "species_x",
+    ):
+        assert getattr(omitted, name).tobytes() == getattr(explicit, name).tobytes()
+    assert omitted.temperature_K.hex() == explicit.temperature_K.hex()
+    assert omitted.basis.hex() == explicit.basis.hex()
+    assert omitted.D.hex() == explicit.D.hex()
+    assert omitted.parent_oxides == explicit.parent_oxides
+    assert omitted.species_names == explicit.species_names
+    assert omitted.convergence == explicit.convergence
+    assert omitted.labels == explicit.labels
+    assert omitted.extrapolated == explicit.extrapolated

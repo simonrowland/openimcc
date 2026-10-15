@@ -229,6 +229,12 @@ class ImccUnprovenDatapackError(ImccRefusal):
     code = "imcc_unproven_datapack"
 
 
+class ImccInvalidWarmStartError(ImccRefusal):
+    """Raised when a caller-provided solver seed is malformed or out of bounds."""
+
+    code = "imcc_invalid_warm_start"
+
+
 class ImccCompositionOutsideValidatedEnvelopeError(ImccRefusal):
     """Raised when the melt lies outside the validated Tier-A envelope."""
 
@@ -1145,28 +1151,36 @@ def evaluate(
             max_iter=max_iter,
             y_init=y_init,
         )
+    except ValueError as exc:
+        if y_init is not None and "y_init" in str(exc):
+            raise ImccInvalidWarmStartError(str(exc)) from None
+        raise
     except ImccNonconvergenceError as cold_error:
-        silica_index = (
-            parent_oxides.index("SiO2") if "SiO2" in parent_oxides else None
-        )
-        if silica_index is None or vector[silica_index] <= 0.0:
+        positive = np.flatnonzero(vector > 0.0)
+        if positive.size == 0:
+            raise
+        trace_index = int(positive[np.argmin(vector[positive])])
+        total_moles = float(vector.sum())
+        trace_fraction = float(vector[trace_index] / total_moles)
+        floor_fraction = 1.0e-3
+        if trace_fraction >= floor_fraction:
             raise
 
-        # The observed basin failure occurs on a strongly depleted silica
-        # parent. A tenfold increase is the smallest tested well-conditioned
-        # neighbour; reducing it through 8, 6, 4, 2, and 1 times the requested
-        # amount follows the connected root back to the exact input. Moles are
-        # scaled before normalization; the factor is dimensionless. The
-        # sanity point is the 2445.65 K depleted-melt case, whose silica
-        # activity is linear in input and is recovered at the final 1x step.
-        # This retry is only entered after the legacy solve refuses.
+        # The depletion sweep found failures down to 1e-12 of total; a 1e-3
+        # floor is nine decades above that seed clamp and clears the observed
+        # ill-conditioned 1e-4 boundary. Seven log-spaced stages spread the
+        # return over at most 1.5 decades per step. Moles are scaled before
+        # normalization; the ratio is dimensionless.
+        floor_moles = floor_fraction * total_moles
+        stage_moles = np.geomspace(floor_moles, vector[trace_index], 7)
         y_stage = None
-        for silica_factor in (10.0, 8.0, 6.0, 4.0, 2.0, 1.0):
+        for stage_number, trace_moles in enumerate(stage_moles, start=1):
             staged_vector = vector.copy()
-            staged_vector[silica_index] *= silica_factor
-            stage_basis = (
-                basis if silica_factor == 1.0 else float(staged_vector.sum())
+            final_stage = stage_number == len(stage_moles)
+            staged_vector[trace_index] = (
+                vector[trace_index] if final_stage else float(trace_moles)
             )
+            stage_basis = basis if final_stage else float(staged_vector.sum())
             try:
                 result = solve_imcc_sf04(
                     staged_vector,
@@ -1193,7 +1207,15 @@ def evaluate(
                     continue
                 raise cold_error from None
             y_stage = np.log(result.parent_x_star[vector > 0.0])
-            if silica_factor == 1.0:
+            if final_stage:
+                result = replace(
+                    result,
+                    convergence=replace(
+                        result.convergence,
+                        solver_path="composition-continuation",
+                        continuation_stages=stage_number,
+                    ),
+                )
                 break
         else:
             raise cold_error from None

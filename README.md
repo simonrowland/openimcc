@@ -593,6 +593,12 @@ print("gas:", gas.unit, {"Na": f"{gas['Na']:.6g}", "K": f"{gas['K']:.6g}"})
 print("Mg domain flag:", gas.domain_flags["Mg"])
 ```
 
+For time-stepped evaluations, pass `y_init` as the natural logs of the prior
+result's `parent_x_star` values for the positive-mole parents, in datapack
+order. If a depleted parent needs a composition homotopy to converge,
+`result.convergence.solver_path` is `"composition-continuation"` and
+`continuation_stages` reports the number of stages used.
+
 Output:
 
 ```text
