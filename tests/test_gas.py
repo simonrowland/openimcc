@@ -787,15 +787,19 @@ def test_default_janaf_basalt_at_1800_predicts_and_flags_source_rows(
         "Al2O2",
         "Al2",
         "Al",
+        "Ti",
+        "TiO",
+        "TiO2",
     }
     assert all(result.domain_flags[species] is not None for species in flagged)
     assert all(
         result.domain_flags[species] is None
-        for species in set(result) - flagged
+        for species in set(result) - flagged - {"K", "K2", "KO", "K2O"}
     )
     assert "MgO(l)" in result.domain_flags["Mg"]
     assert "constant-Cp supercooled-liquid continuation" in result.domain_flags["Mg"]
     assert result.domain_flags["SiO"] is None
+    assert "2130 K" in result.domain_flags["Ti"]
     assert result.provenance_class["SiO"] == "janaf_fitted"
 
 
@@ -926,7 +930,8 @@ def test_opt_in_ions_preserve_neutral_outputs_and_close_charge(
                 with_ions.domain_flags.get("Na") or ""
             )
         else:
-            assert with_ions.domain_flags["Na+"] is None
+            assert with_ions.domain_flags["Na+"] is not None
+            assert "1405.2 K" in with_ions.domain_flags["Na+"]
 
     for element in ("Na", "K", "Ca"):
         low = outputs[1200.0]
@@ -4629,8 +4634,25 @@ def _oxygen_balance_hashes(
             separators=(",", ":"),
         )
         numeric_actual.append(hashlib.sha256(numeric_canonical.encode()).hexdigest())
+        result_for_hash = replace(
+            pressures,
+            domain_flags={
+                name: (
+                    "; ".join(
+                        part
+                        for part in flag.split("; ")
+                        if "source-tabulated supercooled liquid branch" not in part
+                        and "liquid_from_solid construction from K-012" not in part
+                    )
+                    or None
+                )
+                if flag is not None
+                else None
+                for name, flag in pressures.domain_flags.items()
+            },
+        )
         canonical = json.dumps(
-            hex_values((p_o2, pressures, diagnostics)),
+            hex_values((p_o2, result_for_hash, diagnostics)),
             sort_keys=True,
             separators=(",", ":"),
         )

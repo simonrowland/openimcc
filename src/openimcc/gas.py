@@ -42,12 +42,22 @@ if TYPE_CHECKING:
 # --------------------------------------------------------------------------- #
 
 R_J_MOL_K = 8.314462618
+"""Molar gas constant, J / (mol K)."""
+
 _SUPERCOOLED_EXTENSION_REF_SUFFIX = "-SC-CP"
 _SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
 _LIQUID_FROM_SOLID_REF_RE = re.compile(
     r"^LFS\[(?P<source>[^;\]]+);Tf=(?P<temperature>[0-9]+(?:\.[0-9]+)?)\]$"
 )
-"""Molar gas constant, J / (mol K)."""
+_SOURCE_SUPERCOOLED_LIQUID_MARKERS_K = {
+    "FeO(l)": ("Fe-019", 1650.0),
+    "TiO2(l)": ("O-044", 2130.0),
+    "Na2O(l)": ("Na-013", 1405.2),
+    "WO3(l)": ("O-066", 1745.0),
+    "BaO(l)": ("Ba-035", 2286.0),
+    "SrO(l)": ("O-014", 2938.0),
+    "ZrO2(l)": ("O-053", 2950.0),
+}
 
 BAR = 1.0
 """Numerical value of the JANAF gas standard pressure p° = 1 bar.
@@ -3610,6 +3620,11 @@ def _source_model_flag(
         return (
             f"{row_name} uses a flagged liquid-metal continuation above the "
             f"{float(metal_continuation.group(2)):g} K source limit"
+    source_marker = _SOURCE_SUPERCOOLED_LIQUID_MARKERS_K.get(row_name)
+    if phase == "l" and source_marker is not None and T < source_marker[1]:
+        return (
+            f"{row_name} uses a source-tabulated supercooled liquid branch "
+            f"below the {source_marker[1]:g} K fusion marker ({source_marker[0]})"
         )
     konings_liquid = re.fullmatch(r"Konings-Table88-Tf(\d+(?:\.\d+)?)", source_ref)
     if phase == "l" and konings_liquid is not None and T < float(konings_liquid[1]):

@@ -666,6 +666,13 @@ buffer offset such as ΔIW.
 `evaluate_gas` predicts and flags out-of-domain temperatures by default; pass
 `allow_extrapolation=False` to refuse them.
 
+Gas result flags identify held-Cp `-SC-CP` continuations and source-tabulated
+liquid branches below their recorded fusion or glass markers. The source rows
+flagged for the latter are FeO (1650 K), TiO2 (2130 K), Na2O (1405.2 K), WO3
+(1745 K), BaO (2286 K), SrO (2938 K), and ZrO2 (2950 K). The Na2O flag applies
+to both its 1200–1500 K and 1500–3000 K fitted intervals. Gas tables begin at
+1200 K; no held-Cp segment is defined below that temperature.
+
 The melt `evaluate` API also reports a `temperature-domain-extension` notice
 when an allowed evaluation falls below an active association row's declared
 temperature domain. It identifies the continued ΔrCp = 0 assumption, the

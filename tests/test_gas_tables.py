@@ -3128,7 +3128,7 @@ def test_na_supercooled_parent_liquid_covers_low_gas_and_melt_activity() -> None
         gas_species=("Na2O",),
     )
     assert gas["Na2O"] > 0.0
-    assert gas.domain_flags["Na2O"] is None
+    assert "1405.2 K" in gas.domain_flags["Na2O"]
 
 
 def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> None:
