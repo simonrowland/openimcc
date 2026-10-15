@@ -134,6 +134,11 @@ N families are omitted unless their parent key is supplied. HCl, HF, HBr, and
 HI use JANAF gas rows and require both `H2` and their corresponding diatomic
 halogen key; they have zero oxygen demand.
 
+For example, at 1800 K with `fO2 = 1e-8 bar`, the JANAF-fitted CO2 equilibrium
+constant gives `a(C) = 3.15011592e-6` for a 10 mbar CO2 sweep through
+`a(C) = f(CO2)/(K fO2)`. This calculation pins `fO2`; the oxygen-balance
+solver is not used to set it.
+
 The halogen channels use the same gas-parent input convention: supply
 `a(Br2)`, `a(I2)`, `a(Cl2)`, and/or `a(F2)` as `f(X2)/p°`, with `p° = 1 bar`.
 These dimensionless fugacity ratios activate each available elemental pair
@@ -146,6 +151,7 @@ and O2(g) partners.
 
 Ca/Mg/Sr/Ba halides, Li/Rb/Cs halides, Cl− and F− dissolution, and Br−
 dissolution or capacity models are outside this gas-parent implementation.
+The excluded H/C/N species are HO2, H2O2, C(g), carbonates, N2O, and NO3.
 
 The P gas tables are fitted, but no public evaluated `P2O5(l)` G(T) function
 was found; JANAF lists `P4O10(cr)` only. P channels therefore remain unavailable
@@ -667,6 +673,8 @@ an external sweep reservoir. Its species remain in the pressure mapping but
 are excluded from the melt-derived oxygen balance. The default imposes no
 reservoirs; the option also accepts other gas-parent keys such as `S2`, `H2`,
 `Br2`, `I2`, `Cl2`, and `F2`.
+An imposed key without a supplied activity is ignored. Pass parent keys as a
+sequence; a bare string raises `TypeError`.
 
 This balance applies to inert cells such as Pt or Ir. It does not apply to
 reactive W or Mo cells: their effusing oxides contribute oxygen-bearing

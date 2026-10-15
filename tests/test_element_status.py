@@ -1118,6 +1118,22 @@ def _c4_rows_cover_domain(
     parent = parent_by_element.get(element)
     gas_parent = (gas_parent_by_element or {}).get(element)
     if parent is None:
+        if gas_parent == "C(cr)":
+            graphite_rows = pack.oxide_df.loc[pack.oxide_df.index == "C(cr)"]
+            return any(
+                int(row["T_min"]) <= domain_start
+                and int(row["T_max"]) >= domain_end
+                and (source := by_key.get(
+                    (
+                        "condensate",
+                        "C(cr)",
+                        (int(row["T_min"]), int(row["T_max"])),
+                    )
+                )) is not None
+                and source["table_id"] == "C-002"
+                and _one_bar_janaf_source(source["table_id"])
+                for _, row in graphite_rows.iterrows()
+            )
         # Gas-parent rows share the gas coverage checks above; S2(g) is both
         # the caller reference and an exposed sulfur product channel.
         return gas_parent is not None and f"{gas_parent}(g)" in pack.gas_df.index
@@ -1352,7 +1368,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
     }
     gas_parent_by_element = {
         "S": "S2", "Br": "Br2", "I": "I2", "Cl": "Cl2", "F": "F2",
-        "H": "H2", "C": "CO", "N": "N2",
+        "H": "H2", "C": "C(cr)", "N": "N2",
     }
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")
     parent_oxides = set(melt.parent_oxides)
