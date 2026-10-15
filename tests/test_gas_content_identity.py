@@ -145,8 +145,11 @@ def _na_gas_evaluation(pack: ImccGasDatapack) -> dict[str, float]:
 
 def test_packaged_table_content_digests_match_current_tables() -> None:
     pack = load_gas_datapack()
-    added_gas_species = {"Ta(g)", "TaO(g)", "TaO2(g)"}
-    added_condensate_species = {"Ta2O5(l)"}
+    added_gas_species = {
+        "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
+        "(BeO)2(g)", "(BeO)3(g)", "(BeO)4(g)", "Be2(g)",
+    }
+    added_condensate_species = {"Ta2O5(l)", "BeO(l)"}
     retained_gas = pack.gas_df.loc[~pack.gas_df.index.isin(added_gas_species)]
     retained_condensate = pack.oxide_df.loc[
         ~pack.oxide_df.index.isin(added_condensate_species)

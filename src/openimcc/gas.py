@@ -403,6 +403,13 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Ta": ("Ta2O5", 2, 2.5),
     "TaO": ("Ta2O5", 2, 1.5),
     "TaO2": ("Ta2O5", 2, 0.5),
+    "Be": ("BeO", 1, 0.5),
+    "BeO": ("BeO", 1, 0.0),
+    "Be2O": ("BeO", 0.5, 0.25),
+    "(BeO)2": ("BeO", 0.5, 0.0),
+    "(BeO)3": ("BeO", 1 / 3, 0.0),
+    "(BeO)4": ("BeO", 0.25, 0.0),
+    "Be2": ("BeO", 0.5, 0.5),
     # Appended after the existing channels so every pre-existing mapping and
     # output position stays unchanged.
     "Na2O": ("Na2O", 1, 0.0),
@@ -734,6 +741,13 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Ta",
         "TaO",
         "TaO2",
+        "Be",
+        "BeO",
+        "Be2O",
+        "(BeO)2",
+        "(BeO)3",
+        "(BeO)4",
+        "Be2",
         "Mn",
         "MnO",
         "Ni",
@@ -929,6 +943,13 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "(NaI)2": "nasa_glenn_fitted",
         "RbO": "nasa_glenn_fitted",
         "Rb2O": "nasa_glenn_fitted",
+        "Be": "nasa_glenn_fitted",
+        "BeO": "nasa_glenn_fitted",
+        "Be2O": "nasa_glenn_fitted",
+        "(BeO)2": "nasa_glenn_fitted",
+        "(BeO)3": "nasa_glenn_fitted",
+        "(BeO)4": "nasa_glenn_fitted",
+        "Be2": "nasa_glenn_fitted",
         "PbO2": "nasa_glenn_fitted",
         "BO-": "nasa_glenn_fitted",
         "GaO": "nasa_glenn_fitted",
@@ -1047,6 +1068,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "V2O3": "janaf_fitted",
     "NbO2": "janaf_fitted",
     "Ta2O5": "janaf_fitted",
+    "BeO": "nasa_glenn_fitted",
     "Li2O": "janaf_fitted",
     "Rb2O": "nasa_glenn_fitted",
     "PbO": "janaf_fitted",
@@ -1107,6 +1129,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "V2O3": "O-063",
     "NbO2": "Nb-013",
     "Ta2O5": "O-078",
+    "BeO": "NG-1352",
     "Li2O": "Li-015",
     "MoO3": "Mo-015",
     "WO3": "O-066",
@@ -2401,6 +2424,30 @@ ELEMENT_STATUS["Ta"] = {
         "status": "not computed",
         "reason": "not computed: ionized tantalum channels are outside this neutral gas change",
         "source_tables": {"selected": "JANAF"},
+        "parent_activity": None,
+    },
+}
+ELEMENT_STATUS["Be"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": (
+        "NASA Glenn cards NG-0185, NG-0200, NG-0205, NG-0208, NG-0210, NG-0211, "
+        "and NG-0212 provide Be(g), BeO(g), Be2(g), Be2O(g), (BeO)2(g), "
+        "(BeO)3(g), and (BeO)4(g); NG-1352 provides BeO(l). The liquid card's "
+        "2851 K source limit is extended downward by the labelled constant-Cp "
+        "continuation. BeO is the selected oxide parent and a(BeO) is caller-supplied; "
+        "fO2 is also an input. No ion channel or melt activity model is included."
+    ),
+    "c2_candidates": (
+        ("NG-0200", "BeO"), ("NG-0208", "Be2O"),
+        ("NG-0210", "(BeO)2"), ("NG-0211", "(BeO)3"),
+        ("NG-0212", "(BeO)4"),
+    ),
+    "c3_ion_bound": {
+        "status": "not computed",
+        "reason": "not computed: ionized beryllium channels are outside this neutral gas change",
+        "source_tables": {"selected": "NASA Glenn"},
         "parent_activity": None,
     },
 }
@@ -4108,7 +4155,7 @@ _ATOMIC_MASS_G_MOL = {
     "O": 15.999, "Na": 22.989769, "K": 39.0983, "Si": 28.085,
     "Fe": 55.845, "Mg": 24.305, "Al": 26.9815385, "Ca": 40.078,
     "Ti": 47.867, "Cr": 51.9961, "V": 50.9415, "Nb": 92.90637,
-    "Ta": 180.94788,
+    "Ta": 180.94788, "Be": 9.0121831,
     "Mn": 54.938044, "Ni": 58.6934, "Co": 58.933194,
     "Sb": 121.760, "Ag": 107.8682,
     "P": 30.973761998, "S": 32.06,

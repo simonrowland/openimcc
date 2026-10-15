@@ -270,6 +270,13 @@ TRACE_NASA_GAS_SOURCES = (
     ("Ag(g)", "NG-0074", "Ag", "Ag", 1, 0),
     ("RbO(g)", "NG-1329", "RbO", "Rb", 1, 1),
     ("Rb2O(g)", "NG-1352", "Rb2O", "Rb", 2, 1),
+    ("Be(g)", "NG-0185", "Be", "Be", 1, 0),
+    ("BeO(g)", "NG-0200", "BeO", "Be", 1, 1),
+    ("Be2O(g)", "NG-0208", "Be2O", "Be", 2, 1),
+    ("(BeO)2(g)", "NG-0210", "Be2O2", "Be", 2, 2),
+    ("(BeO)3(g)", "NG-0211", "Be3O3", "Be", 3, 3),
+    ("(BeO)4(g)", "NG-0212", "Be4O4", "Be", 4, 4),
+    ("Be2(g)", "NG-0205", "Be2", "Be", 2, 0),
     ("PbO2(g)", "NG-1276", "PbO2", "Pb", 1, 2),
     ("GaO(g)", "NG-5066", "GaO", "Ga", 1, 1),
     ("Ga2O(g)", "NG-5178", "Ga2O", "Ga", 2, 1),
@@ -561,6 +568,9 @@ CONDENSATE_SOURCES = (
 TRACE_CONDENSATE_SOURCES = (("B2O3(l)", "B-096", "B", 2, 3),)
 TRACE_CONDENSED_SOURCES = (("C(cr)", "C-002", "C", 1, 0),)
 TRACE_NASA_CONDENSATE_SOURCES = (
+    ("BeO(l)", "NG-1352", "BeO", "Be", 1, 1, 2851.0,
+     ((1200.0, 1500.0), (1500.0, 2000.0), (2000.0, 2500.0), (2500.0, 2851.0)),
+     ((2851.0, 3000.0),)),
     ("Ga2O3(l)", "NG-12403", "Ga2O3", "Ga", 2, 3, 2080.0, ((1200.0, 2080.0),), ((2080.0, 3000.0),)),
     (
         "GeO2(l)", "NG-12434", "GeO2", "Ge", 1, 2, 1388.0,
@@ -704,6 +714,17 @@ def _load_record(path: Path) -> dict[str, Any]:
         if not isinstance(record, dict):
             raise ValueError(f"{path} did not contain a mapping")
         return record
+
+
+def _nasa_liquid_record(
+    nasa_source_dir: Path, species_name: str, table_id: str
+) -> dict[str, Any]:
+    filename = (
+        "NG-1352-BeO-L.json"
+        if species_name == "BeO(l)" and table_id == "NG-1352"
+        else f"{table_id}.json"
+    )
+    return _load_record(nasa_source_dir / filename)
 
 
 def _value(row: dict[str, Any], field: str) -> float | None:
@@ -2412,7 +2433,7 @@ def _fit_nasa_card_condensate_row(
     runtime_t_min: float | None = None,
     runtime_t_max: float | None = None,
 ) -> dict[str, str]:
-    record = _load_record(nasa_source_dir / f"{table_id}.json")
+    record = _nasa_liquid_record(nasa_source_dir, species_name, table_id)
     if (
         record.get("record_id") != table_id
         or record.get("formula") != formula
@@ -2795,7 +2816,7 @@ def _fit_supercooled_liquid_row(
     """
     yaml_path = source_dir / f"{table_id}.yaml"
     if nasa_source_dir is not None:
-        record = _load_record(nasa_source_dir / f"{table_id}.json")
+        record = _nasa_liquid_record(nasa_source_dir, species_name, table_id)
         formula = species_name.removesuffix("(l)")
         if (
             record.get("record_id") != table_id
@@ -2856,7 +2877,7 @@ def _fit_supercooled_liquid_row(
         nasa_source_dir = nasa_source_dir or (
             Path(__file__).resolve().parents[1] / "data-src/nasa-glenn"
         )
-        record = _load_record(nasa_source_dir / f"{table_id}.json")
+        record = _nasa_liquid_record(nasa_source_dir, species_name, table_id)
         if (
             record.get("record_id") != table_id
             or record.get("formula") != species_name.removesuffix("(l)")
@@ -2876,6 +2897,7 @@ def _fit_supercooled_liquid_row(
         raise ValueError(f"{table_id} has no complete 298.15 K formation enthalpy")
 
     use_cp_constrained_fit = species_name in {
+        "BeO(l)",
         "TiO2(l)",
         "Cr2O3(l)",
         "V2O3(l)",
@@ -4173,19 +4195,40 @@ def build_condensate_rows(
                 )
             )
         for fit_t_min, fit_t_max in fit_intervals:
-            rows.append(
-                _fit_nasa_card_condensate_row(
-                    nasa_source_dir,
+            if species_name == "BeO(l)":
+                # The liquid card prints a constant-Cp function. Reuse its
+                # exact T0 continuation over the card-supported interval so
+                # the narrow 2851-3000 K fit is constrained by the function,
+                # not just two endpoint samples.
+                row = _fit_supercooled_liquid_row(
+                    source_dir,
                     species_name,
                     table_id,
-                    formula,
                     cation,
                     cat_num,
                     oxy_num,
-                    fit_t_min=fit_t_min,
-                    fit_t_max=fit_t_max,
+                    source_t_min,
+                    fit_t_max,
+                    runtime_t_min=fit_t_min,
+                    nasa_source_dir=nasa_source_dir,
                 )
-            )
+                if fit_t_min >= source_t_min:
+                    row["Ref"] = table_id
+                rows.append(row)
+            else:
+                rows.append(
+                    _fit_nasa_card_condensate_row(
+                        nasa_source_dir,
+                        species_name,
+                        table_id,
+                        formula,
+                        cation,
+                        cat_num,
+                        oxy_num,
+                        fit_t_min=fit_t_min,
+                        fit_t_max=fit_t_max,
+                    )
+                )
     # Cs2O(l) has no JANAF liquid table; retain the NASA pure-liquid card.
     for fit_t_min, fit_t_max in (
         (1200.0, 1500.0),

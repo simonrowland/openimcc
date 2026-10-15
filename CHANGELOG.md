@@ -8,6 +8,9 @@
 - Added Ta(g), TaO(g), and TaO2(g) channels with caller-supplied Ta2O5(l)
   activity and fO2, fitted from the NIST-JANAF tables on their elemental
   reference states.
+- Added NASA Glenn Be(g), BeO(g), Be2(g), Be2O(g), (BeO)2(g), (BeO)3(g), and
+  (BeO)4(g) channels with caller-supplied BeO(l) activity and fO2. The liquid
+  card starts at 2851 K and uses a labelled constant-Cp continuation below.
 - Added caller-supplied Br2, I2, Cl2, and F2 gas-parent inputs with elemental
   and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
   pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair

@@ -607,7 +607,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
     )
-    assert len(oxide_rows) == 60
+    assert len(oxide_rows) == 61
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -709,7 +709,15 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert row["table_id"] == table_id
         assert row["source_path"] == f"data-src/janaf/{table_id}.yaml"
         assert (ROOT / row["source_path"]).is_file()
-        assert row["source_sha256"] == source["extraction"]["source_sha256"]
+        if table_id in {"Ta-005", "O-017", "O-041"}:
+            assert row["source_sha256"] == hashlib.sha256(
+                (ROOT / row["source_path"]).read_bytes()
+            ).hexdigest()
+            assert row["upstream_source_sha256"] == source["extraction"][
+                "source_sha256"
+            ]
+        else:
+            assert row["source_sha256"] == source["extraction"]["source_sha256"]
         assert row["authority"] == "janaf_fitted"
         assert row["method"] == "fitted"
         expected_t_max = build_gas_tables._DECLARED_T_MAX_BY_TABLE.get(
@@ -812,7 +820,15 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert source["table"]["index_entry"]["state"] == "l"
         assert row["table_id"] == table_id
         assert row["source_path"] == f"data-src/janaf/{table_id}.yaml"
-        assert row["source_sha256"] == source["extraction"]["source_sha256"]
+        if species == "Ta2O5(l)":
+            assert row["source_sha256"] == hashlib.sha256(
+                (ROOT / row["source_path"]).read_bytes()
+            ).hexdigest()
+            assert row["upstream_source_sha256"] == source["extraction"][
+                "source_sha256"
+            ]
+        else:
+            assert row["source_sha256"] == source["extraction"]["source_sha256"]
         assert row["authority"] == "janaf_fitted"
         assert row["method"] == "fitted"
         expected_t_min = build_gas_tables._FIT_T_MIN_BY_TABLE.get(
@@ -1022,7 +1038,7 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
             "Li2O(l)", "Rb2O(l)", "PbO(l)",
             "Cs2O(l)", "Cu2O(l)", "SnO(l)",
             "ZnO(l)", "CdO(l)", "Bi2O3(l)",
-            "MnO(l)",
+            "MnO(l)", "BeO(l)",
         }:
             continue
         source_path = ROOT / record["source_path"]
@@ -1352,6 +1368,46 @@ def test_trace_nasa_card_thermal_increments_are_zero_at_the_formation_anchor() -
         assert thermal[0]["enthalpy_increment"] == pytest.approx(0.0, abs=1.0e-12)
 
 
+def test_beryllium_nasa_formation_anchors_and_liquid_source_limit() -> None:
+    expected_j_per_mol = {
+        "NG-0185": 324000.0,
+        "NG-0200": 128940.304,
+        "NG-0205": 637543.318,
+        "NG-0208": -37033.803,
+        "NG-0210": -411635.309,
+        "NG-0211": -1023720.628,
+        "NG-0212": -1649294.582,
+    }
+    for table_id, expected in expected_j_per_mol.items():
+        record = _nasa_record(table_id)
+        assert record["delta_f_H_298_15"]["value"] == pytest.approx(expected)
+        thermal = build_gas_tables._nasa_card_thermal_rows(record, [298.15])
+        assert thermal[0]["enthalpy_increment"] == pytest.approx(0.0, abs=1e-12)
+
+    liquid = build_gas_tables._nasa_liquid_record(
+        NASA_DATA, "BeO(l)", "NG-1352"
+    )
+    assert liquid["record_id"] == "NG-1352"
+    assert liquid["phase"] == "L"
+    assert liquid["delta_f_H_298_15"]["value"] == pytest.approx(-609400.0)
+    assert liquid["intervals"][0]["T_min_K"]["value"] == 2851.0
+    assert liquid["citation_as_published"].startswith("Liquid. Gurvich,1996a")
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    parent_rows = [
+        row for row in provenance["rows"]
+        if row["table"] == "condensate" and row["species_name"] == "BeO(l)"
+    ]
+    assert [row["T_range_K"] for row in parent_rows] == [
+        [1200, 1500], [1500, 2000], [2000, 2500], [2500, 2851], [2851, 3000],
+    ]
+    assert all(
+        row["source_data"] is False
+        and row["extrapolation_source_limit_K"] == 2851
+        for row in parent_rows[:-1]
+    )
+    assert parent_rows[-1]["source_data"] is True
+
+
 def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = [row for row in provenance["rows"] if row["table"] == "condensate"]
@@ -1584,10 +1640,13 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         _continuation_intervals,
         fit_intervals,
     ) in build_gas_tables.TRACE_NASA_CONDENSATE_SOURCES:
-        record = _nasa_record(table_id)
+        record = build_gas_tables._nasa_liquid_record(
+            NASA_DATA, species_name, table_id
+        )
         for t_min, t_max in fit_intervals:
             card_nodes = []
-            for temperature in np.arange(t_min, t_max + 50.0, 100.0):
+            step = 1.0 if species_name == "BeO(l)" else 100.0
+            for temperature in np.arange(t_min, t_max + step / 2.0, step):
                 properties = build_gas_tables._nasa7_properties(
                     record, float(temperature)
                 )
@@ -2090,6 +2149,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "(WO3)5",
         "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
         "Ta", "TaO", "TaO2",
+        "Be", "BeO", "Be2O", "(BeO)2", "(BeO)3", "(BeO)4", "Be2",
         "NiO", "CoO",
         "Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf",
         "Y", "YO",
@@ -2111,7 +2171,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
             name for name in (
                 "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "Y",
                 "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag",
-                "Mo", "W", "Ba", "Sr", "Zr", "Ta", "Ni", "Co", "Sc", "U", "Th", "Hf",
+                "Mo", "W", "Ba", "Sr", "Zr", "Ta", "Be", "Ni", "Co", "Sc", "U", "Th", "Hf",
             )
             if name in parent_atoms
         )

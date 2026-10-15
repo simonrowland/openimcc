@@ -2827,6 +2827,48 @@ def test_tantalum_channels_and_oxygen_balance(
     assert unlisted_root == pytest.approx(si_only_root, rel=0.0, abs=0.0)
 
 
+def test_beryllium_channels_and_oxygen_balance(
+    gas_pack: ImccGasDatapack, unit_activities: dict[str, float]
+) -> None:
+    activities = {"BeO": 1.0e-3}
+    species = ("Be", "BeO", "Be2O", "(BeO)2", "(BeO)3", "(BeO)4", "Be2")
+    result = evaluate_gas(
+        activities, 2000.0, 1.0e-10, gas_pack,
+        parent_oxides=("BeO",), gas_species=species,
+        allow_extrapolation=False,
+    )
+    assert result._values == pytest.approx(
+        {
+            "Be": 5.4841642522907187e-11,
+            "BeO": 2.839950604885199e-13,
+            "Be2O": 3.603203485202284e-16,
+            "(BeO)2": 2.528233210150918e-16,
+            "(BeO)3": 2.497155230143581e-17,
+            "(BeO)4": 6.464750106108906e-20,
+            "Be2": 1.699397487178629e-25,
+        },
+        rel=1.0e-12,
+    )
+    default = evaluate_gas(unit_activities, 1800.0, 1.0e-10, gas_pack)
+    assert not set(species).intersection(default)
+
+    root, balanced, diagnostics = evaluate_gas_oxygen_balance(
+        activities, 2000.0, gas_pack, parent_oxides=("BeO",)
+    )
+    assert root == pytest.approx(1.0897538394182622e-12, rel=1.0e-12)
+    assert diagnostics["residual"] < 1.0e-12
+    assert {*species, "O2"}.issubset(balanced)
+
+    unlisted_root, _, _ = evaluate_gas_oxygen_balance(
+        {**activities, "SiO2": 1.0}, 2000.0, gas_pack,
+        parent_oxides=("SiO2",),
+    )
+    si_only_root, _, _ = evaluate_gas_oxygen_balance(
+        {"SiO2": 1.0}, 2000.0, gas_pack, parent_oxides=("SiO2",)
+    )
+    assert unlisted_root == pytest.approx(si_only_root, rel=0.0, abs=0.0)
+
+
 def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
     trace_gas = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
