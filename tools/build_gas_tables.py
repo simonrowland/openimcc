@@ -27,6 +27,7 @@ import numpy as np
 
 # Keep package imports available when this file is invoked as a script.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+PUBLISHED_DATA = Path(__file__).resolve().parents[1] / "data-src/published-thermo"
 
 
 FIT_T_MIN = 1500.0
@@ -414,6 +415,18 @@ TRACE_ION_GAS_NASA_SOURCES = (
 )
 TRACE_ION_GAS_BURCAT_SOURCES = (
     ("Th+(g)", "Burcat-Th-plus", "Th+", "Th", 1, 0),
+)
+BURCAT_METAL_GAS_SOURCES = (
+    ("Hg(g)", "burcat-hg.json", "Hg(g)", "Hg", 1, 0),
+    ("Au(g)", "burcat-au.json", "Au(g)", "Au", 1, 0),
+    ("Pd(g)", "burcat-pd.json", "Pd(g)", "Pd", 1, 0),
+)
+BURCAT_METAL_PARENT_SOURCES = (
+    ("Hg(l)", "burcat-hg.json", "Hg(l)", "Hg", 1, 0, "l", 1200.0, 3000.0, "continuation"),
+    ("Au(cr)", "burcat-au.json", "Au(cr)", "Au", 1, 0, "cr", 1200.0, 1337.0, "source"),
+    ("Au(l)", "burcat-au.json", "Au(l)", "Au", 1, 0, "l", 1337.0, 3000.0, "source"),
+    ("Pd(cr)", "burcat-pd.json", "Pd(cr)", "Pd", 1, 0, "cr", 1200.0, 1827.0, "source"),
+    ("Pd(l)", "burcat-pd.json", "Pd(l)", "Pd", 1, 0, "l", 1827.0, 3000.0, "source"),
 )
 TRACE_ION_PUBLISHED_SOURCES = (("Bi+(g)", "NBS-T22-ASD-BiII", "Bi", 1, 0),)
 TRACE_ION_NASA_SOURCES = (
@@ -1030,6 +1043,97 @@ def _nasa7_properties(
         + float(interval["b2"]["value"])
     )
     return {"cp_R": cp_R, "h_rt": h_rt, "s_R": s_R}
+
+
+def _burcat7_properties(coefficients: list[float], temperature: float) -> dict[str, float]:
+    """Evaluate one published Burcat seven-coefficient polynomial interval."""
+    a1, a2, a3, a4, a5, a6, a7 = map(float, coefficients)
+    cp_R = a1 + a2 * temperature + a3 * temperature**2 + a4 * temperature**3 + a5 * temperature**4
+    h_over_R = (
+        a1 * temperature + a2 * temperature**2 / 2.0
+        + a3 * temperature**3 / 3.0 + a4 * temperature**4 / 4.0
+        + a5 * temperature**5 / 5.0 + a6
+    )
+    s_over_R = (
+        a1 * math.log(temperature) + a2 * temperature
+        + a3 * temperature**2 / 2.0 + a4 * temperature**3 / 3.0
+        + a5 * temperature**4 / 4.0 + a7
+    )
+    return {"cp_R": cp_R, "h_J_mol": R_J_MOL_K * h_over_R, "s_J_molK": R_J_MOL_K * s_over_R}
+
+
+def _burcat_source_record(filename: str, species_name: str) -> dict[str, Any]:
+    record = json.loads((PUBLISHED_DATA / filename).read_text(encoding="utf-8"))
+    try:
+        return record["records"][species_name]
+    except KeyError as exc:
+        raise ValueError(f"{filename}: missing Burcat source record {species_name}") from exc
+
+
+def _fit_burcat_metal_gas_row(
+    species_name: str, filename: str, record_key: str, cation: str,
+    cat_num: int, oxy_num: int, *, interval: int, fit_t_min: float, fit_t_max: float,
+) -> dict[str, str]:
+    source = _burcat_source_record(filename, record_key)
+    coefficients_key = "high_coefficients" if fit_t_min >= 1000.0 else "low_coefficients"
+    coefficients = source[coefficients_key]
+    reference = float(source["delta_f_H_298_15_kJ_mol"])
+    h298 = _burcat7_properties(source["low_coefficients"], NASA_STANDARD_T_K)["h_J_mol"]
+    if abs(h298 - reference * 1000.0) > 5.0:
+        raise ValueError(
+            f"{source['record_id']}: H(298.15 K) misses its printed formation anchor"
+        )
+    temperatures = np.arange(fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K)
+    rows = []
+    for temperature in temperatures:
+        properties = _burcat7_properties(coefficients, float(temperature))
+        rows.append({
+            "temperature": float(temperature),
+            "heat_capacity": R_J_MOL_K * properties["cp_R"],
+            "entropy": properties["s_J_molK"],
+            "enthalpy_increment": (properties["h_J_mol"] - h298) / 1000.0,
+        })
+    fit = _fit_shomate_values(rows, reference)
+    number = lambda value: format(float(value), ".15g")
+    return {
+        "species_name": species_name, "state": "g", "T_interval": str(interval),
+        "cation": cation, "cat_num": str(cat_num), "oxy_num": str(oxy_num),
+        "T_min": number(fit_t_min), "T_max": number(fit_t_max),
+        **{key: number(fit[key]) for key in "ABCDEFG"}, "H": "0",
+        "Ref": source["record_id"],
+        "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
+        "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+    }
+
+
+def _fit_burcat_metal_parent(
+    species_name: str, filename: str, record_key: str, cation: str,
+    cat_num: int, oxy_num: int, phase: str, fit_t_min: float, fit_t_max: float,
+    source_kind: str,
+) -> dict[str, str]:
+    source = _burcat_source_record(filename, record_key)
+    coefficients = source["coefficients"]
+    reference = float(source.get("delta_f_H_298_15_kJ_mol", 0.0))
+    h298 = _burcat7_properties(coefficients, NASA_STANDARD_T_K)["h_J_mol"]
+    temperatures = np.arange(fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K)
+    source_rows = {}
+    for temperature in temperatures:
+        value = _burcat7_properties(coefficients, float(temperature))
+        source_rows[float(temperature)] = {
+            "temperature": float(temperature),
+            "heat_capacity": R_J_MOL_K * value["cp_R"],
+            "entropy": value["s_J_molK"],
+            "enthalpy_increment": (value["h_J_mol"] - h298) / 1000.0,
+        }
+    row = _fit_condensate_values(
+        species_name, source["record_id"], cation, cat_num, oxy_num,
+        source_rows, reference, fit_t_min=fit_t_min, fit_t_max=fit_t_max,
+        runtime_t_min=fit_t_min, runtime_t_max=fit_t_max,
+        ref=(f"{source['record_id']}-METAL-CONT-{source['source_limit_K']}"
+             if source_kind == "continuation" else source["record_id"]),
+    )
+    row["state"] = "s" if phase == "cr" else "l"
+    return row
 
 
 def _janaf_element_functions(
@@ -3385,6 +3489,14 @@ def build_rows(
         for source in TRACE_NASA_GAS_SOURCES
         if source[1] in HALOGEN_NASA_TABLES
     )
+    for species_name, filename, record_key, cation, cat_num, oxy_num in BURCAT_METAL_GAS_SOURCES:
+        rows.extend(
+            _fit_burcat_metal_gas_row(
+                species_name, filename, record_key, cation, cat_num, oxy_num,
+                interval=interval, fit_t_min=fit_min, fit_t_max=fit_max,
+            )
+            for interval, fit_min, fit_max in ((1, 1500.0, 3000.0), (2, 1200.0, 1500.0))
+        )
     return rows
 
 
@@ -4343,6 +4455,16 @@ def build_condensate_rows(
     )
     rows.extend(
         _fit_tsiv_liquid_parent(published_source_dir, "CoO", "TSIV-1334", "Co")
+    )
+    rows.extend(
+        _fit_burcat_metal_parent(
+            species_name, filename, record_key, cation, cat_num, oxy_num,
+            phase, fit_min, fit_max, _source_kind,
+        )
+        for (
+            species_name, filename, record_key, cation, cat_num, oxy_num,
+            phase, fit_min, fit_max, _source_kind,
+        ) in BURCAT_METAL_PARENT_SOURCES
     )
     return rows
 

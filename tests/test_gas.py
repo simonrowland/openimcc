@@ -3994,6 +3994,71 @@ def test_condensed_parent_phase_resolver_switches_at_marker(
     assert gas_module._parent_standard_row("Au", 1336.999) == "Au(cr)"
     assert gas_module._parent_standard_row("Au", 1337.0) == "Au(l)"
     assert gas_module._parent_standard_rows("Au") == ("Au(cr)", "Au(l)")
+    assert gas_module._parent_standard_row("Pd", 1826.999) == "Pd(cr)"
+    assert gas_module._parent_standard_row("Pd", 1827.0) == "Pd(l)"
+
+
+@pytest.mark.parametrize(
+    ("element", "metal_mass"),
+    [("Hg", 200.592), ("Au", 196.96657), ("Pd", 106.42)],
+)
+def test_metal_vapour_parent_activity_and_oxygen_root(
+    gas_pack: ImccGasDatapack, element: str, metal_mass: float
+) -> None:
+    import openimcc.gas as gas_module
+
+    temperature = 1800.0
+    activity = 1.0e-3
+    base_activities = _quickstart_activities(
+        temperature, allow_extrapolation=True
+    )
+    root_without, _, _ = gas_module.evaluate_gas_oxygen_balance(
+        base_activities, temperature, gas_pack,
+    )
+    activities = {**base_activities, element: activity}
+    root_with, pressures, _ = gas_module.evaluate_gas_oxygen_balance(
+        activities, temperature, gas_pack,
+    )
+    assert root_with == root_without
+    assert pressures[element] > 0.0
+    assert gas_module._ATOMIC_MASS_G_MOL[element] == pytest.approx(metal_mass)
+
+    direct = evaluate_gas(
+        {element: activity}, temperature, 1.0e-10, gas_pack,
+        gas_species=(element,),
+    )
+    parent_row = gas_module._parent_standard_row(element, temperature)
+    metal_g = species_thermo(element, "g", temperature, gas_pack).G_J_mol
+    parent_g = species_thermo(
+        parent_row.removesuffix("(cr)").removesuffix("(l)"),
+        "s" if parent_row.endswith("(cr)") else "l",
+        temperature,
+        gas_pack,
+    ).G_J_mol
+    expected = math.exp(-(metal_g - parent_g) / (R_J_MOL_K * temperature)) * activity
+    assert direct[element] == pytest.approx(expected, rel=2e-12)
+    assert evaluate_gas(
+        {element: activity}, temperature, 1.0e-4, gas_pack,
+        gas_species=(element,),
+    )[element] == direct[element]
+
+    omitted = evaluate_gas({}, temperature, 1.0e-10, gas_pack)
+    assert element not in omitted
+    with pytest.raises(ImccGasSpeciesNotFoundError, match="channel"):
+        evaluate_gas(
+            {}, temperature, 1.0e-10, gas_pack, gas_species=(element,)
+        )
+
+
+def test_hg_liquid_continuation_is_returned_above_one_bar(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    result = evaluate_gas(
+        {"Hg": 1.0}, 1200.0, 1.0e-10, gas_pack, gas_species=("Hg",),
+        allow_extrapolation=True,
+    )
+    assert result["Hg"] > 1.0
+    assert "continuation" in result.domain_flags["Hg"]
 
 
 def test_oxygen_balance_accepts_caller_supplied_s2_gas_parent(

@@ -1134,6 +1134,36 @@ def _c4_rows_cover_domain(
                 and _one_bar_janaf_source(source["table_id"])
                 for _, row in graphite_rows.iterrows()
             )
+        if gas_parent in {"Hg", "Au", "Pd"}:
+            import openimcc.gas as gas_module
+
+            metal_rows = gas_module._parent_standard_rows(gas_parent)
+            coverage_end = domain_start
+            for row_name in metal_rows:
+                lookup = row_name
+                if lookup not in pack.oxide_df.index:
+                    return False
+                parent_rows = pack.oxide_df.loc[pack.oxide_df.index == lookup]
+                for _, parent_row in parent_rows.iterrows():
+                    row_start = max(domain_start, int(parent_row["T_min"]))
+                    row_end = min(domain_end, int(parent_row["T_max"]))
+                    if row_start > coverage_end:
+                        return False
+                    source = by_key.get(
+                        (
+                            "condensate",
+                            lookup,
+                            (int(parent_row["T_min"]), int(parent_row["T_max"])),
+                        )
+                    )
+                    if (
+                        source is None
+                        or source["authority"] != "published_fitted"
+                        or not source.get("source", {}).get("citation")
+                    ):
+                        return False
+                    coverage_end = max(coverage_end, row_end)
+            return coverage_end >= domain_end
         # Gas-parent rows share the gas coverage checks above; S2(g) is both
         # the caller reference and an exposed sulfur product channel.
         return gas_parent is not None and f"{gas_parent}(g)" in pack.gas_df.index
@@ -1289,6 +1319,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd",
         "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Y", "Br", "I", "Cl", "F",
         "H", "C", "N", "Ta", "Be", "Tl",
+        "H", "C", "N", "Hg", "Au", "Pd",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1372,6 +1403,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
     gas_parent_by_element = {
         "S": "S2", "Br": "Br2", "I": "I2", "Cl": "Cl2", "F": "F2",
         "H": "H2", "C": "C(cr)", "N": "N2",
+        "Hg": "Hg", "Au": "Au", "Pd": "Pd",
     }
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")
     parent_oxides = set(melt.parent_oxides)

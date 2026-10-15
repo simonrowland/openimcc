@@ -14,6 +14,14 @@
 - Added Pankratz Bulletin 672 Tl(g) and Tl2O(g) channels with a caller-supplied
   Tl2O(l) activity and fO2. The liquid parent uses the printed 852 K melt
   branch through 1000 K and a labelled constant-Cp continuation above.
+- Unified oxygen-balance demand for every supplied non-oxide gas parent and
+  condensed parent unless named in `imposed_parents`. Dict-only S2 and halogen
+  calls now include their oxygen-carrying species in the demand.
+- Added Hg(g), Au(g), and Pd(g) channels with caller-supplied `a(Hg)`, `a(Au)`,
+  and `a(Pd)` relative to each stable metal phase. Burcat gas and reference
+  rows provide each element's paired functions; Au and Pd retain their crystal
+  to liquid fit steps, while the Hg liquid continuation above 629.839 K is
+  flagged. These monatomic metal gases carry no oxygen demand.
 - Added caller-supplied Br2, I2, Cl2, and F2 gas-parent inputs with elemental
   and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
   pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair

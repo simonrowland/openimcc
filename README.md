@@ -74,7 +74,7 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied Ta/Be/Tl/V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd/Sm/Eu/Gd/Tb/Dy/Ho/Er/Tm/Yb/Lu channels:
+and caller-supplied Ta/Be/Tl/V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd/Sm/Eu/Gd/Tb/Dy/Ho/Er/Tm/Yb/Lu/Hg/Au/Pd channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
@@ -84,7 +84,7 @@ Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
 CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
 As4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, NiO, CoO, Sc, ScO, ScO2, U, UO,
-UO2, UO3, Th, ThO, ThO2, Hf, La, LaO, Ce, CeO, CeO2, Pr, PrO, Nd, NdO,
+UO2, UO3, Th, ThO, ThO2, Hf, Hg, Au, Pd, La, LaO, Ce, CeO, CeO2, Pr, PrO, Nd, NdO,
 Sm, SmO, Eu, EuO, Gd, GdO, Tb, TbO, Dy, DyO, Ho, HoO, Er, ErO, Tm, TmO,
 Yb, YbO, Lu, LuO,
 Ta, TaO, TaO2, Be, BeO, Be2, Be2O, (BeO)2, (BeO)3, (BeO)4, Tl, Tl2O,
@@ -136,6 +136,15 @@ with `a(C) = f(CO2)/(K fO2)`. The gas layer holds `a(H2)` or `a(C)` fixed as
 N families are omitted unless their parent key is supplied. HCl, HF, HBr, and
 HI use JANAF gas rows and require both `H2` and their corresponding diatomic
 halogen key; they have zero oxygen demand.
+
+Hg(g) uses the caller-supplied metal activity `a(Hg)` relative to liquid Hg;
+the liquid row is continued and flagged above its 629.839 K source limit. The
+Au(g) and Pd(g) channels use `a(Au)` and `a(Pd)` relative to the stable metal
+phase at each temperature, switching from crystal to liquid at 1337 K and
+1827 K respectively. These metal-gas channels have no oxygen-fugacity power.
+For a specified metal-gas fugacity, convert outside the package with
+`a(M) = f(M)/(K p°)`, where `K = exp(-(G°(M(g)) - G°(selected metal))/RT)`
+and `p° = 1 bar`. The caller activity stays fixed as `fO2` changes.
 
 For example, at 1800 K with `fO2 = 1e-8 bar`, the JANAF-fitted CO2 equilibrium
 constant gives `a(C) = 3.15011592e-6` for a 10 mbar CO2 sweep through

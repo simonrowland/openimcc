@@ -1488,6 +1488,43 @@ def test_published_source_data_flags_follow_source_limits() -> None:
         )
 
 
+def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    rows = provenance["rows"]
+    for element, gas_id, source_file, marker, expected_parent in (
+        ("Hg", "BU-2587", "burcat-hg.json", 629.839, "Hg(l)"),
+        ("Au", "BU-0056", "burcat-au.json", 1337.0, "Au(l)"),
+        ("Pd", "BU-3112", "burcat-pd.json", 1827.0, "Pd(l)"),
+    ):
+        source_path = ROOT / "data-src" / "published-thermo" / source_file
+        digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
+        source = json.loads(source_path.read_text(encoding="utf-8"))
+        gas_record = source["records"][f"{element}(g)"]
+        anchor = float(gas_record["delta_f_H_298_15_kJ_mol"])
+        card_h298 = build_gas_tables._burcat7_properties(
+            gas_record["low_coefficients"], 298.15
+        )["h_J_mol"]
+        assert abs(card_h298 - anchor * 1000.0) <= 5.0
+        metal_rows = [
+            row for row in rows
+            if row.get("source_path") == f"data-src/published-thermo/{source_file}"
+        ]
+        assert metal_rows
+        assert all(row["source_sha256"] == digest for row in metal_rows)
+        assert all(row["source"]["citation"].startswith("Burcat and Ruscic") for row in metal_rows)
+        phase_rows = [row for row in metal_rows if row["table"] == "condensate"]
+        assert any(row["species_name"] == expected_parent for row in phase_rows)
+        if element == "Hg":
+            continuation = next(row for row in phase_rows if row["species_name"] == "Hg(l)")
+            assert continuation["extrapolation_source_limit_K"] == pytest.approx(marker)
+            assert continuation["source_data"] is False
+            assert continuation["uncertainty_band"]["values_J_per_mol"]["3000"] == pytest.approx(1374.554)
+        else:
+            crystal = next(row for row in phase_rows if row["species_name"] == f"{element}(cr)")
+            assert crystal["fit_step_at_K"] == pytest.approx(marker)
+            assert crystal["source_data"] is True
+
+
 def test_trace_nasa_card_thermal_increments_are_zero_at_the_formation_anchor() -> None:
     for _species_name, table_id, *_ in build_gas_tables.TRACE_NASA_GAS_SOURCES:
         record = _nasa_record(table_id)

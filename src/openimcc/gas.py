@@ -655,6 +655,9 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "N": ("N2", 0.5, 0.0),
     "NO": ("N2", 0.5, 0.5),
     "NO2": ("N2", 0.5, 1.0),
+    "Hg": ("Hg", 1.0, 0.0),
+    "Au": ("Au", 1.0, 0.0),
+    "Pd": ("Pd", 1.0, 0.0),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -663,13 +666,16 @@ _GAS_PHASE_PARENT_ROWS = {
     "S2": "S2(g)", "Br2": "Br2(g)", "I2": "I2(g)",
     "Cl2": "Cl2(g)", "F2": "F2(g)", "H2": "H2(g)", "N2": "N2(g)",
 }
-_CONDENSED_PARENT_ROWS = {"C": "C(cr)"}
+_CONDENSED_PARENT_ROWS = {"C": "C(cr)", "Hg": "Hg(l)"}
 # Parents whose stable condensed reference changes phase inside the runtime
 # domain. The tuple is (transition K, crystal row, liquid row); below the
 # marker the crystal is selected, and at/above it the liquid is selected.
 # Keep the phase rule beside the condensed-parent registry so new metal
 # parents use the same selection path as existing condensed references.
-_CONDENSED_PARENT_PHASE_ROWS: dict[str, tuple[float, str, str]] = {}
+_CONDENSED_PARENT_PHASE_ROWS: dict[str, tuple[float, str, str]] = {
+    "Au": (1337.0, "Au(cr)", "Au(l)"),
+    "Pd": (1827.0, "Pd(cr)", "Pd(l)"),
+}
 _ALKALI_HALIDE_REACTION_OXIDES = {
     "NaBr": ("Na2O", 0.5, 0.25),
     "(NaBr)2": ("Na2O", 1.0, 0.5),
@@ -881,6 +887,9 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "F2", "F", "NaF", "(NaF)2", "KF", "(KF)2",
         "HCl", "HF", "HBr", "HI", "H2", "H", "OH", "H2O",
         "CO", "CO2", "N2", "N", "NO", "NO2",
+        "Hg",
+        "Au",
+        "Pd",
     }
 )
 
@@ -970,6 +979,9 @@ _GAS_PROVENANCE_AUTHORITY = {
     for species in (*IMCC_GAS_CHANNEL_SPECIES, "Mn", "Ni", "Co")
     if species not in {"NiO", "CoO"}
 }
+_GAS_PROVENANCE_AUTHORITY["Hg"] = "published_fitted"
+_GAS_PROVENANCE_AUTHORITY["Au"] = "published_fitted"
+_GAS_PROVENANCE_AUTHORITY["Pd"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY.update(
     {
         "(MoO3)2": "nasa_glenn_fitted",
@@ -1096,6 +1108,9 @@ _GAS_PROVENANCE_AUTHORITY.update(
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
     "C(cr)": "janaf_fitted",
+    "Hg": "published_fitted",
+    "Au": "published_fitted",
+    "Pd": "published_fitted",
     "MnO": "liquid_from_solid_estimate",
     "NiO": "published_fitted",
     "CoO": "published_fitted",
@@ -2859,6 +2874,47 @@ for _element, _parent, _species, _reference, _c2_candidates in (
             "parent_activity": None,
         },
     }
+ELEMENT_STATUS["Hg"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": (
+        "Burcat BU-2587 Hg(g) and BU-2586 Hg(l) provide one-compilation "
+        "metal-vapour coverage; callers supply a(Hg) relative to liquid Hg. "
+        "The liquid row is continued above its 629.839 K source limit and "
+        "flagged; no dissolved-Hg model or ion channel is included."
+    ),
+    "c2_candidates": (),
+    "c3_ion_bound": {
+        "status": "not computed",
+        "reason": "not computed: Hg ion channels are outside this neutral gas change",
+    },
+    "source_tables": {"gas": "BU-2587", "parent": "BU-2586"},
+    "parent_activity": "Hg",
+}
+for _element, _gas_table, _parent_table, _phase_marker in (
+    ("Au", "BU-0056", "BU-0054/BU-0055", 1337),
+    ("Pd", "BU-3112", "BU-3110/BU-3111", 1827),
+):
+    ELEMENT_STATUS[_element] = {
+        "status": "gas-complete-melt-pending",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            f"Burcat {_gas_table} metal-gas and {_parent_table} stable-metal "
+            f"rows provide one-compilation coverage over 1200-3000 K; callers "
+            f"supply a({_element}) relative to the stable metal phase, with a "
+            f"crystal-to-liquid fit step at {_phase_marker} K. No oxide-parent "
+            "activity model or ion channel is included."
+        ),
+        "c2_candidates": (),
+        "c3_ion_bound": {
+            "status": "not computed",
+            "reason": f"not computed: {_element} ion channels are outside this neutral gas change",
+        },
+        "source_tables": {"gas": _gas_table, "parent": _parent_table},
+        "parent_activity": _element,
+    }
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #
@@ -3330,6 +3386,14 @@ def _source_model_flag(
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
+    metal_continuation = re.fullmatch(
+        r"(BU-\d+)-METAL-CONT-(\d+(?:\.\d+)?)", source_ref
+    )
+    if phase == "l" and metal_continuation is not None and T >= float(metal_continuation.group(2)):
+        return (
+            f"{row_name} uses a flagged liquid-metal continuation above the "
+            f"{float(metal_continuation.group(2)):g} K source limit"
+        )
     konings_liquid = re.fullmatch(r"Konings-Table88-Tf(\d+(?:\.\d+)?)", source_ref)
     if phase == "l" and konings_liquid is not None and T < float(konings_liquid[1]):
         return (
@@ -3749,8 +3813,11 @@ def evaluate_gas(
     ----------
     activities:
         Parent activities. Either a dict keyed by parent name, or a vector
-        aligned with ``parent_oxides`` (default IMCC order). Condensed parents
-        use their pure-liquid standard state; sulfur channels use caller-supplied
+        aligned with ``parent_oxides`` (default IMCC order). Oxide parents use
+        their liquid standard state; Hg/Au/Pd activities use the stable pure
+        metal phase at T, with Au/Pd crystal-to-liquid steps retained. Hg's
+        liquid function above 629.839 K is a flagged continuation. Sulfur uses
+        caller-supplied
         ``S2`` fugacity relative to JANAF's 1-bar gas standard. Halogen channels
         similarly accept ``Br2``, ``I2``, ``Cl2``, and ``F2`` fugacity ratios;
         their alkali-halide products also use the caller's ``Na2O`` or ``K2O``
@@ -3767,7 +3834,8 @@ def evaluate_gas(
     parent_oxides:
         Ordered parent names. Defaults to the IMCC-SF04 8-oxide basis; callers
         may add ``P2O5``, ``S2``, ``Br2``, ``I2``, ``Cl2``, ``F2``, ``H2``,
-        ``C``, or ``N2`` when supplying those parent activities.
+        ``C``, ``N2``, ``Hg``, ``Au``, or ``Pd`` when supplying those parent
+        activities.
     allow_extrapolation:
         If True (default), evaluate finite temperatures outside the selected
         row and return a per-species ``domain_flags`` entry.  If False, refuse
@@ -4240,6 +4308,7 @@ _ATOMIC_MASS_G_MOL = {
     "Tb": 158.92535, "Dy": 162.500, "Ho": 164.93033,
     "Er": 167.259, "Tm": 168.93422, "Yb": 173.045, "Lu": 174.9668,
     "Br": 79.904, "I": 126.90447, "Cl": 35.45, "F": 18.998403163,
+    "Hg": 200.592, "Au": 196.96657, "Pd": 106.42,
     "H": 1.008, "C": 12.011, "N": 14.007,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
@@ -4534,9 +4603,9 @@ def evaluate_gas_oxygen_balance(
     no imposed reservoirs; a bare string is rejected because it is not a
     sequence of parent keys.
 
-    Every supplied gas-parent activity and condensed parent C contributes its
+    Every supplied non-oxide gas parent and condensed parent contributes its
     oxygen-carrying species to the melt-derived oxygen demand unless named in
-    ``imposed_parents``. Parent oxides omitted from an explicit
+    ``imposed_parents``. Metal vapours carry no oxygen. Parent oxides omitted from an explicit
     ``parent_oxides`` sequence remain excluded.
     """
     if parent_oxides is None:

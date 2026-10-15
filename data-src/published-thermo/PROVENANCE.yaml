@@ -374,3 +374,11 @@ records:
     tier: 3
     selection_reason: 'Selected evaluated YO(g) assessment: Table 5 reports the compatible-reaction value -46 +/- 10 kJ/mol and
       Tables 9 and 11 provide elemental-reference thermal functions. No JANAF, NASA, Burcat, or Pankratz YO function was found.'
+  - record_id: Burcat-Hg-metal
+    path: data-src/published-thermo/burcat-hg.json
+    source_sha256: f4c0d7111a25c8d9742af87be6a3b913490c0443efec3d1d02b3e232934f46f7
+    publication: Burcat and Ruscic, Third Millennium Thermochemical Database, Hg gas and reference-element cards
+    source_url: https://thermo-burcat.net.technion.ac.il/
+    source_locator: BURCAT.THR.txt cards BU-2587 (Hg gas) and BU-2586 (Hg reference element)
+    tier: 3
+    selection_reason: The paired gas and liquid-metal rows are from the same compilation family and use the elemental 298.15 K reference; the liquid card is retained as the declared flagged continuation above its printed 629.839 K limit.
