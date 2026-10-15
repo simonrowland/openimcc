@@ -210,7 +210,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         )
         + 6  # Two gas fit intervals for each metal-vapour channel.
     )
-    assert len(gas_pack.oxide_df) == 187
+    assert len(gas_pack.oxide_df) == 186
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
