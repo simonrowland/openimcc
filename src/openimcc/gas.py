@@ -2507,11 +2507,14 @@ ELEMENT_STATUS["La"] = {
         "parent_activity": 1.0e-3,
     },
 }
+# Y2O3 fusion entropy is 119 kJ/mol ÷ 2712 K = 43.879 J/(mol K). Use the
+# complete melting-region step: Pankratz's separate 1.297 kJ/mol alpha-beta
+# jump is already in the crystal baseline, but is not part of Kapush's step.
 ELEMENT_STATUS["Y"] = {
     "status": "gas-partial",
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
     "validation": "unvalidated",
-    "reason": "Pankratz Bulletin 672 supplies Y(g) and the Y2O3(cr) elemental formation table; Pedley and Marshall (1983) supplies the selected YO(g) assessment and thermal functions. Y2O3(l) is the required tier-4 liquid_from_solid construction from the Pankratz crystal, using the measured 2712 K melting point. The 119 +/- 10 kJ/mol cubic-crystal-to-liquid step includes the 0.310 kcal/mol transition already present in the crystal function; that 1.297 kJ/mol is subtracted before applying the measured fusion input. Values above the Pankratz crystal range are flagged; activities are caller-supplied. No Y+ temperature-dependent gas function was found in the checked JANAF, NASA Glenn, Pankratz 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat routes, so C3 is declined.",
+    "reason": "Pankratz Bulletin 672 printed p. 474 supplies Y(g), and printed p. 475 supplies the Y2O3(cr) elemental formation table; Pedley and Marshall (1983) supplies the selected YO(g) assessment and thermal functions. Y2O3(l) is the required tier-4 liquid_from_solid construction from the Pankratz crystal, using the measured 2712 +/- 12 K melting point. Kapush et al.'s 119 +/- 10 kJ/mol cubic-crystal-to-liquid step is used directly; the distinct 0.310 kcal/mol alpha-beta transition at 1330 K remains in the crystal function and is not subtracted from the melting-region step. Values above the Pankratz crystal range are flagged; activities are caller-supplied. No Y+ temperature-dependent gas function was found in the checked JANAF, NASA Glenn, Pankratz 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat routes, so C3 is declined.",
     "c2_candidates": (("PM83-YO", "YO"),),
     "c3_ion_bound": {
         "status": "declined",

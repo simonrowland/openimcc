@@ -4038,8 +4038,19 @@ def test_yttrium_source_anchors_and_dissociation_closure() -> None:
 
     assert yttrium["formation_enthalpy_298_kcal_mol"] == pytest.approx(100.700)
     assert oxide["formation_enthalpy_298_kcal_mol"] == pytest.approx(-455.380)
+    assert oxide["source_limit_K"] == pytest.approx(2000.0)
+    assert "alpha-beta transition" in oxide["source_note"]
     assert monoxide["formation_enthalpy_298_kcal_mol"] == pytest.approx(-11.0)
     assert monoxide["formation_enthalpy_unc_kcal_mol"] == pytest.approx(2.5)
+    assert monoxide["nodes"][0][1] * 4.184 == pytest.approx(29.0)
+    assert monoxide["nodes"][1][1] == pytest.approx(
+        (monoxide["nodes"][2][3] - monoxide["nodes"][1][3]) * 10.0,
+        abs=1.0e-8,
+    )
+    assert "separate reference-node input" in monoxide["thermal_method"]
+    assert "not attributed to the Table 11 finite difference" in monoxide[
+        "thermal_method"
+    ]
 
     # PM83 Table 5's D0(YO) closes its elemental formation anchor
     # against the Pankratz Y(g) anchor and JANAF O(g), O-002.

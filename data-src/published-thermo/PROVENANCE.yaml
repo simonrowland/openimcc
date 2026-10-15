@@ -124,7 +124,7 @@ records:
         selection_reason: Comparison-only Hf(g) apparent-G values quantify the JANAF versus Bulletin 672 difference; JANAF remains selected by the primary authority rail.
   - record_id: P672
     path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
+    source_sha256: 3072ab1d0e3b2d0fa2b3cda39085a98db63e63b823fd39b4d551e11a9389f061
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     tables:
@@ -325,7 +325,7 @@ records:
     selection_reason: Comparison-only; the selected evaluated family is Konings. The Pankratz table ends at 2000 K, and constant-last-Cp continuation above that limit is comparison-only.
   - record_id: P672-Y-g
     path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
+    source_sha256: 3072ab1d0e3b2d0fa2b3cda39085a98db63e63b823fd39b4d551e11a9389f061
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_locator: Y(g) elemental formation table, printed p. 474
@@ -339,7 +339,7 @@ records:
         selection_reason: Selected source for Y(g); printed elemental-reference formation anchor is 100.700 kcal/mol.
   - record_id: P672-Y2O3-c
     path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 3912cc604e147f541c7c557c74551cddcf4748be08610160e810f0df42ef43e5
+    source_sha256: 3072ab1d0e3b2d0fa2b3cda39085a98db63e63b823fd39b4d551e11a9389f061
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_locator: Y2O3 elemental formation table, printed p. 475
@@ -350,15 +350,15 @@ records:
       P672-Y2O3-c:
         source_locator: Y2O3 elemental formation table, printed p. 475
         tier: 3
-        selection_reason: Selected crystal input for the required Y2O3(l) construction; the table states that values above 1900
-          K are extrapolated.
+        selection_reason: Selected crystal input for the required Y2O3(l) construction; the table prints nodes through 2000 K
+          with no extrapolation footnote.
   - record_id: PM83-YO
     path: data-src/published-thermo/pedley-marshall-1983-yo.json
-    source_sha256: a34e1c621a722266ecd99d857b5dd7a9a981945b64587f36c8c6f786a395df32
+    source_sha256: 5d6eef99a0b7f7ad3a89b775a1386ae572511067698af8f336b1ce04e58bec98
     publication: Pedley, J. B. and Marshall, E. M. (1983), Thermochemical Data for Gaseous Monoxides, Journal of Physical and
       Chemical Reference Data 12(4), 967-1031
     source_url: https://srd.nist.gov/jpcrdreprint/1.555698.pdf
-    source_locator: Table 5, YO formation assessment, printed p. 982; Tables 9 and 11, printed pp. 995-996 and 1006-1007
+    source_locator: Table 5, YO formation assessment, printed p. 983; Tables 9 and 11, printed pp. 995-996 and 1006-1007
     tier: 3
     selection_reason: 'Selected evaluated YO(g) assessment: Table 5 reports the compatible-reaction value -46 +/- 10 kJ/mol and
       Tables 9 and 11 provide elemental-reference thermal functions. No JANAF, NASA, Burcat, or Pankratz YO function was found.'

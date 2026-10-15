@@ -17,7 +17,7 @@
     ],
     [
       1200,
-      8.818116634799237,
+      8.8312619528681,
       67.44208094327597,
       7.620936902485659
     ],
@@ -136,7 +136,7 @@
     "S_cal_mol_K",
     "H_minus_H298_kcal_mol"
   ],
-  "thermal_method": "Pedley and Marshall Tables 9 and 11 give the YO Gibbs-energy function -(G°-H°298)/T and enthalpy function H°-H°298. Entropy is derived as S°=-(G°-H°298)/T+(H°-H°298)/T; Cp is the centered 100 K finite difference of the printed enthalpy function (one-sided at the fitted range endpoints). Values are transcribed or derived at 298.15 and 1200-3000 K; standard pressure 1 bar.",
-  "source_note": "Pedley and Marshall Table 5 selects ΔfH°(298.15 K) = -46 ± 10 kJ/mol (reported as -11.0 ± 2.5 kcal/mol); Table 5 gives D0 = 715 ± 11 kJ/mol. Their section 5.3 selects YO from compatible vaporization and metathetical reactions. The reference is elemental. Thermal functions use the printed Tables 9 and 11, rather than a new partition-function evaluation.",
+  "thermal_method": "Pedley and Marshall Tables 9 and 11 give the YO Gibbs-energy function -(G°-H°298)/T and enthalpy function H°-H°298. Entropy is derived as S°=-(G°-H°298)/T+(H°-H°298)/T; Cp is the centered 100 K finite difference of the printed enthalpy function, with one-sided differences at 1200 and 3000 K. The 1200 K endpoint uses (H1300-H1200)/100 K. At 298.15 K, Cp=29.000 J mol^-1 K^-1 is a separate reference-node input, outside the 1200-3000 K fitted range; it is not attributed to the Table 11 finite difference. Standard pressure 1 bar.",
+  "source_note": "Pedley and Marshall Table 5 (printed p. 983) selects ΔfH°(298.15 K) = -46 ± 10 kJ/mol (reported as -11.0 ± 2.5 kcal/mol); Table 5 gives D0 = 715 ± 11 kJ/mol. Their section 5.3 selects YO from compatible vaporization and metathetical reactions. The reference is elemental. Thermal functions use the printed Tables 9 and 11, rather than a new partition-function evaluation; the separate 298.15 K Cp reference-node input is not a tabulated Table 11 finite difference.",
   "source_limit_K": 4000.0
 }

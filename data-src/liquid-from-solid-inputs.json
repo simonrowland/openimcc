@@ -7574,17 +7574,17 @@
       "family": null,
       "metal_atoms": 2,
       "total_atoms": 5,
-      "selection_reason": "Pankratz Bulletin 672 supplies the Y2O3 crystal formation table through a printed 2000 K node (values above 1900 K are explicitly extrapolated) but no liquid function. Construct the required tier-4 Y2O3(l) parent from that crystal function, extending its printed constant Cp from the 1900 K source limit to fusion. The accepted 2712 K melting point and measured fusion enthalpy corrected for the already-included pre-melting transition are used.",
+      "selection_reason": "Pankratz Bulletin 672 supplies the Y2O3 crystal formation table through a printed 2000 K node but no liquid function. Construct the required tier-4 Y2O3(l) parent from that crystal function, extending its printed constant Cp from 2000 K to fusion. The accepted 2712 K melting point and measured cubic-crystal-to-liquid fusion enthalpy are used.",
       "inputs": {
         "fusion_temperature": {
           "value": 2712.0,
           "tier": 1,
-          "spread": 0.0,
+          "spread": 12.0,
           "bounds_k": [
-            2712.0,
-            2712.0
+            2700.0,
+            2724.0
           ],
-          "source": "Swamy, Seifert and Aldinger, Journal of Alloys and Compounds 269(1-2) (1998), pp. 201-207, assess the Y-O phase diagram and Y2O3 melting point as 2712 K; Kapush et al., Acta Materialia 124 (2017), pp. 204-209, report the measured enthalpy step.",
+          "source": "Foex reports the Y2O3 melting point as 2439 +/- 12 °C, converted to 2712 +/- 12 K; the central value is consistent with Swamy, Seifert and Aldinger, Journal of Alloys and Compounds 269(1-2) (1998), pp. 201-207. Kapush et al., Acta Materialia 124 (2017), pp. 204-209, report the measured enthalpy step.",
           "references": [
             "https://doi.org/10.1016/j.actamat.2016.11.003",
             "https://doi.org/10.1016/S0925-8388(98)00245-X"
@@ -7595,7 +7595,7 @@
           "tier": 2,
           "spread": 3.687315634218289,
           "unit": "J mol^-1 K^-1",
-          "source": "Kapush et al., Acta Materialia 124 (2017), pp. 204-209, measured a 119 +/- 10 kJ/mol cubic-crystal-to-liquid enthalpy step. Fyhrie et al., Journal of Chemical Thermodynamics 132 (2019), pp. 405-410, identifies 0.310 kcal/mol of that step as the 1330 K C-to-H transition already included in the Pankratz crystal function; subtract that 1.297 kJ/mol before using the remaining 117.703 kJ/mol as the fusion enthalpy at 2712 K. The +/-10 kJ/mol measurement uncertainty is retained; the 0.310 kcal/mol transition is source data without a reported uncertainty.",
+          "source": "Kapush et al., Acta Materialia 124 (2017), pp. 204-209, measured the cubic-Y2O3-to-liquid enthalpy step as 119 +/- 10 kJ/mol in the melting region. Use that measured step directly at 2712 K; do not subtract the separate 0.310 kcal/mol (1.297 kJ/mol) alpha-beta transition printed at 1330 K in the Pankratz crystal function, because the 1330 K transition is not part of Kapush's melting-region step. The +/-10 kJ/mol measurement uncertainty is retained.",
           "references": [
             "https://doi.org/10.1016/j.actamat.2016.11.003",
             "https://doi.org/10.1016/j.jct.2019.01.008"
@@ -7613,15 +7613,15 @@
         }
       },
       "crystal_cp_extrapolation_band": {
-        "method": "Difference in G_app between constant final-node Cp continuation and the printed Pankratz Cp equation continuation above the 1900 K source limit; this is zero because both branches use Cp = 31.500 cal/(mol K). The printed 2000 K node is explicitly extrapolated and is not treated as source data.",
-        "source_limit_K": 1900.0,
+        "method": "Difference in G_app between constant final-node Cp continuation and the printed Pankratz Cp equation continuation above the 2000 K source limit; this is zero because both branches use Cp = 31.500 cal/(mol K).",
+        "source_limit_K": 2000.0,
         "references": [
           "https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf"
         ]
       },
       "condensate_fit": {
         "table_id": "P672-Y2O3-LFS",
-        "ref": "LFS[P672-Y2O3-c;Tf=2712]-CP-EXT-1900",
+        "ref": "LFS[P672-Y2O3-c;Tf=2712]-CP-EXT-2000",
         "cation": "Y",
         "cat_num": 2,
         "oxy_num": 3,
