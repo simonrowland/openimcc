@@ -448,11 +448,10 @@ because the public `species_thermo(..., phase="cr")` query reads it. No gas
 reaction consumes the crystal row: SF04 uses `SiO2(l)`, matching the liquid
 standard state of the melt activities.
 
-K2O(l) remains on its flagged LAM1984 row. The [NIST-JANAF potassium
-index](https://janaf.nist.gov/tables/K-index.html) lists K2O(cr), not K2O(l).
-A future switch needs public liquid Gibbs thermochemistry, a fitted and
-provenanced liquid row, and remeasured K/K2/KO comparisons; the crystal row
-cannot supply the required liquid standard state.
+K2O(l) uses a flagged liquid-from-solid estimate constructed from the JANAF
+K-012 crystal because the [NIST-JANAF potassium index](https://janaf.nist.gov/tables/K-index.html)
+lists K2O(cr), not K2O(l). The runtime flag identifies the estimate; the
+provenance records its fusion inputs and uncertainty band.
 
 The gas reaction definitions contain stoichiometry, not stored equilibrium
 constants: `evaluate_gas` recalculates each K from the active parent Gibbs

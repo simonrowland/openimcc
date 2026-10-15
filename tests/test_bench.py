@@ -355,7 +355,8 @@ def test_partial_pressure_uses_parent_basis_and_converts_bar_to_pa(
 
     assert row.status == "ok", row.reason
     assert row.predicted is not None
-    assert row.domain_flag is None
+    assert row.domain_flag is not None
+    assert "liquid_from_solid construction from K-012" in row.domain_flag
     assert row.provenance_class == "estimated_systematic"
 
     pack = load_datapack(DATAPACK_PATH)

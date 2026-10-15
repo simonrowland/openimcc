@@ -300,6 +300,19 @@ def test_liquid_from_solid_refs_emit_extension_and_supercooling_flags(
     assert f"supercooled liquid_from_solid branch below the {fusion_temperature:g} K" in flags
 
 
+def test_k2o_liquid_from_solid_construction_is_flagged(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    result = evaluate_gas(
+        {"K2O": 1.0e-3}, 1200.0, 1.0e-8, gas_pack,
+        parent_oxides=("K2O",), gas_species=("K", "K2", "KO", "K2O"),
+    )
+    for species in ("K", "K2", "KO", "K2O"):
+        assert "tier-4 liquid_from_solid construction from K-012" in (
+            result.domain_flags[species]
+        )
+
+
 def test_explicit_vaporock_override_remains_supported(
     monkeypatch: pytest.MonkeyPatch,
     gas_pack: ImccGasDatapack,

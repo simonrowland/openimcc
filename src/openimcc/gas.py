@@ -3675,6 +3675,8 @@ def _liquid_from_solid_reference(
     match = _LIQUID_FROM_SOLID_REF_RE.fullmatch(base_ref)
     if match is not None:
         return match["source"], float(match["temperature"])
+    if source_ref == "K-012":
+        return "K-012", None
     if "-LFS" in source_ref:
         return _source_table_identifier(source_ref), None
     return None
