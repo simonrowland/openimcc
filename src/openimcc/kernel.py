@@ -90,6 +90,21 @@ class ImccDataframeUnavailableError(ImccRefusal):
     code = "imcc_dataframe_unavailable"
 
 
+class ImccInvalidWarmStartError(ImccRefusal):
+    """Raised when a caller-provided solver seed is malformed or out of bounds."""
+
+    code = "imcc_invalid_warm_start"
+
+
+def _warm_start_vector(y_init: Any) -> np.ndarray:
+    try:
+        return np.array(y_init, dtype=np.float64)
+    except (TypeError, ValueError):
+        raise ImccInvalidWarmStartError(
+            "y_init must be a finite vector matching active parents"
+        ) from None
+
+
 class ImccNonconvergenceError(ImccRefusal):
     code = "imcc_nonconvergence"
 
@@ -801,9 +816,11 @@ def _solve_active(
         if relative_tolerance
         else np.log(np.maximum(x_target, 1.0e-12))
     )
-    direct_y0 = y0 if y_init is None else np.asarray(y_init, dtype=float)
+    direct_y0 = y0 if y_init is None else _warm_start_vector(y_init)
     if direct_y0.shape != y0.shape or not np.all(np.isfinite(direct_y0)):
-        raise ValueError("y_init must be a finite vector matching active parents")
+        raise ImccInvalidWarmStartError(
+            "y_init must be a finite vector matching active parents"
+        )
 
     # Trust-region reflective least-squares with explicit bounds keeps the
     # log-space variables away from the exponential overflow cliff while still
@@ -811,7 +828,7 @@ def _solve_active(
     lb = np.full(n, -200.0)
     ub = np.full(n, 100.0)
     if np.any(direct_y0 < lb) or np.any(direct_y0 > ub):
-        raise ValueError(
+        raise ImccInvalidWarmStartError(
             "y_init values must lie inside the solver bounds [-200, 100]"
         )
     max_nfev = max(10, max_iter * (n + 1))
@@ -991,9 +1008,11 @@ def solve_active_warm(
     if y_init is None:
         y = ideal_y.copy()
     else:
-        y = np.asarray(y_init, dtype=np.float64).copy()
+        y = _warm_start_vector(y_init)
         if y.shape != ideal_y.shape or not np.all(np.isfinite(y)):
-            raise ValueError("y_init must be a finite vector matching active parents")
+            raise ImccInvalidWarmStartError(
+                "y_init must be a finite vector matching active parents"
+            )
     y = np.clip(y, -200.0, 100.0)
 
     def _newton_attempt(

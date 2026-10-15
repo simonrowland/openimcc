@@ -31,6 +31,7 @@ from openimcc.kernel import (
     ImccCompositionIncompleteError,
     ImccDatapack,
     ImccFerricInputUnsupportedError,
+    ImccInvalidWarmStartError,
     ImccNonconvergenceError,
     ImccRefusal,
     ImccResult,
@@ -227,12 +228,6 @@ class ImccUnprovenDatapackError(ImccRefusal):
     """Raised when adapter evaluation receives an unlabelled raw datapack."""
 
     code = "imcc_unproven_datapack"
-
-
-class ImccInvalidWarmStartError(ImccRefusal):
-    """Raised when a caller-provided solver seed is malformed or out of bounds."""
-
-    code = "imcc_invalid_warm_start"
 
 
 class ImccCompositionOutsideValidatedEnvelopeError(ImccRefusal):
@@ -1151,10 +1146,6 @@ def evaluate(
             max_iter=max_iter,
             y_init=y_init,
         )
-    except ValueError as exc:
-        if y_init is not None and "y_init" in str(exc):
-            raise ImccInvalidWarmStartError(str(exc)) from None
-        raise
     except ImccNonconvergenceError as cold_error:
         positive = np.flatnonzero(vector > 0.0)
         if positive.size == 0:

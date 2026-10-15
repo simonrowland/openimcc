@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from openimcc import evaluate
+from openimcc import ImccInvalidWarmStartError, evaluate
 from openimcc.kernel import ImccNonconvergenceError, ImccRefusal
 from openimcc import model
 
@@ -96,10 +96,13 @@ def test_evaluate_accepts_a_validated_warm_start() -> None:
         [float("nan")] * len(y_init),
         [-201.0] * len(y_init),
         [101.0] * len(y_init),
+        "not-a-vector",
+        [[0.0], [0.0, 1.0]],
     )
     for seed in invalid_seeds:
-        with pytest.raises(ImccRefusal, match="y_init"):
+        with pytest.raises(ImccInvalidWarmStartError, match="y_init"):
             evaluate(composition, temperature, y_init=seed)
+    assert issubclass(ImccInvalidWarmStartError, ImccRefusal)
 
 
 def test_non_silica_trace_parent_uses_composition_continuation() -> None:

@@ -26,6 +26,7 @@ from openimcc.model import (
     ImccCompositionOutsideValidatedEnvelopeError,
     ImccDatapack,
     ImccFerricInputUnsupportedError,
+    ImccInvalidWarmStartError,
     ImccLoadedDatapack,
     ImccMalformedDatapackError,
     ImccNonconvergenceError,
@@ -183,6 +184,7 @@ __all__ = [
     "ImccMalformedDatapackError",
     "ImccUnprovenDatapackError",
     "ImccNonconvergenceError",
+    "ImccInvalidWarmStartError",
     # --- opt-in Fe redox --------------------------------------------------
     "evaluate_redox",
     "RedoxResult",
