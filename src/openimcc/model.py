@@ -918,6 +918,7 @@ def evaluate(
     allow_out_of_envelope: bool = False,
     tol: float = 1.0e-12,
     max_iter: int = 100,
+    y_init: Sequence[float] | None = None,
 ) -> ImccResult:
     """Caller-facing IMCC-SF04 evaluation.
 
@@ -958,6 +959,11 @@ def evaluate(
         Infinity-norm residual convergence tolerance passed to the kernel.
     max_iter:
         Newton iteration ceiling passed to the kernel.
+    y_init:
+        Optional finite vector of natural-log free-parent fractions in the
+        order of positive-mole parents in the input and datapack. This is the
+        kernel's `y` vector; pass the previous result's active entries after
+        taking their natural logs to continue a time-stepped solve.
 
     Returns
     -------
@@ -1127,16 +1133,70 @@ def evaluate(
             f"X_Me2O={x_me2o:.12g} exceeds validated bound 0.5"
         )
 
-    result = solve_imcc_sf04(
-        vector,
-        T_K,
-        kernel_pack,
-        basis=basis,
-        extra_mol=extra_mol,
-        allow_extrapolation=allow_extrapolation,
-        tol=tol,
-        max_iter=max_iter,
-    )
+    try:
+        result = solve_imcc_sf04(
+            vector,
+            T_K,
+            kernel_pack,
+            basis=basis,
+            extra_mol=extra_mol,
+            allow_extrapolation=allow_extrapolation,
+            tol=tol,
+            max_iter=max_iter,
+            y_init=y_init,
+        )
+    except ImccNonconvergenceError as cold_error:
+        silica_index = (
+            parent_oxides.index("SiO2") if "SiO2" in parent_oxides else None
+        )
+        if silica_index is None or vector[silica_index] <= 0.0:
+            raise
+
+        # The observed basin failure occurs on a strongly depleted silica
+        # parent. A tenfold increase is the smallest tested well-conditioned
+        # neighbour; reducing it through 8, 6, 4, 2, and 1 times the requested
+        # amount follows the connected root back to the exact input. Moles are
+        # scaled before normalization; the factor is dimensionless. The
+        # sanity point is the 2445.65 K depleted-melt case, whose silica
+        # activity is linear in input and is recovered at the final 1x step.
+        # This retry is only entered after the legacy solve refuses.
+        y_stage = None
+        for silica_factor in (10.0, 8.0, 6.0, 4.0, 2.0, 1.0):
+            staged_vector = vector.copy()
+            staged_vector[silica_index] *= silica_factor
+            stage_basis = (
+                basis if silica_factor == 1.0 else float(staged_vector.sum())
+            )
+            try:
+                result = solve_imcc_sf04(
+                    staged_vector,
+                    T_K,
+                    kernel_pack,
+                    basis=stage_basis,
+                    extra_mol=extra_mol,
+                    allow_extrapolation=allow_extrapolation,
+                    tol=tol,
+                    max_iter=max_iter,
+                    y_init=y_stage,
+                )
+            except ImccNonconvergenceError as stage_error:
+                candidate = np.asarray(
+                    stage_error.diagnostics.get("final_y", ()), dtype=float
+                )
+                active_count = int(np.count_nonzero(vector > 0.0))
+                if (
+                    candidate.ndim == 1
+                    and candidate.size == active_count
+                    and np.all(np.isfinite(candidate))
+                ):
+                    y_stage = candidate
+                    continue
+                raise cold_error from None
+            y_stage = np.log(result.parent_x_star[vector > 0.0])
+            if silica_factor == 1.0:
+                break
+        else:
+            raise cold_error from None
 
     # Build the caller-facing label block. The paper-window flag is computed
     # by the kernel from row metadata; the edge flag is computed from the

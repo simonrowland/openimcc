@@ -810,6 +810,10 @@ def _solve_active(
     # allowing very small unbound fractions (lower bound -200 -> x* ~ 1e-87).
     lb = np.full(n, -200.0)
     ub = np.full(n, 100.0)
+    if np.any(direct_y0 < lb) or np.any(direct_y0 > ub):
+        raise ValueError(
+            "y_init values must lie inside the solver bounds [-200, 100]"
+        )
     max_nfev = max(10, max_iter * (n + 1))
 
     def _attempt(
@@ -1138,6 +1142,7 @@ def solve_imcc_sf04(
     extra_mol: Mapping[str, float] | None = None,
     tol: float = 1.0e-12,
     max_iter: int = 100,
+    y_init: np.ndarray | None = None,
 ) -> ImccResult:
     """
     Solve the IMCC-SF04 ideal-associated-solution equilibrium.
@@ -1159,6 +1164,10 @@ def solve_imcc_sf04(
         Optional mapping of additional components. Positive ``Fe2O3`` triggers
         ``ImccFerricInputUnsupportedError``; other positive components trigger
         ``ImccComponentOutsideDomainError``.
+    y_init:
+        Optional natural-log free-parent fractions aligned with the active
+        parents in datapack order. The vector must be finite, match the active
+        parent count, and lie inside the solver bounds.
     tol:
         Positive finite infinity-norm residual convergence tolerance. SciPy
         ``least_squares`` receives this value as ``ftol``, ``xtol``, and
@@ -1379,7 +1388,8 @@ def solve_imcc_sf04(
         solver_path,
         continuation_stages,
     ) = _solve_active(
-        x_active, nu_active, lnK_active, S_active, tol, max_iter
+        x_active, nu_active, lnK_active, S_active, tol, max_iter,
+        y_init=y_init,
     )
 
     # Reconstruct the full speciation vector (8 parents + 38 complexes).
