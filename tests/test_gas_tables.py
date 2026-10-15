@@ -1317,7 +1317,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         }
     )
     expected_by_limit = {}
-    for limit in (1000.0, 1200.0, 1500.0, 1860.0, 2000.0):
+    for limit in (629.839, 1000.0, 1200.0, 1500.0, 1860.0, 2000.0):
         maximum = {}
         counts = {}
         for card_path in nasa_cards:
@@ -1362,7 +1362,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         if (
             row["table"] not in {"gas", "condensate"}
             or band is None
-            or "44 published NASA Glenn cards" not in band.get("method", "")
+            or band.get("kind") != "held_Cp_continuation_envelope"
         ):
             continue
         limit = float(row["extrapolation_source_limit_K"])
@@ -1372,8 +1372,9 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
             )
         assert limit in expected_by_limit
         values = band["values_J_per_mol"]
-        assert values[int(limit)] == 0.0
-        assert set(values) == {int(limit), *expected_by_limit[limit]}
+        limit_key = next(key for key in values if float(key) == limit)
+        assert values[limit_key] == 0.0
+        assert {float(key) for key in values} == {limit, *expected_by_limit[limit]}
         for temperature, expected in expected_by_limit[limit].items():
             assert values[temperature] == pytest.approx(expected, abs=0.002)
 
@@ -1519,11 +1520,92 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
             continuation = next(row for row in phase_rows if row["species_name"] == "Hg(l)")
             assert continuation["extrapolation_source_limit_K"] == pytest.approx(marker)
             assert continuation["source_data"] is False
-            assert continuation["uncertainty_band"]["values_J_per_mol"]["3000"] == pytest.approx(1374.554)
+            assert continuation["uncertainty_band"]["values_J_per_mol"]["3000"] == pytest.approx(25958.952)
         else:
             crystal = next(row for row in phase_rows if row["species_name"] == f"{element}(cr)")
             assert crystal["fit_step_at_K"] == pytest.approx(marker)
             assert crystal["source_data"] is True
+
+
+@pytest.mark.parametrize(
+    ("element", "marker", "temperatures"),
+    (
+        ("Hg", 629.839, (629.88, 1200.0, 1800.0, 3000.0)),
+        ("Au", 1337.0, (1200.0, 1336.999, 1337.0, 1800.0, 3000.0)),
+        ("Pd", 1827.0, (1200.0, 1800.0, 1826.999, 1827.0, 3000.0)),
+    ),
+)
+def test_burcat_metal_absolute_k_matches_runtime_and_is_continuous(
+    element: str, marker: float, temperatures: tuple[float, ...]
+) -> None:
+    """Compare runtime p(a=1) with raw Burcat G on the elemental scale.
+
+    Premise: K=exp(-(Ggas-Gmetal)/(RT)) and each selected Burcat block has
+    absolute H,S functions. Algebra: independently calculate G=H-T*S from
+    the block valid at T, without block-local H(298.15) subtraction. Units:
+    G is J/mol, R is J/(mol K), and K and p/p° are dimensionless. Sanity:
+    raw crystal/liquid K agrees across each printed melting marker.
+    """
+    source_path = PUBLISHED_DATA / f"burcat-{element.lower()}.json"
+    source = json.loads(source_path.read_text(encoding="utf-8"))["records"]
+    pack = load_gas_datapack()
+
+    def gibbs(record: dict[str, object], temperature: float, *, gas: bool) -> float:
+        if gas:
+            coefficients = (
+                record["high_coefficients"]
+                if temperature >= 1000.0
+                else record["low_coefficients"]
+            )
+        elif temperature >= 1000.0 and "high_coefficients" in record:
+            coefficients = record["high_coefficients"]
+        else:
+            coefficients = record["coefficients"]
+        properties = build_gas_tables._burcat7_properties(coefficients, temperature)
+        return properties["h_J_mol"] - temperature * properties["s_J_molK"]
+
+    gas_record = source[f"{element}(g)"]
+    for temperature in temperatures:
+        phase = "l" if element == "Hg" or temperature >= marker else "cr"
+        parent_record = source[f"{element}({phase})"]
+        absolute_k = math.exp(
+            -(
+                gibbs(gas_record, temperature, gas=True)
+                - gibbs(parent_record, temperature, gas=False)
+            )
+            / (R_J_MOL_K * temperature)
+        )
+        runtime = evaluate_gas(
+            {element: 1.0}, temperature, 1.0, pack, gas_species=(element,)
+        )[element]
+        assert runtime == pytest.approx(absolute_k, rel=0.01)
+        if element == "Au" and temperature < marker:
+            assert species_thermo("Au", "cr", temperature, pack).Cp_J_molK > 0.0
+
+    if element != "Hg":
+        gas_g = gibbs(gas_record, marker, gas=True)
+        crystal_g = gibbs(source[f"{element}(cr)"], marker, gas=False)
+        liquid_g = gibbs(source[f"{element}(l)"], marker, gas=False)
+        k_crystal = math.exp(-(gas_g - crystal_g) / (R_J_MOL_K * marker))
+        k_liquid = math.exp(-(gas_g - liquid_g) / (R_J_MOL_K * marker))
+        assert k_crystal == pytest.approx(k_liquid, rel=5.0e-5)
+
+
+@pytest.mark.parametrize(
+    ("element", "temperature", "relative_tolerance"),
+    (("Hg", 629.88, 0.02), ("Au", 3129.0, 0.5), ("Pd", 3236.0, 0.05)),
+)
+def test_burcat_metal_boiling_pressure_is_near_one_bar(
+    gas_pack: ImccGasDatapack,
+    element: str,
+    temperature: float,
+    relative_tolerance: float,
+) -> None:
+    """Boiling-point check: unit metal activity gives p near the 1-bar scale."""
+    pressure = evaluate_gas(
+        {element: 1.0}, temperature, 1.0, gas_pack, gas_species=(element,)
+    )[element]
+    assert pressure == pytest.approx(1.0, rel=relative_tolerance)
 
 
 def test_trace_nasa_card_thermal_increments_are_zero_at_the_formation_anchor() -> None:

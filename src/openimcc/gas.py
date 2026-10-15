@@ -3390,7 +3390,7 @@ def _source_model_flag(
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
     metal_continuation = re.fullmatch(
-        r"(BU-\d+)-METAL-CONT-(\d+(?:\.\d+)?)", source_ref
+        r"(.+)-METAL-CONT-(\d+(?:\.\d+)?)", source_ref
     )
     if phase == "l" and metal_continuation is not None and T >= float(metal_continuation.group(2)):
         return (

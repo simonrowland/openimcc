@@ -1112,10 +1112,17 @@ def _fit_burcat_metal_parent(
     source_kind: str,
 ) -> dict[str, str]:
     source = _burcat_source_record(filename, record_key)
-    coefficients = source["coefficients"]
+    # Burcat condensed cards can carry separate low/high blocks just like gas
+    # cards. A fit wholly above 1000 K must use the high block valid there.
+    coefficients = source.get("high_coefficients") if fit_t_min >= 1000.0 else None
+    coefficients = coefficients or source["coefficients"]
     reference = float(source.get("delta_f_H_298_15_kJ_mol", 0.0))
-    h298 = _burcat7_properties(coefficients, NASA_STANDARD_T_K)["h_J_mol"]
-    temperatures = np.arange(fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K)
+    temperatures = sorted({
+        *(float(T) for T in np.arange(
+            fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K
+        ) if T <= fit_t_max),
+        fit_t_max,
+    })
     source_rows = {}
     for temperature in temperatures:
         value = _burcat7_properties(coefficients, float(temperature))
@@ -1123,7 +1130,13 @@ def _fit_burcat_metal_parent(
             "temperature": float(temperature),
             "heat_capacity": R_J_MOL_K * value["cp_R"],
             "entropy": value["s_J_molK"],
-            "enthalpy_increment": (value["h_J_mol"] - h298) / 1000.0,
+            # Premise: the selected elemental block stores absolute G already.
+            # Algebra: G=H-T*S, so Hinc(T) must be H(T), with no block-local
+            # subtraction H(T)-H(298.15); that subtraction shifts G by the
+            # block's extrapolated H(298.15). Units: J/mol -> kJ/mol for the
+            # shared fitter. Sanity: independent absolute K remains continuous
+            # at each crystal/liquid marker.
+            "enthalpy_increment": value["h_J_mol"] / 1000.0,
         }
     row = _fit_condensate_values(
         species_name, source["record_id"], cation, cat_num, oxy_num,
@@ -1131,6 +1144,7 @@ def _fit_burcat_metal_parent(
         runtime_t_min=fit_t_min, runtime_t_max=fit_t_max,
         ref=(f"{source['record_id']}-METAL-CONT-{source['source_limit_K']}"
              if source_kind == "continuation" else source["record_id"]),
+        fit_temperatures=temperatures,
     )
     row["state"] = "s" if phase == "cr" else "l"
     return row
@@ -2261,7 +2275,7 @@ def _fit_condensate_values(
     # Transition intervals can contain fewer than five published nodes. Fit
     # only as many polynomial terms as those independent source nodes support;
     # regular grid fits keep the historical quartic path byte-for-byte.
-    degree = 4 if fit_temperatures is None else min(4, len(temperatures) - 1)
+    degree = min(4, len(temperatures) - 1)
     fit_design = np.column_stack([tau**power for power in range(degree + 1)])
     fitted_coefficients = np.linalg.lstsq(
         fit_design, phi / R_J_MOL_K, rcond=None
