@@ -1,0 +1,603 @@
+schema_version: literature_compilation.v1
+source_id: nist-janaf-4th
+source:
+  citation: Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition, J. Phys.
+    Chem. Ref. Data Monograph 9 (1998)
+  database: NIST Standard Reference Database 13
+  doi: 10.18434/T42S31
+  url: https://janaf.nist.gov/
+  last_data_update: 1998
+  licence: 'Quoted from NIST SRD 13 (https://data.nist.gov/od/id/ECBCC1C1301D2ED9E04306570681B10735):
+    "These data are public." Quoted from https://www.nist.gov/copyrights-disclaimers:
+    "With the exception of material marked as copyrighted, information presented on
+    NIST sites are considered public information and may be distributed or copied."'
+extraction:
+  method: machine parse of NIST tab-delimited table download; source bytes cached
+    unchanged
+  date: '2026-09-06'
+  user_agent: RegolithPyrolysisSimulator-corpus-harvester/1.0 (public thermochemical
+    reference-data research; polite cached client)
+  source_cache_path: /Users/simonrowland/Library/CloudStorage/Dropbox/Starship Mission
+    Design/Regolith Processing/regolith-pyrolysis-simulator/docs-private/research/2026-08-09-upstream-mission/IMCC-impl/janaf-mirror/H/H-005.txt
+  source_sha256: 7441a30fa91c3c3791fa2e05e6c265774da8f400f32c5283ac61e5c9383da84f
+  review_status: machine_transcribed_unreviewed
+table:
+  table_id: H-005
+  url: https://janaf.nist.gov/tables/H-005.html
+  download_url: https://janaf.nist.gov/tables/H-005.txt
+  index_entry:
+    formula: HI
+    formula_as_published: HI
+    formula_normalised: HI
+    charge: 0
+    name: Hydrogen Iodide
+    state: g
+  standard_state_as_published: p° = 0.1 MPa (as published by JANAF)
+  values:
+  - temperature:
+      value: 298.15
+      as_published: '298.15'
+    heat_capacity:
+      value: 29.156
+      as_published: '29.156'
+    entropy:
+      value: 206.589
+      as_published: '206.589'
+    enthalpy_increment:
+      value: 0.0
+      as_published: '0.'
+    formation_enthalpy:
+      value: 26.359
+      as_published: '26.359'
+    formation_gibbs_energy:
+      value: 1.56
+      as_published: '1.560'
+    log10_formation_equilibrium_constant:
+      value: -0.273
+      as_published: '-0.273'
+  - temperature:
+      value: 500.0
+      as_published: '500'
+    heat_capacity:
+      value: 29.736
+      as_published: '29.736'
+    entropy:
+      value: 221.76
+      as_published: '221.760'
+    enthalpy_increment:
+      value: 5.928
+      as_published: '5.928'
+    formation_enthalpy:
+      value: -5.622
+      as_published: '-5.622'
+    formation_gibbs_energy:
+      value: -10.088
+      as_published: '-10.088'
+    log10_formation_equilibrium_constant:
+      value: 1.054
+      as_published: '1.054'
+  - temperature:
+      value: 600.0
+      as_published: '600'
+    heat_capacity:
+      value: 30.348
+      as_published: '30.348'
+    entropy:
+      value: 227.233
+      as_published: '227.233'
+    enthalpy_increment:
+      value: 8.931
+      as_published: '8.931'
+    formation_enthalpy:
+      value: -5.961
+      as_published: '-5.961'
+    formation_gibbs_energy:
+      value: -10.948
+      as_published: '-10.948'
+    log10_formation_equilibrium_constant:
+      value: 0.953
+      as_published: '0.953'
+  - temperature:
+      value: 700.0
+      as_published: '700'
+    heat_capacity:
+      value: 31.064
+      as_published: '31.064'
+    entropy:
+      value: 231.964
+      as_published: '231.964'
+    enthalpy_increment:
+      value: 12.001
+      as_published: '12.001'
+    formation_enthalpy:
+      value: -6.243
+      as_published: '-6.243'
+    formation_gibbs_energy:
+      value: -11.756
+      as_published: '-11.756'
+    log10_formation_equilibrium_constant:
+      value: 0.877
+      as_published: '0.877'
+  - temperature:
+      value: 800.0
+      as_published: '800'
+    heat_capacity:
+      value: 31.798
+      as_published: '31.798'
+    entropy:
+      value: 236.16
+      as_published: '236.160'
+    enthalpy_increment:
+      value: 15.144
+      as_published: '15.144'
+    formation_enthalpy:
+      value: -6.466
+      as_published: '-6.466'
+    formation_gibbs_energy:
+      value: -12.528
+      as_published: '-12.528'
+    log10_formation_equilibrium_constant:
+      value: 0.818
+      as_published: '0.818'
+  - temperature:
+      value: 900.0
+      as_published: '900'
+    heat_capacity:
+      value: 32.496
+      as_published: '32.496'
+    entropy:
+      value: 239.946
+      as_published: '239.946'
+    enthalpy_increment:
+      value: 18.359
+      as_published: '18.359'
+    formation_enthalpy:
+      value: -6.633
+      as_published: '-6.633'
+    formation_gibbs_energy:
+      value: -13.275
+      as_published: '-13.275'
+    log10_formation_equilibrium_constant:
+      value: 0.77
+      as_published: '0.770'
+  - temperature:
+      value: 1000.0
+      as_published: '1000'
+    heat_capacity:
+      value: 33.135
+      as_published: '33.135'
+    entropy:
+      value: 243.404
+      as_published: '243.404'
+    enthalpy_increment:
+      value: 21.641
+      as_published: '21.641'
+    formation_enthalpy:
+      value: -6.754
+      as_published: '-6.754'
+    formation_gibbs_energy:
+      value: -14.006
+      as_published: '-14.006'
+    log10_formation_equilibrium_constant:
+      value: 0.732
+      as_published: '0.732'
+  - temperature:
+      value: 1100.0
+      as_published: '1100'
+    heat_capacity:
+      value: 33.706
+      as_published: '33.706'
+    entropy:
+      value: 246.589
+      as_published: '246.589'
+    enthalpy_increment:
+      value: 24.984
+      as_published: '24.984'
+    formation_enthalpy:
+      value: -6.838
+      as_published: '-6.838'
+    formation_gibbs_energy:
+      value: -14.727
+      as_published: '-14.727'
+    log10_formation_equilibrium_constant:
+      value: 0.699
+      as_published: '0.699'
+  - temperature:
+      value: 1200.0
+      as_published: '1200'
+    heat_capacity:
+      value: 34.211
+      as_published: '34.211'
+    entropy:
+      value: 249.544
+      as_published: '249.544'
+    enthalpy_increment:
+      value: 28.38
+      as_published: '28.380'
+    formation_enthalpy:
+      value: -6.897
+      as_published: '-6.897'
+    formation_gibbs_energy:
+      value: -15.441
+      as_published: '-15.441'
+    log10_formation_equilibrium_constant:
+      value: 0.672
+      as_published: '0.672'
+  - temperature:
+      value: 1300.0
+      as_published: '1300'
+    heat_capacity:
+      value: 34.655
+      as_published: '34.655'
+    entropy:
+      value: 252.3
+      as_published: '252.300'
+    enthalpy_increment:
+      value: 31.824
+      as_published: '31.824'
+    formation_enthalpy:
+      value: -6.942
+      as_published: '-6.942'
+    formation_gibbs_energy:
+      value: -16.151
+      as_published: '-16.151'
+    log10_formation_equilibrium_constant:
+      value: 0.649
+      as_published: '0.649'
+  - temperature:
+      value: 1400.0
+      as_published: '1400'
+    heat_capacity:
+      value: 35.046
+      as_published: '35.046'
+    entropy:
+      value: 254.883
+      as_published: '254.883'
+    enthalpy_increment:
+      value: 35.309
+      as_published: '35.309'
+    formation_enthalpy:
+      value: -6.982
+      as_published: '-6.982'
+    formation_gibbs_energy:
+      value: -16.858
+      as_published: '-16.858'
+    log10_formation_equilibrium_constant:
+      value: 0.629
+      as_published: '0.629'
+  - temperature:
+      value: 1500.0
+      as_published: '1500'
+    heat_capacity:
+      value: 35.391
+      as_published: '35.391'
+    entropy:
+      value: 257.313
+      as_published: '257.313'
+    enthalpy_increment:
+      value: 38.832
+      as_published: '38.832'
+    formation_enthalpy:
+      value: -7.027
+      as_published: '-7.027'
+    formation_gibbs_energy:
+      value: -17.562
+      as_published: '-17.562'
+    log10_formation_equilibrium_constant:
+      value: 0.612
+      as_published: '0.612'
+  - temperature:
+      value: 1600.0
+      as_published: '1600'
+    heat_capacity:
+      value: 35.696
+      as_published: '35.696'
+    entropy:
+      value: 259.607
+      as_published: '259.607'
+    enthalpy_increment:
+      value: 42.386
+      as_published: '42.386'
+    formation_enthalpy:
+      value: -7.087
+      as_published: '-7.087'
+    formation_gibbs_energy:
+      value: -18.263
+      as_published: '-18.263'
+    log10_formation_equilibrium_constant:
+      value: 0.596
+      as_published: '0.596'
+  - temperature:
+      value: 1700.0
+      as_published: '1700'
+    heat_capacity:
+      value: 35.967
+      as_published: '35.967'
+    entropy:
+      value: 261.78
+      as_published: '261.780'
+    enthalpy_increment:
+      value: 45.97
+      as_published: '45.970'
+    formation_enthalpy:
+      value: -7.168
+      as_published: '-7.168'
+    formation_gibbs_energy:
+      value: -18.959
+      as_published: '-18.959'
+    log10_formation_equilibrium_constant:
+      value: 0.583
+      as_published: '0.583'
+  - temperature:
+      value: 1800.0
+      as_published: '1800'
+    heat_capacity:
+      value: 36.209
+      as_published: '36.209'
+    entropy:
+      value: 263.842
+      as_published: '263.842'
+    enthalpy_increment:
+      value: 49.579
+      as_published: '49.579'
+    formation_enthalpy:
+      value: -7.277
+      as_published: '-7.277'
+    formation_gibbs_energy:
+      value: -19.649
+      as_published: '-19.649'
+    log10_formation_equilibrium_constant:
+      value: 0.57
+      as_published: '0.570'
+  - temperature:
+      value: 1900.0
+      as_published: '1900'
+    heat_capacity:
+      value: 36.427
+      as_published: '36.427'
+    entropy:
+      value: 265.806
+      as_published: '265.806'
+    enthalpy_increment:
+      value: 53.211
+      as_published: '53.211'
+    formation_enthalpy:
+      value: -7.416
+      as_published: '-7.416'
+    formation_gibbs_energy:
+      value: -20.333
+      as_published: '-20.333'
+    log10_formation_equilibrium_constant:
+      value: 0.559
+      as_published: '0.559'
+  - temperature:
+      value: 2000.0
+      as_published: '2000'
+    heat_capacity:
+      value: 36.623
+      as_published: '36.623'
+    entropy:
+      value: 267.68
+      as_published: '267.680'
+    enthalpy_increment:
+      value: 56.863
+      as_published: '56.863'
+    formation_enthalpy:
+      value: -7.589
+      as_published: '-7.589'
+    formation_gibbs_energy:
+      value: -21.009
+      as_published: '-21.009'
+    log10_formation_equilibrium_constant:
+      value: 0.549
+      as_published: '0.549'
+  - temperature:
+      value: 2100.0
+      as_published: '2100'
+    heat_capacity:
+      value: 36.802
+      as_published: '36.802'
+    entropy:
+      value: 269.471
+      as_published: '269.471'
+    enthalpy_increment:
+      value: 60.535
+      as_published: '60.535'
+    formation_enthalpy:
+      value: -7.794
+      as_published: '-7.794'
+    formation_gibbs_energy:
+      value: -21.675
+      as_published: '-21.675'
+    log10_formation_equilibrium_constant:
+      value: 0.539
+      as_published: '0.539'
+  - temperature:
+      value: 2200.0
+      as_published: '2200'
+    heat_capacity:
+      value: 36.966
+      as_published: '36.966'
+    entropy:
+      value: 271.187
+      as_published: '271.187'
+    enthalpy_increment:
+      value: 64.223
+      as_published: '64.223'
+    formation_enthalpy:
+      value: -8.03
+      as_published: '-8.030'
+    formation_gibbs_energy:
+      value: -22.33
+      as_published: '-22.330'
+    log10_formation_equilibrium_constant:
+      value: 0.53
+      as_published: '0.530'
+  - temperature:
+      value: 2300.0
+      as_published: '2300'
+    heat_capacity:
+      value: 37.116
+      as_published: '37.116'
+    entropy:
+      value: 272.833
+      as_published: '272.833'
+    enthalpy_increment:
+      value: 67.927
+      as_published: '67.927'
+    formation_enthalpy:
+      value: -8.294
+      as_published: '-8.294'
+    formation_gibbs_energy:
+      value: -22.975
+      as_published: '-22.975'
+    log10_formation_equilibrium_constant:
+      value: 0.522
+      as_published: '0.522'
+  - temperature:
+      value: 2400.0
+      as_published: '2400'
+    heat_capacity:
+      value: 37.255
+      as_published: '37.255'
+    entropy:
+      value: 274.416
+      as_published: '274.416'
+    enthalpy_increment:
+      value: 71.646
+      as_published: '71.646'
+    formation_enthalpy:
+      value: -8.581
+      as_published: '-8.581'
+    formation_gibbs_energy:
+      value: -23.607
+      as_published: '-23.607'
+    log10_formation_equilibrium_constant:
+      value: 0.514
+      as_published: '0.514'
+  - temperature:
+      value: 2500.0
+      as_published: '2500'
+    heat_capacity:
+      value: 37.384
+      as_published: '37.384'
+    entropy:
+      value: 275.939
+      as_published: '275.939'
+    enthalpy_increment:
+      value: 75.378
+      as_published: '75.378'
+    formation_enthalpy:
+      value: -8.886
+      as_published: '-8.886'
+    formation_gibbs_energy:
+      value: -24.227
+      as_published: '-24.227'
+    log10_formation_equilibrium_constant:
+      value: 0.506
+      as_published: '0.506'
+  - temperature:
+      value: 2600.0
+      as_published: '2600'
+    heat_capacity:
+      value: 37.504
+      as_published: '37.504'
+    entropy:
+      value: 277.408
+      as_published: '277.408'
+    enthalpy_increment:
+      value: 79.123
+      as_published: '79.123'
+    formation_enthalpy:
+      value: -9.204
+      as_published: '-9.204'
+    formation_gibbs_energy:
+      value: -24.834
+      as_published: '-24.834'
+    log10_formation_equilibrium_constant:
+      value: 0.499
+      as_published: '0.499'
+  - temperature:
+      value: 2700.0
+      as_published: '2700'
+    heat_capacity:
+      value: 37.617
+      as_published: '37.617'
+    entropy:
+      value: 278.825
+      as_published: '278.825'
+    enthalpy_increment:
+      value: 82.879
+      as_published: '82.879'
+    formation_enthalpy:
+      value: -9.528
+      as_published: '-9.528'
+    formation_gibbs_energy:
+      value: -25.429
+      as_published: '-25.429'
+    log10_formation_equilibrium_constant:
+      value: 0.492
+      as_published: '0.492'
+  - temperature:
+      value: 2800.0
+      as_published: '2800'
+    heat_capacity:
+      value: 37.723
+      as_published: '37.723'
+    entropy:
+      value: 280.195
+      as_published: '280.195'
+    enthalpy_increment:
+      value: 86.646
+      as_published: '86.646'
+    formation_enthalpy:
+      value: -9.854
+      as_published: '-9.854'
+    formation_gibbs_energy:
+      value: -26.012
+      as_published: '-26.012'
+    log10_formation_equilibrium_constant:
+      value: 0.485
+      as_published: '0.485'
+  - temperature:
+      value: 2900.0
+      as_published: '2900'
+    heat_capacity:
+      value: 37.823
+      as_published: '37.823'
+    entropy:
+      value: 281.521
+      as_published: '281.521'
+    enthalpy_increment:
+      value: 90.423
+      as_published: '90.423'
+    formation_enthalpy:
+      value: -10.176
+      as_published: '-10.176'
+    formation_gibbs_energy:
+      value: -26.583
+      as_published: '-26.583'
+    log10_formation_equilibrium_constant:
+      value: 0.479
+      as_published: '0.479'
+  - temperature:
+      value: 3000.0
+      as_published: '3000'
+    heat_capacity:
+      value: 37.918
+      as_published: '37.918'
+    entropy:
+      value: 282.805
+      as_published: '282.805'
+    enthalpy_increment:
+      value: 94.21
+      as_published: '94.210'
+    formation_enthalpy:
+      value: -10.489
+      as_published: '-10.489'
+    formation_gibbs_energy:
+      value: -27.144
+      as_published: '-27.144'
+    log10_formation_equilibrium_constant:
+      value: 0.473
+      as_published: '0.473'
