@@ -230,6 +230,9 @@ TRACE_JANAF_YAML_GAS_SOURCES = (
     ("Zr(g)", "Zr-006", "Zr", 1, 0),
     ("ZrO(g)", "O-028", "Zr", 1, 1),
     ("ZrO2(g)", "O-055", "Zr", 1, 2),
+    ("Ta(g)", "Ta-005", "Ta", 1, 0),
+    ("TaO(g)", "O-017", "Ta", 1, 1),
+    ("TaO2(g)", "O-041", "Ta", 1, 2),
     ("Br2(g)", "Br-040", "Br", 2, 0),
     ("Br(g)", "Br-001", "Br", 1, 0),
     ("I2(g)", "I-027", "I", 2, 0),
@@ -3948,7 +3951,7 @@ def build_condensate_rows(
             (
                 (1200.0, 1500.0, None, False),
                 (1500.0, 2000.0, None, False),
-                (2000.0, 2500.0, None, False),
+                (2000.0, 2500.0, (2000, 2200, 2300, 2400, 2500), False),
                 (2500.0, 3000.0, None, False),
             ),
         )
@@ -3981,6 +3984,22 @@ def build_condensate_rows(
                 (1200.0, 1500.0, None, False),
                 (1500.0, 2000.0, None, False),
                 (2000.0, 2500.0, None, False),
+                (2500.0, 3000.0, None, False),
+            ),
+        )
+    )
+    rows.extend(
+        _fit_janaf_parent_liquid(
+            source_dir,
+            "Ta2O5(l)",
+            "O-078",
+            "Ta",
+            2,
+            5,
+            (
+                (1200.0, 1500.0, None, False),
+                (1500.0, 2000.0, None, False),
+                (2000.0, 2500.0, (2000, 2200, 2300, 2400, 2500), False),
                 (2500.0, 3000.0, None, False),
             ),
         )

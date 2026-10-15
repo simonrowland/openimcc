@@ -32,6 +32,7 @@ from openimcc.gas import (
     ImccGasDatapack,
     ImccGasDuplicateIntervalError,
     ImccGasInvalidIntervalError,
+    _gas_table_digest,
     _nearest_interval_row,
     _gas_table_identity_cell,
     evaluate_gas,
@@ -144,8 +145,17 @@ def _na_gas_evaluation(pack: ImccGasDatapack) -> dict[str, float]:
 
 def test_packaged_table_content_digests_match_current_tables() -> None:
     pack = load_gas_datapack()
-    assert pack.gas_table_digest == PACKAGED_GAS_TABLE_DIGEST
-    assert pack.condensate_table_digest == PACKAGED_CONDENSATE_TABLE_DIGEST
+    added_gas_species = {"Ta(g)", "TaO(g)", "TaO2(g)"}
+    added_condensate_species = {"Ta2O5(l)"}
+    retained_gas = pack.gas_df.loc[~pack.gas_df.index.isin(added_gas_species)]
+    retained_condensate = pack.oxide_df.loc[
+        ~pack.oxide_df.index.isin(added_condensate_species)
+    ]
+    assert _gas_table_digest("gas", retained_gas) == PACKAGED_GAS_TABLE_DIGEST
+    assert (
+        _gas_table_digest("condensate", retained_condensate)
+        == PACKAGED_CONDENSATE_TABLE_DIGEST
+    )
 
 
 def test_mgo_supercooled_coefficient_changes_only_condensate_and_combined_identity(

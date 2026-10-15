@@ -1288,7 +1288,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Zn", "Cd", "Bi", "Te", "Se", "As", "Sb", "Ag", "Mo", "W",
         "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd",
         "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Y", "Br", "I", "Cl", "F",
-        "H", "C", "N",
+        "H", "C", "N", "Ta",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1320,6 +1320,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Sc": "Sc2O3",
         "Th": "ThO2",
         "Hf": "HfO2",
+        "Ta": "Ta2O5",
         "Y": "Y2O3",
         "La": "La2O3",
         "Ce": "Ce2O3",

@@ -2786,6 +2786,47 @@ def test_vanadium_and_niobium_channels_match_printed_janaf_gibbs(
         )
 
 
+def test_tantalum_channels_and_oxygen_balance(
+    gas_pack: ImccGasDatapack, unit_activities: dict[str, float]
+) -> None:
+    activities = {"Ta2O5": 1.0e-3}
+    result = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-10,
+        gas_pack,
+        parent_oxides=("Ta2O5",),
+        gas_species=("Ta", "TaO", "TaO2"),
+        allow_extrapolation=False,
+    )
+    assert result._values == pytest.approx(
+        {
+            "Ta": 1.9379680170131573e-18,
+            "TaO": 8.585414315417834e-11,
+            "TaO2": 8.51923862658225e-09,
+        },
+        rel=1.0e-12,
+    )
+    default = evaluate_gas(unit_activities, 1800.0, 1.0e-10, gas_pack)
+    assert not {"Ta", "TaO", "TaO2"}.intersection(default)
+
+    root, balanced, diagnostics = evaluate_gas_oxygen_balance(
+        activities, 2000.0, gas_pack, parent_oxides=("Ta2O5",)
+    )
+    assert root == pytest.approx(1.0907440752895347e-11, rel=1.0e-12)
+    assert diagnostics["residual"] < 1.0e-12
+    assert {"Ta", "TaO", "TaO2", "O2"}.issubset(balanced)
+
+    unlisted_root, _, _ = evaluate_gas_oxygen_balance(
+        {**activities, "SiO2": 1.0}, 2000.0, gas_pack,
+        parent_oxides=("SiO2",),
+    )
+    si_only_root, _, _ = evaluate_gas_oxygen_balance(
+        {"SiO2": 1.0}, 2000.0, gas_pack, parent_oxides=("SiO2",)
+    )
+    assert unlisted_root == pytest.approx(si_only_root, rel=0.0, abs=0.0)
+
+
 def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
     trace_gas = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES

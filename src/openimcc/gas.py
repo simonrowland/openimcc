@@ -400,6 +400,9 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Nb": ("NbO2", 1, 1.0),
     "NbO": ("NbO2", 1, 0.5),
     "NbO2": ("NbO2", 1, 0.0),
+    "Ta": ("Ta2O5", 2, 2.5),
+    "TaO": ("Ta2O5", 2, 1.5),
+    "TaO2": ("Ta2O5", 2, 0.5),
     # Appended after the existing channels so every pre-existing mapping and
     # output position stays unchanged.
     "Na2O": ("Na2O", 1, 0.0),
@@ -728,6 +731,9 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Nb",
         "NbO",
         "NbO2",
+        "Ta",
+        "TaO",
+        "TaO2",
         "Mn",
         "MnO",
         "Ni",
@@ -1040,6 +1046,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Cr2O3": "janaf_fitted",
     "V2O3": "janaf_fitted",
     "NbO2": "janaf_fitted",
+    "Ta2O5": "janaf_fitted",
     "Li2O": "janaf_fitted",
     "Rb2O": "nasa_glenn_fitted",
     "PbO": "janaf_fitted",
@@ -1099,6 +1106,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Cr2O3": "Cr-015",
     "V2O3": "O-063",
     "NbO2": "Nb-013",
+    "Ta2O5": "O-078",
     "Li2O": "Li-015",
     "MoO3": "Mo-015",
     "WO3": "O-066",
@@ -2377,6 +2385,25 @@ for _element, _status in {
             "user_agent": "neutral-source-vendor/1.0",
         },
     }
+ELEMENT_STATUS["Ta"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": (
+        "JANAF Ta-005, O-017, O-041, and O-078 provide Ta(g), TaO(g), TaO2(g), "
+        "and the Ta2O5(l) parent on the same elemental reference states over "
+        "1200-3000 K. Ta2O5 is the selected oxide parent and a(Ta2O5) is "
+        "caller-supplied; fO2 is also an input. No ion channel or melt activity "
+        "model is included."
+    ),
+    "c2_candidates": (("O-017", "TaO"), ("O-041", "TaO2")),
+    "c3_ion_bound": {
+        "status": "not computed",
+        "reason": "not computed: ionized tantalum channels are outside this neutral gas change",
+        "source_tables": {"selected": "JANAF"},
+        "parent_activity": None,
+    },
+}
 
 for _element, _parent, _cation, _neutral, _anion, _hashes in (
     (
@@ -4081,6 +4108,7 @@ _ATOMIC_MASS_G_MOL = {
     "O": 15.999, "Na": 22.989769, "K": 39.0983, "Si": 28.085,
     "Fe": 55.845, "Mg": 24.305, "Al": 26.9815385, "Ca": 40.078,
     "Ti": 47.867, "Cr": 51.9961, "V": 50.9415, "Nb": 92.90637,
+    "Ta": 180.94788,
     "Mn": 54.938044, "Ni": 58.6934, "Co": 58.933194,
     "Sb": 121.760, "Ag": 107.8682,
     "P": 30.973761998, "S": 32.06,

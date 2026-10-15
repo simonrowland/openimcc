@@ -104,6 +104,9 @@ GAS_TABLE_IDS = {
     "Nb": "Nb-005",
     "NbO": "Nb-011",
     "NbO2": "Nb-015",
+    "Ta": "Ta-005",
+    "TaO": "O-017",
+    "TaO2": "O-041",
     "Mn": "Mn-005",
     "Ni": "Ni-005",
     "Co": "Co-005",
@@ -142,6 +145,7 @@ PARENT_TABLE_IDS = {
     "Cr2O3": "Cr-015",
     "V2O3": "O-063",
     "NbO2": "Nb-013",
+    "Ta2O5": "O-078",
 }
 
 # Fitted, not transcribed, condensate rows: species -> JANAF table ID.
@@ -150,6 +154,7 @@ FITTED_CONDENSATE_TABLE_IDS = {
     "Cr2O3(l)": "Cr-015",
     "V2O3(l)": "O-063",
     "NbO2(l)": "Nb-013",
+    "Ta2O5(l)": "O-078",
     "Na2O(l)": "Na-013",
 }
 
@@ -602,7 +607,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
     )
-    assert len(oxide_rows) == 59
+    assert len(oxide_rows) == 60
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -814,7 +819,17 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             table_id, build_gas_tables.FIT_T_MIN
         )
         runtime_t_min = 1500 if species == "Na2O(l)" else int(expected_t_min)
-        assert row["T_range_K"] == [runtime_t_min, 3000]
+        if species == "Ta2O5(l)":
+            ta_rows = [
+                item for item in rows
+                if item["table"] == "condensate"
+                and item["species_name"] == species
+            ]
+            assert sorted(item["T_range_K"] for item in ta_rows) == [
+                [1200, 1500], [1500, 2000], [2000, 2500], [2500, 3000],
+            ]
+        else:
+            assert row["T_range_K"] == [runtime_t_min, 3000]
         assert source["source"]["doi"] == "10.18434/T42S31"
 
     na_high = oxide_rows["Na2O(l)"]
@@ -2074,6 +2089,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "(WO3)2", "(WO3)3", "(WO3)4", "W3O8",
         "(WO3)5",
         "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
+        "Ta", "TaO", "TaO2",
         "NiO", "CoO",
         "Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf",
         "Y", "YO",
@@ -2095,7 +2111,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
             name for name in (
                 "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "Y",
                 "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag",
-                "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "U", "Th", "Hf",
+                "Mo", "W", "Ba", "Sr", "Zr", "Ta", "Ni", "Co", "Sc", "U", "Th", "Hf",
             )
             if name in parent_atoms
         )
@@ -2760,8 +2776,17 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
             table_id, build_gas_tables.FIT_T_MIN
         )
         runtime_t_min = 1500.0 if species == "Na2O(l)" else fit_t_min
-        row = pack.oxide_df.loc[[species]]
-        row = row.loc[row["T_min"].astype(float) == runtime_t_min].iloc[0]
+        fitted_rows = pack.oxide_df.loc[[species]]
+        fitted_rows = fitted_rows.loc[
+            fitted_rows["T_min"].astype(float) >= runtime_t_min
+        ]
+        row = (
+            None
+            if species == "Ta2O5(l)"
+            else fitted_rows.loc[
+                fitted_rows["T_min"].astype(float) == runtime_t_min
+            ].iloc[0]
+        )
         maximum_j = 0.0
         maximum_log10 = 0.0
         nodes = 0
@@ -2786,8 +2811,15 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
                 )
             ):
                 continue
+            fitted_row = row
+            if fitted_row is None:
+                matching = fitted_rows.loc[
+                    (fitted_rows["T_min"].astype(float) <= temperature)
+                    & (fitted_rows["T_max"].astype(float) >= temperature)
+                ]
+                fitted_row = matching.iloc[0]
             residual = abs(
-                _lamor_gibbs(temperature, row)
+                _lamor_gibbs(temperature, fitted_row)
                 - _source_g_app_from_row(table_id, source_row)
             )
             maximum_j = max(maximum_j, residual)
@@ -2801,6 +2833,7 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
             "Cr2O3(l)": 11,
             "V2O3(l)": 13,
             "NbO2(l)": 15,
+            "Ta2O5(l)": 15,
             "Na2O(l)": 16,
         }[species]
         assert nodes == expected_nodes
@@ -2809,6 +2842,7 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
             "Cr2O3(l)": 0.001,
             "V2O3(l)": 0.001,
             "NbO2(l)": 0.001,
+            "Ta2O5(l)": 0.001,
             "Na2O(l)": 0.001,
         }[species]
         max_j_limit = {
@@ -2816,18 +2850,25 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
             "Cr2O3(l)": 10.0,
             "V2O3(l)": 10.0,
             "NbO2(l)": 10.0,
+            "Ta2O5(l)": 10.0,
             "Na2O(l)": 10.0,
         }[species]
         assert maximum_log10 <= max_log10_limit
         assert maximum_j < max_j_limit
+        selected_records = (
+            [
+                item for (name, bounds), item in recorded.items()
+                if name == species and bounds[0] >= runtime_t_min
+            ]
+            if species == "Ta2O5(l)"
+            else [recorded[(species, (int(runtime_t_min), 3000))]]
+        )
         assert maximum_j == pytest.approx(
-            recorded[(species, (int(runtime_t_min), 3000))][
-                "max_residual_J_per_mol"
-            ],
+            max(item["max_residual_J_per_mol"] for item in selected_records),
             abs=1e-6,
         )
         assert maximum_log10 == pytest.approx(
-            recorded[(species, (int(runtime_t_min), 3000))]["max_residual_log10_K"],
+            max(item["max_residual_log10_K"] for item in selected_records),
             abs=1e-9,
         )
 
@@ -3035,6 +3076,8 @@ def test_ba_sr_zr_janaf_298_k_formation_anchors_are_pinned() -> None:
         "O-016": -13.389, "O-014": -517.292, "Zr-006": 610.027,
         "Zr-007": 1277.880, "O-028": 58.576, "O-055": -286.186,
         "O-053": -1023.155,
+        "Ta-005": 781.990, "O-017": 192.464, "O-041": -200.832,
+        "O-078": -1957.171,
     }
     for table_id, expected in expected_kj_mol.items():
         anchor = next(
