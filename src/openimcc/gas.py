@@ -2595,7 +2595,7 @@ for _element, _parent, _products, _fusion, _note in (
     }
 
 # Halogen gas-only channels use the gas-parent activity path; no oxide parent
-# or melt model is provided for elemental Br or I.
+# or melt model is provided for elemental Br, I, Cl, or F.
 for _element, _parent, _species in (
     ("Br", "Br2", "JANAF Br2(g), Br(g), NaBr(g), (NaBr)2(g), KBr(g), and (KBr)2(g)"),
     ("I", "I2", "JANAF I2(g), I(g), KI(g), and (KI)2(g) and NASA Glenn NaI(g) and (NaI)2(g)"),

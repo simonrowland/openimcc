@@ -33,8 +33,8 @@ source_notes:
       JANAF is selected for every available halogen product table. NASA Glenn
       supplies NaI(g) and (NaI)2(g), for which no JANAF product table is
       available. NG-0901 is vendored only to compare (NaBr)2(g); the selected
-      runtime product remains JANAF Br-064. NASA NG-0494/NG-0567 and the
-      alkali-halide cards are cross-checks for the selected chlorine and
+      runtime product remains JANAF Br-064. NASA NG-0494 (Cl2) and NG-0567
+      (F2) are elemental-reference cross-checks for the selected chlorine and
       fluorine JANAF rows.
     closure: >-
       Tests compare each new JANAF table's printed formation Gibbs energy
@@ -2138,7 +2138,7 @@ rows:
     species_name: Cl2(g)
     table_id: Cl-073
     source_path: data-src/janaf/Cl-073.yaml
-    source_sha256: 88452660574fca74e6071bb052f593cc17de14ae8b94582e10108b33d7ac64cc
+    source_sha256: f035903584ede9e27e9c757f07b0f2969fd6ff5967c3e7e91b4bd3fcbe4e5ac4
     upstream_source_sha256: a9d15f46ae04f5ce907b2bfd9a81bbb1b7b30565ce7d4a82cf7291bb2abc1632
     authority: janaf_fitted
     method: fitted
@@ -2152,7 +2152,7 @@ rows:
     species_name: Cl(g)
     table_id: Cl-001
     source_path: data-src/janaf/Cl-001.yaml
-    source_sha256: 152b27e7241b9680d15ce5ca046c96422d620f52d3a895096c8c90afee2cb56e
+    source_sha256: 5e6be5651160e3e5faa3fd198f2117bfa67d65bb696c0a72ad6182108ad1996d
     upstream_source_sha256: 71bd927241f0c0c59b216b82179f844b2e3047823a4f50df14d6f74d396e36e3
     authority: janaf_fitted
     method: fitted
@@ -2166,7 +2166,7 @@ rows:
     species_name: NaCl(g)
     table_id: Cl-056
     source_path: data-src/janaf/Cl-056.yaml
-    source_sha256: 63c09445016435acd2eabe9d5b7335284edeb57ed4d639b7a5a3382970a62090
+    source_sha256: b42b3ca30ec3f439328a4f44476195cfc099f10b2545ee8ee3ca147efc94f4a2
     upstream_source_sha256: 6d74c2d54489222468bd6652950616f1851f90ba762509043286753921ab9156
     authority: janaf_fitted
     method: fitted
@@ -2180,7 +2180,7 @@ rows:
     species_name: (NaCl)2(g)
     table_id: Cl-098
     source_path: data-src/janaf/Cl-098.yaml
-    source_sha256: d79e5fd1a17fe10e7a7927023b99629bc09909b2efa281535ef768bc2181754e
+    source_sha256: 1add1f0d736090594d3ed5e0d1be8e9c0c4a6e1e5fbf3995630c7eb32b0b849d
     upstream_source_sha256: 3d88ccb166e0a5c1d6b9883b6f06f974f27e8af0b132c47e6998951a1cec05ca
     authority: janaf_fitted
     method: fitted
@@ -2194,7 +2194,7 @@ rows:
     species_name: KCl(g)
     table_id: Cl-039
     source_path: data-src/janaf/Cl-039.yaml
-    source_sha256: 3d139fab90e8ff163ea80a6c928da0ec5a746c006aad472e45a4895b9eb6ac6f
+    source_sha256: 5d372b4d514154e393fb49e30aa748a7e520d0954ac7815e03da4dd2f8e6cea6
     upstream_source_sha256: 495c70e88c7ddbde0bd896d8a6571232192e4b016d27afd6c772505c6714c62c
     authority: janaf_fitted
     method: fitted
@@ -2208,7 +2208,7 @@ rows:
     species_name: (KCl)2(g)
     table_id: Cl-091
     source_path: data-src/janaf/Cl-091.yaml
-    source_sha256: df6d314fe2ef26cb00f4b34a4bd25e5f28e0c8741a4d61d68cd9fc9edd631287
+    source_sha256: 01fae5116b099b00a25bf7c0c7131db920f29b047cda49781aad4623bdd8c673
     upstream_source_sha256: 6b3acbd3612a09e81d6207a365652b325d3104d55353756a0cf574c02279fc86
     authority: janaf_fitted
     method: fitted
@@ -2222,7 +2222,7 @@ rows:
     species_name: F2(g)
     table_id: F-054
     source_path: data-src/janaf/F-054.yaml
-    source_sha256: fb28527069330136b7e8064bb9c7301ba50aac55330d1a755233061e73c4539a
+    source_sha256: 7e49d23bd558325efcfab0a056cd20a14820457b585ab5e08f28b181efcf3f3d
     upstream_source_sha256: 6f0f2a74b1de477739338d46360dc009d0733ea19bc4c65a950a21933a0fe6be
     authority: janaf_fitted
     method: fitted
@@ -2236,7 +2236,7 @@ rows:
     species_name: F(g)
     table_id: F-001
     source_path: data-src/janaf/F-001.yaml
-    source_sha256: e9cf86c649f107c2d28905446d3066f211154efbad3eb4916d49e0096c9945b0
+    source_sha256: 2fe398b1a25e03ef6be53bb50f34ed000cadd08dc4c64e3d07dcb78bdbd5135a
     upstream_source_sha256: a670b87bbc01a9abb87dfccfc8dc7814310d08b8b343270f6fb7b7a49a8f90ad
     authority: janaf_fitted
     method: fitted
@@ -2250,7 +2250,7 @@ rows:
     species_name: NaF(g)
     table_id: F-036
     source_path: data-src/janaf/F-036.yaml
-    source_sha256: e48dc0eed99625d8bfa1e57f47b45689849f391aacb2176bb096bed742181090
+    source_sha256: b15691ad401aea01c0a668ffa90c4db6a32ec3c37ad4a3a4dd2d90ffd015b3e5
     upstream_source_sha256: 696d5c61ae29ebeea967bf3e672ec3e610328631c1d27b2f16fc6c2835bf9fb5
     authority: janaf_fitted
     method: fitted
@@ -2264,7 +2264,7 @@ rows:
     species_name: (NaF)2(g)
     table_id: F-082
     source_path: data-src/janaf/F-082.yaml
-    source_sha256: 5bfdb39073781fae2176e6070e5d1b1ea61b6de57f651e2cf17a7ae5b65ce4b8
+    source_sha256: 4c182549f5125942ce29486282998a72f585e967eec1c71c9ba9299cfd73158b
     upstream_source_sha256: 424ac12bee332a6cc8dd5278fe8bfd60b77adbea94860a0bb0af041ed3f9fedd
     authority: janaf_fitted
     method: fitted
@@ -2278,7 +2278,7 @@ rows:
     species_name: KF(g)
     table_id: F-020
     source_path: data-src/janaf/F-020.yaml
-    source_sha256: 1bb95490ae14f78c2be165d00628f56870a2371eff7088e54c48187e996504cd
+    source_sha256: a746cde5a1bddfc6a46c3cffd27ac46e4a538e7aaf2d973b71000bfa7349dd3a
     upstream_source_sha256: 493e748a3e8795ec49852320754b8e8919d567a6cd7ced9112091af2aa427047
     authority: janaf_fitted
     method: fitted
@@ -2292,7 +2292,7 @@ rows:
     species_name: (KF)2(g)
     table_id: F-069
     source_path: data-src/janaf/F-069.yaml
-    source_sha256: 5a3cc234440971e2a1eb8303041b2ea7367f103f44086c4c1d7dce2f223bdb99
+    source_sha256: 34371ccc364ca6199d49d119bf0dd762df277dbb79b6d3316d4d123936b89e95
     upstream_source_sha256: cd5c27ced34766d00a83e0a90fa88235b602c820200912c74229fb4c3d895d32
     authority: janaf_fitted
     method: fitted

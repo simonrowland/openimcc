@@ -2,11 +2,12 @@
 
 ## Unreleased
 
-- Added caller-supplied Br2 and I2 gas-parent inputs with elemental and Na/K
-  halide gas channels. Alkali-halide pressures use the caller's Na2O(l) or
-  K2O(l) activity; NaI channels pair NASA gas functions with JANAF partners.
-- HBr/HI, Ca/Mg/Sr/Ba and Li/Rb/Cs halides, and Br− dissolution remain outside
-  the gas-parent implementation.
+- Added caller-supplied Br2, I2, Cl2, and F2 gas-parent inputs with elemental
+  and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
+  pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair
+  NASA gas functions with JANAF partners.
+- HBr/HI, HCl/HF, Ca/Mg/Sr/Ba and Li/Rb/Cs halides, Cl−/F− dissolution, and
+  Br− dissolution remain outside the gas-parent implementation.
 - Added optional Tb, Dy, Ho, Er, Tm, Yb, and Lu element and monoxide gas
   channels with caller-supplied E2O3(l) activities. Konings Tables 42, 88, and
   89 supply the gas and parent functions. Printed liquid Cp branches are

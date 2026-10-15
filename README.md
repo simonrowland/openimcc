@@ -122,18 +122,19 @@ The sulfur channels activate only when the caller supplies `S2` fugacity as
 `a(S2) = f(S2)/p°` on JANAF's 1-bar `S2(g)` reference. OpenIMCC does not
 provide a sulfur melt-side activity model for pyrolysis temperatures.
 
-The Br and I channels use the same gas-parent input convention: supply
-`a(Br2) = f(Br2)/p°` and/or `a(I2) = f(I2)/p°`, with `p° = 1 bar`. These
-dimensionless fugacity ratios activate Br2/Br and I2/I, plus the available
-Na/K bromide and iodide gases. Alkali-halide pressures also use the caller's
-`a(Na2O)` or `a(K2O)` liquid activity. No halogen family is returned when its
-diatomic gas activity is omitted. The element and alkali-halide gas rows use
-the JANAF 1-bar standard state; NaI and (NaI)2 use NASA Glenn gas functions
-paired with JANAF Na2O(l), I2(g), and O2(g) partners.
+The halogen channels use the same gas-parent input convention: supply
+`a(Br2)`, `a(I2)`, `a(Cl2)`, and/or `a(F2)` as `f(X2)/p°`, with `p° = 1 bar`.
+These dimensionless fugacity ratios activate each available elemental pair
+(Br2/Br, I2/I, Cl2/Cl, F2/F) and the available Na/K halide gases. Alkali-halide
+pressures also use the caller's `a(Na2O)` or `a(K2O)` liquid activity. No
+halogen family is returned when its diatomic gas activity is omitted. Elemental
+and alkali-halide rows use JANAF gas functions on the 1-bar standard state;
+NaI and (NaI)2 use NASA Glenn gas functions paired with JANAF Na2O(l), I2(g),
+and O2(g) partners.
 
-HBr and HI (their reaction requires H2O), Ca/Mg/Sr/Ba halides,
-Li/Rb/Cs halides, and any Br− dissolution or capacity model are outside this
-gas-parent implementation.
+HBr and HI (their reaction requires H2O), HCl and HF, Ca/Mg/Sr/Ba halides,
+Li/Rb/Cs halides, Cl− and F− dissolution, and Br− dissolution or capacity
+models are outside this gas-parent implementation.
 
 The P gas tables are fitted, but no public evaluated `P2O5(l)` G(T) function
 was found; JANAF lists `P4O10(cr)` only. P channels therefore remain unavailable
