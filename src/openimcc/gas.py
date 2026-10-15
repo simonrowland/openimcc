@@ -4391,8 +4391,9 @@ def evaluate_gas_oxygen_balance(
     no imposed reservoirs; a bare string is rejected because it is not a
     sequence of parent keys.
 
-    A dict-only S2 activity can return S2 species while those species remain
-    excluded from oxygen demand, matching the existing parent-list behavior.
+    A gas parent other than H2, C, or N2 (for example S2, Br2, I2, Cl2, or F2)
+    supplied only in ``activities`` returns its species, but they stay out of
+    the oxygen demand. Listing that parent in ``parent_oxides`` puts them in.
     """
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
