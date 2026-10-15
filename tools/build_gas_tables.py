@@ -3018,6 +3018,11 @@ def _fit_supercooled_liquid_row(
         return format(float(value), ".15g")
 
     A, B, C, D, E = coefficients
+    # Keep the established runtime Ref while the vendor record ID selects
+    # BeO's distinct NASA file instead of the Rb2O card.
+    runtime_source_id = (
+        "NG-1352" if table_id == "NG-BeO-L-1352" else table_id
+    )
     return {
         "species_name": species_name,
         "state": "l",
@@ -3032,7 +3037,7 @@ def _fit_supercooled_liquid_row(
         "dG_C": number(C),
         "dG_D": number(D),
         "dG_E": number(E),
-        "Ref": table_id + SUPERCOOLED_LIQUID_REF_SUFFIX,
+        "Ref": runtime_source_id + SUPERCOOLED_LIQUID_REF_SUFFIX,
         "_max_residual_J_per_mol": number(residual_j),
         "_max_residual_log10_K": number(residual_log10),
         "_T0_K": number(T0),
@@ -4214,7 +4219,9 @@ def build_condensate_rows(
                     nasa_source_dir=nasa_source_dir,
                 )
                 if fit_t_min >= source_t_min:
-                    row["Ref"] = table_id
+                    row["Ref"] = (
+                        "NG-1352" if table_id == "NG-BeO-L-1352" else table_id
+                    )
                 rows.append(row)
             else:
                 rows.append(
