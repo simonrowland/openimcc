@@ -209,7 +209,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
             for source in build_gas_tables.GAS_SOURCES
         )
     )
-    assert len(gas_pack.oxide_df) == 169
+    assert len(gas_pack.oxide_df) == 170
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -2722,7 +2722,7 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
         "MnO(l)",
         "MoO3(l)", "WO3(l)", "BaO(l)", "SrO(l)", "ZrO2(l)",
         "Sc2O3(l)", "UO2(l)",
-        "HfO2(l)",
+        "HfO2(l)", "C(cr)",
     }
     return replace(
         pack,
@@ -2763,6 +2763,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "NiO": 1.0e-3, "CoO": 1.0e-3,
         "Sc2O3": 1.0e-3, "UO2": 1.0e-3, "ThO2": 1.0e-3,
         "HfO2": 1.0e-3, "Y2O3": 1.0e-3,
+        "H2": 1.0e-3, "C": 1.0e-3, "N2": 1.0e-3,
         "Br2": 1.0e-3,
         "I2": 1.0e-3,
         "Cl2": 1.0e-3,
@@ -2778,6 +2779,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         2000.0,
         1.0e-8,
         gas_pack,
+        parent_oxides=(*IMCC_PARENT_OXIDES, "H2", "C", "N2"),
         gas_species=tuple(trace_gases),
         allow_extrapolation=False,
     )
@@ -2793,6 +2795,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         2000.0,
         1.0e-8,
         _without_trace_rows(gas_pack),
+        parent_oxides=(*IMCC_PARENT_OXIDES, "H2", "C", "N2"),
         allow_extrapolation=True,
     )
     assert not trace_gases & set(missing_rows)
@@ -2807,8 +2810,14 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
                 )
                 assert parent_gas is None or parent_gas in reason
                 continue
+            parent = _SF04_REACTIONS[species][0]
+            parent_row = (
+                gas_module._GAS_PHASE_PARENT_ROWS.get(parent)
+                or gas_module._CONDENSED_PARENT_ROWS.get(parent)
+                or f"{parent}(l)"
+            )
             assert (
-                _SF04_REACTIONS[species][0] + "(l)" in reason
+                parent_row in reason
                 or species in {"Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf", "Y", "YO"}
                 and f"missing from active table: {species}(g)" in reason
             )

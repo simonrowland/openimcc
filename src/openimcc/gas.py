@@ -1023,7 +1023,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
     }
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
-    "C": "janaf_fitted",
+    "C(cr)": "janaf_fitted",
     "MnO": "liquid_from_solid_estimate",
     "NiO": "published_fitted",
     "CoO": "published_fitted",
@@ -1088,6 +1088,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
 # data/gas/PROVENANCE.yaml. K2O is resolved from the active row because its
 # table is K-012 by default and LAM1984 in sf04-published.
 _OXIDE_SOURCE_TABLE_IDS = {
+    "C": "C-002",
     "Na2O": "Na-013",
     "MgO": "Mg-009",
     "CaO": "Ca-028",
@@ -2673,18 +2674,21 @@ for _element, _parent, _species in (
             "parent_activity": None,
         },
     }
-for _element, _parent, _species, _reference in (
+for _element, _parent, _species, _reference, _c2_candidates in (
     (
         "H", "H2", "JANAF H-001, H-038, and H-064 gas rows",
         "JANAF H-050 H2(g) reference",
+        (("H-038", "OH"), ("H-064", "H2O")),
     ),
     (
         "C", "C", "JANAF C-093 and C-095 gas rows",
         "JANAF C-002 graphite reference",
+        (("C-093", "CO"), ("C-095", "CO2")),
     ),
     (
         "N", "N2", "JANAF N-002, N-005, and N-007 gas rows",
         "JANAF N-023 N2(g) reference",
+        (("N-005", "NO"), ("N-007", "NO2")),
     ),
 ):
     ELEMENT_STATUS[_element] = {
@@ -2705,7 +2709,7 @@ for _element, _parent, _species, _reference in (
             "supply a(N2)=f(N2)/p° on the 1-bar gas standard state. No "
             "dissolved-nitrogen budget or ion channel is modeled."
         ),
-        "c2_candidates": (),
+        "c2_candidates": _c2_candidates,
         "c3_ion_bound": {
             "status": "not computed",
             "reason": "not computed: ionized channels are outside this neutral gas change",

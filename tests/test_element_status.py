@@ -115,6 +115,7 @@ def _neutral_oxide_sources(
                 result[path.stem] = (element, formula)
                 break
     if source_dir == JANAF_DATA:
+        result["H-038"] = ("H", "OH")
         for species_name, table_id, formula, cation, *_ in (
             build_gas_tables.TRACE_NASA_GAS_SOURCES
             + build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES
@@ -1350,7 +1351,8 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Hf": "HfO2",
     }
     gas_parent_by_element = {
-        "S": "S2", "Br": "Br2", "I": "I2", "Cl": "Cl2", "F": "F2"
+        "S": "S2", "Br": "Br2", "I": "I2", "Cl": "Cl2", "F": "F2",
+        "H": "H2", "C": "CO", "N": "N2",
     }
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")
     parent_oxides = set(melt.parent_oxides)
