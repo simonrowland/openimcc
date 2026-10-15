@@ -1315,6 +1315,13 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
             "NG-0494", "NG-0567",
             "NG-0185", "NG-0200", "NG-0205", "NG-0208", "NG-BeO-L-1352",
             "NG-0210", "NG-0211", "NG-0212",
+            # The additional halide and elemental comparison cards are audited
+            # by the dedicated channel band checks, outside this frozen set.
+            "NG-0224", "NG-0467", "NG-0469", "NG-0470", "NG-0472",
+            "NG-0511", "NG-0515", "NG-0524", "NG-0528", "NG-0704",
+            "NG-0804", "NG-0806", "NG-0807", "NG-0809", "NG-0821",
+            "NG-0937", "NG-1018", "NG-1019", "NG-1020", "NG-1022",
+            "NG-1030", "NG-1031", "NG-1032", "NG-1033",
         }
     )
     expected_by_limit = {}
@@ -4515,6 +4522,7 @@ def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
     )
     knots = (1200, 1500, 1800, 2000, 2500, 3000)
     cluster_pattern = re.compile(r"^\((MoO3|WO3)\)([2-5])\(g\)$")
+    gas_rows = [row for row in gas_rows if cluster_pattern.fullmatch(row["species_name"])]
     assert len(gas_rows) == 10
     assert {row["species_name"] for row in gas_rows} == {
         "(MoO3)2(g)", "(MoO3)3(g)", "(MoO3)4(g)", "(MoO3)5(g)",
@@ -7164,6 +7172,9 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
     assert checked_rows == 237
     assert checked_nodes == 3022
     assert checked_nodes * 3 == 9066
+    assert checked_rows == 268
+    assert checked_nodes == 3665
+    assert checked_nodes * 3 == 10995
     assert overall_max["Cp_J_molK"] == pytest.approx(0.7432227428, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0345525573, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0832967405, abs=1e-9)

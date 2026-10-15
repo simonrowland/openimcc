@@ -1181,6 +1181,27 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "K2O": "nasa_glenn_fitted",
         "NaI": "nasa_glenn_fitted",
         "(NaI)2": "nasa_glenn_fitted",
+        "CaF": "nasa_glenn_fitted",
+        "CaF2": "nasa_glenn_fitted",
+        "CaCl": "nasa_glenn_fitted",
+        "CaCl2": "nasa_glenn_fitted",
+        "MgF": "nasa_glenn_fitted",
+        "MgF2": "nasa_glenn_fitted",
+        "(MgF2)2": "nasa_glenn_fitted",
+        "MgCl": "nasa_glenn_fitted",
+        "MgCl2": "nasa_glenn_fitted",
+        "RbF": "nasa_glenn_fitted",
+        "(RbF)2": "nasa_glenn_fitted",
+        "RbCl": "nasa_glenn_fitted",
+        "(RbCl)2": "nasa_glenn_fitted",
+        "RbBr": "nasa_glenn_fitted",
+        "(RbBr)2": "nasa_glenn_fitted",
+        "RbI": "nasa_glenn_fitted",
+        "(RbI)2": "nasa_glenn_fitted",
+        "CsBr": "nasa_glenn_fitted",
+        "(CsBr)2": "nasa_glenn_fitted",
+        "CsI": "nasa_glenn_fitted",
+        "(CsI)2": "nasa_glenn_fitted",
         "RbO": "nasa_glenn_fitted",
         "Rb2O": "nasa_glenn_fitted",
         "Be": "nasa_glenn_fitted",
@@ -4236,7 +4257,12 @@ def evaluate_gas(
                 )
 
     # G°(O2, T) is needed only for reactions that produce or consume O2.
-    needs_O2_row = any(n_O2 != 0.0 for _, (_, _, n_O2) in reactions)
+    needs_O2_row = any(n_O2 != 0.0 for _, (_, _, n_O2) in reactions) or any(
+        species in _HALIDE_REACTIONS
+        and species in _ALKALI_HALIDE_REACTION_OXIDES
+        and _ALKALI_HALIDE_REACTION_OXIDES[species][2] != 0.0
+        for species, _reaction in reactions
+    )
     O2_row = None
     G_O2 = 0.0
     if needs_O2_row:
@@ -4386,7 +4412,13 @@ def evaluate_gas(
             flag = _source_model_flag(side_name, T, side_row, phase="l")
             if flag is not None:
                 flags.append(flag)
-            dG = G_gas + side_n_O2 * G_O2 - n_oxide * G_side_oxide - n_gas * G_oxide
+            # The side table carries complete oxygen stoichiometry for new
+            # halides whose reaction tuple has a zero O2 slot. Existing Na/K
+            # rows keep using their tuple coefficient and unchanged arithmetic.
+            side_G_O2 = (
+                G_O2 if n_O2 != 0.0 or gas_name in _HALIDE_REACTIONS else 0.0
+            )
+            dG = G_gas + side_n_O2 * side_G_O2 - n_oxide * G_side_oxide - n_gas * G_oxide
             Kp = np.exp(-dG / (R_J_MOL_K * T))
             p_gas = (
                 Kp

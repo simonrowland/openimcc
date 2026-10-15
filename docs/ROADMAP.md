@@ -410,6 +410,11 @@ evidence.
 `docs/datapack-format.md`, `CONTRIBUTING.md`, and `CHANGELOG.md` document the
 shipped format, contribution path, and extracted history.
 
+Neutral halide gases are available for Ca, Mg, Sr, and Ba through their
+existing MO(l) parents, and for Li, Rb, and Cs through existing M2O(l)
+parents. Each channel requires its diatomic halogen gas activity. No additional
+oxide parents are introduced; halide dissolution remains out of scope.
+
 ## Known gaps
 
 ### 6. Primary provenance for K2O(l)

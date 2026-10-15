@@ -26,13 +26,17 @@
   and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
   pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair
   NASA gas functions with JANAF partners.
+- Added alkaline-earth monohalide, dihalide, and available dimer gas channels
+  for Ca, Mg, Sr, and Ba, plus Li, Rb, and Cs monohalides and dimers where
+  existing liquid oxide parents are available. Mixed NASA/JANAF channels carry
+  a computed parent-scale inconsistency band.
 - Added H2, graphite C, and N2 gas families with caller-supplied elemental
   reservoirs, plus conditional HCl, HF, HBr, and HI channels when both H2 and
   the matching diatomic halogen activity are supplied. Added imposed gas
   reservoirs to oxygen-balance calculations; their pressures remain reported
   while their oxygen flux is excluded from the melt-derived balance.
-- Ca/Mg/Sr/Ba and Li/Rb/Cs halides, Cl−/F− dissolution, and Br− dissolution
-  remain outside the gas-parent implementation.
+- Cl−/F− dissolution and Br− dissolution remain outside the gas-parent
+  implementation.
 - Added optional Tb, Dy, Ho, Er, Tm, Yb, and Lu element and monoxide gas
   channels with caller-supplied E2O3(l) activities. Konings Tables 42, 88, and
   89 supply the gas and parent functions. Printed liquid Cp branches are

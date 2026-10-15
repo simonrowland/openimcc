@@ -154,15 +154,19 @@ solver is not used to set it.
 The halogen channels use the same gas-parent input convention: supply
 `a(Br2)`, `a(I2)`, `a(Cl2)`, and/or `a(F2)` as `f(X2)/p°`, with `p° = 1 bar`.
 These dimensionless fugacity ratios activate each available elemental pair
-(Br2/Br, I2/I, Cl2/Cl, F2/F) and the available Na/K halide gases. Alkali-halide
-pressures also use the caller's `a(Na2O)` or `a(K2O)` liquid activity. No
+(Br2/Br, I2/I, Cl2/Cl, F2/F), alkaline-earth halides using caller-supplied
+`a(CaO)`, `a(MgO)`, `a(SrO)`, or `a(BaO)`, and Li/Rb/Cs halides using the
+existing `a(Li2O)`, `a(Rb2O)`, or `a(Cs2O)` liquid parents. Alkali-halide
+pressures use the oxide activity and diatomic halogen activity. No
 halogen family is returned when its diatomic gas activity is omitted. Elemental
-and alkali-halide rows use JANAF gas functions on the 1-bar standard state;
-NaI and (NaI)2 use NASA Glenn gas functions paired with JANAF Na2O(l), I2(g),
-and O2(g) partners.
+rows use JANAF gas functions on the 1-bar standard state. Halide product rows
+use the cited JANAF or NASA Glenn compilation; mixed-compilation channels carry
+a computed parent-scale inconsistency band. NaI and (NaI)2 use NASA Glenn gas
+functions paired with JANAF Na2O(l), I2(g), and O2(g) partners.
 
-Ca/Mg/Sr/Ba halides, Li/Rb/Cs halides, Cl− and F− dissolution, and Br−
-dissolution or capacity models are outside this gas-parent implementation.
+Cl− and F− dissolution, and Br− dissolution or capacity models remain outside
+this gas-parent implementation. Li/Rb/Cs channels are available only where
+the existing liquid oxide parent is present; no new oxide parents are added.
 The excluded H/C/N species are HO2, H2O2, C(g), carbonates, N2O, and NO3.
 
 The P gas tables are fitted, but no public evaluated `P2O5(l)` G(T) function

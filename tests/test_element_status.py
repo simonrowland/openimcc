@@ -1322,6 +1322,11 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "H", "C", "N", "Hg", "Au", "Pd",
     }
     assert set(ELEMENT_STATUS) == expected_elements
+    for element, status in ELEMENT_STATUS.items():
+        if element in {"Ca", "Mg", "Sr", "Ba", "Li", "Rb", "Cs"}:
+            assert status["halide_gas_channels"]["oxide_parent"]
+            assert status["halide_gas_channels"]["species"]
+            assert status["halide_gas_channels"]["halogen_activity_required"] is True
     parent_by_element = {
         "Si": "SiO2",
         "Mg": "MgO",

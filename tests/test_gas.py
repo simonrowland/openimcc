@@ -1743,7 +1743,10 @@ def test_new_halide_pressures_match_hand_calculated_source_cells(
             "BaO", "CaO", "MgO", "SrO", "Li2O", "Rb2O", "Cs2O",
         )},
     }
-    parents = (*IMCC_PARENT_OXIDES, "F2", "Cl2", "Br2", "I2")
+    parents = (
+        *IMCC_PARENT_OXIDES, "BaO", "SrO", "Li2O", "Rb2O", "Cs2O",
+        "F2", "Cl2", "Br2", "I2",
+    )
     for temperature in (1800.0, 2200.0):
         g_o2 = _janaf_apparent_gibbs("O-029", temperature)
         for f_o2 in (1.0e-10, 1.0e-6):
@@ -1858,7 +1861,7 @@ def test_new_halide_mixed_source_parent_bands_recompute_from_cards(
                 )
             assert band["values_J_per_mol"][temperature] == pytest.approx(
                 abs(gap), abs=0.001
-            )
+            ), (name, temperature, band["comparison_records"], gap)
 
 
 def test_halogen_activity_and_fugacity_powers_and_optional_family(
@@ -2187,19 +2190,19 @@ def test_halogen_oxygen_balance_uses_dict_only_parent_activity(
     assert root_without.hex() == repeated_root.hex()
     assert dict(result_without) == dict(repeated_result)
     root_with, result_with, _ = evaluate_gas_oxygen_balance(
-        {**activities, "Br2": 1.0e-2}, 1800.0, gas_pack,
+        {**activities, "Br2": 1.0e-20}, 1800.0, gas_pack,
     )
     assert root_with != root_without
-    assert result_with["Br2"] == pytest.approx(1.0e-2)
+    assert result_with["Br2"] == pytest.approx(1.0e-20)
     assert result_with["NaBr"] > 0.0
     listed_root, listed_result, _ = evaluate_gas_oxygen_balance(
-        {**activities, "Br2": 1.0e-2}, 1800.0, gas_pack,
+        {**activities, "Br2": 1.0e-20}, 1800.0, gas_pack,
         parent_oxides=(*IMCC_PARENT_OXIDES, "Br2"),
     )
     assert root_with.hex() == listed_root.hex()
     assert dict(result_with) == dict(listed_result)
     for parent in ("Cl2", "F2"):
-        activity = 1.0e-2 if parent == "Cl2" else 1.0e-8
+        activity = 1.0e-20
         root, result, _ = evaluate_gas_oxygen_balance(
             {**activities, parent: activity}, 1800.0, gas_pack,
             parent_oxides=(*IMCC_PARENT_OXIDES, parent),
@@ -3112,6 +3115,8 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     } | halogen_gases
     parents = {
         "MnO": 1.0e-3,
+        "CaO": 1.0e-3,
+        "MgO": 1.0e-3,
         "Na2O": 1.0e-3,
         "K2O": 1.0e-3,
         "Li2O": 1.0e-3, "Rb2O": 1.0e-3, "PbO": 1.0e-3,
@@ -3152,7 +3157,11 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         2000.0,
         1.0e-8,
         gas_pack,
-        parent_oxides=(*IMCC_PARENT_OXIDES, "H2", "C", "N2"),
+        parent_oxides=(
+            *IMCC_PARENT_OXIDES, "H2", "C", "N2",
+            "BaO", "SrO", "Li2O", "Rb2O", "Cs2O",
+            "F2", "Cl2", "Br2", "I2",
+        ),
         gas_species=tuple(trace_gases),
         allow_extrapolation=False,
     )
@@ -3168,7 +3177,11 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         2000.0,
         1.0e-8,
         _without_trace_rows(gas_pack),
-        parent_oxides=(*IMCC_PARENT_OXIDES, "H2", "C", "N2"),
+        parent_oxides=(
+            *IMCC_PARENT_OXIDES, "H2", "C", "N2",
+            "BaO", "SrO", "Li2O", "Rb2O", "Cs2O",
+            "F2", "Cl2", "Br2", "I2",
+        ),
         allow_extrapolation=True,
     )
     assert not trace_gases & set(missing_rows)
