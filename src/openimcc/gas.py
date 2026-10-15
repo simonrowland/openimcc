@@ -629,14 +629,29 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "(NaF)2": ("F2", 1.0, 0.5),
     "KF": ("F2", 0.5, 0.25),
     "(KF)2": ("F2", 1.0, 0.5),
+    "HCl": ("H2", 0.5, 0.0),
+    "HF": ("H2", 0.5, 0.0),
+    "HBr": ("H2", 0.5, 0.0),
+    "HI": ("H2", 0.5, 0.0),
+    "H2": ("H2", 1, 0.0),
+    "H": ("H2", 0.5, 0.0),
+    "OH": ("H2", 0.5, 0.5),
+    "H2O": ("H2", 1, 0.5),
+    "CO": ("C", 1, -0.5),
+    "CO2": ("C", 1, -1.0),
+    "N2": ("N2", 1, 0.0),
+    "N": ("N2", 0.5, 0.0),
+    "NO": ("N2", 0.5, 0.5),
+    "NO2": ("N2", 0.5, 1.0),
 }
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
-# from the JANAF gas table; all other parent keys keep the liquid lookup.
+# from the JANAF gas table; condensed parent rows use their resolved phase.
 _GAS_PHASE_PARENT_ROWS = {
     "S2": "S2(g)", "Br2": "Br2(g)", "I2": "I2(g)",
-    "Cl2": "Cl2(g)", "F2": "F2(g)",
+    "Cl2": "Cl2(g)", "F2": "F2(g)", "H2": "H2(g)", "N2": "N2(g)",
 }
+_CONDENSED_PARENT_ROWS = {"C": "C(cr)"}
 _ALKALI_HALIDE_REACTION_OXIDES = {
     "NaBr": ("Na2O", 0.5, 0.25),
     "(NaBr)2": ("Na2O", 1.0, 0.5),
@@ -655,6 +670,26 @@ _ALKALI_HALIDE_REACTION_OXIDES = {
     "KF": ("K2O", 0.5, 0.25),
     "(KF)2": ("K2O", 1.0, 0.5),
 }
+_HYDROGEN_HALIDE_PARENTS = {
+    "HCl": "Cl2", "HF": "F2", "HBr": "Br2", "HI": "I2",
+}
+
+
+def _parent_standard_row(parent: str) -> str:
+    """Resolve an activity key to its elemental-reference standard row."""
+    return (
+        _GAS_PHASE_PARENT_ROWS.get(parent)
+        or _CONDENSED_PARENT_ROWS.get(parent)
+        or f"{parent}(l)"
+    )
+
+
+def _side_parent(species: str) -> str | None:
+    halide = _HYDROGEN_HALIDE_PARENTS.get(species)
+    if halide is not None:
+        return halide
+    alkali = _ALKALI_HALIDE_REACTION_OXIDES.get(species)
+    return alkali[0] if alkali is not None else None
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 
@@ -788,6 +823,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "NaI", "(NaI)2", "KI", "(KI)2",
         "Cl2", "Cl", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
         "F2", "F", "NaF", "(NaF)2", "KF", "(KF)2",
+        "HCl", "HF", "HBr", "HI", "H2", "H", "OH", "H2O",
+        "CO", "CO2", "N2", "N", "NO", "NO2",
     }
 )
 
@@ -819,22 +856,24 @@ def _default_reactions(
         oxide = reaction[0]
         if oxide and oxide not in parents:
             continue
-        side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(name)
-        if side_reactant and side_reactant[0] not in parents:
+        side_key = _side_parent(name)
+        if side_key and side_key not in parents:
             continue
         if name in _DATAPACK_OPTIONAL_CHANNELS:
             missing_rows = []
             gas_row = f"{name}(g)"
             gas_parent_row = _GAS_PHASE_PARENT_ROWS.get(oxide)
-            oxide_row = gas_parent_row or f"{oxide}(l)"
+            oxide_row = _parent_standard_row(oxide)
             if gas_row not in gas_rows:
                 missing_rows.append(gas_row)
             parent_rows = gas_rows if gas_parent_row else oxide_rows
             if oxide_row != gas_row and oxide_row not in parent_rows:
                 missing_rows.append(oxide_row)
-            if side_reactant:
-                side_row = f"{side_reactant[0]}(l)"
-                if side_row not in oxide_rows:
+            if side_key:
+                side_gas_row = _GAS_PHASE_PARENT_ROWS.get(side_key)
+                side_row = _parent_standard_row(side_key)
+                side_rows = gas_rows if side_gas_row else oxide_rows
+                if side_row not in side_rows:
                     missing_rows.append(side_row)
             if missing_rows:
                 omitted[name] = (
@@ -984,6 +1023,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
     }
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
+    "C": "janaf_fitted",
     "MnO": "liquid_from_solid_estimate",
     "NiO": "published_fitted",
     "CoO": "published_fitted",
@@ -2633,6 +2673,46 @@ for _element, _parent, _species in (
             "parent_activity": None,
         },
     }
+for _element, _parent, _species, _reference in (
+    (
+        "H", "H2", "JANAF H-001, H-038, and H-064 gas rows",
+        "JANAF H-050 H2(g) reference",
+    ),
+    (
+        "C", "C", "JANAF C-093 and C-095 gas rows",
+        "JANAF C-002 graphite reference",
+    ),
+    (
+        "N", "N2", "JANAF N-002, N-005, and N-007 gas rows",
+        "JANAF N-023 N2(g) reference",
+    ),
+):
+    ELEMENT_STATUS[_element] = {
+        "status": "gas-complete-melt-pending",
+        "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+        "validation": "unvalidated",
+        "reason": (
+            f"{_species} and {_reference} cover 1200-3000 K; callers supply "
+            "a(H2)=f(H2)/p° on the 1-bar gas standard state. HCl, HF, HBr, "
+            "and HI additionally require both H2 and X2. No dissolved-hydrogen "
+            "budget or ion channel is modeled."
+            if _element == "H"
+            else f"{_species} use the {_reference} over 1200-3000 K; callers "
+            "supply a(C) relative to graphite. No dissolved-carbon budget or "
+            "activity model is provided."
+            if _element == "C"
+            else f"{_species} and {_reference} cover 1200-3000 K; callers "
+            "supply a(N2)=f(N2)/p° on the 1-bar gas standard state. No "
+            "dissolved-nitrogen budget or ion channel is modeled."
+        ),
+        "c2_candidates": (),
+        "c3_ion_bound": {
+            "status": "not computed",
+            "reason": "not computed: ionized channels are outside this neutral gas change",
+            "source_tables": {"selected": "JANAF"},
+            "parent_activity": None,
+        },
+    }
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #
@@ -3528,7 +3608,8 @@ def evaluate_gas(
         ``S2`` fugacity relative to JANAF's 1-bar gas standard. Halogen channels
         similarly accept ``Br2``, ``I2``, ``Cl2``, and ``F2`` fugacity ratios;
         their alkali-halide products also use the caller's ``Na2O`` or ``K2O``
-        liquid activity.
+        liquid activity. ``H2`` and ``N2`` accept ``f(parent)/p°``; ``C`` is
+        relative to graphite. HCl, HF, HBr, and HI require both H2 and X2.
     T_K:
         Temperature in Kelvin. Must be finite and positive on this path.
     fO2:
@@ -3539,8 +3620,8 @@ def evaluate_gas(
         Loaded JANAF + condensate thermodynamic tables.
     parent_oxides:
         Ordered parent names. Defaults to the IMCC-SF04 8-oxide basis; callers
-        may add ``P2O5``, ``S2``, ``Br2``, ``I2``, ``Cl2``, or ``F2`` when supplying those
-        parent activities.
+        may add ``P2O5``, ``S2``, ``Br2``, ``I2``, ``Cl2``, ``F2``, ``H2``,
+        ``C``, or ``N2`` when supplying those parent activities.
     allow_extrapolation:
         If True (default), evaluate finite temperatures outside the selected
         row and return a per-species ``domain_flags`` entry.  If False, refuse
@@ -3722,18 +3803,17 @@ def evaluate_gas(
             raise ValueError(
                 f"activity of {oxide!r} must be finite and >= 0, got {a_used}"
             )
-        side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(gas_name)
-        if side_reactant:
-            side_oxide, _n_oxide, _n_O2 = side_reactant
-            if side_oxide not in act:
+        side_key = _side_parent(gas_name)
+        if side_key:
+            if side_key not in act:
                 raise ImccGasSpeciesNotFoundError(
                     f"gas channel {gas_name!r} needs parent activity "
-                    f"{side_oxide!r}, which is not in parent_oxides"
+                    f"{side_key!r}, which is not in parent_oxides"
                 )
-            side_activity = act[side_oxide]
+            side_activity = act[side_key]
             if not math.isfinite(side_activity) or side_activity < 0.0:
                 raise ValueError(
-                    f"activity of {side_oxide!r} must be finite and >= 0, "
+                    f"activity of {side_key!r} must be finite and >= 0, "
                     f"got {side_activity}"
                 )
 
@@ -3799,7 +3879,7 @@ def evaluate_gas(
                     else _outside_interval_flag(gas_parent_row, T, parent_row)
                 )
             else:
-                oxide_name = f"{oxide}(l)"
+                oxide_name = _parent_standard_row(oxide)
                 oxide_row = _oxide_row_for_T(
                     datapack.oxide_df,
                     oxide_name,
@@ -3831,22 +3911,43 @@ def evaluate_gas(
                     f"continuation from {source_name} {source_table}"
                 )
             elif oxide_row is not None:
+                parent_phase = "s" if str(oxide_row["state"]) == "s" else "l"
                 flag = _source_model_flag(
-                    oxide_name, T, oxide_row, phase="l"
+                    oxide_name, T, oxide_row, phase=parent_phase
                 )
                 if flag is not None:
                     flags.append(flag)
-                flag = _supercooled_liquid_from_solid_flag(
-                    oxide_name, T, oxide_row
-                )
-                if flag is not None:
-                    flags.append(flag)
+                if parent_phase == "l":
+                    flag = _supercooled_liquid_from_solid_flag(
+                        oxide_name, T, oxide_row
+                    )
+                    if flag is not None:
+                        flags.append(flag)
         else:
             G_oxide = 0.0
             a_oxide = 1.0
 
-        side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(gas_name)
-        if side_reactant:
+        hydrogen_halide_parent = _HYDROGEN_HALIDE_PARENTS.get(gas_name)
+        if hydrogen_halide_parent:
+            # 1/2 H2(g) + 1/2 X2(g) = HX(g); both activities use their
+            # JANAF 1-bar gas references, and no oxygen enters the reaction.
+            side_row_name = _parent_standard_row(hydrogen_halide_parent)
+            side_row = _nearest_interval_row(
+                datapack.gas_df,
+                side_row_name,
+                T,
+                allow_extrapolation=allow_extrapolation,
+            )
+            G_side = _janaf_gibbs(T, side_row)
+            flag = _outside_interval_flag(side_row_name, T, side_row)
+            if flag is not None:
+                flags.append(flag)
+            dG = G_gas - n_gas * G_oxide - 0.5 * G_side
+            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            p_gas = Kp * a_oxide**n_gas * act[hydrogen_halide_parent]**0.5
+        else:
+            side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(gas_name)
+        if not hydrogen_halide_parent and side_reactant:
             # Halide rows balance an oxide liquid and an elemental X2 gas
             # parent. This isolated side-table path preserves both established
             # mass-action branches and uses the product-side O2 exponent.
@@ -3873,14 +3974,14 @@ def evaluate_gas(
                 * a_oxide**n_gas
                 / p_O2**side_n_O2
             )
-        elif oxide in _GAS_PHASE_PARENT_ROWS:
+        elif not hydrogen_halide_parent and oxide in _GAS_PHASE_PARENT_ROWS:
             # Sulfur tuple: n_S2 S2(g) + n_O2 O2(g) = gas(g).
             # Kp = p_gas / (a_S2**n_S2 * fO2**n_O2), with ΔG° formed from
             # the same balanced reaction; a_S2 is caller-supplied f(S2)/p°.
             dG = G_gas - n_gas * G_oxide - n_O2 * G_O2
             Kp = np.exp(-dG / (R_J_MOL_K * T))
             p_gas = Kp * (a_oxide**n_gas) * (p_O2**n_O2)
-        else:
+        elif not hydrogen_halide_parent:
             # Condensed-parent reaction (1): oxide(l) = n_gas*gas(g) +
             # n_O2*O2(g). Keep its established arithmetic path unchanged.
             dG = n_gas * G_gas + n_O2 * G_O2 - G_oxide
@@ -3992,6 +4093,7 @@ _ATOMIC_MASS_G_MOL = {
     "Tb": 158.92535, "Dy": 162.500, "Ho": 164.93033,
     "Er": 167.259, "Tm": 168.93422, "Yb": 173.045, "Lu": 174.9668,
     "Br": 79.904, "I": 126.90447, "Cl": 35.45, "F": 18.998403163,
+    "H": 1.008, "C": 12.011, "N": 14.007,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # log10(pO2/bar) search bracket. The upper edge (1 bar) is a physical ceiling,
@@ -4251,6 +4353,7 @@ def evaluate_gas_oxygen_balance(
     datapack: ImccGasDatapack,
     parent_oxides: Sequence[str] | None = None,
     allow_extrapolation: bool = True,
+    imposed_parents: Sequence[str] | None = None,
 ) -> tuple[float, ImccGasResult, dict[str, object]]:
     """Solve pO2 that balances oxygen in the Knudsen effusion flux.
 
@@ -4276,18 +4379,44 @@ def evaluate_gas_oxygen_balance(
     match the neutral-only :func:`evaluate_gas` result; diagnostics contain relative residual, the
     log10(bar) bracket, iteration count, and the five strongest O and parent
     oxygen carriers.
+
+    ``imposed_parents`` names external gas reservoirs such as ``("N2",)`` or
+    ``("C",)`` for a nitrogen or CO2 sweep. Their species remain in the
+    returned pressure map but are excluded from the melt-derived oxygen
+    balance. The default is no imposed reservoirs.
     """
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
+    imposed = frozenset(imposed_parents or ())
+    unknown_imposed = imposed - (_GAS_PHASE_PARENT_ROWS.keys() | _CONDENSED_PARENT_ROWS.keys())
+    if unknown_imposed:
+        raise ValueError(
+            "imposed_parents must name gas-parent activity keys; unknown: "
+            f"{sorted(unknown_imposed)}"
+        )
     T = float(T_K)
     if not math.isfinite(T) or T <= 0.0:
         raise ValueError(f"temperature must be finite and positive, got {T_K}")
 
-    channels, _omitted_channels = _default_reactions(parent_oxides, datapack)
+    available_parents = list(parent_oxides)
+    if isinstance(activities, Mapping):
+        available_parents.extend(
+            parent
+            for parent in activities
+            if parent in _REACTION_PARENT_OXIDES and parent not in available_parents
+        )
+    channels, _omitted_channels = _default_reactions(
+        tuple(available_parents), datapack
+    )
+    balance_channels = tuple(
+        (species, reaction)
+        for species, reaction in channels
+        if reaction[0] not in imposed and _side_parent(species) not in imposed
+    )
     species_data = oxygen_balance_species_metadata({
-        species: parent for species, (parent, _n_gas, _n_O2) in channels
+        species: parent for species, (parent, _n_gas, _n_O2) in balance_channels
     })
-    for species, (parent, n_gas, n_O2) in channels:
+    for species, (parent, n_gas, n_O2) in balance_channels:
         data = species_data[species]
         side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(species)
         if side_reactant:

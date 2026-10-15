@@ -592,6 +592,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "Br2", "Br", "I2", "I", "NaBr", "(NaBr)2", "KBr", "(KBr)2", "KI", "(KI)2", "NaI", "(NaI)2",
             "Cl2", "Cl", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
             "F2", "F", "NaF", "(NaF)2", "KF", "(KF)2",
+            "HCl", "HF", "HBr", "HI",
         }
         | {
             "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
@@ -601,7 +602,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
     )
-    assert len(oxide_rows) == 58
+    assert len(oxide_rows) == 59
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -2080,6 +2081,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
     assert trace_channels == (
         set(build_gas_tables.TRACE_GAS_SPECIES)
         - build_gas_tables.HALOGEN_GAS_SPECIES
+        - {"H2", "H", "OH", "H2O", "C", "CO", "CO2", "N2", "N", "NO", "NO2"}
     )
 
     def atom_counts(formula: str) -> dict[str, int]:

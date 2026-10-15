@@ -1774,6 +1774,161 @@ def test_halogen_activity_and_fugacity_powers_and_optional_family(
     assert math.isfinite(zero_na["Br"]) and math.isfinite(zero_na["Br2"])
 
 
+def test_hydrogen_carbon_and_nitrogen_channels_match_hand_mass_action(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    parents = (*IMCC_PARENT_OXIDES, "H2", "C", "N2")
+    activities = {
+        **_quickstart_activities(1800.0),
+        "H2": 2.0e-3,
+        "C": 3.0e-4,
+        "N2": 4.0e-3,
+    }
+    species = (
+        "H2", "H", "OH", "H2O", "CO", "CO2",
+        "N2", "N", "NO", "NO2",
+    )
+    for temperature in (1800.0, 2400.0):
+        for fugacity in (1.0e-10, 1.0e-6):
+            result = evaluate_gas(
+                activities,
+                temperature,
+                fugacity,
+                gas_pack,
+                parent_oxides=parents,
+                gas_species=species,
+            )
+            g_o2 = _janaf_gibbs(
+                temperature,
+                _nearest_interval_row(gas_pack.gas_df, "O2(g)", temperature),
+            )
+            g_h2 = _janaf_gibbs(
+                temperature,
+                _nearest_interval_row(gas_pack.gas_df, "H2(g)", temperature),
+            )
+            g_n2 = _janaf_gibbs(
+                temperature,
+                _nearest_interval_row(gas_pack.gas_df, "N2(g)", temperature),
+            )
+            g_c = _lamor_gibbs(
+                temperature,
+                _oxide_row_for_T(gas_pack.oxide_df, "C(cr)", temperature),
+            )
+            g = {
+                name: _janaf_gibbs(
+                    temperature,
+                    _nearest_interval_row(
+                        gas_pack.gas_df, f"{name}(g)", temperature
+                    ),
+                )
+                for name in species
+                if name not in {"H2", "N2"}
+            }
+            k = lambda delta_g: math.exp(
+                -delta_g / (R_J_MOL_K * temperature)
+            )
+            expected = {
+                "H2": activities["H2"],
+                "H": k(g["H"] - 0.5 * g_h2) * activities["H2"] ** 0.5,
+                "OH": k(g["OH"] - 0.5 * g_h2 - 0.5 * g_o2)
+                * activities["H2"] ** 0.5 * fugacity**0.5,
+                "H2O": k(g["H2O"] - g_h2 - 0.5 * g_o2)
+                * activities["H2"] * fugacity**0.5,
+                "CO": k(g["CO"] - 0.5 * g_o2 - g_c)
+                * activities["C"] * fugacity**0.5,
+                "CO2": k(g["CO2"] - g_o2 - g_c)
+                * activities["C"] * fugacity,
+                "N2": activities["N2"],
+                "N": k(g["N"] - 0.5 * g_n2) * activities["N2"] ** 0.5,
+                "NO": k(g["NO"] - 0.5 * g_n2 - 0.5 * g_o2)
+                * activities["N2"] ** 0.5 * fugacity**0.5,
+                "NO2": k(g["NO2"] - 0.5 * g_n2 - g_o2)
+                * activities["N2"] ** 0.5 * fugacity,
+            }
+            for name in species:
+                assert result[name] == pytest.approx(expected[name], rel=2e-12)
+
+
+def test_hydrogen_halides_require_both_gas_parent_keys(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = {
+        **_quickstart_activities(2000.0),
+        "H2": 1.0e-3,
+        "Cl2": 2.0e-3,
+        "F2": 3.0e-3,
+        "Br2": 4.0e-3,
+        "I2": 5.0e-3,
+    }
+    parents = (*IMCC_PARENT_OXIDES, "H2", "Cl2", "F2", "Br2", "I2")
+    result = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-8,
+        gas_pack,
+        parent_oxides=parents,
+        gas_species=("HCl", "HF", "HBr", "HI"),
+    )
+    for species, halogen_parent in (
+        ("HCl", "Cl2"), ("HF", "F2"), ("HBr", "Br2"), ("HI", "I2")
+    ):
+        g_product = _janaf_gibbs(
+            2000.0,
+            _nearest_interval_row(gas_pack.gas_df, f"{species}(g)", 2000.0),
+        )
+        g_h2 = _janaf_gibbs(
+            2000.0, _nearest_interval_row(gas_pack.gas_df, "H2(g)", 2000.0)
+        )
+        g_x2 = _janaf_gibbs(
+            2000.0,
+            _nearest_interval_row(
+                gas_pack.gas_df, f"{halogen_parent}(g)", 2000.0
+            ),
+        )
+        expected = math.exp(
+            -(g_product - 0.5 * g_h2 - 0.5 * g_x2)
+            / (R_J_MOL_K * 2000.0)
+        ) * activities["H2"] ** 0.5 * activities[halogen_parent] ** 0.5
+        assert result[species] == pytest.approx(expected, rel=2e-12)
+
+
+def test_new_element_families_are_optional_and_imposable_in_oxygen_balance(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    baseline_activities = _quickstart_activities(2000.0)
+    default = evaluate_gas(baseline_activities, 2000.0, 1.0e-8, gas_pack)
+    assert not {
+        "H2", "H", "OH", "H2O", "C", "CO", "CO2", "N2", "N", "NO",
+        "NO2", "HCl", "HF", "HBr", "HI",
+    } & set(default)
+    with pytest.raises(ImccGasSpeciesNotFoundError, match="H2"):
+        evaluate_gas(
+            baseline_activities, 2000.0, 1.0e-8, gas_pack, gas_species="H2O"
+        )
+
+    base_root, _, _ = evaluate_gas_oxygen_balance(
+        baseline_activities, 2000.0, gas_pack
+    )
+    for parent, activity, family, carrier in (
+        ("H2", 1.0e-3, "H2", "H2O"),
+        ("C", 1.0e-4, "C", "CO2"),
+        ("N2", 1.0e-3, "N2", "NO2"),
+    ):
+        with_family = {**baseline_activities, parent: activity}
+        root, pressures, _ = evaluate_gas_oxygen_balance(
+            with_family, 2000.0, gas_pack
+        )
+        imposed_root, imposed_pressures, _ = evaluate_gas_oxygen_balance(
+            with_family,
+            2000.0,
+            gas_pack,
+            imposed_parents=(parent,),
+        )
+        assert root < base_root
+        assert imposed_root.hex() == base_root.hex()
+        assert carrier in pressures and carrier in imposed_pressures
+
+
 def test_halogen_oxygen_balance_only_changes_when_parent_is_supplied(
     gas_pack: ImccGasDatapack,
 ) -> None:

@@ -122,6 +122,18 @@ The sulfur channels activate only when the caller supplies `S2` fugacity as
 `a(S2) = f(S2)/p°` on JANAF's 1-bar `S2(g)` reference. OpenIMCC does not
 provide a sulfur melt-side activity model for pyrolysis temperatures.
 
+Hydrogen channels use `a(H2) = f(H2)/p°` on JANAF's 1-bar `H2(g)` reference;
+nitrogen channels use the same convention for `N2`. Carbon uses `a(C)` relative
+to JANAF graphite `C(cr)`, with pure graphite at unit activity. These caller
+quantities are pressure ratios or activities, not melt-oxide activities.
+Convert a specified water fugacity outside the package with
+`a(H2) = f(H2O)/(K fO2^1/2)`, and convert a specified carbon-dioxide fugacity
+with `a(C) = f(CO2)/(K fO2)`. The gas layer holds `a(H2)` or `a(C)` fixed as
+`fO2` changes; it does not solve a hydrogen or carbon inventory. The H, C, and
+N families are omitted unless their parent key is supplied. HCl, HF, HBr, and
+HI use JANAF gas rows and require both `H2` and their corresponding diatomic
+halogen key; they have zero oxygen demand.
+
 The halogen channels use the same gas-parent input convention: supply
 `a(Br2)`, `a(I2)`, `a(Cl2)`, and/or `a(F2)` as `f(X2)/p°`, with `p° = 1 bar`.
 These dimensionless fugacity ratios activate each available elemental pair
@@ -132,9 +144,8 @@ and alkali-halide rows use JANAF gas functions on the 1-bar standard state;
 NaI and (NaI)2 use NASA Glenn gas functions paired with JANAF Na2O(l), I2(g),
 and O2(g) partners.
 
-HBr and HI (their reaction requires H2O), HCl and HF, Ca/Mg/Sr/Ba halides,
-Li/Rb/Cs halides, Cl− and F− dissolution, and Br− dissolution or capacity
-models are outside this gas-parent implementation.
+Ca/Mg/Sr/Ba halides, Li/Rb/Cs halides, Cl− and F− dissolution, and Br−
+dissolution or capacity models are outside this gas-parent implementation.
 
 The P gas tables are fitted, but no public evaluated `P2O5(l)` G(T) function
 was found; JANAF lists `P4O10(cr)` only. P channels therefore remain unavailable
@@ -650,6 +661,12 @@ The function returns pO2 in bar, the same partial-pressure mapping as
 `evaluate_gas`, and residual/bracket/carrier diagnostics. Result mode is
 `oxygen_balance_effusion`. For a K2O–SiO2 melt where K and O2 dominate, this
 reduces to `pO2/pK = 0.25 sqrt(M_O2/M_K) = 0.2262`, the Plante 1979 anchor.
+
+Use `imposed_parents=("C",)` or `imposed_parents=("N2",)` when that family is
+an external sweep reservoir. Its species remain in the pressure mapping but
+are excluded from the melt-derived oxygen balance. The default imposes no
+reservoirs; the option also accepts other gas-parent keys such as `S2`, `H2`,
+`Br2`, `I2`, `Cl2`, and `F2`.
 
 This balance applies to inert cells such as Pt or Ir. It does not apply to
 reactive W or Mo cells: their effusing oxides contribute oxygen-bearing

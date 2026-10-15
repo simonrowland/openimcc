@@ -197,6 +197,20 @@ TRACE_JANAF_GAS_SOURCES = (
 # Mo/W JANAF tables are vendored as normalized YAML records. Keep them on the
 # same fit path and two-interval domain as the other optional trace channels.
 TRACE_JANAF_YAML_GAS_SOURCES = (
+    ("H2(g)", "H-050", "H", 2, 0),
+    ("H(g)", "H-001", "H", 1, 0),
+    ("OH(g)", "H-038", "H", 1, 1),
+    ("H2O(g)", "H-064", "H", 2, 1),
+    ("CO(g)", "C-093", "C", 1, 1),
+    ("CO2(g)", "C-095", "C", 1, 2),
+    ("N2(g)", "N-023", "N", 2, 0),
+    ("N(g)", "N-002", "N", 1, 0),
+    ("NO(g)", "N-005", "N", 1, 1),
+    ("NO2(g)", "N-007", "N", 1, 2),
+    ("HCl(g)", "Cl-026", "Cl", 1, 1),
+    ("HF(g)", "F-005", "F", 1, 1),
+    ("HBr(g)", "Br-010", "Br", 1, 1),
+    ("HI(g)", "H-005", "H", 1, 1),
     ("Mo(g)", "Mo-005", "Mo", 1, 0),
     ("MoO(g)", "Mo-008", "Mo", 1, 1),
     ("MoO2(g)", "Mo-010", "Mo", 1, 2),
@@ -245,6 +259,7 @@ HALOGEN_JANAF_TABLES = frozenset(
         "Br-018", "Br-055", "I-007", "I-028", "Cl-073", "Cl-001",
         "Cl-056", "Cl-098", "Cl-039", "Cl-091", "F-054", "F-001",
         "F-036", "F-082", "F-020", "F-069",
+        "Cl-026", "F-005", "Br-010", "H-005",
     }
 )
 TRACE_NASA_GAS_SOURCES = (
@@ -541,6 +556,7 @@ CONDENSATE_SOURCES = (
 # complete post-marker node. The other three requested liquids have no JANAF
 # table and use the published NASA CEA liquid cards.
 TRACE_CONDENSATE_SOURCES = (("B2O3(l)", "B-096", "B", 2, 3),)
+TRACE_CONDENSED_SOURCES = (("C(cr)", "C-002", "C", 1, 0),)
 TRACE_NASA_CONDENSATE_SOURCES = (
     ("Ga2O3(l)", "NG-12403", "Ga2O3", "Ga", 2, 3, 2080.0, ((1200.0, 2080.0),), ((2080.0, 3000.0),)),
     (
@@ -906,7 +922,9 @@ def _validate_record_identity(
     # JANAF labels the O2 reference record ``ref`` even though the runtime
     # emits that standard gaseous reference row as O2(g).
     source_phase = (
-        "g" if formula in {"O2", "Cl2", "F2"} and phase == "ref" else phase
+        "g" if formula in {"O2", "Cl2", "F2", "H2", "N2"} and phase == "ref"
+        else "cr" if formula == "C" and phase == "ref"
+        else phase
     )
     if source_phase != expected_phase or expected_state != expected_phase:
         raise ValueError(
@@ -2545,6 +2563,7 @@ def _fit_condensate_row(
     minimum_rows: int | None = None,
     runtime_t_min: float | None = None,
     runtime_t_max: float | None = None,
+    phase: str = "l",
 ) -> dict[str, str]:
     """Fit one parent-oxide liquid to the runtime's condensate row form.
 
@@ -2575,7 +2594,7 @@ def _fit_condensate_row(
     table = record["table"]
     if table["table_id"] != table_id:
         raise ValueError(f"{table_id}: record table_id does not match filename")
-    _validate_record_identity(record, species_name, table_id, "l")
+    _validate_record_identity(record, species_name, table_id, phase)
     rows = _usable_rows(
         table,
         table_id,
@@ -2615,7 +2634,7 @@ def _fit_condensate_row(
     A, B, C, D, E = coefficients
     return {
         "species_name": species_name,
-        "state": "l",
+        "state": "s" if phase == "cr" else "l",
         "cation": cation,
         "cat_num": str(cat_num),
         "oxy_num": str(oxy_num),
@@ -3866,6 +3885,18 @@ def build_condensate_rows(
             )
         else:
             rows.append(_fit_condensate_row(source_dir, *source))
+    for source in TRACE_CONDENSED_SOURCES:
+        rows.append(
+            _fit_condensate_row(
+                source_dir,
+                *source,
+                fit_t_min=1200.0,
+                fit_t_max=3000.0,
+                runtime_t_min=1200.0,
+                runtime_t_max=3000.0,
+                phase="cr",
+            )
+        )
     # Mo-015 prints the liquid branch through 2000 K. Continue its last
     # printed Cp above that endpoint with the labelled, source-limited rule.
     rows.extend(
