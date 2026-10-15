@@ -410,6 +410,8 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "(BeO)3": ("BeO", 1 / 3, 0.0),
     "(BeO)4": ("BeO", 0.25, 0.0),
     "Be2": ("BeO", 0.5, 0.5),
+    "Tl": ("Tl2O", 2, 0.5),
+    "Tl2O": ("Tl2O", 1, 0.0),
     # Appended after the existing channels so every pre-existing mapping and
     # output position stays unchanged.
     "Na2O": ("Na2O", 1, 0.0),
@@ -748,6 +750,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "(BeO)3",
         "(BeO)4",
         "Be2",
+        "Tl",
+        "Tl2O",
         "Mn",
         "MnO",
         "Ni",
@@ -950,6 +954,8 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "(BeO)3": "nasa_glenn_fitted",
         "(BeO)4": "nasa_glenn_fitted",
         "Be2": "nasa_glenn_fitted",
+        "Tl": "published_fitted",
+        "Tl2O": "published_fitted",
         "PbO2": "nasa_glenn_fitted",
         "BO-": "nasa_glenn_fitted",
         "GaO": "nasa_glenn_fitted",
@@ -1069,6 +1075,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "NbO2": "janaf_fitted",
     "Ta2O5": "janaf_fitted",
     "BeO": "nasa_glenn_fitted",
+    "Tl2O": "published_fitted",
     "Li2O": "janaf_fitted",
     "Rb2O": "nasa_glenn_fitted",
     "PbO": "janaf_fitted",
@@ -1130,6 +1137,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "NbO2": "Nb-013",
     "Ta2O5": "O-078",
     "BeO": "NG-1352",
+    "Tl2O": "P672-Tl2O-l",
     "Li2O": "Li-015",
     "MoO3": "Mo-015",
     "WO3": "O-066",
@@ -2448,6 +2456,27 @@ ELEMENT_STATUS["Be"] = {
         "status": "not computed",
         "reason": "not computed: ionized beryllium channels are outside this neutral gas change",
         "source_tables": {"selected": "NASA Glenn"},
+        "parent_activity": None,
+    },
+}
+ELEMENT_STATUS["Tl"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": (
+        "Pankratz Bulletin 672 printed pp. 439-441 provide Tl(g), Tl2O(g), and "
+        "the Tl2O(l) parent on elemental 298.15 K formation enthalpy anchors. "
+        "The parent table prints its liquid branch from its 852 K melting point "
+        "through 1000 K; its labelled constant-Cp continuation supplies the "
+        "1200-3000 K runtime range. Tl2O is the selected parent and a(Tl2O) is "
+        "caller-supplied; fO2 is also an input. No ion channel or melt activity "
+        "model is included."
+    ),
+    "c2_candidates": (("P672-Tl2O-g", "Tl2O"),),
+    "c3_ion_bound": {
+        "status": "not computed",
+        "reason": "not computed: ionized thallium channels are outside this neutral gas change",
+        "source_tables": {"selected": "Pankratz Bulletin 672"},
         "parent_activity": None,
     },
 }
@@ -4155,7 +4184,7 @@ _ATOMIC_MASS_G_MOL = {
     "O": 15.999, "Na": 22.989769, "K": 39.0983, "Si": 28.085,
     "Fe": 55.845, "Mg": 24.305, "Al": 26.9815385, "Ca": 40.078,
     "Ti": 47.867, "Cr": 51.9961, "V": 50.9415, "Nb": 92.90637,
-    "Ta": 180.94788, "Be": 9.0121831,
+    "Ta": 180.94788, "Be": 9.0121831, "Tl": 204.38,
     "Mn": 54.938044, "Ni": 58.6934, "Co": 58.933194,
     "Sb": 121.760, "Ag": 107.8682,
     "P": 30.973761998, "S": 32.06,

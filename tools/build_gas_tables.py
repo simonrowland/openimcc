@@ -334,6 +334,8 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("Th(g)", "P672-Th-g", "Th", "Th", 1, 0, 2500.0),
     ("ThO(g)", "P672-ThO-g", "ThO", "Th", 1, 1, 2500.0),
     ("ThO2(g)", "P672-ThO2-g", "ThO2", "Th", 1, 2, 2500.0),
+    ("Tl(g)", "P672-Tl-g", "Tl", "Tl", 1, 0, 2000.0),
+    ("Tl2O(g)", "P672-Tl2O-g", "Tl2O", "Tl", 2, 1, 1000.0),
     ("MnO(g)", "TSIV-1436", "MnO", "Mn", 1, 1, 6000.0),
     ("CoO(g)", "TSIV-1335", "CoO", "Co", 1, 1, 3000.0),
 )
@@ -3169,7 +3171,9 @@ def build_rows(
     for source in TRACE_PUBLISHED_GAS_SOURCES:
         split_temperature = (
             min(max(source[6], 1500.0), 2000.0)
-            if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb"))
+            if source[1].startswith(
+                ("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")
+            )
             else 1500.0
         )
         high_fit_start = math.floor(split_temperature / 100.0) * 100.0
@@ -3235,7 +3239,9 @@ def build_rows(
     for source in TRACE_PUBLISHED_GAS_SOURCES:
         split_temperature = (
             min(max(source[6], 1500.0), 2000.0)
-            if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb"))
+            if source[1].startswith(
+                ("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")
+            )
             else 1500.0
         )
         rows.append(
@@ -4314,6 +4320,16 @@ def build_condensate_rows(
             "Te",
             1,
             2,
+            published_source_dir,
+        )
+    )
+    rows.extend(
+        _fit_published_condensate_row(
+            "P672-Tl2O-l",
+            "Tl2O(l)",
+            "Tl",
+            2,
+            1,
             published_source_dir,
         )
     )

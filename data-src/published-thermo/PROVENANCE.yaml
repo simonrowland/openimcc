@@ -124,7 +124,7 @@ records:
         selection_reason: Comparison-only Hf(g) apparent-G values quantify the JANAF versus Bulletin 672 difference; JANAF remains selected by the primary authority rail.
   - record_id: P672
     path: data-src/published-thermo/pankratz-bulletin-672.json
-    source_sha256: 3072ab1d0e3b2d0fa2b3cda39085a98db63e63b823fd39b4d551e11a9389f061
+    source_sha256: 02a1f3e0f0c853e103df8c6417f80083a27fc5e57f03e0abf0d1c4ab2bf43466
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     tables:
@@ -176,6 +176,18 @@ records:
         source_locator: ThO2 gas table, printed p. 426
         tier: 3
         selection_reason: JANAF and NASA Glenn provide no ThO2(g) gas card; the published table supplies elemental-reference functions through 2500 K, with the continuation separately flagged.
+      P672-Tl-g:
+        source_locator: Tl(g) formation table, printed p. 439
+        tier: 3
+        selection_reason: Pankratz Bulletin 672 supplies the elemental Tl(g) formation anchor and thermal table through 2000 K; its stated 900-1746 K extrapolation is retained as printed data and higher temperatures use the labelled continuation.
+      P672-Tl2O-g:
+        source_locator: Tl2O(g) formation table, printed p. 441
+        tier: 3
+        selection_reason: The same selected Pankratz compilation supplies the Tl2O(g) elemental formation anchor and thermal nodes through 1000 K; the upper runtime range uses the labelled constant-Cp continuation.
+      P672-Tl2O-l:
+        source_locator: Tl2O(c,l) formation table, printed p. 440
+        tier: 1
+        selection_reason: Pankratz prints the Tl2O liquid branch from its 852 K fusion marker and the elemental 298.15 K formation anchor; this phase-paired parent convention is selected over a source-mixed alternative.
       P672-Se-g:
         source_locator: Selenium gas table, printed p. 367
         tier: 3

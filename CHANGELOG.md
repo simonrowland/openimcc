@@ -11,6 +11,9 @@
 - Added NASA Glenn Be(g), BeO(g), Be2(g), Be2O(g), (BeO)2(g), (BeO)3(g), and
   (BeO)4(g) channels with caller-supplied BeO(l) activity and fO2. The liquid
   card starts at 2851 K and uses a labelled constant-Cp continuation below.
+- Added Pankratz Bulletin 672 Tl(g) and Tl2O(g) channels with a caller-supplied
+  Tl2O(l) activity and fO2. The liquid parent uses the printed 852 K melt
+  branch through 1000 K and a labelled constant-Cp continuation above.
 - Added caller-supplied Br2, I2, Cl2, and F2 gas-parent inputs with elemental
   and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
   pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair

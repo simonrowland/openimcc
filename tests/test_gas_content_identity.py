@@ -148,8 +148,9 @@ def test_packaged_table_content_digests_match_current_tables() -> None:
     added_gas_species = {
         "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
         "(BeO)2(g)", "(BeO)3(g)", "(BeO)4(g)", "Be2(g)",
+        "Tl(g)", "Tl2O(g)",
     }
-    added_condensate_species = {"Ta2O5(l)", "BeO(l)"}
+    added_condensate_species = {"Ta2O5(l)", "BeO(l)", "Tl2O(l)"}
     retained_gas = pack.gas_df.loc[~pack.gas_df.index.isin(added_gas_species)]
     retained_condensate = pack.oxide_df.loc[
         ~pack.oxide_df.index.isin(added_condensate_species)
@@ -209,11 +210,24 @@ def test_gas_cell_change_only_changes_gas_and_combined_identity(
 
 def test_combined_identity_includes_the_published_melt_binding_digest() -> None:
     gas_pack = load_gas_datapack()
+    added_gas_species = {
+        "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
+        "(BeO)2(g)", "(BeO)3(g)", "(BeO)4(g)", "Be2(g)",
+        "Tl(g)", "Tl2O(g)",
+    }
+    added_condensate_species = {"Ta2O5(l)", "BeO(l)", "Tl2O(l)"}
+    legacy_pack = replace(
+        gas_pack,
+        gas_df=gas_pack.gas_df.loc[~gas_pack.gas_df.index.isin(added_gas_species)],
+        oxide_df=gas_pack.oxide_df.loc[
+            ~gas_pack.oxide_df.index.isin(added_condensate_species)
+        ],
+    )
     v1 = load_datapack(PACK_DIR / "imcc-sf04-v1.0.2.json")
     extension = load_datapack(PACK_DIR / "imcc-sf04-ext-v4.json")
 
-    v1_identity = engine_binding_identity(v1, gas_pack)
-    extension_identity = engine_binding_identity(extension, gas_pack)
+    v1_identity = engine_binding_identity(v1, legacy_pack)
+    extension_identity = engine_binding_identity(extension, legacy_pack)
     assert v1_identity.melt_binding_digest == v1.binding_digest
     assert extension_identity.melt_binding_digest == extension.binding_digest
     assert v1_identity.gas_table_digest == extension_identity.gas_table_digest

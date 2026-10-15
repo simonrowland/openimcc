@@ -209,7 +209,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
             for source in build_gas_tables.GAS_SOURCES
         )
     )
-    assert len(gas_pack.oxide_df) == 170
+    assert len(gas_pack.oxide_df) == 181
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -532,7 +532,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     ]
     reviewed_trace_species = {
         f"{source[0]}" for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES
-        if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb"))
+        if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl"))
     }
     ordinary_high_rows = neutral_high_rows.loc[
         ~neutral_high_rows.index.isin(reviewed_trace_species)
@@ -542,7 +542,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     ]
     assert (ordinary_high_rows["T_min"] == 1500).all()
     for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
-        if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb")):
+        if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")):
             split = min(max(source[6], 1500.0), 2000.0)
             assert float(high_rows.loc[source[0], "T_min"]) == split
             assert float(low_rows.loc[source[0], "T_max"]) == split
@@ -2869,6 +2869,43 @@ def test_beryllium_channels_and_oxygen_balance(
     assert unlisted_root == pytest.approx(si_only_root, rel=0.0, abs=0.0)
 
 
+def test_thallium_channels_and_oxygen_balance(
+    gas_pack: ImccGasDatapack, unit_activities: dict[str, float]
+) -> None:
+    activities = {"Tl2O": 1.0e-3}
+    result = evaluate_gas(
+        activities,
+        2000.0,
+        1.0e-10,
+        gas_pack,
+        parent_oxides=("Tl2O",),
+        gas_species=("Tl", "Tl2O"),
+        allow_extrapolation=False,
+    )
+    assert result._values == pytest.approx(
+        {"Tl": 8.624314565304715, "Tl2O": 0.023561701919532385},
+        rel=1.0e-12,
+    )
+    default = evaluate_gas(unit_activities, 1800.0, 1.0e-10, gas_pack)
+    assert not {"Tl", "Tl2O"}.intersection(default)
+
+    root, balanced, diagnostics = evaluate_gas_oxygen_balance(
+        activities, 2000.0, gas_pack, parent_oxides=("Tl2O",)
+    )
+    assert root == pytest.approx(0.008771115323502448, rel=1.0e-12)
+    assert diagnostics["residual"] < 1.0e-12
+    assert {"Tl", "Tl2O", "O2"}.issubset(balanced)
+
+    unlisted_root, _, _ = evaluate_gas_oxygen_balance(
+        {**activities, "SiO2": 1.0}, 2000.0, gas_pack,
+        parent_oxides=("SiO2",),
+    )
+    si_only_root, _, _ = evaluate_gas_oxygen_balance(
+        {"SiO2": 1.0}, 2000.0, gas_pack, parent_oxides=("SiO2",)
+    )
+    assert unlisted_root == pytest.approx(si_only_root, rel=0.0, abs=0.0)
+
+
 def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
     trace_gas = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
@@ -2928,6 +2965,9 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Cu2O": 1.0e-3,
         "SnO": 1.0e-3,
         "ZnO": 1.0e-3,
+        "Tl2O": 1.0e-3,
+        "Ta2O5": 1.0e-3,
+        "BeO": 1.0e-3,
         "CdO": 1.0e-3,
         "Bi2O3": 1.0e-3,
         "TeO2": 1.0e-3,
@@ -2995,7 +3035,12 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
             )
             assert (
                 parent_row in reason
-                or species in {"Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3", "Th", "ThO", "ThO2", "Hf", "Y", "YO"}
+                or species in {
+                    "Sc", "ScO", "ScO2", "U", "UO", "UO2", "UO3",
+                    "Th", "ThO", "ThO2", "Hf", "Y", "YO",
+                    "Ta", "TaO", "TaO2", "Be", "BeO", "Be2O",
+                    "(BeO)2", "(BeO)3", "(BeO)4", "Be2", "Tl", "Tl2O",
+                }
                 and f"missing from active table: {species}(g)" in reason
             )
 
@@ -4348,6 +4393,7 @@ def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> N
         "Ga2O3(l)", "GeO2(l)", "In2O3(l)",
         "Sc2O3(l)", "UO2(l)",
         "Al2O3(l)", "MgO(l)", "CaO(l)", "SnO(l)",
+        "BeO(l)",
     }
     for row_name, row in extension_rows.iterrows():
         species = row_name.removesuffix("(l)")
