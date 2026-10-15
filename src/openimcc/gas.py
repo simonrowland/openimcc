@@ -4391,9 +4391,10 @@ def evaluate_gas_oxygen_balance(
     no imposed reservoirs; a bare string is rejected because it is not a
     sequence of parent keys.
 
-    A gas parent other than H2, C, or N2 (for example S2, Br2, I2, Cl2, or F2)
-    supplied only in ``activities`` returns its species, but they stay out of
-    the oxygen demand. Listing that parent in ``parent_oxides`` puts them in.
+    Every supplied gas-parent activity and condensed parent C contributes its
+    oxygen-carrying species to the melt-derived oxygen demand unless named in
+    ``imposed_parents``. Parent oxides omitted from an explicit
+    ``parent_oxides`` sequence remain excluded.
     """
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
@@ -4412,10 +4413,13 @@ def evaluate_gas_oxygen_balance(
 
     available_parents = list(parent_oxides)
     if isinstance(activities, Mapping):
+        reaction_parents = (
+            _GAS_PHASE_PARENT_ROWS.keys() | _CONDENSED_PARENT_ROWS.keys()
+        )
         available_parents.extend(
             parent
             for parent in activities
-            if parent in ("H2", "C", "N2") and parent not in available_parents
+            if parent in reaction_parents and parent not in available_parents
         )
     channels, _omitted_channels = _default_reactions(
         tuple(available_parents), datapack

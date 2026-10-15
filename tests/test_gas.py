@@ -1929,7 +1929,7 @@ def test_new_element_families_are_optional_and_imposable_in_oxygen_balance(
         assert carrier in pressures and carrier in imposed_pressures
 
 
-def test_oxygen_balance_preserves_legacy_dict_only_parent_contract(
+def test_oxygen_balance_includes_each_dict_only_nonoxide_parent(
     gas_pack: ImccGasDatapack,
 ) -> None:
     with pytest.raises(TypeError, match="sequence of parent-key strings"):
@@ -1941,24 +1941,19 @@ def test_oxygen_balance_preserves_legacy_dict_only_parent_contract(
         )
 
     activities = _quickstart_activities(1800.0, allow_extrapolation=True)
-    baseline_root_hex = "0x1.3d1fbf75274c6p-18"
-
-    for extra in (
-        {"S2": 1.0e-3},
-        {"Br2": 1.0e-4, "I2": 1.0e-4},
-    ):
-        root, _, _ = evaluate_gas_oxygen_balance(
-            {**activities, **extra}, 1800.0, gas_pack
-        )
-        assert root.hex() == baseline_root_hex
-
-    root, _, _ = evaluate_gas_oxygen_balance(
-        {**activities, "Cl2": 1.0e-4, "F2": 1.0e-4},
-        1800.0,
-        gas_pack,
+    no_extra_calls = (
+        evaluate_gas_oxygen_balance(activities, 1800.0, gas_pack),
+        evaluate_gas_oxygen_balance(
+            activities, 1800.0, gas_pack, parent_oxides=tuple(activities)
+        ),
+        evaluate_gas_oxygen_balance(
+            activities, 1800.0, gas_pack, imposed_parents=None
+        ),
     )
-    assert root.hex() == baseline_root_hex
+    assert no_extra_calls[0] == no_extra_calls[1] == no_extra_calls[2]
+    assert no_extra_calls[0][0].hex() == "0x1.3d1fbf75274c6p-18"
 
+    # The explicit oxide subset keeps excluding every other oxide activity.
     root, pressures, _ = evaluate_gas_oxygen_balance(
         activities,
         1800.0,
@@ -1969,8 +1964,61 @@ def test_oxygen_balance_preserves_legacy_dict_only_parent_contract(
     assert len(pressures) == 9
     assert "Na" not in pressures
 
+    extras = (
+        {"S2": 1.0e-10},
+        {"Br2": 1.0e-10, "I2": 1.0e-10},
+        {"Cl2": 1.0e-10, "F2": 1.0e-10},
+    )
+    for temperature in (1500.0, 1800.0, 2200.0):
+        baseline_root, baseline_pressures, _ = evaluate_gas_oxygen_balance(
+            activities, temperature, gas_pack
+        )
+        baseline_listed = evaluate_gas_oxygen_balance(
+            activities,
+            temperature,
+            gas_pack,
+            parent_oxides=tuple(activities),
+        )
+        baseline_imposed_none = evaluate_gas_oxygen_balance(
+            activities, temperature, gas_pack, imposed_parents=None
+        )
+        baseline_imposed_omitted = evaluate_gas_oxygen_balance(
+            activities, temperature, gas_pack
+        )
+        assert baseline_listed == baseline_imposed_none == baseline_imposed_omitted
+        for extra in extras:
+            with_extra = {**activities, **extra}
+            dict_only = evaluate_gas_oxygen_balance(
+                with_extra, temperature, gas_pack
+            )
+            listed = evaluate_gas_oxygen_balance(
+                with_extra,
+                temperature,
+                gas_pack,
+                parent_oxides=(*IMCC_PARENT_OXIDES, *extra),
+            )
+            imposed = evaluate_gas_oxygen_balance(
+                with_extra,
+                temperature,
+                gas_pack,
+                imposed_parents=tuple(extra),
+            )
+            assert dict_only[0].hex() == listed[0].hex()
+            assert dict(dict_only[1]) == dict(listed[1])
+            assert {key: value.hex() for key, value in dict_only[1].items()} == {
+                key: value.hex() for key, value in dict(listed[1]).items()
+            }
+            assert imposed[0].hex() == baseline_root.hex()
+            assert {
+                key: value.hex()
+                for key, value in dict(imposed[1]).items()
+                if key in baseline_pressures
+            } == {
+                key: value.hex() for key, value in dict(baseline_pressures).items()
+            }
 
-def test_halogen_oxygen_balance_only_changes_when_parent_is_supplied(
+
+def test_halogen_oxygen_balance_uses_dict_only_parent_activity(
     gas_pack: ImccGasDatapack,
 ) -> None:
     activities = _quickstart_activities(1800.0, allow_extrapolation=True)
@@ -1984,11 +2032,16 @@ def test_halogen_oxygen_balance_only_changes_when_parent_is_supplied(
     assert dict(result_without) == dict(repeated_result)
     root_with, result_with, _ = evaluate_gas_oxygen_balance(
         {**activities, "Br2": 1.0e-2}, 1800.0, gas_pack,
-        parent_oxides=(*IMCC_PARENT_OXIDES, "Br2"),
     )
     assert root_with != root_without
     assert result_with["Br2"] == pytest.approx(1.0e-2)
     assert result_with["NaBr"] > 0.0
+    listed_root, listed_result, _ = evaluate_gas_oxygen_balance(
+        {**activities, "Br2": 1.0e-2}, 1800.0, gas_pack,
+        parent_oxides=(*IMCC_PARENT_OXIDES, "Br2"),
+    )
+    assert root_with.hex() == listed_root.hex()
+    assert dict(result_with) == dict(listed_result)
     for parent in ("Cl2", "F2"):
         activity = 1.0e-2 if parent == "Cl2" else 1.0e-8
         root, result, _ = evaluate_gas_oxygen_balance(

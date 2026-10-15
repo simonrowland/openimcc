@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Unified oxygen-balance demand for every supplied gas parent and condensed
+  parent C unless named in `imposed_parents`. Dict-only S2 and halogen calls
+  now include their oxygen-carrying species in the demand.
 - Added caller-supplied Br2, I2, Cl2, and F2 gas-parent inputs with elemental
   and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
   pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair

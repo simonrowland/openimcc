@@ -676,6 +676,12 @@ reservoirs; the option also accepts other gas-parent keys such as `S2`, `H2`,
 An imposed key without a supplied activity is ignored. Pass parent keys as a
 sequence; a bare string raises `TypeError`.
 
+Every supplied gas-parent activity and condensed parent `C` contributes its
+oxygen-carrying species to the melt-derived demand unless that parent is named
+in `imposed_parents`. This applies whether the parent is supplied in the
+activity dictionary alone or also listed in `parent_oxides`; the latter selects
+oxide parents and does not control gas-parent inclusion.
+
 This balance applies to inert cells such as Pt or Ir. It does not apply to
 reactive W or Mo cells: their effusing oxides contribute oxygen-bearing
 fluxes that this model does not include.
