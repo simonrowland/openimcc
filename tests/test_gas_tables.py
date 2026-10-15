@@ -583,11 +583,10 @@ def test_nasa_vendored_record_ids_and_filename_stems_do_not_collide() -> None:
         ("record_id", records_by_id), ("NASA filename stem", records_by_ng_stem)
     ):
         for key, records in groups.items():
-            if len(records) > 1:
-                assert len({contents for _path, contents in records}) == 1, (
-                    f"different NASA card contents share {identity} {key!r}: "
-                    f"{[path.name for path, _contents in records]}"
-                )
+            assert len(records) == 1, (
+                f"NASA cards share {identity} {key!r}: "
+                f"{[path.name for path, _contents in records]}"
+            )
 
 
 def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
@@ -1551,6 +1550,11 @@ def test_thallium_pankratz_anchors_closure_and_printed_limits() -> None:
     for table_id, (page, anchor, source_limit) in expected.items():
         record = bundle[table_id]
         assert page in record["source_note"]
+        if table_id == "P672-Tl-g":
+            # The 900-1746 K constant-Cp note is on the metal table (p. 438),
+            # not the gas page, whose printed Cp rises over that span.
+            assert "printed on p. 438" in record["source_note"]
+            assert "The source states" not in record["source_note"]
         assert record["formation_enthalpy_298_kcal_mol"] == pytest.approx(anchor)
         assert record["source_limit_K"] == source_limit
         assert max(node[0] for node in record["nodes"]) == source_limit
