@@ -4040,6 +4040,17 @@ def test_yttrium_source_anchors_and_dissociation_closure() -> None:
     assert oxide["formation_enthalpy_298_kcal_mol"] == pytest.approx(-455.380)
     assert oxide["source_limit_K"] == pytest.approx(2000.0)
     assert "alpha-beta transition" in oxide["source_note"]
+    y2o3_inputs = json.loads(
+        (ROOT / "data-src" / "liquid-from-solid-inputs.json").read_text(
+            encoding="utf-8"
+        )
+    )["rows"]["Y2O3"]["inputs"]
+    assert y2o3_inputs["fusion_entropy"]["value"] * y2o3_inputs[
+        "fusion_temperature"
+    ]["value"] == pytest.approx(119000.0, abs=0.001)
+    assert y2o3_inputs["fusion_entropy"]["spread"] == pytest.approx(
+        10000.0 / y2o3_inputs["fusion_temperature"]["value"]
+    )
     assert monoxide["formation_enthalpy_298_kcal_mol"] == pytest.approx(-11.0)
     assert monoxide["formation_enthalpy_unc_kcal_mol"] == pytest.approx(2.5)
     assert monoxide["nodes"][0][1] * 4.184 == pytest.approx(29.0)
