@@ -1,0 +1,297 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "source_id": "nasa-glenn",
+  "source": {
+    "database": "NASA Glenn / CEA thermo.inp",
+    "citation": "McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556; NASA CEA thermo.inp.",
+    "version": "thermo.inp dated 9/8/2021 (Snyder CEA standalone updates)",
+    "official_url": "https://www.grc.nasa.gov/www/CEAWeb/",
+    "licence": "US government work; 17 U.S.C. § 105 (no U.S. copyright). Public-domain basis."
+  },
+  "compilation_role": {
+    "kind": "assessed_thermodynamic_functions",
+    "engine_reference_input": true,
+    "validation_measurement": false,
+    "scoring_eligible": false,
+    "battery_refusal": "gibbs_table_not_runtime_observable",
+    "circularity_warning": "Do not validate an engine against a compilation it consumes."
+  },
+  "record_id": "NG-0806",
+  "name_as_published": "MgCL2",
+  "citation_as_published": "Gurvich,1996a pt1 p416 pt2 p330.",
+  "cea_section": "products",
+  "formula": "MgCl2",
+  "phase": "gas",
+  "phase_as_published": "0",
+  "phase_flag": 0,
+  "phase_flag_as_published": " 0",
+  "phase_normalization_rule": "G or CEA flag 0 maps to gas. Otherwise a recognized terminal state suffix keeps its published label; without one, NASA-7 S/L/C maps to cr/L/condensed and a positive CEA flag maps to condensed. Unrecognized suffixes stay verbatim in phase_as_published and are listed as ambiguities; card/suffix conflicts retain both published tokens. phase_ordinal is present only when same-formula non-gas records would otherwise share a phase label.",
+  "n_intervals_declared": 2,
+  "source_ref_code": "tpis96",
+  "composition": [
+    {
+      "element_as_published": "MG",
+      "count_as_published": "  1.00",
+      "element": "Mg",
+      "count": 1.0,
+      "filler": false
+    },
+    {
+      "element_as_published": "CL",
+      "count_as_published": "  2.00",
+      "element": "Cl",
+      "count": 2.0,
+      "filler": false
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0.0,
+      "filler": true
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0.0,
+      "filler": true
+    },
+    {
+      "element_as_published": "  ",
+      "count_as_published": "  0.00",
+      "element": null,
+      "count": 0.0,
+      "filler": true
+    }
+  ],
+  "molecular_weight": {
+    "as_published": "95.2110000",
+    "value": 95.211
+  },
+  "delta_f_H_298_15": {
+    "as_published": "-399169.896",
+    "value": -399169.896,
+    "units_as_published": "J/mol"
+  },
+  "intervals": [
+    {
+      "T_min_K": {
+        "as_published": "300.000",
+        "value": 300.0
+      },
+      "T_max_K": {
+        "as_published": "1000.000",
+        "value": 1000.0
+      },
+      "n_poly_terms": {
+        "as_published": "7",
+        "value": 7.0
+      },
+      "exponents": [
+        {
+          "as_published": "-2.0",
+          "value": -2.0
+        },
+        {
+          "as_published": "-1.0",
+          "value": -1.0
+        },
+        {
+          "as_published": "0.0",
+          "value": 0.0
+        },
+        {
+          "as_published": "1.0",
+          "value": 1.0
+        },
+        {
+          "as_published": "2.0",
+          "value": 2.0
+        },
+        {
+          "as_published": "3.0",
+          "value": 3.0
+        },
+        {
+          "as_published": "4.0",
+          "value": 4.0
+        },
+        {
+          "as_published": "0.0",
+          "value": 0.0
+        }
+      ],
+      "H298_minus_H0": {
+        "as_published": "13900.604",
+        "value": 13900.604
+      },
+      "a_coefficients": [
+        {
+          "as_published": "3.637824680D+04",
+          "value": 36378.2468
+        },
+        {
+          "as_published": "-7.307844960D+02",
+          "value": -730.784496
+        },
+        {
+          "as_published": "9.661030510D+00",
+          "value": 9.66103051
+        },
+        {
+          "as_published": "-3.660212940D-03",
+          "value": -0.00366021294
+        },
+        {
+          "as_published": "3.610819350D-06",
+          "value": 3.61081935e-06
+        },
+        {
+          "as_published": "-1.928769286D-09",
+          "value": -1.928769286e-09
+        },
+        {
+          "as_published": "4.309912350D-13",
+          "value": 4.30991235e-13
+        }
+      ],
+      "a8_as_published": "                ",
+      "b1": {
+        "as_published": "-4.646914570D+04",
+        "value": -46469.1457
+      },
+      "b2": {
+        "as_published": "-2.360112274D+01",
+        "value": -23.60112274
+      },
+      "coefficient_count": 9,
+      "raw_t_line": "    300.000   1000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0        13900.604",
+      "raw_coeff_lines": [
+        " 3.637824680D+04-7.307844960D+02 9.661030510D+00-3.660212940D-03 3.610819350D-06",
+        "-1.928769286D-09 4.309912350D-13                -4.646914570D+04-2.360112274D+01"
+      ],
+      "ambiguities": []
+    },
+    {
+      "T_min_K": {
+        "as_published": "1000.000",
+        "value": 1000.0
+      },
+      "T_max_K": {
+        "as_published": "6000.000",
+        "value": 6000.0
+      },
+      "n_poly_terms": {
+        "as_published": "7",
+        "value": 7.0
+      },
+      "exponents": [
+        {
+          "as_published": "-2.0",
+          "value": -2.0
+        },
+        {
+          "as_published": "-1.0",
+          "value": -1.0
+        },
+        {
+          "as_published": "0.0",
+          "value": 0.0
+        },
+        {
+          "as_published": "1.0",
+          "value": 1.0
+        },
+        {
+          "as_published": "2.0",
+          "value": 2.0
+        },
+        {
+          "as_published": "3.0",
+          "value": 3.0
+        },
+        {
+          "as_published": "4.0",
+          "value": 4.0
+        },
+        {
+          "as_published": "0.0",
+          "value": 0.0
+        }
+      ],
+      "H298_minus_H0": {
+        "as_published": "13900.604",
+        "value": 13900.604
+      },
+      "a_coefficients": [
+        {
+          "as_published": "-6.835217010D+04",
+          "value": -68352.1701
+        },
+        {
+          "as_published": "-2.490899393D+01",
+          "value": -24.90899393
+        },
+        {
+          "as_published": "7.518783200D+00",
+          "value": 7.5187832
+        },
+        {
+          "as_published": "-7.564518260D-06",
+          "value": -7.56451826e-06
+        },
+        {
+          "as_published": "1.679293770D-09",
+          "value": 1.67929377e-09
+        },
+        {
+          "as_published": "-1.931706275D-13",
+          "value": -1.931706275e-13
+        },
+        {
+          "as_published": "8.971657820D-18",
+          "value": 8.97165782e-18
+        }
+      ],
+      "a8_as_published": "                ",
+      "b1": {
+        "as_published": "-5.032686910D+04",
+        "value": -50326.8691
+      },
+      "b2": {
+        "as_published": "-1.053268382D+01",
+        "value": -10.53268382
+      },
+      "coefficient_count": 9,
+      "raw_t_line": "   1000.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0        13900.604",
+      "raw_coeff_lines": [
+        "-6.835217010D+04-2.490899393D+01 7.518783200D+00-7.564518260D-06 1.679293770D-09",
+        "-1.931706275D-13 8.971657820D-18                -5.032686910D+04-1.053268382D+01"
+      ],
+      "ambiguities": []
+    }
+  ],
+  "coefficient_count": 18,
+  "interval_count": 2,
+  "ambiguity_count": 0,
+  "ambiguities": [],
+  "source_locator": {
+    "path": "data/literature/compilations/nasa-glenn/source/thermo.inp",
+    "name_line": 6853,
+    "header_line": 6854,
+    "end_line": 6860
+  },
+  "source_text": {
+    "name_line": "MgCL2             Gurvich,1996a pt1 p416 pt2 p330.",
+    "header_line": " 2 tpis96 MG  1.00CL  2.00    0.00    0.00    0.00 0   95.2110000    -399169.896",
+    "interval_lines": [
+      "    300.000   1000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0        13900.604",
+      " 3.637824680D+04-7.307844960D+02 9.661030510D+00-3.660212940D-03 3.610819350D-06",
+      "-1.928769286D-09 4.309912350D-13                -4.646914570D+04-2.360112274D+01",
+      "   1000.000   6000.0007 -2.0 -1.0  0.0  1.0  2.0  3.0  4.0  0.0        13900.604",
+      "-6.835217010D+04-2.490899393D+01 7.518783200D+00-7.564518260D-06 1.679293770D-09",
+      "-1.931706275D-13 8.971657820D-18                -5.032686910D+04-1.053268382D+01"
+    ]
+  }
+}

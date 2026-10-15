@@ -626,6 +626,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "F2", "F", "NaF", "(NaF)2", "KF", "(KF)2",
             "HCl", "HF", "HBr", "HI",
         }
+        - build_gas_tables.HALOGEN_GAS_SPECIES
         | {
             "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
             "Y", "YO",
@@ -7534,6 +7535,13 @@ def test_halogen_janaf_formation_cells_close_to_printed_log_kf() -> None:
         "Br-018", "Br-055", "I-007", "I-028", "Cl-073", "Cl-001",
         "Cl-056", "Cl-098", "Cl-039", "Cl-091", "F-054", "F-001",
         "F-036", "F-082", "F-020", "F-069",
+        "Ba-007", "Ba-011", "Ba-012", "Ba-016", "Ba-017", "Ba-022",
+        "Ba-029", "Ba-033", "Br-004", "Br-044", "Ca-022", "Ca-026",
+        "Br-023", "Br-060", "Br-092", "I-012", "I-033", "Br-034",
+        "Br-073", "Cl-069", "Cl-122", "F-049", "F-105", "I-020",
+        "I-044", "F-024", "F-071", "Cl-044", "Cl-092", "Br-022",
+        "Br-056", "I-011", "I-029", "Cs-011", "Cs-019", "Cl-008",
+        "Cl-078",
     )
     for table_id in table_ids:
         source = _record(table_id)

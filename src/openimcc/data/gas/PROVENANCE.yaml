@@ -13126,6 +13126,934 @@ rows:
   - {"table":"condensate","species_name":"Au(l)","table_id":"BU-0055","runtime_ref":"BU-0055","source_path":"data-src/published-thermo/burcat-au.json","source_sha256":"cd3a52b19c46ea6256ca692281ba68616205e0a4f3ba23ce04fd7d2094c18f64","authority":"published_fitted","method":"fitted","T_range_K":[1337.0,3000.0],"source_fit_range_K":[1337.0,3000.0],"source_limit_K":3200.0,"max_residual_J_per_mol":10.8720496746828,"max_residual_log10_K":0.000246532576697699,"source_data":true,"source_record":"data-src/published-thermo/burcat-au.json","source_locator":"BURCAT.THR.txt card BU-0055; elemental reference-metal l function","source_url":"https://thermo-burcat.net.technion.ac.il/","source":{"citation":"Burcat and Ruscic, Third Millennium Thermochemical Database for Combustion","anchor":"Elemental 298.15 K reference metal."}}
   - {"table":"condensate","species_name":"Pd(cr)","table_id":"BU-3110","runtime_ref":"BU-3110","source_path":"data-src/published-thermo/burcat-pd.json","source_sha256":"f065ec05a1603d14113d3fba01a47da8ed516f23380443b5050896aac2819a85","authority":"published_fitted","method":"fitted","T_range_K":[1200.0,1827.0],"source_fit_range_K":[1200.0,1827.0],"source_limit_K":1827.0,"max_residual_J_per_mol":0.00253158516716212,"max_residual_log10_K":9.44527556620282e-08,"source_data":true,"source_record":"data-src/published-thermo/burcat-pd.json","source_locator":"BURCAT.THR.txt card BU-3110; elemental reference-metal cr function","source_url":"https://thermo-burcat.net.technion.ac.il/","source":{"citation":"Burcat and Ruscic, Third Millennium Thermochemical Database for Combustion","anchor":"Elemental 298.15 K reference metal."},"fit_step_at_K":1827.0}
   - {"table":"condensate","species_name":"Pd(l)","table_id":"BU-3111","runtime_ref":"BU-3111","source_path":"data-src/published-thermo/burcat-pd.json","source_sha256":"f065ec05a1603d14113d3fba01a47da8ed516f23380443b5050896aac2819a85","authority":"published_fitted","method":"fitted","T_range_K":[1827.0,3000.0],"source_fit_range_K":[1827.0,3000.0],"source_limit_K":6000.0,"max_residual_J_per_mol":0.498980724514695,"max_residual_log10_K":1.29462209650406e-05,"source_data":true,"source_record":"data-src/published-thermo/burcat-pd.json","source_locator":"BURCAT.THR.txt card BU-3111; elemental reference-metal l function","source_url":"https://thermo-burcat.net.technion.ac.il/","source":{"citation":"Burcat and Ruscic, Third Millennium Thermochemical Database for Combustion","anchor":"Elemental 298.15 K reference metal."}}
+  - table: gas
+    species_name: BaBr(g)
+    table_id: Ba-007
+    source_path: data-src/janaf/Ba-007.yaml
+    source_sha256: 0d693195ea44208988b729de163f8e25de2f54ac1aca6fddead1734184321d6f
+    upstream_source_sha256: 4562289bbe2887a333cbc4974797a12ab728c416a9fcaad921aa80d6ba643231
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.67495430528652
+    max_residual_log10_K: 3.47080866453879e-05
+    source_locator: JANAF table Ba-007
+    source_url: https://janaf.nist.gov/tables/Ba-007.html
+    download_url: https://janaf.nist.gov/tables/Ba-007.txt
+    source_data: true
+  - table: gas
+    species_name: BaBr2(g)
+    table_id: Ba-011
+    source_path: data-src/janaf/Ba-011.yaml
+    source_sha256: b684faa65294050d42157c5b4fd6156eaf8508b92b8493042969c32988d7387d
+    upstream_source_sha256: b9a85e51cafeb6932dc89a36992930b80c31e04a7d120ac342d30fac6e0ed1c7
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.85639247018844
+    max_residual_log10_K: 3.46307496729595e-05
+    source_locator: JANAF table Ba-011
+    source_url: https://janaf.nist.gov/tables/Ba-011.html
+    download_url: https://janaf.nist.gov/tables/Ba-011.txt
+    source_data: true
+  - table: gas
+    species_name: BaCl(g)
+    table_id: Ba-012
+    source_path: data-src/janaf/Ba-012.yaml
+    source_sha256: 6e99c50c09ed353edcb55e5fb335980bd87f87b1e8e0ff2de5d93c4fa45b4296
+    upstream_source_sha256: f52f607b9e69e0f01dd7975e792846c8ea2fa22d8fd01e812f6ad21ce52713b8
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.46040856931359
+    max_residual_log10_K: 2.794423400635e-05
+    source_locator: JANAF table Ba-012
+    source_url: https://janaf.nist.gov/tables/Ba-012.html
+    download_url: https://janaf.nist.gov/tables/Ba-012.txt
+    source_data: true
+  - table: gas
+    species_name: BaCl2(g)
+    table_id: Ba-016
+    source_path: data-src/janaf/Ba-016.yaml
+    source_sha256: 9c0d2f0ffac715a228289a9e6a7dd8989c6736d8a8d752f64f4edd377fbf5014
+    upstream_source_sha256: 2aa514ad0423fc3424b1b27f9a69341621ccc83fa24aac7dd8a45fff214d4b3d
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.38601092761382
+    max_residual_log10_K: 4.02202045984813e-05
+    source_locator: JANAF table Ba-016
+    source_url: https://janaf.nist.gov/tables/Ba-016.html
+    download_url: https://janaf.nist.gov/tables/Ba-016.txt
+    source_data: true
+  - table: gas
+    species_name: BaF(g)
+    table_id: Ba-017
+    source_path: data-src/janaf/Ba-017.yaml
+    source_sha256: 938d42beb352bead2eab4afb33a832c0d4ecf701c112cbbae99fa60b3c888afa
+    upstream_source_sha256: 1287028696c2b9ddd04aabc20e21274495bdbfe7f9b17bc8f33d2e377f17785e
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.51301908050664
+    max_residual_log10_K: 3.03963322645409e-05
+    source_locator: JANAF table Ba-017
+    source_url: https://janaf.nist.gov/tables/Ba-017.html
+    download_url: https://janaf.nist.gov/tables/Ba-017.txt
+    source_data: true
+  - table: gas
+    species_name: BaF2(g)
+    table_id: Ba-022
+    source_path: data-src/janaf/Ba-022.yaml
+    source_sha256: f310ffd807e429136cdf4e3ddf7eb880776093da24343f45343306c08b73efca
+    upstream_source_sha256: be2096f98c4a6d8b005005d7c3745910079a0446881bede5fcd3ee49716bbeaa
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.16576050734147
+    max_residual_log10_K: 3.29034926805737e-05
+    source_locator: JANAF table Ba-022
+    source_url: https://janaf.nist.gov/tables/Ba-022.html
+    download_url: https://janaf.nist.gov/tables/Ba-022.txt
+    source_data: true
+  - table: gas
+    species_name: BaI(g)
+    table_id: Ba-029
+    source_path: data-src/janaf/Ba-029.yaml
+    source_sha256: cbd7b164f848ea7c663a7ad982d9990c8ce49af7a7ebb41e8df614d63a821a3b
+    upstream_source_sha256: 1f8e456f70e91fba126c5ea509a61c2c861efca750c71f2a566b9bf7115973a2
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.771027016802691
+    max_residual_log10_K: 2.58461961022275e-05
+    source_locator: JANAF table Ba-029
+    source_url: https://janaf.nist.gov/tables/Ba-029.html
+    download_url: https://janaf.nist.gov/tables/Ba-029.txt
+    source_data: true
+  - table: gas
+    species_name: BaI2(g)
+    table_id: Ba-033
+    source_path: data-src/janaf/Ba-033.yaml
+    source_sha256: 229839ca6b818bd61a50c8399c5314342ca5165b3039ada1a341ff5e05217fd2
+    upstream_source_sha256: 476f1286e235b9865e88d4b23b40d7a3a366a46a11b9e84bdc1c21a575e4ac74
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.17502478673123
+    max_residual_log10_K: 2.66851297145642e-05
+    source_locator: JANAF table Ba-033
+    source_url: https://janaf.nist.gov/tables/Ba-033.html
+    download_url: https://janaf.nist.gov/tables/Ba-033.txt
+    source_data: true
+  - table: gas
+    species_name: CaBr(g)
+    table_id: Br-004
+    source_path: data-src/janaf/Br-004.yaml
+    source_sha256: 94d0b8883348bb61cadef732c5b0b946602b6d0a587ae1cf226a64410f375fce
+    upstream_source_sha256: 8f49e0cb7ed825dfbe1d4c7231b3c597233fb8397d46ee5ef836152767c6f6eb
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.27956144476775
+    max_residual_log10_K: 3.93153684871479e-05
+    source_locator: JANAF table Br-004
+    source_url: https://janaf.nist.gov/tables/Br-004.html
+    download_url: https://janaf.nist.gov/tables/Br-004.txt
+    source_data: true
+  - table: gas
+    species_name: CaBr2(g)
+    table_id: Br-044
+    source_path: data-src/janaf/Br-044.yaml
+    source_sha256: 385e8139f5495d2c5b750913ac964740b3c27fd7a6cace04c111db47d3a784cb
+    upstream_source_sha256: 86e89f89680113efa0c7fb39af58672cc38019e00a4ea51a49a425f2417a7428
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.49420273746364
+    max_residual_log10_K: 3.00183146820084e-05
+    source_locator: JANAF table Br-044
+    source_url: https://janaf.nist.gov/tables/Br-044.html
+    download_url: https://janaf.nist.gov/tables/Br-044.txt
+    source_data: true
+  - table: gas
+    species_name: CaI(g)
+    table_id: Ca-022
+    source_path: data-src/janaf/Ca-022.yaml
+    source_sha256: 662b0921e216bbec40dfe61116839e9620ded979aacb405ba7f96ee52b874b94
+    upstream_source_sha256: 1987280879ebb4511f2c8df655e84544e5bc01ef5c7f936b03d55e918b37f696
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.15615442802664
+    max_residual_log10_K: 2.63606501056042e-05
+    source_locator: JANAF table Ca-022
+    source_url: https://janaf.nist.gov/tables/Ca-022.html
+    download_url: https://janaf.nist.gov/tables/Ca-022.txt
+    source_data: true
+  - table: gas
+    species_name: CaI2(g)
+    table_id: Ca-026
+    source_path: data-src/janaf/Ca-026.yaml
+    source_sha256: d0cdf2c43fa7e423d6f77faf18c9f4756a7da41e3acdac46ac5ac62410e0fe55
+    upstream_source_sha256: b34de6cf20348fe62db7dbbcb78e4ecc54d4abf1e5f3aec4b84454314da2c191
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.21131388330832
+    max_residual_log10_K: 3.41001123996752e-05
+    source_locator: JANAF table Ca-026
+    source_url: https://janaf.nist.gov/tables/Ca-026.html
+    download_url: https://janaf.nist.gov/tables/Ca-026.txt
+    source_data: true
+  - table: gas
+    species_name: MgBr(g)
+    table_id: Br-023
+    source_path: data-src/janaf/Br-023.yaml
+    source_sha256: 74f8cb6c2d649028ac88a8d09a75a33a1f3482cd94d07e88b25660371c98f03d
+    upstream_source_sha256: c13dda07de17ad543ad4319e5c8df9c027612bbe9c9a12c782e0cf30c129d7fb
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.10617306828499
+    max_residual_log10_K: 3.65240703659751e-05
+    source_locator: JANAF table Br-023
+    source_url: https://janaf.nist.gov/tables/Br-023.html
+    download_url: https://janaf.nist.gov/tables/Br-023.txt
+    source_data: true
+  - table: gas
+    species_name: MgBr2(g)
+    table_id: Br-060
+    source_path: data-src/janaf/Br-060.yaml
+    source_sha256: 8ff3355d450130f83ac303ea722225cc70d7e3469a42e1abf2298a04c725e69b
+    upstream_source_sha256: accc74f1c0d6ea279eade2af5bda41f5838ac4bf059bc05fff3be9d5ef8ff3a7
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.22777749458328
+    max_residual_log10_K: 4.27541754972157e-05
+    source_locator: JANAF table Br-060
+    source_url: https://janaf.nist.gov/tables/Br-060.html
+    download_url: https://janaf.nist.gov/tables/Br-060.txt
+    source_data: true
+  - table: gas
+    species_name: (MgBr2)2(g)
+    table_id: Br-092
+    source_path: data-src/janaf/Br-092.yaml
+    source_sha256: ee0a2ac42dad3f3d6b9b3c9d7eb81d5d1ed7622311482624593e4d5c23e7c6d8
+    upstream_source_sha256: e85271515e4b466aece43785be440562482ba7064490804676aca8c4cc0091d3
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.10359048144892
+    max_residual_log10_K: 3.76546675957507e-05
+    source_locator: JANAF table Br-092
+    source_url: https://janaf.nist.gov/tables/Br-092.html
+    download_url: https://janaf.nist.gov/tables/Br-092.txt
+    source_data: true
+  - table: gas
+    species_name: MgI(g)
+    table_id: I-012
+    source_path: data-src/janaf/I-012.yaml
+    source_sha256: 947bc64a327f4783e479b18817c3f883ce1b71dedfb127dba883f05854d5a178
+    upstream_source_sha256: 9b83a6ebd21d814fbb3a90b36bbf9d661a3fb09986d8528180ab1c193d0150e9
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.2069996643113
+    max_residual_log10_K: 2.89904932156957e-05
+    source_locator: JANAF table I-012
+    source_url: https://janaf.nist.gov/tables/I-012.html
+    download_url: https://janaf.nist.gov/tables/I-012.txt
+    source_data: true
+  - table: gas
+    species_name: MgI2(g)
+    table_id: I-033
+    source_path: data-src/janaf/I-033.yaml
+    source_sha256: b32209b484226f8376249673a37247c3632dc568d0180ed71aad9ceb6278e704
+    upstream_source_sha256: d9ae2a4b87644ebdf3aa464a422823e7c9a9a137f434534a15e14e5603462c22
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.58394480939023
+    max_residual_log10_K: 3.18212197950594e-05
+    source_locator: JANAF table I-033
+    source_url: https://janaf.nist.gov/tables/I-033.html
+    download_url: https://janaf.nist.gov/tables/I-033.txt
+    source_data: true
+  - table: gas
+    species_name: SrBr(g)
+    table_id: Br-034
+    source_path: data-src/janaf/Br-034.yaml
+    source_sha256: ae16921a16ae7cacaefdac769bcad6cece05c04b05b9f7946782c2746590d48b
+    upstream_source_sha256: 91888d86509053a09b7349d1714aae18edd0ffe6275ae13dc71e2fff40282abf
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.42054520582315
+    max_residual_log10_K: 3.32314891229235e-05
+    source_locator: JANAF table Br-034
+    source_url: https://janaf.nist.gov/tables/Br-034.html
+    download_url: https://janaf.nist.gov/tables/Br-034.txt
+    source_data: true
+  - table: gas
+    species_name: SrBr2(g)
+    table_id: Br-073
+    source_path: data-src/janaf/Br-073.yaml
+    source_sha256: 1b714c15d416c0c2c008717739cc0461453b94e607de58d515817195eff3fa69
+    upstream_source_sha256: 72d068132a3129f2c698ebd20682af455689b68ef657eac3654a570b5802c951
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.26143293501809
+    max_residual_log10_K: 2.64709073688028e-05
+    source_locator: JANAF table Br-073
+    source_url: https://janaf.nist.gov/tables/Br-073.html
+    download_url: https://janaf.nist.gov/tables/Br-073.txt
+    source_data: true
+  - table: gas
+    species_name: SrCl(g)
+    table_id: Cl-069
+    source_path: data-src/janaf/Cl-069.yaml
+    source_sha256: ef4723430aebd8818461bbfc35143d7fb5e0cf70c9abf7f68387f6971041210c
+    upstream_source_sha256: 56a4fd2f097daee2bbd9371558b98409159e62b99585bbbf1b3f8b952ca7e8ad
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.81271495949477
+    max_residual_log10_K: 3.64171786857152e-05
+    source_locator: JANAF table Cl-069
+    source_url: https://janaf.nist.gov/tables/Cl-069.html
+    download_url: https://janaf.nist.gov/tables/Cl-069.txt
+    source_data: true
+  - table: gas
+    species_name: SrCl2(g)
+    table_id: Cl-122
+    source_path: data-src/janaf/Cl-122.yaml
+    source_sha256: 64547e9df5819f7488c52ea02a9276660aa9a6a8572e480309d5f40731493030
+    upstream_source_sha256: f57924d4e085d6e37e17d95c2222e4d75f1891001edd82fe89eedb259fa53586
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.2257482658606
+    max_residual_log10_K: 2.99441380353198e-05
+    source_locator: JANAF table Cl-122
+    source_url: https://janaf.nist.gov/tables/Cl-122.html
+    download_url: https://janaf.nist.gov/tables/Cl-122.txt
+    source_data: true
+  - table: gas
+    species_name: SrF(g)
+    table_id: F-049
+    source_path: data-src/janaf/F-049.yaml
+    source_sha256: 029b117bd9028e89a5648fdd4f525af3f8b5072e96a74fd3e0923a148e27a580
+    upstream_source_sha256: 8fb0ec43d5bf73e1d33891054b7cb9ec317c02ce8a69404dfb1cc4d858faead3
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.23466895474121
+    max_residual_log10_K: 2.46689253824187e-05
+    source_locator: JANAF table F-049
+    source_url: https://janaf.nist.gov/tables/F-049.html
+    download_url: https://janaf.nist.gov/tables/F-049.txt
+    source_data: true
+  - table: gas
+    species_name: SrF2(g)
+    table_id: F-105
+    source_path: data-src/janaf/F-105.yaml
+    source_sha256: 0faca75594c0288a584a32de32d784ff66d2ad3395e8af0bcdd61492216d2e00
+    upstream_source_sha256: add973e2c4d93a665bfd971c6d555ee6b37140aabf7a921e69720d8d30d516b3
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.23853482143022
+    max_residual_log10_K: 4.24004312344455e-05
+    source_locator: JANAF table F-105
+    source_url: https://janaf.nist.gov/tables/F-105.html
+    download_url: https://janaf.nist.gov/tables/F-105.txt
+    source_data: true
+  - table: gas
+    species_name: SrI(g)
+    table_id: I-020
+    source_path: data-src/janaf/I-020.yaml
+    source_sha256: 4eae0bfba643bb551fe16eea70ef27d9e1b22f5625a87aa290ec094a58647405
+    upstream_source_sha256: 6e566d3375f9791e05dfe3a7ee9352b8b034621267ccbc41c49e8e11ce408806
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.32325839472469
+    max_residual_log10_K: 3.94686146776565e-05
+    source_locator: JANAF table I-020
+    source_url: https://janaf.nist.gov/tables/I-020.html
+    download_url: https://janaf.nist.gov/tables/I-020.txt
+    source_data: true
+  - table: gas
+    species_name: SrI2(g)
+    table_id: I-044
+    source_path: data-src/janaf/I-044.yaml
+    source_sha256: 95cec5b5ce9a5a213d1ea2ffc03852b13902ba5484ff5bf6e37ebdd50edbac0a
+    upstream_source_sha256: aa4915a3f37eaae7e43d422bedf325efe98f2ce52f3cb1fedcb0e7eaeadbd56a
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.81289022834972
+    max_residual_log10_K: 4.09605647326384e-05
+    source_locator: JANAF table I-044
+    source_url: https://janaf.nist.gov/tables/I-044.html
+    download_url: https://janaf.nist.gov/tables/I-044.txt
+    source_data: true
+  - table: gas
+    species_name: CaF(g)
+    table_id: NG-0470
+    source_path: data-src/nasa-glenn/NG-0470.json
+    source_sha256: 028ede450325f2b986fb2e4e33d24b9441fdf5d762c075b639c75c7f60a5a65d
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.0301466539967805
+    max_residual_log10_K: 9.26275807531152e-07
+    source_locator: thermo.inp lines 3952-3959
+    source_record: data-src/nasa-glenn/NG-0470.json
+    source:
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
+        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    retrieval_date: '2026-10-15'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      per_formula: gas product formula
+      comparison_records:
+        halogen_parent: NG-0567
+        oxygen_parent: NG-0937
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime
+        parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      values_J_per_mol:
+        1200: 269901.134
+        1300: 295119.544
+        1400: 320622.06
+        1500: 346390.109
+        1600: 372407.522
+        1700: 398660.091
+        1800: 425135.215
+        1900: 451821.624
+        2000: 478709.157
+        2100: 505788.587
+        2200: 533051.479
+        2300: 560490.079
+        2400: 588097.222
+        2500: 615866.257
+        2600: 643790.986
+        2700: 671865.613
+        2800: 700084.703
+        2900: 728443.145
+        3000: 756936.121
+  - table: gas
+    species_name: CaF2(g)
+    table_id: NG-0472
+    source_path: data-src/nasa-glenn/NG-0472.json
+    source_sha256: 5ddc2f72c98a2f0c35defb2c7fd7adbe47336641d9e06d55b619b7f2973f36fc
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.000428830971941352
+    max_residual_log10_K: 1.31761141674882e-08
+    source_locator: thermo.inp lines 3968-3975
+    source_record: data-src/nasa-glenn/NG-0472.json
+    source:
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
+        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    retrieval_date: '2026-10-15'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      per_formula: gas product formula
+      comparison_records:
+        halogen_parent: NG-0567
+        oxygen_parent: NG-0937
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime
+        parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      values_J_per_mol:
+        1200: 404673.851
+        1300: 442536.927
+        1400: 480829.617
+        1500: 519523.683
+        1600: 558594.556
+        1700: 598020.651
+        1800: 637782.809
+        1900: 677863.875
+        2000: 718248.348
+        2100: 758922.122
+        2200: 799872.267
+        2300: 841086.863
+        2400: 882554.863
+        2500: 924265.98
+        2600: 966210.603
+        2700: 1008379.716
+        2800: 1050764.842
+        2900: 1093357.989
+        3000: 1136151.609
+  - table: gas
+    species_name: CaCl(g)
+    table_id: NG-0467
+    source_path: data-src/nasa-glenn/NG-0467.json
+    source_sha256: bb5269b8e4b70a240f8de13799d275c94f0bcd33e0c01bb3ccbefe29d3f616c6
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.069419817533344
+    max_residual_log10_K: 2.13296963408379e-06
+    source_locator: thermo.inp lines 3928-3935
+    source_record: data-src/nasa-glenn/NG-0467.json
+    source:
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
+        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    retrieval_date: '2026-10-15'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      per_formula: gas product formula
+      comparison_records:
+        halogen_parent: NG-0494
+        oxygen_parent: NG-0937
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime
+        parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      values_J_per_mol:
+        1200: 282759.653
+        1300: 309090.33
+        1400: 335705.099
+        1500: 362585.087
+        1600: 389713.803
+        1700: 417076.728
+        1800: 444661.014
+        1900: 472455.238
+        2000: 500449.206
+        2100: 528633.786
+        2200: 557000.769
+        2300: 585542.751
+        2400: 614253.033
+        2500: 643125.527
+        2600: 672154.687
+        2700: 701335.433
+        2800: 730663.103
+        2900: 760133.393
+        3000: 789742.315
+  - table: gas
+    species_name: CaCl2(g)
+    table_id: NG-0469
+    source_path: data-src/nasa-glenn/NG-0469.json
+    source_sha256: 34dda88296a0389c560b8dd8efba7e603385a27a709a1d01ed522f3350fc61af
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.00011872686445713
+    max_residual_log10_K: 3.6479611389846e-09
+    source_locator: thermo.inp lines 3944-3951
+    source_record: data-src/nasa-glenn/NG-0469.json
+    source:
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
+        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    retrieval_date: '2026-10-15'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      per_formula: gas product formula
+      comparison_records:
+        halogen_parent: NG-0494
+        oxygen_parent: NG-0937
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime
+        parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      values_J_per_mol:
+        1200: 430390.89
+        1300: 470478.498
+        1400: 510995.695
+        1500: 551913.639
+        1600: 593207.117
+        1700: 634853.924
+        1800: 676834.407
+        1900: 719131.103
+        2000: 761728.447
+        2100: 804612.52
+        2200: 847770.847
+        2300: 891192.207
+        2400: 934866.484
+        2500: 978784.521
+        2600: 1022938.004
+        2700: 1067319.357
+        2800: 1111921.642
+        2900: 1156738.485
+        3000: 1201763.997
+  - table: gas
+    species_name: MgF(g)
+    table_id: NG-0807
+    source_path: data-src/nasa-glenn/NG-0807.json
+    source_sha256: 97cf3e290a31a2b6601e514e44729b7690cde77690c668522f08383b604ede78
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.000963120372034609
+    max_residual_log10_K: 2.09613598517333e-08
+    source_locator: thermo.inp lines 6861-6868
+    source_record: data-src/nasa-glenn/NG-0807.json
+    source:
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
+        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    retrieval_date: '2026-10-15'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      per_formula: gas product formula
+      comparison_records:
+        halogen_parent: NG-0567
+        oxygen_parent: NG-0937
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime
+        parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      values_J_per_mol:
+        1200: 269901.134
+        1300: 295119.544
+        1400: 320622.06
+        1500: 346390.109
+        1600: 372407.522
+        1700: 398660.091
+        1800: 425135.215
+        1900: 451821.624
+        2000: 478709.157
+        2100: 505788.587
+        2200: 533051.479
+        2300: 560490.079
+        2400: 588097.222
+        2500: 615866.257
+        2600: 643790.986
+        2700: 671865.613
+        2800: 700084.703
+        2900: 728443.145
+        3000: 756936.121
+  - table: gas
+    species_name: MgF2(g)
+    table_id: NG-0809
+    source_path: data-src/nasa-glenn/NG-0809.json
+    source_sha256: 96506dfb54fb7d83bf36909c2436ba6948f63baa8f30f189a114cd127cf2362e
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.00120352860540152
+    max_residual_log10_K: 3.69792093999614e-08
+    source_locator: thermo.inp lines 6880-6887
+    source_record: data-src/nasa-glenn/NG-0809.json
+    source:
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
+        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    retrieval_date: '2026-10-15'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      per_formula: gas product formula
+      comparison_records:
+        halogen_parent: NG-0567
+        oxygen_parent: NG-0937
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime
+        parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      values_J_per_mol:
+        1200: 404673.851
+        1300: 442536.927
+        1400: 480829.617
+        1500: 519523.683
+        1600: 558594.556
+        1700: 598020.651
+        1800: 637782.809
+        1900: 677863.875
+        2000: 718248.348
+        2100: 758922.122
+        2200: 799872.267
+        2300: 841086.863
+        2400: 882554.863
+        2500: 924265.98
+        2600: 966210.603
+        2700: 1008379.716
+        2800: 1050764.842
+        2900: 1093357.989
+        3000: 1136151.609
+  - table: gas
+    species_name: (MgF2)2(g)
+    table_id: NG-0821
+    source_path: data-src/nasa-glenn/NG-0821.json
+    source_sha256: 0f39d73e56529155cb0a807a9f7f2625c6a04d8a4df45fd59d0016fb0f507d24
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.0016522747464478
+    max_residual_log10_K: 5.07672302602043e-08
+    source_locator: thermo.inp lines 6985-6992
+    source_record: data-src/nasa-glenn/NG-0821.json
+    source:
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
+        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    retrieval_date: '2026-10-15'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      per_formula: gas product formula
+      comparison_records:
+        halogen_parent: NG-0567
+        oxygen_parent: NG-0937
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime
+        parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      values_J_per_mol:
+        1200: 809347.702
+        1300: 885073.853
+        1400: 961659.234
+        1500: 1039047.365
+        1600: 1117189.112
+        1700: 1196041.301
+        1800: 1275565.619
+        1900: 1355727.75
+        2000: 1436496.696
+        2100: 1517844.244
+        2200: 1599744.534
+        2300: 1682173.726
+        2400: 1765109.725
+        2500: 1848531.961
+        2600: 1932421.207
+        2700: 2016759.433
+        2800: 2101529.684
+        2900: 2186715.978
+        3000: 2272303.218
+  - table: gas
+    species_name: MgCl(g)
+    table_id: NG-0804
+    source_path: data-src/nasa-glenn/NG-0804.json
+    source_sha256: 3bb6fbf4acbec40d94b6ee031d2c682d05f6a9c3b19fdb8c31b32e1966746a1f
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.0358925703912973
+    max_residual_log10_K: 1.10282287470836e-06
+    source_locator: thermo.inp lines 6834-6841
+    source_record: data-src/nasa-glenn/NG-0804.json
+    source:
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
+        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    retrieval_date: '2026-10-15'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      per_formula: gas product formula
+      comparison_records:
+        halogen_parent: NG-0494
+        oxygen_parent: NG-0937
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime
+        parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      values_J_per_mol:
+        1200: 282759.653
+        1300: 309090.33
+        1400: 335705.099
+        1500: 362585.087
+        1600: 389713.803
+        1700: 417076.728
+        1800: 444661.014
+        1900: 472455.238
+        2000: 500449.206
+        2100: 528633.786
+        2200: 557000.769
+        2300: 585542.751
+        2400: 614253.033
+        2500: 643125.527
+        2600: 672154.687
+        2700: 701335.433
+        2800: 730663.103
+        2900: 760133.393
+        3000: 789742.315
+  - table: gas
+    species_name: MgCl2(g)
+    table_id: NG-0806
+    source_path: data-src/nasa-glenn/NG-0806.json
+    source_sha256: 4347ccb56ee761abf483edca5df04e0dbbbce76d56edbcc56077a4946c6679c0
+    authority: nasa_glenn_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 0.000343047082424164
+    max_residual_log10_K: 1.05403476394953e-08
+    source_locator: thermo.inp lines 6853-6860
+    source_record: data-src/nasa-glenn/NG-0806.json
+    source:
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
+        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+    source_url: https://www.grc.nasa.gov/www/CEAWeb/
+    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
+    retrieval_date: '2026-10-15'
+    user_agent: neutral-source-vendor/1.0
+    source_data: true
+    uncertainty_band:
+      kind: mixed_source_parent_scale_inconsistency
+      basis: card_G_parent_scale_inconsistency
+      units: J/mol
+      per_formula: gas product formula
+      comparison_records:
+        halogen_parent: NG-0494
+        oxygen_parent: NG-0937
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime
+        parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      values_J_per_mol:
+        1200: 430390.89
+        1300: 470478.498
+        1400: 510995.695
+        1500: 551913.639
+        1600: 593207.117
+        1700: 634853.924
+        1800: 676834.407
+        1900: 719131.103
+        2000: 761728.447
+        2100: 804612.52
+        2200: 847770.847
+        2300: 891192.207
+        2400: 934866.484
+        2500: 978784.521
+        2600: 1022938.004
+        2700: 1067319.357
+        2800: 1111921.642
+        2900: 1156738.485
+        3000: 1201763.997
+
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each

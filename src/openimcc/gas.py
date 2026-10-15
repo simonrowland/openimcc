@@ -660,6 +660,71 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Pd": ("Pd", 1.0, 0.0),
 }
 
+# Append oxide + halogen reactions after every pre-existing channel. For MO,
+# MO + X2 = MX2 + 1/2 O2 and MO + 1/2 X2 = MX + 1/2 O2; dimer rows scale
+# both reactants by two. For M2O, the oxide and O2 coefficients are halved.
+_HALIDE_REACTIONS: dict[str, tuple[str, float, float]] = {
+    "BaBr": ("Br2", 0.5, 0.0),
+    "BaBr2": ("Br2", 1, 0.0),
+    "BaCl": ("Cl2", 0.5, 0.0),
+    "BaCl2": ("Cl2", 1, 0.0),
+    "BaF": ("F2", 0.5, 0.0),
+    "BaF2": ("F2", 1, 0.0),
+    "BaI": ("I2", 0.5, 0.0),
+    "BaI2": ("I2", 1, 0.0),
+    "CaBr": ("Br2", 0.5, 0.0),
+    "CaBr2": ("Br2", 1, 0.0),
+    "CaCl": ("Cl2", 0.5, 0.0),
+    "CaCl2": ("Cl2", 1, 0.0),
+    "CaF": ("F2", 0.5, 0.0),
+    "CaF2": ("F2", 1, 0.0),
+    "CaI": ("I2", 0.5, 0.0),
+    "CaI2": ("I2", 1, 0.0),
+    "MgF": ("F2", 0.5, 0.0),
+    "MgF2": ("F2", 1, 0.0),
+    "(MgF2)2": ("F2", 2, 0.0),
+    "MgCl": ("Cl2", 0.5, 0.0),
+    "MgCl2": ("Cl2", 1, 0.0),
+    "MgBr": ("Br2", 0.5, 0.0),
+    "MgBr2": ("Br2", 1, 0.0),
+    "(MgBr2)2": ("Br2", 2, 0.0),
+    "MgI": ("I2", 0.5, 0.0),
+    "MgI2": ("I2", 1, 0.0),
+    "SrBr": ("Br2", 0.5, 0.0),
+    "SrBr2": ("Br2", 1, 0.0),
+    "SrCl": ("Cl2", 0.5, 0.0),
+    "SrCl2": ("Cl2", 1, 0.0),
+    "SrF": ("F2", 0.5, 0.0),
+    "SrF2": ("F2", 1, 0.0),
+    "SrI": ("I2", 0.5, 0.0),
+    "SrI2": ("I2", 1, 0.0),
+    "LiF": ("F2", 0.5, 0.0),
+    "(LiF)2": ("F2", 1, 0.0),
+    "LiCl": ("Cl2", 0.5, 0.0),
+    "(LiCl)2": ("Cl2", 1, 0.0),
+    "LiBr": ("Br2", 0.5, 0.0),
+    "(LiBr)2": ("Br2", 1, 0.0),
+    "LiI": ("I2", 0.5, 0.0),
+    "(LiI)2": ("I2", 1, 0.0),
+    "RbF": ("F2", 0.5, 0.0),
+    "(RbF)2": ("F2", 1, 0.0),
+    "RbCl": ("Cl2", 0.5, 0.0),
+    "(RbCl)2": ("Cl2", 1, 0.0),
+    "RbBr": ("Br2", 0.5, 0.0),
+    "(RbBr)2": ("Br2", 1, 0.0),
+    "RbI": ("I2", 0.5, 0.0),
+    "(RbI)2": ("I2", 1, 0.0),
+    "CsF": ("F2", 0.5, 0.0),
+    "(CsF)2": ("F2", 1, 0.0),
+    "CsCl": ("Cl2", 0.5, 0.0),
+    "(CsCl)2": ("Cl2", 1, 0.0),
+    "CsBr": ("Br2", 0.5, 0.0),
+    "(CsBr)2": ("Br2", 1, 0.0),
+    "CsI": ("I2", 0.5, 0.0),
+    "(CsI)2": ("I2", 1, 0.0),
+}
+_SF04_REACTIONS.update(_HALIDE_REACTIONS)
+
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
 # from the JANAF gas table; condensed parent rows use their resolved phase.
 _GAS_PHASE_PARENT_ROWS = {
@@ -693,6 +758,68 @@ _ALKALI_HALIDE_REACTION_OXIDES = {
     "(NaF)2": ("Na2O", 1.0, 0.5),
     "KF": ("K2O", 0.5, 0.25),
     "(KF)2": ("K2O", 1.0, 0.5),
+    # Each oxide parent in this table contains one O atom, so explicit oxygen
+    # demand equals n_oxide. For MO this is 1/2 O per M2+ equivalent; for M2O
+    # it is 1/2 O per M+ equivalent. With one product gas, the fugacity
+    # exponent is -n_O2, giving matching signs and a monotone root.
+    "BaBr": ("BaO", 1, 0.5),
+    "BaBr2": ("BaO", 1, 0.5),
+    "BaCl": ("BaO", 1, 0.5),
+    "BaCl2": ("BaO", 1, 0.5),
+    "BaF": ("BaO", 1, 0.5),
+    "BaF2": ("BaO", 1, 0.5),
+    "BaI": ("BaO", 1, 0.5),
+    "BaI2": ("BaO", 1, 0.5),
+    "CaBr": ("CaO", 1, 0.5),
+    "CaBr2": ("CaO", 1, 0.5),
+    "CaCl": ("CaO", 1, 0.5),
+    "CaCl2": ("CaO", 1, 0.5),
+    "CaF": ("CaO", 1, 0.5),
+    "CaF2": ("CaO", 1, 0.5),
+    "CaI": ("CaO", 1, 0.5),
+    "CaI2": ("CaO", 1, 0.5),
+    "MgF": ("MgO", 1, 0.5),
+    "MgF2": ("MgO", 1, 0.5),
+    "(MgF2)2": ("MgO", 2, 1),
+    "MgCl": ("MgO", 1, 0.5),
+    "MgCl2": ("MgO", 1, 0.5),
+    "MgBr": ("MgO", 1, 0.5),
+    "MgBr2": ("MgO", 1, 0.5),
+    "(MgBr2)2": ("MgO", 2, 1),
+    "MgI": ("MgO", 1, 0.5),
+    "MgI2": ("MgO", 1, 0.5),
+    "SrBr": ("SrO", 1, 0.5),
+    "SrBr2": ("SrO", 1, 0.5),
+    "SrCl": ("SrO", 1, 0.5),
+    "SrCl2": ("SrO", 1, 0.5),
+    "SrF": ("SrO", 1, 0.5),
+    "SrF2": ("SrO", 1, 0.5),
+    "SrI": ("SrO", 1, 0.5),
+    "SrI2": ("SrO", 1, 0.5),
+    "LiF": ("Li2O", 0.5, 0.25),
+    "(LiF)2": ("Li2O", 1, 0.5),
+    "LiCl": ("Li2O", 0.5, 0.25),
+    "(LiCl)2": ("Li2O", 1, 0.5),
+    "LiBr": ("Li2O", 0.5, 0.25),
+    "(LiBr)2": ("Li2O", 1, 0.5),
+    "LiI": ("Li2O", 0.5, 0.25),
+    "(LiI)2": ("Li2O", 1, 0.5),
+    "RbF": ("Rb2O", 0.5, 0.25),
+    "(RbF)2": ("Rb2O", 1, 0.5),
+    "RbCl": ("Rb2O", 0.5, 0.25),
+    "(RbCl)2": ("Rb2O", 1, 0.5),
+    "RbBr": ("Rb2O", 0.5, 0.25),
+    "(RbBr)2": ("Rb2O", 1, 0.5),
+    "RbI": ("Rb2O", 0.5, 0.25),
+    "(RbI)2": ("Rb2O", 1, 0.5),
+    "CsF": ("Cs2O", 0.5, 0.25),
+    "(CsF)2": ("Cs2O", 1, 0.5),
+    "CsCl": ("Cs2O", 0.5, 0.25),
+    "(CsCl)2": ("Cs2O", 1, 0.5),
+    "CsBr": ("Cs2O", 0.5, 0.25),
+    "(CsBr)2": ("Cs2O", 1, 0.5),
+    "CsI": ("Cs2O", 0.5, 0.25),
+    "(CsI)2": ("Cs2O", 1, 0.5),
 }
 _HYDROGEN_HALIDE_PARENTS = {
     "HCl": "Cl2", "HF": "F2", "HBr": "Br2", "HI": "I2",
@@ -885,6 +1012,64 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "NaI", "(NaI)2", "KI", "(KI)2",
         "Cl2", "Cl", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
         "F2", "F", "NaF", "(NaF)2", "KF", "(KF)2",
+        "BaBr",
+        "BaBr2",
+        "BaCl",
+        "BaCl2",
+        "BaF",
+        "BaF2",
+        "BaI",
+        "BaI2",
+        "CaBr",
+        "CaBr2",
+        "CaCl",
+        "CaCl2",
+        "CaF",
+        "CaF2",
+        "CaI",
+        "CaI2",
+        "MgF",
+        "MgF2",
+        "(MgF2)2",
+        "MgCl",
+        "MgCl2",
+        "MgBr",
+        "MgBr2",
+        "(MgBr2)2",
+        "MgI",
+        "MgI2",
+        "SrBr",
+        "SrBr2",
+        "SrCl",
+        "SrCl2",
+        "SrF",
+        "SrF2",
+        "SrI",
+        "SrI2",
+        "LiF",
+        "(LiF)2",
+        "LiCl",
+        "(LiCl)2",
+        "LiBr",
+        "(LiBr)2",
+        "LiI",
+        "(LiI)2",
+        "RbF",
+        "(RbF)2",
+        "RbCl",
+        "(RbCl)2",
+        "RbBr",
+        "(RbBr)2",
+        "RbI",
+        "(RbI)2",
+        "CsF",
+        "(CsF)2",
+        "CsCl",
+        "(CsCl)2",
+        "CsBr",
+        "(CsBr)2",
+        "CsI",
+        "(CsI)2",
         "HCl", "HF", "HBr", "HI", "H2", "H", "OH", "H2O",
         "CO", "CO2", "N2", "N", "NO", "NO2",
         "Hg",
@@ -2918,6 +3103,20 @@ for _element, _gas_table, _parent_table, _phase_marker in (
         "source_tables": {"gas": _gas_table, "parent": _parent_table},
         "parent_activity": _element,
     }
+
+for _element, _parent in (
+    ("Ca", "CaO"), ("Mg", "MgO"), ("Sr", "SrO"), ("Ba", "BaO"),
+    ("Li", "Li2O"), ("Rb", "Rb2O"), ("Cs", "Cs2O"),
+):
+    ELEMENT_STATUS[_element]["halide_gas_channels"] = {
+        "oxide_parent": _parent,
+        "species": tuple(sorted(
+            species for species in _HALIDE_REACTIONS
+            if species.startswith(_element) or species.startswith(f"({_element}")
+        )),
+        "halogen_activity_required": True,
+    }
+
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #
@@ -4167,9 +4366,11 @@ def evaluate_gas(
         else:
             side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(gas_name)
         if not hydrogen_halide_parent and side_reactant:
-            # Halide rows balance an oxide liquid and an elemental X2 gas
-            # parent. This isolated side-table path preserves both established
-            # mass-action branches and uses the product-side O2 exponent.
+            # Halide rows balance an oxide liquid plus X2(g). The side table
+            # gives n_oxide and n_O2 explicitly; with product coefficient one,
+            # Kp puts product-side oxygen in the denominator, so the pO2
+            # exponent is -n_O2. This also leaves the X2 exponent in the main
+            # reaction tuple, preserving the single gas-parent rule.
             side_oxide, n_oxide, side_n_O2 = side_reactant
             side_name = f"{side_oxide}(l)"
             side_row = _oxide_row_for_T(
@@ -4654,9 +4855,13 @@ def evaluate_gas_oxygen_balance(
         side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(species)
         if side_reactant:
             _oxide, n_oxide, n_O2 = side_reactant
+            # Every side-table oxide here has one O atom per formula. Thus
+            # demand is n_oxide O atoms: n_O2 = demand/2 and the product-gas
+            # fugacity exponent is -n_O2. This covers MO (one O per M2+),
+            # M2O (half O per M+), and dimers by the same scaled balance.
             data = data._replace(
                 parent_oxygen_demand=n_oxide,
-                pO2_exponent=(0.0 - n_oxide) / 2.0,
+                pO2_exponent=-n_O2,
             )
             species_data[species] = data
             exponent = -n_O2

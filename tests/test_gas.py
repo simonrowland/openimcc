@@ -1711,6 +1711,156 @@ def test_halogen_pressures_match_hand_calculated_source_cells(
                 assert result[gas] == pytest.approx(expected, rel=2e-3)
 
 
+def test_new_halide_pressures_match_hand_calculated_source_cells(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    """Close each new halide pressure against its JANAF cells or NASA card."""
+    sources = {
+        spec[0].removesuffix("(g)"): spec[1]
+        for spec in build_gas_tables.TRACE_JANAF_YAML_GAS_SOURCES
+        if spec[1] in build_gas_tables.HALOGEN_JANAF_TABLES
+        and spec[1] not in {
+            "Br-040", "Br-001", "I-027", "I-001", "Br-030", "Br-064",
+            "Br-018", "Br-055", "I-007", "I-028", "Cl-073", "Cl-001",
+            "Cl-056", "Cl-098", "Cl-039", "Cl-091", "F-054", "F-001",
+            "F-036", "F-082", "F-020", "F-069", "Cl-026", "F-005",
+            "Br-010", "H-005",
+        }
+    }
+    sources.update({
+        spec[0].removesuffix("(g)"): spec[1]
+        for spec in build_gas_tables.TRACE_NASA_GAS_SOURCES
+        if spec[1] in build_gas_tables.HALOGEN_NASA_TABLES
+        and spec[1] not in {"NG-0893", "NG-0904"}
+    })
+    import openimcc.gas as gas_module
+
+    assert len(sources) == 58
+    species = tuple(sources)
+    activities = {
+        "F2": 5.0e-3, "Cl2": 4.0e-3, "Br2": 2.0e-3, "I2": 3.0e-3,
+        **{oxide: 1.0e-3 for oxide in (
+            "BaO", "CaO", "MgO", "SrO", "Li2O", "Rb2O", "Cs2O",
+        )},
+    }
+    parents = (*IMCC_PARENT_OXIDES, "F2", "Cl2", "Br2", "I2")
+    for temperature in (1800.0, 2200.0):
+        g_o2 = _janaf_apparent_gibbs("O-029", temperature)
+        for f_o2 in (1.0e-10, 1.0e-6):
+            actual = evaluate_gas(
+                activities, temperature, f_o2, gas_pack,
+                parent_oxides=parents, gas_species=species,
+                allow_extrapolation=False,
+            )
+            for name, source in sources.items():
+                oxide, n_oxide, n_o2 = gas_module._ALKALI_HALIDE_REACTION_OXIDES[name]
+                parent, n_parent, _ = gas_module._SF04_REACTIONS[name]
+                if source.startswith("NG-"):
+                    card = build_gas_tables._load_record(
+                        Path(__file__).resolve().parents[1]
+                        / "data-src" / "nasa-glenn" / f"{source}.json"
+                    )
+                    props = build_gas_tables._nasa7_properties(card, temperature)
+                    props_298 = build_gas_tables._nasa7_properties(card, 298.15)
+                    h_298 = R_J_MOL_K * 298.15 * props_298["h_rt"]
+                    g_product = (
+                        float(card["delta_f_H_298_15"]["value"])
+                        + R_J_MOL_K * temperature * props["h_rt"]
+                        - h_298 - temperature * R_J_MOL_K * props["s_R"]
+                    )
+                else:
+                    g_product = _janaf_apparent_gibbs(source, temperature)
+                oxide_row = _oxide_row_for_T(
+                    gas_pack.oxide_df, f"{oxide}(l)", temperature,
+                    allow_extrapolation=False,
+                )
+                delta_g = (
+                    g_product + n_o2 * g_o2
+                    - n_oxide * _lamor_gibbs(temperature, oxide_row)
+                    - n_parent * _janaf_apparent_gibbs(
+                        {"F2": "F-054", "Cl2": "Cl-073", "Br2": "Br-040", "I2": "I-027"}[parent],
+                        temperature,
+                    )
+                )
+                expected = (
+                    math.exp(-delta_g / (R_J_MOL_K * temperature))
+                    * activities[oxide] ** n_oxide
+                    * activities[parent] ** n_parent
+                    / f_o2**n_o2
+                )
+                assert actual[name] == pytest.approx(expected, rel=2e-3)
+
+
+def test_new_halide_mixed_source_parent_bands_recompute_from_cards(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    import openimcc.gas as gas_module
+
+    def nasa_card_gibbs(card_id: str, temperature: float) -> float:
+        card = build_gas_tables._load_record(
+            Path(__file__).resolve().parents[1]
+            / "data-src" / "nasa-glenn" / f"{card_id}.json"
+        )
+        props = build_gas_tables._nasa7_properties(card, temperature)
+        at_298 = build_gas_tables._nasa7_properties(card, 298.15)
+        h_298 = R_J_MOL_K * 298.15 * at_298["h_rt"]
+        return (
+            float(card["delta_f_H_298_15"]["value"])
+            + R_J_MOL_K * temperature * props["h_rt"]
+            - h_298 - temperature * R_J_MOL_K * props["s_R"]
+        )
+
+    provenance = yaml.safe_load(
+        (Path(__file__).resolve().parents[1]
+         / "src/openimcc/data/gas/PROVENANCE.yaml").read_text()
+    )
+    rows = {
+        row["species_name"].removesuffix("(g)"): row
+        for row in provenance["rows"]
+        if row["table"] == "gas"
+        and (
+            row["table_id"] in build_gas_tables.HALOGEN_NASA_TABLES
+            and row["table_id"] not in {"NG-0893", "NG-0904"}
+            or row["species_name"] in {
+                "CsF(g)", "CsCl(g)", "(CsF)2(g)", "(CsCl)2(g)",
+            }
+        )
+    }
+    assert len(rows) == 25
+    janaf_parent = {
+        "F2": "F-054", "Cl2": "Cl-073", "Br2": "Br-040", "I2": "I-027",
+    }
+    for name, row in rows.items():
+        band = row["uncertainty_band"]
+        assert band["kind"] == "mixed_source_parent_scale_inconsistency"
+        assert set(map(int, band["values_J_per_mol"])) == set(range(1200, 3001, 100))
+        oxide, n_oxide, n_o2 = gas_module._ALKALI_HALIDE_REACTION_OXIDES[name]
+        parent, n_parent, _ = gas_module._SF04_REACTIONS[name]
+        for temperature in range(1200, 3001, 100):
+            nasa_parent = band["comparison_records"]["halogen_parent"]
+            nasa_o2 = band["comparison_records"]["oxygen_parent"]
+            gap = n_parent * (
+                nasa_card_gibbs(nasa_parent, temperature)
+                - _janaf_apparent_gibbs(janaf_parent[parent], temperature)
+            ) + n_o2 * (
+                nasa_card_gibbs(nasa_o2, temperature)
+                - _janaf_apparent_gibbs("O-029", temperature)
+            )
+            if "oxide_parent" in band["comparison_records"]:
+                card_id = band["comparison_records"]["oxide_parent"]
+                oxide_row = _oxide_row_for_T(
+                    gas_pack.oxide_df, f"{oxide}(l)", temperature,
+                    allow_extrapolation=False,
+                )
+                gap += n_oxide * (
+                    nasa_card_gibbs(card_id, temperature)
+                    - _lamor_gibbs(temperature, oxide_row)
+                )
+            assert band["values_J_per_mol"][temperature] == pytest.approx(
+                abs(gap), abs=0.001
+            )
+
+
 def test_halogen_activity_and_fugacity_powers_and_optional_family(
     gas_pack: ImccGasDatapack,
 ) -> None:
@@ -3959,11 +4109,18 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
 def test_alkali_halides_use_half_oxygen_per_alkali_in_balance_metadata() -> None:
     import openimcc.gas as gas_module
 
-    for species, (_oxide, n_oxide, n_o2) in gas_module._ALKALI_HALIDE_REACTION_OXIDES.items():
+    for species, (oxide, n_oxide, n_o2) in gas_module._ALKALI_HALIDE_REACTION_OXIDES.items():
         atoms = gas_module._formula_atoms(species)
-        alkali_atoms = atoms.get("Na", 0) + atoms.get("K", 0)
-        assert n_oxide == pytest.approx(alkali_atoms / 2.0)
-        assert n_o2 == pytest.approx(alkali_atoms / 4.0)
+        oxide_atoms = gas_module._formula_atoms(oxide)
+        metal_atoms = sum(
+            count for element, count in atoms.items()
+            if element != "X" and element in oxide_atoms and element != "O"
+        )
+        oxide_metal_atoms = sum(
+            count for element, count in oxide_atoms.items() if element != "O"
+        )
+        assert n_oxide == pytest.approx(metal_atoms / oxide_metal_atoms)
+        assert n_o2 == pytest.approx(n_oxide / 2.0)
 
 
 def test_oxygen_balance_molar_masses_sum_repeated_formula_tokens() -> None:
