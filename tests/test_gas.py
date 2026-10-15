@@ -3980,6 +3980,22 @@ def test_oxygen_balance_molar_masses_sum_repeated_formula_tokens() -> None:
     assert metadata["(MoO3)2"].molar_mass == pytest.approx(287.894)
 
 
+def test_condensed_parent_phase_resolver_switches_at_marker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import openimcc.gas as gas_module
+
+    monkeypatch.setitem(
+        gas_module._CONDENSED_PARENT_PHASE_ROWS,
+        "Au",
+        (1337.0, "Au(cr)", "Au(l)"),
+    )
+
+    assert gas_module._parent_standard_row("Au", 1336.999) == "Au(cr)"
+    assert gas_module._parent_standard_row("Au", 1337.0) == "Au(l)"
+    assert gas_module._parent_standard_rows("Au") == ("Au(cr)", "Au(l)")
+
+
 def test_oxygen_balance_accepts_caller_supplied_s2_gas_parent(
     gas_pack: ImccGasDatapack,
 ) -> None:

@@ -664,6 +664,12 @@ _GAS_PHASE_PARENT_ROWS = {
     "Cl2": "Cl2(g)", "F2": "F2(g)", "H2": "H2(g)", "N2": "N2(g)",
 }
 _CONDENSED_PARENT_ROWS = {"C": "C(cr)"}
+# Parents whose stable condensed reference changes phase inside the runtime
+# domain. The tuple is (transition K, crystal row, liquid row); below the
+# marker the crystal is selected, and at/above it the liquid is selected.
+# Keep the phase rule beside the condensed-parent registry so new metal
+# parents use the same selection path as existing condensed references.
+_CONDENSED_PARENT_PHASE_ROWS: dict[str, tuple[float, str, str]] = {}
 _ALKALI_HALIDE_REACTION_OXIDES = {
     "NaBr": ("Na2O", 0.5, 0.25),
     "(NaBr)2": ("Na2O", 1.0, 0.5),
@@ -687,12 +693,38 @@ _HYDROGEN_HALIDE_PARENTS = {
 }
 
 
-def _parent_standard_row(parent: str) -> str:
+def _parent_standard_rows(parent: str) -> tuple[str, ...]:
+    """Return all condensed standard rows registered for an activity key."""
+    phase_rows = _CONDENSED_PARENT_PHASE_ROWS.get(parent)
+    if phase_rows is not None:
+        _transition, crystal_row, liquid_row = phase_rows
+        return crystal_row, liquid_row
+    return (
+        _GAS_PHASE_PARENT_ROWS.get(parent)
+        or _CONDENSED_PARENT_ROWS.get(parent)
+        or f"{parent}(l)",
+    )
+
+
+def _parent_standard_row(parent: str, T_K: float | None = None) -> str:
     """Resolve an activity key to its elemental-reference standard row."""
+    phase_rows = _CONDENSED_PARENT_PHASE_ROWS.get(parent)
+    if phase_rows is not None and T_K is not None:
+        transition, crystal_row, liquid_row = phase_rows
+        return crystal_row if T_K < transition else liquid_row
     return (
         _GAS_PHASE_PARENT_ROWS.get(parent)
         or _CONDENSED_PARENT_ROWS.get(parent)
         or f"{parent}(l)"
+    )
+
+
+def _nonoxide_parent_keys() -> frozenset[str]:
+    """Return registered gas-phase and condensed non-oxide parent keys."""
+    return frozenset(
+        _GAS_PHASE_PARENT_ROWS
+        | _CONDENSED_PARENT_ROWS
+        | _CONDENSED_PARENT_PHASE_ROWS
     )
 
 
@@ -859,7 +891,9 @@ _REACTION_PARENT_OXIDES = frozenset(
 
 
 def _default_reactions(
-    available_parents: Sequence[str], datapack: ImccGasDatapack
+    available_parents: Sequence[str],
+    datapack: ImccGasDatapack,
+    T_K: float | None = None,
 ) -> tuple[tuple[tuple[str, tuple[str, float, float]], ...], Mapping[str, str]]:
     """Return selected channels and optional channels skipped for missing rows.
 
@@ -887,15 +921,20 @@ def _default_reactions(
             missing_rows = []
             gas_row = f"{name}(g)"
             gas_parent_row = _GAS_PHASE_PARENT_ROWS.get(oxide)
-            oxide_row = _parent_standard_row(oxide)
             if gas_row not in gas_rows:
                 missing_rows.append(gas_row)
             parent_rows = gas_rows if gas_parent_row else oxide_rows
-            if oxide_row != gas_row and oxide_row not in parent_rows:
-                missing_rows.append(oxide_row)
+            oxide_rows_required = (
+                _parent_standard_rows(oxide)
+                if T_K is None and oxide not in _GAS_PHASE_PARENT_ROWS
+                else (_parent_standard_row(oxide, T_K),)
+            )
+            for oxide_row in oxide_rows_required:
+                if oxide_row != gas_row and oxide_row not in parent_rows:
+                    missing_rows.append(oxide_row)
             if side_key:
                 side_gas_row = _GAS_PHASE_PARENT_ROWS.get(side_key)
-                side_row = _parent_standard_row(side_key)
+                side_row = _parent_standard_row(side_key, T_K)
                 side_rows = gas_rows if side_gas_row else oxide_rows
                 if side_row not in side_rows:
                     missing_rows.append(side_row)
@@ -3895,7 +3934,7 @@ def evaluate_gas(
         act = {name: float(arr[i]) for i, name in enumerate(parent_oxides)}
 
     if reactions is None or (include_ions and requested_channels is not None):
-        reactions, omitted_channels = _default_reactions(tuple(act), datapack)
+        reactions, omitted_channels = _default_reactions(tuple(act), datapack, T)
 
     for gas_name, (oxide, _n_gas, _n_O2) in reactions:
         if not oxide:
@@ -3986,7 +4025,7 @@ def evaluate_gas(
                     else _outside_interval_flag(gas_parent_row, T, parent_row)
                 )
             else:
-                oxide_name = _parent_standard_row(oxide)
+                oxide_name = _parent_standard_row(oxide, T)
                 oxide_row = _oxide_row_for_T(
                     datapack.oxide_df,
                     oxide_name,
@@ -4505,7 +4544,8 @@ def evaluate_gas_oxygen_balance(
     if isinstance(imposed_parents, str):
         raise TypeError("imposed_parents must be a sequence of parent-key strings")
     imposed = frozenset(imposed_parents or ())
-    unknown_imposed = imposed - (_GAS_PHASE_PARENT_ROWS.keys() | _CONDENSED_PARENT_ROWS.keys())
+    nonoxide_parents = _nonoxide_parent_keys()
+    unknown_imposed = imposed - nonoxide_parents
     if unknown_imposed:
         raise ValueError(
             "imposed_parents must name gas-parent activity keys; unknown: "
@@ -4517,16 +4557,13 @@ def evaluate_gas_oxygen_balance(
 
     available_parents = list(parent_oxides)
     if isinstance(activities, Mapping):
-        reaction_parents = (
-            _GAS_PHASE_PARENT_ROWS.keys() | _CONDENSED_PARENT_ROWS.keys()
-        )
         available_parents.extend(
             parent
             for parent in activities
-            if parent in reaction_parents and parent not in available_parents
+            if parent in nonoxide_parents and parent not in available_parents
         )
     channels, _omitted_channels = _default_reactions(
-        tuple(available_parents), datapack
+        tuple(available_parents), datapack, T
     )
     balance_channels = tuple(
         (species, reaction)
