@@ -566,6 +566,30 @@ def test_public_sources_contain_no_private_paths_or_tooling_names() -> None:
     assert offenders == {}
 
 
+def test_nasa_vendored_record_ids_and_filename_stems_do_not_collide() -> None:
+    records_by_id = {}
+    records_by_ng_stem = {}
+    for path in sorted(NASA_DATA.glob("*.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        contents = path.read_bytes()
+        records_by_id.setdefault(record["record_id"], []).append((path, contents))
+        match = re.match(r"^(NG-\d+)", path.stem)
+        if match:
+            records_by_ng_stem.setdefault(match.group(1), []).append(
+                (path, contents)
+            )
+
+    for identity, groups in (
+        ("record_id", records_by_id), ("NASA filename stem", records_by_ng_stem)
+    ):
+        for key, records in groups.items():
+            if len(records) > 1:
+                assert len({contents for _path, contents in records}) == 1, (
+                    f"different NASA card contents share {identity} {key!r}: "
+                    f"{[path.name for path, _contents in records]}"
+                )
+
+
 def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = provenance["rows"]
@@ -1288,7 +1312,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
             "NG-1976", "NG-1977",
             "NG-0893", "NG-0901", "NG-0904",
             "NG-0494", "NG-0567",
-            "NG-0185", "NG-0200", "NG-0205", "NG-0208", "NG-1352",
+            "NG-0185", "NG-0200", "NG-0205", "NG-0208", "NG-BeO-L-1352",
             "NG-0210", "NG-0211", "NG-0212",
         }
     )
@@ -1330,6 +1354,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         assert all(count == 44 for count in counts.values())
         expected_by_limit[limit] = maximum
 
+    nasa_continuation_keys = set()
     # Truncate each published card's Cp function at the row's own source
     # limit, hold Cp there, and compare G(T). Zero belongs only at the limit.
     for row in provenance["rows"]:
@@ -1341,12 +1366,109 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         ):
             continue
         limit = float(row["extrapolation_source_limit_K"])
+        if row["species_name"] in {"Tl(g)", "Tl2O(g)"}:
+            nasa_continuation_keys.add(
+                (row["species_name"], tuple(row["T_range_K"]))
+            )
         assert limit in expected_by_limit
         values = band["values_J_per_mol"]
         assert values[int(limit)] == 0.0
         assert set(values) == {int(limit), *expected_by_limit[limit]}
         for temperature, expected in expected_by_limit[limit].items():
             assert values[temperature] == pytest.approx(expected, abs=0.002)
+
+    assert nasa_continuation_keys == {
+        ("Tl(g)", (2000, 3000)),
+        ("Tl2O(g)", (1200, 1500)),
+        ("Tl2O(g)", (1500, 3000)),
+    }
+
+    liquid_tables = (
+        "Na-013", "Mg-009", "Ca-028", "Al-100", "O-038",
+        "Fe-019", "O-044", "Cr-015", "O-063",
+    )
+    liquid_continuations = {"BeO(l)", "Tl2O(l)"}
+    liquid_continuation_keys = set()
+    for row in provenance["rows"]:
+        band = row.get("uncertainty_band", {})
+        method = band.get("method", "")
+        if (
+            row["table"] != "condensate"
+            or row["species_name"] not in liquid_continuations
+            or "nine JANAF parent-liquid tables" not in method
+        ):
+            continue
+        limit = float(row["extrapolation_source_limit_K"])
+        liquid_continuation_keys.add(
+            (row["species_name"], tuple(row["T_range_K"]))
+        )
+        values = band["values_J_per_mol"]
+        assert values[int(limit)] == 0.0
+        expected = {}
+        for temperature in values:
+            temperature = float(temperature)
+            errors = []
+            for table_id in liquid_tables:
+                table = build_gas_tables._load_record(
+                    ROOT / "data-src" / "janaf" / f"{table_id}.yaml"
+                )["table"]
+                source = {
+                    float(item["temperature"]["value"]): item
+                    for item in table["values"]
+                    if item["temperature"]["value"] is not None
+                }
+
+                def source_at(target: float) -> tuple[float, float, float]:
+                    if target in source:
+                        cells = source[target]
+                    else:
+                        lower = max(t for t in source if t < target)
+                        upper = min(t for t in source if t > target)
+                        fraction = (target - lower) / (upper - lower)
+                        cells = {
+                            key: {
+                                "value": source[lower][key]["value"]
+                                + fraction
+                                * (
+                                    source[upper][key]["value"]
+                                    - source[lower][key]["value"]
+                                )
+                            }
+                            for key in (
+                                "heat_capacity", "entropy", "enthalpy_increment"
+                            )
+                        }
+                    return (
+                        float(cells["heat_capacity"]["value"]),
+                        float(cells["entropy"]["value"]),
+                        float(cells["enthalpy_increment"]["value"]) * 1000.0,
+                    )
+
+                cp_limit, entropy_limit, enthalpy_limit = source_at(limit)
+                _cp_actual, entropy_actual, enthalpy_actual = source_at(temperature)
+                held_g = (
+                    enthalpy_limit
+                    + cp_limit * (temperature - limit)
+                    - temperature
+                    * (
+                        entropy_limit
+                        + cp_limit * math.log(temperature / limit)
+                    )
+                )
+                actual_g = enthalpy_actual - temperature * entropy_actual
+                errors.append(abs(held_g - actual_g))
+            expected[int(temperature)] = max(errors)
+        assert set(values) == set(expected)
+        for temperature, error in expected.items():
+            assert values[temperature] == pytest.approx(error, abs=0.002)
+    assert liquid_continuation_keys == {
+        ("BeO(l)", (1200, 1500)),
+        ("BeO(l)", (1500, 2000)),
+        ("BeO(l)", (2000, 2500)),
+        ("BeO(l)", (2500, 2851)),
+        ("Tl2O(l)", (1200, 1600)),
+        ("Tl2O(l)", (1600, 3000)),
+    }
 
 
 def test_published_source_data_flags_follow_source_limits() -> None:
@@ -1391,9 +1513,9 @@ def test_beryllium_nasa_formation_anchors_and_liquid_source_limit() -> None:
         assert thermal[0]["enthalpy_increment"] == pytest.approx(0.0, abs=1e-12)
 
     liquid = build_gas_tables._nasa_liquid_record(
-        NASA_DATA, "BeO(l)", "NG-1352"
+        NASA_DATA, "BeO(l)", "NG-BeO-L-1352"
     )
-    assert liquid["record_id"] == "NG-1352"
+    assert liquid["record_id"] == "NG-BeO-L-1352"
     assert liquid["phase"] == "L"
     assert liquid["delta_f_H_298_15"]["value"] == pytest.approx(-609400.0)
     assert liquid["intervals"][0]["T_min_K"]["value"] == 2851.0
@@ -6161,8 +6283,9 @@ def _assert_nasa_anchored_rows_match_direct_card_evaluation() -> None:
         ("condensate", "BeO(l)", (1500, 2000)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "BeO(l)", (2000, 2500)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "BeO(l)", (2500, 2851)): "Generated constant-Cp continuation below the NASA liquid card.",
-        ("condensate", "BeO(l)", (2851, 3000)): "The NASA card ends at 2851 K; the documented continuation supplies the remaining range.",
     }
+    # BeO(l) 2851-3000 K is tested against its card; only the four
+    # sub-card intervals use the labelled continuation.
     nasa_sourced = {
         row_key(record): record
         for record in provenance["rows"]

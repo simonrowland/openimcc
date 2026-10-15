@@ -570,7 +570,7 @@ CONDENSATE_SOURCES = (
 TRACE_CONDENSATE_SOURCES = (("B2O3(l)", "B-096", "B", 2, 3),)
 TRACE_CONDENSED_SOURCES = (("C(cr)", "C-002", "C", 1, 0),)
 TRACE_NASA_CONDENSATE_SOURCES = (
-    ("BeO(l)", "NG-1352", "BeO", "Be", 1, 1, 2851.0,
+    ("BeO(l)", "NG-BeO-L-1352", "BeO", "Be", 1, 1, 2851.0,
      ((1200.0, 1500.0), (1500.0, 2000.0), (2000.0, 2500.0), (2500.0, 2851.0)),
      ((2851.0, 3000.0),)),
     ("Ga2O3(l)", "NG-12403", "Ga2O3", "Ga", 2, 3, 2080.0, ((1200.0, 2080.0),), ((2080.0, 3000.0),)),
@@ -721,12 +721,7 @@ def _load_record(path: Path) -> dict[str, Any]:
 def _nasa_liquid_record(
     nasa_source_dir: Path, species_name: str, table_id: str
 ) -> dict[str, Any]:
-    filename = (
-        "NG-1352-BeO-L.json"
-        if species_name == "BeO(l)" and table_id == "NG-1352"
-        else f"{table_id}.json"
-    )
-    return _load_record(nasa_source_dir / filename)
+    return _load_record(nasa_source_dir / f"{table_id}.json")
 
 
 def _value(row: dict[str, Any], field: str) -> float | None:

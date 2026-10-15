@@ -74,7 +74,7 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd/Sm/Eu/Gd/Tb/Dy/Ho/Er/Tm/Yb/Lu channels:
+and caller-supplied Ta/Be/Tl/V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd/Sm/Eu/Gd/Tb/Dy/Ho/Er/Tm/Yb/Lu channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
@@ -87,7 +87,10 @@ As4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, NiO, CoO, Sc, ScO, ScO2, U, UO,
 UO2, UO3, Th, ThO, ThO2, Hf, La, LaO, Ce, CeO, CeO2, Pr, PrO, Nd, NdO,
 Sm, SmO, Eu, EuO, Gd, GdO, Tb, TbO, Dy, DyO, Ho, HoO, Er, ErO, Tm, TmO,
 Yb, YbO, Lu, LuO,
-Na2O, K2O, O and O2.
+Ta, TaO, TaO2, Be, BeO, Be2, Be2O, (BeO)2, (BeO)3, (BeO)4, Tl, Tl2O,
+Na2O, K2O, Ta2O5, BeO, Tl2O, O and O2.
+Ta channels use Ta2O5, Be channels use BeO (including Be2(g)), and Tl
+channels use Tl2O as their caller-supplied parent activities.
 La(g) and LaO(g) use the caller-supplied La2O3(l) activity; the selected
 La2O3 liquid branch comes from Konings et al. Table 88, with its printed
 constant-Cp liquid continuation flagged as supercooled below 2577 K.

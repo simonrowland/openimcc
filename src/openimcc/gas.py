@@ -1136,7 +1136,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "V2O3": "O-063",
     "NbO2": "Nb-013",
     "Ta2O5": "O-078",
-    "BeO": "NG-1352",
+    "BeO": "NG-BeO-L-1352",
     "Tl2O": "P672-Tl2O-l",
     "Li2O": "Li-015",
     "MoO3": "Mo-015",

@@ -3346,8 +3346,14 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("ThO", "ThO2", "P672-ThO-g", "P672-ThO2-LFS"),
         ("ThO2", "ThO2", "P672-ThO2-g", "P672-ThO2-LFS"),
         ("Hf", "HfO2", "Hf-006", "P672-HfO2-LFS"),
+        ("Ta", "Ta2O5", "Ta-005", "O-078", 2000.0),
+        ("Be", "BeO", "NG-0185", "NG-BeO-L-1352", 2900.0),
+        ("Tl", "Tl2O", "P672-Tl-g", "P672-Tl2O-l", 1200.0),
+        ("Tl2O", "Tl2O", "P672-Tl2O-g", "P672-Tl2O-l", 1200.0),
     )
-    for gas_species, parent, gas_table, parent_table in cases:
+    for case in cases:
+        gas_species, parent, gas_table, parent_table = case[:4]
+        temperature = case[4] if len(case) == 5 else 2000.0
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]
         assert reaction_parent == parent
         gas_g = _trace_source_apparent_gibbs(gas_table, temperature)
