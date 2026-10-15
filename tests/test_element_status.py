@@ -1270,7 +1270,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Mn", "Ni", "Co", "P", "S",
         "Zn", "Cd", "Bi", "Te", "Se", "As", "Sb", "Ag", "Mo", "W",
         "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd",
-        "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Y", "Br", "I",
+        "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Y", "Br", "I", "Cl", "F",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     parent_by_element = {
@@ -1348,7 +1348,9 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Th": "ThO2",
         "Hf": "HfO2",
     }
-    gas_parent_by_element = {"S": "S2", "Br": "Br2", "I": "I2"}
+    gas_parent_by_element = {
+        "S": "S2", "Br": "Br2", "I": "I2", "Cl": "Cl2", "F": "F2"
+    }
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")
     parent_oxides = set(melt.parent_oxides)
     gas_pack = load_gas_datapack()

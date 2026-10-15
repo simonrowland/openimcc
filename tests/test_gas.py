@@ -2610,6 +2610,8 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "HfO2": 1.0e-3, "Y2O3": 1.0e-3,
         "Br2": 1.0e-3,
         "I2": 1.0e-3,
+        "Cl2": 1.0e-3,
+        "F2": 1.0e-3,
     }
     default = evaluate_gas({}, 2000.0, 1.0e-8, gas_pack)
     assert not trace_gases & set(default)

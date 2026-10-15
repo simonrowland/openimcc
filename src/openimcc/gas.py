@@ -2621,7 +2621,7 @@ for _element, _parent, _species in (
                 else "not computed: ionized iodine channels are outside this neutral "
                 "gas-only change"
                 if _element == "I"
-                else f"not computed: ionized {_element.lower()} channels are outside this neutral gas-only change"
+                else f"not computed: ionized {'chlorine' if _element == 'Cl' else 'fluorine'} channels are outside this neutral gas-only change"
             ),
             "source_tables": {
                 "selected": (
