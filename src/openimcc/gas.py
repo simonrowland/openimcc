@@ -4294,10 +4294,7 @@ def evaluate_gas(
 
         if O2_row is not None and (
             n_O2 != 0.0
-            or (
-                gas_name in _ALKALI_HALIDE_REACTION_OXIDES
-                and _ALKALI_HALIDE_REACTION_OXIDES[gas_name][2] != 0.0
-            )
+            or gas_name in _HALIDE_REACTIONS
         ):
             flag = _outside_interval_flag("O2(g)", T, O2_row)
             if flag is not None:
