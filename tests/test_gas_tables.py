@@ -3084,7 +3084,9 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
-    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"} | {"Hg(g)", "Au(g)", "Pd(g)"}
+    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"} | {
+        "Hg(g)", "Au(g)", "Pd(g)", "Pt(g)", "PtO2(g)", "Ir(g)"
+    }
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
         table_id = GAS_TABLE_IDS[species]
         row = _gas_row_for_interval(pack, species, 2)
