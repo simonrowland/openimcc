@@ -35,6 +35,17 @@ _DEFAULT_DATAPACK_PATH = (
 _DEFAULT_REDOX_PACK_PATH = (
     Path(__file__).parent / "data" / "packs" / "openimcc-redox-v1.json"
 )
+_BERRY_OPTICAL_BASICITY = {
+    # Berry et al. (2024), supplementary optical-basicity coefficients:
+    # coefficient times oxide formula moles times oxygen count.
+    "SiO2": ("Si", 1, 2, 0.48),
+    "Al2O3": ("Al", 2, 3, 0.61),
+    "MgO": ("Mg", 1, 1, 0.78),
+    "CaO": ("Ca", 1, 1, 1.00),
+    "TiO2": ("Ti", 1, 2, 1.10),
+    "Na2O": ("Na", 2, 1, 1.15),
+    "FeO": ("Fe", 1, 1, 1.00),
+}
 _ORIGINAL_LOAD_DATAPACK = load_datapack
 _ORIGINAL_LOAD_REDOX_PACK = load_redox_pack
 _DEFAULT_PACK_CACHE_LOCK = RLock()
@@ -185,6 +196,9 @@ class RedoxResult:
     chromous_cr_mol: float = 0.0
     chromic_cr_mol: float = 0.0
     cr_oxygen_capacity_mol: float = 0.0
+    titanous_ti_mol: float = 0.0
+    titanic_ti_mol: float = 0.0
+    ti_oxygen_capacity_mol: float = 0.0
     composition_redox_iterations: int = 0
 
     @property
@@ -267,6 +281,16 @@ def _redox_complex_rows(redox_pack: RedoxPack) -> tuple[Mapping[str, Any], ...]:
         for row in redox_pack.rows
         if str(row["complex"]).removesuffix("(l)") not in parent_names
     )
+
+
+def _linear_composition_coefficients(row: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    legacy = row.get("composition_coefficients")
+    if legacy is not None:
+        return legacy
+    term = row.get("composition_term")
+    if term is not None and term.get("kind") == "linear_cation_fractions":
+        return term["coefficients"]
+    return None
 
 
 def _redox_complex_stoichiometry(
@@ -592,7 +616,7 @@ def _active_inner_once(
             redox_lnK.append(0.0)
             continue
         try:
-            if row.get("composition_coefficients") is not None:
+            if row.get("composition_coefficients") is not None or row.get("composition_term") is not None:
                 # Supplied by the fixed point from measured melt ratios and
                 # mapped to the kernel's formula-unit mass-action basis.
                 redox_lnK.append(
@@ -694,7 +718,7 @@ def _active_inner_once(
     )
 
 
-def _cr_composition_effective_ln_k(
+def _composition_conditioned_effective_ln_k(
     state: _LiquidState,
     temperature_K: float,
     lambda_value: float,
@@ -704,7 +728,13 @@ def _cr_composition_effective_ln_k(
     """Map the source single-cation ratio to the kernel formula-unit K."""
     rows = [
         row for row in _redox_complex_rows(redox_pack)
-        if row.get("composition_coefficients") is not None
+        if (
+            _linear_composition_coefficients(row) is not None
+            or (
+                row.get("composition_term") is not None
+                and row["composition_term"].get("kind") == "optical_basicity"
+            )
+        )
     ]
     if not rows:
         return {}
@@ -736,19 +766,20 @@ def _cr_composition_effective_ln_k(
     composition = {
         str(row["complex"]): math.fsum(
             float(coefficient) * oxide_fraction.get(str(oxide), 0.0)
-            for oxide, coefficient in row["composition_coefficients"].items()
+            for oxide, coefficient in (_linear_composition_coefficients(row) or {}).items()
         )
         for row in rows
+        if _linear_composition_coefficients(row) is not None
     }
     parent_names = _redox_parent_names(redox_pack)
     active_parent_log_activity = {
         parent_names[int(index)]: float(log_activity)
         for index, log_activity in zip(state.active_parent, state.y)
     }
-    cr_parent_name = next(
+    cr_parent_name = next((
         str(parent["parent_oxide"]).removesuffix("(l)")
         for parent in redox_pack.parents if str(parent["element"]) == "Cr"
-    )
+    ), None)
     # Source premise: log10(Cr3+/Cr2+) is specified for single-cation oxides.
     # For the reduction row nu_O2=+1/4, ln(Cr2+/Cr3+)=ln(Kred)-lambda/4,
     # hence ln(Kred)=ln(Cr2+/Cr3+)+lambda/4. The kernel's concentration K'
@@ -763,16 +794,81 @@ def _cr_composition_effective_ln_k(
     delta_qfm = lambda_value / math.log(10.0) - qfm_log10
     effective_ln_k: dict[str, float] = {}
     for row in rows:
+        if _linear_composition_coefficients(row) is None:
+            continue
         log10_cr3_cr2 = (
             0.25 * delta_qfm + 3031.0 / temperature_K - 2.26
             + composition[str(row["complex"])]
         )
         log_cr2_cr3 = -math.log(10.0) * log10_cr3_cr2
-        parent_log_activity = active_parent_log_activity.get(cr_parent_name, 0.0)
+        parent_log_activity = active_parent_log_activity.get(str(cr_parent_name), 0.0)
         effective_ln_k[str(row["complex"])] = (
             math.log(2.0) + log_cr2_cr3 + 0.5 * parent_log_activity
         )
+    optical_basicity = _berry_optical_basicity(ledger)
+    for row in rows:
+        term = row.get("composition_term")
+        if term is None:
+            continue
+        if term["kind"] == "linear_cation_fractions":
+            continue
+        if term["kind"] != "optical_basicity":
+            raise RedoxNumericalError("unsupported composition-conditioned redox term")
+        # Berry eq. 7 gives log K' for the reverse ratio. The reduction row
+        # has product TiO1.5 and positive nu_O2=1/4. Its effective ln K'
+        # includes -nu*lambda, giving eq. 6's log(Ti3+/Ti4+) = -logK' -
+        # 1/4 log fO2. Correct for other Ti(IV)
+        # complexes: n(Ti3+)/n(Ti4+) = Krow*n(TiO2 parent)/n(Ti4 total).
+        # All ratios and log K terms are dimensionless; the correction is the
+        # log of mol Ti divided by mol Ti. With only parent and product Ti,
+        # total_ti4/free_tio2 is one and Berry's ratio is recovered directly.
+        log_k_prime = (
+            float(term["A"])
+            + float(term["B_lambda"]) * optical_basicity
+            + float(term["C_over_T"]) / temperature_K
+        )
+        free_tio2 = species.get("TiO2", 0.0)
+        total_ti4 = ledger.get("Ti", {}).get(4, 0.0)
+        correction = (
+            math.log(total_ti4 / free_tio2)
+            if free_tio2 > 0.0 and total_ti4 > 0.0
+            else 0.0
+        )
+        effective_ln_k[str(row["complex"])] = (
+            -math.log(10.0) * log_k_prime - 0.25 * lambda_value + correction
+        )
     return effective_ln_k
+
+
+def _berry_optical_basicity(
+    ledger: Mapping[str, Mapping[int, float]],
+) -> float:
+    """Evaluate Berry's oxygen-weighted Lambda from current oxide amounts.
+
+    Premise: Berry defines Lambda=sum(Lambda_i*m_i*n_i)/sum(m_i*n_i).
+    The ledger stores cation moles, so divide by cations per oxide formula to
+    recover m_i before multiplying by oxygen atoms n_i. Lambda_i and n_i are
+    dimensionless, leaving mol O in numerator and denominator. Sanity: a
+    single-oxide melt returns that oxide's Lambda_i.
+    """
+    oxide_moles = {
+        "Si": math.fsum(ledger.get("Si", {}).values()),
+        "Al": math.fsum(ledger.get("Al", {}).values()),
+        "Mg": math.fsum(ledger.get("Mg", {}).values()),
+        "Ca": math.fsum(ledger.get("Ca", {}).values()),
+        "Ti": math.fsum(ledger.get("Ti", {}).values()),
+        "Na": math.fsum(ledger.get("Na", {}).values()),
+        "Fe": math.fsum(ledger.get("Fe", {}).get(state, 0.0) for state in (2, 3)),
+    }
+    weighted: list[float] = []
+    oxygen: list[float] = []
+    for element, cations, oxygens, coefficient in _BERRY_OPTICAL_BASICITY.values():
+        formula_moles = oxide_moles[element] / cations
+        oxygen_moles = formula_moles * oxygens
+        weighted.append(coefficient * oxygen_moles)
+        oxygen.append(oxygen_moles)
+    denominator = math.fsum(oxygen)
+    return math.fsum(weighted) / denominator if denominator > 0.0 else 0.0
 
 
 def _active_inner(
@@ -790,7 +886,13 @@ def _active_inner(
 ) -> _LiquidState:
     composition_rows = [
         row for row in _redox_complex_rows(redox_pack)
-        if row.get("composition_coefficients") is not None
+        if (
+            _linear_composition_coefficients(row) is not None
+            or (
+                row.get("composition_term") is not None
+                and row["composition_term"].get("kind") == "optical_basicity"
+            )
+        )
         and not exclude_fe_redox
         and any(
             float(amount) > 0.0
@@ -818,7 +920,7 @@ def _active_inner(
             y_init=y_init if state is None else state.y, tol=tol, max_iter=max_iter,
             composition_ln_k=applied,
         )
-        desired = _cr_composition_effective_ln_k(
+        desired = _composition_conditioned_effective_ln_k(
             state, temperature_K, lambda_value, base_datapack, redox_pack
         )
         relative_change = max(
@@ -1501,7 +1603,12 @@ def _make_flags(
         row_name = str(row["complex"])
         for flag in row["range_flags"]:
             flags.append(f"{row_name}: {flag}")
-    if any(row.get("composition_coefficients") is not None for row in active_redox_rows):
+    conditioned_rows = [
+        row for row in active_redox_rows
+        if row.get("composition_coefficients") is not None
+        or row.get("composition_term") is not None
+    ]
+    if conditioned_rows:
         supported = {"Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K", "Cr"}
         cation_totals = {
             element: math.fsum(
@@ -1517,10 +1624,27 @@ def _make_flags(
             if element not in supported and amount / total_cations > 0.01
         ] if total_cations > 0.0 else []
         if outside:
-            flags.append(
-                "RED: Cr composition outside demonstrated CMAS/basaltic range; "
-                "unsupported major cations=" + ",".join(sorted(outside))
+            has_cr_row = any(_linear_composition_coefficients(row) is not None for row in conditioned_rows)
+            label = (
+                "Cr composition outside demonstrated CMAS/basaltic range; "
+                if has_cr_row
+                else "composition outside demonstrated candidate range; "
             )
+            flags.append(
+                "RED: " + label + "unsupported major cations="
+                + ",".join(sorted(outside))
+            )
+    for row in conditioned_rows:
+        term = row.get("composition_term")
+        if term is not None and term["kind"] == "optical_basicity":
+            lambda_value = _berry_optical_basicity(element_moles_by_oxidation_state)
+            low_lambda, high_lambda = map(float, term["lambda_range"])
+            if not low_lambda <= lambda_value <= high_lambda:
+                flags.append(
+                    "RED: optical_basicity_outside_calibrated_range "
+                    f"row={row['complex']} lambda={lambda_value:.6g} "
+                    f"range=[{low_lambda:g},{high_lambda:g}]"
+                )
     extrapolated_redox_rows: list[str] = []
     for row in active_redox_rows:
         row_name = str(row["complex"])
@@ -1563,6 +1687,9 @@ def _assemble_result(
     cr_valence_moles = element_moles_by_oxidation_state.get("Cr", {})
     chromous_cr_mol = float(cr_valence_moles.get(2, 0.0))
     chromic_cr_mol = float(cr_valence_moles.get(3, 0.0))
+    ti_valence_moles = element_moles_by_oxidation_state.get("Ti", {})
+    titanous_ti_mol = float(ti_valence_moles.get(3, 0.0))
+    titanic_ti_mol = float(ti_valence_moles.get(4, 0.0))
     unmodelled_redox_couples = _unmodelled_redox_couples(
         element_moles_by_oxidation_state, redox_pack
     )
@@ -1686,6 +1813,9 @@ def _assemble_result(
         chromous_cr_mol=chromous_cr_mol,
         chromic_cr_mol=chromic_cr_mol,
         cr_oxygen_capacity_mol=0.5 * chromous_cr_mol,
+        titanous_ti_mol=titanous_ti_mol,
+        titanic_ti_mol=titanic_ti_mol,
+        ti_oxygen_capacity_mol=0.5 * titanous_ti_mol,
         composition_redox_iterations=state.composition_redox_iterations,
         unmodelled_redox_couples=unmodelled_redox_couples,
         redox_pack_digest=redox_pack.canonical_digest,

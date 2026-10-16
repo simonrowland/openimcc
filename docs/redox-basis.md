@@ -82,6 +82,49 @@ the 1773 K variable-temperature limit, and compositions outside the demonstrated
 CMAS and basaltic range; pressure is not modelled. It does not define a
 composition-independent CrO Gibbs function.
 
+## Titanium candidate packs
+
+Two additional packs are opt-in. Select the Ti-only row with
+`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-ti-candidate.json")`,
+or select the combined Cr+Ti candidate with
+`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json")`.
+Neither is the packaged default. The Ti-only pack starts from the default
+redox pack; the combined pack carries both empirical rows.
+
+The Ti row uses `TiO2 = TiO1.5 + 1/4 O2`, so `nu_O2=+1/4`. Berry et al.
+(2024), equation 7, supplies `log10 K' = -1.84 + 3.44 Lambda + 6262.5/T`.
+The optical basicity uses Berry's supplementary-text coefficients and the
+oxide set/minor-element rule in Table 3:
+`Lambda = sum(Lambda_i * m_i * n_i) / sum(m_i * n_i)`, with `m_i` oxide
+formula moles, `n_i` oxygen atoms per oxide, and coefficients 0.48 (SiO2),
+0.61 (Al2O3), 0.78 (MgO), 1.00 (CaO), 1.10 (TiO2), 1.15 (Na2O), and 1.00
+(FeO). FeO amounts use the current Fe2+/Fe3+ split from the shared fixed point.
+MnO, K2O, P2O5, and Cr2O3 are excluded as minor oxides in Berry's recipe.
+With product-positive oxygen stoichiometry, the row gives
+`log10(Ti3+/Ti4+) = -log10 K' - 1/4 log10(fO2/1 bar)`.
+
+Berry's five measured glasses anchor the position. Their measured `log K'`
+values span 3.852-4.096 at 1400 °C, a 0.244 dex composition envelope; the
+stored 7.8 kJ/mol value is that envelope converted at 1673.15 K and is not a
+fit residual. Berry's FMQ-parallel `6262.5/T` slope is carried as an
+assumption. Held-out checks remain separate: Tranell's CST4 titration is
+0.090 Ti3+/sum Ti at 1843 K and 1e-9 atm, while this Berry equation predicts
+about 0.033 there for CST4's Berry-recipe Lambda near 0.628. It is a comparison,
+not a fit. Tranell reports 152 ± 25 kJ/mol (7940/T in her correlation; the
+1997 free pO2 slope is -0.21 ± 0.01). Schreiber's 1977/1978 EPR/titration
+series implies steeper isotherms, about 15000/T, and reports 1-7% Ti3+ for
+lunar conditions. No alternate slope is fitted. Johnston (1965) alkali-silicate
+isotherms are also held out.
+
+The Fe-free calibration is a different observable from quenched Fe-bearing
+glasses, where Ti3+/Fe3+ exchange can occur on quench. The row flags
+temperatures outside the 1273-1903 K measured comparison span and optical
+basicity outside the five-glass range 0.5633-0.6345; it evaluates extrapolated
+points rather than refusing them. `titanous_ti_mol`, `titanic_ti_mol`, and
+`ti_oxygen_capacity_mol` report the Ti(III)/Ti(IV) atom totals and the 0.5 mol
+O per mol Ti(III) reduction capacity. `oxygen_capacity_mol_per_ln_f_o2`
+includes the composition fixed point's total derivative.
+
 ## Threading
 
 These solves use small dense linear algebra. Multi-threaded BLAS gives no

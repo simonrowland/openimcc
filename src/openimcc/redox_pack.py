@@ -19,6 +19,13 @@ from typing import Any, Mapping
 
 _PACK_NAME = "openimcc-redox-v1.json"
 _SCHEMA = "openimcc-redox-pack.v2"
+_CANDIDATE_VERSIONS = {
+    "1.4.0-cr-candidate", "1.5.0-ti-candidate", "1.6.0-cr-ti-candidate"
+}
+
+
+class RedoxCompositionTermError(ValueError):
+    """A candidate composition-conditioned row has an invalid tagged term."""
 
 
 def canonical_redox_digest(content: Mapping[str, Any]) -> str:
@@ -100,10 +107,10 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         raise ValueError("redox pack version must be a non-empty string")
     candidate_pack = (
         content.get("candidate_only") is True
-        and content.get("version") == "1.4.0-cr-candidate"
+        and content.get("version") in _CANDIDATE_VERSIONS
     )
     if content.get("candidate_only") is True and not candidate_pack:
-        raise ValueError("candidate-only redox features require the Cr candidate pack version")
+        raise ValueError("candidate-only redox features require a recognized candidate pack version")
     if candidate_pack:
         provenance = content.get("dataset_provenance")
         if (
@@ -113,14 +120,14 @@ def _validate_content(content: Mapping[str, Any]) -> None:
             or not isinstance(provenance.get("held_out_independent"), list)
             or not provenance["held_out_independent"]
         ):
-            raise ValueError("Cr candidate pack needs separate anchor and held-out dataset provenance")
+            raise ValueError("candidate pack needs separate anchor and held-out dataset provenance")
         for group in (provenance["anchors"], provenance["held_out_independent"]):
             for dataset in group:
                 if not isinstance(dataset, dict) or not all(
                     isinstance(dataset.get(key), str) and dataset[key]
                     for key in ("citation", "role", "source_url")
                 ):
-                    raise ValueError("Cr candidate dataset provenance needs citation, role, and source_url")
+                    raise ValueError("candidate dataset provenance needs citation, role, and source_url")
     required = {
         "units", "parent_registry", "thermo_species", "rows",
         "source_selection_rail",
@@ -367,6 +374,42 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         if not isinstance(row.get("nu"), dict):
             raise ValueError(f"{label} needs parent stoichiometry nu")
         composition_coefficients = row.get("composition_coefficients")
+        composition_term = row.get("composition_term")
+        if composition_coefficients is not None and composition_term is not None:
+            raise RedoxCompositionTermError(f"{label} cannot declare both composition term forms")
+        if composition_term is not None:
+            if not candidate_pack:
+                raise ValueError("composition_term is candidate-pack only")
+            if not isinstance(composition_term, dict):
+                raise RedoxCompositionTermError(f"{label} composition_term must be an object")
+            kind = composition_term.get("kind")
+            if kind == "optical_basicity":
+                expected_fields = {"kind", "A", "B_lambda", "C_over_T", "lambda_range"}
+                if set(composition_term) != expected_fields:
+                    raise RedoxCompositionTermError(f"{label} optical_basicity composition_term has unknown or missing fields")
+                for field in ("A", "B_lambda", "C_over_T"):
+                    _finite_number(composition_term[field], f"{label}/composition_term/{field}")
+                bounds = composition_term["lambda_range"]
+                if not isinstance(bounds, list) or len(bounds) != 2:
+                    raise RedoxCompositionTermError(f"{label} composition_term/lambda_range must contain two numbers")
+                low_lambda, high_lambda = (
+                    _finite_number(value, f"{label}/composition_term/lambda_range")
+                    for value in bounds
+                )
+                if high_lambda <= low_lambda:
+                    raise RedoxCompositionTermError(f"{label} composition_term/lambda_range is invalid")
+            elif kind == "linear_cation_fractions":
+                if set(composition_term) != {"kind", "coefficients"}:
+                    raise RedoxCompositionTermError(f"{label} linear_cation_fractions composition_term has unknown or missing fields")
+                coefficients = composition_term["coefficients"]
+                if not isinstance(coefficients, dict) or not coefficients:
+                    raise RedoxCompositionTermError(f"{label} composition_term/coefficients must be a non-empty object")
+                for oxide, coefficient in coefficients.items():
+                    if oxide not in {"NaO0.5", "MgO", "Fe2+O", "AlO1.5", "Fe3+O1.5", "KO0.5", "CaO", "TiO2"}:
+                        raise RedoxCompositionTermError(f"{label} has an unsupported composition coefficient key {oxide!r}")
+                    _finite_number(coefficient, f"{label}/composition_term/coefficients/{oxide}")
+            else:
+                raise RedoxCompositionTermError(f"{label} composition_term has unknown kind {kind!r}")
         if composition_coefficients is not None:
             if not candidate_pack:
                 raise ValueError("composition_coefficients are candidate-pack only")
@@ -424,8 +467,9 @@ def _validate_content(content: Mapping[str, Any]) -> None:
             raise ValueError(f"{label} needs explicit range flags")
         if not isinstance(row.get("provenance"), dict):
             raise ValueError(f"{label} needs provenance")
+        composition_conditioned = composition_coefficients is not None or composition_term is not None
         if not isinstance(row.get("standard_gibbs_terms"), list) or (
-            not row["standard_gibbs_terms"] and composition_coefficients is None
+            not row["standard_gibbs_terms"] and not composition_conditioned
         ):
             raise ValueError(f"{label} needs standard_gibbs_terms")
         terms = {}
@@ -441,7 +485,7 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         }
         expected = {name: value for name, value in expected.items() if value}
         terms = {name: value for name, value in terms.items() if value}
-        if composition_coefficients is not None:
+        if composition_conditioned:
             if row["standard_gibbs_terms"]:
                 raise ValueError(f"{label} empirical effective-K row cannot declare Gibbs terms")
             if product_species.get("evaluator") != "composition_conditioned_effective_k":
@@ -646,7 +690,7 @@ def reaction_gibbs_j_mol(
     ``allow_extrapolation`` bypasses the reaction's evidence interval while
     keeping species evaluator bounds in force.
     """
-    if row.get("composition_coefficients") is not None:
+    if row.get("composition_coefficients") is not None or row.get("composition_term") is not None:
         raise ValueError("composition-conditioned effective K has no Gibbs function")
     temperature = _finite_number(temperature_k, "temperature_k")
     low, high = map(float, row["T_domain_K"])
@@ -689,7 +733,7 @@ def ln_k_prime(
     equivalent parent-basis Gibbs function; ``reaction_gibbs_j_mol`` continues
     to return the Gibbs energy of the displayed reaction itself.
     """
-    if row.get("composition_coefficients") is not None:
+    if row.get("composition_coefficients") is not None or row.get("composition_term") is not None:
         raise ValueError("composition-conditioned effective K requires a melt composition")
     from openimcc.gas import R_J_MOL_K
 

@@ -200,7 +200,7 @@ def test_composition_coefficients_are_rejected_by_default_pack(tmp_path):
 def test_candidate_composition_fixed_point_nonconvergence_is_typed(monkeypatch):
     import openimcc.redox as redox_module
 
-    original = redox_module._cr_composition_effective_ln_k
+    original = redox_module._composition_conditioned_effective_ln_k
     flip = [False]
 
     def oscillating(*args, **kwargs):
@@ -208,6 +208,6 @@ def test_candidate_composition_fixed_point_nonconvergence_is_typed(monkeypatch):
         flip[0] = not flip[0]
         return {name: value + (1.0 if flip[0] else -1.0) for name, value in values.items()}
 
-    monkeypatch.setattr(redox_module, "_cr_composition_effective_ln_k", oscillating)
+    monkeypatch.setattr(redox_module, "_composition_conditioned_effective_ln_k", oscillating)
     with pytest.raises(RedoxNumericalError, match="fixed point did not converge"):
         _candidate_result(1673.0, -10.0)
