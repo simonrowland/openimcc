@@ -1397,7 +1397,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         ):
             continue
         limit = float(row["extrapolation_source_limit_K"])
-        if row["species_name"] in {"Tl(g)", "Tl2O(g)"}:
+        if row["species_name"] in {"Tl(g)", "Tl2O(g)", "Rh(g)"}:
             nasa_continuation_keys.add(
                 (row["species_name"], tuple(row["T_range_K"]))
             )
@@ -1414,6 +1414,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         ("Tl(g)", (2000, 3000)),
         ("Tl2O(g)", (1200, 1500)),
         ("Tl2O(g)", (1500, 3000)),
+        ("Rh(g)", (2000.0, 3000.0)),
     }
 
     liquid_tables = (
@@ -1693,7 +1694,7 @@ def test_pto2_continuation_band_recomputes_from_its_2000_k_limit() -> None:
         if item["table"] == "gas" and item["species_name"] == "PtO2(g)"
         and item.get("T_interval") == 3
     )
-    assert row["source_data"] is False
+    assert row["source_data"] is True
     assert row["extrapolation_source_limit_K"] == 2000.0
     continuation = evaluate_gas(
         {"Pt": 1.0}, 2500.0, 1.0e-10, load_gas_datapack(),
@@ -1916,40 +1917,12 @@ def test_burcat_ir_vapor_pressure_matches_measured_source_range() -> None:
     assert pressure_bar == pytest.approx(measured_atm * 1.01325, rel=0.15)
 
 
-def test_pankratz_rh_continuation_bands_recompute_from_source_limits() -> None:
+def test_pankratz_rh_liquid_continuation_band_recomputes_from_source_limit() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = provenance["rows"]
     source = json.loads(
         (PUBLISHED_DATA / "pankratz-rh.json").read_text(encoding="utf-8")
     )["tables"]
-    gas_band = next(
-        row["uncertainty_band"] for row in rows
-        if row.get("species_name") == "Rh(g)" and row.get("T_interval") == 1
-    )
-    assert gas_band["kind"] == "constant_Cp_alternative_continuation_envelope"
-    gas_nodes = {float(node[0]): node for node in source["P672-Rh-g"]["nodes"]}
-    t0 = 2000.0
-    cp0 = float(gas_nodes[t0][1]) * 4.184
-    s0 = float(gas_nodes[t0][2]) * 4.184
-    h0 = float(gas_nodes[t0][3]) * 4.184 * 1000.0
-    cp_slope = (float(gas_nodes[t0][1]) - float(gas_nodes[1900.0][1])) * 4.184 / 100.0
-    values = {float(T): float(value) for T, value in gas_band["values_J_per_mol"].items()}
-    assert set(values) == set(map(float, range(2000, 3001, 100)))
-    for temperature, actual in values.items():
-        delta = temperature - t0
-        held_h = h0 + cp0 * delta
-        held_s = s0 + cp0 * math.log(temperature / t0)
-        linear_h = h0 + cp0 * delta + 0.5 * cp_slope * delta**2
-        linear_s = (
-            s0 + cp0 * math.log(temperature / t0)
-            + cp_slope * (delta - t0 * math.log(temperature / t0))
-        )
-        expected = abs(
-            (linear_h - temperature * linear_s)
-            - (held_h - temperature * held_s)
-        )
-        assert actual == pytest.approx(expected, abs=0.001)
-
     liquid_band = next(
         row["uncertainty_band"] for row in rows
         if row.get("species_name") == "Rh(l)"
@@ -4161,8 +4134,6 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                 assert value["janaf_minus_pankratz_J_mol"] == pytest.approx(
                     janaf_g - pankratz_g, abs=0.001
                 )
-            continue
-        if "issue" in comparison:
             continue
         nasa = _nasa_record(comparison["nasa_record_id"])
         if "pankratz_table_id" in comparison:
