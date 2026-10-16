@@ -726,6 +726,10 @@ def _composition_conditioned_effective_ln_k(
     redox_pack: RedoxPack,
 ) -> dict[str, float]:
     """Map the source single-cation ratio to the kernel formula-unit K."""
+    active_parent_names = {
+        _redox_parent_names(redox_pack)[int(index)]
+        for index in state.active_parent
+    }
     rows = [
         row for row in _redox_complex_rows(redox_pack)
         if (
@@ -734,6 +738,11 @@ def _composition_conditioned_effective_ln_k(
                 row.get("composition_term") is not None
                 and row["composition_term"].get("kind") == "optical_basicity"
             )
+        )
+        and any(
+            float(amount) > 0.0
+            and str(parent).removesuffix("(l)") in active_parent_names
+            for parent, amount in row.get("nu", {}).items()
         )
     ]
     if not rows:
@@ -1649,10 +1658,15 @@ def _make_flags(
                if row.get("complex") == "TiO1.5(l)-effective"]
     if ti_rows:
         lambda_value = _berry_optical_basicity(element_moles_by_oxidation_state)
-        if not 0.586 <= lambda_value <= 0.618:
+        low_lambda, high_lambda = map(
+            float, ti_rows[0]["composition_term"]["lambda_range"]
+        )
+        if not low_lambda <= lambda_value <= high_lambda:
             flags.append(
-                "RED: Ti candidate outside Berry anchor Lambda [0.586,0.618]; "
-                "Tranell held-out titrations under-predict by a median 0.52 dex (maximum 1.33 dex) at "
+                "RED: Ti candidate outside Berry anchor Lambda "
+                f"[{low_lambda:g},{high_lambda:g}]; "
+                "Tranell held-out titrations (73 points) under-predict by a median "
+                "0.5246 dex (maximum absolute residual 1.3300 dex) at "
                 "7-52 wt% TiO2."
             )
         ti_parent = next((i for i, parent in enumerate(redox_pack.parents)
@@ -1680,14 +1694,15 @@ def _make_flags(
             if ti_wt > 1.03:
                 flags.append(
                     "RED: TiO2 exceeds Berry anchor content (~1.03 wt%); "
-                    "Tranell held-out titrations under-predict by a median 0.52 dex (maximum 1.33 dex) "
+                    "Tranell held-out titrations (73 points) under-predict by a median 0.5246 dex "
+                    "(maximum absolute residual 1.3300 dex) "
                     "at 7-52 wt% TiO2."
                 )
         if not 1673.0 <= temperature_K <= 1674.0:
             flags.append(
                 "RED: Ti candidate temperature outside Berry calibration band "
-                "1673-1674 K; Tranell held-out titrations under-predict by "
-                "a median 0.52 dex (maximum 1.33 dex) at 7-52 wt% TiO2."
+                "1673-1674 K; Tranell held-out titrations (73 points) under-predict by "
+                "a median 0.5246 dex (maximum absolute residual 1.3300 dex) at 7-52 wt% TiO2."
             )
     extrapolated_redox_rows: list[str] = []
     for row in active_redox_rows:

@@ -17,7 +17,7 @@
     "domain_match",
     "systematic_estimate"
   ],
-  "canonical_content_digest": "fa9766c5724aa64e86b68d21345ba0d0ecb80832a90b7b0cb57a4baf038c87f7",
+  "canonical_content_digest": "4170931c0f9e36b88eaf796a2c305a255aa713f4821506eecc59d771e0ec58af",
   "parent_registry": [
     {
       "element": "Si",
@@ -1422,7 +1422,7 @@
       "range_flags": [
         "Fe-free calibration; quenched Fe-bearing glasses can exchange Ti3+/Fe3+, so residual glass valence is a different observable.",
         "Berry equation 7 carries its FMQ-parallel temperature slope as an assumption; measurements span 1273-1903 K.",
-        "Optical-basicity calibration spans Lambda 0.5633-0.6345; values outside that span are flagged during evaluation."
+        "Berry et al. (2024) Table 1 (p. 212) reports anchor Lambda 0.5633-0.6345; recomputation from the reported oxides is 0.5643-0.6353, and evaluation flags outside [0.5633,0.6353]."
       ],
       "provenance": {
         "source": "Berry et al. (2024), equation 7 and Table 1; optical-basicity coefficients from the supplementary text.",
@@ -1785,11 +1785,11 @@
       ],
       "band_kj_mol": 7.8,
       "band_method": "Berry’s five measured glasses span 0.244 dex in log K' at 1673.15 K (equivalent to 7.8 kJ/mol at that temperature via RT ln 10); this is a composition envelope, not a fit residual. Tranell and Schreiber temperature-slope evidence is retained in log K' and fraction units in the uncertainty note.",
-      "uncertainty_note": "Berry’s five glasses anchor Lambda 0.586-0.618, about 1.03 wt% TiO2, and 1673 K. The model assumes ideal Ti3+/Ti4+ mixing and Berry’s FMQ-parallel 6262.5/T slope. Held-out Tranell titrations (Lambda 0.66-0.91, 7-52 wt% TiO2, 1783-1903 K) are under-predicted by a median 0.52 dex (maximum 1.33 dex); temperature and fugacity-slope differences do not explain the miss. Apollo 14072-like low-Ti basalt (about 2.6 wt%, Lambda about 0.63) is just outside calibration, and high-Ti mare basalt (TiO2 > 6 wt% in the Neal & Taylor 1992 classification, GCA 56, 2177-2211) is well outside. The evidence does not establish an error onset between 1 and 7 wt% TiO2, so runtime flags begin above the 1.03 wt% anchor content.",
+      "uncertainty_note": "Berry et al. (2024) Table 1 (p. 212) reports the five measured-glass Lambda values as 0.5633-0.6345; recomputing from their reported oxide analyses with Berry’s oxygen-weighted definition and coefficients gives 0.5643-0.6353. The model uses that definition, including Berry’s TiO2 coefficient 1.10, and flags outside [0.5633,0.6353]. The glasses contain about 1.03 wt% TiO2 and were measured at 1673 K. The model assumes ideal Ti3+/Ti4+ mixing and Berry’s FMQ-parallel 6262.5/T slope. Across 73 held-out Tranell points (Lambda 0.6631-0.9079, 7.3-52.35 wt% TiO2, 1783-1903 K), all remain outside the Berry Lambda envelope; predictions under-predict Ti3+/Ti4+ by a median 0.5246 dex (maximum absolute residual 1.3300 dex). The basicity audit does not change predictions. Apollo 14072-like basalt (about 2.6 wt% TiO2, Lambda about 0.63) lies inside the Lambda envelope but above the 1.03 wt% anchor TiO2 content; high-Ti mare basalt (TiO2 > 6 wt% in the Neal & Taylor 1992 classification, GCA 56, 2177-2211) is well outside. The evidence does not establish an error onset between 1 and 7 wt% TiO2, so runtime flags begin above the 1.03 wt% anchor content.",
       "range_flags": [
         "Berry equation 7 assumes ideal Ti3+/Ti4+ mixing and an FMQ-parallel 6262.5/T temperature slope.",
-        "Berry composition anchors cover Lambda 0.586-0.618, about 1.03 wt% TiO2, and 1673 K; evaluation flags departures from each domain.",
-        "Held-out Tranell titrations at 7-52 wt% TiO2 under-predict Ti3+/Ti4+ by a median 0.52 dex (maximum 1.33 dex); flags do not refuse evaluation.",
+        "Berry et al. (2024) Table 1 (p. 212) reports anchor Lambda 0.5633-0.6345; pack recalculation from the reported oxide analyses is 0.5643-0.6353. The evaluation envelope [0.5633,0.6353] includes that rounding spread; all 73 Tranell points remain outside it.",
+        "Held-out Tranell titrations at 7.3-52.35 wt% TiO2 under-predict Ti3+/Ti4+ by a median 0.5246 dex (maximum absolute residual 1.3300 dex); flags do not refuse evaluation.",
         "Apollo 14072-like basalt (about 2.6 wt% TiO2, Lambda about 0.63) is just outside calibration; high-Ti mare basalt (TiO2 > 6 wt% in the Neal & Taylor 1992 classification, GCA 56, 2177-2211) is well outside.",
         "Fe-free calibration; quenched Fe-bearing glasses exchange Ti3+/Fe3+, a different observable."
       ],
@@ -1798,7 +1798,7 @@
         "source": "Berry et al. (2024), equation 7 and Table 1; composition anchors and independent held-out measurements are split in dataset_provenance.",
         "source_url": "https://doi.org/10.1016/j.gca.2023.11.014",
         "tier": "tier2_primary_measurement",
-        "selection_rationale": "Berry’s five measured Fe-free glasses anchor composition. Equation 7 assumes ideal Ti3+/Ti4+ mixing and an FMQ-parallel 6262.5/T slope. Held-out Tranell titrations show under-prediction at 7-52 wt% TiO2 by a median 0.52 dex (maximum 1.33 dex); the low-Ti Apollo 14072-like case is just outside the anchor domain and high-Ti mare basalt (TiO2 > 6 wt% in the Neal & Taylor 1992 classification, GCA 56, 2177-2211) is well outside. These comparisons inform domain flags only; no alternate slope or concentration cutoff is fitted."
+        "selection_rationale": "Berry’s five measured Fe-free glasses anchor composition using the paper’s oxygen-weighted optical-basicity definition and TiO2 coefficient 1.10 (Table 1, p. 212 and supplementary text). Their published Lambda span is 0.5633-0.6345; the rounded oxide analyses recompute to 0.5643-0.6353, so the runtime envelope is [0.5633,0.6353]. Equation 7 assumes ideal Ti3+/Ti4+ mixing and an FMQ-parallel 6262.5/T slope. All 73 Tranell points have Lambda 0.6631-0.9079, outside that envelope, and predictions under-predict by a median 0.5246 dex (maximum absolute residual 1.3300 dex). The basicity audit leaves candidate predictions unchanged. These comparisons inform domain flags only; no alternate slope or concentration cutoff is fitted."
       },
       "composition_term": {
         "kind": "optical_basicity",
@@ -1807,7 +1807,7 @@
         "C_over_T": 6262.5,
         "lambda_range": [
           0.5633,
-          0.6345
+          0.6353
         ]
       }
     }
@@ -1824,7 +1824,7 @@
     "held_out_independent": [
       {
         "citation": "Tranell (1999)",
-        "role": "held out: independent CaO-SiO2-TiOx redox titrations; across 73 scored points (Lambda 0.66-0.91, 7.3-52.35 wt% TiO2, 1783-1903 K), the candidate under-predicts Ti3+/Ti4+ by a median 0.52 dex (maximum 1.33 dex); CST4 comparison and reported 152 ± 25 kJ/mol, 7940/T correlation, and -0.21 ± 0.01 free-pO2 slope are not fit targets.",
+        "role": "held out: independent CaO-SiO2-TiOx redox titrations; across 73 scored points (Berry Lambda 0.6631-0.9079, 7.3-52.35 wt% TiO2, 1783-1903 K), all points remain outside the Berry anchor Lambda envelope [0.5633,0.6353]. The candidate under-predicts Ti3+/Ti4+ by a median 0.5246 dex (maximum absolute residual 1.3300 dex); CST4 comparison and reported 152 ± 25 kJ/mol, 7940/T correlation, and -0.21 ± 0.01 free-pO2 slope are not fit targets.",
         "source_url": "https://doi.org/10.26190/unsworks/6206"
       },
       {

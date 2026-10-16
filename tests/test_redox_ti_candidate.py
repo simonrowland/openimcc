@@ -126,6 +126,30 @@ def test_ti_row_matches_independent_equation_at_three_glass_compositions():
         assert result.element_moles_by_oxidation_state["Ti"][4] == result.titanic_ti_mol
 
 
+def test_ti_basicity_reproduces_berry_table_1_and_anchor_envelope():
+    from openimcc.redox import _berry_optical_basicity
+
+    glasses = [
+        ({"SiO2": 49.96, "Al2O3": 15.44, "MgO": 10.59, "CaO": 23.27, "TiO2": 1.03}, 0.6094),
+        ({"SiO2": 49.15, "Al2O3": 13.19, "MgO": 17.41, "CaO": 19.83, "TiO2": 1.04}, 0.6127),
+        ({"SiO2": 51.49, "Al2O3": 6.25, "MgO": 4.27, "CaO": 37.43, "TiO2": 1.02}, 0.6345),
+        ({"SiO2": 54.09, "Al2O3": 9.53, "MgO": 21.66, "CaO": 14.31, "TiO2": 1.06}, 0.5986),
+        ({"SiO2": 65.86, "Al2O3": 10.03, "MgO": 6.98, "CaO": 15.30, "TiO2": 1.13}, 0.5633),
+    ]
+    calculated = []
+    for oxides, published_lambda in glasses:
+        result = _imposed(_inventory(oxides), 1673.15, -10.0)
+        value = _berry_optical_basicity(result.element_moles_by_oxidation_state)
+        assert value == pytest.approx(published_lambda, abs=0.002)
+        calculated.append(value)
+        expected = _berry_fraction(1673.15, -10.0, _independent_lambda(oxides))
+        fraction = result.titanous_ti_mol / (result.titanous_ti_mol + result.titanic_ti_mol)
+        assert fraction == pytest.approx(expected, abs=2e-9)
+
+    assert min(calculated) >= 0.5633
+    assert max(calculated) <= 0.6353
+
+
 def test_apollo_14072_fraction_matches_reported_approximately():
     oxides = {
         "SiO2": 45.15, "TiO2": 2.57, "Al2O3": 11.07, "FeO": 17.82,
@@ -166,6 +190,45 @@ def test_tranell_cst4_is_a_held_out_comparison_not_a_fit():
     assert fraction < 0.090
 
 
+@pytest.mark.parametrize(
+    ("pack", "absent_element"),
+    [
+        (CR, "Cr"),
+        (CR, "Ti"),
+        (TI, "Cr"),
+        (TI, "Ti"),
+        (CR_TI, "Cr"),
+        (CR_TI, "Ti"),
+    ],
+)
+def test_candidate_pack_treats_absent_trace_elements_as_inactive(pack, absent_element):
+    inventory = {
+        "Si": 0.60,
+        "Al": 0.20,
+        "Mg": 0.15,
+        "Ca": 0.25,
+        "Fe": 1.0e-12,
+    }
+    present_element = "Ti" if absent_element == "Cr" else "Cr"
+    inventory[present_element] = 0.01
+
+    result = evaluate_redox(
+        inventory,
+        1843.0,
+        "imposed",
+        -9.0 * math.log(10.0),
+        redox_pack_path=pack,
+    )
+
+    assert absent_element not in result.element_moles_by_oxidation_state
+    assert absent_element not in {
+        record["element"] for record in result.unmodelled_redox_couples
+    }
+    assert result.element_moles_by_oxidation_state["Fe"][2] + result.element_moles_by_oxidation_state["Fe"][3] == pytest.approx(
+        1.0e-12
+    )
+
+
 def test_temperature_and_optical_basicity_extrapolations_are_flagged():
     oxides = {"SiO2": 80.0, "CaO": 10.0, "TiO2": 10.0}
     result = _imposed(_inventory(oxides), 2000.0, -9.0)
@@ -199,8 +262,8 @@ def test_ti_anchor_domain_flags_are_advisory_and_do_not_change_prediction(pack):
     outside = {"SiO2": 60.3, "CaO": 31.8, "TiO2": 7.33}
     outside_result = _imposed(feed(outside), 1843.0, -9.0, pack)
     ti_flags = [flag for flag in outside_result.flags if "Tranell held-out titrations" in flag]
-    assert len(ti_flags) == 3
-    assert any("Lambda [0.586,0.618]" in flag for flag in ti_flags)
+    assert len(ti_flags) == 2
+    assert not any("outside Berry anchor Lambda" in flag for flag in ti_flags)
     assert any("1.03 wt%" in flag for flag in ti_flags)
     assert any("1673-1674 K" in flag for flag in ti_flags)
     fraction = outside_result.titanous_ti_mol / (

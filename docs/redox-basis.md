@@ -93,16 +93,38 @@ redox pack; the combined pack carries both empirical rows.
 
 The Ti row uses `TiO2 = TiO1.5 + 1/4 O2`, so `nu_O2=+1/4`. Berry et al.
 (2024), equation 7, supplies `log10 K' = -1.84 + 3.44 Lambda + 6262.5/T`.
-The optical basicity uses Berry's supplementary-text coefficients and the
-oxide set/minor-element rule in Table 3:
-`Lambda = sum(Lambda_i * m_i * n_i) / sum(m_i * n_i)`, with `m_i` oxide
-formula moles, `n_i` oxygen atoms per oxide, and coefficients 0.48 (SiO2),
-0.61 (Al2O3), 0.78 (MgO), 1.00 (CaO), 1.10 (TiO2), 1.15 (Na2O), and 1.00
-(FeO). Dissolved Fe(II) and Fe(III) both enter as bulk FeO at coefficient
-1.00, so the Lambda contribution does not depend on their split; Fe metal is
-excluded. The shared fixed point supplies both dissolved Fe amounts.
-MnO, K2O, P2O5, and Cr2O3 are excluded as minor oxides in Berry's recipe.
-With product-positive oxygen stoichiometry, the row gives
+Berry et al. (2024, GCA 366, pp. 210-220, Table 1 p. 212; [article](https://doi.org/10.1016/j.gca.2023.11.014)) define optical basicity by oxygen-weighted oxide mole fractions,
+`Lambda = sum(x_i * n_i * Lambda_i) / sum(x_i * n_i)` (supplementary text;
+equivalently use oxide formula moles `m_i` in place of normalized `x_i`). Its
+oxide coefficients are 0.48 (SiO2), 0.61 (Al2O3), 0.78 (MgO), 1.00 (CaO),
+1.10 (TiO2), 1.15 (Na2O), and 1.00 (FeO). The TiO2 value is Berry's cited
+Duffy (1989) value ([paper](https://doi.org/10.1111/j.1151-2916.1989.tb06022.x)); it is distinct from the commonly reused Duffy-Ingram/Mills
+TiO2 value 0.61. Berry's measured Table 1 glasses support the 1.10 recipe:
+recalculation from their reported oxide analyses gives the following pack
+Lambda values, versus the published values:
+
+| Berry glass | Published Lambda (Table 1, p. 212) | Pack Lambda |
+|---|---:|---:|
+| AD | 0.6094 | 0.611046 |
+| AD+Fo | 0.6127 | 0.614028 |
+| AD+Wo | 0.6345 | 0.635226 |
+| AD+En | 0.5986 | 0.599595 |
+| AD+Qz | 0.5633 | 0.564323 |
+
+The small differences reflect recomputation from the rounded oxide analyses;
+the pack uses the paper's definition and coefficient set, so Ti predictions
+change by 0.000 dex at these anchors and at CST4. The pack-computed Berry
+anchor envelope is 0.5643-0.6353; its flag interval `[0.5633,0.6353]` also
+retains the published rounded endpoints. For CST4 (60.30 wt% SiO2, 31.80 wt%
+CaO, 7.33 wt% TiO2), the pack gives Lambda 0.628191 (0.62819 rounded), both
+before and after this audit. At 1843 K and 1e-9 atm it predicts Ti3+/sumTi
+0.0327447, unchanged from the candidate equation.
+
+Dissolved Fe(II) and Fe(III) both enter as bulk FeO at coefficient 1.00, so
+the Lambda contribution does not depend on their split; Fe metal is excluded.
+The shared fixed point supplies both dissolved Fe amounts. MnO, K2O, P2O5, and
+Cr2O3 are excluded as minor oxides in Berry's recipe. With product-positive
+oxygen stoichiometry, the row gives
 `log10(Ti3+/Ti4+) = -log10 K' - 1/4 log10(fO2/1 bar)`.
 
 Berry's five measured glasses anchor the position. Their measured `log K'`
@@ -118,15 +140,22 @@ series implies steeper isotherms, about 15000/T, and reports 1-7% Ti3+ for
 lunar conditions. No alternate slope is fitted. Johnston (1965) alkali-silicate
 isotherms are also held out.
 
-The Berry composition anchors cover Lambda 0.586-0.618, about 1.03 wt% TiO2,
-and 1673 K. The evaluator flags active Ti rows outside that Lambda range,
+The Berry measured glasses span published Lambda 0.5633-0.6345 (the pack
+recomputes 0.5643-0.6353 from their reported oxide analyses), about 1.03 wt%
+TiO2, and 1673 K. The evaluator flags active Ti rows outside the inclusive
+Lambda envelope `[0.5633,0.6353]`,
 above 1.03 wt% TiO2, or outside 1673-1674 K. The TiO2 threshold is the anchor
 content because the available comparison cannot locate error onset between
 about 1 and 7 wt%; the cutoff does not claim a validated onset. In held-out
-Tranell titrations at 7-52 wt% TiO2 and Lambda 0.66-0.91, the candidate
-under-predicts Ti3+/Ti4+ by a median 0.52 dex (maximum 1.33 dex). Apollo
-14072-like low-Ti basalt (about 2.6 wt% TiO2, Lambda about 0.63) is just
-outside the anchor domain, while high-Ti mare basalt (TiO2 > 6 wt% in the Neal & Taylor 1992 classification, GCA 56, 2177-2211) is well outside. These
+Tranell titrations (73 scored points) span Lambda 0.6631-0.9079 and 7.3-52.35
+wt% TiO2; all remain outside the Berry Lambda envelope. The candidate
+under-predicts Ti3+/Ti4+ by a median 0.5246 dex (maximum absolute residual
+1.3300 dex), unchanged because the pack recipe already matches Berry's
+definition. Apollo
+14072-like low-Ti basalt (about 2.6 wt% TiO2, Lambda about 0.63) is inside
+the Lambda envelope but above the 1.03 wt% anchor TiO2 content, while high-Ti
+mare basalt (TiO2 > 6 wt% in the Neal & Taylor 1992 classification, GCA 56,
+2177-2211) is well outside. These
 are extrapolation flags; evaluation continues.
 
 The ideal Ti3+/Ti4+ mixing relation and FMQ-parallel temperature slope are
@@ -138,7 +167,7 @@ composition transfer from high-concentration activity effects.
 The Fe-free calibration is a different observable from quenched Fe-bearing
 glasses, where Ti3+/Fe3+ exchange can occur on quench. The row flags
 temperatures outside the 1273-1903 K measured comparison span and optical
-basicity outside the five-glass range 0.5633-0.6345; it evaluates extrapolated
+basicity outside the five-glass flag envelope `[0.5633,0.6353]`; it evaluates extrapolated
 points rather than refusing them. `titanous_ti_mol`, `titanic_ti_mol`, and
 `ti_oxygen_capacity_mol` report the Ti(III)/Ti(IV) atom totals and the 0.5 mol
 O per mol Ti(III) reduction capacity. `oxygen_capacity_mol_per_ln_f_o2`
