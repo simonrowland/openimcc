@@ -185,19 +185,19 @@ _ALKALI_BIAS_BENCHMARKS = MappingProxyType(
         ): "−1.20 to −1.26 dex",
         (
             "IMCC-SF04-EXT",
-            "e0b01cda63f24f24df019f76d891086ef68897001a49ac5cbb3ccf885e12ebb8",
+            "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770",
         ): "−1.20 to −1.26 dex",
         (
             "IMCC-SF04-D066",
-            "98931104ccc4790866a685319cc34275adb3272ecfce16488e00a4b2dc224f44",
+            "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75",
         ): "−1.17 to −1.22 dex",
         (
             "IMCC-SF04-D066",
-            "6dd6120c36d7d5dcad4a699f5ec8565b912ae7274edeb73735895c6e8b6c58bb",
+            "45e12de67ee8effa56fe3935e12e66e0dda2ea73ce877dc598ccda3faaea453f",
         ): "−1.17 to −1.22 dex",
         (
             "IMCC-SF04-D066",
-            "fa919e0733e8e85062800d74b557b932a1c1b15e36bf66d0b1e5cbb1f3181139",
+            "25125d24b9a7f3907773811c245b8137f40e46794caba5ce12f9ea26b7a49ce8",
         ): "−1.17 to −1.22 dex",
     }
 )
@@ -224,7 +224,9 @@ class ImccMalformedDatapackError(ImccRefusal):
     code = "imcc_malformed_datapack"
 
 
-def _validate_band_schema_rows(data: Mapping[str, Any]) -> None:
+def _validate_band_schema_rows(
+    data: Mapping[str, Any], *, row_label: str = "published core row"
+) -> None:
     allowed_basis = {
         "source_uncertainty", "measured_construction", "independent_measurement",
         "fit_only", "none",
@@ -233,11 +235,16 @@ def _validate_band_schema_rows(data: Mapping[str, Any]) -> None:
     rows = data.get("rows")
     if not isinstance(rows, list):
         raise ImccMalformedDatapackError("datapack rows must be a list")
-    for index, row in enumerate(rows):
-        label = f"published core row {index}"
+    labeled_rows = [(f"{row_label} {index}", row) for index, row in enumerate(rows)]
+    for label, row in labeled_rows:
         if not isinstance(row, dict):
             raise ImccMalformedDatapackError(f"{label} must be an object")
-        legacy = {"band_kj_mol", "band_method", "uncertainty_band"} & row.keys()
+        legacy = {
+            "band_kj_mol", "band_method", "uncertainty_band",
+            "max_residual_J_per_mol", "max_residual_J_per_mol_by_interval",
+            "max_residual_log10_K", "additional_uncertainty_bands",
+            "max_abs_heldout_log10K_residual",
+        } & row.keys()
         if legacy:
             raise ImccMalformedDatapackError(f"{label} contains legacy fields {sorted(legacy)}")
         if required - row.keys():
@@ -258,6 +265,22 @@ def _validate_band_schema_rows(data: Mapping[str, Any]) -> None:
             raise ImccMalformedDatapackError(f"{label} has an incomplete independent_check")
         if check.get("status") not in {"not_found", "not_applicable", "lead", "tested"}:
             raise ImccMalformedDatapackError(f"{label} has an invalid independent_check status")
+
+    extension = data.get("sp_extension")
+    extension_rows = extension.get("rows") if isinstance(extension, dict) else None
+    if isinstance(extension_rows, list):
+        for index, row in enumerate(extension_rows):
+            if isinstance(row, dict):
+                legacy = {
+                    "band_kj_mol", "band_method", "uncertainty_band",
+                    "max_residual_J_per_mol", "max_residual_J_per_mol_by_interval",
+                    "max_residual_log10_K", "additional_uncertainty_bands",
+                    "max_abs_heldout_log10K_residual",
+                } & row.keys()
+                if legacy:
+                    raise ImccMalformedDatapackError(
+                        f"sp_extension row {index} contains legacy fields {sorted(legacy)}"
+                    )
 
 
 class ImccUnprovenDatapackError(ImccRefusal):
@@ -687,6 +710,9 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
                     )
             extension_rows.append(row)
         extension_parents = _SP_EXTENSION_PARENTS
+        _validate_band_schema_rows(
+            {"rows": extension_rows}, row_label="sp_extension row"
+        )
 
     parents = base_parents + extension_parents
     all_rows = rows + extension_rows

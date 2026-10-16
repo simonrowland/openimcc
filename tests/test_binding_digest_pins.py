@@ -23,21 +23,21 @@ PUBLISHED_CORE_SHA256 = (
 )
 LEGACY_PACK_SHA256 = {
     "imcc-sf04-v1.0.2.json": "87be28815642e8ec65f09edd791525fef8dfe10622e61772dee6047f4ad027b8",
-    "imcc-sf04-ext-v4.json": "0df10d63346b6f6e2954ebe1296819a07b9905f2ecb58ea33e06c8f39e2ba880",
+    "imcc-sf04-ext-v4.json": "4c8e3c89cce921909b70005b6c28e0a5bd75f4487acf12f33e02be55bb730828",
 }
 LEGACY_BINDING_SHA256 = {
     "imcc-sf04-v1.0.2.json": "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c",
-    "imcc-sf04-ext-v4.json": "e0b01cda63f24f24df019f76d891086ef68897001a49ac5cbb3ccf885e12ebb8",
+    "imcc-sf04-ext-v4.json": "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770",
 }
 D066_MANIFEST_SHA256 = {
     "imcc-sf04-d066-v1.json": (
-        "98931104ccc4790866a685319cc34275adb3272ecfce16488e00a4b2dc224f44"
+        "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75"
     ),
     "imcc-sf04-d066-v1-kcaalsi2o7.json": (
-        "6dd6120c36d7d5dcad4a699f5ec8565b912ae7274edeb73735895c6e8b6c58bb"
+        "45e12de67ee8effa56fe3935e12e66e0dda2ea73ce877dc598ccda3faaea453f"
     ),
     "imcc-sf04-d066-ext-v1.json": (
-        "fa919e0733e8e85062800d74b557b932a1c1b15e36bf66d0b1e5cbb1f3181139"
+        "25125d24b9a7f3907773811c245b8137f40e46794caba5ce12f9ea26b7a49ce8"
     ),
 }
 D066_BINDING_SHA256 = D066_MANIFEST_SHA256

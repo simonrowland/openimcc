@@ -130,7 +130,7 @@ def _validate_band_schema(record: Mapping[str, Any], label: str) -> None:
     }
     if not isinstance(check, dict) or check_fields - check.keys():
         raise RedoxSchemaError(f"{label}/independent_check has an incomplete structure")
-    if check.get("status") not in {"tested", "not_found", "not_applicable"}:
+    if check.get("status") not in {"tested", "lead", "not_found", "not_applicable"}:
         raise RedoxSchemaError(f"{label}/independent_check/status is invalid")
     if check.get("status") == "not_found" and not isinstance(check.get("reason"), str):
         raise RedoxSchemaError(f"{label}/independent_check/reason must explain not_found")

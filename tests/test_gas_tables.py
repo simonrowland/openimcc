@@ -286,6 +286,15 @@ def _accuracy_band_value(row: dict) -> dict | None:
     return band.get("value") if isinstance(band, dict) else None
 
 
+def _accuracy_band_values(row: dict) -> list[dict]:
+    band = _accuracy_band_value(row) or {}
+    return [
+        band,
+        *band.get("additional_uncertainty_bands", []),
+        *row.get("additional_uncertainty_bands", []),
+    ]
+
+
 @lru_cache(maxsize=None)
 def _complete_rows(table_id: str) -> list[dict[str, float]]:
     rows = []
@@ -2360,11 +2369,12 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
         if item["species_name"] == "MnO(g)":
             assert item["table_id"] == "TSIV-1436"
             assert item["tier"] == 3
-            assert _accuracy_band_value(item)["kind"] == (
+            assert item["accuracy_band"] is None
+            assert item["band_basis"]["kind"] == "none"
+            assert item["band_basis"]["explanation"] == (
                 "Table 1436 prints accuracy class 4-E; numeric uncertainty band is "
                 "not quantified by the cited page"
             )
-            assert "phi_uncertainty_J_mol_K" not in _accuracy_band_value(item)
         else:
             assert item["table_id"] == "Mn-006"
             assert item["tier"] == 1
@@ -4184,8 +4194,7 @@ def test_ni_co_mixed_source_parent_bands_recompute_from_compilations() -> None:
         for row in rows:
             low, high = map(float, row["T_range_K"])
             row_knots = tuple(t for t in knots if low <= t <= high)
-            regular = _accuracy_band_value(row) or {}
-            bands = [regular, *row.get("additional_uncertainty_bands", [])]
+            bands = _accuracy_band_values(row)
             band = next(
                 item for item in bands
                 if item.get("kind") == "mixed_source_parent_scale_inconsistency"
@@ -4308,10 +4317,7 @@ def test_na_k_gas_anchor_and_parent_scale_bands_recompute() -> None:
         species = row["species_name"]
         interval = tuple(map(int, row["T_range_K"]))
         band_types = expected[species]
-        bands = [
-            _accuracy_band_value(row) or {},
-            *row.get("additional_uncertainty_bands", []),
-        ]
+        bands = _accuracy_band_values(row)
         row_knots = tuple(t for t in temperatures if interval[0] <= t <= interval[1])
         for band_type, calculate in band_types.items():
             band = next(item for item in bands if item.get("basis") == band_type)
@@ -4440,10 +4446,7 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
         disclosed = all(
             any(
                 band.get("kind") == "mixed_source_parent_scale_inconsistency"
-                for band in [
-                    _accuracy_band_value(row) or {},
-                    *row.get("additional_uncertainty_bands", []),
-                ]
+                for band in _accuracy_band_values(row)
             )
             for row in rows
         )
