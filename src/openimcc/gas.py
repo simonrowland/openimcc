@@ -3657,6 +3657,9 @@ def _source_model_flag(
         and source_marker is not None
         and source_ref in {source_marker["table_id"], "JANAF"}
         and not source_ref.endswith(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
+        # Below the packaged row's own floor the source branch is not
+        # tabulated; the outside-interval flag already describes that case.
+        and T >= float(row["T_min"])
         and T < source_marker["fusion_temperature_K"]
     ):
         glass_join = source_marker["glass_join_temperature_K"]

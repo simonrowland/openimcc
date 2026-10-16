@@ -90,3 +90,28 @@ def test_source_tabulated_liquid_branches_use_source_thresholds(
     assert _source_model_flag(
         species, float(marker["fusion_temperature_K"]), row, phase="l"
     ) is None
+
+
+@pytest.mark.parametrize(
+    ("species", "temperature"),
+    (("PbO(l)", 1100.0), ("B2O3(l)", 700.0), ("MoO3(l)", 1000.0)),
+)
+def test_supercooled_branch_flag_is_silent_below_the_packaged_row_floor(
+    species: str, temperature: float
+) -> None:
+    # These rows begin at 1200 K, above or near their fusion markers, so no
+    # source-tabulated supercooled cells exist below that floor.
+    pack = load_gas_datapack()
+    parent = species.removesuffix("(l)")
+    channel = next(
+        name for name, reaction in _SF04_REACTIONS.items()
+        if reaction[0] == parent
+    )
+    result = evaluate_gas(
+        {parent: 1.0e-3}, temperature, 1.0e-8, pack,
+        parent_oxides=(parent,), gas_species=(channel,),
+        allow_extrapolation=True,
+    )
+    flag = result.domain_flags[channel] or ""
+    assert "source-tabulated supercooled liquid branch" not in flag
+    assert "source-tabulated glass cells" not in flag
