@@ -52,9 +52,19 @@ PACKAGED_GAS_TABLE_DIGEST = (
 PACKAGED_CONDENSATE_TABLE_DIGEST = (
     "4ba6a61f5187a5d6b6b7e12d548b8c473e4f8e71d669f05ad0a0d31ac7dfc866"
 )
+PACKAGED_FULL_GAS_TABLE_DIGEST = (
+    "502aada2ccd76cd2fc824c2dad20d9c1d31379b0375a998df652ea444442504a"
+)
+PACKAGED_FULL_CONDENSATE_TABLE_DIGEST = (
+    "2ead3f7c3fdddb41c8419acda94b52cb8b4925e68c9961b76b2c07f48dc413d7"
+)
 PACKAGED_ENGINE_BINDING_DIGESTS = {
     "v1": "def58f192d449726fb9a4a1b30bc566e233f7348786bfd36006eb2f7710a9e1d",
     "ext": "2ed735ddb34727dc2472f60f23e773ba81554a9a147a2602872407d7ad697d41",
+}
+PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
+    "v1": "7d6dbe9e56ca18eb9082e5b8dfd14a318f46d65e56313726cfb9abaccbf82d77",
+    "ext": "a7b3862aa422f81e36d65aee91aa4f03fa1dc18e907db6c6d25ff96bba344fdb",
 }
 ADDED_GAS_SPECIES = {
     "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
@@ -71,8 +81,13 @@ ADDED_GAS_SPECIES = {
     "MgI(g)", "MgI2(g)", "RbBr(g)", "RbCl(g)", "RbF(g)", "RbI(g)",
     "SrBr(g)", "SrBr2(g)", "SrCl(g)", "SrCl2(g)", "SrF(g)", "SrF2(g)",
     "SrI(g)", "SrI2(g)",
+    "Pt(g)", "PtO2(g)", "Ru(g)", "Rh(g)", "Ir(g)",
 }
-ADDED_CONDENSATE_SPECIES = {"Ta2O5(l)", "BeO(l)", "Tl2O(l)"}
+ADDED_CONDENSATE_SPECIES = {
+    "Ta2O5(l)", "BeO(l)", "Tl2O(l)",
+    "Pt(cr)", "Pt(l)", "Ru(cr)", "Ru(l)",
+    "Rh(cr)", "Rh(l)", "Ir(cr)", "Ir(l)",
+}
 V1_COMPOSITION = {
     "SiO2": 0.45,
     "MgO": 0.20,
@@ -162,6 +177,8 @@ def _na_gas_evaluation(pack: ImccGasDatapack) -> dict[str, float]:
 
 def test_packaged_table_content_digests_match_current_tables() -> None:
     pack = load_gas_datapack()
+    assert pack.gas_table_digest == PACKAGED_FULL_GAS_TABLE_DIGEST
+    assert pack.condensate_table_digest == PACKAGED_FULL_CONDENSATE_TABLE_DIGEST
     retained_gas = pack.gas_df.loc[~pack.gas_df.index.isin(ADDED_GAS_SPECIES)]
     retained_condensate = pack.oxide_df.loc[
         ~pack.oxide_df.index.isin(ADDED_CONDENSATE_SPECIES)
@@ -230,6 +247,11 @@ def test_combined_identity_includes_the_published_melt_binding_digest() -> None:
     )
     v1 = load_datapack(PACK_DIR / "imcc-sf04-v1.0.2.json")
     extension = load_datapack(PACK_DIR / "imcc-sf04-ext-v4.json")
+
+    full_v1_identity = engine_binding_identity(v1, gas_pack)
+    full_extension_identity = engine_binding_identity(extension, gas_pack)
+    assert full_v1_identity.digest == PACKAGED_FULL_ENGINE_BINDING_DIGESTS["v1"]
+    assert full_extension_identity.digest == PACKAGED_FULL_ENGINE_BINDING_DIGESTS["ext"]
 
     v1_identity = engine_binding_identity(v1, legacy_pack)
     extension_identity = engine_binding_identity(extension, legacy_pack)
