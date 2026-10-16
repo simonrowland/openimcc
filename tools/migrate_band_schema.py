@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import hashlib
-import re
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -60,12 +59,6 @@ def _temperature(record: dict[str, Any]) -> Any:
     return deepcopy(value)
 
 
-def _has_halide(species_name: Any) -> bool:
-    if not isinstance(species_name, str):
-        return False
-    return bool({"F", "Cl", "Br", "I"} & set(re.findall(r"[A-Z][a-z]?", species_name)))
-
-
 def _source_band_kind(value: Any, row: dict[str, Any]) -> tuple[str | None, str]:
     """Classify a published band using its declared provenance kind."""
     explanation = str(value.get("kind", "")) if isinstance(value, dict) else ""
@@ -93,6 +86,13 @@ def _redox(root: Path, path: Path | None = None) -> None:
         if "band_kj_mol" not in row:
             if "band_method" in row:
                 row.pop("band_method")
+                changed = True
+            fit = row.get("fit_residual")
+            if (
+                isinstance(fit, dict)
+                and fit.get("temperature_range") in ("T_domain_K", "T_range_K or T_interval")
+            ):
+                fit["temperature_range"] = _temperature(row)
                 changed = True
             rationale = str(row.get("provenance", {}).get("selection_rationale", "")).lower()
             basis = row.get("band_basis")
@@ -133,7 +133,7 @@ def _redox(root: Path, path: Path | None = None) -> None:
                 "value": value, "unit": "kJ mol^-1 species",
                 "target_source": rationale or row.get("provenance", {}).get("source"),
                 "comparison_method": legacy_method or "maximum absolute fit residual against the cited source function",
-                "temperature_range": "T_domain_K" if pack.get("candidate_only") else _temperature(row),
+                "temperature_range": _temperature(row),
                 "held_out_or_in_sample": "in_sample",
             }
             row["accuracy_band"] = None
@@ -145,6 +145,13 @@ def _redox(root: Path, path: Path | None = None) -> None:
         if value is None:
             if "band_method" in row:
                 row.pop("band_method")
+                changed = True
+            fit = row.get("fit_residual")
+            if (
+                isinstance(fit, dict)
+                and fit.get("temperature_range") in ("T_domain_K", "T_range_K or T_interval")
+            ):
+                fit["temperature_range"] = _temperature(row)
                 changed = True
             continue
         changed = True
@@ -171,7 +178,7 @@ def _redox(root: Path, path: Path | None = None) -> None:
                 "value": value, "unit": "kJ mol^-1 reaction",
                 "target_source": "JANAF FeO formation-G values" if row_number == 1 else method,
                 "comparison_method": method,
-                "temperature_range": "T_domain_K" if pack.get("candidate_only") else _temperature(row),
+                "temperature_range": _temperature(row),
                 "held_out_or_in_sample": "in_sample",
             }
             row["band_basis"] = band_basis("fit_only", note or method, row.get("provenance_class"))
@@ -258,6 +265,12 @@ def _gas(root: Path) -> None:
             row["construction_inputs_sha256"] = inputs_digest
         legacy = any(key in row for key in ("max_residual_J_per_mol", "max_residual_J_per_mol_by_interval", "max_residual_log10_K", "uncertainty_band", "additional_uncertainty_bands", "combined_band"))
         if not legacy and all(key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check")):
+            fit = row.get("fit_residual")
+            if (
+                isinstance(fit, dict)
+                and fit.get("temperature_range") in ("T_domain_K", "T_range_K or T_interval")
+            ):
+                fit["temperature_range"] = _temperature(row)
             continue
         old_residuals = {key: row.pop(key) for key in ("max_residual_J_per_mol", "max_residual_J_per_mol_by_interval", "max_residual_log10_K") if key in row}
         additional_bands = row.pop("additional_uncertainty_bands", None)
@@ -275,11 +288,7 @@ def _gas(root: Path) -> None:
                 },
                 "target_source": source,
                 "comparison_method": row.get("method", "source-function fit"),
-                "temperature_range": (
-                    "T_range_K or T_interval"
-                    if _has_halide(row.get("species_name"))
-                    else deepcopy(row.get("fit_intervals_K", temperature))
-                ),
+                "temperature_range": deepcopy(row.get("fit_intervals_K", temperature)),
                 "held_out_or_in_sample": "in_sample",
             }
         else:

@@ -49,6 +49,10 @@ def _validate_row(row: Mapping, label: str) -> None:
                 else {"value", "unit", "temperature_points_or_range", "coverage"}
             )
             assert fields <= value.keys(), label
+            if field == "fit_residual":
+                assert value["temperature_range"] not in (
+                    "T_domain_K", "T_range_K or T_interval",
+                ), label
             if field == "fit_residual" and isinstance(value.get("value"), Mapping):
                 units = value["unit"]
                 for field_name in value["value"]:
@@ -155,16 +159,12 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         for path in sorted((ROOT / "src/openimcc/data/packs").glob("imcc-sf04*.json"))
     )
     archive = subprocess.run(
-        ["git", "archive", "7e64cfd"], cwd=ROOT, check=True, capture_output=True
+        ["git", "archive", "f013bba"], cwd=ROOT, check=True, capture_output=True
     ).stdout
     with tarfile.open(fileobj=__import__("io").BytesIO(archive)) as source:
         source.extractall(tmp_path, filter="data")
     migrate(tmp_path)
     for relative in paths:
-        if relative == "src/openimcc/data/gas/PROVENANCE.yaml":
-            # The merged tree contains halide rows added after this fixture base.
-            # Their migrated ranges are references so migration adds no numbers.
-            continue
         assert (tmp_path / relative).read_bytes() == (ROOT / relative).read_bytes(), relative
     first = {relative: (tmp_path / relative).read_bytes() for relative in paths}
     migrate(tmp_path)

@@ -17,7 +17,7 @@
     "domain_match",
     "systematic_estimate"
   ],
-  "canonical_content_digest": "6fd7e4e9fb1cdb7fd3a2ecfc9901f4763f12c2c6ef19a757602e151ccf4091bf",
+  "canonical_content_digest": "d1c84f40f76f754a1c7ea92ec292443fa04a329ee452e7beffd413b3940a64e8",
   "parent_registry": [
     {
       "element": "Si",
@@ -323,7 +323,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Direct assessed liquid function; reaction residual is at most 0.31 kJ/mol against the directly fitted JANAF elemental references over 1700-3000 K. The band records reaction-fit residual, not thermochemical accuracy; no Fe(l) fusion-anchor adjustment is applied.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1000,
+          5000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -397,7 +400,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The 1200-1500 K interval uses the existing lower JANAF Shomate fit; the original 1500-3000 K coefficients are retained unchanged. Both intervals reproduce their JANAF source nodes within 1 J/mol.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -502,7 +508,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Separate alpha, gamma, and delta fits use the phase-side H-H(298), S, and Cp values at the 1184 and 1665 K transitions. The delta fit extends nine kelvin beyond the final 1800 K node to the transition marker. This band records source-node fit residual only, not thermochemical accuracy.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          500,
+          1809
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -556,7 +565,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The 1700-3000 K Fe(l) fit uses the cited Fe-006 nodes directly. Its maximum source-node fit residual is 1.507 J/mol; the 2.345 J/mol Fe(cr)/Fe(l) seam at the 1809 K fusion marker remains unadjusted and is within the 10 J/mol fit gate. This band records fit residual only, not thermochemical accuracy.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -614,7 +626,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Stable pure-iron reference state uses the crystal below the JANAF 1809 K fusion point and liquid at and above it; a_Fe is fixed to one for the saturation reference. The 2.345 J/mol branch-seam residual is within the 10 J/mol fit gate; this band records fit and seam residual only, not thermochemical accuracy.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -839,7 +854,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1685,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -891,7 +909,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -943,7 +964,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -995,7 +1019,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1083,7 +1110,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The original 1600-2200 K coefficients are retained; separate condensate φ fits use the cited JANAF liquid nodes over 1200-1600 K and 2200-3000 K. Their maximum source residual is 0.524 J/mol.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1745,7 +1775,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Uses the existing supercooled branch below the direct liquid-function interval.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          1800
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1796,7 +1829,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Uses the direct assessed liquid function from its tabulated interval.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1800,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1852,7 +1888,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The two existing standard-state branches meet within 0.01 kJ/mol at their 1800 K join.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1899,7 +1938,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The measured five-glass positions set the composition-conditioned effective K; temperature retains Berry’s explicitly stated FMQ-parallel assumption.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1273,
+          1903
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1944,7 +1986,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The registered TiO2 parent defines amounts for the empirical melt-conditioned row.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1273,
+          1903
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -2018,7 +2063,10 @@
         "unit": "kJ mol^-1 reaction",
         "target_source": "JANAF FeO formation-G values",
         "comparison_method": "Maximum absolute reaction-Gibbs residual against the JANAF FeO formation-Gibbs values over 1700-3000 K.",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "band_basis": {
@@ -2455,7 +2503,10 @@
         "unit": "kJ mol^-1 reaction",
         "target_source": "Berry’s five measured glasses span 0.244 dex in log K' at 1673.15 K (equivalent to 7.8 kJ/mol at that temperature via RT ln 10); this is a composition envelope, not a fit residual. Tranell and Schreiber temperature-slope evidence is retained in log K' and fraction units in the uncertainty note.",
         "comparison_method": "Berry’s five measured glasses span 0.244 dex in log K' at 1673.15 K (equivalent to 7.8 kJ/mol at that temperature via RT ln 10); this is a composition envelope, not a fit residual. Tranell and Schreiber temperature-slope evidence is retained in log K' and fraction units in the uncertainty note.",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1273,
+          1903
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "band_basis": {

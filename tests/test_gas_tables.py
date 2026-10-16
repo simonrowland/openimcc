@@ -1703,7 +1703,7 @@ def test_pto2_continuation_band_recomputes_from_its_2000_k_limit() -> None:
     assert "flagged g-phase continuation above the 2000 K source limit" in (
         continuation.domain_flags["PtO2"]
     )
-    band = row["uncertainty_band"]
+    band = _accuracy_band_value(row)
     assert band["kind"] == "constant_Cp_alternative_continuation_envelope"
     source = json.loads(
         (PUBLISHED_DATA / "burcat-pt.json").read_text(encoding="utf-8")
@@ -1739,8 +1739,8 @@ def test_pto2_mixed_oxygen_reference_band_recomputes_from_source_cards() -> None
     assert set(by_interval) == {1, 2, 3}
     for interval, row in by_interval.items():
         band = next(
-            item for item in row["additional_uncertainty_bands"]
-            if item["kind"] == "mixed_source_parent_scale_inconsistency"
+            item for item in _accuracy_band_values(row)
+            if item.get("kind") == "mixed_source_parent_scale_inconsistency"
         )
         values = {
             int(temperature): float(value)
@@ -1924,7 +1924,7 @@ def test_pankratz_rh_liquid_continuation_band_recomputes_from_source_limit() -> 
         (PUBLISHED_DATA / "pankratz-rh.json").read_text(encoding="utf-8")
     )["tables"]
     liquid_band = next(
-        row["uncertainty_band"] for row in rows
+        _accuracy_band_value(row) for row in rows
         if row.get("species_name") == "Rh(l)"
         and row.get("extrapolation_source_limit_K") == 2500.0
     )
