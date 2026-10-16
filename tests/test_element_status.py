@@ -817,6 +817,38 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     return maxima
 
 
+def test_halogen_selected_authority_labels_match_provenance() -> None:
+    rows = yaml.safe_load(
+        GAS_PROVENANCE.read_text(encoding="utf-8")
+    )["rows"]
+    for element in ("Br", "I", "Cl", "F"):
+        selected_rows = [
+            row for row in rows
+            if row["table"] == "gas"
+            and row["species_name"].startswith(("Na", "Rb", "Cs"))
+            and element in row["species_name"]
+            and row["species_name"].endswith("(g)")
+        ]
+        nasa_rows = [
+            row for row in selected_rows
+            if row["authority"] == "nasa_glenn_fitted"
+        ]
+        label = ELEMENT_STATUS[element]["c3_ion_bound"]["source_tables"]["selected"]
+        assert bool(nasa_rows) == ("NASA Glenn" in label)
+        nasa_alkali_prefixes = {
+            row["species_name"][:2]
+            for row in nasa_rows
+            if row["species_name"].startswith(("Rb", "Cs"))
+        }
+        assert ("Rb/Cs" in label) == (nasa_alkali_prefixes == {"Rb", "Cs"})
+        assert ("Rb/Cs" in label or "Rb " in label) == (
+            "Rb" in nasa_alkali_prefixes
+        )
+        assert bool([row for row in nasa_rows if row["species_name"].startswith("NaI")]) == (
+            "NaI" in label
+        )
+
+
 def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     measured = _ion_bound_maxima()
     negative_screen = yaml.safe_load(

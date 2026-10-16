@@ -3058,9 +3058,12 @@ for _element, _parent, _species in (
             ),
             "source_tables": {
                 "selected": (
-                    "JANAF; NASA Glenn for NaI gases"
-                    if _element == "I"
-                    else "JANAF"
+                    {
+                        "Br": "JANAF; NASA Glenn for Rb/Cs bromides",
+                        "I": "JANAF; NASA Glenn for NaI and Rb/Cs iodides",
+                        "Cl": "JANAF; NASA Glenn for Rb chlorides",
+                        "F": "JANAF; NASA Glenn for Rb fluorides",
+                    }[_element]
                 )
             },
             "parent_activity": None,
