@@ -932,6 +932,22 @@ The keyword-only `redox_pack_path` argument selects a validated redox
 component. Relative paths resolve against the process working directory;
 omitting the argument uses the packaged default.
 
+The opt-in Cr2+/Cr3+ candidate and its evidence domain are documented in
+[`docs/redox-basis.md`](docs/redox-basis.md). Select it explicitly with:
+
+```python
+result = evaluate_redox(
+    inventory,
+    1673.0,
+    "imposed",
+    lambda_imposed,
+    redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-candidate.json",
+)
+```
+
+Leaving `redox_pack_path` unset continues to use the packaged default
+`openimcc-redox-v1.json`.
+
 ## The empirical bench
 
 From a **source checkout** (the bench set is not included in the wheel),

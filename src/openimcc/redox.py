@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from fractions import Fraction
 import math
 from numbers import Real
@@ -182,6 +182,10 @@ class RedoxResult:
     unmodelled_redox_couples: tuple[Mapping[str, Any], ...] = ()
     redox_pack_digest: str = ""
     melt_pack_binding_digest: str | None = None
+    chromous_cr_mol: float = 0.0
+    chromic_cr_mol: float = 0.0
+    cr_oxygen_capacity_mol: float = 0.0
+    composition_redox_iterations: int = 0
 
     @property
     def speciation(self) -> Mapping[str, float]:
@@ -219,6 +223,7 @@ class _LiquidState:
     J: np.ndarray
     solver_path: str
     iterations: int
+    composition_redox_iterations: int = 0
 
 
 @dataclass(frozen=True)
@@ -533,7 +538,7 @@ def _inventory_parent_moles(
     return parent_moles, oxygen
 
 
-def _active_inner(
+def _active_inner_once(
     parent_moles: np.ndarray,
     temperature_K: float,
     lambda_value: float,
@@ -545,6 +550,7 @@ def _active_inner(
     y_init: np.ndarray | None = None,
     tol: float,
     max_iter: int,
+    composition_ln_k: Mapping[str, float] | None = None,
 ) -> _LiquidState:
     parent_names = _redox_parent_names(redox_pack)
     redox_rows = _redox_complex_rows(redox_pack)
@@ -586,15 +592,22 @@ def _active_inner(
             redox_lnK.append(0.0)
             continue
         try:
-            redox_lnK.append(
-                ln_k_prime(
-                    redox_pack,
-                    row,
-                    temperature_K,
-                    ln_f_o2=lambda_value,
-                    allow_extrapolation=True,
+            if row.get("composition_coefficients") is not None:
+                # Supplied by the fixed point from measured melt ratios and
+                # mapped to the kernel's formula-unit mass-action basis.
+                redox_lnK.append(
+                    float((composition_ln_k or {}).get(str(row["complex"]), 0.0))
                 )
-            )
+            else:
+                redox_lnK.append(
+                    ln_k_prime(
+                        redox_pack,
+                        row,
+                        temperature_K,
+                        ln_f_o2=lambda_value,
+                        allow_extrapolation=True,
+                    )
+                )
         except ValueError as exc:
             raise ImccTOutsideDatapackDomainError(
                 f"temperature {temperature_K:g} K cannot be evaluated for "
@@ -611,7 +624,6 @@ def _active_inner(
             redox_nu,
         )
     )
-
     basis = float(np.sum(parent_moles))
     active_parent = parent_moles > 0.0
     inactive_complex = np.any(
@@ -680,6 +692,146 @@ def _active_inner(
         solver_path=solver_path,
         iterations=iterations,
     )
+
+
+def _cr_composition_effective_ln_k(
+    state: _LiquidState,
+    temperature_K: float,
+    lambda_value: float,
+    base_datapack: Any,
+    redox_pack: RedoxPack,
+) -> dict[str, float]:
+    """Map the source single-cation ratio to the kernel formula-unit K."""
+    rows = [
+        row for row in _redox_complex_rows(redox_pack)
+        if row.get("composition_coefficients") is not None
+    ]
+    if not rows:
+        return {}
+    species = _state_species(state, base_datapack, redox_pack)[1]
+    ledger = _element_moles_by_oxidation_state(
+        species, base_datapack, redox_pack, 0.0
+    )
+    cations = {
+        element: math.fsum(
+            amount for oxidation, amount in states.items()
+            if element != "Fe" or oxidation in {2, 3}
+        )
+        for element, states in ledger.items()
+        if element != "O"
+    }
+    denominator = math.fsum(cations.values())
+    if denominator <= 0.0:
+        return {str(row["complex"]): 0.0 for row in rows}
+    oxide_fraction = {
+        "NaO0.5": cations.get("Na", 0.0) / denominator,
+        "MgO": cations.get("Mg", 0.0) / denominator,
+        "Fe2+O": ledger.get("Fe", {}).get(2, 0.0) / denominator,
+        "AlO1.5": cations.get("Al", 0.0) / denominator,
+        "Fe3+O1.5": ledger.get("Fe", {}).get(3, 0.0) / denominator,
+        "KO0.5": cations.get("K", 0.0) / denominator,
+        "CaO": cations.get("Ca", 0.0) / denominator,
+        "TiO2": cations.get("Ti", 0.0) / denominator,
+    }
+    composition = {
+        str(row["complex"]): math.fsum(
+            float(coefficient) * oxide_fraction.get(str(oxide), 0.0)
+            for oxide, coefficient in row["composition_coefficients"].items()
+        )
+        for row in rows
+    }
+    parent_names = _redox_parent_names(redox_pack)
+    active_parent_log_activity = {
+        parent_names[int(index)]: float(log_activity)
+        for index, log_activity in zip(state.active_parent, state.y)
+    }
+    cr_parent_name = next(
+        str(parent["parent_oxide"]).removesuffix("(l)")
+        for parent in redox_pack.parents if str(parent["element"]) == "Cr"
+    )
+    # Source premise: log10(Cr3+/Cr2+) is specified for single-cation oxides.
+    # For the reduction row nu_O2=+1/4, ln(Cr2+/Cr3+)=ln(Kred)-lambda/4,
+    # hence ln(Kred)=ln(Cr2+/Cr3+)+lambda/4. The kernel's concentration K'
+    # includes the fugacity term, so ln(K')=ln(Kred)-lambda/4=ln(Cr2+/Cr3+).
+    # Its formula-unit basis has x(CrO)=K'*x(Cr2O3)^0.5, while atom totals are
+    # n(Cr2+)=n(CrO), n(Cr3+)=2*n(Cr2O3). Therefore K'=2*(Cr2+/Cr3+)*sqrt(aCr2O3).
+    # All activities and K values are dimensionless; factor 2 counts Cr atoms
+    # per Cr2O3 parent formula. For Apollo 14072 at 1673 K and IW-1 this maps
+    # the source composition to Cr2+/sumCr=0.8672.
+    qfm_log10 = 8.58 - 25050.0 / temperature_K
+    delta_qfm = lambda_value / math.log(10.0) - qfm_log10
+    effective_ln_k: dict[str, float] = {}
+    for row in rows:
+        log10_cr3_cr2 = (
+            0.25 * delta_qfm + 3031.0 / temperature_K - 2.26
+            + composition[str(row["complex"])]
+        )
+        log_cr2_cr3 = -math.log(10.0) * log10_cr3_cr2
+        parent_log_activity = active_parent_log_activity.get(cr_parent_name, 0.0)
+        effective_ln_k[str(row["complex"])] = (
+            math.log(2.0) + log_cr2_cr3 + 0.5 * parent_log_activity
+        )
+    return effective_ln_k
+
+
+def _active_inner(
+    parent_moles: np.ndarray,
+    temperature_K: float,
+    lambda_value: float,
+    base_datapack: Any,
+    redox_pack: RedoxPack,
+    *,
+    fallback_counter: list[int] | None = None,
+    exclude_fe_redox: bool = False,
+    y_init: np.ndarray | None = None,
+    tol: float,
+    max_iter: int,
+) -> _LiquidState:
+    composition_rows = [
+        row for row in _redox_complex_rows(redox_pack)
+        if row.get("composition_coefficients") is not None
+        and not exclude_fe_redox
+        and any(
+            float(amount) > 0.0
+            and parent_moles[_redox_parent_names(redox_pack).index(
+                str(parent).removesuffix("(l)")
+            )] > 0.0
+            for parent, amount in row["nu"].items()
+        )
+    ]
+    if not composition_rows:
+        return _active_inner_once(
+            parent_moles, temperature_K, lambda_value, base_datapack, redox_pack,
+            fallback_counter=fallback_counter, exclude_fe_redox=exclude_fe_redox,
+            y_init=y_init, tol=tol, max_iter=max_iter,
+        )
+
+    # Fe and Cr rows share one mass-action solve. Iterate because the Cr
+    # effective K uses Fe(II)/Fe(III) oxide fractions from that same solution.
+    applied: dict[str, float] = {str(row["complex"]): 0.0 for row in composition_rows}
+    state: _LiquidState | None = None
+    for count in range(1, 257):
+        state = _active_inner_once(
+            parent_moles, temperature_K, lambda_value, base_datapack, redox_pack,
+            fallback_counter=fallback_counter, exclude_fe_redox=exclude_fe_redox,
+            y_init=y_init if state is None else state.y, tol=tol, max_iter=max_iter,
+            composition_ln_k=applied,
+        )
+        desired = _cr_composition_effective_ln_k(
+            state, temperature_K, lambda_value, base_datapack, redox_pack
+        )
+        relative_change = max(
+            (abs(math.expm1(desired[name] - applied[name]))
+             for name in desired),
+            default=0.0,
+        )
+        if relative_change < 1.0e-10:
+            return replace(state, composition_redox_iterations=count)
+        applied = {
+            name: 0.5 * (applied[name] + value)
+            for name, value in desired.items()
+        }
+    raise RedoxNumericalError("composition-conditioned redox fixed point did not converge")
 
 
 def _state_species(
@@ -1286,6 +1438,7 @@ def _make_flags(
     capacity: float,
     capacity_tolerance: float,
     active_redox_rows: Sequence[Mapping[str, Any]],
+    element_moles_by_oxidation_state: Mapping[str, Mapping[int, float]],
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
     flags: list[str] = ["liquid_only_model"]
     for index in state.active_complex:
@@ -1311,6 +1464,26 @@ def _make_flags(
         row_name = str(row["complex"])
         for flag in row["range_flags"]:
             flags.append(f"{row_name}: {flag}")
+    if any(row.get("composition_coefficients") is not None for row in active_redox_rows):
+        supported = {"Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K", "Cr"}
+        cation_totals = {
+            element: math.fsum(
+                amount for state, amount in states.items()
+                if element != "Fe" or state in {2, 3}
+            )
+            for element, states in element_moles_by_oxidation_state.items()
+            if element != "O"
+        }
+        total_cations = math.fsum(cation_totals.values())
+        outside = [
+            element for element, amount in cation_totals.items()
+            if element not in supported and amount / total_cations > 0.01
+        ] if total_cations > 0.0 else []
+        if outside:
+            flags.append(
+                "RED: Cr composition outside demonstrated CMAS/basaltic range; "
+                "unsupported major cations=" + ",".join(sorted(outside))
+            )
     extrapolated_redox_rows: list[str] = []
     for row in active_redox_rows:
         row_name = str(row["complex"])
@@ -1350,6 +1523,9 @@ def _assemble_result(
     fe_valence_moles = element_moles_by_oxidation_state.get("Fe", {})
     ferric_fe_mol = float(fe_valence_moles.get(3, 0.0))
     ferrous_fe_mol = float(fe_valence_moles.get(2, 0.0))
+    cr_valence_moles = element_moles_by_oxidation_state.get("Cr", {})
+    chromous_cr_mol = float(cr_valence_moles.get(2, 0.0))
+    chromic_cr_mol = float(cr_valence_moles.get(3, 0.0))
     unmodelled_redox_couples = _unmodelled_redox_couples(
         element_moles_by_oxidation_state, redox_pack
     )
@@ -1419,6 +1595,7 @@ def _assemble_result(
         oxygen_capacity,
         tolerance * max(abs(oxygen_scale), 1.0),
         active_redox_rows,
+        element_moles_by_oxidation_state,
     )
     if unmodelled_redox_couples:
         flags = (*flags, "RED: unmodelled_redox_couples")
@@ -1459,6 +1636,10 @@ def _assemble_result(
         element_moles_by_oxidation_state=element_moles_by_oxidation_state,
         ferric_fe_mol=ferric_fe_mol,
         ferrous_fe_mol=ferrous_fe_mol,
+        chromous_cr_mol=chromous_cr_mol,
+        chromic_cr_mol=chromic_cr_mol,
+        cr_oxygen_capacity_mol=0.5 * chromous_cr_mol,
+        composition_redox_iterations=state.composition_redox_iterations,
         unmodelled_redox_couples=unmodelled_redox_couples,
         redox_pack_digest=redox_pack.canonical_digest,
         melt_pack_binding_digest=getattr(base_datapack, "binding_digest", None),

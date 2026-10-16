@@ -60,6 +60,28 @@ process working directory. Missing or unreadable files raise the typed
 `ImccMalformedDatapackError` refusal with a message that omits the full path.
 Content digest mismatches continue to raise the loader's `ValueError`.
 
+## Chromium candidate pack
+
+`src/openimcc/data/packs/openimcc-redox-cr-candidate.json` is opt-in and is
+not the default. Select it with
+`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-candidate.json")`.
+It adds `1/2 Cr2O3 = CrO + 1/4 O2` using O’Neill & Berry (2021)'s 1-bar
+composition and temperature relation. The Cr K is conditioned on normalized
+single-cation oxide fractions. Since the Fe and Cr rows are solved together,
+the Cr K iterates with the Fe2+O and Fe3+O1.5 fractions to a fixed point.
+`chromous_cr_mol`, `chromic_cr_mol`, and `cr_oxygen_capacity_mol` report Cr(II)
+and Cr(III) atom totals and the 0.5 mol O per mol Cr(II) capacity convention.
+
+The candidate lists Berry & O’Neill (2004), Berry et al. (2006), Berry,
+O’Neill & Foran (2021), and O’Neill & Berry (2021) as anchors. Schreiber &
+Haskin (1976), Roeder & Reynolds (1991), Hanson & Jones (1998), and Apollo
+14072 estimates are listed separately as independent checks. Reported bands
+remain about 0.02 Cr2+ fraction model scatter and ±0.015 XANES measurement
+uncertainty. The row flags its 1-bar scope, the 1673 K isothermal calibration,
+the 1773 K variable-temperature limit, and compositions outside the demonstrated
+CMAS and basaltic range; pressure is not modelled. It does not define a
+composition-independent CrO Gibbs function.
+
 ## Threading
 
 These solves use small dense linear algebra. Multi-threaded BLAS gives no

@@ -98,6 +98,29 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         raise ValueError(f"unsupported redox pack schema {content.get('schema')!r}")
     if not isinstance(content.get("version"), str) or not content["version"]:
         raise ValueError("redox pack version must be a non-empty string")
+    candidate_pack = (
+        content.get("candidate_only") is True
+        and content.get("version") == "1.4.0-cr-candidate"
+    )
+    if content.get("candidate_only") is True and not candidate_pack:
+        raise ValueError("candidate-only redox features require the Cr candidate pack version")
+    if candidate_pack:
+        provenance = content.get("dataset_provenance")
+        if (
+            not isinstance(provenance, dict)
+            or not isinstance(provenance.get("anchors"), list)
+            or not provenance["anchors"]
+            or not isinstance(provenance.get("held_out_independent"), list)
+            or not provenance["held_out_independent"]
+        ):
+            raise ValueError("Cr candidate pack needs separate anchor and held-out dataset provenance")
+        for group in (provenance["anchors"], provenance["held_out_independent"]):
+            for dataset in group:
+                if not isinstance(dataset, dict) or not all(
+                    isinstance(dataset.get(key), str) and dataset[key]
+                    for key in ("citation", "role", "source_url")
+                ):
+                    raise ValueError("Cr candidate dataset provenance needs citation, role, and source_url")
     required = {
         "units", "parent_registry", "thermo_species", "rows",
         "source_selection_rail",
@@ -224,7 +247,9 @@ def _validate_content(content: Mapping[str, Any]) -> None:
                    for key in ("source", "source_url", "tier", "selection_rationale")):
             raise ValueError(f"thermo_species[{name!r}] has incomplete provenance")
         evaluator = record.get("evaluator")
-        if evaluator not in {"condensate_phi", "janaf_shomate", "linear_combination", "piecewise"}:
+        if evaluator == "composition_conditioned_effective_k" and not candidate_pack:
+            raise ValueError("composition-conditioned effective K is candidate-pack only")
+        if evaluator not in {"condensate_phi", "janaf_shomate", "linear_combination", "piecewise", "composition_conditioned_effective_k"}:
             raise ValueError(f"thermo_species[{name!r}] has unknown evaluator")
         if evaluator not in {"condensate_phi", "janaf_shomate"} and "intervals" in record:
             raise ValueError(
@@ -341,6 +366,20 @@ def _validate_content(content: Mapping[str, Any]) -> None:
             )
         if not isinstance(row.get("nu"), dict):
             raise ValueError(f"{label} needs parent stoichiometry nu")
+        composition_coefficients = row.get("composition_coefficients")
+        if composition_coefficients is not None:
+            if not candidate_pack:
+                raise ValueError("composition_coefficients are candidate-pack only")
+            if not isinstance(composition_coefficients, dict) or not composition_coefficients:
+                raise ValueError(f"{label} composition_coefficients must be a non-empty object")
+            supported_oxides = {
+                "NaO0.5", "MgO", "Fe2+O", "AlO1.5", "Fe3+O1.5",
+                "KO0.5", "CaO", "TiO2",
+            }
+            for oxide, coefficient in composition_coefficients.items():
+                if oxide not in supported_oxides:
+                    raise ValueError(f"{label} has an unsupported composition coefficient key {oxide!r}")
+                _finite_number(coefficient, f"{label}/composition_coefficients/{oxide}")
         for parent, amount in row["nu"].items():
             if parent not in parent_names:
                 raise ValueError(f"{label}/nu names unregistered parent {parent!r}")
@@ -385,7 +424,9 @@ def _validate_content(content: Mapping[str, Any]) -> None:
             raise ValueError(f"{label} needs explicit range flags")
         if not isinstance(row.get("provenance"), dict):
             raise ValueError(f"{label} needs provenance")
-        if not isinstance(row.get("standard_gibbs_terms"), list) or not row["standard_gibbs_terms"]:
+        if not isinstance(row.get("standard_gibbs_terms"), list) or (
+            not row["standard_gibbs_terms"] and composition_coefficients is None
+        ):
             raise ValueError(f"{label} needs standard_gibbs_terms")
         terms = {}
         for term in row["standard_gibbs_terms"]:
@@ -400,7 +441,12 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         }
         expected = {name: value for name, value in expected.items() if value}
         terms = {name: value for name, value in terms.items() if value}
-        if terms != expected:
+        if composition_coefficients is not None:
+            if row["standard_gibbs_terms"]:
+                raise ValueError(f"{label} empirical effective-K row cannot declare Gibbs terms")
+            if product_species.get("evaluator") != "composition_conditioned_effective_k":
+                raise ValueError(f"{label} needs a composition-conditioned product record")
+        elif terms != expected:
             raise ValueError(f"{label} standard_gibbs_terms do not match reaction stoichiometry")
         if row.get("role") not in {"parent_reference", "complex"}:
             raise ValueError(f"{label} has unsupported row role")
@@ -600,6 +646,8 @@ def reaction_gibbs_j_mol(
     ``allow_extrapolation`` bypasses the reaction's evidence interval while
     keeping species evaluator bounds in force.
     """
+    if row.get("composition_coefficients") is not None:
+        raise ValueError("composition-conditioned effective K has no Gibbs function")
     temperature = _finite_number(temperature_k, "temperature_k")
     low, high = map(float, row["T_domain_K"])
     if not low <= temperature <= high and not allow_extrapolation:
@@ -641,6 +689,8 @@ def ln_k_prime(
     equivalent parent-basis Gibbs function; ``reaction_gibbs_j_mol`` continues
     to return the Gibbs energy of the displayed reaction itself.
     """
+    if row.get("composition_coefficients") is not None:
+        raise ValueError("composition-conditioned effective K requires a melt composition")
     from openimcc.gas import R_J_MOL_K
 
     complex_products = {
