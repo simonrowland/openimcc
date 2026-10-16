@@ -26,6 +26,7 @@ EXPECTED_SOURCE_SUPERCOOLED_LIQUIDS = {
     "V2O3(l)",
     "MgO(l)",
     "CaO(l)",
+    "Ta2O5(l)",
 }
 
 

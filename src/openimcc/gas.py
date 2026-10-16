@@ -3614,12 +3614,6 @@ def _source_model_flag(
             f"{row_name} uses a flagged liquid-metal continuation above the "
             f"{float(metal_continuation.group(2)):g} K source limit"
         )
-    source_marker = _SOURCE_SUPERCOOLED_LIQUID_MARKERS_K.get(row_name)
-    if phase == "l" and source_marker is not None and T < source_marker[1]:
-        return (
-            f"{row_name} uses a source-tabulated supercooled liquid branch "
-            f"below the {source_marker[1]:g} K fusion marker ({source_marker[0]})"
-        )
     konings_liquid = re.fullmatch(r"Konings-Table88-Tf(\d+(?:\.\d+)?)", source_ref)
     if phase == "l" and konings_liquid is not None and T < float(konings_liquid[1]):
         return (
