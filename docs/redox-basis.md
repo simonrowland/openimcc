@@ -124,9 +124,9 @@ above 1.03 wt% TiO2, or outside 1673-1674 K. The TiO2 threshold is the anchor
 content because the available comparison cannot locate error onset between
 about 1 and 7 wt%; the cutoff does not claim a validated onset. In held-out
 Tranell titrations at 7-52 wt% TiO2 and Lambda 0.66-0.91, the candidate
-under-predicts Ti3+/Ti4+ by about 0.4-1.2 dex (median 0.52 dex). Apollo
+under-predicts Ti3+/Ti4+ by a median 0.52 dex (maximum 1.33 dex). Apollo
 14072-like low-Ti basalt (about 2.6 wt% TiO2, Lambda about 0.63) is just
-outside the anchor domain, while high-Ti mare basalt is well outside. These
+outside the anchor domain, while high-Ti mare basalt (TiO2 > 6 wt% in the Neal & Taylor 1992 classification, GCA 56, 2177-2211) is well outside. These
 are extrapolation flags; evaluation continues.
 
 The ideal Ti3+/Ti4+ mixing relation and FMQ-parallel temperature slope are

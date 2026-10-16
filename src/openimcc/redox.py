@@ -1652,7 +1652,7 @@ def _make_flags(
         if not 0.586 <= lambda_value <= 0.618:
             flags.append(
                 "RED: Ti candidate outside Berry anchor Lambda [0.586,0.618]; "
-                "Tranell held-out titrations under-predict by ~0.4-1.2 dex at "
+                "Tranell held-out titrations under-predict by a median 0.52 dex (maximum 1.33 dex) at "
                 "7-52 wt% TiO2."
             )
         ti_parent = next((i for i, parent in enumerate(redox_pack.parents)
@@ -1680,14 +1680,14 @@ def _make_flags(
             if ti_wt > 1.03:
                 flags.append(
                     "RED: TiO2 exceeds Berry anchor content (~1.03 wt%); "
-                    "Tranell held-out titrations under-predict by ~0.4-1.2 dex "
+                    "Tranell held-out titrations under-predict by a median 0.52 dex (maximum 1.33 dex) "
                     "at 7-52 wt% TiO2."
                 )
         if not 1673.0 <= temperature_K <= 1674.0:
             flags.append(
                 "RED: Ti candidate temperature outside Berry calibration band "
                 "1673-1674 K; Tranell held-out titrations under-predict by "
-                "~0.4-1.2 dex at 7-52 wt% TiO2."
+                "a median 0.52 dex (maximum 1.33 dex) at 7-52 wt% TiO2."
             )
     extrapolated_redox_rows: list[str] = []
     for row in active_redox_rows:
