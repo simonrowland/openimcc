@@ -48,6 +48,16 @@ def _redox(root: Path) -> None:
             if "band_method" in row:
                 row.pop("band_method")
                 changed = True
+            rationale = str(row.get("provenance", {}).get("selection_rationale", "")).lower()
+            basis = row.get("band_basis")
+            if (
+                isinstance(basis, dict)
+                and basis.get("kind") == "source_uncertainty"
+                and row.get("provenance", {}).get("tier") == "tier3_flagged_estimate"
+                and "measured" in rationale
+            ):
+                basis["kind"] = "measured_construction"
+                changed = True
             continue
         changed = True
         value = row.pop("band_kj_mol")
@@ -67,7 +77,9 @@ def _redox(root: Path) -> None:
                 "value": value, "unit": "kJ mol^-1 species",
                 "temperature_points_or_range": "T_domain_K", "coverage": explanation,
             }
-            kind = "measured_construction" if construction and row.get("provenance", {}).get("tier") == "tier4_systematic_estimate" else "source_uncertainty"
+            kind = "measured_construction" if (
+                construction and tier == "tier4_systematic_estimate"
+            ) or "measured" in rationale_lower else "source_uncertainty"
             row["band_basis"] = band_basis(kind, explanation, row.get("provenance", {}).get("source"))
             row["fit_residual"] = None
         else:
@@ -248,6 +260,14 @@ def _liquid_inputs(root: Path) -> None:
     for formula, row in doc["rows"].items():
         current_band = row.get("accuracy_band")
         current_value = current_band.get("value") if isinstance(current_band, dict) else None
+        existing_basis = row.get("band_basis")
+        current_kind = str(current_value.get("kind", "")).lower() if isinstance(current_value, dict) else ""
+        if (
+            isinstance(existing_basis, dict)
+            and existing_basis.get("kind") == "measured_construction"
+            and any(word in current_kind for word in ("uncertainty", "source"))
+        ):
+            existing_basis["kind"] = "source_uncertainty"
         extension_metadata = row.get("crystal_cp_extrapolation_band")
         if extension_metadata is None and isinstance(current_value, dict) and "source_limit_K" in current_value and "values_J_per_mol" not in current_value:
             extension_metadata = current_value
@@ -260,13 +280,17 @@ def _liquid_inputs(root: Path) -> None:
         old_measured = row.pop("measured_band", None)
         old_extension = row.pop("crystal_cp_extrapolation_band", None) or extension_metadata
         if old_measured is not None:
+            measured_kind = str(old_measured.get("kind", "")).lower()
+            basis_kind = "source_uncertainty" if any(
+                word in measured_kind for word in ("uncertainty", "source")
+            ) else "measured_construction"
             row["accuracy_band"] = {
                 "value": old_measured,
                 "unit": "J mol^-1",
                 "temperature_points_or_range": list(old_measured.get("values_J_per_mol", {}).keys()),
                 "coverage": old_measured.get("kind", "measured construction envelope"),
             }
-            row["band_basis"] = band_basis("measured_construction", old_measured.get("source", old_measured.get("kind", "")), formula)
+            row["band_basis"] = band_basis(basis_kind, old_measured.get("source", old_measured.get("kind", "")), formula)
         elif old_extension is not None:
             row["accuracy_band"] = None
             row["band_basis"] = band_basis(
