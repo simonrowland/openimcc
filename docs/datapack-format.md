@@ -658,12 +658,21 @@ digests answer different questions. The canonical digest is a stable component
 identity independent of JSON whitespace, while the manifest catches any byte
 change.
 
+The opt-in `openimcc-redox-cr-candidate.json` keeps its XANES anchor datasets
+separate from held-out checks in `dataset_provenance`. Its Cr reduction row
+stores `composition_coefficients`, evaluated against the caller's normalized
+single-cation oxide fractions. This candidate-only row has no CrO Gibbs
+function; its effective K is solved jointly with Fe using a fixed-point
+iteration. The default redox pack does not accept candidate-only fields.
+
 Top-level redox fields:
 
 | Key | JSON type | Meaning |
 |---|---|---|
 | schema | string | Versioned schema identifier, currently `openimcc-redox-pack.v2`. |
 | version | string | Version of this thermochemistry component. |
+| candidate_only | boolean | Candidate-pack gate for the composition-conditioned empirical effective-K extension; only the versioned Cr candidate accepts this field. |
+| dataset_provenance | object | Candidate-only split of anchor datasets and held-out independent datasets, each with citation, role, and source URL. |
 | created | string | Date the component record was created. |
 | model | string | Human-readable description of the component's reaction thermochemistry. |
 | units | object | Explicit formula-unit, elemental-inventory, temperature, Gibbs-energy, band, and pressure units. |
@@ -671,7 +680,7 @@ Top-level redox fields:
 | canonical_content_digest | string | Canonical JSON SHA-256 checked by the redox loader and exposed on the loaded component. |
 | parent_registry | array of objects | Ordered registry of every feedstock element, its parent oxide formula and valence, known melt valences, standard state, elemental reference state, and redox-row population status. Its length is not fixed at eight. |
 | thermo_species | object | Standard-state species and their formula atoms, temperature range, provenance, band, and evaluator definition. |
-| rows | array of objects | Balanced reaction rows assembled from standard-state Gibbs functions. |
+| rows | array of objects | Balanced reaction rows; the Cr candidate also permits its explicitly composition-conditioned effective-K row without standard Gibbs terms. |
 
 Each Fe-bearing `thermo_species` record declares non-negative
 `ferric_fe_units` and `ferrous_fe_units` counts per formula unit. Their sum may
@@ -733,7 +742,7 @@ The redox species records use these schema fields:
 | formula_atoms | object | Element atom counts per formula unit, including fractional oxygen for a pseudo-complex. |
 | ferric_fe_units | number | Ferric Fe atoms per formula unit; required on Fe-bearing species and validated against the formula and any combination terms. |
 | ferrous_fe_units | number | Ferrous Fe atoms per formula unit; required on Fe-bearing species and validated against the formula and any combination terms. |
-| evaluator | string | Existing φ-polynomial or JANAF Shomate evaluator, or a linear/piecewise combination of named records. |
+| evaluator | string | Existing φ-polynomial or JANAF Shomate evaluator, a linear/piecewise combination of named records, or the candidate-only `composition_conditioned_effective_k` formula record. |
 | row | object | Coefficients consumed by the existing condensate φ or JANAF Shomate evaluator. |
 | intervals | array of objects | Optional alternative to `row` for a fitted function with multiple contiguous intervals; each item has `T_domain_K` and `row`. |
 | terms | array of objects | Product-positive species coefficients for a linear standard-state combination. |
@@ -760,6 +769,7 @@ The redox species records use these schema fields:
 | reactants | object | Positive formula-unit stoichiometries on the left side of the balanced reaction. |
 | products | object | Positive formula-unit stoichiometries on the right side of the balanced reaction. |
 | standard_gibbs_terms | array of objects | Named standard-state Gibbs functions and product-positive coefficients used to evaluate reaction ΔG°. |
+| composition_coefficients | object mapping oxide names to numbers | Candidate-only coefficients multiplying normalized single-cation oxide fractions. This empirical row bypasses Gibbs evaluation and must not be treated as a unary CrO standard state. |
 | range_flags | array of strings | Explicit range caveats, including metastable or supercooled branches. |
 
 An evaluator record with one fitted interval may continue to use `row`; this

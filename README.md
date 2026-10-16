@@ -936,13 +936,20 @@ The opt-in Cr2+/Cr3+ candidate and its evidence domain are documented in
 [`docs/redox-basis.md`](docs/redox-basis.md). Select it explicitly with:
 
 ```python
-result = evaluate_redox(
-    inventory,
-    1673.0,
-    "imposed",
-    lambda_imposed,
-    redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-candidate.json",
+from importlib.resources import as_file, files
+from openimcc import evaluate_redox
+
+inventory = {"Fe": 1.0, "Cr": 0.01, "O": 1.0}
+candidate = files("openimcc.data").joinpath(
+    "packs", "openimcc-redox-cr-candidate.json"
 )
+with as_file(candidate) as candidate_path:
+    result = evaluate_redox(
+        inventory,
+        1673.0,
+        "closed",
+        redox_pack_path=candidate_path,
+    )
 ```
 
 Leaving `redox_pack_path` unset continues to use the packaged default

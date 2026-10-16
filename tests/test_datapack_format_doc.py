@@ -255,8 +255,9 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         "imcc-sf04-d066-v1-kcaalsi2o7.json",
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-ext-v4.json",
-        "openimcc-redox-v1.json",
         "imcc-sf04-v1.0.2.json",
+        "openimcc-redox-cr-candidate.json",
+        "openimcc-redox-v1.json",
     }
 
     ext4 = json.loads(
@@ -372,10 +373,11 @@ def test_every_shipped_pack_loads() -> None:
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-ext-v4.json",
         "imcc-sf04-v1.0.2.json",
+        "openimcc-redox-cr-candidate.json",
         "openimcc-redox-v1.json",
     ]
     for name in names:
-        if name == "openimcc-redox-v1.json":
+        if name in {"openimcc-redox-v1.json", "openimcc-redox-cr-candidate.json"}:
             from openimcc.redox_pack import load_redox_pack
 
             load_redox_pack(PACK_DIR / name)
