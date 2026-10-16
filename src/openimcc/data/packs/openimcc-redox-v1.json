@@ -17,7 +17,7 @@
     "domain_match",
     "systematic_estimate"
   ],
-  "canonical_content_digest": "6e725d57da0c8261d85dc97789a6c1f59f0b52785c66009130944c4522149f00",
+  "canonical_content_digest": "28ac36dfef019b8f0fe3e11a86030c65dbfdae6733d10532d2bdb942cf3dc67b",
   "parent_registry": [
     {
       "element": "Si",
@@ -323,7 +323,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Direct assessed liquid function; reaction residual is at most 0.31 kJ/mol against the directly fitted JANAF elemental references over 1700-3000 K. The band records reaction-fit residual, not thermochemical accuracy; no Fe(l) fusion-anchor adjustment is applied.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1000,
+          5000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -333,15 +336,15 @@
         "provenance": "NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "O2(g)": {
@@ -397,7 +400,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The 1200-1500 K interval uses the existing lower JANAF Shomate fit; the original 1500-3000 K coefficients are retained unchanged. Both intervals reproduce their JANAF source nodes within 1 J/mol.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -407,15 +413,15 @@
         "provenance": "NIST-JANAF O2 reference-state table, O-029"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "Fe(cr)": {
@@ -502,7 +508,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Separate alpha, gamma, and delta fits use the phase-side H-H(298), S, and Cp values at the 1184 and 1665 K transitions. The delta fit extends nine kelvin beyond the final 1800 K node to the transition marker. This band records source-node fit residual only, not thermochemical accuracy.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          500,
+          1809
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -512,15 +521,15 @@
         "provenance": "NIST-JANAF elemental iron crystal table, Fe-007"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "Fe(l)": {
@@ -556,7 +565,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The 1700-3000 K Fe(l) fit uses the cited Fe-006 nodes directly. Its maximum source-node fit residual is 1.507 J/mol; the 2.345 J/mol Fe(cr)/Fe(l) seam at the 1809 K fusion marker remains unadjusted and is within the 10 J/mol fit gate. This band records fit residual only, not thermochemical accuracy.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -566,15 +578,15 @@
         "provenance": "NIST-JANAF elemental iron liquid table, Fe-006"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "Fe(metal)": {
@@ -614,7 +626,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Stable pure-iron reference state uses the crystal below the JANAF 1809 K fusion point and liquid at and above it; a_Fe is fixed to one for the saturation reference. The 2.345 J/mol branch-seam residual is within the 10 J/mol fit gate; this band records fit and seam residual only, not thermochemical accuracy.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -624,15 +639,15 @@
         "provenance": "NIST-JANAF elemental iron tables Fe-007 and Fe-006"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "Fe2O3(l)": {
@@ -839,7 +854,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1685,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -891,7 +909,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -943,7 +964,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -995,7 +1019,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1083,7 +1110,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The original 1600-2200 K coefficients are retained; separate condensate φ fits use the cited JANAF liquid nodes over 1200-1600 K and 2200-3000 K. Their maximum source residual is 0.524 J/mol.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1314,15 +1344,15 @@
       },
       "fit_residual": null,
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     "MnSiO3(l)": {
@@ -1435,15 +1465,15 @@
       },
       "fit_residual": null,
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     "Mn2SiO4(l)": {
@@ -1557,15 +1587,15 @@
       },
       "fit_residual": null,
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     "MnAl2O4(l)": {
@@ -1680,15 +1710,15 @@
       },
       "fit_residual": null,
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     "SiO2(l)-supercooled": {
@@ -1745,7 +1775,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Uses the existing supercooled branch below the direct liquid-function interval.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          1800
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1796,7 +1829,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "Uses the direct assessed liquid function from its tabulated interval.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1800,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1852,7 +1888,10 @@
         "unit": "kJ mol^-1 species",
         "target_source": "The two existing standard-state branches meet within 0.01 kJ/mol at their 1800 K join.",
         "comparison_method": "maximum absolute fit residual against the cited source function",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1200,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "accuracy_band": null,
@@ -1926,7 +1965,10 @@
         "unit": "kJ mol^-1 reaction",
         "target_source": "JANAF FeO formation-G values",
         "comparison_method": "Maximum absolute reaction-Gibbs residual against the JANAF FeO formation-Gibbs values over 1700-3000 K.",
-        "temperature_range": "T_domain_K",
+        "temperature_range": [
+          1700,
+          3000
+        ],
         "held_out_or_in_sample": "in_sample"
       },
       "band_basis": {
@@ -1935,15 +1977,15 @@
         "provenance": "janaf_direct_liquid"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "tested",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     {
@@ -2079,15 +2121,15 @@
         "provenance": "extension-compound-thermo"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     {
@@ -2152,15 +2194,15 @@
         "provenance": "extension-compound-thermo"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     {
@@ -2225,15 +2267,15 @@
         "provenance": "extension-compound-thermo"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     {
@@ -2298,15 +2340,15 @@
         "provenance": "extension-compound-thermo"
       },
       "independent_check": {
-        "status": "not_found",
-        "equilibrium": null,
-        "primary_source": null,
-        "conditions": null,
-        "measured_value": null,
-        "predicted_value": null,
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "No row-specific independent equilibrium check was identified."
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     }
   ]
