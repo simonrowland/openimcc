@@ -3613,6 +3613,7 @@ def _source_model_flag(
         return (
             f"{row_name} uses a flagged liquid-metal continuation above the "
             f"{float(metal_continuation.group(2)):g} K source limit"
+        )
     source_marker = _SOURCE_SUPERCOOLED_LIQUID_MARKERS_K.get(row_name)
     if phase == "l" and source_marker is not None and T < source_marker[1]:
         return (
