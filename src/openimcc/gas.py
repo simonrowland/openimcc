@@ -685,6 +685,7 @@ _HALIDE_REACTIONS: dict[str, tuple[str, float, float]] = {
     "(MgF2)2": ("F2", 2, 0.0),
     "MgCl": ("Cl2", 0.5, 0.0),
     "MgCl2": ("Cl2", 1, 0.0),
+    "(MgCl2)2": ("Cl2", 2, 0.0),
     "MgBr": ("Br2", 0.5, 0.0),
     "MgBr2": ("Br2", 1, 0.0),
     "(MgBr2)2": ("Br2", 2, 0.0),
@@ -759,8 +760,8 @@ _ALKALI_HALIDE_REACTION_OXIDES = {
     "KF": ("K2O", 0.5, 0.25),
     "(KF)2": ("K2O", 1.0, 0.5),
     # Each oxide parent in this table contains one O atom, so explicit oxygen
-    # demand equals n_oxide. For MO this is 1/2 O per M2+ equivalent; for M2O
-    # it is 1/2 O per M+ equivalent. With one product gas, the fugacity
+    # demand equals n_oxide. MO supplies one O per M2+; M2O supplies one O
+    # per two M+ ions. With one product gas, the fugacity
     # exponent is -n_O2, giving matching signs and a monotone root.
     "BaBr": ("BaO", 1, 0.5),
     "BaBr2": ("BaO", 1, 0.5),
@@ -783,6 +784,7 @@ _ALKALI_HALIDE_REACTION_OXIDES = {
     "(MgF2)2": ("MgO", 2, 1),
     "MgCl": ("MgO", 1, 0.5),
     "MgCl2": ("MgO", 1, 0.5),
+    "(MgCl2)2": ("MgO", 2, 1),
     "MgBr": ("MgO", 1, 0.5),
     "MgBr2": ("MgO", 1, 0.5),
     "(MgBr2)2": ("MgO", 2, 1),
@@ -1181,15 +1183,6 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "K2O": "nasa_glenn_fitted",
         "NaI": "nasa_glenn_fitted",
         "(NaI)2": "nasa_glenn_fitted",
-        "CaF": "nasa_glenn_fitted",
-        "CaF2": "nasa_glenn_fitted",
-        "CaCl": "nasa_glenn_fitted",
-        "CaCl2": "nasa_glenn_fitted",
-        "MgF": "nasa_glenn_fitted",
-        "MgF2": "nasa_glenn_fitted",
-        "(MgF2)2": "nasa_glenn_fitted",
-        "MgCl": "nasa_glenn_fitted",
-        "MgCl2": "nasa_glenn_fitted",
         "RbF": "nasa_glenn_fitted",
         "(RbF)2": "nasa_glenn_fitted",
         "RbCl": "nasa_glenn_fitted",
@@ -3004,10 +2997,10 @@ for _element, _parent, _products, _fusion, _note in (
 # Halogen gas-only channels use the gas-parent activity path; no oxide parent
 # or melt model is provided for elemental Br, I, Cl, or F.
 for _element, _parent, _species in (
-    ("Br", "Br2", "JANAF Br2(g), Br(g), NaBr(g), (NaBr)2(g), KBr(g), and (KBr)2(g)"),
-    ("I", "I2", "JANAF I2(g), I(g), KI(g), and (KI)2(g) and NASA Glenn NaI(g) and (NaI)2(g)"),
-    ("Cl", "Cl2", "JANAF Cl2(g), Cl(g), NaCl(g), (NaCl)2(g), KCl(g), and (KCl)2(g)"),
-    ("F", "F2", "JANAF F2(g), F(g), NaF(g), (NaF)2(g), KF(g), and (KF)2(g)"),
+    ("Br", "Br2", "JANAF Br2(g), Br(g), Na/K/Li and alkaline-earth bromides; NASA Glenn Rb/Cs bromides"),
+    ("I", "I2", "JANAF I2(g), I(g), KI, LiI, and alkaline-earth iodides; NASA Glenn NaI and Rb/Cs iodides"),
+    ("Cl", "Cl2", "JANAF Cl2(g), Cl(g), Na/K/Li/Cs and alkaline-earth chlorides; NASA Glenn Rb chlorides"),
+    ("F", "F2", "JANAF F2(g), F(g), Na/K/Li/Cs and alkaline-earth fluorides; NASA Glenn Rb fluorides"),
 ):
     ELEMENT_STATUS[_element] = {
         "status": "gas-complete-melt-pending",
@@ -4045,8 +4038,8 @@ def evaluate_gas(
         caller-supplied
         ``S2`` fugacity relative to JANAF's 1-bar gas standard. Halogen channels
         similarly accept ``Br2``, ``I2``, ``Cl2``, and ``F2`` fugacity ratios;
-        their alkali-halide products also use the caller's ``Na2O`` or ``K2O``
-        liquid activity. ``H2`` and ``N2`` accept ``f(parent)/p°``; ``C`` is
+        their halide products use the supported metal-oxide liquid activities.
+        ``H2`` and ``N2`` accept ``f(parent)/p°``; ``C`` is
         relative to graphite. HCl, HF, HBr, and HI require both H2 and X2.
     T_K:
         Temperature in Kelvin. Must be finite and positive on this path.
@@ -4132,7 +4125,7 @@ def evaluate_gas(
     p̃_gas = K° * a(S2)^n_S2 * fO2^n_O2. The caller supplies
     a(S2)=f(S2)/p° on the JANAF 1-bar gas reference.
 
-        Halogen alkali-halide rows use ``n_oxide*oxide(l) + n_X2*X2(g) =
+        Halide rows use ``n_oxide*oxide(l) + n_X2*X2(g) =
         gas(g) + n_O2*O2(g)``. Their activity power is the reaction
         coefficient, and their oxygen-fugacity power is ``-n_O2``.
 
@@ -4298,7 +4291,13 @@ def evaluate_gas(
         if flag is not None:
             flags.append(flag)
 
-        if O2_row is not None and n_O2 != 0.0:
+        if O2_row is not None and (
+            n_O2 != 0.0
+            or (
+                gas_name in _ALKALI_HALIDE_REACTION_OXIDES
+                and _ALKALI_HALIDE_REACTION_OXIDES[gas_name][2] != 0.0
+            )
+        ):
             flag = _outside_interval_flag("O2(g)", T, O2_row)
             if flag is not None:
                 flags.append(flag)
@@ -4817,9 +4816,9 @@ def evaluate_gas_oxygen_balance(
     Existing equilibria give ``p_i ∝ pO2**k_i``. For condensed-parent
     reactions, the signed oxygen coefficient is ``-2 nO2/n_gas`` and
     ``k_i = -nO2/n_gas``. For the S2(g)-parent reactions, they are ``2 nO2``
-    and ``k_i = nO2``. Alkali halides use an explicit side-oxide demand of
-    one-half O per alkali atom and product-side exponent
-    ``(n_O - n_alkali/2)/2``. Their signed oxygen coefficient and pressure
+    and ``k_i = nO2``. Halides use an explicit oxide oxygen demand; each
+    parent oxide here contains one O atom, so demand is ``n_oxide`` and the
+    product-side exponent is ``-n_O2 = -n_oxide/2``. Their signed oxygen coefficient and pressure
     exponent have matching signs, so
     ``dF/dlog10(pO2) = ln(10) sum_i C_i k_i pO2**k_i >= 0``. Parentless O and
     O2 terms have positive coefficients and exponents 1/2 and 1. F is strictly

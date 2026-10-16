@@ -24,14 +24,20 @@ source_notes:
       respective JANAF table: Br-040, Br-001, I-027, I-001, Br-030, Br-064,
       Br-018, Br-055, I-007, I-028, Cl-073, Cl-001, Cl-056, Cl-098, Cl-039,
       Cl-091, F-054, F-001, F-036, F-082, F-020, and F-069.
+      The Ca/Mg halide channels use elemental-reference anchors from Ca-008,
+      Ca-012, Ca-013, Ca-017, F-026, F-075, F-129, Cl-049, Cl-096, and
+      Cl-150; Sr/Ba and Li halides likewise use their selected JANAF tables.
       NaI(g) and (NaI)2(g) use the elemental-reference formation enthalpy in
       NASA Glenn cards NG-0893 and NG-0904. The Br2 and I2 caller activities
       and new Cl2 and F2 caller activities use the JANAF 1-bar gas standard;
       Na2O(l) is from Na-013 and K2O(l) is the existing K-012
       liquid_from_solid estimate. O2(g) is O-029.
     selection: >-
-      JANAF is selected for every available halogen product table. NASA Glenn
-      supplies NaI(g) and (NaI)2(g), for which no JANAF product table is
+      JANAF is selected for every available halogen product table, including
+      the Ca/Mg F/Cl rows and (MgCl2)2 from Cl-150. CsF/CsCl monomers and
+      dimers use JANAF Cs-011/Cs-019 and Cl-008/Cl-078. NASA Glenn supplies
+      NaI, the Rb halide products, and CsBr/CsI products, for which no JANAF
+      gas product table is
       available. NG-0901 is vendored only to compare (NaBr)2(g); the selected
       runtime product remains JANAF Br-064. NASA NG-0494 (Cl2) and NG-0567
       (F2) are elemental-reference cross-checks for the selected chlorine and
@@ -13747,27 +13753,28 @@ rows:
         halogen_parent: NG-0567
         oxygen_parent: NG-0937
         oxide_parent: NG-1842
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 6213.643
-        1300: 6214.73
-        1400: 6215.126
-        1500: 6216.406
-        1600: 6217.657
-        1700: 6218.717
-        1800: 6219.948
-        1900: 6220.84
-        2000: 6221.818
-        2100: 6224.877
-        2200: 6227.295
-        2300: 6228.85
-        2400: 6231.89
-        2500: 6236.83
-        2600: 6240.713
-        2700: 6244.828
-        2800: 6249.944
-        2900: 6255.359
-        3000: 6262.362
+        1200: 4.076
+        1300: 5.163
+        1400: 5.559
+        1500: 6.839
+        1600: 8.09
+        1700: 9.15
+        1800: 10.381
+        1900: 11.273
+        2000: 12.25
+        2100: 15.31
+        2200: 17.728
+        2300: 19.282
+        2400: 22.323
+        2500: 27.263
+        2600: 31.146
+        2700: 35.261
+        2800: 40.377
+        2900: 45.791
+        3000: 52.795
   - table: gas
     species_name: (CsF)2(g)
     table_id: Cs-019
@@ -13795,27 +13802,28 @@ rows:
         halogen_parent: NG-0567
         oxygen_parent: NG-0937
         oxide_parent: NG-1842
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 12427.285
-        1300: 12429.461
-        1400: 12430.251
-        1500: 12432.812
-        1600: 12435.314
-        1700: 12437.435
-        1800: 12439.897
-        1900: 12441.681
-        2000: 12443.635
-        2100: 12449.754
-        2200: 12454.591
-        2300: 12457.699
-        2400: 12463.78
-        2500: 12473.66
-        2600: 12481.426
-        2700: 12489.656
-        2800: 12499.888
-        2900: 12510.717
-        3000: 12524.723
+        1200: 8.151
+        1300: 10.327
+        1400: 11.117
+        1500: 13.678
+        1600: 16.18
+        1700: 18.3
+        1800: 20.763
+        1900: 22.547
+        2000: 24.501
+        2100: 30.62
+        2200: 35.457
+        2300: 38.565
+        2400: 44.645
+        2500: 54.526
+        2600: 62.292
+        2700: 70.522
+        2800: 80.754
+        2900: 91.583
+        3000: 105.589
   - table: gas
     species_name: CsCl(g)
     table_id: Cl-008
@@ -13843,27 +13851,28 @@ rows:
         halogen_parent: NG-0494
         oxygen_parent: NG-0937
         oxide_parent: NG-1842
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 6211.762
-        1300: 6211.866
-        1400: 6211.665
-        1500: 6212.635
-        1600: 6213.337
-        1700: 6214.354
-        1800: 6215.347
-        1900: 6215.555
-        2000: 6216.367
-        2100: 6218.026
-        2200: 6219.285
-        2300: 6220.372
-        2400: 6222.101
-        2500: 6224.6
-        2600: 6227.214
-        2700: 6230.748
-        2800: 6234.544
-        2900: 6239.256
-        3000: 6247.556
+        1200: 2.195
+        1300: 2.299
+        1400: 2.098
+        1500: 3.067
+        1600: 3.77
+        1700: 4.787
+        1800: 5.78
+        1900: 5.988
+        2000: 6.8
+        2100: 8.459
+        2200: 9.718
+        2300: 10.805
+        2400: 12.533
+        2500: 15.033
+        2600: 17.647
+        2700: 21.181
+        2800: 24.977
+        2900: 29.689
+        3000: 37.988
   - table: gas
     species_name: (CsCl)2(g)
     table_id: Cl-078
@@ -13891,495 +13900,208 @@ rows:
         halogen_parent: NG-0494
         oxygen_parent: NG-0937
         oxide_parent: NG-1842
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 12423.524
-        1300: 12423.733
-        1400: 12423.329
-        1500: 12425.269
-        1600: 12426.675
-        1700: 12428.708
-        1800: 12430.695
-        1900: 12431.11
-        2000: 12432.734
-        2100: 12436.052
-        2200: 12438.571
-        2300: 12440.743
-        2400: 12444.201
-        2500: 12449.2
-        2600: 12454.427
-        2700: 12461.497
-        2800: 12469.088
-        2900: 12478.512
-        3000: 12495.111
+        1200: 4.39
+        1300: 4.598
+        1400: 4.195
+        1500: 6.135
+        1600: 7.541
+        1700: 9.574
+        1800: 11.56
+        1900: 11.975
+        2000: 13.599
+        2100: 16.918
+        2200: 19.436
+        2300: 21.609
+        2400: 25.067
+        2500: 30.066
+        2600: 35.293
+        2700: 42.362
+        2800: 49.953
+        2900: 59.378
+        3000: 75.977
   - table: gas
     species_name: CaF(g)
-    table_id: NG-0470
-    source_path: data-src/nasa-glenn/NG-0470.json
-    source_sha256: 028ede450325f2b986fb2e4e33d24b9441fdf5d762c075b639c75c7f60a5a65d
-    authority: nasa_glenn_fitted
+    table_id: Ca-013
+    source_path: data-src/janaf/Ca-013.yaml
+    source_sha256: 60ea52cd2e84c5071a0be8acbb2005edfced4555ad48a4321941c85ad62fc612
+    upstream_source_sha256: ebdd3926c905d56c9dc698659e965fd61eec7b6e2b17ae891715bd3b8601fab5
+    authority: janaf_fitted
     method: fitted
     T_interval: 1
     T_range_K:
     - 1200
     - 3000
-    max_residual_J_per_mol: 0.0301466539967805
-    max_residual_log10_K: 9.26275807531152e-07
-    source_locator: thermo.inp lines 3952-3959
-    source_record: data-src/nasa-glenn/NG-0470.json
-    source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
-    source_url: https://www.grc.nasa.gov/www/CEAWeb/
-    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-    retrieval_date: '2026-10-15'
-    user_agent: neutral-source-vendor/1.0
+    max_residual_J_per_mol: 1.42300861002877
+    max_residual_log10_K: 2.75292189503354e-05
+    source_locator: JANAF table Ca-013
+    source_url: https://janaf.nist.gov/tables/Ca-013.html
+    download_url: https://janaf.nist.gov/tables/Ca-013.txt
     source_data: true
-    uncertainty_band:
-      kind: mixed_source_parent_scale_inconsistency
-      basis: card_G_parent_scale_inconsistency
-      units: J/mol
-      per_formula: gas product formula
-      comparison_records:
-        halogen_parent: NG-0567
-        oxygen_parent: NG-0937
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
-      values_J_per_mol:
-        1200: 5.534
-        1300: 6.894
-        1400: 7.46
-        1500: 9.359
-        1600: 11.222
-        1700: 12.841
-        1800: 14.215
-        1900: 15.674
-        2000: 17.157
-        2100: 20.337
-        2200: 23.979
-        2300: 26.529
-        2400: 30.222
-        2500: 36.257
-        2600: 40.186
-        2700: 45.513
-        2800: 52.203
-        2900: 58.845
-        3000: 66.621
   - table: gas
     species_name: CaF2(g)
-    table_id: NG-0472
-    source_path: data-src/nasa-glenn/NG-0472.json
-    source_sha256: 5ddc2f72c98a2f0c35defb2c7fd7adbe47336641d9e06d55b619b7f2973f36fc
-    authority: nasa_glenn_fitted
+    table_id: Ca-017
+    source_path: data-src/janaf/Ca-017.yaml
+    source_sha256: 6f044f4c85840a5767f4dd4ec51493f9868cdf143ac632e4ba3cf13a4acc5668
+    upstream_source_sha256: 9833e90d59fb252073c341cfeecbbd55ca055ef7e45b3164142a5e970265371d
+    authority: janaf_fitted
     method: fitted
     T_interval: 1
     T_range_K:
     - 1200
     - 3000
-    max_residual_J_per_mol: 0.000428830971941352
-    max_residual_log10_K: 1.31761141674882e-08
-    source_locator: thermo.inp lines 3968-3975
-    source_record: data-src/nasa-glenn/NG-0472.json
-    source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
-    source_url: https://www.grc.nasa.gov/www/CEAWeb/
-    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-    retrieval_date: '2026-10-15'
-    user_agent: neutral-source-vendor/1.0
+    max_residual_J_per_mol: 1.99801794951782
+    max_residual_log10_K: 3.86532261374469e-05
+    source_locator: JANAF table Ca-017
+    source_url: https://janaf.nist.gov/tables/Ca-017.html
+    download_url: https://janaf.nist.gov/tables/Ca-017.txt
     source_data: true
-    uncertainty_band:
-      kind: mixed_source_parent_scale_inconsistency
-      basis: card_G_parent_scale_inconsistency
-      units: J/mol
-      per_formula: gas product formula
-      comparison_records:
-        halogen_parent: NG-0567
-        oxygen_parent: NG-0937
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
-      values_J_per_mol:
-        1200: 8.151
-        1300: 10.327
-        1400: 11.117
-        1500: 13.683
-        1600: 16.156
-        1700: 18.351
-        1800: 20.709
-        1900: 22.575
-        2000: 24.848
-        2100: 29.872
-        2200: 35.367
-        2300: 39.113
-        2400: 45.163
-        2500: 54.48
-        2600: 61.703
-        2700: 69.966
-        2800: 80.942
-        2900: 92.489
-        3000: 105.109
   - table: gas
     species_name: CaCl(g)
-    table_id: NG-0467
-    source_path: data-src/nasa-glenn/NG-0467.json
-    source_sha256: bb5269b8e4b70a240f8de13799d275c94f0bcd33e0c01bb3ccbefe29d3f616c6
-    authority: nasa_glenn_fitted
+    table_id: Ca-008
+    source_path: data-src/janaf/Ca-008.yaml
+    source_sha256: 784d0ac67775735ad52a713521e1fb13610a389abec37d46451391ffeed26e4e
+    upstream_source_sha256: 3155a9922e218495fa945210638d92f5143f234805bed7bb60147631d3c60afd
+    authority: janaf_fitted
     method: fitted
     T_interval: 1
     T_range_K:
     - 1200
     - 3000
-    max_residual_J_per_mol: 0.069419817533344
-    max_residual_log10_K: 2.13296963408379e-06
-    source_locator: thermo.inp lines 3928-3935
-    source_record: data-src/nasa-glenn/NG-0467.json
-    source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
-    source_url: https://www.grc.nasa.gov/www/CEAWeb/
-    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-    retrieval_date: '2026-10-15'
-    user_agent: neutral-source-vendor/1.0
+    max_residual_J_per_mol: 1.69035408075433
+    max_residual_log10_K: 3.67888803854147e-05
+    source_locator: JANAF table Ca-008
+    source_url: https://janaf.nist.gov/tables/Ca-008.html
+    download_url: https://janaf.nist.gov/tables/Ca-008.txt
     source_data: true
-    uncertainty_band:
-      kind: mixed_source_parent_scale_inconsistency
-      basis: card_G_parent_scale_inconsistency
-      units: J/mol
-      per_formula: gas product formula
-      comparison_records:
-        halogen_parent: NG-0494
-        oxygen_parent: NG-0937
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
-      values_J_per_mol:
-        1200: 3.653
-        1300: 4.03
-        1400: 3.999
-        1500: 5.587
-        1600: 6.903
-        1700: 8.478
-        1800: 9.614
-        1900: 10.388
-        2000: 11.706
-        2100: 13.486
-        2200: 15.969
-        2300: 18.051
-        2400: 20.433
-        2500: 24.027
-        2600: 26.687
-        2700: 31.433
-        2800: 36.803
-        2900: 42.743
-        3000: 51.815
   - table: gas
     species_name: CaCl2(g)
-    table_id: NG-0469
-    source_path: data-src/nasa-glenn/NG-0469.json
-    source_sha256: 34dda88296a0389c560b8dd8efba7e603385a27a709a1d01ed522f3350fc61af
-    authority: nasa_glenn_fitted
+    table_id: Ca-012
+    source_path: data-src/janaf/Ca-012.yaml
+    source_sha256: 104f8c6ce2b67df28ff8f0d6bd435b4e90bb2ae2b8415626e7e3a0effb82f605
+    upstream_source_sha256: f70ffb20eefdd4e571481f963860b48a9901bc7962349d8247b7a7054dcb493f
+    authority: janaf_fitted
     method: fitted
     T_interval: 1
     T_range_K:
     - 1200
     - 3000
-    max_residual_J_per_mol: 0.00011872686445713
-    max_residual_log10_K: 3.6479611389846e-09
-    source_locator: thermo.inp lines 3944-3951
-    source_record: data-src/nasa-glenn/NG-0469.json
-    source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
-    source_url: https://www.grc.nasa.gov/www/CEAWeb/
-    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-    retrieval_date: '2026-10-15'
-    user_agent: neutral-source-vendor/1.0
+    max_residual_J_per_mol: 1.33718944597058
+    max_residual_log10_K: 3.54138285181668e-05
+    source_locator: JANAF table Ca-012
+    source_url: https://janaf.nist.gov/tables/Ca-012.html
+    download_url: https://janaf.nist.gov/tables/Ca-012.txt
     source_data: true
-    uncertainty_band:
-      kind: mixed_source_parent_scale_inconsistency
-      basis: card_G_parent_scale_inconsistency
-      units: J/mol
-      per_formula: gas product formula
-      comparison_records:
-        halogen_parent: NG-0494
-        oxygen_parent: NG-0937
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
-      values_J_per_mol:
-        1200: 4.39
-        1300: 4.598
-        1400: 4.195
-        1500: 6.139
-        1600: 7.517
-        1700: 9.624
-        1800: 11.507
-        1900: 12.003
-        2000: 13.947
-        2100: 16.17
-        2200: 19.347
-        2300: 22.157
-        2400: 25.584
-        2500: 30.021
-        2600: 34.704
-        2700: 41.807
-        2800: 50.142
-        2900: 60.285
-        3000: 75.497
   - table: gas
     species_name: MgF(g)
-    table_id: NG-0807
-    source_path: data-src/nasa-glenn/NG-0807.json
-    source_sha256: 97cf3e290a31a2b6601e514e44729b7690cde77690c668522f08383b604ede78
-    authority: nasa_glenn_fitted
+    table_id: F-026
+    source_path: data-src/janaf/F-026.yaml
+    source_sha256: 274418ca580c9eb5220ca090f8d382a244ff9c631d6c8609d4068c6d4d90b5a6
+    upstream_source_sha256: a27fc29f6d7d7097812bde3473534b7d6fedb68f3808ebd988fd265461e64d72
+    authority: janaf_fitted
     method: fitted
     T_interval: 1
     T_range_K:
     - 1200
     - 3000
-    max_residual_J_per_mol: 0.000963120372034609
-    max_residual_log10_K: 2.09613598517333e-08
-    source_locator: thermo.inp lines 6861-6868
-    source_record: data-src/nasa-glenn/NG-0807.json
-    source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
-    source_url: https://www.grc.nasa.gov/www/CEAWeb/
-    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-    retrieval_date: '2026-10-15'
-    user_agent: neutral-source-vendor/1.0
+    max_residual_J_per_mol: 1.34914188762195
+    max_residual_log10_K: 3.39107607673355e-05
+    source_locator: JANAF table F-026
+    source_url: https://janaf.nist.gov/tables/F-026.html
+    download_url: https://janaf.nist.gov/tables/F-026.txt
     source_data: true
-    uncertainty_band:
-      kind: mixed_source_parent_scale_inconsistency
-      basis: card_G_parent_scale_inconsistency
-      units: J/mol
-      per_formula: gas product formula
-      comparison_records:
-        halogen_parent: NG-0567
-        oxygen_parent: NG-0937
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
-      values_J_per_mol:
-        1200: 5.534
-        1300: 6.894
-        1400: 7.46
-        1500: 9.359
-        1600: 11.222
-        1700: 12.841
-        1800: 14.215
-        1900: 15.674
-        2000: 17.157
-        2100: 20.337
-        2200: 23.979
-        2300: 26.529
-        2400: 30.222
-        2500: 36.257
-        2600: 40.186
-        2700: 45.513
-        2800: 52.203
-        2900: 58.845
-        3000: 66.621
   - table: gas
     species_name: MgF2(g)
-    table_id: NG-0809
-    source_path: data-src/nasa-glenn/NG-0809.json
-    source_sha256: 96506dfb54fb7d83bf36909c2436ba6948f63baa8f30f189a114cd127cf2362e
-    authority: nasa_glenn_fitted
+    table_id: F-075
+    source_path: data-src/janaf/F-075.yaml
+    source_sha256: ec5047a00a17f95e5f7bbb3ef38420034e17dec3fe1bd7e239927a7d119ebaa2
+    upstream_source_sha256: 1c6ad8d363609dc9b79cc78c6a7b5f1360571757cdcaba66a12267911d7ac5d6
+    authority: janaf_fitted
     method: fitted
     T_interval: 1
     T_range_K:
     - 1200
     - 3000
-    max_residual_J_per_mol: 0.00120352860540152
-    max_residual_log10_K: 3.69792093999614e-08
-    source_locator: thermo.inp lines 6880-6887
-    source_record: data-src/nasa-glenn/NG-0809.json
-    source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
-    source_url: https://www.grc.nasa.gov/www/CEAWeb/
-    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-    retrieval_date: '2026-10-15'
-    user_agent: neutral-source-vendor/1.0
+    max_residual_J_per_mol: 1.46190340141766
+    max_residual_log10_K: 2.7948761718886e-05
+    source_locator: JANAF table F-075
+    source_url: https://janaf.nist.gov/tables/F-075.html
+    download_url: https://janaf.nist.gov/tables/F-075.txt
     source_data: true
-    uncertainty_band:
-      kind: mixed_source_parent_scale_inconsistency
-      basis: card_G_parent_scale_inconsistency
-      units: J/mol
-      per_formula: gas product formula
-      comparison_records:
-        halogen_parent: NG-0567
-        oxygen_parent: NG-0937
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
-      values_J_per_mol:
-        1200: 8.151
-        1300: 10.327
-        1400: 11.117
-        1500: 13.683
-        1600: 16.156
-        1700: 18.351
-        1800: 20.709
-        1900: 22.575
-        2000: 24.848
-        2100: 29.872
-        2200: 35.367
-        2300: 39.113
-        2400: 45.163
-        2500: 54.48
-        2600: 61.703
-        2700: 69.966
-        2800: 80.942
-        2900: 92.489
-        3000: 105.109
   - table: gas
     species_name: (MgF2)2(g)
-    table_id: NG-0821
-    source_path: data-src/nasa-glenn/NG-0821.json
-    source_sha256: 0f39d73e56529155cb0a807a9f7f2625c6a04d8a4df45fd59d0016fb0f507d24
-    authority: nasa_glenn_fitted
+    table_id: F-129
+    source_path: data-src/janaf/F-129.yaml
+    source_sha256: 662e9ea508b8d5ab031fb8e99df88adf91e1f449ec4d087676051399f8407b1e
+    upstream_source_sha256: e9800432e8e881a981a8e21772cb0dc9edabaf95b3f71962c748f66f22bbd60b
+    authority: janaf_fitted
     method: fitted
     T_interval: 1
     T_range_K:
     - 1200
     - 3000
-    max_residual_J_per_mol: 0.0016522747464478
-    max_residual_log10_K: 5.07672302602043e-08
-    source_locator: thermo.inp lines 6985-6992
-    source_record: data-src/nasa-glenn/NG-0821.json
-    source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
-    source_url: https://www.grc.nasa.gov/www/CEAWeb/
-    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-    retrieval_date: '2026-10-15'
-    user_agent: neutral-source-vendor/1.0
+    max_residual_J_per_mol: 1.01325520407408
+    max_residual_log10_K: 2.52655269696131e-05
+    source_locator: JANAF table F-129
+    source_url: https://janaf.nist.gov/tables/F-129.html
+    download_url: https://janaf.nist.gov/tables/F-129.txt
     source_data: true
-    uncertainty_band:
-      kind: mixed_source_parent_scale_inconsistency
-      basis: card_G_parent_scale_inconsistency
-      units: J/mol
-      per_formula: gas product formula
-      comparison_records:
-        halogen_parent: NG-0567
-        oxygen_parent: NG-0937
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
-      values_J_per_mol:
-        1200: 16.302
-        1300: 20.653
-        1400: 22.234
-        1500: 27.365
-        1600: 32.312
-        1700: 36.701
-        1800: 41.419
-        1900: 45.15
-        2000: 49.696
-        2100: 59.744
-        2200: 70.734
-        2300: 78.226
-        2400: 90.325
-        2500: 108.961
-        2600: 123.407
-        2700: 139.933
-        2800: 161.884
-        2900: 184.978
-        3000: 210.218
   - table: gas
     species_name: MgCl(g)
-    table_id: NG-0804
-    source_path: data-src/nasa-glenn/NG-0804.json
-    source_sha256: 3bb6fbf4acbec40d94b6ee031d2c682d05f6a9c3b19fdb8c31b32e1966746a1f
-    authority: nasa_glenn_fitted
+    table_id: Cl-049
+    source_path: data-src/janaf/Cl-049.yaml
+    source_sha256: 903ffca3c0a5335bbe971069714bcafcc4b2bfc60b712c87bcba2071d2a544fd
+    upstream_source_sha256: 16e7649ca03fda76352e95a8d5e846613dfb0a925c5122283fb5029959249d98
+    authority: janaf_fitted
     method: fitted
     T_interval: 1
     T_range_K:
     - 1200
     - 3000
-    max_residual_J_per_mol: 0.0358925703912973
-    max_residual_log10_K: 1.10282287470836e-06
-    source_locator: thermo.inp lines 6834-6841
-    source_record: data-src/nasa-glenn/NG-0804.json
-    source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
-    source_url: https://www.grc.nasa.gov/www/CEAWeb/
-    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-    retrieval_date: '2026-10-15'
-    user_agent: neutral-source-vendor/1.0
+    max_residual_J_per_mol: 1.24579654086847
+    max_residual_log10_K: 3.02405529235331e-05
+    source_locator: JANAF table Cl-049
+    source_url: https://janaf.nist.gov/tables/Cl-049.html
+    download_url: https://janaf.nist.gov/tables/Cl-049.txt
     source_data: true
-    uncertainty_band:
-      kind: mixed_source_parent_scale_inconsistency
-      basis: card_G_parent_scale_inconsistency
-      units: J/mol
-      per_formula: gas product formula
-      comparison_records:
-        halogen_parent: NG-0494
-        oxygen_parent: NG-0937
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
-      values_J_per_mol:
-        1200: 3.653
-        1300: 4.03
-        1400: 3.999
-        1500: 5.587
-        1600: 6.903
-        1700: 8.478
-        1800: 9.614
-        1900: 10.388
-        2000: 11.706
-        2100: 13.486
-        2200: 15.969
-        2300: 18.051
-        2400: 20.433
-        2500: 24.027
-        2600: 26.687
-        2700: 31.433
-        2800: 36.803
-        2900: 42.743
-        3000: 51.815
   - table: gas
     species_name: MgCl2(g)
-    table_id: NG-0806
-    source_path: data-src/nasa-glenn/NG-0806.json
-    source_sha256: 4347ccb56ee761abf483edca5df04e0dbbbce76d56edbcc56077a4946c6679c0
-    authority: nasa_glenn_fitted
+    table_id: Cl-096
+    source_path: data-src/janaf/Cl-096.yaml
+    source_sha256: dfdf7957399f04532e23d077758aaec2abe7498120c7abfc79909df37a0b8574
+    upstream_source_sha256: ea372ec77bbf06828e1c8ce14765381052e71c187cfa60a6351864d2df676f7a
+    authority: janaf_fitted
     method: fitted
     T_interval: 1
     T_range_K:
     - 1200
     - 3000
-    max_residual_J_per_mol: 0.000343047082424164
-    max_residual_log10_K: 1.05403476394953e-08
-    source_locator: thermo.inp lines 6853-6860
-    source_record: data-src/nasa-glenn/NG-0806.json
-    source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
-    source_url: https://www.grc.nasa.gov/www/CEAWeb/
-    upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
-    retrieval_date: '2026-10-15'
-    user_agent: neutral-source-vendor/1.0
+    max_residual_J_per_mol: 1.44879883434623
+    max_residual_log10_K: 2.9128760767663e-05
+    source_locator: JANAF table Cl-096
+    source_url: https://janaf.nist.gov/tables/Cl-096.html
+    download_url: https://janaf.nist.gov/tables/Cl-096.txt
     source_data: true
-    uncertainty_band:
-      kind: mixed_source_parent_scale_inconsistency
-      basis: card_G_parent_scale_inconsistency
-      units: J/mol
-      per_formula: gas product formula
-      comparison_records:
-        halogen_parent: NG-0494
-        oxygen_parent: NG-0937
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
-      values_J_per_mol:
-        1200: 4.39
-        1300: 4.598
-        1400: 4.195
-        1500: 6.139
-        1600: 7.517
-        1700: 9.624
-        1800: 11.507
-        1900: 12.003
-        2000: 13.947
-        2100: 16.17
-        2200: 19.347
-        2300: 22.157
-        2400: 25.584
-        2500: 30.021
-        2600: 34.704
-        2700: 41.807
-        2800: 50.142
-        2900: 60.285
-        3000: 75.497
+  - table: gas
+    species_name: (MgCl2)2(g)
+    table_id: Cl-150
+    source_path: data-src/janaf/Cl-150.yaml
+    source_sha256: 3dfcba0f764683b864e00335779400f2ef0949042cc448e8d97866916b8f15fb
+    upstream_source_sha256: 068f9488e98a17b10f2cf08ebcbd423b7c7e284f4534aa4a51a30a6b9eeccd02
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K:
+    - 1200
+    - 3000
+    max_residual_J_per_mol: 1.25144376140088
+    max_residual_log10_K: 2.75917694553967e-05
+    source_locator: JANAF table Cl-150
+    source_url: https://janaf.nist.gov/tables/Cl-150.html
+    download_url: https://janaf.nist.gov/tables/Cl-150.txt
+    source_data: true
   - table: gas
     species_name: RbF(g)
     table_id: NG-1020
@@ -14396,8 +14118,8 @@ rows:
     source_locator: thermo.inp lines 8724-8731
     source_record: data-src/nasa-glenn/NG-1020.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14412,27 +14134,28 @@ rows:
         halogen_parent: NG-0567
         oxygen_parent: NG-0937
         oxide_parent: NG-1841
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 10304.357
-        1300: 10305.444
-        1400: 10305.84
-        1500: 10307.119
-        1600: 10308.377
-        1700: 10309.419
-        1800: 10310.675
-        1900: 10311.548
-        2000: 10312.486
-        2100: 10315.69
-        2200: 10318.019
-        2300: 10319.491
-        2400: 10322.538
-        2500: 10327.552
-        2600: 10331.504
-        2700: 10335.612
-        2800: 10340.632
-        2900: 10345.958
-        3000: 10353.137
+        1200: 4.076
+        1300: 5.163
+        1400: 5.559
+        1500: 6.838
+        1600: 8.096
+        1700: 9.138
+        1800: 10.394
+        1900: 11.267
+        2000: 12.205
+        2100: 15.409
+        2200: 17.738
+        2300: 19.21
+        2400: 22.257
+        2500: 27.271
+        2600: 31.222
+        2700: 35.331
+        2800: 40.351
+        2900: 45.677
+        3000: 52.856
   - table: gas
     species_name: (RbF)2(g)
     table_id: NG-1032
@@ -14449,8 +14172,8 @@ rows:
     source_locator: thermo.inp lines 8820-8827
     source_record: data-src/nasa-glenn/NG-1032.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14465,27 +14188,28 @@ rows:
         halogen_parent: NG-0567
         oxygen_parent: NG-0937
         oxide_parent: NG-1841
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 20608.713
-        1300: 20610.889
-        1400: 20611.679
-        1500: 20614.238
-        1600: 20616.753
-        1700: 20618.839
-        1800: 20621.35
-        1900: 20623.096
-        2000: 20624.972
-        2100: 20631.38
-        2200: 20636.039
-        2300: 20638.982
-        2400: 20645.076
-        2500: 20655.104
-        2600: 20663.007
-        2700: 20671.224
-        2800: 20681.265
-        2900: 20691.916
-        3000: 20706.274
+        1200: 8.151
+        1300: 10.327
+        1400: 11.117
+        1500: 13.676
+        1600: 16.191
+        1700: 18.277
+        1800: 20.788
+        1900: 22.533
+        2000: 24.41
+        2100: 30.818
+        2200: 35.477
+        2300: 38.42
+        2400: 44.513
+        2500: 54.541
+        2600: 62.445
+        2700: 70.662
+        2800: 80.702
+        2900: 91.353
+        3000: 105.712
   - table: gas
     species_name: RbCl(g)
     table_id: NG-1019
@@ -14502,8 +14226,8 @@ rows:
     source_locator: thermo.inp lines 8716-8723
     source_record: data-src/nasa-glenn/NG-1019.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14518,27 +14242,28 @@ rows:
         halogen_parent: NG-0494
         oxygen_parent: NG-0937
         oxide_parent: NG-1841
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 10302.476
-        1300: 10302.58
-        1400: 10302.379
-        1500: 10303.347
-        1600: 10304.057
-        1700: 10305.056
-        1800: 10306.074
-        1900: 10306.262
-        2000: 10307.035
-        2100: 10308.839
-        2200: 10310.009
-        2300: 10311.013
-        2400: 10312.748
-        2500: 10315.322
-        2600: 10318.004
-        2700: 10321.532
-        2800: 10325.232
-        2900: 10329.856
-        3000: 10338.331
+        1200: 2.195
+        1300: 2.299
+        1400: 2.098
+        1500: 3.066
+        1600: 3.776
+        1700: 4.775
+        1800: 5.793
+        1900: 5.981
+        2000: 6.754
+        2100: 8.558
+        2200: 9.728
+        2300: 10.732
+        2400: 12.467
+        2500: 15.041
+        2600: 17.723
+        2700: 21.251
+        2800: 24.951
+        2900: 29.574
+        3000: 38.05
   - table: gas
     species_name: (RbCl)2(g)
     table_id: NG-1031
@@ -14555,8 +14280,8 @@ rows:
     source_locator: thermo.inp lines 8812-8819
     source_record: data-src/nasa-glenn/NG-1031.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14571,27 +14296,28 @@ rows:
         halogen_parent: NG-0494
         oxygen_parent: NG-0937
         oxide_parent: NG-1841
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 20604.952
-        1300: 20605.161
-        1400: 20604.757
-        1500: 20606.695
-        1600: 20608.114
-        1700: 20610.112
-        1800: 20612.148
-        1900: 20612.524
-        2000: 20614.07
-        2100: 20617.678
-        2200: 20620.019
-        2300: 20622.026
-        2400: 20625.497
-        2500: 20630.644
-        2600: 20636.008
-        2700: 20643.064
-        2800: 20650.464
-        2900: 20659.711
-        3000: 20676.662
+        1200: 4.39
+        1300: 4.598
+        1400: 4.195
+        1500: 6.133
+        1600: 7.552
+        1700: 9.55
+        1800: 11.585
+        1900: 11.962
+        2000: 13.508
+        2100: 17.116
+        2200: 19.456
+        2300: 21.464
+        2400: 24.935
+        2500: 30.082
+        2600: 35.446
+        2700: 42.502
+        2800: 49.902
+        2900: 59.149
+        3000: 76.099
   - table: gas
     species_name: RbBr(g)
     table_id: NG-1018
@@ -14608,8 +14334,8 @@ rows:
     source_locator: thermo.inp lines 8708-8715
     source_record: data-src/nasa-glenn/NG-1018.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14624,27 +14350,28 @@ rows:
         halogen_parent: NG-0224
         oxygen_parent: NG-0937
         oxide_parent: NG-1841
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 10349.108
-        1300: 10354.802
-        1400: 10360.099
-        1500: 10366.494
-        1600: 10371.437
-        1700: 10377.08
-        1800: 10381.805
-        1900: 10386.704
-        2000: 10391.356
-        2100: 10397.608
-        2200: 10404.253
-        2300: 10410.999
-        2400: 10419.313
-        2500: 10429.438
-        2600: 10439.106
-        2700: 10450.136
-        2800: 10462.567
-        2900: 10474.603
-        3000: 10490.366
+        1200: 48.827
+        1300: 54.521
+        1400: 59.818
+        1500: 66.213
+        1600: 71.156
+        1700: 76.799
+        1800: 81.524
+        1900: 86.423
+        2000: 91.075
+        2100: 97.327
+        2200: 103.972
+        2300: 110.718
+        2400: 119.032
+        2500: 129.157
+        2600: 138.825
+        2700: 149.855
+        2800: 162.286
+        2900: 174.321
+        3000: 190.085
   - table: gas
     species_name: (RbBr)2(g)
     table_id: NG-1030
@@ -14661,8 +14388,8 @@ rows:
     source_locator: thermo.inp lines 8804-8811
     source_record: data-src/nasa-glenn/NG-1030.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14677,27 +14404,28 @@ rows:
         halogen_parent: NG-0224
         oxygen_parent: NG-0937
         oxide_parent: NG-1841
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 20698.216
-        1300: 20709.604
-        1400: 20720.198
-        1500: 20732.988
-        1600: 20742.875
-        1700: 20754.16
-        1800: 20763.611
-        1900: 20773.408
-        2000: 20782.712
-        2100: 20795.216
-        2200: 20808.506
-        2300: 20821.998
-        2400: 20838.625
-        2500: 20858.877
-        2600: 20878.212
-        2700: 20900.271
-        2800: 20925.134
-        2900: 20949.205
-        3000: 20980.732
+        1200: 97.654
+        1300: 109.041
+        1400: 119.636
+        1500: 132.426
+        1600: 142.313
+        1700: 153.598
+        1800: 163.049
+        1900: 172.846
+        2000: 182.149
+        2100: 194.654
+        2200: 207.943
+        2300: 221.436
+        2400: 238.063
+        2500: 258.315
+        2600: 277.649
+        2700: 299.709
+        2800: 324.572
+        2900: 348.643
+        3000: 380.17
   - table: gas
     species_name: RbI(g)
     table_id: NG-1022
@@ -14714,8 +14442,8 @@ rows:
     source_locator: thermo.inp lines 8740-8747
     source_record: data-src/nasa-glenn/NG-1022.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14730,27 +14458,28 @@ rows:
         halogen_parent: NG-0704
         oxygen_parent: NG-0937
         oxide_parent: NG-1841
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 10302.365
-        1300: 10302.386
-        1400: 10300.891
-        1500: 10299.535
-        1600: 10295.31
-        1700: 10288.727
-        1800: 10278.517
-        1900: 10264.452
-        2000: 10244.876
-        2100: 10221.994
-        2200: 10191.559
-        2300: 10153.811
-        2400: 10108.784
-        2500: 10059.085
-        2600: 9999.268
-        2700: 9934.404
-        2800: 9862.865
-        2900: 9783.08
-        3000: 9699.803
+        1200: 2.084
+        1300: 2.105
+        1400: 0.609
+        1500: 0.746
+        1600: 4.971
+        1700: 11.554
+        1800: 21.764
+        1900: 35.829
+        2000: 55.405
+        2100: 78.287
+        2200: 108.723
+        2300: 146.47
+        2400: 191.497
+        2500: 241.197
+        2600: 301.013
+        2700: 365.877
+        2800: 437.416
+        2900: 517.201
+        3000: 600.478
   - table: gas
     species_name: (RbI)2(g)
     table_id: NG-1033
@@ -14767,8 +14496,8 @@ rows:
     source_locator: thermo.inp lines 8828-8835
     source_record: data-src/nasa-glenn/NG-1033.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14783,27 +14512,28 @@ rows:
         halogen_parent: NG-0704
         oxygen_parent: NG-0937
         oxide_parent: NG-1841
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 20604.73
-        1300: 20604.772
-        1400: 20601.781
-        1500: 20599.07
-        1600: 20590.62
-        1700: 20577.453
-        1800: 20557.034
-        1900: 20528.904
-        2000: 20489.753
-        2100: 20443.988
-        2200: 20383.117
-        2300: 20307.623
-        2400: 20217.568
-        2500: 20118.169
-        2600: 19998.537
-        2700: 19868.809
-        2800: 19725.73
-        2900: 19566.16
-        3000: 19399.605
+        1200: 4.168
+        1300: 4.21
+        1400: 1.219
+        1500: 1.492
+        1600: 9.942
+        1700: 23.109
+        1800: 43.528
+        1900: 71.658
+        2000: 110.809
+        2100: 156.574
+        2200: 217.445
+        2300: 292.939
+        2400: 382.995
+        2500: 482.393
+        2600: 602.026
+        2700: 731.753
+        2800: 874.832
+        2900: 1034.402
+        3000: 1200.957
   - table: gas
     species_name: CsBr(g)
     table_id: NG-0511
@@ -14820,8 +14550,8 @@ rows:
     source_locator: thermo.inp lines 4331-4338
     source_record: data-src/nasa-glenn/NG-0511.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14836,27 +14566,28 @@ rows:
         halogen_parent: NG-0224
         oxygen_parent: NG-0937
         oxide_parent: NG-1842
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 6258.394
-        1300: 6264.088
-        1400: 6269.385
-        1500: 6275.781
-        1600: 6280.718
-        1700: 6286.378
-        1800: 6291.079
-        1900: 6295.997
-        2000: 6300.687
-        2100: 6306.795
-        2200: 6313.529
-        2300: 6320.358
-        2400: 6328.665
-        2500: 6338.717
-        2600: 6348.315
-        2700: 6359.352
-        2800: 6371.879
-        2900: 6384.003
-        3000: 6399.591
+        1200: 48.827
+        1300: 54.521
+        1400: 59.818
+        1500: 66.214
+        1600: 71.151
+        1700: 76.811
+        1800: 81.512
+        1900: 86.43
+        2000: 91.12
+        2100: 97.228
+        2200: 103.962
+        2300: 110.791
+        2400: 119.098
+        2500: 129.149
+        2600: 138.748
+        2700: 149.785
+        2800: 162.312
+        2900: 174.436
+        3000: 190.023
   - table: gas
     species_name: (CsBr)2(g)
     table_id: NG-0524
@@ -14873,8 +14604,8 @@ rows:
     source_locator: thermo.inp lines 4435-4442
     source_record: data-src/nasa-glenn/NG-0524.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14889,27 +14620,28 @@ rows:
         halogen_parent: NG-0224
         oxygen_parent: NG-0937
         oxide_parent: NG-1842
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 12516.788
-        1300: 12528.176
-        1400: 12538.77
-        1500: 12551.562
-        1600: 12561.436
-        1700: 12572.756
-        1800: 12582.158
-        1900: 12591.993
-        2000: 12601.375
-        2100: 12613.59
-        2200: 12627.058
-        2300: 12640.715
-        2400: 12657.329
-        2500: 12677.433
-        2600: 12696.631
-        2700: 12718.704
-        2800: 12743.758
-        2900: 12768.007
-        3000: 12799.181
+        1200: 97.654
+        1300: 109.041
+        1400: 119.636
+        1500: 132.428
+        1600: 142.301
+        1700: 153.622
+        1800: 163.023
+        1900: 172.859
+        2000: 182.241
+        2100: 194.456
+        2200: 207.923
+        2300: 221.581
+        2400: 238.195
+        2500: 258.299
+        2600: 277.496
+        2700: 299.569
+        2800: 324.624
+        2900: 348.872
+        3000: 380.047
   - table: gas
     species_name: CsI(g)
     table_id: NG-0515
@@ -14926,8 +14658,8 @@ rows:
     source_locator: thermo.inp lines 4363-4370
     source_record: data-src/nasa-glenn/NG-0515.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14942,27 +14674,28 @@ rows:
         halogen_parent: NG-0704
         oxygen_parent: NG-0937
         oxide_parent: NG-1842
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 6211.651
-        1300: 6211.672
-        1400: 6210.176
-        1500: 6208.822
-        1600: 6204.591
-        1700: 6198.024
-        1800: 6187.79
-        1900: 6173.745
-        2000: 6154.208
-        2100: 6131.181
-        2200: 6100.835
-        2300: 6063.17
-        2400: 6018.136
-        2500: 5968.363
-        2600: 5908.478
-        2700: 5843.62
-        2800: 5772.177
-        2900: 5692.481
-        3000: 5609.027
+        1200: 2.084
+        1300: 2.105
+        1400: 0.609
+        1500: 0.745
+        1600: 4.977
+        1700: 11.543
+        1800: 21.777
+        1900: 35.822
+        2000: 55.359
+        2100: 78.386
+        2200: 108.733
+        2300: 146.397
+        2400: 191.431
+        2500: 241.204
+        2600: 301.089
+        2700: 365.947
+        2800: 437.39
+        2900: 517.086
+        3000: 600.54
   - table: gas
     species_name: (CsI)2(g)
     table_id: NG-0528
@@ -14979,8 +14712,8 @@ rows:
     source_locator: thermo.inp lines 4467-4474
     source_record: data-src/nasa-glenn/NG-0528.json
     source:
-      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for
-        Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.
+      citation: McBride, B. J., Zehe, M. J. and Gordon, S., NASA Glenn Coefficients for Calculating Thermodynamic
+        Properties of Individual Species, NASA/TP-2002-211556.
     source_url: https://www.grc.nasa.gov/www/CEAWeb/
     upstream_source_sha256: fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363
     retrieval_date: '2026-10-15'
@@ -14995,27 +14728,28 @@ rows:
         halogen_parent: NG-0704
         oxygen_parent: NG-0937
         oxide_parent: NG-1842
-      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G; selected NASA gas product cancels. NASA liquid parents use card G directly.
+      method: Absolute stoichiometric sum of alternate NASA-card G minus selected JANAF/runtime parent G;
+        selected NASA gas product cancels. NASA liquid parents use card G = H_card(T) - T*S_card(T) directly.
       values_J_per_mol:
-        1200: 12423.302
-        1300: 12423.344
-        1400: 12420.353
-        1500: 12417.644
-        1600: 12409.181
-        1700: 12396.049
-        1800: 12375.581
-        1900: 12347.49
-        2000: 12308.416
-        2100: 12262.362
-        2200: 12201.669
-        2300: 12126.34
-        2400: 12036.272
-        2500: 11936.725
-        2600: 11816.955
-        2700: 11687.241
-        2800: 11544.354
-        2900: 11384.961
-        3000: 11218.055
+        1200: 4.168
+        1300: 4.21
+        1400: 1.219
+        1500: 1.49
+        1600: 9.953
+        1700: 23.085
+        1800: 43.553
+        1900: 71.645
+        2000: 110.718
+        2100: 156.772
+        2200: 217.465
+        2300: 292.794
+        2400: 382.862
+        2500: 482.409
+        2600: 602.179
+        2700: 731.893
+        2800: 874.781
+        2900: 1034.173
+        3000: 1201.08
 
 source_comparisons:
   basis: >-
