@@ -277,6 +277,15 @@ def _value(row: dict, field: str):
     return row[field]["value"]
 
 
+def _fit_residual_metric(row: dict, metric: str) -> float:
+    return float(row["fit_residual"]["value"][metric])
+
+
+def _accuracy_band_value(row: dict) -> dict | None:
+    band = row.get("accuracy_band")
+    return band.get("value") if isinstance(band, dict) else None
+
+
 @lru_cache(maxsize=None)
 def _complete_rows(table_id: str) -> list[dict[str, float]]:
     rows = []
@@ -798,7 +807,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
                 record_path.read_bytes()
             ).hexdigest()
             assert row["source"]["citation"].startswith("Konings")
-            assert row["max_residual_J_per_mol"] <= 10.0
+            assert _fit_residual_metric(row, "max_residual_J_per_mol") <= 10.0
         assert gas_rows[f"{species}(g)"]["T_range_K"] == [1500, 3000]
         assert low_gas_rows[species]["T_range_K"] == [1200, 1500]
 
@@ -943,7 +952,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     assert k_row["source_sha256"] == _record("K-012")["extraction"]["source_sha256"]
     assert k_row["inputs"]["fusion_temperature"]["band_K"] == [919, 1190]
     assert k_row["inputs"]["liquid_heat_capacity"]["band_includes_J_per_mol_K"] == [104.6]
-    assert k_row["combined_band"]["sample_temperatures_K"] == [1013, 1313, 1813]
+    assert _accuracy_band_value(k_row)["combined_band"]["sample_temperatures_K"] == [
+        1013, 1313, 1813,
+    ]
 
 
 def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
@@ -1133,10 +1144,10 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
             record = rows[(species_name, interval)]
             assert residuals
             assert max(residuals) == pytest.approx(
-                record["max_residual_J_per_mol"], abs=1.0e-7
+                _fit_residual_metric(record, "max_residual_J_per_mol"), abs=1.0e-7
             )
             assert max(log_residuals) == pytest.approx(
-                record["max_residual_log10_K"], abs=1.0e-10
+                _fit_residual_metric(record, "max_residual_log10_K"), abs=1.0e-10
             )
 
     for species_name, table_id, *_ in build_gas_tables.TRACE_JANAF_YAML_GAS_SOURCES:
@@ -1160,10 +1171,10 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
                 abs(residual) / (R_J_MOL_K * temperature * math.log(10.0))
             )
         assert max(residuals) == pytest.approx(
-            record["max_residual_J_per_mol"], abs=1.0e-7
+            _fit_residual_metric(record, "max_residual_J_per_mol"), abs=1.0e-7
         )
         assert max(log_residuals) == pytest.approx(
-            record["max_residual_log10_K"], abs=1.0e-10
+            _fit_residual_metric(record, "max_residual_log10_K"), abs=1.0e-10
         )
 
     for species_name, table_id, *_ in (
@@ -1204,11 +1215,11 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
                 )
             provenance_row = rows[(species_name, interval)]
             assert max(residuals) == pytest.approx(
-                provenance_row["max_residual_J_per_mol"],
+                _fit_residual_metric(provenance_row, "max_residual_J_per_mol"),
                 abs=1.0e-7,
             ), f"{species_name} interval {interval}"
             assert max(log_residuals) == pytest.approx(
-                provenance_row["max_residual_log10_K"], abs=1.0e-10
+                _fit_residual_metric(provenance_row, "max_residual_log10_K"), abs=1.0e-10
             )
 
 
@@ -1240,7 +1251,7 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
             record = rows[(species_name, interval)]
             assert residuals
             assert max(residuals) == pytest.approx(
-                record["max_residual_J_per_mol"], abs=1.0e-6
+                _fit_residual_metric(record, "max_residual_J_per_mol"), abs=1.0e-6
             )
 
     published_dir = ROOT / "data-src" / "published-thermo"
@@ -1282,10 +1293,10 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
                 )
             provenance_row = rows[(species_name, interval)]
             assert max(residuals) == pytest.approx(
-                provenance_row["max_residual_J_per_mol"], abs=1.0e-7
+                _fit_residual_metric(provenance_row, "max_residual_J_per_mol"), abs=1.0e-7
             ), f"published {species_name} interval {interval}"
             assert max(log_residuals) == pytest.approx(
-                provenance_row["max_residual_log10_K"], abs=1.0e-10
+                _fit_residual_metric(provenance_row, "max_residual_log10_K"), abs=1.0e-10
             )
 
 
@@ -1366,7 +1377,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
     # Truncate each published card's Cp function at the row's own source
     # limit, hold Cp there, and compare G(T). Zero belongs only at the limit.
     for row in provenance["rows"]:
-        band = row.get("uncertainty_band")
+        band = _accuracy_band_value(row)
         if (
             row["table"] not in {"gas", "condensate"}
             or band is None
@@ -1403,7 +1414,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
     liquid_continuations = {"BeO(l)", "Tl2O(l)"}
     liquid_continuation_keys = set()
     for row in provenance["rows"]:
-        band = row.get("uncertainty_band", {})
+        band = _accuracy_band_value(row) or {}
         method = band.get("method", "")
         if (
             row["table"] != "condensate"
@@ -1532,7 +1543,7 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
             continuation = next(row for row in phase_rows if row["species_name"] == "Hg(l)")
             assert continuation["extrapolation_source_limit_K"] == pytest.approx(marker)
             assert continuation["source_data"] is False
-            assert continuation["uncertainty_band"]["values_J_per_mol"]["3000"] == pytest.approx(25958.952)
+            assert _accuracy_band_value(continuation)["values_J_per_mol"]["3000"] == pytest.approx(25958.952)
         else:
             crystal = next(row for row in phase_rows if row["species_name"] == f"{element}(cr)")
             assert crystal["fit_step_at_K"] == pytest.approx(marker)
@@ -1762,7 +1773,7 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
             == [int(float(row["T_min"])), int(float(row["T_max"]))]
         )
         assert residual == pytest.approx(
-            provenance_row["max_residual_J_per_mol"], abs=1.0e-6
+            _fit_residual_metric(provenance_row, "max_residual_J_per_mol"), abs=1.0e-6
         )
         return residual
 
@@ -2041,7 +2052,7 @@ def test_pankratz_liquid_construction_inputs_and_band_are_independent() -> None:
     )
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     band = next(
-        row["uncertainty_band"]["values_J_per_mol"]
+        _accuracy_band_value(row)["values_J_per_mol"]
         for row in provenance["rows"]
         if row["table"] == "condensate"
         and row["species_name"] == "SeO2(l)"
@@ -2101,7 +2112,7 @@ def test_tho2_parent_fit_uses_reviewed_inputs_and_meets_node_gate() -> None:
     assert max(float(row["_max_residual_J_per_mol"]) for row in rows) < 10.0
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     band = next(
-        row["uncertainty_band"]["values_J_per_mol"]
+        _accuracy_band_value(row)["values_J_per_mol"]
         for row in provenance["rows"]
         if row["table"] == "condensate" and row["species_name"] == "ThO2(l)"
     )
@@ -2137,7 +2148,7 @@ def test_hfo2_parent_fit_uses_reviewed_inputs_and_meets_node_gate() -> None:
     assert max(float(row["_max_residual_J_per_mol"]) for row in rows) < 10.0
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     band = next(
-        row["uncertainty_band"]["values_J_per_mol"]
+        _accuracy_band_value(row)["values_J_per_mol"]
         for row in provenance["rows"]
         if row["table"] == "condensate" and row["species_name"] == "HfO2(l)"
     )
@@ -2165,7 +2176,7 @@ def test_hf_mixed_source_band_matches_pankratz_apparent_gibbs_nodes() -> None:
     ]
     assert len(rows) == 2
     for row in rows:
-        band = row["uncertainty_band"]
+        band = _accuracy_band_value(row)
         for temperature, value in band["values_J_per_mol"].items():
             temperature = int(temperature)
             if temperature == 3000:
@@ -2307,7 +2318,7 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
         for temperature in (1673.0, 2000.0)
     }
     for temperature, value in expected_band.items():
-        assert condensate_provenance["uncertainty_band"]["values_J_per_mol"][
+        assert _accuracy_band_value(condensate_provenance)["values_J_per_mol"][
             int(temperature)
         ] == pytest.approx(value * 1000.0, abs=1e-6)
 
@@ -2349,11 +2360,11 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
         if item["species_name"] == "MnO(g)":
             assert item["table_id"] == "TSIV-1436"
             assert item["tier"] == 3
-            assert item["uncertainty_band"]["kind"] == (
+            assert _accuracy_band_value(item)["kind"] == (
                 "Table 1436 prints accuracy class 4-E; numeric uncertainty band is "
                 "not quantified by the cited page"
             )
-            assert "phi_uncertainty_J_mol_K" not in item["uncertainty_band"]
+            assert "phi_uncertainty_J_mol_K" not in _accuracy_band_value(item)
         else:
             assert item["table_id"] == "Mn-006"
             assert item["tier"] == 1
@@ -2404,10 +2415,10 @@ def test_constructed_condensate_bands_match_liquid_construction_inputs() -> None
         species = row["species_name"]
         input_row = inputs["rows"][species.removesuffix("(l)")]
         assert row["construction_inputs_sha256"] == digest, species
-        band = input_row.get("measured_band")
+        band = _accuracy_band_value(input_row)
         if band and isinstance(band.get("values_J_per_mol"), dict):
             expected = band["values_J_per_mol"]
-            actual = row["uncertainty_band"]["values_J_per_mol"]
+            actual = _accuracy_band_value(row)["values_J_per_mol"]
             actual_values = {str(key): value for key, value in actual.items()}
             assert set(actual_values) == {str(key) for key in expected}, species
             for temperature, value in expected.items():
@@ -2417,11 +2428,11 @@ def test_constructed_condensate_bands_match_liquid_construction_inputs() -> None
             continue
         assert species in other_input_forms, f"unhandled input band for {species}"
         seen_other_forms.add(species)
-        assert row["uncertainty_band"]["values_J_per_mol"], species
+        assert _accuracy_band_value(row)["values_J_per_mol"], species
         if species in {"SeO2(l)", "CdO(l)"}:
-            assert input_row["crystal_cp_extrapolation_band"]
+            assert input_row["band_basis"]["provenance"]
         elif species == "ZnO(l)":
-            assert input_row["measured_band"].get("phi_uncertainty_j_mol_k")
+            assert input_row["band_basis"]["kind"] == "source_uncertainty"
         else:
             assert "fusion_entropy" in input_row["inputs"]
     assert seen_other_forms == set(other_input_forms), sorted(seen_other_forms)
@@ -2774,10 +2785,10 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
 
         recorded = low_provenance[f"{species}(g)"]
         assert max(residuals) == pytest.approx(
-            float(recorded["max_residual_J_per_mol"]), abs=1.0e-8
+            _fit_residual_metric(recorded, "max_residual_J_per_mol"), abs=1.0e-8
         )
         assert max(log_residuals) == pytest.approx(
-            float(recorded["max_residual_log10_K"]), abs=1.0e-12
+            _fit_residual_metric(recorded, "max_residual_log10_K"), abs=1.0e-12
         )
         assert max(residuals) < 2.1
         assert max(log_residuals) < 0.01
@@ -2989,7 +3000,7 @@ def test_nasa_rows_match_anchored_card_evaluation_and_2000_k_hand_check() -> Non
             for row in rows
         ]
         assert max(residuals) == pytest.approx(
-            float(recorded[(species + "(g)", 1)]["max_residual_J_per_mol"]),
+            _fit_residual_metric(recorded[(species + "(g)", 1)], "max_residual_J_per_mol"),
             abs=1e-9,
         )
         assert max(residuals) < 1e-3
@@ -3061,7 +3072,7 @@ def test_nasa_low_rows_use_piecewise_cards_and_lh84_anchors() -> None:
             for source in source_rows
         ]
         assert max(residuals) == pytest.approx(
-            float(recorded[species + "(g)"]["max_residual_J_per_mol"]), abs=1e-9
+            _fit_residual_metric(recorded[species + "(g)"], "max_residual_J_per_mol"), abs=1e-9
         )
         assert max(residuals) < 2.0e-2
         assert checks["check_temperature_K"] == 1500.0
@@ -3243,11 +3254,11 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
             else [recorded[(species, (int(runtime_t_min), 3000))]]
         )
         assert maximum_j == pytest.approx(
-            max(item["max_residual_J_per_mol"] for item in selected_records),
+            max(_fit_residual_metric(item, "max_residual_J_per_mol") for item in selected_records),
             abs=1e-6,
         )
         assert maximum_log10 == pytest.approx(
-            max(item["max_residual_log10_K"] for item in selected_records),
+            max(_fit_residual_metric(item, "max_residual_log10_K") for item in selected_records),
             abs=1e-9,
         )
 
@@ -3295,8 +3306,8 @@ def test_ba_sr_zr_janaf_liquids_fit_each_printed_node() -> None:
             ]
             assert max(residuals) < 10.0
             provenance_row = recorded[(species, (start, fit_end))]
-            assert provenance_row["max_residual_J_per_mol"] < 10.0
-            assert provenance_row["max_residual_J_per_mol"] == pytest.approx(
+            assert _fit_residual_metric(provenance_row, "max_residual_J_per_mol") < 10.0
+            assert _fit_residual_metric(provenance_row, "max_residual_J_per_mol") == pytest.approx(
                 max(residuals), abs=1e-5
             )
 
@@ -3352,11 +3363,11 @@ def test_nickel_cobalt_tsiv_liquid_fits_each_printed_node() -> None:
             assert max(residuals) < 10.0
             item = recorded[(species, (interval_start, interval_end))]
             assert item["tier"] == 3
-            assert item["max_residual_J_per_mol"] == pytest.approx(
+            assert _fit_residual_metric(item, "max_residual_J_per_mol") == pytest.approx(
                 max(residuals), abs=1e-5
             )
             assert item["source_data"] is (interval_start == melt_k)
-            band = item["uncertainty_band"]
+            band = _accuracy_band_value(item)
             source_phi = source["phi_uncertainty_j_mol_k"]
             phi_knots = sorted(
                 (float(t), float(value)) for t, value in source_phi.items()
@@ -3932,12 +3943,12 @@ def test_sc2o3_source_disagreement_bands_recompute_from_published_nodes() -> Non
         row for row in provenance["rows"]
         if row["table"] == "condensate"
         and row["species_name"] == "Sc2O3(l)"
-        and row.get("uncertainty_band", {}).get("kind")
+        and (_accuracy_band_value(row) or {}).get("kind")
         == "measured_G_app_difference_from_Pankratz_Bulletin_672"
     ]
     assert len(rows) == 1
     for row in rows:
-        values = row["uncertainty_band"]["values_J_per_mol"]
+        values = _accuracy_band_value(row)["values_J_per_mol"]
         low, high = map(int, row["T_range_K"])
         assert set(map(int, values)) == {
             temperature for temperature in differences
@@ -3984,10 +3995,10 @@ def test_u_g_source_disagreement_band_recomputes_from_vendored_records() -> None
     band_rows = [
         row for row in provenance["rows"]
         if row["table"] == "gas" and row["species_name"] == "U(g)"
-        and row.get("uncertainty_band") is not None
+        and _accuracy_band_value(row) is not None
     ]
     assert len(band_rows) == 1
-    band = band_rows[0]["uncertainty_band"]
+    band = _accuracy_band_value(band_rows[0])
     assert band["kind"] == "measured_G_app_difference_from_Pankratz_Bulletin_672"
     comparison_values = {int(row["T_K"]): row for row in comparison["values"]}
     recorded_band = {int(key): float(value) for key, value in band["values_J_per_mol"].items()}
@@ -4064,7 +4075,7 @@ def test_nio_gas_uncertainty_band_recomputes_from_bulletin_and_nasa() -> None:
         1: (1500, 1800, 2000, 2500, 3000),
         2: (1200, 1300, 1400, 1500),
     }.items():
-        band = records[interval]["uncertainty_band"]["values_J_per_mol"]
+        band = _accuracy_band_value(records[interval])["values_J_per_mol"]
         assert tuple(map(int, band)) == temperatures
         for temperature in temperatures:
             comparison_temperature = min(temperature, 2000)
@@ -4173,7 +4184,7 @@ def test_ni_co_mixed_source_parent_bands_recompute_from_compilations() -> None:
         for row in rows:
             low, high = map(float, row["T_range_K"])
             row_knots = tuple(t for t in knots if low <= t <= high)
-            regular = row.get("uncertainty_band", {})
+            regular = _accuracy_band_value(row) or {}
             bands = [regular, *row.get("additional_uncertainty_bands", [])]
             band = next(
                 item for item in bands
@@ -4298,7 +4309,7 @@ def test_na_k_gas_anchor_and_parent_scale_bands_recompute() -> None:
         interval = tuple(map(int, row["T_range_K"]))
         band_types = expected[species]
         bands = [
-            row.get("uncertainty_band", {}),
+            _accuracy_band_value(row) or {},
             *row.get("additional_uncertainty_bands", []),
         ]
         row_knots = tuple(t for t in temperatures if interval[0] <= t <= interval[1])
@@ -4430,7 +4441,7 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
             any(
                 band.get("kind") == "mixed_source_parent_scale_inconsistency"
                 for band in [
-                    row.get("uncertainty_band", {}),
+                    _accuracy_band_value(row) or {},
                     *row.get("additional_uncertainty_bands", []),
                 ]
             )
@@ -4514,7 +4525,7 @@ def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
         row for row in provenance["rows"]
         if row["table"] == "gas"
         and row["species_name"].startswith("(")
-        and row.get("uncertainty_band", {}).get("kind")
+        and (_accuracy_band_value(row) or {}).get("kind")
         == "mixed_source_parent_scale_inconsistency"
     ]
     runtime_parents = pd.read_csv(GAS_DATA / "condensate.csv").set_index(
@@ -4546,7 +4557,7 @@ def test_mixed_source_cluster_bands_recompute_from_parent_scales() -> None:
         row_knots = {t for t in knots if row_low <= t <= row_high}
         undefined = {t for t in row_knots if not card_low <= t <= card_high}
         expected_knots = row_knots - undefined
-        band = row["uncertainty_band"]
+        band = _accuracy_band_value(row)
         assert band["basis"] == "card_G_parent_scale_inconsistency"
         assert band["per_formula"] == "cluster formula"
         assert band["factor_from_parent_formula"] == n
@@ -6026,7 +6037,7 @@ def test_nb_low_condensate_interval_uses_liquid_rows_and_keeps_seam() -> None:
         and row["T_range_K"] == [1200, 1500]
     )
     assert max(residuals) == pytest.approx(
-        low_provenance["max_residual_J_per_mol"], abs=1.0e-6
+        _fit_residual_metric(low_provenance, "max_residual_J_per_mol"), abs=1.0e-6
     )
     assert max(residuals) < 1.0e-5
     for temperature in (1100.0, 1199.9):
@@ -6163,7 +6174,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
                 assert entry["Cp_l_J_molK"] == pytest.approx(
                     source_cp, abs=1e-12
                 )
-                assert entry["max_residual_J_per_mol"] == pytest.approx(
+                assert _fit_residual_metric(entry, "max_residual_J_per_mol") == pytest.approx(
                     float(fitted["_max_residual_J_per_mol"]), abs=1e-8
                 )
                 assert "NASA pure-liquid standard state at 1 atm" in entry["note"]
@@ -6195,7 +6206,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             assert entry["T_range_K"] == [T_min, T_max]
             assert entry["T0_K"] == table_config[-2]
             assert entry["Cp_l_J_molK"] == cp
-            assert entry["max_residual_J_per_mol"] == pytest.approx(
+            assert _fit_residual_metric(entry, "max_residual_J_per_mol") == pytest.approx(
                 float(fitted["_max_residual_J_per_mol"]), abs=1e-8
             )
             if T_min == 1200:
@@ -6282,7 +6293,7 @@ def _assert_snol_constant_cp_continuation_uses_the_nasa_liquid_anchor() -> None:
         residuals.append(abs(_lamor_gibbs(float(temperature), packaged) - source_g))
     assert max(residuals) < 10.0
     assert float(generated["_max_residual_J_per_mol"]) == pytest.approx(
-        row["max_residual_J_per_mol"], abs=1e-6
+        _fit_residual_metric(row, "max_residual_J_per_mol"), abs=1e-6
     )
 
 
@@ -6474,7 +6485,7 @@ def _assert_nasa_anchored_rows_match_direct_card_evaluation() -> None:
             row = candidates.loc[candidates["T_min"].astype(float) == lower].iloc[0]
             fitted_g = lambda T: _lamor_gibbs(T, row)
 
-        allowed = float(record["max_residual_J_per_mol"]) + 10.0
+        allowed = _fit_residual_metric(record, "max_residual_J_per_mol") + 10.0
         for temperature in temperatures:
             properties = build_gas_tables._nasa7_properties(card, temperature)
             if record["table_id"] in {
@@ -7423,14 +7434,12 @@ def test_konings_batch_integrates_and_fits_with_residual_gates() -> None:
                     and row["species_name"] == species
                     and row["T_interval"] == interval
                 )
-                assert matching["max_residual_J_per_mol"] == pytest.approx(
+                assert _fit_residual_metric(matching, "max_residual_J_per_mol") == pytest.approx(
                     float(fitted["_max_residual_J_per_mol"]), abs=1e-12
                 )
                 range_low, range_high = map(float, matching["T_range_K"])
                 gas_item = record["gases"][species]
-                for knot, value in matching["uncertainty_band"][
-                    "values_J_per_mol"
-                ].items():
+                for knot, value in _accuracy_band_value(matching)["values_J_per_mol"].items():
                     assert range_low <= float(knot) <= range_high
                     expected_band = (
                         float(gas_item["dfH_unc_kJ_mol"]) * 1000.0
@@ -7451,13 +7460,13 @@ def test_konings_batch_integrates_and_fits_with_residual_gates() -> None:
             ]
             assert len(rows) == len(condensates)
             for row, fitted in zip(rows, condensates, strict=True):
-                for knot, value in row["uncertainty_band"]["values_J_per_mol"].items():
+                for knot, value in _accuracy_band_value(row)["values_J_per_mol"].items():
                     assert float(value) == pytest.approx(
                         build_gas_tables._konings_condensate_uncertainty_j_mol(
                             item, float(knot)
                         ), abs=1e-5
                     )
-                assert row["max_residual_J_per_mol"] == pytest.approx(
+                assert _fit_residual_metric(row, "max_residual_J_per_mol") == pytest.approx(
                     float(fitted["_max_residual_J_per_mol"]), abs=1e-12
                 )
                 fusion = float(item["fusion_temperature_K"])

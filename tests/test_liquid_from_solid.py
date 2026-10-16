@@ -344,14 +344,14 @@ def test_tier3_constructed_liquid_bands_follow_each_transition_offset():
     constructed = [
         (species, row)
         for species, row in INPUTS["rows"].items()
-        if row.get("measured_band", {}).get("kind", "").startswith(
+        if (row.get("accuracy_band") or {}).get("value", {}).get("kind", "").startswith(
             "tier-3 liquid_from_solid"
         )
     ]
     assert constructed
     for species, row in constructed:
         transition = row["inputs"]["fusion_temperature"]["value"]
-        for temperature, recorded in row["measured_band"][
+        for temperature, recorded in row["accuracy_band"]["value"][
             "values_J_per_mol"
         ].items():
             assert recorded == pytest.approx(

@@ -181,6 +181,8 @@ def _redox_source(root: Path) -> None:
 
 def _gas(root: Path) -> None:
     path = root / "src/openimcc/data/gas/PROVENANCE.yaml"
+    inputs_path = root / "data-src/liquid-from-solid-inputs.json"
+    inputs_digest = hashlib.sha256(inputs_path.read_bytes()).hexdigest()
     source_text = path.read_text()
     doc = yaml.safe_load(source_text)
     parent_checks = {
@@ -192,6 +194,8 @@ def _gas(root: Path) -> None:
     }
     not_found = "No same-standard independent equilibrium check was located in the 2026-10-15 research sweep."
     for row in doc["rows"]:
+        if row.get("construction_inputs_path") == "data-src/liquid-from-solid-inputs.json":
+            row["construction_inputs_sha256"] = inputs_digest
         legacy = any(key in row for key in ("max_residual_J_per_mol", "max_residual_log10_K", "uncertainty_band", "combined_band"))
         if not legacy and all(key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check")):
             continue
@@ -306,76 +310,78 @@ def _liquid_inputs(root: Path) -> None:
     path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
 
 
+def migrate_melt_row(row: dict[str, Any]) -> None:
+    def has_legacy_residual(value: Any, *, top: bool = False) -> bool:
+        if isinstance(value, dict):
+            for key, member in value.items():
+                if top and key == "fit_residual":
+                    continue
+                if "residual" in key.lower() or has_legacy_residual(member):
+                    return True
+            return False
+        if isinstance(value, list):
+            return any(has_legacy_residual(member) for member in value)
+        return False
+
+    if (
+        all(key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check"))
+        and not has_legacy_residual(row, top=True)
+        and (
+            row["fit_residual"] is None
+            or row["fit_residual"].get("temperature_range") == "T_domain_K"
+        )
+    ):
+        return
+    existing_fit = row.get("fit_residual")
+    existing_diagnostics = (
+        existing_fit.get("value")
+        if isinstance(existing_fit, dict) and isinstance(existing_fit.get("value"), dict)
+        else {}
+    )
+    diagnostics: dict[str, Any] = {}
+
+    def move_residuals(value: Any, prefix: str = "", *, top: bool = False) -> None:
+        if isinstance(value, dict):
+            for key in list(value):
+                if top and key == "fit_residual":
+                    continue
+                label = f"{prefix}/{key}" if prefix else key
+                if "residual" in key.lower():
+                    diagnostics[label] = value.pop(key)
+                else:
+                    move_residuals(value[key], label)
+        elif isinstance(value, list):
+            for index, member in enumerate(value):
+                move_residuals(member, f"{prefix}/{index}")
+
+    move_residuals(row, top=True)
+    diagnostics = {**existing_diagnostics, **diagnostics}
+    row["fit_residual"] = None if not diagnostics else {
+        "value": diagnostics,
+        "unit": "source-specific",
+        "target_source": row.get("source") or row.get("provenance"),
+        "comparison_method": "Existing held-out or candidate-fit diagnostic; see original field names in value.",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "held_out_or_candidate",
+    }
+    row["accuracy_band"] = None
+    row["band_basis"] = band_basis("none", "Complex association row has no row-specific uncertainty band.", row.get("provenance"))
+    row["independent_check"] = independent_check("No row-specific pure-complex equilibrium check was identified.")
+
+
 def _melt_packs(root: Path) -> None:
     for path in sorted((root / "src/openimcc/data/packs").glob("imcc-sf04*.json")):
         doc = json.loads(path.read_text())
         for row in doc["rows"]:
-            def has_legacy_residual(value: Any, *, top: bool = False) -> bool:
-                if isinstance(value, dict):
-                    for key, member in value.items():
-                        if top and key == "fit_residual":
-                            continue
-                        if "residual" in key.lower() or has_legacy_residual(member):
-                            return True
-                    return False
-                if isinstance(value, list):
-                    return any(has_legacy_residual(member) for member in value)
-                return False
-
-            if (
-                all(key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check"))
-                and not has_legacy_residual(row, top=True)
-                and (
-                    row["fit_residual"] is None
-                    or row["fit_residual"].get("temperature_range") == "T_domain_K"
-                )
-            ):
-                continue
-            existing_fit = row.get("fit_residual")
-            existing_diagnostics = (
-                existing_fit.get("value")
-                if isinstance(existing_fit, dict) and isinstance(existing_fit.get("value"), dict)
-                else {}
-            )
-            # Existing diagnostics are retained under fit_residual as their
-            # own payload; their source fields remain available for audit.
-            diagnostics: dict[str, Any] = {}
-
-            def move_residuals(value: Any, prefix: str = "", *, top: bool = False) -> None:
-                if isinstance(value, dict):
-                    for key in list(value):
-                        if top and key == "fit_residual":
-                            continue
-                        label = f"{prefix}/{key}" if prefix else key
-                        if "residual" in key.lower():
-                            diagnostics[label] = value.pop(key)
-                        else:
-                            move_residuals(value[key], label)
-                elif isinstance(value, list):
-                    for index, member in enumerate(value):
-                        move_residuals(member, f"{prefix}/{index}")
-
-            move_residuals(row, top=True)
-            diagnostics = {**existing_diagnostics, **diagnostics}
-            row["fit_residual"] = None if not diagnostics else {
-                "value": diagnostics,
-                "unit": "source-specific",
-                "target_source": row.get("source") or row.get("provenance"),
-                "comparison_method": "Existing held-out or candidate-fit diagnostic; see original field names in value.",
-                "temperature_range": "T_domain_K",
-                "held_out_or_in_sample": "held_out_or_candidate",
-            }
-            row["accuracy_band"] = None
-            row["band_basis"] = band_basis("none", "Complex association row has no row-specific uncertainty band.", row.get("provenance"))
-            row["independent_check"] = independent_check("No row-specific pure-complex equilibrium check was identified.")
+            migrate_melt_row(row)
         path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
 
 
 def migrate(root: Path = ROOT) -> None:
     _redox(root)
     _redox_source(root)
-    _gas(root)
     _liquid_inputs(root)
+    _gas(root)
     _melt_packs(root)
 
 

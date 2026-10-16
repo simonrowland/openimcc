@@ -214,6 +214,11 @@ def test_translation_tool_reproduces_each_shipped_d066_pack(
         arm=arm,
     )
     expected = json.loads(output_path.read_text(encoding="utf-8"))
+    for row in expected["rows"]:
+        fit = row.get("fit_residual")
+        diagnostics = fit.get("value") if isinstance(fit, dict) else None
+        if isinstance(diagnostics, dict) and diagnostics.get("fit_residual", object()) is None:
+            diagnostics.pop("fit_residual")
 
     def assert_pack_matches(actual: object, wanted: object) -> None:
         if isinstance(wanted, bool) or isinstance(actual, bool):
@@ -285,7 +290,9 @@ def test_translation_preserves_absolute_complex_g_on_the_domain_grid() -> None:
         assert record["delta_B_K"] == pytest.approx(448.875854425, abs=1e-9)
         assert record["delta_A"] < 0.0
         assert record["delta_B_K"] > 0.0
-        assert record["max_abs_residual_dex"] == pytest.approx(
+        assert new[name]["fit_residual"]["value"][
+            "k_translation/max_abs_residual_dex"
+        ] == pytest.approx(
             0.02709743389, abs=1e-10
         )
         assert record["max_abs_complex_G_error_kJ_mol"] == pytest.approx(

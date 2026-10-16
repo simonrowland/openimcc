@@ -80,7 +80,28 @@ def _assert_valence_totals_conserve(result, inventory: dict[str, float]) -> None
 def _write_synthetic_redox_pack(tmp_path: Path, *, add_mn_couple: bool = False) -> Path:
     content = json.loads(DEFAULT_REDOX_PACK_PATH.read_text(encoding="utf-8"))
     provenance = content["thermo_species"]["FeO(l)"]["provenance"]
+    band_schema = {
+        "fit_residual": None,
+        "accuracy_band": None,
+        "band_basis": {
+            "kind": "none",
+            "explanation": "Synthetic test fixture has no quantified band.",
+            "provenance": "test fixture",
+        },
+        "independent_check": {
+            "status": "not_found",
+            "equilibrium": None,
+            "primary_source": None,
+            "conditions": None,
+            "measured_value": None,
+            "predicted_value": None,
+            "miss": None,
+            "miss_to_band_ratio": None,
+            "reason": "Synthetic test fixture has no independent check.",
+        },
+    }
     content["thermo_species"]["SynthFe3O4(l)"] = {
+        **band_schema,
         "formula_atoms": {"Fe": 3, "O": 4},
         "ferric_fe_units": 2.0,
         "ferrous_fe_units": 1.0,
@@ -91,11 +112,11 @@ def _write_synthetic_redox_pack(tmp_path: Path, *, add_mn_couple: bool = False) 
         ],
         "T_domain_K": [1700.0, 3000.0],
         "range_flags": [],
-        "band_kj_mol": 0.0,
         "provenance": provenance,
     }
     content["rows"].append(
         {
+            **band_schema,
             "complex": "SynthFe3O4(l)",
             "reaction": "FeO(l) + 2 FeO1.5(l) = SynthFe3O4(l)",
             "nu": {"FeO(l)": 3.0},
@@ -108,10 +129,8 @@ def _write_synthetic_redox_pack(tmp_path: Path, *, add_mn_couple: bool = False) 
                 {"species": "FeO1.5(l)", "coefficient": -2.0},
             ],
             "T_domain_K": [1700.0, 3000.0],
-            "band_kj_mol": 0.0,
             "phase_or_construction": "synthetic test species",
             "method": "linear combination of registered redox species",
-            "band_method": "zero-width synthetic test band",
             "uncertainty_note": "test fixture only",
             "range_flags": ["synthetic test fixture"],
             "provenance": provenance,
@@ -121,6 +140,7 @@ def _write_synthetic_redox_pack(tmp_path: Path, *, add_mn_couple: bool = False) 
     )
     if add_mn_couple:
         content["thermo_species"]["MnO1.5(l)"] = {
+            **band_schema,
             "formula_atoms": {"Mn": 1, "O": 1.5},
             "evaluator": "linear_combination",
             "terms": [
@@ -129,11 +149,11 @@ def _write_synthetic_redox_pack(tmp_path: Path, *, add_mn_couple: bool = False) 
             ],
             "T_domain_K": [1700.0, 3000.0],
             "range_flags": [],
-            "band_kj_mol": 0.0,
             "provenance": provenance,
         }
         content["rows"].append(
             {
+                **band_schema,
                 "complex": "MnO1.5(l)",
                 "reaction": "MnO(l) + 1/4 O2(g) = MnO1.5(l)",
                 "nu": {"MnO(l)": 1.0},
@@ -146,10 +166,8 @@ def _write_synthetic_redox_pack(tmp_path: Path, *, add_mn_couple: bool = False) 
                     {"species": "MnO(l)", "coefficient": -1.0},
                 ],
                 "T_domain_K": [1700.0, 3000.0],
-                "band_kj_mol": 0.0,
                 "phase_or_construction": "synthetic test species",
                 "method": "linear combination of registered species",
-                "band_method": "zero-width synthetic test band",
                 "uncertainty_note": "test fixture only",
                 "range_flags": ["synthetic test fixture"],
                 "provenance": provenance,

@@ -11,6 +11,11 @@ from typing import Any, Mapping
 
 import numpy as np
 
+if __package__:
+    from .migrate_band_schema import migrate_melt_row
+else:
+    from migrate_band_schema import migrate_melt_row
+
 from openimcc.gas import (
     R_J_MOL_K,
     ImccGasDatapack,
@@ -248,6 +253,8 @@ def translate_k_rows(
         elif name not in _D066_CARRIED_PUBLISHED_ROWS:
             raise ValueError(f"unclassified D066 row {name!r}")
 
+    for row in pack["rows"]:
+        migrate_melt_row(row)
     return pack
 
 

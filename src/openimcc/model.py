@@ -234,7 +234,7 @@ def _validate_band_schema_rows(data: Mapping[str, Any]) -> None:
     if not isinstance(rows, list):
         raise ImccMalformedDatapackError("datapack rows must be a list")
     for index, row in enumerate(rows):
-        label = f"datapack row {index} band schema"
+        label = f"published core row {index}"
         if not isinstance(row, dict):
             raise ImccMalformedDatapackError(f"{label} must be an object")
         legacy = {"band_kj_mol", "band_method", "uncertainty_band"} & row.keys()
