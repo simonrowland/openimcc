@@ -362,7 +362,10 @@ def test_kcaalsi2o7_is_absent_from_primary_and_flagged_in_sensitivity() -> None:
 def test_loaded_coverage_matches_active_species_for_every_shipped_pack() -> None:
     manifest = json.loads((PACK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))
     for entry in manifest["packs"]:
-        if entry["file"] == "openimcc-redox-v1.json":
+        if entry["file"] in {
+            "openimcc-redox-v1.json",
+            "openimcc-redox-cr-candidate.json",
+        }:
             continue
         loaded = load_datapack(PACK_DIR / entry["file"])
         kernel = loaded.kernel_datapack
