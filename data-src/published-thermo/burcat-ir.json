@@ -1,0 +1,35 @@
+{
+  "record_id": "Burcat-Ir-metal",
+  "source": "Burcat and Ruscic, Third Millennium Thermochemical Database; cards BU-2613, BU-2611, and BU-2612",
+  "source_url": "https://respecth.elte.hu/burcat.php",
+  "records": {
+    "Ir(g)": {
+      "record_id": "BU-2613",
+      "phase": "gas",
+      "temperature_range_K": [298.15, 6000.0],
+      "delta_f_H_298_15_kJ_mol": 669.9968379836847,
+      "high_coefficients": [1.54357493, 0.00176570672, -5.57103859e-7, 8.09797319e-11, -4.32706919e-15, 80153.1846, 14.227109],
+      "low_coefficients": [2.49366441, 0.000245098747, -1.47704592e-6, 2.8038587e-9, -1.23674548e-12, 79835.8104, 9.04518064],
+      "source_note": "BURCAT.THR.txt card BU-2613; calculated from Gurvich's Thermel (1992). The printed comment gives HF298=160.134 kcal/mol, while the card-implied H(298.15 K) is 669.9968379836847 kJ/mol from its low coefficients."
+    },
+    "Ir(cr)": {
+      "record_id": "BU-2611",
+      "phase": "crystal",
+      "temperature_range_K": [298.15, 2720.0],
+      "source_limit_K": 2720.0,
+      "delta_f_H_298_15_kJ_mol": 0.0,
+      "high_coefficients": [3.12748335, 2.66314435e-5, 5.72352901e-7, -2.05605606e-10, 3.10639151e-14, -987.100754, -13.6884967],
+      "coefficients": [2.84948295, 0.000201970716, 1.56773265e-6, -1.82288867e-9, 7.55628355e-13, -869.155364, -12.0832139],
+      "source_note": "BURCAT.THR.txt card BU-2611; elemental reference iridium crystal through the 2720 K melting marker; calculated from Gurvich's Thermel (1992)."
+    },
+    "Ir(l)": {
+      "record_id": "BU-2612",
+      "phase": "liquid",
+      "temperature_range_K": [2720.0, 6000.0],
+      "source_limit_K": 6000.0,
+      "delta_f_H_298_15_kJ_mol": 0.0,
+      "coefficients": [5.21920918, 0.000701209382, -2.255091e-7, 3.24110289e-11, -1.76996103e-15, -1167.86469, -28.4483015],
+      "source_note": "BURCAT.THR.txt card BU-2612; elemental reference iridium liquid beginning at 2720 K; calculated from Gurvich's Thermel (1992)."
+    }
+  }
+}

@@ -664,6 +664,7 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Pt": ("Pt", 1.0, 0.0),
     "Ru": ("Ru", 1.0, 0.0),
     "Rh": ("Rh", 1.0, 0.0),
+    "Ir": ("Ir", 1.0, 0.0),
     "PtO2": ("Pt", 1.0, -1.0),
 }
 
@@ -751,6 +752,7 @@ _CONDENSED_PARENT_PHASE_ROWS: dict[str, tuple[float, str, str]] = {
     "Pt": (2042.0, "Pt(cr)", "Pt(l)"),
     "Ru": (2607.0, "Ru(cr)", "Ru(l)"),
     "Rh": (2237.0, "Rh(cr)", "Rh(l)"),
+    "Ir": (2720.0, "Ir(cr)", "Ir(l)"),
 }
 _ALKALI_HALIDE_REACTION_OXIDES = {
     "NaBr": ("Na2O", 0.5, 0.25),
@@ -1091,6 +1093,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Pt",
         "Ru",
         "Rh",
+        "Ir",
         "PtO2",
     }
 )
@@ -3181,6 +3184,22 @@ ELEMENT_STATUS["Rh"] = {
     "source_tables": {"gas": "P672-Rh-g", "parent": "P672-Rh-cr/P672-Rh-l"},
     "parent_activity": "Rh",
 }
+ELEMENT_STATUS["Ir"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "reason": (
+        "Burcat cards BU-2613, BU-2611, and BU-2612 provide paired Ir(g) and "
+        "stable iridium phase functions on one elemental reference scale. "
+        "Callers supply a(Ir) relative to Ir(cr)/Ir(l), switching at 2720 K."
+    ),
+    "c2_candidates": (),
+    "c3_ion_bound": {
+        "status": "not computed",
+        "reason": "not computed: Ir ion channels are outside this neutral gas change",
+    },
+    "source_tables": {"gas": "BU-2613", "parent": "BU-2611/BU-2612"},
+    "parent_activity": "Ir",
+}
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #
@@ -4662,6 +4681,7 @@ _ATOMIC_MASS_G_MOL = {
     "Pt": 195.084,
     "Ru": 101.07,
     "Rh": 102.9055,
+    "Ir": 192.217,
     "H": 1.008, "C": 12.011, "N": 14.007,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")

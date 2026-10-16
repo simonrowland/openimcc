@@ -1530,6 +1530,7 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
         ("Au", "BU-0056", "burcat-au.json", 1337.0, "Au(l)"),
         ("Pd", "BU-3112", "burcat-pd.json", 1827.0, "Pd(l)"),
         ("Pt", "BU-3122", "burcat-pt.json", 2042.0, "Pt(l)"),
+        ("Ir", "BU-2613", "burcat-ir.json", 2720.0, "Ir(l)"),
     ):
         source_path = ROOT / "data-src" / "published-thermo" / source_file
         digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
@@ -1567,6 +1568,7 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
         ("Au", 1337.0, (1200.0, 1336.999, 1337.0, 1800.0, 3000.0)),
         ("Pd", 1827.0, (1200.0, 1800.0, 1826.999, 1827.0, 3000.0)),
         ("Pt", 2042.0, (1200.0, 1800.0, 2041.999, 2042.0, 2500.0, 3000.0)),
+        ("Ir", 2720.0, (1200.0, 1800.0, 2719.999, 2720.0, 2500.0, 3000.0)),
     ),
 )
 def test_burcat_metal_absolute_k_matches_runtime_and_is_continuous(
@@ -1627,7 +1629,7 @@ def test_burcat_metal_absolute_k_matches_runtime_and_is_continuous(
 
 @pytest.mark.parametrize(
     ("element", "temperature", "relative_tolerance"),
-    (("Hg", 629.88, 0.02), ("Au", 3129.0, 0.5), ("Pd", 3236.0, 0.05), ("Pt", 4098.0, 0.3)),
+    (("Hg", 629.88, 0.02), ("Au", 3129.0, 0.5), ("Pd", 3236.0, 0.05), ("Pt", 4098.0, 0.3), ("Ir", 4800.0, 0.4)),
 )
 def test_burcat_metal_boiling_pressure_is_near_one_bar(
     element: str,
@@ -1869,6 +1871,14 @@ def test_pankratz_rh_vapor_pressure_matches_measured_source_range() -> None:
         {"Rh": 1.0}, 2000.0, 1.0, load_gas_datapack(), gas_species=("Rh",)
     )["Rh"]
     measured_atm = 10.0 ** (6.894 - 27276.0 / 2000.0)
+    assert pressure_bar == pytest.approx(measured_atm * 1.01325, rel=0.15)
+
+
+def test_burcat_ir_vapor_pressure_matches_measured_source_range() -> None:
+    pressure_bar = evaluate_gas(
+        {"Ir": 1.0}, 2200.0, 1.0, load_gas_datapack(), gas_species=("Ir",)
+    )["Ir"]
+    measured_atm = 10.0 ** (7.139 - 33337.0 / 2200.0)
     assert pressure_bar == pytest.approx(measured_atm * 1.01325, rel=0.15)
 
 

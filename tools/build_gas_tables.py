@@ -497,6 +497,7 @@ BURCAT_METAL_GAS_SOURCES = (
     ("Au(g)", "burcat-au.json", "Au(g)", "Au", 1, 0),
     ("Pd(g)", "burcat-pd.json", "Pd(g)", "Pd", 1, 0),
     ("Pt(g)", "burcat-pt.json", "Pt(g)", "Pt", 1, 0),
+    ("Ir(g)", "burcat-ir.json", "Ir(g)", "Ir", 1, 0),
     ("PtO2(g)", "burcat-pt.json", "PtO2(g)", "Pt", 1, 2),
 )
 BURCAT_METAL_PARENT_SOURCES = (
@@ -507,6 +508,8 @@ BURCAT_METAL_PARENT_SOURCES = (
     ("Pd(l)", "burcat-pd.json", "Pd(l)", "Pd", 1, 0, "l", 1827.0, 3000.0, "source"),
     ("Pt(cr)", "burcat-pt.json", "Pt(cr)", "Pt", 1, 0, "cr", 1200.0, 2042.0, "source"),
     ("Pt(l)", "burcat-pt.json", "Pt(l)", "Pt", 1, 0, "l", 2042.0, 3000.0, "source"),
+    ("Ir(cr)", "burcat-ir.json", "Ir(cr)", "Ir", 1, 0, "cr", 1200.0, 2720.0, "source"),
+    ("Ir(l)", "burcat-ir.json", "Ir(l)", "Ir", 1, 0, "l", 2720.0, 3000.0, "source"),
 )
 PANKRATZ_METAL_PARENT_SOURCES = (
     ("Ru(cr)", "P672-Ru-cr", "Ru", 1, 0, "cr", 1200.0, 2607.0, "source"),

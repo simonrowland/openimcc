@@ -40,6 +40,8 @@
   Rh(cr)/Rh(l) reference phases, switching at 2237 K. The gas continuation
   above 2000 K and liquid-parent continuation above 2500 K are flagged and
   banded.
+- Added Burcat Ir(g) with caller-supplied `a(Ir)` and stable Ir(cr)/Ir(l)
+  reference phases, switching at 2720 K.
 - Added caller-supplied Br2, I2, Cl2, and F2 gas-parent inputs with elemental
   and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
   pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair
