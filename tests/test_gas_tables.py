@@ -1723,6 +1723,66 @@ def test_pto2_continuation_band_recomputes_from_its_2000_k_limit() -> None:
         assert actual_band == pytest.approx(expected, abs=0.001)
 
 
+def test_pankratz_ru_absolute_k_and_printed_reaction_cells_close() -> None:
+    source = json.loads(
+        (PUBLISHED_DATA / "pankratz-ru.json").read_text(encoding="utf-8")
+    )["tables"]
+    pack = load_gas_datapack()
+
+    def gibbs(record: dict[str, object], temperature: float) -> float:
+        node = next(row for row in record["nodes"] if row[0] == temperature)
+        return (
+            float(record["formation_enthalpy_298_kcal_mol"]) * 4184.0
+            + float(node[3]) * 4184.0
+            - temperature * float(node[2]) * 4.184
+        )
+
+    gas_record = source["P672-Ru-g"]
+    parent_crystal = source["P672-Ru-cr"]
+    parent_liquid = source["P672-Ru-l"]
+    for temperature, parent in (
+        (1500.0, parent_crystal), (1800.0, parent_crystal),
+        (2607.0, parent_liquid), (2700.0, parent_liquid), (3000.0, parent_liquid),
+    ):
+        absolute_k = math.exp(
+            -(gibbs(gas_record, temperature) - gibbs(parent, temperature))
+            / (R_J_MOL_K * temperature)
+        )
+        pressure = evaluate_gas(
+            {"Ru": 1.0}, temperature, 1.0, pack, gas_species=("Ru",)
+        )["Ru"]
+        assert pressure == pytest.approx(absolute_k, rel=0.02)
+
+    marker = 2607.0
+    gas_g = gibbs(gas_record, marker)
+    crystal_k = math.exp(
+        -(gas_g - gibbs(parent_crystal, marker)) / (R_J_MOL_K * marker)
+    )
+    liquid_k = math.exp(
+        -(gas_g - gibbs(parent_liquid, marker)) / (R_J_MOL_K * marker)
+    )
+    assert crystal_k == pytest.approx(liquid_k, rel=5.0e-5)
+
+    for temperature, printed_log_k in gas_record["reaction_log10_Kf_nodes"]:
+        parent = parent_crystal if temperature < marker else parent_liquid
+        calculated_log_k = math.log10(math.exp(
+            -(gibbs(gas_record, temperature) - gibbs(parent, temperature))
+            / (R_J_MOL_K * temperature)
+        ))
+        assert calculated_log_k == pytest.approx(printed_log_k, abs=0.001)
+
+
+def test_pankratz_ru_vapor_pressure_matches_measured_source_range() -> None:
+    """Compare inside the measured range instead of extrapolating to boiling."""
+    pack = load_gas_datapack()
+    for temperature in (2000.0, 2377.0):
+        pressure_bar = evaluate_gas(
+            {"Ru": 1.0}, temperature, 1.0, pack, gas_species=("Ru",)
+        )["Ru"]
+        measured_atm = 10.0 ** (7.500 - 32769.0 / temperature)
+        assert pressure_bar == pytest.approx(measured_atm * 1.01325, rel=0.6)
+
+
 def test_trace_nasa_card_thermal_increments_are_zero_at_the_formation_anchor() -> None:
     for _species_name, table_id, *_ in build_gas_tables.TRACE_NASA_GAS_SOURCES:
         record = _nasa_record(table_id)

@@ -146,6 +146,9 @@ Pt(g) uses `a(Pt)` on the same stable-metal basis, switching at 2042 K. The
 PtO2(g) channel uses that activity with an `fO2` exponent of +1, so it
 contributes oxygen demand and moves the oxygen-balance root. Its Burcat card's
 continuation above 2000 K is flagged.
+Ru(g) uses `a(Ru)` relative to the Pankratz stable-metal functions, switching
+from crystal to liquid at 2607 K; this monatomic gas channel has no
+oxygen-fugacity power.
 For a specified metal-gas fugacity, convert outside the package with
 `a(M) = f(M)/(K p°)`, where `K = exp(-(G°(M(g)) - G°(selected metal))/RT)`
 and `p° = 1 bar`. The caller activity stays fixed as `fO2` changes.

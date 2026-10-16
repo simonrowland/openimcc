@@ -384,6 +384,7 @@ HALOGEN_NASA_TABLES = frozenset({
     "NG-1033", "NG-0511", "NG-0524", "NG-0515", "NG-0528",
 })
 TRACE_PUBLISHED_GAS_SOURCES = (
+    ("Ru(g)", "P672-Ru-g", "Ru", "Ru", 1, 0, 3000.0),
     ("Y(g)", "P672-Y-g", "Y", "Y", 1, 0, 2500.0),
     ("YO(g)", "PM83-YO", "YO", "Y", 1, 1, 1500.0),
     ("ZnO(g)", "IVTAN-264", "ZnO", "Zn", 1, 1, 3000.0),
@@ -505,6 +506,10 @@ BURCAT_METAL_PARENT_SOURCES = (
     ("Pd(l)", "burcat-pd.json", "Pd(l)", "Pd", 1, 0, "l", 1827.0, 3000.0, "source"),
     ("Pt(cr)", "burcat-pt.json", "Pt(cr)", "Pt", 1, 0, "cr", 1200.0, 2042.0, "source"),
     ("Pt(l)", "burcat-pt.json", "Pt(l)", "Pt", 1, 0, "l", 2042.0, 3000.0, "source"),
+)
+PANKRATZ_METAL_PARENT_SOURCES = (
+    ("Ru(cr)", "P672-Ru-cr", "Ru", 1, 0, "cr", 1200.0, 2607.0, "source"),
+    ("Ru(l)", "P672-Ru-l", "Ru", 1, 0, "l", 2607.0, 3000.0, "source"),
 )
 TRACE_ION_PUBLISHED_SOURCES = (("Bi+(g)", "NBS-T22-ASD-BiII", "Bi", 1, 0),)
 TRACE_ION_NASA_SOURCES = (
@@ -1238,6 +1243,36 @@ def _fit_burcat_metal_parent(
     return row
 
 
+def _fit_pankratz_metal_parent(
+    species_name: str, table_id: str, cation: str, cat_num: int, oxy_num: int,
+    phase: str, fit_t_min: float, fit_t_max: float, source_kind: str,
+) -> dict[str, str]:
+    """Fit one elemental Pankratz metal phase on its printed 298 K scale."""
+    record = _published_table_record(PUBLISHED_DATA, table_id)
+    source_rows, reference, source_limit = _published_gas_source_rows(
+        PUBLISHED_DATA, table_id
+    )
+    if source_kind == "continuation":
+        source_rows = _constant_cp_rows_through(source_rows, fit_t_max)
+    temperatures = sorted(
+        temperature for temperature in source_rows
+        if fit_t_min <= temperature <= fit_t_max
+    )
+    if not temperatures or temperatures[0] != fit_t_min or temperatures[-1] != fit_t_max:
+        raise ValueError(f"{table_id}: parent fit endpoints are not source nodes")
+    row = _fit_condensate_values(
+        species_name, table_id, cation, cat_num, oxy_num,
+        source_rows, reference,
+        fit_t_min=fit_t_min, fit_t_max=fit_t_max,
+        runtime_t_min=fit_t_min, runtime_t_max=fit_t_max,
+        ref=(f"{table_id}-CONT-{source_limit:g}"
+             if source_kind == "continuation" else table_id),
+        fit_temperatures=temperatures,
+    )
+    row["state"] = "s" if phase == "cr" else "l"
+    return row
+
+
 def _janaf_element_functions(
     records: dict[str, dict[str, Any]], table_id: str, temperature: float
 ) -> tuple[float, float]:
@@ -1956,6 +1991,10 @@ def _published_table_record(source_dir: Path, table_id: str) -> dict[str, Any]:
         return _load_record(source_dir / "pedley-marshall-1983-yo.json")
     if table_id in {"P672-HfO2-c", "P672-Hf-g"}:
         filename = "pankratz-hf.json"
+    elif table_id.startswith("P672-Ru-"):
+        filename = "pankratz-ru.json"
+    elif table_id.startswith("P672-Rh-"):
+        filename = "pankratz-rh.json"
     elif table_id.startswith("P672-"):
         filename = "pankratz-bulletin-672.json"
     elif table_id.startswith("P696-"):
@@ -4573,6 +4612,16 @@ def build_condensate_rows(
             species_name, filename, record_key, cation, cat_num, oxy_num,
             phase, fit_min, fit_max, _source_kind,
         ) in BURCAT_METAL_PARENT_SOURCES
+    )
+    rows.extend(
+        _fit_pankratz_metal_parent(
+            species_name, table_id, cation, cat_num, oxy_num,
+            phase, fit_min, fit_max, source_kind,
+        )
+        for (
+            species_name, table_id, cation, cat_num, oxy_num,
+            phase, fit_min, fit_max, source_kind,
+        ) in PANKRATZ_METAL_PARENT_SOURCES
     )
     return rows
 

@@ -34,6 +34,8 @@
 - Added Pt(g) and PtO2(g) with caller-supplied `a(Pt)` and stable Pt(cr)/Pt(l)
   reference phases. PtO2 has an `fO2` exponent of +1 and a flagged continuation
   above the Burcat card's 2000 K source limit.
+- Added Pankratz Bulletin 672 Ru(g) with caller-supplied `a(Ru)` and stable
+  Ru(cr)/Ru(l) reference phases, switching at 2607 K.
 - Added caller-supplied Br2, I2, Cl2, and F2 gas-parent inputs with elemental
   and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
   pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair

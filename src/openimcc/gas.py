@@ -662,6 +662,7 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Au": ("Au", 1.0, 0.0),
     "Pd": ("Pd", 1.0, 0.0),
     "Pt": ("Pt", 1.0, 0.0),
+    "Ru": ("Ru", 1.0, 0.0),
     "PtO2": ("Pt", 1.0, -1.0),
 }
 
@@ -747,6 +748,7 @@ _CONDENSED_PARENT_PHASE_ROWS: dict[str, tuple[float, str, str]] = {
     "Au": (1337.0, "Au(cr)", "Au(l)"),
     "Pd": (1827.0, "Pd(cr)", "Pd(l)"),
     "Pt": (2042.0, "Pt(cr)", "Pt(l)"),
+    "Ru": (2607.0, "Ru(cr)", "Ru(l)"),
 }
 _ALKALI_HALIDE_REACTION_OXIDES = {
     "NaBr": ("Na2O", 0.5, 0.25),
@@ -1085,6 +1087,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Au",
         "Pd",
         "Pt",
+        "Ru",
         "PtO2",
     }
 )
@@ -3127,7 +3130,6 @@ for _element, _gas_table, _parent_table, _phase_marker in (
         "source_tables": {"gas": _gas_table, "parent": _parent_table},
         "parent_activity": _element,
     }
-
 for _element, _parent in (
     ("Ca", "CaO"), ("Mg", "MgO"), ("Sr", "SrO"), ("Ba", "BaO"),
     ("Li", "Li2O"), ("Rb", "Rb2O"), ("Cs", "Cs2O"),
@@ -3141,6 +3143,24 @@ for _element, _parent in (
         "halogen_activity_required": True,
     }
 
+ELEMENT_STATUS["Ru"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": (
+        "Pankratz Bulletin 672 printed pp. 332-333 supplies paired Ru(g) and "
+        "stable-metal phase functions over 1200-3000 K; callers supply a(Ru) "
+        "relative to the stable metal phase, switching from crystal to liquid "
+        "at 2607 K. No oxide-parent activity model or ion channel is included."
+    ),
+    "c2_candidates": (),
+    "c3_ion_bound": {
+        "status": "not computed",
+        "reason": "not computed: Ru ion channels are outside this neutral gas change",
+    },
+    "source_tables": {"gas": "P672-Ru-g", "parent": "P672-Ru-cr/P672-Ru-l"},
+    "parent_activity": "Ru",
+}
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #
@@ -4620,6 +4640,7 @@ _ATOMIC_MASS_G_MOL = {
     "Br": 79.904, "I": 126.90447, "Cl": 35.45, "F": 18.998403163,
     "Hg": 200.592, "Au": 196.96657, "Pd": 106.42,
     "Pt": 195.084,
+    "Ru": 101.07,
     "H": 1.008, "C": 12.011, "N": 14.007,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")

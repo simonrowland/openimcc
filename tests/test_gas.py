@@ -4282,6 +4282,9 @@ def test_condensed_parent_phase_resolver_switches_at_marker(
     assert gas_module._parent_standard_row("Pt", 2041.999) == "Pt(cr)"
     assert gas_module._parent_standard_row("Pt", 2042.0) == "Pt(l)"
     assert gas_module._parent_standard_rows("Pt") == ("Pt(cr)", "Pt(l)")
+    assert gas_module._parent_standard_row("Ru", 2606.999) == "Ru(cr)"
+    assert gas_module._parent_standard_row("Ru", 2607.0) == "Ru(l)"
+    assert gas_module._parent_standard_rows("Ru") == ("Ru(cr)", "Ru(l)")
 
 
 def test_pt_oxide_gas_uses_unit_positive_oxygen_exponent_and_moves_root_down(
@@ -4325,7 +4328,7 @@ def test_pt_oxide_gas_uses_unit_positive_oxygen_exponent_and_moves_root_down(
 
 @pytest.mark.parametrize(
     ("element", "metal_mass"),
-    [("Hg", 200.592), ("Au", 196.96657), ("Pd", 106.42)],
+    [("Hg", 200.592), ("Au", 196.96657), ("Pd", 106.42), ("Ru", 101.07)],
 )
 def test_metal_vapour_parent_activity_and_oxygen_root(
     gas_pack: ImccGasDatapack, element: str, metal_mass: float

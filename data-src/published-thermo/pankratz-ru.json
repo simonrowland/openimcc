@@ -1,0 +1,48 @@
+{
+  "record_id": "Pankratz-Ru-metal",
+  "publication": "Pankratz, Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672",
+  "source_url": "https://digital.library.unt.edu/ark:/67531/metadc12769/",
+  "tables": {
+    "P672-Ru-g": {
+      "table": "Ruthenium ideal monatomic gas table, printed p. 333",
+      "species": "Ru(g)", "formula": "Ru", "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 153.600, "source_limit_K": 3000.0,
+      "nodes": [
+        [298.15,5.144,44.550,0.000],[300,5.149,44.582,0.010],[400,5.414,46.099,0.537],[500,5.687,47.337,1.093],[600,5.918,48.395,1.673],
+        [700,6.089,49.321,2.274],[800,6.203,50.142,2.889],[900,6.268,50.876,3.513],[1000,6.298,51.539,4.142],[1100,6.305,52.140,4.772],
+        [1200,6.301,52.688,5.402],[1300,6.294,53.192,6.032],[1400,6.293,53.658,6.661],[1500,6.300,54.093,7.291],[1600,6.318,54.500,7.922],
+        [1700,6.349,54.884,8.555],[1800,6.392,55.248,9.192],[1900,6.446,55.595,9.834],[2000,6.510,55.927,10.481],[2100,6.581,56.246,11.136],
+        [2200,6.660,56.554,11.798],[2300,6.743,56.852,12.468],[2400,6.829,57.141,13.147],[2500,6.917,57.421,13.834],[2600,7.005,57.695,14.530],
+        [2607,7.011,57.714,14.579],[2700,7.092,57.960,15.235],[2800,7.178,58.220,15.948],[2900,7.261,58.473,16.670],[3000,7.341,58.721,17.401]
+      ],
+      "node_columns": ["T_K","Cp_cal_mol_K","S_cal_mol_K","H_minus_H298_kcal_mol"],
+      "reaction_log10_Kf_nodes": [[1200,-19.819],[1800,-10.555],[2607,-4.882],[3000,-3.356]],
+      "source_note": "Printed p. 333; 153.600 kcal/mol is the elemental formation enthalpy in the Ru(g) table at 298.15 K. Thermal and formation cells are transcribed from the source table. The 2607 K elemental phase change is retained in the printed nodes."
+    },
+    "P672-Ru-cr": {
+      "table": "Ruthenium elemental condensed table, printed p. 332",
+      "species": "Ru(cr)", "formula": "Ru", "phase": "crystal",
+      "formation_enthalpy_298_kcal_mol": 0.0, "source_limit_K": 2607.0,
+      "nodes": [
+        [298.15,5.730,6.839,0.000],[300,5.736,6.874,0.011],[400,6.041,8.568,0.600],[500,6.281,9.943,1.217],[600,6.485,11.107,1.855],
+        [700,6.665,12.120,2.513],[800,6.827,13.021,3.188],[900,6.978,13.834,3.878],[1000,7.122,14.577,4.583],[1100,7.266,15.262,5.302],
+        [1200,7.413,15.901,6.036],[1300,7.567,16.500,6.785],[1400,7.734,17.067,7.550],[1500,7.917,17.606,8.332],[1600,8.121,18.124,9.134],
+        [1700,8.350,18.623,9.957],[1800,8.610,19.107,10.805],[1900,8.903,19.580,11.680],[2000,9.235,20.045,12.587],[2100,9.609,20.505,13.529],
+        [2200,10.030,20.961,14.510],[2300,10.503,21.417,15.537],[2400,11.032,21.875,16.613],[2500,11.620,22.338,17.745],[2600,12.273,22.806,18.939],
+        [2607,12.322,22.839,19.025]
+      ],
+      "node_columns": ["T_K","Cp_cal_mol_K","S_cal_mol_K","H_minus_H298_kcal_mol"],
+      "source_note": "Printed p. 332; the elemental table anchors Ru(cr) at zero formation enthalpy and prints the 2607 K melting marker. Crystal thermal cells are transcribed through the marker."
+    },
+    "P672-Ru-l": {
+      "table": "Ruthenium elemental condensed table, printed p. 332",
+      "species": "Ru(l)", "formula": "Ru", "phase": "liquid",
+      "formation_enthalpy_298_kcal_mol": 0.0, "source_limit_K": 3000.0,
+      "nodes": [
+        [2607,12.400,26.368,28.225],[2700,12.400,26.802,29.378],[2800,12.400,27.253,30.618],[2900,12.400,27.688,31.858],[3000,12.400,28.109,33.098]
+      ],
+      "node_columns": ["T_K","Cp_cal_mol_K","S_cal_mol_K","H_minus_H298_kcal_mol"],
+      "source_note": "Printed p. 332; the liquid branch begins at the 2607 K melting marker. The 9.200 kcal/mol fusion enthalpy is included in the 2607 K liquid H-H298 cell; liquid Cp is printed as 12.400 cal/(mol K) through 3000 K."
+    }
+  }
+}
