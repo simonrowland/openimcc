@@ -2917,6 +2917,49 @@ def test_reference_solid_tables_give_printed_fusion_gibbs(
     assert fusion == pytest.approx(expected_kj, abs=5.0e-4)
 
 
+def test_condensate_builder_reproduces_shipped_gibbs_values(tmp_path: Path) -> None:
+    shipped = GAS_DATA / "condensate.csv"
+    rebuilt = tmp_path / "condensate.csv"
+    rebuilt.write_bytes(shipped.read_bytes())
+    rows = build_gas_tables.build_condensate_rows(JANAF_DATA, NASA_DATA)
+    build_gas_tables.merge_condensate_csv(rows, rebuilt)
+
+    shipped_rows = {
+        (row["species_name"], row["T_min"], row["T_max"]): row
+        for row in csv.DictReader(io.StringIO(shipped.read_text(encoding="utf-8")))
+    }
+    rebuilt_rows = {
+        (row["species_name"], row["T_min"], row["T_max"]): row
+        for row in csv.DictReader(io.StringIO(rebuilt.read_text(encoding="utf-8")))
+    }
+    assert shipped_rows.keys() == rebuilt_rows.keys()
+
+    # Raw tau-basis coefficients are ill-conditioned: LAPACK roundoff can
+    # move the coefficients while their fitted Gibbs values stay stable.
+    # Compare the represented G(T), in J/mol, at every 100 K knot to 1e-6 J/mol.
+    for key, expected in shipped_rows.items():
+        actual = rebuilt_rows[key]
+        for column in ("state", "cation", "cat_num", "oxy_num", "T_min", "T_max", "dH298_R", "Ref"):
+            assert expected[column] == actual[column], (key, column)
+        low, high = float(expected["T_min"]), float(expected["T_max"])
+        temperatures = {low, high}
+        temperatures.update(
+            float(temperature)
+            for temperature in np.arange(math.ceil(low / 100.0) * 100.0, high, 100.0)
+        )
+        for temperature in sorted(temperatures):
+            tau = temperature / 1000.0
+            def g(row: dict[str, str]) -> float:
+                polynomial = sum(
+                    float(row[f"dG_{letter}"]) * tau**power
+                    for power, letter in enumerate("ABCDE")
+                )
+                return -R_J_MOL_K * temperature * polynomial + (
+                    R_J_MOL_K * float(row["dH298_R"]) * 1000.0
+                )
+            assert g(actual) == pytest.approx(g(expected), abs=1.0e-6), (key, temperature)
+
+
 def test_runtime_provenance_mirror_matches_yaml() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     expected_gas = {}

@@ -4245,7 +4245,8 @@ def build_condensate_rows(
             (
                 (1200.0, 1500.0, None, False),
                 (1500.0, 2000.0, None, False),
-                (2000.0, 2500.0, (2000, 2200, 2300, 2400, 2500), False),
+                # BaO's 2100 K thermal row is valid; unlike Ta2O5, use all parsed nodes.
+                (2000.0, 2500.0, None, False),
                 (2500.0, 3000.0, None, False),
             ),
         )
