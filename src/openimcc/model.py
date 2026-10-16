@@ -1347,6 +1347,21 @@ def evaluate(
                 f"using ΔrCp = 0; the active rows have declared domains "
                 f"{domain_text}; uncertainty band unavailable"
             )
+            # Independent check (no coefficient change): continued below 1700 K, the
+            # Na2Si2O5 row misses Kracek's Na2O-SiO2 liquidus at 1079-1147 K by
+            # about 17 kJ/mol in crystal-minus-melt Gibbs energy (~0.6-0.7 dex at
+            # those temperatures), several times the Na2SiO3 miss (~4 kJ/mol).
+            reaction_names = list(kernel_pack.reactions)
+            if any(
+                reaction_names[index] == "Na2Si2O5" for index in below_domain_rows
+            ):
+                notices.append(
+                    "low-temperature-uncertain: the Na2Si2O5 association is "
+                    "evaluated below its declared domain, where it disagrees "
+                    "with independent Na2O-SiO2 liquidus measurements by about "
+                    "17 kJ/mol near 1080-1150 K; treat Na-silicate activities "
+                    "below 1700 K as uncertain"
+                )
 
     adapter_labels = ImccAdapterLabels(
         identity=identity,

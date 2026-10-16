@@ -257,7 +257,12 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
         "https://github.com/simonrowland/openimcc"
     )
     assert result.labels.notices[1].startswith("temperature-domain-extension:")
-    assert len(result.labels.notices) == 2
+    if alkali_oxide == "Na2O":
+        # Na2Si2O5 is active below its domain in these binary melts.
+        assert result.labels.notices[2].startswith("low-temperature-uncertain:")
+        assert len(result.labels.notices) == 3
+    else:
+        assert len(result.labels.notices) == 2
 
 
 @pytest.mark.parametrize(

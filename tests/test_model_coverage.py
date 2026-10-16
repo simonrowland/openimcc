@@ -478,3 +478,16 @@ def test_evaluate_extension_vector_guards_and_canonical_zero(
     with pytest.raises(ImccCompositionIncompleteError, match="canonical") as zero:
         evaluate({"S": 1.0}, 2500.0, pack, enable_sp_extension=True)
     assert zero.value.code == "imcc_composition_incomplete"
+
+
+def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
+    from openimcc import evaluate
+
+    melt = {"Na2O": 33.0, "SiO2": 67.0}
+    below = evaluate(melt, 1500.0, allow_extrapolation=True)
+    marker = "low-temperature-uncertain: the Na2Si2O5 association"
+    assert sum(marker in notice for notice in below.labels.notices) == 1
+    inside = evaluate(melt, 1800.0, allow_extrapolation=True)
+    assert not any(marker in notice for notice in inside.labels.notices)
+    sodium_free = evaluate({"MgO": 40.0, "SiO2": 60.0}, 1500.0, allow_extrapolation=True)
+    assert not any(marker in notice for notice in sodium_free.labels.notices)
