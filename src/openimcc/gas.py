@@ -661,6 +661,8 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Hg": ("Hg", 1.0, 0.0),
     "Au": ("Au", 1.0, 0.0),
     "Pd": ("Pd", 1.0, 0.0),
+    "Pt": ("Pt", 1.0, 0.0),
+    "PtO2": ("Pt", 1.0, -1.0),
 }
 
 # Append oxide + halogen reactions after every pre-existing channel. For MO,
@@ -744,6 +746,7 @@ _CONDENSED_PARENT_ROWS = {"C": "C(cr)", "Hg": "Hg(l)"}
 _CONDENSED_PARENT_PHASE_ROWS: dict[str, tuple[float, str, str]] = {
     "Au": (1337.0, "Au(cr)", "Au(l)"),
     "Pd": (1827.0, "Pd(cr)", "Pd(l)"),
+    "Pt": (2042.0, "Pt(cr)", "Pt(l)"),
 }
 _ALKALI_HALIDE_REACTION_OXIDES = {
     "NaBr": ("Na2O", 0.5, 0.25),
@@ -1081,6 +1084,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Hg",
         "Au",
         "Pd",
+        "Pt",
+        "PtO2",
     }
 )
 
@@ -3101,6 +3106,7 @@ ELEMENT_STATUS["Hg"] = {
 for _element, _gas_table, _parent_table, _phase_marker in (
     ("Au", "BU-0056", "BU-0054/BU-0055", 1337),
     ("Pd", "BU-3112", "BU-3110/BU-3111", 1827),
+    ("Pt", "BU-3122/BU-3126", "BU-3120/BU-3121", 2042),
 ):
     ELEMENT_STATUS[_element] = {
         "status": "gas-complete-melt-pending",
@@ -3606,13 +3612,19 @@ def _source_model_flag(
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
-    metal_continuation = re.fullmatch(
-        r"(.+)-METAL-CONT-(\d+(?:\.\d+)?)", source_ref
+    declared_continuation = re.fullmatch(
+        r"(.+)-CONT-(\d+(?:\.\d+)?)", source_ref
     )
-    if phase == "l" and metal_continuation is not None and T >= float(metal_continuation.group(2)):
+    if declared_continuation is not None and T >= float(declared_continuation.group(2)):
+        continuation_limit = float(declared_continuation.group(2))
+        if phase == "l" and "-METAL-CONT-" in source_ref:
+            return (
+                f"{row_name} uses a flagged liquid-metal continuation above the "
+                f"{continuation_limit:g} K source limit"
+            )
         return (
-            f"{row_name} uses a flagged liquid-metal continuation above the "
-            f"{float(metal_continuation.group(2)):g} K source limit"
+            f"{row_name} uses a flagged {phase}-phase continuation above the "
+            f"{continuation_limit:g} K source limit"
         )
     konings_liquid = re.fullmatch(r"Konings-Table88-Tf(\d+(?:\.\d+)?)", source_ref)
     if phase == "l" and konings_liquid is not None and T < float(konings_liquid[1]):
@@ -4607,6 +4619,7 @@ _ATOMIC_MASS_G_MOL = {
     "Er": 167.259, "Tm": 168.93422, "Yb": 173.045, "Lu": 174.9668,
     "Br": 79.904, "I": 126.90447, "Cl": 35.45, "F": 18.998403163,
     "Hg": 200.592, "Au": 196.96657, "Pd": 106.42,
+    "Pt": 195.084,
     "H": 1.008, "C": 12.011, "N": 14.007,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")

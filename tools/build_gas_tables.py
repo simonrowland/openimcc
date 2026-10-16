@@ -494,6 +494,8 @@ BURCAT_METAL_GAS_SOURCES = (
     ("Hg(g)", "burcat-hg.json", "Hg(g)", "Hg", 1, 0),
     ("Au(g)", "burcat-au.json", "Au(g)", "Au", 1, 0),
     ("Pd(g)", "burcat-pd.json", "Pd(g)", "Pd", 1, 0),
+    ("Pt(g)", "burcat-pt.json", "Pt(g)", "Pt", 1, 0),
+    ("PtO2(g)", "burcat-pt.json", "PtO2(g)", "Pt", 1, 2),
 )
 BURCAT_METAL_PARENT_SOURCES = (
     ("Hg(l)", "burcat-hg.json", "Hg(l)", "Hg", 1, 0, "l", 1200.0, 3000.0, "continuation"),
@@ -501,6 +503,8 @@ BURCAT_METAL_PARENT_SOURCES = (
     ("Au(l)", "burcat-au.json", "Au(l)", "Au", 1, 0, "l", 1337.0, 3000.0, "source"),
     ("Pd(cr)", "burcat-pd.json", "Pd(cr)", "Pd", 1, 0, "cr", 1200.0, 1827.0, "source"),
     ("Pd(l)", "burcat-pd.json", "Pd(l)", "Pd", 1, 0, "l", 1827.0, 3000.0, "source"),
+    ("Pt(cr)", "burcat-pt.json", "Pt(cr)", "Pt", 1, 0, "cr", 1200.0, 2042.0, "source"),
+    ("Pt(l)", "burcat-pt.json", "Pt(l)", "Pt", 1, 0, "l", 2042.0, 3000.0, "source"),
 )
 TRACE_ION_PUBLISHED_SOURCES = (("Bi+(g)", "NBS-T22-ASD-BiII", "Bi", 1, 0),)
 TRACE_ION_NASA_SOURCES = (
@@ -3588,13 +3592,19 @@ def build_rows(
         if source[1] in HALOGEN_NASA_TABLES
     )
     for species_name, filename, record_key, cation, cat_num, oxy_num in BURCAT_METAL_GAS_SOURCES:
-        rows.extend(
-            _fit_burcat_metal_gas_row(
+        intervals = (
+            ((1, 1500.0, 1900.0), (2, 1200.0, 1500.0), (3, 1900.0, 3000.0))
+            if species_name == "PtO2(g)"
+            else ((1, 1500.0, 3000.0), (2, 1200.0, 1500.0))
+        )
+        for interval, fit_min, fit_max in intervals:
+            row = _fit_burcat_metal_gas_row(
                 species_name, filename, record_key, cation, cat_num, oxy_num,
                 interval=interval, fit_t_min=fit_min, fit_t_max=fit_max,
             )
-            for interval, fit_min, fit_max in ((1, 1500.0, 3000.0), (2, 1200.0, 1500.0))
-        )
+            if species_name == "PtO2(g)" and interval == 3:
+                row["Ref"] = f"{row['Ref']}-CONT-2000"
+            rows.append(row)
     return rows
 
 

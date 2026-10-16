@@ -4279,6 +4279,48 @@ def test_condensed_parent_phase_resolver_switches_at_marker(
     assert gas_module._parent_standard_rows("Au") == ("Au(cr)", "Au(l)")
     assert gas_module._parent_standard_row("Pd", 1826.999) == "Pd(cr)"
     assert gas_module._parent_standard_row("Pd", 1827.0) == "Pd(l)"
+    assert gas_module._parent_standard_row("Pt", 2041.999) == "Pt(cr)"
+    assert gas_module._parent_standard_row("Pt", 2042.0) == "Pt(l)"
+    assert gas_module._parent_standard_rows("Pt") == ("Pt(cr)", "Pt(l)")
+
+
+def test_pt_oxide_gas_uses_unit_positive_oxygen_exponent_and_moves_root_down(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    import openimcc.gas as gas_module
+
+    temperature = 1800.0
+    activity = 1.0e14
+    base_activities = _quickstart_activities(
+        temperature, allow_extrapolation=True
+    )
+    root_without, _, _ = gas_module.evaluate_gas_oxygen_balance(
+        base_activities, temperature, gas_pack,
+    )
+    root_with, pressures, _ = gas_module.evaluate_gas_oxygen_balance(
+        {**base_activities, "Pt": activity}, temperature, gas_pack,
+    )
+    assert root_with < root_without
+    assert pressures["Pt"] > 0.0
+    assert pressures["PtO2"] > 0.0
+    metadata = oxygen_balance_species_metadata({"PtO2": None})["PtO2"]
+    assert metadata.parent_oxygen_demand == 0.0
+    assert metadata.pO2_exponent == pytest.approx(1.0)
+
+    lower_f = evaluate_gas(
+        {"Pt": 1.0}, temperature, 1.0e-10, gas_pack, gas_species=("PtO2",)
+    )["PtO2"]
+    higher_f = evaluate_gas(
+        {"Pt": 1.0}, temperature, 1.0e-9, gas_pack, gas_species=("PtO2",)
+    )["PtO2"]
+    assert higher_f / lower_f == pytest.approx(10.0, rel=1e-12)
+    metal_at_low_f = evaluate_gas(
+        {"Pt": 1.0}, temperature, 1.0e-10, gas_pack, gas_species=("Pt",)
+    )["Pt"]
+    metal_at_high_f = evaluate_gas(
+        {"Pt": 1.0}, temperature, 1.0e-9, gas_pack, gas_species=("Pt",)
+    )["Pt"]
+    assert metal_at_high_f == metal_at_low_f
 
 
 @pytest.mark.parametrize(

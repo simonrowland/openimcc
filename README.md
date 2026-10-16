@@ -142,6 +142,10 @@ the liquid row is continued and flagged above its 629.839 K source limit. The
 Au(g) and Pd(g) channels use `a(Au)` and `a(Pd)` relative to the stable metal
 phase at each temperature, switching from crystal to liquid at 1337 K and
 1827 K respectively. These metal-gas channels have no oxygen-fugacity power.
+Pt(g) uses `a(Pt)` on the same stable-metal basis, switching at 2042 K. The
+PtO2(g) channel uses that activity with an `fO2` exponent of +1, so it
+contributes oxygen demand and moves the oxygen-balance root. Its Burcat card's
+continuation above 2000 K is flagged.
 For a specified metal-gas fugacity, convert outside the package with
 `a(M) = f(M)/(K p°)`, where `K = exp(-(G°(M(g)) - G°(selected metal))/RT)`
 and `p° = 1 bar`. The caller activity stays fixed as `fO2` changes.

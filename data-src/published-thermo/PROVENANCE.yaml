@@ -401,3 +401,12 @@ records:
     source_locator: BURCAT.THR.txt cards BU-3112, BU-3110, and BU-3111
     tier: 3
     selection_reason: The paired gas and stable reference-metal phase rows come from one compilation family and share the elemental 298.15 K reference; the phase marker is retained as a fit step.
+
+  - record_id: Burcat-Pt-metal
+    path: data-src/published-thermo/burcat-pt.json
+    source_sha256: f1cb1917ffbdfb8e6b61cc6faa8d57e32350c3b8d687a8abae1919a16d12bbaa
+    publication: Burcat and Ruscic, Third Millennium Thermochemical Database, Pt(g), Pt(cr), Pt(l), and PtO2(g) cards
+    source_url: https://thermo-burcat.net.technion.ac.il/
+    source_locator: BURCAT.THR.txt cards BU-3122, BU-3120, BU-3121, and BU-3126; PtO2 cites Barin (1985)
+    tier: 3
+    selection_reason: Burcat supplies paired elemental-reference gas and stable metal phase functions. PtO2(g) is retained from its evaluated card; its 2000 K source limit is respected with a separately flagged, banded continuation.

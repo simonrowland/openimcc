@@ -1529,6 +1529,7 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
         ("Hg", "BU-2587", "burcat-hg.json", 629.839, "Hg(l)"),
         ("Au", "BU-0056", "burcat-au.json", 1337.0, "Au(l)"),
         ("Pd", "BU-3112", "burcat-pd.json", 1827.0, "Pd(l)"),
+        ("Pt", "BU-3122", "burcat-pt.json", 2042.0, "Pt(l)"),
     ):
         source_path = ROOT / "data-src" / "published-thermo" / source_file
         digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
@@ -1565,6 +1566,7 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
         ("Hg", 629.839, (629.88, 1200.0, 1800.0, 3000.0)),
         ("Au", 1337.0, (1200.0, 1336.999, 1337.0, 1800.0, 3000.0)),
         ("Pd", 1827.0, (1200.0, 1800.0, 1826.999, 1827.0, 3000.0)),
+        ("Pt", 2042.0, (1200.0, 1800.0, 2041.999, 2042.0, 2500.0, 3000.0)),
     ),
 )
 def test_burcat_metal_absolute_k_matches_runtime_and_is_continuous(
@@ -1625,7 +1627,7 @@ def test_burcat_metal_absolute_k_matches_runtime_and_is_continuous(
 
 @pytest.mark.parametrize(
     ("element", "temperature", "relative_tolerance"),
-    (("Hg", 629.88, 0.02), ("Au", 3129.0, 0.5), ("Pd", 3236.0, 0.05)),
+    (("Hg", 629.88, 0.02), ("Au", 3129.0, 0.5), ("Pd", 3236.0, 0.05), ("Pt", 4098.0, 0.3)),
 )
 def test_burcat_metal_boiling_pressure_is_near_one_bar(
     element: str,
@@ -1637,6 +1639,88 @@ def test_burcat_metal_boiling_pressure_is_near_one_bar(
         {element: 1.0}, temperature, 1.0, load_gas_datapack(), gas_species=(element,)
     )[element]
     assert pressure == pytest.approx(1.0, rel=relative_tolerance)
+
+
+def test_pto2_absolute_k_uses_elemental_pt_and_o2_references() -> None:
+    """PtO2's exponent is +1 and its K uses Pt(cr/l) plus O2(g) references."""
+    source = json.loads(
+        (PUBLISHED_DATA / "burcat-pt.json").read_text(encoding="utf-8")
+    )["records"]
+    pack = load_gas_datapack()
+
+    def gibbs(record: dict[str, object], temperature: float) -> float:
+        coefficients = (
+            record["high_coefficients"]
+            if temperature >= 1000.0 and "high_coefficients" in record
+            else record.get("coefficients", record.get("low_coefficients"))
+        )
+        properties = build_gas_tables._burcat7_properties(coefficients, temperature)
+        return properties["h_J_mol"] - temperature * properties["s_J_molK"]
+
+    for temperature in (1500.0, 1800.0, 2000.0, 2041.999, 2042.0, 2500.0, 3000.0):
+        parent_key = "Pt(cr)" if temperature < 2042.0 else "Pt(l)"
+        delta_g = (
+            gibbs(source["PtO2(g)"], temperature)
+            - gibbs(source[parent_key], temperature)
+            - species_thermo("O2", "g", temperature, pack).G_J_mol
+        )
+        absolute_k = math.exp(-delta_g / (R_J_MOL_K * temperature))
+        pressure = evaluate_gas(
+            {"Pt": 1.0}, temperature, 1.0, pack, gas_species=("PtO2",)
+        )["PtO2"]
+        assert pressure == pytest.approx(absolute_k, rel=0.02)
+
+    marker = 2042.0
+    crystal_k = math.exp(-(
+        gibbs(source["PtO2(g)"], marker)
+        - gibbs(source["Pt(cr)"], marker)
+        - species_thermo("O2", "g", marker, pack).G_J_mol
+    ) / (R_J_MOL_K * marker))
+    liquid_k = math.exp(-(
+        gibbs(source["PtO2(g)"], marker)
+        - gibbs(source["Pt(l)"], marker)
+        - species_thermo("O2", "g", marker, pack).G_J_mol
+    ) / (R_J_MOL_K * marker))
+    assert crystal_k == pytest.approx(liquid_k, rel=5.0e-5)
+
+
+def test_pto2_continuation_band_recomputes_from_its_2000_k_limit() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    row = next(
+        item for item in provenance["rows"]
+        if item["table"] == "gas" and item["species_name"] == "PtO2(g)"
+        and item.get("T_interval") == 3
+    )
+    assert row["source_data"] is False
+    assert row["extrapolation_source_limit_K"] == 2000.0
+    continuation = evaluate_gas(
+        {"Pt": 1.0}, 2500.0, 1.0e-10, load_gas_datapack(),
+        gas_species=("PtO2",), allow_extrapolation=True,
+    )
+    assert "flagged g-phase continuation above the 2000 K source limit" in (
+        continuation.domain_flags["PtO2"]
+    )
+    band = row["uncertainty_band"]
+    assert band["kind"] == "constant_Cp_alternative_continuation_envelope"
+    source = json.loads(
+        (PUBLISHED_DATA / "burcat-pt.json").read_text(encoding="utf-8")
+    )["records"]["PtO2(g)"]
+    coefficients = source["high_coefficients"]
+    limit = 2000.0
+    at_limit = build_gas_tables._burcat7_properties(coefficients, limit)
+    cp = R_J_MOL_K * at_limit["cp_R"]
+    values = {float(T): float(value) for T, value in band["values_J_per_mol"].items()}
+    assert values[limit] == 0.0
+    assert set(values) == set(map(float, range(2000, 3001, 100)))
+    for temperature, actual_band in values.items():
+        properties = build_gas_tables._burcat7_properties(coefficients, temperature)
+        held_h = at_limit["h_J_mol"] + cp * (temperature - limit)
+        held_s = at_limit["s_J_molK"] + cp * math.log(temperature / limit)
+        expected = abs(
+            properties["h_J_mol"] - temperature * properties["s_J_molK"]
+            - held_h + temperature * held_s
+        )
+        assert actual_band == pytest.approx(expected, abs=0.001)
 
 
 def test_trace_nasa_card_thermal_increments_are_zero_at_the_formation_anchor() -> None:
