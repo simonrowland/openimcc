@@ -301,6 +301,10 @@ def _melt_packs(root: Path) -> None:
             if (
                 all(key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check"))
                 and not has_legacy_residual(row, top=True)
+                and (
+                    row["fit_residual"] is None
+                    or row["fit_residual"].get("temperature_range") == "T_domain_K"
+                )
             ):
                 continue
             existing_fit = row.get("fit_residual")
@@ -313,9 +317,11 @@ def _melt_packs(root: Path) -> None:
             # own payload; their source fields remain available for audit.
             diagnostics: dict[str, Any] = {}
 
-            def move_residuals(value: Any, prefix: str = "") -> None:
+            def move_residuals(value: Any, prefix: str = "", *, top: bool = False) -> None:
                 if isinstance(value, dict):
                     for key in list(value):
+                        if top and key == "fit_residual":
+                            continue
                         label = f"{prefix}/{key}" if prefix else key
                         if "residual" in key.lower():
                             diagnostics[label] = value.pop(key)
@@ -325,14 +331,14 @@ def _melt_packs(root: Path) -> None:
                     for index, member in enumerate(value):
                         move_residuals(member, f"{prefix}/{index}")
 
-            move_residuals(row)
+            move_residuals(row, top=True)
             diagnostics = {**existing_diagnostics, **diagnostics}
             row["fit_residual"] = None if not diagnostics else {
                 "value": diagnostics,
                 "unit": "source-specific",
                 "target_source": row.get("source") or row.get("provenance"),
                 "comparison_method": "Existing held-out or candidate-fit diagnostic; see original field names in value.",
-                "temperature_range": row.get("T_domain_K"),
+                "temperature_range": "T_domain_K",
                 "held_out_or_in_sample": "held_out_or_candidate",
             }
             row["accuracy_band"] = None
