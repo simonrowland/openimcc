@@ -246,12 +246,19 @@ def _liquid_inputs(root: Path) -> None:
     path = root / "data-src/liquid-from-solid-inputs.json"
     doc = json.loads(path.read_text())
     for formula, row in doc["rows"].items():
-        if not any(key in row for key in ("measured_band", "crystal_cp_extrapolation_band")) and all(
-            key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check")
+        current_band = row.get("accuracy_band")
+        current_value = current_band.get("value") if isinstance(current_band, dict) else None
+        extension_metadata = row.get("crystal_cp_extrapolation_band")
+        if extension_metadata is None and isinstance(current_value, dict) and "source_limit_K" in current_value and "values_J_per_mol" not in current_value:
+            extension_metadata = current_value
+        if (
+            not any(key in row for key in ("measured_band", "crystal_cp_extrapolation_band"))
+            and extension_metadata is None
+            and all(key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check"))
         ):
             continue
         old_measured = row.pop("measured_band", None)
-        old_extension = row.pop("crystal_cp_extrapolation_band", None)
+        old_extension = row.pop("crystal_cp_extrapolation_band", None) or extension_metadata
         if old_measured is not None:
             row["accuracy_band"] = {
                 "value": old_measured,
@@ -261,8 +268,12 @@ def _liquid_inputs(root: Path) -> None:
             }
             row["band_basis"] = band_basis("measured_construction", old_measured.get("source", old_measured.get("kind", "")), formula)
         elif old_extension is not None:
-            row["accuracy_band"] = {"value": old_extension, "unit": "J mol^-1", "temperature_points_or_range": "source_limit_K", "coverage": old_extension.get("method", "Cp extrapolation comparison")}
-            row["band_basis"] = band_basis("measured_construction", old_extension.get("method", "Cp extrapolation comparison"), formula)
+            row["accuracy_band"] = None
+            row["band_basis"] = band_basis(
+                "none",
+                "Cp extrapolation comparison metadata is retained as source provenance; no numerical row band is published.",
+                old_extension,
+            )
         else:
             row["accuracy_band"] = None
             row["band_basis"] = band_basis("source_uncertainty" if row.get("tier") else "none", "Input provenance only; no composed liquid Gibbs band stored on this input row.", formula)
@@ -275,11 +286,47 @@ def _melt_packs(root: Path) -> None:
     for path in sorted((root / "src/openimcc/data/packs").glob("imcc-sf04*.json")):
         doc = json.loads(path.read_text())
         for row in doc["rows"]:
-            if all(key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check")):
+            def has_legacy_residual(value: Any, *, top: bool = False) -> bool:
+                if isinstance(value, dict):
+                    for key, member in value.items():
+                        if top and key == "fit_residual":
+                            continue
+                        if "residual" in key.lower() or has_legacy_residual(member):
+                            return True
+                    return False
+                if isinstance(value, list):
+                    return any(has_legacy_residual(member) for member in value)
+                return False
+
+            if (
+                all(key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check"))
+                and not has_legacy_residual(row, top=True)
+            ):
                 continue
+            existing_fit = row.get("fit_residual")
+            existing_diagnostics = (
+                existing_fit.get("value")
+                if isinstance(existing_fit, dict) and isinstance(existing_fit.get("value"), dict)
+                else {}
+            )
             # Existing diagnostics are retained under fit_residual as their
             # own payload; their source fields remain available for audit.
-            diagnostics = {key: row.pop(key) for key in list(row) if "residual" in key.lower()}
+            diagnostics: dict[str, Any] = {}
+
+            def move_residuals(value: Any, prefix: str = "") -> None:
+                if isinstance(value, dict):
+                    for key in list(value):
+                        label = f"{prefix}/{key}" if prefix else key
+                        if "residual" in key.lower():
+                            diagnostics[label] = value.pop(key)
+                        else:
+                            move_residuals(value[key], label)
+                elif isinstance(value, list):
+                    for index, member in enumerate(value):
+                        move_residuals(member, f"{prefix}/{index}")
+
+            move_residuals(row)
+            diagnostics = {**existing_diagnostics, **diagnostics}
             row["fit_residual"] = None if not diagnostics else {
                 "value": diagnostics,
                 "unit": "source-specific",
