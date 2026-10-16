@@ -173,6 +173,81 @@ def test_temperature_and_optical_basicity_extrapolations_are_flagged():
     assert any("optical_basicity_outside_calibrated_range" in flag for flag in result.flags)
 
 
+@pytest.mark.parametrize("pack", [TI, CR_TI])
+def test_ti_anchor_domain_flags_are_advisory_and_do_not_change_prediction(pack):
+    def feed(oxides):
+        result = _inventory(oxides)
+        if pack == CR_TI:
+            result["Cr"] = 1e-4
+        return result
+
+    inside = {
+        "SiO2": 49.96, "Al2O3": 15.44, "MgO": 10.59,
+        "CaO": 23.27, "TiO2": 1.02,
+    }
+    inside_result = _imposed(feed(inside), 1673.15, -10.7, pack)
+    assert not any("Ti candidate outside Berry anchor" in flag
+                   or "TiO2 exceeds Berry anchor" in flag
+                   or "Ti candidate temperature outside Berry calibration" in flag
+                   for flag in inside_result.flags)
+    assert inside_result.titanous_ti_mol / inside_result.titanic_ti_mol == pytest.approx(
+        _berry_fraction(1673.15, -10.7, _independent_lambda(inside)) /
+        (1 - _berry_fraction(1673.15, -10.7, _independent_lambda(inside))),
+        abs=2e-9,
+    )
+
+    outside = {"SiO2": 60.3, "CaO": 31.8, "TiO2": 7.33}
+    outside_result = _imposed(feed(outside), 1843.0, -9.0, pack)
+    ti_flags = [flag for flag in outside_result.flags if "Tranell held-out titrations" in flag]
+    assert len(ti_flags) == 3
+    assert any("Lambda [0.586,0.618]" in flag for flag in ti_flags)
+    assert any("1.03 wt%" in flag for flag in ti_flags)
+    assert any("1673-1674 K" in flag for flag in ti_flags)
+    fraction = outside_result.titanous_ti_mol / (
+        outside_result.titanous_ti_mol + outside_result.titanic_ti_mol
+    )
+    assert fraction == pytest.approx(
+        _berry_fraction(1843.0, -9.0, _independent_lambda(outside)), abs=2e-9
+    )
+
+
+def test_combined_candidate_locks_cr_ti_fixed_point_coupling():
+    feed = {
+        "Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
+        "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05,
+    }
+    temperature, logf = 1700.0, -8.0
+    result = _imposed(feed, temperature, logf, CR_TI)
+    total_cations = sum(amount for element, amount in feed.items() if element != "O")
+    composition = sum(coefficient * amount / total_cations for coefficient, amount in [
+        (2.00, feed["Na"]), (1.00, feed["Mg"]), (1.00, result.ferrous_fe_mol),
+        (0.37, feed["Al"]), (0.37, result.ferric_fe_mol), (2.12, feed["K"]),
+        (2.44, feed["Ca"]), (3.69, feed["Ti"]),
+    ])
+    qfm = 8.58 - 25050.0 / temperature
+    log10_cr3_cr2 = 0.25 * (logf - qfm) + 3031.0 / temperature - 2.26 + composition
+    expected_cr2_fraction = 1.0 / (1.0 + 10.0**log10_cr3_cr2)
+    actual_cr2_fraction = result.chromous_cr_mol / (
+        result.chromous_cr_mol + result.chromic_cr_mol
+    )
+    lambda_value = _independent_lambda({
+        "SiO2": feed["Si"] * _MW["SiO2"],
+        "Al2O3": feed["Al"] / 2 * _MW["Al2O3"],
+        "MgO": feed["Mg"] * _MW["MgO"],
+        "CaO": feed["Ca"] * _MW["CaO"],
+        "TiO2": feed["Ti"] * _MW["TiO2"],
+        "Na2O": feed["Na"] / 2 * _MW["Na2O"],
+        "FeO": (result.ferrous_fe_mol + result.ferric_fe_mol) * _MW["FeO"],
+    })
+    expected_ti_fraction = _berry_fraction(temperature, logf, lambda_value)
+    actual_ti_fraction = result.titanous_ti_mol / (
+        result.titanous_ti_mol + result.titanic_ti_mol
+    )
+    assert actual_cr2_fraction == pytest.approx(expected_cr2_fraction, abs=2e-10)
+    assert actual_ti_fraction == pytest.approx(expected_ti_fraction, abs=2e-9)
+    assert result.composition_redox_iterations >= 2
+
+
 def test_total_oxygen_capacity_matches_finite_difference_with_fe_coupling():
     oxides = {
         "SiO2": 45.15, "TiO2": 2.57, "Al2O3": 11.07, "FeO": 17.82,

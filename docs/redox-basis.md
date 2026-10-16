@@ -98,7 +98,9 @@ oxide set/minor-element rule in Table 3:
 `Lambda = sum(Lambda_i * m_i * n_i) / sum(m_i * n_i)`, with `m_i` oxide
 formula moles, `n_i` oxygen atoms per oxide, and coefficients 0.48 (SiO2),
 0.61 (Al2O3), 0.78 (MgO), 1.00 (CaO), 1.10 (TiO2), 1.15 (Na2O), and 1.00
-(FeO). FeO amounts use the current Fe2+/Fe3+ split from the shared fixed point.
+(FeO). Dissolved Fe(II) and Fe(III) both enter as bulk FeO at coefficient
+1.00, so the Lambda contribution does not depend on their split; Fe metal is
+excluded. The shared fixed point supplies both dissolved Fe amounts.
 MnO, K2O, P2O5, and Cr2O3 are excluded as minor oxides in Berry's recipe.
 With product-positive oxygen stoichiometry, the row gives
 `log10(Ti3+/Ti4+) = -log10 K' - 1/4 log10(fO2/1 bar)`.
@@ -115,6 +117,23 @@ not a fit. Tranell reports 152 ± 25 kJ/mol (7940/T in her correlation; the
 series implies steeper isotherms, about 15000/T, and reports 1-7% Ti3+ for
 lunar conditions. No alternate slope is fitted. Johnston (1965) alkali-silicate
 isotherms are also held out.
+
+The Berry composition anchors cover Lambda 0.586-0.618, about 1.03 wt% TiO2,
+and 1673 K. The evaluator flags active Ti rows outside that Lambda range,
+above 1.03 wt% TiO2, or outside 1673-1674 K. The TiO2 threshold is the anchor
+content because the available comparison cannot locate error onset between
+about 1 and 7 wt%; the cutoff does not claim a validated onset. In held-out
+Tranell titrations at 7-52 wt% TiO2 and Lambda 0.66-0.91, the candidate
+under-predicts Ti3+/Ti4+ by about 0.4-1.2 dex (median 0.52 dex). Apollo
+14072-like low-Ti basalt (about 2.6 wt% TiO2, Lambda about 0.63) is just
+outside the anchor domain, while high-Ti mare basalt is well outside. These
+are extrapolation flags; evaluation continues.
+
+The ideal Ti3+/Ti4+ mixing relation and FMQ-parallel temperature slope are
+assumptions of the candidate, not established by the held-out comparison.
+Tranell's larger temperature coefficient and flatter free-fO2 slope do not
+explain the observed under-prediction; the available data cannot separate
+composition transfer from high-concentration activity effects.
 
 The Fe-free calibration is a different observable from quenched Fe-bearing
 glasses, where Ti3+/Fe3+ exchange can occur on quench. The row flags

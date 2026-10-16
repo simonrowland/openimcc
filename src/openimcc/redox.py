@@ -909,8 +909,8 @@ def _active_inner(
             y_init=y_init, tol=tol, max_iter=max_iter,
         )
 
-    # Fe and Cr rows share one mass-action solve. Iterate because the Cr
-    # effective K uses Fe(II)/Fe(III) oxide fractions from that same solution.
+    # Composition-conditioned Cr and Ti rows share one mass-action solve.
+    # Their effective K values use valence fractions from that same solution.
     applied: dict[str, float] = {str(row["complex"]): 0.0 for row in composition_rows}
     state: _LiquidState | None = None
     for count in range(1, 257):
@@ -1645,6 +1645,50 @@ def _make_flags(
                     f"row={row['complex']} lambda={lambda_value:.6g} "
                     f"range=[{low_lambda:g},{high_lambda:g}]"
                 )
+    ti_rows = [row for row in active_redox_rows
+               if row.get("complex") == "TiO1.5(l)-effective"]
+    if ti_rows:
+        lambda_value = _berry_optical_basicity(element_moles_by_oxidation_state)
+        if not 0.586 <= lambda_value <= 0.618:
+            flags.append(
+                "RED: Ti candidate outside Berry anchor Lambda [0.586,0.618]; "
+                "Tranell held-out titrations under-predict by ~0.4-1.2 dex at "
+                "7-52 wt% TiO2."
+            )
+        ti_parent = next((i for i, parent in enumerate(redox_pack.parents)
+                          if parent["element"] == "Ti"), None)
+        if ti_parent is not None:
+            atomic_mass = {
+                "O": 15.999, "Si": 28.085, "Al": 26.9815385,
+                "Mg": 24.305, "Ca": 40.078, "Ti": 47.867,
+                "Na": 22.989769, "Fe": 55.845, "K": 39.0983,
+                "Cr": 51.9961, "Mn": 54.938044, "P": 30.973761998,
+                "S": 32.06, "V": 50.9415, "Ni": 58.6934,
+                "Co": 58.933194, "Ce": 140.116, "Eu": 151.964,
+            }
+            parent_mass = [math.fsum(
+                float(count) * atomic_mass[element]
+                for element, count in parent["parent_formula_atoms"].items()
+            ) for parent in redox_pack.parents]
+            total_mass = math.fsum(
+                float(state.parent_moles[i]) * parent_mass[i]
+                for i in range(len(redox_pack.parents))
+            )
+            ti_wt = (float(state.parent_moles[ti_parent]) *
+                     parent_mass[ti_parent] /
+                     total_mass * 100.0) if total_mass else 0.0
+            if ti_wt > 1.03:
+                flags.append(
+                    "RED: TiO2 exceeds Berry anchor content (~1.03 wt%); "
+                    "Tranell held-out titrations under-predict by ~0.4-1.2 dex "
+                    "at 7-52 wt% TiO2."
+                )
+        if not 1673.0 <= temperature_K <= 1674.0:
+            flags.append(
+                "RED: Ti candidate temperature outside Berry calibration band "
+                "1673-1674 K; Tranell held-out titrations under-predict by "
+                "~0.4-1.2 dex at 7-52 wt% TiO2."
+            )
     extrapolated_redox_rows: list[str] = []
     for row in active_redox_rows:
         row_name = str(row["complex"])
