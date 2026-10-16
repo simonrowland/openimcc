@@ -8,7 +8,7 @@
     "inventory": "mol atoms by element",
     "temperature": "K",
     "gibbs_energy": "J mol^-1 reaction",
-    "band": "kJ mol^-1 reaction",
+    "band": "declared per record by fit_residual or accuracy_band unit",
     "pressure": "bar relative to 1 bar standard state"
   },
   "source_selection_rail": [
@@ -17,7 +17,7 @@
     "domain_match",
     "systematic_estimate"
   ],
-  "canonical_content_digest": "30197bd78b007838211e5159fba21dccc8d741891b1d2b5ecca53ca29fd417ed",
+  "canonical_content_digest": "bf5a1b9cc7b980496e60319b1f5239eebbf0d7af9b76523d15015a723d075f73",
   "parent_registry": [
     {
       "element": "Si",
@@ -312,12 +312,36 @@
         "dG_D": 0.15,
         "dG_E": -0.007697
       },
-      "band_kj_mol": 0.31,
       "provenance": {
         "source": "NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database",
         "source_url": "https://janaf.nist.gov/tables/Fe-019.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "Direct assessed liquid function; reaction residual is at most 0.31 kJ/mol against the directly fitted JANAF elemental references over 1700-3000 K. The band records reaction-fit residual, not thermochemical accuracy; no Fe(l) fusion-anchor adjustment is applied."
+      },
+      "fit_residual": {
+        "value": 0.31,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Direct assessed liquid function; reaction residual is at most 0.31 kJ/mol against the directly fitted JANAF elemental references over 1700-3000 K. The band records reaction-fit residual, not thermochemical accuracy; no Fe(l) fusion-anchor adjustment is applied.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Direct assessed liquid function; reaction residual is at most 0.31 kJ/mol against the directly fitted JANAF elemental references over 1700-3000 K. The band records reaction-fit residual, not thermochemical accuracy; no Fe(l) fusion-anchor adjustment is applied.",
+        "provenance": "NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database"
+      },
+      "independent_check": {
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "O2(g)": {
@@ -362,12 +386,36 @@
           }
         }
       ],
-      "band_kj_mol": 0.002,
       "provenance": {
         "source": "NIST-JANAF O2 reference-state table, O-029",
         "source_url": "https://janaf.nist.gov/tables/O-029.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "The 1200-1500 K interval uses the existing lower JANAF Shomate fit; the original 1500-3000 K coefficients are retained unchanged. Both intervals reproduce their JANAF source nodes within 1 J/mol."
+      },
+      "fit_residual": {
+        "value": 0.002,
+        "unit": "kJ mol^-1 species",
+        "target_source": "The 1200-1500 K interval uses the existing lower JANAF Shomate fit; the original 1500-3000 K coefficients are retained unchanged. Both intervals reproduce their JANAF source nodes within 1 J/mol.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The 1200-1500 K interval uses the existing lower JANAF Shomate fit; the original 1500-3000 K coefficients are retained unchanged. Both intervals reproduce their JANAF source nodes within 1 J/mol.",
+        "provenance": "NIST-JANAF O2 reference-state table, O-029"
+      },
+      "independent_check": {
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "Fe(cr)": {
@@ -443,12 +491,36 @@
           }
         }
       ],
-      "band_kj_mol": 0.001,
       "provenance": {
         "source": "NIST-JANAF elemental iron crystal table, Fe-007",
         "source_url": "https://janaf.nist.gov/tables/Fe-007.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "Separate alpha, gamma, and delta fits use the phase-side H-H(298), S, and Cp values at the 1184 and 1665 K transitions. The delta fit extends nine kelvin beyond the final 1800 K node to the transition marker. This band records source-node fit residual only, not thermochemical accuracy."
+      },
+      "fit_residual": {
+        "value": 0.001,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Separate alpha, gamma, and delta fits use the phase-side H-H(298), S, and Cp values at the 1184 and 1665 K transitions. The delta fit extends nine kelvin beyond the final 1800 K node to the transition marker. This band records source-node fit residual only, not thermochemical accuracy.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Separate alpha, gamma, and delta fits use the phase-side H-H(298), S, and Cp values at the 1184 and 1665 K transitions. The delta fit extends nine kelvin beyond the final 1800 K node to the transition marker. This band records source-node fit residual only, not thermochemical accuracy.",
+        "provenance": "NIST-JANAF elemental iron crystal table, Fe-007"
+      },
+      "independent_check": {
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "Fe(l)": {
@@ -473,12 +545,36 @@
         "dG_D": 0.0918940916919638,
         "dG_E": -0.00449130555799253
       },
-      "band_kj_mol": 0.002,
       "provenance": {
         "source": "NIST-JANAF elemental iron liquid table, Fe-006",
         "source_url": "https://janaf.nist.gov/tables/Fe-006.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "The 1700-3000 K Fe(l) fit uses the cited Fe-006 nodes directly. Its maximum source-node fit residual is 1.507 J/mol; the 2.345 J/mol Fe(cr)/Fe(l) seam at the 1809 K fusion marker remains unadjusted and is within the 10 J/mol fit gate. This band records fit residual only, not thermochemical accuracy."
+      },
+      "fit_residual": {
+        "value": 0.002,
+        "unit": "kJ mol^-1 species",
+        "target_source": "The 1700-3000 K Fe(l) fit uses the cited Fe-006 nodes directly. Its maximum source-node fit residual is 1.507 J/mol; the 2.345 J/mol Fe(cr)/Fe(l) seam at the 1809 K fusion marker remains unadjusted and is within the 10 J/mol fit gate. This band records fit residual only, not thermochemical accuracy.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The 1700-3000 K Fe(l) fit uses the cited Fe-006 nodes directly. Its maximum source-node fit residual is 1.507 J/mol; the 2.345 J/mol Fe(cr)/Fe(l) seam at the 1809 K fusion marker remains unadjusted and is within the 10 J/mol fit gate. This band records fit residual only, not thermochemical accuracy.",
+        "provenance": "NIST-JANAF elemental iron liquid table, Fe-006"
+      },
+      "independent_check": {
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "Fe(metal)": {
@@ -507,12 +603,36 @@
         }
       ],
       "reference_activity": 1.0,
-      "band_kj_mol": 0.003,
       "provenance": {
         "source": "NIST-JANAF elemental iron tables Fe-007 and Fe-006",
         "source_url": "https://janaf.nist.gov/tables/Fe-007.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "Stable pure-iron reference state uses the crystal below the JANAF 1809 K fusion point and liquid at and above it; a_Fe is fixed to one for the saturation reference. The 2.345 J/mol branch-seam residual is within the 10 J/mol fit gate; this band records fit and seam residual only, not thermochemical accuracy."
+      },
+      "fit_residual": {
+        "value": 0.003,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Stable pure-iron reference state uses the crystal below the JANAF 1809 K fusion point and liquid at and above it; a_Fe is fixed to one for the saturation reference. The 2.345 J/mol branch-seam residual is within the 10 J/mol fit gate; this band records fit and seam residual only, not thermochemical accuracy.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Stable pure-iron reference state uses the crystal below the JANAF 1809 K fusion point and liquid at and above it; a_Fe is fixed to one for the saturation reference. The 2.345 J/mol branch-seam residual is within the 10 J/mol fit gate; this band records fit and seam residual only, not thermochemical accuracy.",
+        "provenance": "NIST-JANAF elemental iron tables Fe-007 and Fe-006"
+      },
+      "independent_check": {
+        "status": "lead",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     "Fe2O3(l)": {
@@ -562,8 +682,6 @@
           }
         }
       ],
-      "band_kj_mol": 19.306,
-      "band_method": "conservative propagated Gibbs spread from the primary fusion-enthalpy estimate and tier-2 liquid-Cp uncertainty, sampled at 1500, 1895, 2195, 2695, and 3000 K",
       "construction": {
         "crystal_source_table": "Fe-030",
         "fusion_temperature_K": 1895,
@@ -614,6 +732,29 @@
         "tier": "tier3_flagged_estimate",
         "first_hand_verified": false,
         "selection_rationale": "The central nominal fusion value follows the explicit Lesher and Spera secondary transcription; the genuine Sugawara and Akaogi primary estimate is retained as an uncertainty bound. The tier-2 liquid-component Cp is used centrally with its stated uncertainty and a high-temperature extrapolation flag; the hypothetical hematite phase remains metastable."
+      },
+      "accuracy_band": {
+        "value": 19.306,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "conservative propagated Gibbs spread from the primary fusion-enthalpy estimate and tier-2 liquid-Cp uncertainty, sampled at 1500, 1895, 2195, 2695, and 3000 K"
+      },
+      "band_basis": {
+        "kind": "source_uncertainty",
+        "explanation": "conservative propagated Gibbs spread from the primary fusion-enthalpy estimate and tier-2 liquid-Cp uncertainty, sampled at 1500, 1895, 2195, 2695, and 3000 K",
+        "provenance": "NIST-JANAF hematite crystal table Fe-030; Lesher and Spera supplemental Table S5.5 secondary transcription, checked against Sugawara and Akaogi (2004)"
+      },
+      "fit_residual": null,
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "FeO1.5(l)": {
@@ -637,12 +778,34 @@
           "coefficient": 0.5
         }
       ],
-      "band_kj_mol": 9.653,
       "provenance": {
         "source": "Half the constructed Fe2O3(l) standard Gibbs energy",
         "source_url": "https://janaf.nist.gov/tables/Fe-030.html",
         "tier": "tier3_flagged_estimate",
         "selection_rationale": "Stoichiometric pseudo-complex reference; it adds no independent Gibbs function."
+      },
+      "accuracy_band": {
+        "value": 9.653,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Stoichiometric pseudo-complex reference; it adds no independent Gibbs function."
+      },
+      "band_basis": {
+        "kind": "source_uncertainty",
+        "explanation": "Stoichiometric pseudo-complex reference; it adds no independent Gibbs function.",
+        "provenance": "Half the constructed Fe2O3(l) standard Gibbs energy"
+      },
+      "fit_residual": null,
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "Si(l)": {
@@ -665,12 +828,36 @@
         "dG_D": 0.179198580898701,
         "dG_E": -0.0134061386171519
       },
-      "band_kj_mol": 0.002,
       "provenance": {
         "source": "NIST-JANAF silicon liquid table Si-003",
         "source_url": "https://janaf.nist.gov/tables/Si-003.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."
+      },
+      "fit_residual": {
+        "value": 0.002,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Elemental standard fitted with the existing condensate φ fitter.",
+        "provenance": "NIST-JANAF silicon liquid table Si-003"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "Cr(l)": {
@@ -693,12 +880,36 @@
         "dG_D": 0.0498930412846965,
         "dG_E": -0.00148698361629795
       },
-      "band_kj_mol": 0.002,
       "provenance": {
         "source": "NIST-JANAF chromium liquid table Cr-003",
         "source_url": "https://janaf.nist.gov/tables/Cr-003.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."
+      },
+      "fit_residual": {
+        "value": 0.002,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Elemental standard fitted with the existing condensate φ fitter.",
+        "provenance": "NIST-JANAF chromium liquid table Cr-003"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "Ni(l)": {
@@ -721,12 +932,36 @@
         "dG_D": 0.0748436235036801,
         "dG_E": -0.00374471016373705
       },
-      "band_kj_mol": 0.002,
       "provenance": {
         "source": "NIST-JANAF nickel liquid table Ni-003",
         "source_url": "https://janaf.nist.gov/tables/Ni-003.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."
+      },
+      "fit_residual": {
+        "value": 0.002,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Elemental standard fitted with the existing condensate φ fitter.",
+        "provenance": "NIST-JANAF nickel liquid table Ni-003"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "Co(l)": {
@@ -749,12 +984,36 @@
         "dG_D": 0.11391385112234,
         "dG_E": -0.00700225800198168
       },
-      "band_kj_mol": 0.002,
       "provenance": {
         "source": "NIST-JANAF cobalt liquid table Co-003",
         "source_url": "https://janaf.nist.gov/tables/Co-003.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "Elemental standard fitted with the existing condensate φ fitter."
+      },
+      "fit_residual": {
+        "value": 0.002,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Elemental standard fitted with the existing condensate φ fitter.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Elemental standard fitted with the existing condensate φ fitter.",
+        "provenance": "NIST-JANAF cobalt liquid table Co-003"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "Mn(l)": {
@@ -813,12 +1072,36 @@
           }
         }
       ],
-      "band_kj_mol": 0.001,
       "provenance": {
         "source": "NIST-JANAF manganese liquid table Mn-003",
         "source_url": "https://janaf.nist.gov/tables/Mn-003.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "The original 1600-2200 K coefficients are retained; separate condensate φ fits use the cited JANAF liquid nodes over 1200-1600 K and 2200-3000 K. Their maximum source residual is 0.524 J/mol."
+      },
+      "fit_residual": {
+        "value": 0.001,
+        "unit": "kJ mol^-1 species",
+        "target_source": "The original 1600-2200 K coefficients are retained; separate condensate φ fits use the cited JANAF liquid nodes over 1200-1600 K and 2200-3000 K. Their maximum source residual is 0.524 J/mol.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The original 1600-2200 K coefficients are retained; separate condensate φ fits use the cited JANAF liquid nodes over 1200-1600 K and 2200-3000 K. Their maximum source residual is 0.524 J/mol.",
+        "provenance": "NIST-JANAF manganese liquid table Mn-003"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "Al2O3(l)": {
@@ -892,12 +1175,34 @@
           }
         }
       ],
-      "band_kj_mol": 1.154923273485,
       "provenance": {
         "source": "NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval",
         "source_url": "https://janaf.nist.gov/tables/Al-100.txt",
         "tier": "tier3_flagged_estimate",
         "selection_rationale": "Uses the existing Al-100-SC-CP continuation over 1200-2500 K and the direct liquid fit over 2500-3000 K; the numeric band remains based on the measured Tier 1 leave-one-out maximum at fusion."
+      },
+      "accuracy_band": {
+        "value": 1.154923273485,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Uses the existing Al-100-SC-CP continuation over 1200-2500 K and the direct liquid fit over 2500-3000 K; the numeric band remains based on the measured Tier 1 leave-one-out maximum at fusion."
+      },
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "Uses the existing Al-100-SC-CP continuation over 1200-2500 K and the direct liquid fit over 2500-3000 K; the numeric band remains based on the measured Tier 1 leave-one-out maximum at fusion.",
+        "provenance": "NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval"
+      },
+      "fit_residual": null,
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "MnO(l)": {
@@ -958,7 +1263,6 @@
           }
         }
       ],
-      "band_kj_mol": 5.753514,
       "construction": {
         "crystal_source_table": "MnO-IVTAN-1435",
         "fusion_temperature_K": 2120,
@@ -996,6 +1300,29 @@
         "source_url": "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
         "tier": "tier4_systematic_estimate",
         "selection_rationale": "The original 1600-2200 K coefficients are retained. The same liquid_from_solid construction is independently fitted below and above that interval on 100 K nodes; maximum outer-interval residual is 0.271 J/mol. The construction uses the tool's leave-one-out mean fusion entropy per formula atom; IVTAN's 40 ± 5 kJ/mol fusion enthalpy is a cross-check only."
+      },
+      "accuracy_band": {
+        "value": 5.753514,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "The original 1600-2200 K coefficients are retained. The same liquid_from_solid construction is independently fitted below and above that interval on 100 K nodes; maximum outer-interval residual is 0.271 J/mol. The construction uses the tool's leave-one-out mean fusion entropy per formula atom; IVTAN's 40 ± 5 kJ/mol fusion enthalpy is a cross-check only."
+      },
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The original 1600-2200 K coefficients are retained. The same liquid_from_solid construction is independently fitted below and above that interval on 100 K nodes; maximum outer-interval residual is 0.271 J/mol. The construction uses the tool's leave-one-out mean fusion entropy per formula atom; IVTAN's 40 ± 5 kJ/mol fusion enthalpy is a cross-check only.",
+        "provenance": "IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates."
+      },
+      "fit_residual": null,
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     "MnSiO3(l)": {
@@ -1057,7 +1384,6 @@
           }
         }
       ],
-      "band_kj_mol": 43.214067,
       "construction": {
         "crystal_source_table": "MnSiO3-Robie-1995",
         "fusion_temperature_K": 1564,
@@ -1095,6 +1421,29 @@
         "source_url": "https://rruff.info/uploads/AM80_560.pdf",
         "tier": "tier4_systematic_estimate",
         "selection_rationale": "The original 1500-2000 K coefficients are retained. The same liquid_from_solid construction is fitted on source nodes in 1200-1500 K and 2000-3000 K; the largest additional source-node residual is 2.278 J/mol. No activity data were used to select coefficients."
+      },
+      "accuracy_band": {
+        "value": 43.214067,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "The original 1500-2000 K coefficients are retained. The same liquid_from_solid construction is fitted on source nodes in 1200-1500 K and 2000-3000 K; the largest additional source-node residual is 2.278 J/mol. No activity data were used to select coefficients."
+      },
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The original 1500-2000 K coefficients are retained. The same liquid_from_solid construction is fitted on source nodes in 1200-1500 K and 2000-3000 K; the largest additional source-node residual is 2.278 J/mol. No activity data were used to select coefficients.",
+        "provenance": "Robie, Huebner, and Hemingway rhodonite crystal thermochemistry; the 1559-1564 K interval is reported in the 2024 Mn-Si-O assessment."
+      },
+      "fit_residual": null,
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     "Mn2SiO4(l)": {
@@ -1156,7 +1505,6 @@
           }
         }
       ],
-      "band_kj_mol": 37.329086,
       "construction": {
         "crystal_source_table": "Mn2SiO4-Robie-1982",
         "fusion_temperature_K": 1616,
@@ -1195,6 +1543,29 @@
         "source_url": "https://msaweb.org/AmMin/AM67/AM67_470.pdf",
         "tier": "tier4_systematic_estimate",
         "selection_rationale": "The original 1500-2000 K coefficients are retained. The same liquid_from_solid construction is fitted on source nodes in 1200-1500 K and 2000-3000 K; the largest additional source-node residual is 3.510 J/mol. No activity data were used to select coefficients."
+      },
+      "accuracy_band": {
+        "value": 37.329086,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "The original 1500-2000 K coefficients are retained. The same liquid_from_solid construction is fitted on source nodes in 1200-1500 K and 2000-3000 K; the largest additional source-node residual is 3.510 J/mol. No activity data were used to select coefficients."
+      },
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The original 1500-2000 K coefficients are retained. The same liquid_from_solid construction is fitted on source nodes in 1200-1500 K and 2000-3000 K; the largest additional source-node residual is 3.510 J/mol. No activity data were used to select coefficients.",
+        "provenance": "Robie et al. (1982) primary tephroite thermochemistry; the 1616-1620 K interval is reported in the 2024 Mn-Si-O assessment."
+      },
+      "fit_residual": null,
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     "MnAl2O4(l)": {
@@ -1256,7 +1627,6 @@
           }
         }
       ],
-      "band_kj_mol": 20.328344,
       "construction": {
         "crystal_source_table": "MnAl2O4-open-primary",
         "fusion_temperature_K": 2000,
@@ -1296,6 +1666,29 @@
         "source_url": "https://doi.org/10.1016/j.jmrt.2020.02.046",
         "tier": "tier4_systematic_estimate",
         "selection_rationale": "The original 1600-2200 K coefficients are retained. The same liquid_from_solid construction is fitted below and above that interval on 100 K nodes; the maximum additional source-node residual is 0.975 J/mol. Chen activities were not used to select coefficients."
+      },
+      "accuracy_band": {
+        "value": 20.328344,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "The original 1600-2200 K coefficients are retained. The same liquid_from_solid construction is fitted below and above that interval on 100 K nodes; the maximum additional source-node residual is 0.975 J/mol. Chen activities were not used to select coefficients."
+      },
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The original 1600-2200 K coefficients are retained. The same liquid_from_solid construction is fitted below and above that interval on 100 K nodes; the maximum additional source-node residual is 0.975 J/mol. Chen activities were not used to select coefficients.",
+        "provenance": "Open primary galaxite heat-capacity and entropy measurements by Navarro et al. (2012) and Navarro, de Avillez, Goes, and Gomes (2020), with primary phase-equilibrium data from Ilatovskaya and Fabrichnaya."
+      },
+      "fit_residual": null,
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     "SiO2(l)-supercooled": {
@@ -1341,12 +1734,36 @@
           }
         }
       ],
-      "band_kj_mol": 0.01,
       "provenance": {
         "source": "Existing SiO2 supercooled liquid construction O-038-SC-CP",
         "source_url": "https://janaf.nist.gov/tables/O-038.html",
         "tier": "tier3_flagged_estimate",
         "selection_rationale": "Uses the existing supercooled branch below the direct liquid-function interval."
+      },
+      "fit_residual": {
+        "value": 0.01,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Uses the existing supercooled branch below the direct liquid-function interval.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Uses the existing supercooled branch below the direct liquid-function interval.",
+        "provenance": "Existing SiO2 supercooled liquid construction O-038-SC-CP"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "SiO2(l)-direct": {
@@ -1368,12 +1785,36 @@
         "dG_D": 0.0548103280961078,
         "dG_E": 0.000912865784425249
       },
-      "band_kj_mol": 0.002,
       "provenance": {
         "source": "NIST-JANAF silicon dioxide liquid table O-038",
         "source_url": "https://janaf.nist.gov/tables/O-038.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "Uses the direct assessed liquid function from its tabulated interval."
+      },
+      "fit_residual": {
+        "value": 0.002,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Uses the direct assessed liquid function from its tabulated interval.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Uses the direct assessed liquid function from its tabulated interval.",
+        "provenance": "NIST-JANAF silicon dioxide liquid table O-038"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "SiO2(l)": {
@@ -1400,12 +1841,36 @@
           "species": "SiO2(l)-direct"
         }
       ],
-      "band_kj_mol": 0.01,
       "provenance": {
         "source": "NIST-JANAF O-038 and its existing supercooled liquid construction",
         "source_url": "https://janaf.nist.gov/tables/O-038.html",
         "tier": "tier3_flagged_estimate",
         "selection_rationale": "The two existing standard-state branches meet within 0.01 kJ/mol at their 1800 K join."
+      },
+      "fit_residual": {
+        "value": 0.01,
+        "unit": "kJ mol^-1 species",
+        "target_source": "The two existing standard-state branches meet within 0.01 kJ/mol at their 1800 K join.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The two existing standard-state branches meet within 0.01 kJ/mol at their 1800 K join.",
+        "provenance": "NIST-JANAF O-038 and its existing supercooled liquid construction"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "Cr2O3(l)": {
@@ -1421,12 +1886,36 @@
       "range_flags": [
         "Parent formula basis only; not evaluated as a Gibbs species."
       ],
-      "band_kj_mol": 0.0,
       "provenance": {
         "source": "O’Neill & Berry (2021)",
         "source_url": "https://doi.org/10.1016/j.gca.2021.03.024",
         "tier": "tier2_primary_measurement",
         "selection_rationale": "The Cr2O3 formula defines parent amounts; the candidate row uses a melt-conditioned effective K."
+      },
+      "fit_residual": {
+        "value": 0.0,
+        "unit": "kJ mol^-1 species",
+        "target_source": "The Cr2O3 formula defines parent amounts; the candidate row uses a melt-conditioned effective K.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The Cr2O3 formula defines parent amounts; the candidate row uses a melt-conditioned effective K.",
+        "provenance": "O’Neill & Berry (2021)"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "CrO(l)-effective": {
@@ -1442,12 +1931,36 @@
       "range_flags": [
         "Effective melt bookkeeping species; not a unary CrO(l) standard state."
       ],
-      "band_kj_mol": 0.0,
       "provenance": {
         "source": "O’Neill & Berry (2021)",
         "source_url": "https://doi.org/10.1016/j.gca.2021.03.024",
         "tier": "tier2_primary_measurement",
         "selection_rationale": "Used only to count Cr(II) atoms and oxygen after solving the composition-conditioned empirical row."
+      },
+      "fit_residual": {
+        "value": 0.0,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Used only to count Cr(II) atoms and oxygen after solving the composition-conditioned empirical row.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Used only to count Cr(II) atoms and oxygen after solving the composition-conditioned empirical row.",
+        "provenance": "O’Neill & Berry (2021)"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "TiO1.5(l)-effective": {
@@ -1460,7 +1973,6 @@
         1273,
         1903
       ],
-      "band_kj_mol": 7.8,
       "range_flags": [
         "Fe-free calibration; quenched Fe-bearing glasses can exchange Ti3+/Fe3+, so residual glass valence is a different observable.",
         "Berry equation 7 carries its FMQ-parallel temperature slope as an assumption; measurements span 1273-1903 K.",
@@ -1471,6 +1983,31 @@
         "source_url": "https://doi.org/10.1016/j.gca.2023.11.014",
         "tier": "tier2_primary_measurement",
         "selection_rationale": "The measured five-glass positions set the composition-conditioned effective K; temperature retains Berry’s explicitly stated FMQ-parallel assumption."
+      },
+      "fit_residual": {
+        "value": 7.8,
+        "unit": "kJ mol^-1 species",
+        "target_source": "The measured five-glass positions set the composition-conditioned effective K; temperature retains Berry’s explicitly stated FMQ-parallel assumption.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The measured five-glass positions set the composition-conditioned effective K; temperature retains Berry’s explicitly stated FMQ-parallel assumption.",
+        "provenance": "Berry et al. (2024), equation 7 and Table 1; optical-basicity coefficients from the supplementary text."
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     "TiO2(l)": {
@@ -1483,7 +2020,6 @@
         1273,
         1903
       ],
-      "band_kj_mol": 0.0,
       "range_flags": [
         "Parent formula basis only; not evaluated as a Gibbs species."
       ],
@@ -1492,6 +2028,31 @@
         "source_url": "https://doi.org/10.1016/j.gca.2023.11.014",
         "tier": "tier2_primary_measurement",
         "selection_rationale": "The registered TiO2 parent defines amounts for the empirical melt-conditioned row."
+      },
+      "fit_residual": {
+        "value": 0.0,
+        "unit": "kJ mol^-1 species",
+        "target_source": "The registered TiO2 parent defines amounts for the empirical melt-conditioned row.",
+        "comparison_method": "maximum absolute fit residual against the cited source function",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The registered TiO2 parent defines amounts for the empirical melt-conditioned row.",
+        "provenance": "Berry et al. (2024)"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     }
   },
@@ -1530,8 +2091,6 @@
         1700,
         3000
       ],
-      "band_kj_mol": 0.39,
-      "band_method": "Maximum absolute reaction-Gibbs residual against the JANAF FeO formation-Gibbs values over 1700-3000 K.",
       "uncertainty_note": "The 0.39 kJ/mol band bounds the fitted reaction-Gibbs residual against JANAF FeO values; it is a residual band, not a thermochemical accuracy estimate. The Fe(cr) endpoint extrapolation is separately flagged.",
       "range_flags": [
         "Fe metal switches from crystal to liquid at 1809 K; the crystal fit uses source nodes through 1800 K."
@@ -1542,6 +2101,31 @@
         "source_url": "https://janaf.nist.gov/tables/Fe-019.html",
         "tier": "tier1_direct_assessed",
         "selection_rationale": "Existing FeO parent row retained; its reaction-Gibbs residual is at most 0.31 kJ/mol against the JANAF FeO values over 1700-3000 K using the direct source-fitted Fe(cr) and Fe(l) reference functions. The reaction band records this fit residual, not thermochemical accuracy."
+      },
+      "accuracy_band": null,
+      "fit_residual": {
+        "value": 0.39,
+        "unit": "kJ mol^-1 reaction",
+        "target_source": "JANAF FeO formation-G values",
+        "comparison_method": "Maximum absolute reaction-Gibbs residual against the JANAF FeO formation-Gibbs values over 1700-3000 K.",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The 0.39 kJ/mol band bounds the fitted reaction-Gibbs residual against JANAF FeO values; it is a residual band, not a thermochemical accuracy estimate. The Fe(cr) endpoint extrapolation is separately flagged.",
+        "provenance": "janaf_direct_liquid"
+      },
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
+        "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually."
       }
     },
     {
@@ -1580,8 +2164,6 @@
         1500,
         3000
       ],
-      "band_kj_mol": 10.044,
-      "band_method": "Conservative sum of one half the propagated Fe2O3 fusion-enthalpy and tier-2 liquid-Cp band, the FeO reaction band, and one quarter the O2 fit band.",
       "uncertainty_note": "The band includes the primary fusion-estimate bound and stated tier-2 Cp uncertainty; high-temperature Cp extrapolation and hypothetical hematite metastability remain flagged.",
       "range_flags": [
         "FeO1.5 uses half the hypothetical metastable Fe2O3(l) construction.",
@@ -1595,6 +2177,29 @@
         "source_url": "https://magma.geol.ucsb.edu/papers/EoV_complete.pdf",
         "tier": "tier3_flagged_estimate",
         "selection_rationale": "Reaction stoichiometry fixes the pseudo-complex; the centrally selected secondary fusion transcription is bounded by the verified primary estimate, and the tier-2 liquid-component Cp is central with stated uncertainty and an extrapolation flag."
+      },
+      "accuracy_band": {
+        "value": 10.044,
+        "unit": "kJ mol^-1 reaction",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Conservative sum of one half the propagated Fe2O3 fusion-enthalpy and tier-2 liquid-Cp band, the FeO reaction band, and one quarter the O2 fit band."
+      },
+      "fit_residual": null,
+      "band_basis": {
+        "kind": "source_uncertainty",
+        "explanation": "The band includes the primary fusion-estimate bound and stated tier-2 Cp uncertainty; high-temperature Cp extrapolation and hypothetical hematite metastability remain flagged.",
+        "provenance": "extension-compound-thermo"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     {
@@ -1631,8 +2236,6 @@
         1673,
         2000
       ],
-      "band_kj_mol": 5.756,
-      "band_method": "Conservative sum of the below-fusion MnO construction band using the seven-rock-salt-monoxide maximum residuals, the Mn(l) source-fit band, and one half the O2 fit band.",
       "uncertainty_note": "The MnO liquid reference is supercooled throughout the declared domain; the below-fusion band uses domain-matched measured monoxide residuals and the measured leave-one-out anchor.",
       "range_flags": [
         "MnO(l) is supercooled below its measured 2120 ± 20 K melting point throughout 1673-2000 K.",
@@ -1644,6 +2247,29 @@
         "source_url": "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
         "tier": "tier4_systematic_estimate",
         "selection_rationale": "The elemental reference uses the direct assessed liquid-metal function; the oxide uses the measured melting point and crystal function with a tool-derived Tier 3 center. IVTAN's estimated fusion enthalpy is a cross-check only."
+      },
+      "accuracy_band": {
+        "value": 5.756,
+        "unit": "kJ mol^-1 reaction",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Conservative sum of the below-fusion MnO construction band using the seven-rock-salt-monoxide maximum residuals, the Mn(l) source-fit band, and one half the O2 fit band."
+      },
+      "fit_residual": null,
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The MnO liquid reference is supercooled throughout the declared domain; the below-fusion band uses domain-matched measured monoxide residuals and the measured leave-one-out anchor.",
+        "provenance": "extension-compound-thermo"
+      },
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     {
@@ -1683,8 +2309,6 @@
         1673,
         2000
       ],
-      "band_kj_mol": 48.978,
-      "band_method": "Sum of the MnSiO3(l) band from interpolated Tier 3 leave-one-out columns, its independent fusion-temperature interval and fit residual, the MnO(l) band, and the SiO2(l) band.",
       "uncertainty_note": "The leave-one-out columns are interpolated to T-T_fus; the same residuals are not also stacked as propagated entropy and heat-capacity spreads. The Chen activity data remain held out.",
       "range_flags": [
         "Rhodonite melts incongruently; MnSiO3(l) is an association standard constructed from open crystal thermochemistry.",
@@ -1696,6 +2320,29 @@
         "source_url": "https://rruff.info/uploads/AM80_560.pdf",
         "tier": "tier4_systematic_estimate",
         "selection_rationale": "The reaction is fixed by crystal stoichiometry. The 1559-1564 K transition interval is taken from https://doi.org/10.1007/s00269-024-01302-8 (Tier 3). The liquid Gibbs function is constructed from the crystal function and systematic fusion estimates; no activity data selected its parameters."
+      },
+      "accuracy_band": {
+        "value": 48.978,
+        "unit": "kJ mol^-1 reaction",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Sum of the MnSiO3(l) band from interpolated Tier 3 leave-one-out columns, its independent fusion-temperature interval and fit residual, the MnO(l) band, and the SiO2(l) band."
+      },
+      "fit_residual": null,
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The leave-one-out columns are interpolated to T-T_fus; the same residuals are not also stacked as propagated entropy and heat-capacity spreads. The Chen activity data remain held out.",
+        "provenance": "extension-compound-thermo"
+      },
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     {
@@ -1735,8 +2382,6 @@
         1673,
         2000
       ],
-      "band_kj_mol": 48.846,
-      "band_method": "Sum of the Mn2SiO4(l) band from interpolated Tier 3 leave-one-out columns, its independent source enthalpy and fusion-temperature uncertainties and fit residual, two MnO(l) bands, and the SiO2(l) band.",
       "uncertainty_note": "The leave-one-out columns are interpolated to T-T_fus; the same residuals are not also stacked as propagated entropy and heat-capacity spreads. The primary tephroite enthalpy uncertainty is counted once. The Chen activity data remain held out.",
       "range_flags": [
         "Tephroite peritectic behavior is reported near air conditions; Mn2SiO4(l) is an association standard constructed from open crystal thermochemistry.",
@@ -1748,6 +2393,29 @@
         "source_url": "https://msaweb.org/AmMin/AM67/AM67_470.pdf",
         "tier": "tier4_systematic_estimate",
         "selection_rationale": "The primary oxide-basis calorimetry reports ΔfH° = -1732.0 ± 2.9 kJ/mol; the later -1731.5 tabulation is not used. The 1616-1620 K interval is from https://doi.org/10.1007/s00269-024-01302-8 (Tier 3). The liquid standard is constructed from the crystal function and systematic fusion estimates; no activity data selected its parameters."
+      },
+      "accuracy_band": {
+        "value": 48.846,
+        "unit": "kJ mol^-1 reaction",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Sum of the Mn2SiO4(l) band from interpolated Tier 3 leave-one-out columns, its independent source enthalpy and fusion-temperature uncertainties and fit residual, two MnO(l) bands, and the SiO2(l) band."
+      },
+      "fit_residual": null,
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The leave-one-out columns are interpolated to T-T_fus; the same residuals are not also stacked as propagated entropy and heat-capacity spreads. The primary tephroite enthalpy uncertainty is counted once. The Chen activity data remain held out.",
+        "provenance": "extension-compound-thermo"
+      },
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     {
@@ -1787,8 +2455,6 @@
         1673,
         2000
       ],
-      "band_kj_mol": 27.237,
-      "band_method": "Sum of the constructed galaxite band, including its crystal formation-enthalpy and entropy uncertainties, the MnO(l) band, and the existing Al2O3(l) supercooled-reference band.",
       "uncertainty_note": "The heat-capacity fit is extrapolated above its measured range and the formation enthalpy is assessed rather than directly measured. Chen activity data were held out and did not select the equilibrium constant.",
       "range_flags": [
         "Galaxite melts peritectically near 2000 K; the liquid association standard is constructed from crystal data.",
@@ -1800,6 +2466,29 @@
         "source_url": "https://doi.org/10.1016/j.jmrt.2020.02.046",
         "tier": "tier4_systematic_estimate",
         "selection_rationale": "Galaxite is included from open primary crystal thermochemistry. Its Gibbs function uses the measured Cp fit and S°298.15; no primary formation enthalpy exists, so the assessed -39.5 kJ/mol oxide-formation value is used with ±12.6 kJ/mol uncertainty. Below fusion, the Tier 3 entropy and Cp spreads use the maximum measured residuals among the two liquid-reference spinel homologues MgAl2O4 (Al-090) and Mg2TiO4 (Mg-032), N=2. No Chen activity data were used to choose the row. Held-out summary: all_three: median ratio 5.809, out-of-band 55/55; without_MnSiO3: median ratio 9.583, out-of-band 55/55; without_Mn2SiO4: median ratio 6.205, out-of-band 55/55; without_MnAl2O4: median ratio 7.261, out-of-band 55/55; MnSiO3_only: median ratio 7.692, out-of-band 55/55; Mn2SiO4_only: median ratio 14.926, out-of-band 55/55; MnAl2O4_only: median ratio 11.487, out-of-band 55/55; no_complexes: median ratio 18.058, out-of-band 55/55. These comparisons use the held-out Chen datasets after MnO solid-to-liquid reference conversion; no equilibrium constant was tuned to them."
+      },
+      "accuracy_band": {
+        "value": 27.237,
+        "unit": "kJ mol^-1 reaction",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Sum of the constructed galaxite band, including its crystal formation-enthalpy and entropy uncertainties, the MnO(l) band, and the existing Al2O3(l) supercooled-reference band."
+      },
+      "fit_residual": null,
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The heat-capacity fit is extrapolated above its measured range and the formation enthalpy is assessed rather than directly measured. Chen activity data were held out and did not select the equilibrium constant.",
+        "provenance": "extension-compound-thermo"
+      },
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction."
       }
     },
     {
@@ -1825,8 +2514,6 @@
         1673,
         1773
       ],
-      "band_kj_mol": 0.0,
-      "band_method": "Model scatter and measurement uncertainty are reported in fraction units, not converted to a Gibbs-energy band.",
       "uncertainty_note": "About 0.02 average Cr2+ fraction model scatter and ±0.015 XANES measurement uncertainty; neither is a self-fit residual.",
       "range_flags": [
         "Model is for 1 bar; pressure is not modelled.",
@@ -1849,6 +2536,31 @@
         "KO0.5": 2.12,
         "CaO": 2.44,
         "TiO2": 3.69
+      },
+      "accuracy_band": null,
+      "fit_residual": {
+        "value": 0.0,
+        "unit": "kJ mol^-1 reaction",
+        "target_source": "Model scatter and measurement uncertainty are reported in fraction units, not converted to a Gibbs-energy band.",
+        "comparison_method": "Model scatter and measurement uncertainty are reported in fraction units, not converted to a Gibbs-energy band.",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "About 0.02 average Cr2+ fraction model scatter and ±0.015 XANES measurement uncertainty; neither is a self-fit residual.",
+        "provenance": "measured-melt-composition-conditioned-effective-k"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     },
     {
@@ -1874,8 +2586,6 @@
         1273,
         1903
       ],
-      "band_kj_mol": 7.8,
-      "band_method": "Berry’s five measured glasses span 0.244 dex in log K' at 1673.15 K (equivalent to 7.8 kJ/mol at that temperature via RT ln 10); this is a composition envelope, not a fit residual. Tranell and Schreiber temperature-slope evidence is retained in log K' and fraction units in the uncertainty note.",
       "uncertainty_note": "Berry et al. (2024) Table 1 (p. 212) reports the five measured-glass Lambda values as 0.5633-0.6345; recomputing from their reported oxide analyses with Berry’s oxygen-weighted definition and coefficients gives 0.5643-0.6353. The model uses that definition, including Berry’s TiO2 coefficient 1.10, and flags outside [0.5633,0.6353]. The glasses contain about 1.03 wt% TiO2 and were measured at 1673 K. The model assumes ideal Ti3+/Ti4+ mixing and Berry’s FMQ-parallel 6262.5/T slope. Across 73 held-out Tranell points (Lambda 0.6631-0.9079, 7.3-52.35 wt% TiO2, 1783-1903 K), all remain outside the Berry Lambda envelope; predictions under-predict Ti3+/Ti4+ by a median 0.5246 dex (maximum absolute residual 1.3300 dex). The basicity audit does not change predictions. Apollo 14072-like basalt (about 2.6 wt% TiO2, Lambda about 0.63) lies inside the Lambda envelope but above the 1.03 wt% anchor TiO2 content; high-Ti mare basalt (TiO2 > 6 wt% in the Neal & Taylor 1992 classification, GCA 56, 2177-2211) is well outside. The evidence does not establish an error onset between 1 and 7 wt% TiO2, so runtime flags begin above the 1.03 wt% anchor content.",
       "range_flags": [
         "Berry equation 7 assumes ideal Ti3+/Ti4+ mixing and an FMQ-parallel 6262.5/T temperature slope.",
@@ -1900,6 +2610,31 @@
           0.5633,
           0.6353
         ]
+      },
+      "accuracy_band": null,
+      "fit_residual": {
+        "value": 7.8,
+        "unit": "kJ mol^-1 reaction",
+        "target_source": "Berry’s five measured glasses span 0.244 dex in log K' at 1673.15 K (equivalent to 7.8 kJ/mol at that temperature via RT ln 10); this is a composition envelope, not a fit residual. Tranell and Schreiber temperature-slope evidence is retained in log K' and fraction units in the uncertainty note.",
+        "comparison_method": "Berry’s five measured glasses span 0.244 dex in log K' at 1673.15 K (equivalent to 7.8 kJ/mol at that temperature via RT ln 10); this is a composition envelope, not a fit residual. Tranell and Schreiber temperature-slope evidence is retained in log K' and fraction units in the uncertainty note.",
+        "temperature_range": "T_domain_K",
+        "held_out_or_in_sample": "in_sample"
+      },
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Berry et al. (2024) Table 1 (p. 212) reports the five measured-glass Lambda values as 0.5633-0.6345; recomputing from their reported oxide analyses with Berry’s oxygen-weighted definition and coefficients gives 0.5643-0.6353. The model uses that definition, including Berry’s TiO2 coefficient 1.10, and flags outside [0.5633,0.6353]. The glasses contain about 1.03 wt% TiO2 and were measured at 1673 K. The model assumes ideal Ti3+/Ti4+ mixing and Berry’s FMQ-parallel 6262.5/T slope. Across 73 held-out Tranell points (Lambda 0.6631-0.9079, 7.3-52.35 wt% TiO2, 1783-1903 K), all remain outside the Berry Lambda envelope; predictions under-predict Ti3+/Ti4+ by a median 0.5246 dex (maximum absolute residual 1.3300 dex). The basicity audit does not change predictions. Apollo 14072-like basalt (about 2.6 wt% TiO2, Lambda about 0.63) lies inside the Lambda envelope but above the 1.03 wt% anchor TiO2 content; high-Ti mare basalt (TiO2 > 6 wt% in the Neal & Taylor 1992 classification, GCA 56, 2177-2211) is well outside. The evidence does not establish an error onset between 1 and 7 wt% TiO2, so runtime flags begin above the 1.03 wt% anchor content.",
+        "provenance": "measured-melt-composition-conditioned-effective-k"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check was identified."
       }
     }
   ],

@@ -1905,7 +1905,7 @@ def test_new_halide_mixed_source_parent_bands_recompute_from_cards(
         "F2": "F-054", "Cl2": "Cl-073", "Br2": "Br-040", "I2": "I-027",
     }
     for name, row in rows.items():
-        band = row["uncertainty_band"]
+        band = row["accuracy_band"]["value"]
         assert band["kind"] == "mixed_source_parent_scale_inconsistency"
         assert set(map(int, band["values_J_per_mol"])) == set(range(1200, 3001, 100))
         oxide, n_oxide, n_o2 = gas_module._ALKALI_HALIDE_REACTION_OXIDES[name]

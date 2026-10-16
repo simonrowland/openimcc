@@ -98,8 +98,7 @@ def _legacy_output_digest(result) -> str:
         result.fallback_fired, result.warm_start,
         tuple((element, tuple(states.items())) for element, states
               in result.element_moles_by_oxidation_state.items()),
-        result.unmodelled_redox_couples, result.redox_pack_digest,
-        result.melt_pack_binding_digest, result.chromous_cr_mol,
+        result.unmodelled_redox_couples, result.chromous_cr_mol,
         result.chromic_cr_mol, result.cr_oxygen_capacity_mol,
         result.composition_redox_iterations,
     )
@@ -355,9 +354,9 @@ def test_cr_candidate_legacy_outputs_are_bit_identical_to_base_commit():
     feed = {"Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
             "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05}
     expected = (
-        "d9be283f274f6340eee15c5223eebbba92dd01a38720e0fee606637df011ee71",
-        "7a5f098c6e1354e4ca4c1fda0b37bd8fa36b06e3b0087a3168cd75bdf12a2027",
-        "f141153bab1b73d235ed5713045d2e33964222813785763cff199d5c745fca30",
+        "2255bae07f770732409948ccd464fce4c0086d382c8f5b541863978925d9f6c4",
+        "eb5263cf95727fbd311f0e9b48ed3fc5e524d0fb37ca2ce042d6b04b7598127c",
+        "974bc70338caca957de2df9e774cd3641d61d708b6f8d71dcabb57c271526d43",
     )
     actual = []
     for temperature, logf in ((1673.0, -10.0), (1700.0, -8.0), (1773.0, -6.0)):
@@ -375,9 +374,9 @@ def test_default_outputs_are_bit_identical_to_base_commit():
         (2500.0, {"Fe": 0.7, "Si": 0.2, "Mg": 0.1, "O": 1.0}),
     ]
     expected = (
-        "322c95c29ab2f48970690f09978b6f82491a38ce99f655d8dc065cf296905a61",
-        "ed556c3da7e16d08bb8bf3d9e75659759dcf0387e1660d3a52e8c6b06b067952",
-        "f938b462405d6de6127371854007c8d1f4cfee05b67b25a3929c4d36c90dbd42",
+        "55e89d0cba18a35b40bcaa67263c28f4cbbe9dd45878bcfeb434605946e7fdfd",
+        "630fcf57eac6480ee9a272022f0e2064cdf7348bfe3c15ec35ca91ea7fcbcb79",
+        "d9d5224aefeedaf222550f2bffb96c528e08a9fbf66bb1e30ddcaa9c0e8ba79d",
     )
     actual = [
         _legacy_output_digest(evaluate_redox(feed, temperature, "closed"))
