@@ -984,7 +984,8 @@ def _solve_active(
         "continuation_stages": continuation_stages,
     }
     raise ImccNonconvergenceError(
-        "IMCC-SF04 parent-balance solve did not converge",
+        "IMCC-SF04 parent-balance solve did not converge "
+        f"(residual_inf={res_inf_best:.6g}; {msg_best})",
         diagnostics,
     )
 

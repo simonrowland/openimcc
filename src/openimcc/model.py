@@ -1217,61 +1217,176 @@ def evaluate(
         total_moles = float(vector.sum())
         trace_fraction = float(vector[trace_index] / total_moles)
         floor_fraction = 1.0e-3
-        if trace_fraction >= floor_fraction:
-            raise
+        recovered = False
+        trace_stages = 0
+        if trace_fraction < floor_fraction:
+            # The depletion sweep found failures down to 1e-12 of total; a
+            # 1e-3 floor clears the observed ill-conditioned 1e-4 boundary.
+            # Seven log-spaced stages span at most 1.5 decades per step.
+            floor_moles = floor_fraction * total_moles
+            stage_moles = np.geomspace(floor_moles, vector[trace_index], 7)
+            y_stage = None
+            last_success_y = None
+            for stage_number, trace_moles in enumerate(stage_moles, start=1):
+                trace_stages = stage_number
+                staged_vector = vector.copy()
+                final_stage = stage_number == len(stage_moles)
+                staged_vector[trace_index] = (
+                    vector[trace_index] if final_stage else float(trace_moles)
+                )
+                stage_basis = basis if final_stage else float(staged_vector.sum())
+                try:
+                    result = solve_imcc_sf04(
+                        staged_vector,
+                        T_K,
+                        kernel_pack,
+                        basis=stage_basis,
+                        extra_mol=extra_mol,
+                        allow_extrapolation=allow_extrapolation,
+                        tol=tol,
+                        max_iter=max_iter,
+                        y_init=y_stage,
+                    )
+                except ImccNonconvergenceError as stage_error:
+                    candidate = np.asarray(
+                        stage_error.diagnostics.get("final_y", ()), dtype=float
+                    )
+                    active_count = int(np.count_nonzero(vector > 0.0))
+                    if (
+                        candidate.ndim == 1
+                        and candidate.size == active_count
+                        and np.all(np.isfinite(candidate))
+                    ):
+                        y_stage = candidate
+                        continue
+                    break
+                y_stage = np.log(result.parent_x_star[vector > 0.0])
+                last_success_y = y_stage.copy()
+                if final_stage:
+                    result = replace(
+                        result,
+                        convergence=replace(
+                            result.convergence,
+                            solver_path="composition-continuation",
+                            continuation_stages=stage_number,
+                        ),
+                    )
+                    recovered = True
+                    break
 
-        # The depletion sweep found failures down to 1e-12 of total; a 1e-3
-        # floor is nine decades above that seed clamp and clears the observed
-        # ill-conditioned 1e-4 boundary. Seven log-spaced stages spread the
-        # return over at most 1.5 decades per step. Moles are scaled before
-        # normalization; the ratio is dimensionless.
-        floor_moles = floor_fraction * total_moles
-        stage_moles = np.geomspace(floor_moles, vector[trace_index], 7)
-        y_stage = None
-        for stage_number, trace_moles in enumerate(stage_moles, start=1):
-            staged_vector = vector.copy()
-            final_stage = stage_number == len(stage_moles)
-            staged_vector[trace_index] = (
-                vector[trace_index] if final_stage else float(trace_moles)
-            )
-            stage_basis = basis if final_stage else float(staged_vector.sum())
-            try:
-                result = solve_imcc_sf04(
-                    staged_vector,
-                    T_K,
-                    kernel_pack,
-                    basis=stage_basis,
-                    extra_mol=extra_mol,
-                    allow_extrapolation=allow_extrapolation,
-                    tol=tol,
-                    max_iter=max_iter,
-                    y_init=y_stage,
-                )
-            except ImccNonconvergenceError as stage_error:
-                candidate = np.asarray(
-                    stage_error.diagnostics.get("final_y", ()), dtype=float
-                )
-                active_count = int(np.count_nonzero(vector > 0.0))
-                if (
-                    candidate.ndim == 1
-                    and candidate.size == active_count
-                    and np.all(np.isfinite(candidate))
-                ):
-                    y_stage = candidate
-                    continue
-                raise cold_error from None
-            y_stage = np.log(result.parent_x_star[vector > 0.0])
-            if final_stage:
-                result = replace(
-                    result,
-                    convergence=replace(
-                        result.convergence,
-                        solver_path="composition-continuation",
-                        continuation_stages=stage_number,
-                    ),
-                )
-                break
-        else:
+            if not recovered and last_success_y is not None:
+                # A failed later stage can leave a poor `final_y` even though
+                # an earlier stage converged on the connected branch. Insert
+                # a trace anchor at 1e-11 before returning to the true vector;
+                # the fraction is dimensionless and sits one decade above the
+                # sweep's 1e-12 lower end. At or below the anchor, retry the
+                # true vector directly from the certified root.
+                bridge_fraction = min(trace_fraction, 1.0e-11)
+                bridge_vector = vector.copy()
+                bridge_vector[trace_index] = bridge_fraction * total_moles
+                bridge_is_input = bridge_fraction == trace_fraction
+                try:
+                    bridge_result = solve_imcc_sf04(
+                        bridge_vector,
+                        T_K,
+                        kernel_pack,
+                        basis=(
+                            basis if bridge_is_input
+                            else float(bridge_vector.sum())
+                        ),
+                        extra_mol=extra_mol,
+                        allow_extrapolation=allow_extrapolation,
+                        tol=tol,
+                        max_iter=max_iter,
+                        y_init=last_success_y,
+                    )
+                except ImccNonconvergenceError:
+                    pass
+                else:
+                    result = bridge_result
+                    if not bridge_is_input:
+                        bridge_y = np.log(bridge_result.parent_x_star[vector > 0.0])
+                        try:
+                            result = solve_imcc_sf04(
+                                vector,
+                                T_K,
+                                kernel_pack,
+                                basis=basis,
+                                extra_mol=extra_mol,
+                                allow_extrapolation=allow_extrapolation,
+                                tol=tol,
+                                max_iter=max_iter,
+                                y_init=bridge_y,
+                            )
+                        except ImccNonconvergenceError:
+                            result = None
+                    if result is not None:
+                        retry_stages = 1 if bridge_is_input else 2
+                        result = replace(
+                            result,
+                            convergence=replace(
+                                result.convergence,
+                                solver_path="composition-continuation",
+                                continuation_stages=trace_stages + retry_stages,
+                            ),
+                        )
+                        recovered = True
+
+        if not recovered:
+            # A failed trace walk can still start outside the selected basin.
+            # Raising SiO2 moves the analytical composition toward a nearby
+            # well-conditioned silicate root; geometric factors interpolate
+            # that root back to the requested vector. The factors are
+            # dimensionless, the basis is recomputed at each intermediate
+            # composition, and the final factor 1 restores the exact input.
+            silica_index = parent_oxides.index("SiO2")
+            if vector[silica_index] > 0.0:
+                y_stage = None
+                silica_factors = (10.0, 8.0, 6.0, 4.0, 2.0, 1.0)
+                for silica_stage, factor in enumerate(silica_factors, start=1):
+                    silica_vector = vector.copy()
+                    silica_vector[silica_index] *= factor
+                    final_stage = silica_stage == len(silica_factors)
+                    stage_basis = basis if final_stage else float(silica_vector.sum())
+                    try:
+                        result = solve_imcc_sf04(
+                            silica_vector,
+                            T_K,
+                            kernel_pack,
+                            basis=stage_basis,
+                            extra_mol=extra_mol,
+                            allow_extrapolation=allow_extrapolation,
+                            tol=tol,
+                            max_iter=max_iter,
+                            y_init=y_stage,
+                        )
+                    except ImccNonconvergenceError as silica_error:
+                        candidate = np.asarray(
+                            silica_error.diagnostics.get("final_y", ()), dtype=float
+                        )
+                        active_count = int(np.count_nonzero(vector > 0.0))
+                        if (
+                            candidate.ndim == 1
+                            and candidate.size == active_count
+                            and np.all(np.isfinite(candidate))
+                        ):
+                            y_stage = candidate
+                            continue
+                        break
+                    y_stage = np.log(result.parent_x_star[vector > 0.0])
+                    if final_stage:
+                        result = replace(
+                            result,
+                            convergence=replace(
+                                result.convergence,
+                                solver_path="composition-continuation",
+                                continuation_stages=trace_stages + silica_stage,
+                            ),
+                        )
+                        recovered = True
+                        break
+
+        if not recovered:
             raise cold_error from None
 
     # Build the caller-facing label block. The paper-window flag is computed

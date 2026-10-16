@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import pytest
 
 from openimcc import ImccInvalidWarmStartError, evaluate
@@ -55,6 +56,35 @@ CASES = (
         6.914222520149845e-05,
     ),
 )
+
+
+def _cai_mole_vector(ti_fraction: float) -> np.ndarray:
+    oxides = (
+        "SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"
+    )
+    weight = {
+        "SiO2": 29.1,
+        "MgO": 10.2,
+        "FeO": 0.6,
+        "CaO": 28.8,
+        "Al2O3": 29.6,
+        "TiO2": 1.3,
+        "Na2O": 0.18,
+        "K2O": 0.1,
+    }
+    mole = {
+        name: weight[name] / model._OXIDE_MOLAR_MASS_G_MOL[name]
+        for name in oxides
+    }
+    vector = np.asarray([mole[name] for name in oxides])
+    vector /= vector.sum()
+    ti_index = oxides.index("TiO2")
+    total_other = float(vector.sum() - vector[ti_index])
+    vector[ti_index] = ti_fraction
+    for name in oxides:
+        if name != "TiO2":
+            vector[oxides.index(name)] *= (1.0 - ti_fraction) / total_other
+    return vector
 
 
 @pytest.mark.parametrize(
@@ -130,6 +160,147 @@ def test_non_silica_trace_parent_uses_composition_continuation() -> None:
     assert result.convergence.residual_inf <= 1.0e-12
 
 
+def test_silica_walk_recovers_above_floor_feo_trace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    oxides = (
+        "SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"
+    )
+    feo_fraction = 1.2e-3
+    composition = {
+        oxide: (feo_fraction if oxide == "FeO" else (1.0 - feo_fraction) / 7.0)
+        for oxide in oxides
+    }
+
+    calls: list[np.ndarray] = []
+    solve = model.solve_imcc_sf04
+
+    def record(parent_mol: np.ndarray, *args: object, **kwargs: object) -> object:
+        calls.append(parent_mol.copy())
+        return solve(parent_mol, *args, **kwargs)
+
+    monkeypatch.setattr(model, "solve_imcc_sf04", record)
+    result = evaluate(
+        composition,
+        2288.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.convergence.solver_path == "composition-continuation"
+    assert result.convergence.continuation_stages == 6
+    assert result.convergence.residual_inf <= 1.0e-12
+    assert len(calls) == 7
+    assert np.array_equal(calls[0], calls[-1])
+    assert calls[1][0] == pytest.approx(calls[0][0] * 10.0)
+    assert result.parent_mol[oxides.index("FeO")] / result.basis == pytest.approx(
+        feo_fraction
+    )
+
+
+def test_silica_walk_recovers_depleted_cai_tio2(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    vector = _cai_mole_vector(1.0e-5)
+    calls: list[np.ndarray] = []
+    solve = model.solve_imcc_sf04
+
+    def record(parent_mol: np.ndarray, *args: object, **kwargs: object) -> object:
+        calls.append(parent_mol.copy())
+        return solve(parent_mol, *args, **kwargs)
+
+    monkeypatch.setattr(model, "solve_imcc_sf04", record)
+    result = evaluate(
+        vector,
+        1710.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.convergence.solver_path == "composition-continuation"
+    assert result.convergence.continuation_stages == 13
+    assert result.convergence.residual_inf <= 1.0e-12
+    assert any(call[0] >= vector[0] * 10.0 for call in calls)
+    assert np.array_equal(calls[-1], vector)
+    assert result.parent_mol[5] / result.basis == pytest.approx(1.0e-5)
+
+
+def test_silica_walk_recovers_cai_trace_missed_by_staged_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    vector = _cai_mole_vector(1.414213562373095e-7)
+    calls: list[np.ndarray] = []
+    solve = model.solve_imcc_sf04
+
+    def record(parent_mol: np.ndarray, *args: object, **kwargs: object) -> object:
+        calls.append(parent_mol.copy())
+        return solve(parent_mol, *args, **kwargs)
+
+    monkeypatch.setattr(model, "solve_imcc_sf04", record)
+    result = evaluate(
+        vector,
+        1710.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.convergence.solver_path == "composition-continuation"
+    assert result.convergence.continuation_stages == 13
+    assert result.convergence.residual_inf <= 1.0e-12
+    assert any(call[0] >= vector[0] * 10.0 for call in calls)
+    assert np.array_equal(calls[-1], vector)
+
+
+def test_last_converged_trace_seed_recovers_depleted_feo() -> None:
+    composition = {name: 1.0 / 8.0 for name in (
+        "SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"
+    )}
+    composition["FeO"] = 1.0e-12
+    remaining = (1.0 - 1.0e-12) / 7.0
+    for name in composition:
+        if name != "FeO":
+            composition[name] = remaining
+
+    result = evaluate(
+        composition,
+        1710.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.convergence.solver_path == "composition-continuation"
+    assert result.convergence.continuation_stages > 7
+    assert result.convergence.residual_inf <= 1.0e-12
+
+
+def test_trace_anchor_recovers_depleted_feo_at_2288k() -> None:
+    feo_fraction = float(np.geomspace(2.0e-2, 1.0e-12, 9)[7])
+    composition = {
+        name: (
+            feo_fraction
+            if name == "FeO"
+            else (1.0 - feo_fraction) / 7.0
+        )
+        for name in ("SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O")
+    }
+
+    result = evaluate(
+        composition,
+        2288.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.convergence.solver_path == "composition-continuation"
+    assert result.convergence.continuation_stages > 7
+    assert result.convergence.residual_inf <= 1.0e-12
+
+
 def test_failed_composition_continuation_preserves_original_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -154,7 +325,7 @@ def test_failed_composition_continuation_preserves_original_diagnostics(
     with pytest.raises(ImccNonconvergenceError, match="fixture refuses") as caught:
         evaluate(composition, temperature)
 
-    assert calls == 8
+    assert calls == 14
     assert caught.value.diagnostics == diagnostics
 
 
