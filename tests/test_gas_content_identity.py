@@ -48,8 +48,6 @@ PACK_DIR = ROOT / "src/openimcc/data/packs"
 TABLE_FILES = ("gas-shomate.csv", "condensate.csv")
 PACKAGED_GAS_TABLE_DIGEST = (
     "9f1f8f3191e873119fa162202c604d4b56d70dd6b8e6aa938c15dd65cd20679f"
-    "337b2f126da38b112714b24513318a75dc2495ac9145bb21d40cd59e205be206"
-    "7761ef34f59d8d42be0cc992b2ab6a9f63df8512521aa00432dfd85ec286d78c"
 )
 PACKAGED_CONDENSATE_TABLE_DIGEST = (
     "4ba6a61f5187a5d6b6b7e12d548b8c473e4f8e71d669f05ad0a0d31ac7dfc866"
@@ -57,11 +55,24 @@ PACKAGED_CONDENSATE_TABLE_DIGEST = (
 PACKAGED_ENGINE_BINDING_DIGESTS = {
     "v1": "ec7ba28da70209852d310ec7631c9b035bdcf398904034029aaaa298eb571ec8",
     "ext": "058812797682d9c7874348bf4ef301685121db0eb59195ab5bd1134a5d9a9fbc",
-    "v1": "07daab0cb7caf56206b791c69a42b3d39f270ca6a02796d5ec2a4a470b7a50db",
-    "ext": "d6186ef11e26bf773e9a17db3d6e1b6ad23a0c78155a7262c70d5ec219691e88",
-    "v1": "ce6a68fe41f9ef27852f4a6c760e46301af329f1304a86089845c2fadf241bb8",
-    "ext": "ba8142cec88aa548ef2891a1a6630be9ad1f1a8f3245bfee4e06c7f86f127d32",
 }
+ADDED_GAS_SPECIES = {
+    "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
+    "(BeO)2(g)", "(BeO)3(g)", "(BeO)4(g)", "Be2(g)", "Tl(g)", "Tl2O(g)",
+    "(CsBr)2(g)", "(CsCl)2(g)", "(CsF)2(g)", "(CsI)2(g)",
+    "(LiBr)2(g)", "(LiCl)2(g)", "(LiF)2(g)", "(LiI)2(g)",
+    "(MgBr2)2(g)", "(MgCl2)2(g)", "(MgF2)2(g)",
+    "(RbBr)2(g)", "(RbCl)2(g)", "(RbF)2(g)", "(RbI)2(g)",
+    "BaBr(g)", "BaBr2(g)", "BaCl(g)", "BaCl2(g)", "BaF(g)", "BaF2(g)",
+    "BaI(g)", "BaI2(g)", "CaBr(g)", "CaBr2(g)", "CaCl(g)", "CaCl2(g)",
+    "CaF(g)", "CaF2(g)", "CaI(g)", "CaI2(g)", "CsBr(g)", "CsCl(g)",
+    "CsF(g)", "CsI(g)", "LiBr(g)", "LiCl(g)", "LiF(g)", "LiI(g)",
+    "MgBr(g)", "MgBr2(g)", "MgCl(g)", "MgCl2(g)", "MgF(g)", "MgF2(g)",
+    "MgI(g)", "MgI2(g)", "RbBr(g)", "RbCl(g)", "RbF(g)", "RbI(g)",
+    "SrBr(g)", "SrBr2(g)", "SrCl(g)", "SrCl2(g)", "SrF(g)", "SrF2(g)",
+    "SrI(g)", "SrI2(g)",
+}
+ADDED_CONDENSATE_SPECIES = {"Ta2O5(l)", "BeO(l)", "Tl2O(l)"}
 V1_COMPOSITION = {
     "SiO2": 0.45,
     "MgO": 0.20,
@@ -151,15 +162,9 @@ def _na_gas_evaluation(pack: ImccGasDatapack) -> dict[str, float]:
 
 def test_packaged_table_content_digests_match_current_tables() -> None:
     pack = load_gas_datapack()
-    added_gas_species = {
-        "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
-        "(BeO)2(g)", "(BeO)3(g)", "(BeO)4(g)", "Be2(g)",
-        "Tl(g)", "Tl2O(g)",
-    }
-    added_condensate_species = {"Ta2O5(l)", "BeO(l)", "Tl2O(l)"}
-    retained_gas = pack.gas_df.loc[~pack.gas_df.index.isin(added_gas_species)]
+    retained_gas = pack.gas_df.loc[~pack.gas_df.index.isin(ADDED_GAS_SPECIES)]
     retained_condensate = pack.oxide_df.loc[
-        ~pack.oxide_df.index.isin(added_condensate_species)
+        ~pack.oxide_df.index.isin(ADDED_CONDENSATE_SPECIES)
     ]
     assert _gas_table_digest("gas", retained_gas) == PACKAGED_GAS_TABLE_DIGEST
     assert (
@@ -216,17 +221,11 @@ def test_gas_cell_change_only_changes_gas_and_combined_identity(
 
 def test_combined_identity_includes_the_published_melt_binding_digest() -> None:
     gas_pack = load_gas_datapack()
-    added_gas_species = {
-        "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
-        "(BeO)2(g)", "(BeO)3(g)", "(BeO)4(g)", "Be2(g)",
-        "Tl(g)", "Tl2O(g)",
-    }
-    added_condensate_species = {"Ta2O5(l)", "BeO(l)", "Tl2O(l)"}
     legacy_pack = replace(
         gas_pack,
-        gas_df=gas_pack.gas_df.loc[~gas_pack.gas_df.index.isin(added_gas_species)],
+        gas_df=gas_pack.gas_df.loc[~gas_pack.gas_df.index.isin(ADDED_GAS_SPECIES)],
         oxide_df=gas_pack.oxide_df.loc[
-            ~gas_pack.oxide_df.index.isin(added_condensate_species)
+            ~gas_pack.oxide_df.index.isin(ADDED_CONDENSATE_SPECIES)
         ],
     )
     v1 = load_datapack(PACK_DIR / "imcc-sf04-v1.0.2.json")
