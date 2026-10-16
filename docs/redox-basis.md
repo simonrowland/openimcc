@@ -148,7 +148,7 @@ above 1.03 wt% TiO2, or outside 1673-1674 K. The TiO2 threshold is the anchor
 content because the available comparison cannot locate error onset between
 about 1 and 7 wt%; the cutoff does not claim a validated onset. In held-out
 Tranell titrations (73 scored points) span Lambda 0.6631-0.9079 and 7.3-52.35
-wt% TiO2; all remain outside the Berry Lambda envelope. The candidate
+wt% TiO2; all 73 lie outside the Berry Lambda envelope. CST4 (Lambda 0.628, 7.33 wt% TiO2) is the one Tranell slag inside the Lambda envelope; its titrations are listed under CST4a/CST4b without composition records and are not among the 73 scored points. A downstream reconstruction from the parent CST4 composition under-predicts it by about 0.44 dex, so the miss is not explained by Lambda extrapolation alone; CST4 is still outside in TiO2 content and temperature.  The candidate
 under-predicts Ti3+/Ti4+ by a median 0.5246 dex (maximum absolute residual
 1.3300 dex), unchanged because the pack recipe already matches Berry's
 definition. Apollo
