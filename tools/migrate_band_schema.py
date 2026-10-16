@@ -5,12 +5,35 @@ from __future__ import annotations
 
 import json
 import hashlib
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+
+SOURCE_UNCERTAINTY_KINDS = {
+    "TSIV dfH298 ±1.0 kJ/mol uncertainty plus Phi uncertainty, propagated fusion-input spread, and quadratic crystal-Cp extrapolation band",
+    "reviewed fusion-enthalpy and transition-temperature spreads plus crystal-Cp extension model spread",
+    "maximum envelope of TSIV Phi uncertainty (linearly interpolated between stated knots and multiplied by T) and the estimated ±5 kJ/mol fusion-enthalpy contribution dG = dH_fus(1 − T/Tm) below Tm; max avoids an unsupported independence assumption; formation-anchor uncertainty is separate",
+    "TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate",
+    "TSIV Phi uncertainty, linearly interpolated between stated knots and multiplied by T; formation-anchor uncertainty is separate; the estimated 40 kJ/mol fusion enthalpy has no stated numeric uncertainty, so no fusion term is added",
+    "propagated OECD/NEA fusion-input uncertainty plus crystal-extension model spread",
+    "propagated fusion-input uncertainty plus crystal-extension model spread",
+    "propagated source-reported ΔfH°298 and S°298 uncertainties",
+    "propagated printed formation, transition, fusion and temperature uncertainties",
+    "propagated printed phase-chain uncertainty",
+    "propagated printed formation",
+    "propagated source-reported formation-enthalpy uncertainty",
+    "propagated fusion-input, fusion-temperature, and liquid-Cp uncertainty",
+    "TSIV dfH298 uncertainty, Phi uncertainty, and fitted crystal-Cp extension band",
+}
+UNQUANTIFIED_BAND_KINDS = {
+    "not separately quantified by selected source",
+    "Table 1436 prints accuracy class 4-E; numeric uncertainty band is not quantified by the cited page",
+    "not numerically quantified by source; TSIV accuracy class 4-F",
+}
 
 
 def independent_check(reason: str) -> dict[str, Any]:
@@ -32,7 +55,18 @@ def band_basis(kind: str, explanation: str, provenance: Any = None) -> dict[str,
 
 
 def _temperature(record: dict[str, Any]) -> Any:
-    return record.get("T_domain_K", record.get("T_range_K"))
+    value = record.get("T_domain_K", record.get("T_range_K", record.get("T_interval")))
+    return deepcopy(value)
+
+
+def _source_band_kind(value: Any, row: dict[str, Any]) -> tuple[str | None, str]:
+    """Classify a published band using its declared provenance kind."""
+    explanation = str(value.get("kind", "")) if isinstance(value, dict) else ""
+    if explanation in UNQUANTIFIED_BAND_KINDS:
+        return None, explanation
+    if explanation in SOURCE_UNCERTAINTY_KINDS:
+        return "source_uncertainty", explanation or "Uncertainty reported or propagated from the source."
+    return "measured_construction", explanation or "Measured construction envelope."
 
 
 def _redox(root: Path) -> None:
@@ -87,7 +121,7 @@ def _redox(root: Path) -> None:
                 "value": value, "unit": "kJ mol^-1 species",
                 "target_source": rationale or row.get("provenance", {}).get("source"),
                 "comparison_method": legacy_method or "maximum absolute fit residual against the cited source function",
-                "temperature_range": "T_domain_K",
+                "temperature_range": _temperature(row),
                 "held_out_or_in_sample": "in_sample",
             }
             row["accuracy_band"] = None
@@ -125,25 +159,39 @@ def _redox(root: Path) -> None:
                 "value": value, "unit": "kJ mol^-1 reaction",
                 "target_source": "JANAF FeO formation-G values" if row_number == 1 else method,
                 "comparison_method": method,
-                "temperature_range": "T_domain_K",
+                "temperature_range": _temperature(row),
                 "held_out_or_in_sample": "in_sample",
             }
             row["band_basis"] = band_basis("fit_only", note or method, row.get("provenance_class"))
         row["independent_check"] = independent_check("No row-specific independent equilibrium check was identified.")
-    # The published Fe buffer check tests the reaction collectively; it cannot
-    # be apportioned to any one component standard.
-    reaction = pack["rows"][0]
-    if not reaction.get("independent_check"):
-        changed = True
-        reaction["independent_check"] = {
+    # Distin checks the combined buffer, so keep its numeric miss unassigned.
+    distin = {
         "status": "tested", "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
         "primary_source": "Distin, Whiteway & Masson (1971), DOI 10.1179/cmq.1971.10.1.13",
-        "conditions": "1700–2200 K; stoichiometric FeO(l) standard",
-        "measured_value": "5–9 kJ/mol miss",
-        "predicted_value": "Existing fit-only reaction residual",
-        "miss": "5–9 kJ/mol", "miss_to_band_ratio": "12.8–23.1",
-        "reason": "Collective reaction check; the discrepancy cannot be assigned to an individual component.",
-        }
+        "conditions": "1800–2230 K; stoichiometric FeO(l) standard",
+        "measured_value": "Oxygen solubility in liquid iron in contact with liquid iron oxide",
+        "predicted_value": "Fe/FeO/O2 buffer equilibrium",
+        "miss": None, "miss_to_band_ratio": None,
+        "reason": "Collective reaction check; the discrepancy cannot be assigned to FeO, Fe(metal), Fe(l), Fe(cr), or O2 individually.",
+    }
+    pack["rows"][0]["independent_check"] = distin
+    for species in ("FeO(l)", "Fe(metal)", "Fe(l)", "Fe(cr)", "O2(g)"):
+        pack["thermo_species"][species]["independent_check"] = {**distin, "status": "lead"}
+    chen = {
+        "status": "tested", "equilibrium": "Mn-bearing silicate/aluminate melt activity",
+        "primary_source": "Chen et al. (2021), https://www.jstage.jst.go.jp/article/isijinternational/61/6/61_ISIJINT-2020-730/_pdf; Chen et al. (2022), https://www.jstage.jst.go.jp/article/isijinternational/62/7/62_ISIJINT-2022-018/_pdf",
+        "conditions": "Held-out slag activity observations at 1673 K (18 points) and 1723 K (25 points).",
+        "measured_value": "Observed Mn activities in held-out slag fixtures",
+        "predicted_value": "Coupled OpenIMCC Mn-bearing melt predictions",
+        "miss": None, "miss_to_band_ratio": None,
+        "reason": "This is a coupled-model check; observations cannot be apportioned to an individual Mn standard or reaction.",
+    }
+    for species in ("MnO(l)", "MnSiO3(l)", "Mn2SiO4(l)", "MnAl2O4(l)"):
+        pack["thermo_species"][species]["independent_check"] = chen
+    for row in pack["rows"]:
+        if "Mn" in row.get("reaction", ""):
+            row["independent_check"] = chen
+    changed = True
     if changed:
         projection = dict(pack)
         projection.pop("canonical_content_digest", None)
@@ -196,39 +244,63 @@ def _gas(root: Path) -> None:
     for row in doc["rows"]:
         if row.get("construction_inputs_path") == "data-src/liquid-from-solid-inputs.json":
             row["construction_inputs_sha256"] = inputs_digest
-        legacy = any(key in row for key in ("max_residual_J_per_mol", "max_residual_log10_K", "uncertainty_band", "combined_band"))
+        legacy = any(key in row for key in ("max_residual_J_per_mol", "max_residual_J_per_mol_by_interval", "max_residual_log10_K", "uncertainty_band", "additional_uncertainty_bands", "combined_band"))
         if not legacy and all(key in row for key in ("fit_residual", "accuracy_band", "band_basis", "independent_check")):
             continue
-        old_residuals = {key: row.pop(key) for key in ("max_residual_J_per_mol", "max_residual_log10_K") if key in row}
+        old_residuals = {key: row.pop(key) for key in ("max_residual_J_per_mol", "max_residual_J_per_mol_by_interval", "max_residual_log10_K") if key in row}
+        additional_bands = row.pop("additional_uncertainty_bands", None)
         old_band = row.pop("uncertainty_band", None)
         if "combined_band" in row:
             old_band = {"combined_band": row.pop("combined_band"), "source_uncertainty": row.pop("source_uncertainty", None)}
         source = row.get("source_locator") or row.get("source_record") or row.get("source_path")
-        temperature = row.get("T_range_K") or row.get("T_interval")
+        temperature = _temperature(row)
         if old_residuals:
             row["fit_residual"] = {
                 "value": old_residuals,
-                "unit": {"max_residual_J_per_mol": "J mol^-1", "max_residual_log10_K": "log10 K"},
+                "unit": {
+                    key: "J mol^-1" if "_J_per_mol" in key else "log10 K"
+                    for key in old_residuals
+                },
                 "target_source": source,
                 "comparison_method": row.get("method", "source-function fit"),
-                "temperature_range": "T_range_K or T_interval",
+                "temperature_range": deepcopy(row.get("fit_intervals_K", temperature)),
                 "held_out_or_in_sample": "in_sample",
             }
         else:
             row["fit_residual"] = None
         if old_band is not None:
             kind = str(old_band.get("kind", ""))
-            row["accuracy_band"] = {
-                "value": old_band,
-                "unit": old_band.get("units", "J mol^-1"),
-                "temperature_points_or_range": "values_J_per_mol keys or T_range_K",
-                "coverage": kind or "published source uncertainty or measured construction envelope",
-            }
-            basis_kind = "source_uncertainty" if "TSIV" in kind or "source uncertainty" in kind else "measured_construction"
-            row["band_basis"] = band_basis(basis_kind, kind or "Existing source or continuation band", source)
+            basis_kind, basis_explanation = _source_band_kind(old_band, row)
+            if "combined_band" in old_band:
+                basis_kind = "measured_construction"
+                basis_explanation = "Tier-2 fusion-entropy and liquid-Cp census envelopes combined with the selected input spreads."
+            if basis_kind is None:
+                row["accuracy_band"] = None
+                row["band_basis"] = band_basis("none", basis_explanation, source)
+                row["fit_residual"] = row.get("fit_residual")
+                old_band = None
+            if old_band is None:
+                pass
+            else:
+                unit = "kJ mol^-1" if "combined_band" in old_band else old_band.get("units", "J mol^-1")
+                band_value = old_band
+                if additional_bands:
+                    band_value = {**old_band, "additional_uncertainty_bands": additional_bands}
+                row["accuracy_band"] = {
+                    "value": band_value,
+                    "unit": unit,
+                    "temperature_points_or_range": "values_J_per_mol keys or T_range_K",
+                    "coverage": kind or "published source uncertainty or measured construction envelope",
+                }
+                row["band_basis"] = band_basis(basis_kind, basis_explanation, source)
         else:
-            row["accuracy_band"] = None
-            row["band_basis"] = band_basis("fit_only" if old_residuals else "none", "Source-fit residual only" if old_residuals else "No quantified row-level band", source)
+            if additional_bands:
+                old_band = {"additional_uncertainty_bands": additional_bands}
+                row["accuracy_band"] = {"value": old_band, "unit": "J mol^-1", "temperature_points_or_range": temperature, "coverage": "Additional source comparison envelope."}
+                row["band_basis"] = band_basis("measured_construction", "Additional source comparison envelope.", source)
+            else:
+                row["accuracy_band"] = None
+                row["band_basis"] = band_basis("fit_only" if old_residuals else "none", "Source-fit residual only" if old_residuals else "No quantified row-level band", source)
         parent = row.get("species_name")
         if parent in parent_checks:
             citation, method, conditions, limitation = parent_checks[parent]
@@ -243,6 +315,7 @@ def _gas(root: Path) -> None:
             row["independent_check"] = independent_check(not_found)
         else:
             row["independent_check"] = independent_check("Not a liquid gas-parent row; independent check status is not applicable.")
+            row["independent_check"]["status"] = "not_applicable"
     lines = source_text.splitlines(keepends=True)
     row_header = next(i for i, line in enumerate(lines) if line.startswith("rows:"))
     row_end = next(
@@ -265,11 +338,11 @@ def _liquid_inputs(root: Path) -> None:
         current_band = row.get("accuracy_band")
         current_value = current_band.get("value") if isinstance(current_band, dict) else None
         existing_basis = row.get("band_basis")
-        current_kind = str(current_value.get("kind", "")).lower() if isinstance(current_value, dict) else ""
+        current_kind = str(current_value.get("kind", "")) if isinstance(current_value, dict) else ""
         if (
             isinstance(existing_basis, dict)
             and existing_basis.get("kind") == "measured_construction"
-            and any(word in current_kind for word in ("uncertainty", "source"))
+            and current_kind in SOURCE_UNCERTAINTY_KINDS
         ):
             existing_basis["kind"] = "source_uncertainty"
         extension_metadata = row.get("crystal_cp_extrapolation_band")
@@ -284,10 +357,8 @@ def _liquid_inputs(root: Path) -> None:
         old_measured = row.pop("measured_band", None)
         old_extension = row.pop("crystal_cp_extrapolation_band", None) or extension_metadata
         if old_measured is not None:
-            measured_kind = str(old_measured.get("kind", "")).lower()
-            basis_kind = "source_uncertainty" if any(
-                word in measured_kind for word in ("uncertainty", "source")
-            ) else "measured_construction"
+            measured_kind = str(old_measured.get("kind", ""))
+            basis_kind = "source_uncertainty" if measured_kind == "TSIV dfH298 uncertainty, Phi uncertainty, and fitted crystal-Cp extension band" else "measured_construction"
             row["accuracy_band"] = {
                 "value": old_measured,
                 "unit": "J mol^-1",
@@ -311,6 +382,12 @@ def _liquid_inputs(root: Path) -> None:
 
 
 def migrate_melt_row(row: dict[str, Any]) -> None:
+    provenance = row.get("provenance")
+    provenance_ref = (
+        provenance.get("source") or provenance.get("source_url")
+        if isinstance(provenance, dict)
+        else provenance
+    )
     def has_legacy_residual(value: Any, *, top: bool = False) -> bool:
         if isinstance(value, dict):
             for key, member in value.items():
@@ -328,7 +405,7 @@ def migrate_melt_row(row: dict[str, Any]) -> None:
         and not has_legacy_residual(row, top=True)
         and (
             row["fit_residual"] is None
-            or row["fit_residual"].get("temperature_range") == "T_domain_K"
+            or row["fit_residual"].get("temperature_range") == _temperature(row)
         )
     ):
         return
@@ -356,16 +433,17 @@ def migrate_melt_row(row: dict[str, Any]) -> None:
 
     move_residuals(row, top=True)
     diagnostics = {**existing_diagnostics, **diagnostics}
+    split = "held_out" if any("heldout" in key.lower() for key in diagnostics) else "held_out_or_candidate"
     row["fit_residual"] = None if not diagnostics else {
         "value": diagnostics,
         "unit": "source-specific",
-        "target_source": row.get("source") or row.get("provenance"),
+        "target_source": row.get("source") or provenance_ref,
         "comparison_method": "Existing held-out or candidate-fit diagnostic; see original field names in value.",
-        "temperature_range": "T_domain_K",
-        "held_out_or_in_sample": "held_out_or_candidate",
+                "temperature_range": _temperature(row),
+        "held_out_or_in_sample": split,
     }
     row["accuracy_band"] = None
-    row["band_basis"] = band_basis("none", "Complex association row has no row-specific uncertainty band.", row.get("provenance"))
+    row["band_basis"] = band_basis("none", "Complex association row has no row-specific uncertainty band.", provenance_ref)
     row["independent_check"] = independent_check("No row-specific pure-complex equilibrium check was identified.")
 
 
@@ -373,6 +451,8 @@ def _melt_packs(root: Path) -> None:
     for path in sorted((root / "src/openimcc/data/packs").glob("imcc-sf04*.json")):
         doc = json.loads(path.read_text())
         for row in doc["rows"]:
+            migrate_melt_row(row)
+        for row in doc.get("sp_extension", {}).get("rows", []):
             migrate_melt_row(row)
         path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
 
