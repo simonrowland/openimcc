@@ -652,9 +652,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
-        | {"Hg", "Au", "Pd"}
+        | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir"}
     )
-    assert len(oxide_rows) == 67
+    assert len(oxide_rows) == 75
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -1725,6 +1725,40 @@ def test_pto2_continuation_band_recomputes_from_its_2000_k_limit() -> None:
         assert actual_band == pytest.approx(expected, abs=0.001)
 
 
+def test_pto2_mixed_oxygen_reference_band_recomputes_from_source_cards() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    rows = [
+        row for row in provenance["rows"]
+        if row["table"] == "gas" and row["species_name"] == "PtO2(g)"
+    ]
+    source = json.loads(
+        (PUBLISHED_DATA / "burcat-o2-reference.json").read_text(encoding="utf-8")
+    )["records"]["O2(g)"]
+    by_interval = {row["T_interval"]: row for row in rows}
+    assert set(by_interval) == {1, 2, 3}
+    for interval, row in by_interval.items():
+        band = next(
+            item for item in row["additional_uncertainty_bands"]
+            if item["kind"] == "mixed_source_parent_scale_inconsistency"
+        )
+        values = {
+            int(temperature): float(value)
+            for temperature, value in band["values_J_per_mol"].items()
+        }
+        low, high = map(int, row["T_range_K"])
+        assert set(values) == set(range(low, high + 1, 100))
+        for temperature, actual in values.items():
+            coefficients = source[
+                "high_coefficients" if temperature >= 1000.0 else "low_coefficients"
+            ]
+            properties = build_gas_tables._burcat7_properties(
+                coefficients, float(temperature)
+            )
+            burcat_g = properties["h_J_mol"] - temperature * properties["s_J_molK"]
+            janaf_g = _janaf_apparent_gibbs("O-029", float(temperature))
+            assert actual == pytest.approx(abs(burcat_g - janaf_g), abs=0.001)
+
+
 def test_pankratz_ru_absolute_k_and_printed_reaction_cells_close() -> None:
     source = json.loads(
         (PUBLISHED_DATA / "pankratz-ru.json").read_text(encoding="utf-8")
@@ -2790,6 +2824,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "(WO3)5",
         "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
         "Ta", "TaO", "TaO2",
+        "Ru", "Rh",
         "Be", "BeO", "Be2O", "(BeO)2", "(BeO)3", "(BeO)4", "Be2",
         "Tl", "Tl2O",
         "NiO", "CoO",
@@ -2811,7 +2846,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         gas_atoms = atom_counts(species)
         element = next(
             name for name in (
-                "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "Y",
+                "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "Y", "Ru", "Rh",
                 "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag",
                 "Mo", "W", "Ba", "Sr", "Zr", "Ta", "Be", "Tl", "Ni", "Co", "Sc", "U", "Th", "Hf",
             )
@@ -3174,7 +3209,7 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
             species in ion_species
             or species in build_gas_tables.TRACE_GAS_SPECIES
             or species in {
-                "Hg", "Au", "Pd",
+                "Hg", "Au", "Pd", "Pt", "PtO2", "Ir",
                 "Y", "YO",
                 "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
                 "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
@@ -4124,6 +4159,8 @@ def test_trace_source_comparisons_use_apparent_gibbs() -> None:
                 assert value["janaf_minus_pankratz_J_mol"] == pytest.approx(
                     janaf_g - pankratz_g, abs=0.001
                 )
+            continue
+        if "issue" in comparison:
             continue
         nasa = _nasa_record(comparison["nasa_record_id"])
         if "pankratz_table_id" in comparison:
@@ -7155,6 +7192,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     assert checked == 236
     existing = set(_SF04_REACTIONS) - {
         "O2",
+        "Pt", "PtO2", "Ru", "Rh", "Ir",
         "Hg",
         "Au",
         "Pd",
@@ -7191,7 +7229,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         "SO3",
         "SSO",
     } - build_gas_tables.TRACE_GAS_SPECIES - {
-        "Y", "YO",
+        "Y", "YO", "Ru", "Rh",
         "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
         "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
         "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",

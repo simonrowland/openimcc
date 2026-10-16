@@ -1188,6 +1188,9 @@ _GAS_PROVENANCE_AUTHORITY["Hg"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY["Au"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY["Pd"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY.update(
+    {species: "published_fitted" for species in ("Pt", "PtO2", "Ru", "Rh", "Ir")}
+)
+_GAS_PROVENANCE_AUTHORITY.update(
     {
         "(MoO3)2": "nasa_glenn_fitted",
         "(MoO3)3": "nasa_glenn_fitted",
@@ -1328,6 +1331,14 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Hg": "published_fitted",
     "Au": "published_fitted",
     "Pd": "published_fitted",
+    "Pt(cr)": "published_fitted",
+    "Pt": "published_fitted",
+    "Ru(cr)": "published_fitted",
+    "Ru": "published_fitted",
+    "Rh(cr)": "published_fitted",
+    "Rh": "published_fitted",
+    "Ir(cr)": "published_fitted",
+    "Ir": "published_fitted",
     "MnO": "liquid_from_solid_estimate",
     "NiO": "published_fitted",
     "CoO": "published_fitted",
@@ -1399,6 +1410,10 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Hg": "BU-2586",
     "Au": "BU-0055",
     "Pd": "BU-3111",
+    "Pt": "BU-3121",
+    "Ru": "P672-Ru-l",
+    "Rh": "P672-Rh-l",
+    "Ir": "BU-2612",
     "Na2O": "Na-013",
     "MgO": "Mg-009",
     "CaO": "Ca-028",
@@ -3170,6 +3185,7 @@ ELEMENT_STATUS["Ru"] = {
 ELEMENT_STATUS["Rh"] = {
     "status": "gas-complete-melt-pending",
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
     "reason": (
         "Pankratz Bulletin 672 printed pp. 330-331 supplies paired Rh(g) and "
         "stable-metal functions; Rh(g) uses a flagged held-Cp continuation "
@@ -3187,6 +3203,7 @@ ELEMENT_STATUS["Rh"] = {
 ELEMENT_STATUS["Ir"] = {
     "status": "gas-complete-melt-pending",
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
     "reason": (
         "Burcat cards BU-2613, BU-2611, and BU-2612 provide paired Ir(g) and "
         "stable iridium phase functions on one elemental reference scale. "
