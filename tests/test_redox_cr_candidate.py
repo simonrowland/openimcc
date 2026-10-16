@@ -70,7 +70,8 @@ def test_candidate_cr_fraction_matches_independent_2021_equation_at_three_points
         assert result.cr_oxygen_capacity_mol == pytest.approx(0.5 * result.chromous_cr_mol)
 
 
-def test_berry_oneill_2004_fixed_slope_positions_for_two_glasses():
+def test_algebraic_berry_oneill_2004_fixed_slope_positions_for_two_glasses():
+    """Check the source equation against two Table 4 glass positions; no solver call."""
     # Table 1 oxide wt% converted independently to single-cation fractions.
     # The fixed-slope Table 4 log10 K' values are 1.871 (AD) and 1.921 (AD+Fo).
     mw = {"SiO2": 60.0843, "Al2O3": 101.9613, "MgO": 40.3044, "CaO": 56.0774}
@@ -96,7 +97,8 @@ def test_berry_oneill_2004_fixed_slope_positions_for_two_glasses():
         )
 
 
-def test_source_equation_has_one_quarter_log_fugacity_slope():
+def test_algebraic_source_equation_has_one_quarter_log_fugacity_slope():
+    """Check the source equation's algebraic slope; this does not exercise the solver."""
     T = 1673.0
     fixed_composition = 0.71749
     qfm = 8.58 - 25050.0 / T
@@ -109,19 +111,20 @@ def test_source_equation_has_one_quarter_log_fugacity_slope():
 
 def test_apollo_14072_like_composition_reproduces_reported_fraction():
     oxide_wt = {
-        "SiO2": 45.2, "TiO2": 2.57, "Al2O3": 11.1, "FeO": 17.8,
-        "MgO": 9.84, "CaO": 12.16, "Na2O": 0.32, "K2O": 0.08,
+        "SiO2": 45.15, "TiO2": 2.57, "Al2O3": 11.07, "FeO": 17.82,
+        "MnO": 0.27, "MgO": 12.16, "CaO": 9.84, "Na2O": 0.32, "K2O": 0.08,
     }
     mw = {
         "SiO2": 60.0843, "TiO2": 79.866, "Al2O3": 101.9613,
-        "FeO": 71.844, "MgO": 40.3044, "CaO": 56.0774,
+        "FeO": 71.844, "MnO": 70.9374, "MgO": 40.3044, "CaO": 56.0774,
         "Na2O": 61.979, "K2O": 94.196,
     }
     inventory = {
         "Si": oxide_wt["SiO2"] / mw["SiO2"],
         "Ti": oxide_wt["TiO2"] / mw["TiO2"],
         "Al": 2.0 * oxide_wt["Al2O3"] / mw["Al2O3"],
-        "Fe": 0.2478,
+        "Fe": oxide_wt["FeO"] / mw["FeO"],
+        "Mn": oxide_wt["MnO"] / mw["MnO"],
         "Mg": oxide_wt["MgO"] / mw["MgO"],
         "Ca": oxide_wt["CaO"] / mw["CaO"],
         "Na": 2.0 * oxide_wt["Na2O"] / mw["Na2O"],
@@ -129,13 +132,40 @@ def test_apollo_14072_like_composition_reproduces_reported_fraction():
         "Cr": 0.00671,
         "O": 0.0,
     }
-    # The 1-bar IW-1 fugacity used by the source calculation is log10(fO2)=-10.729.
+    # Neal (2006), as tabulated in NASA Lunar Sample Compendium Table 1:
+    # SiO2 45.15, TiO2 2.57, Al2O3 11.07, FeO 17.82, MnO 0.27, MgO 12.16,
+    # CaO 9.84, Na2O 0.32, K2O 0.08 wt%. The source calculation uses
+    # log10(fO2)=-10.729 (1-bar IW-1).
     result = _candidate_result(1673.0, -10.729, inventory)
     fraction = result.chromous_cr_mol / (
         result.chromous_cr_mol + result.chromic_cr_mol
     )
-    assert fraction == pytest.approx(0.86716, abs=0.02)
-    assert result.cr_oxygen_capacity_mol == pytest.approx(0.00291, abs=0.00014)
+    assert fraction == pytest.approx(0.87515, abs=0.0001)
+    assert result.cr_oxygen_capacity_mol == pytest.approx(0.5 * result.chromous_cr_mol)
+
+
+def test_candidate_oxygen_capacity_matches_total_fixed_point_difference():
+    inventory = {
+        "Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
+        "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.005, "O": 1.05,
+    }
+    temperature_K = 1700.0
+    qfm_log10 = 8.58 - 25050.0 / temperature_K
+    log10_f_o2 = qfm_log10 - 2.0
+    step = 1.0e-4
+    center = _candidate_result(temperature_K, log10_f_o2, inventory)
+    oxidized = _candidate_result(
+        temperature_K, log10_f_o2 + step / math.log(10.0), inventory
+    )
+    reduced = _candidate_result(
+        temperature_K, log10_f_o2 - step / math.log(10.0), inventory
+    )
+    finite_difference = (oxidized.oxygen_mol - reduced.oxygen_mol) / (2.0 * step)
+    relative_error = abs(
+        (center.oxygen_capacity_mol_per_ln_f_o2 - finite_difference)
+        / finite_difference
+    )
+    assert relative_error < 1.0e-4
 
 
 def test_candidate_loader_and_default_outputs_remain_identical_across_sweep():
@@ -148,9 +178,13 @@ def test_candidate_loader_and_default_outputs_remain_identical_across_sweep():
         (2200.0, {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65}),
         (2500.0, {"Fe": 0.7, "Si": 0.2, "Mg": 0.1, "O": 1.0}),
     ]:
-        assert evaluate_redox(inventory, T, "closed") == evaluate_redox(
+        default_result = evaluate_redox(inventory, T, "closed")
+        assert default_result == evaluate_redox(
             inventory, T, "closed", redox_pack_path=DEFAULT
         )
+        assert default_result.oxygen_capacity_mol_per_ln_f_o2 == evaluate_redox(
+            inventory, T, "closed", redox_pack_path=CANDIDATE
+        ).oxygen_capacity_mol_per_ln_f_o2
 
 
 def test_composition_coefficients_are_rejected_by_default_pack(tmp_path):

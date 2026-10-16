@@ -757,7 +757,8 @@ def _cr_composition_effective_ln_k(
     # n(Cr2+)=n(CrO), n(Cr3+)=2*n(Cr2O3). Therefore K'=2*(Cr2+/Cr3+)*sqrt(aCr2O3).
     # All activities and K values are dimensionless; factor 2 counts Cr atoms
     # per Cr2O3 parent formula. For Apollo 14072 at 1673 K and IW-1 this maps
-    # the source composition to Cr2+/sumCr=0.8672.
+    # the published Apollo 14072 composition (Neal, 2006; NASA Lunar Sample
+    # Compendium, Table 1) to Cr2+/sumCr≈0.875.
     qfm_log10 = 8.58 - 25050.0 / temperature_K
     delta_qfm = lambda_value / math.log(10.0) - qfm_log10
     effective_ln_k: dict[str, float] = {}
@@ -863,6 +864,42 @@ def _state_species(
         )
     }
     return parents, species, oxygen_moles
+
+
+def _fixed_point_oxygen_capacity(
+    state: _LiquidState,
+    temperature_K: float,
+    lambda_value: float,
+    base_datapack: Any,
+    redox_pack: RedoxPack,
+    fallback_counter: list[int],
+    tolerance: float,
+) -> float:
+    """Differentiate oxygen after resolving the composition-conditioned K."""
+    step = 2.0e-5
+    oxygen_at: list[float] = []
+    for shifted_lambda in (lambda_value - step, lambda_value + step):
+        shifted_state = _active_inner(
+            state.parent_moles,
+            temperature_K,
+            shifted_lambda,
+            base_datapack,
+            redox_pack,
+            fallback_counter=fallback_counter,
+            y_init=state.y,
+            tol=tolerance,
+            max_iter=300,
+        )
+        oxygen_at.append(
+            _state_species(shifted_state, base_datapack, redox_pack)[2]
+        )
+    # The outer fixed point recomputes the composition term from Fe2+/Fe3+
+    # at each shifted lambda. Thus this central difference includes the total
+    # implicit response, including d(composition)/d(lambda) through that split.
+    # Oxygen is in mol and lambda is dimensionless, so this is mol O per
+    # natural-log fO2. The 2e-5 step keeps truncation error below the solver
+    # tolerance while avoiding cancellation at ordinary melt inventories.
+    return (oxygen_at[1] - oxygen_at[0]) / (2.0 * step)
 
 
 def _inferred_redox_oxidation_state(
@@ -1531,6 +1568,16 @@ def _assemble_result(
     )
     response = _response(state, base_datapack, redox_pack)
     oxygen_capacity = response.oxygen_capacity
+    if state.composition_redox_iterations > 0:
+        oxygen_capacity = _fixed_point_oxygen_capacity(
+            state,
+            temperature_K,
+            lambda_value,
+            base_datapack,
+            redox_pack,
+            fallback_counter,
+            tolerance,
+        )
     if metal_moles > 0.0:
         # Along the buffered branch, m is the independent coordinate: C is
         # (dO/dm)/(d(lambda_sat)/dm). A zero lambda slope is an invariant
