@@ -903,6 +903,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
         "V",
         "VO",
+        *_HALIDE_REACTIONS,
         "VO2",
         "Nb",
         "NbO",

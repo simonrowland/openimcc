@@ -7175,6 +7175,10 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
     assert checked_rows == 268
     assert checked_nodes == 3665
     assert checked_nodes * 3 == 10995
+    # The JANAF-first halide rows and the MgCl2 dimer join the gas-node audit.
+    assert checked_rows == 278
+    assert checked_nodes == 3855
+    assert checked_nodes * 3 == 11565
     assert overall_max["Cp_J_molK"] == pytest.approx(0.7432227428, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0345525573, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0832967405, abs=1e-9)

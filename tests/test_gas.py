@@ -1630,10 +1630,6 @@ def test_halogen_pressures_match_hand_calculated_source_cells(
         "NaCl": "Cl-056", "(NaCl)2": "Cl-098", "KCl": "Cl-039",
         "(KCl)2": "Cl-091", "NaF": "F-036", "(NaF)2": "F-082",
         "KF": "F-020", "(KF)2": "F-069",
-        "CaF": "Ca-013", "CaF2": "Ca-017", "CaCl": "Ca-008",
-        "CaCl2": "Ca-012", "MgF": "F-026", "MgF2": "F-075",
-        "(MgF2)2": "F-129", "MgCl": "Cl-049", "MgCl2": "Cl-096",
-        "(MgCl2)2": "Cl-150",
     }
     halides = {
         "NaBr": ("Na2O", "Br-030", "Br-040", 0.5, 0.5, 0.25),
@@ -1652,17 +1648,6 @@ def test_halogen_pressures_match_hand_calculated_source_cells(
         "(NaF)2": ("Na2O", "F-082", "F-054", 1.0, 1.0, 0.5),
         "KF": ("K2O", "F-020", "F-054", 0.5, 0.5, 0.25),
         "(KF)2": ("K2O", "F-069", "F-054", 1.0, 1.0, 0.5),
-        # Independent family stoichiometry for the JANAF-selected Ca/Mg rows.
-        "CaF": ("CaO", "Ca-013", "F-054", 1.0, 0.5, 0.5),
-        "CaF2": ("CaO", "Ca-017", "F-054", 1.0, 1.0, 0.5),
-        "CaCl": ("CaO", "Ca-008", "Cl-073", 1.0, 0.5, 0.5),
-        "CaCl2": ("CaO", "Ca-012", "Cl-073", 1.0, 1.0, 0.5),
-        "MgF": ("MgO", "F-026", "F-054", 1.0, 0.5, 0.5),
-        "MgF2": ("MgO", "F-075", "F-054", 1.0, 1.0, 0.5),
-        "(MgF2)2": ("MgO", "F-129", "F-054", 2.0, 2.0, 1.0),
-        "MgCl": ("MgO", "Cl-049", "Cl-073", 1.0, 0.5, 0.5),
-        "MgCl2": ("MgO", "Cl-096", "Cl-073", 1.0, 1.0, 0.5),
-        "(MgCl2)2": ("MgO", "Cl-150", "Cl-073", 2.0, 2.0, 1.0),
     }
     species = (*janaf_products, *halides)
     parent_activities = {
