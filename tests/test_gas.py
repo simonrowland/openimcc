@@ -4328,7 +4328,7 @@ def test_pt_oxide_gas_uses_unit_positive_oxygen_exponent_and_moves_root_down(
 
 @pytest.mark.parametrize(
     ("element", "metal_mass"),
-    [("Hg", 200.592), ("Au", 196.96657), ("Pd", 106.42), ("Ru", 101.07)],
+    [("Hg", 200.592), ("Au", 196.96657), ("Pd", 106.42), ("Ru", 101.07), ("Rh", 102.9055)],
 )
 def test_metal_vapour_parent_activity_and_oxygen_root(
     gas_pack: ImccGasDatapack, element: str, metal_mass: float

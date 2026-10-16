@@ -149,6 +149,10 @@ continuation above 2000 K is flagged.
 Ru(g) uses `a(Ru)` relative to the Pankratz stable-metal functions, switching
 from crystal to liquid at 2607 K; this monatomic gas channel has no
 oxygen-fugacity power.
+Rh(g) uses `a(Rh)` relative to the Pankratz stable-metal functions, switching
+from crystal to liquid at 2237 K. Rh(g) uses a flagged continuation above its
+2000 K source limit; its liquid-parent continuation above 2500 K is also
+flagged. This monatomic gas channel has no oxygen-fugacity power.
 For a specified metal-gas fugacity, convert outside the package with
 `a(M) = f(M)/(K p°)`, where `K = exp(-(G°(M(g)) - G°(selected metal))/RT)`
 and `p° = 1 bar`. The caller activity stays fixed as `fO2` changes.

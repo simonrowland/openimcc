@@ -1,0 +1,45 @@
+{
+  "record_id": "Pankratz-Rh-metal",
+  "publication": "Pankratz, Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672",
+  "source_url": "https://digital.library.unt.edu/ark:/67531/metadc12769/",
+  "tables": {
+    "P672-Rh-g": {
+      "table": "Rhodium ideal monatomic gas table, printed p. 331",
+      "species": "Rh(g)", "formula": "Rh", "phase": "gas",
+      "formation_enthalpy_298_kcal_mol": 133.100, "source_limit_K": 2000.0,
+      "nodes": [
+        [298.15,5.022,44.387,0.000],[300,5.024,44.418,0.009],[400,5.173,45.882,0.518],[500,5.386,47.058,1.046],[600,5.617,48.061,1.596],
+        [700,5.839,48.943,2.169],[800,6.034,49.736,2.763],[900,6.198,50.457,3.375],[1000,6.329,51.117,4.002],[1100,6.430,51.725,4.640],
+        [1200,6.505,52.288,5.287],[1300,6.558,52.811,5.940],[1400,6.594,53.298,6.598],[1500,6.616,53.754,7.258],[1600,6.629,54.181,7.921],
+        [1700,6.635,54.583,8.584],[1800,6.636,54.963,9.248],[1900,6.634,55.321,9.911],[2000,6.630,55.662,10.574]
+      ],
+      "node_columns": ["T_K","Cp_cal_mol_K","S_cal_mol_K","H_minus_H298_kcal_mol"],
+      "reaction_log10_Kf_nodes": [[1200,-16.341],[1800,-8.356],[2000,-6.773]],
+      "source_note": "Printed p. 331; 133.100 kcal/mol is the elemental formation enthalpy in the Rh(g) table at 298.15 K. Gas thermal and formation cells are transcribed through the last printed 2000 K node."
+    },
+    "P672-Rh-cr": {
+      "table": "Rhodium elemental condensed table, printed p. 330",
+      "species": "Rh(cr)", "formula": "Rh", "phase": "crystal",
+      "formation_enthalpy_298_kcal_mol": 0.0, "source_limit_K": 2237.0,
+      "nodes": [
+        [298.15,5.952,7.542,0.000],[300,5.958,7.579,0.011],[400,6.257,9.335,0.622],[500,6.510,10.759,1.261],[600,6.740,11.967,1.923],
+        [700,6.957,13.022,2.608],[800,7.167,13.965,3.315],[900,7.376,14.821,4.042],[1000,7.587,15.609,4.790],[1100,7.805,16.342,5.559],
+        [1200,8.032,17.031,6.351],[1300,8.271,17.683,7.166],[1400,8.528,18.306,8.006],[1500,8.804,18.903,8.872],[1600,9.103,19.481,9.768],
+        [1700,9.429,20.042,10.694],[1800,9.784,20.591,11.654],[1900,10.173,21.130,12.652],[2000,10.597,21.663,13.690],[2100,11.062,22.191,14.773],
+        [2200,11.569,22.717,15.904],[2237,11.769,22.912,16.336]
+      ],
+      "node_columns": ["T_K","Cp_cal_mol_K","S_cal_mol_K","H_minus_H298_kcal_mol"],
+      "source_note": "Printed p. 330; the elemental table anchors Rh(cr) at zero formation enthalpy and prints the 2237 K melting marker. Crystal thermal cells are transcribed through the marker."
+    },
+    "P672-Rh-l": {
+      "table": "Rhodium elemental condensed table, printed p. 330",
+      "species": "Rh(l)", "formula": "Rh", "phase": "liquid",
+      "formation_enthalpy_298_kcal_mol": 0.0, "source_limit_K": 2500.0,
+      "nodes": [
+        [2237,12.090,25.753,22.692],[2300,12.090,26.089,23.454],[2400,12.090,26.603,24.663],[2500,12.090,27.097,25.872]
+      ],
+      "node_columns": ["T_K","Cp_cal_mol_K","S_cal_mol_K","H_minus_H298_kcal_mol"],
+      "source_note": "Printed p. 330; the liquid branch begins at the 2237 K melting marker. The 6.356 kcal/mol fusion enthalpy is included in the 2237 K liquid H-H298 cell; liquid Cp is printed as 12.090 cal/(mol K) through the last 2500 K node."
+    }
+  }
+}

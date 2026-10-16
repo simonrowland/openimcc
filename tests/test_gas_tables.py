@@ -1269,7 +1269,7 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
         split = (
             min(max(source_limit, 1500.0), 2000.0)
             if table_id.startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl"))
-            else 1500.0
+            else (2000.0 if table_id == "P672-Rh-g" else 1500.0)
         )
         high_fit_start = math.floor(split / 100.0) * 100.0
         for interval, t_min, t_max, side in (
@@ -1781,6 +1781,159 @@ def test_pankratz_ru_vapor_pressure_matches_measured_source_range() -> None:
         )["Ru"]
         measured_atm = 10.0 ** (7.500 - 32769.0 / temperature)
         assert pressure_bar == pytest.approx(measured_atm * 1.01325, rel=0.6)
+
+
+def test_pankratz_rh_absolute_k_and_printed_reaction_cells_close() -> None:
+    source = json.loads(
+        (PUBLISHED_DATA / "pankratz-rh.json").read_text(encoding="utf-8")
+    )["tables"]
+    pack = load_gas_datapack()
+
+    def gibbs(record: dict[str, object], temperature: float) -> float:
+        node = next(row for row in record["nodes"] if row[0] == temperature)
+        return (
+            float(record["formation_enthalpy_298_kcal_mol"]) * 4184.0
+            + float(node[3]) * 4184.0
+            - temperature * float(node[2]) * 4.184
+        )
+
+    gas_record = source["P672-Rh-g"]
+    gas_nodes = {
+        float(row[0]): {
+            "heat_capacity": float(row[1]) * 4.184,
+            "entropy": float(row[2]) * 4.184,
+            "enthalpy_increment": float(row[3]) * 4.184,
+        }
+        for row in gas_record["nodes"]
+    }
+    gas_nodes = build_gas_tables._constant_cp_rows_through(gas_nodes, 3000.0)
+    parent_crystal = source["P672-Rh-cr"]
+    parent_liquid = source["P672-Rh-l"]
+    liquid_nodes = {
+        float(row[0]): {
+            "heat_capacity": float(row[1]) * 4.184,
+            "entropy": float(row[2]) * 4.184,
+            "enthalpy_increment": float(row[3]) * 4.184,
+        }
+        for row in parent_liquid["nodes"]
+    }
+    liquid_nodes = build_gas_tables._constant_cp_rows_through(liquid_nodes, 3000.0)
+
+    for temperature in (1200.0, 1500.0, 1800.0, 2000.0, 2500.0, 3000.0):
+        gas_g = (
+            float(gas_record["formation_enthalpy_298_kcal_mol"]) * 4184.0
+            + gas_nodes[temperature]["enthalpy_increment"] * 1000.0
+            - temperature * gas_nodes[temperature]["entropy"]
+        )
+        parent = parent_crystal if temperature < 2237.0 else parent_liquid
+        if temperature <= 2237.0:
+            parent_g = gibbs(parent, temperature)
+        else:
+            source_node = liquid_nodes[temperature]
+            parent_g = (
+                float(parent["formation_enthalpy_298_kcal_mol"]) * 4184.0
+                + source_node["enthalpy_increment"] * 1000.0
+                - temperature * source_node["entropy"]
+            )
+        absolute_k = math.exp(-(gas_g - parent_g) / (R_J_MOL_K * temperature))
+        pressure = evaluate_gas(
+            {"Rh": 1.0}, temperature, 1.0, pack, gas_species=("Rh",),
+            allow_extrapolation=True,
+        )["Rh"]
+        assert pressure == pytest.approx(absolute_k, rel=0.03)
+
+    marker = 2237.0
+    limit_node = gas_nodes[2000.0]
+    held_cp = limit_node["heat_capacity"]
+    gas_g = (
+        float(gas_record["formation_enthalpy_298_kcal_mol"]) * 4184.0
+        + limit_node["enthalpy_increment"] * 1000.0
+        + held_cp * (marker - 2000.0)
+        - marker * (limit_node["entropy"] + held_cp * math.log(marker / 2000.0))
+    )
+    crystal_k = math.exp(-(gas_g - gibbs(parent_crystal, marker)) / (R_J_MOL_K * marker))
+    liquid_k = math.exp(-(gas_g - gibbs(parent_liquid, marker)) / (R_J_MOL_K * marker))
+    assert crystal_k == pytest.approx(liquid_k, rel=2.0e-4)
+
+    for temperature, printed_log_k in gas_record["reaction_log10_Kf_nodes"]:
+        parent = parent_crystal if temperature < marker else parent_liquid
+        calculated = math.log10(math.exp(
+            -(gibbs(gas_record, temperature) - gibbs(parent, temperature))
+            / (R_J_MOL_K * temperature)
+        ))
+        assert calculated == pytest.approx(printed_log_k, abs=0.001)
+
+
+def test_pankratz_rh_vapor_pressure_matches_measured_source_range() -> None:
+    pressure_bar = evaluate_gas(
+        {"Rh": 1.0}, 2000.0, 1.0, load_gas_datapack(), gas_species=("Rh",)
+    )["Rh"]
+    measured_atm = 10.0 ** (6.894 - 27276.0 / 2000.0)
+    assert pressure_bar == pytest.approx(measured_atm * 1.01325, rel=0.15)
+
+
+def test_pankratz_rh_continuation_bands_recompute_from_source_limits() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    rows = provenance["rows"]
+    source = json.loads(
+        (PUBLISHED_DATA / "pankratz-rh.json").read_text(encoding="utf-8")
+    )["tables"]
+    gas_band = next(
+        row["uncertainty_band"] for row in rows
+        if row.get("species_name") == "Rh(g)" and row.get("T_interval") == 1
+    )
+    assert gas_band["kind"] == "constant_Cp_alternative_continuation_envelope"
+    gas_nodes = {float(node[0]): node for node in source["P672-Rh-g"]["nodes"]}
+    t0 = 2000.0
+    cp0 = float(gas_nodes[t0][1]) * 4.184
+    s0 = float(gas_nodes[t0][2]) * 4.184
+    h0 = float(gas_nodes[t0][3]) * 4.184 * 1000.0
+    cp_slope = (float(gas_nodes[t0][1]) - float(gas_nodes[1900.0][1])) * 4.184 / 100.0
+    values = {float(T): float(value) for T, value in gas_band["values_J_per_mol"].items()}
+    assert set(values) == set(map(float, range(2000, 3001, 100)))
+    for temperature, actual in values.items():
+        delta = temperature - t0
+        held_h = h0 + cp0 * delta
+        held_s = s0 + cp0 * math.log(temperature / t0)
+        linear_h = h0 + cp0 * delta + 0.5 * cp_slope * delta**2
+        linear_s = (
+            s0 + cp0 * math.log(temperature / t0)
+            + cp_slope * (delta - t0 * math.log(temperature / t0))
+        )
+        expected = abs(
+            (linear_h - temperature * linear_s)
+            - (held_h - temperature * held_s)
+        )
+        assert actual == pytest.approx(expected, abs=0.001)
+
+    liquid_band = next(
+        row["uncertainty_band"] for row in rows
+        if row.get("species_name") == "Rh(l)"
+        and row.get("extrapolation_source_limit_K") == 2500.0
+    )
+    assert liquid_band["kind"] == "printed_Cp_rounding_envelope"
+    liquid_values = {
+        float(T): float(value)
+        for T, value in liquid_band["values_J_per_mol"].items()
+    }
+    assert set(liquid_values) == set(map(float, range(2500, 3001, 100)))
+    for temperature, actual in liquid_values.items():
+        expected = abs(
+            0.0005 * 4.184
+            * ((temperature - 2500.0) - temperature * math.log(temperature / 2500.0))
+        )
+        assert actual == pytest.approx(expected, abs=0.001)
+
+    gas_continuation = evaluate_gas(
+        {"Rh": 1.0}, 2500.0, 1.0, load_gas_datapack(), gas_species=("Rh",),
+        allow_extrapolation=True,
+    )
+    parent_continuation = evaluate_gas(
+        {"Rh": 1.0}, 2700.0, 1.0, load_gas_datapack(), gas_species=("Rh",),
+        allow_extrapolation=True,
+    )
+    assert "flagged g-phase continuation" in gas_continuation.domain_flags["Rh"]
+    assert "flagged l-phase continuation" in parent_continuation.domain_flags["Rh"]
 
 
 def test_trace_nasa_card_thermal_increments_are_zero_at_the_formation_anchor() -> None:

@@ -385,6 +385,7 @@ HALOGEN_NASA_TABLES = frozenset({
 })
 TRACE_PUBLISHED_GAS_SOURCES = (
     ("Ru(g)", "P672-Ru-g", "Ru", "Ru", 1, 0, 3000.0),
+    ("Rh(g)", "P672-Rh-g", "Rh", "Rh", 1, 0, 2000.0),
     ("Y(g)", "P672-Y-g", "Y", "Y", 1, 0, 2500.0),
     ("YO(g)", "PM83-YO", "YO", "Y", 1, 1, 1500.0),
     ("ZnO(g)", "IVTAN-264", "ZnO", "Zn", 1, 1, 3000.0),
@@ -510,6 +511,9 @@ BURCAT_METAL_PARENT_SOURCES = (
 PANKRATZ_METAL_PARENT_SOURCES = (
     ("Ru(cr)", "P672-Ru-cr", "Ru", 1, 0, "cr", 1200.0, 2607.0, "source"),
     ("Ru(l)", "P672-Ru-l", "Ru", 1, 0, "l", 2607.0, 3000.0, "source"),
+    ("Rh(cr)", "P672-Rh-cr", "Rh", 1, 0, "cr", 1200.0, 2237.0, "source"),
+    ("Rh(l)", "P672-Rh-l", "Rh", 1, 0, "l", 2237.0, 2500.0, "source"),
+    ("Rh(l)", "P672-Rh-l", "Rh", 1, 0, "l", 2500.0, 3000.0, "continuation"),
 )
 TRACE_ION_PUBLISHED_SOURCES = (("Bi+(g)", "NBS-T22-ASD-BiII", "Bi", 1, 0),)
 TRACE_ION_NASA_SOURCES = (
@@ -3419,11 +3423,10 @@ def build_rows(
             if source[1].startswith(
                 ("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")
             )
-            else 1500.0
+            else (2000.0 if source[1] == "P672-Rh-g" else 1500.0)
         )
         high_fit_start = math.floor(split_temperature / 100.0) * 100.0
-        rows.append(
-            _fit_published_gas_row(
+        fitted = _fit_published_gas_row(
                 published_source_dir,
                 *source[:6],
                 t_interval=1,
@@ -3433,7 +3436,9 @@ def build_rows(
                 runtime_t_max=FIT_T_MAX,
                 breakpoint_side="high",
             )
-        )
+        if source[1] == "P672-Rh-g":
+            fitted["Ref"] = f"{source[1]}-CONT-{source[6]:g}"
+        rows.append(fitted)
     rows.extend(
         _fit_row(
             source_dir,
@@ -3487,10 +3492,9 @@ def build_rows(
             if source[1].startswith(
                 ("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")
             )
-            else 1500.0
+            else (2000.0 if source[1] == "P672-Rh-g" else 1500.0)
         )
-        rows.append(
-            _fit_published_gas_row(
+        fitted = _fit_published_gas_row(
                 published_source_dir,
                 *source[:6],
                 t_interval=2,
@@ -3500,7 +3504,7 @@ def build_rows(
                 runtime_t_max=split_temperature,
                 breakpoint_side="low",
             )
-        )
+        rows.append(fitted)
     for source in TRACE_JANAF_YAML_GAS_SOURCES:
         if not source[0].startswith(("Mo", "W")):
             continue

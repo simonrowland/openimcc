@@ -663,6 +663,7 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Pd": ("Pd", 1.0, 0.0),
     "Pt": ("Pt", 1.0, 0.0),
     "Ru": ("Ru", 1.0, 0.0),
+    "Rh": ("Rh", 1.0, 0.0),
     "PtO2": ("Pt", 1.0, -1.0),
 }
 
@@ -749,6 +750,7 @@ _CONDENSED_PARENT_PHASE_ROWS: dict[str, tuple[float, str, str]] = {
     "Pd": (1827.0, "Pd(cr)", "Pd(l)"),
     "Pt": (2042.0, "Pt(cr)", "Pt(l)"),
     "Ru": (2607.0, "Ru(cr)", "Ru(l)"),
+    "Rh": (2237.0, "Rh(cr)", "Rh(l)"),
 }
 _ALKALI_HALIDE_REACTION_OXIDES = {
     "NaBr": ("Na2O", 0.5, 0.25),
@@ -1088,6 +1090,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Pd",
         "Pt",
         "Ru",
+        "Rh",
         "PtO2",
     }
 )
@@ -3161,6 +3164,23 @@ ELEMENT_STATUS["Ru"] = {
     "source_tables": {"gas": "P672-Ru-g", "parent": "P672-Ru-cr/P672-Ru-l"},
     "parent_activity": "Ru",
 }
+ELEMENT_STATUS["Rh"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "reason": (
+        "Pankratz Bulletin 672 printed pp. 330-331 supplies paired Rh(g) and "
+        "stable-metal functions; Rh(g) uses a flagged held-Cp continuation "
+        "above its 2000 K source limit. Callers supply a(Rh) relative to "
+        "Rh(cr)/Rh(l), switching at 2237 K."
+    ),
+    "c2_candidates": (),
+    "c3_ion_bound": {
+        "status": "not computed",
+        "reason": "not computed: Rh ion channels are outside this neutral gas change",
+    },
+    "source_tables": {"gas": "P672-Rh-g", "parent": "P672-Rh-cr/P672-Rh-l"},
+    "parent_activity": "Rh",
+}
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #
@@ -4641,6 +4661,7 @@ _ATOMIC_MASS_G_MOL = {
     "Hg": 200.592, "Au": 196.96657, "Pd": 106.42,
     "Pt": 195.084,
     "Ru": 101.07,
+    "Rh": 102.9055,
     "H": 1.008, "C": 12.011, "N": 14.007,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
