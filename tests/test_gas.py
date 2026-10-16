@@ -2269,16 +2269,17 @@ def test_halogen_oxygen_balance_uses_dict_only_parent_activity(
 def test_side_table_halides_inherit_o2_domain_flag(
     gas_pack: ImccGasDatapack, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import openimcc.gas as gas_module
-
-    original = gas_module._outside_interval_flag
+    evaluate_gas_globals = evaluate_gas.__globals__
+    original = evaluate_gas_globals["_outside_interval_flag"]
 
     def flag_o2_extrapolation(name: str, temperature: float, row: pd.Series) -> str | None:
         if name == "O2(g)":
             return "mock O2 source extrapolation"
         return original(name, temperature, row)
 
-    monkeypatch.setattr(gas_module, "_outside_interval_flag", flag_o2_extrapolation)
+    monkeypatch.setitem(
+        evaluate_gas_globals, "_outside_interval_flag", flag_o2_extrapolation
+    )
     result = evaluate_gas(
         {**_quickstart_activities(1800.0), "F2": 1.0e-8},
         1800.0, 1.0e-10, gas_pack,
