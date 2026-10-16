@@ -3,8 +3,17 @@
 An inventory is a map from element symbols to amounts in moles of atoms. Oxide
 formula-unit amounts are converted through explicit atom counts. Oxygen is
 counted as its own element total; it is not hidden in an oxide coordinate.
-Temperatures use kelvin, standard Gibbs energies use joules per mole of
-reaction, and uncertainty bands use kilojoules per mole of reaction. Define
+Temperatures use kelvin and standard Gibbs energies use joules per mole of
+reaction. Redox fit residuals and accuracy bands carry their units directly:
+species values use kJ mol⁻¹ species and reaction values use kJ mol⁻¹ reaction.
+`fit_residual` stores source-fit quality only; `accuracy_band` stores source
+uncertainty or a measured construction envelope. `band_basis.kind` is one of
+`source_uncertainty`, `measured_construction`, `independent_measurement`,
+`fit_only`, or `none`. `independent_check` records the check status, equilibrium,
+source, conditions, measured/predicted values, miss, miss-to-band ratio, and
+reason. A `not_found` check explains what was not located and keeps unknown
+values null. The shared field contract is in
+[`provenance-schema.md`](provenance-schema.md). Define
 `λ = ln(fO2 / 1 bar)`. The oxygen chemical-potential shift is
 `Δμ_O = RTλ/2` per mole of O atoms because the gas standard is O2. Reaction
 rows store product-positive external O2 stoichiometry `ν_O2`; their fugacity

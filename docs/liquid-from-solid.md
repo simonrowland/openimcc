@@ -14,6 +14,15 @@ runtime Gibbs evaluator.
 source, references, units, and spread. Alternatives are data rows rather than
 species-specific branches in the construction code.
 
+Each input row also uses `fit_residual`, `accuracy_band`, `band_basis`, and
+`independent_check`. Input spreads remain source provenance; a composed liquid
+Gibbs band belongs to the consumer row. Band basis kinds are
+`source_uncertainty`, `measured_construction`, `independent_measurement`,
+`fit_only`, and `none`. Values state their own units (the construction records
+use J mol⁻¹ or kJ mol⁻¹ as declared), and unavailable checks use
+`independent_check.status: not_found` with a reason. See
+[`provenance-schema.md`](provenance-schema.md) for field shapes and units.
+
 | Input | Tier 1 | Tier 2 | Tier 3 |
 | --- | --- | --- | --- |
 | Fusion temperature | JANAF crystal-to-liquid marker or assessed value | Cited alternative assessment with uncertainty | Extrapolated liquidus for incongruently melting or decomposing solids; band is the range of cited hypothetical constructions |

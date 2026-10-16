@@ -27,6 +27,15 @@ _CANDIDATE_VERSIONS = {
 class RedoxCompositionTermError(ValueError):
     """A candidate composition-conditioned row has an invalid tagged term."""
 
+_BAND_BASIS = {
+    "source_uncertainty", "measured_construction", "independent_measurement",
+    "fit_only", "none",
+}
+
+
+class RedoxSchemaError(ValueError):
+    """A redox pack row uses an incomplete or legacy band schema."""
+
 
 def canonical_redox_digest(content: Mapping[str, Any]) -> str:
     """Return SHA-256 over canonical JSON, excluding its stored digest field."""
@@ -85,6 +94,48 @@ def _finite_number(value: Any, label: str) -> float:
     return number
 
 
+def _validate_band_schema(record: Mapping[str, Any], label: str) -> None:
+    legacy = {"band_kj_mol", "band_method", "uncertainty_band"} & record.keys()
+    if legacy:
+        raise RedoxSchemaError(f"{label} contains legacy band fields: {sorted(legacy)}")
+    required = {"fit_residual", "accuracy_band", "band_basis", "independent_check"}
+    missing = required - record.keys()
+    if missing:
+        raise RedoxSchemaError(f"{label} is missing band schema fields: {sorted(missing)}")
+    for field in ("fit_residual", "accuracy_band"):
+        value = record[field]
+        if value is not None:
+            if not isinstance(value, dict):
+                raise RedoxSchemaError(f"{label}/{field} must be an object or null")
+            shape = (
+                {"value", "unit", "target_source", "comparison_method", "temperature_range", "held_out_or_in_sample"}
+                if field == "fit_residual"
+                else {"value", "unit", "temperature_points_or_range", "coverage"}
+            )
+            if shape - value.keys():
+                raise RedoxSchemaError(f"{label}/{field} has an incomplete structure")
+            if _finite_number(value.get("value"), f"{label}/{field}/value") < 0.0:
+                raise RedoxSchemaError(f"{label}/{field}/value must be non-negative")
+            if not isinstance(value.get("unit"), str) or not value["unit"]:
+                raise RedoxSchemaError(f"{label}/{field}/unit must be a non-empty string")
+    basis = record["band_basis"]
+    if not isinstance(basis, dict) or basis.get("kind") not in _BAND_BASIS:
+        raise RedoxSchemaError(f"{label}/band_basis/kind is not an allowed value")
+    if "provenance" not in basis or not isinstance(basis.get("explanation"), str) or not basis["explanation"]:
+        raise RedoxSchemaError(f"{label}/band_basis needs an explanation")
+    check = record["independent_check"]
+    check_fields = {
+        "status", "equilibrium", "primary_source", "conditions", "measured_value",
+        "predicted_value", "miss", "miss_to_band_ratio", "reason",
+    }
+    if not isinstance(check, dict) or check_fields - check.keys():
+        raise RedoxSchemaError(f"{label}/independent_check has an incomplete structure")
+    if check.get("status") not in {"tested", "not_found", "not_applicable"}:
+        raise RedoxSchemaError(f"{label}/independent_check/status is invalid")
+    if check.get("status") == "not_found" and not isinstance(check.get("reason"), str):
+        raise RedoxSchemaError(f"{label}/independent_check/reason must explain not_found")
+
+
 def _atom_totals(
     terms: Mapping[str, Any], species: Mapping[str, Mapping[str, Any]], label: str
 ) -> dict[str, float]:
@@ -140,7 +191,7 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         "inventory": "mol atoms by element",
         "temperature": "K",
         "gibbs_energy": "J mol^-1 reaction",
-        "band": "kJ mol^-1 reaction",
+        "band": "declared per record by fit_residual or accuracy_band unit",
         "pressure": "bar relative to 1 bar standard state",
     }:
         raise ValueError("redox pack units do not match schema v2")
@@ -211,6 +262,7 @@ def _validate_content(content: Mapping[str, Any]) -> None:
     for name, record in species.items():
         if not isinstance(record, dict) or not isinstance(record.get("formula_atoms"), dict):
             raise ValueError(f"thermo_species[{name!r}] has no formula_atoms")
+        _validate_band_schema(record, f"thermo_species[{name!r}]")
         if not record["formula_atoms"]:
             raise ValueError(f"thermo_species[{name!r}] has empty formula_atoms")
         for element, count in record["formula_atoms"].items():
@@ -242,9 +294,6 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         low, high = (_finite_number(x, f"thermo_species[{name!r}]/T_domain_K") for x in domain)
         if low <= 0.0 or high <= low:
             raise ValueError(f"thermo_species[{name!r}] has invalid temperature domain")
-        band = record.get("band_kj_mol")
-        if _finite_number(band, f"thermo_species[{name!r}]/band_kj_mol") < 0.0:
-            raise ValueError(f"thermo_species[{name!r}] has negative band")
         if not isinstance(record.get("range_flags"), list):
             raise ValueError(f"thermo_species[{name!r}] needs range_flags")
         if not isinstance(record.get("provenance"), dict):
@@ -357,6 +406,7 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         label = f"rows[{index}]"
         if not isinstance(row, dict):
             raise ValueError(f"{label} must be an object")
+        _validate_band_schema(row, label)
         if row.get("complex") not in species:
             raise ValueError(f"{label} names an unknown product species")
         product_species = species[str(row["complex"])]
@@ -458,9 +508,7 @@ def _validate_content(content: Mapping[str, Any]) -> None:
         low, high = (_finite_number(x, f"{label}/T_domain_K") for x in domain)
         if low <= 0.0 or high <= low:
             raise ValueError(f"{label} has invalid temperature domain")
-        if _finite_number(row.get("band_kj_mol"), f"{label}/band_kj_mol") < 0.0:
-            raise ValueError(f"{label} needs a non-negative Gibbs band")
-        for field in ("phase_or_construction", "method", "band_method", "uncertainty_note"):
+        for field in ("phase_or_construction", "method", "uncertainty_note"):
             if not isinstance(row.get(field), str) or not row[field]:
                 raise ValueError(f"{label} needs {field}")
         if not isinstance(row.get("range_flags"), list) or not row["range_flags"]:

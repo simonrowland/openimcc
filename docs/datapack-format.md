@@ -411,7 +411,7 @@ not silently repair a pack.
    frozen published identity SHA-256:
 
 ~~~text
-f2b479cd54e3c82704a5863fcc06836f72045375d9a8c7f8d2fad19e98f75d05
+ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c
 ~~~
 
 Canonicalization failure or a mismatch is a malformed-datapack refusal.
@@ -690,7 +690,8 @@ of each count because they are not dissolved ferric or ferrous species.
 Every row retains the ext-v4 reaction fields `reaction`, `nu`, and
 `external_oxygen_stoich_product_positive`. Redox rows additionally declare
 `role`, `reactants`, `products`, `standard_gibbs_terms`, `T_domain_K`,
-`band_kj_mol`, `range_flags`, `provenance_class`, and `provenance`. `nu` is a
+`fit_residual`, `accuracy_band`, `band_basis`, `independent_check`,
+`range_flags`, `provenance_class`, and `provenance`. `nu` is a
 mapping from any registered parent oxide to the amount consumed per reaction;
 there is no eight-parent ceiling. The signed external oxygen coefficient is
 positive for product O2 and negative for reactant O2.
@@ -748,11 +749,13 @@ The redox species records use these schema fields:
 | branches | array of objects | Temperature-selected species records for a piecewise standard state. |
 | transition_temperature_K | number | Temperature used to select the piecewise standard-state branch. |
 | reference_activity | number | Pure reference activity; the Fe metal reference is 1. |
-| band_kj_mol | number | Gibbs band in kJ/mol of species or reaction, as specified by the containing record. |
+| fit_residual | object or null | Fit residual only, with value, unit, target source, comparison method, temperature range, and in-sample/held-out designation. |
+| accuracy_band | object or null | Source uncertainty or measured construction envelope, with value, unit, temperature domain, and coverage. |
+| band_basis | object | Basis kind (`source_uncertainty`, `measured_construction`, `independent_measurement`, `fit_only`, or `none`), explanation, and provenance reference. |
+| independent_check | object | Check status (`tested`, `lead`, `not_found`, or `not_applicable`), equilibrium, primary source, conditions, measured and predicted values, miss, miss-to-band ratio, and reason. Unknown quantities are null. |
 | phase_or_construction | string | Phase and standard-state construction used for the reaction row; retained from the ext-v4 row convention. |
 | method | string | Method used to assemble the reaction Gibbs function from named standard-state records. |
-| band_method | string | Method used to calculate the numeric Gibbs band. |
-| uncertainty_note | string | Uncertainty covered by the band and any known unquantified contribution. |
+| uncertainty_note | string | Uncertainty covered by an accuracy band and any known unquantified contribution. |
 | construction | object | Inputs, sources, fit range, and fallback flags for a constructed standard state. |
 | fit_intervals_K | array of two-number arrays | Optional fitted intervals recorded for a constructed function that preserves a prior fit between added outer fits. |
 | band_scope | string | States what the numeric construction band includes and any unquantified systematic error. |

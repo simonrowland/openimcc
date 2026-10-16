@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from openimcc.redox_pack import (
+    RedoxSchemaError,
     canonical_redox_digest,
     load_redox_pack,
     ln_k_prime,
@@ -24,6 +25,11 @@ from tools.liquid_from_solid import liquid_from_solid
 ROOT = Path(__file__).resolve().parents[1]
 PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v1.json"
 SOURCE_PATH = ROOT / "data-src/redox-thermochemistry.json"
+
+
+def _band_value(record: dict) -> float:
+    band = record["accuracy_band"] or record["fit_residual"]
+    return float(band["value"])
 
 
 def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
@@ -172,7 +178,7 @@ def test_reaction_rows_are_balanced_and_have_evidence_and_range_flags() -> None:
         "MnAl2O4(l)"
     ]
     for name, species in pack.content["thermo_species"].items():
-        assert species["band_kj_mol"] >= 0.0
+        assert _band_value(species) >= 0.0
         assert isinstance(species["range_flags"], tuple)
         assert species["provenance"]["source_url"].startswith("https://")
         assert species["provenance"]["tier"].startswith("tier")
@@ -190,11 +196,11 @@ def test_reaction_rows_are_balanced_and_have_evidence_and_range_flags() -> None:
             "MnAl2O4(l)": (1673, 2000),
         }
         assert row["T_domain_K"] == expected_domains[row["complex"]]
-        assert row["band_kj_mol"] >= 0.0
+        assert _band_value(row) >= 0.0
         assert row["range_flags"]
         assert row["phase_or_construction"]
         assert row["method"]
-        assert row["band_method"]
+        assert row["band_basis"]["explanation"]
         assert row["uncertainty_note"]
         assert row["provenance"]["source_url"].startswith("https://")
         assert row["provenance"]["tier"].startswith("tier")
@@ -280,7 +286,7 @@ def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
                         rel=1e-9,
                         abs=1e-12,
                     )
-            assert record["band_kj_mol"] >= float(
+            assert _band_value(record) >= float(
                 fitted["_max_residual_J_per_mol"]
             ) / 1000.0
             continue
@@ -313,7 +319,7 @@ def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
                 expected, rel=1e-9, abs=1e-12
             )
         residual = float(fitted["_max_residual_J_per_mol"])
-        assert record["band_kj_mol"] >= residual / 1000.0
+        assert _band_value(record) >= residual / 1000.0
 
 
 def test_ferrous_parent_reaction_band_covers_janaf_reference_residual() -> None:
@@ -330,7 +336,7 @@ def test_ferrous_parent_reaction_band_covers_janaf_reference_residual() -> None:
             residuals.append(abs(reaction - float(formation_gibbs) * 1000.0) / 1000.0)
 
     assert residuals
-    assert max(residuals) <= row["band_kj_mol"]
+    assert max(residuals) <= _band_value(row)
 
 
 def test_oxygen_standard_row_band_covers_janaf_nodes() -> None:
@@ -350,7 +356,7 @@ def test_oxygen_standard_row_band_covers_janaf_nodes() -> None:
             )
 
     assert residuals
-    assert max(residuals) <= species["band_kj_mol"]
+    assert max(residuals) <= _band_value(species)
 
 
 def test_elemental_metal_functions_match_their_source_nodes_within_ten_joules() -> None:
@@ -447,7 +453,7 @@ def test_hematite_row_reproduces_liquid_from_solid_construction_and_band() -> No
     # fusion estimate and measured Cp uncertainty through this construction.
     spread = max(nominal.input_spread_kj_mol(temperature) for temperature in temperatures)
     spread += float(fitted["_max_residual_J_per_mol"]) / 1000.0
-    assert record["band_kj_mol"] == pytest.approx(spread, abs=1e-3)
+    assert _band_value(record) == pytest.approx(spread, abs=1e-3)
     assert record["provenance"]["tier"] == "tier3_flagged_estimate"
     assert record["provenance"]["provenance_class"] == "secondary_transcription_unverified_primary"
     assert record["construction"]["liquid_heat_capacity_j_mol_K"] == 240.9
@@ -576,7 +582,7 @@ def test_manganese_liquid_rows_reproduce_crystal_constructions_and_bands():
                     )
                 )
         expected_band = max(expected_at.values())
-        assert species["band_kj_mol"] == pytest.approx(expected_band, abs=1e-6)
+        assert _band_value(species) == pytest.approx(expected_band, abs=1e-6)
 
     with (ROOT / "src/openimcc/data/gas/condensate.csv").open(
         newline="", encoding="utf-8"
@@ -623,7 +629,7 @@ def test_manganese_liquid_rows_reproduce_crystal_constructions_and_bands():
                 )
 
     alumina = pack.content["thermo_species"]["Al2O3(l)"]
-    assert alumina["band_kj_mol"] == pytest.approx(
+    assert _band_value(alumina) == pytest.approx(
         inputs["tier_error_bands"]["fusion_entropy_tier1"]["max"][0]
     )
 
@@ -669,15 +675,15 @@ def test_manganese_reaction_bands_sum_each_species_band_once():
             continue
         band = sum(
             float(coefficient)
-            * float(pack.content["thermo_species"][species]["band_kj_mol"])
+            * _band_value(pack.content["thermo_species"][species])
             for species, coefficient in row["reactants"].items()
         )
         band += sum(
             float(coefficient)
-            * float(pack.content["thermo_species"][species]["band_kj_mol"])
+            * _band_value(pack.content["thermo_species"][species])
             for species, coefficient in row["products"].items()
         )
-        assert float(row["band_kj_mol"]) == pytest.approx(
+        assert _band_value(row) == pytest.approx(
             round(band, 3), abs=1e-12
         )
 

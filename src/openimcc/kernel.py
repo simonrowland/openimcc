@@ -49,7 +49,7 @@ _PUBLISHED_CORE_ROWS = 38
 # field of every row and the top-level identity/version. Changing this digest
 # is deliberate published-datapack re-versioning, never a silent row edit.
 _PUBLISHED_DATAPACK_SHA256 = (
-    "f2b479cd54e3c82704a5863fcc06836f72045375d9a8c7f8d2fad19e98f75d05"
+    "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c"
 )
 
 

@@ -19,25 +19,25 @@ import openimcc.model as model
 
 PACK_DIR = Path("src/openimcc/data/packs")
 PUBLISHED_CORE_SHA256 = (
-    "f2b479cd54e3c82704a5863fcc06836f72045375d9a8c7f8d2fad19e98f75d05"
+    "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c"
 )
 LEGACY_PACK_SHA256 = {
-    "imcc-sf04-v1.0.2.json": "313ab57ffb45f25d762b76f54cba70c4bac5df06cb8eca59dba4a7ce046c89bf",
-    "imcc-sf04-ext-v4.json": "fbae18acb13acb18404581183ab9bf91ef657992ec9273d0ae83f924695c0922",
+    "imcc-sf04-v1.0.2.json": "87be28815642e8ec65f09edd791525fef8dfe10622e61772dee6047f4ad027b8",
+    "imcc-sf04-ext-v4.json": "0df10d63346b6f6e2954ebe1296819a07b9905f2ecb58ea33e06c8f39e2ba880",
 }
 LEGACY_BINDING_SHA256 = {
-    "imcc-sf04-v1.0.2.json": "f2b479cd54e3c82704a5863fcc06836f72045375d9a8c7f8d2fad19e98f75d05",
-    "imcc-sf04-ext-v4.json": "4cbec2ee85cd95314a5f62f5ce4e00cbe660935bde12df3a7e5daa425612ad03",
+    "imcc-sf04-v1.0.2.json": "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c",
+    "imcc-sf04-ext-v4.json": "e0b01cda63f24f24df019f76d891086ef68897001a49ac5cbb3ccf885e12ebb8",
 }
 D066_MANIFEST_SHA256 = {
     "imcc-sf04-d066-v1.json": (
-        "d894f4e5ce79ba393f7068ec7d9032336eda8276293c4f46cafb18944a8b247e"
+        "98931104ccc4790866a685319cc34275adb3272ecfce16488e00a4b2dc224f44"
     ),
     "imcc-sf04-d066-v1-kcaalsi2o7.json": (
-        "e737f191a6b12df89bf8c3814e65e25ee0d37745ad8142d12ed0c8614d9f55d5"
+        "6dd6120c36d7d5dcad4a699f5ec8565b912ae7274edeb73735895c6e8b6c58bb"
     ),
     "imcc-sf04-d066-ext-v1.json": (
-        "90b3fb016073b415e7f505b4739fb193e9cf4680232307d642db730694bcb44b"
+        "fa919e0733e8e85062800d74b557b932a1c1b15e36bf66d0b1e5cbb1f3181139"
     ),
 }
 D066_BINDING_SHA256 = D066_MANIFEST_SHA256

@@ -181,23 +181,23 @@ _ALKALI_BIAS_BENCHMARKS = MappingProxyType(
     {
         (
             "IMCC-SF04",
-            "f2b479cd54e3c82704a5863fcc06836f72045375d9a8c7f8d2fad19e98f75d05",
+            "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c",
         ): "−1.20 to −1.26 dex",
         (
             "IMCC-SF04-EXT",
-            "4cbec2ee85cd95314a5f62f5ce4e00cbe660935bde12df3a7e5daa425612ad03",
+            "e0b01cda63f24f24df019f76d891086ef68897001a49ac5cbb3ccf885e12ebb8",
         ): "−1.20 to −1.26 dex",
         (
             "IMCC-SF04-D066",
-            "d894f4e5ce79ba393f7068ec7d9032336eda8276293c4f46cafb18944a8b247e",
+            "98931104ccc4790866a685319cc34275adb3272ecfce16488e00a4b2dc224f44",
         ): "−1.17 to −1.22 dex",
         (
             "IMCC-SF04-D066",
-            "e737f191a6b12df89bf8c3814e65e25ee0d37745ad8142d12ed0c8614d9f55d5",
+            "6dd6120c36d7d5dcad4a699f5ec8565b912ae7274edeb73735895c6e8b6c58bb",
         ): "−1.17 to −1.22 dex",
         (
             "IMCC-SF04-D066",
-            "90b3fb016073b415e7f505b4739fb193e9cf4680232307d642db730694bcb44b",
+            "fa919e0733e8e85062800d74b557b932a1c1b15e36bf66d0b1e5cbb1f3181139",
         ): "−1.17 to −1.22 dex",
     }
 )
@@ -222,6 +222,42 @@ class ImccMalformedDatapackError(ImccRefusal):
     """Raised when a datapack JSON file is malformed or schema-invalid."""
 
     code = "imcc_malformed_datapack"
+
+
+def _validate_band_schema_rows(data: Mapping[str, Any]) -> None:
+    allowed_basis = {
+        "source_uncertainty", "measured_construction", "independent_measurement",
+        "fit_only", "none",
+    }
+    required = {"fit_residual", "accuracy_band", "band_basis", "independent_check"}
+    rows = data.get("rows")
+    if not isinstance(rows, list):
+        raise ImccMalformedDatapackError("datapack rows must be a list")
+    for index, row in enumerate(rows):
+        label = f"datapack row {index} band schema"
+        if not isinstance(row, dict):
+            raise ImccMalformedDatapackError(f"{label} must be an object")
+        legacy = {"band_kj_mol", "band_method", "uncertainty_band"} & row.keys()
+        if legacy:
+            raise ImccMalformedDatapackError(f"{label} contains legacy fields {sorted(legacy)}")
+        if required - row.keys():
+            raise ImccMalformedDatapackError(f"{label} is missing fields {sorted(required - row.keys())}")
+        if row["accuracy_band"] is not None:
+            raise ImccMalformedDatapackError(f"{label} complex rows must have accuracy_band null")
+        basis = row["band_basis"]
+        if not isinstance(basis, dict) or basis.get("kind") not in allowed_basis or not basis.get("explanation"):
+            raise ImccMalformedDatapackError(f"{label} has an invalid band_basis")
+        if basis["kind"] != "none":
+            raise ImccMalformedDatapackError(f"{label} complex rows require band_basis none")
+        check = row["independent_check"]
+        check_fields = {
+            "status", "equilibrium", "primary_source", "conditions", "measured_value",
+            "predicted_value", "miss", "miss_to_band_ratio", "reason",
+        }
+        if not isinstance(check, dict) or check_fields - check.keys():
+            raise ImccMalformedDatapackError(f"{label} has an incomplete independent_check")
+        if check.get("status") not in {"not_found", "not_applicable", "lead", "tested"}:
+            raise ImccMalformedDatapackError(f"{label} has an invalid independent_check status")
 
 
 class ImccUnprovenDatapackError(ImccRefusal):
@@ -537,6 +573,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
 
     if not isinstance(data, dict):
         raise ImccMalformedDatapackError("datapack JSON root must be an object")
+    _validate_band_schema_rows(data)
 
     version = data.get("imcc_sf04_datapack_version")
     if not isinstance(version, str) or not version:
