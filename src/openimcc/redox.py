@@ -692,6 +692,9 @@ def _active_inner_once(
         tol,
         max_iter,
         y_init=y_init,
+        parent_names=tuple(
+            parent_names[index] for index in np.flatnonzero(active_parent)
+        ),
     )
     if fallback_counter is not None:
         fallback_counter[0] += int(inner_fallback_fired)

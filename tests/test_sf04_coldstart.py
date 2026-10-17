@@ -174,13 +174,13 @@ def test_silica_walk_recovers_above_floor_feo_trace(
     }
 
     calls: list[np.ndarray] = []
-    solve = model.solve_imcc_sf04
+    solve = model._solve_imcc_sf04_with_seed
 
     def record(parent_mol: np.ndarray, *args: object, **kwargs: object) -> object:
         calls.append(parent_mol.copy())
         return solve(parent_mol, *args, **kwargs)
 
-    monkeypatch.setattr(model, "solve_imcc_sf04", record)
+    monkeypatch.setattr(model, "_solve_imcc_sf04_with_seed", record)
     result = evaluate(
         composition,
         2288.0,
@@ -205,13 +205,13 @@ def test_silica_walk_recovers_depleted_cai_tio2(
 ) -> None:
     vector = _cai_mole_vector(1.0e-5)
     calls: list[np.ndarray] = []
-    solve = model.solve_imcc_sf04
+    solve = model._solve_imcc_sf04_with_seed
 
     def record(parent_mol: np.ndarray, *args: object, **kwargs: object) -> object:
         calls.append(parent_mol.copy())
         return solve(parent_mol, *args, **kwargs)
 
-    monkeypatch.setattr(model, "solve_imcc_sf04", record)
+    monkeypatch.setattr(model, "_solve_imcc_sf04_with_seed", record)
     result = evaluate(
         vector,
         1710.0,
@@ -233,13 +233,13 @@ def test_silica_walk_recovers_cai_trace_missed_by_staged_path(
 ) -> None:
     vector = _cai_mole_vector(1.414213562373095e-7)
     calls: list[np.ndarray] = []
-    solve = model.solve_imcc_sf04
+    solve = model._solve_imcc_sf04_with_seed
 
     def record(parent_mol: np.ndarray, *args: object, **kwargs: object) -> object:
         calls.append(parent_mol.copy())
         return solve(parent_mol, *args, **kwargs)
 
-    monkeypatch.setattr(model, "solve_imcc_sf04", record)
+    monkeypatch.setattr(model, "_solve_imcc_sf04_with_seed", record)
     result = evaluate(
         vector,
         1710.0,
@@ -321,7 +321,7 @@ def test_failed_composition_continuation_preserves_original_diagnostics(
         calls += 1
         raise ImccNonconvergenceError("fixture refuses", diagnostics)
 
-    monkeypatch.setattr(model, "solve_imcc_sf04", refuse)
+    monkeypatch.setattr(model, "_solve_imcc_sf04_with_seed", refuse)
     composition, temperature, _expected = CASES[0]
     with pytest.raises(ImccNonconvergenceError, match="fixture refuses") as caught:
         evaluate(composition, temperature)
@@ -399,10 +399,13 @@ def test_temperature_continuation_refusal_call_count_is_bounded(
         if temperature == 1710.0 and calls_by_temperature[temperature] == 14:
             # The final silica stage at the warm temperature returns its
             # independently computed root, allowing the target solve to run.
-            return warm_result
+            return (
+                warm_result,
+                np.log(warm_result.parent_x_star[composition > 0.0]),
+            )
         raise ImccNonconvergenceError("fixture refuses", diagnostics)
 
-    monkeypatch.setattr(model, "solve_imcc_sf04", refuse)
+    monkeypatch.setattr(model, "_solve_imcc_sf04_with_seed", refuse)
     with pytest.raises(ImccNonconvergenceError) as caught:
         evaluate(
             composition,

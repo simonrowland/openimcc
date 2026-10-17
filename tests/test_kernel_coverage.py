@@ -186,6 +186,48 @@ def test_solve_active_refuses_empty_active_parent_set() -> None:
         )
 
 
+def test_uncertified_relative_refinement_names_the_parent_and_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[bool] = []
+
+    def uncertified_root(
+        x_target: np.ndarray,
+        nu: np.ndarray,
+        lnK: np.ndarray,
+        S: np.ndarray,
+        tol: float,
+        max_iter: int,
+        *,
+        y_init: np.ndarray | None = None,
+        relative_tolerance: bool = False,
+    ) -> tuple[np.ndarray, np.ndarray, float, int, float, float, float, str, int]:
+        calls.append(relative_tolerance)
+        return (
+            np.log(np.array([0.8, 0.8])),
+            np.array([1.0]),
+            2.0,
+            1,
+            0.8,
+            1.0,
+            0.0,
+            "direct",
+            0,
+        )
+
+    monkeypatch.setattr(kernel, "_solve_active", uncertified_root)
+    with pytest.raises(ImccNonconvergenceError) as caught:
+        solve_imcc_sf04(np.array([0.5, 0.5]), 1500.0, _ab_pack())
+
+    assert calls == [False, True]
+    assert "parent A" in str(caught.value)
+    assert "relative inventory error=+0.8" in str(caught.value)
+    assert caught.value.diagnostics["parent"] == "A"
+    assert caught.value.diagnostics["relative_inventory_error"] == pytest.approx(
+        0.8
+    )
+
+
 def test_solver_reports_a_nonconverged_continuation_stage(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

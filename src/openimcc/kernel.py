@@ -20,7 +20,7 @@ import json
 import math
 import warnings
 from types import MappingProxyType
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, NoReturn, Sequence
 
 import numpy as np
 from scipy.optimize import least_squares
@@ -551,6 +551,14 @@ def _label_loaded_datapack(
 
 @dataclass(frozen=True)
 class ImccConvergence:
+    """Convergence diagnostics for an accepted parent-balance root.
+
+    ``residual_inf`` and ``residual_l2`` are always absolute norms of the
+    unscaled parent-balance residual. A relative-tolerance refinement may
+    control ``|f_i / X_i|`` internally, but the public record reports ``|f|``
+    for both refined and unrefined roots.
+    """
+
     iterations: int
     residual_inf: float
     residual_l2: float
@@ -990,6 +998,206 @@ def _solve_active(
     )
 
 
+def _certify_active_root(
+    x_target: np.ndarray,
+    nu: np.ndarray,
+    lnK: np.ndarray,
+    S: np.ndarray,
+    tol: float,
+    max_iter: int,
+    solution: tuple[
+        np.ndarray, np.ndarray, float, int, float, float, float, str, int
+    ],
+    *,
+    parent_names: Sequence[str] | None = None,
+) -> tuple[
+    tuple[np.ndarray, np.ndarray, float, int, float, float, float, str, int], bool
+]:
+    """Certify every active parent balance, refining an accepted root once."""
+    y, g, D, *_ = solution
+    names = (
+        tuple(str(name) for name in parent_names)
+        if parent_names is not None
+        else tuple(f"active parent {index}" for index in range(len(x_target)))
+    )
+    if len(names) != len(x_target):
+        raise ValueError("parent_names must match the active parent vector")
+
+    # The model balance is X_i = (a_i + sum_j nu_ij*g_j) / D, with
+    # a_i=exp(y_i), nu_ij>=0, g_j>=0, and D>0. Therefore the exact free-parent
+    # bound is a_i <= D*X_i. Also, the relative inventory error is exactly
+    # f_i/(D*X_i), where f_i is the existing parent-balance residual. Use the
+    # public dimensionless solver tolerance as tol_rel; checking every positive
+    # parent avoids an arbitrary trace cutoff. An absolute |f_i|<=tol only
+    # implies relative error <=tol/(D*X_i), so it can allow order-one error
+    # when a trace X_i is on the scale of tol. At tol=1e-12, tol_rel is about
+    # 4.5e3 float64 epsilons, above summation roundoff for this fixed system.
+    tol_rel = float(tol)
+
+    def measure(
+        candidate_y: np.ndarray,
+        candidate_g: np.ndarray,
+        candidate_D: float,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            activity = np.exp(candidate_y)
+            bound_rhs = candidate_D * x_target
+            relative_error = (
+                activity + nu @ candidate_g
+            ) / bound_rhs - 1.0
+        return relative_error, activity, bound_rhs, activity <= bound_rhs
+
+    def certified(
+        relative_error: np.ndarray, bound_ok: np.ndarray, candidate_D: float
+    ) -> bool:
+        return bool(
+            math.isfinite(candidate_D)
+            and candidate_D > 0.0
+            and np.all(np.isfinite(relative_error))
+            and np.all(np.abs(relative_error) <= tol_rel)
+            and np.all(bound_ok)
+        )
+
+    def refuse(
+        relative_error: np.ndarray,
+        activity: np.ndarray,
+        bound_rhs: np.ndarray,
+        bound_ok: np.ndarray,
+        *,
+        cause: ImccNonconvergenceError | None = None,
+    ) -> NoReturn:
+        bad = np.flatnonzero(
+            (~np.isfinite(relative_error))
+            | (np.abs(relative_error) > tol_rel)
+            | (~bound_ok)
+        )
+        if bad.size == 0:
+            bad = np.arange(len(relative_error))
+        finite_error = np.where(
+            np.isfinite(relative_error), np.abs(relative_error), np.inf
+        )
+        index = int(bad[np.argmax(finite_error[bad])])
+        error = float(relative_error[index])
+        bound_violation = not bool(bound_ok[index])
+        message = (
+            "IMCC-SF04 parent-balance certification failed for parent "
+            f"{names[index]}: relative inventory error={error:+.6g} "
+            f"(tol_rel={tol_rel:.6g})"
+        )
+        if bound_violation:
+            message += (
+                f"; activity {activity[index]:.6g} exceeds D*X_i="
+                f"{bound_rhs[index]:.6g}"
+            )
+        diagnostics: dict[str, Any] = {
+            "parent": names[index],
+            "relative_inventory_error": error,
+            "tol_rel": tol_rel,
+            "activity_bound_violated": bound_violation,
+            "activity": float(activity[index]),
+            "activity_bound": float(bound_rhs[index]),
+            "solver_path": solution[7],
+        }
+        if cause is not None:
+            message += f"; relative-tolerance refinement failed: {cause}"
+            diagnostics["refinement_diagnostics"] = cause.diagnostics
+        raise ImccNonconvergenceError(message, diagnostics) from None
+
+    relative_error, activity, bound_rhs, bound_ok = measure(y, g, D)
+    if certified(relative_error, bound_ok, D):
+        return solution, False
+
+    if not math.isfinite(D) or D <= 0.0:
+        refuse(relative_error, activity, bound_rhs, bound_ok)
+
+    # _solve_active(relative_tolerance=True) scales f_i by X_i. Since the exact
+    # inventory error divides once more by D, scale that solver tolerance by
+    # min(D, 1): this targets tol_rel in the exact inventory ratio without
+    # loosening the caller's original tolerance. D is recomputed below and the
+    # exact certificate is checked again after refinement.
+    relative_solve_tol = tol_rel * min(D, 1.0)
+    try:
+        refined = _solve_active(
+            x_target,
+            nu,
+            lnK,
+            S,
+            relative_solve_tol,
+            max_iter,
+            y_init=y,
+            relative_tolerance=True,
+        )
+    except ImccNonconvergenceError as exc:
+        refuse(relative_error, activity, bound_rhs, bound_ok, cause=exc)
+
+    refined_y, refined_g, refined_D = refined[:3]
+    refined_error, refined_activity, refined_bound_rhs, refined_bound_ok = measure(
+        refined_y, refined_g, refined_D
+    )
+    # For a parent with no complex inventory the exact bound is equality, but
+    # exp(log(D*X_i)) can round above D*X_i by several ulps. Only when the
+    # relative balance already passes, move a violating y_i to the greatest
+    # float64 value whose exp is below the bound, then recompute mass action and
+    # D. Recheck both conditions after each adjustment; a real residual failure
+    # cannot be hidden by this equality-rounding correction.
+    if np.all(np.isfinite(refined_error)) and np.all(
+        np.abs(refined_error) <= tol_rel
+    ):
+        while np.any(~refined_bound_ok):
+            violating = np.flatnonzero(~refined_bound_ok)
+            lower_y = refined_y.copy()
+            target_activity = np.nextafter(refined_bound_rhs[violating], 0.0)
+            if np.any(target_activity <= 0.0):
+                break
+            with np.errstate(divide="ignore", invalid="ignore"):
+                log_target_activity = np.log(target_activity)
+            lower_y[violating] = np.minimum(
+                lower_y[violating], log_target_activity
+            )
+            with np.errstate(over="ignore", invalid="ignore", under="ignore"):
+                above_target = np.exp(lower_y[violating]) > target_activity
+            while np.any(above_target):
+                indices = violating[above_target]
+                lower_y[indices] = np.nextafter(lower_y[indices], -np.inf)
+                with np.errstate(over="ignore", invalid="ignore", under="ignore"):
+                    above_target = np.exp(lower_y[violating]) > target_activity
+            if np.any(lower_y < -200.0) or np.array_equal(lower_y, refined_y):
+                break
+            with np.errstate(over="ignore", invalid="ignore", under="ignore"):
+                _f, refined_g, refined_D, _J = _active_residual(
+                    lower_y, x_target, nu, lnK, S
+                )
+            refined_y = lower_y
+            refined_error, refined_activity, refined_bound_rhs, refined_bound_ok = (
+                measure(refined_y, refined_g, refined_D)
+            )
+            if not (
+                np.all(np.isfinite(refined_error))
+                and np.all(np.abs(refined_error) <= tol_rel)
+            ):
+                break
+    if not certified(refined_error, refined_bound_ok, refined_D):
+        refuse(
+            refined_error,
+            refined_activity,
+            refined_bound_rhs,
+            refined_bound_ok,
+        )
+
+    refined_solution = (
+        refined_y,
+        refined_g,
+        refined_D,
+        solution[3] + refined[3],
+        refined[4],
+        refined[5],
+        refined[6],
+        solution[7],
+        solution[8] + refined[8],
+    )
+    return refined_solution, True
+
+
 def solve_active_warm(
     x_target: np.ndarray,
     nu: np.ndarray,
@@ -999,6 +1207,7 @@ def solve_active_warm(
     max_iter: int,
     *,
     y_init: np.ndarray | None = None,
+    parent_names: Sequence[str] | None = None,
 ) -> tuple[
     np.ndarray, np.ndarray, float, int, float, float, float, str, int, bool
 ]:
@@ -1092,16 +1301,28 @@ def solve_active_warm(
     first, _, direct_iterations = _newton_attempt(lnK, y, scale_rows=False)
     if first is not None:
         y, g, D, newton_iterations, residual_inf, residual_l2 = first
+        certified, _refined = _certify_active_root(
+            x_target,
+            nu,
+            lnK,
+            S,
+            tol,
+            max_iter,
+            (
+                y,
+                g,
+                D,
+                newton_iterations,
+                residual_inf,
+                residual_l2,
+                float(np.linalg.norm(y - ideal_y)),
+                "newton",
+                0,
+            ),
+            parent_names=parent_names,
+        )
         return (
-            y,
-            g,
-            D,
-            newton_iterations,
-            residual_inf,
-            residual_l2,
-            float(np.linalg.norm(y - ideal_y)),
-            "newton",
-            0,
+            *certified,
             False,
         )
 
@@ -1124,16 +1345,28 @@ def solve_active_warm(
         y_stage = y_stage_next
         if log_lambda == 0.0:
             y, g, D, _stage_iterations, residual_inf, residual_l2 = stage
+            certified, _refined = _certify_active_root(
+                x_target,
+                nu,
+                lnK,
+                S,
+                tol,
+                max_iter,
+                (
+                    y,
+                    g,
+                    D,
+                    total_iterations,
+                    residual_inf,
+                    residual_l2,
+                    float(np.linalg.norm(y - ideal_y)),
+                    "newton",
+                    continuation_stages,
+                ),
+                parent_names=parent_names,
+            )
             return (
-                y,
-                g,
-                D,
-                total_iterations,
-                residual_inf,
-                residual_l2,
-                float(np.linalg.norm(y - ideal_y)),
-                "newton",
-                continuation_stages,
+                *certified,
                 False,
             )
 
@@ -1149,10 +1382,20 @@ def solve_active_warm(
         y_init=y_stage,
         relative_tolerance=True,
     )
-    return (*fallback, True)
+    certified, _refined = _certify_active_root(
+        x_target,
+        nu,
+        lnK,
+        S,
+        tol,
+        max_iter,
+        fallback,
+        parent_names=parent_names,
+    )
+    return (*certified, True)
 
 
-def solve_imcc_sf04(
+def _solve_imcc_sf04_with_seed(
     parent_mol: Sequence[float],
     T_K: float,
     datapack: ImccDatapack,
@@ -1163,7 +1406,8 @@ def solve_imcc_sf04(
     tol: float = 1.0e-12,
     max_iter: int = 100,
     y_init: np.ndarray | None = None,
-) -> ImccResult:
+    relative_recovery: bool = False,
+) -> tuple[ImccResult, np.ndarray]:
     """
     Solve the IMCC-SF04 ideal-associated-solution equilibrium.
 
@@ -1188,6 +1432,9 @@ def solve_imcc_sf04(
         Optional natural-log free-parent fractions aligned with the active
         parents in datapack order. The vector must be finite, match the active
         parent count, and lie inside the solver bounds.
+    relative_recovery:
+        Internal continuation option to retry an absolute-tolerance stall
+        with parent-scaled residuals. Public solves leave this disabled.
     tol:
         Positive finite infinity-norm residual convergence tolerance. SciPy
         ``least_squares`` receives this value as ``ftol``, ``xtol``, and
@@ -1206,9 +1453,9 @@ def solve_imcc_sf04(
 
     Returns
     -------
-    ImccResult
-        Activities, gamma coefficients, full speciation, convergence
-        diagnostics, identity labels, and domain flags.
+    tuple[ImccResult, np.ndarray]
+        The certified result and the pre-refinement log activities to use only
+        as a continuation start. The second item is not a returned solution.
 
     Raises
     ------
@@ -1396,7 +1643,65 @@ def solve_imcc_sf04(
         # Should not happen because total > 0.
         raise ImccCompositionIncompleteError("no positive parent oxides")
 
-    # Solve the reduced log-space system.
+    # Solve the reduced log-space system. A targeted continuation caller may
+    # retry an absolute-tolerance stall with parent-scaled residuals; the final
+    # certificate below still decides whether any result may leave this
+    # function.
+    try:
+        solution = _solve_active(
+            x_active, nu_active, lnK_active, S_active, tol, max_iter,
+            y_init=y_init,
+        )
+    except ImccNonconvergenceError as absolute_error:
+        if not relative_recovery:
+            raise
+        failed_y = np.asarray(
+            absolute_error.diagnostics.get("final_y", ()), dtype=float
+        )
+        if (
+            failed_y.ndim != 1
+            or failed_y.size != x_active.size
+            or not np.all(np.isfinite(failed_y))
+        ):
+            raise
+        _failed_f, _failed_g, failed_D, _failed_J = _active_residual(
+            failed_y, x_active, nu_active, lnK_active, S_active
+        )
+        if not math.isfinite(failed_D) or failed_D <= 0.0:
+            raise
+        # The relative solver measures f_i/X_i, while the certificate measures
+        # f_i/(D*X_i). Scaling by min(D, 1) targets tol_rel without loosening
+        # the public tolerance when the current iterate has D > 1.
+        relative_solve_tol = float(tol) * min(failed_D, 1.0)
+        try:
+            solution = _solve_active(
+                x_active,
+                nu_active,
+                lnK_active,
+                S_active,
+                relative_solve_tol,
+                max_iter,
+                y_init=failed_y,
+                relative_tolerance=True,
+            )
+        except ImccNonconvergenceError:
+            raise absolute_error from None
+    # Keep the original accepted iterate available as a continuation start.
+    # The result below is still certified before it leaves this function.
+    continuation_y = solution[0]
+    solution, refined = _certify_active_root(
+        x_active,
+        nu_active,
+        lnK_active,
+        S_active,
+        tol,
+        max_iter,
+        solution,
+        parent_names=tuple(
+            datapack.parent_oxides[index]
+            for index in np.flatnonzero(active_parent)
+        ),
+    )
     (
         y_active,
         g_active,
@@ -1407,10 +1712,17 @@ def solve_imcc_sf04(
         final_step,
         solver_path,
         continuation_stages,
-    ) = _solve_active(
-        x_active, nu_active, lnK_active, S_active, tol, max_iter,
-        y_init=y_init,
-    )
+    ) = solution
+    if relative_recovery or refined:
+        # The absolute path already records these norms. A relative solve or
+        # refinement records |f/X|, so recompute |f| only for those uncommon
+        # roots and keep the default passing path at the certificate's O(P*C)
+        # cost.
+        final_residual, _final_g, _final_D, _final_J = _active_residual(
+            y_active, x_active, nu_active, lnK_active, S_active
+        )
+        res_inf = float(np.linalg.norm(final_residual, ord=np.inf))
+        res_l2 = float(np.linalg.norm(final_residual, ord=2))
 
     # Reconstruct the full speciation vector (8 parents + 38 complexes).
     n_parents = datapack.n_parents
@@ -1466,7 +1778,7 @@ def solve_imcc_sf04(
         flags=flags,
     )
 
-    return ImccResult(
+    result = ImccResult(
         temperature_K=T,
         parent_oxides=tuple(datapack.parent_oxides),
         parent_mol=parent_mol,
@@ -1483,3 +1795,31 @@ def solve_imcc_sf04(
         labels=labels,
         extrapolated=extrapolated,
     )
+    return result, continuation_y
+
+
+def solve_imcc_sf04(
+    parent_mol: Sequence[float],
+    T_K: float,
+    datapack: ImccDatapack,
+    *,
+    allow_extrapolation: bool = False,
+    basis: float | None = None,
+    extra_mol: Mapping[str, float] | None = None,
+    tol: float = 1.0e-12,
+    max_iter: int = 100,
+    y_init: np.ndarray | None = None,
+) -> ImccResult:
+    """Return the certified result of the IMCC-SF04 parent-balance solve."""
+    result, _continuation_y = _solve_imcc_sf04_with_seed(
+        parent_mol,
+        T_K,
+        datapack,
+        allow_extrapolation=allow_extrapolation,
+        basis=basis,
+        extra_mol=extra_mol,
+        tol=tol,
+        max_iter=max_iter,
+        y_init=y_init,
+    )
+    return result

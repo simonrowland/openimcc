@@ -40,6 +40,7 @@ from openimcc.kernel import (
     _PUBLISHED_MODEL_ID,
     _label_loaded_datapack,
     _published_datapack_manifest_hash,
+    _solve_imcc_sf04_with_seed,
     label_research_datapack,
     solve_imcc_sf04,
 )
@@ -1201,7 +1202,7 @@ def evaluate(
         )
 
     try:
-        result = solve_imcc_sf04(
+        result, _continuation_y = _solve_imcc_sf04_with_seed(
             vector,
             T_K,
             kernel_pack,
@@ -1239,7 +1240,7 @@ def evaluate(
                 )
                 stage_basis = basis if final_stage else float(staged_vector.sum())
                 try:
-                    result = solve_imcc_sf04(
+                    result, continuation_y = _solve_imcc_sf04_with_seed(
                         staged_vector,
                         T_K,
                         kernel_pack,
@@ -1263,7 +1264,10 @@ def evaluate(
                         y_stage = candidate
                         continue
                     break
-                y_stage = np.log(result.parent_x_star[vector > 0.0])
+                # Keep the pre-certification solver iterate as the walk seed:
+                # using the refined root made one low-temperature trace refuse
+                # and changed another case's solver path.
+                y_stage = np.log(np.exp(continuation_y))
                 last_success_y = y_stage.copy()
                 if final_stage:
                     result = replace(
@@ -1283,13 +1287,13 @@ def evaluate(
                 # a trace anchor at 1e-11 before returning to the true vector;
                 # the fraction is dimensionless and sits one decade above the
                 # sweep's 1e-12 lower end. At or below the anchor, retry the
-                # true vector directly from the certified root.
+                # true vector directly from the last continuation start.
                 bridge_fraction = min(trace_fraction, 1.0e-11)
                 bridge_vector = vector.copy()
                 bridge_vector[trace_index] = bridge_fraction * total_moles
                 bridge_is_input = bridge_fraction == trace_fraction
                 try:
-                    bridge_result = solve_imcc_sf04(
+                    bridge_result, bridge_y = _solve_imcc_sf04_with_seed(
                         bridge_vector,
                         T_K,
                         kernel_pack,
@@ -1308,9 +1312,11 @@ def evaluate(
                 else:
                     result = bridge_result
                     if not bridge_is_input:
-                        bridge_y = np.log(bridge_result.parent_x_star[vector > 0.0])
+                        # Preserve the pre-certification bridge seed for the
+                        # same established continuation basin.
+                        bridge_y = np.log(np.exp(bridge_y))
                         try:
-                            result = solve_imcc_sf04(
+                            result, _continuation_y = _solve_imcc_sf04_with_seed(
                                 vector,
                                 T_K,
                                 kernel_pack,
@@ -1352,7 +1358,7 @@ def evaluate(
                     final_stage = silica_stage == len(silica_factors)
                     stage_basis = basis if final_stage else float(silica_vector.sum())
                     try:
-                        result = solve_imcc_sf04(
+                        result, continuation_y = _solve_imcc_sf04_with_seed(
                             silica_vector,
                             T_K,
                             kernel_pack,
@@ -1376,7 +1382,8 @@ def evaluate(
                             y_stage = candidate
                             continue
                         break
-                    y_stage = np.log(result.parent_x_star[vector > 0.0])
+                    # Match the trace walk above to retain its established basin.
+                    y_stage = np.log(np.exp(continuation_y))
                     if final_stage:
                         result = replace(
                             result,
@@ -1430,7 +1437,7 @@ def evaluate(
                         warm_y = np.log(
                             warm_result.parent_x_star[active_parent]
                         )
-                        result = solve_imcc_sf04(
+                        result, _continuation_y = _solve_imcc_sf04_with_seed(
                             vector,
                             T_K,
                             kernel_pack,
@@ -1440,6 +1447,7 @@ def evaluate(
                             tol=tol,
                             max_iter=max_iter,
                             y_init=warm_y,
+                            relative_recovery=True,
                         )
                     except ImccRefusal:
                         pass

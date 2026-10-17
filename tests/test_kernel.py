@@ -11,6 +11,8 @@ Rung-1 gates for the IMCC-SF04 melt-equilibrium kernel.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import warnings
 
 import numpy as np
@@ -257,6 +259,103 @@ def test_bit_determinism() -> None:
     assert np.array_equal(res1.species_x, res2.species_x)
     assert res1.D == res2.D
     assert res1.convergence.iterations == res2.convergence.iterations
+
+
+def test_trace_parent_root_is_refined_to_relative_inventory_tolerance() -> None:
+    pack = load_datapack()
+    composition = {
+        oxide: 1.0e-12 if oxide == "FeO" else (1.0 - 1.0e-12) / 7.0
+        for oxide in pack.parent_oxides
+    }
+    result = evaluate(
+        composition,
+        2288.0,
+        pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    active = result.parent_x > 0.0
+    inventory = (
+        result.parent_x_star
+        + pack.kernel_datapack.nu @ result.complex_x
+    ) / result.D
+    relative_error = inventory[active] / result.parent_x[active] - 1.0
+    balance_residual = (
+        result.parent_x_star
+        + pack.kernel_datapack.nu @ result.complex_x
+        - result.D * result.parent_x
+    )
+    assert result.convergence.residual_inf == pytest.approx(
+        np.linalg.norm(balance_residual, ord=np.inf), rel=0.25, abs=0.0
+    )
+    assert result.convergence.residual_l2 == pytest.approx(
+        np.linalg.norm(balance_residual, ord=2), rel=0.25, abs=0.0
+    )
+    # The exact inventory error is f_i/(D*X_i). It uses the caller's 1e-12
+    # dimensionless solver tolerance; this is about 4.5e3 float64 epsilons,
+    # while the unscaled absolute residual cannot certify a trace parent.
+    assert np.max(np.abs(relative_error)) <= 1.0e-12
+    assert np.all(
+        result.parent_activity[active]
+        <= result.D * result.parent_x[active]
+    )
+    fe_index = result.parent_oxides.index("FeO")
+    assert result.parent_activity[fe_index] == pytest.approx(
+        1.4991342575302651e-12, rel=1.0e-12, abs=0.0
+    )
+
+
+def test_passing_bulk_root_keeps_its_pre_certification_bytes() -> None:
+    composition = {
+        "SiO2": 51.85068,
+        "MgO": 4.78527,
+        "FeO": 13.77307,
+        "CaO": 9.02862,
+        "Al2O3": 14.80572,
+        "TiO2": 1.73824,
+        "Na2O": 3.23108,
+        "K2O": 0.78732,
+    }
+    result = evaluate(
+        composition,
+        1800.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    arrays = (
+        "parent_mol",
+        "parent_x",
+        "parent_x_star",
+        "parent_activity",
+        "parent_gamma",
+        "complex_x",
+        "species_x",
+    )
+    fingerprint = {
+        name: getattr(result, name).tobytes().hex() for name in arrays
+    }
+    fingerprint.update(
+        {
+            "temperature_K": result.temperature_K.hex(),
+            "basis": result.basis.hex(),
+            "D": result.D.hex(),
+            "residual_inf": result.convergence.residual_inf.hex(),
+            "residual_l2": result.convergence.residual_l2.hex(),
+            "total_displacement": result.convergence.total_displacement.hex(),
+            "iterations": result.convergence.iterations,
+            "status": result.convergence.status,
+            "solver_path": result.convergence.solver_path,
+            "continuation_stages": result.convergence.continuation_stages,
+            "extrapolated": result.extrapolated,
+        }
+    )
+    digest = hashlib.sha256(
+        json.dumps(fingerprint, separators=(",", ":"), sort_keys=True).encode()
+    ).hexdigest()
+    assert digest == (
+        "a30a4d124ad28bd2dd863a5b62e154eaa498fb1eb013718da602a69185b18177"
+    )
 
 
 def test_refusal_T_outside_domain() -> None:
