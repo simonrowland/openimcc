@@ -1390,6 +1390,74 @@ def evaluate(
                         break
 
         if not recovered:
+            active_parent = vector > 0.0
+            inactive_complex = np.any(
+                (kernel_pack.nu > 0.0) & (~active_parent[:, None]), axis=0
+            )
+            active_domains = [
+                domain
+                for domain, inactive in zip(
+                    kernel_pack.domains, inactive_complex, strict=True
+                )
+                if not inactive
+            ]
+            if active_domains:
+                shared_lower = max(domain[0] for domain in active_domains)
+                shared_upper = min(domain[1] for domain in active_domains)
+                # Start 10 K above the highest active-row lower edge. This
+                # margin keeps the start strictly inside the common domain;
+                # the one linear interval to T_K avoids extra failed solves.
+                start_temperature = shared_lower + 10.0
+                if (
+                    shared_lower < start_temperature <= shared_upper
+                    and T_K < start_temperature
+                ):
+                    try:
+                        warm_result = evaluate(
+                            vector,
+                            start_temperature,
+                            pack,
+                            basis=basis,
+                            basis_type="mol",
+                            extra_mol=extra_mol,
+                            enable_sp_extension=enable_sp_extension,
+                            allow_extrapolation=allow_extrapolation,
+                            allow_out_of_envelope=allow_out_of_envelope,
+                            tol=tol,
+                            max_iter=max_iter,
+                            y_init=y_init,
+                        )
+                        warm_y = np.log(
+                            warm_result.parent_x_star[active_parent]
+                        )
+                        result = solve_imcc_sf04(
+                            vector,
+                            T_K,
+                            kernel_pack,
+                            basis=basis,
+                            extra_mol=extra_mol,
+                            allow_extrapolation=allow_extrapolation,
+                            tol=tol,
+                            max_iter=max_iter,
+                            y_init=warm_y,
+                        )
+                    except ImccRefusal:
+                        pass
+                    else:
+                        result = replace(
+                            result,
+                            convergence=replace(
+                                result.convergence,
+                                solver_path="temperature-continuation",
+                                continuation_stages=(
+                                    warm_result.convergence.continuation_stages
+                                    + 1
+                                ),
+                            ),
+                        )
+                        recovered = True
+
+        if not recovered:
             raise cold_error from None
 
     # Build the caller-facing label block. The paper-window flag is computed

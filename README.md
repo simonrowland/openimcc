@@ -644,6 +644,10 @@ result's `parent_x_star` values for the positive-mole parents, in datapack
 order. If a depleted parent needs a composition homotopy to converge,
 `result.convergence.solver_path` is `"composition-continuation"` and
 `continuation_stages` reports the number of stages used.
+For low-temperature refusals recovered from a warm root at a higher
+temperature, `solver_path` is `"temperature-continuation"`; its stage count
+includes the warm solve's recovery stages and the final solve at the requested
+temperature.
 
 Output:
 

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
 
-from openimcc import ImccInvalidWarmStartError, evaluate
+from openimcc import ImccInvalidWarmStartError, evaluate, load_datapack
 from openimcc.kernel import ImccNonconvergenceError, ImccRefusal
 from openimcc import model
 
@@ -327,6 +328,185 @@ def test_failed_composition_continuation_preserves_original_diagnostics(
 
     assert calls == 14
     assert caught.value.diagnostics == diagnostics
+
+
+@pytest.mark.parametrize(
+    ("composition", "trace_name", "trace_fraction"),
+    (
+        (_cai_mole_vector(1.0e-10), "TiO2", 1.0e-10),
+        (_cai_mole_vector(1.0e-12), "TiO2", 1.0e-12),
+        (np.full(8, 1.0 / 8.0), "FeO", 1.0e-12),
+    ),
+)
+def test_temperature_continuation_recovers_low_temperature_depletions(
+    composition: np.ndarray,
+    trace_name: str,
+    trace_fraction: float,
+) -> None:
+    if trace_name == "FeO":
+        composition = composition.copy()
+        composition[2] = trace_fraction
+        composition[np.arange(8) != 2] *= (1.0 - trace_fraction) / (
+            7.0 / 8.0
+        )
+
+    result = evaluate(
+        composition,
+        1500.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    assert result.convergence.solver_path == "temperature-continuation"
+    assert result.convergence.continuation_stages > 1
+    assert result.convergence.residual_inf <= 1.0e-12
+    assert np.array_equal(result.parent_mol, composition)
+    trace_amount = result.parent_mol[result.parent_oxides.index(trace_name)]
+    assert trace_amount / result.basis == pytest.approx(trace_fraction)
+
+
+def test_temperature_continuation_refusal_call_count_is_bounded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+    calls_by_temperature: dict[float, int] = {}
+    composition = _cai_mole_vector(1.0e-12)
+    diagnostics = {
+        "iterations": 0,
+        "residual_inf": 1.0,
+        "residual_l2": 1.0,
+        "final_y": [0.0] * 8,
+        "solver_path": "failed",
+        "continuation_stages": 0,
+        "scipy_message": "fixture failure",
+    }
+    warm_result = evaluate(
+        composition,
+        1710.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+
+    def refuse(*args: object, **_kwargs: object) -> object:
+        nonlocal calls
+        calls += 1
+        temperature = float(args[1])
+        calls_by_temperature[temperature] = (
+            calls_by_temperature.get(temperature, 0) + 1
+        )
+        if temperature == 1710.0 and calls_by_temperature[temperature] == 14:
+            # The final silica stage at the warm temperature returns its
+            # independently computed root, allowing the target solve to run.
+            return warm_result
+        raise ImccNonconvergenceError("fixture refuses", diagnostics)
+
+    monkeypatch.setattr(model, "solve_imcc_sf04", refuse)
+    with pytest.raises(ImccNonconvergenceError) as caught:
+        evaluate(
+            composition,
+            1500.0,
+            basis_type="mol",
+            allow_extrapolation=True,
+            allow_out_of_envelope=True,
+        )
+
+    # Both temperatures execute direct solve + seven trace stages + six
+    # silica stages; the final warm-started target solve makes call 29.
+    # Without the temperature stage this fixture would stop at 14 calls.
+    assert calls == 29
+    assert calls_by_temperature == {1500.0: 15, 1710.0: 14}
+    assert caught.value.diagnostics == diagnostics
+
+
+@pytest.mark.parametrize(
+    "pack_file",
+    ("imcc-sf04-d066-ext-v1.json", "imcc-sf04-ext-v4.json"),
+)
+def test_extension_temperature_refusal_preserves_original_diagnostics(
+    pack_file: str,
+) -> None:
+    pack = load_datapack(
+        Path(__file__).parents[1]
+        / "src"
+        / "openimcc"
+        / "data"
+        / "packs"
+        / pack_file
+    )
+    core_names = (
+        "SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"
+    )
+    core_vector = _cai_mole_vector(1.0e-12)
+    composition = np.array(
+        [
+            core_vector[core_names.index(name)] if name in core_names else 0.0
+            for name in pack.parent_oxides
+        ]
+    )
+    options = {
+        "pack": pack,
+        "basis_type": "mol",
+        "enable_sp_extension": True,
+        "allow_extrapolation": True,
+        "allow_out_of_envelope": True,
+    }
+
+    with pytest.raises(ImccNonconvergenceError) as original:
+        model.solve_imcc_sf04(
+            composition,
+            1500.0,
+            pack.kernel_datapack,
+            basis=float(composition.sum()),
+            allow_extrapolation=True,
+            max_iter=1,
+        )
+    with pytest.raises(ImccNonconvergenceError) as caught:
+        evaluate(composition, 1500.0, max_iter=1, **options)
+
+    assert caught.value.diagnostics == original.value.diagnostics
+
+
+@pytest.mark.parametrize(
+    "pack_file",
+    ("imcc-sf04-d066-ext-v1.json", "imcc-sf04-ext-v4.json"),
+)
+def test_extension_temperature_max_iter_zero_preserves_did_not_run(
+    pack_file: str,
+) -> None:
+    pack = load_datapack(
+        Path(__file__).parents[1]
+        / "src"
+        / "openimcc"
+        / "data"
+        / "packs"
+        / pack_file
+    )
+    composition = np.full(len(pack.parent_oxides), 1.0 / 8.0)
+    composition[8:] = 0.0
+    options = {
+        "pack": pack,
+        "basis_type": "mol",
+        "enable_sp_extension": True,
+        "allow_extrapolation": True,
+        "allow_out_of_envelope": True,
+        "max_iter": 0,
+    }
+
+    with pytest.raises(ImccNonconvergenceError) as original:
+        model.solve_imcc_sf04(
+            composition,
+            1500.0,
+            pack.kernel_datapack,
+            basis=float(composition.sum()),
+            allow_extrapolation=True,
+            max_iter=0,
+        )
+    with pytest.raises(ImccNonconvergenceError, match="did not run") as caught:
+        evaluate(composition, 1500.0, **options)
+
+    assert caught.value.diagnostics == original.value.diagnostics
 
 
 def test_none_warm_start_is_bit_identical_to_omitted_default() -> None:
