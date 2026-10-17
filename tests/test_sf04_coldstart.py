@@ -108,6 +108,34 @@ def test_depleted_melt_cold_start_converges(
     )
 
 
+def test_lunar_trace_state_uses_relative_log_x_last_resort() -> None:
+    composition = {
+        "SiO2": 1489.5026789257954,
+        "MgO": 2292.1310472268683,
+        "FeO": 0.044418319238703666,
+        "CaO": 2014.8649752615986,
+        "Al2O3": 1360.0091164074408,
+        "TiO2": 192.89908941162028,
+        "Na2O": 1.9086093358233833e-07,
+        "K2O": 8.337651502659869,
+    }
+
+    result = evaluate(
+        composition,
+        2385.65,
+        basis_type="mol",
+        enable_sp_extension=False,
+        allow_extrapolation=False,
+        allow_out_of_envelope=False,
+    )
+
+    assert result.convergence.solver_path == "relative-log-x"
+    assert result.convergence.residual_inf <= 1.0e-12
+    assert result.parent_activity[result.parent_oxides.index("SiO2")] == pytest.approx(
+        0.0059419, rel=2.0e-5
+    )
+
+
 def test_evaluate_accepts_a_validated_warm_start() -> None:
     composition, temperature, _expected = CASES[0]
     cold = evaluate(composition, temperature)
@@ -315,18 +343,20 @@ def test_failed_composition_continuation_preserves_original_diagnostics(
         "continuation_stages": 2,
         "scipy_message": "fixture failure",
     }
+    original_error = ImccNonconvergenceError("fixture refuses", diagnostics)
 
     def refuse(*_args: object, **_kwargs: object) -> None:
         nonlocal calls
         calls += 1
-        raise ImccNonconvergenceError("fixture refuses", diagnostics)
+        raise original_error
 
     monkeypatch.setattr(model, "_solve_imcc_sf04_with_seed", refuse)
     composition, temperature, _expected = CASES[0]
     with pytest.raises(ImccNonconvergenceError, match="fixture refuses") as caught:
         evaluate(composition, temperature)
 
-    assert calls == 14
+    assert calls == 15
+    assert caught.value is original_error
     assert caught.value.diagnostics == diagnostics
 
 
@@ -416,10 +446,11 @@ def test_temperature_continuation_refusal_call_count_is_bounded(
         )
 
     # Both temperatures execute direct solve + seven trace stages + six
-    # silica stages; the final warm-started target solve makes call 29.
-    # Without the temperature stage this fixture would stop at 14 calls.
-    assert calls == 29
-    assert calls_by_temperature == {1500.0: 15, 1710.0: 14}
+    # silica stages; the final warm-started target solve makes call 29, and
+    # the relative log-x retry at the target makes call 30. This exact bound
+    # fails if the last-resort stage is removed.
+    assert calls == 30
+    assert calls_by_temperature == {1500.0: 16, 1710.0: 14}
     assert caught.value.diagnostics == diagnostics
 
 

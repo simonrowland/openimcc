@@ -1466,6 +1466,28 @@ def evaluate(
                         recovered = True
 
         if not recovered:
+            # Earlier composition and temperature continuation stages preserve
+            # their warm-started roots. If those all stall on a trace balance,
+            # solve once from log(x) with parent-scaled residuals; the kernel's
+            # certificate still decides whether the candidate is returned.
+            try:
+                result, _continuation_y = _solve_imcc_sf04_with_seed(
+                    vector,
+                    T_K,
+                    kernel_pack,
+                    allow_extrapolation=allow_extrapolation,
+                    basis=basis,
+                    extra_mol=extra_mol,
+                    tol=tol,
+                    max_iter=max_iter,
+                    relative_log_x_recovery=True,
+                )
+            except ImccRefusal:
+                pass
+            else:
+                recovered = True
+
+        if not recovered:
             raise cold_error from None
 
     # Build the caller-facing label block. The paper-window flag is computed

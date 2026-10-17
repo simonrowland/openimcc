@@ -1407,6 +1407,7 @@ def _solve_imcc_sf04_with_seed(
     max_iter: int = 100,
     y_init: np.ndarray | None = None,
     relative_recovery: bool = False,
+    relative_log_x_recovery: bool = False,
 ) -> tuple[ImccResult, np.ndarray]:
     """
     Solve the IMCC-SF04 ideal-associated-solution equilibrium.
@@ -1435,6 +1436,10 @@ def _solve_imcc_sf04_with_seed(
     relative_recovery:
         Internal continuation option to retry an absolute-tolerance stall
         with parent-scaled residuals. Public solves leave this disabled.
+    relative_log_x_recovery:
+        Internal last-resort option to solve once with parent-scaled residuals
+        from the ideal-fraction start. The public adapter enables this only
+        after its existing recovery stages fail.
     tol:
         Positive finite infinity-norm residual convergence tolerance. SciPy
         ``least_squares`` receives this value as ``ftol``, ``xtol``, and
@@ -1647,13 +1652,30 @@ def _solve_imcc_sf04_with_seed(
     # retry an absolute-tolerance stall with parent-scaled residuals; the final
     # certificate below still decides whether any result may leave this
     # function.
+    solve_y_init = y_init
+    solve_tol = tol
+    relative_tolerance = False
+    if relative_log_x_recovery:
+        # log(x) is the exact no-complexing solution and keeps this bounded
+        # final retry to one start. Cap the scaled tolerance at 1e-14, the
+        # precision needed to resolve the trace-parent inventories, without
+        # relaxing a stricter caller tolerance.
+        solve_y_init = np.log(x_active)
+        solve_tol = min(float(tol), 1.0e-14)
+        relative_tolerance = True
     try:
         solution = _solve_active(
-            x_active, nu_active, lnK_active, S_active, tol, max_iter,
-            y_init=y_init,
+            x_active,
+            nu_active,
+            lnK_active,
+            S_active,
+            solve_tol,
+            max_iter,
+            y_init=solve_y_init,
+            relative_tolerance=relative_tolerance,
         )
     except ImccNonconvergenceError as absolute_error:
-        if not relative_recovery:
+        if relative_log_x_recovery or not relative_recovery:
             raise
         failed_y = np.asarray(
             absolute_error.diagnostics.get("final_y", ()), dtype=float
@@ -1686,6 +1708,8 @@ def _solve_imcc_sf04_with_seed(
             )
         except ImccNonconvergenceError:
             raise absolute_error from None
+    if relative_log_x_recovery:
+        solution = (*solution[:7], "relative-log-x", solution[8])
     # Keep the original accepted iterate available as a continuation start.
     # The result below is still certified before it leaves this function.
     continuation_y = solution[0]
@@ -1702,6 +1726,8 @@ def _solve_imcc_sf04_with_seed(
             for index in np.flatnonzero(active_parent)
         ),
     )
+    if relative_log_x_recovery:
+        solution = (*solution[:7], "relative-log-x", solution[8])
     (
         y_active,
         g_active,
@@ -1713,7 +1739,7 @@ def _solve_imcc_sf04_with_seed(
         solver_path,
         continuation_stages,
     ) = solution
-    if relative_recovery or refined:
+    if relative_recovery or relative_log_x_recovery or refined:
         # The absolute path already records these norms. A relative solve or
         # refinement records |f/X|, so recompute |f| only for those uncommon
         # roots and keep the default passing path at the certificate's O(P*C)
