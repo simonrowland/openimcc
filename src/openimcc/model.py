@@ -596,7 +596,6 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
 
     if not isinstance(data, dict):
         raise ImccMalformedDatapackError("datapack JSON root must be an object")
-    _validate_band_schema_rows(data)
 
     version = data.get("imcc_sf04_datapack_version")
     if not isinstance(version, str) or not version:
@@ -637,6 +636,10 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             model_id=model_id,
             version=version,
         )
+    # Field-level band checks run only after the published-identity gate
+    # above: an unpublished or modified pack must refuse on its canonical
+    # hash and never reach field validation.
+    _validate_band_schema_rows(data)
 
     if sp_extension is not None:
         if not isinstance(sp_extension, dict):

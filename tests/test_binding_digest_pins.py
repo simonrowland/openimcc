@@ -252,3 +252,24 @@ def test_legacy_evaluation_outputs_match_portable_pins() -> None:
                 ) == EXACT_PIN_ENVIRONMENT:
                     packed = b"".join(struct.pack("<d", value) for value in exact_values)
                     assert hashlib.sha256(packed).hexdigest() == EXACT_EVALUATION_SHA256[key]
+
+
+def test_modified_published_core_refuses_on_hash_before_band_field_validation(
+    tmp_path: Path,
+) -> None:
+    # A modified published core that also lacks the band fields must be
+    # refused by the published-identity gate (canonical hash), not by
+    # field-level band validation. (D066 packs have no published-hash gate;
+    # their rows are checked structurally, so the ordering applies here.)
+    manifest = json.loads(
+        (PACK_DIR / "imcc-sf04-v1.0.2.json").read_text(encoding="utf-8")
+    )
+    manifest["rows"][0]["A"] += 0.5
+    for row in manifest["rows"]:
+        for field in ("fit_residual", "accuracy_band", "band_basis", "independent_check"):
+            row.pop(field, None)
+    altered_path = tmp_path / "altered.json"
+    altered_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ImccMalformedDatapackError, match="hash mismatch"):
+        load_datapack(altered_path)
