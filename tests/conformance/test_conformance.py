@@ -42,6 +42,16 @@ def _cases() -> list[str]:
     return sorted(_golden()["cases"])
 
 
+def test_golden_cases_are_present() -> None:
+    assert _cases(), "conformance golden must contain at least one case"
+
+
+def test_golden_cases_guard_rejects_an_empty_file(monkeypatch) -> None:
+    monkeypatch.setattr("test_conformance._golden", lambda: {"cases": {}})
+    with pytest.raises(AssertionError, match="must contain at least one case"):
+        test_golden_cases_are_present()
+
+
 @pytest.fixture(scope="module")
 def pack():
     return load_datapack(PACK)
