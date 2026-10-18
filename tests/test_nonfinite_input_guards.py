@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import pytest
 
 from openimcc import (
@@ -226,6 +227,26 @@ def test_amount_beyond_float_range_is_a_typed_refusal(pack, name):
     message = str(exc.value)
     assert "too large to represent" in message, message
     assert name in message, message
+
+
+@pytest.mark.parametrize(
+    "amount", [True, False, np.bool_(True), np.bool_(False)]
+)
+def test_boolean_melt_amounts_are_refused(pack, amount):
+    composition = _uniform()
+    composition["SiO2"] = amount
+
+    with pytest.raises(ImccCompositionIncompleteError, match="is not a number"):
+        evaluate(composition, 2000.0, pack)
+
+    vector = [amount, *([1.0] * (len(PARENTS) - 1))]
+    with pytest.raises(ImccCompositionIncompleteError, match="is not a number"):
+        evaluate(vector, 2000.0, pack)
+
+
+def test_boolean_declared_basis_is_refused(pack):
+    with pytest.raises(ImccCompositionIncompleteError, match="is not a number"):
+        evaluate({"SiO2": 1.0}, 2000.0, pack, basis=True)
 
 
 def test_extra_amount_beyond_float_range_is_a_typed_refusal(pack):

@@ -16,6 +16,7 @@ from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 import yaml
@@ -170,6 +171,29 @@ _VNB_AGAINST_JANAF_PRINTED_FORMATION_GIBBS = {
 @pytest.fixture(scope="module")
 def gas_pack() -> ImccGasDatapack:
     return load_gas_datapack()
+
+
+@pytest.mark.parametrize("value", [True, False, np.bool_(True), np.bool_(False)])
+def test_evaluate_gas_refuses_boolean_fugacity(gas_pack, value):
+    with pytest.raises(ImccGasInvalidFugacityError):
+        evaluate_gas(
+            {"Na2O": 0.1}, 1800.0, value, gas_pack, gas_species=("Na",)
+        )
+
+
+@pytest.mark.parametrize("value", [True, False, np.bool_(True), np.bool_(False)])
+def test_evaluate_gas_refuses_boolean_activity(gas_pack, value):
+    with pytest.raises(ValueError, match="activity.*real number"):
+        evaluate_gas(
+            {"Na2O": value}, 1800.0, 1.0e-8, gas_pack, gas_species=("Na",)
+        )
+
+
+def test_evaluate_gas_refuses_boolean_temperature(gas_pack):
+    with pytest.raises(ValueError, match="temperature must be a real number"):
+        evaluate_gas(
+            {"Na2O": 0.1}, True, 1.0e-8, gas_pack, gas_species=("Na",)
+        )
 
 
 @pytest.fixture

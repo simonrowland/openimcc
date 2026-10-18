@@ -146,6 +146,35 @@ def test_oxide_parsing_refuses_a_repeated_oxide():
         cli._parse_oxides(["SiO2=40", "SiO2=50"])
 
 
+@pytest.mark.parametrize("value", ["true", "false"])
+def test_json_composition_refuses_boolean_amounts(tmp_path, value):
+    composition = tmp_path / "composition.json"
+    composition.write_text(f'{{"SiO2": {value}}}', encoding="utf-8")
+
+    with pytest.raises(ValueError, match="non-numeric"):
+        cli._load_composition(str(composition), [])
+
+
+def test_json_composition_large_integer_is_a_typed_refusal(tmp_path, capsys):
+    composition = tmp_path / "composition.json"
+    composition.write_text(
+        '{"SiO2":' + str(10**400) + ',"MgO":1}', encoding="utf-8"
+    )
+
+    status = cli.main(
+        [
+            "solve", "--pack", str(PACK), "--temperature", "1800",
+            "--basis-type", "wt", "--composition", str(composition), "--json",
+        ]
+    )
+
+    assert status == cli.EXIT_REFUSED
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "refused"
+    assert payload["code"] == "imcc_composition_incomplete"
+    assert "too large to represent as a float" in payload["reason"]
+
+
 # The package these modules live in, used to resolve relative imports. A
 # relative import records only the tail -- `from ...accounting.formulas import X`
 # has node.module == "accounting.formulas" -- so a scanner that tests

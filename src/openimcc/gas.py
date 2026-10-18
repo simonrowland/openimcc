@@ -34,6 +34,7 @@ import numpy as np
 from scipy.optimize import brentq
 
 from openimcc.kernel import ImccRefusal, _canonical_published_serialization
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -4679,7 +4680,16 @@ def evaluate_gas(
             (name, _SF04_REACTIONS[name]) for name in neutral_requests
         )
 
+    if not is_declared_real_scalar(T_K, allow_numeric_str=True):
+        raise ValueError(
+            f"temperature must be a real number, got {T_K!r}"
+        )
     T = float(T_K)
+    if not is_declared_real_scalar(fO2, allow_numeric_str=True):
+        raise ImccGasInvalidFugacityError(
+            "fO2 must be finite and positive p_O2/p° (bar-relative, not "
+            f"log10 fO2); got {fO2}"
+        )
     try:
         p_O2 = float(fO2)
     except (OverflowError, TypeError, ValueError) as exc:
@@ -4695,11 +4705,21 @@ def evaluate_gas(
             f"log10 fO2); got {fO2}"
         )
 
+    def activity_as_float(name: str, value: Any) -> float:
+        if not is_declared_real_scalar(value, allow_numeric_str=True):
+            raise ValueError(
+                f"activity for {name!r} must be a real number"
+            )
+        return float(value)
+
     if isinstance(activities, Mapping):
-        act = {name: float(activities.get(name, 0.0)) for name in parent_oxides}
+        act = {
+            name: activity_as_float(name, activities.get(name, 0.0))
+            for name in parent_oxides
+        }
         act.update(
             {
-                name: float(activities[name])
+                name: activity_as_float(name, activities[name])
                 for name in activities
                 if (
                     name in _REACTION_PARENT_OXIDES
@@ -4709,12 +4729,19 @@ def evaluate_gas(
             }
         )
     else:
-        arr = np.asarray(activities, dtype=float)
-        if arr.shape[0] != len(parent_oxides):
+        raw_arr = np.asarray(activities, dtype=object)
+        if raw_arr.shape[0] != len(parent_oxides):
             raise ValueError(
-                f"activities vector length {arr.shape[0]} does not match "
+                f"activities vector length {raw_arr.shape[0]} does not match "
                 f"{len(parent_oxides)} parent oxides"
             )
+        arr = np.asarray(
+            [
+                activity_as_float(name, value)
+                for name, value in zip(parent_oxides, raw_arr, strict=True)
+            ],
+            dtype=float,
+        )
         act = {name: float(arr[i]) for i, name in enumerate(parent_oxides)}
 
     if reactions is None or (include_ions and requested_channels is not None):

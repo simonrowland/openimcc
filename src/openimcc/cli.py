@@ -36,10 +36,12 @@ from typing import Any, Mapping, Sequence
 
 from openimcc.model import (
     ImccLoadedDatapack,
+    _amount_as_float,
     evaluate,
     load_datapack,
 )
 from openimcc.kernel import ImccRefusal
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 EXIT_OK = 0
 EXIT_USAGE = 1
@@ -77,10 +79,15 @@ def _load_composition(
             raise ValueError(
                 f"{composition_path}: expected a JSON object of oxide -> value"
             )
-        bad = sorted(k for k, v in data.items() if not isinstance(v, (int, float)))
+        bad = sorted(
+            k for k, v in data.items() if not is_declared_real_scalar(v)
+        )
         if bad:
             raise ValueError(f"{composition_path}: non-numeric values for {bad}")
-        return {str(k): float(v) for k, v in data.items()}
+        return {
+            str(k): _amount_as_float(v, f"composition value for {k}")
+            for k, v in data.items()
+        }
     if not oxides:
         raise ValueError("no composition given; pass --composition or --oxide")
     return _parse_oxides(oxides)

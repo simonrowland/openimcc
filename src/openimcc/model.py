@@ -949,6 +949,10 @@ def _amount_as_float(value: Any, label: str) -> float:
     "abc" or None, so a caller would get a crash instead of a refusal that
     names the bad entry.
     """
+    if not is_declared_real_scalar(value, allow_numeric_str=True):
+        raise ImccCompositionIncompleteError(
+            f"{label} is not a number: {value!r}"
+        )
     try:
         return float(value)
     except (TypeError, ValueError):
@@ -1122,21 +1126,28 @@ def evaluate(
             dtype=float,
         )
     else:
-        vector = np.asarray(composition, dtype=float)
-        if vector.ndim != 1:
+        raw_vector = np.asarray(composition, dtype=object)
+        if raw_vector.ndim != 1:
             raise ImccCompositionIncompleteError(
                 "composition vector must be 1-D"
             )
-        if vector.shape[0] != len(parent_oxides):
-            if vector.shape[0] > len(parent_oxides):
+        if raw_vector.shape[0] != len(parent_oxides):
+            if raw_vector.shape[0] > len(parent_oxides):
                 raise ImccComponentOutsideDomainError(
-                    f"composition vector length {vector.shape[0]} exceeds "
+                    f"composition vector length {raw_vector.shape[0]} exceeds "
                     f"the {len(parent_oxides)}-oxide basis"
                 )
             raise ImccCompositionIncompleteError(
-                f"composition vector length {vector.shape[0]} does not match "
+                f"composition vector length {raw_vector.shape[0]} does not match "
                 f"the {len(parent_oxides)}-oxide basis"
             )
+        vector = np.asarray(
+            [
+                _amount_as_float(value, f"composition value at index {index}")
+                for index, value in enumerate(raw_vector)
+            ],
+            dtype=float,
+        )
 
     if not np.all(np.isfinite(vector)):
         raise ImccCompositionIncompleteError(
@@ -1159,7 +1170,7 @@ def evaluate(
     if basis is None:
         basis = total
     else:
-        basis = float(basis)
+        basis = _amount_as_float(basis, "declared basis")
         # nan and inf both pass a bare `<= 0.0` (IEEE 754); see the matching
         # guard in kernel.solve_imcc_sf04.
         if not np.isfinite(basis) or basis <= 0.0:
