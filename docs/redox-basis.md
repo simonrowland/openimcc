@@ -109,7 +109,7 @@ oxide coefficients are 0.48 (SiO2), 0.61 (Al2O3), 0.78 (MgO), 1.00 (CaO),
 1.10 (TiO2), 1.15 (Na2O), and 1.00 (FeO). The TiO2 value is Berry's cited
 Duffy (1989) value ([paper](https://doi.org/10.1111/j.1151-2916.1989.tb06022.x)); it is distinct from the commonly reused Duffy-Ingram/Mills
 TiO2 value 0.61. The evaluator also includes K2O at 1.40 from Duffy's common
-oxide/fluoride scale (1989a, Table 1, p. 37;
+oxide/fluoride scale (1989, Table 1, p. 36, printed as 1.4;
 [paper](https://doi.org/10.1016/0022-3093(89)90438-9)). Berry's measured Table 1 glasses support the 1.10 recipe:
 recalculation from their reported oxide analyses gives the following pack
 Lambda values, versus the published values:

@@ -38,8 +38,8 @@ _DEFAULT_REDOX_PACK_PATH = (
 )
 _BERRY_OPTICAL_BASICITY = {
     # Berry et al. (2024, GCA 366, Table 1 and supplementary text) give the
-    # seven listed coefficients; Duffy (1989a), Table 1, p. 37 gives K2O=1.40
-    # on the same optical-basicity scale. Cr2O3 is omitted because its value
+    # seven listed coefficients; Duffy (1989), Table 1, p. 36 prints K2O
+    # as 1.4 on the same optical-basicity scale. Cr2O3 is omitted because its value
     # on this scale could not be verified in either cited primary table.
     "SiO2": ("Si", 1, 2, 0.48),
     "Al2O3": ("Al", 2, 3, 0.61),
