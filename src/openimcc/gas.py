@@ -4958,9 +4958,11 @@ def evaluate_gas(
     activities:
         Parent activities. Either a dict keyed by parent name, or a vector
         aligned with ``parent_oxides`` (default IMCC order). A dict key that
-        is not a recognised parent raises ``ImccGasUnknownActivityError``.
-        A recognised parent omitted from the dict is zero on this call;
-        ``parent_oxides`` still chooses which oxide parents are evaluated.
+        is not a recognised parent or gas species raises
+        ``ImccGasUnknownActivityError``. A recognised species that is not a
+        parent is ignored. A recognised parent omitted from the dict is zero
+        on this call; ``parent_oxides`` still chooses which oxide parents are
+        evaluated.
         Oxide parents use
         their liquid standard state; Hg/Au/Pd activities use the stable pure
         metal phase at T, with Au/Pd crystal-to-liquid steps retained. Hg's
@@ -5156,15 +5158,18 @@ def evaluate_gas(
             ) from exc
 
     if isinstance(activities, Mapping):
-        # An omitted recognised parent stays zero. A key that is not a
-        # recognised parent must not take that same path: a misspelling
-        # would otherwise be indistinguishable from leaving the parent out.
+        # An omitted recognised parent stays zero. A key that is neither a
+        # parent nor a gas species is a misspelling, not an omission. The
+        # species S is not the parent S2, so that key must not be refused.
         unknown_activities = sorted(
-            name for name in activities if name not in _REACTION_PARENT_OXIDES
+            name
+            for name in activities
+            if name not in _REACTION_PARENT_OXIDES
+            and name not in _SF04_REACTIONS
         )
         if unknown_activities:
             raise ImccGasUnknownActivityError(
-                "activity key(s) not a recognised gas parent: "
+                "activity key(s) not a recognised gas parent or species: "
                 f"{unknown_activities}"
             )
         act = {

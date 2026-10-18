@@ -3301,6 +3301,26 @@ def test_unknown_activity_key_names_itself_and_omitted_parent_stays_zero(
         gas_species=("SiO",),
     )["SiO"]
 
+    # S is the gas channel whose parent is S2. A melt activity map may
+    # carry that species name without supplying the S2 parent.
+    sulfur = evaluate_gas(
+        {"K2O": 1.0, "S": 0.2},
+        1800.0,
+        1.0e-8,
+        gas_pack,
+        gas_species=("K",),
+        allow_extrapolation=False,
+    )
+    without_sulfur = evaluate_gas(
+        {"K2O": 1.0},
+        1800.0,
+        1.0e-8,
+        gas_pack,
+        gas_species=("K",),
+        allow_extrapolation=False,
+    )
+    assert sulfur["K"] == without_sulfur["K"]
+
 
 def test_default_set_follows_parent_oxides_without_key_errors(
     gas_pack: ImccGasDatapack,
