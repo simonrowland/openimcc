@@ -43,6 +43,7 @@ from openimcc.gas import (
     ImccGasSpeciesNotFoundError,
     ImccGasTemperatureOutsideDomainError,
     ImccGasUnknownActivityError,
+    ImccGasUnrecognizedSourceError,
     ImccGasEquilibriumRangeError,
     default_condensate_database_path,
     default_gas_database_path,
@@ -5711,6 +5712,93 @@ def test_oxygen_balance_refusal_messages_match_base(
             activities, temperature, sf04_gas_pack, parent_oxides=parents
         )
     assert str(error.value) == message
+
+
+def test_condensate_source_table_follows_the_selected_row(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    """A phase-blind species map must not rename the row that supplied G."""
+    corrected = (
+        ("BaO", "l", 1350.0, "Ba-035", "Ba-035", -673304.1866616248),
+        ("SrO", "l", 1350.0, "O-014", "O-014", -676460.3790433418),
+        ("ZrO2", "l", 1350.0, "O-053", "O-053", -1190328.7307094275),
+        ("Rh", "cr", 2000.0, "P672-Rh-cr", "P672-Rh-cr", -123994.38790011544),
+        ("Ru", "cr", 1903.5, "P672-Ru-cr", "P672-Ru-cr", -107072.09380351192),
+        ("Ag2O", "l", 1400.0, "P672-Ag2O-LFS", "P672-Ag2O-c", -305830.0988187776),
+        (
+            "Sb2O3", "l", 1400.0, "P672-Sb2O3-LFS", "P672-Sb2O3-c",
+            -1022618.2486650476,
+        ),
+    )
+    for species, phase, temperature, reference, table_id, gibbs in corrected:
+        thermo = species_thermo(species, phase, temperature, gas_pack)
+        assert thermo.source_row_id == reference
+        assert thermo.source_table_id == table_id
+        assert thermo.G_J_mol == gibbs
+
+    unchanged = (
+        ("BeO", "l", 2900.0, "NG-BeO-L-1352"),
+        ("MnO", "l", 2200.0, "MnO-liquid-construction"),
+        ("As2O3", "l", 1400.0, "P672-As2O3"),
+        ("FeO", "l", 2200.0, "Fe-019"),
+        ("P2O5", "l", 2200.0, "Jung-Hudon-2012"),
+        ("HfO2", "l", 2000.0, "P672-HfO2-c"),
+        ("ThO2", "l", 2500.0, "P672-ThO2-c"),
+        ("Y2O3", "l", 2000.0, "P672-Y2O3-c"),
+        ("K2O", "l", 1500.0, "K-012"),
+    )
+    for species, phase, temperature, table_id in unchanged:
+        assert species_thermo(
+            species, phase, temperature, gas_pack
+        ).source_table_id == table_id
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        species_thermo("Rh", "l", 2000.0, gas_pack)
+
+
+def test_unrecognised_condensate_reference_does_not_inherit_the_packaged_table(
+    gas_pack: ImccGasDatapack, tmp_path: Path
+) -> None:
+    source = gas_pack.oxide_path.read_text(encoding="utf-8").splitlines(True)
+    rewritten = []
+    for line in source:
+        if line.startswith("MgO(l),"):
+            prefix, _separator, _old = line.rstrip("\r\n").rpartition(",")
+            ending = line[len(line.rstrip("\r\n")):]
+            rewritten.append(f"{prefix},CUSTOM-THERMO-42{ending}")
+        else:
+            rewritten.append(line)
+    oxide_path = tmp_path / "condensate.csv"
+    oxide_path.write_text("".join(rewritten), encoding="utf-8")
+    custom = load_gas_datapack(gas_path=gas_pack.gas_path, oxide_path=oxide_path)
+
+    with pytest.raises(ImccGasUnrecognizedSourceError, match="CUSTOM-THERMO-42") as exc:
+        species_thermo("MgO", "l", 1800.0, custom)
+    assert exc.value.code == "imcc_gas_unrecognized_source"
+    packaged = evaluate_gas(
+        {"MgO": 1.0}, 1800.0, 1.0e-8, gas_pack,
+        parent_oxides=("MgO",), gas_species=("Mg",),
+    )
+    overridden = evaluate_gas(
+        {"MgO": 1.0}, 1800.0, 1.0e-8, custom,
+        parent_oxides=("MgO",), gas_species=("Mg",),
+    )
+    assert overridden["Mg"] == packaged["Mg"]
+
+    silica = []
+    for line in source:
+        if line.startswith("SiO2(l),"):
+            prefix, _separator, _old = line.rstrip("\r\n").rpartition(",")
+            ending = line[len(line.rstrip("\r\n")):]
+            silica.append(f"{prefix},O-999-NOT-JANAF{ending}")
+        else:
+            silica.append(line)
+    silica_path = tmp_path / "silica.csv"
+    silica_path.write_text("".join(silica), encoding="utf-8")
+    silica_pack = load_gas_datapack(
+        gas_path=gas_pack.gas_path, oxide_path=silica_path
+    )
+    with pytest.raises(ImccGasUnrecognizedSourceError, match="O-999-NOT-JANAF"):
+        species_thermo("SiO2", "l", 2000.0, silica_pack)
 
 
 def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> None:

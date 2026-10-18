@@ -103,6 +103,12 @@ class ImccGasUnknownActivityError(ImccRefusal):
     code = "imcc_gas_unknown_activity"
 
 
+class ImccGasUnrecognizedSourceError(ImccRefusal):
+    """Raised when a condensate reference is not a packaged table id."""
+
+    code = "imcc_gas_unrecognized_source"
+
+
 class ImccGasEquilibriumRangeError(ImccRefusal):
     """Raised when an equilibrium exponential is not a finite float."""
 
@@ -4341,6 +4347,76 @@ def _source_table_identifier(source_ref: str) -> str:
     return base.removesuffix("-LFS").removesuffix(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
 
 
+# Continuation tails stored on a packaged Ref. They are not a new table.
+_REF_CONTINUATION_RE = re.compile(
+    r"-(?:CONT|LOW|SC)-[0-9]+(?:\.[0-9]+)?$"
+)
+
+
+def _ref_continues_table(source_ref: str, table_id: str) -> bool:
+    base = _REF_CONTINUATION_RE.sub("", source_ref)
+    return base == table_id and base != source_ref
+
+
+@lru_cache(maxsize=1)
+def _packaged_condensate_ref_pairs() -> frozenset[tuple[str, str]]:
+    """Shipped ``(species_name, Ref)`` pairs. Not the environment override."""
+    resource = _packaged_resource(_PACKAGED_CONDENSATE_NAME)
+    with resource.open("r", encoding="utf-8-sig", newline="") as handle:
+        return frozenset(
+            (row["species_name"], row["Ref"]) for row in csv.DictReader(handle)
+        )
+
+
+def _other_phase_carries_mapped_table(
+    oxide_df: pd.DataFrame, species: str, phase: str, mapped: str
+) -> bool:
+    for other in ("l", "cr"):
+        if other == phase:
+            continue
+        name = f"{species}({other})"
+        if name not in oxide_df.index:
+            continue
+        refs = oxide_df.loc[name, "Ref"]
+        values = [refs] if isinstance(refs, str) else list(refs)
+        for value in values:
+            text = str(value)
+            if text == mapped or _ref_continues_table(text, mapped):
+                return True
+    return False
+
+
+def _condensate_source_table_id(
+    species: str, phase: str, source_ref: str, oxide_df: pd.DataFrame
+) -> str | None:
+    """Cite a condensate row the earlier Ref arms did not name.
+
+    ``_OXIDE_SOURCE_TABLE_IDS`` is one id per species. A Ref that is that id,
+    a continuation of it, or a packaged alias (``JANAF``, ``LFS[...]``) keeps
+    the map. A packaged Ref that belongs to the other phase is cited as
+    itself. Any other Ref on a mapped species is refused, so a caller-supplied
+    row cannot inherit the packaged table id.
+    """
+    mapped = _OXIDE_SOURCE_TABLE_IDS.get(species)
+    if source_ref in {"JANAF"} or source_ref.startswith("LFS["):
+        return mapped
+    if mapped is not None and (
+        source_ref == mapped or _ref_continues_table(source_ref, mapped)
+    ):
+        return mapped
+    row_name = f"{species}({phase})"
+    packaged = (row_name, source_ref) in _packaged_condensate_ref_pairs()
+    if not packaged and mapped is not None:
+        raise ImccGasUnrecognizedSourceError(
+            f"unrecognised condensate reference {source_ref!r} for {row_name}"
+        )
+    if mapped is None:
+        return source_ref or None
+    if _other_phase_carries_mapped_table(oxide_df, species, phase, mapped):
+        return source_ref
+    return mapped
+
+
 def _nearest_interval_row(
     df: pd.DataFrame, species: str, T: float, allow_extrapolation: bool = False
 ) -> pd.Series:
@@ -4674,8 +4750,21 @@ def species_thermo(
         source_table_id = source_ref.split("-METAL-", 1)[0]
     elif phase != "g" and source_ref == "LAM1984":
         source_table_id = None
-    elif phase != "g" and ("-LFS" in source_ref or _SOURCE_CP_EXTENSION_RE.search(source_ref)):
+    elif phase != "g" and source_ref.endswith("-LFS"):
+        # The liquid is constructed from the crystal table. Stripping "-LFS"
+        # leaves a name that is not that table; the species map has the id.
+        mapped = _OXIDE_SOURCE_TABLE_IDS.get(species)
+        source_table_id = (
+            mapped if mapped is not None else _source_table_identifier(source_ref)
+        )
+    elif phase != "g" and (
+        "-LFS" in source_ref or _SOURCE_CP_EXTENSION_RE.search(source_ref)
+    ):
         source_table_id = _source_table_identifier(source_ref)
+    elif phase != "g":
+        source_table_id = _condensate_source_table_id(
+            species, phase, source_ref, active_pack.oxide_df
+        )
     else:
         source_table_id = _OXIDE_SOURCE_TABLE_IDS.get(species)
 
