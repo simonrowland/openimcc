@@ -3473,7 +3473,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         assert parent in str(refusal.value)
     expected_trace_ions = {
         "Li+", "Rb+", "Pb+", "Li-", "LiO-", "Rb-", "Pb-",
-        "Cs+", "Sn+", "Cs2O+",
+        "Cs+", "Cs-", "Sn+", "Cs2O+",
         "Zn+", "Zn-", "Cd+", "Bi+",
         "Mo+", "Mo-", "W+", "W-",
     }

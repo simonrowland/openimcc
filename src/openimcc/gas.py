@@ -2236,9 +2236,11 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
              'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
              'validation': 'unvalidated',
              'reason': 'JANAF B2O3(l) is fitted from its printed liquid branch after the 723 K '
-                       'marker; BO(g), BO2(g), B2O(g), B2O2(g), and B2O3(g) are included; a(B2O3) '
-                       'is caller-supplied; the joint B-ion screen used a(B2O3)=1e-3 and reached '
-                       '1.252e-02 at 2800 K and fO2=1e-4, above the 1e-4 C3 threshold.',
+                       'marker; BO(g), BO2(g), B2O(g), B2O2(g), and B2O3(g) are included; B2(g) '
+                       'from JANAF B-083 has a conservative screened share of 3.836e-06; a(B2O3) '
+                       'is caller-supplied, so C1 remains pending; B+, B-, BO-, and BO2- are '
+                       'included on the opt-in ion path; their joint screen reaches 1.247e-02 '
+                       'at 2800 K and fO2=1e-4, above the 1e-4 C3 threshold.',
              'c2_candidates': (   ('B-078', 'BO'),
                                   ('B-079', 'BO2'),
                                   ('B-093', 'B2O'),
@@ -2401,18 +2403,20 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
     'Cs': {   'status': 'gas-partial',
               'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
               'validation': 'unvalidated',
-              'reason': 'Cs2O(l) and neutral Cs gas rows cover 1200-3000 K; a(Cs2O) is '
-                        'caller-supplied; the C3 screen at a(Cs2O)=1e-3 reached 1.342e-04 at 2000 '
-                        'K and fO2=1e-4 within the <=1-bar neutral-pressure domain, above the 1e-4 '
+              'reason': 'Cs2O(l) and neutral Cs gas rows cover 1200-3000 K; Cs2(g) from JANAF '
+                        'Cs-018 has a conservative screened share of 4.866e-23; a(Cs2O) is '
+                        'caller-supplied, so C1 remains pending; Cs+, Cs2O+, and Cs- are included '
+                        'on the opt-in ion path; their joint screen reaches 1.389e-04 at 2000 K '
+                        'and fO2=1e-4 within the <=1-bar neutral-pressure domain, above the 1e-4 '
                         'limit.',
               'c2_candidates': (('Cs-017', 'CsO'), ('Cs-021', 'Cs2O')),
-              'c3_ion_bound': {   'max_ratio': 0.00013435728411027962,
+              'c3_ion_bound': {   'max_ratio': 0.00013890184686647745,
                                   'isolated_bound': 8.94135201604957e-09,
                                   'temperature_K': 2000.0,
                                   'fO2': 0.0001,
                                   'neutral_pressure_bar': 0.5532219297945025,
                                   'element_total_pressure_bar': 0.5552861930691437,
-                                  'joint_ion_pressure_bar': 7.460674480470653e-05,
+                                  'joint_ion_pressure_bar': 7.713027775675943e-05,
                                   'electron_pressure_bar': 7.057232466395302e-05,
                                   'K_ion': 4.422886285229813e-17,
                                   'parent_oxide': 'Cs2O',
@@ -2420,10 +2424,12 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                   'source_tables': {   'cation': 'Cs-006',
                                                        'neutral': 'Cs-005',
                                                        'molecular_cation': 'NG-1843',
+                                                       'anions': ['Cs-007'],
                                                        'electron': 'D-020'},
                                   'upstream_sha256': {   'Cs-006': 'b2705d424836ca9fd585303e923b54ad1fca54d81f4db8c4e37c7a198595da3c',
                                                          'Cs-005': '5872ade6306f453d12dc6380c58a693117f5020ba1bcaad6f3c016a5211412a5',
                                                          'NG-1843': 'b6bc19299621afada6708b0c109c4215c91ab7521b8ec5c6b48250e24e133948',
+                                                         'Cs-007': '6c574457a4addcc5518d4c42cb0cdfdac61da9c998afd7b52c4b934f8c7afd4a',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'neutral-source-vendor/1.0'}},
     'Cu': {   'status': 'gas-complete-melt-pending',

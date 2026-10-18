@@ -27,7 +27,7 @@ meet that bound. `evaluate_gas(..., include_ions=True)` solves charge balance
 on the full default neutral set, adds fitted Na+, K+, Ca+ and e−, and includes
 every available JANAF-supported anion whose neutral is present. Caller-supplied
 trace-parent activities enable Li+, Rb+, Pb+, Cs+, Cu+, Sn+, Cs2O+, Ga+, Ge+,
-B+, Zn+, Cd+, Bi+, Mn+, Ba+, Sr+, Zr+, Zr−, Zn−, Ga−, B−, BO− and BO2−. Zn− and
+B+, Zn+, Cd+, Bi+, Mn+, Ba+, Sr+, Zr+, Zr−, Zn−, Ga−, B−, BO−, BO2−, and Cs−. Zn− and
 Zr− use JANAF rows; BO−
 uses a NASA CEA card because JANAF has no BO−
 table. In+ remains in the source ledger but is declined after its fitted
@@ -40,6 +40,11 @@ are above the threshold. Mo and W are also
 screened using their caller-supplied parent activities. Se's positive ion
 source is unavailable, so its C3 screen is declined. B exceeds the threshold when
 its cation and available anions are combined; Cs is also above the threshold.
+The JANAF B2(g) and Cs2(g) dimers were screened against their sourced oxide
+parents, with conservative maximum element shares of 3.836e-06 and 4.866e-23;
+the JANAF species index has no Ba2(g) or Sr2(g) table. BaO(l), SrO(l),
+B2O3(l), and Cs2O(l) parent rows are sourced, but their activities remain
+caller supplied, so C1 remains pending for all four elements.
 Positive molecular ions and nonthermal electrons remain outside this
 calculation. Mn has a public but range-limited MnO(l) parent. Ni and Co now
 have public TSIV liquid parents. P has a published P2O5(l) gas reference, but
@@ -115,8 +120,8 @@ its melt activity remains caller-supplied.
 | Pb | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | PbO(l) and neutral Pb gas rows cover 1200-3000 K; a(PbO) is caller-supplied; PbO(l) is the Pb(II) parent because no evaluated PbO2(l) parent row was found; the joint C3 screen used a(PbO)=1e-3 and reached 1.301e-12 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain; unmodeled positive molecular ions and thermal electrons from walls or other sources remain outside the estimate. |
 | Ga | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Ga2O3(l) uses its NASA liquid card from 2080 K with a labelled constant-Cp continuation to 1200 K; GaO(g) and Ga2O(g) are included; a(Ga2O3) is caller-supplied; the joint C3 screen used a(Ga2O3)=1e-3 and reached 5.443e-07 at 2600 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
 | Ge | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | GeO2(l) uses its NASA liquid card from 1388 K with a labelled constant-Cp continuation to 1200 K; GeO(g) and GeO2(g) are included; a(GeO2) is caller-supplied; the joint C3 screen used a(GeO2)=1e-3 and reached 3.495e-14 at 2300 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
-| B | gas-partial | no | yes | no | yes | unvalidated | JANAF B2O3(l) is fitted from its printed liquid branch after the 723 K marker; BO(g), BO2(g), B2O(g), B2O2(g), and B2O3(g) are included; a(B2O3) is caller-supplied; the joint B-ion screen used a(B2O3)=1e-3 and reached 1.252e-02 at 2800 K and fO2=1e-4, above the 1e-4 C3 threshold. |
-| Cs | gas-partial | no | yes | no | yes | unvalidated | Cs2O(l) and neutral Cs gas rows cover 1200-3000 K; a(Cs2O) is caller-supplied; the C3 screen at a(Cs2O)=1e-3 reached 1.342e-04 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain, above the 1e-4 limit. |
+| B | gas-partial | no | yes | no | yes | unvalidated | JANAF B2O3(l) is fitted from its printed liquid branch after the 723 K marker; BO(g), BO2(g), B2O(g), B2O2(g), and B2O3(g) are included; B2(g) from JANAF B-083 has a conservative screened share of 3.836e-06; a(B2O3) is caller-supplied, so C1 remains pending; B+, B-, BO-, and BO2- are included on the opt-in ion path; their joint screen reaches 1.247e-02 at 2800 K and fO2=1e-4, above the 1e-4 C3 threshold. |
+| Cs | gas-partial | no | yes | no | yes | unvalidated | Cs2O(l) and neutral Cs gas rows cover 1200-3000 K; Cs2(g) from JANAF Cs-018 has a conservative screened share of 4.866e-23; a(Cs2O) is caller-supplied, so C1 remains pending; Cs+, Cs2O+, and Cs- are included on the opt-in ion path; their joint screen reaches 1.389e-04 at 2000 K and fO2=1e-4 within the <=1-bar neutral-pressure domain, above the 1e-4 limit. |
 | Cu | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Cu2O(l) is the Cu(I) parent because JANAF provides its liquid row; neutral Cu gas rows and the parent cover 1200-3000 K; a(Cu2O) is caller-supplied; Cu- is available on the opt-in ion path; its corrected attachment-Saha ratios against NIST EA 1.23578 eV are 0.941424 at 1500 K and 0.958988 at 2500 K; Cu+ is declined because JANAF Cu-006 gives fitted/Saha ratios 1666.15 and 1656.61. |
 | Sn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | SnO(l) is selected over the later-starting SnO2(l) card as the tin parent; neutral Sn gas rows and the parent cover 1200-3000 K; a(SnO) is caller-supplied; the C3 screen at a(SnO)=1e-3 reached 3.515e-08 at 2800 K and fO2=1e-4 within the <=1-bar neutral-pressure domain. |
 | Te | gas-partial | no | yes | declined | yes | unvalidated | Te(g), Te2(g), TeO2(g), and the TeO2(l) parent cover 1200-3000 K; TeO2(l) is selected because Bulletin 672 prints a measured liquid branch; a(TeO2) is caller-supplied. This oxide-parent convention does not model telluride dissolution in reduced melts. |
@@ -140,8 +145,10 @@ prior positive-only estimate and bounded fitted closure screen give:
 | Pb | — | 1.301e-12 (2000 K, 1e-4) |
 | Ga | — | 5.443e-7 (2600 K, 1e-4) |
 | Ge | — | 3.495e-14 (2300 K, 1e-4) |
-| B | — | 1.252e-2 (2800 K, 1e-4) |
-| Cs | — | 1.342e-4 (2000 K, 1e-4) |
+| B | — | 1.247e-2 (2800 K, 1e-4) |
+| Ba | — | 1.752e-4 (2300 K, 1e-10) |
+| Sr | — | 3.100e-4 (2800 K, 1e-4) |
+| Cs | — | 1.389e-4 (2000 K, 1e-4) |
 | Zn | — | 1.484e-7 (2600 K, 1e-4) |
 | Cd | — | 1.994e-13 (2000 K, 1e-4) |
 | Bi | — | 4.129e-11 (1800 K, 1e-4) |

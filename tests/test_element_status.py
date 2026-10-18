@@ -228,6 +228,72 @@ def test_janaf_neutral_oxide_sources_are_included_or_measured_screens() -> None:
     )
 
 
+def test_janaf_b2_and_cs2_neutral_dimers_are_below_the_gas_share_cutoff() -> None:
+    """Keep JANAF elemental dimers screened without adding runtime rows."""
+    cases = (
+        ("B", "B2O3", "B-083", "B-096", 1.5, "d4b699aefa6a314b1318638581f9aab10a32c8ec85173afc17df2b7a2874ed09", 3.835888945149373e-6, (2600.0, 1.0e-12)),
+        ("Cs", "Cs2O", "Cs-018", "NG-1842", 0.5, "8ece1162a62bc74f2c47f145590897c1fe9baf1cc76362ced4f34762d5620d3b", 4.866278816766107e-23, (1200.0, 1.0e-12)),
+    )
+    pack = load_gas_datapack()
+    for element, parent, gas_table, parent_table, n_o2, source_sha, expected, location in cases:
+        record = _record(gas_table)
+        entry = record["table"]["index_entry"]
+        assert entry["formula_normalised"] == f"{element}2"
+        assert entry["state"] == "g"
+        assert entry["charge"] == 0
+        assert record["extraction"]["source_sha256"] == source_sha
+
+        maximum = 0.0
+        maximum_location = None
+        for temperature in TEMPERATURES_K:
+            gas_g = _source_value(
+                gas_table, "formation_gibbs_energy", temperature
+            )
+            parent_g = _source_value(
+                parent_table, "formation_gibbs_energy", temperature
+            )
+            # Premise: E2O_b(l) -> E2(g) + b/2 O2(g). JANAF uses O2(g) as
+            # the elemental reference, so ΔfG(O2)=0. Therefore ΔG is the
+            # gas-minus-parent formation Gibbs energy; Kp=p(E2)fO2^(b/2)/a.
+            # Convert kJ/mol to J/mol before dividing by RT, leaving Kp and
+            # the 1-bar-relative pressure dimensionless. The coefficients
+            # (B2O3 -> B2 + 3/2 O2; Cs2O -> Cs2 + 1/2 O2) balance atoms.
+            delta_g_j = (gas_g - parent_g) * 1000.0
+            for fugacity in FUGACITIES:
+                pressures = evaluate_gas(
+                    {parent: 1.0e-3},
+                    temperature,
+                    fugacity,
+                    pack,
+                    parent_oxides=(parent,),
+                    allow_extrapolation=True,
+                )
+                # Parent-only neutral pressure retains extra nodes that the
+                # complete background can remove at the 1-bar ceiling, so the
+                # largest resulting share is a conservative upper bound.
+                if sum(pressures.values()) > 1.0:
+                    continue
+                element_pressure = sum(
+                    _gas_element_atom_count(species, element) * pressure
+                    for species, pressure in pressures.items()
+                )
+                dimer_pressure = (
+                    math.exp(-delta_g_j / (R_J_MOL_K * temperature))
+                    * 1.0e-3
+                    / fugacity**n_o2
+                )
+                share = 2.0 * dimer_pressure / (
+                    element_pressure + 2.0 * dimer_pressure
+                )
+                if share > maximum:
+                    maximum = share
+                    maximum_location = (temperature, fugacity)
+
+        assert maximum == pytest.approx(expected, rel=1.0e-12)
+        assert maximum_location == location
+        assert maximum < 1.0e-4
+
+
 def test_text_neutral_oxide_source_is_scanned(tmp_path: Path) -> None:
     (tmp_path / "SiO3.txt").write_text(
         "Silicon trioxide\tSiO3(g)\n", encoding="utf-8"
@@ -681,6 +747,10 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                     if species.endswith("+")
                     and _gas_element_atom_count(species, element)
                 )
+                if element == "Cs":
+                    # Cs- is the JANAF-supported attachment channel; include
+                    # its atom pressure in the joint Cs bound with Cs+ and Cs2O+.
+                    ion_pressure += trace_pressures["Cs-"]
                 element_total = sum(
                     _gas_element_atom_count(species, element) * pressure
                     for species, pressure in trace_neutrals.items()
@@ -893,6 +963,11 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "Ba", "Sr", "Zr", "Ni", "Co", "Sc",
         "Hf", "Th",
     }
+    cs_bound = ELEMENT_STATUS["Cs"]["c3_ion_bound"]
+    assert cs_bound["source_tables"]["anions"] == ["Cs-007"]
+    assert hashlib.sha256((JANAF_DATA / "Cs-007.txt").read_bytes()).hexdigest() == (
+        cs_bound["upstream_sha256"]["Cs-007"]
+    )
     for element, result in measured.items():
         recorded = ELEMENT_STATUS[element]["c3_ion_bound"]
         if element in {
