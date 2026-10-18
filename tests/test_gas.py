@@ -41,6 +41,7 @@ from openimcc.gas import (
     ImccGasResult,
     ImccGasSpeciesNotFoundError,
     ImccGasTemperatureOutsideDomainError,
+    ImccGasUnknownActivityError,
     default_condensate_database_path,
     default_gas_database_path,
     evaluate_gas,
@@ -3070,6 +3071,71 @@ def test_vaporock_default_reports_missing_alkali_channels(
     assert {
         name: result.omitted_channels[name] for name in missing_alkali
     } == missing_alkali
+
+
+def test_unknown_activity_key_names_itself_and_omitted_parent_stays_zero(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(ImccGasUnknownActivityError, match="K20") as exc:
+        evaluate_gas(
+            {"SiO2": 0.5, "K20": 0.1},
+            1800.0,
+            1e-8,
+            gas_pack,
+            gas_species=("K", "SiO"),
+        )
+    assert exc.value.code == "imcc_gas_unknown_activity"
+    with pytest.raises(ImccGasUnknownActivityError, match="NotAnOxide") as exc:
+        evaluate_gas(
+            {"sio2": 1.0, "NotAnOxide": 5.0},
+            1800.0,
+            1e-8,
+            gas_pack,
+            parent_oxides=("SiO2",),
+            gas_species=("SiO",),
+        )
+    assert "sio2" in str(exc.value)
+    with pytest.raises(ImccGasUnknownActivityError, match="K20"):
+        evaluate_gas_oxygen_balance(
+            {"SiO2": 0.5, "K20": 0.1}, 1800.0, gas_pack
+        )
+
+    omitted = evaluate_gas(
+        {"SiO2": 0.5},
+        1800.0,
+        1e-8,
+        gas_pack,
+        gas_species=("K", "SiO"),
+    )
+    explicit_zero = evaluate_gas(
+        {"SiO2": 0.5, "K2O": 0.0},
+        1800.0,
+        1e-8,
+        gas_pack,
+        gas_species=("K", "SiO"),
+    )
+    assert omitted["K"] == 0.0
+    assert explicit_zero["K"] == omitted["K"]
+    assert explicit_zero["SiO"] == omitted["SiO"]
+    assert omitted["SiO"] > 0.0
+
+    # A recognised parent left out of parent_oxides is not an unknown key.
+    silica_only = evaluate_gas(
+        {"SiO2": 1.0, "Na2O": 1.0},
+        1800.0,
+        1e-8,
+        gas_pack,
+        parent_oxides=("SiO2",),
+        gas_species=("SiO",),
+    )
+    assert silica_only["SiO"] == evaluate_gas(
+        {"SiO2": 1.0},
+        1800.0,
+        1e-8,
+        gas_pack,
+        parent_oxides=("SiO2",),
+        gas_species=("SiO",),
+    )["SiO"]
 
 
 def test_default_set_follows_parent_oxides_without_key_errors(

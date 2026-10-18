@@ -97,6 +97,12 @@ class ImccGasInvalidFugacityError(ImccRefusal):
     code = "imcc_gas_invalid_fO2"
 
 
+class ImccGasUnknownActivityError(ImccRefusal):
+    """Raised when an activity map names a parent this layer does not recognise."""
+
+    code = "imcc_gas_unknown_activity"
+
+
 class ImccGasOxygenBalanceError(ImccRefusal):
     """Raised when the oxygen-balance root is not monotone or bracketed."""
 
@@ -4662,7 +4668,11 @@ def evaluate_gas(
     ----------
     activities:
         Parent activities. Either a dict keyed by parent name, or a vector
-        aligned with ``parent_oxides`` (default IMCC order). Oxide parents use
+        aligned with ``parent_oxides`` (default IMCC order). A dict key that
+        is not a recognised parent raises ``ImccGasUnknownActivityError``.
+        A recognised parent omitted from the dict is zero on this call;
+        ``parent_oxides`` still chooses which oxide parents are evaluated.
+        Oxide parents use
         their liquid standard state; Hg/Au/Pd activities use the stable pure
         metal phase at T, with Au/Pd crystal-to-liquid steps retained. Hg's
         liquid function above 629.839 K is a flagged continuation. Sulfur uses
@@ -4854,6 +4864,17 @@ def evaluate_gas(
             ) from exc
 
     if isinstance(activities, Mapping):
+        # An omitted recognised parent stays zero. A key that is not a
+        # recognised parent must not take that same path: a misspelling
+        # would otherwise be indistinguishable from leaving the parent out.
+        unknown_activities = sorted(
+            name for name in activities if name not in _REACTION_PARENT_OXIDES
+        )
+        if unknown_activities:
+            raise ImccGasUnknownActivityError(
+                "activity key(s) not a recognised gas parent: "
+                f"{unknown_activities}"
+            )
         act = {
             name: activity_as_float(name, activities.get(name, 0.0))
             for name in parent_oxides
