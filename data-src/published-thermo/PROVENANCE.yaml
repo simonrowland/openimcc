@@ -491,3 +491,14 @@ records:
     source_locator: BURCAT.THR.txt lines 33338-33344
     tier: 3
     selection_reason: No Pt- function was found in JANAF or the checked NASA Glenn cards. The selected Gurvich card prints HF298=353.159 kJ/mol and an alternate Bilodeau 360.2 kJ/mol value; the source card's stated function and anchor are preserved with the 39.7803 J/mol internal residual recorded.
+  - record_id: Constructed-M-plus-NIST-ASD
+    path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    publication: Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F
+    source_url: https://physics.nist.gov/asd
+    source_locator: First ionization energies and Handbook Tables 5/6 for the listed neutral and singly charged spectra
+    tier: 1
+    selection_reason: NIST ASD critically evaluated ionization energies and listed atomic levels provide the inputs for flagged, derived opt-in Saha cation functions. No coefficients are tuned to a benchmark.
+    citation_gaps:
+      - ASD bibliography keys are retained per element, but not expanded here to every underlying historical citation.
+      - The selected listed levels do not claim completeness of each bound spectrum.

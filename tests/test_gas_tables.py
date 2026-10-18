@@ -62,6 +62,7 @@ _ION_GAS_PROVENANCE_SPECIES = tuple(
         *build_gas_tables.TRACE_ION_PUBLISHED_SOURCES,
         *build_gas_tables.TRACE_ION_NASA_SOURCES,
         *build_gas_tables.TRACE_ION_GAS_YAML_SOURCES,
+        *build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES,
     )
 )
 
@@ -679,6 +680,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         "Mo+(g)", "Mo-(g)", "W+(g)", "W-(g)",
         "Ba+(g)", "Sr+(g)", "Zr+(g)", "Zr-(g)",
         "Sc+(g)",
+        *(source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES),
         "Ni+(g)", "Ni-(g)", "Co+(g)", "Co-(g)",
     }
     nasa_atomic_ion_species = {
@@ -733,6 +735,16 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
                 assert row["source_path"] == (
                     "data-src/published-thermo/bismuth-ion-sources.json"
                 )
+            elif species in {
+                source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
+            }:
+                assert row["authority"] == "nist_partition_fitted_ionisation"
+                assert row["source_path"] == (
+                    "data-src/published-thermo/constructed-ion-sources.json"
+                )
+                assert "FLAGGED" in row["flags"]
+                assert "DERIVED" in row["flags"]
+                assert row["source"]["citation_gaps"]
             elif species == "Th+(g)":
                 assert row["authority"] == "published_fitted_ionisation"
                 assert row["source_path"] == (
@@ -2910,7 +2922,6 @@ REFERENCE_SOLID_TABLE_IDS = {
     "SiO2": ("O-035", "O-038"),
 }
 
-
 def _printed_formation_gibbs_kj(table_id: str, temperature: float) -> float:
     for raw in _record(table_id)["table"]["values"]:
         if _value(raw, "temperature") == temperature:
@@ -3142,6 +3153,8 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
     } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"} | {
         "Hg(g)", "Au(g)", "Pd(g)", "Pt(g)", "PtO2(g)", "Ir(g)"
+    } | {
+        source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
     }
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
         table_id = GAS_TABLE_IDS[species]
@@ -5581,6 +5594,26 @@ _SAHA_LEVELS = {
     ),
 }
 
+_CONSTRUCTED_SAHA_SOURCES = json.loads(
+    (PUBLISHED_DATA / "constructed-ion-sources.json").read_text(encoding="utf-8")
+)["elements"]
+for _element, _source in _CONSTRUCTED_SAHA_SOURCES.items():
+    _SAHA_LEVELS[_element] = (
+        float(_source["ionization_energy"]["value_eV"]),
+        tuple(
+            (int(weight), float(energy))
+            for weight, energy in _source["neutral"][
+                "levels_2Jplus1_energy_cm_minus_1"
+            ]
+        ),
+        tuple(
+            (int(weight), float(energy))
+            for weight, energy in _source["cation"][
+                "levels_2Jplus1_energy_cm_minus_1"
+            ]
+        ),
+    )
+
 
 def test_burcat_th_plus_card_composition_resolves_its_charge_label() -> None:
     record = json.loads(
@@ -5657,11 +5690,12 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
             for weight, energy in levels
         )
 
-    temperatures = (1500.0, 2500.0, 3000.0) if element in {
-        "Mo", "W", "Ba", "Sr", "Zr"
-    } else (
-        1500.0, 2500.0
-    )
+    if element in build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS:
+        temperatures = tuple(float(T) for T in range(1200, 3001, 100))
+    elif element in {"Mo", "W", "Ba", "Sr", "Zr"}:
+        temperatures = (1500.0, 2500.0, 3000.0)
+    else:
+        temperatures = (1500.0, 2500.0)
     for temperature in temperatures:
         ion_row = _nearest_interval_row(
             pack.gas_df, f"{element}+(g)", temperature, allow_extrapolation=False

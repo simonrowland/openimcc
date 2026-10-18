@@ -125,6 +125,10 @@ _ION_GAS_SPECIES = {
     "Hf+", "Hf-", "Th+",
     "Au+", "Au-", "Hg+", "Pd+", "Pt+", "Pt-",
 }
+_ION_GAS_SPECIES.update(
+    species.removesuffix("(g)")
+    for species, _element in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
+)
 
 
 # Titanium channels against the printed JANAF formation-Gibbs columns at
@@ -200,6 +204,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_GAS_YAML_SOURCES)
+        + len(build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES)
         + 3
         + 2 * len(build_gas_tables.TRACE_GAS_SPECIES)
         - len(build_gas_tables.HALOGEN_GAS_SPECIES)
@@ -495,6 +500,8 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_BURCAT_SOURCES
+    } | {
+        source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
     }
     high_rows = gas_pack.gas_df.loc[
         gas_pack.gas_df["T_interval"].astype(int) == 1
@@ -512,6 +519,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_GAS_YAML_SOURCES)
+        + len(build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES)
         + 3
         # Halogen rows use one 1200-3000 K interval and have no low interval.
         + len(_RARE_EARTH_CHANNELS)
@@ -530,7 +538,9 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         species for species, *_ in build_gas_tables.TRACE_ION_NASA_SOURCES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
-    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
+    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"} | {
+        source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
+    }
     neutral_high_rows = high_rows.loc[
         ~high_rows.index.isin(tuple(f"{species}(g)" for species in _ION_GAS_SPECIES))
     ]
@@ -543,7 +553,9 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
-    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"}
+    } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"} | {
+        source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
+    }
     split_ion_rows = ion_rows.loc[ion_rows.index.isin(split_ion_names)]
     single_interval_ion_rows = ion_rows.loc[
         ~ion_rows.index.isin(split_ion_names)
@@ -3410,7 +3422,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
                     "Th", "ThO", "ThO2", "Hf", "Y", "YO",
                     "Ta", "TaO", "TaO2", "Be", "BeO", "Be2O",
                     "(BeO)2", "(BeO)3", "(BeO)4", "Be2", "Tl", "Tl2O",
-                }
+                    }
                 and f"missing from active table: {species}(g)" in reason
             )
 
@@ -3435,16 +3447,21 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Ba+", "Sr+", "Zr+", "Zr-", "Ni+", "Ni-", "Co+", "Co-",
         "Sc+",
     }
+    constructed_trace_ions = {
+        f"{element}+"
+        for element in build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS
+        if element in trace_gases
+    }
+    expected_ions.update(constructed_trace_ions)
     assert expected_ions <= set(trace_ions)
     assert "In+" not in trace_ions
     assert "Sc+" in trace_ions
-    assert "U+" not in trace_ions
     nasa_ions = {"Ge+", "BO-", "Cd+", "Ag+", "Ag-", "Sc+"}
     for species in expected_ions:
         assert trace_ions[species] > 0.0
         assert trace_ions.provenance_class[species] == (
             "nist_partition_fitted_ionisation"
-            if species == "Bi+"
+            if species == "Bi+" or species in constructed_trace_ions
             else "nasa_glenn_fitted_ionisation"
             if species in nasa_ions
             else "janaf_fitted_ionisation"

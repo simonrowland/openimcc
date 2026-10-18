@@ -487,6 +487,8 @@ Thermal ions are opt-in: `evaluate_gas(..., include_ions=True)` solves charge
 balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
 `Li+`, `Rb+`, `Pb+`, `Cs+`, `Sn+`, `Cs2O+`, `Ga+`, `Ge+`, `B+`,
 `Zn+`, `Cd+`, `Bi+`, `Mn+`, `Mo+`, and `W+`,
+`La+`, `Ce+`, `Pr+`, `Nd+`, `Sm+`, `Eu+`, `Gd+`, `Tb+`, `Dy+`, `Ho+`,
+`Er+`, `Tm+`, `Yb+`, `Lu+`, `Y+`, and `U+`,
 `Ga-`, `B-`, `BO-`, `BO2-`, `Cu-`, `Mo-`, `W-`, and every available JANAF-supported negative ion
 whose neutral is present. In+ is retained in the source ledger but declined
 after its NASA card failed the NIST Saha check. JANAF W-006/W-005 imply a 0 K
@@ -516,6 +518,16 @@ mapping as before. Ion entries use provenance class
 cards; their source rows cover 1200–3000 K and their domain flags include the
 neutral and charge-species source rows. The Cs− and Cu− rows are emitted.
 No JANAF Sn− row was found.
+
+The listed La+ through Lu+ rows except Pm, along with Y+ and U+, are
+`FLAGGED` and `DERIVED`: their ion functions combine the neutral gas
+row, NIST ASD first ionization energy, and neutral and cation electronic
+partition functions from listed levels below 25,000 cm⁻¹. Pm+ is omitted
+because the project has no Pm(g) neutral thermal function or oxide-parent
+model for its C3 screen.
+The level cutoff keeps the listed low terms while the source record flags that
+the bound-level sets are not asserted complete. These channels are opt-in and
+their per-element C3 share screens are in `docs/ROADMAP.md`.
 `gas_species` requests use the full default neutral set for the charge closure,
 then retain the requested neutral and charge channels. Requesting an ion name
 requires `include_ions=True`. `evaluate_gas_oxygen_balance` remains neutral-only.

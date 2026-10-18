@@ -1310,6 +1310,8 @@ _ION_GAS_SPECIES = (
     "Mn+", "Ni+", "Ni-", "Co+", "Co-", "Ag+", "Ag-", "Mo+", "Mo-", "W+", "W-",
     "Ba+", "Sr+", "Zr+", "Zr-", "Sc+",
     "Hg+", "Au+", "Au-", "Pd+", "Pt+", "Pt-",
+    "La+", "Ce+", "Pr+", "Nd+", "Sm+", "Eu+", "Gd+", "Tb+", "Dy+",
+    "Ho+", "Er+", "Tm+", "Yb+", "Lu+", "Y+", "U+",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -1338,6 +1340,13 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Ag+": "nasa_glenn_fitted_ionisation",
         "Ag-": "nasa_glenn_fitted_ionisation",
         "Sc+": "nasa_glenn_fitted_ionisation",
+        **{
+            f"{element}+": "nist_partition_fitted_ionisation"
+            for element in (
+                "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb",
+                "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Y", "U",
+            )
+        },
     }
 )
 _OXIDE_PROVENANCE_AUTHORITY = {
@@ -1694,6 +1703,22 @@ _GAS_IONIZATION_PAIRS = (
     ("Au", "Au+"),
     ("Pd", "Pd+"),
     ("Pt", "Pt+"),
+    ("La", "La+"),
+    ("Ce", "Ce+"),
+    ("Pr", "Pr+"),
+    ("Nd", "Nd+"),
+    ("Sm", "Sm+"),
+    ("Eu", "Eu+"),
+    ("Gd", "Gd+"),
+    ("Tb", "Tb+"),
+    ("Dy", "Dy+"),
+    ("Ho", "Ho+"),
+    ("Er", "Er+"),
+    ("Tm", "Tm+"),
+    ("Yb", "Yb+"),
+    ("Lu", "Lu+"),
+    ("Y", "Y+"),
+    ("U", "U+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -3059,6 +3084,93 @@ for _element, _parent, _products, _fusion, _note in (
         },
     }
 
+_CONSTRUCTED_SAHA_PARENT_SPECIES = {
+    "La": "La2O3", "Ce": "Ce2O3", "Pr": "Pr2O3", "Nd": "Nd2O3",
+    "Sm": "Sm2O3", "Eu": "Eu2O3", "Gd": "Gd2O3", "Tb": "Tb2O3",
+    "Dy": "Dy2O3", "Ho": "Ho2O3", "Er": "Er2O3", "Tm": "Tm2O3",
+    "Yb": "Yb2O3", "Lu": "Lu2O3", "Y": "Y2O3", "U": "UO2",
+}
+_CONSTRUCTED_SAHA_C3_RESULTS = {
+    "La": (2.0923799948988704e-09, 2800.0, 1e-4, 1.036040811333684e-10, 2.2602096549129838e-05, 4.7292174662172065e-14, 8.13192058904133e-05, 3.7119793412461715e-08, 6593377105.645445),
+    "Ce": (1.4411189921248762e-09, 2800.0, 1e-4, 9.902564373909755e-11, 2.795382610160845e-05, 4.028478969758403e-14, 8.13192058904133e-05, 3.308160375408321e-08, 3224818252.6853676),
+    "Pr": (1.3862311050353695e-08, 2800.0, 1e-4, 3.5899982215034133e-10, 2.1356414909339508e-05, 2.9604926639367547e-13, 8.13192058904133e-05, 6.705989742103895e-08, 392772343.1861758),
+    "Nd": (6.961602878201551e-08, 2300.0, 1e-10, 1.1035447997134214e-09, 7.066642280471184e-07, 4.919515723894896e-14, 4.936440766595111e-06, 2.2006263794317137e-10, 59295747.71090956),
+    "Sm": (1.3321440665561297e-05, 2300.0, 1e-10, 4.0170039752268123e-07, 7.178295976663803e-07, 9.562524393296424e-12, 4.936440766595111e-06, 1.175125430239668e-10, 145586.4355439479),
+    "Eu": (9.53907928260223e-05, 2800.0, 1e-4, 9.334782543316031e-06, 3.115464920120108e-05, 2.971866687519173e-09, 8.13192058904133e-05, 2.588917716291899e-08, 286.641211894425),
+    "Gd": (2.5466079064385976e-09, 2800.0, 1e-4, 1.6576318011643315e-10, 2.571353296859451e-06, 6.548228636029232e-15, 8.13192058904133e-05, 3.2123946481765864e-09, 73357775.34804751),
+    "Tb": (4.871962129161649e-09, 2800.0, 1e-4, 7.610838278979845e-11, 7.503800025911933e-07, 3.6558229551045136e-15, 8.13192058904133e-05, 3.906121884183455e-09, 518984376.87324727),
+    "Dy": (1.1156465364714069e-06, 2300.0, 1e-10, 5.294588881399273e-09, 2.5077703423071043e-08, 2.7977852966606353e-14, 4.936440766595111e-06, 2.6085314089516064e-11, 3463901.874017831),
+    "Ho": (1.0259501626608162e-06, 2800.0, 1e-4, 6.116388417893875e-09, 4.827374404302177e-07, 4.952645555318479e-13, 8.13192058904133e-05, 6.584689789107321e-09, 9065655.727327311),
+    "Er": (2.4086885287492815e-07, 2300.0, 1e-10, 3.797403145253413e-10, 3.8614794448606164e-09, 9.30110124283691e-16, 4.936440766595111e-06, 1.2090982598661903e-11, 36596804.31002931),
+    "Tm": (6.903202794424891e-06, 2800.0, 1e-4, 3.027534454401633e-08, 2.0875984398854196e-07, 1.4411115383854072e-12, 8.13192058904133e-05, 3.870808001231313e-09, 264198.09044147475),
+    "Yb": (2.251117457292375e-05, 2800.0, 1e-4, 9.530421708938875e-07, 1.5928047519798162e-06, 3.5855905832400155e-11, 8.13192058904133e-05, 3.0594383730548098e-09, 943.0252660957862),
+    "Lu": (5.441895423620451e-08, 2300.0, 1e-10, 1.7533627974232688e-11, 2.4224507873638623e-09, 1.3182723853701162e-16, 4.936440766595111e-06, 3.7114814767263864e-11, 16361195168.491522),
+    "Y": (3.577005126645399e-09, 2800.0, 1e-4, 5.778287917162048e-11, 4.235254540248039e-07, 1.5149527203115438e-15, 8.13192058904133e-05, 2.1320286206465477e-09, 653987039.4209787),
+    "U": (4.592874503209744e-13, 2300.0, 1e-10, 3.3440657128091203e-14, 5.136528682611412e-08, 2.3591431621371492e-20, 4.936440766595111e-06, 3.482518431142045e-12, 16828640614693.193),
+}
+def _apply_constructed_saha_status(_element: str, _parent: str) -> None:
+    _status = ELEMENT_STATUS[_element]
+    _status["status"] = "gas-complete-melt-pending"
+    _result = _CONSTRUCTED_SAHA_C3_RESULTS[_element]
+    _screen = dict(
+        zip(
+            (
+                "max_ratio", "temperature_K", "fO2", "neutral_pressure_bar",
+                "element_total_pressure_bar", "joint_ion_pressure_bar",
+                "electron_pressure_bar", "K_ion", "isolated_bound",
+            ),
+            _result,
+        )
+    )
+    _status["criteria"]["C3"] = _screen["max_ratio"] < 1.0e-4
+    _reason = _status["reason"]
+    for _decline in (
+        " No ion thermal function was selected",
+        " No Y+ temperature-dependent gas function",
+        " No evaluated U+ thermo function",
+    ):
+        if _decline in _reason:
+            _reason = _reason.split(_decline, 1)[0].rstrip(" .")
+            break
+    _parent_description = (
+        f"caller-supplied a({_parent})=1e-3 metal activity"
+        if _element in {"Ru", "Rh", "Ir"}
+        else f"caller-supplied a({_parent})=1e-3 oxide activity"
+    )
+    _status["reason"] = (
+        f"{_reason} Constructed FLAGGED, DERIVED NIST ASD {_element}+ is opt-in; "
+        f"with {_parent_description}, the C3 joint ion-share screen reached "
+        f"{_screen['max_ratio']:.3g} at {_screen['temperature_K']:g} K and "
+        f"fO2={_screen['fO2']:g}, below the 1e-4 threshold."
+    )
+    _status["c3_ion_bound"] = {
+        "status": "available",
+        "reason": (
+            f"FLAGGED, DERIVED {_element}+ thermal function from NIST ASD levels "
+            f"and first ionization energy; ion channel is opt-in. Maximum joint "
+            f"ion share { _screen['max_ratio']:.3g} at {_screen['temperature_K']:g} K "
+            f"and fO2={_screen['fO2']:g}."
+        ),
+        "source_tables": {
+            "neutral": _status.get("source_tables", {}).get(
+                "gas", f"{_element}(g)"
+            ),
+            "cation": f"NIST-ASD-Saha-{_element}+",
+            "electron": "D-020",
+        },
+        **(
+            {"parent_activity_species": _parent}
+            if _element in {"Ru", "Rh", "Ir"}
+            else {"parent_oxide": _parent}
+        ),
+        "parent_activity": 1.0e-3,
+        **_screen,
+    }
+
+
+for _element, _parent in _CONSTRUCTED_SAHA_PARENT_SPECIES.items():
+    _apply_constructed_saha_status(_element, _parent)
+
 # Halogen gas-only channels use the gas-parent activity path; no oxide parent
 # or melt model is provided for elemental Br, I, Cl, or F.
 for _element, _parent, _species in (
@@ -4083,19 +4195,23 @@ def _add_ion_channels(
             continue
         G_neutral, _neutral_row, neutral_flag = gibbs(neutral)
         G_ion, ion_row, ion_flag = gibbs(ion)
-        # Premise: the fitted apparent-Gibbs rows share JANAF's elemental
-        # reference, so the baseline cancels for M = M+ + e-. Algebra:
-        # K_M = exp[-(G(M+) + G(e-) - G(M))/(R*T)]. Unit check: ΔG and R*T
-        # are J/mol. Saha check for Na at 1500 K:
-        # Kp = 2*(2*pi*m_e*k_B*T/h**2)**(3/2)*(k_B*T/p°)
-        #      *(U_Na+/U_Na)*exp(-chi/(k_B*T)).
-        # With U_Na+/U_Na = 1/2 for the ground states and chi = 5.13907696 eV
-        # (NIST Atomic Spectra Database), Kp = 1.57265e-16. The fitted value
-        # is 1.58211e-16 (JANAF log Kf = -15.801); its 0.60% offset is in
-        # JANAF's tabulated thermochemical equilibrium, not our fit residual.
-        # The k_B*T/p° factor converts Saha number density to dimensionless
-        # pressure. Excited-state partition functions are not the explanation:
-        # their correction at 1500 K is below this difference.
+        # Premise: each ideal gas uses p°=1 bar and
+        # Z_i°=(kBT/p°)*(2*pi*m_i*kBT/h²)^(3/2)*Q_i*exp(-E_i/kBT).
+        # For M -> M+ + e-, Kp=p(M+)p(e-)/(p(M)p°)=Z_+°*Z_e°/Z_M°;
+        # neglecting the tiny M+/M mass correction gives
+        # Kp=(kBT/p°)*2*(2*pi*m_e*kBT/h²)^(3/2)*(Q_M+/Q_M)*exp(-IE/kBT).
+        # The 2 is electron spin. Equivalently,
+        # G(M+)+G(e-)-G(M)=IE+RT*ln(Q_M/Q_M+)+G_e,physical, where
+        # Z_e°=(kBT/p°)*2*(2*pi*m_e*kBT/h²)^(3/2),
+        # G_e,physical=-RT*ln(Z_e°), H_e,physical=5/2 RT, and
+        # S_e,physical=R*(ln(Z_e°)+5/2). D-020's shipped electron row uses
+        # H_e(298.15 K)=0, so G_e,JANAF=G_e,physical-5/2*R*298.15 K.
+        # Constructed NIST-ASD cations add +5/2*R*298.15 K to G(M+); the
+        # existing D-020 row stays unchanged. Their closure reproduces the
+        # dimensionless 1-bar Saha Kp, including its T^(5/2) translation.
+        # Unit check: Kp and ΔG/(RT) are dimensionless. Sanity: the Na+ pilot
+        # differs from JANAF by at most 128.537 J/mol and 0.3005% in ion share
+        # over 1200-3000 K.
         dG = G_ion + G_electron - G_neutral
         equilibrium = math.exp(-dG / (R_J_MOL_K * T))
         positive_sum += equilibrium * values[neutral]

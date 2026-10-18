@@ -492,7 +492,9 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Cr", "V", "Nb", "Na", "K",
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
         "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W",
-        "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "Hf", "Th", "Au", "Hg", "Pd", "Pt",
+        "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "Hf", "Th",
+        "Au", "Hg", "Pd", "Pt",
+        *build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS,
     }
     caller_parent_oxides = {
         "Cr": "Cr2O3", "V": "V2O3", "Nb": "NbO2",
@@ -511,9 +513,14 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Gd": "Gd2O3",
         "Tb": "Tb2O3", "Dy": "Dy2O3", "Ho": "Ho2O3", "Er": "Er2O3",
         "Tm": "Tm2O3", "Yb": "Yb2O3", "Lu": "Lu2O3", "Y": "Y2O3",
-        "Th": "ThO2",
+        "Th": "ThO2", "U": "UO2",
     }
-    new_trace_elements = {"Ga", "Ge", "B", "In", "Cu", "Mn", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "Hf", "Th", "Au", "Hg", "Pd", "Pt"}
+    new_trace_elements = {
+        "Ga", "Ge", "B", "In", "Cu", "Mn", "Ba", "Sr", "Zr",
+        "Ni", "Co", "Sc", "Hf", "Th",
+        *build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS,
+    }
+    new_trace_elements.update({"Au", "Hg", "Pd", "Pt"})
     new_trace_parents = {
         "Ga": "Ga2O3", "Ge": "GeO2", "B": "B2O3", "In": "In2O3",
         "Cu": "Cu2O", "Zn": "ZnO", "Cd": "CdO", "Bi": "Bi2O3",
@@ -523,6 +530,10 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Ni": "NiO", "Co": "CoO", "Sc": "Sc2O3", "Hf": "HfO2",
         "Th": "ThO2",
         "Au": "Au", "Hg": "Hg", "Pd": "Pd", "Pt": "Pt",
+        "La": "La2O3", "Ce": "Ce2O3", "Pr": "Pr2O3", "Nd": "Nd2O3",
+        "Sm": "Sm2O3", "Eu": "Eu2O3", "Gd": "Gd2O3", "Tb": "Tb2O3",
+        "Dy": "Dy2O3", "Ho": "Ho2O3", "Er": "Er2O3", "Tm": "Tm2O3",
+        "Yb": "Yb2O3", "Lu": "Lu2O3", "Y": "Y2O3", "U": "UO2",
     }
     new_trace_elements.update({"Zn", "Cd", "Bi"})
     caller_parent_oxides.update(
@@ -532,7 +543,9 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     existing_caller_parent_oxides = {
         element: oxide
         for element, oxide in caller_parent_oxides.items()
-        if element not in trace_elements | {"Zn", "Cd", "Bi", "Ba", "Sr", "Zr", "Ni", "Co", "Sc"}
+        if element not in trace_elements | {
+            "Zn", "Cd", "Bi", "Ba", "Sr", "Zr", "Ni", "Co", "Sc",
+        }
     }
     activities_by_temperature = {}
     trace_activities_by_temperature = {}
@@ -804,8 +817,16 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Hg": ("Hg+",),
         "Pd": ("Pd+",),
         "Pt": ("Pt+", "Pt-"),
+        **{
+            element: (f"{element}+",)
+            for element in build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS
+        },
     }
-    for element in ("Ga", "Ge", "B", "Cu", "Zn", "Cd", "Bi", "Mn", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "Hf", "Th", "Au", "Hg", "Pd", "Pt"):
+    for element in (
+        "Ga", "Ge", "B", "Cu", "Zn", "Cd", "Bi", "Mn", "Ba", "Sr",
+        "Zr", "Ni", "Co", "Sc", "Hf", "Th", "Au", "Hg", "Pd", "Pt",
+        *build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS,
+    ):
         current = {"max_ratio": -1.0, "isolated_bound": 0.0}
         for temperature in TEMPERATURES_K:
             activities = dict(activities_by_temperature[temperature])
@@ -966,7 +987,8 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B",
         "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W",
         "Ba", "Sr", "Zr", "Ni", "Co", "Sc",
-        "Hf", "Th", "Au", "Hg", "Pd", "Pt",
+        "Hf", "Th", *build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS,
+        "Au", "Hg", "Pd", "Pt",
     }
     cs_bound = ELEMENT_STATUS["Cs"]["c3_ion_bound"]
     assert cs_bound["source_tables"]["anions"] == ["Cs-007"]
@@ -978,7 +1000,8 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         if element in {
             "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "In",
             "Zn", "Cd", "Bi", "Mn", "Ag", "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co", "Sc",
-            "Hf", "Th", "Au", "Hg", "Pd", "Pt",
+            "Hf", "Th", *build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS,
+            "Au", "Hg", "Pd", "Pt",
         }:
             assert recorded["parent_activity"] == 1.0e-3
         assert recorded["temperature_K"] == result["temperature_K"], element
@@ -1021,6 +1044,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
         if element not in {
             "Ga", "Ge", "B", "In", "Cu", "Zn", "Cd", "Bi", "Mn", "Ag",
             "Mo", "W", "Ba", "Sr", "Zr", "Ni", "Co", "Sc", "Hf", "Th",
+            *build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS,
             "Au", "Hg", "Pd", "Pt",
         }
     }

@@ -441,27 +441,27 @@ source_notes:
         disposition: fitted_and_included_in_charge_balance
     maximum_ion_to_neutral_pressure_ratios:
       O2-:
-        value: 1.841668047125017e-05
+        value: 1.8563249803404387e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       AlO2-:
-        value: 5.006051897515916
+        value: 5.00648548456391
         temperature_K: 2100
         fO2_bar: 1.0e-12
       KO-:
-        value: 0.001258594363320064
+        value: 0.00126861089890436
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Cr-:
-        value: 1.5641513654764425e-05
+        value: 1.5765996794591864e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
       V-:
-        value: 7.556974311977284e-06
+        value: 7.617116566155075e-06
         temperature_K: 3000
         fO2_bar: 1.0e-8
       Nb-:
-        value: 2.6667237972114522e-05
+        value: 2.6879469447057692e-05
         temperature_K: 3000
         fO2_bar: 1.0e-8
     ko_note: >-
@@ -563,6 +563,35 @@ source_notes:
       Bi2O3(l) band is the maximum held-Cp error measured against nine JANAF
       parent-liquid tables truncated at 1300 K. These source-data back-tests
       define continuation bands and are not benchmark tuning.
+  constructed_saha_ions:
+    standard_state: >-
+      The constructed M+ rows use ideal gases at p° = 1 bar. For M(g) ->
+      M+(g) + e-(g), Kp = p(M+)p(e-)/(p(M)p°) is dimensionless and equals
+      (kBT/p°)*2*(2*pi*me*kBT/h²)^(3/2)*(Q_M+/Q_M)*exp(-IE/kBT), neglecting
+      the tiny M+/M mass correction. Thus ΔG° = IE + RT ln(Q_M/Q_M+) +
+      G°(e-, physical). The electron's translational partition function
+      supplies T^(5/2); its ideal monatomic enthalpy and entropy contain the
+      5/2 RT terms. D-020 sets H°(298.15 K)=0, so the constructed cation
+      adds +5/2 R*298.15 K to cancel the corresponding shift in the shipped
+      JANAF electron Gibbs function. The existing D-020 row is unchanged.
+    level_cutoff_cm_minus_1: 25000
+    level_cutoff_rationale: >-
+      At 3000 K a level at 25000 cm-1 has Boltzmann factor 6.2e-6 before its
+      statistical weight. The cutoff retains the ASD-listed thermally relevant
+      low terms but does not claim a complete bound spectrum.
+    method_gate:
+      criterion: Existing 2% K/Saha ratio gate; in the trace-ion limit share varies as sqrt(K), so this is approximately a 1% share tolerance.
+      results:
+        Na+: {max_abs_dG_J_mol: 128.537, max_ion_share_error_percent: 0.3005}
+        K+: {max_abs_dG_J_mol: 151.252, max_ion_share_error_percent: 0.3035}
+        Ca+: {max_abs_dG_J_mol: 7.987, max_ion_share_error_percent: 0.0172}
+        Ba+: {max_abs_dG_J_mol: 8.828, max_ion_share_error_percent: 0.0218}
+        Sr+: {max_abs_dG_J_mol: 2.339, max_ion_share_error_percent: 0.0116}
+    citation_gaps: >-
+      NIST ASD spectrum bibliography keys are retained per element in the
+      input record and runtime rows; some underlying historical references
+      are not expanded to full citations here. Pr's bracketed IE estimate is
+      used as printed and flagged.
 rows:
   - {table: gas, species_name: Na(g), table_id: Na-005, source_path: data-src/janaf/Na-005.yaml, source_sha256: 56df39453bc3895f80161d7ca0146b344669da2d1a9918b27139e917d491c255, authority: janaf_fitted, method: fitted, T_range_K: [1500, 3000], fit_residual: {value: {max_residual_J_per_mol: 1.31541910674423, max_residual_log10_K: 2.94179714698391e-05}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/janaf/Na-005.yaml, comparison_method: fitted, temperature_range: [1500, 3000], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: data-src/janaf/Na-005.yaml}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}}
   - {table: gas, species_name: K(g), table_id: K-005, source_path: data-src/janaf/K-005.yaml, source_sha256: 7729eda5976a6eacd68197b80eaadaf4f8bd1805f6673a08206c91827d1c407d, authority: janaf_fitted, method: fitted, T_range_K: [1500, 3000], fit_residual: {value: {max_residual_J_per_mol: 1.23262874502689, max_residual_log10_K: 2.73326874103486e-05}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/janaf/K-005.yaml, comparison_method: fitted, temperature_range: [1500, 3000], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: data-src/janaf/K-005.yaml}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}}
@@ -1451,6 +1480,1768 @@ rows:
   - {table: gas, species_name: Pt+(g), table_id: Burcat-Pt-plus, runtime_ref: Burcat-Pt-plus, source_path: data-src/published-thermo/burcat-pt-plus.json, source_sha256: 8149658f7acec81adfefb1276a6f94428b5f8acdab5fdc150beb9fb05ad8e367, authority: published_fitted_ionisation, method: fitted_burcat_nasa7_to_shomate, tier: 3, T_range_K: [1200, 3000], source_fit_range_K: [1200, 3000], T_interval: 1, flags: ['NIST ASD Saha ratios 1.314 at 1500 K and 1.180 at 2500 K; retained source offset'], source: {citation: 'Gurvich thermal table (1992), Pt+ card as cited by the Burcat thermochemical database', source_record: 'Burcat-Pt-plus; HF298 1431.815 kJ/mol', source_locator: 'Pt+ card, 298.15-6000 K', source_url: 'https://respecth.elte.hu/burcat.php'}, source_url: 'https://respecth.elte.hu/burcat.php', source_locator: 'Burcat Pt+ card', extrapolation: false, source_data: true, source_limit_K: 6000, fit_residual: {value: {max_residual_J_per_mol: 0.0128434470389038, max_residual_log10_K: 3.79525692008565e-07}, unit: {max_residual_J_per_mol: 'J mol^-1', max_residual_log10_K: 'log10 K'}, target_source: 'BURCAT.THR.txt Pt+ card, Gurvich Thermel 1992', comparison_method: fitted, temperature_range: [1200, 3000], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: none, explanation: not separately quantified by selected source, provenance: 'Burcat Pt+ card'}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: 'Not a liquid gas-parent row; independent check status is not applicable.'}}
   - {table: gas, species_name: Pt-(g), table_id: Burcat-Pt-minus, runtime_ref: Burcat-Pt-minus, source_path: data-src/published-thermo/burcat-pt-minus.json, source_sha256: 766cf39935a790e316fb181a8a2df7203982dd333a230d84476eb4a26c4ff825, authority: published_fitted_ionisation, method: fitted_burcat_nasa7_to_shomate, tier: 3, T_range_K: [1200, 3000], source_fit_range_K: [1200, 3000], T_interval: 1, flags: ['Burcat card selects HF298 353.159 kJ/mol and lists an alternate 360.2 kJ/mol Bilodeau value; its printed anchor differs from its NASA-7 polynomial by 39.7803 J/mol'], source: {citation: 'Gurvich thermal table (1992), Pt- card as cited by the Burcat thermochemical database', source_record: 'Burcat-Pt-minus; HF298 353.159 kJ/mol; alternate Bilodeau value 360.2 kJ/mol', source_locator: 'Pt- card, 298.15-6000 K', source_url: 'https://respecth.elte.hu/burcat.php'}, source_url: 'https://respecth.elte.hu/burcat.php', source_locator: 'Burcat Pt- card', extrapolation: false, source_data: true, source_limit_K: 6000, fit_residual: {value: {max_residual_J_per_mol: 0.0163737338734791, max_residual_log10_K: 4.8384617546921e-07}, unit: {max_residual_J_per_mol: 'J mol^-1', max_residual_log10_K: 'log10 K'}, target_source: 'BURCAT.THR.txt Pt- card, Gurvich Thermel 1992', comparison_method: fitted, temperature_range: [1200, 3000], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: none, explanation: not separately quantified by selected source, provenance: 'Burcat Pt- card'}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: 'Not a liquid gas-parent row; independent check status is not applicable.'}}
 
+  - table: gas
+    species_name: "La+(g)"
+    table_id: "NIST-ASD-Saha-La+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-La"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD La I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD La I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lanthanumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lanthanumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=La&unc_out=on&units=1"
+      ionization_energy_eV: 5.5769
+      ionization_energy_reported_value: "5.5769"
+      ionization_energy_uncertainty_eV: 0.0006
+      ionization_energy_reference_keys: ["L3974", "L16228"]
+      neutral_level_bibliography_keys: ["MZH78"]
+      cation_level_bibliography_keys: ["MZH78", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lanthanumtable5.htm"
+    source_locator: "NIST ASD La I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.00885277800261974, max_residual_log10_K: 2.43375075373186e-7}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "La+(g)"
+    table_id: "NIST-ASD-Saha-La+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-La"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD La I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD La I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lanthanumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lanthanumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=La&unc_out=on&units=1"
+      ionization_energy_eV: 5.5769
+      ionization_energy_reported_value: "5.5769"
+      ionization_energy_uncertainty_eV: 0.0006
+      ionization_energy_reference_keys: ["L3974", "L16228"]
+      neutral_level_bibliography_keys: ["MZH78"]
+      cation_level_bibliography_keys: ["MZH78", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lanthanumtable5.htm"
+    source_locator: "NIST ASD La I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.131337242200971, max_residual_log10_K: 0.00000571684968077878}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Ce+(g)"
+    table_id: "NIST-ASD-Saha-Ce+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Ce"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Ce I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Ce I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ceriumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ceriumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Ce&unc_out=on&units=1"
+      ionization_energy_eV: 5.5386
+      ionization_energy_reported_value: "5.5386"
+      ionization_energy_uncertainty_eV: 0.0004
+      ionization_energy_reference_keys: ["L4277"]
+      neutral_level_bibliography_keys: ["MZH78", "WSPC78"]
+      cation_level_bibliography_keys: ["C73", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ceriumtable5.htm"
+    source_locator: "NIST ASD Ce I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0342013431945816, max_residual_log10_K: 9.06844756466371e-7}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Ce+(g)"
+    table_id: "NIST-ASD-Saha-Ce+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Ce"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Ce I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Ce I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ceriumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ceriumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Ce&unc_out=on&units=1"
+      ionization_energy_eV: 5.5386
+      ionization_energy_reported_value: "5.5386"
+      ionization_energy_uncertainty_eV: 0.0004
+      ionization_energy_reference_keys: ["L4277"]
+      neutral_level_bibliography_keys: ["MZH78", "WSPC78"]
+      cation_level_bibliography_keys: ["C73", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ceriumtable5.htm"
+    source_locator: "NIST ASD Ce I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.150428514229134, max_residual_log10_K: 0.00000654785488974195}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Pr+(g)"
+    table_id: "NIST-ASD-Saha-Pr+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Pr"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Pr I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Pr I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/praseodymiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/praseodymiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Pr&unc_out=on&units=1"
+      ionization_energy_eV: 5.4702
+      ionization_energy_reported_value: "[5.4702]"
+      ionization_energy_uncertainty_eV: 0.0004
+      ionization_energy_reference_keys: ["L19006"]
+      neutral_level_bibliography_keys: ["MZH78", "WSPC78"]
+      cation_level_bibliography_keys: ["MZH78", "G89", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+        - "NIST ASD prints the first ionization energy as a bracketed estimate."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/praseodymiumtable5.htm"
+    source_locator: "NIST ASD Pr I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0240327703650109, max_residual_log10_K: 6.27659298856941e-7}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Pr+(g)"
+    table_id: "NIST-ASD-Saha-Pr+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Pr"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Pr I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Pr I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/praseodymiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/praseodymiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Pr&unc_out=on&units=1"
+      ionization_energy_eV: 5.4702
+      ionization_energy_reported_value: "[5.4702]"
+      ionization_energy_uncertainty_eV: 0.0004
+      ionization_energy_reference_keys: ["L19006"]
+      neutral_level_bibliography_keys: ["MZH78", "WSPC78"]
+      cation_level_bibliography_keys: ["MZH78", "G89", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+        - "NIST ASD prints the first ionization energy as a bracketed estimate."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/praseodymiumtable5.htm"
+    source_locator: "NIST ASD Pr I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.00170889333821833, max_residual_log10_K: 5.950779030447e-8}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Nd+(g)"
+    table_id: "NIST-ASD-Saha-Nd+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Nd"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Nd I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Nd I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/neodymiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/neodymiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Nd&unc_out=on&units=1"
+      ionization_energy_eV: 5.52475
+      ionization_energy_reported_value: "5.52475"
+      ionization_energy_uncertainty_eV: 0.00005
+      ionization_energy_reference_keys: ["L23155"]
+      neutral_level_bibliography_keys: ["MZH78", "ABK92", "WSPC78"]
+      cation_level_bibliography_keys: ["BWDA84", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/neodymiumtable5.htm"
+    source_locator: "NIST ASD Nd I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.124912618717644, max_residual_log10_K: 0.00000326231913724131}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Nd+(g)"
+    table_id: "NIST-ASD-Saha-Nd+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Nd"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Nd I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Nd I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/neodymiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/neodymiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Nd&unc_out=on&units=1"
+      ionization_energy_eV: 5.52475
+      ionization_energy_reported_value: "5.52475"
+      ionization_energy_uncertainty_eV: 0.00005
+      ionization_energy_reference_keys: ["L23155"]
+      neutral_level_bibliography_keys: ["MZH78", "ABK92", "WSPC78"]
+      cation_level_bibliography_keys: ["BWDA84", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/neodymiumtable5.htm"
+    source_locator: "NIST ASD Nd I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.367265809560195, max_residual_log10_K: 0.0000127890818534616}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Sm+(g)"
+    table_id: "NIST-ASD-Saha-Sm+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Sm"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Sm I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Sm I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/samariumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/samariumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Sm&unc_out=on&units=1"
+      ionization_energy_eV: 5.643722
+      ionization_energy_reported_value: "5.643722"
+      ionization_energy_uncertainty_eV: 0.000021
+      ionization_energy_reference_keys: ["L21624"]
+      neutral_level_bibliography_keys: ["MZH78", "JRB00"]
+      cation_level_bibliography_keys: ["MZH78", "RAVS90", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/samariumtable5.htm"
+    source_locator: "NIST ASD Sm I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0381187307648361, max_residual_log10_K: 9.95539651142613e-7}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Sm+(g)"
+    table_id: "NIST-ASD-Saha-Sm+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Sm"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Sm I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Sm I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/samariumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/samariumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Sm&unc_out=on&units=1"
+      ionization_energy_eV: 5.643722
+      ionization_energy_reported_value: "5.643722"
+      ionization_energy_uncertainty_eV: 0.000021
+      ionization_energy_reference_keys: ["L21624"]
+      neutral_level_bibliography_keys: ["MZH78", "JRB00"]
+      cation_level_bibliography_keys: ["MZH78", "RAVS90", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/samariumtable5.htm"
+    source_locator: "NIST ASD Sm I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0854186345823109, max_residual_log10_K: 0.00000371810375839332}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Eu+(g)"
+    table_id: "NIST-ASD-Saha-Eu+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Eu"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Eu I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Eu I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/europiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/europiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Eu&unc_out=on&units=1"
+      ionization_energy_eV: 5.670385
+      ionization_energy_reported_value: "5.670385"
+      ionization_energy_uncertainty_eV: 0.000005
+      ionization_energy_reference_keys: ["L13382"]
+      neutral_level_bibliography_keys: ["MZH78", "NRCA00"]
+      cation_level_bibliography_keys: ["MZH78", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/europiumtable5.htm"
+    source_locator: "NIST ASD Eu I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0907192577142268, max_residual_log10_K: 0.00000236929762257593}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Eu+(g)"
+    table_id: "NIST-ASD-Saha-Eu+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Eu"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Eu I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Eu I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/europiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/europiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Eu&unc_out=on&units=1"
+      ionization_energy_eV: 5.670385
+      ionization_energy_reported_value: "5.670385"
+      ionization_energy_uncertainty_eV: 0.000005
+      ionization_energy_reference_keys: ["L13382"]
+      neutral_level_bibliography_keys: ["MZH78", "NRCA00"]
+      cation_level_bibliography_keys: ["MZH78", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/europiumtable5.htm"
+    source_locator: "NIST ASD Eu I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0803019164595753, max_residual_log10_K: 0.00000279630653292005}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Gd+(g)"
+    table_id: "NIST-ASD-Saha-Gd+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Gd"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Gd I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Gd I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/gadoliniumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/gadoliniumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Gd&unc_out=on&units=1"
+      ionization_energy_eV: 6.1498
+      ionization_energy_reported_value: "6.1498"
+      ionization_energy_uncertainty_eV: 0.00004
+      ionization_energy_reference_keys: ["L11798"]
+      neutral_level_bibliography_keys: ["MZH78", "MOW98"]
+      cation_level_bibliography_keys: ["MZH78", "SR73"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/gadoliniumtable5.htm"
+    source_locator: "NIST ASD Gd I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0526726618409157, max_residual_log10_K: 0.00000137564190469403}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Gd+(g)"
+    table_id: "NIST-ASD-Saha-Gd+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Gd"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Gd I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Gd I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/gadoliniumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/gadoliniumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Gd&unc_out=on&units=1"
+      ionization_energy_eV: 6.1498
+      ionization_energy_reported_value: "6.1498"
+      ionization_energy_uncertainty_eV: 0.00004
+      ionization_energy_reference_keys: ["L11798"]
+      neutral_level_bibliography_keys: ["MZH78", "MOW98"]
+      cation_level_bibliography_keys: ["MZH78", "SR73"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/gadoliniumtable5.htm"
+    source_locator: "NIST ASD Gd I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0672552494797856, max_residual_log10_K: 0.00000292748762708806}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Tb+(g)"
+    table_id: "NIST-ASD-Saha-Tb+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Tb"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Tb I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Tb I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/terbiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/terbiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Tb&unc_out=on&units=1"
+      ionization_energy_eV: 5.8638
+      ionization_energy_reported_value: "5.8638"
+      ionization_energy_uncertainty_eV: 0.0006
+      ionization_energy_reference_keys: ["L4277"]
+      neutral_level_bibliography_keys: ["B01", "WSPC78"]
+      cation_level_bibliography_keys: ["B01", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/terbiumtable5.htm"
+    source_locator: "NIST ASD Tb I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0101666278205812, max_residual_log10_K: 2.12415910198876e-7}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Tb+(g)"
+    table_id: "NIST-ASD-Saha-Tb+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Tb"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Tb I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Tb I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/terbiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/terbiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Tb&unc_out=on&units=1"
+      ionization_energy_eV: 5.8638
+      ionization_energy_reported_value: "5.8638"
+      ionization_energy_uncertainty_eV: 0.0006
+      ionization_energy_reference_keys: ["L4277"]
+      neutral_level_bibliography_keys: ["B01", "WSPC78"]
+      cation_level_bibliography_keys: ["B01", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/terbiumtable5.htm"
+    source_locator: "NIST ASD Tb I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.14958482561633, max_residual_log10_K: 0.00000520890463812553}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Dy+(g)"
+    table_id: "NIST-ASD-Saha-Dy+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Dy"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Dy I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Dy I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/dysprosiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/dysprosiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Dy&unc_out=on&units=1"
+      ionization_energy_eV: 5.939061
+      ionization_energy_reported_value: "5.939061"
+      ionization_energy_uncertainty_eV: 0.000006
+      ionization_energy_reference_keys: ["L22122"]
+      neutral_level_bibliography_keys: ["NG00", "WSPC78"]
+      cation_level_bibliography_keys: ["NG00", "MZH78"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/dysprosiumtable5.htm"
+    source_locator: "NIST ASD Dy I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0362185716512613, max_residual_log10_K: 9.45913556488151e-7}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Dy+(g)"
+    table_id: "NIST-ASD-Saha-Dy+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Dy"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Dy I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Dy I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/dysprosiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/dysprosiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Dy&unc_out=on&units=1"
+      ionization_energy_eV: 5.939061
+      ionization_energy_reported_value: "5.939061"
+      ionization_energy_uncertainty_eV: 0.000006
+      ionization_energy_reference_keys: ["L22122"]
+      neutral_level_bibliography_keys: ["NG00", "WSPC78"]
+      cation_level_bibliography_keys: ["NG00", "MZH78"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/dysprosiumtable5.htm"
+    source_locator: "NIST ASD Dy I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0483845688868314, max_residual_log10_K: 0.00000168486746065242}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Ho+(g)"
+    table_id: "NIST-ASD-Saha-Ho+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Ho"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Ho I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Ho I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/holmiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/holmiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Ho&unc_out=on&units=1"
+      ionization_energy_eV: 6.0215
+      ionization_energy_reported_value: "6.0215"
+      ionization_energy_uncertainty_eV: 0.0006
+      ionization_energy_reference_keys: ["L4277"]
+      neutral_level_bibliography_keys: ["MZH78", "KWL97", "WSPC78"]
+      cation_level_bibliography_keys: ["MZH78"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/holmiumtable5.htm"
+    source_locator: "NIST ASD Ho I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0265311860712245, max_residual_log10_K: 5.54327957847159e-7}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Ho+(g)"
+    table_id: "NIST-ASD-Saha-Ho+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Ho"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Ho I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Ho I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/holmiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/holmiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Ho&unc_out=on&units=1"
+      ionization_energy_eV: 6.0215
+      ionization_energy_reported_value: "6.0215"
+      ionization_energy_uncertainty_eV: 0.0006
+      ionization_energy_reference_keys: ["L4277"]
+      neutral_level_bibliography_keys: ["MZH78", "KWL97", "WSPC78"]
+      cation_level_bibliography_keys: ["MZH78"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/holmiumtable5.htm"
+    source_locator: "NIST ASD Ho I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0605546812294051, max_residual_log10_K: 0.00000263582517993077}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Er+(g)"
+    table_id: "NIST-ASD-Saha-Er+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Er"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Er I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Er I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/erbiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/erbiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Er&unc_out=on&units=1"
+      ionization_energy_eV: 6.1077
+      ionization_energy_reported_value: "6.1077"
+      ionization_energy_uncertainty_eV: 0.001
+      ionization_energy_reference_keys: ["L4277"]
+      neutral_level_bibliography_keys: ["MZH78", "WSPC78"]
+      cation_level_bibliography_keys: ["MZH78", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/erbiumtable5.htm"
+    source_locator: "NIST ASD Er I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.108328159723897, max_residual_log10_K: 0.00000282918597174108}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Er+(g)"
+    table_id: "NIST-ASD-Saha-Er+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Er"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Er I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Er I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/erbiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/erbiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Er&unc_out=on&units=1"
+      ionization_energy_eV: 6.1077
+      ionization_energy_reported_value: "6.1077"
+      ionization_energy_uncertainty_eV: 0.001
+      ionization_energy_reference_keys: ["L4277"]
+      neutral_level_bibliography_keys: ["MZH78", "WSPC78"]
+      cation_level_bibliography_keys: ["MZH78", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/erbiumtable5.htm"
+    source_locator: "NIST ASD Er I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.029400403262116, max_residual_log10_K: 0.00000127974124617757}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Tm+(g)"
+    table_id: "NIST-ASD-Saha-Tm+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Tm"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Tm I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Tm I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/thuliumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/thuliumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Tm&unc_out=on&units=1"
+      ionization_energy_eV: 6.184402
+      ionization_energy_reported_value: "6.184402"
+      ionization_energy_uncertainty_eV: 0.000009
+      ionization_energy_reference_keys: ["L22274"]
+      neutral_level_bibliography_keys: ["MZH78", "C71"]
+      cation_level_bibliography_keys: ["MZH78", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/thuliumtable5.htm"
+    source_locator: "NIST ASD Tm I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0273461244651116, max_residual_log10_K: 7.14193538553323e-7}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Tm+(g)"
+    table_id: "NIST-ASD-Saha-Tm+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Tm"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Tm I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Tm I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/thuliumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/thuliumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Tm&unc_out=on&units=1"
+      ionization_energy_eV: 6.184402
+      ionization_energy_reported_value: "6.184402"
+      ionization_energy_uncertainty_eV: 0.000009
+      ionization_energy_reference_keys: ["L22274"]
+      neutral_level_bibliography_keys: ["MZH78", "C71"]
+      cation_level_bibliography_keys: ["MZH78", "SR65"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/thuliumtable5.htm"
+    source_locator: "NIST ASD Tm I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0375003737281077, max_residual_log10_K: 0.00000130585351715285}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Yb+(g)"
+    table_id: "NIST-ASD-Saha-Yb+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Yb"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Yb I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Yb I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ytterbiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ytterbiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Yb&unc_out=on&units=1"
+      ionization_energy_eV: 6.25416
+      ionization_energy_reported_value: "6.25416"
+      ionization_energy_uncertainty_eV: 0.000012
+      ionization_energy_reference_keys: ["L4980"]
+      neutral_level_bibliography_keys: ["MT78", "A80"]
+      cation_level_bibliography_keys: ["M67", "SK79"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ytterbiumtable5.htm"
+    source_locator: "NIST ASD Yb I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.00197885255329311, max_residual_log10_K: 4.13450530180907e-8}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Yb+(g)"
+    table_id: "NIST-ASD-Saha-Yb+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Yb"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Yb I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Yb I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ytterbiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ytterbiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Yb&unc_out=on&units=1"
+      ionization_energy_eV: 6.25416
+      ionization_energy_reported_value: "6.25416"
+      ionization_energy_uncertainty_eV: 0.000012
+      ionization_energy_reference_keys: ["L4980"]
+      neutral_level_bibliography_keys: ["MT78", "A80"]
+      cation_level_bibliography_keys: ["M67", "SK79"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/ytterbiumtable5.htm"
+    source_locator: "NIST ASD Yb I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.00212560826912522, max_residual_log10_K: 7.40188099044428e-8}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Lu+(g)"
+    table_id: "NIST-ASD-Saha-Lu+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Lu"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Lu I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Lu I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lutetiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lutetiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Lu&unc_out=on&units=1"
+      ionization_energy_eV: 5.425871
+      ionization_energy_reported_value: "5.425871"
+      ionization_energy_uncertainty_eV: 0.000012
+      ionization_energy_reference_keys: ["L10494", "L1638"]
+      neutral_level_bibliography_keys: ["MZH78", "VW78", "CT72", "MMMS89"]
+      cation_level_bibliography_keys: ["MZH78"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lutetiumtable5.htm"
+    source_locator: "NIST ASD Lu I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.110681503778324, max_residual_log10_K: 0.00000289064781141817}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Lu+(g)"
+    table_id: "NIST-ASD-Saha-Lu+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Lu"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Lu I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Lu I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lutetiumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lutetiumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Lu&unc_out=on&units=1"
+      ionization_energy_eV: 5.425871
+      ionization_energy_reported_value: "5.425871"
+      ionization_energy_uncertainty_eV: 0.000012
+      ionization_energy_reference_keys: ["L10494", "L1638"]
+      neutral_level_bibliography_keys: ["MZH78", "VW78", "CT72", "MMMS89"]
+      cation_level_bibliography_keys: ["MZH78"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/lutetiumtable5.htm"
+    source_locator: "NIST ASD Lu I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0395450142677873, max_residual_log10_K: 0.00000172131604413665}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Y+(g)"
+    table_id: "NIST-ASD-Saha-Y+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Y"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Y I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Y I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/yttriumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/yttriumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Y&unc_out=on&units=1"
+      ionization_energy_eV: 6.21726
+      ionization_energy_reported_value: "6.21726"
+      ionization_energy_uncertainty_eV: 0.0001
+      ionization_energy_reference_keys: ["L8844", "L2111", "L9735"]
+      neutral_level_bibliography_keys: ["P77", "GRTE73", "JS00"]
+      cation_level_bibliography_keys: ["NJK91"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/yttriumtable5.htm"
+    source_locator: "NIST ASD Y I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.0548231187276542, max_residual_log10_K: 0.00000143180497874884}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "Y+(g)"
+    table_id: "NIST-ASD-Saha-Y+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-Y"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD Y I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD Y I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/yttriumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/yttriumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Y&unc_out=on&units=1"
+      ionization_energy_eV: 6.21726
+      ionization_energy_reported_value: "6.21726"
+      ionization_energy_uncertainty_eV: 0.0001
+      ionization_energy_reference_keys: ["L8844", "L2111", "L9735"]
+      neutral_level_bibliography_keys: ["P77", "GRTE73", "JS00"]
+      cation_level_bibliography_keys: ["NJK91"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/yttriumtable5.htm"
+    source_locator: "NIST ASD Y I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.394038269412704, max_residual_log10_K: 0.0000137213635185648}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "U+(g)"
+    table_id: "NIST-ASD-Saha-U+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-U"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    T_interval: 1
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD U I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD U I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/uraniumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/uraniumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=U&unc_out=on&units=1"
+      ionization_energy_eV: 6.19405
+      ionization_energy_reported_value: "6.19405"
+      ionization_energy_uncertainty_eV: 0.00006
+      ionization_energy_reference_keys: ["L5494", "L7765"]
+      neutral_level_bibliography_keys: ["L14620"]
+      cation_level_bibliography_keys: ["BW92b", "L14620"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/uraniumtable5.htm"
+    source_locator: "NIST ASD U I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 3.49245965480804e-10, max_residual_log10_K: 1.14014881811877e-14}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1500, 3000]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
+  - table: gas
+    species_name: "U+(g)"
+    table_id: "NIST-ASD-Saha-U+"
+    runtime_ref: "FLAGGED-DERIVED-NIST-ASD-U"
+    source_path: data-src/published-thermo/constructed-ion-sources.json
+    source_sha256: 6c7130b7c2385041644b00dad0d4a6e7f0054d5cdabb52d3747cf7e48aab942e
+    authority: nist_partition_fitted_ionisation
+    method: fitted
+    tier: 1
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    T_interval: 2
+    flags: [FLAGGED, DERIVED, constructed, opt-in ion]
+    source:
+      citation: "Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F"
+      source_record: "NIST ASD U I/II level inputs and first ionization energy"
+      source_locator: "NIST ASD U I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+      source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/uraniumtable5.htm"
+      secondary_source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/uraniumtable6.htm"
+      ionization_energy_source_url: "https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=U&unc_out=on&units=1"
+      ionization_energy_eV: 6.19405
+      ionization_energy_reported_value: "6.19405"
+      ionization_energy_uncertainty_eV: 0.00006
+      ionization_energy_reference_keys: ["L5494", "L7765"]
+      neutral_level_bibliography_keys: ["L14620"]
+      cation_level_bibliography_keys: ["BW92b", "L14620"]
+      level_cutoff_cm_minus_1: 25000
+      citation_gaps:
+        - "ASD bibliography keys are retained, but the underlying historical references are not expanded to full citations here."
+        - "The listed energy levels do not claim a complete bound spectrum."
+    source_url: "https://physics.nist.gov/PhysRefData/Handbook/Tables/uraniumtable5.htm"
+    source_locator: "NIST ASD U I and II listed levels below 25000 cm-1 and first-ionization-energy output"
+    source_data: true
+    fit_residual:
+      value: {max_residual_J_per_mol: 0.321719330037013, max_residual_log10_K: 0.0000112030435139371}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: data-src/published-thermo/constructed-ion-sources.json
+      comparison_method: fitted
+      temperature_range: [1200, 1500]
+      held_out_or_in_sample: in_sample
+    accuracy_band: null
+    band_basis:
+      kind: none
+      explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately.
+      provenance: NIST ASD reference keys in constructed-ion-sources.json
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each

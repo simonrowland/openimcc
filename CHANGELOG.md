@@ -11,6 +11,11 @@
   Burcat/Gurvich source rows. NIST Saha checks and C3 results are recorded in
   the element status table: Hg and Pd pass; Au and Pt exceed the share bound.
   No Ru, Rh, or Ir ion functions were found in the checked source rail.
+- Added flagged, derived opt-in La+, Ce+, Pr+, Nd+, Sm+, Eu+, Gd+, Tb+, Dy+,
+  Ho+, Er+, Tm+, Yb+, Lu+, Y+, and U+ thermal functions from NIST ASD levels
+  and first ionization energies. Promethium is omitted because the project has
+  no Pm(g) neutral thermal function to use as the parent. C3 joint-share screens
+  and source gaps are recorded per included element in the roadmap and provenance.
 - Added a caller-visible melt notice for allowed temperatures below active
   association-row domains. It records the ΔrCp = 0 continuation, the declared
   domains of active rows below their lower bounds, and that the uncertainty

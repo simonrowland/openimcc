@@ -52,6 +52,13 @@ LOW_FIT_MINIMUM_ROWS = SHOMATE_CP_PARAMETER_COUNT + LOW_FIT_NODE_MARGIN
 R_J_MOL_K = 8.314462618
 KONINGS_SOURCE_DIR = Path(__file__).resolve().parents[1] / "data-src/konings"
 KONINGS_BATCH_ELEMENTS = ("La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu")
+CONSTRUCTED_SAHA_ION_ELEMENTS = (
+    "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho",
+    "Er", "Tm", "Yb", "Lu", "Y", "U",
+)
+CONSTRUCTED_SAHA_ION_SOURCES = tuple(
+    (f"{element}+(g)", element) for element in CONSTRUCTED_SAHA_ION_ELEMENTS
+)
 KONINGS_GAS_SPECIES = {
     "La": (("La(g)", 0), ("LaO(g)", 1)),
     "Ce": (("Ce(g)", 0), ("CeO(g)", 1), ("CeO2(g)", 2)),
@@ -2285,6 +2292,154 @@ def _fit_bi_plus_row(
     }
 
 
+def _constructed_saha_ion_thermal_rows(
+    element: str,
+    temperatures: list[float],
+    published_source_dir: Path,
+) -> list[dict[str, float]]:
+    """Derive flagged M+ H/S/Cp from the neutral function and ASD levels.
+
+    At p°=1 bar, the ideal-gas standard partition factors give
+    Kp(M -> M+ + e-) = (kBT/p°)*2*(2*pi*me*kBT/h²)^(3/2)
+    *(Q_M+/Q_M)*exp(-IE/kBT), neglecting the tiny M+/M mass correction.
+    Thus G(M+)+G(e-)-G(M) = IE + RT*ln(Q_M/Q_M+) + G_e,physical, where
+    Z_e°=(kBT/p°)*2*(2*pi*me*kBT/h²)^(3/2), G_e,physical=-RT*ln(Z_e°),
+    H_e,physical=5/2 RT, and S_e,physical=R*(ln(Z_e°)+5/2). The factor 2
+    is electron spin. D-020's shipped electron row sets H_e(298.15 K)=0,
+    so G_e,JANAF=G_e,physical-5/2*R*T0. Add the matching constant
+    +5/2*R*T0 to G(M+) and retain the existing D-020 row; then the JANAF
+    closure reproduces the dimensionless 1-bar Saha Kp exactly. Differentiating
+    RT*ln(Q_M/Q_M+) gives S+ = S0-R*ln(Q_M/Q_M+)-(U0-U+)/T and
+    H+ = H0+IE+5/2*R*T0+(U+-U0); Cp adds Cv,+-Cv,0. Energies are molar
+    J and level inputs are 2J+1 with cm^-1 converted by N_A*h*c*100.
+    """
+    from openimcc.gas import load_gas_datapack, species_thermo
+
+    record = _load_record(
+        published_source_dir / "constructed-ion-sources.json"
+    )
+    source = record["elements"][element]
+    ie_j_mol = (
+        float(source["ionization_energy"]["value_eV"])
+        * 1.602176634e-19
+        * 6.02214076e23
+    )
+    neutral_levels = tuple(
+        (int(weight), float(energy))
+        for weight, energy in source["neutral"][
+            "levels_2Jplus1_energy_cm_minus_1"
+        ]
+    )
+    ion_levels = tuple(
+        (int(weight), float(energy))
+        for weight, energy in source["cation"][
+            "levels_2Jplus1_energy_cm_minus_1"
+        ]
+    )
+    if not neutral_levels or not ion_levels:
+        raise ValueError(f"{element} ASD partitions require a ground level")
+
+    r = R_J_MOL_K
+    t0 = NASA_STANDARD_T_K
+    electron_reference_shift = 2.5 * r * t0
+    h_c_mol_cm = 6.02214076e23 * 6.62607015e-34 * 299792458.0 * 100.0
+    gas_pack = load_gas_datapack()
+
+    def electronic(
+        levels: tuple[tuple[int, float], ...], temperature: float
+    ) -> tuple[float, float, float]:
+        energies = [h_c_mol_cm * level for _weight, level in levels]
+        weighted = [
+            degeneracy * math.exp(-energy / (r * temperature))
+            for (degeneracy, _level), energy in zip(levels, energies)
+        ]
+        partition = math.fsum(weighted)
+        probabilities = [weight / partition for weight in weighted]
+        mean_energy = math.fsum(
+            probability * energy
+            for probability, energy in zip(probabilities, energies)
+        )
+        variance = math.fsum(
+            probability * (energy - mean_energy) ** 2
+            for probability, energy in zip(probabilities, energies)
+        )
+        return (
+            math.log(partition),
+            mean_energy,
+            variance / (r * temperature**2),
+        )
+
+    rows = []
+    for temperature in temperatures:
+        neutral = species_thermo(element, "g", temperature, gas_pack)
+        ln_q0, u0, cv0 = electronic(neutral_levels, temperature)
+        ln_q_plus, u_plus, cv_plus = electronic(ion_levels, temperature)
+        ln_q_ratio = ln_q0 - ln_q_plus
+        g_plus = (
+            neutral.G_J_mol
+            + ie_j_mol
+            + electron_reference_shift
+            + r * temperature * ln_q_ratio
+        )
+        s_plus = (
+            neutral.S_J_molK
+            - r * ln_q_ratio
+            - (u0 - u_plus) / temperature
+        )
+        h_plus = g_plus + temperature * s_plus
+        rows.append(
+            {
+                "temperature": temperature,
+                "heat_capacity": neutral.Cp_J_molK + cv_plus - cv0,
+                "entropy": s_plus,
+                "enthalpy_increment": h_plus / 1000.0,
+            }
+        )
+    return rows
+
+
+def _fit_constructed_saha_ion_row(
+    element: str,
+    published_source_dir: Path,
+    *,
+    t_interval: int,
+    fit_t_min: float,
+    fit_t_max: float,
+    runtime_t_min: float,
+) -> dict[str, str]:
+    temperatures = [
+        float(T)
+        for T in np.arange(
+            fit_t_min,
+            fit_t_max + JANAF_GRID_STEP_K / 2.0,
+            JANAF_GRID_STEP_K,
+        )
+    ]
+    thermal_rows = _constructed_saha_ion_thermal_rows(
+        element, temperatures, published_source_dir
+    )
+    fit = _fit_shomate_values(thermal_rows, 0.0)
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    return {
+        "species_name": f"{element}+(g)",
+        "state": "g",
+        "T_interval": str(t_interval),
+        "cation": element,
+        "cat_num": "1",
+        "oxy_num": "0",
+        "T_min": number(runtime_t_min),
+        "T_max": number(fit_t_max),
+        **{key: number(fit[key]) for key in "ABCDEFG"},
+        "H": "0",
+        "Ref": f"FLAGGED-DERIVED-NIST-ASD-{element}",
+        "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
+        "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+    }
+
+
 def _fit_nasa_row(
     nasa_source_dir: Path,
     lh84_source_dir: Path,
@@ -3665,6 +3820,21 @@ def build_rows(
             if species_name == "PtO2(g)" and interval == 3:
                 row["Ref"] = f"{row['Ref']}-CONT-2000"
             rows.append(row)
+    rows.extend(
+        _fit_constructed_saha_ion_row(
+            element,
+            published_source_dir,
+            t_interval=interval,
+            fit_t_min=fit_t_min,
+            fit_t_max=fit_t_max,
+            runtime_t_min=runtime_t_min,
+        )
+        for element in CONSTRUCTED_SAHA_ION_ELEMENTS
+        for interval, fit_t_min, fit_t_max, runtime_t_min in (
+            (1, 1500.0, 3000.0, 1500.0),
+            (2, 1200.0, 1500.0, 1200.0),
+        )
+    )
     return rows
 
 
