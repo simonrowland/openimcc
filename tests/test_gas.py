@@ -42,6 +42,7 @@ from openimcc.gas import (
     ImccGasSpeciesNotFoundError,
     ImccGasTemperatureOutsideDomainError,
     ImccGasUnknownActivityError,
+    ImccGasEquilibriumRangeError,
     default_condensate_database_path,
     default_gas_database_path,
     evaluate_gas,
@@ -3071,6 +3072,28 @@ def test_vaporock_default_reports_missing_alkali_channels(
     assert {
         name: result.omitted_channels[name] for name in missing_alkali
     } == missing_alkali
+
+
+def test_overflowing_equilibrium_constant_is_a_typed_refusal(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(ImccGasEquilibriumRangeError) as exc:
+        evaluate_gas(
+            {"Na2O": 1.0}, 1.0, 1.0, gas_pack, include_ions=True
+        )
+    assert exc.value.code == "imcc_gas_equilibrium_out_of_range"
+    with pytest.raises(ImccGasEquilibriumRangeError):
+        evaluate_gas({"Na2O": 1.0}, 1.0, 1.0, gas_pack)
+    # A temperature inside the tabulated rows still returns a finite pressure.
+    pressure = evaluate_gas(
+        {"Na2O": 1.0},
+        1800.0,
+        1.0e-8,
+        gas_pack,
+        gas_species=("Na",),
+        allow_extrapolation=False,
+    )["Na"]
+    assert math.isfinite(pressure) and pressure > 0.0
 
 
 def test_unknown_activity_key_names_itself_and_omitted_parent_stays_zero(

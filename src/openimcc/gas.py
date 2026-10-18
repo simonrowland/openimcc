@@ -103,6 +103,12 @@ class ImccGasUnknownActivityError(ImccRefusal):
     code = "imcc_gas_unknown_activity"
 
 
+class ImccGasEquilibriumRangeError(ImccRefusal):
+    """Raised when an equilibrium exponential is not a finite float."""
+
+    code = "imcc_gas_equilibrium_out_of_range"
+
+
 class ImccGasOxygenBalanceError(ImccRefusal):
     """Raised when the oxygen-balance root is not monotone or bracketed."""
 
@@ -4378,6 +4384,33 @@ def _oxide_row_for_T(
     return _nearest_interval_row(df, oxide, T, allow_extrapolation)
 
 
+def _equilibrium_range_message(exponent: float) -> str:
+    try:
+        shown: object = float(exponent)
+    except (TypeError, ValueError, OverflowError):
+        shown = exponent
+    return f"equilibrium constant is not a finite float for exp({shown!r})"
+
+
+def _finite_equilibrium_exp(exponent: float) -> np.floating:
+    """Return ``exp(exponent)`` for one dimensionless equilibrium argument.
+
+    Call sites already use ``np.exp``. Keeping that function leaves in-range
+    values bit-identical. Overflow and invalid results become a typed refusal.
+    Underflow to 0 is the K→0 limit and is kept.
+    """
+    with np.errstate(over="raise", invalid="raise", under="ignore"):
+        try:
+            value = np.exp(exponent)
+        except FloatingPointError as exc:
+            raise ImccGasEquilibriumRangeError(
+                _equilibrium_range_message(exponent)
+            ) from exc
+    if not math.isfinite(float(value)):
+        raise ImccGasEquilibriumRangeError(_equilibrium_range_message(exponent))
+    return value
+
+
 def _add_ion_channels(
     values: dict[str, float],
     domain_flags: dict[str, str | None],
@@ -4456,7 +4489,7 @@ def _add_ion_channels(
         # differs from JANAF by at most 128.537 J/mol and 0.3005% in ion share
         # over 1200-3000 K.
         dG = G_ion + G_electron - G_neutral
-        equilibrium = math.exp(-dG / (R_J_MOL_K * T))
+        equilibrium = float(_finite_equilibrium_exp(-dG / (R_J_MOL_K * T)))
         positive_sum += equilibrium * values[neutral]
         positive.append(
             (
@@ -4479,7 +4512,7 @@ def _add_ion_channels(
         # p°/kBT is m^-3 and the electron translational factor m^3. It is the
         # inverse cation Saha form, so detailed balance gives K_attach*K_ion=1.
         dG = G_ion - G_neutral - G_electron
-        equilibrium = math.exp(-dG / (R_J_MOL_K * T))
+        equilibrium = float(_finite_equilibrium_exp(-dG / (R_J_MOL_K * T)))
         negative_sum += equilibrium * values[neutral]
         negative.append(
             (
@@ -5071,7 +5104,7 @@ def evaluate_gas(
             if flag is not None:
                 flags.append(flag)
             dG = G_gas - n_gas * G_oxide - 0.5 * G_side
-            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
             p_gas = Kp * a_oxide**n_gas * act[hydrogen_halide_parent]**0.5
         else:
             side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(gas_name)
@@ -5103,7 +5136,7 @@ def evaluate_gas(
                 G_O2 if n_O2 != 0.0 or gas_name in _HALIDE_REACTIONS else 0.0
             )
             dG = G_gas + side_n_O2 * side_G_O2 - n_oxide * G_side_oxide - n_gas * G_oxide
-            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
             p_gas = (
                 Kp
                 * act[side_oxide] ** n_oxide
@@ -5126,7 +5159,7 @@ def evaluate_gas(
             # P2O5(l) + S2(g) = 2 PS(g) + 5/2 O2(g). The tuple coefficients
             # are per mole of P2O5; solve mass action for the two PS products.
             dG = n_gas * G_gas + n_O2 * G_O2 - G_oxide - n_side * G_side
-            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
             p_gas = (
                 Kp
                 * a_oxide
@@ -5138,13 +5171,13 @@ def evaluate_gas(
             # Kp = p_gas / (a_S2**n_S2 * fO2**n_O2), with ΔG° formed from
             # the same balanced reaction; a_S2 is caller-supplied f(S2)/p°.
             dG = G_gas - n_gas * G_oxide - n_O2 * G_O2
-            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
             p_gas = Kp * (a_oxide**n_gas) * (p_O2**n_O2)
         elif not hydrogen_halide_parent:
             # Condensed-parent reaction (1): oxide(l) = n_gas*gas(g) +
             # n_O2*O2(g). Keep its established arithmetic path unchanged.
             dG = n_gas * G_gas + n_O2 * G_O2 - G_oxide
-            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
             p_gas = (Kp * a_oxide / (p_O2**n_O2)) ** (1.0 / n_gas)
         result[gas_name] = float(p_gas)
         domain_flags[gas_name] = "; ".join(flags) or None
