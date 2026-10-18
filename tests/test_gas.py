@@ -3069,14 +3069,10 @@ def test_tantalum_channels_and_oxygen_balance(
         gas_species=("Ta", "TaO", "TaO2"),
         allow_extrapolation=False,
     )
-    assert result._values == pytest.approx(
-        {
-            "Ta": 1.9379680170131573e-18,
-            "TaO": 8.585414315417834e-11,
-            "TaO2": 8.51923862658225e-09,
-        },
-        rel=1.0e-12,
-    )
+    assert set(result._values) == {"Ta", "TaO", "TaO2"}
+    assert result._values["Ta"] == pytest.approx(1.9379680170131573e-18, rel=1.0e-12)
+    assert result._values["TaO"] == pytest.approx(8.585414315417834e-11, rel=1.0e-12)
+    assert result._values["TaO2"] == pytest.approx(8.51923862658225e-09, rel=1.0e-12)
     default = evaluate_gas(unit_activities, 1800.0, 1.0e-10, gas_pack)
     assert not {"Ta", "TaO", "TaO2"}.intersection(default)
 

@@ -300,13 +300,12 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     assert fe_closed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
         0.03125, rel=1.0e-12
     )
-    assert {
+    species = {
         name: amount for name, amount in fe_closed.species_moles.items() if amount
-    } == pytest.approx(
-        {"FeO": 0.49999999999999967, "FeO1.5(l)": 0.5000000000000003},
-        rel=1.0e-12,
-        abs=0.0,
-    )
+    }
+    assert set(species) == {"FeO", "FeO1.5(l)"}
+    assert species["FeO"] == pytest.approx(0.49999999999999967, rel=1.0e-12, abs=0.0)
+    assert species["FeO1.5(l)"] == pytest.approx(0.5000000000000003, rel=1.0e-12, abs=0.0)
 
     # Fe reference functions are refit directly to JANAF. The previous rows
     # missed their JANAF source by up to 79 J/mol (a fusion-anchor offset on
