@@ -465,7 +465,12 @@ the first release tag.
 
 ### 10. Validation decks
 
-`docs/validation/md-decks/` is empty.
+Public LAMMPS validation decks, cell builder, driver, and analyzer are in
+`docs/validation/md-decks/`. The SiO2 calibration produced a liquid Cp about
+20–25% higher than the calorimetric liquid Cp; Al2O3 passed; CaO density was
+low; TiO2 and MgO remain exploratory;
+Cr2O3 did not converge to a usable Cp. MD is an independent check and never
+an anchor for fitted thermochemistry.
 
 ## Running the checks
 

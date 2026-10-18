@@ -1,0 +1,50 @@
+# Parameters and source limits are documented in potential.md.
+units real
+atom_style charge
+boundary p p p
+if "${load_restart} == 1" then "read_restart ${data}" else "read_data ${data}"
+pair_style buck/coul/long 10.0
+if "${material} == cao" then &
+  "pair_coeff 1 1 0.0 1.0 0.0 10.0" &
+  "pair_coeff 1 2 3589789.459847 0.178 974.533939 10.0" &
+  "pair_coeff 2 2 208071.223709 0.265 1962.277725 10.0"
+if "${material} == mgo" then &
+  "pair_coeff 1 1 0.0 1.0 0.0 10.0" &
+  "pair_coeff 1 2 752989.340344 0.178 629.115679 10.0" &
+  "pair_coeff 2 2 208071.223709 0.265 1962.277725 10.0"
+if "${material} == tio2" then &
+  "pair_coeff 1 1 0.0 1.0 0.0 10.0" &
+  "pair_coeff 1 2 1155950.047801 0.178 1067.655354 10.0" &
+  "pair_coeff 2 2 208071.223709 0.265 1962.277725 10.0"
+if "${material} == al2o3" then &
+  "pair_coeff 1 1 0.0 1.0 0.0 10.0" &
+  "pair_coeff 1 2 658112.882409 0.172 797.385277 10.0" &
+  "pair_coeff 2 2 208071.223709 0.265 1962.277725 10.0"
+if "${material} == cr2o3" then &
+  "pair_coeff 1 1 0.0 1.0 0.0 10.0" &
+  "pair_coeff 1 2 39989.296287 0.301 0.0 10.0" &
+  "pair_coeff 2 2 524957.232836 0.149 642.928078 10.0"
+if "${material} == sio2" then &
+  "pair_coeff 1 1 0.0 1.0 0.0 10.0" &
+  "pair_coeff 1 2 1160089.746654 0.161 1067.655354 10.0" &
+  "pair_coeff 2 2 208071.223709 0.265 1962.277725 10.0"
+kspace_style pppm 1.0e-5
+neighbor 2.0 bin
+neigh_modify every 1 delay 0 check yes
+timestep 1.0
+thermo 100
+variable H equal enthalpy
+variable PE equal pe/atoms
+variable vol equal vol
+variable q6 atom orientorder/atom degrees 6
+compute q6mean all reduce ave v_q6
+compute msd all msd
+fix integrate all npt temp ${temp} ${temp} 100.0 iso 0.0 0.0 1000.0
+thermo_style custom step temp v_H c_msd[4] v_PE v_vol c_q6mean
+run ${eq}
+reset_timestep 0
+fix sample all ave/time 100 1 100 v_H c_msd[4] v_PE v_vol temp c_q6mean file ${samples}
+run ${prod}
+unfix sample
+unfix integrate
+write_restart ${restart}
