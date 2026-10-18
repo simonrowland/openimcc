@@ -453,9 +453,13 @@ rows.
 
 An audit of the two shipped packs found **zero reverse-engineered rows**.
 
-### 8. The model spec is not ported
+### 8. Model specification (done)
 
-`docs/spec.md` — the model spec — has not been ported.
+[`docs/spec.md`](spec.md) documents the shipped association model, numerical
+balance certification and cold-start continuation, redox and gas layers,
+oxygen-balance contract, datapack identity checks, and thermochemical band
+schema. Its equations and runtime contracts were checked against the shipped
+implementation and [datapack format](datapack-format.md).
 
 ### 9. Identity
 
