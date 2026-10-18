@@ -1234,6 +1234,24 @@ def evaluate(
         floor_fraction = 1.0e-3
         recovered = False
         trace_stages = 0
+        recovery_attempts: list[dict[str, Any]] = []
+
+        def record_recovery_failure(
+            route: str, stage: int | str, error: ImccNonconvergenceError
+        ) -> None:
+            recovery_attempts.append(
+                {
+                    "route": route,
+                    "stage": stage,
+                    "message": str(error),
+                    "diagnostics": {
+                        key: value
+                        for key, value in error.diagnostics.items()
+                        if key != "final_y"
+                    },
+                }
+            )
+
         if trace_fraction < floor_fraction:
             # The depletion sweep found failures down to 1e-12 of total; a
             # 1e-3 floor clears the observed ill-conditioned 1e-4 boundary.
@@ -1263,6 +1281,7 @@ def evaluate(
                         y_init=y_stage,
                     )
                 except ImccNonconvergenceError as stage_error:
+                    record_recovery_failure("trace", stage_number, stage_error)
                     candidate = np.asarray(
                         stage_error.diagnostics.get("final_y", ()), dtype=float
                     )
@@ -1318,8 +1337,8 @@ def evaluate(
                         max_iter=max_iter,
                         y_init=last_success_y,
                     )
-                except ImccNonconvergenceError:
-                    pass
+                except ImccNonconvergenceError as bridge_error:
+                    record_recovery_failure("trace_bridge", "anchor", bridge_error)
                 else:
                     result = bridge_result
                     if not bridge_is_input:
@@ -1338,7 +1357,10 @@ def evaluate(
                                 max_iter=max_iter,
                                 y_init=bridge_y,
                             )
-                        except ImccNonconvergenceError:
+                        except ImccNonconvergenceError as retry_error:
+                            record_recovery_failure(
+                                "trace_bridge", "input_retry", retry_error
+                            )
                             result = None
                     if result is not None:
                         retry_stages = 1 if bridge_is_input else 2
@@ -1381,6 +1403,9 @@ def evaluate(
                             y_init=y_stage,
                         )
                     except ImccNonconvergenceError as silica_error:
+                        record_recovery_failure(
+                            "silica", silica_stage, silica_error
+                        )
                         candidate = np.asarray(
                             silica_error.diagnostics.get("final_y", ()), dtype=float
                         )
@@ -1460,8 +1485,11 @@ def evaluate(
                             y_init=warm_y,
                             relative_recovery=True,
                         )
-                    except ImccRefusal:
-                        pass
+                    except ImccRefusal as temperature_error:
+                        if isinstance(temperature_error, ImccNonconvergenceError):
+                            record_recovery_failure(
+                                "temperature", "warm_start", temperature_error
+                            )
                     else:
                         result = replace(
                             result,
@@ -1493,12 +1521,17 @@ def evaluate(
                     max_iter=max_iter,
                     relative_log_x_recovery=True,
                 )
-            except ImccRefusal:
-                pass
+            except ImccRefusal as relative_error:
+                if isinstance(relative_error, ImccNonconvergenceError):
+                    record_recovery_failure(
+                        "relative_log_x", "requested_composition", relative_error
+                    )
             else:
                 recovered = True
 
         if not recovered:
+            if recovery_attempts:
+                cold_error.diagnostics["recovery_attempts"] = recovery_attempts
             raise cold_error from None
 
     # Build the caller-facing label block. The paper-window flag is computed

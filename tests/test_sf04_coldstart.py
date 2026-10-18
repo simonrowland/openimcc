@@ -334,30 +334,41 @@ def test_failed_composition_continuation_preserves_original_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = 0
-    diagnostics = {
-        "iterations": 17,
-        "residual_inf": 0.25,
-        "residual_l2": 0.4,
-        "final_y": [0.0] * 8,
-        "solver_path": "failed",
-        "continuation_stages": 2,
-        "scipy_message": "fixture failure",
-    }
-    original_error = ImccNonconvergenceError("fixture refuses", diagnostics)
+    failures = []
 
     def refuse(*_args: object, **_kwargs: object) -> None:
         nonlocal calls
         calls += 1
-        raise original_error
+        diagnostics = {
+            "attempt": calls,
+            "iterations": 17,
+            "residual_inf": calls / 10.0,
+            "residual_l2": 0.4,
+            "final_y": [0.0] * 8,
+            "solver_path": "failed",
+            "continuation_stages": 2,
+            "scipy_message": "fixture failure",
+        }
+        error = ImccNonconvergenceError(f"fixture refuses at {calls}", diagnostics)
+        failures.append(error)
+        raise error
 
     monkeypatch.setattr(model, "_solve_imcc_sf04_with_seed", refuse)
     composition, temperature, _expected = CASES[0]
-    with pytest.raises(ImccNonconvergenceError, match="fixture refuses") as caught:
+    with pytest.raises(ImccNonconvergenceError, match="fixture refuses at 1") as caught:
         evaluate(composition, temperature)
 
     assert calls == 15
-    assert caught.value is original_error
-    assert caught.value.diagnostics == diagnostics
+    assert caught.value is failures[0]
+    recovery_attempts = caught.value.diagnostics["recovery_attempts"]
+    assert len(recovery_attempts) == calls - 1
+    assert [item["diagnostics"]["attempt"] for item in recovery_attempts] == list(
+        range(2, calls + 1)
+    )
+    assert all("final_y" not in item["diagnostics"] for item in recovery_attempts)
+    routes = {item["route"] for item in recovery_attempts}
+    assert routes == {"trace", "silica", "relative_log_x"}
+    assert all(item["stage"] for item in recovery_attempts)
 
 
 @pytest.mark.parametrize(
@@ -451,7 +462,11 @@ def test_temperature_continuation_refusal_call_count_is_bounded(
     # fails if the last-resort stage is removed.
     assert calls == 30
     assert calls_by_temperature == {1500.0: 16, 1710.0: 14}
-    assert caught.value.diagnostics == diagnostics
+    assert {
+        key: value for key, value in caught.value.diagnostics.items()
+        if key != "recovery_attempts"
+    } == diagnostics
+    assert caught.value.diagnostics["recovery_attempts"]
 
 
 @pytest.mark.parametrize(
@@ -499,7 +514,11 @@ def test_extension_temperature_refusal_preserves_original_diagnostics(
     with pytest.raises(ImccNonconvergenceError) as caught:
         evaluate(composition, 1500.0, max_iter=1, **options)
 
-    assert caught.value.diagnostics == original.value.diagnostics
+    assert {
+        key: value for key, value in caught.value.diagnostics.items()
+        if key != "recovery_attempts"
+    } == original.value.diagnostics
+    assert caught.value.diagnostics["recovery_attempts"]
 
 
 @pytest.mark.parametrize(
@@ -540,7 +559,10 @@ def test_extension_temperature_max_iter_zero_preserves_did_not_run(
     with pytest.raises(ImccNonconvergenceError, match="did not run") as caught:
         evaluate(composition, 1500.0, **options)
 
-    assert caught.value.diagnostics == original.value.diagnostics
+    assert {
+        key: value for key, value in caught.value.diagnostics.items()
+        if key != "recovery_attempts"
+    } == original.value.diagnostics
 
 
 def test_none_warm_start_is_bit_identical_to_omitted_default() -> None:
