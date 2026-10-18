@@ -4968,6 +4968,27 @@ def test_generic_oxygen_balance_analytic_limits(
     assert diagnostics["residual"] < 1e-12
 
 
+def test_generic_oxygen_balance_rejects_node_aligned_sine() -> None:
+    metadata = oxygen_balance_species_metadata(
+        {"K": "K2O", "O2": None},
+        pO2_exponents={"K": 0.0},
+    )
+    pure_p_o2, _pressures, _diagnostics = oxygen_balance_from_pressure_model(
+        lambda logp: {"K": 1e-8, "O2": 10.0**logp},
+        metadata,
+    )
+    pure_root = math.log10(pure_p_o2)
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        # Equals 1 at the pure root and at pure-root ± 0.1, so a chord
+        # through those nodes reports the declared exponent.
+        factor = 1.0 + 0.8 * math.sin(math.pi * (logp - pure_root) / 0.1)
+        return {"K": 1e-8 * factor, "O2": 10.0**logp}
+
+    with pytest.raises(ImccGasOxygenBalanceError, match="not a power law"):
+        oxygen_balance_from_pressure_model(pressure_model, metadata)
+
+
 def test_generic_oxygen_balance_rejects_nonmonotone_pressure_model() -> None:
     metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
 
