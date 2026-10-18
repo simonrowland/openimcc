@@ -5589,14 +5589,6 @@ _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # (1e-30 bar) is below any physically resolvable oxygen pressure.
 _KNUDSEN_TOTAL_PRESSURE_BAR = 1e-3
 _OXYGEN_BALANCE_BRACKET = (-30.0, 0.0)
-# Dex offsets inside a ±0.1 window around a root. A chord through the two
-# endpoints is zero for a curve that matches at both ends, including a sine
-# aligned to those nodes. Each sample is compared with the power law anchored
-# at the root.
-_POWER_LAW_PROBE_OFFSETS = (
-    -0.10, -0.08, -0.06, -0.04, -0.02,
-    0.02, 0.04, 0.06, 0.08, 0.10,
-)
 
 
 class OxygenBalanceSpeciesMetadata(NamedTuple):
@@ -5783,39 +5775,30 @@ def oxygen_balance_from_pressure_model(
         raise ImccGasOxygenBalanceError("oxygen-balance solve did not converge")
 
     residual, pressures, oxygen_flux, parent_flux = at(root)
-    probes = {
-        offset: at(root + offset)[1] for offset in _POWER_LAW_PROBE_OFFSETS
-    }
+    slope_low = at(root - 0.1)[1]
+    slope_high = at(root + 0.1)[1]
     for name, data in species.items():
-        root_pressure = float(pressures[name])
-        if root_pressure <= 1e-300:
-            continue
-        log_root = math.log10(root_pressure)
-        worst_deviation = 0.0
-        try:
-            for offset, sampled in probes.items():
-                probe = float(sampled[name])
-                if probe <= 0.0:
+        if float(pressures[name]) > 1e-300:
+            try:
+                if float(slope_low[name]) <= 0 or float(slope_high[name]) <= 0:
                     raise ValueError("non-positive pressure around root")
-                deviation = abs(
-                    math.log10(probe)
-                    - (log_root + data.pO2_exponent * offset)
+                observed_exponent = (
+                    math.log10(float(slope_high[name]))
+                    - math.log10(float(slope_low[name]))
+                ) / 0.2
+            except (KeyError, ValueError, TypeError) as exc:
+                raise ImccGasOxygenBalanceError(
+                    f"pressure model is not a power law in pO2 with the declared "
+                    f"exponent for species {name!r}"
+                ) from exc
+            # Power-law log ratios incur about 1e-12 dex of float round-off;
+            # 1e-6 leaves a generous margin while detecting real curvature.
+            if abs(observed_exponent - data.pO2_exponent) > 1e-6:
+                raise ImccGasOxygenBalanceError(
+                    f"pressure model is not a power law in pO2 with the declared "
+                    f"exponent for species {name!r} (declared="
+                    f"{data.pO2_exponent}, observed={observed_exponent})"
                 )
-                if deviation > worst_deviation:
-                    worst_deviation = deviation
-        except (KeyError, ValueError, TypeError) as exc:
-            raise ImccGasOxygenBalanceError(
-                f"pressure model is not a power law in pO2 with the declared "
-                f"exponent for species {name!r}"
-            ) from exc
-        # Power-law log ratios incur about 1e-12 dex of float round-off;
-        # 1e-6 leaves a generous margin while detecting real curvature.
-        if worst_deviation > 1e-6:
-            raise ImccGasOxygenBalanceError(
-                f"pressure model is not a power law in pO2 with the declared "
-                f"exponent for species {name!r} (declared="
-                f"{data.pO2_exponent}, deviation={worst_deviation} dex)"
-            )
     oxygen_carriers = sorted(
         (
             (
