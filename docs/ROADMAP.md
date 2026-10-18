@@ -496,6 +496,35 @@ low; TiO2 and MgO remain exploratory;
 Cr2O3 did not converge to a usable Cp. MD is an independent check and never
 an anchor for fitted thermochemistry.
 
+### 11. Rhenium and osmium oxide gas channels
+
+The 2026-10-17 source re-check found primary evidence for Re2O7(g), OsO4(g),
+and OsO3(g), but no complete, independently sourced temperature-dependent gas
+functions suitable for fitted rows over the runtime domain. Smith, Line, and
+Bell measured Re2O7 vapor pressure, and Battles, Gundersen, and Edwards
+measured gaseous rhenium oxides; the later Bureau of Mines review explicitly
+notes that high-temperature Re2O7(g) heat-capacity data were unavailable and
+that earlier work used W2O6(g) heat content as a proxy. The 1991 osmium-oxide
+study reports the OsO4(g) ⇌ OsO3(g) + 1/2 O2(g) reaction enthalpy and an
+estimated OsO3 formation enthalpy, but the accessible results do not provide
+the gas heat-capacity/Gibbs functions needed for a fit. [Smith et al. (1952)](https://doi.org/10.1021/ja01139a522),
+[Battles et al. (1968)](https://doi.org/10.1021/j100858a005),
+[Bureau of Mines RI 8199](https://stacks.cdc.gov/view/cdc/237634),
+[Thermochemical Properties of the Osmium Oxides (1991)](https://doi.org/10.1021/j100175a095).
+
+The re-check covered JANAF, NASA Glenn/CEA, Burcat, Pankratz Bulletins 672
+and 674, Barin, Kubaschewski, non-TKV Gurvich sources, Lamoreaux & Hildenbrand,
+and primary vapor-pressure/mass-spectrometry papers. The local JANAF and NASA
+records contain no Re/Os oxide gas rows; Burcat contains an Os elemental gas
+and stable-phase set derived from Gurvich, but no Re/Os oxide gas set. The
+Pankratz 672 scan could not be opened for direct transcription, and no
+qualifying oxide-gas function was found in its searchable records; Bulletin
+674 is the halide volume. Barin and Kubaschewski searches produced no usable
+high-temperature gas functions. Lamoreaux & Hildenbrand's reviewed oxide
+families do not include Re or Os. Separate Re and Os metal-vapor evidence was
+found, but it does not supply oxide gas functions or justify substituting
+metal vapor for these oxide channels. No Re/Os oxide gas rows are shipped.
+
 ## Running the checks
 
 ```bash
