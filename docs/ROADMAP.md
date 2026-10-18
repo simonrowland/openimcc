@@ -459,8 +459,9 @@ An audit of the two shipped packs found **zero reverse-engineered rows**.
 
 ### 9. Identity
 
-`CITATION.cff` has no DOI and no ORCID. Zenodo wiring would give a citable DOI.
-No PyPI publish workflow yet.
+The repository includes citation metadata and release automation groundwork. The
+owner still needs to create the Zenodo link, create the PyPI project, and make
+the first release tag.
 
 ### 10. Validation decks
 
