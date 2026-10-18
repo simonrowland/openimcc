@@ -3103,17 +3103,18 @@ def test_beryllium_channels_and_oxygen_balance(
         parent_oxides=("BeO",), gas_species=species,
         allow_extrapolation=False,
     )
-    assert result._values == pytest.approx(
-        {
-            "Be": 5.4841642522907187e-11,
-            "BeO": 2.839950604885199e-13,
-            "Be2O": 3.603203485202284e-16,
-            "(BeO)2": 2.528233210150918e-16,
-            "(BeO)3": 2.497155230143581e-17,
-            "(BeO)4": 6.464750106108906e-20,
-            "Be2": 1.699397487178629e-25,
-        },
-        rel=1.0e-12,
+    expected = {
+        "Be": 5.4841642522907187e-11,
+        "BeO": 2.839950604885199e-13,
+        "Be2O": 3.603203485202284e-16,
+        "(BeO)2": 2.528233210150918e-16,
+        "(BeO)3": 2.497155230143581e-17,
+        "(BeO)4": 6.464750106108906e-20,
+        "Be2": 1.699397487178629e-25,
+    }
+    assert set(result._values) == set(expected)
+    assert [result._values[name] for name in expected] == pytest.approx(
+        list(expected.values()), rel=1.0e-12
     )
     default = evaluate_gas(unit_activities, 1800.0, 1.0e-10, gas_pack)
     assert not set(species).intersection(default)
@@ -3148,9 +3149,10 @@ def test_thallium_channels_and_oxygen_balance(
         gas_species=("Tl", "Tl2O"),
         allow_extrapolation=False,
     )
-    assert result._values == pytest.approx(
-        {"Tl": 8.624314565304715, "Tl2O": 0.023561701919532385},
-        rel=1.0e-12,
+    expected = {"Tl": 8.624314565304715, "Tl2O": 0.023561701919532385}
+    assert set(result._values) == set(expected)
+    assert [result._values[name] for name in expected] == pytest.approx(
+        list(expected.values()), rel=1.0e-12
     )
     default = evaluate_gas(unit_activities, 1800.0, 1.0e-10, gas_pack)
     assert not {"Tl", "Tl2O"}.intersection(default)

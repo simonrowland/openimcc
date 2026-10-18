@@ -321,12 +321,16 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     assert fe_buffered.oxygen_residual_mol is not None
     assert abs(fe_buffered.oxygen_residual_mol) <= 5.0e-13
     assert math.isinf(fe_buffered.oxygen_capacity_mol_per_ln_f_o2)
-    assert {
+    buffered_species = {
         name: amount for name, amount in fe_buffered.species_moles.items() if amount
-    } == pytest.approx(
-        {"FeO": 0.9606275899489891, "FeO1.5(l)": 0.026248273367340567},
-        rel=1.0e-12,
-        abs=0.0,
+    }
+    expected_buffered_species = {
+        "FeO": 0.9606275899489891,
+        "FeO1.5(l)": 0.026248273367340567,
+    }
+    assert set(buffered_species) == set(expected_buffered_species)
+    assert [buffered_species[name] for name in expected_buffered_species] == pytest.approx(
+        list(expected_buffered_species.values()), rel=1.0e-12, abs=0.0
     )
 
     fe_imposed = evaluate_redox(
@@ -335,12 +339,16 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     assert fe_imposed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
         0.026532459689033592, rel=1.0e-12
     )
-    assert {
+    imposed_species = {
         name: amount for name, amount in fe_imposed.species_moles.items() if amount
-    } == pytest.approx(
-        {"FeO": 0.6942686863283202, "FeO1.5(l)": 0.3057313136716798},
-        rel=1.0e-12,
-        abs=0.0,
+    }
+    expected_imposed_species = {
+        "FeO": 0.6942686863283202,
+        "FeO1.5(l)": 0.3057313136716798,
+    }
+    assert set(imposed_species) == set(expected_imposed_species)
+    assert [imposed_species[name] for name in expected_imposed_species] == pytest.approx(
+        list(expected_imposed_species.values()), rel=1.0e-12, abs=0.0
     )
 
     mixed = {
@@ -375,10 +383,10 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     )
     assert mixed_closed.solver_path == "newton"
     assert mixed_closed.fallback_fired is False
-    assert {
+    mixed_species = {
         name: amount for name, amount in mixed_closed.species_moles.items() if amount
-    } == pytest.approx(
-        {
+    }
+    expected_mixed_species = {
             "Al2O3": 0.012005629428046326,
             "Al6Si2O13": 3.732013567813373e-06,
             "Ca12Al14O33": 1.1304283457685428e-30,
@@ -425,9 +433,10 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
             "NaAlSiO4": 0.004903188817970845,
             "SiO2": 0.16069482185317643,
             "TiO2": 0.0025507784126572756,
-        },
-        rel=1.0e-12,
-        abs=0.0,
+    }
+    assert set(mixed_species) == set(expected_mixed_species)
+    assert [mixed_species[name] for name in expected_mixed_species] == pytest.approx(
+        list(expected_mixed_species.values()), rel=1.0e-12, abs=0.0
     )
 
 
