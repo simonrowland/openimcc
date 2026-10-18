@@ -17,6 +17,7 @@ from openimcc import evaluate as evaluate_imcc, load_datapack
 from openimcc.gas import (
     ELEMENT_STATUS,
     IMCC_GAS_CHANNEL_SPECIES,
+    IMCC_PARENT_OXIDES,
     R_J_MOL_K,
     ImccGasSpeciesNotFoundError,
     evaluate_gas,
@@ -514,6 +515,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Tb": "Tb2O3", "Dy": "Dy2O3", "Ho": "Ho2O3", "Er": "Er2O3",
         "Tm": "Tm2O3", "Yb": "Yb2O3", "Lu": "Lu2O3", "Y": "Y2O3",
         "Th": "ThO2", "U": "UO2",
+        "Ru": "Ru", "Rh": "Rh", "Ir": "Ir",
     }
     new_trace_elements = {
         "Ga", "Ge", "B", "In", "Cu", "Mn", "Ba", "Sr", "Zr",
@@ -534,6 +536,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         "Sm": "Sm2O3", "Eu": "Eu2O3", "Gd": "Gd2O3", "Tb": "Tb2O3",
         "Dy": "Dy2O3", "Ho": "Ho2O3", "Er": "Er2O3", "Tm": "Tm2O3",
         "Yb": "Yb2O3", "Lu": "Lu2O3", "Y": "Y2O3", "U": "UO2",
+        "Ru": "Ru", "Rh": "Rh", "Ir": "Ir",
     }
     new_trace_elements.update({"Zn", "Cd", "Bi"})
     caller_parent_oxides.update(
@@ -545,6 +548,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         for element, oxide in caller_parent_oxides.items()
         if element not in trace_elements | {
             "Zn", "Cd", "Bi", "Ba", "Sr", "Zr", "Ni", "Co", "Sc",
+            "Ru", "Rh", "Ir",
         }
     }
     activities_by_temperature = {}
@@ -839,6 +843,11 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                     pack,
                     allow_extrapolation=True,
                     include_ions=True,
+                    parent_oxides=(
+                        (*IMCC_PARENT_OXIDES, element)
+                        if element in {"Ru", "Rh", "Ir"}
+                        else None
+                    ),
                 )
                 neutral_pressures = {
                     species: pressure
@@ -884,6 +893,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                             "electron_source_terms": {},
                             "K_ion": k_ion,
                             "parent_oxide": new_trace_parents[element],
+                            "parent_activity_species": new_trace_parents[element],
                         }
                     )
         maxima[element] = current

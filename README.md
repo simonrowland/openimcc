@@ -488,7 +488,7 @@ balance on the default neutral gas set, then appends `Na+`, `K+`, `Ca+`, `e-`,
 `Li+`, `Rb+`, `Pb+`, `Cs+`, `Sn+`, `Cs2O+`, `Ga+`, `Ge+`, `B+`,
 `Zn+`, `Cd+`, `Bi+`, `Mn+`, `Mo+`, and `W+`,
 `La+`, `Ce+`, `Pr+`, `Nd+`, `Sm+`, `Eu+`, `Gd+`, `Tb+`, `Dy+`, `Ho+`,
-`Er+`, `Tm+`, `Yb+`, `Lu+`, `Y+`, and `U+`,
+`Er+`, `Tm+`, `Yb+`, `Lu+`, `Y+`, `U+`, `Ru+`, `Rh+`, and `Ir+`,
 `Ga-`, `B-`, `BO-`, `BO2-`, `Cu-`, `Mo-`, `W-`, and every available JANAF-supported negative ion
 whose neutral is present. In+ is retained in the source ledger but declined
 after its NASA card failed the NIST Saha check. JANAF W-006/W-005 imply a 0 K
@@ -519,8 +519,8 @@ cards; their source rows cover 1200–3000 K and their domain flags include the
 neutral and charge-species source rows. The Cs− and Cu− rows are emitted.
 No JANAF Sn− row was found.
 
-The listed La+ through Lu+ rows except Pm, along with Y+ and U+, are
-`FLAGGED` and `DERIVED`: their ion functions combine the neutral gas
+The listed La+ through Lu+ rows except Pm, along with Y+, U+, Ru+, Rh+, and
+Ir+, are `FLAGGED` and `DERIVED`: their ion functions combine the neutral gas
 row, NIST ASD first ionization energy, and neutral and cation electronic
 partition functions from listed levels below 25,000 cm⁻¹. Pm+ is omitted
 because the project has no Pm(g) neutral thermal function or oxide-parent

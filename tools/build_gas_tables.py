@@ -54,7 +54,7 @@ KONINGS_SOURCE_DIR = Path(__file__).resolve().parents[1] / "data-src/konings"
 KONINGS_BATCH_ELEMENTS = ("La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu")
 CONSTRUCTED_SAHA_ION_ELEMENTS = (
     "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho",
-    "Er", "Tm", "Yb", "Lu", "Y", "U",
+    "Er", "Tm", "Yb", "Lu", "Y", "U", "Ru", "Rh", "Ir",
 )
 CONSTRUCTED_SAHA_ION_SOURCES = tuple(
     (f"{element}+(g)", element) for element in CONSTRUCTED_SAHA_ION_ELEMENTS

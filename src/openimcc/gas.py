@@ -1311,7 +1311,7 @@ _ION_GAS_SPECIES = (
     "Ba+", "Sr+", "Zr+", "Zr-", "Sc+",
     "Hg+", "Au+", "Au-", "Pd+", "Pt+", "Pt-",
     "La+", "Ce+", "Pr+", "Nd+", "Sm+", "Eu+", "Gd+", "Tb+", "Dy+",
-    "Ho+", "Er+", "Tm+", "Yb+", "Lu+", "Y+", "U+",
+    "Ho+", "Er+", "Tm+", "Yb+", "Lu+", "Y+", "U+", "Ru+", "Rh+", "Ir+",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -1345,6 +1345,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
             for element in (
                 "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb",
                 "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Y", "U",
+                "Ru", "Rh", "Ir",
             )
         },
     }
@@ -1719,6 +1720,9 @@ _GAS_IONIZATION_PAIRS = (
     ("Lu", "Lu+"),
     ("Y", "Y+"),
     ("U", "U+"),
+    ("Ru", "Ru+"),
+    ("Rh", "Rh+"),
+    ("Ir", "Ir+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -3089,6 +3093,7 @@ _CONSTRUCTED_SAHA_PARENT_SPECIES = {
     "Sm": "Sm2O3", "Eu": "Eu2O3", "Gd": "Gd2O3", "Tb": "Tb2O3",
     "Dy": "Dy2O3", "Ho": "Ho2O3", "Er": "Er2O3", "Tm": "Tm2O3",
     "Yb": "Yb2O3", "Lu": "Lu2O3", "Y": "Y2O3", "U": "UO2",
+    "Ru": "Ru", "Rh": "Rh", "Ir": "Ir",
 }
 _CONSTRUCTED_SAHA_C3_RESULTS = {
     "La": (2.0923799948988704e-09, 2800.0, 1e-4, 1.036040811333684e-10, 2.2602096549129838e-05, 4.7292174662172065e-14, 8.13192058904133e-05, 3.7119793412461715e-08, 6593377105.645445),
@@ -3107,6 +3112,9 @@ _CONSTRUCTED_SAHA_C3_RESULTS = {
     "Lu": (5.441895423620451e-08, 2300.0, 1e-10, 1.7533627974232688e-11, 2.4224507873638623e-09, 1.3182723853701162e-16, 4.936440766595111e-06, 3.7114814767263864e-11, 16361195168.491522),
     "Y": (3.577005126645399e-09, 2800.0, 1e-4, 5.778287917162048e-11, 4.235254540248039e-07, 1.5149527203115438e-15, 8.13192058904133e-05, 2.1320286206465477e-09, 653987039.4209787),
     "U": (4.592874503209744e-13, 2300.0, 1e-10, 3.3440657128091203e-14, 5.136528682611412e-08, 2.3591431621371492e-20, 4.936440766595111e-06, 3.482518431142045e-12, 16828640614693.193),
+    "Ru": (1.496426623221137e-07, 2800.0, 1e-4, 8.392602955546507e-08, 8.392602955546507e-08, 1.2558914500804194e-14, 8.131920589616242e-05, 1.216882246822187e-11, 0.012041371038284848),
+    "Rh": (8.655345997559655e-08, 2800.0, 1e-4, 1.2743155754524446e-06, 1.2743155754524446e-06, 1.1029642215620246e-13, 8.131920594090396e-05, 7.038458636653324e-12, 0.0023501754520455125),
+    "Ir": (2.8475128718865534e-10, 2800.0, 1e-4, 2.189897457428653e-08, 2.189897457428653e-08, 6.2357611981397244e-18, 8.131920589041615e-05, 2.315574855045528e-14, 0.001028294523330185),
 }
 def _apply_constructed_saha_status(_element: str, _parent: str) -> None:
     _status = ELEMENT_STATUS[_element]
@@ -3169,7 +3177,8 @@ def _apply_constructed_saha_status(_element: str, _parent: str) -> None:
 
 
 for _element, _parent in _CONSTRUCTED_SAHA_PARENT_SPECIES.items():
-    _apply_constructed_saha_status(_element, _parent)
+    if _element not in {"Ru", "Rh", "Ir"}:
+        _apply_constructed_saha_status(_element, _parent)
 
 # Halogen gas-only channels use the gas-parent activity path; no oxide parent
 # or melt model is provided for elemental Br, I, Cl, or F.
@@ -3403,9 +3412,7 @@ ELEMENT_STATUS["Ru"] = {
         "Pankratz Bulletin 672 printed pp. 332-333 supplies paired Ru(g) and "
         "stable-metal phase functions over 1200-3000 K; callers supply a(Ru) "
         "relative to the stable metal phase, switching from crystal to liquid "
-        "at 2607 K. No evaluated Ru+ or Ru- gas function was found in the "
-        "checked JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV, NIST "
-        "WebBook, OECD/NEA, or Burcat sources; C3 is declined."
+        "at 2607 K."
     ),
     "c2_candidates": (),
     "c3_ion_bound": {
@@ -3455,6 +3462,10 @@ ELEMENT_STATUS["Ir"] = {
     "source_tables": {"gas": "BU-2613", "parent": "BU-2611/BU-2612"},
     "parent_activity": "Ir",
 }
+for _element in ("Ru", "Rh", "Ir"):
+    _apply_constructed_saha_status(
+        _element, _CONSTRUCTED_SAHA_PARENT_SPECIES[_element]
+    )
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #

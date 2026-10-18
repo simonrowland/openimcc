@@ -3295,6 +3295,7 @@ def _without_trace_rows(pack: ImccGasDatapack) -> ImccGasDatapack:
         *(source[0] for source in build_gas_tables.TRACE_ION_NASA_SOURCES),
         *(source[0] for source in build_gas_tables.TRACE_ION_PUBLISHED_SOURCES),
         *(source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES),
+        "Ru(g)", "Rh(g)", "Ir(g)",
     }
     trace_parents = {
         "Li2O(l)", "Rb2O(l)", "PbO(l)", "Cs2O(l)", "Cu2O(l)", "SnO(l)",
@@ -3324,7 +3325,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
 
     halogen_gases = build_gas_tables.HALOGEN_GAS_SPECIES
     trace_gases = (set(build_gas_tables.TRACE_GAS_SPECIES) - {"Ru", "Rh"}) | {
-        "Mn", "Ni", "Co", "NiO", "CoO"
+        "Mn", "Ni", "Co", "NiO", "CoO", "Ru", "Rh", "Ir"
     } | halogen_gases
     parents = {
         "MnO": 1.0e-3,
@@ -3353,6 +3354,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "BaO": 1.0e-3, "SrO": 1.0e-3, "ZrO2": 1.0e-3,
         "NiO": 1.0e-3, "CoO": 1.0e-3,
         "Sc2O3": 1.0e-3, "UO2": 1.0e-3, "ThO2": 1.0e-3,
+        "Ru": 1.0e-3, "Rh": 1.0e-3, "Ir": 1.0e-3,
         "HfO2": 1.0e-3, "Y2O3": 1.0e-3,
         "H2": 1.0e-3, "C": 1.0e-3, "N2": 1.0e-3,
         "Br2": 1.0e-3,
@@ -3374,6 +3376,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
             *IMCC_PARENT_OXIDES, "H2", "C", "N2",
             "BaO", "SrO", "Li2O", "Rb2O", "Cs2O",
             "F2", "Cl2", "Br2", "I2",
+                "Ru", "Rh", "Ir",
         ),
         gas_species=tuple(trace_gases),
         allow_extrapolation=False,
@@ -3394,6 +3397,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
             *IMCC_PARENT_OXIDES, "H2", "C", "N2",
             "BaO", "SrO", "Li2O", "Rb2O", "Cs2O",
             "F2", "Cl2", "Br2", "I2",
+                "Ru", "Rh", "Ir",
         ),
         allow_extrapolation=True,
     )
@@ -3422,7 +3426,8 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
                     "Th", "ThO", "ThO2", "Hf", "Y", "YO",
                     "Ta", "TaO", "TaO2", "Be", "BeO", "Be2O",
                     "(BeO)2", "(BeO)3", "(BeO)4", "Be2", "Tl", "Tl2O",
-                    }
+                    "Ru", "Rh", "Ir",
+                }
                 and f"missing from active table: {species}(g)" in reason
             )
 
@@ -3445,7 +3450,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         "Ag+",
         "Ag-",
         "Ba+", "Sr+", "Zr+", "Zr-", "Ni+", "Ni-", "Co+", "Co-",
-        "Sc+",
+        "Sc+", "Ru+", "Rh+", "Ir+",
     }
     constructed_trace_ions = {
         f"{element}+"
