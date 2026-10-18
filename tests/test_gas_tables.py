@@ -804,20 +804,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert row["table_id"] == table_id
         assert row["source_path"] == f"data-src/janaf/{table_id}.yaml"
         assert (ROOT / row["source_path"]).is_file()
-        if table_id == "P-011":
-            assert row["source_sha256"] == hashlib.sha256(
-                (ROOT / row["source_path"]).read_bytes()
-            ).hexdigest()
-            assert "source_sha256" not in source["extraction"]
-        elif table_id in {"Ta-005", "O-017", "O-041"}:
-            assert row["source_sha256"] == hashlib.sha256(
-                (ROOT / row["source_path"]).read_bytes()
-            ).hexdigest()
-            assert row["upstream_source_sha256"] == source["extraction"][
-                "source_sha256"
-            ]
-        else:
-            assert row["source_sha256"] == source["extraction"]["source_sha256"]
+        assert row["source_sha256"] == hashlib.sha256(
+            (ROOT / row["source_path"]).read_bytes()
+        ).hexdigest()
         assert row["authority"] == "janaf_fitted"
         assert row["method"] == "fitted"
         expected_t_max = build_gas_tables._DECLARED_T_MAX_BY_TABLE.get(
@@ -854,12 +843,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             assert row["table_id"] == table_id
             assert row["source_path"] == f"data-src/janaf/{table_id}.yaml"
             assert (ROOT / row["source_path"]).is_file()
-            expected_source_sha256 = (
-                hashlib.sha256((ROOT / row["source_path"]).read_bytes()).hexdigest()
-                if table_id == "P-011"
-                else source["extraction"]["source_sha256"]
-            )
-            assert row["source_sha256"] == expected_source_sha256
+            assert row["source_sha256"] == hashlib.sha256(
+                (ROOT / row["source_path"]).read_bytes()
+            ).hexdigest()
             assert row["authority"] == "janaf_fitted"
             assert source["source"]["doi"] == "10.18434/T42S31"
 
@@ -925,15 +911,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert source["table"]["index_entry"]["state"] == "l"
         assert row["table_id"] == table_id
         assert row["source_path"] == f"data-src/janaf/{table_id}.yaml"
-        if species == "Ta2O5(l)":
-            assert row["source_sha256"] == hashlib.sha256(
-                (ROOT / row["source_path"]).read_bytes()
-            ).hexdigest()
-            assert row["upstream_source_sha256"] == source["extraction"][
-                "source_sha256"
-            ]
-        else:
-            assert row["source_sha256"] == source["extraction"]["source_sha256"]
+        assert row["source_sha256"] == hashlib.sha256(
+            (ROOT / row["source_path"]).read_bytes()
+        ).hexdigest()
         assert row["authority"] == "janaf_fitted"
         assert row["method"] == "fitted"
         expected_t_min = build_gas_tables._FIT_T_MIN_BY_TABLE.get(
@@ -972,7 +952,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     )
     nb_source = _record("Nb-013")
     assert nb_low["source_path"] == "data-src/janaf/Nb-013.yaml"
-    assert nb_low["source_sha256"] == nb_source["extraction"]["source_sha256"]
+    assert nb_low["source_sha256"] == hashlib.sha256(
+        (ROOT / nb_low["source_path"]).read_bytes()
+    ).hexdigest()
     assert nb_low["source_fit_range_K"] == [1100, 1500]
     assert nb_low["authority"] == "janaf_fitted"
     assert "liquid Cp" in nb_low["note"]
@@ -986,7 +968,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     )
     na_source = _record("Na-013")
     assert na_low["source_path"] == "data-src/janaf/Na-013.yaml"
-    assert na_low["source_sha256"] == na_source["extraction"]["source_sha256"]
+    assert na_low["source_sha256"] == hashlib.sha256(
+        (ROOT / na_low["source_path"]).read_bytes()
+    ).hexdigest()
     assert na_low["source_fit_range_K"] == [1000, 1500]
     assert na_low["authority"] == "janaf_fitted"
     assert "Cp = 104.600" in na_low["note"]
@@ -1016,7 +1000,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     assert k_row["method_class"] == "estimated_systematic"
     assert k_row["method_rule"] == "liquid_from_solid"
     assert k_row["source_table_id"] == "K-012"
-    assert k_row["source_sha256"] == _record("K-012")["extraction"]["source_sha256"]
+    assert k_row["source_sha256"] == hashlib.sha256(
+        (ROOT / k_row["source_path"]).read_bytes()
+    ).hexdigest()
     assert k_row["inputs"]["fusion_temperature"]["band_K"] == [919, 1190]
     assert k_row["inputs"]["liquid_heat_capacity"]["band_includes_J_per_mol_K"] == [104.6]
     assert _accuracy_band_value(k_row)["combined_band"]["sample_temperatures_K"] == [
@@ -6982,7 +6968,9 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
                 if table_config[-2] <= row["temperature"] <= 3000.0
             ]
             expected_source_path = f"data-src/janaf/{entry['table_id']}.yaml"
-            expected_source_sha256 = source["extraction"]["source_sha256"]
+            expected_source_sha256 = hashlib.sha256(
+                (ROOT / expected_source_path).read_bytes()
+            ).hexdigest()
             cp = float(anchor["heat_capacity"]["value"])
             assert entry["source_path"] == expected_source_path
             assert entry["source_sha256"] == expected_source_sha256
