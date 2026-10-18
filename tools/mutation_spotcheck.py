@@ -155,12 +155,6 @@ def _run(test: str) -> subprocess.CompletedProcess[str]:
         if not existing_path
         else source_path + os.pathsep + existing_path
     )
-
-
-def _is_expected_red(result: subprocess.CompletedProcess[str]) -> bool:
-    return result.returncode == 1 and any(
-        line.startswith(("FAILED ", "ERROR ")) for line in result.stdout.splitlines()
-    )
     return subprocess.run(
         [sys.executable, "-m", "pytest", "-q", test],
         cwd=ROOT,
@@ -169,6 +163,12 @@ def _is_expected_red(result: subprocess.CompletedProcess[str]) -> bool:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         check=False,
+    )
+
+
+def _is_expected_red(result: subprocess.CompletedProcess[str]) -> bool:
+    return result.returncode == 1 and any(
+        line.startswith(("FAILED ", "ERROR ")) for line in result.stdout.splitlines()
     )
 
 
