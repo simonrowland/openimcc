@@ -56,12 +56,12 @@ _DEFAULT_REDOX_PACK_CACHE: tuple[tuple[str, int, int], RedoxPack] | None = None
 
 
 def _unreadable_pack(
-    path: Path, exc: OSError, *, description: str
+    path: Path, exc: OSError | RuntimeError, *, description: str
 ) -> ImccMalformedDatapackError:
     # Keep a missing or unreadable pack inside the refusal hierarchy.
     # The message names only the file and the OS reason, never a full path;
     # the original exception stays chained as __cause__.
-    reason = exc.strerror or type(exc).__name__
+    reason = getattr(exc, "strerror", None) or type(exc).__name__
     return ImccMalformedDatapackError(
         f"{description} {path.name} is not readable: {reason}"
     )
@@ -76,7 +76,7 @@ def _pack_file_identity(path: Path) -> tuple[str, int, int]:
     try:
         resolved = path.resolve(strict=True)
         stat = resolved.stat()
-    except OSError as exc:
+    except (OSError, RuntimeError) as exc:
         raise _unreadable_pack(path, exc, description="default datapack") from exc
     return str(resolved), stat.st_mtime_ns, stat.st_size
 

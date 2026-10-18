@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import openimcc.redox as redox_module
+
 from openimcc import (
     ImccRefusal,
     ImccTOutsideDatapackDomainError,
@@ -28,6 +30,7 @@ from openimcc.redox_pack import (
     ln_k_prime,
     species_gibbs_j_mol,
 )
+from openimcc.model import ImccMalformedDatapackError
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -667,6 +670,21 @@ def test_metal_amount_matches_independent_dense_thermodynamic_scan() -> None:
     assert abs(saturation_residual[scan_index]) < 2.0e-4
     assert result.metal_moles == pytest.approx(scan_metal, abs=2.0e-6)
     assert result.lambda_ln_f_o2 == pytest.approx(lambdas[scan_index], abs=2.0e-4)
+
+
+def test_redox_pack_symlink_loop_is_a_typed_refusal(monkeypatch):
+    path = redox_module._DEFAULT_REDOX_PACK_PATH
+    original_resolve = Path.resolve
+
+    def resolve(self, *args, **kwargs):
+        if self == path:
+            raise RuntimeError("too many levels of symbolic links")
+        return original_resolve(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", resolve)
+    with pytest.raises(ImccMalformedDatapackError, match="is not readable: RuntimeError") as exc:
+        redox_module._load_default_redox_pack()
+    assert isinstance(exc.value.__cause__, RuntimeError)
 
 
 @pytest.mark.parametrize(
