@@ -737,6 +737,14 @@ def test_sc130_max_iter_huge_int_refused() -> None:
     assert "max_iter must be a finite number" in str(exc.value)
 
 
+@pytest.mark.parametrize("max_iter", [True, np.bool_(True), 1.0, 1.5])
+def test_sc303_max_iter_requires_an_integer_count(max_iter) -> None:
+    pack = make_ab_datapack()
+    parent = np.array([0.5, 0.5])
+    with pytest.raises(ValueError, match="max_iter must be an integer count"):
+        solve_imcc_sf04(parent, 1000.0, pack, max_iter=max_iter)
+
+
 @pytest.mark.parametrize(
     "window",
     [

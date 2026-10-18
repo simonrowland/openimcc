@@ -18,6 +18,7 @@ import hashlib
 import importlib
 import json
 import math
+from numbers import Integral
 import warnings
 from types import MappingProxyType
 from typing import Any, Mapping, NoReturn, Sequence
@@ -1581,6 +1582,10 @@ def _solve_imcc_sf04_with_seed(
     if not math.isfinite(max_iter_f):
         raise ValueError(
             f"max_iter must be a finite number, got {max_iter!r}"
+        )
+    if isinstance(max_iter, bool) or not isinstance(max_iter, Integral):
+        raise ValueError(
+            f"max_iter must be an integer count, got {max_iter!r}"
         )
 
     # --- Analytical parent fractions on the declared basis -------------------
