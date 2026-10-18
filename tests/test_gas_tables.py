@@ -6642,9 +6642,11 @@ def test_v2o3_refit_changes_only_its_outputs_and_uses_liquid_boundary() -> None:
 
     assert _oxide_row_for_T(pack.oxide_df, "V2O3(l)", 1699.9)["T_min"] == 1200
     assert _oxide_row_for_T(pack.oxide_df, "V2O3(l)", 1700.0)["T_min"] == 1700
+    # Crystal rows keep their phase suffix and are not parent activity keys.
     activities = {
         str(name).removesuffix("(l)"): 1.0e-3
         for name in pack.oxide_df.index.unique()
+        if str(name).endswith("(l)")
     }
     v_channels = {"V", "VO", "VO2"}
     changed_v_temperatures = (1500.0, 1600.0, 1699.0, 1700.0, 2000.0, 3000.0)
