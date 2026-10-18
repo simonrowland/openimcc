@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+import openimcc.redox_pack as redox_pack_module
 from openimcc.redox_pack import (
     RedoxSchemaError,
     canonical_redox_digest,
@@ -50,6 +51,31 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     ) == 15
     with pytest.raises(TypeError):
         pack.content["version"] = "changed"
+
+
+def test_default_redox_pack_is_pinned_to_manifest_bytes(tmp_path, monkeypatch):
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["thermo_species"]["FeO(l)"]["row"]["dG_A"] += 1.0
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    altered_bytes = json.dumps(content).encode("utf-8")
+
+    package_root = tmp_path / "package"
+    pack_dir = package_root / "packs"
+    pack_dir.mkdir(parents=True)
+    (pack_dir / PACK_PATH.name).write_bytes(altered_bytes)
+    (pack_dir / "MANIFEST.json").write_bytes(
+        (PACK_PATH.parent / "MANIFEST.json").read_bytes()
+    )
+    monkeypatch.setattr(redox_pack_module, "files", lambda _package: package_root)
+
+    with pytest.raises(ValueError, match="SHA-256 does not match MANIFEST.json"):
+        redox_pack_module.load_redox_pack()
+
+    external_path = tmp_path / "external-redox.json"
+    external_path.write_bytes(altered_bytes)
+    assert redox_pack_module.load_redox_pack(external_path).canonical_digest == (
+        content["canonical_content_digest"]
+    )
 
 
 def test_parent_registry_oxidation_states_and_oxide_charge_are_validated(

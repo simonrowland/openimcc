@@ -600,9 +600,23 @@ def _validate_content(content: Mapping[str, Any]) -> None:
 def load_redox_pack(path: str | Path | None = None) -> RedoxPack:
     """Load the default pack, or a supplied pack path, and verify its digest."""
     if path is None:
-        text = files("openimcc.data").joinpath("packs", _PACK_NAME).read_text(
-            encoding="utf-8"
+        pack_dir = files("openimcc.data").joinpath("packs")
+        pack_bytes = pack_dir.joinpath(_PACK_NAME).read_bytes()
+        manifest = json.loads(pack_dir.joinpath("MANIFEST.json").read_bytes())
+        manifest_entries = (
+            manifest.get("packs")
+            if isinstance(manifest, dict) and isinstance(manifest.get("packs"), list)
+            else []
         )
+        entries = [
+            entry for entry in manifest_entries
+            if isinstance(entry, dict) and entry.get("file") == _PACK_NAME
+        ]
+        if len(entries) != 1 or not isinstance(entries[0].get("sha256"), str):
+            raise ValueError("default redox pack has no unique manifest SHA-256 pin")
+        if hashlib.sha256(pack_bytes).hexdigest() != entries[0]["sha256"]:
+            raise ValueError("default redox pack SHA-256 does not match MANIFEST.json")
+        text = pack_bytes.decode("utf-8")
     else:
         text = Path(path).read_text(encoding="utf-8")
     content = json.loads(text)
