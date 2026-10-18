@@ -26,6 +26,7 @@ from openimcc import (
     ImccComponentOutsideDomainError,
     ImccCompositionIncompleteError,
     ImccRefusal,
+    ImccTOutsideDatapackDomainError,
     evaluate,
     load_datapack,
 )
@@ -253,3 +254,8 @@ def test_extra_amount_beyond_float_range_is_a_typed_refusal(pack):
     with pytest.raises(ImccCompositionIncompleteError) as exc:
         evaluate(_uniform(), 2000.0, pack, extra_mol={"Cr2O3": 10**400})
     assert "too large to represent" in str(exc.value)
+
+
+def test_temperature_beyond_float_range_is_a_typed_refusal(pack):
+    with pytest.raises(ImccTOutsideDatapackDomainError, match="too large"):
+        evaluate(_uniform(), 10**400, pack)

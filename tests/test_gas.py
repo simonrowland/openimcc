@@ -196,6 +196,25 @@ def test_evaluate_gas_refuses_boolean_temperature(gas_pack):
         )
 
 
+def test_evaluate_gas_refuses_temperature_beyond_float_range(gas_pack):
+    with pytest.raises(ValueError, match="temperature must be finite and positive"):
+        evaluate_gas(
+            {"Na2O": 0.1}, 10**400, 1.0e-8, gas_pack, gas_species=("Na",)
+        )
+
+
+def test_evaluate_gas_refuses_activity_beyond_float_range(gas_pack):
+    with pytest.raises(ValueError, match="activity.*too large to represent"):
+        evaluate_gas(
+            {"Na2O": 10**400}, 1800.0, 1.0e-8, gas_pack, gas_species=("Na",)
+        )
+
+
+def test_evaluate_gas_oxygen_balance_refuses_temperature_beyond_float_range(gas_pack):
+    with pytest.raises(ValueError, match="temperature must be finite and positive"):
+        evaluate_gas_oxygen_balance({}, 10**400, gas_pack)
+
+
 @pytest.fixture
 def unit_activities() -> dict[str, float]:
     return {

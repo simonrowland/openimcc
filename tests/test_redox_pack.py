@@ -11,6 +11,7 @@ import pytest
 
 import openimcc.redox_pack as redox_pack_module
 from openimcc.redox_pack import (
+    _finite_number,
     RedoxSchemaError,
     canonical_redox_digest,
     load_redox_pack,
@@ -51,6 +52,11 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     ) == 15
     with pytest.raises(TypeError):
         pack.content["version"] = "changed"
+
+
+def test_finite_number_refuses_integer_beyond_float_range() -> None:
+    with pytest.raises(ValueError, match="must be a finite number"):
+        _finite_number(10**400, "test value")
 
 
 def test_default_redox_pack_is_pinned_to_manifest_bytes(tmp_path, monkeypatch):

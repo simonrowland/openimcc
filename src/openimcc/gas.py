@@ -4684,7 +4684,10 @@ def evaluate_gas(
         raise ValueError(
             f"temperature must be a real number, got {T_K!r}"
         )
-    T = float(T_K)
+    try:
+        T = float(T_K)
+    except OverflowError as exc:
+        raise ValueError("temperature must be finite and positive") from exc
     if not is_declared_real_scalar(fO2, allow_numeric_str=True):
         raise ImccGasInvalidFugacityError(
             "fO2 must be finite and positive p_O2/p° (bar-relative, not "
@@ -4710,7 +4713,12 @@ def evaluate_gas(
             raise ValueError(
                 f"activity for {name!r} must be a real number"
             )
-        return float(value)
+        try:
+            return float(value)
+        except OverflowError as exc:
+            raise ValueError(
+                f"activity for {name!r} is too large to represent as a float"
+            ) from exc
 
     if isinstance(activities, Mapping):
         act = {
@@ -5414,7 +5422,10 @@ def evaluate_gas_oxygen_balance(
             "imposed_parents must name gas-parent activity keys; unknown: "
             f"{sorted(unknown_imposed)}"
         )
-    T = float(T_K)
+    try:
+        T = float(T_K)
+    except OverflowError as exc:
+        raise ValueError("temperature must be finite and positive") from exc
     if not math.isfinite(T) or T <= 0.0:
         raise ValueError(f"temperature must be finite and positive, got {T_K}")
 

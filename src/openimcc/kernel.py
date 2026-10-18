@@ -1549,7 +1549,12 @@ def _solve_imcc_sf04_with_seed(
                 f"{basis:.12g} within 1e-6 relative"
             )
 
-    T = float(T_K)
+    try:
+        T = float(T_K)
+    except OverflowError as exc:
+        raise ImccTOutsideDatapackDomainError(
+            "temperature is too large to represent as a finite Kelvin value"
+        ) from exc
     if not math.isfinite(T) or T <= 0.0:
         raise ImccTOutsideDatapackDomainError(
             f"temperature {T_K} is not a positive finite Kelvin value"
