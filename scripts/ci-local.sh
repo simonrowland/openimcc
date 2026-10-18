@@ -71,8 +71,14 @@ for V in "${VERSIONS[@]}"; do
         VPY="$VENV/bin/python"
         "$VPY" -m pip install -q -e ".[dev]" >/dev/null 2>&1 || { fail "install on $V"; continue; }
     fi
+    # Gate on pytest's exit status, not on the summary text alone: a run that
+    # ends "1 passed, 1 error" still matches '^[0-9]+ passed'. Exit 0 is the
+    # only pass; the summary must also carry no failed/error count.
     OUT="$("$VPY" -m pytest tests/ -q -W error 2>&1)"
-    if printf '%s' "$OUT" | tail -1 | grep -qE '^[0-9]+ passed'; then
+    RC=$?
+    LAST="$(printf '%s' "$OUT" | tail -1)"
+    if [ "$RC" -eq 0 ] && printf '%s' "$LAST" | grep -qE '^[0-9]+ passed' \
+        && ! printf '%s' "$LAST" | grep -qE '[0-9]+ (failed|errors?)'; then
         pass "tests on $V  $DIM$(printf '%s' "$OUT" | tail -1)$OFF"
     else
         fail "tests on $V"
