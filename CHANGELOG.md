@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added TeO(g) with caller-supplied TeO2(l) activity, fitted from NUREG/CR-4308
+  Table 30 Gibbs nodes and anchored to the primary 2005 TeO formation-enthalpy
+  measurement. Te+(g) remains declined because its Burcat/Gurvich candidate
+  misses the NIST Saha check; Se+, As+, Sb+, and U+ remain declined for lack of
+  evaluated thermochemical functions.
 - Added source-rated P2O5(l) and phosphorus gas channels through 3000 K,
   including JANAF PS(g), which also requires caller-supplied S2 activity.
 - Included JANAF Cs-007 Cs- in the Cs C3 ion-share bound, screened JANAF B2(g)
@@ -162,27 +167,36 @@
   region. The oxide-parent convention does
   not represent silver dissolved as metal in reduced melts; Ag2(g) and AgO(g)
   had no source table in the checked records.
-- Added optional Sb, Sb2, Sb4, and Sb4O6 gas channels with caller-supplied
-  Sb2O3(l) activity. Bulletin 672 supplies the gas and crystal data; the
-  hypothetical liquid parent is a tier-4 construction because its fusion
-  enthalpy and liquid function are unavailable. Constant-Cp continuation above
-  each gas row's source limit is flagged and banded. SbO(g) and Sb+(g) were not
-  located in the checked sources.
+- Added optional Sb, Sb2, Sb4, SbO, and Sb4O6 gas channels with caller-supplied
+  Sb2O3(l) activity. Bulletin 672 supplies Sb, Sb2, Sb4, and Sb4O6; Kelley
+  Bulletin 584 heat/entropy increments plus the NBS Table 21 anchor and Sohn
+  et al. reaction function supply SbO. NUREG Table 12's SbO curve conflicts by
+  132.0-149.4 kJ/mol and is retained as a non-statistical disagreement band;
+  its underlying reference 289 is unidentified. SbO has a labelled constant-Cp
+  continuation above 2000 K. The tier-4 hypothetical liquid parent remains
+  flagged because the fusion enthalpy and liquid function are unavailable.
+  Sb+ remains declined because no evaluated thermal function was located in
+  JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV/IVTAN, NIST WebBook,
+  OECD/NEA, or Burcat.
 - Added optional As, As2, As4, and As4O6 gas channels with caller-supplied
   As2O3(l) activity. Pankratz Bulletin 672 supplies the gas channels and the
   As2O3 crystal function. As2O3(l) is a flagged tier-4 construction using the
   repository's tier-3 liquid_from_solid estimate and leave-one-out band.
   As(g), As2(g), and As4(g) continue by constant Cp above 1200 K; As4O6(g)
-  continues above 1000 K. No AsO(g) or As+(g) source was located in Bulletin
-  672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN.
+  continues above 1000 K. The NBS tables provide an AsO(g) 298.15 K anchor but
+  no evaluated temperature-dependent function; no AsO(g) function was located
+  in JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV/IVTAN, NIST WebBook,
+  OECD/NEA, or Burcat. As+ remains declined across the same evaluated routes.
 - Added optional Se, Se2, SeO, and SeO2 gas channels with caller-supplied SeO2(l)
   activity. Pankratz Bulletin 672 supplies the gas rows. SeO2(l) is a flagged
   tier-4 construction using the OECD/NEA reviewed fusion inputs and the
   documented crystal-Cp carry-over estimate; its crystal Cp equation extends
   above the printed 602 K range. The Se2 entropy transcription was checked
-  against the published Cp equation. SeO(g) uses the Bulletin 672 gas table;
-  Se+(g) had no source in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook,
-  or Gurvich/IVTAN. SeO2(g)'s 1000–1500 K nodes are transcribed from the
+  against the published Cp equation. SeO(g) uses the Bulletin 672 gas table.
+  A second Se+ search found only ionization/appearance data on NIST WebBook;
+  JANAF has no selenium table, and no evaluated temperature-dependent Se+
+  function was located in NASA Glenn/CEA, Pankratz 672/677/696, TSIV/IVTAN,
+  OECD/NEA, or Burcat. SeO2(g)'s 1000–1500 K nodes are transcribed from the
   printed reaction table.
 - Added optional Te, Te2, and TeO2 gas channels with caller-supplied TeO2(l)
   activity. Pankratz Bulletin 672 supplies the selected rows; the TeO2(l)

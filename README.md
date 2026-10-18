@@ -74,7 +74,7 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied Ta/Be/Tl/V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd/Sm/Eu/Gd/Tb/Dy/Ho/Er/Tm/Yb/Lu/Hg/Au/Pd/Pt/Ru/Rh/Ir channels:
+and caller-supplied Ta/Be/Tl/V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Se/As/Sb/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd/Sm/Eu/Gd/Tb/Dy/Ho/Er/Tm/Yb/Lu/Hg/Au/Pd/Pt/Ru/Rh/Ir channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
@@ -82,8 +82,9 @@ PO, PO2, P4O6, P4O10, S, S2, S3, S4, S5, S6, S7, S8, SO, SO2, SO3, SSO,
 Ga, GaO, Ga2O,
 Ge, GeO, GeO2, B, BO, BO2, B2O, B2O2, B2O3, In, InO, In2O,
 Li, LiO, Li2O, Li2O2, Rb, RbO, Rb2O, Pb, PbO, PbO2, Cs, CsO, Cs2O, Cu,
-CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
-As4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, NiO, CoO, Sc, ScO, ScO2, U, UO,
+CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
+As4O6, Sb, Sb2, Sb4, SbO, Sb4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, NiO, CoO,
+Sc, ScO, ScO2, U, UO,
 UO2, UO3, Th, ThO, ThO2, Hf, Hg, Au, Pd, La, LaO, Ce, CeO, CeO2, Pr, PrO, Nd, NdO,
 Sm, SmO, Eu, EuO, Gd, GdO, Tb, TbO, Dy, DyO, Ho, HoO, Er, ErO, Tm, TmO,
 Yb, YbO, Lu, LuO, Pt, PtO2, Ru, Rh, Ir,
@@ -205,9 +206,19 @@ supplies their parent activity (`Li2O`, `Rb2O`, `PbO`, `Cs2O`, `Cu2O`, `SnO`,
 `evaluate_gas` mapping. Activities are caller-supplied; openimcc has no
 trace-element activity model and applies no activity coefficients. As(g), As2(g),
 and As4(g) are constant-Cp continuation above 1200 K; As4O6(g) is continuation
-above 1000 K. TeO2(l) is
+above 1000 K. SbO(g) uses [Kelley Bulletin 584 Table 30](https://digital.library.unt.edu/ark:/67531/metadc12739/m1/31/)
+heat/entropy increments and the [NBS Table 21](https://srd.nist.gov/JPCRD/jpcrdS2Vol11.pdf)
+formation-enthalpy anchor; its S298 is inferred from the [Sohn et al. Table V
+reaction](https://doi.org/10.1007/s11663-004-0006-8) bridged through [NUREG
+Table 12](https://www.osti.gov/servlets/purl/5150148) Sb(g)-Sb(l) values. The
+alternate NUREG SbO curve differs by 132.0-149.4 kJ/mol and is recorded as a
+non-statistical source-disagreement band; its reference 289 is unidentified.
+SbO has a labelled constant-Cp continuation above 2000 K. TeO2(l) is
 the Te(IV) parent because Bulletin 672 prints its measured liquid branch; its
 constant-Cp continuation above the last printed node is flagged and banded.
+In2O3(l) uses its NASA Glenn liquid card from 2186 K with a labelled
+constant-Cp continuation down to 1200 K. The As2O3(l), Sb2O3(l), and SeO2(l)
+parents retain their flagged tier-4 liquid-from-solid constructions.
 MoO3(l) uses the JANAF liquid branch from its 1074 K crystal/liquid marker
 through 2000 K, then a labelled constant-Cp continuation. WO3(l) uses the
 JANAF O-066 liquid cells through 3000 K, including its printed supercooled
@@ -261,18 +272,30 @@ reduced melts. SeO2(l) is a flagged tier-4 construction from the Pankratz
 crystal function and the OECD/NEA reviewed fusion inputs; its liquid heat
 capacity is the documented crystal-Cp carry-over estimate. Selenium can
 dissolve as selenide in reduced melts, which this oxide-parent convention does
-not represent. SeO(g) is included from the Pankratz gas table; no Se+(g)
-source was located in the checked Bulletin 672, JANAF, NASA Glenn/CEA, NIST
-WebBook, and Gurvich/IVTAN sources. No TeO(g), Te+(g), AsO(g), or As+(g)
-source was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or
-Gurvich/IVTAN. As2O3(l) is a flagged tier-4 construction based on the Pankratz
+not represent. SeO(g) is included from the Pankratz gas table. A second Se+
+search found NIST WebBook ionization/appearance data only; JANAF has no
+selenium element table, and no evaluated Se+(g) thermal function was located in
+NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV/IVTAN, OECD/NEA, or Burcat.
+TeO(g) uses the
+1200-3000 K Gibbs nodes in NUREG/CR-4308 Table 30, with the later measured
+TeO formation enthalpy as its 298 K anchor; provenance records the
+55.657 kJ/mol anchor adjustment and the remaining reference-288 citation gap.
+Te+(g) is declined because the Burcat/Gurvich candidate's fitted Kion/Saha
+ratios are 1.228 at 1200 K and 1.107 at 3000 K against NIST's 9.009808 eV
+ionization energy, outside the 2% gate. The NBS tables provide an AsO(g)
+298.15 K anchor but no temperature-dependent function; none was located in
+JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV/IVTAN, NIST WebBook, OECD/NEA,
+or Burcat. As+(g), Sb+(g), and U+(g) have no evaluated thermochemical function in JANAF, NASA
+Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV/IVTAN, NIST WebBook, OECD/NEA,
+or Burcat. As2O3(l) is a flagged tier-4 construction based on the Pankratz
 Table 53 crystal function and the repository's leave-one-out liquid_from_solid
 error band. The source has no liquid standard-state function. Sb2O3(l) is likewise
 a tier-4 caller-supplied liquid standard constructed from the Pankratz crystal
 row: the 928 K marker has no fusion enthalpy, and Bulletin 672 publishes no
 liquid function. Sb(g), Sb2(g), and Sb4(g) continue above their source nodes;
-Sb4O6(g) continues above 1000 K. SbO(g) and Sb+(g) were not located in the
-checked Bulletin 672 and NASA Glenn sources. Li2O(l),
+Sb4O6(g) continues above 1000 K. Sb+ remains declined because no evaluated
+function was located in JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV/IVTAN,
+NIST WebBook, OECD/NEA, or Burcat. Li2O(l),
 Cu2O(l), and PbO(l) use JANAF liquid rows. Rb2O(l), Cs2O(l), SnO(l),
 Ga2O3(l), GeO2(l), and In2O3(l) use NASA Glenn CEA liquid cards. Ag(g) and
 opt-in Ag+(g) and Ag-(g) use NASA Glenn cards because JANAF has no silver

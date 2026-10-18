@@ -497,11 +497,12 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Bi2": ("Bi2O3", 1, 1.5),
     "BiO": ("Bi2O3", 2, 0.5),
     # Premise: TeO2(l) supplies one Te atom and two O atoms. Algebra: its
-    # Te/Te2/TeO2 gas coefficients are 1, 1/2, and 1; the O2 coefficients
-    # are (2 - n_gas*oxy_num)/2 = 1, 1, and 0. These are dimensionless; the
-    # reaction-balance test checks Te and O atom counts independently.
+    # Te/Te2/TeO/TeO2 gas coefficients are 1, 1/2, 1, and 1; the O2
+    # coefficients are (2 - n_gas*oxy_num)/2 = 1, 1, 1/2, and 0. These are
+    # dimensionless; the reaction-balance test checks Te and O independently.
     "Te": ("TeO2", 1, 1.0),
     "Te2": ("TeO2", 0.5, 1.0),
+    "TeO": ("TeO2", 1, 0.5),
     "TeO2": ("TeO2", 1, 0.0),
     # SeO2(l) supplies one Se atom and two O atoms, so Se and Se2 release
     # one O2 each while SeO2(g) releases none.
@@ -521,6 +522,7 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "Sb": ("Sb2O3", 2, 1.5),
     "Sb2": ("Sb2O3", 1, 1.5),
     "Sb4": ("Sb2O3", 0.5, 1.5),
+    "SbO": ("Sb2O3", 2, 0.5),
     "Sb4O6": ("Sb2O3", 0.5, 0.0),
     # The source reports decomposition near 500 K, not a bulk liquid row;
     # Ag2O(l) is only the flagged caller-activity construction convention.
@@ -954,6 +956,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "BiO",
         "Te",
         "Te2",
+        "TeO",
         "TeO2",
         "Se",
         "Se2",
@@ -966,6 +969,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Sb",
         "Sb2",
         "Sb4",
+        "SbO",
         "Sb4O6",
         "Ag",
         "P",
@@ -1268,6 +1272,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "Sb": "published_fitted",
         "Sb2": "published_fitted",
         "Sb4": "published_fitted",
+        "SbO": "published_fitted",
         "Sb4O6": "published_fitted",
         "Ag": "nasa_glenn_fitted",
         "MnO": "published_fitted",
@@ -1668,8 +1673,7 @@ IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES = (
 # NASA/Gurvich gas rows joined the package. Mn/Ni/Co have retained optional
 # channels activated by caller-supplied parent activities.
 IMCC_GAS_NO_JANAF_ROWS: dict[str, str] = {
-    "TeO": "needs a source; none was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN",
-    "AsO": "needs a source; none was located in Bulletin 672, JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN",
+    "AsO": "needs a temperature-dependent thermochemical function; the NBS Tables provide only a 298.15 K anchor and no evaluated function was located in JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV/IVTAN, NIST WebBook, OECD/NEA, or Burcat",
 }
 
 _GAS_IONIZATION_PAIRS = (
@@ -2313,7 +2317,7 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
               'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
               'validation': 'unvalidated',
               'reason': 'In2O3(l) uses its NASA liquid card from 2186 K with a labelled '
-                        'constant-Cp continuation to 1200 K; InO(g) and In2O(g) are included; '
+                        'constant-Cp continuation to 1200 K; In(g), InO(g), and In2O(g) are included; '
                         'a(In2O3) is caller-supplied. In+ is declined because its NASA card gives '
                         'Kion/Saha ratios of 1.510e28 at 1500 K and 9.143e16 at 2500 K against '
                         "NIST's 5.78636 eV ionisation energy.",
@@ -2506,24 +2510,24 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
     'Te': {   'status': 'gas-partial',
               'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
               'validation': 'unvalidated',
-              'reason': 'Te(g), Te2(g), TeO2(g), and the TeO2(l) parent cover 1200-3000 K; TeO2(l) is selected because Bulletin 672 prints a measured liquid branch; a(TeO2) is caller-supplied. This oxide-parent convention does not model telluride dissolution in reduced melts.',
-              'c2_candidates': (('P672-TeO2-g', 'TeO2'),),
+              'reason': 'Te(g), Te2(g), TeO(g), TeO2(g), and TeO2(l) cover 1200-3000 K. TeO(g) uses NUREG/CR-4308 Table 30 Gibbs nodes with the primary 2005 measured formation enthalpy as its 298 K anchor; provenance records the +55.657 kJ/mol anchor adjustment and source citation gap. TeO2(l) has a measured Bulletin 672 branch through 1500 K and a labelled constant-Cp continuation to 3000 K; a(TeO2) is caller-supplied. Te+ remains declined because the Burcat/Gurvich candidate\'s NIST Saha ratios are 1.228 at 1200 K and 1.107 at 3000 K, outside the 2% screen. The oxide-parent convention does not model telluride dissolution in reduced melts.',
+              'c2_candidates': (('P672-TeO2-g', 'TeO2'), ('NUREG-4308-TeO', 'TeO')),
               'c3_ion_bound': {   'status': 'declined',
-                                  'reason': 'No source for Te+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},
+                                  'reason': 'Burcat’s Gurvich-based Te+(g) function gives Kion/Saha ratios 1.227584, 1.181322, 1.138855, 1.116688, and 1.107070 at 1200, 1500, 2000, 2500, and 3000 K against NIST ASD’s 9.009808 eV ionisation energy; each exceeds the 2% source-screen gate.'}},
     'Se': {   'status': 'gas-partial',
               'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
               'validation': 'unvalidated',
-              'reason': 'Se(g), Se2(g), SeO(g), SeO2(g), and the SeO2(l) parent cover 1200-3000 K; SeO2(l) is the selected caller parent because no standard liquid function was found and the oxide state is the sourced parent convention; a(SeO2) is caller-supplied. This oxide-parent convention does not model selenide dissolution in reduced melts.',
+              'reason': 'Se(g), Se2(g), SeO(g), SeO2(g), and the tier-4 SeO2(l) liquid-from-solid parent cover 1200-3000 K; its Pankratz crystal Cp function is extended above 602 K and the construction is flagged in provenance; a(SeO2) is caller-supplied. Se+ remains declined after a second check: NIST WebBook provides gas-phase ionization and appearance data only, and no evaluated thermal function was located in JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV/IVTAN, OECD/NEA, or Burcat. The oxide-parent convention does not model selenide dissolution in reduced melts.',
               'c2_candidates': (('P672-SeO-g', 'SeO'), ('P672-SeO2-g', 'SeO2')),
               'c3_ion_bound': {   'status': 'declined',
-                                  'reason': 'No source for Se+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},
+                                  'reason': 'No evaluated Se+(g) thermochemical function was located in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV/IVTAN, NIST WebBook, OECD/NEA, or Burcat.'}},
     'As': {   'status': 'gas-partial',
               'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
               'validation': 'unvalidated',
-              'reason': 'As(g), As2(g), As4(g), As4O6(g), and a tier-4 As2O3(l) parent cover 1200-3000 K; As(g), As2(g), and As4(g) are constant-Cp continuation above 1200 K, and As4O6(g) is continuation above 1000 K. As2O3(l) is constructed from the Pankratz Table 53 crystal function and the repository tier-3 liquid_from_solid estimates because no standard liquid function was located; a(As2O3) is caller-supplied.',
+              'reason': 'As(g), As2(g), As4(g), As4O6(g), and a tier-4 As2O3(l) parent cover 1200-3000 K; As(g), As2(g), and As4(g) continue by constant Cp above 1200 K and As4O6(g) above 1000 K. As2O3(l) uses the Pankratz Table 53 crystal function with the flagged liquid-from-solid estimates because no standard liquid function was located; a(As2O3) is caller-supplied. AsO(g) is declined because the NBS tables provide only a 298.15 K anchor and no evaluated temperature-dependent function was located in JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV/IVTAN, NIST WebBook, OECD/NEA, or Burcat. As+ remains declined because no evaluated function was located in those same routes.',
               'c2_candidates': (('P672-As4O6-g', 'As4O6'),),
               'c3_ion_bound': {   'status': 'declined',
-                                  'reason': 'No source for As+(g) was located in the checked JANAF, NASA Glenn/CEA, NIST WebBook, or Gurvich/IVTAN routes.'}},
+                                  'reason': 'No evaluated As+(g) thermochemical function was located in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV/IVTAN, NIST WebBook, OECD/NEA, or Burcat.'}},
     'Sn': {   'status': 'gas-complete-melt-pending',
               'criteria': {'C1': False, 'C2': True, 'C3': True, 'C4': True},
               'validation': 'unvalidated',
@@ -2558,11 +2562,11 @@ ELEMENT_STATUS["Sb"] = {
     "status": "gas-partial",
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
     "validation": "unvalidated",
-    "reason": "Sb(g), Sb2(g), Sb4(g), Sb4O6(g), and a tier-4 Sb2O3(l) construction cover 1200-3000 K; the source Sb4O6(g) nodes end at 1000 K and the other source nodes end at 2000 K. Bulletin 672 reports a 928 K Sb2O3 melting marker but insufficient fusion-enthalpy data and no liquid function; a(Sb2O3) is caller-supplied.",
-    "c2_candidates": (("P672-Sb4O6-g", "Sb4O6"),),
+    "reason": "Sb(g), Sb2(g), Sb4(g), SbO(g), Sb4O6(g), and a tier-4 Sb2O3(l) liquid-from-solid parent cover 1200-3000 K; SbO(g) uses Kelley Bulletin 584 Table 30 heat/entropy increments and the NBS Table 21 formation-enthalpy anchor, with S298 inferred from Sohn et al. Table V bridged through NUREG Table 12 Sb vaporization; the conflicting NUREG SbO Gibbs route is recorded as a source-disagreement band. SbO uses a labelled constant-Cp continuation above 2000 K; Sb4O6(g) continues above its 1000 K source limit and the other gas rows above 2000 K. Bulletin 672 reports a 928 K Sb2O3 melting marker but insufficient fusion-enthalpy data and no liquid function; a(Sb2O3) is caller-supplied. Sb+ remains declined because no evaluated function was located in JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV/IVTAN, NIST WebBook, OECD/NEA, or Burcat.",
+    "c2_candidates": (("P672-Sb4O6-g", "Sb4O6"), ("Kelley-584-SbO", "SbO")),
     "c3_ion_bound": {
         "status": "declined",
-        "reason": "No JANAF, NASA Glenn/CEA, or Bulletin 672 source for Sb+(g) was located.",
+        "reason": "No evaluated Sb+(g) thermochemical function was located in JANAF, NASA Glenn/CEA, Pankratz Bulletins 672/677/696, TSIV/IVTAN, NIST WebBook, OECD/NEA, or Burcat.",
     },
 }
 

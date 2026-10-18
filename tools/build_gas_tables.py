@@ -424,6 +424,8 @@ TRACE_PUBLISHED_GAS_SOURCES = (
     ("Tl2O(g)", "P672-Tl2O-g", "Tl2O", "Tl", 2, 1, 1000.0),
     ("MnO(g)", "TSIV-1436", "MnO", "Mn", 1, 1, 6000.0),
     ("CoO(g)", "TSIV-1335", "CoO", "Co", 1, 1, 3000.0),
+    ("TeO(g)", "NUREG-4308-TeO", "TeO", "Te", 1, 1, 3000.0),
+    ("SbO(g)", "Kelley-584-SbO", "SbO", "Sb", 1, 1, 2000.0),
 )
 TRACE_GAS_SPECIES = frozenset(
     {source[0].removesuffix("(g)") for source in TRACE_JANAF_GAS_SOURCES}
@@ -2196,6 +2198,357 @@ def _fit_published_gas_row(
     }
 
 
+def _generated_gas_gibbs(
+    gas_rows: list[dict[str, str]],
+    species: str,
+    temperature: float,
+    source_id: str,
+) -> float:
+    candidates = [
+        row
+        for row in gas_rows
+        if row["species_name"] == f"{species}(g)"
+        and float(row["T_min"]) <= temperature <= float(row["T_max"])
+    ]
+    if not candidates:
+        raise ValueError(
+            f"{source_id}: no generated {species}(g) reference at "
+            f"{temperature:g} K"
+        )
+    row = min(candidates, key=lambda candidate: int(candidate["T_interval"]))
+    A, B, C, D, E, F, G = (float(row[key]) for key in "ABCDEFG")
+    value = temperature / 1000.0
+    enthalpy = (
+        A * value
+        + B * value**2 / 2.0
+        + C * value**3 / 3.0
+        + D * value**4 / 4.0
+        - E / value
+        + F
+    )
+    entropy = (
+        A * math.log(value)
+        + B * value
+        + C * value**2 / 2.0
+        + D * value**3 / 3.0
+        - E / (2.0 * value**2)
+        + G
+    )
+    return enthalpy * 1000.0 - temperature * entropy
+
+
+def _fit_nureg_teo_rows(
+    source_dir: Path, gas_rows: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    """Fit TeO to NUREG's Gibbs nodes with its later measured enthalpy anchor."""
+    record = _load_record(source_dir / "nureg-cr-4308-teo.json")
+    if record.get("table_id") != "NUREG-4308-TeO":
+        raise ValueError("NUREG-4308-TeO: source record identity mismatch")
+    nodes = record["nodes"]
+    temperatures = np.asarray([float(node[0]) for node in nodes])
+    anchor = record["anchor"]
+    anchor_enthalpy = float(anchor["formation_enthalpy_kj_mol"])
+    t = temperatures / 1000.0
+    t0 = 298.15 / 1000.0
+
+    def source_basis(values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        h = np.column_stack(
+            (values, values**2 / 2.0, values**3 / 3.0, values**4 / 4.0, -1.0 / values)
+        )
+        s = np.column_stack(
+            (
+                np.log(values),
+                values,
+                values**2 / 2.0,
+                values**3 / 3.0,
+                -1.0 / (2.0 * values**2),
+            )
+        )
+        return h, s
+
+    # Premise: Table 30 reports ΔfG for TeO(g) and Te(g) against the same
+    # elements, so their difference is ΔrG for Te(g)+1/2 O2(g)=TeO(g).
+    # Algebra: add that reaction ΔG to the generated Te(g) and O2(g) G_app
+    # rows. The NUREG temperature curve implies Hf298=17.043 kJ/mol; the later
+    # primary measurement supplies 72.7 kJ/mol, so its +55.657 kJ/mol update
+    # shifts G by a constant while retaining the NUREG thermal dependence.
+    # Unit check: Table 30 calories use 4.184 J/cal; the Shomate enthalpy basis
+    # is kJ/mol and its entropy basis is J/(mol K). Sanity: the corrected fit
+    # follows all 19 converted nodes within its recorded residual.
+    source_gibbs = np.asarray(
+        [
+            _generated_gas_gibbs(gas_rows, "Te", float(node[0]), "NUREG-4308-TeO")
+            + 0.5
+            * _generated_gas_gibbs(gas_rows, "O2", float(node[0]), "NUREG-4308-TeO")
+            + (float(node[1]) - float(node[2])) * 4.184
+            for node in nodes
+        ]
+    )
+    h_basis, s_basis = source_basis(t)
+    h0, s0 = source_basis(np.asarray([t0]))
+    h0 = h0[0]
+    s0 = s0[0]
+    design = np.column_stack(
+        (
+            1000.0 * (h_basis - h0)
+            - temperatures[:, None] * (s_basis - s0),
+            np.full(len(temperatures), 1000.0),
+            -temperatures,
+        )
+    )
+    fitted = np.linalg.lstsq(design, source_gibbs, rcond=None)[0]
+    source_enthalpy = float(fitted[5])
+    source_entropy = float(fitted[6])
+    enthalpy_shift = anchor_enthalpy - source_enthalpy
+    corrected_gibbs = source_gibbs + enthalpy_shift * 1000.0
+    residual = float(
+        np.max(np.abs(design @ fitted + enthalpy_shift * 1000.0 - corrected_gibbs))
+    )
+    residual_log10 = float(
+        np.max(
+            np.abs(
+                (design @ fitted + enthalpy_shift * 1000.0 - corrected_gibbs)
+                / (R_J_MOL_K * temperatures * np.log(10.0))
+            )
+        )
+    )
+    A, B, C, D, E = (float(value) for value in fitted[:5])
+    F = anchor_enthalpy - float(h0 @ fitted[:5])
+    G = source_entropy - float(s0 @ fitted[:5])
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    coefficients = {key: number(value) for key, value in zip("ABCDEFG", (A, B, C, D, E, F, G))}
+    rows = []
+    for interval, runtime_min, runtime_max in (
+        (1, 1500.0, 3000.0),
+        (2, 1200.0, 1500.0),
+    ):
+        rows.append(
+            {
+                "species_name": "TeO(g)",
+                "state": "g",
+                "T_interval": str(interval),
+                "cation": "Te",
+                "cat_num": "1",
+                "oxy_num": "1",
+                "T_min": number(runtime_min),
+                "T_max": number(runtime_max),
+                **coefficients,
+                "H": "0",
+                "Ref": "NUREG-4308-TeO",
+                "_max_residual_J_per_mol": number(residual),
+                "_max_residual_log10_K": number(residual_log10),
+            }
+        )
+    if residual > 10.0:
+        raise ValueError(
+            f"TeO(g): NUREG fit residual {residual:g} J/mol exceeds 10"
+        )
+    return rows
+
+
+def _fit_kelley_sbo_rows(
+    source_dir: Path, gas_rows: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    """Fit Kelley SbO increments, anchored and bridged to selected Sb sources."""
+    record = _load_record(source_dir / "kelley-1960-sbo.json")
+    if record.get("table_id") != "Kelley-584-SbO":
+        raise ValueError("Kelley-584-SbO: source record identity mismatch")
+
+    thermal = record["thermal_source"]
+    nodes = np.asarray(thermal["nodes"], dtype=float)
+    temperatures = nodes[:, 0]
+    h_nodes = nodes[:, 1] * 4.184
+    s_nodes = nodes[:, 2] * 4.184
+    t = temperatures / 1000.0
+    t298 = 298.15 / 1000.0
+
+    def source_basis(values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        h = np.column_stack(
+            (values, values**2 / 2.0, values**3 / 3.0, values**4 / 4.0, -1.0 / values)
+        )
+        s = np.column_stack(
+            (
+                np.log(values),
+                values,
+                values**2 / 2.0,
+                values**3 / 3.0,
+                -1.0 / (2.0 * values**2),
+            )
+        )
+        return h, s
+
+    h_basis, s_basis = source_basis(t)
+    h298_basis, s298_basis = source_basis(np.asarray([t298]))
+    h298_basis = h298_basis[0]
+    s298_basis = s298_basis[0]
+
+    # Premise: Kelley Table 30 supplies independent H-H298 and S-S298 nodes,
+    # while NBS Table 21 supplies ΔfH°298 and Sohn et al. Table V supplies a
+    # selected liquid-Sb oxidation function. Algebra: fit A-E jointly to
+    # ΔH/T and ΔS (both J mol^-1 K^-1), then infer S298 where the fitted
+    # thermal increments close to the Sohn reaction bridged through NUREG's
+    # Sb(g)-Sb(l) Gibbs difference. Units are cal*4.184 -> J and Shomate H is
+    # converted from kJ/mol before division by T. Sanity: Cp remains positive;
+    # the NUREG SbO alternative is retained as a separate disagreement band.
+    design_h = 1000.0 * (h_basis - h298_basis) / temperatures[:, None]
+    design_s = s_basis - s298_basis
+    coefficients = np.linalg.lstsq(
+        np.vstack((design_h, design_s)),
+        np.concatenate((h_nodes / temperatures, s_nodes)),
+        rcond=None,
+    )[0]
+    h_residuals = 1000.0 * (h_basis - h298_basis) @ coefficients - h_nodes
+    s_residuals = (s_basis - s298_basis) @ coefficients - s_nodes
+
+    anchor = record["formation_enthalpy_anchor"]
+    formation_enthalpy = float(anchor["formation_enthalpy_kj_mol"])
+    reaction = record["reaction_source"]["gibbs_function"]
+    reaction_constant = float(reaction["constant_J_mol"])
+    reaction_slope = float(reaction["slope_J_mol_K"])
+    comparison_nodes = {
+        int(node[0]): tuple(float(value) for value in node[1:])
+        for node in record["comparison_source"]["nodes"]
+    }
+
+    def source_gibbs(temperature: float) -> float:
+        # Sohn's function starts from liquid Sb. NUREG gives G(Sb(g))-G(Sb(l)),
+        # so subtract that vaporization Gibbs value to express the reaction on
+        # the generated Sb(g)/O2(g) basis.
+        sb_g, sb_l, _ = comparison_nodes[int(temperature)]
+        vaporization_gibbs = (sb_g - sb_l) * 4.184
+        gas_basis_reaction_gibbs = (
+            reaction_constant + reaction_slope * temperature - vaporization_gibbs
+        )
+        return (
+            _generated_gas_gibbs(gas_rows, "Sb", temperature, "Kelley-584-SbO")
+            + 0.5
+            * _generated_gas_gibbs(gas_rows, "O2", temperature, "Kelley-584-SbO")
+            + gas_basis_reaction_gibbs
+        )
+
+    source_temperatures = np.asarray((1200.0, 1400.0, 1600.0, 1800.0, 2000.0))
+    node_by_temperature = {
+        int(node[0]): (float(node[1]) * 4.184, float(node[2]) * 4.184)
+        for node in nodes
+    }
+    entropy_anchors = []
+    for temperature in source_temperatures:
+        h_increment, s_increment = node_by_temperature[int(temperature)]
+        entropy_anchors.append(
+            (
+                formation_enthalpy * 1000.0
+                + h_increment
+                - source_gibbs(float(temperature))
+            )
+            / temperature
+            - s_increment
+        )
+    formation_entropy = float(np.mean(entropy_anchors))
+
+    A, B, C, D, E = (float(value) for value in coefficients)
+    F = formation_enthalpy - float(h298_basis @ coefficients)
+    G = formation_entropy - float(s298_basis @ coefficients)
+
+    def shomate_cp(temperature: float) -> float:
+        value = temperature / 1000.0
+        return A + B * value + C * value**2 + D * value**3 + E / value**2
+
+    if min(shomate_cp(float(temperature)) for temperature in temperatures) <= 0.0:
+        raise ValueError("Kelley-584-SbO: fitted heat capacity is not positive")
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    low_coefficients = {key: number(value) for key, value in zip("ABCDEFG", (A, B, C, D, E, F, G))}
+    low_row = {
+        "species_name": "SbO(g)",
+        "state": "g",
+        "T_interval": "2",
+        "cation": "Sb",
+        "cat_num": "1",
+        "oxy_num": "1",
+        "T_min": "1200",
+        "T_max": "2000",
+        **low_coefficients,
+        "H": "0",
+        "Ref": "Kelley-584-SbO",
+    }
+
+    boundary_t = 2.0
+    boundary_h = (
+        A * boundary_t
+        + B * boundary_t**2 / 2.0
+        + C * boundary_t**3 / 3.0
+        + D * boundary_t**4 / 4.0
+        - E / boundary_t
+        + F
+    )
+    boundary_s = (
+        A * math.log(boundary_t)
+        + B * boundary_t
+        + C * boundary_t**2 / 2.0
+        + D * boundary_t**3 / 3.0
+        - E / (2.0 * boundary_t**2)
+        + G
+    )
+    held_cp = shomate_cp(2000.0)
+    high_coefficients = {
+        "A": number(held_cp),
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "E": "0",
+        "F": number(boundary_h - held_cp * boundary_t),
+        "G": number(boundary_s - held_cp * math.log(boundary_t)),
+    }
+    high_row = {
+        "species_name": "SbO(g)",
+        "state": "g",
+        "T_interval": "1",
+        "cation": "Sb",
+        "cat_num": "1",
+        "oxy_num": "1",
+        "T_min": "2000",
+        "T_max": "3000",
+        **high_coefficients,
+        "H": "0",
+        "Ref": "Kelley-584-SbO-CP-EXT-2000",
+    }
+
+    source_residuals = [
+        _generated_gas_gibbs([low_row, high_row], "SbO", float(temperature), "Kelley-584-SbO")
+        - source_gibbs(float(temperature))
+        for temperature in range(1200, 2001, 100)
+    ]
+    max_source_residual = max(abs(value) for value in source_residuals)
+    max_source_log10_residual = max(
+        abs(value / (R_J_MOL_K * temperature * math.log(10.0)))
+        for temperature, value in zip(range(1200, 2001, 100), source_residuals)
+    )
+    seam_residual = (
+        _generated_gas_gibbs([high_row], "SbO", 2000.0, "Kelley-584-SbO")
+        - _generated_gas_gibbs([low_row], "SbO", 2000.0, "Kelley-584-SbO")
+    )
+    for row in (low_row, high_row):
+        row["_max_enthalpy_increment_residual_J_per_mol"] = number(
+            float(np.max(np.abs(h_residuals)))
+        )
+        row["_max_entropy_increment_residual_J_per_mol_K"] = number(
+            float(np.max(np.abs(s_residuals)))
+        )
+        row["_inferred_formation_entropy_J_per_mol_K"] = number(formation_entropy)
+    low_row["_max_residual_J_per_mol"] = number(max_source_residual)
+    low_row["_max_residual_log10_K"] = number(max_source_log10_residual)
+    high_row["_max_residual_J_per_mol"] = number(abs(seam_residual))
+    high_row["_max_residual_log10_K"] = number(
+        abs(seam_residual / (R_J_MOL_K * 2000.0 * math.log(10.0)))
+    )
+    return [high_row, low_row]
+
+
 def _bi_plus_thermal_rows(
     temperatures: list[float], published_source_dir: Path
 ) -> tuple[list[dict[str, float]], float]:
@@ -3590,6 +3943,8 @@ def build_rows(
         if source[1] not in HALOGEN_NASA_TABLES
     )
     for source in TRACE_PUBLISHED_GAS_SOURCES:
+        if source[1] in {"NUREG-4308-TeO", "Kelley-584-SbO"}:
+            continue
         split_temperature = (
             min(max(source[6], 1500.0), 2000.0)
             if source[1].startswith(
@@ -3659,6 +4014,8 @@ def build_rows(
         if source[1] not in HALOGEN_NASA_TABLES
     )
     for source in TRACE_PUBLISHED_GAS_SOURCES:
+        if source[1] in {"NUREG-4308-TeO", "Kelley-584-SbO"}:
+            continue
         split_temperature = (
             min(max(source[6], 1500.0), 2000.0)
             if source[1].startswith(
@@ -3835,6 +4192,8 @@ def build_rows(
             (2, 1200.0, 1500.0, 1200.0),
         )
     )
+    rows.extend(_fit_nureg_teo_rows(published_source_dir, rows))
+    rows.extend(_fit_kelley_sbo_rows(published_source_dir, rows))
     return rows
 
 

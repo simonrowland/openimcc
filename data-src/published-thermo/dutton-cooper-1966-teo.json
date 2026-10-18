@@ -1,0 +1,48 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "publication": "Dutton, W. A., and W. Charles Cooper (1966), The Oxides and Oxyacids of Tellurium, Chemical Reviews 66(6), 657-675.",
+  "source_url": "https://doi.org/10.1021/cr60244a003",
+  "table_id": "Dutton-Cooper-1966-TeO",
+  "source_locator": "Tables II and III",
+  "source_reference_temperature_K": 298.16,
+  "formation_enthalpy_kcal_mol": {
+    "value": 43.0,
+    "uncertainty": 10.0
+  },
+  "formation_gibbs_kcal_mol": {
+    "value": 36.5,
+    "uncertainty": 10.5
+  },
+  "entropy_cal_mol_K": {
+    "value": 55.8,
+    "uncertainty": 0.5,
+    "source_note": "Absolute standard entropy cited from Kelly and King."
+  },
+  "nodes": [
+    [400, 0.795, 2.29],
+    [500, 1.610, 4.11],
+    [600, 2.445, 5.63],
+    [700, 3.295, 6.94],
+    [800, 4.155, 8.09],
+    [900, 5.020, 9.11],
+    [1000, 5.895, 10.03],
+    [1200, 7.650, 11.63],
+    [1400, 9.410, 12.99],
+    [1600, 11.180, 14.17],
+    [1800, 12.955, 15.22],
+    [2000, 14.730, 16.15]
+  ],
+  "node_columns": [
+    "T_K",
+    "H_minus_H298_16_kcal_mol",
+    "S_minus_S298_16_cal_mol_K"
+  ],
+  "heat_capacity_cal_mol_K": {
+    "a": 8.44,
+    "b_per_K": 0.00032,
+    "c_K2": -83000.0,
+    "equation": "Cp = a + b*T + c/T^2",
+    "source_limit_K": 2000.0
+  },
+  "source_note": "Tables II-III compile TeO thermochemistry derived from spectroscopic data. The heat-capacity correlation reproduces the printed heat-content and entropy increments through 2000 K; the publication does not validate it above that limit."
+}

@@ -272,6 +272,26 @@ records:
         source_locator: Antimony sesquioxide table, printed p. 358
         tier: 4
         selection_reason: The source identifies the 928 K melt marker but states fusion enthalpy is insufficient and supplies no liquid function; construct the required hypothetical Sb2O3(l) caller standard state from the source crystal with the tier-3 estimate ladder and construction band.
+  - record_id: NUREG-4308-TeO
+    path: data-src/published-thermo/nureg-cr-4308-teo.json
+    source_sha256: 2c3cdb68ca76940a604f8cfb14c1d2dae0514592f89fd623d98e8a8775f51818
+    publication: Powers, Brockmann, and Shiver, NUREG/CR-4308, Table 30 (1986)
+    source_url: https://www.osti.gov/servlets/purl/5150148
+    source_locator: Table 30
+    tier: 3
+    selection_reason: Table 30 supplies the TeO(g) and Te(g) Gibbs nodes through 3000 K where JANAF and NASA Glenn have no TeO(g) row. Its thermal curve implies a fitted 298.15 K formation enthalpy of 17.043 kJ/mol; the later primary Narasimhan et al. (2005) Table 6 measurement, 72.7 ± 7.4 kJ/mol, is used as the higher-tier anchor, shifting the Gibbs function by +55.657 kJ/mol while preserving the NUREG temperature dependence.
+    anchor_source: Narasimhan, Sai Baba, and Viswanathan (2005), Thermochimica Acta 427, 137-147, Table 6, p. 143, https://doi.org/10.1016/j.tca.2004.09.003
+    citation_gaps:
+      - NUREG reference 288 is identified as K. C. Mills (1974), Thermodynamic Data for Inorganic Sulphides, Selenides and Tellurides, Butterworths, London; the exact underlying Mills table and page are not identified in the report.
+  - record_id: Dutton-Cooper-1966-TeO
+    path: data-src/published-thermo/dutton-cooper-1966-teo.json
+    source_sha256: dd815f7fbb1d34cdf9accdd5a64dfbe6bba66b8ec3476e14592ff47e62903532
+    publication: Dutton and Cooper, The Oxides and Oxyacids of Tellurium, Chemical Reviews 66(6), 657-675 (1966)
+    source_url: https://doi.org/10.1021/cr60244a003
+    source_locator: Tables II and III
+    tier: 4
+    selection_reason: Retained as the alternate TeO(g) thermochemical route for a computed source-scale comparison; Dutton and Cooper report the values as spectroscopically derived and the heat-capacity correlation is validated only through 2000 K.
+    source_limit_K: 2000.0
   - record_id: P696
     path: data-src/published-thermo/pankratz-bulletin-696.json
     source_sha256: 1b0de65dc2fdd078a4babe5fb0430205259b503f4f74064f727af9df8c99e291
@@ -502,3 +522,15 @@ records:
     citation_gaps:
       - ASD bibliography keys are retained per element, but not expanded here to every underlying historical citation.
       - The selected listed levels do not claim completeness of each bound spectrum.
+  - record_id: Kelley-584-SbO
+    path: data-src/published-thermo/kelley-1960-sbo.json
+    source_sha256: 2277da4c2f3152c2df5c446b4e5cb9628766c3b24f677d8371b5309809c21d16
+    publication: Kelley, K. K. (1960), Contributions to the Data on Theoretical Metallurgy XIII, U.S. Bureau of Mines Bulletin 584; Wagman et al. (1982), NBS Tables of Chemical Thermodynamic Properties, Table 21; Sohn et al. (2004), Metallurgical and Materials Transactions B 35, Table V
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12739/m1/31/
+    source_locator: Kelley Table 30, SbO(g), printed p. 15
+    tier: 3
+    anchor_source: Wagman et al. (1982), NBS Table 21, ΔfH°298.15(SbO(g)) = 199.45 kJ/mol
+    reaction_source: Sohn et al. (2004), Table V, Sb(l) + 1/2 O2(g) = SbO(g), ΔG° = 169285 - 56.78 T J/mol
+    comparison_source: Powers et al. (1986), NUREG/CR-4308 Table 12, Sb(l), Sb(g), and SbO(g)
+    selection_reason: Kelley Table 30 supplies SbO(g) heat-content and entropy increments through 2000 K. NBS Table 21 anchors its formation enthalpy, and its absolute entropy is inferred by closing those increments against the Sohn et al. reaction bridged through NUREG Sb(g)-Sb(l) Gibbs values. The conflicting NUREG SbO Gibbs curve is retained as a non-statistical source-disagreement band.
+    citation_gaps:

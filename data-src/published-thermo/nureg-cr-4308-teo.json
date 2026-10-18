@@ -1,0 +1,43 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "publication": "Powers, D. A., J. E. Brockmann, and A. W. Shiver (1986), VANESA: A Mechanistic Model of Radionuclide Release and Aerosol Generation During Core Debris Interactions with Concrete, NUREG/CR-4308, SAND85-1370.",
+  "source_url": "https://www.osti.gov/servlets/purl/5150148",
+  "table_id": "NUREG-4308-TeO",
+  "source_locator": "Table 30",
+  "source_reference_note": "Table 30 cites reference 288 for Te(g) and TeO(g), identified in the report's reference list as K. C. Mills (1974), Thermodynamic Data for Inorganic Sulphides, Selenides and Tellurides, Butterworths, London. The source's full underlying table locator was not verified.",
+  "nodes": [
+    [1200, -2630, 16993],
+    [1300, -3691, 14794],
+    [1400, -4718, 12624],
+    [1500, -5713, 10480],
+    [1600, -6678, 8360],
+    [1700, -7615, 6263],
+    [1800, -8526, 4185],
+    [1900, -9411, 2128],
+    [2000, -10273, 88],
+    [2100, -9176, 0],
+    [2200, -7986, 0],
+    [2300, -6790, 0],
+    [2400, -5587, 0],
+    [2500, -4379, 0],
+    [2600, -3165, 0],
+    [2700, -1945, 0],
+    [2800, -719, 0],
+    [2900, 514, 0],
+    [3000, 1752, 0]
+  ],
+  "node_columns": [
+    "T_K",
+    "TeO_delta_f_G_cal_mol",
+    "Te_delta_f_G_cal_mol"
+  ],
+  "anchor": {
+    "citation": "Narasimhan, T. S. L., M. Sai Baba, and R. Viswanathan (2005), Vaporization behavior of TeO2(s): a quantitative vaporization—Knudsen effusion mass spectrometric study, Thermochimica Acta 427, 137-147.",
+    "source_url": "https://doi.org/10.1016/j.tca.2004.09.003",
+    "source_locator": "Table 6, p. 143",
+    "temperature_K": 298.15,
+    "formation_enthalpy_kj_mol": 72.7,
+    "uncertainty_kj_mol": 7.4
+  },
+  "source_note": "The 100 K TeO(g) and Te(g) formation-Gibbs cells are transcribed from Table 30. Their difference gives the Te(g) + 1/2 O2(g) = TeO(g) reaction Gibbs function. The independent 2005 measured formation-enthalpy anchor replaces the older Table 30 function's fitted 298.15 K enthalpy while retaining its temperature dependence. The source correction is computed by the builder and is not a published Table 30 cell."
+}

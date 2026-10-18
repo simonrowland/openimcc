@@ -1,0 +1,81 @@
+{
+  "schema_version": "literature_compilation.v1",
+  "table_id": "Kelley-584-SbO",
+  "thermal_source": {
+    "citation": "Kelley, K. K. (1960), Contributions to the Data on Theoretical Metallurgy XIII. High-temperature heat-content, heat-capacity, and entropy data for the elements and inorganic compounds, U.S. Bureau of Mines Bulletin 584.",
+    "source_url": "https://digital.library.unt.edu/ark:/67531/metadc12739/m1/31/",
+    "source_locator": "Table 30, heat content and entropy of SbO(g), printed p. 15",
+    "units": {
+      "heat_content_increment": "cal/mol",
+      "entropy_increment": "cal/(mol K)"
+    },
+    "nodes": [
+      [400, 795, 2.29],
+      [500, 1615, 4.12],
+      [600, 2470, 5.68],
+      [700, 3350, 7.04],
+      [800, 4255, 8.24],
+      [900, 5180, 9.33],
+      [1000, 6125, 10.83],
+      [1200, 8040, 12.07],
+      [1400, 9975, 13.56],
+      [1600, 11915, 14.86],
+      [1800, 13850, 16.00],
+      [2000, 15780, 17.02]
+    ]
+  },
+  "formation_enthalpy_anchor": {
+    "citation": "Wagman, D. D., et al. (1982), The NBS Tables of Chemical Thermodynamic Properties, Journal of Physical and Chemical Reference Data 11, Supplement 2.",
+    "source_url": "https://srd.nist.gov/JPCRD/jpcrdS2Vol11.pdf",
+    "source_locator": "Table 21, SbO(g)",
+    "temperature_K": 298.15,
+    "formation_enthalpy_kj_mol": 199.45
+  },
+  "reaction_source": {
+    "citation": "Sohn, H. Y., et al. (2004), Kinetics of As, Sb, Bi and Pb volatilization from industrial copper matte during Ar + O2 bubbling, Metallurgical and Materials Transactions B 35, 651-661.",
+    "source_url": "https://doi.org/10.1007/s11663-004-0006-8",
+    "source_locator": "Table V, printed p. 657",
+    "reaction": "Sb(l) + 1/2 O2(g) = SbO(g)",
+    "gibbs_function": {
+      "constant_J_mol": 169285,
+      "slope_J_mol_K": -56.78,
+      "temperature_unit": "K"
+    },
+    "reference_notes": "Table V cites Nagamori (2001), Itagaki and Yazawa (1983), and Kubaschewski et al. (1976) as its sources."
+  },
+  "comparison_source": {
+    "citation": "Powers, D. A., J. E. Brockmann, and A. W. Shiver (1986), VANESA: A Mechanistic Model of Radionuclide Release and Aerosol Generation During Core Debris Interactions with Concrete, NUREG/CR-4308, SAND85-1370.",
+    "source_url": "https://www.osti.gov/servlets/purl/5150148",
+    "source_locator": "Table 12, Sb(l), Sb(g), and SbO(g) formation-Gibbs values",
+    "units": "cal/mol",
+    "nodes": [
+      [1200, 26770, 0, -9683],
+      [1300, 24325, 0, -11047],
+      [1400, 21905, 0, -12393],
+      [1500, 19503, 0, -13726],
+      [1600, 17106, 0, -15045],
+      [1700, 14723, 0, -16350],
+      [1800, 12364, 0, -17643],
+      [1900, 9887, 0, -18925],
+      [2000, 6921, 0, -20195],
+      [2100, 3961, 0, -21453],
+      [2200, 1005, 0, -22699],
+      [2300, 0, 0, -23935],
+      [2400, 0, 405, -24756],
+      [2500, 0, 2497, -23880],
+      [2600, 0, 4560, -23022],
+      [2700, 0, 6593, -22186],
+      [2800, 0, 8599, -21367],
+      [2900, 0, 10581, -20566],
+      [3000, 0, 12531, -19782]
+    ],
+    "node_columns": [
+      "T_K",
+      "Sb_g_delta_f_G_cal_mol",
+      "Sb_l_delta_f_G_cal_mol",
+      "SbO_delta_f_G_cal_mol"
+    ],
+    "source_reference_note": "The SbO values are retained as an alternate evaluated route for the source-disagreement envelope. NUREG reference 289 underlying the SbO entry was not identified."
+  },
+  "source_note": "Kelley supplies SbO(g) heat-content and entropy increments; the NBS Table 21 value anchors formation enthalpy at 298.15 K. The absolute entropy is inferred by closing the Kelley increments against Sohn et al.'s selected liquid-Sb reaction and NUREG Table 12's Sb(g)-Sb(l) Gibbs difference at 1200, 1400, 1600, 1800, and 2000 K. The NUREG SbO(g) Gibbs function is retained separately as a large, non-statistical disagreement envelope."
+}

@@ -563,6 +563,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     reviewed_trace_species = {
         f"{source[0]}" for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES
         if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl"))
+        or source[1] == "Kelley-584-SbO"
     }
     reviewed_trace_species.add("Rh(g)")
     ordinary_high_rows = neutral_high_rows.loc[
@@ -573,7 +574,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     ]
     assert (ordinary_high_rows["T_min"] == 1500).all()
     for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
-        if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")):
+        if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")) or source[1] == "Kelley-584-SbO":
             split = min(max(source[6], 1500.0), 2000.0)
             assert float(high_rows.loc[source[0], "T_min"]) == split
             assert float(low_rows.loc[source[0], "T_max"]) == split
@@ -657,9 +658,9 @@ def test_channel_coverage_ledger_is_closed() -> None:
         + len(build_gas_tables.TRACE_GAS_SPECIES)
         - len({"NiO", "CoO"} & build_gas_tables.TRACE_GAS_SPECIES)
     )
-    assert unavailable == {"TeO", "AsO"}
+    assert unavailable == {"AsO"}
     assert unavailable & implemented == set()
-    assert unavailable - implemented == {"TeO", "AsO"}
+    assert unavailable - implemented == {"AsO"}
     assert in_domain.isdisjoint(extrapolated)
     assert not set(_P_CHANNELS) & (in_domain | extrapolated)
     assert (
@@ -1349,7 +1350,7 @@ def test_gas_result_omitted_channels_default_is_empty_and_immutable() -> None:
 def test_unavailable_species_ledger_names_the_closing_source(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    assert set(IMCC_GAS_NO_JANAF_ROWS) == {"TeO", "AsO"}
+    assert set(IMCC_GAS_NO_JANAF_ROWS) == {"AsO"}
     assert IMCC_GAS_INCOMPLETE_PARENT_SPECIES == {}
     assert all(
         source.startswith("needs") or "; needs" in source
@@ -3969,6 +3970,448 @@ def test_sb4_reaction_closes_to_printed_pankratz_cells(
         delta_g = _janaf_gibbs(temperature, sb4) - 2 * _janaf_gibbs(temperature, sb2)
         log10_k = -delta_g / (R_J_MOL_K * temperature * math.log(10.0))
         assert log10_k == pytest.approx(printed_log10_k, abs=0.002)
+
+
+def test_teo_matches_nureg_table_30_and_anchored_mass_action(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    repository = Path(__file__).resolve().parents[1]
+    source_path = repository / "data-src/published-thermo/nureg-cr-4308-teo.json"
+    source_bytes = source_path.read_bytes()
+    source = json.loads(source_bytes)
+    provenance = yaml.safe_load(
+        (repository / "src/openimcc/data/gas/PROVENANCE.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    rows = [
+        row
+        for row in provenance["rows"]
+        if row.get("table_id") == "NUREG-4308-TeO"
+    ]
+    assert len(rows) == 2
+    assert all(
+        hashlib.sha256(source_bytes).hexdigest() == row["source_sha256"]
+        for row in rows
+    )
+    anchor_correction = float(rows[0]["anchor_correction"]["value_kJ_mol"]) * 1000.0
+    inferred_hf = float(
+        rows[0]["anchor_correction"]["inferred_nureg_Hf298_kJ_mol"]
+    )
+    selected_hf = float(rows[0]["anchor_correction"]["selected_Hf298_kJ_mol"])
+
+    dutton_path = repository / "data-src/published-thermo/dutton-cooper-1966-teo.json"
+    dutton_bytes = dutton_path.read_bytes()
+    dutton = json.loads(dutton_bytes)
+    published_provenance = yaml.safe_load(
+        (repository / "data-src/published-thermo/PROVENANCE.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    dutton_metadata = next(
+        record
+        for record in published_provenance["records"]
+        if record["record_id"] == "Dutton-Cooper-1966-TeO"
+    )
+    assert dutton_metadata["path"] == "data-src/published-thermo/dutton-cooper-1966-teo.json"
+    assert dutton_metadata["source_sha256"] == hashlib.sha256(dutton_bytes).hexdigest()
+    assert dutton_metadata["source_limit_K"] == 2000.0
+
+    cp = dutton["heat_capacity_cal_mol_K"]
+    a = float(cp["a"])
+    b = float(cp["b_per_K"])
+    c = float(cp["c_K2"])
+    reference_temperature = float(dutton["source_reference_temperature_K"])
+    source_limit = float(cp["source_limit_K"])
+
+    def dutton_increments(temperature: float) -> tuple[float, float]:
+        # Integrate the printed Cp = a + b*T + c/T^2 correlation from 298.16 K.
+        h_increment = (
+            a * (temperature - reference_temperature)
+            + 0.5 * b * (temperature**2 - reference_temperature**2)
+            - c * (1.0 / temperature - 1.0 / reference_temperature)
+        )
+        s_increment = (
+            a * math.log(temperature / reference_temperature)
+            + b * (temperature - reference_temperature)
+            - 0.5 * c * (1.0 / temperature**2 - 1.0 / reference_temperature**2)
+        )
+        return h_increment, s_increment
+
+    # Premise: Dutton and Cooper report H-H298 in kcal/mol and S-S298 in
+    # cal/(mol K), with their Cp equation accurate through 2000 K. Algebra:
+    # integrate Cp and compare against each printed source node. Units convert
+    # kcal to cal only for the H-node closure. Sanity: the largest printed-node
+    # closure residual is below 0.05 kcal/mol and 0.05 cal/(mol K).
+    for temperature, h_node_kcal, s_node in dutton["nodes"]:
+        h_increment, s_increment = dutton_increments(float(temperature))
+        assert h_increment / 1000.0 == pytest.approx(float(h_node_kcal), abs=0.05)
+        assert s_increment == pytest.approx(float(s_node), abs=0.05)
+
+    h_at_limit, s_at_limit = dutton_increments(source_limit)
+    cp_at_limit = a + b * source_limit + c / source_limit**2
+
+    def dutton_gibbs(temperature: float) -> float:
+        h_increment, s_increment = dutton_increments(
+            min(temperature, source_limit)
+        )
+        if temperature > source_limit:
+            # Dutton does not validate Cp beyond 2000 K. Hold only the
+            # comparison Cp at its source-limit value and integrate H/S.
+            h_increment = h_at_limit + cp_at_limit * (temperature - source_limit)
+            s_increment = s_at_limit + cp_at_limit * math.log(
+                temperature / source_limit
+            )
+        return (
+            float(dutton["formation_enthalpy_kcal_mol"]["value"]) * 1000.0
+            + h_increment
+        ) * 4.184 - temperature * (
+            float(dutton["entropy_cal_mol_K"]["value"]) + s_increment
+        ) * 4.184
+
+    assert anchor_correction == pytest.approx(abs(selected_hf - inferred_hf) * 1000.0)
+    for row in rows:
+        low, high = map(int, row["T_range_K"])
+        knots = set(range(low, high + 1, 100))
+        anchor_values = {
+            int(temperature): float(value)
+            for temperature, value in row["accuracy_band"]["value"][
+                "values_J_per_mol"
+            ].items()
+        }
+        assert set(anchor_values) == knots
+        assert all(value == pytest.approx(7400.0) for value in anchor_values.values())
+        mixed_bands = row["accuracy_band"]["value"]["additional_uncertainty_bands"]
+        assert len(mixed_bands) == 1
+        band = mixed_bands[0]
+        assert band["kind"] == "mixed_source_parent_scale_inconsistency"
+        assert band["comparison_record"] == dutton_metadata["record_id"]
+        assert band["comparison_source_limit_K"] == source_limit
+        extrapolated = sorted(
+            temperature for temperature in knots if temperature > source_limit
+        )
+        assert band["comparison_extrapolated_temperatures_K"] == extrapolated
+        values = {
+            int(temperature): float(value)
+            for temperature, value in band["values_J_per_mol"].items()
+        }
+        assert set(values) == knots
+        assert band["comparison_extrapolation"]["source_data"] is False
+
+        # Compare the two complete parent reactions on the same P672 TeO2(l)
+        # and JANAF O2 references. Those terms cancel, leaving the source-route
+        # difference between the selected NUREG and alternate Dutton TeO data.
+        for temperature in knots:
+            t = float(temperature)
+            teo_row = _nearest_interval_row(gas_pack.gas_df, "TeO(g)", t)
+            oxygen_row = _nearest_interval_row(gas_pack.gas_df, "O2(g)", t)
+            parent_row = _oxide_row_for_T(gas_pack.oxide_df, "TeO2(l)", t)
+            selected_reaction_g = (
+                _janaf_gibbs(t, teo_row)
+                + 0.5 * _janaf_gibbs(t, oxygen_row)
+                - _lamor_gibbs(t, parent_row)
+            )
+            alternate_reaction_g = (
+                dutton_gibbs(t)
+                + 0.5 * _janaf_gibbs(t, oxygen_row)
+                - _lamor_gibbs(t, parent_row)
+            )
+            assert values[temperature] == pytest.approx(
+                abs(selected_reaction_g - alternate_reaction_g), abs=0.001
+            )
+
+    # Premise: Table 30's difference is the Te(g)+1/2 O2(g)=TeO(g)
+    # reaction Gibbs function, while the later measured enthalpy anchor shifts
+    # that function uniformly. Algebra: add the reaction Gibbs to the active
+    # Te/O2 reference rows; compare each printed node to TeO's fitted G_app.
+    # Unit check: source cal/mol becomes J/mol with 4.184; the anchor is kJ/mol.
+    # Sanity: all 19 source nodes close within the recorded 10 J/mol fit gate.
+    for temperature, teo_delta_g_cal, te_delta_g_cal in source["nodes"]:
+        teo_row = _nearest_interval_row(gas_pack.gas_df, "TeO(g)", temperature)
+        te_row = _nearest_interval_row(gas_pack.gas_df, "Te(g)", temperature)
+        oxygen_row = _nearest_interval_row(gas_pack.gas_df, "O2(g)", temperature)
+        expected_gibbs = (
+            _janaf_gibbs(temperature, te_row)
+            + 0.5 * _janaf_gibbs(temperature, oxygen_row)
+            + (teo_delta_g_cal - te_delta_g_cal) * 4.184
+            + anchor_correction
+        )
+        assert _janaf_gibbs(temperature, teo_row) == pytest.approx(
+            expected_gibbs, abs=10.0
+        )
+
+    # The fit's F coefficient carries the measured 298.15 K enthalpy anchor.
+    high_row = _nearest_interval_row(gas_pack.gas_df, "TeO(g)", 2000.0)
+    t298 = 298.15 / 1000.0
+    h298 = (
+        float(high_row["A"]) * t298
+        + float(high_row["B"]) * t298**2 / 2.0
+        + float(high_row["C"]) * t298**3 / 3.0
+        + float(high_row["D"]) * t298**4 / 4.0
+        - float(high_row["E"]) / t298
+        + float(high_row["F"])
+        - float(high_row["H"])
+    )
+    assert h298 == pytest.approx(
+        source["anchor"]["formation_enthalpy_kj_mol"], abs=1e-10
+    )
+
+    # Premise: TeO2(l)=TeO(g)+1/2 O2(g) is TeO's active parent reaction.
+    # Algebra: compare the direct runtime result to Kp from the same active
+    # species Gibbs values at multiple source-grid nodes.
+    for temperature in (1200.0, 1500.0, 2000.0, 2500.0, 3000.0):
+        product_row = _nearest_interval_row(
+            gas_pack.gas_df, "TeO(g)", temperature
+        )
+        oxygen_row = _nearest_interval_row(gas_pack.gas_df, "O2(g)", temperature)
+        parent_row = _oxide_row_for_T(
+            gas_pack.oxide_df, "TeO2(l)", temperature
+        )
+        delta_g = (
+            _janaf_gibbs(temperature, product_row)
+            + 0.5 * _janaf_gibbs(temperature, oxygen_row)
+            - _lamor_gibbs(temperature, parent_row)
+        )
+        expected_log10_pressure = -delta_g / (
+            R_J_MOL_K * temperature * math.log(10.0)
+        )
+        result = evaluate_gas(
+            {"TeO2": 1.0},
+            temperature,
+            1.0,
+            gas_pack,
+            parent_oxides=("TeO2",),
+            gas_species=("TeO",),
+            allow_extrapolation=False,
+        )
+        assert math.log10(result["TeO"]) == pytest.approx(
+            expected_log10_pressure, abs=1e-12
+        )
+
+
+def test_sbo_matches_kelley_nbs_sohn_and_records_nureg_disagreement(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    repository = Path(__file__).resolve().parents[1]
+    source_path = repository / "data-src/published-thermo/kelley-1960-sbo.json"
+    source_bytes = source_path.read_bytes()
+    source = json.loads(source_bytes)
+    published_provenance = yaml.safe_load(
+        (repository / "data-src/published-thermo/PROVENANCE.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    source_record = next(
+        record
+        for record in published_provenance["records"]
+        if record["record_id"] == "Kelley-584-SbO"
+    )
+    assert source_record["source_sha256"] == hashlib.sha256(source_bytes).hexdigest()
+
+    gas_provenance = yaml.safe_load(
+        (repository / "src/openimcc/data/gas/PROVENANCE.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    rows = [
+        row
+        for row in gas_provenance["rows"]
+        if row.get("table_id") == "Kelley-584-SbO"
+    ]
+    assert len(rows) == 2
+    assert all(
+        row["source_sha256"] == hashlib.sha256(source_bytes).hexdigest()
+        for row in rows
+    )
+    low = next(row for row in rows if row["T_interval"] == 2)
+    high = next(row for row in rows if row["T_interval"] == 1)
+    assert low["T_range_K"] == [1200, 2000]
+    assert high["T_range_K"] == [2000, 3000]
+    assert high["extrapolation"] is True
+    assert high["extrapolation_source_limit_K"] == 2000
+    assert "constant-Cp continuation above 2000 K" in high["flags"]
+
+    def h_increment(row: pd.Series, temperature: float) -> float:
+        value = temperature / 1000.0
+        reference = 298.15 / 1000.0
+        return 1000.0 * (
+            float(row["A"]) * (value - reference)
+            + float(row["B"]) * (value**2 - reference**2) / 2.0
+            + float(row["C"]) * (value**3 - reference**3) / 3.0
+            + float(row["D"]) * (value**4 - reference**4) / 4.0
+            - float(row["E"]) * (1.0 / value - 1.0 / reference)
+        )
+
+    def s_increment(row: pd.Series, temperature: float) -> float:
+        value = temperature / 1000.0
+        reference = 298.15 / 1000.0
+        return (
+            float(row["A"]) * math.log(value / reference)
+            + float(row["B"]) * (value - reference)
+            + float(row["C"]) * (value**2 - reference**2) / 2.0
+            + float(row["D"]) * (value**3 - reference**3) / 3.0
+            - float(row["E"]) * (1.0 / value**2 - 1.0 / reference**2) / 2.0
+        )
+
+    def absolute_h(row: pd.Series, temperature: float) -> float:
+        value = temperature / 1000.0
+        return (
+            float(row["A"]) * value
+            + float(row["B"]) * value**2 / 2.0
+            + float(row["C"]) * value**3 / 3.0
+            + float(row["D"]) * value**4 / 4.0
+            - float(row["E"]) / value
+            + float(row["F"])
+        )
+
+    def absolute_s(row: pd.Series, temperature: float) -> float:
+        value = temperature / 1000.0
+        return (
+            float(row["A"]) * math.log(value)
+            + float(row["B"]) * value
+            + float(row["C"]) * value**2 / 2.0
+            + float(row["D"]) * value**3 / 3.0
+            - float(row["E"]) / (2.0 * value**2)
+            + float(row["G"])
+        )
+
+    low_runtime = _nearest_interval_row(gas_pack.gas_df, "SbO(g)", 1500.0)
+    high_runtime = _nearest_interval_row(gas_pack.gas_df, "SbO(g)", 2500.0)
+    anchor = source["formation_enthalpy_anchor"]
+    assert h_increment(low_runtime, 298.15) == pytest.approx(0.0, abs=1e-12)
+    assert (
+        float(low_runtime["A"]) * (298.15 / 1000.0)
+        + float(low_runtime["B"]) * (298.15 / 1000.0) ** 2 / 2.0
+        + float(low_runtime["C"]) * (298.15 / 1000.0) ** 3 / 3.0
+        + float(low_runtime["D"]) * (298.15 / 1000.0) ** 4 / 4.0
+        - float(low_runtime["E"]) / (298.15 / 1000.0)
+        + float(low_runtime["F"])
+    ) == pytest.approx(anchor["formation_enthalpy_kj_mol"], abs=1e-10)
+
+    thermal_h_residuals = []
+    thermal_s_residuals = []
+    for temperature, source_h_cal, source_s_cal in source["thermal_source"]["nodes"]:
+        row = low_runtime
+        thermal_h_residuals.append(
+            h_increment(row, float(temperature)) - float(source_h_cal) * 4.184
+        )
+        thermal_s_residuals.append(
+            s_increment(row, float(temperature)) - float(source_s_cal) * 4.184
+        )
+    thermal_fit = low["thermal_increment_fit"]
+    assert max(map(abs, thermal_h_residuals)) == pytest.approx(
+        thermal_fit["max_enthalpy_increment_residual_J_per_mol"], abs=1e-8
+    )
+    assert max(map(abs, thermal_s_residuals)) == pytest.approx(
+        thermal_fit["max_entropy_increment_residual_J_per_mol_K"], abs=1e-8
+    )
+
+    t298 = 298.15 / 1000.0
+    s298 = (
+        float(low_runtime["A"]) * math.log(t298)
+        + float(low_runtime["B"]) * t298
+        + float(low_runtime["C"]) * t298**2 / 2.0
+        + float(low_runtime["D"]) * t298**3 / 3.0
+        - float(low_runtime["E"]) / (2.0 * t298**2)
+        + float(low_runtime["G"])
+    )
+    assert s298 == pytest.approx(
+        low["inferred_formation_entropy_J_per_mol_K"], abs=1e-10
+    )
+
+    reaction = source["reaction_source"]["gibbs_function"]
+    nureg_nodes = {
+        int(node[0]): tuple(float(value) for value in node[1:])
+        for node in source["comparison_source"]["nodes"]
+    }
+    source_gibbs_residuals = []
+    for temperature in range(1200, 2001, 100):
+        sb_g, sb_l, _ = nureg_nodes[temperature]
+        selected_source_delta_g = (
+            float(reaction["constant_J_mol"])
+            + float(reaction["slope_J_mol_K"]) * temperature
+        ) - (sb_g - sb_l) * 4.184
+        expected_gibbs = (
+            _janaf_gibbs(temperature, _nearest_interval_row(gas_pack.gas_df, "Sb(g)", temperature))
+            + 0.5
+            * _janaf_gibbs(
+                temperature, _nearest_interval_row(gas_pack.gas_df, "O2(g)", temperature)
+            )
+            + selected_source_delta_g
+        )
+        actual_gibbs = _janaf_gibbs(
+            temperature, _nearest_interval_row(gas_pack.gas_df, "SbO(g)", temperature)
+        )
+        source_gibbs_residuals.append(actual_gibbs - expected_gibbs)
+    assert max(map(abs, source_gibbs_residuals)) == pytest.approx(
+        low["fit_residual"]["value"]["max_residual_J_per_mol"], abs=1e-7
+    )
+
+    low_band = low["accuracy_band"]["value"]
+    high_band = high["accuracy_band"]["value"]
+    assert low_band["comparison_record"] == "NUREG-4308-SbO"
+    assert high_band["comparison_record"] == "NUREG-4308-SbO"
+    recorded_differences = {
+        int(temperature): float(value)
+        for band in (low_band, high_band)
+        for temperature, value in band["values_J_per_mol"].items()
+    }
+    assert set(recorded_differences) == set(nureg_nodes)
+    for temperature, (sb_g, sb_l, sbo_g) in nureg_nodes.items():
+        selected_delta_f_g = (
+            _janaf_gibbs(
+                temperature, _nearest_interval_row(gas_pack.gas_df, "SbO(g)", temperature)
+            )
+            - _janaf_gibbs(
+                temperature, _nearest_interval_row(gas_pack.gas_df, "Sb(g)", temperature)
+            )
+            - 0.5
+            * _janaf_gibbs(
+                temperature, _nearest_interval_row(gas_pack.gas_df, "O2(g)", temperature)
+            )
+            + (sb_g - sb_l) * 4.184
+        )
+        assert recorded_differences[temperature] == pytest.approx(
+            abs(selected_delta_f_g - (sbo_g - sb_l) * 4.184), abs=0.001
+        )
+
+    low_cp_at_limit = (
+        float(low_runtime["A"])
+        + float(low_runtime["B"]) * 2.0
+        + float(low_runtime["C"]) * 2.0**2
+        + float(low_runtime["D"]) * 2.0**3
+        + float(low_runtime["E"]) / 2.0**2
+    )
+    assert float(high_runtime["A"]) == pytest.approx(low_cp_at_limit, abs=1e-12)
+    assert absolute_h(high_runtime, 2000.0) == pytest.approx(
+        absolute_h(low_runtime, 2000.0), abs=1e-8
+    )
+    assert absolute_s(high_runtime, 2000.0) == pytest.approx(
+        absolute_s(low_runtime, 2000.0), abs=1e-8
+    )
+    for temperature in (1200.0, 1500.0, 2000.0, 2500.0, 3000.0):
+        parent_row = _oxide_row_for_T(gas_pack.oxide_df, "Sb2O3(l)", temperature)
+        product_row = _nearest_interval_row(gas_pack.gas_df, "SbO(g)", temperature)
+        oxygen_row = _nearest_interval_row(gas_pack.gas_df, "O2(g)", temperature)
+        delta_g = (
+            2.0 * _janaf_gibbs(temperature, product_row)
+            + 0.5 * _janaf_gibbs(temperature, oxygen_row)
+            - _lamor_gibbs(temperature, parent_row)
+        )
+        expected_log10_pressure = -delta_g / (
+            2.0 * R_J_MOL_K * temperature * math.log(10.0)
+        )
+        result = evaluate_gas(
+            {"Sb2O3": 1.0},
+            temperature,
+            1.0,
+            gas_pack,
+            parent_oxides=("Sb2O3",),
+            gas_species=("SbO",),
+        )
+        assert math.log10(result["SbO"]) == pytest.approx(
+            expected_log10_pressure, abs=1e-12
+        )
 
 
 def test_ti_channels_against_janaf_printed_formation_gibbs(

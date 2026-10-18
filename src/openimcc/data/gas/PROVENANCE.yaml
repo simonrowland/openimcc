@@ -3248,6 +3248,150 @@ rows:
   - {table: gas, species_name: Rh+(g), table_id: NIST-ASD-Saha-Rh+, runtime_ref: FLAGGED-DERIVED-NIST-ASD-Rh, source_path: data-src/published-thermo/constructed-ion-sources.json, source_sha256: d8139cae9ca5caacbe4da1d0561a9e470f88f99b7bf224ca29812d86a4c201e8, authority: nist_partition_fitted_ionisation, method: fitted, tier: 1, T_range_K: [1200, 1500], source_fit_range_K: [1200, 1500], T_interval: 2, flags: [FLAGGED, DERIVED, constructed, opt-in ion], source: {citation: 'Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F', source_record: NIST ASD Rh I/II level inputs and first ionization energy, source_locator: NIST ASD Rh I and II listed levels below 25000 cm-1 and first-ionization-energy output, source_url: 'https://physics.nist.gov/PhysRefData/Handbook/Tables/rhodiumtable5_a.htm', secondary_source_url: 'https://physics.nist.gov/PhysRefData/Handbook/Tables/rhodiumtable6.htm', ionization_energy_source_url: 'https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Rh&unc_out=on&units=1', ionization_energy_eV: 7.4589, ionization_energy_reported_value: '7.45890', ionization_energy_uncertainty_eV: 5.0e-05, ionization_energy_reference_keys: [L10032], neutral_level_bibliography_keys: [M58], cation_level_bibliography_keys: [S58], level_cutoff_cm_minus_1: 25000, citation_gaps: [ASD Handbook bibliography keys are retained but their full citations are not expanded in this input record., The selected ASD tables are not a completeness claim for all bound levels; only listed levels below the stated cutoff are used.]}, source_url: 'https://physics.nist.gov/PhysRefData/Handbook/Tables/rhodiumtable5_a.htm', source_locator: NIST ASD Rh I and II listed levels below 25000 cm-1 and first-ionization-energy output, source_data: true, fit_residual: {value: {max_residual_J_per_mol: '0.000146240694448352', max_residual_log10_K: '5.09245392008238e-09'}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/published-thermo/constructed-ion-sources.json, comparison_method: fitted, temperature_range: [1200.0, 1500.0], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: none, explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately., provenance: NIST ASD reference keys in constructed-ion-sources.json}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: 'The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.'}}
   - {table: gas, species_name: Ir+(g), table_id: NIST-ASD-Saha-Ir+, runtime_ref: FLAGGED-DERIVED-NIST-ASD-Ir, source_path: data-src/published-thermo/constructed-ion-sources.json, source_sha256: d8139cae9ca5caacbe4da1d0561a9e470f88f99b7bf224ca29812d86a4c201e8, authority: nist_partition_fitted_ionisation, method: fitted, tier: 1, T_range_K: [1500, 3000], source_fit_range_K: [1500, 3000], T_interval: 1, flags: [FLAGGED, DERIVED, constructed, opt-in ion], source: {citation: 'Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F', source_record: NIST ASD Ir I/II level inputs and first ionization energy, source_locator: NIST ASD Ir I and II listed levels below 25000 cm-1 and first-ionization-energy output, source_url: 'https://physics.nist.gov/PhysRefData/Handbook/Tables/iridiumtable5_a.htm', secondary_source_url: 'https://physics.nist.gov/PhysRefData/Handbook/Tables/iridiumtable6.htm', ionization_energy_source_url: 'https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Ir&unc_out=on&units=1', ionization_energy_eV: 8.96702, ionization_energy_reported_value: '8.96702', ionization_energy_uncertainty_eV: 0.00022, ionization_energy_reference_keys: [L8105], neutral_level_bibliography_keys: [K57], cation_level_bibliography_keys: [KM78], level_cutoff_cm_minus_1: 25000, citation_gaps: [ASD Handbook bibliography keys are retained but their full citations are not expanded in this input record., The selected ASD tables are not a completeness claim for all bound levels; only listed levels below the stated cutoff are used.]}, source_url: 'https://physics.nist.gov/PhysRefData/Handbook/Tables/iridiumtable5_a.htm', source_locator: NIST ASD Ir I and II listed levels below 25000 cm-1 and first-ionization-energy output, source_data: true, fit_residual: {value: {max_residual_J_per_mol: '0.00927137257531285', max_residual_log10_K: '2.42138676552019e-07'}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/published-thermo/constructed-ion-sources.json, comparison_method: fitted, temperature_range: [1500.0, 3000.0], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: none, explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately., provenance: NIST ASD reference keys in constructed-ion-sources.json}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: 'The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.'}}
   - {table: gas, species_name: Ir+(g), table_id: NIST-ASD-Saha-Ir+, runtime_ref: FLAGGED-DERIVED-NIST-ASD-Ir, source_path: data-src/published-thermo/constructed-ion-sources.json, source_sha256: d8139cae9ca5caacbe4da1d0561a9e470f88f99b7bf224ca29812d86a4c201e8, authority: nist_partition_fitted_ionisation, method: fitted, tier: 1, T_range_K: [1200, 1500], source_fit_range_K: [1200, 1500], T_interval: 2, flags: [FLAGGED, DERIVED, constructed, opt-in ion], source: {citation: 'Kramida, A., Ralchenko, Yu., Reader, J., and NIST ASD Team (2024), NIST Atomic Spectra Database, version 5.12, DOI 10.18434/T4W30F', source_record: NIST ASD Ir I/II level inputs and first ionization energy, source_locator: NIST ASD Ir I and II listed levels below 25000 cm-1 and first-ionization-energy output, source_url: 'https://physics.nist.gov/PhysRefData/Handbook/Tables/iridiumtable5_a.htm', secondary_source_url: 'https://physics.nist.gov/PhysRefData/Handbook/Tables/iridiumtable6.htm', ionization_energy_source_url: 'https://physics.nist.gov/cgi-bin/ASD/ie.pl?at_num_out=on&biblio=on&e_out=0&el_name_out=on&format=1&level_out=on&seq_out=on&shells_out=on&spectra=Ir&unc_out=on&units=1', ionization_energy_eV: 8.96702, ionization_energy_reported_value: '8.96702', ionization_energy_uncertainty_eV: 0.00022, ionization_energy_reference_keys: [L8105], neutral_level_bibliography_keys: [K57], cation_level_bibliography_keys: [KM78], level_cutoff_cm_minus_1: 25000, citation_gaps: [ASD Handbook bibliography keys are retained but their full citations are not expanded in this input record., The selected ASD tables are not a completeness claim for all bound levels; only listed levels below the stated cutoff are used.]}, source_url: 'https://physics.nist.gov/PhysRefData/Handbook/Tables/iridiumtable5_a.htm', source_locator: NIST ASD Ir I and II listed levels below 25000 cm-1 and first-ionization-energy output, source_data: true, fit_residual: {value: {max_residual_J_per_mol: '0.000788059318438172', max_residual_log10_K: '3.43026592271077e-08'}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/published-thermo/constructed-ion-sources.json, comparison_method: fitted, temperature_range: [1200.0, 1500.0], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: none, explanation: NIST ASD level completeness is not quantified; the IE uncertainty is recorded separately., provenance: NIST ASD reference keys in constructed-ion-sources.json}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: 'The cation function is derived from these NIST ASD Saha inputs, not an independent thermal-function measurement.'}}
+  - table: gas
+    species_name: SbO(g)
+    table_id: Kelley-584-SbO
+    runtime_ref: Kelley-584-SbO
+    source_path: data-src/published-thermo/kelley-1960-sbo.json
+    source_sha256: 2277da4c2f3152c2df5c446b4e5cb9628766c3b24f677d8371b5309809c21d16
+    authority: published_fitted
+    method: fitted
+    tier: 3
+    T_range_K: [1200, 2000]
+    source_fit_range_K: [400, 2000]
+    source_limit_K: 2000
+    flags:
+      - Kelley Table 30 H and S increment fit; 298.15 K enthalpy anchored to NBS Table 21
+      - S298 inferred from the Sohn Table V reaction bridged through NUREG Sb(g)-Sb(l) Gibbs values
+      - NUREG Table 12 SbO(g) is a conflicting evaluated route; comparison is non-statistical
+      - NUREG reference 289 underlying the alternate SbO curve is unidentified
+    T_interval: 2
+    source:
+      citation: Kelley, K. K. (1960), U.S. Bureau of Mines Bulletin 584, Table 30, SbO(g)
+      source_record: Kelley Table 30 heat-content and entropy increments for SbO(g)
+      source_locator: Table 30, printed p. 15
+      source_url: https://digital.library.unt.edu/ark:/67531/metadc12739/m1/31/
+      anchor_source: Wagman et al. (1982), NBS Tables, Table 21, ΔfH°298.15 = 199.45 kJ/mol
+      anchor_url: https://srd.nist.gov/JPCRD/jpcrdS2Vol11.pdf
+      reaction_source: Sohn et al. (2004), Table V, Sb(l)+1/2 O2(g)=SbO(g), ΔG° = 169285 - 56.78 T J/mol
+      reaction_url: https://doi.org/10.1007/s11663-004-0006-8
+      comparison_source: Powers et al. (1986), NUREG/CR-4308 Table 12, Sb(l), Sb(g), and SbO(g)
+      comparison_url: https://www.osti.gov/servlets/purl/5150148
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12739/m1/31/
+    source_locator: Table 30, printed p. 15; NBS Table 21 anchor and Sohn Table V reaction
+    source_data: true
+    extrapolation: false
+    fit_residual:
+      value: {max_residual_J_per_mol: 2533.54685862869, max_residual_log10_K: 0.0661681620868499}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: Kelley H/S increments and NBS/Sohn/NUREG Gibbs bridge
+      comparison_method: fitted
+      temperature_range: [1200, 2000]
+      held_out_or_in_sample: in_sample
+    thermal_increment_fit:
+      max_enthalpy_increment_residual_J_per_mol: 352.2149457384803
+      max_entropy_increment_residual_J_per_mol_K: 1.74445306572234
+    inferred_formation_entropy_J_per_mol_K: 239.766973641248
+    accuracy_band:
+      value:
+        kind: absolute source-route Gibbs disagreement, not statistical uncertainty
+        comparison_record: NUREG-4308-SbO
+        comparison_source_url: https://www.osti.gov/servlets/purl/5150148
+        method: Absolute difference between the selected Sb(l)+1/2 O2(g)=SbO(g) Gibbs function reconstructed from active rows and the NUREG Table 12 SbO(g) value on the same Sb(l) reference.
+        values_J_per_mol: {1200: 142066.716772288, 1300: 141888.783939569, 1400: 141734.831072836, 1500: 141600.042971816, 1600: 141428.667389843, 1700: 141259.023399602, 1800: 141139.878121359, 1900: 140477.196039006, 2000: 137687.333141371}
+      unit: J mol^-1
+      temperature_points_or_range: [1200, 2000]
+      coverage: Absolute comparison between the selected source route and the unresolved NUREG reference 289 route; this is not a statistical uncertainty.
+    band_basis:
+      kind: source_uncertainty
+      explanation: The large values record disagreement between independent source routes, not a probability interval; NUREG's underlying SbO reference is unidentified.
+      provenance: NUREG/CR-4308 Table 12 compared with Kelley/NBS/Sohn selected route
+    citation_gaps:
+      - NUREG/CR-4308 Table 12 reference 289 underlying the SbO(g) curve was not identified.
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: No independent measured SbO(g) equilibrium check is supplied by these source tables.
+  - table: gas
+    species_name: SbO(g)
+    table_id: Kelley-584-SbO
+    runtime_ref: Kelley-584-SbO-CP-EXT-2000
+    source_path: data-src/published-thermo/kelley-1960-sbo.json
+    source_sha256: 2277da4c2f3152c2df5c446b4e5cb9628766c3b24f677d8371b5309809c21d16
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    tier: 3
+    T_range_K: [2000, 3000]
+    source_fit_range_K: [2000, 2000]
+    source_limit_K: 2000
+    extrapolation_source_limit_K: 2000
+    flags:
+      - constant-Cp continuation above 2000 K
+      - 2000 K H/S continuity with the Kelley Table 30 fit
+      - NUREG Table 12 SbO(g) is a conflicting evaluated route; comparison is non-statistical
+      - NUREG reference 289 underlying the alternate SbO curve is unidentified
+    T_interval: 1
+    source:
+      citation: Kelley, K. K. (1960), U.S. Bureau of Mines Bulletin 584, Table 30, SbO(g)
+      source_record: Kelley Table 30 heat-content and entropy increments for SbO(g)
+      source_locator: Table 30, printed p. 15
+      source_url: https://digital.library.unt.edu/ark:/67531/metadc12739/m1/31/
+      anchor_source: Wagman et al. (1982), NBS Tables, Table 21, ΔfH°298.15 = 199.45 kJ/mol
+      anchor_url: https://srd.nist.gov/JPCRD/jpcrdS2Vol11.pdf
+      reaction_source: Sohn et al. (2004), Table V, Sb(l)+1/2 O2(g)=SbO(g), ΔG° = 169285 - 56.78 T J/mol
+      reaction_url: https://doi.org/10.1007/s11663-004-0006-8
+      comparison_source: Powers et al. (1986), NUREG/CR-4308 Table 12, Sb(l), Sb(g), and SbO(g)
+      comparison_url: https://www.osti.gov/servlets/purl/5150148
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12739/m1/31/
+    source_locator: Kelley Table 30 heat-capacity continuation from 2000 K
+    source_data: false
+    extrapolation: true
+    fit_limitation: Kelley Table 30 thermal nodes end at 2000 K; Cp is held at its fitted 2000 K value, with H and S continuous at the seam.
+    fit_residual:
+      value: {max_residual_J_per_mol: 3.49245965480804e-10, max_residual_log10_K: 9.12119054478209e-15}
+      unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}
+      target_source: H/S continuity with the Kelley-584-SbO lower interval at 2000 K
+      comparison_method: generated_constant_cp_extrapolation_fit
+      temperature_range: [2000, 2000]
+      held_out_or_in_sample: in_sample
+    thermal_increment_fit:
+      max_enthalpy_increment_residual_J_per_mol: 352.2149457384803
+      max_entropy_increment_residual_J_per_mol_K: 1.74445306572234
+    inferred_formation_entropy_J_per_mol_K: 239.766973641248
+    accuracy_band:
+      value:
+        kind: absolute source-route Gibbs disagreement, not statistical uncertainty
+        comparison_record: NUREG-4308-SbO
+        comparison_source_url: https://www.osti.gov/servlets/purl/5150148
+        method: Absolute difference between the selected Sb(l)+1/2 O2(g)=SbO(g) Gibbs function reconstructed from active rows and the NUREG Table 12 SbO(g) value on the same Sb(l) reference.
+        values_J_per_mol: {2000: 137687.333141371, 2100: 134873.847119134, 2200: 132007.648968857, 2300: 137244.743246867, 2400: 144933.808007013, 2500: 145507.185917415, 2600: 146141.488644392, 2700: 146854.415097687, 2800: 147625.927982239, 2900: 148461.020994634, 3000: 149356.252924221}
+      unit: J mol^-1
+      temperature_points_or_range: [2000, 3000]
+      coverage: Absolute comparison between the selected source route and the unresolved NUREG reference 289 route; this is not a statistical uncertainty.
+    band_basis:
+      kind: source_uncertainty
+      explanation: The large values record disagreement between independent source routes, not a probability interval; NUREG's underlying SbO reference is unidentified.
+      provenance: NUREG/CR-4308 Table 12 compared with Kelley/NBS/Sohn selected route
+    citation_gaps:
+      - NUREG/CR-4308 Table 12 reference 289 underlying the SbO(g) curve was not identified.
+    independent_check:
+      status: not_applicable
+      equilibrium: null
+      primary_source: null
+      conditions: null
+      measured_value: null
+      predicted_value: null
+      miss: null
+      miss_to_band_ratio: null
+      reason: No independent measured SbO(g) equilibrium check is supplied by these source tables.
+  - {table: gas, species_name: TeO(g), table_id: NUREG-4308-TeO, runtime_ref: NUREG-4308-TeO, source_path: data-src/published-thermo/nureg-cr-4308-teo.json, source_sha256: 2c3cdb68ca76940a604f8cfb14c1d2dae0514592f89fd623d98e8a8775f51818, authority: published_fitted, method: fitted, tier: 3, T_range_K: [1500, 3000], source_fit_range_K: [1200, 3000], flags: ["Te(g)+1/2 O2(g)=TeO(g) formation-Gibbs conversion", "2005 primary enthalpy anchor; +55.657 kJ/mol shift from NUREG-fitted 17.043 kJ/mol anchor", "NUREG reference-288 underlying table locator not verified"], T_interval: 1, source: {citation: 'Powers, Brockmann, and Shiver (1986), NUREG/CR-4308, Table 30', source_record: 'Table 30 TeO(g) and Te(g) 100 K formation-Gibbs nodes', source_locator: Table 30, source_url: 'https://www.osti.gov/servlets/purl/5150148', anchor_source: 'Narasimhan, Sai Baba, and Viswanathan (2005), Thermochimica Acta 427, 137-147, Table 6, p. 143', anchor_url: 'https://doi.org/10.1016/j.tca.2004.09.003', anchor_Hf298_kJ_mol: 72.7, anchor_uncertainty_kJ_mol: 7.4}, source_url: 'https://www.osti.gov/servlets/purl/5150148', source_locator: 'Table 30; source 288 is K. C. Mills (1974), underlying page not verified', source_data: true, extrapolation: false, fit_residual: {value: {max_residual_J_per_mol: 5.57443909131689, max_residual_log10_K: 0.000153249017834968}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: 'anchor-corrected Table 30 formation-Gibbs nodes transformed to Te(g)+1/2 O2(g)=TeO(g) on the generated Te(g)/O2(g) references', comparison_method: fitted, temperature_range: [1200, 3000], held_out_or_in_sample: in_sample}, accuracy_band: {value: {kind: symmetric measured formation-enthalpy anchor uncertainty propagated as a constant Gibbs offset, values_J_per_mol: {1500: 7400, 1600: 7400, 1700: 7400, 1800: 7400, 1900: 7400, 2000: 7400, 2100: 7400, 2200: 7400, 2300: 7400, 2400: 7400, 2500: 7400, 2600: 7400, 2700: 7400, 2800: 7400, 2900: 7400, 3000: 7400}, method: "Narasimhan et al. (2005) Table 6 reports ΔfH°298 = 72.7 ± 7.4 kJ/mol", additional_uncertainty_bands: [{kind: mixed_source_parent_scale_inconsistency, basis: absolute_alternate_source_reaction_G, comparison_record: Dutton-Cooper-1966-TeO, comparison_source_url: https://doi.org/10.1021/cr60244a003, units: J/mol per mol TeO reaction, method: "Absolute difference between selected NUREG-anchored and Dutton-Cooper TeO(g) apparent Gibbs values in the common TeO2(l) -> TeO(g)+1/2O2(g) reaction; same parent and JANAF O2 terms cancel.", values_J_per_mol: {1500: 60476.733, 1600: 61193.282, 1700: 61905.614, 1800: 62613.484, 1900: 63316.845, 2000: 64015.612, 2100: 64709.662, 2200: 65399.102, 2300: 66083.891, 2400: 66763.736, 2500: 67438.143, 2600: 68106.458, 2700: 68767.919, 2800: 69421.706, 2900: 70066.989, 3000: 70702.970}, comparison_source_limit_K: 2000, comparison_extrapolation: {method: constant_Cp_continuation, anchor_temperature_K: 2000, Cp_cal_mol_K: 9.05925, source_data: false, description: "Comparison-only tail holds Dutton Cp(2000 K) and integrates H and S from the source-equation 2000 K values."}, comparison_extrapolated_temperatures_K: [2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900, 3000]}]}, unit: J mol^-1, temperature_points_or_range: [1500, 3000], coverage: "Anchor-only uncertainty and resolved source-scale comparison; NUREG Table 30 node uncertainty is not stated."}, band_basis: {kind: source_uncertainty, explanation: 'The measured ±7.4 kJ/mol formation-enthalpy anchor shifts the fitted Gibbs function uniformly; the NUREG table does not quantify its node uncertainty.', provenance: 'Narasimhan et al. (2005), Table 6, p. 143'}, anchor_correction: {value_kJ_mol: 55.656688250038, inferred_nureg_Hf298_kJ_mol: 17.043311749962, selected_Hf298_kJ_mol: 72.7}, citation_gaps: ['NUREG reference 288 is identified as K. C. Mills (1974), but the underlying table and page are not identified.'], independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: 'The 2005 measured formation enthalpy is used as the fit anchor; it is not a post-fit independent validation.'}}
+  - {table: gas, species_name: TeO(g), table_id: NUREG-4308-TeO, runtime_ref: NUREG-4308-TeO, source_path: data-src/published-thermo/nureg-cr-4308-teo.json, source_sha256: 2c3cdb68ca76940a604f8cfb14c1d2dae0514592f89fd623d98e8a8775f51818, authority: published_fitted, method: fitted, tier: 3, T_range_K: [1200, 1500], source_fit_range_K: [1200, 3000], flags: ["Te(g)+1/2 O2(g)=TeO(g) formation-Gibbs conversion", "2005 primary enthalpy anchor; +55.657 kJ/mol shift from NUREG-fitted 17.043 kJ/mol anchor", "NUREG reference-288 underlying table locator not verified"], T_interval: 2, source: {citation: 'Powers, Brockmann, and Shiver (1986), NUREG/CR-4308, Table 30', source_record: 'Table 30 TeO(g) and Te(g) 100 K formation-Gibbs nodes', source_locator: Table 30, source_url: 'https://www.osti.gov/servlets/purl/5150148', anchor_source: 'Narasimhan, Sai Baba, and Viswanathan (2005), Thermochimica Acta 427, 137-147, Table 6, p. 143', anchor_url: 'https://doi.org/10.1016/j.tca.2004.09.003', anchor_Hf298_kJ_mol: 72.7, anchor_uncertainty_kJ_mol: 7.4}, source_url: 'https://www.osti.gov/servlets/purl/5150148', source_locator: 'Table 30; source 288 is K. C. Mills (1974), underlying page not verified', source_data: true, extrapolation: false, fit_residual: {value: {max_residual_J_per_mol: 5.57443909131689, max_residual_log10_K: 0.000153249017834968}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: 'anchor-corrected Table 30 formation-Gibbs nodes transformed to Te(g)+1/2 O2(g)=TeO(g) on the generated Te(g)/O2(g) references', comparison_method: fitted, temperature_range: [1200, 3000], held_out_or_in_sample: in_sample}, accuracy_band: {value: {kind: symmetric measured formation-enthalpy anchor uncertainty propagated as a constant Gibbs offset, values_J_per_mol: {1200: 7400, 1300: 7400, 1400: 7400, 1500: 7400}, method: "Narasimhan et al. (2005) Table 6 reports ΔfH°298 = 72.7 ± 7.4 kJ/mol", additional_uncertainty_bands: [{kind: mixed_source_parent_scale_inconsistency, basis: absolute_alternate_source_reaction_G, comparison_record: Dutton-Cooper-1966-TeO, comparison_source_url: https://doi.org/10.1021/cr60244a003, units: J/mol per mol TeO reaction, method: "Absolute difference between selected NUREG-anchored and Dutton-Cooper TeO(g) apparent Gibbs values in the common TeO2(l) -> TeO(g)+1/2O2(g) reaction; same parent and JANAF O2 terms cancel.", values_J_per_mol: {1200: 58318.885, 1300: 59035.897, 1400: 59756.847, 1500: 60476.733}, comparison_source_limit_K: 2000, comparison_extrapolation: {method: constant_Cp_continuation, anchor_temperature_K: 2000, Cp_cal_mol_K: 9.05925, source_data: false, description: "Comparison-only tail holds Dutton Cp(2000 K) and integrates H and S from the source-equation 2000 K values."}, comparison_extrapolated_temperatures_K: []}]}, unit: J mol^-1, temperature_points_or_range: [1200, 1500], coverage: "Anchor-only uncertainty and resolved source-scale comparison; NUREG Table 30 node uncertainty is not stated."}, band_basis: {kind: source_uncertainty, explanation: 'The measured ±7.4 kJ/mol formation-enthalpy anchor shifts the fitted Gibbs function uniformly; the NUREG table does not quantify its node uncertainty.', provenance: 'Narasimhan et al. (2005), Table 6, p. 143'}, anchor_correction: {value_kJ_mol: 55.656688250038, inferred_nureg_Hf298_kJ_mol: 17.043311749962, selected_Hf298_kJ_mol: 72.7}, citation_gaps: ['NUREG reference 288 is identified as K. C. Mills (1974), but the underlying table and page are not identified.'], independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: 'The 2005 measured formation enthalpy is used as the fit anchor; it is not a post-fit independent validation.'}}
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each
