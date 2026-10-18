@@ -16,6 +16,7 @@ from openimcc import (
     ImccFerricInputUnsupportedError,
     ImccNonconvergenceError,
     ImccTOutsideDatapackDomainError,
+    load_datapack,
 )
 from openimcc.kernel import (
     _PUBLISHED_COVERAGE,
@@ -75,6 +76,42 @@ def test_datapack_rejects_invalid_shapes_and_values() -> None:
         kwargs.update(overrides)
         with pytest.raises(ValueError, match=message):
             ImccDatapack(**kwargs)
+
+
+def test_rejected_datapack_reinitialization_preserves_published_identity() -> None:
+    datapack = load_datapack(
+        "src/openimcc/data/packs/imcc-sf04-v1.0.2.json"
+    ).kernel_datapack
+    original_reactions = datapack.reactions
+    original_A = datapack.A.copy()
+    original_version = datapack.version
+    original_identity = (
+        datapack.identity_is_proven,
+        datapack.binding_digest,
+        datapack.model_id,
+    )
+
+    with pytest.raises((TypeError, ValueError)) as caught:
+        datapack.__init__(
+            reactions=("RENAMED", *datapack.reactions[1:]),
+            nu=datapack.nu,
+            A=np.full_like(datapack.A, np.nan),
+            B=datapack.B,
+            domains=datapack.domains,
+            version="mutated",
+            parent_oxides=datapack.parent_oxides,
+            paper_domains=datapack.paper_domains,
+        )
+
+    assert datapack.reactions == original_reactions
+    assert np.array_equal(datapack.A, original_A)
+    assert datapack.version == original_version
+    assert (
+        datapack.identity_is_proven,
+        datapack.binding_digest,
+        datapack.model_id,
+    ) == original_identity
+    assert isinstance(caught.value, TypeError)
 
 
 def test_canonical_serialization_preserves_json_types_and_refuses_invalid_values() -> None:

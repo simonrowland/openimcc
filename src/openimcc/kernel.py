@@ -177,25 +177,37 @@ class ImccDatapack:
     B: np.ndarray
     domains: Sequence[tuple[float, float]]
     version: str
-    parent_oxides: Sequence[str] = field(
-        default_factory=lambda: (
-            "SiO2",
-            "MgO",
-            "FeO",
-            "CaO",
-            "Al2O3",
-            "TiO2",
-            "Na2O",
-            "K2O",
-        )
-    )
+    parent_oxides: Sequence[str] = _PUBLISHED_PARENT_OXIDES
     paper_domains: Sequence[tuple[float, float] | None] | None = None
     _identity: _ImccDatapackIdentity = field(
-        default_factory=_untrusted_datapack_identity,
         init=False,
         repr=False,
         compare=False,
     )
+
+    def __init__(
+        self,
+        reactions: Sequence[str],
+        nu: np.ndarray,
+        A: np.ndarray,
+        B: np.ndarray,
+        domains: Sequence[tuple[float, float]],
+        version: str,
+        parent_oxides: Sequence[str] = _PUBLISHED_PARENT_OXIDES,
+        paper_domains: Sequence[tuple[float, float] | None] | None = None,
+    ) -> None:
+        if hasattr(self, "_identity"):
+            raise TypeError("ImccDatapack cannot be initialized more than once")
+        object.__setattr__(self, "reactions", reactions)
+        object.__setattr__(self, "nu", nu)
+        object.__setattr__(self, "A", A)
+        object.__setattr__(self, "B", B)
+        object.__setattr__(self, "domains", domains)
+        object.__setattr__(self, "version", version)
+        object.__setattr__(self, "parent_oxides", parent_oxides)
+        object.__setattr__(self, "paper_domains", paper_domains)
+        object.__setattr__(self, "_identity", _untrusted_datapack_identity())
+        self.__post_init__()
 
     def __post_init__(self) -> None:
         # Convert to arrays for shape validation and arithmetic.
