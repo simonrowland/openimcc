@@ -111,7 +111,6 @@ _BENCH_POINT_KEYS = frozenset(
         "composition_wt_pct",
         "convention",
         "dropped_reason",
-        "enabled",
         "evidence_class",
         "extrapolation_flag",
         "extrapolation_note",

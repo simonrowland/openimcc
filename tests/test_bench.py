@@ -734,7 +734,7 @@ points:
   - id: no
     composition_id: no
     species: NO
-    enabled: true
+    score: true
 """,
         encoding="utf-8",
     )
@@ -746,7 +746,7 @@ points:
     assert point["id"] == "no"
     assert point["composition_id"] == "no"
     assert point["species"] == "NO"
-    assert point["enabled"] is True
+    assert point["score"] is True
 
 
 def test_load_bench_set_uses_yaml_12_integer_grammar(tmp_path: Path) -> None:
@@ -800,6 +800,13 @@ def test_bench_rejects_unknown_point_configuration_key(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="unknown point keys.*scored"):
         load_bench_set(_write_fixture(tmp_path / "bench.yaml", [point]))
+
+    # A key the grader never reads must not be accepted either: an
+    # "enabled: false" point would otherwise still be graded into RMSE.
+    unread = {key: value for key, value in point.items() if key != "scored"}
+    unread["enabled"] = False
+    with pytest.raises(ValueError, match="unknown point keys.*enabled"):
+        load_bench_set(_write_fixture(tmp_path / "bench2.yaml", [unread]))
 
 
 def test_run_bench_cache_distinguishes_inline_compositions(tmp_path: Path) -> None:
