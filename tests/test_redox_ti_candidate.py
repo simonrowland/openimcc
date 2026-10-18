@@ -37,7 +37,7 @@ _MW = {
 _OPTICAL = {
     "SiO2": (1, 2, 0.48),
     "Al2O3": (2, 3, 0.61),
-    "Cr2O3": (2, 3, 0.58),
+    "Cr2O3": (2, 3, None),
     "MgO": (1, 1, 0.78),
     "CaO": (1, 1, 1.00),
     "TiO2": (1, 2, 1.10),
@@ -72,6 +72,7 @@ def _independent_lambda(oxide_wt: dict[str, float]) -> float:
     oxygen_weighted = {
         oxide: amount / _MW[oxide] * _OPTICAL[oxide][1]
         for oxide, amount in oxide_wt.items()
+        if _OPTICAL[oxide][2] is not None
     }
     return sum(
         _OPTICAL[oxide][2] * amount
@@ -158,9 +159,8 @@ def test_ti_basicity_reproduces_berry_table_1_and_anchor_envelope():
 
 @pytest.mark.parametrize(("element", "cations", "published_lambda"), [
     ("K", 2, 1.40),
-    ("Cr", 2, 0.58),
 ])
-def test_berry_optical_basicity_uses_published_k_and_cr_values(
+def test_berry_optical_basicity_uses_published_k_value(
     element: str, cations: int, published_lambda: float
 ):
     from openimcc.redox import _berry_optical_basicity
@@ -168,6 +168,14 @@ def test_berry_optical_basicity_uses_published_k_and_cr_values(
     assert _berry_optical_basicity({element: {1: cations}}) == pytest.approx(
         published_lambda
     )
+
+
+def test_berry_optical_basicity_excludes_unsourced_chromium():
+    from openimcc.redox import _berry_optical_basicity
+
+    assert _berry_optical_basicity(
+        {"Si": {4: 1.0}, "Cr": {3: 2.0}}
+    ) == pytest.approx(0.48)
 
 
 @pytest.mark.parametrize(
@@ -181,7 +189,7 @@ def test_berry_optical_basicity_uses_published_k_and_cr_values(
         pytest.param(CR_TI, {"K2O": 1.0, "Cr2O3": 1.0}, id="cr-ti-k-and-cr-bearing"),
     ],
 )
-def test_ti_candidate_lambda_includes_k_and_cr(
+def test_ti_candidate_lambda_excludes_unsourced_cr_and_flags_it(
     pack: Path, additions: dict[str, float]
 ):
     from openimcc.redox import _berry_optical_basicity
@@ -201,6 +209,16 @@ def test_ti_candidate_lambda_includes_k_and_cr(
     assert ti_fraction == pytest.approx(
         _berry_fraction(1673.15, -10.0, expected_lambda), abs=2e-9
     )
+    if "Cr2O3" in additions:
+        assert any(
+            "Cr-bearing melt is outside the candidate optical-basicity basis" in flag
+            for flag in result.flags
+        )
+    else:
+        assert not any(
+            "Cr-bearing melt is outside the candidate optical-basicity basis" in flag
+            for flag in result.flags
+        )
 
 
 def test_apollo_14072_fraction_matches_reported_approximately():

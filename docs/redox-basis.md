@@ -108,7 +108,9 @@ equivalently use oxide formula moles `m_i` in place of normalized `x_i`). Its
 oxide coefficients are 0.48 (SiO2), 0.61 (Al2O3), 0.78 (MgO), 1.00 (CaO),
 1.10 (TiO2), 1.15 (Na2O), and 1.00 (FeO). The TiO2 value is Berry's cited
 Duffy (1989) value ([paper](https://doi.org/10.1111/j.1151-2916.1989.tb06022.x)); it is distinct from the commonly reused Duffy-Ingram/Mills
-TiO2 value 0.61. Berry's measured Table 1 glasses support the 1.10 recipe:
+TiO2 value 0.61. The evaluator also includes K2O at 1.40 from Duffy's common
+oxide/fluoride scale (1989a, Table 1, p. 37;
+[paper](https://doi.org/10.1016/0022-3093(89)90438-9)). Berry's measured Table 1 glasses support the 1.10 recipe:
 recalculation from their reported oxide analyses gives the following pack
 Lambda values, versus the published values:
 
@@ -131,9 +133,12 @@ before and after this audit. At 1843 K and 1e-9 atm it predicts Ti3+/sumTi
 
 Dissolved Fe(II) and Fe(III) both enter as bulk FeO at coefficient 1.00, so
 the Lambda contribution does not depend on their split; Fe metal is excluded.
-The shared fixed point supplies both dissolved Fe amounts. MnO, K2O, P2O5, and
-Cr2O3 are excluded as minor oxides in Berry's recipe. With product-positive
-oxygen stoichiometry, the row gives
+The shared fixed point supplies both dissolved Fe amounts. Berry's supplement
+does not list K2O or Cr2O3: K2O is added from the Duffy scale cited above,
+while Cr2O3 is omitted because a value on this same basis has not been verified
+in a primary table. A positive Cr inventory therefore adds a candidate flag
+that the melt is outside this optical-basicity basis. MnO and P2O5 remain
+excluded as minor oxides. With product-positive oxygen stoichiometry, the row gives
 `log10(Ti3+/Ti4+) = -log10 K' - 1/4 log10(fO2/1 bar)`.
 
 Berry's five measured glasses anchor the position. Their measured `log K'`

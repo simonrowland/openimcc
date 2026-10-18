@@ -36,11 +36,12 @@ _DEFAULT_REDOX_PACK_PATH = (
     Path(__file__).parent / "data" / "packs" / "openimcc-redox-v1.json"
 )
 _BERRY_OPTICAL_BASICITY = {
-    # Berry et al. (2024), Table S7 (Mills, 1993), gives K2O=1.40 and
-    # Cr2O3=0.58; the existing supported-oxide coefficients are unchanged.
+    # Berry et al. (2024, GCA 366, Table 1 and supplementary text) give the
+    # seven listed coefficients; Duffy (1989a), Table 1, p. 37 gives K2O=1.40
+    # on the same optical-basicity scale. Cr2O3 is omitted because its value
+    # on this scale could not be verified in either cited primary table.
     "SiO2": ("Si", 1, 2, 0.48),
     "Al2O3": ("Al", 2, 3, 0.61),
-    "Cr2O3": ("Cr", 2, 3, 0.58),
     "MgO": ("Mg", 1, 1, 0.78),
     "CaO": ("Ca", 1, 1, 1.00),
     "TiO2": ("Ti", 1, 2, 1.10),
@@ -868,7 +869,6 @@ def _berry_optical_basicity(
     oxide_moles = {
         "Si": math.fsum(ledger.get("Si", {}).values()),
         "Al": math.fsum(ledger.get("Al", {}).values()),
-        "Cr": math.fsum(ledger.get("Cr", {}).values()),
         "Mg": math.fsum(ledger.get("Mg", {}).values()),
         "Ca": math.fsum(ledger.get("Ca", {}).values()),
         "Ti": math.fsum(ledger.get("Ti", {}).values()),
@@ -1637,6 +1637,10 @@ def _make_flags(
         if row.get("composition_coefficients") is not None
         or row.get("composition_term") is not None
     ]
+    optical_basicity_rows = [
+        row for row in conditioned_rows
+        if (row.get("composition_term") or {}).get("kind") == "optical_basicity"
+    ]
     if conditioned_rows:
         supported = {"Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K", "Cr"}
         cation_totals = {
@@ -1648,6 +1652,11 @@ def _make_flags(
             if element != "O"
         }
         total_cations = math.fsum(cation_totals.values())
+        if optical_basicity_rows and cation_totals.get("Cr", 0.0) > 0.0:
+            flags.append(
+                "RED: Cr-bearing melt is outside the candidate optical-basicity "
+                "basis (Cr2O3 coefficient is not sourced)"
+            )
         outside = [
             element for element, amount in cation_totals.items()
             if element not in supported and amount / total_cations > 0.01
@@ -1663,17 +1672,16 @@ def _make_flags(
                 "RED: " + label + "unsupported major cations="
                 + ",".join(sorted(outside))
             )
-    for row in conditioned_rows:
-        term = row.get("composition_term")
-        if term is not None and term["kind"] == "optical_basicity":
-            lambda_value = _berry_optical_basicity(element_moles_by_oxidation_state)
-            low_lambda, high_lambda = map(float, term["lambda_range"])
-            if not low_lambda <= lambda_value <= high_lambda:
-                flags.append(
-                    "RED: optical_basicity_outside_calibrated_range "
-                    f"row={row['complex']} lambda={lambda_value:.6g} "
-                    f"range=[{low_lambda:g},{high_lambda:g}]"
-                )
+    for row in optical_basicity_rows:
+        term = row["composition_term"]
+        lambda_value = _berry_optical_basicity(element_moles_by_oxidation_state)
+        low_lambda, high_lambda = map(float, term["lambda_range"])
+        if not low_lambda <= lambda_value <= high_lambda:
+            flags.append(
+                "RED: optical_basicity_outside_calibrated_range "
+                f"row={row['complex']} lambda={lambda_value:.6g} "
+                f"range=[{low_lambda:g},{high_lambda:g}]"
+            )
     ti_rows = [row for row in active_redox_rows
                if row.get("complex") == "TiO1.5(l)-effective"]
     if ti_rows:
