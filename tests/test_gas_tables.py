@@ -5869,9 +5869,9 @@ _ATTACHMENT_LEVELS = {
 
 
 _ATOMIC_ANION_ELEMENTS = (
-    "Al", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb",
+    "Al", "Au", "B", "Cr", "Cs", "Cu", "Fe", "Ga", "K", "Li", "Na", "Nb",
     "O", "Pb", "Rb", "Si", "Ti", "V", "Zn", "Ag", "Mo", "W", "Zr",
-    "Ni", "Co", "Hf",
+    "Ni", "Co", "Hf", "Pt",
 )
 _UNCHECKED_MOLECULAR_ANIONS = ("AlO", "AlO2", "BO", "BO2", "KO", "LiO", "NaO", "O2")
 
@@ -5887,9 +5887,10 @@ def test_gas_table_atomic_anion_inventory() -> None:
     molecular = {f"{species}-(g)" for species in _UNCHECKED_MOLECULAR_ANIONS}
     assert packaged == atomic | molecular
     # JANAF supplies Zn-, while Hf- is audited with its measured affinity and
-    # ground level. Ag- comes from NASA CEA.
+    # ground level. Ag- comes from NASA CEA. Au- and Pt- are sourced Burcat
+    # channels without an NIST attachment-level check in this inventory.
     assert {f"{element}-(g)" for element in _ATTACHMENT_LEVELS} == atomic - {
-        "Zn-(g)", "Ag-(g)"
+        "Zn-(g)", "Ag-(g)", "Au-(g)", "Pt-(g)"
     }
 
 

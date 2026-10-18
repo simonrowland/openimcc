@@ -53,7 +53,7 @@ PACKAGED_CONDENSATE_TABLE_DIGEST = (
     "4ba6a61f5187a5d6b6b7e12d548b8c473e4f8e71d669f05ad0a0d31ac7dfc866"
 )
 PACKAGED_FULL_GAS_TABLE_DIGEST = (
-    "9c8b7baaf898a8bc00f7ebfc2ec10f3c6228077fdeaa1455385018b2087ace03"
+    "ec8b1b374db3f64ca2ce827b16e216c4f4a9f1f6c455fad5963d42ca3cf6c37e"
 )
 PACKAGED_FULL_CONDENSATE_TABLE_DIGEST = (
     "a38c297a47ed030b89ce69622cda17a0950aa43818b70666662d7b8bfe3c5962"
@@ -63,10 +63,11 @@ PACKAGED_ENGINE_BINDING_DIGESTS = {
     "ext": "2ed735ddb34727dc2472f60f23e773ba81554a9a147a2602872407d7ad697d41",
 }
 PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
-    "v1": "0f6a90f74743c2f148f39e4942c167b7fe9e1833f10c4a0bfaeefd2168fe44ba",
-    "ext": "631d6fc08188aa70b68155916c14fa016517c533012422aa780697fb6a55ae19",
+    "v1": "dfd6b7909d10e1091838e56bcb2a7eb30dd6059962483161a5e9f0a1d9e27f2b",
+    "ext": "9d605c427e1bf67a32f4337bcf661a1d5c8c40be13dd86f915b1dc08b541e004",
 }
 ADDED_GAS_SPECIES = {
+    "Au+(g)", "Au-(g)", "Hg+(g)", "Pd+(g)", "Pt+(g)", "Pt-(g)",
     "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
     "(BeO)2(g)", "(BeO)3(g)", "(BeO)4(g)", "Be2(g)", "Tl(g)", "Tl2O(g)",
     "(CsBr)2(g)", "(CsCl)2(g)", "(CsF)2(g)", "(CsI)2(g)",

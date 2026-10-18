@@ -163,12 +163,34 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
     ).stdout
     with tarfile.open(fileobj=__import__("io").BytesIO(archive)) as source:
         source.extractall(tmp_path, filter="data")
+    ion_species = {
+        "Au+(g)", "Au-(g)", "Hg+(g)", "Pd+(g)", "Pt+(g)", "Pt-(g)",
+    }
+    current_gas_provenance = ROOT / "src/openimcc/data/gas/PROVENANCE.yaml"
+    ion_rows = [
+        line
+        for line in current_gas_provenance.read_text().splitlines()
+        if line.startswith("  - {table: gas, species_name: ")
+        and any(f"species_name: {species}," in line for species in ion_species)
+    ]
+    assert len(ion_rows) == len(ion_species)
+    baseline_gas_provenance = tmp_path / "src/openimcc/data/gas/PROVENANCE.yaml"
+    baseline_text = baseline_gas_provenance.read_text()
+    marker = "\nsource_comparisons:"
+    assert marker in baseline_text
+    baseline_gas_provenance.write_text(
+        baseline_text.replace(
+            marker, "\n" + "\n".join(ion_rows) + marker, 1
+        )
+    )
     migrate(tmp_path)
     gas_provenance = "src/openimcc/data/gas/PROVENANCE.yaml"
     for relative in paths:
         if relative == gas_provenance:
-            baseline = yaml.safe_load((tmp_path / relative).read_text())
-            current = yaml.safe_load((ROOT / relative).read_text())
+            migrated_path = tmp_path / relative
+            committed_path = ROOT / relative
+            baseline = yaml.safe_load(migrated_path.read_text())
+            current = yaml.safe_load(committed_path.read_text())
             for document in (baseline, current):
                 document["source_notes"].pop("phosphorus_parent_channels", None)
                 document["rows"] = [
@@ -177,8 +199,8 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                     if row.get("species_name") not in {"PS(g)", "P2O5(l)"}
                 ]
             assert baseline == current, relative
-            continue
-        assert (tmp_path / relative).read_bytes() == (ROOT / relative).read_bytes(), relative
+        else:
+            assert migrated_path.read_bytes() == committed_path.read_bytes(), relative
     first = {relative: (tmp_path / relative).read_bytes() for relative in paths}
     migrate(tmp_path)
     second = {relative: (tmp_path / relative).read_bytes() for relative in paths}
