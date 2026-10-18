@@ -1281,7 +1281,7 @@ def _c4_rows_cover_domain(
                 and _one_bar_janaf_source(source["table_id"])
                 for _, row in graphite_rows.iterrows()
             )
-        if gas_parent in {"Hg", "Au", "Pd", "Pt", "Ru", "Rh", "Ir"}:
+        if gas_parent in {"Hg", "Au", "Pd", "Pt", "Ru", "Rh", "Ir", "Os"}:
             import openimcc.gas as gas_module
 
             metal_rows = gas_module._parent_standard_rows(gas_parent)
@@ -1470,7 +1470,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd",
         "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Y", "Br", "I", "Cl", "F",
         "H", "C", "N", "Ta", "Be", "Tl",
-        "H", "C", "N", "Hg", "Au", "Pd", "Pt", "Ru", "Rh", "Ir",
+        "H", "C", "N", "Hg", "Au", "Pd", "Pt", "Ru", "Rh", "Ir", "Os",
     }
     assert set(ELEMENT_STATUS) == expected_elements
     for element, status in ELEMENT_STATUS.items():
@@ -1560,7 +1560,8 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
     gas_parent_by_element = {
         "S": "S2", "Br": "Br2", "I": "I2", "Cl": "Cl2", "F": "F2",
         "H": "H2", "C": "C(cr)", "N": "N2",
-        "Hg": "Hg", "Au": "Au", "Pd": "Pd", "Pt": "Pt", "Ru": "Ru", "Rh": "Rh", "Ir": "Ir",
+        "Hg": "Hg", "Au": "Au", "Pd": "Pd", "Pt": "Pt", "Ru": "Ru", "Rh": "Rh",
+        "Ir": "Ir", "Os": "Os",
     }
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")
     parent_oxides = set(melt.parent_oxides)
@@ -1620,6 +1621,14 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         assert status["reason"] and "\n" not in status["reason"]
         if element != "O":
             assert status["status"] == _status_is_complete(status), element
+
+
+def test_os_metal_parent_covers_c4() -> None:
+    assert ELEMENT_STATUS["Os"]["criteria"]["C4"] is True
+    pack = load_gas_datapack()
+    assert _c4_rows_cover_domain(
+        "Os", {}, pack, {"Os": "Os"}
+    )
 
 
 def test_roadmap_status_table_matches_element_status() -> None:

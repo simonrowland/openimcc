@@ -157,6 +157,9 @@ flagged. This monatomic gas channel has no oxygen-fugacity power.
 Ir(g) uses `a(Ir)` relative to the Burcat stable-metal functions, switching
 from crystal to liquid at 2720 K. This monatomic gas channel has no
 oxygen-fugacity power.
+Os(g) uses `a(Os)` relative to the Burcat Os(cr) stable-metal function over
+1200-3000 K. The source liquid branch begins at 3300 K, above the runtime
+interval; this monatomic gas channel has no oxygen-fugacity power.
 With `include_ions=True`, the gas result also includes Au+, Au-, Hg+, Pd+,
 Pt+, Pt-, and e-. No sourced Ru+, Rh+, or Ir+ functions were found. Ion
 channels are opt-in; default gas results remain neutral-only.

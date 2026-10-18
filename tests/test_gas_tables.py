@@ -654,7 +654,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
-        | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir"}
+        | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir", "Os"}
     )
     assert len(oxide_rows) == 76
 
@@ -1586,6 +1586,7 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
         ("Pd", "BU-3112", "burcat-pd.json", 1827.0, "Pd(l)"),
         ("Pt", "BU-3122", "burcat-pt.json", 2042.0, "Pt(l)"),
         ("Ir", "BU-2613", "burcat-ir.json", 2720.0, "Ir(l)"),
+        ("Os", "BURCAT-OS-G", "burcat-os.json", 3300.0, "Os(cr)"),
     ):
         source_path = ROOT / "data-src" / "published-thermo" / source_file
         digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
@@ -1612,8 +1613,16 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
             assert _accuracy_band_value(continuation)["values_J_per_mol"]["3000"] == pytest.approx(25958.952)
         else:
             crystal = next(row for row in phase_rows if row["species_name"] == f"{element}(cr)")
-            assert crystal["fit_step_at_K"] == pytest.approx(marker)
+            if element == "Os":
+                assert crystal["T_range_K"] == [1200.0, 3000.0]
+                assert "fit_step_at_K" not in crystal
+            else:
+                assert crystal["fit_step_at_K"] == pytest.approx(marker)
             assert crystal["source_data"] is True
+    os_pressure = evaluate_gas(
+        {"Os": 1.0}, 1500.0, 1e-10, load_gas_datapack(), gas_species=("Os",)
+    )["Os"]
+    assert math.isfinite(os_pressure) and os_pressure > 0.0
 
 
 @pytest.mark.parametrize(
@@ -1624,6 +1633,7 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
         ("Pd", 1827.0, (1200.0, 1800.0, 1826.999, 1827.0, 3000.0)),
         ("Pt", 2042.0, (1200.0, 1800.0, 2041.999, 2042.0, 2500.0, 3000.0)),
         ("Ir", 2720.0, (1200.0, 1800.0, 2719.999, 2720.0, 2500.0, 3000.0)),
+        ("Os", 3300.0, (1200.0, 1800.0, 2999.0, 3000.0)),
     ),
 )
 def test_burcat_metal_absolute_k_matches_runtime_and_is_continuous(
@@ -3039,6 +3049,8 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
             if runtime_name in {"Au(cr)", "Pd(cr)"}:
                 runtime_name = runtime_name.removesuffix("(cr)")
             expected_oxide[runtime_name] = row["authority"]
+            if name == "Os(cr)":
+                expected_oxide["Os"] = row["authority"]
             expected_table_ids[name] = row.get(
                 "source_table_id",
                 row.get("table_id", (row.get("source") or {}).get("table_id")),

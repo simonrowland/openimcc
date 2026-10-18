@@ -1,0 +1,75 @@
+{
+  "record_id": "Burcat-Os-metal",
+  "source": "Burcat and Ruscic, Third Millennium Thermochemical Database; OS(g), OS(cr), and OS(liq) cards, calculated from Gurvich's Thermel Table 1992",
+  "source_url": "https://respecth.elte.hu/burcat.php",
+  "records": {
+    "Os(g)": {
+      "record_id": "BURCAT-OS-G",
+      "phase": "gas",
+      "temperature_range_K": [298.15, 6000.0],
+      "delta_f_H_298_15_kJ_mol": 788.0041690351907,
+      "high_coefficients": [
+        1.32541095,
+        0.00197569059,
+        -6.12810143e-7,
+        9.67721845e-11,
+        -5.67804701e-15,
+        94456.0311,
+        15.4025142
+      ],
+      "low_coefficients": [
+        2.66552196,
+        -0.00107846614,
+        2.15585224e-6,
+        -1.50655194e-9,
+        5.43029411e-13,
+        94012.0005,
+        8.21244536
+      ],
+      "source_note": "BURCAT.THR.txt card OS(g), calculated from Gurvich's Thermel Table 1992. The printed comment gives HF298=188.337 kcal/mol; the card-implied H(298.15 K) anchor is 788.0041690351907 kJ/mol."
+    },
+    "Os(cr)": {
+      "record_id": "BURCAT-OS-CR",
+      "phase": "crystal",
+      "temperature_range_K": [298.15, 3300.0],
+      "source_limit_K": 3300.0,
+      "delta_f_H_298_15_kJ_mol": 0.0,
+      "high_coefficients": [
+        3.01993455,
+        0.000249424566,
+        -1.10850253e-9,
+        5.58953566e-11,
+        -2.90167949e-15,
+        -926.335857,
+        -13.4045369
+      ],
+      "coefficients": [
+        2.16079282,
+        0.00466479149,
+        -8.62786766e-6,
+        7.57104172e-9,
+        -2.44751408e-12,
+        -789.155315,
+        -9.46567913
+      ],
+      "source_note": "BURCAT.THR.txt card OS(cr) REF ELEMENT, calculated from Gurvich's Thermel Table 1992; the elemental-reference crystal branch ends at its 3300 K melt marker."
+    },
+    "Os(l)": {
+      "record_id": "BURCAT-OS-L",
+      "phase": "liquid",
+      "temperature_range_K": [3300.0, 6000.0],
+      "source_limit_K": 6000.0,
+      "delta_f_H_298_15_kJ_mol": 0.0,
+      "coefficients": [
+        6.12731497,
+        -0.000102820527,
+        3.43934903e-8,
+        -5.06002660e-12,
+        2.75979529e-16,
+        -1514.72315,
+        -34.9699783
+      ],
+      "source_note": "BURCAT.THR.txt card OS(liq), elemental-reference liquid branch beginning at the 3300 K melt marker; calculated from Gurvich's Thermel Table 1992. Outside the 1200-3000 K runtime interval."
+    }
+  }
+}

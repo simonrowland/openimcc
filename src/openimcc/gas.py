@@ -1444,6 +1444,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Ru": "P672-Ru-l",
     "Rh": "P672-Rh-l",
     "Ir": "BU-2612",
+    "Os": "BURCAT-OS-CR",
     "P2O5": "Jung-Hudon-2012",
     "Na2O": "Na-013",
     "MgO": "Mg-009",
@@ -3466,6 +3467,24 @@ for _element in ("Ru", "Rh", "Ir"):
     _apply_constructed_saha_status(
         _element, _CONSTRUCTED_SAHA_PARENT_SPECIES[_element]
     )
+ELEMENT_STATUS["Os"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": (
+        "Burcat cards OS(g) and OS(cr) provide paired metal-gas and stable-"
+        "phase functions on one elemental reference scale through 3000 K. "
+        "Callers supply a(Os) relative to Os(cr); the OS(liq) branch starts "
+        "at 3300 K, outside this runtime interval."
+    ),
+    "c2_candidates": (),
+    "c3_ion_bound": {
+        "status": "not computed",
+        "reason": "not computed: Os ion channels are outside this neutral gas change",
+    },
+    "source_tables": {"gas": "BURCAT-OS-G", "parent": "BURCAT-OS-CR"},
+    "parent_activity": "Os",
+}
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #

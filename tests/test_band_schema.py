@@ -217,6 +217,11 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                 for row in document["rows"]
                 if row.get("species_name") not in {"PS(g)", "P2O5(l)"}
             ]
+        committed_provenance["rows"] = [
+            row
+            for row in committed_provenance["rows"]
+            if row.get("source_path") != "data-src/published-thermo/burcat-os.json"
+        ]
         wave3_rows = {
             ("gas", "SbO(g)", "Kelley-584-SbO", 1),
             ("gas", "SbO(g)", "Kelley-584-SbO", 2),

@@ -62,6 +62,8 @@
   banded.
 - Added Burcat Ir(g) with caller-supplied `a(Ir)` and stable Ir(cr)/Ir(l)
   reference phases, switching at 2720 K.
+- Added Burcat Os(g) with caller-supplied `a(Os)` relative to stable Os(cr);
+  the source liquid branch begins above the 1200-3000 K runtime interval.
 - Added caller-supplied Br2, I2, Cl2, and F2 gas-parent inputs with elemental
   and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
   pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair

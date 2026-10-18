@@ -84,13 +84,13 @@ ADDED_GAS_SPECIES = {
     "MgI(g)", "MgI2(g)", "RbBr(g)", "RbCl(g)", "RbF(g)", "RbI(g)",
     "SrBr(g)", "SrBr2(g)", "SrCl(g)", "SrCl2(g)", "SrF(g)", "SrF2(g)",
     "SrI(g)", "SrI2(g)",
-    "Pt(g)", "PtO2(g)", "Ru(g)", "Rh(g)", "Ir(g)",
+    "Pt(g)", "PtO2(g)", "Ru(g)", "Rh(g)", "Ir(g)", "Os(g)",
     "PS(g)",
 } | {species for species, _element in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES}
 ADDED_CONDENSATE_SPECIES = {
     "Ta2O5(l)", "BeO(l)", "Tl2O(l)",
     "Pt(cr)", "Pt(l)", "Ru(cr)", "Ru(l)",
-    "Rh(cr)", "Rh(l)", "Ir(cr)", "Ir(l)",
+    "Rh(cr)", "Rh(l)", "Ir(cr)", "Ir(l)", "Os(cr)",
     "P2O5(l)",
 }
 V1_COMPOSITION = {
