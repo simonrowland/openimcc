@@ -221,7 +221,9 @@ parent activities. Gas standard states are ideal gases at \(p^\circ=1\) bar;
 oxide parents use their liquid standard-state rows. The condensed references
 for Au, Pd, Pt, Ru, Rh, and Ir use crystal rows below their pack transition
 temperatures (1337, 1827, 2042, 2607, 2237, and 2720 K, respectively) and
-liquid rows at or above them; C uses C(cr) and Hg uses Hg(l). Gas-phase
+liquid rows at or above them. C uses C(cr), Hg uses Hg(l), and Os and Re
+use Os(cr) and Re(cr) throughout, since both melt above the 3000 K domain
+ceiling. Gas-phase
 parents use their gas rows. For
 the channel
 
