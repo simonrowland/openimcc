@@ -119,6 +119,12 @@ def main(argv: list[str] | None = None) -> int:
               "commit message; consumers pin this hash.", file=sys.stderr)
         return 1
 
+    if not current["packs"]:
+        # Zero packs on disk and in the manifest is not a match; it means the
+        # check looked in the wrong place or the data are missing.
+        print("datapack check found no packs; refusing to report a vacuous match",
+              file=sys.stderr)
+        return 1
     print(f"ok: {len(current['packs'])} pack(s) match the manifest")
     return 0
 

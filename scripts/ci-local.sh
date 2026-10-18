@@ -53,6 +53,7 @@ fi
 
 # --------------------------------------------------------------------------
 head "test matrix"
+RAN=0
 if [ "$QUICK" = "1" ]; then
     VERSIONS=("$(python3 -c 'import sys;print(f"{sys.version_info.major}.{sys.version_info.minor}")')")
 else
@@ -77,6 +78,7 @@ for V in "${VERSIONS[@]}"; do
     OUT="$("$VPY" -m pytest tests/ -q -W error 2>&1)"
     RC=$?
     LAST="$(printf '%s' "$OUT" | tail -1)"
+    RAN=$((RAN + 1))
     if [ "$RC" -eq 0 ] && printf '%s' "$LAST" | grep -qE '^[0-9]+ passed' \
         && ! printf '%s' "$LAST" | grep -qE '[0-9]+ (failed|errors?)'; then
         pass "tests on $V  $DIM$(printf '%s' "$OUT" | tail -1)$OFF"
@@ -122,6 +124,9 @@ else
 fi
 
 # --------------------------------------------------------------------------
+# A matrix in which no interpreter ran pytest proves nothing: every skip is
+# green only if at least one version actually ran the suite.
+[ "$RAN" -eq 0 ] && fail "test matrix (no interpreter ran the suite)"
 printf '\n'
 if [ ${#FAILED[@]} -eq 0 ]; then
     printf '%sall gates passed%s' "$GRN" "$OFF"
