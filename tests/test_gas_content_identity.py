@@ -68,6 +68,7 @@ PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
     "ext": "cea44dee8b9e35875c1f6d44a4adfd7ef13df0fc3605e69f091ca48dc23ed7b1",
 }
 ADDED_GAS_SPECIES = {
+    "TeO(g)", "SbO(g)",
     "Au+(g)", "Au-(g)", "Hg+(g)", "Pd+(g)", "Pt+(g)", "Pt-(g)",
     "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
     "(BeO)2(g)", "(BeO)3(g)", "(BeO)4(g)", "Be2(g)", "Tl(g)", "Tl2O(g)",

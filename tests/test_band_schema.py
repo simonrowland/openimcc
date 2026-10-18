@@ -199,24 +199,50 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
     for relative in paths:
         migrated_path = tmp_path / relative
         committed_path = ROOT / relative
-        if relative == gas_provenance:
-            baseline = yaml.safe_load(migrated_path.read_text())
-            current = yaml.safe_load(committed_path.read_text())
-            for document in (baseline, current):
-                for note in (
-                    "phosphorus_parent_channels",
-                    "negative_ion_screen",
-                    "constructed_saha_ions",
-                ):
-                    document["source_notes"].pop(note, None)
-                document["rows"] = [
-                    row
-                    for row in document["rows"]
-                    if row.get("species_name") not in {"PS(g)", "P2O5(l)"}
-                ]
-            assert baseline == current, relative
-        else:
+        if relative != gas_provenance:
             assert migrated_path.read_bytes() == committed_path.read_bytes(), relative
+            continue
+
+        migrated_provenance = yaml.safe_load(migrated_path.read_text())
+        committed_provenance = yaml.safe_load(committed_path.read_text())
+        for document in (migrated_provenance, committed_provenance):
+            for note in (
+                "phosphorus_parent_channels",
+                "negative_ion_screen",
+                "constructed_saha_ions",
+            ):
+                document["source_notes"].pop(note, None)
+            document["rows"] = [
+                row
+                for row in document["rows"]
+                if row.get("species_name") not in {"PS(g)", "P2O5(l)"}
+            ]
+        wave3_rows = {
+            ("gas", "SbO(g)", "Kelley-584-SbO", 1),
+            ("gas", "SbO(g)", "Kelley-584-SbO", 2),
+            ("gas", "TeO(g)", "NUREG-4308-TeO", 1),
+            ("gas", "TeO(g)", "NUREG-4308-TeO", 2),
+        }
+
+        def row_key(row: dict) -> tuple:
+            return (
+                row.get("table"), row.get("species_name"), row.get("table_id"),
+                row.get("T_interval"),
+            )
+
+        migrated_rows = {row_key(row): row for row in migrated_provenance["rows"]}
+        committed_rows = {row_key(row): row for row in committed_provenance["rows"]}
+        assert set(committed_rows) - set(migrated_rows) == wave3_rows
+        assert set(migrated_rows) <= set(committed_rows)
+        assert all(committed_rows[key] == row for key, row in migrated_rows.items())
+        for key in set(migrated_provenance) - {"rows", "source_notes"}:
+            assert committed_provenance[key] == migrated_provenance[key]
+        assert set(committed_provenance["source_notes"]) == set(
+            migrated_provenance["source_notes"]
+        )
+        for key, value in migrated_provenance["source_notes"].items():
+            if key != "trace_channel_additions":
+                assert committed_provenance["source_notes"][key] == value
     first = {relative: (tmp_path / relative).read_bytes() for relative in paths}
     migrate(tmp_path)
     second = {relative: (tmp_path / relative).read_bytes() for relative in paths}

@@ -1260,6 +1260,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
         "BiO": "published_fitted",
         "Te": "published_fitted",
         "Te2": "published_fitted",
+        "TeO": "published_fitted",
         "TeO2": "published_fitted",
         "Se": "published_fitted",
         "Se2": "published_fitted",
