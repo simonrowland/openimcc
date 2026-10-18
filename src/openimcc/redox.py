@@ -27,6 +27,7 @@ from openimcc.model import (
     load_datapack,
 )
 from openimcc.redox_pack import RedoxPack, load_redox_pack, ln_k_prime
+from openimcc.scalar_boundary import is_declared_real_scalar
 
 
 _DEFAULT_DATAPACK_PATH = (
@@ -109,10 +110,15 @@ def _load_default_redox_pack() -> RedoxPack:
     with _DEFAULT_PACK_CACHE_LOCK:
         if _DEFAULT_REDOX_PACK_CACHE is None or _DEFAULT_REDOX_PACK_CACHE[0] != identity:
             try:
-                loaded = load_redox_pack(_DEFAULT_REDOX_PACK_PATH)
+                loaded = load_redox_pack()
             except OSError as exc:
                 raise _unreadable_pack(
                     _DEFAULT_REDOX_PACK_PATH, exc, description="default datapack"
+                ) from exc
+            except ValueError as exc:
+                raise ImccMalformedDatapackError(
+                    "default redox datapack "
+                    f"{_DEFAULT_REDOX_PACK_PATH.name} is invalid: {exc}"
                 ) from exc
             _DEFAULT_REDOX_PACK_CACHE = (identity, loaded)
         return _DEFAULT_REDOX_PACK_CACHE[1]
@@ -512,7 +518,12 @@ def _inventory_parent_moles(
     for element, raw in inventory.items():
         if isinstance(raw, bool) or not isinstance(raw, Real):
             raise RedoxInputError(f"inventory amount for {element!r} must be real")
-        amount = float(raw)
+        try:
+            amount = float(raw)
+        except OverflowError as exc:
+            raise RedoxInputError(
+                f"inventory amount for {element!r} is too large to represent"
+            ) from exc
         if not math.isfinite(amount) or amount < 0.0:
             raise RedoxInputError(
                 f"inventory amount for {element!r} must be finite and non-negative"
@@ -1950,6 +1961,13 @@ def evaluate_redox(
     omitted, the packaged default is used. Relative paths resolve from the
     process working directory.
     """
+    if any(
+        not is_declared_real_scalar(value, allow_numeric_str=True)
+        for value in (T_K, tol, max_iter)
+    ):
+        raise RedoxInputError(
+            "temperature, tolerance, and iteration limit must be numeric and not boolean"
+        )
     try:
         temperature = float(T_K)
         tolerance = float(tol)
@@ -1967,6 +1985,8 @@ def evaluate_redox(
     if mode == "imposed":
         if lambda_imposed is None:
             raise RedoxInputError("imposed mode requires lambda_imposed")
+        if not is_declared_real_scalar(lambda_imposed, allow_numeric_str=True):
+            raise RedoxInputError("lambda_imposed must be finite and not boolean")
         try:
             lambda_value = float(lambda_imposed)
         except (TypeError, ValueError, OverflowError) as exc:

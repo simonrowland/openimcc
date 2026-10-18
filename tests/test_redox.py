@@ -188,6 +188,7 @@ def test_default_redox_pack_cache_is_immutable_and_reloads_changed_files(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     import openimcc.redox as redox_module
+    import openimcc.redox_pack as redox_pack_module
 
     loaded = redox_module._load_default_datapack()
     assert loaded is redox_module._load_default_datapack()
@@ -204,9 +205,17 @@ def test_default_redox_pack_cache_is_immutable_and_reloads_changed_files(
     assert melt_pack is not redox_module._load_default_datapack()
 
     source = redox_module._DEFAULT_REDOX_PACK_PATH
-    changed_path = tmp_path / "redox.json"
+    package_root = tmp_path / "package"
+    pack_dir = package_root / "packs"
+    pack_dir.mkdir(parents=True)
+    changed_path = pack_dir / source.name
     changed_path.write_bytes(source.read_bytes())
+    (pack_dir / "MANIFEST.json").write_bytes(
+        (source.parent / "MANIFEST.json").read_bytes()
+    )
+    monkeypatch.setattr(redox_pack_module, "files", lambda _package: package_root)
     monkeypatch.setattr(redox_module, "_DEFAULT_REDOX_PACK_PATH", changed_path)
+    monkeypatch.setattr(redox_module, "_DEFAULT_REDOX_PACK_CACHE", None)
     pack = redox_module._load_default_redox_pack()
     version = pack.version
     with pytest.raises(TypeError):
@@ -215,7 +224,7 @@ def test_default_redox_pack_cache_is_immutable_and_reloads_changed_files(
     assert redox_module._load_default_redox_pack().version == version
 
     changed_path.write_text("{", encoding="utf-8")
-    with pytest.raises(ValueError):
+    with pytest.raises(ImccMalformedDatapackError):
         redox_module._load_default_redox_pack()
 
 
@@ -1034,6 +1043,71 @@ def test_unregistered_inventory_amounts_are_validated_by_value() -> None:
         evaluate_redox({**inventory, "Xx": -0.1}, 2200.0, "closed")
     with pytest.raises(RedoxInputError):
         evaluate_redox({**inventory, "Xx": float("nan")}, 2200.0, "closed")
+
+
+def test_inventory_amount_beyond_float_range_is_a_typed_refusal() -> None:
+    with pytest.raises(RedoxInputError, match="too large to represent"):
+        evaluate_redox({"Fe": 10**400, "O": 1.25}, 2200.0, "closed")
+
+
+@pytest.mark.parametrize(
+    ("mode", "lambda_imposed", "kwargs"),
+    [
+        ("closed", None, {"max_iter": True}),
+        ("closed", None, {"tol": True}),
+        ("imposed", True, {}),
+    ],
+    ids=("max-iter", "tol", "lambda-imposed"),
+)
+def test_evaluate_redox_refuses_boolean_numeric_controls(mode, lambda_imposed, kwargs):
+    with pytest.raises(RedoxInputError):
+        evaluate_redox(
+            {"Fe": 1.0, "O": 1.25}, 2200.0, mode,
+            lambda_imposed=lambda_imposed, **kwargs,
+        )
+
+
+def test_default_redox_manifest_is_checked_via_evaluate_redox(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    import openimcc.redox_pack as redox_pack_module
+
+    package_root = tmp_path / "package"
+    pack_dir = package_root / "packs"
+    pack_dir.mkdir(parents=True)
+    default_source = redox_module._DEFAULT_REDOX_PACK_PATH
+    pack_path = pack_dir / default_source.name
+    pack_path.write_bytes(default_source.read_bytes())
+    manifest_path = pack_dir / "MANIFEST.json"
+    manifest_path.write_bytes(
+        (default_source.parent / manifest_path.name).read_bytes()
+    )
+    monkeypatch.setattr(redox_pack_module, "files", lambda _package: package_root)
+    monkeypatch.setattr(redox_module, "_DEFAULT_REDOX_PACK_PATH", pack_path)
+    monkeypatch.setattr(redox_module, "_DEFAULT_REDOX_PACK_CACHE", None)
+
+    evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+
+    pack_path.write_bytes(b"{}\n")
+    with pytest.raises(
+        ImccMalformedDatapackError, match="SHA-256 does not match MANIFEST.json"
+    ):
+        evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+
+    manifest_path.unlink()
+    with pytest.raises(ImccMalformedDatapackError):
+        evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+
+    content = json.loads(default_source.read_text(encoding="utf-8"))
+    content["thermo_species"]["FeO(l)"]["row"]["dG_A"] += 1.0
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    external_path = tmp_path / "external-redox.json"
+    external_path.write_text(json.dumps(content), encoding="utf-8")
+    result = evaluate_redox(
+        {"Fe": 1.0, "O": 1.25}, 2200.0, "closed",
+        redox_pack_path=external_path,
+    )
+    assert result.redox_pack_digest == content["canonical_content_digest"]
 
 
 def test_result_publishes_domain_flags_and_active_band_intersection() -> None:
