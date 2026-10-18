@@ -4560,7 +4560,7 @@ def _add_ion_channels(
     for neutral, ion in _GAS_IONIZATION_PAIRS:
         if neutral not in values:
             continue
-        G_neutral, _neutral_row, neutral_flag = gibbs(neutral)
+        G_neutral, neutral_row, neutral_flag = gibbs(neutral)
         G_ion, ion_row, ion_flag = gibbs(ion)
         # Premise: each ideal gas uses p°=1 bar and
         # Z_i°=(kBT/p°)*(2*pi*m_i*kBT/h²)^(3/2)*Q_i*exp(-E_i/kBT).
@@ -4589,13 +4589,16 @@ def _add_ion_channels(
                 equilibrium,
                 (neutral_flag, ion_flag, electron_flag, domain_flags.get(neutral)),
                 str(ion_row.get("Ref", "")),
+                _gas_rows_match_packaged(
+                    datapack, (neutral_row, ion_row, electron_row)
+                ),
             )
         )
 
     for neutral, ion in _GAS_ELECTRON_ATTACHMENTS:
         if neutral not in values:
             continue
-        G_neutral, _neutral_row, neutral_flag = gibbs(neutral)
+        G_neutral, neutral_row, neutral_flag = gibbs(neutral)
         G_ion, ion_row, ion_flag = gibbs(ion)
         # Premise: A + e- = A- uses the same ideal-gas standard state.
         # Algebra: K_A = exp[-(G(A-) - G(A) - G(e-))/(R*T)]. Its partition
@@ -4612,6 +4615,9 @@ def _add_ion_channels(
                 equilibrium,
                 (neutral_flag, ion_flag, electron_flag, domain_flags.get(neutral)),
                 str(ion_row.get("Ref", "")),
+                _gas_rows_match_packaged(
+                    datapack, (neutral_row, ion_row, electron_row)
+                ),
             )
         )
 
@@ -4623,8 +4629,10 @@ def _add_ion_channels(
     values["e-"] = electron_pressure
     domain_flags["e-"] = electron_flag
     provenance_class["e-"] = _ION_PROVENANCE_CLASS
+    if not _gas_rows_match_packaged(datapack, (electron_row,)):
+        provenance_class["e-"] = _EXTERNAL_DATAPACK_CLASS
 
-    for neutral, ion, equilibrium, flags, source_id in positive:
+    for neutral, ion, equilibrium, flags, source_id, rows_match in positive:
         values[ion] = (
             equilibrium * values[neutral] / electron_pressure
             if electron_pressure > 0.0
@@ -4637,8 +4645,10 @@ def _add_ion_channels(
             else _ION_PROVENANCE_CLASS
         )
         provenance_class[ion] = _GAS_PROVENANCE_AUTHORITY[ion]
+        if not rows_match:
+            provenance_class[ion] = _EXTERNAL_DATAPACK_CLASS
 
-    for neutral, ion, equilibrium, flags, source_id in negative:
+    for neutral, ion, equilibrium, flags, source_id, rows_match in negative:
         values[ion] = equilibrium * values[neutral] * electron_pressure
         domain_flags[ion] = "; ".join(flag for flag in flags if flag) or None
         provenance_class[ion] = (
@@ -4647,6 +4657,8 @@ def _add_ion_channels(
             else _ION_PROVENANCE_CLASS
         )
         provenance_class[ion] = _GAS_PROVENANCE_AUTHORITY[ion]
+        if not rows_match:
+            provenance_class[ion] = _EXTERNAL_DATAPACK_CLASS
 
 
 def species_thermo(
@@ -4789,6 +4801,146 @@ def species_thermo(
 # --------------------------------------------------------------------------- #
 
 
+_GAS_PRESSURE_COLUMNS = ("A", "B", "C", "D", "E", "F", "G")
+_OXIDE_PRESSURE_COLUMNS = (
+    "dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E",
+)
+# These refs are the loaded parent row's authority. Their coefficients are
+# the preserved transcription, not the packaged liquid row.
+_LAM_PARENT_REFS = frozenset({"LAM1984", "LAM1987"})
+_EXTERNAL_DATAPACK_CLASS = "external_datapack"
+
+
+def _pressure_row_signature(
+    row: pd.Series, columns: tuple[str, ...]
+) -> tuple[object, ...]:
+    """Species, interval start, Gibbs coefficients, and Ref.
+
+    ``T_max`` and the gas ``H`` column do not enter G, so a change there is
+    not a different pressure.
+    """
+    return (
+        str(row.name),
+        float(row["T_min"]),
+        *(float(row[column]) for column in columns),
+        str(row["Ref"]),
+    )
+
+
+def _frame_pressure_signatures(
+    frame: pd.DataFrame, columns: tuple[str, ...]
+) -> frozenset[tuple[object, ...]]:
+    names = frame.index.to_numpy()
+    starts = frame["T_min"].to_numpy()
+    refs = frame["Ref"].to_numpy()
+    numeric = tuple(frame[column].to_numpy() for column in columns)
+    return frozenset(
+        (
+            str(names[position]),
+            float(starts[position]),
+            *(float(values[position]) for values in numeric),
+            str(refs[position]),
+        )
+        for position in range(len(frame))
+    )
+
+
+def _read_packaged_table(name: str) -> tuple[pd.DataFrame, Path]:
+    pd = _pandas()
+    resource = _packaged_resource(name)
+    display_path = _packaged_database_path(name)
+    with resource.open("rb") as handle:
+        frame = pd.read_csv(handle)
+    frame, _notice = _drop_unnamed_columns(frame, resource, display_path)
+    return frame.set_index("species_name"), display_path
+
+
+@lru_cache(maxsize=1)
+def _packaged_pressure_signatures() -> tuple[
+    str,
+    str,
+    frozenset[tuple[object, ...]],
+    frozenset[tuple[object, ...]],
+]:
+    """Digests and Gibbs-cell signatures of the packaged tables.
+
+    Read through the importlib resources, not ``load_gas_datapack``. An
+    environment override must not become the reference the digests name.
+    """
+    gas_df, gas_path = _read_packaged_table(_PACKAGED_GAS_NAME)
+    oxide_df, oxide_path = _read_packaged_table(_PACKAGED_CONDENSATE_NAME)
+    pack = ImccGasDatapack(
+        gas_df=gas_df,
+        oxide_df=oxide_df,
+        gas_path=gas_path,
+        oxide_path=oxide_path,
+    )
+    return (
+        pack.gas_table_digest,
+        pack.condensate_table_digest,
+        _frame_pressure_signatures(pack.gas_df, _GAS_PRESSURE_COLUMNS),
+        _frame_pressure_signatures(pack.oxide_df, _OXIDE_PRESSURE_COLUMNS),
+    )
+
+
+def _channel_provenance(
+    species: str,
+    oxide_row: pd.Series | None,
+    datapack: ImccGasDatapack,
+    rows: list[tuple[str, pd.Series]],
+) -> str:
+    """Label a channel from the rows that enter its pressure.
+
+    The static species map is the packaged authority. It stays for the
+    packaged tables themselves, and for a pack whose used Gibbs cells are
+    those packaged cells. Dropping an unused interval therefore does not
+    relabel the channels that remain. A LAM parent ref keeps the class the
+    loaded row already selects; a gas row beside it still has to match.
+    """
+    declared = _result_provenance_authority(species, oxide_row)
+    gas_digest, oxide_digest, gas_rows, oxide_rows = (
+        _packaged_pressure_signatures()
+    )
+    if (
+        datapack.gas_table_digest == gas_digest
+        and datapack.condensate_table_digest == oxide_digest
+    ):
+        return declared
+    for kind, row in rows:
+        if kind == "gas":
+            if (
+                _pressure_row_signature(row, _GAS_PRESSURE_COLUMNS)
+                not in gas_rows
+            ):
+                return _EXTERNAL_DATAPACK_CLASS
+            continue
+        if (
+            _pressure_row_signature(row, _OXIDE_PRESSURE_COLUMNS)
+            not in oxide_rows
+            and str(row["Ref"]) not in _LAM_PARENT_REFS
+        ):
+            return _EXTERNAL_DATAPACK_CLASS
+    return declared
+
+
+def _gas_rows_match_packaged(
+    datapack: ImccGasDatapack, rows: tuple[pd.Series, ...]
+) -> bool:
+    """True when ion Gibbs rows are the packaged gas rows."""
+    gas_digest, oxide_digest, gas_rows, _oxide_rows = (
+        _packaged_pressure_signatures()
+    )
+    if (
+        datapack.gas_table_digest == gas_digest
+        and datapack.condensate_table_digest == oxide_digest
+    ):
+        return True
+    return all(
+        _pressure_row_signature(row, _GAS_PRESSURE_COLUMNS) in gas_rows
+        for row in rows
+    )
+
+
 def evaluate_gas(
     activities: Mapping[str, float] | Sequence[float] | np.ndarray,
     T_K: float,
@@ -4857,7 +5009,10 @@ def evaluate_gas(
         A read-only mapping of partial pressures in bar.  ``unit`` is
         ``"bar"``; ``domain_flags`` names extrapolated source rows; and
         ``provenance_class`` carries the least-authoritative class returned by
-        ``gas_species_provenance`` for each channel.
+        ``gas_species_provenance`` when the rows that enter the pressure are
+        the packaged rows. A Gibbs cell that is not that packaged cell is
+        ``external_datapack``, except a LAM1984 or LAM1987 parent ref, which
+        keeps the authority taken from that loaded row.
 
     Derivation
     ----------
@@ -5114,6 +5269,9 @@ def evaluate_gas(
         flag = _source_model_flag(gas_species, T, gas_row, phase="g")
         if flag is not None:
             flags.append(flag)
+        # Rows whose G enters this channel. O2 is appended only when its
+        # coefficient in ΔG is not zero.
+        pressure_rows: list[tuple[str, pd.Series]] = [("gas", gas_row)]
 
         if O2_row is not None and (
             n_O2 != 0.0
@@ -5137,6 +5295,7 @@ def evaluate_gas(
                         allow_extrapolation=allow_extrapolation,
                     )
                 G_oxide = _janaf_gibbs(T, parent_row)
+                pressure_rows.append(("gas", parent_row))
                 flag = (
                     None
                     if gas_parent_row == gas_species
@@ -5151,6 +5310,7 @@ def evaluate_gas(
                     allow_extrapolation=allow_extrapolation,
                 )
                 G_oxide = _lamor_gibbs(T, oxide_row)
+                pressure_rows.append(("oxide", oxide_row))
                 flag = _outside_interval_flag(oxide_name, T, oxide_row)
             a_oxide = act[oxide]
             if flag is not None:
@@ -5204,6 +5364,7 @@ def evaluate_gas(
                 allow_extrapolation=allow_extrapolation,
             )
             G_side = _janaf_gibbs(T, side_row)
+            pressure_rows.append(("gas", side_row))
             flag = _outside_interval_flag(side_row_name, T, side_row)
             if flag is not None:
                 flags.append(flag)
@@ -5227,6 +5388,11 @@ def evaluate_gas(
                 allow_extrapolation=allow_extrapolation,
             )
             G_side_oxide = _lamor_gibbs(T, side_row)
+            pressure_rows.append(("oxide", side_row))
+            if side_n_O2 != 0.0 and O2_row is not None and (
+                n_O2 != 0.0 or gas_name in _HALIDE_REACTIONS
+            ):
+                pressure_rows.append(("gas", O2_row))
             flag = _outside_interval_flag(side_name, T, side_row)
             if flag is not None:
                 flags.append(flag)
@@ -5257,6 +5423,9 @@ def evaluate_gas(
                 allow_extrapolation=allow_extrapolation,
             )
             G_side = _janaf_gibbs(T, side_row)
+            pressure_rows.append(("gas", side_row))
+            if n_O2 != 0.0 and O2_row is not None:
+                pressure_rows.append(("gas", O2_row))
             flag = _outside_interval_flag(side_name, T, side_row)
             if flag is not None:
                 flags.append(flag)
@@ -5274,19 +5443,23 @@ def evaluate_gas(
             # Sulfur tuple: n_S2 S2(g) + n_O2 O2(g) = gas(g).
             # Kp = p_gas / (a_S2**n_S2 * fO2**n_O2), with ΔG° formed from
             # the same balanced reaction; a_S2 is caller-supplied f(S2)/p°.
+            if n_O2 != 0.0 and O2_row is not None:
+                pressure_rows.append(("gas", O2_row))
             dG = G_gas - n_gas * G_oxide - n_O2 * G_O2
             Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
             p_gas = Kp * (a_oxide**n_gas) * (p_O2**n_O2)
         elif not hydrogen_halide_parent:
             # Condensed-parent reaction (1): oxide(l) = n_gas*gas(g) +
             # n_O2*O2(g). Keep its established arithmetic path unchanged.
+            if n_O2 != 0.0 and O2_row is not None:
+                pressure_rows.append(("gas", O2_row))
             dG = n_gas * G_gas + n_O2 * G_O2 - G_oxide
             Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
             p_gas = (Kp * a_oxide / (p_O2**n_O2)) ** (1.0 / n_gas)
         result[gas_name] = float(p_gas)
         domain_flags[gas_name] = "; ".join(flags) or None
-        provenance_class[gas_name] = _result_provenance_authority(
-            gas_name, oxide_row
+        provenance_class[gas_name] = _channel_provenance(
+            gas_name, oxide_row, datapack, pressure_rows
         )
 
     if include_ions:

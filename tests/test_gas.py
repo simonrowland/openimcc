@@ -1084,6 +1084,93 @@ def test_gas_result_is_frozen_bar_mapping_and_preserves_numbers(
         result.unit = "Pa"  # type: ignore[misc]
 
 
+def test_provenance_class_follows_the_coefficients_that_set_the_pressure(
+    gas_pack: ImccGasDatapack,
+    sf04_gas_pack: ImccGasDatapack,
+) -> None:
+    """A changed Gibbs coefficient must not keep the packaged class.
+
+    Dropping an unused row leaves the selected cells packaged, so that
+    channel keeps its class. A LAM1984 or LAM1987 parent ref keeps the
+    class taken from the loaded row.
+    """
+    call = {
+        "parent_oxides": ("SiO2",),
+        "gas_species": ("SiO",),
+        "allow_extrapolation": False,
+    }
+    packaged = evaluate_gas({"SiO2": 1.0}, 2000.0, 1.0e-8, gas_pack, **call)
+    assert packaged["SiO"] == 0.00020806801791891136
+    assert packaged.provenance_class["SiO"] == "janaf_fitted"
+
+    edited = gas_pack.gas_df.copy()
+    sio = edited.index == "SiO(g)"
+    assert bool(sio.any())
+    edited.loc[sio, "A"] = edited.loc[sio, "A"] + 50.0
+    shifted = evaluate_gas(
+        {"SiO2": 1.0},
+        2000.0,
+        1.0e-8,
+        replace(gas_pack, gas_df=edited),
+        **call,
+    )
+    assert shifted["SiO"] == 3.28702986411851e-05
+    assert shifted.provenance_class["SiO"] == "external_datapack"
+
+    oxide = gas_pack.oxide_df.copy()
+    silica = oxide.index == "SiO2(l)"
+    assert bool(silica.any())
+    oxide.loc[silica, "dG_A"] = oxide.loc[silica, "dG_A"] + 5.0
+    oxide_result = evaluate_gas(
+        {"SiO2": 1.0},
+        2000.0,
+        1.0e-8,
+        replace(gas_pack, oxide_df=oxide),
+        **call,
+    )
+    assert oxide_result["SiO"] != packaged["SiO"]
+    assert oxide_result.provenance_class["SiO"] == "external_datapack"
+
+    without_sodium = replace(
+        gas_pack, gas_df=gas_pack.gas_df.drop(index=["Na(g)"])
+    )
+    kept = evaluate_gas(
+        {"SiO2": 1.0}, 2000.0, 1.0e-8, without_sodium, **call
+    )
+    assert kept["SiO"] == packaged["SiO"]
+    assert kept.provenance_class["SiO"] == "janaf_fitted"
+
+    published = evaluate_gas(
+        {"SiO2": 1.0, "K2O": 1.0, "Na2O": 1.0},
+        2000.0,
+        1.0,
+        sf04_gas_pack,
+        parent_oxides=("SiO2", "K2O", "Na2O"),
+        gas_species=("SiO", "K", "Na"),
+        allow_extrapolation=True,
+    )
+    assert published.provenance_class["SiO"] == "lam1987_transcribed"
+    assert published.provenance_class["K"] == "lam1984_transcribed"
+    assert published.provenance_class["Na"] == "janaf_fitted"
+
+    ions = gas_pack.gas_df.copy()
+    sodium_ion = ions.index == "Na+(g)"
+    assert bool(sodium_ion.any())
+    ions.loc[sodium_ion, "A"] = ions.loc[sodium_ion, "A"] + 50.0
+    with_ions = evaluate_gas(
+        {"Na2O": 1.0},
+        2000.0,
+        1.0e-8,
+        replace(gas_pack, gas_df=ions),
+        parent_oxides=("Na2O",),
+        gas_species=("Na",),
+        include_ions=True,
+    )
+    assert with_ions.provenance_class["Na"] == "janaf_fitted"
+    assert with_ions.provenance_class["Na+"] == "external_datapack"
+    assert with_ions.provenance_class["e-"] == "janaf_fitted_ionisation"
+
+
 def test_opt_in_ions_preserve_neutral_outputs_and_close_charge(
     gas_pack: ImccGasDatapack,
 ) -> None:
