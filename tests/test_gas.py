@@ -804,6 +804,57 @@ def test_ti_and_v_gas_rows_use_the_low_fit_below_1500_k(
     assert "extrapolation" not in result.domain_flags[species]
 
 
+def test_stored_gas_tables_refuse_edits_that_would_diverge_from_their_digest(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    """A public cell write must not change pressures under a cached digest."""
+    digest = gas_pack.gas_table_digest
+    condensate_digest = gas_pack.condensate_table_digest
+    pressure = evaluate_gas(
+        {"SiO2": 1.0},
+        1800.0,
+        1e-8,
+        gas_pack,
+        parent_oxides=("SiO2",),
+        gas_species=("SiO",),
+        allow_extrapolation=False,
+    )["SiO"]
+
+    with pytest.raises((TypeError, ValueError)):
+        gas_pack.gas_df.loc["SiO(g)", "A"] = gas_pack.gas_df.loc["SiO(g)", "A"] + 1
+    with pytest.raises(TypeError, match="immutable gas table"):
+        gas_pack.gas_df["A"] = gas_pack.gas_df["A"] + 1
+    with pytest.raises(TypeError, match="immutable gas table"):
+        gas_pack.gas_df.index = gas_pack.gas_df.index
+    with pytest.raises((TypeError, ValueError)):
+        gas_pack.oxide_df.loc["SiO2(l)", "dG_A"] = (
+            gas_pack.oxide_df.loc["SiO2(l)", "dG_A"] + 1
+        )
+
+    again = evaluate_gas(
+        {"SiO2": 1.0},
+        1800.0,
+        1e-8,
+        gas_pack,
+        parent_oxides=("SiO2",),
+        gas_species=("SiO",),
+        allow_extrapolation=False,
+    )["SiO"]
+    assert again == pressure
+    assert gas_pack.gas_table_digest == digest
+    assert gas_pack.condensate_table_digest == condensate_digest
+
+    # A copy is the supported way to build a replacement table.
+    editable = gas_pack.gas_df.copy()
+    editable.loc["SiO(g)", "A"] = editable.loc["SiO(g)", "A"] + 1
+    replaced = replace(
+        gas_pack,
+        gas_df=editable,
+    )
+    assert replaced.gas_table_digest != digest
+    assert gas_pack.gas_table_digest == digest
+
+
 def test_gas_domain_refusal_is_typed(gas_pack: ImccGasDatapack) -> None:
     """A selected gas-row gap still refuses before evaluating the reaction."""
     gas_df = gas_pack.gas_df.copy()

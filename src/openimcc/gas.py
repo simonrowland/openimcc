@@ -3751,14 +3751,126 @@ def _canonicalize_gas_table(
     return canonical
 
 
+def _gas_table_is_locked(frame: "pd.DataFrame") -> bool:
+    state = getattr(frame, "__dict__", None)
+    return bool(state and state.get("_locked"))
+
+
+def _immutable_gas_frame_type():
+    """DataFrame subclass that refuses structural edits once locked.
+
+    Built on first use so importing this module does not import pandas.
+    """
+    existing = getattr(_immutable_gas_frame_type, "cls", None)
+    if existing is not None:
+        return existing
+    pd = _pandas()
+    index_property = pd.DataFrame.index
+    columns_property = pd.DataFrame.columns
+
+    class _ImmutableGasFrame(pd.DataFrame):
+        # Slices and copies stay this type but do not inherit the lock: the
+        # flag lives on the stored instance only.
+        @property
+        def _constructor(self):
+            return _ImmutableGasFrame
+
+        def __setattr__(self, key, value):
+            if key == "_locked":
+                if _gas_table_is_locked(self):
+                    raise TypeError("immutable gas table")
+                object.__setattr__(self, key, value)
+                return
+            # An owned-block write replaces nothing; a column or index
+            # replacement installs a new manager. Both have to fail closed.
+            if key == "_mgr" and _gas_table_is_locked(self):
+                raise TypeError("immutable gas table")
+            return super().__setattr__(key, value)
+
+        @property
+        def index(self):
+            return index_property.__get__(self, type(self))
+
+        @index.setter
+        def index(self, value):
+            if _gas_table_is_locked(self):
+                raise TypeError("immutable gas table")
+            index_property.__set__(self, value)
+
+        @property
+        def columns(self):
+            return columns_property.__get__(self, type(self))
+
+        @columns.setter
+        def columns(self, value):
+            if _gas_table_is_locked(self):
+                raise TypeError("immutable gas table")
+            columns_property.__set__(self, value)
+
+        def __setitem__(self, key, value):
+            if _gas_table_is_locked(self):
+                raise TypeError("immutable gas table")
+            return super().__setitem__(key, value)
+
+        def __delitem__(self, key):
+            if _gas_table_is_locked(self):
+                raise TypeError("immutable gas table")
+            return super().__delitem__(key)
+
+        def insert(self, *args, **kwargs):
+            if _gas_table_is_locked(self):
+                raise TypeError("immutable gas table")
+            return super().insert(*args, **kwargs)
+
+        def drop(self, *args, **kwargs):
+            if kwargs.get("inplace") and _gas_table_is_locked(self):
+                raise TypeError("immutable gas table")
+            return super().drop(*args, **kwargs)
+
+        def rename(self, *args, **kwargs):
+            if kwargs.get("inplace") and _gas_table_is_locked(self):
+                raise TypeError("immutable gas table")
+            return super().rename(*args, **kwargs)
+
+    _ImmutableGasFrame.__module__ = __name__
+    _ImmutableGasFrame.__qualname__ = "_ImmutableGasFrame"
+    _immutable_gas_frame_type.cls = _ImmutableGasFrame
+    return _ImmutableGasFrame
+
+
+def _freeze_gas_table_blocks(table: "pd.DataFrame") -> None:
+    """Mark stored numpy blocks read-only.
+
+    Copy-on-write updates an owned block in place and does not replace the
+    manager, so refusing ``_mgr`` assignment leaves ``loc`` cell writes live.
+    """
+    for block in table._mgr.blocks:
+        values = block.values
+        if not isinstance(values, np.ndarray):
+            raise TypeError(
+                "immutable gas table cannot freeze "
+                f"{type(values).__name__} values"
+            )
+        values.flags.writeable = False
+
+
+def _lock_gas_table(table: "pd.DataFrame") -> "pd.DataFrame":
+    """Return a deep copy that cannot diverge from the digest of its cells."""
+    frame = _immutable_gas_frame_type()(table).copy(deep=True)
+    _freeze_gas_table_blocks(frame)
+    frame._locked = True
+    return frame
+
+
 @dataclass(frozen=True)
 class ImccGasDatapack:
     """Loaded JANAF + condensate tables and their parsed-content identities.
 
     ``gas_path`` and ``oxide_path`` are diagnostic source locations; content
     identity is exposed by the table digest properties. Both frames are
-    canonicalized once at construction. In-place mutation of a stored frame is
-    outside the contract; use :func:`dataclasses.replace` to create a validated
+    canonicalized once at construction and then locked. In-place edits raise,
+    so a stored digest cannot describe different coefficients from the ones
+    evaluations read. Use :func:`dataclasses.replace` to create a validated
     pack with changed tables.
     """
 
@@ -3786,6 +3898,8 @@ class ImccGasDatapack:
             _CONDENSATE_NUMERIC_COLUMNS,
             _CONDENSATE_TEXT_COLUMNS,
         )
+        gas_df = _lock_gas_table(gas_df)
+        oxide_df = _lock_gas_table(oxide_df)
         object.__setattr__(self, "_gas_digest", _gas_table_digest("gas", gas_df))
         object.__setattr__(
             self, "_condensate_digest", _gas_table_digest("condensate", oxide_df)
