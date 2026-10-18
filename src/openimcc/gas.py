@@ -119,6 +119,10 @@ class ImccGasIngestionWarning(UserWarning):
     """A CSV load discarded one or more columns with empty headers."""
 
 
+class ImccGasSourceOverrideWarning(UserWarning):
+    """``OPENIMCC_VAPOROCK_ROOT`` replaced a packaged gas table."""
+
+
 # --------------------------------------------------------------------------- #
 # Packaged data and explicit VapoRock override
 # --------------------------------------------------------------------------- #
@@ -3954,16 +3958,27 @@ def load_gas_datapack(
     """Load the JANAF gas and condensate-oxide thermodynamic tables.
 
     With no arguments the packaged tables are opened through
-    :mod:`importlib.resources`.  Setting ``OPENIMCC_VAPOROCK_ROOT`` explicitly
-    selects the matching VapoRock files instead.  Explicit ``gas_path`` and
-    ``oxide_path`` arguments always win for callers building a diagnostic pack.
-    Both files are read-only.
+    :mod:`importlib.resources`.  Setting ``OPENIMCC_VAPOROCK_ROOT`` selects
+    the matching VapoRock file for any path that was not passed explicitly,
+    and warns once with :class:`ImccGasSourceOverrideWarning` because those
+    files replace the packaged tables.  Passing both ``gas_path`` and
+    ``oxide_path`` uses those files and does not warn.  Both files are
+    read-only.
     """
     pd = _pandas()
 
     # Resolved lazily: an unconfigured install must fail with a typed refusal
     # at CALL time, not at import time, or `import openimcc.gas` breaks for
-    # everyone who only wanted the species constants.
+    # everyone who only wanted the species constants.  The override notice is
+    # emitted before either file is opened so a missing checkout is not silent.
+    override = os.environ.get(_VAPOROCK_ENV_VAR)
+    if override and (gas_path is None or oxide_path is None):
+        warnings.warn(
+            ImccGasSourceOverrideWarning(
+                f"{_VAPOROCK_ENV_VAR}={override} replaces the packaged gas tables"
+            ),
+            stacklevel=2,
+        )
     notice_messages = []
     if gas_path is not None:
         gas_source = Path(gas_path)

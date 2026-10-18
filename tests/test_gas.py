@@ -36,6 +36,7 @@ from openimcc.gas import (
     ImccGasDatapack,
     ImccGasInvalidFugacityError,
     ImccGasIngestionWarning,
+    ImccGasSourceOverrideWarning,
     ImccGasInvalidIntervalError,
     ImccGasOxygenBalanceError,
     ImccGasResult,
@@ -382,11 +383,34 @@ def test_explicit_vaporock_override_remains_supported(
     shutil.copy2(gas_pack.oxide_path, oxide_target / "condensate-thermo-data.csv")
     monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
 
-    overridden = load_gas_datapack()
+    with pytest.warns(
+        ImccGasSourceOverrideWarning, match="OPENIMCC_VAPOROCK_ROOT"
+    ) as notices:
+        overridden = load_gas_datapack()
+    assert str(root) in str(notices[0].message)
     assert overridden.gas_path == gas_target / "JANAF-vapor-data-full.csv"
     assert overridden.oxide_path == oxide_target / "condensate-thermo-data.csv"
     assert overridden.gas_df.equals(gas_pack.gas_df)
     assert overridden.oxide_df.equals(gas_pack.oxide_df)
+
+    with pytest.warns(
+        ImccGasSourceOverrideWarning, match="OPENIMCC_VAPOROCK_ROOT"
+    ):
+        load_gas_datapack(gas_path=overridden.gas_path)
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", ImccGasSourceOverrideWarning)
+        assert default_gas_database_path() == overridden.gas_path
+        assert default_condensate_database_path() == overridden.oxide_path
+        explicit = load_gas_datapack(
+            gas_path=overridden.gas_path,
+            oxide_path=overridden.oxide_path,
+        )
+    assert not any(
+        issubclass(item.category, ImccGasSourceOverrideWarning) for item in caught
+    )
+    assert explicit.gas_df.equals(overridden.gas_df)
+    assert explicit.oxide_df.equals(overridden.oxide_df)
 
 
 def test_vaporock_override_drops_synthetic_unnamed_columns_with_notice(
@@ -413,9 +437,16 @@ def test_vaporock_override_drops_synthetic_unnamed_columns_with_notice(
     )
     monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
 
-    with pytest.warns(ImccGasIngestionWarning) as notices:
+    with (
+        pytest.warns(ImccGasSourceOverrideWarning, match="OPENIMCC_VAPOROCK_ROOT"),
+        pytest.warns(ImccGasIngestionWarning) as notices,
+    ):
         overridden = load_gas_datapack()
-    message = str(notices[0].message)
+    ingestion = [
+        item for item in notices
+        if issubclass(item.category, ImccGasIngestionWarning)
+    ]
+    message = str(ingestion[0].message)
     assert "Unnamed: 14" in message
     assert "Unnamed: 15" in message
     assert "Unnamed: 16" in message
@@ -457,9 +488,16 @@ def test_vaporock_checkout_real_file_regression(
         "d45d76722f21746a0c73202f6b9d70928d0f285025672fa5593c7032ff182f8a"
     )
     monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
-    with pytest.warns(ImccGasIngestionWarning) as notices:
+    with (
+        pytest.warns(ImccGasSourceOverrideWarning, match="OPENIMCC_VAPOROCK_ROOT"),
+        pytest.warns(ImccGasIngestionWarning) as notices,
+    ):
         datapack = load_gas_datapack()
-    message = str(notices[0].message)
+    ingestion = [
+        item for item in notices
+        if issubclass(item.category, ImccGasIngestionWarning)
+    ]
+    message = str(ingestion[0].message)
     assert "Unnamed: 14" in message
     assert "Unnamed: 15" in message
     assert "Unnamed: 16" in message
@@ -474,9 +512,13 @@ def test_vaporock_checkout_real_file_regression(
 def test_packaged_gas_tables_load_without_ingestion_warning() -> None:
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always", ImccGasIngestionWarning)
+        warnings.simplefilter("always", ImccGasSourceOverrideWarning)
         load_gas_datapack()
     assert not any(
         issubclass(item.category, ImccGasIngestionWarning) for item in caught
+    )
+    assert not any(
+        issubclass(item.category, ImccGasSourceOverrideWarning) for item in caught
     )
 
 
@@ -500,7 +542,10 @@ def test_vaporock_override_refuses_named_extra_columns(
             legacy_csv.replace("Ref,,,", f"Ref,,,{named_column}", 1),
             encoding="utf-8",
         )
-        with pytest.warns(ImccGasIngestionWarning):
+        with (
+            pytest.warns(ImccGasSourceOverrideWarning, match="OPENIMCC_VAPOROCK_ROOT"),
+            pytest.warns(ImccGasIngestionWarning),
+        ):
             with pytest.raises(ImccGasInvalidIntervalError, match="invalid schema") as refusal:
                 load_gas_datapack()
         assert f"extra=['{named_column}']" in str(refusal.value)
@@ -2903,7 +2948,8 @@ def test_override_without_tio2_parent_keeps_the_sf04_default_set(
         encoding="utf-8",
     )
     monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
-    legacy = load_gas_datapack()
+    with pytest.warns(ImccGasSourceOverrideWarning, match="OPENIMCC_VAPOROCK_ROOT"):
+        legacy = load_gas_datapack()
     assert "TiO2(l)" not in legacy.oxide_df.index
     assert {"Ti(g)", "TiO(g)", "TiO2(g)"} <= set(legacy.gas_df.index)
 
@@ -3052,7 +3098,14 @@ def test_vaporock_default_reports_missing_alkali_channels(
         "OPENIMCC_VAPOROCK_ROOT",
         os.environ["OPENIMCC_TEST_LEGACY_VAPOROCK_ROOT"],
     )
-    datapack = load_gas_datapack()
+    # The checkout may also drop unnamed columns. That notice is covered
+    # elsewhere; here it must not hide the source-override warning.
+    with warnings.catch_warnings():
+        warnings.simplefilter("always", ImccGasIngestionWarning)
+        with pytest.warns(
+            ImccGasSourceOverrideWarning, match="OPENIMCC_VAPOROCK_ROOT"
+        ):
+            datapack = load_gas_datapack()
     activities = _quickstart_activities(2200.0)
     missing_alkali = {}
     for name in ("Na2O", "K2O"):
