@@ -5301,9 +5301,11 @@ _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")
 # molecular flow, where the mean free path λ ≫ orifice diameter d.
 # λ = k_B T / (√2 π σ² p); with σ ≈ 3.6e-10 m at 2000 K, λ ≈ 0.5 µm × (1 bar / p).
 # Knudsen orifices are ~0.1–1 mm, so molecular flow (λ/d ≳ 1) already requires a
-# total pressure ≲ 1e-3 bar. A root above 1 bar therefore lies far outside the
-# model's validity and is refused rather than returned. The lower edge (1e-30 bar)
-# is below any physically resolvable oxygen pressure.
+# total pressure ≲ 1e-3 bar. That total-pressure line is
+# ``_KNUDSEN_TOTAL_PRESSURE_BAR``. A root above 1 bar therefore lies far outside
+# the model's validity and is refused rather than returned. The lower edge
+# (1e-30 bar) is below any physically resolvable oxygen pressure.
+_KNUDSEN_TOTAL_PRESSURE_BAR = 1e-3
 _OXYGEN_BALANCE_BRACKET = (-30.0, 0.0)
 
 
@@ -5541,6 +5543,11 @@ def oxygen_balance_from_pressure_model(
         key=lambda item: item[1],
         reverse=True,
     )[:5]
+    total_pressure_bar = math.fsum(
+        pressure
+        for pressure in map(float, pressures.values())
+        if math.isfinite(pressure)
+    )
     diagnostics: dict[str, object] = {
         "mode": "oxygen_balance_effusion",
         "residual": abs(residual) / max(oxygen_flux, parent_flux, 1e-300),
@@ -5548,6 +5555,8 @@ def oxygen_balance_from_pressure_model(
         "iterations": solver.iterations,
         "dominant_O_carriers": oxygen_carriers,
         "dominant_metal_carriers": metal_carriers,
+        "total_pressure_bar": total_pressure_bar,
+        "knudsen_regime": total_pressure_bar <= _KNUDSEN_TOTAL_PRESSURE_BAR,
     }
     return 10.0**root, pressures, diagnostics
 
@@ -5582,8 +5591,10 @@ def evaluate_gas_oxygen_balance(
 
     Returns ``(pO2_bar, partial_pressures, diagnostics)``. Partial pressures
     match the neutral-only :func:`evaluate_gas` result; diagnostics contain relative residual, the
-    log10(bar) bracket, iteration count, and the five strongest O and parent
-    oxygen carriers.
+    log10(bar) bracket, iteration count, the five strongest O and parent
+    oxygen carriers, the summed finite partial pressures, and whether that
+    total is at or below the 1e-3 bar molecular-flow line. The returned root
+    is unchanged when the total is above that line.
 
     ``imposed_parents`` names external gas reservoirs such as ``("N2",)`` or
     ``("C",)`` for a nitrogen or CO2 sweep. Their species remain in the

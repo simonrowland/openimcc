@@ -4823,6 +4823,35 @@ def _deny_gas_table_reads(
         gas_pack.gas_df["state"]
 
 
+def test_oxygen_balance_records_whether_the_total_pressure_is_knudsen(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = {
+        "SiO2": 0.45,
+        "MgO": 0.10,
+        "FeO": 0.15,
+        "CaO": 0.15,
+        "Al2O3": 0.15,
+    }
+    low_p, low_gas, low_diag = evaluate_gas_oxygen_balance(
+        activities, 1800.0, gas_pack, allow_extrapolation=False
+    )
+    high_p, high_gas, high_diag = evaluate_gas_oxygen_balance(
+        activities, 3000.0, gas_pack, allow_extrapolation=False
+    )
+    low_total = math.fsum(float(value) for value in low_gas.values())
+    high_total = math.fsum(float(value) for value in high_gas.values())
+    assert low_diag["mode"] == "oxygen_balance_effusion"
+    assert high_diag["mode"] == "oxygen_balance_effusion"
+    assert low_diag["total_pressure_bar"] == low_total
+    assert high_diag["total_pressure_bar"] == high_total
+    assert low_total <= 1e-3
+    assert high_total > 1e-3
+    assert low_diag["knudsen_regime"] is True
+    assert high_diag["knudsen_regime"] is False
+    assert high_p > low_p > 0.0
+
+
 def test_pure_silica_oxygen_balance_matches_analytic_flux_limit(
     gas_pack: ImccGasDatapack,
 ) -> None:
