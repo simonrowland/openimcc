@@ -662,7 +662,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         }
         | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir", "Os", "Re2O7"}
     )
-    assert len(oxide_rows) == 77
+    assert len(oxide_rows) == 78
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
