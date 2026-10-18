@@ -423,13 +423,20 @@ deferred because this fill is limited to monomers and dimers.
 
 ## Known gaps
 
-### 6. Primary provenance for K2O(l)
+### 6. Primary provenance for K2O(l) (resolved for the retained LH84 row)
 
-The shipped K2O(l) coefficients are a secondary transcription from a
-condensate CSV, cited to Lamoreaux & Hildenbrand 1984, and are flagged
-`secondary_transcription_unverified_primary`. The K, K2 and KO channel authority
-therefore carries that flag. Once the LH84 primary coefficient table is
-available, re-certify the row and remove the flag.
+The LH84 primary is online: Lamoreaux and Hildenbrand (1984), *J. Phys. Chem.
+Ref. Data* 13(1), 151-173, DOI 10.1063/1.555706. Its Table 2 (p. 154) gives
+the K2O(l) Gibbs function over 1190-3000 K. The legacy compatibility row
+matches the printed coefficients: dH298/R = -43.58 kK and (A, 10^3B, 10^6C,
+10^9D) = (0.80, 18.889, -4.532, 0.467). It is therefore primary-verified,
+not `secondary_transcription_unverified_primary`.
+
+The default condensate table now uses the distinct K-012 crystal-based
+liquid-from-solid estimate over 1200-3000 K. The primary check certifies the
+retained LH84 compatibility row only; it does not replace or recertify the
+default estimate. The old unresolved-provenance flag is removed from results
+using an LH84 row.
 
 The NIST-JANAF potassium index lists K2O(cr) but no K2O(l) table
 ([K tables](https://janaf.nist.gov/tables/K-index.html)); the vendored K-012

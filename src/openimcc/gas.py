@@ -1548,7 +1548,7 @@ def _result_provenance_authority(
     provenance = gas_species_provenance(species)
     if oxide_row is not None:
         row_authority = {
-            "LAM1984": "secondary_transcription_unverified_primary",
+            "LAM1984": "lam1984_transcribed",
             "LAM1987": "lam1987_transcribed",
         }.get(str(oxide_row["Ref"]))
         if row_authority is not None:

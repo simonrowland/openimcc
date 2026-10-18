@@ -341,6 +341,41 @@ def _gas(root: Path) -> None:
         else:
             row["independent_check"] = independent_check("Not a liquid gas-parent row; independent check status is not applicable.")
             row["independent_check"]["status"] = "not_applicable"
+    citation_notes = '''    lamoreaux_hildenbrand_1984:
+      citation: >-
+        Lamoreaux, R. H.; Hildenbrand, D. L. (1984), High Temperature
+        Vaporization Behavior of Oxides. I. Alkali Metal Binary Oxides,
+        J. Phys. Chem. Ref. Data 13(1), 151-173.
+      doi: 10.1063/1.555706
+      coefficient_locator: Table 2, p. 154 (K2O(l), 1190-3000 K)
+      anchor_locator: Table 4, p. 157 (K2O(s) formation enthalpy)
+      records_are: >-
+        Primary printed thermodynamic tables. The legacy compatibility row is
+        directly checked against Table 2; the default K2O(l) row is the
+        separate K-012 liquid-from-solid estimate.
+    konings_benes_2010:
+      citation: >-
+        Konings, R. J. M.; Beneš, O. (2010), The Thermodynamic Properties of
+        the f-Elements and Their Compounds. I. The Lanthanide and Actinide
+        Metals, J. Phys. Chem. Ref. Data 39(4), 043102.
+      doi: 10.1063/1.3474238
+    konings_et_al_2014:
+      citation: >-
+        Konings, R. J. M.; Beneš, O.; Kovács, A.; Manara, D.; Sedmidubský, D.;
+        Gorokhov, L.; Iorish, V. S.; Yungman, V.; Shenyavskaya, E.; Osina, E.
+        (2014), The Thermodynamic Properties of the f-Elements and Their
+        Compounds. Part 2. The Lanthanide and Actinide Oxides, J. Phys. Chem.
+        Ref. Data 43(1), 013101.
+      doi: 10.1063/1.4825256
+    pedley_marshall_1983:
+      citation: >-
+        Pedley, J. B.; Marshall, E. M. (1983), Thermochemical Data for Gaseous
+        Monoxides, J. Phys. Chem. Ref. Data 12(4), 967-1031.
+      doi: 10.1063/1.555698
+'''
+    marker = "    declined_ions:\n"
+    if "lamoreaux_hildenbrand_1984:" not in source_text:
+        source_text = source_text.replace(marker, citation_notes + marker, 1)
     lines = source_text.splitlines(keepends=True)
     row_header = next(i for i, line in enumerate(lines) if line.startswith("rows:"))
     row_end = next(
