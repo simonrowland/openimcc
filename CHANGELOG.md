@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added source-rated P2O5(l) and phosphorus gas channels through 3000 K,
+  including JANAF PS(g), which also requires caller-supplied S2 activity.
 - Added a caller-visible melt notice for allowed temperatures below active
   association-row domains. It records the ΔrCp = 0 continuation, the declared
   domains of active rows below their lower bounds, and that the uncertainty

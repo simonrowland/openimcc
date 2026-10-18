@@ -42,8 +42,8 @@ source is unavailable, so its C3 screen is declined. B exceeds the threshold whe
 its cation and available anions are combined; Cs is also above the threshold.
 Positive molecular ions and nonthermal electrons remain outside this
 calculation. Mn has a public but range-limited MnO(l) parent. Ni and Co now
-have public TSIV liquid parents; P channels still need an external source-rated
-P2O5(l) row.
+have public TSIV liquid parents. P has a published P2O5(l) gas reference, but
+its melt activity remains caller-supplied.
 
 | Element | Status | C1 | C2 | C3 | C4 | Validation | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -93,7 +93,7 @@ P2O5(l) row.
 | Tl | gas-complete-melt-pending | no | yes | not computed: ionized thallium channels are outside this neutral gas change | yes | unvalidated | Pankratz Bulletin 672 printed pp. 439-441 provide Tl(g), Tl2O(g), and the Tl2O(l) parent on elemental 298.15 K formation enthalpy anchors. The parent table prints its liquid branch from its 852 K melting point through 1000 K; its labelled constant-Cp continuation supplies the 1200-3000 K runtime range. Tl2O is the selected parent and a(Tl2O) is caller-supplied; fO2 is also an input. No ion channel or melt activity model is included. |
 | Mn | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Mn(g), MnO(g), MnO(l), and opt-in Mn+ are available; MnO(l) is a tier-4 liquid_from_solid construction fitted over 1200-3000 K and supercooled below measured Tm 2120 ± 20 K; a(MnO) is caller-supplied; the joint C3 screen used a(MnO)=1e-3 and reached 1.621e-07 at 2800 K and fO2=1e-4, within the fitted interval and the <=1-bar neutral-pressure domain. |
 | O | input (fO2 pinned) | n/a | yes | n/a | n/a | unvalidated | O is input (fO2 pinned), so C1, C3 and C4 do not apply. |
-| P | gas-partial | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | no | unvalidated | JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) function was found and JANAF lists P4O10(cr) only. Channels need an external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); OpenIMCC provides no pyrolysis-temperature melt activity model. |
+| P | gas-complete-melt-pending | no | yes | not computed: ionized phosphorus channels are outside this neutral gas-only change | yes | unvalidated | Jung and Hudon (2012) supply the assessed P2O5(l) reaction function, fitted here to JANAF's 1-bar P2(g)/O2(g) references over 1200-3000 K. JANAF P, P2, P4, PO, PO2, P4O6, P4O10, and PS(g) channels are available; PS also uses caller-supplied a(S2). C1 stays no because phosphorus melt activity is not computed. sp_extension P2O5 melt activity uses half-P4O10(cr), a different reference from this liquid standard. |
 | S | gas-complete-melt-pending | no | yes | not computed: ionized sulfur channels are outside this neutral gas-only change | yes | unvalidated | JANAF sulfur gas rows and the S2(g) parent cover 500-3000 K; callers supply a(S2)=f(S2)/p° on the 1-bar gas reference. OpenIMCC provides no pyrolysis-temperature sulfur melt activity model. |
 | Br | gas-complete-melt-pending | no | yes | not computed: ionized bromine channels are outside this neutral gas-only change | yes | unvalidated | JANAF Br2(g), Br(g), Na/K/Li and alkaline-earth bromides; NASA Glenn Rb/Cs bromides cover 1200-3000 K; callers supply a(Br2)=f(Br2)/p° on the 1-bar gas reference. No ion channel or halogen dissolution model is included. |
 | I | gas-complete-melt-pending | no | yes | not computed: ionized iodine channels are outside this neutral gas-only change | yes | unvalidated | JANAF I2(g), I(g), KI, LiI, and alkaline-earth iodides; NASA Glenn NaI and Rb/Cs iodides cover 1200-3000 K; callers supply a(I2)=f(I2)/p° on the 1-bar gas reference. No ion channel or halogen dissolution model is included. |
@@ -151,9 +151,11 @@ prior positive-only estimate and bounded fitted closure screen give:
 
 The P/S channels are optional and stay out of default gas results unless their
 caller-supplied parent activity is present. Sulfur uses the JANAF `S2(g)` gas
-standard. Phosphorus uses `P2O5(l)`, but no public evaluated liquid G(T) function
-was found (JANAF lists `P4O10(cr)` only); an external pack must supply a
-source-rated `P2O5(l)` standard state before callers can use `a(P2O5)`.
+standard. Phosphorus uses the assessed `P2O5(l)` gas reference from Jung and
+Hudon (2012); callers provide `a(P2O5)`, and `PS` additionally uses `a(S2)`.
+The `sp_extension` melt pack's `P2O5` activity is on the half-`P4O10(cr)` basis
+and must be converted to the pure-liquid standard before it can be passed to
+the gas model.
 
 The Hg, Au, and Pd metal-vapour channels are optional and use caller activities
 relative to the stable condensed metal. Au and Pd switch from crystal to liquid

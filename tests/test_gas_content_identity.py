@@ -53,18 +53,18 @@ PACKAGED_CONDENSATE_TABLE_DIGEST = (
     "4ba6a61f5187a5d6b6b7e12d548b8c473e4f8e71d669f05ad0a0d31ac7dfc866"
 )
 PACKAGED_FULL_GAS_TABLE_DIGEST = (
-    "502aada2ccd76cd2fc824c2dad20d9c1d31379b0375a998df652ea444442504a"
+    "9c8b7baaf898a8bc00f7ebfc2ec10f3c6228077fdeaa1455385018b2087ace03"
 )
 PACKAGED_FULL_CONDENSATE_TABLE_DIGEST = (
-    "2ead3f7c3fdddb41c8419acda94b52cb8b4925e68c9961b76b2c07f48dc413d7"
+    "a38c297a47ed030b89ce69622cda17a0950aa43818b70666662d7b8bfe3c5962"
 )
 PACKAGED_ENGINE_BINDING_DIGESTS = {
     "v1": "def58f192d449726fb9a4a1b30bc566e233f7348786bfd36006eb2f7710a9e1d",
     "ext": "2ed735ddb34727dc2472f60f23e773ba81554a9a147a2602872407d7ad697d41",
 }
 PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
-    "v1": "7d6dbe9e56ca18eb9082e5b8dfd14a318f46d65e56313726cfb9abaccbf82d77",
-    "ext": "a7b3862aa422f81e36d65aee91aa4f03fa1dc18e907db6c6d25ff96bba344fdb",
+    "v1": "0f6a90f74743c2f148f39e4942c167b7fe9e1833f10c4a0bfaeefd2168fe44ba",
+    "ext": "631d6fc08188aa70b68155916c14fa016517c533012422aa780697fb6a55ae19",
 }
 ADDED_GAS_SPECIES = {
     "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
@@ -82,11 +82,13 @@ ADDED_GAS_SPECIES = {
     "SrBr(g)", "SrBr2(g)", "SrCl(g)", "SrCl2(g)", "SrF(g)", "SrF2(g)",
     "SrI(g)", "SrI2(g)",
     "Pt(g)", "PtO2(g)", "Ru(g)", "Rh(g)", "Ir(g)",
+    "PS(g)",
 }
 ADDED_CONDENSATE_SPECIES = {
     "Ta2O5(l)", "BeO(l)", "Tl2O(l)",
     "Pt(cr)", "Pt(l)", "Ru(cr)", "Ru(l)",
     "Rh(cr)", "Rh(l)", "Ir(cr)", "Ir(l)",
+    "P2O5(l)",
 }
 V1_COMPOSITION = {
     "SiO2": 0.45,

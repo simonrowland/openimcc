@@ -183,11 +183,16 @@ this gas-parent implementation. Li/Rb/Cs channels are available only where
 the existing liquid oxide parent is present; no new oxide parents are added.
 The excluded H/C/N species are HO2, H2O2, C(g), carbonates, N2O, and NO3.
 
-The P gas tables are fitted, but no public evaluated `P2O5(l)` G(T) function
-was found; JANAF lists `P4O10(cr)` only. P channels therefore remain unavailable
-until an external pack supplies a source-rated `P2O5(l)` standard state and the
-caller supplies `a(P2O5)` on that reference. OpenIMCC does not provide a
-melt-side P2O5 activity model for pyrolysis temperatures.
+The P gas channels now include `P`, `P2`, `P4`, `PO`, `PO2`, `P4O6`, `P4O10`,
+and JANAF `PS`. Their parent is a fitted pure-liquid `P2O5(l)` reference from
+the Jung-Hudon assessment over 1200-3000 K. Callers supply `a(P2O5)` on this
+liquid standard; `PS` also needs caller-supplied `a(S2)` on the JANAF 1-bar gas
+standard. OpenIMCC still does not calculate phosphorus activity in a melt.
+
+The `sp_extension` melt packs keep their existing `P2O5` rows, whose activity
+reference is half `P4O10(cr)`. That crystal-based melt reference is distinct
+from the new pure-liquid gas parent; convert chemical potentials before using
+an extension-pack activity as `a(P2O5)` for gas calculations.
 
 Li, Rb, Pb, Cs, Cu, Sn, Ga, Ge, B, In, Te, Se, As, Sb, Ag, Mo, W, Ba, Sr,
 Zr, Sc, U, Th, and Hf channels activate when the caller

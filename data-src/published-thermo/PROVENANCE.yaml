@@ -443,3 +443,11 @@ records:
     source_locator: Rhodium elemental table, printed p. 330; Rh(g) ideal monatomic gas table, printed p. 331
     tier: 3
     selection_reason: Pankratz supplies the paired Rh(g)/Rh(cr,l) functions on one elemental 298.15 K reference. The gas source ends at 2000 K and the liquid-parent source ends at 2500 K, so each continuation remains labelled and banded at its printed limit.
+  - record_id: Jung-Hudon-2012
+    path: data-src/published-thermo/jung-hudon-p2o5.json
+    source_sha256: 2fdf2ecc20b0004d15e414c6652004f86f470be207bd975e84f453f6a11191f7
+    publication: Jung and Hudon (2012), Thermodynamic Assessment of P2O5, Journal of the American Ceramic Society 95(11), 3665-3672
+    source_url: https://doi.org/10.1111/j.1551-2916.2012.05382.x
+    source_locator: Liquid P2O5 assessment from stable and metastable vapor-pressure data; the selected formation equation is reproduced as equation (3) in Jung et al. (2013).
+    tier: 2
+    selection_reason: This recent critical assessment directly evaluates liquid P2O5 from stable and metastable vapor-pressure evidence and is selected over the older Barin liquid data. NASA Glenn has a P4O10(l) card rather than a direct P2O5(l) card, JANAF lists P4O10 phases, and no direct P2O5(l) function was identified in the checked Pankratz, IVTAN, or Burcat records. The assessment does not state a numeric uncertainty for the selected linear equation.

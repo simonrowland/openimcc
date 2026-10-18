@@ -145,8 +145,8 @@ GAS_SOURCES = (
     ("Mn(g)", "Mn-005", "Mn", 1, 0),
     ("Ni(g)", "Ni-005", "Ni", 1, 0),
     ("Co(g)", "Co-005", "Co", 1, 0),
-    # Public phosphorus and sulfur rows from JANAF 4th ed.; these are gas-only
-    # inputs, with caller-supplied P2O5(l) and S2(g) parent standards.
+    # Public phosphorus and sulfur gas rows from JANAF 4th ed.; their parent
+    # standards are the assessed P2O5(l) row and caller-supplied S2(g).
     ("P(g)", "P-008", "P", 1, 0),
     ("P2(g)", "P-012", "P", 2, 0),
     ("P4(g)", "P-013", "P", 4, 0),
@@ -154,6 +154,8 @@ GAS_SOURCES = (
     ("PO2(g)", "O-032", "P", 1, 2),
     ("P4O6(g)", "O-087", "P", 4, 6),
     ("P4O10(g)", "O-095", "P", 4, 10),
+    # Appended within the P/S block so all existing source rows retain order.
+    ("PS(g)", "P-011", "P", 1, 0),
     ("S(g)", "S-006", "S", 1, 0),
     ("S2(g)", "S-012", "S", 2, 0),
     ("S3(g)", "S-016", "S", 3, 0),
@@ -590,6 +592,7 @@ LOW_T_GAS_SPECIES = frozenset(
         "PO2",
         "P4O6",
         "P4O10",
+        "PS",
         "S",
         "S2",
         "S3",
@@ -4631,6 +4634,109 @@ def build_condensate_rows(
             phase, fit_min, fit_max, source_kind,
         ) in PANKRATZ_METAL_PARENT_SOURCES
     )
+    # Jung and Hudon assess the reaction P2(g) + 5/2 O2(g) = P2O5(l) as
+    # ΔG° = -1616372 + 539.0*T J/mol. The accessible equation does not state
+    # p°; use the metallurgical 1-atm convention and convert its gas standards
+    # to JANAF's 1 bar. Here Δν_g = 0 - (1 + 5/2) = -3.5, so ΔG°_1bar is
+    # ΔG°_1atm - Δν_g*R*T*ln(1.01325), i.e. its slope increases by
+    # 3.5*R*ln(1.01325) and ΔS°_rxn decreases by the same amount.
+    # As a phase-normalization check, P4O10 = 2 P2O5 in formula units. With
+    # identical elemental references and the same pure-liquid standard,
+    # formation Gibbs energies are additive: G°f(P4O10(l)) =
+    # 2*G°f(P2O5(l)). NASA's P4O10(l) function must therefore be divided by
+    # two. This relation does not apply to JANAF P4O10(cr) or to the separate
+    # sp_extension activity basis, which uses half P4O10(cr), not P4O10(l).
+    p2o5_source = _load_record(
+        published_source_dir / "jung-hudon-p2o5.json"
+    )
+    p2o5_reaction = p2o5_source["delta_g_standard_j_mol"]
+    reaction_enthalpy_kj_mol = float(p2o5_reaction["intercept"]) / 1000.0
+    reaction_slope_1bar = float(p2o5_reaction["slope"]) + (
+        3.5 * R_J_MOL_K * math.log(1.01325)
+    )
+    reaction_entropy_1bar = -reaction_slope_1bar
+    janaf_thermal_rows: dict[str, dict[float, dict[str, float]]] = {}
+    for table_id in ("P-012", "O-029"):
+        table = _load_record(source_dir / f"{table_id}.yaml")["table"]
+        table_rows = {}
+        for raw in table["values"]:
+            temperature = _value(raw, "temperature")
+            if temperature is None:
+                continue
+            fields = {
+                name: _value(raw, name)
+                for name in (
+                    "heat_capacity",
+                    "entropy",
+                    "enthalpy_increment",
+                )
+            }
+            if all(value is not None for value in fields.values()):
+                table_rows[float(temperature)] = {
+                    name: float(value) for name, value in fields.items()
+                }
+                formation_enthalpy = _value(raw, "formation_enthalpy")
+                if formation_enthalpy is not None:
+                    table_rows[float(temperature)]["formation_enthalpy"] = float(
+                        formation_enthalpy
+                    )
+        for recovered in _recover_thermal_transition_rows(table):
+            table_rows[recovered["temperature"]] = {
+                name: recovered[name]
+                for name in ("heat_capacity", "entropy", "enthalpy_increment")
+            }
+        janaf_thermal_rows[table_id] = table_rows
+    anchor_hf = (
+        janaf_thermal_rows["P-012"][298.15]["formation_enthalpy"]
+        + 2.5 * janaf_thermal_rows["O-029"][298.15]["formation_enthalpy"]
+        + reaction_enthalpy_kj_mol
+    )
+    p2o5_rows = {}
+    for temperature in np.arange(
+        1200.0, 3000.0 + JANAF_GRID_STEP_K, JANAF_GRID_STEP_K
+    ):
+        T = float(temperature)
+        p2 = janaf_thermal_rows["P-012"][T]
+        o2 = janaf_thermal_rows["O-029"][T]
+        enthalpy_increment = (
+            p2["enthalpy_increment"] + 2.5 * o2["enthalpy_increment"]
+        )
+        entropy = (
+            p2["entropy"] + 2.5 * o2["entropy"] + reaction_entropy_1bar
+        )
+        p2o5_rows[T] = {
+            "temperature": T,
+            "heat_capacity": p2["heat_capacity"] + 2.5 * o2["heat_capacity"],
+            "entropy": entropy,
+            "enthalpy_increment": enthalpy_increment,
+            "formation_enthalpy": anchor_hf + enthalpy_increment,
+            "formation_gibbs_energy": anchor_hf + enthalpy_increment - T * entropy / 1000.0,
+        }
+    for fit_min, fit_max, fit_nodes in (
+        (1200.0, 1500.0, tuple(np.arange(1200.0, 1500.0 + 100.0, 100.0))),
+        (1500.0, 3000.0, tuple(np.arange(1500.0, 3000.0 + 100.0, 100.0))),
+    ):
+        row = _fit_condensate_values(
+            "P2O5(l)",
+            "Jung-Hudon-2012",
+            "P",
+            2,
+            5,
+            p2o5_rows,
+            anchor_hf,
+            fit_t_min=fit_min,
+            fit_t_max=fit_max,
+            runtime_t_min=fit_min,
+            runtime_t_max=fit_max,
+            ref="Jung-Hudon-2012",
+            fit_temperatures=fit_nodes,
+        )
+        if float(row["_max_residual_J_per_mol"]) > 10.0:
+            raise ValueError(
+                f"P2O5(l): Jung-Hudon fit residual "
+                f"{row['_max_residual_J_per_mol']} J/mol exceeds 10"
+            )
+        rows.append(row)
     return rows
 
 

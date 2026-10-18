@@ -1,0 +1,31 @@
+{
+  "schema_version": "published_thermo_tables.v1",
+  "record_id": "Jung-Hudon-2012",
+  "publication": "Jung, I.-H. and Hudon, P. (2012), Thermodynamic Assessment of P2O5, Journal of the American Ceramic Society 95(11), 3665-3672, doi:10.1111/j.1551-2916.2012.05382.x.",
+  "source_url": "https://doi.org/10.1111/j.1551-2916.2012.05382.x",
+  "source_locator": "Critical evaluation of stable and metastable P2O5 vapor pressures; the resulting liquid formation reaction is reproduced in Jung et al. (2013), equation (3), citing this 2012 assessment.",
+  "equation_verification": {
+    "publication": "Jung, I.-H., Hudon, P., Kim, W.-Y., van Ende, M.-A., Rahman, M., and Garcia Curiel, G. (2013), Thermodynamic Database of P2O5-containing Oxide Systems for the Dephosphorization Process in Steelmaking, High Temperature Materials and Processes 32(3), 247-254, doi:10.1515/htmp-2012-0132.",
+    "source_url": "https://doi.org/10.1515/htmp-2012-0132",
+    "source_locator": "Equation (3), reproducing the P2O5(l) assessment from Jung and Hudon (2012)."
+  },
+  "comparison_source": {
+    "citation": "McBride, B. J., Zehe, M. J., and Gordon, S. (2002), NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species, NASA/TP-2002-211556.",
+    "source_url": "https://ntrs.nasa.gov/citations/20020085330",
+    "source_locator": "Appendix D, P4O10(L) card, printed p. 262; the liquid function cites Gurvich (1989), Part 1 p. 417 and Part 2 p. 270.",
+    "use": "Phase-normalization comparison only. Divide Gf(P4O10(l)) by two for the P2O5(l) formula-unit standard; NASA's 1-atm pure-liquid standard still needs a pressure correction for a same-standard comparison."
+  },
+  "species": "P2O5(l)",
+  "phase": "l",
+  "standard_state": "pure liquid P2O5; reaction gas reference pressure inferred as 1 atm from the assessment's metallurgical convention because the accessible equation does not state p°",
+  "reaction": "P2(g) + 5/2 O2(g) = P2O5(l)",
+  "delta_g_standard_j_mol": {
+    "intercept": -1616372,
+    "slope": 539.0,
+    "equation": "Delta G° = -1616372 + 539.0*T J/mol"
+  },
+  "source_temperature_range_K": null,
+  "runtime_temperature_range_K": [1200, 3000],
+  "accuracy": "The 2012 article critically evaluates solid and liquid P2O5 data and derives liquid Gibbs energies from stable and metastable vapor-pressure data. The publication does not quantify a numeric uncertainty for this linear function.",
+  "source_note": "Jung et al. (2013), citing Jung and Hudon (2012), prints log K = -16.92 at 1873 K, but the selected Delta G° equation implies log10 K = +16.92 for the stated formation reaction. The implementation uses the printed Gibbs equation and recomputes equilibrium constants from it. NASA Glenn lists P4O10(l), not P2O5(l); under the same elemental references and pure-liquid formula-unit standard, G°f(P4O10(l)) equals twice G°f(P2O5(l)), as derived in the builder comment. NASA's condensed standard is 1 atm, so the comparison needs a liquid pressure correction that is not applied without a molar volume."
+}

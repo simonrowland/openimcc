@@ -15,6 +15,34 @@ source_notes:
       Some ion-table notes specify that adjustment only for conversion to the
       alternate convention that excludes the electron.
     ion_convention_reference: https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-1Vol1-Intro.pdf
+  phosphorus_parent_channels:
+    selected_source: Jung and Hudon (2012), Journal of the American Ceramic Society 95(11), 3665-3672, DOI 10.1111/j.1551-2916.2012.05382.x
+    equation_verification: Jung et al. (2013), High Temperature Materials and Processes 32(3), 247-254, equation (3), DOI 10.1515/htmp-2012-0132
+    parent_standard_state: Pure liquid P2O5, with caller-supplied a(P2O5)
+    reaction: P2(g) + 5/2 O2(g) = P2O5(l); ΔG° = -1616372 + 539.0*T J/mol at the source's inferred 1-atm gas reference
+    gas_reference_conversion: >-
+      The accessible equation does not state its gas standard pressure. The
+      metallurgical 1-atm convention is inferred and converted to JANAF's 1-bar
+      gas reference. For Delta nu_gas = -3.5, Delta G degree_1bar =
+      Delta G degree_1atm - Delta nu_gas*R*T*ln(1.01325), so the slope gains
+      3.5*R*ln(1.01325). No liquid pressure correction is applied because the
+      source does not supply a molar volume.
+    alternative_phase_relation: >-
+      NASA Glenn TP-2002-211556 Appendix D, printed p. 262, has a P4O10(l)
+      card from Gurvich rather than a direct P2O5(l) card; see
+      https://ntrs.nasa.gov/citations/20020085330. For identical elemental
+      references and pure-liquid formula-unit standards, G°f(P4O10(l)) =
+      2*G°f(P2O5(l)); compare the NASA function after dividing by two. This
+      relation does not apply to P4O10(cr) or to the sp_extension half-P4O10(cr)
+      melt activity basis. NASA's liquid standard is 1 atm and its gas function
+      uses 1 bar, so this is a comparison lead, not pressure-corrected
+      independent validation.
+    ps_reaction: P2O5(l) + S2(g) = 2 PS(g) + 5/2 O2(g); callers supply both a(P2O5) and a(S2) on their 1-bar standards
+    source_note: >-
+      Jung et al. (2013) prints log K = -16.92 at 1873 K beside the selected
+      Gibbs equation, although that equation implies log10 K = +16.92 for the
+      stated formation reaction. Runtime calculations use the printed Gibbs
+      equation and derive equilibrium constants from it.
   halogen_gas_parent_channels:
     reference_states: >-
       Br2(g), Br(g), I2(g), I(g), NaBr(g), (NaBr)2(g), KBr(g), (KBr)2(g),
@@ -1334,6 +1362,88 @@ rows:
   - {table: gas, species_name: Ir(g), table_id: BU-2613, source_path: data-src/published-thermo/burcat-ir.json, source_sha256: a3b8e742b625416bf3a5aaf06b0033fa7dde40d1b4e213237478c7672c9efb9e, authority: published_fitted, method: fitted, T_interval: 2, T_range_K: [1200.0, 1500.0], source_fit_range_K: [1200.0, 1500.0], source_limit_K: 6000.0, source_data: true, source_record: data-src/published-thermo/burcat-ir.json, source_locator: 'BURCAT.THR.txt card BU-2613; elemental reference from card-implied H(298.15 K), corresponding to printed HF298=160.134 kcal/mol', source_url: 'https://respecth.elte.hu/burcat.php', source: {citation: 'Burcat and Ruscic, Third Millennium Thermochemical Database for Combustion', anchor: Elemental 298.15 K formation enthalpy from card-implied H(298.15 K).}, fit_residual: {value: {max_residual_J_per_mol: 0.000122969096992165, max_residual_log10_K: 4.29873602658574e-09}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: 'BURCAT.THR.txt card BU-2613; elemental reference from card-implied H(298.15 K), corresponding to printed HF298=160.134 kcal/mol', comparison_method: fitted, temperature_range: [1200.0, 1500.0], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: 'BURCAT.THR.txt card BU-2613; elemental reference from card-implied H(298.15 K), corresponding to printed HF298=160.134 kcal/mol'}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}}
   - {table: condensate, species_name: Ir(cr), table_id: BU-2611, source_path: data-src/published-thermo/burcat-ir.json, source_sha256: a3b8e742b625416bf3a5aaf06b0033fa7dde40d1b4e213237478c7672c9efb9e, authority: published_fitted, method: fitted, T_range_K: [1200.0, 2720.0], source_fit_range_K: [1200.0, 2720.0], source_limit_K: 2720.0, source_data: true, fit_step_at_K: 2720.0, source_record: data-src/published-thermo/burcat-ir.json, source_locator: BURCAT.THR.txt card BU-2611; elemental reference iridium crystal through the 2720 K melt, source_url: 'https://respecth.elte.hu/burcat.php', source: {citation: 'Burcat and Ruscic, Third Millennium Thermochemical Database for Combustion', anchor: Elemental Ir(cr) reference phase with ΔfH(298.15 K)=0.}, fit_residual: {value: {max_residual_J_per_mol: 1.36244677106151, max_residual_log10_K: 2.73713565674726e-05}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: BURCAT.THR.txt card BU-2611; elemental reference iridium crystal through the 2720 K melt, comparison_method: fitted, temperature_range: [1200.0, 2720.0], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: BURCAT.THR.txt card BU-2611; elemental reference iridium crystal through the 2720 K melt}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}}
   - {table: condensate, species_name: Ir(l), table_id: BU-2612, source_path: data-src/published-thermo/burcat-ir.json, source_sha256: a3b8e742b625416bf3a5aaf06b0033fa7dde40d1b4e213237478c7672c9efb9e, authority: published_fitted, method: fitted, T_range_K: [2720.0, 3000.0], source_fit_range_K: [2720.0, 3000.0], source_limit_K: 6000.0, source_data: true, fit_step_at_K: 2720.0, source_record: data-src/published-thermo/burcat-ir.json, source_locator: BURCAT.THR.txt card BU-2612; elemental reference iridium liquid beginning at the 2720 K melt, source_url: 'https://respecth.elte.hu/burcat.php', source: {citation: 'Burcat and Ruscic, Third Millennium Thermochemical Database for Combustion', anchor: Elemental Ir(l) reference phase with ΔfH(298.15 K)=0.}, fit_residual: {value: {max_residual_J_per_mol: 1.19325704872608e-09, max_residual_log10_K: 2.07760451301643e-14}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: BURCAT.THR.txt card BU-2612; elemental reference iridium liquid beginning at the 2720 K melt, comparison_method: fitted, temperature_range: [2720.0, 3000.0], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: BURCAT.THR.txt card BU-2612; elemental reference iridium liquid beginning at the 2720 K melt}, independent_check: {status: not_found, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: No same-standard independent equilibrium check was located in the 2026-10-15 research sweep.}}
+  - table: gas
+    species_name: PS(g)
+    table_id: P-011
+    source_path: data-src/janaf/P-011.yaml
+    source_sha256: 765edb486570cad78f9164a94a39cb757c8a6a5e60f72e8ddc9d2cb9e56d478a
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 1
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    source_data: true
+    source_record: data-src/janaf/P-011.yaml
+    source_locator: NIST-JANAF P-011, PS(g), 298.15 K anchor and 500-3000 K selected cells
+    source_url: https://janaf.nist.gov/tables/P-011.html
+    source: {citation: 'Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition (1998), P-011', anchor: Elemental-reference formation enthalpy of PS(g) at 298.15 K; gas standard pressure 0.1 MPa (1 bar).}
+    note: P-011 PS(g) uses the JANAF 1-bar standard; its channel also consumes caller-supplied P2O5(l) and S2(g) activities.
+    fit_residual: {value: {max_residual_J_per_mol: 1.2396512493724, max_residual_log10_K: 2.81321271777997e-05}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/janaf/P-011.yaml, comparison_method: fitted, temperature_range: [1500, 3000], held_out_or_in_sample: in_sample}
+    accuracy_band: null
+    band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: data-src/janaf/P-011.yaml}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Gas-source row; no separate liquid-parent comparison applies.}
+  - table: gas
+    species_name: PS(g)
+    table_id: P-011
+    source_path: data-src/janaf/P-011.yaml
+    source_sha256: 765edb486570cad78f9164a94a39cb757c8a6a5e60f72e8ddc9d2cb9e56d478a
+    authority: janaf_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [500, 1500]
+    source_fit_range_K: [500, 1500]
+    source_data: true
+    source_record: data-src/janaf/P-011.yaml
+    source_locator: NIST-JANAF P-011, PS(g), 298.15 K anchor and 500-3000 K selected cells
+    source_url: https://janaf.nist.gov/tables/P-011.html
+    source: {citation: 'Chase, M. W. Jr., NIST-JANAF Thermochemical Tables, 4th Edition (1998), P-011', anchor: Elemental-reference formation enthalpy of PS(g) at 298.15 K; gas standard pressure 0.1 MPa (1 bar).}
+    note: P-011 PS(g) uses the JANAF 1-bar standard; its channel also consumes caller-supplied P2O5(l) and S2(g) activities.
+    fit_residual: {value: {max_residual_J_per_mol: 0.905354195361724, max_residual_log10_K: 5.5007697593022e-05}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/janaf/P-011.yaml, comparison_method: fitted, temperature_range: [500, 1500], held_out_or_in_sample: in_sample}
+    accuracy_band: null
+    band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: data-src/janaf/P-011.yaml}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Gas-source row; no separate liquid-parent comparison applies.}
+  - table: condensate
+    species_name: P2O5(l)
+    tier: 2
+    table_id: Jung-Hudon-2012
+    runtime_ref: Jung-Hudon-2012
+    source_path: data-src/published-thermo/jung-hudon-p2o5.json
+    source_sha256: 2fdf2ecc20b0004d15e414c6652004f86f470be207bd975e84f453f6a11191f7
+    authority: published_fitted
+    method: fitted_assessed_reaction_function
+    T_range_K: [1200, 1500]
+    source_fit_range_K: [1200, 1500]
+    source_data: true
+    source_record: data-src/published-thermo/jung-hudon-p2o5.json
+    source_locator: Jung and Hudon (2012) P2O5 liquid assessment; equation reproduced in Jung et al. (2013), equation (3)
+    source_url: https://doi.org/10.1111/j.1551-2916.2012.05382.x
+    source: {citation: 'Jung, I.-H. and Hudon, P. (2012), Thermodynamic Assessment of P2O5, Journal of the American Ceramic Society 95(11), 3665-3672', anchor: 'P2(g) + 5/2 O2(g) = P2O5(l), ΔG° = -1616372 + 539.0*T J/mol; the thermal increments use JANAF P-012 and O-029.'}
+    note: Source equation gas pressure is inferred as 1 atm and converted to JANAF's 1-bar gas reference for Δνgas = -3.5; no liquid pressure correction is applied without a molar volume. Caller supplies a(P2O5). The sp_extension activity uses half-P4O10(cr), a different standard.
+    fit_residual: {value: {max_residual_J_per_mol: 4.65661287307739e-10, max_residual_log10_K: 1.73736962760956e-14}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: Jung-Hudon-2012 equation with JANAF P-012/O-029 thermal increments, comparison_method: fitted_assessed_reaction_function, temperature_range: [1200, 1500], held_out_or_in_sample: in_sample}
+    accuracy_band: null
+    band_basis: {kind: fit_only, explanation: The assessment supplies no numeric uncertainty; the band records only the fit residual., provenance: Jung-Hudon-2012 equation with JANAF P-012/O-029 thermal increments}
+    independent_check: {status: lead, equilibrium: P4O10(l) normalization to two P2O5(l) formula units, primary_source: NASA Glenn TP-2002-211556 Appendix D P4O10(L), conditions: 'Divide NASA Gf(P4O10(l)) by two; NASA uses a 1-atm liquid standard while the fitted gas reference is 1 bar, and no liquid molar volume is available for the pressure correction.', measured_value: NASA P4O10(l) liquid function from Gurvich (1989), predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Phase-normalization comparison lead only; no same-standard numerical comparison or independent validation is claimed.}
+  - table: condensate
+    species_name: P2O5(l)
+    tier: 2
+    table_id: Jung-Hudon-2012
+    runtime_ref: Jung-Hudon-2012
+    source_path: data-src/published-thermo/jung-hudon-p2o5.json
+    source_sha256: 2fdf2ecc20b0004d15e414c6652004f86f470be207bd975e84f453f6a11191f7
+    authority: published_fitted
+    method: fitted_assessed_reaction_function
+    T_range_K: [1500, 3000]
+    source_fit_range_K: [1500, 3000]
+    source_data: true
+    source_record: data-src/published-thermo/jung-hudon-p2o5.json
+    source_locator: Jung and Hudon (2012) P2O5 liquid assessment; equation reproduced in Jung et al. (2013), equation (3)
+    source_url: https://doi.org/10.1111/j.1551-2916.2012.05382.x
+    source: {citation: 'Jung, I.-H. and Hudon, P. (2012), Thermodynamic Assessment of P2O5, Journal of the American Ceramic Society 95(11), 3665-3672', anchor: 'P2(g) + 5/2 O2(g) = P2O5(l), ΔG° = -1616372 + 539.0*T J/mol; the thermal increments use JANAF P-012 and O-029.'}
+    note: Source equation gas pressure is inferred as 1 atm and converted to JANAF's 1-bar gas reference for Δνgas = -3.5; no liquid pressure correction is applied without a molar volume. Caller supplies a(P2O5). The sp_extension activity uses half-P4O10(cr), a different standard.
+    fit_residual: {value: {max_residual_J_per_mol: 5.4138758177869, max_residual_log10_K: 0.000108763974173617}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: Jung-Hudon-2012 equation with JANAF P-012/O-029 thermal increments, comparison_method: fitted_assessed_reaction_function, temperature_range: [1500, 3000], held_out_or_in_sample: in_sample}
+    accuracy_band: null
+    band_basis: {kind: fit_only, explanation: The assessment supplies no numeric uncertainty; the band records only the fit residual., provenance: Jung-Hudon-2012 equation with JANAF P-012/O-029 thermal increments}
+    independent_check: {status: lead, equilibrium: P4O10(l) normalization to two P2O5(l) formula units, primary_source: NASA Glenn TP-2002-211556 Appendix D P4O10(L), conditions: 'Divide NASA Gf(P4O10(l)) by two; NASA uses a 1-atm liquid standard while the fitted gas reference is 1 bar, and no liquid molar volume is available for the pressure correction.', measured_value: NASA P4O10(l) liquid function from Gurvich (1989), predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Phase-normalization comparison lead only; no same-standard numerical comparison or independent validation is claimed.}
 source_comparisons:
   basis: >-
     NASA gas cards use G_app(T)=dfH298+[H(T)-H(298.15 K)]-T*S(T), with each

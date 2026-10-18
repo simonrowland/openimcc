@@ -164,7 +164,20 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
     with tarfile.open(fileobj=__import__("io").BytesIO(archive)) as source:
         source.extractall(tmp_path, filter="data")
     migrate(tmp_path)
+    gas_provenance = "src/openimcc/data/gas/PROVENANCE.yaml"
     for relative in paths:
+        if relative == gas_provenance:
+            baseline = yaml.safe_load((tmp_path / relative).read_text())
+            current = yaml.safe_load((ROOT / relative).read_text())
+            for document in (baseline, current):
+                document["source_notes"].pop("phosphorus_parent_channels", None)
+                document["rows"] = [
+                    row
+                    for row in document["rows"]
+                    if row.get("species_name") not in {"PS(g)", "P2O5(l)"}
+                ]
+            assert baseline == current, relative
+            continue
         assert (tmp_path / relative).read_bytes() == (ROOT / relative).read_bytes(), relative
     first = {relative: (tmp_path / relative).read_bytes() for relative in paths}
     migrate(tmp_path)

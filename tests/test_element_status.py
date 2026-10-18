@@ -1319,12 +1319,16 @@ def _c4_rows_cover_domain(
             ):
                 return False
         elif source["authority"] in {"published_fitted", "liquid_from_solid_estimate"}:
+            method = source["method"]
+            if method not in {
+                "fitted",
+                "integrated_phase_chain_and_supercooled_liquid",
+                "fitted_assessed_reaction_function",
+            } or not source.get("source", {}).get("citation"):
+                return False
             if (
-                source["method"] not in {
-                    "fitted",
-                    "integrated_phase_chain_and_supercooled_liquid",
-                }
-                or not source.get("source", {}).get("citation")
+                method == "fitted_assessed_reaction_function"
+                and source.get("tier") != 2
             ):
                 return False
         elif source["authority"] not in {
@@ -1404,6 +1408,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
     }
     liquid_by_element = {
         **parent_by_element,
+        "P": "P2O5",
         "Cr": "Cr2O3",
         "V": "V2O3",
         "Nb": "NbO2",

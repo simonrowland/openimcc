@@ -117,6 +117,7 @@ GAS_TABLE_IDS = {
     "PO2": "O-032",
     "P4O6": "O-087",
     "P4O10": "O-095",
+    "PS": "P-011",
     "S": "S-006",
     "S2": "S-012",
     "S3": "S-016",
@@ -654,7 +655,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         }
         | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir"}
     )
-    assert len(oxide_rows) == 75
+    assert len(oxide_rows) == 76
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -756,7 +757,12 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         assert row["table_id"] == table_id
         assert row["source_path"] == f"data-src/janaf/{table_id}.yaml"
         assert (ROOT / row["source_path"]).is_file()
-        if table_id in {"Ta-005", "O-017", "O-041"}:
+        if table_id == "P-011":
+            assert row["source_sha256"] == hashlib.sha256(
+                (ROOT / row["source_path"]).read_bytes()
+            ).hexdigest()
+            assert "source_sha256" not in source["extraction"]
+        elif table_id in {"Ta-005", "O-017", "O-041"}:
             assert row["source_sha256"] == hashlib.sha256(
                 (ROOT / row["source_path"]).read_bytes()
             ).hexdigest()
@@ -801,7 +807,12 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             assert row["table_id"] == table_id
             assert row["source_path"] == f"data-src/janaf/{table_id}.yaml"
             assert (ROOT / row["source_path"]).is_file()
-            assert row["source_sha256"] == source["extraction"]["source_sha256"]
+            expected_source_sha256 = (
+                hashlib.sha256((ROOT / row["source_path"]).read_bytes()).hexdigest()
+                if table_id == "P-011"
+                else source["extraction"]["source_sha256"]
+            )
+            assert row["source_sha256"] == expected_source_sha256
             assert row["authority"] == "janaf_fitted"
             assert source["source"]["doi"] == "10.18434/T42S31"
 
@@ -3216,7 +3227,7 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
         for source in build_gas_tables.TRACE_ION_GAS_TEXT_SOURCES
     }
     ps_table_ids = {GAS_TABLE_IDS[species] for species in (
-        "P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10",
+        "P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10", "PS",
         "S", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
         "SO", "SSO", "SO2", "SO3",
     )}
@@ -3245,7 +3256,7 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
                 continue
             retained.append(line)
 
-    assert intervals[: intervals.index("2")] == ["1"] * 62
+    assert intervals[: intervals.index("2")] == ["1"] * 63
     assert all(interval == "2" for interval in intervals[intervals.index("2") :])
     assert hashlib.sha256(b"".join(retained)).hexdigest() == _BASE_INTERVAL_1_SHA256
 
@@ -3510,6 +3521,49 @@ def test_na_supercooled_parent_liquid_covers_low_gas_and_melt_activity() -> None
     )
     assert gas["Na2O"] > 0.0
     assert "1405.2 K" in gas.domain_flags["Na2O"]
+
+
+def test_p2o5_liquid_rows_reproduce_jung_hudon_on_janaf_1bar_gas_references() -> None:
+    pack = load_gas_datapack()
+    source = json.loads(
+        (PUBLISHED_DATA / "jung-hudon-p2o5.json").read_text(encoding="utf-8")
+    )
+    source_manifest = yaml.safe_load(
+        (PUBLISHED_DATA / "PROVENANCE.yaml").read_text(encoding="utf-8")
+    )
+    source_record = next(
+        record
+        for record in source_manifest["records"]
+        if record["record_id"] == "Jung-Hudon-2012"
+    )
+    assert source_record["tier"] == 2
+    assert source_record["source_sha256"] == hashlib.sha256(
+        (PUBLISHED_DATA / "jung-hudon-p2o5.json").read_bytes()
+    ).hexdigest()
+    assert source["equation_verification"]["source_locator"].endswith(
+        "Equation (3), reproducing the P2O5(l) assessment from Jung and Hudon (2012)."
+    )
+
+    liquid_rows = pack.oxide_df.loc[
+        pack.oxide_df.index == "P2O5(l)"
+    ].sort_values("T_min")
+    assert list(zip(liquid_rows["T_min"], liquid_rows["T_max"])) == [
+        (1200.0, 1500.0),
+        (1500.0, 3000.0),
+    ]
+    reaction = source["delta_g_standard_j_mol"]
+    pressure_slope = float(reaction["slope"]) + (
+        3.5 * R_J_MOL_K * math.log(1.01325)
+    )
+
+    for temperature in (1200.0, 1500.0, 1873.0, 2000.0, 3000.0):
+        p2o5 = species_thermo("P2O5", "l", temperature, pack)
+        p2 = species_thermo("P2", "g", temperature, pack)
+        oxygen = species_thermo("O2", "g", temperature, pack)
+        reaction_g = p2o5.G_J_mol - p2.G_J_mol - 2.5 * oxygen.G_J_mol
+        expected = float(reaction["intercept"]) + pressure_slope * temperature
+        assert reaction_g == pytest.approx(expected, abs=25.0)
+        assert p2o5.source_table_id == "Jung-Hudon-2012"
 
 
 def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> None:
@@ -7027,9 +7081,10 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
             _SF04_REACTIONS[species][0]
             and _SF04_REACTIONS[species][0] not in PARENT_TABLE_IDS
         ):
-            # No public evaluated P2O5(l) source is available; JANAF lists
-            # P4O10(cr) only. S2(g) uses a gas-parent law covered by the
-            # dedicated sulfur cell tests.
+            # P2O5(l) is derived from the assessed Jung-Hudon formation
+            # reaction rather than a direct JANAF parent table; its dedicated
+            # reaction-reference test covers that function. S2(g) uses a
+            # caller-supplied gas-parent law covered by sulfur cell tests.
             continue
         n_gas, n_o2, temperatures, independent, source_parent_app = (
             _reaction_source_series(species)
@@ -7232,6 +7287,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
         "PO2",
         "P4O6",
         "P4O10",
+        "PS",
         "S",
         "S2",
         "S3",
@@ -7555,9 +7611,9 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
         per_row_max[(species_name, interval)] = maxima
 
     # Metal and halide additions expand the packaged JANAF gas-node audit.
-    assert checked_rows == 284
-    assert checked_nodes == 3915
-    assert checked_nodes * 3 == 11745
+    assert checked_rows == 286
+    assert checked_nodes == 3942
+    assert checked_nodes * 3 == 11826
     assert overall_max["Cp_J_molK"] == pytest.approx(0.7432227428, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0345525573, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0832967405, abs=1e-9)

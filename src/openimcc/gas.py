@@ -341,6 +341,8 @@ def default_condensate_database_path() -> Path:
 # n_O2=(5-n_gas*n_O)/2: P, P2, P4, PO, PO2, P4O6 and P4O10 use
 # (2, 5/2), (1, 5/2), (1/2, 5/2), (2, 3/2), (2, 1/2),
 # (1/2, 1) and (1/2, 0), respectively. Each tuple balances one P2O5(l).
+# PS uses P2O5(l) + S2(g) = 2 PS(g) + 5/2 O2(g), so its parent tuple is
+# (2, 5/2) and it consumes one mole of the separate S2 gas parent.
 # Sulfur tuples use the caller's gas parent directly: n_S2 S2(g) + n_O2 O2(g)
 # = species(g), with n_S2=n_S/2 and n_O2=n_O/2. Thus S, S2, S3, S4, S5,
 # S6, S7, S8, SO, SO2, SO3 and SSO use (1/2, 0), (1, 0), (3/2, 0),
@@ -433,6 +435,7 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "PO2": ("P2O5", 2, 0.5),
     "P4O6": ("P2O5", 0.5, 1.0),
     "P4O10": ("P2O5", 0.5, 0.0),
+    "PS": ("P2O5", 2, 2.5),
     "S": ("S2", 0.5, 0.0),
     "S2": ("S2", 1, 0.0),
     "S3": ("S2", 1.5, 0.0),
@@ -838,6 +841,7 @@ _ALKALI_HALIDE_REACTION_OXIDES = {
 _HYDROGEN_HALIDE_PARENTS = {
     "HCl": "Cl2", "HF": "F2", "HBr": "Br2", "HI": "I2",
 }
+_MIXED_GAS_REACTION_SIDE_PARENTS = {"PS": ("S2", 1.0)}
 
 
 def _parent_standard_rows(parent: str) -> tuple[str, ...]:
@@ -880,7 +884,10 @@ def _side_parent(species: str) -> str | None:
     if halide is not None:
         return halide
     alkali = _ALKALI_HALIDE_REACTION_OXIDES.get(species)
-    return alkali[0] if alkali is not None else None
+    if alkali is not None:
+        return alkali[0]
+    mixed = _MIXED_GAS_REACTION_SIDE_PARENTS.get(species)
+    return mixed[0] if mixed is not None else None
 
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 
@@ -968,6 +975,7 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "PO2",
         "P4O6",
         "P4O10",
+        "PS",
         "S",
         "S2",
         "S3",
@@ -1342,7 +1350,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "MnO": "liquid_from_solid_estimate",
     "NiO": "published_fitted",
     "CoO": "published_fitted",
-    "P2O5": "external_datapack",
+    "P2O5": "published_fitted",
     "MgO": "janaf_fitted",
     "CaO": "janaf_fitted",
     "Al2O3": "janaf_fitted",
@@ -1414,6 +1422,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Ru": "P672-Ru-l",
     "Rh": "P672-Rh-l",
     "Ir": "BU-2612",
+    "P2O5": "Jung-Hudon-2012",
     "Na2O": "Na-013",
     "MgO": "Mg-009",
     "CaO": "Ca-028",
@@ -1532,6 +1541,9 @@ def gas_species_provenance(species: str) -> dict[str, str | None]:
     if side_reactant is not None:
         condensate_authority = _OXIDE_PROVENANCE_AUTHORITY[side_reactant[0]]
         authorities.append(condensate_authority)
+    mixed_side = _MIXED_GAS_REACTION_SIDE_PARENTS.get(species)
+    if mixed_side is not None:
+        authorities.append(_GAS_PROVENANCE_AUTHORITY[mixed_side[0]])
     authority = min(authorities, key=_PROVENANCE_AUTHORITY_RANK.__getitem__)
     return {
         "species_name": species,
@@ -1736,13 +1748,15 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
              'validation': 'unvalidated',
              'reason': 'O is input (fO2 pinned), so C1, C3 and C4 do not apply.',
              'c2_candidates': ()},
-    'P': {   'status': 'gas-partial',
-             'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': False},
+    'P': {   'status': 'gas-complete-melt-pending',
+             'criteria': {'C1': False, 'C2': True, 'C3': False, 'C4': True},
              'validation': 'unvalidated',
-             'reason': 'JANAF P gas rows cover 500-3000 K; no public evaluated P2O5(l) G(T) '
-                       'function was found and JANAF lists P4O10(cr) only. Channels need an '
-                       'external, source-rated P2O5(l) standard state and caller-supplied a(P2O5); '
-                       'OpenIMCC provides no pyrolysis-temperature melt activity model.',
+             'reason': 'Jung and Hudon (2012) supply the assessed P2O5(l) reaction function, fitted '
+                       'here to JANAF\'s 1-bar P2(g)/O2(g) references over 1200-3000 K. JANAF P, P2, '
+                       'P4, PO, PO2, P4O6, P4O10, and PS(g) channels are available; PS also uses '
+                       'caller-supplied a(S2). C1 stays no because phosphorus melt activity is not '
+                       'computed. sp_extension P2O5 melt activity uses half-P4O10(cr), a different '
+                       'reference from this liquid standard.',
              'c3_ion_bound': {   'status': 'not computed',
                                  'reason': 'not computed: ionized phosphorus channels are outside '
                                            'this neutral gas-only change'},
@@ -4195,7 +4209,8 @@ def evaluate_gas(
         similarly accept ``Br2``, ``I2``, ``Cl2``, and ``F2`` fugacity ratios;
         their halide products use the supported metal-oxide liquid activities.
         ``H2`` and ``N2`` accept ``f(parent)/p°``; ``C`` is
-        relative to graphite. HCl, HF, HBr, and HI require both H2 and X2.
+        relative to graphite. HCl, HF, HBr, and HI require both H2 and X2;
+        PS requires both ``P2O5`` and ``S2`` activities.
     T_K:
         Temperature in Kelvin. Must be finite and positive on this path.
     fO2:
@@ -4523,6 +4538,7 @@ def evaluate_gas(
             a_oxide = 1.0
 
         hydrogen_halide_parent = _HYDROGEN_HALIDE_PARENTS.get(gas_name)
+        mixed_side_parent = _MIXED_GAS_REACTION_SIDE_PARENTS.get(gas_name)
         if hydrogen_halide_parent:
             # 1/2 H2(g) + 1/2 X2(g) = HX(g); both activities use their
             # JANAF 1-bar gas references, and no oxygen enters the reaction.
@@ -4577,6 +4593,29 @@ def evaluate_gas(
                 * a_oxide**n_gas
                 / p_O2**side_n_O2
             )
+        elif mixed_side_parent:
+            side_parent, n_side = mixed_side_parent
+            side_name = _parent_standard_row(side_parent)
+            side_row = _nearest_interval_row(
+                datapack.gas_df,
+                side_name,
+                T,
+                allow_extrapolation=allow_extrapolation,
+            )
+            G_side = _janaf_gibbs(T, side_row)
+            flag = _outside_interval_flag(side_name, T, side_row)
+            if flag is not None:
+                flags.append(flag)
+            # P2O5(l) + S2(g) = 2 PS(g) + 5/2 O2(g). The tuple coefficients
+            # are per mole of P2O5; solve mass action for the two PS products.
+            dG = n_gas * G_gas + n_O2 * G_O2 - G_oxide - n_side * G_side
+            Kp = np.exp(-dG / (R_J_MOL_K * T))
+            p_gas = (
+                Kp
+                * a_oxide
+                * act[side_parent] ** n_side
+                / p_O2**n_O2
+            ) ** (1.0 / n_gas)
         elif not hydrogen_halide_parent and oxide in _GAS_PHASE_PARENT_ROWS:
             # Sulfur tuple: n_S2 S2(g) + n_O2 O2(g) = gas(g).
             # Kp = p_gas / (a_S2**n_S2 * fO2**n_O2), with ΔG° formed from
@@ -4753,9 +4792,11 @@ def oxygen_balance_species_metadata(
     """Return formula, parent-demand, and pO2 exponent metadata by species.
 
     Parent oxygen demand is the parent oxide's O/metal ratio multiplied by
-    the gas species' metal-atom count. For M_x O_y from parent M_a O_b,
-    the pO2 exponent is (y - x*b/a) / 2. Parentless oxygen species use
-    y / 2. Supply pO2_exponents to override or define custom tables.
+    the count of parent-element atoms in the gas species. Other elements in
+    mixed products are side reactants and do not carry the oxide's oxygen
+    demand. For M_x O_y from parent M_a O_b, the pO2 exponent is
+    (y - x*b/a) / 2. Parentless oxygen species use y / 2. Supply
+    pO2_exponents to override or define custom tables.
     """
     overrides = pO2_exponents or {}
     unknown_overrides = overrides.keys() - species_parent_oxides.keys()
@@ -4769,17 +4810,20 @@ def oxygen_balance_species_metadata(
         atoms = _formula_atoms(species)
         mass = sum(_ATOMIC_MASS_G_MOL[element] * number for element, number in atoms.items())
         oxygen_atoms = atoms.get("O", 0)
-        metal_atoms = sum(number for element, number in atoms.items() if element != "O")
         if parent:
             parent_atoms = _formula_atoms(parent)
-            parent_metals = sum(number for element, number in parent_atoms.items() if element != "O")
+            parent_elements = set(parent_atoms) - {"O"}
+            parent_metals = sum(parent_atoms[element] for element in parent_elements)
             if parent_metals <= 0:
                 raise ImccGasOxygenBalanceError(
                     f"parent oxide {parent!r} has no metal atoms for oxygen balance"
                 )
             parent_ratio = parent_atoms.get("O", 0) / parent_metals
-            parent_oxygen = parent_ratio * metal_atoms
-            exponent = (oxygen_atoms - parent_ratio * metal_atoms) / 2.0
+            parent_element_atoms = sum(
+                atoms.get(element, 0) for element in parent_elements
+            )
+            parent_oxygen = parent_ratio * parent_element_atoms
+            exponent = (oxygen_atoms - parent_oxygen) / 2.0
         else:
             parent_oxygen = 0.0
             exponent = oxygen_atoms / 2.0

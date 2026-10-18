@@ -192,7 +192,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
     assert gas_path.is_file()
     assert oxide_path.is_file()
     assert len(gas_pack.gas_df) == (
-        62
+        63
         + len(build_gas_tables.LOW_T_GAS_SPECIES)
         + 2
         + len(_ION_GAS_SPECIES)
@@ -212,7 +212,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 5  # Pt and PtO2, including PtO2's continuation interval.
         + 2  # Ir gas rows; Ru and Rh are counted with trace gas species.
     )
-    assert len(gas_pack.oxide_df) == 195
+    assert len(gas_pack.oxide_df) == 197
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -638,7 +638,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     in_domain = set(IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES)
     extrapolated = set(IMCC_GAS_WORKBOOK_EXTRAPOLATION_LABELS)
     assert len(implemented) == (
-        64
+        65
         + 6
         + len(_RARE_EARTH_CHANNELS)
         + len(build_gas_tables.TRACE_GAS_SPECIES)
@@ -653,6 +653,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
         in_domain
         | extrapolated
         | set(_P_CHANNELS)
+        | {"PS"}
         | set(_RARE_EARTH_CHANNELS)
         | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir"}
         | build_gas_tables.TRACE_GAS_SPECIES
@@ -1424,7 +1425,7 @@ _S_CHANNELS = (
     "S", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
     "SO", "SO2", "SO3", "SSO",
 )
-_PS_CHANNELS = _P_CHANNELS + _S_CHANNELS
+_PS_CHANNELS = _P_CHANNELS + ("PS",) + _S_CHANNELS
 _RARE_EARTH_CHANNELS = ("La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO", "Sm", "SmO", "Eu", "EuO", "Gd", "GdO", "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO", "Tm", "TmO", "Yb", "YbO", "Lu", "LuO")
 _NICO_PARENT_PAIRS = (("Ni", "NiO"), ("Co", "CoO"))
 _PRE_GATED_CHANNELS = tuple(
@@ -1514,7 +1515,7 @@ def test_readme_basalt_outputs_match_interval_1_at_and_above_1500_k(
 
 _OPTIONAL_PS_GAS_SPECIES = (
     "S", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "SO", "SO2", "SO3", "SSO",
-    "P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10",
+    "P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10", "PS",
 )
 
 
@@ -2346,25 +2347,33 @@ def test_phosphorus_and_sulfur_channels_are_optional_and_refuse_without_parent(
         gas_pack,
         allow_extrapolation=True,
     )
-    assert not set(_P_CHANNELS) & set(p_parent_only)
-    assert set(_P_CHANNELS) <= set(p_parent_only.omitted_channels)
-    assert all(
-        "P2O5(l)" in p_parent_only.omitted_channels[species]
-        for species in _P_CHANNELS
-    )
+    assert set(_P_CHANNELS) <= set(p_parent_only)
+    assert all(p_parent_only[species] > 0.0 for species in _P_CHANNELS)
+    assert "PS" not in p_parent_only
+    assert not set(_P_CHANNELS) & set(p_parent_only.omitted_channels)
 
-    with pytest.raises(ImccGasSpeciesNotFoundError) as p_error:
+    requested_p = evaluate_gas(
+        {**activities, "P2O5": 1.0e-3},
+        2200.0,
+        1.0e-10,
+        gas_pack,
+        parent_oxides=(*IMCC_PARENT_OXIDES, "P2O5"),
+        gas_species=("PO",),
+        allow_extrapolation=True,
+    )
+    assert tuple(requested_p) == ("PO",)
+
+    with pytest.raises(ImccGasSpeciesNotFoundError) as ps_error:
         evaluate_gas(
             {**activities, "P2O5": 1.0e-3},
             2200.0,
             1.0e-10,
             gas_pack,
             parent_oxides=(*IMCC_PARENT_OXIDES, "P2O5"),
-            gas_species=("PO",),
+            gas_species=("PS",),
             allow_extrapolation=True,
         )
-    assert p_error.value.code == "imcc_gas_species_not_found"
-    assert "P2O5(l)" in str(p_error.value)
+    assert "PS" in str(ps_error.value)
 
     for species in ("PO", "P2", "S", "S2"):
         with pytest.raises(ImccGasSpeciesNotFoundError):
@@ -2604,32 +2613,114 @@ def test_nickel_and_cobalt_evaporation_match_hand_mass_action_at_2000_k(
     assert result["Co"] == pytest.approx(expected["Co"], rel=1.0e-12)
 
 
-def test_external_p2o5_row_sets_phosphorus_provenance(
-    gas_pack: ImccGasDatapack, tmp_path: Path
+def test_published_p2o5_row_sets_phosphorus_provenance(
+    gas_pack: ImccGasDatapack,
 ) -> None:
-    oxide_df = pd.read_csv(gas_pack.oxide_path)
-    p2o5_row = oxide_df.loc[oxide_df["species_name"] == "FeO(l)"].iloc[[0]]
-    oxide_path = tmp_path / "external-condensate.csv"
-    pd.concat(
-        [oxide_df, p2o5_row.assign(species_name="P2O5(l)")], ignore_index=True
-    ).to_csv(oxide_path, index=False)
-    external_pack = load_gas_datapack(
-        gas_path=gas_pack.gas_path, oxide_path=oxide_path
-    )
-
     result = evaluate_gas(
         {"P2O5": 1.0e-3},
         2200.0,
         1.0e-6,
-        external_pack,
+        gas_pack,
         parent_oxides=(*IMCC_PARENT_OXIDES, "P2O5"),
         gas_species=_P_CHANNELS,
     )
     assert tuple(result) == _P_CHANNELS
     assert all(
-        result.provenance_class[species] == "external_datapack"
+        result.provenance_class[species] == "published_fitted"
         for species in _P_CHANNELS
     )
+    assert species_thermo("P2O5", "l", 2200.0, gas_pack).source_table_id == (
+        "Jung-Hudon-2012"
+    )
+
+    low = evaluate_gas(
+        {"P2O5": 1.0e-3},
+        1100.0,
+        1.0e-6,
+        gas_pack,
+        parent_oxides=(*IMCC_PARENT_OXIDES, "P2O5"),
+        gas_species=_P_CHANNELS,
+        allow_extrapolation=True,
+    )
+    assert all("P2O5(l)" in (low.domain_flags[name] or "") for name in _P_CHANNELS)
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        evaluate_gas(
+            {"P2O5": 1.0e-3},
+            1100.0,
+            1.0e-6,
+            gas_pack,
+            parent_oxides=(*IMCC_PARENT_OXIDES, "P2O5"),
+            gas_species=("P",),
+            allow_extrapolation=False,
+        )
+
+
+def test_ps_uses_both_parent_activities_and_propagates_source_domains(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    temperature = 2200.0
+    fugacity = 1.0e-6
+    p2o5_activity = 1.0e-3
+    s2_activity = 2.5e-2
+    parents = ("P2O5", "S2")
+    activities = {"P2O5": p2o5_activity, "S2": s2_activity}
+
+    p2o5_g = species_thermo("P2O5", "l", temperature, gas_pack).G_J_mol
+    ps_g = species_thermo("PS", "g", temperature, gas_pack).G_J_mol
+    s2_g = species_thermo("S2", "g", temperature, gas_pack).G_J_mol
+    oxygen_g = species_thermo("O2", "g", temperature, gas_pack).G_J_mol
+    delta_g = 2.0 * ps_g + 2.5 * oxygen_g - p2o5_g - s2_g
+    expected = math.sqrt(
+        math.exp(-delta_g / (R_J_MOL_K * temperature))
+        * p2o5_activity
+        * s2_activity
+        / fugacity**2.5
+    )
+
+    result = evaluate_gas(
+        activities,
+        temperature,
+        fugacity,
+        gas_pack,
+        parent_oxides=parents,
+        gas_species=("PS",),
+    )
+    assert result["PS"] == pytest.approx(expected, rel=1.0e-12)
+    assert result.domain_flags["PS"] is None
+    assert gas_species_provenance("PS")["authority"] == "published_fitted"
+
+    balance_metadata = oxygen_balance_species_metadata({"PS": "P2O5"})["PS"]
+    assert balance_metadata.parent_oxygen_demand == pytest.approx(2.5)
+    assert balance_metadata.pO2_exponent == pytest.approx(-1.25)
+    _root, balance_pressures, diagnostics = evaluate_gas_oxygen_balance(
+        activities,
+        temperature,
+        gas_pack,
+        parent_oxides=parents,
+    )
+    assert balance_pressures["PS"] > 0.0
+    assert diagnostics["residual"] < 1.0e-12
+
+    low = evaluate_gas(
+        activities,
+        1100.0,
+        fugacity,
+        gas_pack,
+        parent_oxides=parents,
+        gas_species=("PS",),
+        allow_extrapolation=True,
+    )
+    assert "P2O5(l)" in (low.domain_flags["PS"] or "")
+    with pytest.raises(ImccGasTemperatureOutsideDomainError):
+        evaluate_gas(
+            activities,
+            1100.0,
+            fugacity,
+            gas_pack,
+            parent_oxides=parents,
+            gas_species=("PS",),
+            allow_extrapolation=False,
+        )
 
 
 def test_override_without_tio2_parent_keeps_the_sf04_default_set(
