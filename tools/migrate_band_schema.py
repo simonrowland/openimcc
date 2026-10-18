@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import re
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -251,7 +252,70 @@ def _gas(root: Path) -> None:
     inputs_path = root / "data-src/liquid-from-solid-inputs.json"
     inputs_digest = hashlib.sha256(inputs_path.read_bytes()).hexdigest()
     source_text = path.read_text()
+    # Repair legacy flow mappings before YAML parsing: unquoted commas in a
+    # citation are interpreted as mapping separators and silently discard the
+    # remainder into null-valued keys.
+    citation_fields = (
+        "source_record|source_locator|source_url|doi|url|table_id|"
+        "anchor|citation_gaps|upstream_source_sha256"
+    )
+    source_text, _citation_fixes = re.subn(
+        rf"source: \{{citation: (?!['\"])(.*?)(, ({citation_fields}):)",
+        lambda match: "source: {citation: '"
+        + match.group(1).replace("'", "''")
+        + "'"
+        + match.group(2),
+        source_text,
+    )
     doc = yaml.safe_load(source_text)
+    for row in doc["rows"]:
+        source_path = row.get("source_path")
+        if not source_path:
+            continue
+        source_file = root / source_path
+        if not source_file.is_file():
+            continue
+        if source_path.startswith("data-src/janaf/"):
+            file_hash = hashlib.sha256(source_file.read_bytes()).hexdigest()
+            row["source_sha256"] = file_hash
+            source_record = (
+                yaml.safe_load(source_file.read_text())
+                if source_file.suffix in {".yaml", ".yml"}
+                else json.loads(source_file.read_text())
+                if source_file.suffix == ".json"
+                else {}
+            )
+            upstream_hash = source_record.get("extraction", {}).get("source_sha256")
+            if upstream_hash and upstream_hash != file_hash:
+                row["upstream_source_sha256"] = upstream_hash
+            else:
+                row.pop("upstream_source_sha256", None)
+        elif source_path.startswith("data-src/published-thermo/"):
+            if row.get("source_sha256"):
+                row["source_sha256"] = hashlib.sha256(source_file.read_bytes()).hexdigest()
+        source = row.get("source")
+        if not isinstance(source, dict):
+            continue
+        citation = source.get("citation", "")
+        malformed_citation = any(value is None for value in source.values()) or ": null" in citation
+        if not malformed_citation:
+            continue
+        if source_path.startswith("data-src/published-thermo/pankratz-"):
+            published = yaml.safe_load(
+                (root / "data-src/published-thermo/PROVENANCE.yaml").read_text()
+            )
+            record = next(
+                record for record in published["records"]
+                if record["path"] == source_path
+            )
+            citation = record["publication"]
+        elif source_path.startswith("data-src/konings/"):
+            citation = json.loads(source_file.read_text())["citation"]
+        else:
+            continue
+        source["citation"] = citation
+        for key in [key for key, value in source.items() if value is None]:
+            del source[key]
     parent_checks = {
         "PbO(l)": ("Holman & Fulrath (1973), LBL-1462", "Modified Knudsen effusion; pure PbO vapor-pressure curve", "approximately 1050–1180 K; compared vaporization enthalpy and entropy with JANAF, not liquid Gibbs energy", "Raw Fig. 22 points and Appendix C need transcription before calculating a pressure or Gibbs residual."),
         "Na2O(l)": ("Kobertz (2019), Calphad 64, 327–333, DOI 10.1016/j.calphad.2019.01.006", "KEMS of pure Na2O(c), Na and O2 pressures", "900–1165 K; reported solid-reference reaction Gibbs at 1000 K; no liquid or OpenIMCC difference", "Near-transition vapor evidence; reconcile phase and raw points before a matched comparison."),

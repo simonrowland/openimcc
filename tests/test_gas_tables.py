@@ -1024,6 +1024,87 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     ]
 
 
+def test_janaf_gas_provenance_hashes_source_files_and_preserves_upstream_hashes() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    janaf_rows = [
+        row for row in provenance["rows"]
+        if row.get("source_path", "").startswith("data-src/janaf/")
+    ]
+    for row in janaf_rows:
+        source_path = ROOT / row["source_path"]
+        source_bytes = source_path.read_bytes()
+        assert row["source_sha256"] == hashlib.sha256(source_bytes).hexdigest()
+        if source_path.suffix == ".yaml":
+            source = yaml.safe_load(source_bytes)
+        elif source_path.suffix == ".json":
+            source = json.loads(source_bytes)
+        else:
+            source = {}
+        upstream_hash = source.get("extraction", {}).get("source_sha256")
+        if upstream_hash and upstream_hash != hashlib.sha256(source_bytes).hexdigest():
+            assert row["upstream_source_sha256"] == upstream_hash
+        else:
+            assert "upstream_source_sha256" not in row
+
+
+def test_pankratz_yttrium_and_mno_source_pins_match_source_files() -> None:
+    vendor = yaml.safe_load(
+        (ROOT / "data-src/published-thermo/PROVENANCE.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    yttrium = {
+        row["record_id"]: row for row in vendor["records"]
+        if row["record_id"] in {"P672-Y-g", "P672-Y2O3-c"}
+    }
+    assert set(yttrium) == {"P672-Y-g", "P672-Y2O3-c"}
+    for row in yttrium.values():
+        assert row["source_sha256"] == hashlib.sha256(
+            (ROOT / row["path"]).read_bytes()
+        ).hexdigest()
+    gas = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    manganese = [
+        row for row in gas["rows"] if row.get("species_name") == "MnO(g)"
+    ]
+    assert len(manganese) == 2
+    for row in manganese:
+        assert row["source_sha256"] == hashlib.sha256(
+            (ROOT / row["source_path"]).read_bytes()
+        ).hexdigest()
+
+
+def test_inline_provenance_citations_match_their_source_records() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    for row in provenance["rows"]:
+        source_path = row.get("source_path", "")
+        if not source_path.startswith((
+            "data-src/published-thermo/pankratz-",
+            "data-src/konings/",
+        )):
+            continue
+        source = row.get("source", {})
+        citation = source.get("citation", "")
+        assert ": null" not in citation
+        assert all(value is not None for value in source.values())
+    sb2o3 = next(
+        row for row in provenance["rows"]
+        if row.get("species_name") == "Sb2O3(l)"
+        and row.get("table_id") == "P672-Sb2O3-c"
+    )
+    assert sb2o3["source"]["citation"] == (
+        "Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, "
+        "U.S. Bureau of Mines Bulletin 672"
+    )
+    gd = next(
+        row for row in provenance["rows"]
+        if row.get("species_name") == "Gd(g)"
+        and row.get("source_path") == "data-src/konings/gd.json"
+    )
+    assert gd["source"]["citation"] == json.loads(
+        (ROOT / gd["source_path"]).read_text(encoding="utf-8")
+    )["citation"]
+
+
 def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = provenance["rows"]
