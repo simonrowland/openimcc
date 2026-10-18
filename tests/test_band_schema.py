@@ -167,32 +167,48 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         "Au+(g)", "Au-(g)", "Hg+(g)", "Pd+(g)", "Pt+(g)", "Pt-(g)",
     }
     current_gas_provenance = ROOT / "src/openimcc/data/gas/PROVENANCE.yaml"
-    ion_rows = [
-        line
-        for line in current_gas_provenance.read_text().splitlines()
-        if line.startswith("  - {table: gas, species_name: ")
-        and any(f"species_name: {species}," in line for species in ion_species)
-    ]
-    assert len(ion_rows) == len(ion_species)
     baseline_gas_provenance = tmp_path / "src/openimcc/data/gas/PROVENANCE.yaml"
+    current_document = yaml.safe_load(current_gas_provenance.read_text())
+    pgm_rows = [
+        row for row in current_document["rows"]
+        if row.get("species_name") in ion_species
+    ]
+    saha_rows = [
+        row for row in current_document["rows"]
+        if str(row.get("table_id", "")).startswith("NIST-ASD-Saha-")
+    ]
+    assert len(pgm_rows) == len(ion_species)
+    assert saha_rows
+    injected_rows = [
+        "  - " + yaml.safe_dump(
+            row, allow_unicode=True, sort_keys=False,
+            default_flow_style=True, width=1_000_000,
+        ).strip()
+        for row in (*pgm_rows, *saha_rows)
+    ]
     baseline_text = baseline_gas_provenance.read_text()
     marker = "\nsource_comparisons:"
     assert marker in baseline_text
     baseline_gas_provenance.write_text(
         baseline_text.replace(
-            marker, "\n" + "\n".join(ion_rows) + marker, 1
+            marker, "\n" + "\n".join(injected_rows) + marker, 1
         )
     )
     migrate(tmp_path)
     gas_provenance = "src/openimcc/data/gas/PROVENANCE.yaml"
     for relative in paths:
+        migrated_path = tmp_path / relative
+        committed_path = ROOT / relative
         if relative == gas_provenance:
-            migrated_path = tmp_path / relative
-            committed_path = ROOT / relative
             baseline = yaml.safe_load(migrated_path.read_text())
             current = yaml.safe_load(committed_path.read_text())
             for document in (baseline, current):
-                document["source_notes"].pop("phosphorus_parent_channels", None)
+                for note in (
+                    "phosphorus_parent_channels",
+                    "negative_ion_screen",
+                    "constructed_saha_ions",
+                ):
+                    document["source_notes"].pop(note, None)
                 document["rows"] = [
                     row
                     for row in document["rows"]
