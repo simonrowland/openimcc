@@ -855,6 +855,46 @@ def test_stored_gas_tables_refuse_edits_that_would_diverge_from_their_digest(
     assert gas_pack.gas_table_digest == digest
 
 
+def test_rejected_gas_pack_reinitialization_preserves_table_identity(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    digest = gas_pack.gas_table_digest
+    condensate_digest = gas_pack.condensate_table_digest
+    rows = len(gas_pack.gas_df)
+    bad = gas_pack.gas_df.iloc[:1].copy()
+    bad.loc[:, "T_min"] = 5000.0
+    bad.loc[:, "T_max"] = 1000.0
+
+    with pytest.raises(TypeError, match="cannot be initialized more than once"):
+        gas_pack.__init__(
+            gas_df=bad,
+            oxide_df=gas_pack.oxide_df,
+            gas_path=gas_pack.gas_path,
+            oxide_path=gas_pack.oxide_path,
+        )
+
+    assert len(gas_pack.gas_df) == rows
+    assert gas_pack.gas_table_digest == digest
+    assert gas_pack.condensate_table_digest == condensate_digest
+    assert evaluate_gas(
+        {"SiO2": 1.0},
+        1800.0,
+        1e-8,
+        gas_pack,
+        parent_oxides=("SiO2",),
+        gas_species=("SiO",),
+        allow_extrapolation=False,
+    )["SiO"] == evaluate_gas(
+        {"SiO2": 1.0},
+        1800.0,
+        1e-8,
+        load_gas_datapack(),
+        parent_oxides=("SiO2",),
+        gas_species=("SiO",),
+        allow_extrapolation=False,
+    )["SiO"]
+
+
 def test_gas_domain_refusal_is_typed(gas_pack: ImccGasDatapack) -> None:
     """A selected gas-row gap still refuses before evaluating the reaction."""
     gas_df = gas_pack.gas_df.copy()

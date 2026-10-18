@@ -3881,6 +3881,25 @@ class ImccGasDatapack:
     _gas_digest: str = field(init=False, repr=False, compare=False)
     _condensate_digest: str = field(init=False, repr=False, compare=False)
 
+    def __init__(
+        self,
+        gas_df: pd.DataFrame,
+        oxide_df: pd.DataFrame,
+        gas_path: Path,
+        oxide_path: Path,
+    ) -> None:
+        # A second call would write the new tables before validation. If that
+        # validation fails, the stored frame no longer matches its digest.
+        if hasattr(self, "_gas_digest"):
+            raise TypeError("ImccGasDatapack cannot be initialized more than once")
+        object.__setattr__(self, "_gas_digest", "")
+        object.__setattr__(self, "_condensate_digest", "")
+        object.__setattr__(self, "gas_df", gas_df)
+        object.__setattr__(self, "oxide_df", oxide_df)
+        object.__setattr__(self, "gas_path", gas_path)
+        object.__setattr__(self, "oxide_path", oxide_path)
+        self.__post_init__()
+
     def __post_init__(self) -> None:
         gas_df = _canonicalize_gas_table(
             self.gas_df,
