@@ -18,6 +18,7 @@ from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 import pytest
+from tools import build_gas_tables
 
 from openimcc import (
     ImccGasDuplicateIntervalError as PublicDuplicateIntervalError,
@@ -53,7 +54,7 @@ PACKAGED_CONDENSATE_TABLE_DIGEST = (
     "4ba6a61f5187a5d6b6b7e12d548b8c473e4f8e71d669f05ad0a0d31ac7dfc866"
 )
 PACKAGED_FULL_GAS_TABLE_DIGEST = (
-    "ec8b1b374db3f64ca2ce827b16e216c4f4a9f1f6c455fad5963d42ca3cf6c37e"
+    "e55bf48a04216d4e99f521e659131a7acd7e570ac96655554a988b13ad1ab11d"
 )
 PACKAGED_FULL_CONDENSATE_TABLE_DIGEST = (
     "a38c297a47ed030b89ce69622cda17a0950aa43818b70666662d7b8bfe3c5962"
@@ -63,8 +64,8 @@ PACKAGED_ENGINE_BINDING_DIGESTS = {
     "ext": "2ed735ddb34727dc2472f60f23e773ba81554a9a147a2602872407d7ad697d41",
 }
 PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
-    "v1": "dfd6b7909d10e1091838e56bcb2a7eb30dd6059962483161a5e9f0a1d9e27f2b",
-    "ext": "9d605c427e1bf67a32f4337bcf661a1d5c8c40be13dd86f915b1dc08b541e004",
+    "v1": "b3eff60d2549cff1254ddecf017dc77b0cacd57c6615021cc524fefebb5b73ca",
+    "ext": "cea44dee8b9e35875c1f6d44a4adfd7ef13df0fc3605e69f091ca48dc23ed7b1",
 }
 ADDED_GAS_SPECIES = {
     "Au+(g)", "Au-(g)", "Hg+(g)", "Pd+(g)", "Pt+(g)", "Pt-(g)",
@@ -84,7 +85,7 @@ ADDED_GAS_SPECIES = {
     "SrI(g)", "SrI2(g)",
     "Pt(g)", "PtO2(g)", "Ru(g)", "Rh(g)", "Ir(g)",
     "PS(g)",
-}
+} | {species for species, _element in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES}
 ADDED_CONDENSATE_SPECIES = {
     "Ta2O5(l)", "BeO(l)", "Tl2O(l)",
     "Pt(cr)", "Pt(l)", "Ru(cr)", "Ru(l)",
