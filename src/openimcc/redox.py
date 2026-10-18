@@ -1405,10 +1405,18 @@ def _response(
 
 
 def _ln_k_fe(redox_pack: RedoxPack, temperature_K: float) -> float:
+    metal_rows = [
+        row for row in redox_pack.rows
+        if row.get("role") == "parent_reference" and row.get("complex") == "FeO(l)"
+    ]
+    if len(metal_rows) != 1:
+        raise ImccMalformedDatapackError(
+            "redox pack must contain exactly one FeO(l) parent reference row"
+        )
     try:
         return ln_k_prime(
             redox_pack,
-            redox_pack.rows[0],
+            metal_rows[0],
             temperature_K,
             allow_extrapolation=True,
         )

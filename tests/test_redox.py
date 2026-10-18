@@ -657,8 +657,13 @@ def test_metal_amount_matches_independent_dense_thermodynamic_scan() -> None:
         for index in range(base.n_complexes)
     )
     redox_pack = load_redox_pack()
-    ln_k_fe = ln_k_prime(redox_pack, redox_pack.rows[0], temperature)
-    ln_k_ferric = ln_k_prime(redox_pack, redox_pack.rows[1], temperature)
+    metal_row = next(
+        row for row in redox_pack.rows
+        if row["role"] == "parent_reference" and row["complex"] == "FeO(l)"
+    )
+    ferric_row = next(row for row in redox_pack.rows if row["complex"] == "FeO1.5(l)")
+    ln_k_fe = ln_k_prime(redox_pack, metal_row, temperature)
+    ln_k_ferric = ln_k_prime(redox_pack, ferric_row, temperature)
     lambdas = np.linspace(-30.0, 0.0, 120_001, dtype=np.float64)
     ferric_ratio = np.exp(ln_k_ferric + lambdas / 4.0)
     log_a_feo = -np.log1p(ferric_ratio)
@@ -670,6 +675,29 @@ def test_metal_amount_matches_independent_dense_thermodynamic_scan() -> None:
     assert abs(saturation_residual[scan_index]) < 2.0e-4
     assert result.metal_moles == pytest.approx(scan_metal, abs=2.0e-6)
     assert result.lambda_ln_f_o2 == pytest.approx(lambdas[scan_index], abs=2.0e-4)
+
+
+def test_fe_metal_k_row_is_selected_by_identity_after_reordering(tmp_path):
+    from openimcc.redox import _ln_k_fe
+
+    content = json.loads(DEFAULT_REDOX_PACK_PATH.read_text(encoding="utf-8"))
+    content["rows"] = [content["rows"][1], content["rows"][0], *content["rows"][2:]]
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path = tmp_path / "reordered-redox.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+
+    reordered = load_redox_pack(path)
+    default = load_redox_pack(DEFAULT_REDOX_PACK_PATH)
+    temperature = 2200.0
+    metal_row = next(
+        row for row in reordered.rows
+        if row["role"] == "parent_reference" and row["complex"] == "FeO(l)"
+    )
+
+    assert reordered.rows[0]["complex"] == "FeO1.5(l)"
+    assert _ln_k_fe(reordered, temperature) == pytest.approx(
+        ln_k_prime(default, metal_row, temperature), abs=1e-12
+    )
 
 
 def test_redox_pack_symlink_loop_is_a_typed_refusal(monkeypatch):

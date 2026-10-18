@@ -324,7 +324,10 @@ def test_metal_standard_rows_reproduce_the_existing_fitter() -> None:
 
 def test_ferrous_parent_reaction_band_covers_janaf_reference_residual() -> None:
     pack = load_redox_pack(PACK_PATH)
-    row = pack.rows[0]
+    row = next(
+        row for row in pack.rows
+        if row["role"] == "parent_reference" and row["complex"] == "FeO(l)"
+    )
     source = _load_record(ROOT / "data-src/janaf/Fe-019.yaml")["table"]["values"]
     residuals = []
 
