@@ -31,7 +31,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import os
 import re
 import statistics
 import sys
@@ -61,17 +60,17 @@ from openimcc import (
     load_datapack,
 )
 
-_YAML_BASE_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+_YAML_BASE_LOADER = yaml.SafeLoader
 
 
 class _BenchYAML12SafeLoader(_YAML_BASE_LOADER):
-    """Safe loader with YAML 1.2 booleans only.
+    """Safe loader with YAML 1.2 boolean and integer scalars.
 
     YAML 1.1 resolves bare ``NO``/``yes``/``on``/``off`` to booleans, which
     would turn chemistry identifiers such as ``species: NO`` (nitric oxide)
-    or a composition id ``no`` into ``False``. Copy the resolver table so the
-    base loader is untouched, drop the bool resolver, then re-add it for the
-    YAML 1.2 spellings only (true/false in three cases).
+    or a composition id ``no`` into ``False``. YAML 1.1 also treats leading
+    zero, hexadecimal, and sexagesimal forms as integers. Copy the resolver
+    table, then add only YAML 1.2 bool spellings and decimal integers.
     """
 
     yaml_implicit_resolvers = {
@@ -84,10 +83,63 @@ class _BenchYAML12SafeLoader(_YAML_BASE_LOADER):
     }
 
 
+_BenchYAML12SafeLoader.yaml_implicit_resolvers = {
+    key: [
+        (tag, regexp)
+        for tag, regexp in resolvers
+        if tag != "tag:yaml.org,2002:int"
+    ]
+    for key, resolvers in _BenchYAML12SafeLoader.yaml_implicit_resolvers.items()
+}
+
 _BenchYAML12SafeLoader.add_implicit_resolver(
     "tag:yaml.org,2002:bool",
     re.compile(r"^(?:true|True|TRUE|false|False|FALSE)$"),
     list("tTfF"),
+)
+_BenchYAML12SafeLoader.add_implicit_resolver(
+    "tag:yaml.org,2002:int",
+    re.compile(r"^[-+]?(?:0|[1-9][0-9_]*)$"),
+    list("-+0123456789"),
+)
+
+_BENCH_POINT_KEYS = frozenset(
+    {
+        "activity_basis_conversion",
+        "as_published_tridymite_activity",
+        "composition_id",
+        "composition_wt_pct",
+        "convention",
+        "dropped_reason",
+        "enabled",
+        "evidence_class",
+        "extrapolation_flag",
+        "extrapolation_note",
+        "fO2_bar",
+        "fO2_condition",
+        "fO2_note",
+        "id",
+        "material_class",
+        "measured",
+        "measurement_technique",
+        "observable",
+        "parent_oxide",
+        "population",
+        "provenance",
+        "published_a_AlO1.5",
+        "published_coefficients",
+        "published_mass_pct",
+        "published_mole_fraction",
+        "reduction_class",
+        "score",
+        "scoring_status",
+        "source_evidence_class",
+        "species",
+        "standard_state_conversion",
+        "temperature_K",
+        "uncertainty",
+        "units",
+    }
 )
 
 # Bare pack names that resolve to the packaged resource when no file of that
@@ -251,6 +303,8 @@ def _binary_subslice(point: Mapping[str, Any]) -> str | None:
     # this keeps nominal X=0.5 rows out of the X>0.5 envelope sub-slice while
     # the model's 0.500003947 fencepost is being fixed in model.py.
     x_na2o = float(mole_fraction["Na2O"])
+    if not math.isfinite(x_na2o):
+        return "X unknown"
     return "X>0.5" if x_na2o > 0.5 else "X<=0.5"
 
 
@@ -351,6 +405,16 @@ def load_bench_set(path: Path) -> dict[str, Any]:
         raise ValueError(f"unsupported melt activity bench set: {path}")
     if not data.get("compositions") or not data.get("points"):
         raise ValueError(f"bench set lacks compositions or points: {path}")
+    for point in data["points"]:
+        if not isinstance(point, Mapping):
+            raise ValueError("bench points must be mappings")
+        unknown = set(point) - _BENCH_POINT_KEYS
+        if unknown:
+            point_id = point.get("id", "<unknown>")
+            raise ValueError(
+                f"bench point {point_id!r} has unknown point keys: "
+                f"{', '.join(sorted(map(str, unknown)))}"
+            )
     assert_xtoken_points_carry_explicit_composition(data["points"])
     return data
 
@@ -397,11 +461,11 @@ def load_pack(pack_path: Path) -> _PackedEngine:
     that name in the working directory resolves to the packaged resource.
     """
     pack_path = Path(pack_path)
-    if (
-        not os.path.lexists(pack_path)
-        and str(pack_path) == pack_path.name
-        and pack_path.name in _PACKAGED_PACK_NAMES
-    ):
+    try:
+        pack_path.lstat()
+    except FileNotFoundError:
+        if str(pack_path) != pack_path.name or pack_path.name not in _PACKAGED_PACK_NAMES:
+            raise
         resource = resources.files("openimcc").joinpath("data", "packs", pack_path.name)
         with resources.as_file(resource) as packaged_path:
             return load_pack(packaged_path)
@@ -491,15 +555,6 @@ def _evaluate_imcc(
         except ImccRefusal:
             pass
 
-        try:
-            result = evaluate_with_overrides(
-                allow_extrapolation=True, allow_out_of_envelope=True
-            )
-        except ImccNonconvergenceError as retry_exc:
-            return "not_converged", {}, {}, _reason_line(retry_exc), None
-        except ImccRefusal as retry_exc:
-            return "out_of_domain", {}, {}, _reason_line(retry_exc), None
-        activities, gammas = maps(result)
         flags: list[str] = []
         if temperature_refusal is not None:
             flags.append(f"temperature: {_reason_line(temperature_refusal)}")
@@ -512,7 +567,18 @@ def _evaluate_imcc(
                 else "temperature"
             )
             flags.append(f"{cause}: {_reason_line(exc)}")
-        return "ok", activities, gammas, "", "; ".join(flags)
+        domain_flag = "; ".join(flags)
+
+        try:
+            result = evaluate_with_overrides(
+                allow_extrapolation=True, allow_out_of_envelope=True
+            )
+        except ImccNonconvergenceError as retry_exc:
+            return "not_converged", {}, {}, _reason_line(retry_exc), domain_flag
+        except ImccRefusal as retry_exc:
+            return "out_of_domain", {}, {}, _reason_line(retry_exc), domain_flag
+        activities, gammas = maps(result)
+        return "ok", activities, gammas, "", domain_flag
     except (
         ImccComponentOutsideDomainError,
         ImccCompositionIncompleteError,
@@ -548,7 +614,7 @@ def _prediction_for_point(
     shared analytical gas layer, which also takes parent-formula activities.
     """
     if status != "ok":
-        return None, reason, status, None, None
+        return None, reason, status, None, initial_domain_flag
     observable = str(point["observable"])
     if observable not in _SUPPORTED_OBSERVABLES:
         return (
@@ -796,7 +862,7 @@ def run_bench(
         except ImccRefusal as exc:
             gas_reason = f"partial_pressure refused: {_reason_line(exc)}"
     cache: dict[
-        tuple[str, float],
+        tuple[tuple[tuple[str, float], ...], float],
         tuple[str, dict[str, float], dict[str, float], str, str | None],
     ] = {}
     rows: list[PointResult] = []
@@ -804,7 +870,7 @@ def run_bench(
         composition_id = str(point["composition_id"])
         composition = composition_wt_pct_for_point(point, compositions)
         temperature_K = float(point["temperature_K"])
-        cache_key = (composition_id, temperature_K)
+        cache_key = (tuple(sorted(composition.items())), temperature_K)
         if cache_key not in cache:
             cache[cache_key] = _evaluate_imcc(engine, composition, temperature_K)
         (

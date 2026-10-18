@@ -15,6 +15,7 @@ import pytest
 
 from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
 from openimcc.bench import (
+    _binary_subslice,
     _evaluate_imcc,
     load_bench_set,
     load_pack,
@@ -217,6 +218,8 @@ def test_run_bench_ok_out_of_domain_and_refused(tmp_path: Path) -> None:
     assert ood.status == "not_converged"
     assert ood.predicted is None
     assert ood.residual is None
+    assert ood.domain_flag is not None
+    assert "temperature:" in ood.domain_flag
     assert "did not converge" in ood.reason.lower()
 
     refused = by_id["refused_held"]
@@ -746,6 +749,98 @@ points:
     assert point["enabled"] is True
 
 
+def test_load_bench_set_uses_yaml_12_integer_grammar(tmp_path: Path) -> None:
+    path = tmp_path / "bench.yaml"
+    path.write_text(
+        """\
+schema_version: melt-activity-bench.v1
+compositions:
+  c:
+    composition_wt_pct:
+      SiO2: 012
+      MgO: 0x10
+      CaO: 1:30
+points:
+  - id: yaml12
+    composition_id: c
+    species: SiO
+""",
+        encoding="utf-8",
+    )
+
+    composition = load_bench_set(path)["compositions"]["c"]["composition_wt_pct"]
+
+    assert composition == {"SiO2": "012", "MgO": "0x10", "CaO": "1:30"}
+
+
+def test_binary_subslice_does_not_classify_nonfinite_mole_fractions() -> None:
+    point = {
+        "population": "yamaguchi1983_emf_na2o_sio2",
+        "published_mole_fraction": {"Na2O": float("nan")},
+    }
+
+    assert _binary_subslice(point) == "X unknown"
+
+
+def test_bench_rejects_unknown_point_configuration_key(tmp_path: Path) -> None:
+    point = {
+        "id": "typo_exclusion",
+        "population": "inline_ok",
+        "composition_id": "cmas_in_domain",
+        "material_class": "cmas_slag",
+        "temperature_K": 1800.0,
+        "parent_oxide": "SiO2",
+        "species": "SiO",
+        "observable": "activity",
+        "measured": 0.5,
+        "units": "dimensionless",
+        "scored": False,
+        "dropped_reason": "intended exclusion",
+    }
+
+    with pytest.raises(ValueError, match="unknown point keys.*scored"):
+        load_bench_set(_write_fixture(tmp_path / "bench.yaml", [point]))
+
+
+def test_run_bench_cache_distinguishes_inline_compositions(tmp_path: Path) -> None:
+    first = {**_CMAS_WT}
+    second = {"SiO2": 75.0, "CaO": 5.0, "MgO": 10.0, "Al2O3": 10.0}
+    points = [
+        {
+            "id": f"inline_{index}",
+            "population": "inline_cache",
+            "composition_id": "same_id",
+            "composition_wt_pct": composition,
+            "material_class": "cmas_slag",
+            "temperature_K": 1800.0,
+            "parent_oxide": "SiO2",
+            "species": "SiO",
+            "observable": "activity",
+            "measured": 0.5,
+            "units": "dimensionless",
+            "score": True,
+        }
+        for index, composition in enumerate((first, second))
+    ]
+    report = run_bench(_write_fixture(tmp_path / "bench.yaml", points), DATAPACK_PATH)
+
+    expected = [
+        float(
+            evaluate(
+                composition,
+                1800.0,
+                load_datapack(DATAPACK_PATH),
+                basis_type="wt",
+            ).parent_activity[0]
+        )
+        for composition in (first, second)
+    ]
+    actual = [row.predicted for row in report.points]
+
+    assert actual == pytest.approx(expected)
+    assert actual[0] != pytest.approx(actual[1])
+
+
 def test_load_pack_resolves_bare_packaged_name(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     packaged = load_pack(Path("imcc-sf04-v1.0.2.json"))
@@ -755,6 +850,23 @@ def test_load_pack_resolves_bare_packaged_name(tmp_path: Path, monkeypatch) -> N
     # An unknown bare name is not redirected; it fails as a missing file.
     with pytest.raises(FileNotFoundError):
         load_pack(Path("not-a-pack.json"))
+
+
+def test_load_pack_does_not_fallback_when_local_path_cannot_be_statted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    original_lstat = Path.lstat
+
+    def unstatable(path: Path):
+        if path == Path("imcc-sf04-v1.0.2.json"):
+            raise PermissionError("cannot inspect local pack")
+        return original_lstat(path)
+
+    monkeypatch.setattr(Path, "lstat", unstatable)
+
+    with pytest.raises(PermissionError, match="cannot inspect local pack"):
+        load_pack(Path("imcc-sf04-v1.0.2.json"))
 
 
 def test_load_pack_prefers_a_local_file_over_the_packaged_name(tmp_path: Path, monkeypatch) -> None:
