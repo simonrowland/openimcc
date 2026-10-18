@@ -31,23 +31,30 @@ _MW = {
     "TiO2": 79.866,
     "Na2O": 61.9789,
     "FeO": 71.844,
+    "K2O": 94.196,
+    "Cr2O3": 151.9904,
 }
 _OPTICAL = {
     "SiO2": (1, 2, 0.48),
     "Al2O3": (2, 3, 0.61),
+    "Cr2O3": (2, 3, 0.58),
     "MgO": (1, 1, 0.78),
     "CaO": (1, 1, 1.00),
     "TiO2": (1, 2, 1.10),
     "Na2O": (2, 1, 1.15),
+    "K2O": (2, 1, 1.40),
     "FeO": (1, 1, 1.00),
 }
 
 
 def _inventory(oxide_wt: dict[str, float]) -> dict[str, float]:
-    inventory = {element: 0.0 for element in ("Si", "Al", "Mg", "Ca", "Ti", "Na", "Fe")}
+    inventory = {
+        element: 0.0
+        for element in ("Si", "Al", "Cr", "Mg", "Ca", "Ti", "Na", "K", "Fe")
+    }
     cation = {
-        "SiO2": "Si", "Al2O3": "Al", "MgO": "Mg", "CaO": "Ca",
-        "TiO2": "Ti", "Na2O": "Na", "FeO": "Fe",
+        "SiO2": "Si", "Al2O3": "Al", "Cr2O3": "Cr", "MgO": "Mg",
+        "CaO": "Ca", "TiO2": "Ti", "Na2O": "Na", "K2O": "K", "FeO": "Fe",
     }
     for oxide, amount in oxide_wt.items():
         count = _OPTICAL[oxide][0]
@@ -60,7 +67,7 @@ def _inventory(oxide_wt: dict[str, float]) -> dict[str, float]:
 
 
 def _independent_lambda(oxide_wt: dict[str, float]) -> float:
-    # Independent hand calculation of Berry's Table 3 recipe:
+    # Independent hand calculation of Berry's oxygen-weighted recipe:
     # Lambda = sum(Lambda_i*m_i*n_i) / sum(m_i*n_i).
     oxygen_weighted = {
         oxide: amount / _MW[oxide] * _OPTICAL[oxide][1]
@@ -147,6 +154,53 @@ def test_ti_basicity_reproduces_berry_table_1_and_anchor_envelope():
 
     assert min(calculated) >= 0.5633
     assert max(calculated) <= 0.6353
+
+
+@pytest.mark.parametrize(("element", "cations", "published_lambda"), [
+    ("K", 2, 1.40),
+    ("Cr", 2, 0.58),
+])
+def test_berry_optical_basicity_uses_published_k_and_cr_values(
+    element: str, cations: int, published_lambda: float
+):
+    from openimcc.redox import _berry_optical_basicity
+
+    assert _berry_optical_basicity({element: {1: cations}}) == pytest.approx(
+        published_lambda
+    )
+
+
+@pytest.mark.parametrize(
+    ("pack", "additions"),
+    [
+        pytest.param(TI, {"K2O": 2.0}, id="ti-k-bearing"),
+        pytest.param(TI, {"Cr2O3": 2.0}, id="ti-cr-bearing"),
+        pytest.param(TI, {"K2O": 1.0, "Cr2O3": 1.0}, id="ti-k-and-cr-bearing"),
+        pytest.param(CR_TI, {"K2O": 2.0}, id="cr-ti-k-bearing"),
+        pytest.param(CR_TI, {"Cr2O3": 2.0}, id="cr-ti-cr-bearing"),
+        pytest.param(CR_TI, {"K2O": 1.0, "Cr2O3": 1.0}, id="cr-ti-k-and-cr-bearing"),
+    ],
+)
+def test_ti_candidate_lambda_includes_k_and_cr(
+    pack: Path, additions: dict[str, float]
+):
+    from openimcc.redox import _berry_optical_basicity
+
+    oxides = {
+        "SiO2": 49.96, "Al2O3": 15.44, "MgO": 10.59,
+        "CaO": 23.27, "TiO2": 1.03, **additions,
+    }
+    result = _imposed(_inventory(oxides), 1673.15, -10.0, pack)
+    lambda_value = _berry_optical_basicity(result.element_moles_by_oxidation_state)
+    expected_lambda = _independent_lambda(oxides)
+    ti_fraction = result.titanous_ti_mol / (
+        result.titanous_ti_mol + result.titanic_ti_mol
+    )
+
+    assert lambda_value == pytest.approx(expected_lambda, abs=2e-12)
+    assert ti_fraction == pytest.approx(
+        _berry_fraction(1673.15, -10.0, expected_lambda), abs=2e-9
+    )
 
 
 def test_apollo_14072_fraction_matches_reported_approximately():
@@ -247,18 +301,26 @@ def test_ti_anchor_domain_flags_are_advisory_and_do_not_change_prediction(pack):
         "SiO2": 49.96, "Al2O3": 15.44, "MgO": 10.59,
         "CaO": 23.27, "TiO2": 1.02,
     }
+    expected_inside = dict(inside)
+    if pack == CR_TI:
+        expected_inside["Cr2O3"] = 1e-4 / 2 * _MW["Cr2O3"]
     inside_result = _imposed(feed(inside), 1673.15, -10.7, pack)
     assert not any("Ti candidate outside Berry anchor" in flag
                    or "TiO2 exceeds Berry anchor" in flag
                    or "Ti candidate temperature outside Berry calibration" in flag
                    for flag in inside_result.flags)
+    expected_inside_fraction = _berry_fraction(
+        1673.15, -10.7, _independent_lambda(expected_inside)
+    )
     assert inside_result.titanous_ti_mol / inside_result.titanic_ti_mol == pytest.approx(
-        _berry_fraction(1673.15, -10.7, _independent_lambda(inside)) /
-        (1 - _berry_fraction(1673.15, -10.7, _independent_lambda(inside))),
+        expected_inside_fraction / (1 - expected_inside_fraction),
         abs=2e-9,
     )
 
     outside = {"SiO2": 60.3, "CaO": 31.8, "TiO2": 7.33}
+    expected_outside = dict(outside)
+    if pack == CR_TI:
+        expected_outside["Cr2O3"] = 1e-4 / 2 * _MW["Cr2O3"]
     outside_result = _imposed(feed(outside), 1843.0, -9.0, pack)
     ti_flags = [flag for flag in outside_result.flags if "Tranell held-out titrations" in flag]
     assert len(ti_flags) == 2
@@ -269,7 +331,7 @@ def test_ti_anchor_domain_flags_are_advisory_and_do_not_change_prediction(pack):
         outside_result.titanous_ti_mol + outside_result.titanic_ti_mol
     )
     assert fraction == pytest.approx(
-        _berry_fraction(1843.0, -9.0, _independent_lambda(outside)), abs=2e-9
+        _berry_fraction(1843.0, -9.0, _independent_lambda(expected_outside)), abs=2e-9
     )
 
 
@@ -300,6 +362,8 @@ def test_combined_candidate_locks_cr_ti_fixed_point_coupling():
         "TiO2": feed["Ti"] * _MW["TiO2"],
         "Na2O": feed["Na"] / 2 * _MW["Na2O"],
         "FeO": (result.ferrous_fe_mol + result.ferric_fe_mol) * _MW["FeO"],
+        "K2O": feed["K"] / 2 * _MW["K2O"],
+        "Cr2O3": feed["Cr"] / 2 * _MW["Cr2O3"],
     })
     expected_ti_fraction = _berry_fraction(temperature, logf, lambda_value)
     actual_ti_fraction = result.titanous_ti_mol / (

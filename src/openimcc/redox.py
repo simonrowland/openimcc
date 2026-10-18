@@ -36,14 +36,16 @@ _DEFAULT_REDOX_PACK_PATH = (
     Path(__file__).parent / "data" / "packs" / "openimcc-redox-v1.json"
 )
 _BERRY_OPTICAL_BASICITY = {
-    # Berry et al. (2024), supplementary optical-basicity coefficients:
-    # coefficient times oxide formula moles times oxygen count.
+    # Berry et al. (2024), Table S7 (Mills, 1993), gives K2O=1.40 and
+    # Cr2O3=0.58; the existing supported-oxide coefficients are unchanged.
     "SiO2": ("Si", 1, 2, 0.48),
     "Al2O3": ("Al", 2, 3, 0.61),
+    "Cr2O3": ("Cr", 2, 3, 0.58),
     "MgO": ("Mg", 1, 1, 0.78),
     "CaO": ("Ca", 1, 1, 1.00),
     "TiO2": ("Ti", 1, 2, 1.10),
     "Na2O": ("Na", 2, 1, 1.15),
+    "K2O": ("K", 2, 1, 1.40),
     "FeO": ("Fe", 1, 1, 1.00),
 }
 _ORIGINAL_LOAD_DATAPACK = load_datapack
@@ -866,12 +868,19 @@ def _berry_optical_basicity(
     oxide_moles = {
         "Si": math.fsum(ledger.get("Si", {}).values()),
         "Al": math.fsum(ledger.get("Al", {}).values()),
+        "Cr": math.fsum(ledger.get("Cr", {}).values()),
         "Mg": math.fsum(ledger.get("Mg", {}).values()),
         "Ca": math.fsum(ledger.get("Ca", {}).values()),
         "Ti": math.fsum(ledger.get("Ti", {}).values()),
         "Na": math.fsum(ledger.get("Na", {}).values()),
+        "K": math.fsum(ledger.get("K", {}).values()),
         "Fe": math.fsum(ledger.get("Fe", {}).get(state, 0.0) for state in (2, 3)),
     }
+    # Berry's Lambda is Σ(X_i n_i Λ_i) / Σ(X_i n_i). Since X_i are oxide
+    # formula mole fractions, the shared normalization cancels; divide cation
+    # moles by cations per formula unit to recover X_i's proportional moles,
+    # then multiply each oxide's oxygen count n_i into both sums. The result is
+    # mol-O-weighted basicity divided by mol O, so Lambda is dimensionless.
     weighted: list[float] = []
     oxygen: list[float] = []
     for element, cations, oxygens, coefficient in _BERRY_OPTICAL_BASICITY.values():
