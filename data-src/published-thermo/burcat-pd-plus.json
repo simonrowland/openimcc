@@ -1,0 +1,36 @@
+{
+  "record_id": "Burcat-Pd-plus",
+  "species": "Pd+",
+  "formula": "Pd+",
+  "phase": "gas",
+  "charge": 1,
+  "source": "Burcat thermochemical database, Gurvich Thermel tables 1992",
+  "composition": {"Pd": 1, "electron": -1},
+  "delta_f_H_298_15": {"value": 1186590.768, "unit": "J/mol"},
+  "temperature_range_K": [298.15, 6000.0],
+  "intervals": [
+    {
+      "T_min_K": {"value": 298.15},
+      "T_max_K": {"value": 1000.0},
+      "a_coefficients": [
+        {"value": 0.0}, {"value": 0.0}, {"value": 2.45252224}, {"value": 4.21244568e-4},
+        {"value": -1.32418565e-6}, {"value": 1.67915944e-9}, {"value": -6.23667082e-13}
+      ],
+      "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+      "b1": {"value": 141971.986},
+      "b2": {"value": 7.83106926}
+    },
+    {
+      "T_min_K": {"value": 1000.0},
+      "T_max_K": {"value": 6000.0},
+      "a_coefficients": [
+        {"value": 0.0}, {"value": 0.0}, {"value": 1.91579516}, {"value": 1.04822152e-3},
+        {"value": -4.22418708e-7}, {"value": 6.69895160e-11}, {"value": -3.51396903e-15}
+      ],
+      "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+      "b1": {"value": 142173.647},
+      "b2": {"value": 10.8431399}
+    }
+  ],
+  "source_note": "Transcribed NASA-7 coefficients from the Burcat Pd+ card. Its printed formation enthalpy is 283.602 kcal/mol, converted by 4.184 J/cal to 1186590.768 J/mol; the card cites Gurvich Thermel 1992."
+}

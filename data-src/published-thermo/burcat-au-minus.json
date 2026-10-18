@@ -1,0 +1,36 @@
+{
+  "record_id": "Burcat-Au-minus",
+  "species": "Au-",
+  "formula": "Au-",
+  "phase": "gas",
+  "charge": -1,
+  "source": "Burcat thermochemical database, Gurvich Thermel tables 1992",
+  "composition": {"Au": 1, "electron": 1},
+  "delta_f_H_298_15": {"value": 139566.0, "unit": "J/mol"},
+  "temperature_range_K": [298.15, 6000.0],
+  "intervals": [
+    {
+      "T_min_K": {"value": 298.15},
+      "T_max_K": {"value": 1000.0},
+      "a_coefficients": [
+        {"value": 0.0}, {"value": 0.0}, {"value": 2.50276308}, {"value": -1.88645003e-5},
+        {"value": 4.22145182e-8}, {"value": -3.85826087e-11}, {"value": 1.24372035e-14}
+      ],
+      "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+      "b1": {"value": 16040.1729},
+      "b2": {"value": 6.74773222}
+    },
+    {
+      "T_min_K": {"value": 1000.0},
+      "T_max_K": {"value": 6000.0},
+      "a_coefficients": [
+        {"value": 0.0}, {"value": 0.0}, {"value": 2.49867416}, {"value": 2.21182840e-6},
+        {"value": -1.12691090e-9}, {"value": 2.23900538e-13}, {"value": -1.52844112e-17}
+      ],
+      "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+      "b1": {"value": 16040.9597},
+      "b2": {"value": 6.76674949}
+    }
+  ],
+  "source_note": "Transcribed NASA-7 coefficients and the 139.566 kJ/mol formation enthalpy from the Burcat Au- gas card; the card cites Gurvich Thermel tables 1992 and also lists an alternate Hotop electron-affinity measurement."
+}

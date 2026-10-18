@@ -451,3 +451,43 @@ records:
     source_locator: Liquid P2O5 assessment from stable and metastable vapor-pressure data; the selected formation equation is reproduced as equation (3) in Jung et al. (2013).
     tier: 2
     selection_reason: This recent critical assessment directly evaluates liquid P2O5 from stable and metastable vapor-pressure evidence and is selected over the older Barin liquid data. NASA Glenn has a P4O10(l) card rather than a direct P2O5(l) card, JANAF lists P4O10 phases, and no direct P2O5(l) function was identified in the checked Pankratz, IVTAN, or Burcat records. The assessment does not state a numeric uncertainty for the selected linear equation.
+  - record_id: Burcat-Au-plus
+    path: data-src/published-thermo/burcat-au-plus.json
+    source_sha256: 22460a933ea9d4f8bdbc155c93b87bb023b09a963d28e0675ad2575b40354ec7
+    publication: Burcat and Ruscic, Third Millennium Thermochemical Database, Au+ card based on Gurvich Thermel tables (1992)
+    source_url: https://respecth.elte.hu/burcat.php
+    source_locator: BURCAT.THR.txt lines 604-609
+    tier: 3
+    selection_reason: No Au+ function was found in JANAF or the checked NASA Glenn cards. The evaluated Gurvich card supplies an elemental-reference formation anchor and temperature function; the NIST ASD Saha source offset is recorded without coefficient adjustment.
+  - record_id: Burcat-Au-minus
+    path: data-src/published-thermo/burcat-au-minus.json
+    source_sha256: a6596362f5b8b8153c62fb7249fe0cc25f28e3ecdb3af14e0daad8a6bfbee4bc
+    publication: Burcat and Ruscic, Third Millennium Thermochemical Database, Au- card based on Gurvich Thermel tables (1992)
+    source_url: https://respecth.elte.hu/burcat.php
+    source_locator: BURCAT.THR.txt lines 612-618
+    tier: 3
+    selection_reason: No Au- function was found in JANAF or the checked NASA Glenn cards. The selected Gurvich card provides the evaluated function and prints a separate Hotop affinity as an alternative; the selected source row is retained.
+  - record_id: Burcat-Pd-plus
+    path: data-src/published-thermo/burcat-pd-plus.json
+    source_sha256: cf838bb28edece6aca7ad2791e18a38c1c8d748437f075a81911799580e1ff52
+    publication: Burcat and Ruscic, Third Millennium Thermochemical Database, Pd+ card based on Gurvich Thermel tables (1992)
+    source_url: https://respecth.elte.hu/burcat.php
+    source_locator: BURCAT.THR.txt lines 33258-33263
+    tier: 3
+    selection_reason: No Pd+ function was found in JANAF or the checked NASA Glenn cards. The evaluated Gurvich card's printed 283.602 kcal/mol formation enthalpy is converted to 1186.590768 kJ/mol; its NIST ASD Saha ratios are 0.991986 at 1500 K and 0.975696 at 2500 K, so the 2.43% deficit is recorded and retained as a source offset.
+  - record_id: Burcat-Pt-plus
+    path: data-src/published-thermo/burcat-pt-plus.json
+    source_sha256: 8149658f7acec81adfefb1276a6f94428b5f8acdab5fdc150beb9fb05ad8e367
+    publication: Burcat and Ruscic, Third Millennium Thermochemical Database, Pt+ card based on Gurvich Thermel tables (1992)
+    source_url: https://respecth.elte.hu/burcat.php
+    source_locator: BURCAT.THR.txt lines 33330-33335
+    tier: 3
+    selection_reason: No Pt+ function was found in JANAF or the checked NASA Glenn cards. The evaluated Gurvich card supplies the selected elemental-reference ion row; its measured NIST ASD Saha source offset is recorded without coefficient adjustment.
+  - record_id: Burcat-Pt-minus
+    path: data-src/published-thermo/burcat-pt-minus.json
+    source_sha256: 766cf39935a790e316fb181a8a2df7203982dd333a230d84476eb4a26c4ff825
+    publication: Burcat and Ruscic, Third Millennium Thermochemical Database, Pt- card based on Gurvich Thermel tables (1992)
+    source_url: https://respecth.elte.hu/burcat.php
+    source_locator: BURCAT.THR.txt lines 33338-33344
+    tier: 3
+    selection_reason: No Pt- function was found in JANAF or the checked NASA Glenn cards. The selected Gurvich card prints HF298=353.159 kJ/mol and an alternate Bilodeau 360.2 kJ/mol value; the source card's stated function and anchor are preserved with the 39.7803 J/mol internal residual recorded.

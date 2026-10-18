@@ -1,0 +1,36 @@
+{
+  "record_id": "Burcat-Pt-minus",
+  "species": "Pt-",
+  "formula": "Pt-",
+  "phase": "gas",
+  "charge": -1,
+  "source": "Burcat thermochemical database, Gurvich Thermel tables 1992",
+  "composition": {"Pt": 1, "electron": 1},
+  "delta_f_H_298_15": {"value": 353159.0, "unit": "J/mol"},
+  "temperature_range_K": [298.15, 6000.0],
+  "intervals": [
+    {
+      "T_min_K": {"value": 298.15},
+      "T_max_K": {"value": 1000.0},
+      "a_coefficients": [
+        {"value": 0.0}, {"value": 0.0}, {"value": 2.49563088}, {"value": 2.73252542e-5},
+        {"value": -5.37968248e-8}, {"value": 3.96334956e-11}, {"value": -8.32164819e-15}
+      ],
+      "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+      "b1": {"value": 41725.5942},
+      "b2": {"value": 7.46999215}
+    },
+    {
+      "T_min_K": {"value": 1000.0},
+      "T_max_K": {"value": 6000.0},
+      "a_coefficients": [
+        {"value": 0.0}, {"value": 0.0}, {"value": 3.12608896}, {"value": -1.20878095e-3},
+        {"value": 6.98358745e-7}, {"value": -1.21981370e-10}, {"value": 6.78577513e-15}
+      ],
+      "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+      "b1": {"value": 41499.8529},
+      "b2": {"value": 4.02506525}
+    }
+  ],
+  "source_note": "Transcribed NASA-7 coefficients and the 353.159 kJ/mol formation enthalpy from the Burcat Pt- gas card; the card cites Gurvich Thermel tables 1992 and lists an alternate 360.2 kJ/mol Bilodeau value."
+}

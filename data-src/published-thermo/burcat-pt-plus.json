@@ -1,0 +1,36 @@
+{
+  "record_id": "Burcat-Pt-plus",
+  "species": "Pt+",
+  "formula": "Pt+",
+  "phase": "gas",
+  "charge": 1,
+  "source": "Burcat thermochemical database, Gurvich Thermel tables 1992",
+  "composition": {"Pt": 1, "electron": -1},
+  "delta_f_H_298_15": {"value": 1431815.0, "unit": "J/mol"},
+  "temperature_range_K": [298.15, 6000.0],
+  "intervals": [
+    {
+      "T_min_K": {"value": 298.15},
+      "T_max_K": {"value": 1000.0},
+      "a_coefficients": [
+        {"value": 0.0}, {"value": 0.0}, {"value": 2.46549239}, {"value": 2.60014813e-4},
+        {"value": -6.44120440e-7}, {"value": 5.52130479e-10}, {"value": -5.19829994e-14}
+      ],
+      "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+      "b1": {"value": 171464.763},
+      "b2": {"value": 8.69265125}
+    },
+    {
+      "T_min_K": {"value": 1000.0},
+      "T_max_K": {"value": 6000.0},
+      "a_coefficients": [
+        {"value": 0.0}, {"value": 0.0}, {"value": 1.99304317}, {"value": 4.99044287e-4},
+        {"value": 1.45703880e-7}, {"value": -6.15798058e-11}, {"value": 5.32271637e-15}
+      ],
+      "exponents": [{"value": -2.0}, {"value": -1.0}, {"value": 0.0}, {"value": 1.0}, {"value": 2.0}, {"value": 3.0}, {"value": 4.0}],
+      "b1": {"value": 171696.389},
+      "b2": {"value": 11.5125169}
+    }
+  ],
+  "source_note": "Transcribed NASA-7 coefficients and the 1431.815 kJ/mol formation enthalpy from the Burcat Pt+ gas card; the card cites Gurvich Thermel tables 1992."
+}

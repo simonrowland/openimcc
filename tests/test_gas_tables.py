@@ -684,6 +684,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     nasa_atomic_ion_species = {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     }
+    burcat_ion_species = {
+        source[0] for source in build_gas_tables.TRACE_ION_GAS_BURCAT_SOURCES
+    }
     for species, records in ion_records.items():
         if species in split_ion_species:
             assert {tuple(row["T_range_K"]) for row in records} == {
@@ -700,7 +703,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             ).hexdigest()
             expected_method = (
                 "fitted_burcat_nasa7_to_shomate"
-                if row["table_id"] == "Burcat-Th-plus"
+                if species in burcat_ion_species
                 else "fitted"
             )
             assert row["method"] == expected_method
@@ -736,6 +739,32 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
                     "data-src/published-thermo/burcat-th-plus.json"
                 )
                 assert row["source_locator"] == "Burcat Th+ card"
+            elif species in burcat_ion_species:
+                source = next(
+                    item for item in build_gas_tables.TRACE_ION_GAS_BURCAT_SOURCES
+                    if item[0] == species
+                )
+                expected_path = (
+                    f"data-src/published-thermo/{source[1].lower()}.json"
+                )
+                assert row["authority"] == "published_fitted_ionisation"
+                assert row["table_id"] == source[1]
+                assert row["source_path"] == expected_path
+                assert row["source_locator"] == (
+                    f"Burcat {species.removesuffix('(g)')} card"
+                )
+                assert row["source_url"] == "https://respecth.elte.hu/burcat.php"
+                source_manifest = yaml.safe_load(
+                    (PUBLISHED_DATA / "PROVENANCE.yaml").read_text(
+                        encoding="utf-8"
+                    )
+                )
+                source_record = next(
+                    item for item in source_manifest["records"]
+                    if item["record_id"] == source[1]
+                )
+                assert source_record["path"] == expected_path
+                assert source_record["source_sha256"] == row["source_sha256"]
             else:
                 assert row["authority"] == "janaf_fitted_ionisation"
                 assert row["source_url"] == (
@@ -5451,6 +5480,31 @@ _SAHA_LEVELS = {
          (9, 4028.988), (7, 4560.789), (5, 4950.062), (3, 5204.698),
          (9, 9812.859), (7, 10708.330), (5, 11321.859)),
     ),
+    # NIST ASD ionization energies and Handbook Tables 5/6.
+    "Au": (
+        9.225554,
+        ((2, 0.0), (6, 9161.177), (4, 21435.191)),
+        ((1, 0.0), (6, 15039.572), (4, 17640.616),
+         (3, 27765.758), (5, 29621.249)),
+    ),  # NIST Handbook Au I/II Tables 5/6.
+    "Hg": (10.437504, ((1, 0.0),), ((2, 0.0),)),  # First excited Hg I/II levels exceed 35,000 cm^-1.
+    "Pd": (
+        8.336839,
+        ((1, 0.0), (7, 6564.148), (5, 7755.025), (3, 10093.992),
+         (5, 11721.809), (9, 25101.235), (7, 28213.767), (5, 29711.109)),
+        ((6, 0.0), (4, 3539.242), (10, 25084.270), (8, 27097.084),
+         (6, 28929.419), (4, 29948.151)),
+    ),  # NIST Handbook Pd I/II Tables 5/6.
+    "Pt": (
+        8.95883,
+        ((7, 0.0), (5, 775.892), (9, 823.678), (5, 6567.461),
+         (1, 6140.180), (3, 10131.887), (7, 10116.729), (5, 15501.845),
+         (5, 13496.271), (1, 16983.492), (3, 18566.558),
+         (9, 21967.111), (5, 26638.591)),
+        ((6, 0.0), (10, 4786.611), (4, 8419.822), (8, 9356.274),
+         (6, 16820.894), (4, 21168.684), (6, 13329.227),
+         (2, 21717.260), (4, 23875.553)),
+    ),  # NIST Handbook Pt I/II Tables 5/6.
     # NIST Atomic Spectra Database Handbook tables: Zn I/II and Cd I/II have
     # non-degenerate ground levels; their first excited levels are above
     # 30,000 cm^-1. Bi I and II fine-structure levels below 17,100 cm^-1 are
@@ -5546,6 +5600,21 @@ def test_burcat_th_plus_card_composition_resolves_its_charge_label() -> None:
         * build_gas_tables._nasa7_properties(record, 298.15)["h_rt"]
         - record["delta_f_H_298_15"]["value"]
     ) < 21.0
+
+
+def test_burcat_pt_minus_retains_its_printed_anchor_and_card_residual() -> None:
+    record = json.loads(
+        (PUBLISHED_DATA / "burcat-pt-minus.json").read_text(encoding="utf-8")
+    )
+    h298_j = (
+        build_gas_tables.R_J_MOL_K * 298.15
+        * build_gas_tables._nasa7_properties(record, 298.15)["h_rt"]
+    )
+    assert h298_j - record["delta_f_H_298_15"]["value"] == pytest.approx(
+        -39.7803, abs=0.001
+    )
+    thermal = build_gas_tables._nasa_card_thermal_rows(record, [298.15])[0]
+    assert thermal["enthalpy_increment"] == pytest.approx(0.0, abs=1.0e-9)
 
 
 @pytest.mark.parametrize("element", tuple(_SAHA_LEVELS))
@@ -5725,6 +5794,17 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
             expected = {
                 "Ni": {1500.0: 165.8964143, 2500.0: 259.9036526},
                 "Co": {1500.0: 1.139494036, 2500.0: 1.293825767},
+            }[element][temperature]
+            assert fitted_k / saha_k == pytest.approx(expected, rel=5e-5)
+        elif element in {"Au", "Hg", "Pd", "Pt"}:
+            # Preserve the published source functions and expose their
+            # measured NIST-Saha offsets. No coefficients are tuned to the
+            # spectroscopic values.
+            expected = {
+                "Au": {1500.0: 0.5271462573, 2500.0: 0.6806822085},
+                "Hg": {1500.0: 196.2836660, 2500.0: 196.1612880},
+                "Pd": {1500.0: 0.9919860, 2500.0: 0.9756958248},
+                "Pt": {1500.0: 1.3141543384, 2500.0: 1.1798339641},
             }[element][temperature]
             assert fitted_k / saha_k == pytest.approx(expected, rel=5e-5)
         else:

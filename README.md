@@ -74,7 +74,7 @@ release; until then, use the source-checkout commands above.
 
 `openimcc.gas` computes equilibrium partial pressures for the SF04 gas set
 plus the titanium channels, screened Al/Si association channels, Cr channels,
-and caller-supplied Ta/Be/Tl/V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd/Sm/Eu/Gd/Tb/Dy/Ho/Er/Tm/Yb/Lu/Hg/Au/Pd channels:
+and caller-supplied Ta/Be/Tl/V/Nb/P/S/Li/Rb/Pb/Cs/Cu/Sn/Ga/Ge/B/In/Te/Ag/Ba/Sr/Zr/Ni/Co/Sc/U/Th/Hf/La/Ce/Pr/Nd/Sm/Eu/Gd/Tb/Dy/Ho/Er/Tm/Yb/Lu/Hg/Au/Pd/Pt/Ru/Rh/Ir channels:
 Na, Na2, NaO, K, K2, KO, Si, SiO,
 SiO2, Fe, FeO, Mg, MgO, Al, AlO, AlO2, Al2O, Al2O2, Ca, CaO, Ti, TiO, TiO2,
 Al2, Si2, Si3, Cr, CrO, CrO2, CrO3, V, VO, VO2, Nb, NbO, NbO2, P, P2, P4,
@@ -86,7 +86,7 @@ CuO, Cu2, Sn, SnO, SnO2, Te, Te2, TeO2, Se, Se2, SeO, SeO2, As, As2, As4,
 As4O6, Ag, Ba, BaO, Sr, SrO, Zr, ZrO, ZrO2, NiO, CoO, Sc, ScO, ScO2, U, UO,
 UO2, UO3, Th, ThO, ThO2, Hf, Hg, Au, Pd, La, LaO, Ce, CeO, CeO2, Pr, PrO, Nd, NdO,
 Sm, SmO, Eu, EuO, Gd, GdO, Tb, TbO, Dy, DyO, Ho, HoO, Er, ErO, Tm, TmO,
-Yb, YbO, Lu, LuO,
+Yb, YbO, Lu, LuO, Pt, PtO2, Ru, Rh, Ir,
 Ta, TaO, TaO2, Be, BeO, Be2, Be2O, (BeO)2, (BeO)3, (BeO)4, Tl, Tl2O,
 Na2O, K2O, Ta2O5, BeO, Tl2O, O and O2.
 Ta channels use Ta2O5, Be channels use BeO (including Be2(g)), and Tl
@@ -156,6 +156,9 @@ flagged. This monatomic gas channel has no oxygen-fugacity power.
 Ir(g) uses `a(Ir)` relative to the Burcat stable-metal functions, switching
 from crystal to liquid at 2720 K. This monatomic gas channel has no
 oxygen-fugacity power.
+With `include_ions=True`, the gas result also includes Au+, Au-, Hg+, Pd+,
+Pt+, Pt-, and e-. No sourced Ru+, Rh+, or Ir+ functions were found. Ion
+channels are opt-in; default gas results remain neutral-only.
 For a specified metal-gas fugacity, convert outside the package with
 `a(M) = f(M)/(K p°)`, where `K = exp(-(G°(M(g)) - G°(selected metal))/RT)`
 and `p° = 1 bar`. The caller activity stays fixed as `fO2` changes.

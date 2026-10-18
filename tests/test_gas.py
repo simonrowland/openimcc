@@ -123,6 +123,7 @@ _ION_GAS_SPECIES = {
     "Ba+", "Sr+", "Zr+", "Zr-",
     "Ni+", "Ni-", "Co+", "Co-",
     "Hf+", "Hf-", "Th+",
+    "Au+", "Au-", "Hg+", "Pd+", "Pt+", "Pt-",
 }
 
 

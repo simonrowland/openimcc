@@ -7,6 +7,10 @@
 - Included JANAF Cs-007 Cs- in the Cs C3 ion-share bound, screened JANAF B2(g)
   and Cs2(g) below the gas-share cutoff, and recorded the Ba/Sr dimer coverage
   audit and updated Wave 3 ion bounds.
+- Added opt-in Au+, Au-, Hg+, Pd+, Pt+, and Pt- gas channels from JANAF and
+  Burcat/Gurvich source rows. NIST Saha checks and C3 results are recorded in
+  the element status table: Hg and Pd pass; Au and Pt exceed the share bound.
+  No Ru, Rh, or Ir ion functions were found in the checked source rail.
 - Added a caller-visible melt notice for allowed temperatures below active
   association-row domains. It records the ΔrCp = 0 continuation, the declared
   domains of active rows below their lower bounds, and that the uncertainty

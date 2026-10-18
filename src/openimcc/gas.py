@@ -1309,6 +1309,7 @@ _ION_GAS_SPECIES = (
     "Zn+", "Zn-", "Cd+", "Bi+",
     "Mn+", "Ni+", "Ni-", "Co+", "Co-", "Ag+", "Ag-", "Mo+", "Mo-", "W+", "W-",
     "Ba+", "Sr+", "Zr+", "Zr-", "Sc+",
+    "Hg+", "Au+", "Au-", "Pd+", "Pt+", "Pt-",
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -1320,7 +1321,12 @@ _GAS_PROVENANCE_AUTHORITY.update(
         for species in _ION_GAS_SPECIES
     }
 )
-_GAS_PROVENANCE_AUTHORITY["Th+"] = "published_fitted_ionisation"
+_GAS_PROVENANCE_AUTHORITY.update(
+    {
+        species: "published_fitted_ionisation"
+        for species in ("Th+", "Au+", "Au-", "Pd+", "Pt+", "Pt-")
+    }
+)
 _NASA_ION_GAS_SPECIES = frozenset({"Ge+", "BO-"})
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -1684,6 +1690,10 @@ _GAS_IONIZATION_PAIRS = (
     ("Sc", "Sc+"),
     ("Hf", "Hf+"),
     ("Th", "Th+"),
+    ("Hg", "Hg+"),
+    ("Au", "Au+"),
+    ("Pd", "Pd+"),
+    ("Pt", "Pt+"),
 )
 _GAS_ELECTRON_ATTACHMENTS = (
     ("Na", "Na-"),
@@ -1719,6 +1729,8 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("Ni", "Ni-"),
     ("Co", "Co-"),
     ("Hf", "Hf-"),
+    ("Au", "Au-"),
+    ("Pt", "Pt-"),
 )
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
@@ -3134,42 +3146,126 @@ for _element, _parent, _species, _reference, _c2_candidates in (
     }
 ELEMENT_STATUS["Hg"] = {
     "status": "gas-complete-melt-pending",
-    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "criteria": {"C1": False, "C2": True, "C3": True, "C4": True},
     "validation": "unvalidated",
     "reason": (
         "Burcat BU-2587 Hg(g) and BU-2586 Hg(l) provide one-compilation "
         "metal-vapour coverage; callers supply a(Hg) relative to liquid Hg. "
         "The liquid row is continued above its 629.839 K source limit and "
-        "flagged; no dissolved-Hg model or ion channel is included."
+        "flagged. JANAF Hg-004 supplies opt-in Hg+(g); its NIST ASD Saha "
+        "ratios are 196.284 at 1500 K and 196.161 at 2500 K, a source entropy "
+        "offset retained without tuning. At a(Hg)=1e-3, the C3 screen reaches "
+        "2.020e-17 at 1700 K and fO2=1e-4, below the 1e-4 threshold."
     ),
     "c2_candidates": (),
     "c3_ion_bound": {
-        "status": "not computed",
-        "reason": "not computed: Hg ion channels are outside this neutral gas change",
+        "status": "computed",
+        "parent_oxide": "Hg",
+        "source_tables": {
+            "neutral": "BU-2587", "cation": "Hg-004", "electron": "D-020",
+        },
+        "parent_activity": 1.0e-3,
+        "max_ratio": 2.0204928231203823e-17,
+        "isolated_bound": 6.245214561301318e-14,
+        "temperature_K": 1700.0,
+        "fO2": 1.0e-4,
+        "neutral_pressure_bar": 0.9121537423279414,
+        "element_total_pressure_bar": 0.9121537423279414,
+        "joint_ion_pressure_bar": 1.843000089956004e-17,
+        "electron_pressure_bar": 1.7607814709150057e-10,
+        "K_ion": 3.557646325067119e-27,
     },
     "source_tables": {"gas": "BU-2587", "parent": "BU-2586"},
     "parent_activity": "Hg",
 }
-for _element, _gas_table, _parent_table, _phase_marker in (
-    ("Au", "BU-0056", "BU-0054/BU-0055", 1337),
-    ("Pd", "BU-3112", "BU-3110/BU-3111", 1827),
-    ("Pt", "BU-3122/BU-3126", "BU-3120/BU-3121", 2042),
+for _element, _gas_table, _parent_table, _phase_marker, _saha_note, _c3 in (
+    (
+        "Au", "BU-0056", "BU-0054/BU-0055", 1337,
+        "NIST ASD Saha ratios are 0.527 at 1500 K and 0.681 at 2500 K.",
+        {
+            "source_tables": {
+                "neutral": "BU-0056", "cation": "Burcat-Au-plus",
+                "anion": "Burcat-Au-minus", "electron": "D-020",
+            },
+            "max_ratio": 0.0014494135223238737,
+            "isolated_bound": 2.7799594603323795e-06,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 0.0003076462576336098,
+            "element_total_pressure_bar": 0.0003076462576336098,
+            "joint_ion_pressure_bar": 4.4590664590648826e-07,
+            "electron_pressure_bar": 8.111393356443537e-05,
+            "K_ion": 2.377543994364913e-15,
+        },
+    ),
+    (
+        "Pd", "BU-3112", "BU-3110/BU-3111", 1827,
+        "NIST ASD Saha ratios are 0.991986 at 1500 K and 0.975696 at 2500 K; "
+        "the 2.43% deficit at 2500 K is retained as a source offset.",
+        {
+            "source_tables": {
+                "neutral": "BU-3112", "cation": "Burcat-Pd-plus",
+                "electron": "D-020",
+            },
+            "max_ratio": 1.6072867979839367e-08,
+            "isolated_bound": 9.761839905919717e-05,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 0.0001371562642352788,
+            "element_total_pressure_bar": 0.0001371562642352788,
+            "joint_ion_pressure_bar": 2.2044945276616e-12,
+            "electron_pressure_bar": 8.131780214304317e-05,
+            "K_ion": 1.307010298255831e-12,
+        },
+    ),
+    (
+        "Pt", "BU-3122/BU-3126", "BU-3120/BU-3121", 2042,
+        "NIST ASD Saha ratios are 1.314 at 1500 K and 1.180 at 2500 K.",
+        {
+            "source_tables": {
+                "neutral": "BU-3122", "cation": "Burcat-Pt-plus",
+                "anion": "Burcat-Pt-minus", "electron": "D-020",
+            },
+            "max_ratio": 0.00024347537024246028,
+            "isolated_bound": 0.00011298413832918825,
+            "temperature_K": 2800.0,
+            "fO2": 1.0e-4,
+            "neutral_pressure_bar": 7.95216101229406e-07,
+            "element_total_pressure_bar": 7.952688760338734e-07,
+            "joint_ion_pressure_bar": 1.9362838403465257e-10,
+            "electron_pressure_bar": 8.131771249628793e-05,
+            "K_ion": 1.015126395560782e-14,
+        },
+    ),
 ):
+    _c3_passes = _c3["max_ratio"] < 1.0e-4
     ELEMENT_STATUS[_element] = {
-        "status": "gas-complete-melt-pending",
-        "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+        "status": "gas-complete-melt-pending" if _c3_passes else "gas-partial",
+        "criteria": {"C1": False, "C2": True, "C3": _c3_passes, "C4": True},
         "validation": "unvalidated",
         "reason": (
             f"Burcat {_gas_table} metal-gas and {_parent_table} stable-metal "
             f"rows provide one-compilation coverage over 1200-3000 K; callers "
             f"supply a({_element}) relative to the stable metal phase, with a "
-            f"crystal-to-liquid fit step at {_phase_marker} K. No oxide-parent "
-            "activity model or ion channel is included."
+            f"crystal-to-liquid fit step at {_phase_marker} K. Opt-in {_element}+ "
+            + (
+                "is sourced; no Pd- source was found. "
+                if _element == "Pd"
+                else f"and {_element}- source rows are included. "
+            )
+            + f"{_saha_note} "
+            f"At a({_element})=1e-3, the C3 screen reaches "
+            f"{_c3['max_ratio']:.3e} at {_c3['temperature_K']:.0f} K and "
+            f"fO2={_c3['fO2']:.0e} within the <=1-bar neutral-pressure domain, "
+            + ("below" if _c3_passes else "above")
+            + " the 1e-4 threshold."
         ),
         "c2_candidates": (),
         "c3_ion_bound": {
-            "status": "not computed",
-            "reason": f"not computed: {_element} ion channels are outside this neutral gas change",
+            "status": "computed",
+            "parent_oxide": _element,
+            "parent_activity": 1.0e-3,
+            **_c3,
         },
         "source_tables": {"gas": _gas_table, "parent": _parent_table},
         "parent_activity": _element,
@@ -3188,54 +3284,61 @@ for _element, _parent in (
     }
 
 ELEMENT_STATUS["Ru"] = {
-    "status": "gas-complete-melt-pending",
+    "status": "gas-partial",
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
     "validation": "unvalidated",
     "reason": (
         "Pankratz Bulletin 672 printed pp. 332-333 supplies paired Ru(g) and "
         "stable-metal phase functions over 1200-3000 K; callers supply a(Ru) "
         "relative to the stable metal phase, switching from crystal to liquid "
-        "at 2607 K. No oxide-parent activity model or ion channel is included."
+        "at 2607 K. No evaluated Ru+ or Ru- gas function was found in the "
+        "checked JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV, NIST "
+        "WebBook, OECD/NEA, or Burcat sources; C3 is declined."
     ),
     "c2_candidates": (),
     "c3_ion_bound": {
-        "status": "not computed",
-        "reason": "not computed: Ru ion channels are outside this neutral gas change",
+        "status": "declined",
+        "reason": "No evaluated Ru+ or Ru- thermo function was found in the checked JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat sources.",
     },
     "source_tables": {"gas": "P672-Ru-g", "parent": "P672-Ru-cr/P672-Ru-l"},
     "parent_activity": "Ru",
 }
 ELEMENT_STATUS["Rh"] = {
-    "status": "gas-complete-melt-pending",
+    "status": "gas-partial",
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
     "validation": "unvalidated",
     "reason": (
         "Pankratz Bulletin 672 printed pp. 330-331 supplies paired Rh(g) and "
         "stable-metal functions; Rh(g) uses a flagged held-Cp continuation "
         "above its 2000 K source limit. Callers supply a(Rh) relative to "
-        "Rh(cr)/Rh(l), switching at 2237 K."
+        "Rh(cr)/Rh(l), switching at 2237 K. No evaluated Rh+ or Rh- gas "
+        "function was found in the checked JANAF, NASA Glenn/CEA, Pankratz "
+        "672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat sources; C3 is declined."
     ),
     "c2_candidates": (),
     "c3_ion_bound": {
-        "status": "not computed",
-        "reason": "not computed: Rh ion channels are outside this neutral gas change",
+        "status": "declined",
+        "reason": "No evaluated Rh+ or Rh- thermo function was found in the checked JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat sources.",
     },
     "source_tables": {"gas": "P672-Rh-g", "parent": "P672-Rh-cr/P672-Rh-l"},
     "parent_activity": "Rh",
 }
 ELEMENT_STATUS["Ir"] = {
-    "status": "gas-complete-melt-pending",
+    "status": "gas-partial",
     "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
     "validation": "unvalidated",
     "reason": (
         "Burcat cards BU-2613, BU-2611, and BU-2612 provide paired Ir(g) and "
         "stable iridium phase functions on one elemental reference scale. "
-        "Callers supply a(Ir) relative to Ir(cr)/Ir(l), switching at 2720 K."
+        "Callers supply a(Ir) relative to Ir(cr)/Ir(l), switching at 2720 K. "
+        "No evaluated Ir+ or Ir- gas function was found in the checked JANAF, "
+        "NASA Glenn/CEA, Pankratz 672/677/696, TSIV, NIST WebBook, OECD/NEA, "
+        "or Burcat sources; C3 is declined."
     ),
     "c2_candidates": (),
     "c3_ion_bound": {
-        "status": "not computed",
-        "reason": "not computed: Ir ion channels are outside this neutral gas change",
+        "status": "declined",
+        "reason": "No evaluated Ir+ or Ir- thermo function was found in the checked JANAF, NASA Glenn/CEA, Pankratz 672/677/696, TSIV, NIST WebBook, OECD/NEA, or Burcat sources.",
     },
     "source_tables": {"gas": "BU-2613", "parent": "BU-2611/BU-2612"},
     "parent_activity": "Ir",
