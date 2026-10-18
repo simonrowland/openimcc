@@ -155,6 +155,12 @@ def _run(test: str) -> subprocess.CompletedProcess[str]:
         if not existing_path
         else source_path + os.pathsep + existing_path
     )
+
+
+def _is_expected_red(result: subprocess.CompletedProcess[str]) -> bool:
+    return result.returncode == 1 and any(
+        line.startswith(("FAILED ", "ERROR ")) for line in result.stdout.splitlines()
+    )
     return subprocess.run(
         [sys.executable, "-m", "pytest", "-q", test],
         cwd=ROOT,
@@ -192,6 +198,12 @@ def main() -> int:
                 print(
                     f"NOT-RED {index:02d} {mutation.name}: "
                     "focused test still passed"
+                )
+                failed.append(mutation.name)
+            elif not _is_expected_red(mutated):
+                print(
+                    f"ERROR {index:02d} {mutation.name}: focused pytest could not "
+                    f"establish an expected red (exit {mutated.returncode})"
                 )
                 failed.append(mutation.name)
             else:
