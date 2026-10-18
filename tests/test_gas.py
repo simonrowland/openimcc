@@ -45,6 +45,7 @@ from openimcc.gas import (
     ImccGasUnknownActivityError,
     ImccGasUnrecognizedSourceError,
     ImccGasEquilibriumRangeError,
+    OxygenBalanceSpeciesMetadata,
     default_condensate_database_path,
     default_gas_database_path,
     evaluate_gas,
@@ -5127,27 +5128,139 @@ def test_generic_oxygen_balance_analytic_limits(
     # the deficit is 1 O per SiO, so pSiO/sqrt(MSiO) = 2pO2/sqrt(MO2).
     assert p_o2 / fixed_pressure == pytest.approx(expected_ratio, rel=1e-12)
     assert diagnostics["residual"] < 1e-12
+    assert diagnostics["root_solver"]["path"] == "direct"
+    assert diagnostics["root_solver"]["refinement_evaluations"] == 0
 
 
-def test_generic_oxygen_balance_rejects_nonmonotone_pressure_model() -> None:
-    metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
+def _generic_oxygen_balance_relative_residual(
+    pressures: Mapping[str, float],
+    species: Mapping[str, OxygenBalanceSpeciesMetadata],
+) -> float:
+    oxygen_flux = math.fsum(
+        data.oxygen_atoms * pressures[name] / math.sqrt(data.molar_mass)
+        for name, data in species.items()
+    )
+    parent_flux = math.fsum(
+        data.parent_oxygen_demand * pressures[name] / math.sqrt(data.molar_mass)
+        for name, data in species.items()
+    )
+    return abs(oxygen_flux - parent_flux) / max(oxygen_flux, parent_flux, 1e-300)
+
+
+def test_generic_oxygen_balance_solves_sine_on_k_pressure_model() -> None:
+    metadata = oxygen_balance_species_metadata(
+        {"K": "K2O", "O2": None}, pO2_exponents={"K": 0.0}
+    )
+    power_law_root = math.log10(
+        0.25 * 1e-8
+        * math.sqrt(metadata["O2"].molar_mass / metadata["K"].molar_mass)
+    )
 
     def pressure_model(logp: float) -> dict[str, float]:
-        residual = 0.001 * (
-            logp + 1.0 + 0.1 * math.sin(32.0 * math.pi * (logp + 2.0))
-        )
         return {
+            "K": 1e-8 * (
+                1.0 + 0.8 * math.sin(math.pi * (logp - power_law_root) / 0.1)
+            ),
             "O2": 10.0**logp,
-            "K": (
-                2.0 * 10.0**logp / math.sqrt(metadata["O2"].molar_mass)
-                - residual
-            ) * math.sqrt(metadata["K"].molar_mass) / 0.5,
         }
 
-    with pytest.raises(ImccGasOxygenBalanceError, match="not a power law"):
-        oxygen_balance_from_pressure_model(
-            pressure_model, metadata, bracket=(-2.0, 0.0)
-        )
+    p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
+        pressure_model, metadata
+    )
+    assert abs(math.log10(p_o2) - power_law_root) > 0.01
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
+        diagnostics["root_solver"]["residual_tolerance"]
+    )
+
+
+def test_generic_oxygen_balance_accepts_monotone_piecewise_pressure_model() -> None:
+    metadata = oxygen_balance_species_metadata(
+        {"K": "K2O", "O2": None, "MgO": "MgO"},
+        pO2_exponents={"K": 0.0, "MgO": -0.5},
+    )
+    power_law_root = math.log10(
+        0.25 * 1e-8
+        * math.sqrt(metadata["O2"].molar_mass / metadata["K"].molar_mass)
+    )
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        offset = logp - power_law_root
+        inner = max(-0.05, min(0.05, offset))
+        outer = offset - inner
+        return {
+            "K": 1e-8,
+            "O2": 10.0**logp,
+            "MgO": 10.0 ** (-30.0 - 0.9 * inner - 0.1 * outer),
+        }
+
+    _p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
+        pressure_model, metadata
+    )
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
+        diagnostics["root_solver"]["residual_tolerance"]
+    )
+
+
+@pytest.mark.parametrize("spacing", [0.2, 0.1, 0.05])
+def test_generic_oxygen_balance_accepts_linear_in_pressure_table(
+    spacing: float,
+) -> None:
+    metadata = oxygen_balance_species_metadata(
+        {"K": "K2O", "O2": None, "MgO": "MgO"},
+        pO2_exponents={"K": 0.0, "MgO": -0.5},
+    )
+    power_law_root = math.log10(
+        0.25 * 1e-8
+        * math.sqrt(metadata["O2"].molar_mass / metadata["K"].molar_mass)
+    )
+    # The spectator follows a true -0.5 law at each knot; interpolation is
+    # linear in p, so the chord's two endpoints can miss its interior bend.
+    logp_nodes = np.arange(-30.0, 0.0001, spacing)
+    pressure_nodes = 10.0**logp_nodes
+    mgo_pressures = 1e-30 * 10.0 ** (-0.5 * (logp_nodes - power_law_root))
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        return {
+            "K": 1e-8,
+            "O2": 10.0**logp,
+            "MgO": float(np.interp(10.0**logp, pressure_nodes, mgo_pressures)),
+        }
+
+    p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
+        pressure_model, metadata
+    )
+    assert math.log10(p_o2) == pytest.approx(power_law_root, abs=1e-12)
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
+        diagnostics["root_solver"]["residual_tolerance"]
+    )
+
+
+def test_generic_oxygen_balance_reports_refinement_cost_for_curved_model() -> None:
+    metadata = oxygen_balance_species_metadata(
+        {"K": "K2O", "O2": None}, pO2_exponents={"K": 0.0}
+    )
+    power_law_root = math.log10(
+        0.25 * 1e-8
+        * math.sqrt(metadata["O2"].molar_mass / metadata["K"].molar_mass)
+    )
+    model_evaluations = 0
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        nonlocal model_evaluations
+        model_evaluations += 1
+        offset = max(-0.01, min(0.01, logp - power_law_root))
+        return {"K": 1e-8 * 10.0 ** (-1000.0 * offset), "O2": 10.0**logp}
+
+    _p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
+        pressure_model, metadata
+    )
+    solver_diagnostics = diagnostics["root_solver"]
+    assert solver_diagnostics["path"] == "refined"
+    assert solver_diagnostics["refinement_evaluations"] > 0
+    assert solver_diagnostics["model_evaluations"] == model_evaluations
+    assert _generic_oxygen_balance_relative_residual(pressures, metadata) <= (
+        solver_diagnostics["residual_tolerance"]
+    )
 
 
 def test_generic_oxygen_balance_validates_model_pressures() -> None:
@@ -5683,8 +5796,15 @@ def _oxygen_balance_hashes(
             numeric_actual.append(digest)
             actual.append(digest)
             continue
+        assert diagnostics["root_solver"]["path"] == "direct"
+        assert diagnostics["root_solver"]["refinement_evaluations"] == 0
+        # Preserve the pre-existing output pins; root_solver is the one new,
+        # additive diagnostic and has focused path/evaluation assertions above.
+        pinned_diagnostics = {
+            key: value for key, value in diagnostics.items() if key != "root_solver"
+        }
         numeric_canonical = json.dumps(
-            hex_values((p_o2, dict(pressures), diagnostics)),
+            hex_values((p_o2, dict(pressures), pinned_diagnostics)),
             sort_keys=True,
             separators=(",", ":"),
         )
@@ -5707,7 +5827,7 @@ def _oxygen_balance_hashes(
             },
         )
         canonical = json.dumps(
-            hex_values((p_o2, result_for_hash, diagnostics)),
+            hex_values((p_o2, result_for_hash, pinned_diagnostics)),
             sort_keys=True,
             separators=(",", ":"),
         )

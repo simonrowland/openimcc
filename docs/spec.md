@@ -284,15 +284,20 @@ where \(n_{{\rm O},i}\) is oxygen atoms per gas molecule, \(d_i\) is the
 oxygen demand assigned to the corresponding parent, and \(M_i\) is molar
 mass in g mol\(^{-1}\). Thus each weighted term has units proportional to
 bar\((\mathrm{g\,mol^{-1}})^{-1/2}\); the shared flux scale is omitted.
-Every retained pressure follows its declared power law
-\(p_i\propto p_{\mathrm O_2}^{k_i}\), with signed oxygen weight and
-exponent constrained so \(F\) is monotone. A sign-changing bracket therefore
-contains one root. The bracket does not extend above \(p_{\mathrm O_2}=1\)
-bar. The solver returns no oxygen fugacity for an invalid bracket, a root
-above 1 bar, a missing sign change, a Brent failure, a nonmonotone flux,
-invalid pressure values, or a pressure model that does not follow the declared
-power law. The relative flux residual is reported in diagnostics; it is not a
-return acceptance test.
+For analytic gas tables, each retained pressure follows its declared power law
+\(p_i\propto p_{\mathrm O_2}^{k_i}\); the signed oxygen weight and exponent
+must agree on the expected flux direction. A caller-supplied pressure model may
+curve between nodes, including a monotone piecewise fit or interpolation linear
+in pressure. Brent evaluates that model's true residual over the bracket. A
+sign change certifies at least one root; the root is unique when the true oxygen
+flux is monotone. The initial root tolerance is \(10^{-12}\) dex. The solver
+derives a relative flux-residual tolerance from that value and the declared
+exponents, then uses a tighter bracketed solve when the true residual exceeds
+it. The bracket does not extend above \(p_{\mathrm O_2}=1\) bar. Invalid
+brackets, a root above 1 bar, a missing sign change, a Brent failure, invalid
+pressure values, or a residual that remains above tolerance produce typed
+refusals. The `root_solver` diagnostic reports the direct or refined path and
+model-evaluation counts.
 
 Explicitly imposed external gas reservoirs may be reported in the pressure
 map but are excluded from melt-derived oxygen accounting. Species parents

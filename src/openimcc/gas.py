@@ -116,7 +116,7 @@ class ImccGasEquilibriumRangeError(ImccRefusal):
 
 
 class ImccGasOxygenBalanceError(ImccRefusal):
-    """Raised when the oxygen-balance root is not monotone or bracketed."""
+    """Raised when an oxygen-balance root cannot be certified or refined."""
 
     code = "imcc_gas_oxygen_balance_failed"
 
@@ -5688,9 +5688,9 @@ def oxygen_balance_from_pressure_model(
 ) -> tuple[float, Mapping[str, float], dict[str, object]]:
     """Solve the generic Knudsen oxygen-balance root for a pressure model.
 
-    Each pressure must follow its declared power law in pO2. If every signed
-    coefficient has the same sign as its exponent, F is monotone; a strictly
-    increasing term makes its sign-changing root unique.
+    The declared exponents establish the expected monotonic direction of each
+    flux term. The supplied model is evaluated directly, so it may bend between
+    pressure nodes as long as its oxygen-balance residual has a bracketed root.
     """
     for name, data in species.items():
         weight = (
@@ -5709,7 +5709,11 @@ def oxygen_balance_from_pressure_model(
             "oxygen-balance flux is not strictly monotone for declared species"
         )
 
+    model_evaluations = 0
+
     def at(logp: float) -> tuple[float, Mapping[str, float], float, float]:
+        nonlocal model_evaluations
+        model_evaluations += 1
         pressures = pressure_model(logp)
         if not isinstance(pressures, MappingABC):
             raise ImccGasOxygenBalanceError(
@@ -5764,9 +5768,10 @@ def oxygen_balance_from_pressure_model(
             f"oxygen-balance root is not bracketed on {bracket}: "
             f"F(low)={f_low}, F(high)={f_high}"
         )
+    root_xtol = 1e-12
     try:
         root, solver = brentq(
-            lambda value: at(value)[0], low, high, xtol=1e-12,
+            lambda value: at(value)[0], low, high, xtol=root_xtol,
             full_output=True, disp=False,
         )
     except (ValueError, RuntimeError) as exc:
@@ -5775,30 +5780,59 @@ def oxygen_balance_from_pressure_model(
         raise ImccGasOxygenBalanceError("oxygen-balance solve did not converge")
 
     residual, pressures, oxygen_flux, parent_flux = at(root)
-    slope_low = at(root - 0.1)[1]
-    slope_high = at(root + 0.1)[1]
-    for name, data in species.items():
-        if float(pressures[name]) > 1e-300:
-            try:
-                if float(slope_low[name]) <= 0 or float(slope_high[name]) <= 0:
-                    raise ValueError("non-positive pressure around root")
-                observed_exponent = (
-                    math.log10(float(slope_high[name]))
-                    - math.log10(float(slope_low[name]))
-                ) / 0.2
-            except (KeyError, ValueError, TypeError) as exc:
-                raise ImccGasOxygenBalanceError(
-                    f"pressure model is not a power law in pO2 with the declared "
-                    f"exponent for species {name!r}"
-                ) from exc
-            # Power-law log ratios incur about 1e-12 dex of float round-off;
-            # 1e-6 leaves a generous margin while detecting real curvature.
-            if abs(observed_exponent - data.pO2_exponent) > 1e-6:
-                raise ImccGasOxygenBalanceError(
-                    f"pressure model is not a power law in pO2 with the declared "
-                    f"exponent for species {name!r} (declared="
-                    f"{data.pO2_exponent}, observed={observed_exponent})"
-                )
+    residual_scale = max(oxygen_flux, parent_flux, 1e-300)
+    relative_residual = abs(residual) / residual_scale
+    max_exponent = max(
+        (abs(data.pO2_exponent) for data in species.values()), default=1.0
+    )
+    # At a power-law root, |dF/dlog10(pO2)| / max(fluxes) is bounded by
+    # 2*ln(10)*max(|k|): positive and negative flux sums are equal, and
+    # |nO-demand| <= nO+demand. Thus this residual tolerance follows the
+    # 1e-12 dex Brent xtol while allowing the solver's default relative tol.
+    solver_logp_tol = root_xtol + 4.0 * math.ulp(1.0) * max(abs(low), abs(high))
+    residual_tolerance = max(
+        32.0 * math.ulp(1.0),
+        2.0 * math.log(10.0) * max(1.0, max_exponent) * solver_logp_tol,
+    )
+    root_path = "direct"
+    refinement_evaluations = 0
+    iterations = solver.iterations
+    if relative_residual > residual_tolerance:
+        if not (f_low < 0.0 < f_high):
+            raise ImccGasOxygenBalanceError(
+                "oxygen-balance residual exceeds tolerance and no sign change "
+                f"certifies refinement (residual={residual}, "
+                f"F(low)={f_low}, F(high)={f_high})"
+            )
+        initial_model_evaluations = model_evaluations
+        try:
+            root, refinement_solver = brentq(
+                lambda value: at(value)[0], low, high,
+                xtol=root_xtol / 1000.0,
+                full_output=True, disp=False,
+            )
+        except (ValueError, RuntimeError) as exc:
+            raise ImccGasOxygenBalanceError(
+                "oxygen-balance refinement failed for true residual "
+                f"{residual}: {exc}"
+            ) from exc
+        if not refinement_solver.converged:
+            raise ImccGasOxygenBalanceError(
+                "oxygen-balance refinement did not converge for true residual "
+                f"{residual}"
+            )
+        iterations += refinement_solver.iterations
+        refinement_evaluations = model_evaluations - initial_model_evaluations
+        residual, pressures, oxygen_flux, parent_flux = at(root)
+        residual_scale = max(oxygen_flux, parent_flux, 1e-300)
+        relative_residual = abs(residual) / residual_scale
+        if relative_residual > residual_tolerance:
+            raise ImccGasOxygenBalanceError(
+                "oxygen-balance refinement did not meet residual tolerance "
+                f"{residual_tolerance} (true residual={residual}, "
+                f"relative residual={relative_residual})"
+            )
+        root_path = "refined"
     oxygen_carriers = sorted(
         (
             (
@@ -5832,13 +5866,19 @@ def oxygen_balance_from_pressure_model(
     )
     diagnostics: dict[str, object] = {
         "mode": "oxygen_balance_effusion",
-        "residual": abs(residual) / max(oxygen_flux, parent_flux, 1e-300),
+        "residual": relative_residual,
         "bracket": bracket,
-        "iterations": solver.iterations,
+        "iterations": iterations,
         "dominant_O_carriers": oxygen_carriers,
         "dominant_metal_carriers": metal_carriers,
         "total_pressure_bar": total_pressure_bar,
         "knudsen_regime": total_pressure_bar <= _KNUDSEN_TOTAL_PRESSURE_BAR,
+        "root_solver": {
+            "path": root_path,
+            "model_evaluations": model_evaluations,
+            "refinement_evaluations": refinement_evaluations,
+            "residual_tolerance": residual_tolerance,
+        },
     }
     return 10.0**root, pressures, diagnostics
 
