@@ -244,6 +244,13 @@ def test_redox_species_schema_table_has_no_duplicate_rows() -> None:
     assert not duplicates, f"duplicate redox species schema rows: {duplicates}"
 
 
+def test_kernel_docstring_references_the_tracked_model_spec() -> None:
+    kernel = (ROOT / "src/openimcc/kernel.py").read_text(encoding="utf-8")
+    assert "``docs/spec.md``" in kernel
+    assert (ROOT / "docs/spec.md").is_file()
+    assert "docs/imcc-sf04-spec.md" not in kernel
+
+
 def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
     names = {
         path.name

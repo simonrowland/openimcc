@@ -1,7 +1,7 @@
 """IMCC-SF04 kernel: 8-parent ideal associated-solution melt-activity solver.
 
 This is the independent diagnostic shadow engine described in
-``docs/imcc-sf04-spec.md``. It solves the 8 coupled nonlinear parent-oxide
+``docs/spec.md``. It solves the 8 coupled nonlinear parent-oxide
 balances for 46 species (8 unbound parents + 38 complexes) using mass-action
 complexing in an ideal associated-solution framework.
 

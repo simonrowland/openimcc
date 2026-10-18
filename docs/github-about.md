@@ -71,8 +71,8 @@ data, not a reconciled result.
 
 Plante 1979 KEMS K pressures agree to median +0.09 dex (RMSE 0.20). The
 low-temperature drift is about +0.27 dex at about 1250 K (n = 6), falling to
-about +0.02 dex at 1750 K; the K channel uses the flagged K2O(l) secondary
-transcription. Independently pinned behaviour is the analytic binary and
+about +0.02 dex at 1750 K; default K2O(l) is a K-012 crystal-based systematic
+estimate. Independently pinned behaviour is the analytic binary and
 limits in `tests/test_kernel.py`,
 pure-silica D = 1 in conformance, atom balance, and the JANAF gas-fit
 reproduction. Conformance goldens are a drift alarm at RTOL 1e-9, not an

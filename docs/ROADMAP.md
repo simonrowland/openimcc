@@ -438,7 +438,7 @@ deferred because this fill is limited to monomers and dimers.
 
 ## Known gaps
 
-### 6. Primary provenance for K2O(l) (resolved for the retained LH84 row)
+### 6. Primary provenance for the retained K2O(l) compatibility row
 
 The LH84 primary is online: Lamoreaux and Hildenbrand (1984), *J. Phys. Chem.
 Ref. Data* 13(1), 151-173, DOI 10.1063/1.555706. Its Table 2 (p. 154) gives
