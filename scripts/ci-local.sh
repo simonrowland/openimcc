@@ -94,13 +94,14 @@ head "core-only install"
 # prove the core solve still works. pandas and yaml must be absent, or the
 # check proves nothing.
 VENV="$TMPROOT/core"
+CORE_VPY="$VENV/bin/python"
 if [ "$HAVE_UV" = "1" ]; then
-    uv venv "$VENV" >/dev/null 2>&1 && VPY="$VENV/bin/python" && uv pip install --python "$VPY" -q -e . >/dev/null 2>&1
+    uv venv "$VENV" >/dev/null 2>&1 && uv pip install --python "$CORE_VPY" -q -e . >/dev/null 2>&1
 else
-    python3 -m venv "$VENV" >/dev/null 2>&1 && VPY="$VENV/bin/python" && "$VPY" -m pip install -q -e . >/dev/null 2>&1
+    python3 -m venv "$VENV" >/dev/null 2>&1 && "$CORE_VPY" -m pip install -q -e . >/dev/null 2>&1
 fi
-if [ -x "${VPY:-}" ]; then
-    OUT="$("$VPY" - <<'PY' 2>&1
+if [ -x "$CORE_VPY" ]; then
+    OUT="$("$CORE_VPY" - <<'PY' 2>&1
 import importlib.util, sys
 present = [m for m in ("pandas", "yaml") if importlib.util.find_spec(m)]
 if present:
