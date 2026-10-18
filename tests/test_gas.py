@@ -217,8 +217,10 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 6  # Two gas fit intervals for Hg, Au, and Pd.
         + 5  # Pt and PtO2, including PtO2's continuation interval.
         + 2  # Ir gas rows; Ru and Rh are counted with trace gas species.
+        + 2  # Os gas fit intervals.
+        + 4  # Four Re2O7 constructed intervals.
     )
-    assert len(gas_pack.oxide_df) == 197
+    assert len(gas_pack.oxide_df) == 201
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -504,10 +506,12 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
     }
     high_rows = gas_pack.gas_df.loc[
-        gas_pack.gas_df["T_interval"].astype(int) == 1
+        (gas_pack.gas_df["T_interval"].astype(int) == 1)
+        & (gas_pack.gas_df.index != "Re2O7(g)")
     ]
     low_rows = gas_pack.gas_df.loc[
-        gas_pack.gas_df["T_interval"].astype(int) == 2
+        (gas_pack.gas_df["T_interval"].astype(int) == 2)
+        & (gas_pack.gas_df.index != "Re2O7(g)")
     ]
     low_trace_species = (
         build_gas_tables.TRACE_GAS_SPECIES - build_gas_tables.HALOGEN_GAS_SPECIES
@@ -524,6 +528,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         # Halogen rows use one 1200-3000 K interval and have no low interval.
         + len(_RARE_EARTH_CHANNELS)
         + 6
+        + 1  # Os(g) has one low interval; Re2O7(g) is excluded above.
     )
     assert set(low_rows.index) == {
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
@@ -540,7 +545,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
     } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"} | {
         source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
-    }
+    } | {"Os(g)"}
     neutral_high_rows = high_rows.loc[
         ~high_rows.index.isin(tuple(f"{species}(g)" for species in _ION_GAS_SPECIES))
     ]
@@ -566,6 +571,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         or source[1] == "Kelley-584-SbO"
     }
     reviewed_trace_species.add("Rh(g)")
+    reviewed_trace_species.add("Re(g)")
     ordinary_high_rows = neutral_high_rows.loc[
         ~neutral_high_rows.index.isin(reviewed_trace_species)
         & ~neutral_high_rows.index.isin(
@@ -574,7 +580,10 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     ]
     assert (ordinary_high_rows["T_min"] == 1500).all()
     for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
-        if source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")) or source[1] == "Kelley-584-SbO":
+        if (
+            source[1].startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl"))
+            or source[1] in {"Kelley-584-SbO", "P677-Re-g"}
+        ):
             split = min(max(source[6], 1500.0), 2000.0)
             assert float(high_rows.loc[source[0], "T_min"]) == split
             assert float(low_rows.loc[source[0], "T_max"]) == split
@@ -587,7 +596,9 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     trace_low_species = {
         f"{species}(g)" for species in build_gas_tables.TRACE_GAS_SPECIES
     } | split_ion_names | {f"{species}(g)" for species in _RARE_EARTH_CHANNELS}
-    trace_low_species |= {"Hg(g)", "Au(g)", "Pd(g)", "Pt(g)", "PtO2(g)", "Ir(g)"}
+    trace_low_species |= {
+        "Hg(g)", "Au(g)", "Pd(g)", "Pt(g)", "PtO2(g)", "Ir(g)", "Os(g)"
+    }
     legacy_low_rows = low_rows.loc[~low_rows.index.isin(trace_low_species)]
     trace_low_rows = low_rows.loc[low_rows.index.isin(trace_low_species)]
     assert (legacy_low_rows["T_min"] == build_gas_tables.LOW_FIT_T_MIN).all()
@@ -654,6 +665,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
     assert len(implemented) == (
         65
         + 6
+        + 2  # Os and Re2O7 are exposed metal-vapor channels.
         + len(_RARE_EARTH_CHANNELS)
         + len(build_gas_tables.TRACE_GAS_SPECIES)
         - len({"NiO", "CoO"} & build_gas_tables.TRACE_GAS_SPECIES)
@@ -669,7 +681,7 @@ def test_channel_coverage_ledger_is_closed() -> None:
         | set(_P_CHANNELS)
         | {"PS"}
         | set(_RARE_EARTH_CHANNELS)
-        | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir"}
+        | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir", "Os", "Re2O7"}
         | build_gas_tables.TRACE_GAS_SPECIES
         | (unavailable & implemented)
     ) == implemented
@@ -1453,7 +1465,7 @@ _PRE_GATED_CHANNELS = tuple(
     and species not in _PS_CHANNELS
     and species not in _RARE_EARTH_CHANNELS
     and species not in build_gas_tables.TRACE_GAS_SPECIES
-    and species not in {"Hg", "Au", "Pd", "Pt", "PtO2", "Ru", "Rh", "Ir"}
+    and species not in {"Hg", "Au", "Pd", "Pt", "PtO2", "Ru", "Rh", "Ir", "Os", "Re2O7"}
 )
 _SF04_CHANNELS = tuple(
     species for species in _PRE_GATED_CHANNELS if species not in _TI_CHANNELS
@@ -3325,7 +3337,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
     import openimcc.gas as gas_module
 
     halogen_gases = build_gas_tables.HALOGEN_GAS_SPECIES
-    trace_gases = (set(build_gas_tables.TRACE_GAS_SPECIES) - {"Ru", "Rh"}) | {
+    trace_gases = (set(build_gas_tables.TRACE_GAS_SPECIES) - {"Ru", "Rh", "Re"}) | {
         "Mn", "Ni", "Co", "NiO", "CoO", "Ru", "Rh", "Ir"
     } | halogen_gases
     parents = {
@@ -5507,7 +5519,11 @@ def test_sf04_pack_reproduces_base_default_and_default_keeps_other_channels(
     base_pack = _load_task_base_gas_pack(tmp_path)
     default_pack = load_gas_datapack()
     parents = collection_type(
-        sorted(parent for parent in _REACTION_PARENT_OXIDES if parent != "Ag2O")
+        sorted(
+            parent
+            for parent in _REACTION_PARENT_OXIDES
+            if parent not in {"Ag2O", "Os", "Re"}
+        )
     )
     activities = {parent: 1.0 for parent in parents}
     selected, _omitted = _default_reactions(parents, base_pack)

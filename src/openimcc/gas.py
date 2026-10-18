@@ -738,6 +738,14 @@ _HALIDE_REACTIONS: dict[str, tuple[str, float, float]] = {
     "(CsI)2": ("I2", 1, 0.0),
 }
 _SF04_REACTIONS.update(_HALIDE_REACTIONS)
+_SF04_REACTIONS.update(
+    {
+        "Os": ("Os", 1.0, 0.0),
+        "Re": ("Re", 1.0, 0.0),
+        # Per Re atom: Re(cr) + 7/4 O2(g) = 1/2 Re2O7(g).
+        "Re2O7": ("Re", 0.5, -1.75),
+    }
+)
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
 # from the JANAF gas table; condensed parent rows use their resolved phase.
@@ -745,7 +753,9 @@ _GAS_PHASE_PARENT_ROWS = {
     "S2": "S2(g)", "Br2": "Br2(g)", "I2": "I2(g)",
     "Cl2": "Cl2(g)", "F2": "F2(g)", "H2": "H2(g)", "N2": "N2(g)",
 }
-_CONDENSED_PARENT_ROWS = {"C": "C(cr)", "Hg": "Hg(l)"}
+_CONDENSED_PARENT_ROWS = {
+    "C": "C(cr)", "Hg": "Hg(l)", "Os": "Os(cr)", "Re": "Re(cr)"
+}
 # Parents whose stable condensed reference changes phase inside the runtime
 # domain. The tuple is (transition K, crystal row, liquid row); below the
 # marker the crystal is selected, and at/above it the liquid is selected.
@@ -1200,7 +1210,10 @@ _GAS_PROVENANCE_AUTHORITY["Hg"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY["Au"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY["Pd"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY.update(
-    {species: "published_fitted" for species in ("Pt", "PtO2", "Ru", "Rh", "Ir")}
+    {
+        species: "published_fitted"
+        for species in ("Pt", "PtO2", "Ru", "Rh", "Ir", "Os", "Re", "Re2O7")
+    }
 )
 _GAS_PROVENANCE_AUTHORITY.update(
     {
@@ -1369,6 +1382,10 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "Rh": "published_fitted",
     "Ir(cr)": "published_fitted",
     "Ir": "published_fitted",
+    "Os(cr)": "published_fitted",
+    "Os": "published_fitted",
+    "Re(cr)": "published_fitted",
+    "Re": "published_fitted",
     "MnO": "liquid_from_solid_estimate",
     "NiO": "published_fitted",
     "CoO": "published_fitted",
@@ -1445,6 +1462,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "Rh": "P672-Rh-l",
     "Ir": "BU-2612",
     "Os": "BURCAT-OS-CR",
+    "Re": "P677-Re-cr",
     "P2O5": "Jung-Hudon-2012",
     "Na2O": "Na-013",
     "MgO": "Mg-009",
@@ -3485,6 +3503,33 @@ ELEMENT_STATUS["Os"] = {
     "source_tables": {"gas": "BURCAT-OS-G", "parent": "BURCAT-OS-CR"},
     "parent_activity": "Os",
 }
+ELEMENT_STATUS["Re"] = {
+    "status": "gas-complete-melt-pending",
+    "criteria": {"C1": False, "C2": True, "C3": False, "C4": True},
+    "validation": "unvalidated",
+    "reason": (
+        "Pankratz Bulletin 677 supplies paired Re(g) and stable Re(cr) "
+        "functions through 2000 K, with flagged held-Cp continuation to 3000 K; "
+        "Re(cr) is fitted from 298 K to anchor the Smith range. Re2O7(g) is "
+        "constructed from Smith's measured pressure at 503-633 K and Battles' "
+        "measured equilibrium at 961-1087 K, with labelled intervals and "
+        "propagated pressure uncertainty through the held-Cp continuation to "
+        "3000 K. Callers supply a(Re) relative to Re(cr). ReO3(g) is declined "
+        "because only a <3-5% abundance upper bound is available, without a "
+        "temperature-dependent pressure or equilibrium function."
+    ),
+    "c2_candidates": (),
+    "c3_ion_bound": {
+        "status": "not computed",
+        "reason": "not computed: Re ion channels are outside this neutral gas change",
+    },
+    "source_tables": {
+        "gas": "P677-Re-g",
+        "parent": "P677-Re-cr",
+        "constructed_oxide_gas": "P677-ReO2-c/P677-Re2O7-l + Battles 1968",
+    },
+    "parent_activity": "Re",
+}
 # --------------------------------------------------------------------------- #
 # Data pack
 # --------------------------------------------------------------------------- #
@@ -3956,6 +4001,34 @@ def _source_model_flag(
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
+    if source_ref.startswith("P677-Re2O7-g-SMITH-EST-"):
+        uncertainty_kj = (
+            R_J_MOL_K * math.log(10.0) * T * 0.131479893726766 / 1000.0
+        )
+        measured_range = "503-598 K" if source_ref.endswith("598") else "613-633 K"
+        return (
+            "constructed Re2O7(g) from Smith 1952 measured vapor pressure and "
+            f"B677 condensed functions over {measured_range}; maximum log-pressure "
+            "fit scatter propagated as "
+            f"±{uncertainty_kj:.1f} kJ/mol at {T:g} K"
+        )
+    if source_ref == "P677-Re2O7-g-BATTLES-EST-961-1087":
+        uncertainty_kj = R_J_MOL_K * math.log(10.0) * (0.145 * T + 143.0) / 1000.0
+        return (
+            "constructed Re2O7(g) from Battles vapor-pressure equilibrium measured "
+            "at 961-1087 K; B677 Re2O7(l) Cp held above its 700 K limit for the "
+            "condensed-function reconstruction; propagated regression coefficient "
+            f"band ±{uncertainty_kj:.1f} kJ/mol at {T:g} K"
+        )
+    if source_ref == "P677-Re2O7-g-EST-CONT-1087":
+        uncertainty_kj = R_J_MOL_K * math.log(10.0) * (0.145 * T + 143.0) / 1000.0
+        return (
+            "constructed Re2O7(g) from Battles vapor-pressure equilibrium measured "
+            "at 961-1087 K; held-Cp runtime continuation from 1087 K to 3000 K; "
+            "B677 Re2O7(l) Cp held above its 700 K limit for the condensed-function "
+            "reconstruction; propagated "
+            f"vapor-pressure regression bound ±{uncertainty_kj:.1f} kJ/mol at {T:g} K"
+        )
     declared_continuation = re.fullmatch(
         r"(.+)-CONT-(\d+(?:\.\d+)?)", source_ref
     )
@@ -4996,6 +5069,8 @@ _ATOMIC_MASS_G_MOL = {
     "Ru": 101.07,
     "Rh": 102.9055,
     "Ir": 192.217,
+    "Re": 186.207,
+    "Os": 190.23,
     "H": 1.008, "C": 12.011, "N": 14.007,
 }
 _FORMULA_PART = re.compile(r"([A-Z][a-z]?)(\d*)")

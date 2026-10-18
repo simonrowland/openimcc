@@ -593,6 +593,202 @@ source_notes:
       are not expanded to full citations here. Pr's bracketed IE estimate is
       used as printed and flagged.
 rows:
+  - table: gas
+    species_name: Re(g)
+    table_id: P677-Re-g
+    runtime_ref: P677-Re-g
+    source_path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    authority: published_fitted
+    method: fitted
+    T_interval: 2
+    T_range_K: [1200.0, 2000.0]
+    source_fit_range_K: [1200.0, 2000.0]
+    source_limit_K: 2000.0
+    source_data: true
+    source_record: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_locator: 'Pankratz Bulletin 677, Re(g) ideal monatomic gas table, printed p. 77 (scan p. 81); elemental ΔfH(298.15 K)=184.000 kcal/mol'
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    source: {citation: 'Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 677', anchor: 'Elemental Re reference from the Re(g) formation table, printed p. 77.'}
+    fit_residual: {value: {max_residual_J_per_mol: 4.73719821148552, max_residual_log10_K: 0.000137467228788396}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: 'Pankratz Bulletin 677, Re(g) ideal monatomic gas table, printed p. 77', comparison_method: fitted, temperature_range: [1200.0, 2000.0], held_out_or_in_sample: in_sample}
+    accuracy_band: null
+    band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: 'Pankratz Bulletin 677, Re(g), printed p. 77'}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}
+  - table: gas
+    species_name: Re(g)
+    table_id: P677-Re-g
+    runtime_ref: P677-Re-g-CONT-2000
+    source_path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    T_interval: 1
+    T_range_K: [2000.0, 3000.0]
+    source_fit_range_K: [2000.0, 3000.0]
+    source_limit_K: 2000.0
+    extrapolation_source_limit_K: 2000.0
+    source_data: false
+    flags: [flagged held-Cp gas continuation above 2000 K source limit]
+    source_record: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_locator: 'Pankratz Bulletin 677, Re(g) ideal monatomic gas table, printed p. 77 (scan p. 81); Cp=4.968 cal/(mol K) printed through 2000 K'
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    source: {citation: 'Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 677', anchor: 'Elemental Re reference from the Re(g) formation table, printed p. 77.'}
+    fit_residual: {value: {max_residual_J_per_mol: 1.16415321826935e-10, max_residual_log10_K: 2.53366404026394e-15}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: 'Pankratz Bulletin 677 Re(g), Cp=4.968 cal/(mol K) printed through 2000 K', comparison_method: generated_constant_cp_extrapolation_fit, temperature_range: [2000.0, 3000.0], held_out_or_in_sample: in_sample}
+    accuracy_band: {value: {kind: printed_Cp_rounding_envelope, method: 'Propagate half the printed 0.001 cal/(mol K) Cp resolution as |δCp × ((T-2000)-T ln(T/2000))|.', values_J_per_mol: {2000: 0.0, 2500: 0.121, 3000: 0.453}}, unit: J mol^-1, temperature_points_or_range: values_J_per_mol keys or T_range_K, coverage: printed_Cp_rounding_envelope}
+    band_basis: {kind: source_uncertainty, explanation: Half-unit printed Cp rounding propagated above the source limit, provenance: 'Pankratz Bulletin 677 Re(g), printed p. 77'}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}
+  - table: gas
+    species_name: Re2O7(g)
+    table_id: P677-Re2O7-g-Smith-constructed
+    runtime_ref: P677-Re2O7-g-SMITH-EST-598
+    source_path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    authority: published_fitted
+    method: constructed_from_vapor_pressure_and_condensed_function
+    T_interval: 1
+    T_range_K: [504, 598]
+    source_fit_range_K: [503.15, 598.15]
+    source_limit_K: 598.15
+    source_data: false
+    flags: [constructed from Smith measured vapor pressure and B677 Re2O7(c), measured Smith range 503.15-598.15 K, no extrapolation beyond measured interval]
+    source_record: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_locator: 'B677 Table 1251 Re2O7(c); Smith et al. measured vapor pressure, 503.15-598.15 K'
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    additional_sources: [{citation: 'Smith, D. F.; Line, L. E.; Bell, W. E. (1952), The Vapor Pressures of Rhenium Heptoxide and Perrhenic Acid, J. Am. Chem. Soc. 74, 4964-4966', doi: '10.1021/ja01139a522', url: 'https://pubs.acs.org/doi/10.1021/ja01139a522', measured_range_K: [503.15, 633.15]}]
+    source: {citation: 'Constructed from Smith et al. (1952) measured Re2O7 vapor pressure and Pankratz Bulletin 677 Re2O7 condensed functions.', anchor: 'Fit log10(p_bar)=a-b/T; dG_sub=-RT ln(p_bar)=R ln(10)(b-aT); G_f(Re2O7,g)=G_f(Re2O7,c)+dG_sub.'}
+    fit_residual: {value: {max_residual_J_per_mol: 4.65661287307739e-10, max_residual_log10_K: 4.08792853555191e-14}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: constructed H/S/Cp from B677 Re2O7(c) and Smith pressure regression, comparison_method: constructed_from_vapor_pressure_and_condensed_function, temperature_range: [503.15, 598.15], held_out_or_in_sample: in_sample}
+    accuracy_band: {value: {kind: Smith_pressure_fit_scatter, values_J_per_mol: {503.15: 1266.504, 550: 1384.433, 598.15: 1505.634}}, unit: J mol^-1, temperature_points_or_range: values_J_per_mol keys or T_range_K, coverage: Maximum phase-specific absolute log10(p_bar) residual 0.131480 propagated as R ln(10) T |δlog10(p)| across the ten Smith measurements}
+    band_basis: {kind: source_uncertainty, explanation: 'Maximum phase-specific observed absolute log10(p_bar) residual 0.131480 from the Smith measured-pressure fits, propagated as R ln(10) T |δlog10(p)| and conservatively applied to both measured windows.', provenance: 'Smith et al. (1952), DOI 10.1021/ja01139a522'}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Smith pressure points are construction inputs; no independent Re2O7(g) heat-capacity function is available.}
+  - table: gas
+    species_name: Re2O7(g)
+    table_id: P677-Re2O7-g-Smith-constructed
+    runtime_ref: P677-Re2O7-g-SMITH-EST-633
+    source_path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    authority: published_fitted
+    method: constructed_from_vapor_pressure_and_condensed_function
+    T_interval: 2
+    T_range_K: [614, 633]
+    source_fit_range_K: [613.15, 633.15]
+    source_limit_K: 633.15
+    source_data: false
+    flags: [constructed from Smith measured vapor pressure and B677 Re2O7(l), measured Smith range 613.15-633.15 K, no extrapolation beyond measured interval]
+    source_record: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_locator: 'B677 Table 1251 Re2O7(l); Smith et al. measured vapor pressure, 613.15-633.15 K'
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    additional_sources: [{citation: 'Smith, D. F.; Line, L. E.; Bell, W. E. (1952), The Vapor Pressures of Rhenium Heptoxide and Perrhenic Acid, J. Am. Chem. Soc. 74, 4964-4966', doi: '10.1021/ja01139a522', url: 'https://pubs.acs.org/doi/10.1021/ja01139a522', measured_range_K: [503.15, 633.15]}]
+    source: {citation: 'Constructed from Smith et al. (1952) measured Re2O7 vapor pressure and Pankratz Bulletin 677 Re2O7 condensed functions.', anchor: 'Fit log10(p_bar)=a-b/T; dG_sub=-RT ln(p_bar)=R ln(10)(b-aT); G_f(Re2O7,g)=G_f(Re2O7,l)+dG_sub.'}
+    fit_residual: {value: {max_residual_J_per_mol: 6.98491930961609e-10, max_residual_log10_K: 5.90368320061501e-14}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: constructed H/S/Cp from B677 Re2O7(l) and Smith pressure regression, comparison_method: constructed_from_vapor_pressure_and_condensed_function, temperature_range: [613.15, 633.15], held_out_or_in_sample: in_sample}
+    accuracy_band: {value: {kind: Smith_pressure_fit_scatter, values_J_per_mol: {613.15: 1543.391, 633.15: 1593.734}}, unit: J mol^-1, temperature_points_or_range: values_J_per_mol keys or T_range_K, coverage: Maximum phase-specific absolute log10(p_bar) residual 0.131480 propagated as R ln(10) T |δlog10(p)| across the ten Smith measurements}
+    band_basis: {kind: source_uncertainty, explanation: 'Maximum phase-specific observed absolute log10(p_bar) residual 0.131480 from the Smith measured-pressure fits, propagated as R ln(10) T |δlog10(p)| and conservatively applied to both measured windows.', provenance: 'Smith et al. (1952), DOI 10.1021/ja01139a522'}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Smith pressure points are construction inputs; no independent Re2O7(g) heat-capacity function is available.}
+  - table: gas
+    species_name: Re2O7(g)
+    table_id: P677-Re2O7-g-Battles-constructed
+    runtime_ref: P677-Re2O7-g-BATTLES-EST-961-1087
+    source_path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    authority: published_fitted
+    method: constructed_from_equilibrium_and_condensed_function
+    T_interval: 3
+    T_range_K: [961.0, 1087.0]
+    source_fit_range_K: [961.0, 1087.0]
+    source_limit_K: 1087.0
+    source_data: false
+    flags: [constructed from Battles measured pressure equilibrium and B677 ReO2/Re functions, measured Battles range 961-1087 K, B677 Re2O7(l) Cp held above its 700 K source limit]
+    source_record: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_locator: 'B677 Tables 1249 and 1251; Battles Re2O7(g) equilibrium regression, 961-1087 K'
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    additional_sources: [{citation: 'Battles, J. E.; Gundersen, G.; Edwards, J. W. (1968), A Mass Spectrometric Study of the Rhenium-Oxygen System, J. Phys. Chem. 72, 3963-3969', doi: '10.1021/j100858a005', url: 'https://pubs.acs.org/doi/10.1021/j100858a005'}]
+    source: {citation: 'Constructed from Pankratz Bulletin 677 ReO2(s), Re(s), and Re2O7(l) functions with Battles et al. (1968) measured equilibrium.', anchor: 'For 3.5 ReO2(s)->1.5 Re(s)+Re2O7(g), ΔG_rxn=-RT ln(p_bar); G_f(g)=ΔG_rxn+3.5G_f(ReO2)-1.5G_f(Re); dG_sub=G_f(g)-G_f(Re2O7,l).'}
+    fit_residual: {value: {max_residual_J_per_mol: 0.000601313775405288, max_residual_log10_K: 3.13774179004608e-08}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: constructed H/S/Cp from Battles measured equilibrium and B677 functions, comparison_method: constructed_from_equilibrium_and_condensed_function, temperature_range: [961.0, 1087.0], held_out_or_in_sample: in_sample}
+    accuracy_band: {value: {kind: Battles_regression_coefficient_uncertainty, values_J_per_mol: {961: 5405.427, 1000: 5513.690, 1087: 5755.201}}, unit: J mol^-1, temperature_points_or_range: values_J_per_mol keys or T_range_K, coverage: Conservatively propagated intercept and inverse-temperature-coefficient uncertainties from Battles et al. 1968}
+    band_basis: {kind: source_uncertainty, explanation: 'R ln(10) × (0.145 T + 143 K), with T in K; conservative sum of the reported Battles regression coefficient uncertainties.', provenance: 'Battles et al. (1968), DOI 10.1021/j100858a005'}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Battles equilibrium is a construction input; no independent Re2O7(g) thermal function is available.}
+  - table: gas
+    species_name: Re2O7(g)
+    table_id: P677-Re2O7-g-constructed-continuation
+    runtime_ref: P677-Re2O7-g-EST-CONT-1087
+    source_path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    authority: published_fitted
+    method: constructed_from_equilibrium_and_condensed_function_with_held_cp_continuation
+    T_interval: 4
+    T_range_K: [1087.0, 3000.0]
+    source_fit_range_K: [1087.0, 3000.0]
+    source_limit_K: 1087.0
+    extrapolation_source_limit_K: 1087.0
+    source_data: false
+    flags: [constructed from Battles measured pressure equilibrium and B677 functions, measured Battles range 961-1087 K, held-Cp continuation from 1087 K to 3000 K, B677 Re2O7(l) Cp held above its 700 K source limit]
+    source_record: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_locator: 'B677 Tables 1249 and 1251; Battles Re2O7(g) equilibrium regression, measured through 1087 K'
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    additional_sources: [{citation: 'Battles, J. E.; Gundersen, G.; Edwards, J. W. (1968), A Mass Spectrometric Study of the Rhenium-Oxygen System, J. Phys. Chem. 72, 3963-3969', doi: '10.1021/j100858a005', url: 'https://pubs.acs.org/doi/10.1021/j100858a005'}]
+    source: {citation: 'Held-Cp continuation of the Re2O7(g) Gibbs function constructed from Battles et al. (1968) measured equilibrium and Pankratz Bulletin 677 ReO2/Re/Re2O7 functions.', anchor: 'Continue H/S continuously from 1087 K with the derived Re2O7(g) Cp held at its 1087 K value.'}
+    fit_residual: {value: {max_residual_J_per_mol: 9.31322574615479e-10, max_residual_log10_K: 3.35646386198719e-14}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: held-Cp H/S continuation from the 1087 K Battles endpoint, comparison_method: constructed_from_equilibrium_and_condensed_function_with_held_cp_continuation, temperature_range: [1087.0, 3000.0], held_out_or_in_sample: in_sample}
+    accuracy_band: {value: {kind: Battles_regression_coefficient_uncertainty, values_J_per_mol: {1087: 5755.201, 1200: 6068.888, 1500: 6901.685, 2000: 8289.680, 2500: 9677.675, 3000: 11065.670}}, unit: J mol^-1, temperature_points_or_range: values_J_per_mol keys or T_range_K, coverage: Conservatively propagated Battles pressure-regression coefficient uncertainties carried through the held-Cp continuation}
+    band_basis: {kind: source_uncertainty, explanation: 'R ln(10) × (0.145 T + 143 K), with T in K; conservative sum of the reported Battles regression coefficient uncertainties.', provenance: 'Battles et al. (1968), DOI 10.1021/j100858a005'}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: No independent Re2O7(g) heat-capacity function is available.}
+  - table: condensate
+    species_name: Re(cr)
+    table_id: P677-Re-cr
+    runtime_ref: P677-Re-cr-LOW-1200
+    source_path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    authority: published_fitted
+    method: fitted
+    T_range_K: [298.0, 1200.0]
+    source_fit_range_K: [298.0, 1200.0]
+    source_limit_K: 2000.0
+    source_data: true
+    source_locator: 'Pankratz Bulletin 677, Re(cr) elemental metal table, printed p. 76 (scan p. 80); ΔfH(298.15 K)=0'
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    source: {citation: 'Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 677', anchor: 'Elemental Re reference crystal function, printed p. 76.'}
+    fit_residual: {value: {max_residual_J_per_mol: 51.1180504665172, max_residual_log10_K: 0.00369862189947403}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: 'Pankratz Bulletin 677 Re(cr), printed p. 76', comparison_method: fitted, temperature_range: [298.0, 1200.0], held_out_or_in_sample: in_sample}
+    accuracy_band: null
+    band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: 'Pankratz Bulletin 677 Re(cr), printed p. 76'}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}
+  - table: condensate
+    species_name: Re(cr)
+    table_id: P677-Re-cr
+    runtime_ref: P677-Re-cr
+    source_path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    authority: published_fitted
+    method: fitted
+    T_range_K: [1200.0, 2000.0]
+    source_fit_range_K: [1200.0, 2000.0]
+    source_limit_K: 2000.0
+    source_data: true
+    source_locator: 'Pankratz Bulletin 677, Re(cr) elemental metal table, printed p. 76 (scan p. 80); ΔfH(298.15 K)=0'
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    source: {citation: 'Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 677', anchor: 'Elemental Re reference crystal function, printed p. 76.'}
+    fit_residual: {value: {max_residual_J_per_mol: 2.61934474110603e-10, max_residual_log10_K: 6.84089290871265e-15}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: 'Pankratz Bulletin 677 Re(cr), printed p. 76', comparison_method: fitted, temperature_range: [1200.0, 2000.0], held_out_or_in_sample: in_sample}
+    accuracy_band: null
+    band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: 'Pankratz Bulletin 677 Re(cr), printed p. 76'}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}
+  - table: condensate
+    species_name: Re(cr)
+    table_id: P677-Re-cr
+    runtime_ref: P677-Re-cr-CONT-2000
+    source_path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    authority: published_fitted
+    method: generated_constant_cp_extrapolation_fit
+    T_range_K: [2000.0, 3000.0]
+    source_fit_range_K: [2000.0, 3000.0]
+    source_limit_K: 2000.0
+    extrapolation_source_limit_K: 2000.0
+    source_data: false
+    flags: [flagged Re(cr) held-Cp continuation above 2000 K source limit]
+    source_locator: 'Pankratz Bulletin 677, Re(cr) elemental metal table, printed p. 76 (scan p. 80); Cp=8.265 cal/(mol K) printed through 2000 K'
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    source: {citation: 'Pankratz, L. B. (1984), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 677', anchor: 'Elemental Re reference crystal function, printed p. 76.'}
+    fit_residual: {value: {max_residual_J_per_mol: 0.0362628467555624, max_residual_log10_K: 9.01971315216764e-07}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: 'Pankratz Bulletin 677 Re(cr), Cp=8.265 cal/(mol K) printed through 2000 K', comparison_method: generated_constant_cp_extrapolation_fit, temperature_range: [2000.0, 3000.0], held_out_or_in_sample: in_sample}
+    accuracy_band: {value: {kind: printed_Cp_rounding_envelope, method: 'Propagate half the printed 0.001 cal/(mol K) Cp resolution as |δCp × ((T-2000)-T ln(T/2000))|.', values_J_per_mol: {2000: 0.0, 2500: 0.121, 3000: 0.453}}, unit: J mol^-1, temperature_points_or_range: values_J_per_mol keys or T_range_K, coverage: printed_Cp_rounding_envelope}
+    band_basis: {kind: source_uncertainty, explanation: Half-unit printed Cp rounding propagated above the source limit, provenance: 'Pankratz Bulletin 677 Re(cr), printed p. 76'}
+    independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}
   - {table: gas, species_name: Na(g), table_id: Na-005, source_path: data-src/janaf/Na-005.yaml, source_sha256: 56df39453bc3895f80161d7ca0146b344669da2d1a9918b27139e917d491c255, authority: janaf_fitted, method: fitted, T_range_K: [1500, 3000], fit_residual: {value: {max_residual_J_per_mol: 1.31541910674423, max_residual_log10_K: 2.94179714698391e-05}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/janaf/Na-005.yaml, comparison_method: fitted, temperature_range: [1500, 3000], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: data-src/janaf/Na-005.yaml}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}}
   - {table: gas, species_name: K(g), table_id: K-005, source_path: data-src/janaf/K-005.yaml, source_sha256: 7729eda5976a6eacd68197b80eaadaf4f8bd1805f6673a08206c91827d1c407d, authority: janaf_fitted, method: fitted, T_range_K: [1500, 3000], fit_residual: {value: {max_residual_J_per_mol: 1.23262874502689, max_residual_log10_K: 2.73326874103486e-05}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/janaf/K-005.yaml, comparison_method: fitted, temperature_range: [1500, 3000], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: data-src/janaf/K-005.yaml}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}}
   - {table: gas, species_name: SiO(g), table_id: O-012, source_path: data-src/janaf/O-012.yaml, source_sha256: e786b264b198a4e3fce25393c511dca8c24d2049651ff20c8f6f44079f064f45, authority: janaf_fitted, method: fitted, T_range_K: [1500, 3000], fit_residual: {value: {max_residual_J_per_mol: 1.52894106844906, max_residual_log10_K: 3.19448507830281e-05}, unit: {max_residual_J_per_mol: J mol^-1, max_residual_log10_K: log10 K}, target_source: data-src/janaf/O-012.yaml, comparison_method: fitted, temperature_range: [1500, 3000], held_out_or_in_sample: in_sample}, accuracy_band: null, band_basis: {kind: fit_only, explanation: Source-fit residual only, provenance: data-src/janaf/O-012.yaml}, independent_check: {status: not_applicable, equilibrium: null, primary_source: null, conditions: null, measured_value: null, predicted_value: null, miss: null, miss_to_band_ratio: null, reason: Not a liquid gas-parent row; independent check status is not applicable.}}

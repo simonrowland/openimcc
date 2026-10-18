@@ -542,3 +542,12 @@ records:
     comparison_source: Powers et al. (1986), NUREG/CR-4308 Table 12, Sb(l), Sb(g), and SbO(g)
     selection_reason: Kelley Table 30 supplies SbO(g) heat-content and entropy increments through 2000 K. NBS Table 21 anchors its formation enthalpy, and its absolute entropy is inferred by closing those increments against the Sohn et al. reaction bridged through NUREG Sb(g)-Sb(l) Gibbs values. The conflicting NUREG SbO Gibbs curve is retained as a non-statistical source-disagreement band.
     citation_gaps:
+
+  - record_id: Pankratz-B677-Re-and-oxides
+    path: data-src/published-thermo/pankratz-bulletin-677-re.json
+    source_sha256: eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251
+    publication: Pankratz, Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 677 (1984)
+    source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
+    source_locator: Re(cr) and Re(g), printed pp. 76-77; ReO2(c), ReO3(c), and Re2O7(c,l), Tables 1249-1251, printed p. 283
+    tier: 3
+    selection_reason: B677 supplies paired Re(g)/Re(cr) functions and compatible condensed rhenium oxide functions. Re2O7(g) is constructed from the Smith vapor pressures at 503-633 K and Battles equilibrium over 961-1087 K, then flagged for its runtime continuation. ReO3(g) remains declined because Battles provides only an abundance upper bound without temperature-dependent partial pressure or equilibrium data.

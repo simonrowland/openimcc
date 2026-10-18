@@ -64,6 +64,15 @@
   reference phases, switching at 2720 K.
 - Added Burcat Os(g) with caller-supplied `a(Os)` relative to stable Os(cr);
   the source liquid branch begins above the 1200-3000 K runtime interval.
+- Added Pankratz Bulletin 677 Re(g)/Re(cr) with caller-supplied `a(Re)` and a
+  flagged held-Cp continuation above the 2000 K source limit; the Re(cr)
+  reference extends down to 298 K for the measured Re2O7(g) intervals. Added a flagged
+  Re2O7(g) construction with separate Smith measured-pressure and Battles
+  equilibrium intervals, B677 Re2O7 condensed functions, a labelled held-Cp
+  continuation above 1087 K, and propagated pressure-scatter/fit uncertainty.
+  ReO3(g),
+  OsO4(g), and OsO3(g) remain declined because the required temperature-
+  dependent pressure/equilibrium or gas Gibbs/Cp functions are unavailable.
 - Added caller-supplied Br2, I2, Cl2, and F2 gas-parent inputs with elemental
   and Na/K halide gas channels on the JANAF 1-bar standard state. Alkali-halide
   pressures use the caller's Na2O(l) or K2O(l) activity; NaI channels pair

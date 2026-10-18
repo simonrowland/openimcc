@@ -160,6 +160,24 @@ oxygen-fugacity power.
 Os(g) uses `a(Os)` relative to the Burcat Os(cr) stable-metal function over
 1200-3000 K. The source liquid branch begins at 3300 K, above the runtime
 interval; this monatomic gas channel has no oxygen-fugacity power.
+Re(g) uses `a(Re)` relative to the Pankratz Bulletin 677 Re(cr) function over
+1200-2000 K, with a flagged held-Cp continuation to 3000 K. The Re(cr)
+reference function also covers 298-1200 K so the measured low-temperature
+Re2O7(g) intervals use the B677 parent function in range. Re2O7(g) is a
+flagged construction over the Smith measured windows at 503-598 K and 613-633 K,
+the Battles Re-O equilibrium at 961-1087 K, and the B677 Re2O7 condensed
+functions. The Smith pressure-fit scatter is propagated over its measured
+windows; the Battles regression uncertainty is carried through the labelled
+held-Cp continuation from 1087 K to 3000 K. The B677 Re2O7(l) Cp is held above
+its 700 K source limit when reconstructing the high-temperature sublimation
+Gibbs function. ReO3(g) is declined because the available evidence is only a
+`<3-5%` abundance bound, without a temperature-dependent partial-pressure or
+equilibrium function.
+OsO4(g) and OsO3(g) are declined because Grimley et al. detected the gases but
+could not obtain a temperature-dependent equilibrium relation, and the 1991
+study reports reaction/formation enthalpies rather than the temperature-
+dependent Cp(T), S(T), or G(T) functions needed for rows.
+
 With `include_ions=True`, the gas result also includes Au+, Au-, Hg+, Pd+,
 Pt+, Pt-, and e-. No sourced Ru+, Rh+, or Ir+ functions were found. Ion
 channels are opt-in; default gas results remain neutral-only.

@@ -395,6 +395,7 @@ HALOGEN_NASA_TABLES = frozenset({
 TRACE_PUBLISHED_GAS_SOURCES = (
     ("Ru(g)", "P672-Ru-g", "Ru", "Ru", 1, 0, 3000.0),
     ("Rh(g)", "P672-Rh-g", "Rh", "Rh", 1, 0, 2000.0),
+    ("Re(g)", "P677-Re-g", "Re", "Re", 1, 0, 2000.0),
     ("Y(g)", "P672-Y-g", "Y", "Y", 1, 0, 2500.0),
     ("YO(g)", "PM83-YO", "YO", "Y", 1, 1, 1500.0),
     ("ZnO(g)", "IVTAN-264", "ZnO", "Zn", 1, 1, 3000.0),
@@ -536,6 +537,9 @@ PANKRATZ_METAL_PARENT_SOURCES = (
     ("Rh(cr)", "P672-Rh-cr", "Rh", 1, 0, "cr", 1200.0, 2237.0, "source"),
     ("Rh(l)", "P672-Rh-l", "Rh", 1, 0, "l", 2237.0, 2500.0, "source"),
     ("Rh(l)", "P672-Rh-l", "Rh", 1, 0, "l", 2500.0, 3000.0, "continuation"),
+    ("Re(cr)", "P677-Re-cr", "Re", 1, 0, "cr", 298.0, 1200.0, "source-low"),
+    ("Re(cr)", "P677-Re-cr", "Re", 1, 0, "cr", 1200.0, 2000.0, "source"),
+    ("Re(cr)", "P677-Re-cr", "Re", 1, 0, "cr", 2000.0, 3000.0, "continuation"),
 )
 TRACE_ION_PUBLISHED_SOURCES = (("Bi+(g)", "NBS-T22-ASD-BiII", "Bi", 1, 0),)
 TRACE_ION_NASA_SOURCES = (
@@ -1292,8 +1296,13 @@ def _fit_pankratz_metal_parent(
         source_rows, reference,
         fit_t_min=fit_t_min, fit_t_max=fit_t_max,
         runtime_t_min=fit_t_min, runtime_t_max=fit_t_max,
-        ref=(f"{table_id}-CONT-{source_limit:g}"
-             if source_kind == "continuation" else table_id),
+        ref=(
+            f"{table_id}-LOW-{fit_t_max:g}"
+            if source_kind == "source-low"
+            else f"{table_id}-CONT-{source_limit:g}"
+            if source_kind == "continuation"
+            else table_id
+        ),
         fit_temperatures=temperatures,
     )
     row["state"] = "s" if phase == "cr" else "l"
@@ -2027,6 +2036,8 @@ def _published_table_record(source_dir: Path, table_id: str) -> dict[str, Any]:
         filename = "pankratz-ru.json"
     elif table_id.startswith("P672-Rh-"):
         filename = "pankratz-rh.json"
+    elif table_id.startswith("P677-"):
+        filename = "pankratz-bulletin-677-re.json"
     elif table_id.startswith("P672-"):
         filename = "pankratz-bulletin-672.json"
     elif table_id.startswith("P696-"):
@@ -2168,9 +2179,10 @@ def _fit_published_gas_row(
         source_dir, table_id, breakpoint_side=breakpoint_side
     )
     rows = _constant_cp_rows_through(rows, fit_t_max)
+    fit_step = 200.0 if table_id == "P677-Re-g" else JANAF_GRID_STEP_K
     temperatures = [
         float(T)
-        for T in np.arange(fit_t_min, fit_t_max + JANAF_GRID_STEP_K / 2.0, JANAF_GRID_STEP_K)
+        for T in np.arange(fit_t_min, fit_t_max + fit_step / 2.0, fit_step)
     ]
     missing = [T for T in temperatures if T not in rows]
     if missing:
@@ -2549,6 +2561,313 @@ def _fit_kelley_sbo_rows(
         abs(seam_residual / (R_J_MOL_K * 2000.0 * math.log(10.0)))
     )
     return [high_row, low_row]
+def _fit_re2o7_constructed_gas_rows(
+    source_dir: Path,
+) -> list[dict[str, str]]:
+    """Construct Re2O7(g) from measured vapor pressures and B677 functions."""
+    source = _load_record(source_dir / "pankratz-bulletin-677-re.json")
+    tables = source["tables"]
+    pressure = source["vapor_pressure_sources"]["Battles_Gundersen_Edwards_1968"]
+    equilibrium = pressure["runtime_construction_equilibrium"]
+    A = float(equilibrium["intercept"])
+    B = float(equilibrium["inverse_temperature_coefficient_K"])
+
+    def source_state(table_id: str, temperature: float) -> tuple[float, float, float, float]:
+        """Evaluate B677 Cp/Hinc/S with piecewise-linear Cp integration."""
+        record = tables[table_id]
+        nodes = [
+            (
+                float(row[0]), float(row[1]) * 4.184,
+                float(row[2]) * 4.184, float(row[3]) * 4.184,
+            )
+            for row in record["nodes"]
+        ]
+        # Table 1251's liquid branch begins with its printed fusion jump at
+        # 600 K; anchor on its last liquid node not above T and hold the
+        # printed liquid Cp after the 700 K source limit.
+        if table_id == "P677-Re2O7-l":
+            anchor = max(node for node in nodes if node[0] <= temperature)
+            cp = anchor[1]
+            delta_t = temperature - anchor[0]
+            h_increment = anchor[3] + cp * delta_t / 1000.0
+            entropy = anchor[2] + cp * math.log(temperature / anchor[0])
+            return cp, h_increment, entropy, float(
+                record["formation_enthalpy_298_kcal_mol"]
+            ) * 4.184
+
+        def cp_at(at: float) -> float:
+            if at <= nodes[0][0]:
+                return nodes[0][1]
+            for left, right in zip(nodes, nodes[1:]):
+                if at <= right[0]:
+                    fraction = (at - left[0]) / (right[0] - left[0])
+                    return left[1] + fraction * (right[1] - left[1])
+            return nodes[-1][1]
+
+        anchor = nodes[0]
+        h_increment = anchor[3]
+        entropy = anchor[2]
+        points = [anchor[0]]
+        points.extend(node[0] for node in nodes[1:] if node[0] < temperature)
+        points.append(temperature)
+        for low, high in zip(points, points[1:]):
+            cp_low = cp_at(low)
+            cp_high = cp_at(high)
+            slope = (cp_high - cp_low) / (high - low)
+            delta_t = high - low
+            log_ratio = math.log(high / low)
+            h_increment += (cp_low * delta_t + slope * delta_t**2 / 2.0) / 1000.0
+            entropy += cp_low * log_ratio + slope * (delta_t - low * log_ratio)
+        return (
+            cp_at(temperature), h_increment, entropy,
+            float(record["formation_enthalpy_298_kcal_mol"]) * 4.184,
+        )
+
+    re_o2_ref = float(tables["P677-ReO2-c"]["formation_enthalpy_298_kcal_mol"]) * 4.184
+    re_ref = float(tables["P677-Re-cr"]["formation_enthalpy_298_kcal_mol"]) * 4.184
+    gas_reference = 3.5 * re_o2_ref - 1.5 * re_ref + R_J_MOL_K * math.log(10.0) * B / 1000.0
+    pressure_entropy = (
+        R_J_MOL_K * math.log(10.0) * A
+        + R_J_MOL_K * math.log(1.01325)
+    )
+
+    def measured_state(temperature: float) -> dict[str, float]:
+        cp_o2, h_o2, s_o2, _ = source_state("P677-ReO2-c", temperature)
+        cp_re, h_re, s_re, _ = source_state("P677-Re-cr", temperature)
+        cp = 3.5 * cp_o2 - 1.5 * cp_re
+        h_increment = 3.5 * h_o2 - 1.5 * h_re
+        entropy = 3.5 * s_o2 - 1.5 * s_re + pressure_entropy
+        return {
+            "temperature": temperature,
+            "heat_capacity": cp,
+            "enthalpy_increment": h_increment,
+            "entropy": entropy,
+        }
+
+    # Fit each Smith phase's measurements as log10(p_bar)=a-b/T. Then
+    # dG_sub(T)=-RT ln(p_bar)=R ln(10)(b-aT), with ΔH_sub=R ln(10)b and
+    # ΔS_sub=R ln(10)a. Adding these to B677 Re2O7(c) below 600 K or Re2O7(l)
+    # above the transition gives G_f(g)=G_f(cond)+dG_sub. For Battles,
+    # log10(p_atm)=A-B/T describes 3.5 ReO2(s)->1.5 Re(s)+Re2O7(g). Convert
+    # p_atm to the 1-bar standard with p_bar=1.01325*p_atm, then
+    # ΔG_rxn=-RT ln(p_bar) and G_f(g)=ΔG_rxn+3.5G_f(ReO2)-1.5G_f(Re).
+    # Subtracting B677 Re2O7(l) Gibbs gives dG_sub; adding it back reconstructs
+    # G_f(g). These are flagged constructions, not a published Re2O7(g) Cp table.
+    smith = source["vapor_pressure_sources"]["Smith_Line_Bell_1952"]
+    smith_points = smith["measured_points_temperature_C_pressure_mmHg"]
+    smith_temperatures = np.array([float(row[0]) + 273.15 for row in smith_points])
+    smith_pressures_bar = np.array(
+        [float(row[1]) * 1.01325 / 760.0 for row in smith_points]
+    )
+    smith_log_pressure = np.log10(smith_pressures_bar)
+    smith_phase_fits = []
+    for interval, table_id, source_ref, mask in (
+        (
+            1,
+            "P677-Re2O7-c-high",
+            "P677-Re2O7-g-SMITH-EST-598",
+            smith_temperatures < 600.0,
+        ),
+        (
+            2,
+            "P677-Re2O7-l",
+            "P677-Re2O7-g-SMITH-EST-633",
+            smith_temperatures >= 600.0,
+        ),
+    ):
+        indices = np.flatnonzero(mask)
+        phase_temperatures = smith_temperatures[indices]
+        design = np.column_stack((np.ones_like(phase_temperatures), 1.0 / phase_temperatures))
+        phase_log_pressure = smith_log_pressure[indices]
+        a, slope = np.linalg.lstsq(design, phase_log_pressure, rcond=None)[0]
+        b = -float(slope)
+        residual = phase_log_pressure - (float(a) - b / phase_temperatures)
+        condensed_reference = (
+            float(tables[table_id]["formation_enthalpy_298_kcal_mol"]) * 4.184
+        )
+        delta_h = R_J_MOL_K * math.log(10.0) * b
+        smith_phase_fits.append(
+            {
+                "interval": interval,
+                "table_id": table_id,
+                "source_ref": source_ref,
+                "indices": indices,
+                "a": float(a),
+                "b": b,
+                "delta_h": delta_h,
+                "delta_s": R_J_MOL_K * math.log(10.0) * float(a),
+                "gas_reference": condensed_reference + delta_h / 1000.0,
+                "max_log_pressure_residual": float(np.max(np.abs(residual))),
+            }
+        )
+    smith_max_log_pressure_residual = max(
+        fit["max_log_pressure_residual"] for fit in smith_phase_fits
+    )
+
+    # Verify dG_sub=-RT ln(p_bar) and G_f(g)=G_f(cond)+dG_sub at every
+    # measured Smith point. Residuals from the phase-specific fits set the
+    # pressure-scatter band; the solid and liquid fits retain their own H/S.
+    for fit in smith_phase_fits:
+        for index in fit["indices"]:
+            temperature = float(smith_temperatures[index])
+            pressure_bar = float(smith_pressures_bar[index])
+            condensed = source_state(fit["table_id"], temperature)
+            condensed_g = (
+                (condensed[3] + condensed[1]) * 1000.0
+                - temperature * condensed[2]
+            )
+            gas_from_pressure = condensed_g - R_J_MOL_K * temperature * math.log(
+                pressure_bar
+            )
+            gas_from_fit = condensed_g + R_J_MOL_K * math.log(10.0) * (
+                fit["b"] - fit["a"] * temperature
+            )
+            residual = gas_from_pressure - gas_from_fit
+            expected_residual = -R_J_MOL_K * math.log(10.0) * temperature * (
+                smith_log_pressure[index]
+                - (fit["a"] - fit["b"] / temperature)
+            )
+            if not math.isclose(residual, expected_residual, rel_tol=0.0, abs_tol=1e-8):
+                raise ValueError("Re2O7(g): Smith pressure-to-Gibbs conversion failed")
+
+    def fit_row(
+        interval: int,
+        low: float,
+        high: float,
+        source_rows: list[dict[str, float]],
+        reference: float,
+        source_ref: str,
+    ) -> dict[str, str]:
+        fit = _fit_shomate_values(source_rows, reference)
+
+        def number(value: float) -> str:
+            return format(float(value), ".15g")
+
+        return {
+            "species_name": "Re2O7(g)",
+            "state": "g",
+            "T_interval": str(interval),
+            "cation": "Re",
+            "cat_num": "2",
+            "oxy_num": "7",
+            "T_min": number(low),
+            "T_max": number(high),
+            **{key: number(fit[key]) for key in "ABCDEFG"},
+            "H": "0",
+            "Ref": source_ref,
+            "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
+            "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        }
+
+    def smith_row(phase_fit: dict[str, Any]) -> dict[str, str]:
+        interval = int(phase_fit["interval"])
+        table_id = str(phase_fit["table_id"])
+        source_ref = str(phase_fit["source_ref"])
+        indices = phase_fit["indices"]
+        low = float(smith_temperatures[indices[0]])
+        high = float(smith_temperatures[indices[-1]])
+        grid = sorted({low, high, *np.arange(math.ceil(low), high, 1.0).tolist()})
+        source_rows = []
+        for temperature in grid:
+            cp, h_increment, entropy, _ = source_state(table_id, temperature)
+            source_rows.append(
+                {
+                    "temperature": temperature,
+                    "heat_capacity": cp,
+                    "enthalpy_increment": h_increment,
+                    "entropy": entropy + float(phase_fit["delta_s"]),
+                }
+            )
+        row = fit_row(
+            interval,
+            # Runtime bounds are exact integer K in this table. Fit to the
+            # exact Celsius-to-Kelvin source endpoints, but round the exposed
+            # interval inward so it never extends past measured pressure data.
+            math.ceil(low),
+            math.floor(high),
+            source_rows,
+            float(phase_fit["gas_reference"]),
+            source_ref,
+        )
+        row["_max_log10_pressure_residual"] = format(
+            smith_max_log_pressure_residual, ".15g"
+        )
+        return row
+
+    smith_solid_row = smith_row(smith_phase_fits[0])
+    smith_liquid_row = smith_row(smith_phase_fits[1])
+
+    # The regression-derived branch and the condensed-function reconstruction
+    # are checked at both measured Battles endpoints below. The resulting row
+    # is a constructed estimate, not an independently published Re2O7(g) table.
+    # The measured regression is valid only at 961-1087 K. Above 1087 K,
+    # continue H/S with the derived gas Cp fixed at its 1087 K value.
+    measured_high = measured_state(1087.0)
+    for temperature in (961.0, 1087.0):
+        state = measured_state(temperature)
+        gas_g = (
+            (gas_reference + state["enthalpy_increment"]) * 1000.0
+            - temperature * state["entropy"]
+        )
+        pressure_bar = 1.01325 * 10.0 ** (A - B / temperature)
+        delta_g = -R_J_MOL_K * temperature * math.log(pressure_bar)
+        re_o2 = source_state("P677-ReO2-c", temperature)
+        re = source_state("P677-Re-cr", temperature)
+        equilibrium_g = (
+            delta_g
+            + 3.5 * ((re_o2[3] + re_o2[1]) * 1000.0 - temperature * re_o2[2])
+            - 1.5 * ((re[3] + re[1]) * 1000.0 - temperature * re[2])
+        )
+        condensed = source_state("P677-Re2O7-l", temperature)
+        condensed_g = (condensed[3] + condensed[1]) * 1000.0 - temperature * condensed[2]
+        d_g_sub = equilibrium_g - condensed_g
+        reconstructed_g = condensed_g + d_g_sub
+        if not math.isclose(gas_g, equilibrium_g, rel_tol=0.0, abs_tol=1e-6):
+            raise ValueError("Re2O7(g): vapor-pressure and H/S constructions disagree")
+        if not math.isclose(reconstructed_g, equilibrium_g, rel_tol=0.0, abs_tol=1e-9):
+            raise ValueError("Re2O7(g): condensed + sublimation Gibbs check failed")
+
+    measured_rows = [
+        measured_state(float(temperature))
+        for temperature in np.arange(961.0, 1087.0 + 0.5, 1.0)
+    ]
+    battles_row = fit_row(
+        3,
+        961.0,
+        1087.0,
+        measured_rows,
+        gas_reference,
+        "P677-Re2O7-g-BATTLES-EST-961-1087",
+    )
+
+    # Battles' measured interval ends at 1087 K. Continue its derived gas Cp
+    # at that endpoint, keeping H/S continuous and labelling the range.
+    cp_continuation = measured_high["heat_capacity"]
+    continuation_rows = []
+    continuation_temperatures = sorted(
+        {1087.0, 3000.0, *np.arange(1100.0, 3000.0 + 50.0, 100.0).tolist()}
+    )
+    for temperature in continuation_temperatures:
+        temperature = float(temperature)
+        continuation_rows.append({
+            "temperature": temperature,
+            "heat_capacity": cp_continuation,
+            "enthalpy_increment": measured_high["enthalpy_increment"]
+            + cp_continuation * (temperature - 1087.0) / 1000.0,
+            "entropy": measured_high["entropy"]
+            + cp_continuation * math.log(temperature / 1087.0),
+        })
+    continuation_row = fit_row(
+        4, 1087.0, 3000.0, continuation_rows, gas_reference,
+        "P677-Re2O7-g-EST-CONT-1087",
+    )
+    smith_solid_row["_max_log10_pressure_residual"] = format(
+        smith_max_log_pressure_residual, ".15g"
+    )
+    smith_liquid_row["_max_log10_pressure_residual"] = format(
+        smith_max_log_pressure_residual, ".15g"
+    )
+    return [smith_solid_row, smith_liquid_row, battles_row, continuation_row]
 
 
 def _bi_plus_thermal_rows(
@@ -3952,7 +4271,7 @@ def build_rows(
             if source[1].startswith(
                 ("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")
             )
-            else (2000.0 if source[1] == "P672-Rh-g" else 1500.0)
+            else (2000.0 if source[1] in {"P672-Rh-g", "P677-Re-g"} else 1500.0)
         )
         high_fit_start = math.floor(split_temperature / 100.0) * 100.0
         fitted = _fit_published_gas_row(
@@ -3965,7 +4284,7 @@ def build_rows(
                 runtime_t_max=FIT_T_MAX,
                 breakpoint_side="high",
             )
-        if source[1] == "P672-Rh-g":
+        if source[1] in {"P672-Rh-g", "P677-Re-g"}:
             fitted["Ref"] = f"{source[1]}-CONT-{source[6]:g}"
         rows.append(fitted)
     rows.extend(
@@ -4023,7 +4342,7 @@ def build_rows(
             if source[1].startswith(
                 ("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl")
             )
-            else (2000.0 if source[1] == "P672-Rh-g" else 1500.0)
+            else (2000.0 if source[1] in {"P672-Rh-g", "P677-Re-g"} else 1500.0)
         )
         fitted = _fit_published_gas_row(
                 published_source_dir,
@@ -4036,6 +4355,7 @@ def build_rows(
                 breakpoint_side="low",
             )
         rows.append(fitted)
+    rows.extend(_fit_re2o7_constructed_gas_rows(published_source_dir))
     for source in TRACE_JANAF_YAML_GAS_SOURCES:
         if not source[0].startswith(("Mo", "W")):
             continue

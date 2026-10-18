@@ -68,6 +68,7 @@ its melt activity remains caller-supplied.
 | Rh | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Pankratz Bulletin 672 printed pp. 330-331 supplies paired Rh(g) and stable-metal functions; Rh(g) uses a flagged held-Cp continuation above its 2000 K source limit. Callers supply a(Rh) relative to Rh(cr)/Rh(l), switching at 2237 K. Constructed FLAGGED, DERIVED NIST ASD Rh+ is opt-in; with caller-supplied a(Rh)=1e-3 metal activity, the C3 joint ion-share screen reached 8.66e-08 at 2800 K and fO2=0.0001, below the 1e-4 threshold. |
 | Ir | gas-complete-melt-pending | no | yes | yes | yes | unvalidated | Burcat cards BU-2613, BU-2611, and BU-2612 provide paired Ir(g) and stable iridium phase functions on one elemental reference scale. Callers supply a(Ir) relative to Ir(cr)/Ir(l), switching at 2720 K. Constructed FLAGGED, DERIVED NIST ASD Ir+ is opt-in; with caller-supplied a(Ir)=1e-3 metal activity, the C3 joint ion-share screen reached 2.85e-10 at 2800 K and fO2=0.0001, below the 1e-4 threshold. |
 | Os | gas-complete-melt-pending | no | yes | not computed: Os ion channels are outside this neutral gas change | yes | unvalidated | Burcat cards OS(g) and OS(cr) provide paired metal-gas and stable-phase functions on one elemental reference scale through 3000 K. Callers supply a(Os) relative to Os(cr); the OS(liq) branch starts at 3300 K, outside this runtime interval. |
+| Re | gas-complete-melt-pending | no | yes | not computed: Re ion channels are outside this neutral gas change | yes | unvalidated | Pankratz Bulletin 677 supplies paired Re(g) and stable Re(cr) functions through 2000 K, with flagged held-Cp continuation to 3000 K; Re(cr) is fitted from 298 K to anchor the Smith range. Re2O7(g) is constructed from Smith's measured pressure at 503-633 K and Battles' measured equilibrium at 961-1087 K, with labelled intervals and propagated pressure uncertainty through the held-Cp continuation to 3000 K. Callers supply a(Re) relative to Re(cr). ReO3(g) is declined because only a <3-5% abundance upper bound is available, without a temperature-dependent pressure or equilibrium function. |
 | H | gas-complete-melt-pending | no | yes | not computed: ionized channels are outside this neutral gas change | yes | unvalidated | JANAF H-001, H-038, and H-064 gas rows and JANAF H-050 H2(g) reference cover 1200-3000 K; callers supply a(H2)=f(H2)/p° on the 1-bar gas standard state. HCl, HF, HBr, and HI additionally require both H2 and X2. No dissolved-hydrogen budget or ion channel is modeled. |
 | C | gas-complete-melt-pending | no | yes | not computed: ionized channels are outside this neutral gas change | yes | unvalidated | JANAF C-093 and C-095 gas rows use the JANAF C-002 graphite reference over 1200-3000 K; callers supply a(C) relative to graphite. No dissolved-carbon budget or activity model is provided. |
 | N | gas-complete-melt-pending | no | yes | not computed: ionized channels are outside this neutral gas change | yes | unvalidated | JANAF N-002, N-005, and N-007 gas rows and JANAF N-023 N2(g) reference cover 1200-3000 K; callers supply a(N2)=f(N2)/p° on the 1-bar gas standard state. No dissolved-nitrogen budget or ion channel is modeled. |
@@ -511,6 +512,33 @@ estimated OsO3 formation enthalpy, but the accessible results do not provide
 the gas heat-capacity/Gibbs functions needed for a fit. [Smith et al. (1952)](https://doi.org/10.1021/ja01139a522),
 [Battles et al. (1968)](https://doi.org/10.1021/j100858a005),
 [Bureau of Mines RI 8199](https://stacks.cdc.gov/view/cdc/237634),
+
+Re2O7(g) is exposed as a flagged construction. Smith, Line, and Bell's
+measured vapor pressures give constructed solid and liquid rows over the
+observed windows 503-598 K and 613-633 K. Battles, Gundersen, and Edwards'
+measured equilibrium gives a separate constructed row over 961-1087 K; its
+pressure relation combines with the B677 ReO2(s), Re(s), and Re2O7(l) functions
+to derive dG_sub(T) and reconstruct G_f(Re2O7,g). The derived gas Cp is held
+from 1087 K through 3000 K with the Battles regression uncertainty propagated
+as its accuracy band. Re2O7(l) Cp is held above the B677 700 K limit when used
+in the high-temperature condensed-function reconstruction. The Re(cr) parent
+function is also fitted from 298 K so the measured Smith rows use an in-domain
+metal reference. These are
+thermochemical estimates, not a published gas heat-capacity function.
+[Smith et al. (1952)](https://doi.org/10.1021/ja01139a522),
+[Battles et al. (1968)](https://doi.org/10.1021/j100858a005),
+[Pankratz Bulletin 677](https://digital.library.unt.edu/ark:/67531/metadc12819/).
+
+ReO3(g) remains declined: Battles reports only a `<3-5%` upper bound on its
+abundance, not a temperature-dependent partial pressure or equilibrium
+function. Grimley et al. (1960) detected OsO3(g) and OsO4(g), but interference
+from MoO2 dimers prevented a systematic temperature-dependent van't Hoff
+relation. The 1991 osmium-oxide study measured the OsO4(g) ⇌ OsO3(g) + 1/2 O2(g)
+reaction enthalpy over 1139-1471 K and estimated an OsO3 formation enthalpy;
+it does not supply temperature-dependent Cp(T), S(T), or G(T) functions for
+either gas. The earlier study also provides no usable temperature-dependent
+equilibrium log K for Os(cr)+2O2(g) ⇌ OsO4(g). Those missing functions prevent
+fitted OsO4(g) and OsO3(g) rows. [Grimley et al. (1960)](https://doi.org/10.1063/1.1731120),
 [Thermochemical Properties of the Osmium Oxides (1991)](https://doi.org/10.1021/j100175a095).
 
 The re-check covered JANAF, NASA Glenn/CEA, Burcat, Pankratz Bulletins 672
@@ -524,7 +552,10 @@ qualifying oxide-gas function was found in its searchable records; Bulletin
 high-temperature gas functions. Lamoreaux & Hildenbrand's reviewed oxide
 families do not include Re or Os. Separate Re and Os metal-vapor evidence was
 found, but it does not supply oxide gas functions or justify substituting
-metal vapor for these oxide channels. No Re/Os oxide gas rows are shipped.
+metal vapor for these oxide channels. The flagged Re2O7(g) estimate is the
+only oxide-gas row shipped; ReO3(g), OsO4(g), and OsO3(g) remain declined
+because no temperature-dependent pressure/equilibrium and gas Gibbs functions
+are available for them.
 
 ## Running the checks
 

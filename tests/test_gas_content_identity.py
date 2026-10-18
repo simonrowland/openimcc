@@ -54,18 +54,18 @@ PACKAGED_CONDENSATE_TABLE_DIGEST = (
     "4ba6a61f5187a5d6b6b7e12d548b8c473e4f8e71d669f05ad0a0d31ac7dfc866"
 )
 PACKAGED_FULL_GAS_TABLE_DIGEST = (
-    "e55bf48a04216d4e99f521e659131a7acd7e570ac96655554a988b13ad1ab11d"
+    "d6998a34dd62e344e6756f1ddc76d276454cf749be0da99b20436f0588ddb87d"
 )
 PACKAGED_FULL_CONDENSATE_TABLE_DIGEST = (
-    "a38c297a47ed030b89ce69622cda17a0950aa43818b70666662d7b8bfe3c5962"
+    "b9c497901404b03b1d1e20bec58f2d4c0903f481af17ae82bfcf97ea7f4bf5e8"
 )
 PACKAGED_ENGINE_BINDING_DIGESTS = {
     "v1": "def58f192d449726fb9a4a1b30bc566e233f7348786bfd36006eb2f7710a9e1d",
     "ext": "2ed735ddb34727dc2472f60f23e773ba81554a9a147a2602872407d7ad697d41",
 }
 PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
-    "v1": "b3eff60d2549cff1254ddecf017dc77b0cacd57c6615021cc524fefebb5b73ca",
-    "ext": "cea44dee8b9e35875c1f6d44a4adfd7ef13df0fc3605e69f091ca48dc23ed7b1",
+    "v1": "d02f38a0ab81e1415d7c8a590eb369fe2fd922c1a316a3bf3db9aabae13dfda1",
+    "ext": "e3bf61c2c839d187c5be1fd4614a24ec87525955880e006a9643413a2482d49f",
 }
 ADDED_GAS_SPECIES = {
     "TeO(g)", "SbO(g)",
@@ -85,12 +85,13 @@ ADDED_GAS_SPECIES = {
     "SrBr(g)", "SrBr2(g)", "SrCl(g)", "SrCl2(g)", "SrF(g)", "SrF2(g)",
     "SrI(g)", "SrI2(g)",
     "Pt(g)", "PtO2(g)", "Ru(g)", "Rh(g)", "Ir(g)", "Os(g)",
+    "Re(g)", "Re2O7(g)",
     "PS(g)",
 } | {species for species, _element in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES}
 ADDED_CONDENSATE_SPECIES = {
     "Ta2O5(l)", "BeO(l)", "Tl2O(l)",
     "Pt(cr)", "Pt(l)", "Ru(cr)", "Ru(l)",
-    "Rh(cr)", "Rh(l)", "Ir(cr)", "Ir(l)", "Os(cr)",
+    "Rh(cr)", "Rh(l)", "Ir(cr)", "Ir(l)", "Os(cr)", "Re(cr)",
     "P2O5(l)",
 }
 V1_COMPOSITION = {

@@ -1252,6 +1252,7 @@ def _c4_rows_cover_domain(
                     source["method"] not in {
                         "fitted", "generated_constant_cp_extrapolation_fit",
                         "integrated_printed_Cp_then_fitted",
+                        "constructed_from_equilibrium_and_condensed_function_with_held_cp_continuation",
                     }
                     or not source.get("source", {}).get("citation")
                 ):
@@ -1281,7 +1282,7 @@ def _c4_rows_cover_domain(
                 and _one_bar_janaf_source(source["table_id"])
                 for _, row in graphite_rows.iterrows()
             )
-        if gas_parent in {"Hg", "Au", "Pd", "Pt", "Ru", "Rh", "Ir", "Os"}:
+        if gas_parent in {"Hg", "Au", "Pd", "Pt", "Ru", "Rh", "Ir", "Os", "Re"}:
             import openimcc.gas as gas_module
 
             metal_rows = gas_module._parent_standard_rows(gas_parent)
@@ -1470,9 +1471,10 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "Ba", "Sr", "Zr", "Sc", "U", "Th", "Hf", "La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd",
         "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Y", "Br", "I", "Cl", "F",
         "H", "C", "N", "Ta", "Be", "Tl",
-        "H", "C", "N", "Hg", "Au", "Pd", "Pt", "Ru", "Rh", "Ir", "Os",
+        "H", "C", "N", "Hg", "Au", "Pd", "Pt", "Ru", "Rh", "Ir", "Os", "Re",
     }
     assert set(ELEMENT_STATUS) == expected_elements
+    assert "only a <3-5% abundance upper bound" in ELEMENT_STATUS["Re"]["reason"]
     for element, status in ELEMENT_STATUS.items():
         if element in {"Ca", "Mg", "Sr", "Ba", "Li", "Rb", "Cs"}:
             assert status["halide_gas_channels"]["oxide_parent"]
@@ -1561,7 +1563,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         "S": "S2", "Br": "Br2", "I": "I2", "Cl": "Cl2", "F": "F2",
         "H": "H2", "C": "C(cr)", "N": "N2",
         "Hg": "Hg", "Au": "Au", "Pd": "Pd", "Pt": "Pt", "Ru": "Ru", "Rh": "Rh",
-        "Ir": "Ir", "Os": "Os",
+            "Ir": "Ir", "Os": "Os", "Re": "Re",
     }
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")
     parent_oxides = set(melt.parent_oxides)
@@ -1623,9 +1625,13 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
             assert status["status"] == _status_is_complete(status), element
 
 
-def test_os_metal_parent_covers_c4() -> None:
+def test_re_and_os_metal_parents_cover_c4() -> None:
+    assert ELEMENT_STATUS["Re"]["criteria"]["C4"] is True
     assert ELEMENT_STATUS["Os"]["criteria"]["C4"] is True
     pack = load_gas_datapack()
+    assert _c4_rows_cover_domain(
+        "Re", {}, pack, {"Re": "Re"}
+    )
     assert _c4_rows_cover_domain(
         "Os", {}, pack, {"Os": "Os"}
     )

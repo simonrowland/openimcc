@@ -220,7 +220,10 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         committed_provenance["rows"] = [
             row
             for row in committed_provenance["rows"]
-            if row.get("source_path") != "data-src/published-thermo/burcat-os.json"
+            if row.get("source_path") not in {
+                "data-src/published-thermo/burcat-os.json",
+                "data-src/published-thermo/pankratz-bulletin-677-re.json",
+            }
         ]
         wave3_rows = {
             ("gas", "SbO(g)", "Kelley-584-SbO", 1),

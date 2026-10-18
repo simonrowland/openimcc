@@ -617,10 +617,16 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     gas_rows = {
         row["species_name"]: row
         for row in gas_records
-        if (row["T_range_K"][0] >= 1500 or row["table_id"] in {
-            *build_gas_tables.HALOGEN_JANAF_TABLES,
-            *build_gas_tables.HALOGEN_NASA_TABLES,
-        }) and row["species_name"] not in ion_species
+        if (
+            row["T_range_K"][0] >= 1500
+            or row["table_id"]
+            in {
+                *build_gas_tables.HALOGEN_JANAF_TABLES,
+                *build_gas_tables.HALOGEN_NASA_TABLES,
+            }
+            or row["species_name"] == "Re2O7(g)"
+        )
+        and row["species_name"] not in ion_species
     }
     low_gas_rows = {
         row["species_name"].removesuffix("(g)"): row
@@ -654,9 +660,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "Tb", "TbO", "Dy", "DyO", "Ho", "HoO", "Er", "ErO",
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
-        | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir", "Os"}
+        | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir", "Os", "Re2O7"}
     )
-    assert len(oxide_rows) == 76
+    assert len(oxide_rows) == 77
 
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
     ion_records = {}
@@ -1323,7 +1329,7 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
         split = (
             min(max(source_limit, 1500.0), 2000.0)
             if table_id.startswith(("P672-Te", "P672-Se", "P672-As", "P672-Sb", "P672-Tl"))
-            else (2000.0 if table_id == "P672-Rh-g" else 1500.0)
+            else (2000.0 if table_id in {"P672-Rh-g", "P677-Re-g"} else 1500.0)
         )
         high_fit_start = math.floor(split / 100.0) * 100.0
         for interval, t_min, t_max, side in (
@@ -1338,12 +1344,21 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
             source_rows = build_gas_tables._constant_cp_rows_through(
                 source_rows, t_max
             )
+            temperatures = (
+                [
+                    temperature
+                    for temperature in sorted(source_rows)
+                    if t_min <= temperature <= t_max
+                ]
+                if table_id == "P677-Re-g"
+                else np.arange(t_min, t_max + 50.0, 100.0)
+            )
             row = _gas_row_for_interval(
                 pack, species_name.removesuffix("(g)"), interval
             )
             residuals = []
             log_residuals = []
-            for temperature in np.arange(t_min, t_max + 50.0, 100.0):
+            for temperature in temperatures:
                 source = source_rows[float(temperature)]
                 source_g = (
                     reference + source["enthalpy_increment"]
@@ -1623,6 +1638,143 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
         {"Os": 1.0}, 1500.0, 1e-10, load_gas_datapack(), gas_species=("Os",)
     )["Os"]
     assert math.isfinite(os_pressure) and os_pressure > 0.0
+
+
+def test_pankratz_b677_re_rows_and_constructed_re2o7_are_flagged() -> None:
+    source_path = PUBLISHED_DATA / "pankratz-bulletin-677-re.json"
+    source_bytes = source_path.read_bytes()
+    digest = hashlib.sha256(source_bytes).hexdigest()
+    source = json.loads(source_bytes)
+    assert digest == "eef8111d1c3611487c667c000434986851b2f237f278dd30e0e4365012364251"
+    assert {
+        "P677-Re-g", "P677-Re-cr", "P677-ReO2-c", "P677-ReO3-c", "P677-Re2O7-l"
+    } <= set(source["tables"])
+    assert source["vapor_pressure_sources"]["Smith_Line_Bell_1952"][
+        "measured_points_temperature_C_pressure_mmHg"
+    ]
+    battles = source["vapor_pressure_sources"]["Battles_Gundersen_Edwards_1968"]
+    assert battles["runtime_construction_equilibrium"]["temperature_range_K"] == [961, 1087]
+    assert "only a <3-5% abundance upper bound" in source[
+        "vapor_pressure_sources"]["constructed_Re2O7_gas"]["declined_ReO3_g"]
+
+    source_manifest = yaml.safe_load(
+        (ROOT / "data-src/published-thermo/PROVENANCE.yaml").read_text(encoding="utf-8")
+    )
+    manifest_row = next(
+        row for row in source_manifest["records"]
+        if row["record_id"] == "Pankratz-B677-Re-and-oxides"
+    )
+    assert manifest_row["source_sha256"] == digest
+
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    rows = [row for row in provenance["rows"] if row.get("source_path") == str(
+        source_path.relative_to(ROOT)
+    )]
+    assert rows
+    assert all(row["source_sha256"] == digest for row in rows)
+    re2o7_provenance = [row for row in rows if row["species_name"] == "Re2O7(g)"]
+    assert {tuple(row["T_range_K"]) for row in re2o7_provenance} == {
+        (504, 598), (614, 633), (961.0, 1087.0), (1087.0, 3000.0)
+    }
+    assert all(row["source_data"] is False for row in re2o7_provenance)
+    smith_ranges = {
+        tuple(row["source_fit_range_K"])
+        for row in re2o7_provenance
+        if "SMITH" in row["runtime_ref"]
+    }
+    assert smith_ranges == {(503.15, 598.15), (613.15, 633.15)}
+    assert all(
+        tuple(row["source_fit_range_K"]) == tuple(row["T_range_K"])
+        for row in re2o7_provenance
+        if "SMITH" not in row["runtime_ref"]
+    )
+    smith_rows = [row for row in re2o7_provenance if "SMITH" in row["runtime_ref"]]
+    battles_rows = [row for row in re2o7_provenance if "BATTLES" in row["runtime_ref"]]
+    continuation_rows = [row for row in re2o7_provenance if "CONT" in row["runtime_ref"]]
+    assert len(smith_rows) == 2
+    assert len(battles_rows) == len(continuation_rows) == 1
+    assert all(
+        row["accuracy_band"]["value"]["kind"] == "Smith_pressure_fit_scatter"
+        and max(row["accuracy_band"]["value"]["values_J_per_mol"].values())
+        < 2300
+        for row in smith_rows
+    )
+    assert smith_rows[0]["accuracy_band"]["value"]["values_J_per_mol"][598.15] == pytest.approx(
+        1505.634
+    )
+    assert smith_rows[1]["accuracy_band"]["value"]["values_J_per_mol"][633.15] == pytest.approx(
+        1593.734
+    )
+    assert battles_rows[0]["accuracy_band"]["value"]["values_J_per_mol"][
+        1087
+    ] == pytest.approx(5755.201)
+    assert continuation_rows[0]["accuracy_band"]["value"]["values_J_per_mol"][
+        3000
+    ] == pytest.approx(11065.670)
+    assert {source["doi"] for source in smith_rows[0]["additional_sources"]} == {
+        "10.1021/ja01139a522"
+    }
+    assert {source["doi"] for source in battles_rows[0]["additional_sources"]} == {
+        "10.1021/j100858a005"
+    }
+
+    constructed = build_gas_tables._fit_re2o7_constructed_gas_rows(PUBLISHED_DATA)
+    assert [row["T_interval"] for row in constructed] == ["1", "2", "3", "4"]
+    assert float(constructed[0]["_max_log10_pressure_residual"]) == pytest.approx(
+        0.1314799
+    )
+    assert max(float(row["_max_residual_J_per_mol"]) for row in constructed) < 1e-3
+
+    pack = load_gas_datapack()
+    re_rows = pack.gas_df.loc["Re(g)"]
+    assert set(re_rows["Ref"]) == {"P677-Re-g", "P677-Re-g-CONT-2000"}
+    re_parent_rows = pack.oxide_df.loc["Re(cr)"]
+    assert set(re_parent_rows["Ref"]) == {
+        "P677-Re-cr-LOW-1200", "P677-Re-cr", "P677-Re-cr-CONT-2000"
+    }
+    assert set(pack.gas_df.loc["Re2O7(g)"]["Ref"]) == {
+        "P677-Re2O7-g-SMITH-EST-598",
+        "P677-Re2O7-g-SMITH-EST-633",
+        "P677-Re2O7-g-BATTLES-EST-961-1087",
+        "P677-Re2O7-g-EST-CONT-1087",
+    }
+
+    re = evaluate_gas({"Re": 1.0}, 2500.0, 1e-10, pack, gas_species=("Re",))
+    assert re["Re"] > 0.0
+    assert "flagged g-phase continuation above the 2000 K source limit" in re.domain_flags["Re"]
+    re2o7 = evaluate_gas({"Re": 1.0}, 1500.0, 1e-10, pack, gas_species=("Re2O7",))
+    assert re2o7["Re2O7"] > 0.0
+    assert "constructed Re2O7(g)" in re2o7.domain_flags["Re2O7"]
+    assert "961-1087 K" in re2o7.domain_flags["Re2O7"]
+    assert "±6.9 kJ/mol" in re2o7.domain_flags["Re2O7"]
+    smith_re2o7 = evaluate_gas(
+        {"Re": 1.0}, 550.0, 1e-10, pack, gas_species=("Re2O7",)
+    )
+    assert smith_re2o7["Re2O7"] > 0.0
+    assert "Smith 1952 measured vapor pressure" in smith_re2o7.domain_flags["Re2O7"]
+    assert "±1.4 kJ/mol" in smith_re2o7.domain_flags["Re2O7"]
+    assert "outside declared G(T) interval for 'Re(cr)'" not in (
+        smith_re2o7.domain_flags["Re2O7"]
+    )
+    battles_re2o7 = evaluate_gas(
+        {"Re": 1.0}, 1000.0, 1e-10, pack, gas_species=("Re2O7",)
+    )
+    assert battles_re2o7["Re2O7"] > 0.0
+    assert "Battles vapor-pressure equilibrium measured at 961-1087 K" in (
+        battles_re2o7.domain_flags["Re2O7"]
+    )
+    re2o7_lower_f_o2 = evaluate_gas(
+        {"Re": 1.0}, 1500.0, 1e-12, pack, gas_species=("Re2O7",)
+    )["Re2O7"]
+    assert re2o7["Re2O7"] / re2o7_lower_f_o2 == pytest.approx(1e7)
+    parent, n_gas, n_o2 = _SF04_REACTIONS["Re2O7"]
+    parent_atoms = _formula_atoms(parent)
+    assert parent == "Re"
+    gas_atoms = _formula_atoms("Re2O7")
+    assert parent_atoms["Re"] == pytest.approx(n_gas * gas_atoms["Re"])
+    assert parent_atoms.get("O", 0) == pytest.approx(
+        n_gas * gas_atoms.get("O", 0) + 2.0 * n_o2
+    )
 
 
 @pytest.mark.parametrize(
@@ -2861,7 +3013,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         "(WO3)5",
         "Ba", "BaO", "Sr", "SrO", "Zr", "ZrO", "ZrO2",
         "Ta", "TaO", "TaO2",
-        "Ru", "Rh",
+        "Ru", "Rh", "Re",
         "Be", "BeO", "Be2O", "(BeO)2", "(BeO)3", "(BeO)4", "Be2",
         "Tl", "Tl2O",
         "NiO", "CoO",
@@ -2884,7 +3036,7 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         element = next(
             name for name in (
                 "Li", "Rb", "Pb", "Cs", "Cu", "Sn", "Ga", "Ge", "B", "Y", "Ru", "Rh",
-                "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag",
+                "In", "Zn", "Cd", "Bi", "Mn", "Te", "Se", "As", "Sb", "Ag", "Re",
                 "Mo", "W", "Ba", "Sr", "Zr", "Ta", "Be", "Tl", "Ni", "Co", "Sc", "U", "Th", "Hf",
             )
             if name in parent_atoms
@@ -3051,6 +3203,8 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
             expected_oxide[runtime_name] = row["authority"]
             if name == "Os(cr)":
                 expected_oxide["Os"] = row["authority"]
+            if name == "Re(cr)":
+                expected_oxide["Re"] = row["authority"]
             expected_table_ids[name] = row.get(
                 "source_table_id",
                 row.get("table_id", (row.get("source") or {}).get("table_id")),
@@ -3166,7 +3320,8 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_YAML_SOURCES
     } | {"Zn+(g)", "Zn-(g)", "Bi+(g)"} | {
-        "Hg(g)", "Au(g)", "Pd(g)", "Pt(g)", "PtO2(g)", "Ir(g)"
+        "Hg(g)", "Au(g)", "Pd(g)", "Pt(g)", "PtO2(g)", "Ir(g)",
+        "Os(g)", "Re2O7(g)",
     } | {
         source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
     }
@@ -3294,7 +3449,7 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
             species in ion_species
             or species in build_gas_tables.TRACE_GAS_SPECIES
             or species in {
-                "Hg", "Au", "Pd", "Pt", "PtO2", "Ir",
+                "Hg", "Au", "Pd", "Pt", "PtO2", "Ir", "Os", "Re2O7",
                 "Y", "YO",
                 "La", "LaO", "Ce", "CeO", "CeO2", "Pr", "PrO", "Nd", "NdO",
                 "Sm", "SmO", "Eu", "EuO", "Gd", "GdO",
@@ -7393,7 +7548,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     assert checked == 236
     existing = set(_SF04_REACTIONS) - {
         "O2",
-        "Pt", "PtO2", "Ru", "Rh", "Ir",
+        "Pt", "PtO2", "Ru", "Rh", "Ir", "Os", "Re2O7",
         "Hg",
         "Au",
         "Pd",
