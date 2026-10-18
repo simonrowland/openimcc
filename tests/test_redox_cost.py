@@ -41,14 +41,44 @@ def _element_inventory(
     return elements
 
 
-# Measured after the cold-start fix: median process CPU over seven cold calls
-# per fixture, with no warm start. Runtime margin comes from this run's robust
-# spread so scheduler delays do not create a quiet-host requirement.
+# Recorded after the cold-start fix: median and max-minus-min process CPU
+# spread over seven cold calls per fixture, with no warm start.
 _COLD_COST_BASELINES = {
-    "basalt": 0.009259,
-    "basalt_with_traces": 0.009416,
-    "closed_natural_melt": 0.022004,
+    "basalt": (0.009259, 0.027440),
+    "basalt_with_traces": (0.009416, 0.001370),
+    "closed_natural_melt": (0.022004, 0.003787),
 }
+
+
+def _cold_cost_ceiling(
+    baseline_median: float, baseline_spread: float, measured_spread: float
+) -> float:
+    return min(
+        1.3 * baseline_median + 2.0 * (baseline_spread + measured_spread),
+        1.9 * baseline_median,
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "baseline", "pre_fix_median"),
+    [
+        ("basalt", _COLD_COST_BASELINES["basalt"], 0.035180),
+        ("basalt_with_traces", _COLD_COST_BASELINES["basalt_with_traces"], 0.029706),
+        ("closed_natural_melt", _COLD_COST_BASELINES["closed_natural_melt"], 0.077567),
+    ],
+)
+def test_cold_cost_budget_retains_the_old_zero_spread_ceiling(
+    name: str, baseline: tuple[float, float], pre_fix_median: float
+) -> None:
+    baseline_median, baseline_spread = baseline
+    expected = min(
+        1.3 * baseline_median + 2.0 * baseline_spread,
+        1.9 * baseline_median,
+    )
+    assert _cold_cost_ceiling(baseline_median, baseline_spread, 0.0) == expected
+    assert pre_fix_median > _cold_cost_ceiling(
+        baseline_median, baseline_spread, 0.0
+    ), name
 
 _COLD_BASALT_INVENTORY = {
     "Si": 0.855,
@@ -88,7 +118,7 @@ _CLOSED_NATURAL_MELT_INVENTORY = {
 
 
 @pytest.mark.parametrize(
-    ("name", "inventory", "temperature", "mode", "baseline_median"),
+    ("name", "inventory", "temperature", "mode", "baseline"),
     [
         (
             "basalt",
@@ -118,8 +148,9 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     inventory: dict[str, float],
     temperature: float,
     mode: Literal["closed", "imposed"],
-    baseline_median: float,
+    baseline: tuple[float, float],
 ) -> None:
+    baseline_median, baseline_spread = baseline
     repetitions = 7
     cpu_samples: list[float] = []
     wall_samples: list[float] = []
@@ -149,13 +180,14 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
             gc.enable()
 
     median = statistics.median(cpu_samples)
-    spread = statistics.median(abs(sample - median) for sample in cpu_samples)
+    spread = max(cpu_samples) - min(cpu_samples)
     load_end = os.getloadavg()[0]
-    ceiling = 1.9 * baseline_median + 3.0 * spread
+    ceiling = _cold_cost_ceiling(baseline_median, baseline_spread, spread)
     print(
         f"{name}: cold CPU median={median * 1000:.3f} ms "
-        f"MAD={spread * 1000:.3f} ms; baseline="
-        f"{baseline_median * 1000:.3f} ms; ceiling={ceiling * 1000:.3f} ms; "
+        f"spread={spread * 1000:.3f} ms; baseline="
+        f"{baseline_median * 1000:.3f} ms spread="
+        f"{baseline_spread * 1000:.3f} ms; ceiling={ceiling * 1000:.3f} ms; "
         f"max wall={max(wall_samples) * 1000:.3f} ms; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
     )
