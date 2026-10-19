@@ -49,6 +49,7 @@ from openimcc.redox import (
     RedoxResult,
     evaluate_redox,
 )
+from openimcc.trace_melt import Cr3TraceActivity, cr3_trace_activity
 
 
 def _resolve_version() -> str:
@@ -200,6 +201,9 @@ __all__ = [
     "RedoxNoLiveCoupleError",
     "RedoxEndpointError",
     "RedoxNumericalError",
+    # --- opt-in trace-melt activity candidates ---------------------------
+    "Cr3TraceActivity",
+    "cr3_trace_activity",
     # --- gas (lazy; needs the [gas] extra) --------------------------------
     "load_gas_datapack",
     "evaluate_gas",
