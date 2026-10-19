@@ -799,7 +799,10 @@ Every supplied gas-parent activity and condensed parent `C` contributes its
 oxygen-carrying species to the melt-derived demand unless that parent is named
 in `imposed_parents`. This applies whether the parent is supplied in the
 activity dictionary alone or also listed in `parent_oxides`; the latter selects
-oxide parents and does not control gas-parent inclusion.
+oxide parents and does not control gas-parent inclusion. When `parent_oxides`
+is omitted, recognised oxide parents in the activity dictionary (for example
+`Cr2O3` or `ZnO`) enter both the returned pressures and the balance; an
+explicit `parent_oxides` list still decides which oxide parents are included.
 
 This balance applies to inert cells such as Pt or Ir. It does not apply to
 reactive W or Mo cells: their effusing oxides contribute oxygen-bearing
