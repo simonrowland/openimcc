@@ -3127,8 +3127,11 @@ def test_default_channels_report_missing_optional_gas_rows(
         for parent in activities
         if parent not in {"Na2O", "K2O", "Al2O3", "SiO2"}
     )
+    activities_without_missing_channels = {
+        parent: activities[parent] for parent in parents_without_missing_channels
+    }
     without_parent_activity = evaluate_gas(
-        activities,
+        activities_without_missing_channels,
         2200.0,
         1.0e-8,
         alternate,
@@ -3284,23 +3287,16 @@ def test_unknown_activity_key_names_itself_and_omitted_parent_stays_zero(
     assert explicit_zero["SiO"] == omitted["SiO"]
     assert omitted["SiO"] > 0.0
 
-    # A recognised parent left out of parent_oxides is not an unknown key.
-    silica_only = evaluate_gas(
-        {"SiO2": 1.0, "Na2O": 1.0},
-        1800.0,
-        1e-8,
-        gas_pack,
-        parent_oxides=("SiO2",),
-        gas_species=("SiO",),
-    )
-    assert silica_only["SiO"] == evaluate_gas(
-        {"SiO2": 1.0},
-        1800.0,
-        1e-8,
-        gas_pack,
-        parent_oxides=("SiO2",),
-        gas_species=("SiO",),
-    )["SiO"]
+    # Recognised mapping parents outside an explicit selection must be listed.
+    with pytest.raises(ValueError, match=r"Na2O.*add them to parent_oxides"):
+        evaluate_gas(
+            {"SiO2": 1.0, "Na2O": 1.0},
+            1800.0,
+            1e-8,
+            gas_pack,
+            parent_oxides=("SiO2",),
+            gas_species=("SiO",),
+        )
 
     # S is the gas channel whose parent is S2. A melt activity map may
     # carry that species name without supplying the S2 parent.
@@ -3323,6 +3319,33 @@ def test_unknown_activity_key_names_itself_and_omitted_parent_stays_zero(
     assert sulfur["K"] == without_sulfur["K"]
 
 
+def test_mapping_parent_selection_is_explicit_but_none_auto_includes(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = {"FeO": 1.0, "Cr2O3": 1.0}
+
+    with pytest.raises(ValueError, match=r"Cr2O3.*add them to parent_oxides"):
+        evaluate_gas(
+            activities,
+            1800.0,
+            1.0,
+            gas_pack,
+            parent_oxides=IMCC_PARENT_OXIDES,
+        )
+
+    explicit = evaluate_gas(
+        activities,
+        1800.0,
+        1.0,
+        gas_pack,
+        parent_oxides=(*IMCC_PARENT_OXIDES, "Cr2O3"),
+    )
+    assert {"Cr", "CrO", "CrO2", "CrO3"}.issubset(explicit)
+
+    automatic = evaluate_gas(activities, 1800.0, 1.0, gas_pack)
+    assert {"Cr", "CrO", "CrO2", "CrO3"}.issubset(automatic)
+
+
 def test_default_set_follows_parent_oxides_without_key_errors(
     gas_pack: ImccGasDatapack,
 ) -> None:
@@ -3343,18 +3366,22 @@ def test_default_set_follows_parent_oxides_without_key_errors(
     )
 
     seven = tuple(name for name in activities if name != "TiO2")
-    for supplied in (
-        activities,
-        [activities[name] for name in seven],
-    ):
-        result = evaluate_gas(
-            supplied, 2200.0, 1.0e-10, gas_pack, parent_oxides=seven
+    with pytest.raises(ValueError, match=r"TiO2.*add them to parent_oxides"):
+        evaluate_gas(
+            activities, 2200.0, 1.0e-10, gas_pack, parent_oxides=seven
         )
-        assert tuple(result) == _SF04_CHANNELS
-        assert result.omitted_channels == {}
-        assert dict(result) == {
-            species: packaged[species] for species in _SF04_CHANNELS
-        }
+    vector_result = evaluate_gas(
+        [activities[name] for name in seven],
+        2200.0,
+        1.0e-10,
+        gas_pack,
+        parent_oxides=seven,
+    )
+    assert tuple(vector_result) == _SF04_CHANNELS
+    assert vector_result.omitted_channels == {}
+    assert dict(vector_result) == {
+        species: packaged[species] for species in _SF04_CHANNELS
+    }
 
     # The same rule covers every parent: only channels it can serve.
     silica_only = evaluate_gas(
@@ -3364,9 +3391,12 @@ def test_default_set_follows_parent_oxides_without_key_errors(
 
     # An explicit channel whose parent is not supplied refuses, typed.
     for species, parents in (("Ti", seven), ("Na", ("SiO2",))):
+        selected_activities = {
+            name: activities[name] for name in parents if name in activities
+        }
         with pytest.raises(ImccGasSpeciesNotFoundError) as exc:
             evaluate_gas(
-                activities,
+                selected_activities,
                 2200.0,
                 1.0e-10,
                 gas_pack,
@@ -3770,12 +3800,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         2000.0,
         1.0e-8,
         gas_pack,
-        parent_oxides=(
-            *IMCC_PARENT_OXIDES, "H2", "C", "N2",
-            "BaO", "SrO", "Li2O", "Rb2O", "Cs2O",
-            "F2", "Cl2", "Br2", "I2",
-                "Ru", "Rh", "Ir",
-        ),
+        parent_oxides=tuple(parents),
         gas_species=tuple(trace_gases),
         allow_extrapolation=False,
     )
@@ -3791,12 +3816,7 @@ def test_default_trace_channels_are_optional_and_report_missing_rows(
         2000.0,
         1.0e-8,
         _without_trace_rows(gas_pack),
-        parent_oxides=(
-            *IMCC_PARENT_OXIDES, "H2", "C", "N2",
-            "BaO", "SrO", "Li2O", "Rb2O", "Cs2O",
-            "F2", "Cl2", "Br2", "I2",
-                "Ru", "Rh", "Ir",
-        ),
+        parent_oxides=tuple(parents),
         allow_extrapolation=True,
     )
     assert not trace_gases & set(missing_rows)

@@ -4960,9 +4960,11 @@ def evaluate_gas(
         aligned with ``parent_oxides`` (default IMCC order). A dict key that
         is not a recognised parent or gas species raises
         ``ImccGasUnknownActivityError``. A recognised species that is not a
-        parent is ignored. A recognised parent omitted from the dict is zero
-        on this call; ``parent_oxides`` still chooses which oxide parents are
-        evaluated.
+        parent is ignored. With a mapping, a recognised parent key outside an
+        explicitly supplied ``parent_oxides`` raises ``ValueError``; add the
+        key to ``parent_oxides`` to evaluate it. If ``parent_oxides`` is
+        omitted, recognized parents in the mapping are included as before. A
+        selected parent omitted from the dict has zero activity.
         Oxide parents use
         their liquid standard state; Hg/Au/Pd activities use the stable pure
         metal phase at T, with Au/Pd crystal-to-liquid steps retained. Hg's
@@ -5078,6 +5080,7 @@ def evaluate_gas(
     consume O2, so p̃_gas scales as fO2^n_O2 and decreases as fO2 is lowered
     when n_O2 > 0. fO2 = 0 is refused (non-positive), so that limit is not returned.
     """
+    parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
 
@@ -5172,21 +5175,34 @@ def evaluate_gas(
                 "activity key(s) not a recognised gas parent or species: "
                 f"{unknown_activities}"
             )
+        if parent_oxides_explicit:
+            extra_parents = sorted(
+                name
+                for name in activities
+                if name in _REACTION_PARENT_OXIDES
+                and name not in parent_oxides
+            )
+            if extra_parents:
+                raise ValueError(
+                    "activity mapping contains recognised parent key(s) "
+                    f"{extra_parents} outside parent_oxides; add them to "
+                    "parent_oxides"
+                )
         act = {
             name: activity_as_float(name, activities.get(name, 0.0))
             for name in parent_oxides
         }
-        act.update(
-            {
-                name: activity_as_float(name, activities[name])
-                for name in activities
-                if (
-                    name in _REACTION_PARENT_OXIDES
-                    and name not in IMCC_PARENT_OXIDES
-                    and name not in act
-                )
-            }
-        )
+        if not parent_oxides_explicit:
+            act.update(
+                {
+                    name: activity_as_float(name, activities[name])
+                    for name in activities
+                    if (
+                        name in _REACTION_PARENT_OXIDES
+                        and name not in act
+                    )
+                }
+            )
     else:
         raw_arr = np.asarray(activities, dtype=object)
         if raw_arr.shape[0] != len(parent_oxides):
@@ -5930,6 +5946,7 @@ def evaluate_gas_oxygen_balance(
     ``imposed_parents``. Metal vapours carry no oxygen. Parent oxides omitted
     from an explicit ``parent_oxides`` sequence remain excluded.
     """
+    parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
     if isinstance(imposed_parents, str):
@@ -6000,9 +6017,23 @@ def evaluate_gas_oxygen_balance(
             )
 
     def pressure_model(logp: float) -> ImccGasResult:
+        pressure_activities = activities
+        if isinstance(activities, Mapping) and parent_oxides_explicit:
+            included_parents = set(available_parents)
+            pressure_activities = {
+                name: value
+                for name, value in activities.items()
+                if (
+                    name in included_parents
+                    if name in _REACTION_PARENT_OXIDES
+                    else name in _SF04_REACTIONS
+                )
+            }
         return evaluate_gas(
-            activities, T, 10.0**logp, datapack,
-            parent_oxides=parent_oxides,
+            pressure_activities, T, 10.0**logp, datapack,
+            parent_oxides=(
+                tuple(available_parents) if parent_oxides_explicit else None
+            ),
             allow_extrapolation=allow_extrapolation,
         )
 

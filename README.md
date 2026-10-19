@@ -747,6 +747,12 @@ buffer offset such as ΔIW.
 `evaluate_gas` predicts and flags out-of-domain temperatures by default; pass
 `allow_extrapolation=False` to refuse them.
 
+For mapping inputs, an explicitly supplied `parent_oxides` list is authoritative:
+if the activity mapping also contains a recognized parent outside that list,
+`evaluate_gas` raises `ValueError` and names the parent to add. When
+`parent_oxides` is omitted, recognized mapping parents continue to be included
+automatically.
+
 Gas result flags identify held-Cp `-SC-CP` continuations and source-tabulated
 liquid branches below their recorded fusion markers, and source-tabulated glass
 cells below their recorded glass/liquid joins. The source-liquid flags cover

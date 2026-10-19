@@ -835,6 +835,11 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
         for temperature in TEMPERATURES_K:
             activities = dict(activities_by_temperature[temperature])
             activities[new_trace_parents[element]] = 1.0e-3
+            selected_parents = (
+                tuple(activities)
+                if element in {"Ru", "Rh", "Ir"}
+                else None
+            )
             for fugacity in FUGACITIES:
                 pressures = evaluate_gas(
                     activities,
@@ -843,11 +848,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
                     pack,
                     allow_extrapolation=True,
                     include_ions=True,
-                    parent_oxides=(
-                        (*IMCC_PARENT_OXIDES, element)
-                        if element in {"Ru", "Rh", "Ir"}
-                        else None
-                    ),
+                    parent_oxides=selected_parents,
                 )
                 neutral_pressures = {
                     species: pressure
