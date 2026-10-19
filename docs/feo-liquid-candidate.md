@@ -4,7 +4,7 @@
 
 ## Source transcriptions and uncertainty
 
-[Darken & Gurry Table I transcription](feo-liquid-dg-table-i.csv) records all 76 liquid-oxide measurements, the printed starting material and equilibration time, the imposed gas condition, the reported ratio r = (Fe²⁺ + Fe³⁺)/Fe²⁺, and the derived O/Fe value. Gas conditions are recorded as the source states them; for mixed CO₂/H₂ runs these are initial mixture ratios, not measured equilibrium gas ratios. In the oxygen group, five OCR temperatures are corrected from 1003/1007/1015/1032/1030 to 1603/1607/1615/1632/1630 °C using the table context and sequence. These corrections are flagged in the CSV.
+[Darken & Gurry Table I transcription](feo-liquid-dg-table-i.csv) records all 76 liquid-oxide measurements, the printed starting material and equilibration time, the imposed gas condition, the reported ratio r = (Fe²⁺ + Fe³⁺)/Fe²⁺, and the derived O/Fe value. Gas conditions are recorded as the source states them; for mixed CO₂/H₂ runs these are initial mixture ratios, not measured equilibrium gas ratios. Cells that the text extraction misread (times printed as fractions, and several oxygen-group temperatures and times) were re-read from the journal page image of p. 800 and are flagged in the CSV; none of them feeds the Gibbs-energy anchor.
 
 [Darken & Gurry Tables IIIA, IIIB, and VI transcription](feo-liquid-dg-anchor-data.csv) preserves the iron-saturated compositions, CO₂/CO ratios, and printed FeO activity coordinates used for the re-anchor.
 
