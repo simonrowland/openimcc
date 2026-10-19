@@ -6019,14 +6019,17 @@ def evaluate_gas_oxygen_balance(
     def pressure_model(logp: float) -> ImccGasResult:
         pressure_activities = activities
         if isinstance(activities, Mapping) and parent_oxides_explicit:
+            # Drop only recognised parents left out of the explicit selection,
+            # so they stay out of the pressures as they stay out of the
+            # balance channels. Every other key still reaches evaluate_gas,
+            # which keeps refusing unknown keys.
             included_parents = set(available_parents)
             pressure_activities = {
                 name: value
                 for name, value in activities.items()
-                if (
-                    name in included_parents
-                    if name in _REACTION_PARENT_OXIDES
-                    else name in _SF04_REACTIONS
+                if not (
+                    name in _REACTION_PARENT_OXIDES
+                    and name not in included_parents
                 )
             }
         return evaluate_gas(

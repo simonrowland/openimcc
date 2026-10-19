@@ -6340,3 +6340,32 @@ def test_cerium_dioxide_channel_uses_caller_supplied_ceo2_liquid(
     expected = activity * math.exp(-(gas_g - parent_g) / (R_J_MOL_K * temperature))
     assert result["CeO2"] == pytest.approx(expected, rel=2e-12)
     assert "supercooled continuation below 3083 K" in result.domain_flags["CeO2"]
+
+
+def test_oxygen_balance_explicit_parents_keep_unknown_key_refusal(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    # An explicit parent list drops unlisted recognised parents only; an
+    # unknown key must still be refused rather than silently ignored.
+    with pytest.raises(ImccGasUnknownActivityError, match="NotAParent"):
+        evaluate_gas_oxygen_balance(
+            {"SiO2": 1.0, "NotAParent": 1.0},
+            1800.0,
+            gas_pack,
+            parent_oxides=("SiO2",),
+            allow_extrapolation=True,
+        )
+
+    activities = _quickstart_activities(1800.0, allow_extrapolation=True)
+    base = evaluate_gas_oxygen_balance(
+        activities, 1800.0, gas_pack, parent_oxides=("SiO2", "MgO"),
+    )
+    with_extra = evaluate_gas_oxygen_balance(
+        {**activities, "Cr2O3": 1.0e-3},
+        1800.0,
+        gas_pack,
+        parent_oxides=("SiO2", "MgO"),
+    )
+    assert with_extra[0].hex() == base[0].hex()
+    assert with_extra[1] == base[1]
+    assert not any(name.startswith("Cr") for name in with_extra[1])
