@@ -209,6 +209,12 @@ parent-oxide balance. The standard-state redox datapack has its own schema,
 temperature evidence intervals, identity digest, and row-level provenance.
 Candidate packs or candidate-only composition-conditioned terms remain
 opt-in and are not silently promoted into the default redox model.
+`evaluate_redox()` accepts keyword-only `redox_pack_path` and
+`melt_pack_path` selectors. A supplied `melt_pack_path` is loaded through the
+normal `load_datapack()` identity gate; `None` keeps the packaged melt pack.
+Missing, malformed, unpublished, or identity-mismatched melt packs raise
+`ImccMalformedDatapackError`. `RedoxResult.melt_pack_binding_digest`
+identifies the melt pack used by the solve.
 
 The base melt API itself does not infer ferric iron or convert Fe2O3 to FeO.
 The caller must choose and declare whether to use the separate redox

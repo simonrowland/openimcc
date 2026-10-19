@@ -1946,6 +1946,7 @@ def evaluate_redox(
     tol: float = 1.0e-12,
     max_iter: int = 100,
     redox_pack_path: str | Path | None = None,
+    melt_pack_path: str | Path | None = None,
 ) -> RedoxResult:
     """Solve an imposed- or closed-oxygen Fe liquid equilibrium.
 
@@ -1959,7 +1960,9 @@ def evaluate_redox(
     input once oxygen fugacity has been supplied through lambda.
     ``redox_pack_path`` selects a validated alternative redox component; when
     omitted, the packaged default is used. Relative paths resolve from the
-    process working directory.
+    process working directory. ``melt_pack_path`` selects a validated melt
+    association pack; when omitted, the packaged default is used. The selected
+    melt-pack binding digest is returned on ``RedoxResult``.
     """
     if any(
         not is_declared_real_scalar(value, allow_numeric_str=True)
@@ -1996,7 +1999,15 @@ def evaluate_redox(
     elif lambda_imposed is not None:
         raise RedoxInputError("closed mode determines lambda and rejects lambda_imposed")
 
-    loaded = _load_default_datapack()
+    if melt_pack_path is None:
+        loaded = _load_default_datapack()
+    else:
+        try:
+            loaded = load_datapack(melt_pack_path)
+        except OSError as exc:
+            raise _unreadable_pack(
+                Path(melt_pack_path), exc, description="melt datapack"
+            ) from exc
     base_datapack = loaded.kernel_datapack
     if redox_pack_path is None:
         redox_pack = _load_default_redox_pack()

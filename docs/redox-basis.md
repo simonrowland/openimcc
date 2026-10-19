@@ -68,6 +68,12 @@ omitting it uses the packaged default. Relative paths resolve against the
 process working directory. Missing or unreadable files raise the typed
 `ImccMalformedDatapackError` refusal with a message that omits the full path.
 Content digest mismatches continue to raise the loader's `ValueError`.
+The keyword-only `melt_pack_path` argument selects a validated melt
+association pack for the same solve. It uses `load_datapack()` and its normal
+identity checks; `None` preserves the packaged default. Missing, malformed,
+unpublished, or identity-mismatched packs raise
+`ImccMalformedDatapackError`. The selected pack's canonical binding identity
+is returned as `melt_pack_binding_digest`.
 
 ## Chromium candidate pack
 
