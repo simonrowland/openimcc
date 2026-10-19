@@ -11,8 +11,15 @@ from openimcc.model import _EXPECTED_PARENT_OXIDES, _OXIDE_MOLAR_MASS_G_MOL
 from openimcc.scalar_boundary import is_declared_real_scalar
 
 
-_LOG10_GAMMA_INTERCEPT = 1.27580279745
-_LOG10_GAMMA_LOG10_BASICITY_SLOPE = 0.62054327952
+# OLS on the seven unsaturated liquid-plus-alloy rows: CCrS5 at -9.56,
+# CCrS12, CCrS5 low/high at -11.50, CCrS6, CCrS8 low, and CCrS18.
+# CCrS13 is excluded because it lies on the wollastonite liquidus. The fit is
+# log10(gamma)=1.26499243521+0.62567770680*log10(B), RMSE=0.06135 dex,
+# max |residual|=0.12739 dex. The constant fit is 1.24693702, RMSE=0.11085,
+# max |residual|=0.20240 dex. CCrS12's printed X=0.0005 contradicts a/gamma;
+# its gamma remains in the fit, but its X is excluded from loading bounds.
+_LOG10_GAMMA_INTERCEPT = 1.26499243521
+_LOG10_GAMMA_LOG10_BASICITY_SLOPE = 0.62567770680
 _MIN_T_K = 1771.15
 _MAX_T_K = 1775.15
 _MIN_LOG10_FO2_ATM = -11.50
@@ -20,9 +27,9 @@ _MAX_LOG10_FO2_ATM = -9.56
 _MIN_BASICITY_AT_LOW_FO2 = 0.52
 _MAX_BASICITY_AT_LOW_FO2 = 1.27
 _MIN_BASICITY_AT_HIGH_FO2 = 0.71
-_MAX_BASICITY_AT_HIGH_FO2 = 0.93
-_MIN_X_CRO15 = 0.0005
-_MAX_X_CRO15 = 0.01
+_MAX_BASICITY_AT_HIGH_FO2 = 1.25
+_MIN_X_CRO15 = 0.0008
+_MAX_X_CRO15 = 0.0069
 _BAR_PER_ATM = 1.01325
 
 
