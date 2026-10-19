@@ -505,6 +505,15 @@ def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
     below = evaluate(melt, 1500.0, allow_extrapolation=True)
     marker = "low-temperature-uncertain: the Na2Si2O5 association"
     assert sum(marker in notice for notice in below.labels.notices) == 1
+    floor = evaluate(melt, 1699.0, allow_extrapolation=True)
+    assert sum(marker in notice for notice in floor.labels.notices) == 1
+    # Flagging is metadata only: pin default parent activities at the cutoff.
+    assert floor.parent_activity[0].hex() == "0x1.1d981753f79bep-2"
+    assert floor.parent_activity[6].hex() == "0x1.2250cb159e740p-23"
+    at_floor = evaluate(melt, 1700.0, allow_extrapolation=True)
+    assert not any(marker in notice for notice in at_floor.labels.notices)
+    assert at_floor.parent_activity[0].hex() == "0x1.1db1ef283bdeap-2"
+    assert at_floor.parent_activity[6].hex() == "0x1.258e458b5eb31p-23"
     inside = evaluate(melt, 1800.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in inside.labels.notices)
     sodium_free = evaluate({"MgO": 40.0, "SiO2": 60.0}, 1500.0, allow_extrapolation=True)

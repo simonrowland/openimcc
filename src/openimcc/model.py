@@ -1670,20 +1670,29 @@ def evaluate(
                 f"using ΔrCp = 0; the active rows have declared domains "
                 f"{domain_text}; uncertainty band unavailable"
             )
-            # Independent check (no coefficient change): continued below 1700 K, the
-            # Na2Si2O5 row misses Kracek's Na2O-SiO2 liquidus at 1079-1147 K by
-            # about 17 kJ/mol in crystal-minus-melt Gibbs energy (~0.6-0.7 dex at
-            # those temperatures), several times the Na2SiO3 miss (~4 kJ/mol).
+            # Held-out check (no coefficient change): Zaitsev et al. Table 4
+            # (2000, p. 535) compares measured Na2O and SiO2 activities over
+            # x(Na2O)=0.195-0.618 and 1173-1673 K. Against the default SF04
+            # pack, 55 of 56 tabulated oxide activities differ by more than
+            # 3%; the paper reports 1-3% experimental error for these KEMS
+            # determinations (p. 531). Thus the activity residual exceeds even
+            # the stated upper error in 55/56 cases through 1673 K. The tested
+            # subset does not locate a higher-temperature recovery, so retain
+            # the conservative 1700 K row-domain floor. Independently, below
+            # 1700 K the Na2Si2O5 row misses Kracek's Na2O-SiO2 liquidus at
+            # 1079-1147 K by about 17 kJ/mol in crystal-minus-melt Gibbs energy
+            # (~0.6-0.7 dex), several times the Na2SiO3 miss (~4 kJ/mol).
             reaction_names = list(kernel_pack.reactions)
             if any(
                 reaction_names[index] == "Na2Si2O5" for index in below_domain_rows
             ):
                 notices.append(
                     "low-temperature-uncertain: the Na2Si2O5 association is "
-                    "evaluated below its declared domain, where it disagrees "
-                    "with independent Na2O-SiO2 liquidus measurements by about "
-                    "17 kJ/mol near 1080-1150 K; treat Na-silicate activities "
-                    "below 1700 K as uncertain"
+                    "evaluated below its declared domain; held-out Zaitsev et al. "
+                    "KEMS Table 4 activities exceed the reported 1-3% error "
+                    "at 55 of 56 Na2O/SiO2 values through 1673 K, and independent "
+                    "liquidus residuals reach about 17 kJ/mol near 1080-1150 K; "
+                    "treat Na-silicate activities below 1700 K as uncertain"
                 )
 
     adapter_labels = ImccAdapterLabels(
