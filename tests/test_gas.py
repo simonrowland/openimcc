@@ -6369,3 +6369,28 @@ def test_oxygen_balance_explicit_parents_keep_unknown_key_refusal(
     assert with_extra[0].hex() == base[0].hex()
     assert with_extra[1] == base[1]
     assert not any(name.startswith("Cr") for name in with_extra[1])
+
+
+def test_default_oxygen_balance_counts_auto_included_oxide_parents(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    # parent_oxides=None auto-includes a mapping's oxide parents in the
+    # returned pressures, so the balance must count their oxygen too: the
+    # default call must match the explicit call that lists the same parents.
+    base = _quickstart_activities(1800.0, allow_extrapolation=True)
+    activities = {**base, "ZnO": 1.0e-2}
+    default = evaluate_gas_oxygen_balance(
+        activities, 1800.0, gas_pack, allow_extrapolation=True,
+    )
+    explicit = evaluate_gas_oxygen_balance(
+        activities, 1800.0, gas_pack,
+        parent_oxides=tuple(activities), allow_extrapolation=True,
+    )
+    without_zno = evaluate_gas_oxygen_balance(
+        base, 1800.0, gas_pack, allow_extrapolation=True,
+    )
+    assert any(name.startswith("Zn") for name in default[1])
+    assert default[0].hex() == explicit[0].hex()
+    assert default[1] == explicit[1]
+    # ZnO gas carries real oxygen demand at this activity, so the root moves.
+    assert abs(math.log10(default[0] / without_zno[0])) > 0.1

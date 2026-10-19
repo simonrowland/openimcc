@@ -5943,8 +5943,10 @@ def evaluate_gas_oxygen_balance(
 
     Every supplied non-oxide gas parent and condensed parent contributes its
     oxygen-carrying species to the melt-derived oxygen demand unless named in
-    ``imposed_parents``. Metal vapours carry no oxygen. Parent oxides omitted
-    from an explicit ``parent_oxides`` sequence remain excluded.
+    ``imposed_parents``. Metal vapours carry no oxygen. With ``parent_oxides``
+    omitted, recognised oxide parents in a mapping (for example ``Cr2O3``)
+    enter the balance as they enter the returned pressures. Parent oxides
+    omitted from an explicit ``parent_oxides`` sequence remain excluded.
     """
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
@@ -5968,10 +5970,22 @@ def evaluate_gas_oxygen_balance(
 
     available_parents = list(parent_oxides)
     if isinstance(activities, Mapping):
+        # Without an explicit list, evaluate_gas auto-includes every
+        # recognised parent in the mapping, oxides included. The balance must
+        # count the same channels the pressure callback returns, or the root
+        # ignores oxygen carried by those gases. An explicit list keeps
+        # excluding unlisted oxides; non-oxide parents are added either way.
         available_parents.extend(
             parent
             for parent in activities
-            if parent in nonoxide_parents and parent not in available_parents
+            if (
+                parent in nonoxide_parents
+                or (
+                    not parent_oxides_explicit
+                    and parent in _REACTION_PARENT_OXIDES
+                )
+            )
+            and parent not in available_parents
         )
     channels, _omitted_channels = _default_reactions(
         tuple(available_parents), datapack, T
