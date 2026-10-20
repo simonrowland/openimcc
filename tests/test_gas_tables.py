@@ -2825,7 +2825,7 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
     inputs_path = ROOT / "data-src" / "liquid-from-solid-inputs.json"
     inputs = json.loads(inputs_path.read_text(encoding="utf-8"))
     redox_path = ROOT / "src" / "openimcc" / "data" / "packs" / (
-        "openimcc-redox-v1.json"
+        "openimcc-redox-v2.json"
     )
     redox = json.loads(redox_path.read_text(encoding="utf-8"))
     config = inputs["rows"]["MnO"]
@@ -2873,7 +2873,7 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
     ]
     assert all(row["species_name"] == "MnO(l)" for row in rows)
     assert all(row["Ref"] == "LFS[MnO-IVTAN-1435;Tf=2120]" for row in rows)
-    assert residual == pytest.approx(0.186390915536322, abs=1e-12)
+    assert residual == pytest.approx(0.182062821346335, abs=1e-12)
     assert max(float(row["_max_residual_J_per_mol"]) for row in rows) < 10.0
     for gas_row, redox_interval in zip(rows, redox_intervals):
         assert all(

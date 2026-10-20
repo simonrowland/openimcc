@@ -64,8 +64,8 @@ def _validate_row(row: Mapping, label: str) -> None:
 
 
 def test_every_published_row_uses_the_band_schema() -> None:
-    redox_paths = [ROOT / "src/openimcc/data/packs/openimcc-redox-v1.json"]
-    redox_paths.extend(sorted((ROOT / "src/openimcc/data/packs").glob("openimcc-redox-*-candidate.json")))
+    redox_paths = [ROOT / "src/openimcc/data/packs/openimcc-redox-v2.json"]
+    redox_paths.extend(sorted((ROOT / "src/openimcc/data/packs").glob("openimcc-redox-*-candidate*.json")))
     for path in redox_paths:
         redox = json.loads(path.read_text())
         for key, row in redox["thermo_species"].items():
@@ -138,7 +138,7 @@ def test_accuracy_band_never_repeats_its_own_fit_residual() -> None:
                 walk(child, f"{label}/{index}")
 
     for path in (
-        ROOT / "src/openimcc/data/packs/openimcc-redox-v1.json",
+        ROOT / "src/openimcc/data/packs/openimcc-redox-v2.json",
         ROOT / "src/openimcc/data/gas/PROVENANCE.yaml",
         ROOT / "data-src/liquid-from-solid-inputs.json",
         *sorted((ROOT / "src/openimcc/data/packs").glob("imcc-sf04*.json")),
@@ -157,21 +157,43 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
     paths.extend(
         path.relative_to(ROOT).as_posix()
         for path in sorted((ROOT / "src/openimcc/data/packs").glob("imcc-sf04*.json"))
-        # Opt-in candidate packs were authored after the band migration, in
-        # the migrated schema, so the f013bba baseline has no copy to migrate.
-        if not path.name.endswith("-candidate.json")
+        # Candidate packs and the corrected D066 v2 pack were authored after
+        # the band migration, so the f013bba baseline has no copy to migrate.
+        if "-candidate" not in path.name
+        and path.name != "imcc-sf04-d066-v2.json"
     )
     archive = subprocess.run(
         ["git", "archive", "f013bba"], cwd=ROOT, check=True, capture_output=True
     ).stdout
     with tarfile.open(fileobj=__import__("io").BytesIO(archive)) as source:
         source.extractall(tmp_path, filter="data")
+
+    def row_key(row: dict) -> tuple:
+        return (
+            row.get("table"), row.get("species_name"), row.get("table_id"),
+            row.get("T_interval"),
+        )
+
     ion_species = {
         "Au+(g)", "Au-(g)", "Hg+(g)", "Pd+(g)", "Pt+(g)", "Pt-(g)",
     }
     current_gas_provenance = ROOT / "src/openimcc/data/gas/PROVENANCE.yaml"
     baseline_gas_provenance = tmp_path / "src/openimcc/data/gas/PROVENANCE.yaml"
     current_document = yaml.safe_load(current_gas_provenance.read_text())
+    current_inputs = ROOT / "data-src/liquid-from-solid-inputs.json"
+    (tmp_path / "data-src/liquid-from-solid-inputs.json").write_bytes(
+        current_inputs.read_bytes()
+    )
+    current_construction_rows = [
+        row for row in current_document["rows"]
+        if row.get("construction_inputs_path") == "data-src/liquid-from-solid-inputs.json"
+    ]
+    construction_keys = {row_key(row) for row in current_construction_rows}
+    baseline_document = yaml.safe_load(baseline_gas_provenance.read_text())
+    baseline_document["rows"] = [
+        row for row in baseline_document["rows"]
+        if row_key(row) not in construction_keys
+    ]
     pgm_rows = [
         row for row in current_document["rows"]
         if row.get("species_name") in ion_species
@@ -182,20 +204,25 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
     ]
     assert len(pgm_rows) == len(ion_species)
     assert saha_rows
-    injected_rows = [
+    baseline_document["rows"].extend(
+        (*pgm_rows, *saha_rows, *current_construction_rows)
+    )
+    baseline_rows = baseline_document["rows"]
+    baseline_document["rows"] = []
+    baseline_text = yaml.safe_dump(
+        baseline_document, allow_unicode=True, sort_keys=False
+    )
+    serialized_rows = "".join(
         "  - " + yaml.safe_dump(
             row, allow_unicode=True, sort_keys=False,
             default_flow_style=True, width=1_000_000,
-        ).strip()
-        for row in (*pgm_rows, *saha_rows)
-    ]
-    baseline_text = baseline_gas_provenance.read_text()
-    marker = "\nsource_comparisons:"
-    assert marker in baseline_text
+        ).strip() + "\n"
+        for row in baseline_rows
+    )
+    assert "rows: []\n" in baseline_text
     baseline_gas_provenance.write_text(
-        baseline_text.replace(
-            marker, "\n" + "\n".join(injected_rows) + marker, 1
-        )
+        baseline_text.replace("rows: []\n", "rows:\n" + serialized_rows, 1),
+        encoding="utf-8",
     )
     migrate(tmp_path)
     gas_provenance = "src/openimcc/data/gas/PROVENANCE.yaml"
@@ -234,12 +261,6 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
             ("gas", "TeO(g)", "NUREG-4308-TeO", 1),
             ("gas", "TeO(g)", "NUREG-4308-TeO", 2),
         }
-
-        def row_key(row: dict) -> tuple:
-            return (
-                row.get("table"), row.get("species_name"), row.get("table_id"),
-                row.get("T_interval"),
-            )
 
         migrated_rows = {row_key(row): row for row in migrated_provenance["rows"]}
         committed_rows = {row_key(row): row for row in committed_provenance["rows"]}

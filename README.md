@@ -716,10 +716,10 @@ temperature.
 Output:
 
 ```text
-activities: {'SiO2': '0.311771', 'MgO': '0.00475089', 'FeO': '0.109063', 'CaO': '6.82375e-05', 'Al2O3': '0.0157785', 'TiO2': '0.00274341', 'Na2O': '3.50463e-10', 'K2O': '6.61375e-15'}
+activities: {'SiO2': '0.31854', 'MgO': '0.00420895', 'FeO': '0.109932', 'CaO': '7.04116e-05', 'Al2O3': '0.0133431', 'TiO2': '0.00263984', 'Na2O': '3.63377e-10', 'K2O': '6.98169e-15'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
-melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see https://github.com/simonrowland/openimcc',)
-gas: bar {'Na': '0.000239779', 'K': '6.27343e-06'}
+melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see https://github.com/simonrowland/openimcc',)
+gas: bar {'Na': '0.000244157', 'K': '6.44558e-06'}
 Mg domain flag: MgO(l) uses a labelled constant-Cp supercooled-liquid continuation from JANAF Mg-009
 ```
 
@@ -1037,7 +1037,7 @@ from openimcc import evaluate_redox
 
 inventory = {"Fe": 1.0, "Cr": 0.01, "O": 1.0}
 candidate = files("openimcc.data").joinpath(
-    "packs", "openimcc-redox-cr-candidate.json"
+    "packs", "openimcc-redox-cr-candidate-v2.json"
 )
 with as_file(candidate) as candidate_path:
     result = evaluate_redox(
@@ -1049,7 +1049,7 @@ with as_file(candidate) as candidate_path:
 ```
 
 Leaving `redox_pack_path` unset continues to use the packaged default
-`openimcc-redox-v1.json`.
+`openimcc-redox-v2.json`.
 
 ## The empirical bench
 
@@ -1295,14 +1295,20 @@ complexes. Nothing is retuned.
 
 #### Known limit: complex rows below their demonstrated range
 
-The complex rows are evaluated from 1700 K, but several are Fegley & Cameron
-(1987) `A + B/T` fits that the paper demonstrated only over 2500–3500 K.
-Below 2500 K they are extrapolated. Against JANAF (4th ed.) reaction Gibbs
-energies (the complex minus its parent liquids), the packaged rows differ at
-1700–2500 K by up to 6.4 kJ/mol for MgAl2O4 (at 1700 K, on the glass segments
-of the JANAF liquid tables), 1.1 kJ/mol for Mg2SiO4, 0.7 kJ/mol for MgTi2O5,
-and 0.3–0.4 kJ/mol for MgTiO3, Mg2TiO4 and MgSiO3 (0.27 kJ/mol). On the liquid
-branch at 2600–3000 K, MgAl2O4 differs by +5.0 to +6.0 kJ/mol (0.10–0.11 dex).
+The complex rows are evaluated from 1700 K, but several Fegley & Cameron
+(1987) `A + B/T` fits were demonstrated only over 2500–3500 K. Below 2500 K
+they are extrapolated. Against JANAF (4th ed.) reaction Gibbs energies (the
+complex minus its parent liquids), the frozen SF04 reproduction pack
+`imcc-sf04-v1.0.2.json` differs at 1700–2500 K by up to 6.4 kJ/mol for
+MgAl2O4 (at 1700 K, on the glass segments of the JANAF liquid tables),
+1.1 kJ/mol for Mg2SiO4, 0.7 kJ/mol for MgTi2O5, and 0.3–0.4 kJ/mol for
+MgTiO3, Mg2TiO4 and MgSiO3 (0.27 kJ/mol). On the liquid branch at
+2600–3000 K, its MgAl2O4 row differs by +5.0 to +6.0 kJ/mol (0.10–0.11 dex).
+The current default D066 v2 pack corrects MgAl2O4 row 3 using Shornikov's
+primary fusion measurement; the frozen published pack and D066 v1 remain
+available with their original JANAF-derived row. See
+[`docs/liquid-from-solid.md`](docs/liquid-from-solid.md) for the source choice
+and derivation.
 
 The alkali-silicate rows are assessed or empirical fits, so they cannot be
 extended below 1700 K from crystal data, and
@@ -1313,7 +1319,9 @@ caveat: the published comparison pack preserves SF04's SiO2 transition at
 source liquid nodes below 1800 K; its 1200–1800 K parent row is therefore an
 explicit constant-Cp continuation, which every affected gas result flags.
 
-The pack is unchanged: every row is its source's published value.
+The frozen published reproduction pack remains unchanged: every row is its
+source's published value. D066 v2 is a separately versioned default with the
+MgAl2O4 source correction and its erratum recorded in the pack.
 
 ### Independently pinned behaviour
 

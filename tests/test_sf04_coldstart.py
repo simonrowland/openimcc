@@ -26,7 +26,7 @@ CASES = (
             "K2O": 8.844980280923895,
         },
         2445.65,
-        3.4859611072197934e-09,
+        3.553418291524387e-09,
     ),
     (
         {
@@ -40,7 +40,7 @@ CASES = (
             "K2O": 8.96629272065383,
         },
         2400.65,
-        6.914222520149932e-05,
+        6.88946420066845e-05,
     ),
     (
         {
@@ -54,7 +54,7 @@ CASES = (
             "K2O": 8.966292720650552,
         },
         2400.65,
-        6.914222520149845e-05,
+        6.889464200668377e-05,
     ),
 )
 
@@ -108,7 +108,7 @@ def test_depleted_melt_cold_start_converges(
     )
 
 
-def test_lunar_trace_state_uses_relative_log_x_last_resort() -> None:
+def test_lunar_trace_state_converges_with_corrected_default_pack() -> None:
     composition = {
         "SiO2": 1489.5026789257954,
         "MgO": 2292.1310472268683,
@@ -129,10 +129,11 @@ def test_lunar_trace_state_uses_relative_log_x_last_resort() -> None:
         allow_out_of_envelope=False,
     )
 
-    assert result.convergence.solver_path == "relative-log-x"
+    assert result.convergence.solver_path == "composition-continuation"
+    assert result.convergence.continuation_stages > 0
     assert result.convergence.residual_inf <= 1.0e-12
     assert result.parent_activity[result.parent_oxides.index("SiO2")] == pytest.approx(
-        0.0059419, rel=2.0e-5
+        0.005915179067129001, rel=2.0e-5
     )
 
 
@@ -164,7 +165,7 @@ def test_evaluate_accepts_a_validated_warm_start() -> None:
     assert issubclass(ImccInvalidWarmStartError, ImccRefusal)
 
 
-def test_non_silica_trace_parent_uses_composition_continuation() -> None:
+def test_non_silica_trace_parent_uses_corrected_direct_root() -> None:
     composition = {
         "SiO2": 197.0,
         "MgO": 1.0e-12
@@ -184,12 +185,12 @@ def test_non_silica_trace_parent_uses_composition_continuation() -> None:
         allow_out_of_envelope=True,
     )
 
-    assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages > 0
+    assert result.convergence.solver_path == "direct"
+    assert result.convergence.continuation_stages == 0
     assert result.convergence.residual_inf <= 1.0e-12
 
 
-def test_silica_walk_recovers_above_floor_feo_trace(
+def test_association_continuation_recovers_above_floor_feo_trace(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     oxides = (
@@ -217,18 +218,17 @@ def test_silica_walk_recovers_above_floor_feo_trace(
         allow_out_of_envelope=True,
     )
 
-    assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages == 6
+    assert result.convergence.solver_path == "continuation"
+    assert result.convergence.continuation_stages == 8
     assert result.convergence.residual_inf <= 1.0e-12
-    assert len(calls) == 7
+    assert len(calls) == 1
     assert np.array_equal(calls[0], calls[-1])
-    assert calls[1][0] == pytest.approx(calls[0][0] * 10.0)
     assert result.parent_mol[oxides.index("FeO")] / result.basis == pytest.approx(
         feo_fraction
     )
 
 
-def test_silica_walk_recovers_depleted_cai_tio2(
+def test_composition_continuation_recovers_depleted_cai_tio2(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     vector = _cai_mole_vector(1.0e-5)
@@ -249,14 +249,13 @@ def test_silica_walk_recovers_depleted_cai_tio2(
     )
 
     assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages == 13
+    assert result.convergence.continuation_stages == 7
     assert result.convergence.residual_inf <= 1.0e-12
-    assert any(call[0] >= vector[0] * 10.0 for call in calls)
     assert np.array_equal(calls[-1], vector)
     assert result.parent_mol[5] / result.basis == pytest.approx(1.0e-5)
 
 
-def test_silica_walk_recovers_cai_trace_missed_by_staged_path(
+def test_composition_continuation_recovers_cai_trace_with_corrected_pack(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     vector = _cai_mole_vector(1.414213562373095e-7)
@@ -277,13 +276,12 @@ def test_silica_walk_recovers_cai_trace_missed_by_staged_path(
     )
 
     assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages == 13
+    assert result.convergence.continuation_stages == 7
     assert result.convergence.residual_inf <= 1.0e-12
-    assert any(call[0] >= vector[0] * 10.0 for call in calls)
     assert np.array_equal(calls[-1], vector)
 
 
-def test_last_converged_trace_seed_recovers_depleted_feo() -> None:
+def test_depleted_feo_trace_root_is_polished_to_inventory_tolerance() -> None:
     composition = {name: 1.0 / 8.0 for name in (
         "SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"
     )}
@@ -301,9 +299,12 @@ def test_last_converged_trace_seed_recovers_depleted_feo() -> None:
         allow_out_of_envelope=True,
     )
 
-    assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages == 7
+    assert result.convergence.solver_path == "direct"
+    assert result.convergence.continuation_stages == 0
     assert result.convergence.residual_inf <= 1.0e-12
+    assert result.parent_activity[result.parent_oxides.index("FeO")] == pytest.approx(
+        1.6045765472734952e-12, rel=2.0e-12
+    )
 
 
 def test_trace_anchor_recovers_depleted_feo_at_2288k() -> None:
@@ -379,7 +380,7 @@ def test_failed_composition_continuation_preserves_original_diagnostics(
         (np.full(8, 1.0 / 8.0), "FeO", 1.0e-12),
     ),
 )
-def test_temperature_continuation_recovers_low_temperature_depletions(
+def test_low_temperature_depletions_keep_certified_roots(
     composition: np.ndarray,
     trace_name: str,
     trace_fraction: float,

@@ -27,6 +27,9 @@ LEGACY_BINDING_SHA256 = {
     "imcc-sf04-ext-v4.json": "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770",
 }
 D066_MANIFEST_SHA256 = {
+    "imcc-sf04-d066-v2.json": (
+        "efd2330f57d366b660e100d821806054b59134cb95b6404e1f9c27b5e468893e"
+    ),
     "imcc-sf04-d066-v1.json": (
         "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75"
     ),
@@ -38,7 +41,7 @@ D066_MANIFEST_SHA256 = {
     ),
 }
 D066_BINDING_SHA256 = D066_MANIFEST_SHA256
-D066_DEFAULT_K_PRESSURE_BAR = float.fromhex("0x1.edb56ea3c124cp-12")
+D066_DEFAULT_K_PRESSURE_BAR = float.fromhex("0x1.0c82fc7be3decp-11")
 COMPOSITIONS = (
     {
         "SiO2": 0.45,

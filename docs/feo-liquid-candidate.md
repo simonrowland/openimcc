@@ -84,13 +84,15 @@ That produces ΔA = −0.572561660·ν_FeO and ΔB = 1450.995948·ν_FeO K for l
 | Fe₂SiO₄ | 2 | −0.630000 | −1.775123 | 3103.000 | 6004.992 |
 | FeAl₂O₄ | 1 | −1.760000 | −2.332562 | 5692.000 | 7142.996 |
 
+The FeO candidate's melt-pack v2 also updates MgAl₂O₄ row 3 to the measured Shornikov fusion enthalpy used by the current default pack. FeAl₂O₄ row 21 retains FC87 R21's own estimated melting entropy and liquid Cp; those estimates do not define a quantitative transfer from MgAl₂O₄'s measured fusion enthalpy. Its FeO-parent transformation remains the separate D&G standard-state adjustment shown above. The earlier candidate melt pack remains frozen.
+
 The candidate bundle is opt-in in the existing pack formats:
 
-- src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate.json
-- src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json
+- src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate-v2.json
+- src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate-v2.json
 - src/openimcc/data/gas/condensate-feo-liquid-candidate.csv
 
-Select the redox and melt JSON paths together in evaluate_redox(..., redox_pack_path=..., melt_pack_path=...); pass the candidate condensate file to the gas loader for gas calculations. The packaged defaults were not edited. The candidate redox canonical digest is 00bb1056567715f2a81c53339b0c5d3296cb0f250ac79b7db62ec2b8cac0cb7b; the melt binding digest is 8c96383e5c1464dbec4e748ff7b528151028f5b2b4d731c5f9861d677c8cff39.
+Select the redox and melt JSON paths together in `evaluate_redox(..., redox_pack_path=..., melt_pack_path=...)`; pass the candidate condensate file to the gas loader for gas calculations. The earlier pack files remain frozen; the current default D066 and redox packs are versioned v2 files. This FeO candidate uses its own versioned melt pack. Its redox canonical digest is `cb84e1a40e4fb41b4b964534f9cee40a6c0da412738217e866b0e618ec08a349`; its v2 melt binding digest is `9b709c5ac1ec04ca839463bae098b957b2fa7088d8afa1a326312ca8137d6061`.
 
 ## Held-out comparison
 

@@ -78,7 +78,7 @@ when absent, although they are present in the shipped packs as noted.
 | errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2, ext-v4, and D066 packs use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
 | extension_parent_datapack_version | string | No | Version of the parent/earlier extension pack used by the extension record. Present in the retired ext-v3 record; the loader treats it as metadata. |
 | extension_wave | string | No | Label for the extension work wave, for example EXT3-JANAF-native-endmember-screen. Its exact release semantics are not established by the code. |
-| feo_liquid_candidate | object | No | Present only in the opt-in imcc-sf04-d066-feo-liquid-candidate pack. Records the candidate FeO(l) standard Gibbs-energy shift (`source`, `delta_g_j_mol` as a T-linear expression in J/mol, `transformation`, `uncertainty`) and how it was carried into every association row that consumes FeO. The coefficients in `rows` already include the shift; the loader does not read this field. See docs/feo-liquid-candidate.md. |
+| feo_liquid_candidate | object | No | Present only in the opt-in imcc-sf04-d066-feo-liquid-candidate pack versions. Records the candidate FeO(l) standard Gibbs-energy shift (`source`, `delta_g_j_mol` as a T-linear expression in J/mol, `transformation`, `uncertainty`) and how it was carried into every association row that consumes FeO. The coefficients in `rows` already include the shift; the loader does not read this field. See docs/feo-liquid-candidate.md. |
 | gas_only_inventory | array of objects | No | Species considered for the gas inventory but deliberately refused as melt components. In the retired ext-v3 record each object has cation, species, table_id, T_range_K, melt_disposition, and certification. |
 | imcc_sf04_datapack_version | non-empty string | Yes | Datapack version. load_datapack() stores it as the loaded version and uses it in the published-core projection or the per-pack binding digest. |
 | merge_semantics | object | No | Describes how an extension overlays or carries forward published rows: mode, row counts, replacement counts, and rationale. It is not interpreted by load_datapack(). |
@@ -284,7 +284,8 @@ uncertified (`certification: denied`) and records that redox and sulfur-
 solubility behavior remain out of scope.
 
 The default `load_datapack()` resource is the nonpublished D066 primary pack,
-imcc-sf04-d066-v1.json. Its sibling KCa sensitivity pack is
+imcc-sf04-d066-v2.json. Version 1 remains available as a frozen historical
+pack. Its sibling KCa sensitivity pack is
 imcc-sf04-d066-v1-kcaalsi2o7.json. The D066 S/P extension pack,
 imcc-sf04-d066-ext-v1.json, carries the ext-v4 sp_extension unchanged and
 requires `enable_sp_extension=True`. All three use model_id IMCC-SF04-D066 and
@@ -645,7 +646,8 @@ predicting whether the current loader accepts a pack.
 
 ## Redox thermochemistry component
 
-`openimcc-redox-v1.json` is a separate, versioned thermochemistry component.
+`openimcc-redox-v2.json` is the default, separate, versioned thermochemistry
+component; `openimcc-redox-v1.json` remains a frozen historical version.
 The legacy `load_datapack()` path does not load it and the legacy eight-parent
 pack identity remains unchanged. `openimcc.redox_pack.load_redox_pack()` reads
 this schema and validates the N-parent registry, row balances, reference-state

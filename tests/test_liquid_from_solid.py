@@ -294,7 +294,7 @@ def test_k2o_per_atom_entropy_rung_uses_the_full_census():
         / candidate["total_atoms"]
         for candidate in training
     ) / len(training)
-    assert rung["value"] == pytest.approx(28.004377717, abs=1e-9)
+    assert rung["value"] == pytest.approx(27.497678907, abs=1e-9)
     assert rung["value"] == pytest.approx(expected, abs=1e-9)
 
 
@@ -432,6 +432,18 @@ def test_validation_rows_record_each_input_tier_and_source():
             elif entry["value"] is not None:
                 assert entry["components"]
                 assert entry["provenance_class"] == "secondary_transcription_unverified_primary"
+
+
+def test_mgal2o4_selected_fusion_entropy_pins_shornikov_enthalpy():
+    row = INPUTS["rows"]["MgAl2O4"]
+    temperature = row["inputs"]["fusion_temperature"]["value"]
+    entropy = row["inputs"]["fusion_entropy"]
+
+    assert temperature == 2408.0
+    assert entropy["value"] * temperature / 1000.0 == pytest.approx(55.81)
+    assert entropy["spread"] * temperature / 1000.0 == pytest.approx(4.62)
+    assert "Shornikov" in entropy["source"]
+    assert "analogy estimate" in entropy["source"]
 
 
 @pytest.mark.parametrize(
@@ -664,10 +676,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             1,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 1.164968030, 4.244316141],
-                "rms": [0.166756612, 0.194235591, 0.688929378],
-                "dex_max_per_metal_atom": [0.035569471, 0.030486221, 0.024323595],
-                "dex_rms_per_metal_atom": [0.005134217, 0.004586338, 0.004790863],
+                "max": [1.154923273, 16.995707831, 45.375204939],
+                "rms": [0.166756612, 2.460793149, 6.799128480],
+                "dex_max_per_metal_atom": [0.035569471, 0.109274661, 0.246270908],
+                "dex_rms_per_metal_atom": [0.005134217, 0.016425699, 0.037023175],
             },
         ),
         (
@@ -675,10 +687,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             1,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 1.164968030, 4.244316141],
-                "rms": [0.166756612, 0.194235591, 0.688929378],
-                "dex_max_per_metal_atom": [0.035569471, 0.030486221, 0.024323595],
-                "dex_rms_per_metal_atom": [0.005134217, 0.004586338, 0.004790863],
+                "max": [1.154923273, 16.995707831, 45.375204939],
+                "rms": [0.166756612, 2.460793149, 6.799128480],
+                "dex_max_per_metal_atom": [0.035569471, 0.109274661, 0.246270908],
+                "dex_rms_per_metal_atom": [0.005134217, 0.016425699, 0.037023175],
             },
         ),
         (
@@ -697,10 +709,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             3,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 16.463782854, 43.473443387],
-                "rms": [0.166756612, 5.275975461, 13.853112193],
-                "dex_max_per_metal_atom": [0.035569471, 0.232041418, 0.454135746],
-                "dex_rms_per_metal_atom": [0.005134217, 0.064309722, 0.124731647],
+                "max": [1.154923273, 15.998051182, 42.231492261],
+                "rms": [0.166756612, 5.126627961, 13.439587513],
+                "dex_max_per_metal_atom": [0.035569471, 0.227978818, 0.445472337],
+                "dex_rms_per_metal_atom": [0.005134217, 0.063576052, 0.123292719],
             },
         ),
         (
@@ -708,10 +720,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             1,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 1.164968030, 4.244316141],
-                "rms": [0.166756612, 0.194235591, 0.688929378],
-                "dex_max_per_metal_atom": [0.035569471, 0.030486221, 0.024323595],
-                "dex_rms_per_metal_atom": [0.005134217, 0.004586338, 0.004790863],
+                "max": [1.154923273, 16.995707831, 45.375204939],
+                "rms": [0.166756612, 2.460793149, 6.799128480],
+                "dex_max_per_metal_atom": [0.035569471, 0.109274661, 0.246270908],
+                "dex_rms_per_metal_atom": [0.005134217, 0.016425699, 0.037023175],
             },
         ),
         (
@@ -719,10 +731,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             2,
             {
                 "sample_size_by_offset": [15, 15, 15],
-                "max": [1.154923273, 1.673914153, 10.776914095],
-                "rms": [0.298201071, 0.864249049, 5.144593809],
-                "dex_max_per_metal_atom": [0.035569471, 0.027549534, 0.066704258],
-                "dex_rms_per_metal_atom": [0.009184008, 0.010222396, 0.038088008],
+                "max": [1.154923273, 16.255175785, 40.417392783],
+                "rms": [0.298201071, 4.280513081, 11.563562947],
+                "dex_max_per_metal_atom": [0.035569471, 0.104513377, 0.219362712],
+                "dex_rms_per_metal_atom": [0.009184008, 0.028828230, 0.067896525],
             },
         ),
         (
@@ -730,10 +742,10 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             3,
             {
                 "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 6.697977676, 45.198184561],
-                "rms": [0.166756612, 1.613335036, 10.999609475],
-                "dex_max_per_metal_atom": [0.035569471, 0.042515407, 0.208409675],
-                "dex_rms_per_metal_atom": [0.005134217, 0.013318372, 0.064879782],
+                "max": [1.154923273, 16.778135063, 45.198184561],
+                "rms": [0.166756612, 2.909687954, 12.798662173],
+                "dex_max_per_metal_atom": [0.035569471, 0.107875767, 0.238365118],
+                "dex_rms_per_metal_atom": [0.005134217, 0.020488235, 0.073963300],
             },
         ),
     ],
@@ -825,8 +837,8 @@ def test_below_fusion_band_is_anchored_to_the_measured_loo_term():
 @pytest.mark.parametrize(
     ("temperature", "expected_fusion_kj", "expected_band_kj"),
     [
-        (1673.0, 8.345304559680903, 5.753327687635518),
-        (2000.0, 2.240350217364, 2.5199385118699427),
+        (1673.0, 8.194308314369714, 5.900780634884792),
+        (2000.0, 2.199814312582473, 2.55458089857983),
     ],
 )
 def test_below_fusion_band_matches_the_constant_delta_cp_identity(

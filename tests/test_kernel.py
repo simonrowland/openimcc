@@ -301,11 +301,11 @@ def test_trace_parent_root_is_refined_to_relative_inventory_tolerance() -> None:
     )
     fe_index = result.parent_oxides.index("FeO")
     assert result.parent_activity[fe_index] == pytest.approx(
-        1.4991342575302651e-12, rel=1.0e-12, abs=0.0
+        1.5021272839105901e-12, rel=1.0e-12, abs=0.0
     )
 
 
-def test_passing_bulk_root_keeps_its_pre_certification_bytes() -> None:
+def test_corrected_default_pack_bulk_root_bytes_are_pinned() -> None:
     composition = {
         "SiO2": 51.85068,
         "MgO": 4.78527,
@@ -353,8 +353,9 @@ def test_passing_bulk_root_keeps_its_pre_certification_bytes() -> None:
     digest = hashlib.sha256(
         json.dumps(fingerprint, separators=(",", ":"), sort_keys=True).encode()
     ).hexdigest()
+    # This versioned pin reflects the MgAl2O4 fusion correction in the default pack.
     assert digest == (
-        "a30a4d124ad28bd2dd863a5b62e154eaa498fb1eb013718da602a69185b18177"
+        "e21dee071f64c8eefc8e8d6a26f7dc9f307727775439c4bc9c5b88db2101115a"
     )
 
 

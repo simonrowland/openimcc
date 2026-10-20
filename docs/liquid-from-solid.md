@@ -26,7 +26,7 @@ use J mol⁻¹ or kJ mol⁻¹ as declared), and unavailable checks use
 | Input | Tier 1 | Tier 2 | Tier 3 |
 | --- | --- | --- | --- |
 | Fusion temperature | JANAF crystal-to-liquid marker or assessed value | Cited alternative assessment with uncertainty | Extrapolated liquidus for incongruently melting or decomposing solids; band is the range of cited hypothetical constructions |
-| Fusion entropy | Liquid-minus-crystal entropy at the marker | Mean of measured/assessed members in a declared oxide or homologue family | Leave-one-out Richards-type mean per formula atom, including oxygen; red fallback |
+| Fusion entropy | JANAF liquid-minus-crystal entropy or a selected direct primary measurement | Mean of measured/assessed members in a declared oxide or homologue family | Leave-one-out Richards-type mean per formula atom, including oxygen; red fallback |
 | Liquid heat capacity | JANAF liquid Cp at the marker | Stoichiometric sum of cited oxide partial-molar liquid Cp values | Crystal Cp at fusion carried over; red fallback |
 
 ## Tier-4 ZnO and CdO constructions
@@ -68,8 +68,8 @@ Cs₂O 763–768 K (Gurvich)—supports this value over Lamoreaux and Hildenbran
 Journal of Chemistry* 48, 1955–1958); silica contamination makes this a
 one-sided lower bound. The selected K₂O temperature band is therefore
 [919, 1190] K, with 919 K as the lower bound. Its tier-3 formula entropy is
-28.004377717 J/(mol K), equal to three atoms times the mean fusion entropy of
-9.334792572 J/(mol K) per atom across all 48 pairs in the declared census.
+27.497678907 J/(mol K), equal to three atoms times the mean fusion entropy of
+9.165892969 J/(mol K) per atom across all 48 pairs in the declared census.
 K₂O is not in that census, so it
 is excluded by construction; this is not a leave-one-out estimate for K₂O. It
 is red-flagged because the rule is known to perform poorly.
@@ -183,21 +183,21 @@ Cells below give maximum / RMS absolute error in kJ/mol. Sample counts are for
 
 | Input tier | N | T_fus | +300 K | +800 K |
 | --- | ---: | ---: | ---: | ---: |
-| Fusion temperature, entropy, and Cp, tier 1 control | 48 / 48 / 45 | 1.155 / 0.167 | 1.165 / 0.194 | 4.244 / 0.689 |
+| Fusion temperature, entropy, and Cp, tier 1 control | 48 / 48 / 45 | 1.155 / 0.167 | 16.996 / 2.461 | 45.375 / 6.799 |
 | Fusion entropy, tier 2 family | 32 / 32 / 31 | 0.002 / 0.001 | 7.357 / 2.947 | 19.757 / 8.141 |
-| Fusion entropy, tier 3 per formula atom | 48 / 48 / 45 | 1.155 / 0.167 | 16.464 / 5.276 | 43.473 / 13.853 |
-| Liquid Cp, tier 2 additive | 15 / 15 / 15 | 1.155 / 0.298 | 1.674 / 0.864 | 10.777 / 5.145 |
-| Liquid Cp, tier 3 crystal carry-over | 48 / 48 / 45 | 1.155 / 0.167 | 6.698 / 1.613 | 45.198 / 11.000 |
+| Fusion entropy, tier 3 per formula atom | 48 / 48 / 45 | 1.155 / 0.167 | 15.998 / 5.127 | 42.231 / 13.440 |
+| Liquid Cp, tier 2 additive | 15 / 15 / 15 | 1.155 / 0.298 | 16.255 / 4.281 | 40.417 / 11.564 |
+| Liquid Cp, tier 3 crystal carry-over | 48 / 48 / 45 | 1.155 / 0.167 | 16.778 / 2.910 | 45.198 / 12.799 |
 
 The paired maximum / RMS errors in dex per metal atom are:
 
 | Input tier | T_fus | +300 K | +800 K |
 | --- | ---: | ---: | ---: |
-| Fusion temperature, entropy, and Cp, tier 1 control | 0.035569 / 0.005134 | 0.030486 / 0.004586 | 0.024324 / 0.004791 |
+| Fusion temperature, entropy, and Cp, tier 1 control | 0.035569 / 0.005134 | 0.109275 / 0.016426 | 0.246271 / 0.037023 |
 | Fusion entropy, tier 2 family | 0.000035 / 0.000014 | 0.133452 / 0.040429 | 0.293746 / 0.087499 |
-| Fusion entropy, tier 3 per formula atom | 0.035569 / 0.005134 | 0.232041 / 0.064310 | 0.454136 / 0.124732 |
-| Liquid Cp, tier 2 additive | 0.035569 / 0.009184 | 0.027550 / 0.010222 | 0.066704 / 0.038088 |
-| Liquid Cp, tier 3 crystal carry-over | 0.035569 / 0.005134 | 0.042515 / 0.013318 | 0.208410 / 0.064880 |
+| Fusion entropy, tier 3 per formula atom | 0.035569 / 0.005134 | 0.227979 / 0.063576 | 0.445472 / 0.123293 |
+| Liquid Cp, tier 2 additive | 0.035569 / 0.009184 | 0.104513 / 0.028828 | 0.219363 / 0.067897 |
+| Liquid Cp, tier 3 crystal carry-over | 0.035569 / 0.005134 | 0.107876 / 0.020488 | 0.238365 / 0.073963 |
 
 The independent census reports maximum errors of 0.77 / 0.13 / 0.27 kJ/mol
 for integrated temperature-dependent `ΔCp`, 0.77 / 0.32 / 6.2 kJ/mol for
@@ -212,9 +212,14 @@ measured-Cp tier also holds an absolute liquid Cp constant, while constant
 reflect table selection and interpolation conventions; the
 independent census did not include enough method detail to reproduce its
 exact pair-by-pair calculation. Its Richards-rule maxima, 24.9 / 58.7 kJ/mol
-at +300 / +800 K, are above the formula-atom LOO results here (16.464 /
-43.473); both use 48 formulas, but their exact phase-selection and
+at +300 / +800 K, are above the formula-atom LOO results here (15.998 /
+42.231); both use 48 formulas, but their exact phase-selection and
 normalization conventions were not supplied for a stricter comparison.
+
+The Tier 1 control now includes Shornikov's primary MgAl₂O₄ fusion
+measurement in place of JANAF Al-090's analogy estimate. Its larger
+disagreement with the JANAF liquid table raises the measured +300/+800 K
+Tier 1 errors; the fusion-point control remains 1.155 kJ/mol.
 
 The largest fusion-point residual is 1.155 kJ/mol for SiO₂ (O-035/O-038).
 Its crystal and liquid `ΔfH°298` values differ by 2.828 kJ/mol, and the

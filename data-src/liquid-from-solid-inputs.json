@@ -16,23 +16,23 @@
       ],
       "max": [
         1.1549232734846555,
-        1.1649680302818979,
-        4.244316140970113
+        16.995707831272284,
+        45.375204938644856
       ],
       "rms": [
         0.16675661205906273,
-        0.1942355913846266,
-        0.6889293776899685
+        2.4607931490650765,
+        6.799128479670743
       ],
       "dex_max_per_metal_atom": [
         0.03556947142494595,
-        0.030486221216166644,
-        0.02432359455017699
+        0.10927466107276512,
+        0.2462709079074841
       ],
       "dex_rms_per_metal_atom": [
         0.005134217414986276,
-        0.004586338138877788,
-        0.004790863079717567
+        0.016425698722777052,
+        0.037023175404278665
       ]
     },
     "fusion_entropy_tier1": {
@@ -43,23 +43,23 @@
       ],
       "max": [
         1.1549232734846555,
-        1.1649680302818979,
-        4.244316140970113
+        16.995707831272284,
+        45.375204938644856
       ],
       "rms": [
         0.16675661205906273,
-        0.1942355913846266,
-        0.6889293776899685
+        2.4607931490650765,
+        6.799128479670743
       ],
       "dex_max_per_metal_atom": [
         0.03556947142494595,
-        0.030486221216166644,
-        0.02432359455017699
+        0.10927466107276512,
+        0.2462709079074841
       ],
       "dex_rms_per_metal_atom": [
         0.005134217414986276,
-        0.004586338138877788,
-        0.004790863079717567
+        0.016425698722777052,
+        0.037023175404278665
       ]
     },
     "fusion_entropy_tier2": {
@@ -97,23 +97,23 @@
       ],
       "max": [
         1.1549232734846555,
-        16.463782854254987,
-        43.47344338657513
+        15.998051182303698,
+        42.23149226137093
       ],
       "rms": [
-        0.16675661205906261,
-        5.275975461216285,
-        13.853112193365535
+        0.16675661205906256,
+        5.126627960573981,
+        13.439587513144001
       ],
       "dex_max_per_metal_atom": [
         0.03556947142494595,
-        0.23204141841522835,
-        0.45413574584218686
+        0.22797881800920108,
+        0.44547233728404106
       ],
       "dex_rms_per_metal_atom": [
         0.005134217414986274,
-        0.06430972193479502,
-        0.12473164691075295
+        0.06357605180898798,
+        0.12329271915569284
       ]
     },
     "liquid_heat_capacity_tier1": {
@@ -124,23 +124,23 @@
       ],
       "max": [
         1.1549232734846555,
-        1.1649680302818979,
-        4.244316140970113
+        16.995707831272284,
+        45.375204938644856
       ],
       "rms": [
         0.16675661205906273,
-        0.1942355913846266,
-        0.6889293776899685
+        2.4607931490650765,
+        6.799128479670743
       ],
       "dex_max_per_metal_atom": [
         0.03556947142494595,
-        0.030486221216166644,
-        0.02432359455017699
+        0.10927466107276512,
+        0.2462709079074841
       ],
       "dex_rms_per_metal_atom": [
         0.005134217414986276,
-        0.004586338138877788,
-        0.004790863079717567
+        0.016425698722777052,
+        0.037023175404278665
       ]
     },
     "liquid_heat_capacity_tier2": {
@@ -151,23 +151,23 @@
       ],
       "max": [
         1.1549232734846555,
-        1.6739141528746586,
-        10.776914094937638
+        16.25517578527979,
+        40.41739278268051
       ],
       "rms": [
         0.2982010707227809,
-        0.8642490490090516,
-        5.144593808664274
+        4.280513081231164,
+        11.56356294671284
       ],
       "dex_max_per_metal_atom": [
         0.03556947142494595,
-        0.027549534277388474,
-        0.06670425843314448
+        0.10451337727436662,
+        0.21936271206495167
       ],
       "dex_rms_per_metal_atom": [
         0.009184007969681211,
-        0.010222395679362723,
-        0.038088007955544984
+        0.02882823015590816,
+        0.06789652454918876
       ]
     },
     "liquid_heat_capacity_tier3": {
@@ -178,23 +178,23 @@
       ],
       "max": [
         1.1549232734846555,
-        6.697977675712536,
+        16.778135062911133,
         45.19818456086978
       ],
       "rms": [
         0.16675661205906273,
-        1.6133350361071739,
-        10.999609475350193
+        2.9096879537821003,
+        12.798662172601299
       ],
       "dex_max_per_metal_atom": [
         0.03556947142494595,
-        0.042515407248387295,
-        0.20840967536503835
+        0.10787576726043555,
+        0.23836511815438718
       ],
       "dex_rms_per_metal_atom": [
         0.005134217414986276,
-        0.0133183717651654,
-        0.06487978189101926
+        0.020488235192885704,
+        0.07396329989462866
       ]
     }
   },
@@ -525,14 +525,14 @@
             },
             {
               "tier": 3,
-              "value": 28.004377717,
+              "value": 27.497678907280914,
               "source": "Richards-type estimate from the declared 48-pair census: mean fusion entropy per formula atom across all 48 pairs, including oxygen, multiplied by K2O’s 3 atoms. K2O is outside this census, so it is excluded by construction. The rule is known to fail badly.",
               "flag": "red",
               "training_provenance": {
                 "census": "48 liquid/crystal pairs in this file",
                 "training_count": 48,
                 "normalization": "mean of fusion_entropy / total_atoms, multiplied by the target formula atom count",
-                "value_j_mol_k": 28.004377717
+                "value_j_mol_k": 27.497678907280914
               }
             }
           ]
@@ -713,7 +713,7 @@
             },
             {
               "tier": 3,
-              "value": 46.651331538645394,
+              "value": 45.78886547947579,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -842,7 +842,7 @@
             },
             {
               "tier": 3,
-              "value": 46.95860402308224,
+              "value": 46.09613796391262,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -1036,7 +1036,7 @@
             },
             {
               "tier": 3,
-              "value": 18.521630195994028,
+              "value": 18.176643772326184,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -1230,7 +1230,7 @@
             },
             {
               "tier": 3,
-              "value": 18.538257169050596,
+              "value": 18.19327074538275,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -1394,7 +1394,7 @@
             },
             {
               "tier": 3,
-              "value": 46.60684562644636,
+              "value": 45.74437956727674,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -1520,7 +1520,7 @@
             },
             {
               "tier": 3,
-              "value": 27.69164450468903,
+              "value": 27.17416486918726,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -1714,7 +1714,7 @@
             },
             {
               "tier": 3,
-              "value": 18.756586815445928,
+              "value": 18.411600391778087,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -1864,7 +1864,7 @@
             },
             {
               "tier": 3,
-              "value": 121.89088249315571,
+              "value": 119.6484707393147,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -2014,7 +2014,7 @@
             },
             {
               "tier": 3,
-              "value": 56.345099874162045,
+              "value": 55.3101406031585,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -2168,7 +2168,7 @@
             },
             {
               "tier": 3,
-              "value": 37.5863689884774,
+              "value": 36.896396141141715,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -2318,7 +2318,7 @@
             },
             {
               "tier": 3,
-              "value": 121.77897087027094,
+              "value": 119.53655911642994,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -2467,7 +2467,7 @@
             },
             {
               "tier": 3,
-              "value": 27.9239789707484,
+              "value": 27.406499335246636,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -2606,7 +2606,7 @@
             },
             {
               "tier": 3,
-              "value": 84.92474185520098,
+              "value": 83.37230294869568,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -2756,7 +2756,7 @@
             },
             {
               "tier": 3,
-              "value": 56.7957790936775,
+              "value": 55.760819822673966,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -2882,7 +2882,7 @@
             },
             {
               "tier": 3,
-              "value": 55.912551461449894,
+              "value": 54.877592190446364,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -3008,7 +3008,7 @@
             },
             {
               "tier": 3,
-              "value": 37.186099431764944,
+              "value": 36.496126584429256,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -3158,7 +3158,7 @@
             },
             {
               "tier": 3,
-              "value": 37.48967314624464,
+              "value": 36.79970029890895,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -3284,7 +3284,7 @@
             },
             {
               "tier": 3,
-              "value": 66.03673446383034,
+              "value": 64.82928198099289,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -3415,7 +3415,7 @@
             },
             {
               "tier": 3,
-              "value": 65.36292350582872,
+              "value": 64.15547102299124,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -3520,20 +3520,19 @@
           ]
         },
         "fusion_entropy": {
-          "value": 79.92717699236408,
+          "value": 23.17691029900332,
           "tier": 1,
-          "spread": 0.0,
+          "spread": 1.9186046511627908,
           "unit": "J mol^-1 K^-1",
-          "source": "Liquid-minus-crystal JANAF entropy at 2408 K; marker CRYSTAL <--> LIQUID.",
+          "source": "Shornikov et al. (2017), Table 2, direct Knudsen fusion enthalpy 55.81 ± 4.62 kJ/mol compound; ΔS_fus=ΔH_fus/T_m using the retained JANAF Al-090 marker T_m=2408 K. This primary measurement replaces JANAF Al-090's 46 ± 5 kcal/mol analogy estimate; JANAF Al-090 remains the liquid Cp source. The spread propagates the reported enthalpy uncertainty at fixed selected T_m.",
           "ladder": [
             {
               "tier": 1,
-              "value": 79.92717699236408,
-              "spread": 0.0,
-              "source": "Liquid-minus-crystal JANAF entropy at 2408 K; marker CRYSTAL <--> LIQUID.",
+              "value": 23.17691029900332,
+              "spread": 1.9186046511627908,
+              "source": "Shornikov et al. (2017), Table 2, direct Knudsen fusion enthalpy 55.81 ± 4.62 kJ/mol compound; ΔS_fus=ΔH_fus/T_m using the retained JANAF Al-090 marker T_m=2408 K. This primary measurement replaces JANAF Al-090's 46 ± 5 kcal/mol analogy estimate; JANAF Al-090 remains the liquid Cp source. The spread propagates the reported enthalpy uncertainty at fixed selected T_m.",
               "references": [
-                "https://janaf.nist.gov/tables/Al-089.txt",
-                "https://janaf.nist.gov/tables/Al-090.txt"
+                "https://doi.org/10.1134/S0036024417020303"
               ]
             },
             {
@@ -3744,7 +3743,7 @@
             },
             {
               "tier": 3,
-              "value": 18.5335535523065,
+              "value": 18.188567128638653,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -3873,7 +3872,7 @@
             },
             {
               "tier": 3,
-              "value": 46.80086656534562,
+              "value": 45.93840050617601,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -4003,7 +4002,7 @@
             },
             {
               "tier": 3,
-              "value": 74.6800095157059,
+              "value": 73.30006382103451,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -4134,7 +4133,7 @@
             },
             {
               "tier": 3,
-              "value": 46.682465397391006,
+              "value": 45.819999338221386,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -4240,17 +4239,17 @@
           ]
         },
         "fusion_entropy": {
-          "value": 18.6695851447,
+          "value": 18.331785938187277,
           "tier": 3,
-          "spread": 7.859575422458086,
+          "spread": 8.204561846125934,
           "unit": "J mol^-1 K^-1",
           "flag": "red",
           "source": "Tool Tier 3 leave-one-out mean fusion entropy per formula atom over 48 validation pairs, multiplied by two atoms; spread is the maximum absolute entropy residual over the seven measured rock-salt monoxides BaO, CaO, FeO, MgO, SrO, TiO, and VO. IVTAN's 40 ± 5 kJ/mol fusion enthalpy is retained as a cross-check only.",
           "ladder": [
             {
               "tier": 3,
-              "value": 18.6695851447,
-              "spread": 7.859575422458086,
+              "value": 18.331785938187277,
+              "spread": 8.204561846125934,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by two; the maximum absolute residual among seven rock-salt monoxide homologues supplies the spread.",
               "references": [
@@ -4344,19 +4343,19 @@
           ]
         },
         "fusion_entropy": {
-          "value": 65.3435480064,
+          "value": 64.16125078365548,
           "tier": 3,
-          "spread": 14.893918964,
+          "spread": 41.856347729006444,
           "unit": "J mol^-1 K^-1",
           "flag": "red",
-          "source": "Tier 3 leave-one-out mean fusion entropy per formula atom, multiplied by seven atoms; the maximum measured residual over the two liquid-reference spinel homologues MgAl2O4 (Al-090) and Mg2TiO4 (Mg-032) supplies the spread (N=2).",
+          "source": "Tier 3 leave-one-out mean fusion entropy per formula atom, including oxygen, multiplied by seven atoms. Spread is the maximum absolute measured residual over MgAl2O4 (Al-090, corrected from Shornikov 2017 Knudsen ΔH_fus/T_m) and Mg2TiO4 (Mg-032), N=2; no activity residual is used as a selection gate.",
           "ladder": [
             {
               "tier": 3,
-              "value": 65.3435480064,
-              "spread": 14.893918964,
+              "value": 64.16125078365548,
+              "spread": 41.856347729006444,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by seven; use the maximum measured residual over MgAl2O4 (Al-090) and Mg2TiO4 (Mg-032) liquid-reference spinel homologues (N=2).",
+              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by seven; spread is the maximum absolute measured residual over MgAl2O4 (Al-090, corrected from Shornikov 2017) and Mg2TiO4 (Mg-032), N=2.",
               "references": [
                 "https://doi.org/10.1016/j.calphad.2011.12.008",
                 "https://doi.org/10.1016/j.jmrt.2020.02.046"
@@ -4449,7 +4448,7 @@
           ]
         },
         "fusion_entropy": {
-          "value": 65.3435480064,
+          "value": 64.16125078365548,
           "tier": 3,
           "spread": 54.1349436118,
           "unit": "J mol^-1 K^-1",
@@ -4458,7 +4457,7 @@
           "ladder": [
             {
               "tier": 3,
-              "value": 65.3435480064,
+              "value": 64.16125078365548,
               "spread": 54.1349436118,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by seven; use the 48-pair maximum absolute entropy residual as the spread.",
@@ -4552,7 +4551,7 @@
           ]
         },
         "fusion_entropy": {
-          "value": 46.6739628617,
+          "value": 45.829464845468195,
           "tier": 3,
           "spread": 54.1349436118,
           "unit": "J mol^-1 K^-1",
@@ -4561,7 +4560,7 @@
           "ladder": [
             {
               "tier": 3,
-              "value": 46.6739628617,
+              "value": 45.829464845468195,
               "spread": 54.1349436118,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by five; use the 48-pair maximum absolute entropy residual as the spread.",
@@ -4693,7 +4692,7 @@
             },
             {
               "tier": 3,
-              "value": 37.17217595452496,
+              "value": 36.48220310718927,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -4843,7 +4842,7 @@
             },
             {
               "tier": 3,
-              "value": 122.32356024356129,
+              "value": 120.08114848972028,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -4992,7 +4991,7 @@
             },
             {
               "tier": 3,
-              "value": 27.878009497082253,
+              "value": 27.36052986158049,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -5134,7 +5133,7 @@
             },
             {
               "tier": 3,
-              "value": 85.140944476376,
+              "value": 83.58850556987069,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -5289,7 +5288,7 @@
             },
             {
               "tier": 3,
-              "value": 56.39123366674139,
+              "value": 55.35627439573785,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -5455,7 +5454,7 @@
             },
             {
               "tier": 3,
-              "value": 37.55929329525661,
+              "value": 36.86932044792092,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -5605,7 +5604,7 @@
             },
             {
               "tier": 3,
-              "value": 65.49101188398112,
+              "value": 64.28355940114365,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -5731,7 +5730,7 @@
             },
             {
               "tier": 3,
-              "value": 18.24507110481567,
+              "value": 17.90008468114782,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -5881,7 +5880,7 @@
             },
             {
               "tier": 3,
-              "value": 27.69977733427729,
+              "value": 27.18229769877552,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -6007,7 +6006,7 @@
             },
             {
               "tier": 3,
-              "value": 18.598277087263387,
+              "value": 18.25329066359554,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -6133,7 +6132,7 @@
             },
             {
               "tier": 3,
-              "value": 28.539239933542333,
+              "value": 28.02176029804056,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -6330,7 +6329,7 @@
             },
             {
               "tier": 3,
-              "value": 18.521409108426422,
+              "value": 18.176422684758574,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -6480,7 +6479,7 @@
             },
             {
               "tier": 3,
-              "value": 65.49235840242241,
+              "value": 64.28490591958496,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -6641,7 +6640,7 @@
             },
             {
               "tier": 3,
-              "value": 46.61476051719359,
+              "value": 45.75229445802397,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -6767,7 +6766,7 @@
             },
             {
               "tier": 3,
-              "value": 74.48682291217085,
+              "value": 73.10687721749947,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -6893,7 +6892,7 @@
             },
             {
               "tier": 3,
-              "value": 102.40225377847825,
+              "value": 100.5048284483051,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -7087,7 +7086,7 @@
             },
             {
               "tier": 3,
-              "value": 18.626757236357207,
+              "value": 18.281770812689363,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -7237,7 +7236,7 @@
             },
             {
               "tier": 3,
-              "value": 27.93150070420474,
+              "value": 27.41402106870297,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -7401,7 +7400,7 @@
             },
             {
               "tier": 3,
-              "value": 46.60182142341072,
+              "value": 45.739355364241106,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -7551,7 +7550,7 @@
             },
             {
               "tier": 3,
-              "value": 55.88886389254347,
+              "value": 54.853904621539925,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -7701,7 +7700,7 @@
             },
             {
               "tier": 3,
-              "value": 65.27815514582468,
+              "value": 64.07070266298723,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -7895,7 +7894,7 @@
             },
             {
               "tier": 3,
-              "value": 18.505843990060832,
+              "value": 18.160857566392984,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -8034,7 +8033,7 @@
             },
             {
               "tier": 3,
-              "value": 37.238301321419165,
+              "value": 36.54832847408347,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -8160,7 +8159,7 @@
             },
             {
               "tier": 3,
-              "value": 27.97253698601066,
+              "value": 27.455057350508888,
               "spread": 0.0,
               "flag": "red",
               "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
@@ -8558,11 +8557,11 @@
           ]
         },
         "fusion_entropy": {
-          "value": 46.673962862,
+          "value": 45.829464845468195,
           "tier": 3,
           "spread": 0.0,
           "unit": "J mol^-1 K^-1",
-          "source": "No Sb2O3 fusion enthalpy or entropy is tabulated. Tier-3 estimate: the 48-pair per-atom mean 9.334792572 J/(mol K) times five atoms per Sb2O3 formula unit. The matching five-atom leave-one-out Gibbs-error envelope is retained below.",
+          "source": "No Sb2O3 fusion enthalpy or entropy is tabulated. Tier-3 estimate: the 48-pair per-atom mean 9.165892969 J/(mol K) times five atoms per Sb2O3 formula unit. The matching five-atom leave-one-out Gibbs-error envelope is retained below.",
           "training_count": 48,
           "references": [
             "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"
@@ -8596,12 +8595,12 @@
           "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
           "method": "Evaluate the tier-3 leave-one-out Gibbs envelope at each listed temperature's offset from the constructed 928 K transition: interpolate the measured maxima at offsets 0, +300, and +800 K, then continue the final measured slope above +800 K.",
           "values_J_per_mol": {
-            "1200": 15034.955959773,
-            "1500": 31157.038183952,
-            "1800": 47362.834503752,
-            "2000": 58166.698716952,
-            "2500": 85176.359249952,
-            "3000": 112186.019782952
+            "1200": 14612.692577480588,
+            "1500": 30269.043129316273,
+            "1800": 46009.10777675662,
+            "2000": 56502.48420838351,
+            "2500": 82735.92528745074,
+            "3000": 108969.36636651798
           }
         },
         "unit": "J mol^-1",
@@ -8655,11 +8654,11 @@
           ]
         },
         "fusion_entropy": {
-          "value": 28.004377717,
+          "value": 27.497678907280914,
           "tier": 3,
           "spread": 0.0,
           "unit": "J mol^-1 K^-1",
-          "source": "No Ag2O transition entropy is published. Apply the repository tier-3 per-atom mean of 9.334792572 J/(mol K) to the three atoms in Ag2O; this is a construction input, not a measured fusion entropy.",
+          "source": "No Ag2O transition entropy is published. Apply the repository tier-3 per-atom mean of 9.165892969 J/(mol K) to the three atoms in Ag2O; this is a construction input, not a measured fusion entropy.",
           "training_count": 48,
           "references": [
             "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"
@@ -8693,12 +8692,12 @@
           "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
           "method": "Evaluate the tier-3 leave-one-out Gibbs envelope at each listed temperature's offset from the 500 K hypothetical anchor: interpolate the measured maxima at offsets 0, +300, and +800 K, then continue the final measured slope above +800 K. This construction uncertainty is not a fit residual; its +800 K-calibrated slope is extended 1500-2500 K past the decomposition near 500 K.",
           "values_J_per_mol": {
-            "1200": 38071.5112804,
-            "1500": 54277.3076002,
-            "1800": 70483.10392,
-            "2000": 81286.9681332,
-            "2500": 108296.6286662,
-            "3000": 135306.2891992
+            "1200": 36984.80404555748,
+            "1500": 52724.86869299782,
+            "1800": 68464.93334043816,
+            "2000": 78958.30977206507,
+            "2500": 105191.7508511323,
+            "3000": 131425.19193019954
           }
         },
         "unit": "J mol^-1",
@@ -8752,11 +8751,11 @@
           ]
         },
         "fusion_entropy": {
-          "value": 46.673962861666666,
+          "value": 45.829464845468195,
           "tier": 3,
           "spread": 0.0,
           "unit": "J mol^-1 K^-1",
-          "source": "No As2O3 fusion enthalpy or fusion entropy was located. Apply the documented tier-3 Richards-type estimate: 28.004377717 J/(mol K) for K2O divided by its three atoms gives the repository's 48-pair mean per formula atom; multiply by the five atoms in As2O3. The leave-one-out construction band is recorded separately.",
+          "source": "No As2O3 fusion enthalpy or fusion entropy was located. Apply the documented tier-3 Richards-type estimate: 27.497678907 J/(mol K) for K2O divided by its three atoms gives the repository's 48-pair mean per formula atom; multiply by the five atoms in As2O3. The leave-one-out construction band is recorded separately.",
           "training_count": 48,
           "references": [
             "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"
@@ -8790,12 +8789,12 @@
           "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
           "method": "Interpolate the measured maximum absolute leave-one-out Gibbs error between +300 and +800 K from fusion; above +800 K, continue its final measured slope as a flagged uncertainty estimate.",
           "values_J_per_mol": {
-            "1200": 35316.525905814444,
-            "1500": 51522.32222520653,
-            "1800": 67728.11854459862,
-            "2000": 78531.98275752667,
-            "2500": 105541.64328984682,
-            "3000": 132551.30382216698
+            "1200": 34308.99305549262,
+            "1500": 50049.05770293297,
+            "1800": 65789.1223503733,
+            "2000": 76282.4987820002,
+            "2500": 102515.93986106744,
+            "3000": 128749.38094013464
           }
         },
         "unit": "J mol^-1",

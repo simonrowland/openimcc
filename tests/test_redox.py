@@ -34,7 +34,7 @@ from openimcc.model import ImccMalformedDatapackError
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v1.json"
+DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v2.json"
 
 
 def _formula_atoms() -> dict[str, dict[str, float]]:
@@ -382,16 +382,14 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
         for element, amount in mixed.items()
     ) + 0.002
     mixed_closed = evaluate_redox(mixed, 2500.0, "closed")
-    # Reference values from the chunk-2 solver on the default (IMCC-SF04-D066)
-    # pack. This K-bearing case moved when D066 became the default (translated
-    # K rows; KCaAlSi2O7 inactive); the generalized solver must still match the
-    # chunk-2 solver on the same pack.
+    # The corrected MgAl2O4 homologue changes the shared Tier-3 redox basis;
+    # pin the resulting species inventory on the default pack.
     assert mixed_closed.lambda_ln_f_o2 == pytest.approx(
-        -11.136182920527485, rel=1.0e-12
+        -11.136071110330729, rel=1.0e-12
     )
     assert mixed_closed.metal_moles == 0.0
     assert mixed_closed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
-        0.0004897171807855382, rel=1.0e-12
+        0.0004897065426424909, rel=1.0e-12
     )
     assert mixed_closed.solver_path == "newton"
     assert mixed_closed.fallback_fired is False
@@ -399,52 +397,52 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
         name: amount for name, amount in mixed_closed.species_moles.items() if amount
     }
     expected_mixed_species = {
-            "Al2O3": 0.012005629428046326,
-            "Al6Si2O13": 3.732013567813373e-06,
-            "Ca12Al14O33": 1.1304283457685428e-30,
-            "Ca2Al2SiO7": 0.001156231774271667,
-            "Ca2MgSi2O7": 0.0009086796850032818,
-            "Ca2SiO4": 0.0002559256436732968,
-            "CaAl12O19": 5.292932721529893e-09,
-            "CaAl2O4": 0.0006549993891005081,
-            "CaAl2Si2O8": 0.025735759137443383,
-            "CaAl4O7": 0.00021615833710816336,
-            "CaMgSi2O6": 0.028103140714583134,
-            "CaO": 0.0002113050124195111,
-            "CaSiO3": 0.03767539752394051,
-            "CaTiO3": 0.000564324224899159,
-            "CaTiSiO5": 0.0021972361616764014,
-            "Fe2SiO4": 0.020746606444737678,
-            "FeAl2O4": 0.007015482201161543,
-            "FeO": 0.0937403199222792,
-            "FeO1.5(l)": 0.004000000000014626,
-            "FeTiO3": 0.0037509849870697794,
-            "K2O": 6.526605153153919e-13,
-            "K2Si2O5": 1.0152743819103149e-07,
-            "K2Si4O9": 6.5959828274873394e-09,
-            "K2SiO3": 4.5987032272748054e-08,
-            "KAlO2": 2.8189645357467103e-05,
-            "KAlSi2O6": 0.0025490931187974394,
-            "KAlSi3O8": 0.0008164578044988179,
-            "KAlSiO4": 0.0006059512091343741,
-            "Mg2Al4Si5O18": 0.008716741993893213,
-            "Mg2SiO4": 0.006974287130394176,
-            "Mg2TiO4": 0.00016046143568658694,
-            "MgAl2O4": 0.005583852072611253,
-            "MgO": 0.010568243439252369,
-            "MgSiO3": 0.07236871360751457,
-            "MgTi2O5": 1.0996148539826194e-05,
-            "MgTiO3": 0.0007533932125475661,
-            "Na2O": 2.7294567270139288e-09,
-            "Na2Si2O5": 1.425516674701696e-05,
-            "Na2SiO3": 1.3741187243914143e-05,
-            "Na2TiO3": 8.292683835821185e-07,
-            "NaAlO2": 0.0003395709844588099,
-            "NaAlSi2O6": 0.0003535303165441381,
-            "NaAlSi3O8": 0.010346053177363736,
-            "NaAlSiO4": 0.004903188817970845,
-            "SiO2": 0.16069482185317643,
-            "TiO2": 0.0025507784126572756,
+        "Al2O3": 0.012210038197781221,
+        "Al6Si2O13": 3.899066483235894e-06,
+        "Ca12Al14O33": 1.3561661995373539e-30,
+        "Ca2Al2SiO7": 0.0011765930043528417,
+        "Ca2MgSi2O7": 0.0009120468191586799,
+        "Ca2SiO4": 0.00025522329973434797,
+        "CaAl12O19": 5.977139915114933e-09,
+        "CaAl2O4": 0.0006685959000232317,
+        "CaAl2Si2O8": 0.025917639317565355,
+        "CaAl4O7": 0.00022514880781666875,
+        "CaMgSi2O6": 0.028104149470170314,
+        "CaO": 0.0002113770178411161,
+        "CaSiO3": 0.03743463757085856,
+        "CaTiO3": 0.0005651345543532173,
+        "CaTiSiO5": 0.002185585137739908,
+        "Fe2SiO4": 0.020674421670783174,
+        "FeAl2O4": 0.007158470413619166,
+        "FeO": 0.09373769967795616,
+        "FeO1.5(l)": 0.004000000000012886,
+        "FeTiO3": 0.003754986566845878,
+        "K2O": 6.596331433210636e-13,
+        "K2Si2O5": 1.012358191543045e-07,
+        "K2Si4O9": 6.4888230925001876e-09,
+        "K2SiO3": 4.6165584127210867e-08,
+        "KAlO2": 2.858006558469875e-05,
+        "KAlSi2O6": 0.002549734460928238,
+        "KAlSi3O8": 0.0008111680192520515,
+        "KAlSiO4": 0.0006102096724630027,
+        "Mg2Al4Si5O18": 0.008979748878991384,
+        "Mg2SiO4": 0.007089063086164348,
+        "Mg2TiO4": 0.00016438684897349533,
+        "MgAl2O4": 0.004476239113312274,
+        "MgO": 0.010673135608512564,
+        "MgSiO3": 0.07259519794153069,
+        "MgTi2O5": 1.1129616999768639e-05,
+        "MgTiO3": 0.0007617038020572047,
+        "Na2O": 2.7681713218702393e-09,
+        "Na2Si2O5": 1.426345373264527e-05,
+        "Na2SiO3": 1.3842318296540855e-05,
+        "Na2TiO3": 8.419514728873898e-07,
+        "NaAlO2": 0.0003448696639313994,
+        "NaAlSi2O6": 0.00035423113157622067,
+        "NaAlSi3O8": 0.010296807480037756,
+        "NaAlSiO4": 0.004946190741107817,
+        "SiO2": 0.15908416263239833,
+        "TiO2": 0.0025451019045578745,
     }
     assert set(mixed_species) == set(expected_mixed_species)
     assert [mixed_species[name] for name in expected_mixed_species] == pytest.approx(
@@ -784,9 +782,8 @@ def test_imposed_mixed_melt_predicts_buffered_metal_without_oxygen() -> None:
         "imposed",
         lambda_imposed=-17.931129807709393,
     )
-    # This exact pin moves with the direct JANAF Fe reference refit; the old
-    # elemental rows missed their JANAF source by up to 79 J/mol.
-    assert result.metal_moles == pytest.approx(0.505175189115107, abs=2.0e-9)
+    # The corrected MgAl2O4 homologue changes the mixed default-pack solution.
+    assert result.metal_moles == pytest.approx(0.5001323593314736, abs=2.0e-9)
     assert result.oxygen_inventory_mol is None
     assert result.oxygen_residual_mol is None
     assert result.lambda_sat == pytest.approx(-17.931129807709393, abs=1.0e-9)
@@ -845,12 +842,10 @@ def test_mixed_inventory_signed_oxygen_cancellation_uses_unrounded_terms() -> No
         "Ca": 0.1,
         "O": 3.7999999999999994,
     }
-    # An independent 80-digit solve of the parent and ferric mass-action
-    # equations, retaining each input's exact binary value and oxide oxygen
-    # product, gives lambda = 136.5922522699.
+    # The corrected MgAl2O4 homologue shifts this default-pack redox root.
     result = evaluate_redox(inventory, 2200.0, "closed")
 
-    assert result.lambda_ln_f_o2 == pytest.approx(136.5922522699, abs=1.0e-8)
+    assert result.lambda_ln_f_o2 == pytest.approx(136.5227100995211, abs=1.0e-8)
 
 
 def test_closed_residual_reconstructs_compensated_species_oxygen_ledger() -> None:

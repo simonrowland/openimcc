@@ -2482,7 +2482,7 @@ def test_oxygen_balance_includes_each_dict_only_nonoxide_parent(
         ),
     )
     assert no_extra_calls[0] == no_extra_calls[1] == no_extra_calls[2]
-    assert no_extra_calls[0][0].hex() == "0x1.3d1fbf75274c6p-18"
+    assert no_extra_calls[0][0].hex() == "0x1.41da4345afe0bp-18"
 
     # The explicit oxide subset keeps excluding every other oxide activity.
     root, pressures, _ = evaluate_gas_oxygen_balance(
@@ -2491,7 +2491,7 @@ def test_oxygen_balance_includes_each_dict_only_nonoxide_parent(
         gas_pack,
         parent_oxides=("SiO2", "MgO"),
     )
-    assert root.hex() == "0x1.bfa86c0523f92p-25"
+    assert root.hex() == "0x1.c4f14e8eac65fp-25"
     assert len(pressures) == 9
     assert "Na" not in pressures
 
@@ -3972,8 +3972,9 @@ def test_default_outputs_are_unchanged_when_trace_rows_are_removed(
 def test_existing_coefficient_rows_match_the_base_pack_exactly(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    """Keep every serialized row from the pre-campaign gas pack unchanged."""
+    """Keep unchanged rows exact while rebuilding the four LFS dependents."""
     base = "af0f2a2"
+    rebuilt_lfs = {"MnO(l)", "As2O3(l)", "Sb2O3(l)", "Ag2O(l)"}
     root = Path(__file__).resolve().parents[1]
     for relpath, current_path in (
         ("src/openimcc/data/gas/gas-shomate.csv", gas_pack.gas_path),
@@ -3989,7 +3990,11 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         old_lines = original.splitlines()
         current_lines = current_path.read_text(encoding="utf-8").splitlines()
         assert current_lines[0] == old_lines[0]
-        assert Counter(old_lines[1:]) <= Counter(current_lines[1:])
+        unchanged = [
+            line for line in old_lines[1:]
+            if line.split(",", 1)[0] not in rebuilt_lfs
+        ]
+        assert Counter(unchanged) <= Counter(current_lines[1:])
 
 
 def _trace_janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
@@ -5950,10 +5955,12 @@ def test_condensate_source_table_follows_the_selected_row(
         ("ZrO2", "l", 1350.0, "O-053", "O-053", -1190328.7307094275),
         ("Rh", "cr", 2000.0, "P672-Rh-cr", "P672-Rh-cr", -123994.38790011544),
         ("Ru", "cr", 1903.5, "P672-Ru-cr", "P672-Ru-cr", -107072.09380351192),
-        ("Ag2O", "l", 1400.0, "P672-Ag2O-LFS", "P672-Ag2O-c", -305830.0988187776),
+        ("MnO", "l", 2200.0, "LFS[MnO-IVTAN-1435;Tf=2120]", "MnO-liquid-construction", -643084.090715248),
+        ("As2O3", "l", 1400.0, "P672-As2O3-LFS", "P672-As2O3", -969773.6990807425),
+        ("Ag2O", "l", 1400.0, "P672-Ag2O-LFS", "P672-Ag2O-c", -305374.0698900303),
         (
             "Sb2O3", "l", 1400.0, "P672-Sb2O3-LFS", "P672-Sb2O3-c",
-            -1022618.2486650476,
+            -1022219.6456012437,
         ),
     )
     for species, phase, temperature, reference, table_id, gibbs in corrected:
@@ -5964,8 +5971,6 @@ def test_condensate_source_table_follows_the_selected_row(
 
     unchanged = (
         ("BeO", "l", 2900.0, "NG-BeO-L-1352"),
-        ("MnO", "l", 2200.0, "MnO-liquid-construction"),
-        ("As2O3", "l", 1400.0, "P672-As2O3"),
         ("FeO", "l", 2200.0, "Fe-019"),
         ("P2O5", "l", 2200.0, "Jung-Hudon-2012"),
         ("HfO2", "l", 2000.0, "P672-HfO2-c"),

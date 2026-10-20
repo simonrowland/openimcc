@@ -24,9 +24,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src/openimcc/data/packs"
 LEGACY_PATH = PACK_DIR / "imcc-sf04-ext-v4.json"
 PUBLISHED_PATH = PACK_DIR / "imcc-sf04-v1.0.2.json"
-DEFAULT_PATH = PACK_DIR / "imcc-sf04-d066-v1.json"
+DEFAULT_PATH = PACK_DIR / "imcc-sf04-d066-v2.json"
+FEO_CANDIDATE_PATH = PACK_DIR / "imcc-sf04-d066-feo-liquid-candidate-v2.json"
 SENSITIVITY_PATH = PACK_DIR / "imcc-sf04-d066-v1-kcaalsi2o7.json"
 EXTENSION_PATH = PACK_DIR / "imcc-sf04-d066-ext-v1.json"
+D066_V1_PATH = PACK_DIR / "imcc-sf04-d066-v1.json"
 FC87_GRID_K = (1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2200, 2500, 2800, 3000)
 FC87_GRID_G_KJ_MOL = (
     -550.392,
@@ -120,7 +122,7 @@ def test_loader_defaults_unmarked_published_rows_to_active() -> None:
 def test_default_is_d066_and_legacy_packs_remain_selectable() -> None:
     default_pack = load_datapack()
     assert default_pack.model_id == "IMCC-SF04-D066"
-    assert default_pack.version == "1.0.3-d066-v1"
+    assert default_pack.version == "1.0.4-d066-v2"
     assert "A-published-imcc" not in default_pack.kernel_datapack.coverage.values()
     assert load_datapack(LEGACY_PATH).version == "1.0.2-ext-sp-2"
     assert load_datapack(PUBLISHED_PATH).version == "1.0.2"
@@ -182,12 +184,25 @@ def test_d066_extension_carries_ext_v4_overlay_under_its_own_identity() -> None:
 
 
 def test_d066_extension_k_rows_match_the_core_arm() -> None:
-    core = _rows(DEFAULT_PATH)
+    # The frozen extension remains paired with its original D066 core. D066
+    # v2 moves the Tier-3 fallback estimate from 28.004 to 27.498 J/(mol K)
+    # and rebuilds the MnO, As2O3, Sb2O3, and Ag2O LFS condensates; JANAF K-012
+    # and its four FC87 row translations are unchanged.
+    core = _rows(D066_V1_PATH)
     extension = _rows(EXTENSION_PATH)
     for name in (*TRANSLATED_COMPLEXES, *REFERENCE_UNKNOWN_COMPLEXES, "KCaAlSi2O7"):
         assert extension[name]["A"] == core[name]["A"]
         assert extension[name]["B"] == core[name]["B"]
         assert extension[name]["coverage"] == core[name]["coverage"]
+
+
+def test_d066_v2_packs_preserve_v1_k_row_translations() -> None:
+    v1 = _rows(D066_V1_PATH)
+    for pack_path in (DEFAULT_PATH, FEO_CANDIDATE_PATH):
+        corrected = _rows(pack_path)
+        for name in TRANSLATED_COMPLEXES:
+            for field in ("A", "B", "k_translation", "fit_residual"):
+                assert corrected[name][field] == v1[name][field]
 
 
 @pytest.mark.parametrize(
@@ -236,7 +251,21 @@ def test_translation_tool_reproduces_each_shipped_d066_pack(
         else:
             assert actual == wanted
 
-    assert_pack_matches(generated, expected)
+    if output_path == DEFAULT_PATH:
+        generated_rows = {row["complex"]: row for row in generated["rows"]}
+        expected_rows = {row["complex"]: row for row in expected["rows"]}
+        for name in TRANSLATED_COMPLEXES:
+            for field in ("A", "B", "k_translation", "fit_residual"):
+                assert_pack_matches(
+                    generated_rows[name].get(field), expected_rows[name].get(field)
+                )
+        for name in REFERENCE_UNKNOWN_COMPLEXES:
+            for field in ("fit_residual", "translation_candidates"):
+                assert_pack_matches(
+                    generated_rows[name].get(field), expected_rows[name].get(field)
+                )
+    else:
+        assert_pack_matches(generated, expected)
 
 
 def test_fc87_reference_reproduces_the_species_grid() -> None:
@@ -538,36 +567,30 @@ def test_free_fraction_pressure_bookkeeping_and_pure_k2o_endpoint() -> None:
     assert observed_shift == pytest.approx(full_reference_shift, abs=1e-10)
 
 
-def test_non_k_composition_is_bit_identical_to_the_published_core() -> None:
+def test_corrected_mgal2o4_row_changes_non_k_composition_from_frozen_d066_v1() -> None:
     composition = {**COMPOSITIONS[0], "K2O": 0.0}
-    published = evaluate(
+    frozen = evaluate(
         composition,
         2000.0,
-        load_datapack(PUBLISHED_PATH),
+        load_datapack(D066_V1_PATH),
         allow_out_of_envelope=True,
     )
-    default = evaluate(
+    corrected = evaluate(
         composition,
         2000.0,
         load_datapack(),
         allow_out_of_envelope=True,
     )
-    for field in (
-        "parent_mol",
-        "parent_x",
-        "parent_x_star",
-        "parent_activity",
-        "parent_gamma",
-    ):
-        assert getattr(default, field).tolist() == getattr(published, field).tolist()
-    published_species = dict(zip(published.species_names, published.species_x))
-    default_species = dict(zip(default.species_names, default.species_x))
-    assert default_species.keys() <= published_species.keys()
-    assert all(
-        default_species[name] == published_species[name]
-        for name in default_species
+    frozen_activity = dict(zip(frozen.parent_oxides, frozen.parent_activity))
+    corrected_activity = dict(zip(corrected.parent_oxides, corrected.parent_activity))
+    corrected_species = dict(zip(corrected.species_names, corrected.species_x))
+    assert frozen_activity["MgO"] == pytest.approx(0.030035248299845278, abs=1e-14)
+    assert frozen_activity["Al2O3"] == pytest.approx(0.01691805447658924, abs=1e-14)
+    assert corrected_activity["MgO"] == pytest.approx(0.027720947030726254, abs=1e-14)
+    assert corrected_activity["Al2O3"] == pytest.approx(0.011987250042884732, abs=1e-14)
+    assert corrected_species["MgAl2O4"] == pytest.approx(
+        0.034533154171957715, abs=1e-14
     )
-    assert default.D == published.D
 
 
 def test_published_melt_and_lam_gas_pair_reproduces_its_k_pressure_pin() -> None:
