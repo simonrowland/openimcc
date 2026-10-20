@@ -212,9 +212,10 @@ measured-Cp tier also holds an absolute liquid Cp constant, while constant
 reflect table selection and interpolation conventions; the
 independent census did not include enough method detail to reproduce its
 exact pair-by-pair calculation. Its Richards-rule maxima, 24.9 / 58.7 kJ/mol
-at +300 / +800 K, are above the formula-atom LOO results here (15.998 /
-42.231); both use 48 formulas, but their exact phase-selection and
-normalization conventions were not supplied for a stricter comparison.
+at +300 / +800 K, are above the formula-atom LOO results here (14.144 /
+37.286); the class-C estimate uses 17 measured pairs while the Richards
+comparison uses all 48. The exact phase-selection and normalization
+conventions were not supplied for a stricter comparison.
 
 The Tier 1 control now includes Shornikov's primary MgAl₂O₄ fusion
 measurement in place of JANAF Al-090's analogy estimate. Its larger
