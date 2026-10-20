@@ -302,7 +302,7 @@ def test_last_converged_trace_seed_recovers_depleted_feo() -> None:
     )
 
     assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages > 7
+    assert result.convergence.continuation_stages == 7
     assert result.convergence.residual_inf <= 1.0e-12
 
 
@@ -326,7 +326,7 @@ def test_trace_anchor_recovers_depleted_feo_at_2288k() -> None:
     )
 
     assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages > 7
+    assert result.convergence.continuation_stages == 7
     assert result.convergence.residual_inf <= 1.0e-12
 
 
@@ -399,8 +399,12 @@ def test_temperature_continuation_recovers_low_temperature_depletions(
         allow_out_of_envelope=True,
     )
 
-    assert result.convergence.solver_path == "temperature-continuation"
-    assert result.convergence.continuation_stages > 1
+    if trace_name == "FeO":
+        assert result.convergence.solver_path == "direct"
+        assert result.convergence.continuation_stages == 0
+    else:
+        assert result.convergence.solver_path == "temperature-continuation"
+        assert result.convergence.continuation_stages > 1
     assert result.convergence.residual_inf <= 1.0e-12
     assert np.array_equal(result.parent_mol, composition)
     trace_amount = result.parent_mol[result.parent_oxides.index(trace_name)]

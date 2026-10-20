@@ -926,6 +926,57 @@ def _solve_active(
             },
         )
 
+    if first[4] > tol and not relative_tolerance:
+        # A trace-parent root can be numerically close in absolute residual
+        # while still failing the relative inventory certificate. If SciPy
+        # stops on gtol just above the requested absolute tolerance, polish
+        # that direct iterate with the existing analytic Jacobian. Keep the
+        # result only when both the solver residual and inventory certificate
+        # pass; otherwise retain the original result and use continuation.
+        polish_y = first[0].copy()
+        polish_steps = 0
+        for _ in range(12):
+            polish_f, polish_g, polish_D, polish_J = _active_residual(
+                polish_y, x_target, nu, lnK, S
+            )
+            polish_residual = polish_f
+            polish_residual_inf = float(np.linalg.norm(polish_residual, ord=np.inf))
+            if (
+                math.isfinite(polish_D)
+                and polish_D > 0.0
+                and polish_residual_inf <= tol
+            ):
+                relative_error = polish_f / (polish_D * x_target)
+                if (
+                    np.all(np.isfinite(relative_error))
+                    and np.all(np.abs(relative_error) <= tol)
+                ):
+                    polish_l2 = float(np.linalg.norm(polish_residual, ord=2))
+                    first = (
+                        polish_y,
+                        polish_g,
+                        polish_D,
+                        first[3] + polish_steps,
+                        polish_residual_inf,
+                        polish_l2,
+                        float(np.linalg.norm(polish_y - y0)),
+                        f"{first[7]}; analytic Newton polish",
+                    )
+                    break
+            try:
+                correction = np.linalg.solve(polish_J, polish_f)
+            except np.linalg.LinAlgError:
+                break
+            candidate_y = polish_y - correction
+            if (
+                not np.all(np.isfinite(candidate_y))
+                or np.any(candidate_y < lb)
+                or np.any(candidate_y > ub)
+            ):
+                break
+            polish_y = candidate_y
+            polish_steps += 1
+
     if first[4] <= tol:
         return (*first[:7], "direct", 0)
 
