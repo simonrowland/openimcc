@@ -27,11 +27,8 @@ LEGACY_BINDING_SHA256 = {
     "imcc-sf04-ext-v4.json": "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770",
 }
 D066_MANIFEST_SHA256 = {
-    "imcc-sf04-d066-v3.json": (
-        "076e1c1c73fe5adcafa83ee27ef9481674231cfbd13adf5bf94375100ab1cd6a"
-    ),
     "imcc-sf04-d066-v2.json": (
-        "efd2330f57d366b660e100d821806054b59134cb95b6404e1f9c27b5e468893e"
+        "ac88aa2272c50d1cbf300634737c5d0071bddee0cd0f0483a6530c4a4992c393"
     ),
     "imcc-sf04-d066-v1.json": (
         "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75"
@@ -158,7 +155,7 @@ def test_default_d066_k_pressure_is_pinned_after_data_change() -> None:
         load_gas_datapack(),
         gas_species=("K",),
     )["K"]
-    # This intentionally moves with the v3 MgAl2O4 and FeO(l) corrections.
+    # This intentionally moves with the v2 MgAl2O4 and FeO(l) corrections.
     # Keep the portable-golden convention: a tight relative bound with no
     # absolute allowance; pack and digest pins stay exact.
     assert float(pressure) == pytest.approx(

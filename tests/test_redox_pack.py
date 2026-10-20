@@ -25,7 +25,7 @@ from tools.liquid_from_solid import liquid_from_solid
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
+PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v2.json"
 SOURCE_PATH = ROOT / "data-src/redox-thermochemistry.json"
 
 
@@ -38,7 +38,7 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     pack = load_redox_pack(PACK_PATH)
     elements = [parent["element"] for parent in pack.parents]
 
-    assert pack.version == "1.6.0"
+    assert pack.version == "1.5.0"
     assert pack.content["schema"] == "openimcc-redox-pack.v2"
     assert elements == [
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K", "Cr", "Ni",

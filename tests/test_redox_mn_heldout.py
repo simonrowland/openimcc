@@ -19,7 +19,7 @@ DATA_PATH = ROOT / "tests/data/redox-mn-heldout.json"
 REPORT_PATH = ROOT / "tests/data/redox-mn-heldout-residuals.json"
 INPUTS_PATH = ROOT / "data-src/liquid-from-solid-inputs.json"
 CRYSTALS_PATH = ROOT / "data-src/crystal-thermochemistry.json"
-PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
+PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v2.json"
 FORMULA_WEIGHT_G_MOL = {
     "MnO": 54.938044 + 15.999,
     "FeO": 55.845 + 15.999,

@@ -12,8 +12,8 @@ from openimcc.model import ImccMalformedDatapackError
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKS = ROOT / "src/openimcc/data/packs"
-FEO_REDOX = PACKS / "openimcc-redox-feo-liquid-candidate-v2.json"
-FEO_MELT = PACKS / "imcc-sf04-d066-feo-liquid-candidate-v2.json"
+FEO_REDOX = PACKS / "openimcc-redox-feo-liquid-candidate.json"
+FEO_MELT = PACKS / "imcc-sf04-d066-feo-liquid-candidate.json"
 
 
 def _bse_feed() -> dict[str, float]:
@@ -76,7 +76,7 @@ def test_feo_melt_candidate_is_loaded_and_reported() -> None:
 
     assert candidate.melt_pack_binding_digest == melt_pack.binding_digest
     assert candidate.melt_pack_binding_digest != default.melt_pack_binding_digest
-    assert candidate.species_moles == default.species_moles
+    assert candidate.species_moles != default.species_moles
 
 
 @pytest.mark.parametrize("bad_path_kind", ["missing", "mismatched"])

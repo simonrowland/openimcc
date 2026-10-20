@@ -17,12 +17,11 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping
 
-_PACK_NAME = "openimcc-redox-v3.json"
+_PACK_NAME = "openimcc-redox-v2.json"
 _SCHEMA = "openimcc-redox-pack.v2"
 _CANDIDATE_VERSIONS = {
     "1.4.0-cr-candidate", "1.5.0-ti-candidate", "1.6.0-cr-ti-candidate",
     "1.5.0-cr-candidate", "1.6.0-ti-candidate", "1.7.0-cr-ti-candidate",
-    "1.6.0-cr-candidate", "1.7.0-ti-candidate", "1.8.0-cr-ti-candidate",
 }
 
 

@@ -2,7 +2,7 @@
   "imcc_sf04_datapack_version": "1.0.4-d066-v2",
   "created": "2026-10-20",
   "spec": "docs/imcc-sf04-spec.md r2.1 (review-converged)",
-  "model": "IMCC ideal associated solution: 46 melt species = 8 unbound parent oxides + 38 complexes; x_j = K_j(T) * prod_i (x_i*)^nu_ij; log10 K_j = A_j + B_j/T (T in K)",
+  "model": "IMCC ideal associated solution with the D066 translations, the measured MgAl2O4 fusion correction, and the D&G/Masson FeO(l) standard-state re-anchor applied consistently to Fe-bearing associations.",
   "parents": [
     "SiO2",
     "MgO",
@@ -184,7 +184,7 @@
       },
       "A": -1.7842579418420448,
       "B": 7601.933123955643,
-      "source": "FC87 Table 3 (p. 211), R3; fusion enthalpy corrected from Shornikov et al. (2017), Table 2 (p. 290)",
+      "source": "FC87 Table 3 (p. 211), R3; fusion enthalpy corrected from Shornikov (2017), Table 2 (p. 290)",
       "T_domain_K": [
         1700,
         3000
@@ -196,7 +196,7 @@
         4000
       ],
       "janaf_range_caveat": null,
-      "derivation": "Source decision: criterion 2 (primary measurements) selects Shornikov et al. (2017), Table 2, Knudsen ΔfusH = 55.81 ± 4.62 kJ/mol compound over the JANAF Al-090 analogy estimate of 46 ± 5 kcal/mol = 192.464 ± 20.92 kJ/mol. Shornikov reports a direct compound-molar measurement and the smaller stated uncertainty; the independent Richet et al. DTA value is 53.50 ± 5.50 kJ/mol. JANAF Al-090 prints “Be2O4(l)”; reading the seven-gram-atom construction as BeAl2O4 is an inference, not a verified page transcription. Criterion 1 keeps JANAF Al-089 MgAl2O4(cr) for the crystal phase pair. Retain JANAF Al-090 Tfus = 2408 ± 20 K; the measured 2416 ± 10 K and 2420 ± 25 K ranges overlap. Using 2420 K instead would increase the JANAF-minus-measured Gibbs gap by 0.478, 0.563, 0.619 kJ/mol at 1700, 2000, and 2200 K. Build G(MgAl2O4,l;T)=G(cr,T)+ΔfusG(T), retaining JANAF Al-090 Cp(l)=52.5 cal mol^-1 K^-1 = 219.66 J mol^-1 K^-1 above Tg=1750 K and the crystal Cp below Tg. For the constant-ΔCp branch above Tg, ΔfusG(T)=ΔHfus(1−T/Tm)+ΔCp[(T−Tm)−T ln(T/Tm)]; below Tg the liquid uses the crystal Cp branch. In the JANAF-versus-corrected comparison, this common Cp/Tg term cancels, leaving ΔG=(192.464−55.81)(1−T/2408) kJ/mol. FC87 Appendix 1 R1-R6 derives log10K=A+B/T from JANAF; lowering product G by ΔG raises log10K by ΔG/(RT ln 10), so ΔB=136.654 kJ/mol divided by R ln 10 = 7137.933123955643 K and ΔA=−ΔB/Tm=−2.9642579418420448. Thus A=−1.7842579418420448 and B=7601.933123955643 for row 3. Units: R=8.31446261815324 J mol^-1 K^-1=0.00831446261815324 kJ mol^-1 K^-1, so kJ/mol divided by R gives kelvin for ΔB; ΔA is dimensionless and the Cp bracket has units of kelvin. Sanity: ΔGfus(2408 K)=0 and the JANAF liquid-G bias is 40.179, 23.154, 11.804 kJ/mol at 1700, 2000, and 2200 K.",
+      "derivation": "Source decision: criterion 2 (primary measurements) selects Shornikov (2017), Table 2, Knudsen ΔfusH = 55.81 ± 4.62 kJ/mol compound over the JANAF Al-090 analogy estimate of 46 ± 5 kcal/mol = 192.464 ± 20.92 kJ/mol. Shornikov reports a direct compound-molar measurement and the smaller stated uncertainty; the independent Richet et al. DTA value is 53.50 ± 5.50 kJ/mol. JANAF Al-090 prints “Be2O4(l)”; reading the seven-gram-atom construction as BeAl2O4 is an inference, not a verified page transcription. Criterion 1 keeps JANAF Al-089 MgAl2O4(cr) for the crystal phase pair. Retain JANAF Al-090 Tfus = 2408 ± 20 K; the measured 2416 ± 10 K and 2420 ± 25 K ranges overlap. Using 2420 K instead would increase the JANAF-minus-measured Gibbs gap by 0.478, 0.563, 0.619 kJ/mol at 1700, 2000, and 2200 K. Build G(MgAl2O4,l;T)=G(cr,T)+ΔfusG(T), retaining JANAF Al-090 Cp(l)=52.5 cal mol^-1 K^-1 = 219.66 J mol^-1 K^-1 above Tg=1750 K and the crystal Cp below Tg. For the constant-ΔCp branch above Tg, ΔfusG(T)=ΔHfus(1−T/Tm)+ΔCp[(T−Tm)−T ln(T/Tm)]; below Tg the liquid uses the crystal Cp branch. In the JANAF-versus-corrected comparison, this common Cp/Tg term cancels, leaving ΔG=(192.464−55.81)(1−T/2408) kJ/mol. FC87 Appendix 1 R1-R6 derives log10K=A+B/T from JANAF; lowering product G by ΔG raises log10K by ΔG/(RT ln 10), so ΔB=136.654 kJ/mol divided by R ln 10 = 7137.933123955643 K and ΔA=−ΔB/Tm=−2.9642579418420448. Thus A=−1.7842579418420448 and B=7601.933123955643 for row 3. Units: R=8.31446261815324 J mol^-1 K^-1=0.00831446261815324 kJ mol^-1 K^-1, so kJ/mol divided by R gives kelvin for ΔB; ΔA is dimensionless and the Cp bracket has units of kelvin. Sanity: ΔGfus(2408 K)=0 and the JANAF liquid-G bias is 40.179, 23.154, 11.804 kJ/mol at 1700, 2000, and 2200 K.",
       "T_domain_paper_demonstrated_K": [
         2500,
         3500
@@ -1037,16 +1037,16 @@
         "Na2O": 0,
         "K2O": 0
       },
-      "A": -0.51,
-      "B": 3569,
-      "source": "FC87 Table 3 (p. 211), R19",
+      "A": -1.0825616596895684,
+      "B": 5019.995948414166,
+      "source": "FC87 Table 3 (p. 211), R19; FeO parent standard transformed in opt-in D&G candidate",
       "T_domain_K": [
         1700,
         3000
       ],
       "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
       "provenance_class": "authority_by_publication",
-      "derivation": "FC87 Appendix 1 R19: ilmenite solid/liquid/fusion (Kelley; Robie et al.)",
+      "derivation": "FC87 Appendix 1 R19: ilmenite solid/liquid/fusion (Kelley; Robie et al.) FeO candidate transform: preserve the complex standard Gibbs energy with Δlog10K=nu_FeO(c0/T+c1)/(R ln 10), c0=27778.965828 J/mol and c1=-10.961554232 J/mol/K.",
       "T_domain_paper_demonstrated_K": [
         2500,
         3500
@@ -1089,16 +1089,16 @@
         "Na2O": 0,
         "K2O": 0
       },
-      "A": -0.63,
-      "B": 3103,
-      "source": "FC87 Table 3 (p. 211), R20",
+      "A": -1.7751233193791367,
+      "B": 6004.991896828333,
+      "source": "FC87 Table 3 (p. 211), R20; FeO parent standard transformed in opt-in D&G candidate",
       "T_domain_K": [
         1700,
         3000
       ],
       "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
       "provenance_class": "authority_by_publication",
-      "derivation": "FC87 Appendix 1 R20: fayalite solid/liquid/fusion (Kelley; Robie et al.)",
+      "derivation": "FC87 Appendix 1 R20: fayalite solid/liquid/fusion (Kelley; Robie et al.) FeO candidate transform: preserve the complex standard Gibbs energy with Δlog10K=nu_FeO(c0/T+c1)/(R ln 10), c0=27778.965828 J/mol and c1=-10.961554232 J/mol/K.",
       "T_domain_paper_demonstrated_K": [
         2500,
         3500
@@ -1141,16 +1141,16 @@
         "Na2O": 0,
         "K2O": 0
       },
-      "A": -1.76,
-      "B": 5692,
-      "source": "FC87 Table 3 (p. 211), R21",
+      "A": -2.3325616596895684,
+      "B": 7142.995948414166,
+      "source": "FC87 Table 3 (p. 211), R21; FeO parent standard transformed in opt-in D&G candidate",
       "T_domain_K": [
         1700,
         3000
       ],
       "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
       "provenance_class": "authority_by_publication",
-      "derivation": "FC87 Appendix 1 R21: hercynite formation (Chan et al.). FC87 gives its own estimated melting entropy (8.8 J g-atom^-1 K^-1) and liquid Cp (34.3 J g-atom^-1 K^-1), described as consistent with JANAF liquid MgAl2O4; these are not an algebraic copy of MgAl2O4 fusion enthalpy. Retain the published coefficients because the MgAl2O4 fusion correction does not supply a FeAl2O4-specific fusion enthalpy or transfer rule.",
+      "derivation": "FC87 Appendix 1 R21: hercynite formation (Chan et al.); liquid entropy/Cp estimated vs JANAF liquid MgAl2O4 FeO candidate transform: preserve the complex standard Gibbs energy with Δlog10K=nu_FeO(c0/T+c1)/(R ln 10), c0=27778.965828 J/mol and c1=-10.961554232 J/mol/K.",
       "T_domain_paper_demonstrated_K": [
         2500,
         3500
@@ -1703,18 +1703,18 @@
       "translation_candidates": {
         "provenance_only": true,
         "FC87": {
-          "A": -0.2661937326876799,
-          "B": 13632.751708849615
+          "A": -0.266193732687681,
+          "B": 13632.751708849617
         },
         "LAM": {
-          "A": -0.07410362579546054,
-          "B": 12212.220751243607
+          "A": -0.07410362579546004,
+          "B": 12212.220751243605
         }
       },
       "fit_residual": {
         "value": {
-          "translation_candidates/FC87/max_abs_residual_dex": 0.054194867779168814,
-          "translation_candidates/LAM/max_abs_residual_dex": 0.008372225180168336
+          "translation_candidates/FC87/max_abs_residual_dex": 0.05419486777916915,
+          "translation_candidates/LAM/max_abs_residual_dex": 0.008372225180168225
         },
         "unit": "source-specific",
         "target_source": "SF04 Table 2 (p. 218)",
@@ -1784,18 +1784,18 @@
       "translation_candidates": {
         "provenance_only": true,
         "FC87": {
-          "A": -0.1861937326876799,
-          "B": 15582.751708849615
+          "A": -0.18619373268768102,
+          "B": 15582.751708849617
         },
         "LAM": {
-          "A": 0.005896374204539423,
-          "B": 14162.220751243607
+          "A": 0.0058963742045399226,
+          "B": 14162.220751243605
         }
       },
       "fit_residual": {
         "value": {
-          "translation_candidates/FC87/max_abs_residual_dex": 0.054194867779168814,
-          "translation_candidates/LAM/max_abs_residual_dex": 0.008372225180168336
+          "translation_candidates/FC87/max_abs_residual_dex": 0.05419486777916915,
+          "translation_candidates/LAM/max_abs_residual_dex": 0.008372225180168225
         },
         "unit": "source-specific",
         "target_source": "SF04 Table 2 (p. 218)",
@@ -2177,18 +2177,18 @@
       "translation_candidates": {
         "provenance_only": true,
         "FC87": {
-          "A": -1.4961937326876797,
-          "B": 18469.751708849613
+          "A": -1.496193732687681,
+          "B": 18469.751708849617
         },
         "LAM": {
-          "A": -1.3041036257954606,
-          "B": 17049.220751243607
+          "A": -1.30410362579546,
+          "B": 17049.220751243603
         }
       },
       "fit_residual": {
         "value": {
-          "translation_candidates/FC87/max_abs_residual_dex": 0.054194867779168814,
-          "translation_candidates/LAM/max_abs_residual_dex": 0.008372225180168336
+          "translation_candidates/FC87/max_abs_residual_dex": 0.05419486777916915,
+          "translation_candidates/LAM/max_abs_residual_dex": 0.008372225180168225
         },
         "unit": "source-specific",
         "target_source": "SF04 Table 2 (p. 218)",
@@ -2299,8 +2299,14 @@
     {
       "version": "1.0.4-d066-v2",
       "date": "2026-10-20",
-      "change": "MgAl2O4 row 3: criterion 2 selects the primary Shornikov (2017) Knudsen fusion enthalpy 55.81 ± 4.62 kJ/mol over JANAF Al-090’s analogy estimate; the row retains JANAF Al-089 crystal and Al-090 Tfus/Cp, with the Gibbs and A+B/T derivation recorded on the row. FeAl2O4 row 21 was reviewed and retained because FC87 R21 specifies its own melting-entropy and liquid-Cp estimates, without a quantitative MgAl2O4-to-FeAl2O4 transfer. The redox packs use MgAl2O4 as a homologue, not as galaxite’s central Gibbs function; their new versions recalculate the shared Tier-3 mean and homologue residual after this measurement correction. Frozen earlier melt and redox versions remain unchanged. The 48-pair Tier-3 mean moves from 9.334792572 to 9.165892969 J/(mol K) per formula atom, changing the K2O(l) Tier-3 fallback estimate from 28.004377717 to 27.497678907 J/(mol K). Active K2O(l) retains its Tier-2 selection of 33.74 J/(mol K), and its four FC87 translations against packaged JANAF K-012 are unchanged. The four LFS condensates whose Gibbs rows change are MnO, As2O3, Sb2O3, and Ag2O."
+      "change": "D-071 promotion: criterion 2 selects the primary Darken & Gurry (1946) iron-saturated equilibria reduced via Masson (1965) for FeO(l), using the adopted dG = 27778.965828 - 10.961554232*T J/mol without refitting; the shift is applied to FeO(l), the FeO1.5 oxidation reaction, and every Fe-bearing association. MgAl2O4 row 3 uses Shornikov (2017) Delta_fus_H = 55.81 +/- 4.62 kJ/mol with JANAF Al-089 crystal and Al-090 Tfus/Cp. FeAl2O4 row 21 retains its FC87 R21 estimates; redox homologue statistics and the condensate FeO(l) row are updated consistently."
     }
   ],
-  "model_id": "IMCC-SF04-D066"
+  "model_id": "IMCC-SF04-D066",
+  "feo_liquid_candidate": {
+    "source": "Source decision: criterion 2 (primary measurements) selects the Darken & Gurry (1946) iron-saturated equilibria, reduced via Masson (1965), over JANAF Fe-019’s 1965 construction. Fe-019 assigns wustite fusion to O2 release at 1 bar. Residuals are reported and never gate this source choice. Darken & Gurry (1946), Tables IIIA/B/VI; Masson (1965), Eq. 17",
+    "delta_g_j_mol": "27778.965828 - 10.961554232*T",
+    "transformation": "For each association consuming nu_FeO FeO(l), preserve the complex standard Gibbs energy: log10(K_new/K_old)=nu_FeO*DeltaG_FeO/(R*T*ln(10)); equivalently add nu_FeO*c1/(R ln 10) to A and nu_FeO*c0/(R ln 10) to B.",
+    "uncertainty": "Darken & Gurry report no formal pointwise activity uncertainty; the adopted source correction is fixed and its anchor residuals are reported without using them as a selection gate."
+  }
 }

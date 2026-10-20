@@ -17,10 +17,10 @@ from openimcc.redox_pack import (
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src/openimcc/data/packs"
-TI = PACK_DIR / "openimcc-redox-ti-candidate-v3.json"
-CR = PACK_DIR / "openimcc-redox-cr-candidate-v3.json"
-CR_TI = PACK_DIR / "openimcc-redox-cr-ti-candidate-v3.json"
-DEFAULT = PACK_DIR / "openimcc-redox-v3.json"
+TI = PACK_DIR / "openimcc-redox-ti-candidate-v2.json"
+CR = PACK_DIR / "openimcc-redox-cr-candidate-v2.json"
+CR_TI = PACK_DIR / "openimcc-redox-cr-ti-candidate-v2.json"
+DEFAULT = PACK_DIR / "openimcc-redox-v2.json"
 
 
 _MW = {
@@ -498,8 +498,8 @@ def test_default_pack_rejects_the_new_composition_term(tmp_path):
 
 
 def test_new_candidate_packs_select_explicitly_and_default_pack_is_unchanged():
-    assert load_redox_pack(TI).version == "1.7.0-ti-candidate"
-    assert load_redox_pack(CR_TI).version == "1.8.0-cr-ti-candidate"
+    assert load_redox_pack(TI).version == "1.6.0-ti-candidate"
+    assert load_redox_pack(CR_TI).version == "1.7.0-cr-ti-candidate"
     combined = _imposed(
         {"Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
          "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05},

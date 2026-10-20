@@ -353,7 +353,7 @@ def test_corrected_default_pack_bulk_root_bytes_are_pinned() -> None:
     digest = hashlib.sha256(
         json.dumps(fingerprint, separators=(",", ":"), sort_keys=True).encode()
     ).hexdigest()
-    # This versioned pin reflects the MgAl2O4 and FeO(l) corrections in D066 v3.
+    # This versioned pin reflects the MgAl2O4 and FeO(l) corrections in D066 v2.
     assert digest == (
         "b58034a0c1cf02e961387e6257312ab6333a717dfd6f7bfa4d7aa289799aea83"
     )

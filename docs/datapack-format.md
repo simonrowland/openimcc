@@ -78,7 +78,7 @@ when absent, although they are present in the shipped packs as noted.
 | errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2, ext-v4, and D066 packs use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
 | extension_parent_datapack_version | string | No | Version of the parent/earlier extension pack used by the extension record. Present in the retired ext-v3 record; the loader treats it as metadata. |
 | extension_wave | string | No | Label for the extension work wave, for example EXT3-JANAF-native-endmember-screen. Its exact release semantics are not established by the code. |
-| feo_liquid_candidate | object | No | Records the D&G/Masson FeO(l) standard Gibbs-energy shift (`source`, `delta_g_j_mol` as a T-linear expression in J/mol, `transformation`, `uncertainty`) and how it was carried into every association row that consumes FeO. Present in both the historical opt-in candidate and promoted D066 v3 pack. The coefficients in `rows` already include the shift; the loader does not read this field. See docs/feo-liquid-candidate.md. |
+| feo_liquid_candidate | object | No | Records the D&G/Masson FeO(l) standard Gibbs-energy shift (`source`, `delta_g_j_mol` as a T-linear expression in J/mol, `transformation`, `uncertainty`) and how it was carried into every association row that consumes FeO. Present in both the historical opt-in candidate and promoted D066 v2 pack. The coefficients in `rows` already include the shift; the loader does not read this field. See docs/feo-liquid-candidate.md. |
 | gas_only_inventory | array of objects | No | Species considered for the gas inventory but deliberately refused as melt components. In the retired ext-v3 record each object has cation, species, table_id, T_range_K, melt_disposition, and certification. |
 | imcc_sf04_datapack_version | non-empty string | Yes | Datapack version. load_datapack() stores it as the loaded version and uses it in the published-core projection or the per-pack binding digest. |
 | merge_semantics | object | No | Describes how an extension overlays or carries forward published rows: mode, row counts, replacement counts, and rationale. It is not interpreted by load_datapack(). |
@@ -284,10 +284,11 @@ uncertified (`certification: denied`) and records that redox and sulfur-
 solubility behavior remain out of scope.
 
 The default `load_datapack()` resource is the nonpublished D066 primary pack,
-imcc-sf04-d066-v3.json, which combines the MgAl2O4 correction and D&G/Masson
-FeO(l) re-anchor. D066 v1 and v2 remain available as frozen historical
-packs. Its sibling KCa sensitivity pack is
-imcc-sf04-d066-v1-kcaalsi2o7.json. The D066 S/P extension pack,
+imcc-sf04-d066-v2.json, which combines the MgAl2O4 correction and D&G/Masson
+FeO(l) re-anchor. D066 v1 remains available as the previous historical pack;
+D066 v2 is the single new default. The released historical model is D066 v1
+paired with the condensate table shipped at f55617a. Its sibling KCa
+sensitivity pack is imcc-sf04-d066-v1-kcaalsi2o7.json. The D066 S/P extension pack,
 imcc-sf04-d066-ext-v1.json, carries the ext-v4 sp_extension unchanged and
 requires `enable_sp_extension=True`. All three use model_id IMCC-SF04-D066 and
 the loader validates their explicit 38-row core structure and row coverage.
@@ -296,15 +297,20 @@ imcc-sf04-v1.0.2.json. Pair that melt pack with the SF04-published gas
 condensate table (`gas/gas-shomate.csv` plus
 `packs/sf04-published/condensate.csv`) to reproduce the published LAM K2O(l)
 gas pressures; the default D066 pack pairs with the packaged condensate.
-JANAF Fe-019 remains selectable with
-`load_gas_datapack(oxide_path=...)` using
-`gas/condensate-feo-janaf-legacy.csv`.
+The file `gas/condensate-feo-janaf-legacy.csv` keeps the other rows from the
+249fde5 condensate table and substitutes only its JANAF Fe-019 FeO(l) row.
+Selecting it with
+`load_gas_datapack(oxide_path=...)` restores the gas FeO standard only; it does
+not restore melt associations or redox thermochemistry. For the released
+historical model, use D066 v1 with the f55617a condensate instead. The legacy
+file is retained for explicit Fe-019 gas comparisons and the source-pinned
+element-status regression.
 
 The ext-v1, ext-v2, and ext-v3 records are retired and no longer shipped:
 ext-v1 and ext-v3 fail the frozen canonical hash, while ext-v2 fails the fixed
 parent-basis check because it includes CoO. Git history retains them as
-research records; the shipped packs are v1.0.2, ext-v4, and the three D066
-variants above.
+research records; the shipped packs are v1.0.2, ext-v4, D066 v1 and v2, the
+D066 KCa sensitivity pack, and the D066 S/P extension.
 
 The nested screen and gas-inventory fields are descriptive only; the loader
 does not read any of these fields or activate the candidates.
@@ -650,9 +656,9 @@ predicting whether the current loader accepts a pack.
 
 ## Redox thermochemistry component
 
-`openimcc-redox-v3.json` is the default, separate, versioned thermochemistry
-component; `openimcc-redox-v1.json` and `openimcc-redox-v2.json` remain frozen
-historical versions.
+`openimcc-redox-v2.json` is the default, separate, versioned thermochemistry
+component. `openimcc-redox-v1.json` remains available as the frozen historical
+version.
 The legacy `load_datapack()` path does not load it and the legacy eight-parent
 pack identity remains unchanged. `openimcc.redox_pack.load_redox_pack()` reads
 this schema and validates the N-parent registry, row balances, reference-state

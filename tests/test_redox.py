@@ -34,7 +34,7 @@ from openimcc.model import ImccMalformedDatapackError
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
+DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v2.json"
 
 
 def _formula_atoms() -> dict[str, dict[str, float]]:
@@ -382,7 +382,7 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     ) + 0.002
     mixed_closed = evaluate_redox(mixed, 2500.0, "closed")
     # The MgAl2O4 correction and FeO(l) re-anchor change the shared redox
-    # solution; pin the resulting species inventory on the v3 default pack.
+    # solution; pin the resulting species inventory on the v2 default pack.
     assert mixed_closed.lambda_ln_f_o2 == pytest.approx(
         -11.171376087683274, rel=1.0e-12
     )

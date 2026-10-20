@@ -718,7 +718,7 @@ Output:
 ```text
 activities: {'SiO2': '0.315285', 'MgO': '0.00433676', 'FeO': '0.075856', 'CaO': '7.40178e-05', 'Al2O3': '0.012809', 'TiO2': '0.00252758', 'Na2O': '4.25573e-10', 'K2O': '8.13513e-15'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
-melt notices: ('K predictions against Hastie 1981 KEMS pressures (case 4) have not been evaluated for this IMCC-SF04-D066 pack; see https://github.com/simonrowland/openimcc',)
+melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see https://github.com/simonrowland/openimcc',)
 gas: bar {'Na': '0.000264227', 'K': '6.95767e-06'}
 Mg domain flag: MgO(l) uses a labelled constant-Cp supercooled-liquid continuation from JANAF Mg-009
 ```
@@ -1049,7 +1049,7 @@ with as_file(candidate) as candidate_path:
 ```
 
 Leaving `redox_pack_path` unset continues to use the packaged default
-`openimcc-redox-v3.json`.
+`openimcc-redox-v2.json`.
 
 ## The empirical bench
 
@@ -1304,9 +1304,9 @@ MgAl2O4 (at 1700 K, on the glass segments of the JANAF liquid tables),
 1.1 kJ/mol for Mg2SiO4, 0.7 kJ/mol for MgTi2O5, and 0.3–0.4 kJ/mol for
 MgTiO3, Mg2TiO4 and MgSiO3 (0.27 kJ/mol). On the liquid branch at
 2600–3000 K, its MgAl2O4 row differs by +5.0 to +6.0 kJ/mol (0.10–0.11 dex).
-The current default D066 v3 pack combines Shornikov's primary MgAl2O4
+The current default D066 v2 pack combines Shornikov's primary MgAl2O4
 fusion measurement and the D&G/Masson FeO(l) re-anchor; the frozen published
-pack and D066 v1/v2 remain available with their historical rows. See
+pack and D066 v1 remain available with their historical rows. See
 [`docs/liquid-from-solid.md`](docs/liquid-from-solid.md) for the source choice
 and derivation.
 
@@ -1320,8 +1320,8 @@ source liquid nodes below 1800 K; its 1200–1800 K parent row is therefore an
 explicit constant-Cp continuation, which every affected gas result flags.
 
 The frozen published reproduction pack remains unchanged: every row is its
-source's published value. D066 v3 is a separately versioned default with the MgAl2O4 and FeO(l)
-source corrections and their provenance recorded in the pack.
+source's published value. D066 v2 is the single new default with the MgAl2O4
+and FeO(l) source corrections and their provenance recorded in the pack.
 
 ### Independently pinned behaviour
 
