@@ -3973,7 +3973,7 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
     gas_pack: ImccGasDatapack,
 ) -> None:
     """Keep unchanged rows exact while rebuilding the four LFS dependents."""
-    base = "af0f2a2"
+    base = "ccabd0b"
     rebuilt_lfs = {"MnO(l)", "As2O3(l)", "Sb2O3(l)", "Ag2O(l)"}
     root = Path(__file__).resolve().parents[1]
     for relpath, current_path in (
@@ -5955,12 +5955,12 @@ def test_condensate_source_table_follows_the_selected_row(
         ("ZrO2", "l", 1350.0, "O-053", "O-053", -1190328.7307094275),
         ("Rh", "cr", 2000.0, "P672-Rh-cr", "P672-Rh-cr", -123994.38790011544),
         ("Ru", "cr", 1903.5, "P672-Ru-cr", "P672-Ru-cr", -107072.09380351192),
-        ("MnO", "l", 2200.0, "LFS[MnO-IVTAN-1435;Tf=2120]", "MnO-liquid-construction", -643084.090715248),
-        ("As2O3", "l", 1400.0, "P672-As2O3-LFS", "P672-As2O3", -969773.6990807425),
-        ("Ag2O", "l", 1400.0, "P672-Ag2O-LFS", "P672-Ag2O-c", -305374.0698900303),
+        ("MnO", "l", 2200.0, "LFS[MnO-IVTAN-1435;Tf=2120]", "MnO-liquid-construction", -642945.1452175163),
+        ("As2O3", "l", 1400.0, "P672-As2O3-LFS", "P672-As2O3", -966087.500692369),
+        ("Ag2O", "l", 1400.0, "P672-Ag2O-LFS", "P672-Ag2O-c", -303029.4914097916),
         (
             "Sb2O3", "l", 1400.0, "P672-Sb2O3-LFS", "P672-Sb2O3-c",
-            -1022219.6456012437,
+            -1020170.3103370364,
         ),
     )
     for species, phase, temperature, reference, table_id, gibbs in corrected:

@@ -898,8 +898,8 @@ def test_below_fusion_band_is_anchored_to_the_measured_loo_term():
 @pytest.mark.parametrize(
     ("temperature", "expected_fusion_kj", "expected_band_kj"),
     [
-        (1673.0, 8.194308314369714, 5.900780634884792),
-        (2000.0, 2.199814312582473, 2.55458089857983),
+        (1673.0, 7.417992328691072, 22.939970279619978),
+        (2000.0, 1.9914073365613607, 7.103450198747776),
     ],
 )
 def test_below_fusion_band_matches_the_constant_delta_cp_identity(

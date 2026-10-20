@@ -195,7 +195,7 @@ The paired maximum / RMS errors in dex per metal atom are:
 | --- | ---: | ---: | ---: |
 | Fusion temperature, entropy, and Cp, tier 1 control | 0.035569 / 0.005134 | 0.109275 / 0.016426 | 0.246271 / 0.037023 |
 | Fusion entropy, tier 2 family | 0.000035 / 0.000014 | 0.133452 / 0.040429 | 0.293746 / 0.087499 |
-| Fusion entropy, tier 3 per formula atom | 0.035569 / 0.008627 | 0.214220 / 0.083028 | 0.416132 / 0.163397 |
+| Fusion entropy, tier 3 per formula atom | 0.035569 / 0.008627 | 0.214220 / 0.083028 | 0.416133 / 0.163397 |
 | Liquid Cp, tier 2 additive | 0.035569 / 0.009184 | 0.104513 / 0.028828 | 0.219363 / 0.067897 |
 | Liquid Cp, tier 3 crystal carry-over | 0.035569 / 0.005134 | 0.107876 / 0.020488 | 0.238365 / 0.073963 |
 
