@@ -111,3 +111,60 @@ Kress entries use the source’s Table 1 iron analyses, converting Fe₂O₃/(Fe
 For Sossi et al. (2020), the locally available paper reports log₁₀(Fe³⁺/Fe²⁺) = (0.252 ± 0.015)ΔIW − 1.530 ± 0.053 at 2173 K, but the supplementary per-run table is not present in the corpus. The four residual rows evaluate that published regression at ΔIW −1.5, 0, +3, and +6.4; they are derived curve values, not four measured runs, and have no pointwise σ. The paper’s separate mantle-derived anchor Fe³⁺/ΣFe = 0.037 ± 0.005 at ΔIW +0.5 gives default residual −0.00510 and candidate residual −0.00011. The fO₂ conversion uses log₁₀ fO₂(IW) = −6.47 at 2173 K as reported in the [comparison literature](https://doi.org/10.3847/psj/ac67a9). Sossi’s two most reducing levitation glasses also lost 7% and 9% of their initial iron, a further limit on comparing those points to this closed-composition melt model.
 
 The held-out scores use the redox and melt candidates together; the gas file is checked as part of the bundle but does not enter ferric-fraction scoring. All predictions were computed through the normal pack loaders and evaluate_redox. Tests cover omitted/None equivalence, candidate selection and digest reporting, missing and mismatched packs, plus the pinned default redox outputs.
+
+## Why JANAF Fe-019 is offset
+
+The 4th edition's Wüstite table (Fe-001, printed p. 1219) and FeO(l) table (Fe-019, printed pp. 1237–1238) are both marked current June 1965. The FeO(l) notes assign Wüstite's fusion enthalpy and entropy to
+
+$$
+\mathrm{Fe}_{0.947}\mathrm O(\mathrm{cr})=0.947\,\mathrm{FeO}(l)+0.0265\,\mathrm O_2(g),
+$$
+
+with oxygen at its 1-bar standard fugacity. The 3rd edition repeats this construction, says the liquid Wüstite composition was not identified, and carries Coughlin et al.'s $C_p(l)=16.3\ \mathrm{cal\,mol^{-1}K^{-1}}$ to 4000 K. See the [JANAF Fe-001](https://janaf.nist.gov/tables/Fe-001.html), [Fe-019](https://janaf.nist.gov/tables/Fe-019.html), [Fe-007](https://janaf.nist.gov/tables/Fe-007.html), and [O-029](https://janaf.nist.gov/tables/O-029.html) tables; the 4th-edition page images are in the [iron volume](https://janaf.nist.gov/pdf/JANAF-FourthEd-1998-Iron.pdf). The 3rd-edition locator is Chase et al., *JANAF Thermochemical Tables*, 3rd ed., *J. Phys. Chem. Ref. Data* 14, Suppl. 1 (1985), FeO(l) entry (“Enthalpy of Formation,” “Heat Capacity and Entropy,” and “Fusion Data”; [NIST edition record](https://janaf.nist.gov/janbanr.html)).
+
+**Premise.** Fe-001 gives $\Delta_fG_W(1650)=-157.393\ \mathrm{kJ\,mol^{-1}}$ by interpolation between 1600 and 1700 K. At Fe saturation, with unit solid Wüstite activity, its formation reaction gives
+
+$$
+\log_{10} f_{O_2}=\frac{2\Delta_fG_W}{RT\ln 10}=-9.965,
+$$
+
+or about $1.08\times10^{-10}$ bar. The 1-bar oxygen standard used in JANAF's construction therefore has a different oxygen chemical potential from the Fe-saturated melt.
+
+**Algebra.** Assume Wüstite melts near-congruently at $O/Fe=1/0.947=1.05597$. The Temkin/Masson site count is $N_{Fe^{2+}}=3-2(O/Fe)=0.88807$. Taking unit nonstoichiometric activity at that liquid composition gives $a_{FeO}^{stoich}=N_{Fe^{2+}}a_{FeO}^{nonstoich}$. The oxygen and composition corrections at 1650 K are
+
+$$
+\delta G_{O_2}=-\frac{0.053}{0.947}\Delta_fG_W=+8.809\ \mathrm{kJ\,mol^{-1}},\qquad
+\delta G_N=-RT\ln N_{Fe^{2+}}=+1.629\ \mathrm{kJ\,mol^{-1}}.
+$$
+
+Thus $\delta G_{corr-J}(1650)=+10.437\ \mathrm{kJ\,mol^{-1}}$. Wüstite's fusion entropy is 4.539 cal mol$^{-1}$ K$^{-1}$ (18.991 J mol$^{-1}$ K$^{-1}$). Combining it with JANAF's formation entropies gives an oxygen-term slope of −2.473 J mol$^{-1}$ K$^{-1}$; the fusion-entropy assignment adds +1.062 J mol$^{-1}$ K$^{-1}$ relative to the solid-Wüstite slope alone. The fixed $N_{Fe^{2+}}$ term adds +0.987 J mol$^{-1}$ K$^{-1}$. The corrected shift is
+
+$$
+\boxed{\delta G_{corr-J}(T)=12{,}889.834-1.486432T\quad\mathrm{J\,mol^{-1}}.}
+$$
+
+**Unit check.** $RT\ln f_{O_2}$ is energy per mole O$_2$; multiplication by 0.0265/0.947 gives energy per mole FeO. $N_{Fe^{2+}}$ is dimensionless, so $RT\ln N_{Fe^{2+}}$ is also energy per mole FeO.
+
+**Sanity check.** At the Fe-saturation fugacity, oxygen release contributes +8.34 kJ per mole Fe$_{0.947}$O, or +8.81 kJ per mole FeO. Adding the composition term gives +10.44 kJ/mol, close to the D&G/Masson candidate's +9.69 kJ/mol at 1650 K (see [the re-anchor derivation](#standard-state-reduction), based on [Darken and Gurry](https://doi.org/10.1021/ja01209a030) and [Masson](https://doi.org/10.1098/rspa.1965.0176)).
+
+| T (K) | JANAF Fe-019 (kJ/mol) | Corrected (kJ/mol) | D&G/Masson candidate (kJ/mol) | Corrected − candidate (kJ/mol) |
+|---:|---:|---:|---:|---:|
+| 1650 | −166.202* | −155.764 | −156.509 | +0.745 |
+| 1700 | −163.826 | −153.463 | −154.682 | +1.219 |
+| 1800 | −159.160 | −148.946 | −151.112 | +2.166 |
+| 1900 | −153.831 | −143.765 | −146.879 | +3.114 |
+| 2000 | −148.452 | −138.535 | −142.596 | +4.061 |
+| 2200 | −137.741 | −128.121 | −134.077 | +5.956 |
+
+*The 1650 K Fe-019 transition row is nonnumeric; its value is inferred from Fe-001 using JANAF's 1-bar construction.* The component split is:
+
+| T (K) | O$_2$ term before fusion-entropy slope (kJ/mol) | Fusion-entropy increment (kJ/mol) | $-RT\ln N_{Fe^{2+}}$ (kJ/mol) | Net corrected − JANAF (kJ/mol) |
+|---:|---:|---:|---:|---:|
+| 1650 | +8.809 | 0.000 | +1.629 | +10.437 |
+| 1700 | +8.632 | +0.053 | +1.678 | +10.363 |
+| 1800 | +8.278 | +0.159 | +1.777 | +10.214 |
+| 1900 | +7.925 | +0.266 | +1.875 | +10.066 |
+| 2000 | +7.571 | +0.372 | +1.974 | +9.917 |
+| 2200 | +6.864 | +0.585 | +2.171 | +9.620 |
+
+JANAF's constant liquid $C_p=68.199\ \mathrm{J\,mol^{-1}K^{-1}}$ contributes common curvature relative to the 1650 K tangent of 0, −0.051, −0.452, −1.231, −2.369, and −5.654 kJ/mol at these temperatures. The correction keeps this heat capacity, so the curvature cancels from corrected-versus-JANAF and corrected-versus-candidate differences. The corrected shift's slope, −1.486 J mol$^{-1}$ K$^{-1}$, differs from the D&G/Masson fit's −10.962 J mol$^{-1}$ K$^{-1}$. That remaining slope gap is consistent with the candidate's temperature-varying Fe-saturated composition and activity versus this fixed-composition Wüstite approximation; JANAF's fusion inputs do not separate those effects further.
