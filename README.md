@@ -716,10 +716,10 @@ temperature.
 Output:
 
 ```text
-activities: {'SiO2': '0.31854', 'MgO': '0.00420895', 'FeO': '0.109932', 'CaO': '7.04116e-05', 'Al2O3': '0.0133431', 'TiO2': '0.00263984', 'Na2O': '3.63377e-10', 'K2O': '6.98169e-15'}
+activities: {'SiO2': '0.315285', 'MgO': '0.00433676', 'FeO': '0.075856', 'CaO': '7.40178e-05', 'Al2O3': '0.012809', 'TiO2': '0.00252758', 'Na2O': '4.25573e-10', 'K2O': '8.13513e-15'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
-melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see https://github.com/simonrowland/openimcc',)
-gas: bar {'Na': '0.000244157', 'K': '6.44558e-06'}
+melt notices: ('K predictions against Hastie 1981 KEMS pressures (case 4) have not been evaluated for this IMCC-SF04-D066 pack; see https://github.com/simonrowland/openimcc',)
+gas: bar {'Na': '0.000264227', 'K': '6.95767e-06'}
 Mg domain flag: MgO(l) uses a labelled constant-Cp supercooled-liquid continuation from JANAF Mg-009
 ```
 

@@ -5631,12 +5631,14 @@ def build_source_liquid_markers(
         source_path = row.get("source_path")
         source = row.get("source") or {}
         table_id = row.get("table_id") or source.get("table_id")
-        if not table_id or not (
+        if table_id and (
             (source_path or "").startswith("data-src/janaf/")
             or row.get("authority") == "janaf_transcribed"
         ):
-            continue
-        source_records.setdefault(row["species_name"], table_id)
+            source_records.setdefault(row["species_name"], table_id)
+        legacy_table_id = source.get("legacy_table_id")
+        if legacy_table_id:
+            source_records.setdefault(row["species_name"], legacy_table_id)
 
     for species_name, table_id in sorted(source_records.items()):
         source_file = next(
@@ -5867,6 +5869,8 @@ def main() -> None:
         args.source_liquid_markers_output.parent.mkdir(parents=True, exist_ok=True)
         write_source_liquid_markers(markers, args.source_liquid_markers_output)
     for row in [*rows, *condensate_rows]:
+        if "_max_residual_J_per_mol" not in row:
+            continue
         print(
             f"{row['species_name']}: {row['_max_residual_J_per_mol']} J/mol, "
             f"{row['_max_residual_log10_K']} log10 K"

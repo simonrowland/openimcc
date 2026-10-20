@@ -260,7 +260,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
             {"Fe": 1.0, "O": 1.0},
             2200.0,
             "imposed",
-            -15.119336858668342,
+            -14.73700130009624,
             2,
         ),
         (
@@ -268,7 +268,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
             {"Fe": 1.0, "O": 1.0},
             2200.0,
             "imposed",
-            -15.119336858668342,
+            -14.73700130009624,
             4,
         ),
         (
@@ -276,8 +276,8 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
             {"Fe": 1.0, "O": 1.0},
             2200.0,
             "imposed",
-            -15.119336858668342,
-            50,
+            -14.73700130009624,
+            51,
         ),
     ],
 )
@@ -355,7 +355,7 @@ def test_fallback_flag_collects_kernel_bit_during_invariant_extent(
         {"Fe": 1.0, "O": 1.0},
         2200.0,
         "imposed",
-        lambda_imposed=-15.119336858668342,
+        lambda_imposed=-14.73700130009624,
     )
 
     assert seen_calls > selected_call

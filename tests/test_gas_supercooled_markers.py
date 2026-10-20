@@ -12,7 +12,6 @@ from openimcc.gas import (
 
 
 EXPECTED_SOURCE_SUPERCOOLED_LIQUIDS = {
-    "FeO(l)",
     "TiO2(l)",
     "Na2O(l)",
     "WO3(l)",
@@ -58,6 +57,10 @@ def test_source_liquid_marker_derivation_finds_exact_expected_names() -> None:
     assert set(_derived_source_supercooled_liquid_markers(pack)) == (
         EXPECTED_SOURCE_SUPERCOOLED_LIQUIDS
     )
+    legacy = load_gas_datapack(
+        oxide_path="src/openimcc/data/gas/condensate-feo-janaf-legacy.csv"
+    )
+    assert "FeO(l)" in _derived_source_supercooled_liquid_markers(legacy)
 
 
 @pytest.mark.parametrize(

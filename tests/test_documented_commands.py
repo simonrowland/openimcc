@@ -234,7 +234,10 @@ def test_documented_python_and_shell_commands_run_from_outside_repo(
                     if command.startswith("openimcc solve "):
                         assert "basis type = wt" in completed.stdout
                         assert "mole total (from wt%) =" in completed.stdout
-                        assert "notice: K predictions from IMCC-SF04" in completed.stdout
+                        assert (
+                            "notice: K predictions against Hastie 1981 KEMS pressures"
+                            in completed.stdout
+                        )
                     if command.startswith("openimcc-bench "):
                         bench_commands.append(command)
                         if command == (

@@ -196,7 +196,7 @@ def test_existing_eight_parent_gas_outputs_and_cr2o3_pass_through():
     assert tuple(float(baseline[name]).hex() for name in species) == (
         "0x1.c31f1c387bffbp-29",
         "0x1.fbfa0f749d3b0p-22",
-        "0x1.84713927983e3p-21",
+        "0x1.4c8a33a9ff2f6p-20",
         "0x1.094053d32a5d2p-22",
         "0x1.2fb51a1637602p-41",
         "0x1.4c45c8294ecd4p-58",

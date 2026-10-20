@@ -476,9 +476,12 @@ def _gas_element_atom_count(species: str, element: str) -> int:
 
 @cache
 def _ion_bound_maxima() -> dict[str, dict[str, object]]:
-    pack = load_gas_datapack()
-    # This gas-status grid is pinned to the melt identity used by its source
-    # values; changing the package default must not silently retune the screen.
+    # These status values are pinned to the published source run, including its
+    # JANAF Fe-019 FeO standard. Keep that explicit when the package default moves.
+    pack = load_gas_datapack(
+        oxide_path=ROOT / "src/openimcc/data/gas/condensate-feo-janaf-legacy.csv"
+    )
+    # The screen is also pinned to the melt identity used by its source values.
     melt_pack = load_datapack(
         ROOT / "src/openimcc/data/packs/imcc-sf04-v1.0.2.json"
     )

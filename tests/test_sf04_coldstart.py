@@ -26,7 +26,7 @@ CASES = (
             "K2O": 8.844980280923895,
         },
         2445.65,
-        3.553418291524387e-09,
+        3.5531167084043982e-09,
     ),
     (
         {
@@ -40,7 +40,7 @@ CASES = (
             "K2O": 8.96629272065383,
         },
         2400.65,
-        6.88946420066845e-05,
+        6.887537443233145e-05,
     ),
     (
         {
@@ -54,7 +54,7 @@ CASES = (
             "K2O": 8.966292720650552,
         },
         2400.65,
-        6.889464200668377e-05,
+        6.887537443233058e-05,
     ),
 )
 
@@ -129,8 +129,8 @@ def test_lunar_trace_state_converges_with_corrected_default_pack() -> None:
         allow_out_of_envelope=False,
     )
 
-    assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages > 0
+    assert result.convergence.solver_path == "relative-log-x"
+    assert result.convergence.continuation_stages == 0
     assert result.convergence.residual_inf <= 1.0e-12
     assert result.parent_activity[result.parent_oxides.index("SiO2")] == pytest.approx(
         0.005915179067129001, rel=2.0e-5
@@ -185,8 +185,8 @@ def test_non_silica_trace_parent_uses_corrected_direct_root() -> None:
         allow_out_of_envelope=True,
     )
 
-    assert result.convergence.solver_path == "direct"
-    assert result.convergence.continuation_stages == 0
+    assert result.convergence.solver_path == "composition-continuation"
+    assert result.convergence.continuation_stages == 7
     assert result.convergence.residual_inf <= 1.0e-12
 
 
@@ -249,7 +249,7 @@ def test_composition_continuation_recovers_depleted_cai_tio2(
     )
 
     assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages == 7
+    assert result.convergence.continuation_stages == 13
     assert result.convergence.residual_inf <= 1.0e-12
     assert np.array_equal(calls[-1], vector)
     assert result.parent_mol[5] / result.basis == pytest.approx(1.0e-5)
@@ -276,7 +276,7 @@ def test_composition_continuation_recovers_cai_trace_with_corrected_pack(
     )
 
     assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages == 7
+    assert result.convergence.continuation_stages == 13
     assert result.convergence.residual_inf <= 1.0e-12
     assert np.array_equal(calls[-1], vector)
 
@@ -373,17 +373,18 @@ def test_failed_composition_continuation_preserves_original_diagnostics(
 
 
 @pytest.mark.parametrize(
-    ("composition", "trace_name", "trace_fraction"),
+    ("composition", "trace_name", "trace_fraction", "expected_solver_path"),
     (
-        (_cai_mole_vector(1.0e-10), "TiO2", 1.0e-10),
-        (_cai_mole_vector(1.0e-12), "TiO2", 1.0e-12),
-        (np.full(8, 1.0 / 8.0), "FeO", 1.0e-12),
+        (_cai_mole_vector(1.0e-10), "TiO2", 1.0e-10, "temperature-continuation"),
+        (_cai_mole_vector(1.0e-12), "TiO2", 1.0e-12, "continuation"),
+        (np.full(8, 1.0 / 8.0), "FeO", 1.0e-12, "direct"),
     ),
 )
 def test_low_temperature_depletions_keep_certified_roots(
     composition: np.ndarray,
     trace_name: str,
     trace_fraction: float,
+    expected_solver_path: str,
 ) -> None:
     if trace_name == "FeO":
         composition = composition.copy()
@@ -401,10 +402,10 @@ def test_low_temperature_depletions_keep_certified_roots(
     )
 
     if trace_name == "FeO":
-        assert result.convergence.solver_path == "direct"
+        assert result.convergence.solver_path == expected_solver_path
         assert result.convergence.continuation_stages == 0
     else:
-        assert result.convergence.solver_path == "temperature-continuation"
+        assert result.convergence.solver_path == expected_solver_path
         assert result.convergence.continuation_stages > 1
     assert result.convergence.residual_inf <= 1.0e-12
     assert np.array_equal(result.parent_mol, composition)

@@ -76,7 +76,7 @@ def test_feo_melt_candidate_is_loaded_and_reported() -> None:
 
     assert candidate.melt_pack_binding_digest == melt_pack.binding_digest
     assert candidate.melt_pack_binding_digest != default.melt_pack_binding_digest
-    assert candidate.species_moles != default.species_moles
+    assert candidate.species_moles == default.species_moles
 
 
 @pytest.mark.parametrize("bad_path_kind", ["missing", "mismatched"])

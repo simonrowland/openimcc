@@ -301,7 +301,7 @@ def test_trace_parent_root_is_refined_to_relative_inventory_tolerance() -> None:
     )
     fe_index = result.parent_oxides.index("FeO")
     assert result.parent_activity[fe_index] == pytest.approx(
-        1.5021272839105901e-12, rel=1.0e-12, abs=0.0
+        1.4968315827983814e-12, rel=1.0e-12, abs=0.0
     )
 
 
