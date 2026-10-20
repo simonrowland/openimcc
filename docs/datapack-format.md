@@ -94,6 +94,12 @@ when absent, although they are present in the shipped packs as noted.
 | spec | string | No | Path and, in v1.0.2 and ext-v4, revision label for the model specification used by the pack. It is not opened by the loader. |
 | transcription | string or object | No | Record of how source values were transcribed and checked. Retired packs use a string; v1.0.2/ext-v4 use an object with `method` and `diff_result` fields. |
 
+In D066 v3, each source inventory entry may include `citation`, `table`, `url`,
+and `doi` fields. Each row's `source_refs` array contains keys into this
+top-level `sources` object. The loader preserves and hashes these references
+as pack metadata but does not interpret them when constructing the numerical
+kernel.
+
 ### sp_extension structure
 
 The shipped ext-v4 sp_extension is separate from the 38-row published core.
@@ -199,6 +205,7 @@ pack, but those fields are not required to construct the kernel datapack.
 | replaces_published_fit | object | No | Prior published coefficient record replaced by an extension overlay. Shipped objects contain prior A, B, source, and source_provenance_class. |
 | row | number | No | Stable/display row number from the source or pack record. It is not used as the array index by the loader. |
 | source | string | No | Primary source URL or source identifier for the row. |
+| source_refs | array of strings | No | D066 v3 provenance keys into the top-level `sources` object. Every D066 v3 row has at least one reference; the loader does not use these references in numerical evaluation. |
 | source_access_copy | string | No | Access-copy URL for a supporting source, used by one extension row. Its semantics are provenance metadata only. |
 | source_compilation | string | No | Name/edition of the supporting thermochemical compilation, used by one extension row. |
 | source_provenance_class | string | No | Provenance class of the source being replaced or compared, distinct from this row's provenance_class. |
@@ -284,10 +291,10 @@ uncertified (`certification: denied`) and records that redox and sulfur-
 solubility behavior remain out of scope.
 
 The default `load_datapack()` resource is the nonpublished D066 primary pack,
-imcc-sf04-d066-v2.json, which combines the MgAl2O4 correction and D&G/Masson
-FeO(l) re-anchor. D066 v1 remains available as the previous historical pack;
-D066 v2 is the single new default. The released historical model is D066 v1
-paired with the condensate table shipped at f55617a. Its sibling KCa
+imcc-sf04-d066-v3.json, which combines the MgAl2O4 correction and D&G/Masson
+FeO(l) re-anchor. D066 v2 remains available as the previous default, and D066
+v1 remains available as a historical pack. The released historical model is
+D066 v1 paired with the condensate table shipped at f55617a. Its sibling KCa
 sensitivity pack is imcc-sf04-d066-v1-kcaalsi2o7.json. The D066 S/P extension pack,
 imcc-sf04-d066-ext-v1.json, carries the ext-v4 sp_extension unchanged and
 requires `enable_sp_extension=True`. All three use model_id IMCC-SF04-D066 and

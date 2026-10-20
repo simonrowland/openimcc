@@ -43,6 +43,7 @@ _K_CMAS_WT = {**_CMAS_WT, "K2O": 1.0}
         "imcc-sf04-ext-v4.json",
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-d066-v2.json",
+        "imcc-sf04-d066-v3.json",
         "imcc-sf04-d066-v1-kcaalsi2o7.json",
         "imcc-sf04-d066-ext-v1.json",
     ],
@@ -95,6 +96,14 @@ def test_packaged_core_and_extension_packs_run_through_bench(
         ),
         (
             "imcc-sf04-d066-v2.json",
+            {
+                "hastie_k_1917_186": -1.179372213,
+                "hastie_k_1917_282": -1.235243892,
+                "hastie_k_1955_825": -1.231518409,
+            },
+        ),
+        (
+            "imcc-sf04-d066-v3.json",
             {
                 "hastie_k_1917_186": -1.179372213,
                 "hastie_k_1917_282": -1.235243892,

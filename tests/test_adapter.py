@@ -131,14 +131,14 @@ def test_pack_and_evaluate_default_to_the_shipped_resource() -> None:
     default_pack = load_datapack()
     explicit_pack = load_datapack(DATAPACK_PATH)
     assert default_pack.model_id == "IMCC-SF04-D066"
-    assert default_pack.version == "1.0.4-d066-v2"
+    assert default_pack.version == "1.0.5-d066-v3"
     assert explicit_pack.version == "1.0.2"
 
     result = evaluate({"SiO2": 1.0}, 2500.0)
     assert result.convergence.solver_path == "direct"
     assert result.convergence.continuation_stages == 0
     assert result.labels.identity["model_id"] == "IMCC-SF04-D066"
-    assert result.labels.identity["datapack_version"] == "1.0.4-d066-v2"
+    assert result.labels.identity["datapack_version"] == "1.0.5-d066-v3"
     assert result.labels.acid_sink_ratio == pytest.approx(1.0)
 
     legacy_result = evaluate({"SiO2": 1.0}, 2500.0, explicit_pack)
@@ -294,6 +294,12 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
         ),
         (
             "imcc-sf04-d066-v2.json",
+            "K predictions from IMCC-SF04-D066 remain low against Hastie "
+            "1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see "
+            "https://github.com/simonrowland/openimcc",
+        ),
+        (
+            "imcc-sf04-d066-v3.json",
             "K predictions from IMCC-SF04-D066 remain low against Hastie "
             "1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see "
             "https://github.com/simonrowland/openimcc",

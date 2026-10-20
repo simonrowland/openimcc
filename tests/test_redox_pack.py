@@ -27,6 +27,19 @@ from tools.liquid_from_solid import liquid_from_solid
 ROOT = Path(__file__).resolve().parents[1]
 PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
 SOURCE_PATH = ROOT / "data-src/redox-thermochemistry.json"
+PROVENANCE_SUCCESSOR_PATHS = (
+    PACK_PATH,
+    ROOT / "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate-v2.json",
+    ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json",
+    ROOT / "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json",
+    ROOT / "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json",
+)
+INDEPENDENT_CHECK_NOT_FOUND_REASON = (
+    "No independent FeO(l) standard-state check was identified. Darken & Gurry "
+    "(1946) is the fit source; the held-out activity comparisons inherit that "
+    "D&G FeO reference and do not independently validate the FeO(l) standard "
+    "Gibbs energy."
+)
 
 
 def _band_value(record: dict) -> float:
@@ -52,6 +65,29 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     ) == 15
     with pytest.raises(TypeError):
         pack.content["version"] = "changed"
+
+
+def test_feo_fit_source_is_not_reported_as_an_independent_check() -> None:
+    for path in PROVENANCE_SUCCESSOR_PATHS:
+        content = json.loads(path.read_text(encoding="utf-8"))
+        records = (content["thermo_species"]["FeO(l)"], content["rows"][0])
+        for record in records:
+            check = record["independent_check"]
+            assert check["status"] == "not_found", path.name
+            assert check["primary_source"] is None, path.name
+            assert check["reason"] == INDEPENDENT_CHECK_NOT_FOUND_REASON, path.name
+            assert all(
+                check[field] is None
+                for field in (
+                    "equilibrium",
+                    "conditions",
+                    "measured_value",
+                    "predicted_value",
+                    "miss",
+                    "miss_to_band_ratio",
+                )
+            ), path.name
+        assert content["errata"][-1]["version"] == content["version"], path.name
 
 
 def test_finite_number_refuses_integer_beyond_float_range() -> None:

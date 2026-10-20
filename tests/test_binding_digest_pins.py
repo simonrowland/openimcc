@@ -27,6 +27,9 @@ LEGACY_BINDING_SHA256 = {
     "imcc-sf04-ext-v4.json": "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770",
 }
 D066_MANIFEST_SHA256 = {
+    "imcc-sf04-d066-v3.json": (
+        "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"
+    ),
     "imcc-sf04-d066-v2.json": (
         "ac88aa2272c50d1cbf300634737c5d0071bddee0cd0f0483a6530c4a4992c393"
     ),
@@ -136,6 +139,68 @@ def test_d066_manifest_and_binding_digests_are_pinned() -> None:
         assert pack.model_id == "IMCC-SF04-D066"
         assert actual_manifest == expected_manifest
         assert pack.kernel_datapack.binding_digest == D066_BINDING_SHA256[filename]
+
+
+def test_d066_source_refs_are_complete_and_do_not_change_numeric_results(
+    tmp_path: Path,
+) -> None:
+    path = PACK_DIR / "imcc-sf04-d066-v3.json"
+    content = json.loads(path.read_text(encoding="utf-8"))
+    sources = content["sources"]
+    expected_dois = {
+        "FC87": "10.1016/0012-821X(87)90196-8",
+        "SF04": "10.1016/j.icarus.2003.08.023",
+        "Shornikov2017": "10.1134/S0036024417020303",
+        "DarkenGurry1946": "10.1021/ja01209a030",
+        "Masson1965": "10.1098/rspa.1965.0176",
+    }
+    assert {key: sources[key]["doi"] for key in expected_dois} == expected_dois
+
+    for row in content["rows"]:
+        name = row["complex"]
+        if name == "MgAl2O4":
+            expected_refs = ["FC87", "Shornikov2017"]
+        elif name in {"FeTiO3", "Fe2SiO4", "FeAl2O4"}:
+            expected_refs = ["FC87", "DarkenGurry1946", "Masson1965"]
+        elif row["source"].startswith("SF04 "):
+            expected_refs = ["SF04"]
+        else:
+            expected_refs = ["FC87"]
+        assert row["source_refs"] == expected_refs
+        assert all(ref in sources for ref in row["source_refs"])
+        assert all(sources[ref].get("doi") for ref in row["source_refs"])
+
+    without_refs = json.loads(json.dumps(content))
+    for row in without_refs["rows"]:
+        row.pop("source_refs")
+    without_refs_path = tmp_path / "d066-without-source-refs.json"
+    without_refs_path.write_text(
+        json.dumps(without_refs, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    with_refs = load_datapack(path)
+    without_refs_pack = load_datapack(without_refs_path)
+    with_refs_result = evaluate(
+        COMPOSITIONS[0], 2000.0, with_refs, allow_out_of_envelope=True
+    )
+    without_refs_result = evaluate(
+        COMPOSITIONS[0], 2000.0, without_refs_pack, allow_out_of_envelope=True
+    )
+    for field in (
+        "parent_mol",
+        "parent_x",
+        "parent_x_star",
+        "parent_activity",
+        "parent_gamma",
+        "complex_x",
+        "species_x",
+    ):
+        np.testing.assert_array_equal(
+            getattr(with_refs_result, field),
+            getattr(without_refs_result, field),
+        )
+    assert with_refs_result.D == without_refs_result.D
 
 
 def test_default_d066_k_pressure_is_pinned_after_data_change() -> None:

@@ -31,7 +31,7 @@ from openimcc.scalar_boundary import is_declared_real_scalar
 
 
 _DEFAULT_DATAPACK_PATH = (
-    Path(__file__).parent / "data" / "packs" / "imcc-sf04-d066-v2.json"
+    Path(__file__).parent / "data" / "packs" / "imcc-sf04-d066-v3.json"
 )
 _DEFAULT_REDOX_PACK_PATH = (
     Path(__file__).parent / "data" / "packs" / "openimcc-redox-v3.json"

@@ -206,6 +206,10 @@ _ALKALI_BIAS_BENCHMARKS = MappingProxyType(
         ): "−1.18 to −1.24 dex",
         (
             "IMCC-SF04-D066",
+            "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        ): "−1.18 to −1.24 dex",
+        (
+            "IMCC-SF04-D066",
             "ac88aa2272c50d1cbf300634737c5d0071bddee0cd0f0483a6530c4a4992c393",
         ): "−1.18 to −1.24 dex",
     }
@@ -587,7 +591,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         resources.files("openimcc")
         / "data"
         / "packs"
-        / "imcc-sf04-d066-v2.json"
+        / "imcc-sf04-d066-v3.json"
         if path is None
         else Path(path)
     )

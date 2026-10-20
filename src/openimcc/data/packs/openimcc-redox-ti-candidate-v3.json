@@ -17,7 +17,7 @@
     "domain_match",
     "systematic_estimate"
   ],
-  "canonical_content_digest": "20f6449cc0d7115447a77d09ec49518487ed047ce2d94de42f71156227d80c0f",
+  "canonical_content_digest": "497438fa71aeb6a928baeb2034497d53aef76d4f9f85e6b663b8d56f1ba3ca43",
   "parent_registry": [
     {
       "element": "Si",
@@ -339,15 +339,15 @@
         "provenance": "Darken & Gurry (1946), Tables IIIA, IIIB, VI"
       },
       "independent_check": {
-        "status": "tested",
-        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
-        "primary_source": "Darken & Gurry (1946), DOI 10.1021/ja01209a030",
-        "conditions": "1376–1493 °C; Fe-saturated liquid oxide; 1 atm CO2/CO",
-        "measured_value": "pCO2/pCO plus Fe-saturated liquid-oxide O/Fe and activity relative to O/Fe=1.07",
-        "predicted_value": "three-point stoichiometric FeO(l) Gibbs correction",
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "Used to construct the candidate; D&G provide no formal pointwise uncertainty, so residuals are reported without a confidence interval."
+        "reason": "No independent FeO(l) standard-state check was identified. Darken & Gurry (1946) is the fit source; the held-out activity comparisons inherit that D&G FeO reference and do not independently validate the FeO(l) standard Gibbs energy."
       }
     },
     "O2(g)": {
@@ -2079,15 +2079,15 @@
         "provenance": "Darken & Gurry (1946), Tables IIIA, IIIB, VI"
       },
       "independent_check": {
-        "status": "tested",
-        "equilibrium": "Fe(metal) + 1/2 O2(g) = FeO(l)",
-        "primary_source": "Darken & Gurry (1946), DOI 10.1021/ja01209a030",
-        "conditions": "1376–1493 °C; Fe-saturated liquid oxide; 1 atm CO2/CO",
-        "measured_value": "pCO2/pCO plus Fe-saturated liquid-oxide O/Fe and activity relative to O/Fe=1.07",
-        "predicted_value": "three-point stoichiometric FeO(l) Gibbs correction",
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
         "miss": null,
         "miss_to_band_ratio": null,
-        "reason": "Used to construct the candidate; D&G provide no formal pointwise uncertainty, so residuals are reported without a confidence interval."
+        "reason": "No independent FeO(l) standard-state check was identified. Darken & Gurry (1946) is the fit source; the held-out activity comparisons inherit that D&G FeO reference and do not independently validate the FeO(l) standard Gibbs energy."
       }
     },
     {
@@ -2562,6 +2562,11 @@
   "errata": [
     {
       "change": "Restricts Tier-3 fusion-entropy calibration to 17 measured class-C JANAF pairs and refreshes the manganese liquid constructions and uncertainty bands.",
+      "date": "2026-10-20",
+      "version": "1.7.0-ti-candidate"
+    },
+    {
+      "change": "Corrected FeO(l) independent-check provenance: D&G is the fit source and held-out activity references retain the D&G standard-state lineage, so no independent FeO(l) standard-state check is claimed.",
       "date": "2026-10-20",
       "version": "1.7.0-ti-candidate"
     }

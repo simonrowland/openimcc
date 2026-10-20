@@ -160,10 +160,10 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
     paths.extend(
         path.relative_to(ROOT).as_posix()
         for path in sorted((ROOT / "src/openimcc/data/packs").glob("imcc-sf04*.json"))
-        # Candidate packs and corrected D066 v2 pack were authored after
+        # Candidate packs and corrected D066 v2/v3 packs were authored after
         # the band migration, so the f013bba baseline has no copy to migrate.
         if "-candidate" not in path.name
-        and path.name != "imcc-sf04-d066-v2.json"
+        and path.name not in {"imcc-sf04-d066-v2.json", "imcc-sf04-d066-v3.json"}
     )
     archive = subprocess.run(
         ["git", "archive", "f013bba"], cwd=ROOT, check=True, capture_output=True

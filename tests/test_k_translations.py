@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src/openimcc/data/packs"
 LEGACY_PATH = PACK_DIR / "imcc-sf04-ext-v4.json"
 PUBLISHED_PATH = PACK_DIR / "imcc-sf04-v1.0.2.json"
-DEFAULT_PATH = PACK_DIR / "imcc-sf04-d066-v2.json"
+DEFAULT_PATH = PACK_DIR / "imcc-sf04-d066-v3.json"
 FEO_CANDIDATE_PATH = PACK_DIR / "imcc-sf04-d066-feo-liquid-candidate.json"
 SENSITIVITY_PATH = PACK_DIR / "imcc-sf04-d066-v1-kcaalsi2o7.json"
 EXTENSION_PATH = PACK_DIR / "imcc-sf04-d066-ext-v1.json"
@@ -122,7 +122,16 @@ def test_loader_defaults_unmarked_published_rows_to_active() -> None:
 def test_default_is_d066_and_legacy_packs_remain_selectable() -> None:
     default_pack = load_datapack()
     assert default_pack.model_id == "IMCC-SF04-D066"
-    assert default_pack.version == "1.0.4-d066-v2"
+    assert default_pack.version == "1.0.5-d066-v3"
+    data = json.loads(DEFAULT_PATH.read_text(encoding="utf-8"))
+    rows = {row["complex"]: row for row in data["rows"]}
+    source_suffix = (
+        "FeO parent standard transformed per the Darken & Gurry (1946)/Masson "
+        "(1965) re-anchor (default)"
+    )
+    for name in ("FeTiO3", "Fe2SiO4", "FeAl2O4"):
+        assert rows[name]["source"].endswith(source_suffix)
+    assert data["errata"][-1]["version"] == default_pack.version
     assert "A-published-imcc" not in default_pack.kernel_datapack.coverage.values()
     assert load_datapack(LEGACY_PATH).version == "1.0.2-ext-sp-2"
     assert load_datapack(PUBLISHED_PATH).version == "1.0.2"
