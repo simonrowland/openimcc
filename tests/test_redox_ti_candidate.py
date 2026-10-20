@@ -17,10 +17,10 @@ from openimcc.redox_pack import (
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src/openimcc/data/packs"
-TI = PACK_DIR / "openimcc-redox-ti-candidate-v2.json"
-CR = PACK_DIR / "openimcc-redox-cr-candidate-v2.json"
-CR_TI = PACK_DIR / "openimcc-redox-cr-ti-candidate-v2.json"
-DEFAULT = PACK_DIR / "openimcc-redox-v2.json"
+TI = PACK_DIR / "openimcc-redox-ti-candidate-v3.json"
+CR = PACK_DIR / "openimcc-redox-cr-candidate-v3.json"
+CR_TI = PACK_DIR / "openimcc-redox-cr-ti-candidate-v3.json"
+DEFAULT = PACK_DIR / "openimcc-redox-v3.json"
 
 
 _MW = {
@@ -455,11 +455,11 @@ def test_default_output_digests_pin_corrected_redox_homologue():
         (2200.0, {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65}),
         (2500.0, {"Fe": 0.7, "Si": 0.2, "Mg": 0.1, "O": 1.0}),
     ]
-    # The middle case includes MgAl2O4 and Fe-bearing associations; the Fe-only
-    # endpoints also move because the FeO standard state changed in v3.
+    # The middle case includes the refreshed manganese associations; the
+    # Fe-only endpoints retain their prior values.
     expected = (
         "22aa16d3e716accfa736676672a97b25cd503eeef5183fa07e9d79f7bec819a1",
-        "fd729d1c4877551ca2d16c974fab070dd268f6d2ec36d87427f07323a0167e3b",
+        "af75c3f5dfd6f3b85becfb951b87eaa0f54a8d68e0226d6612107897d3882334",
         "051dbd2627182bcda02c5b25d6e3b01bdb266edb6c56cf337fd3c865d2464839",
     )
     actual = [
@@ -498,8 +498,8 @@ def test_default_pack_rejects_the_new_composition_term(tmp_path):
 
 
 def test_new_candidate_packs_select_explicitly_and_default_pack_is_unchanged():
-    assert load_redox_pack(TI).version == "1.6.0-ti-candidate"
-    assert load_redox_pack(CR_TI).version == "1.7.0-cr-ti-candidate"
+    assert load_redox_pack(TI).version == "1.7.0-ti-candidate"
+    assert load_redox_pack(CR_TI).version == "1.8.0-cr-ti-candidate"
     combined = _imposed(
         {"Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
          "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05},

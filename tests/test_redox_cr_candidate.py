@@ -12,8 +12,8 @@ from openimcc.redox_pack import canonical_redox_digest, load_redox_pack
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CANDIDATE = ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json"
-DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v2.json"
+CANDIDATE = ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json"
+DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
 
 
 def _candidate_result(T: float, log10_f_o2: float, inventory=None):

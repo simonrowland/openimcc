@@ -12,7 +12,7 @@ from openimcc.model import ImccMalformedDatapackError
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKS = ROOT / "src/openimcc/data/packs"
-FEO_REDOX = PACKS / "openimcc-redox-feo-liquid-candidate.json"
+FEO_REDOX = PACKS / "openimcc-redox-feo-liquid-candidate-v2.json"
 FEO_MELT = PACKS / "imcc-sf04-d066-feo-liquid-candidate.json"
 
 

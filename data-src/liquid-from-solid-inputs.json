@@ -1,7 +1,7 @@
 {
   "schema_version": "liquid_from_solid_inputs.v1",
   "tier_error_bands": {
-    "definition": "Leave-one-out construction against the JANAF liquid Gibbs table, reported at Tfus and offsets +300/+800 K. Rows without a liquid reference point beyond the published table limit are omitted at that offset. Tier 1 uses each held-out row's measured values as an in-sample control; tiers 2 and 3 use leave-one-out estimates.",
+    "definition": "Construction errors are evaluated against JANAF liquid Gibbs tables at Tfus and offsets +300/+800 K; rows without a liquid reference point beyond the published table limit are omitted at that offset. Tier 1 is an in-sample control and tier 2 uses leave-one-out family estimates. Tier 3 fusion entropy is restricted to measured class-C pairs under d-071 criterion 2; d-070 requires calibrating the systematic rule and its uncertainty on real data. Tier-3 construction remains available for targets without their own measurement under d-071 criterion 4.",
     "offsets_k": [
       0,
       300,
@@ -91,30 +91,38 @@
     },
     "fusion_entropy_tier3": {
       "sample_size_by_offset": [
-        48,
-        48,
-        45
+        17,
+        17,
+        16
       ],
       "max": [
         1.1549232734846555,
-        15.998051182303698,
-        42.23149226137093
+        14.143677814967305,
+        37.28649661514146
       ],
       "rms": [
-        0.16675661205906256,
-        5.126627960573981,
-        13.439587513144001
+        0.2802052415592736,
+        5.4858997443997435,
+        14.178216804231054
       ],
       "dex_max_per_metal_atom": [
         0.03556947142494595,
-        0.22797881800920108,
-        0.44547233728404106
+        0.21422040823503688,
+        0.4161328224237475
       ],
       "dex_rms_per_metal_atom": [
-        0.005134217414986274,
-        0.06357605180898798,
-        0.12329271915569284
-      ]
+        0.008627193042677343,
+        0.08302777886917612,
+        0.16339714318331883
+      ],
+      "census_summary": {
+        "class": "C",
+        "training_count": 17,
+        "mean_per_atom_j_mol_k": 8.297530569005671,
+        "leave_one_out_entropy_residual_max_j_mol_k": 46.40126014755481,
+        "leave_one_out_entropy_residual_rms_j_mol_k": 17.84520529327536,
+        "criterion": "d-071 criterion 2 and d-070 systematic-estimate calibration; d-071 criterion 4 permits targets without their own measurement"
+      }
     },
     "liquid_heat_capacity_tier1": {
       "sample_size_by_offset": [
@@ -525,14 +533,14 @@
             },
             {
               "tier": 3,
-              "value": 27.497678907280914,
-              "source": "Richards-type estimate from the declared 48-pair census: mean fusion entropy per formula atom across all 48 pairs, including oxygen, multiplied by K2O’s 3 atoms. K2O is outside this census, so it is excluded by construction. The rule is known to fail badly.",
+              "value": 24.89259170701701,
+              "source": "Richards-type tier-3 fallback from the 17 measured class-C pairs: 8.297530569 J/(mol K) per atom times K2O's 3 atoms. K2O is outside the calibration set; its selected tier-2 standard is unchanged.",
               "flag": "red",
               "training_provenance": {
-                "census": "48 liquid/crystal pairs in this file",
-                "training_count": 48,
-                "normalization": "mean of fusion_entropy / total_atoms, multiplied by the target formula atom count",
-                "value_j_mol_k": 27.497678907280914
+                "census": "17 measured class-C pairs in data-src/liquid-from-solid-inputs.json",
+                "training_count": 17,
+                "normalization": "mean of fusion_entropy / total_atoms over class-C pairs, multiplied by the target formula atom count",
+                "value_j_mol_k": 24.89259170701701
               }
             }
           ]
@@ -713,10 +721,10 @@
             },
             {
               "tier": 3,
-              "value": 45.78886547947579,
+              "value": 41.097028957398166,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/Al-096.txt",
                 "https://janaf.nist.gov/tables/Al-100.txt"
@@ -783,6 +791,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Liquid enthalpy measured (Shpil'rain, Sheindlin, Kantor, West & Ishihara). ΔfusH is the difference of the adopted enthalpy fits, 111.1 ± 4.2 kJ/mol, not an analogy.",
+        "audit_locator": "audit-B.md § Al2O3"
       }
     },
     "B2O3": {
@@ -842,10 +856,10 @@
             },
             {
               "tier": 3,
-              "value": 46.09613796391262,
+              "value": 41.99964188043138,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/B-095.txt",
                 "https://janaf.nist.gov/tables/B-096.txt"
@@ -909,6 +923,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "ΔfusH = 24.071 ± 0.4 kJ/mol from the measured crystal-to-glass enthalpy plus drop calorimetry (Southard; Krasovitskaya). Liquid Cp measured.",
+        "audit_locator": "audit-B.md § B2O3"
       }
     },
     "BaO": {
@@ -1036,10 +1056,10 @@
             },
             {
               "tier": 3,
-              "value": 18.176643772326184,
+              "value": 16.595061138011342,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 2 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Ba-034.txt",
                 "https://janaf.nist.gov/tables/Ba-035.txt"
@@ -1103,6 +1123,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH set so ΔfusS = 6 cal/(mol·K). Liquid Cp estimated at 8 cal/(K·g-atom).",
+        "audit_locator": "audit-B.md § BaO"
       }
     },
     "CaO": {
@@ -1230,10 +1256,10 @@
             },
             {
               "tier": 3,
-              "value": 18.19327074538275,
+              "value": 16.595061138011342,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 2 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Ca-027.txt",
                 "https://janaf.nist.gov/tables/Ca-028.txt"
@@ -1300,6 +1326,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusS borrowed as 6 cal/(mol·K) from the 1965 MgO sheet. Printed [79.5] kJ/mol. No calorimetric fusion or liquid Cp.",
+        "audit_locator": "audit-B.md § CaO; mgo-cao-liquid-review.md"
       }
     },
     "Cr2O3": {
@@ -1394,10 +1426,10 @@
             },
             {
               "tier": 3,
-              "value": 45.74437956727674,
+              "value": 41.48765284502836,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 5 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Cr-014.txt",
                 "https://janaf.nist.gov/tables/Cr-015.txt"
@@ -1461,6 +1493,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH estimated from the 6-30-72 corundum ΔfusS = 12.03 cal/(mol·K). Liquid Cp estimated at 7.5 cal/(K·g-atom).",
+        "audit_locator": "audit-B.md § Cr2O3"
       }
     },
     "Cu2O": {
@@ -1520,10 +1558,10 @@
             },
             {
               "tier": 3,
-              "value": 27.17416486918726,
+              "value": 23.7794512701004,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/Cu-019.txt",
                 "https://janaf.nist.gov/tables/Cu-020.txt"
@@ -1587,6 +1625,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Mah drop calorimetry: Tfus, ΔfusH = 15.48 ± 0.15 kcal/mol, and liquid enthalpy 1521–1600 K.",
+        "audit_locator": "audit-A.md Cu2O; nonstoich-liquids.md § Cu2O"
       }
     },
     "FeO": {
@@ -1714,10 +1758,10 @@
             },
             {
               "tier": 3,
-              "value": 18.411600391778087,
+              "value": 16.595061138011342,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 2 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Fe-018.txt",
                 "https://janaf.nist.gov/tables/Fe-019.txt"
@@ -1781,6 +1825,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "A",
+        "membership": "excluded: estimated",
+        "reason": "Wüstite fusion entropy assigned through Fe0.947O(cr) = 0.947 FeO(l) + 0.0265 O2(g) at 1 bar. Not a measured stoichiometric FeO fusion.",
+        "audit_locator": "audit-A.md FeO"
       }
     },
     "K2B4O7": {
@@ -1864,10 +1914,10 @@
             },
             {
               "tier": 3,
-              "value": 119.6484707393147,
+              "value": 108.6071979864759,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/B-115.txt",
                 "https://janaf.nist.gov/tables/B-116.txt"
@@ -1931,6 +1981,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Smith liquid enthalpies 298–1373 K. ΔfusH = 104.5 ± 4.2 kJ/mol from crystal and glass formation enthalpies plus thermal increments.",
+        "audit_locator": "audit-C.md § K2B4O7"
       }
     },
     "K2SiO3": {
@@ -2014,10 +2070,10 @@
             },
             {
               "tier": 3,
-              "value": 55.3101406031585,
+              "value": 49.78518341403402,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 6 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/K-014.txt",
                 "https://janaf.nist.gov/tables/K-015.txt"
@@ -2085,6 +2141,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH = 12 ± 3 kcal/mol estimated by comparison with other silicates. Liquid Cp estimated at 43 cal/(mol·K).",
+        "audit_locator": "audit-C.md § K2SiO3"
       }
     },
     "KBO2": {
@@ -2168,10 +2230,10 @@
             },
             {
               "tier": 3,
-              "value": 36.896396141141715,
+              "value": 33.190122276022684,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 4 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/B-064.txt",
                 "https://janaf.nist.gov/tables/B-065.txt"
@@ -2235,6 +2297,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH = 7.5 ± 1 kcal/mol from phase-diagram analysis, not drop calorimetry. Liquid Cp copied from LiBO2(l).",
+        "audit_locator": "audit-C.md § KBO2"
       }
     },
     "Li2B4O7": {
@@ -2318,10 +2386,10 @@
             },
             {
               "tier": 3,
-              "value": 119.53655911642994,
+              "value": 108.2784575942519,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/B-118.txt",
                 "https://janaf.nist.gov/tables/B-119.txt"
@@ -2385,6 +2453,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Smith enthalpies through melting. ΔfusH = 28.8 kcal/mol = 120.5 ± 6.3 kJ/mol from Smith.",
+        "audit_locator": "audit-C.md § Li2B4O7"
       }
     },
     "Li2O": {
@@ -2467,10 +2541,10 @@
             },
             {
               "tier": 3,
-              "value": 27.406499335246636,
+              "value": 24.89259170701701,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 3 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Li-014.txt",
                 "https://janaf.nist.gov/tables/Li-015.txt"
@@ -2534,6 +2608,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH = [14] kcal/mol estimated by Glassner. Liquid Cp estimated.",
+        "audit_locator": "audit-B.md § Li2O"
       }
     },
     "Li2Si2O5": {
@@ -2606,10 +2686,10 @@
             },
             {
               "tier": 3,
-              "value": 83.37230294869568,
+              "value": 74.67777512105104,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 9 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Li-031.txt",
                 "https://janaf.nist.gov/tables/Li-032.txt"
@@ -2673,6 +2753,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "Kracek measured crystal and glass formation enthalpies at 298 K. The census ΔS is the fictive congruent jump at the incongruent liquidus with estimated Cp above 800 K.",
+        "audit_locator": "audit-C.md § Li2Si2O5"
       }
     },
     "Li2SiO3": {
@@ -2756,10 +2842,10 @@
             },
             {
               "tier": 3,
-              "value": 55.760819822673966,
+              "value": 49.78518341403402,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 6 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Li-020.txt",
                 "https://janaf.nist.gov/tables/Li-021.txt"
@@ -2823,6 +2909,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH = 6.7 kcal/mol from a cooling-curve ratio against NaCl (Schwartz and Sturm). Liquid Cp estimated from Na2SiO3, Na2O, and Li2O. Class B.",
+        "audit_locator": "audit-C.md § Li2SiO3"
       }
     },
     "Li2TiO3": {
@@ -2882,10 +2974,10 @@
             },
             {
               "tier": 3,
-              "value": 54.877592190446364,
+              "value": 49.113610993161856,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/Li-023.txt",
                 "https://janaf.nist.gov/tables/Li-024.txt"
@@ -2949,6 +3041,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Tfus and ΔfusH from Christensen. Measured Cp extrapolated to an assumed Tg and held constant.",
+        "audit_locator": "audit-C.md § Li2TiO3"
       }
     },
     "LiAlO2": {
@@ -3008,10 +3106,10 @@
             },
             {
               "tier": 3,
-              "value": 36.496126584429256,
+              "value": 33.190122276022684,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 4 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Al-068.txt",
                 "https://janaf.nist.gov/tables/Al-069.txt"
@@ -3075,6 +3173,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH estimated by setting the gram-atom fusion entropy equal to BeAl2O4. Liquid Cp is the 7.5 cal/(K·g-atom) rule.",
+        "audit_locator": "audit-C.md § LiAlO2"
       }
     },
     "LiBO2": {
@@ -3158,10 +3262,10 @@
             },
             {
               "tier": 3,
-              "value": 36.79970029890895,
+              "value": 33.37290891719549,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/B-068.txt",
                 "https://janaf.nist.gov/tables/B-069.txt"
@@ -3225,6 +3329,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "McDonald drop calorimetry 1118–1707 K. ΔfusH = 8.08 ± 0.12 kcal/mol from the observed enthalpies.",
+        "audit_locator": "audit-C.md § LiBO2"
       }
     },
     "Mg2SiO4": {
@@ -3284,10 +3394,10 @@
             },
             {
               "tier": 3,
-              "value": 64.82928198099289,
+              "value": 58.082713983039696,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 7 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Mg-028.txt",
                 "https://janaf.nist.gov/tables/Mg-029.txt"
@@ -3356,6 +3466,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH estimated from MacGregor's 10 and 20 kbar Mg2SiO4–TiO2 diagrams. Liquid Cp is the 7 cal/(K·g-atom) rule.",
+        "audit_locator": "audit-C.md § Mg2SiO4"
       }
     },
     "Mg2TiO4": {
@@ -3415,10 +3531,10 @@
             },
             {
               "tier": 3,
-              "value": 64.15547102299124,
+              "value": 58.082713983039696,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 7 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Mg-031.txt",
                 "https://janaf.nist.gov/tables/Mg-032.txt"
@@ -3487,6 +3603,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "Bracketed ΔfusH from Naylor's sodium titanates and King's sphene. Liquid Cp is the 7.8 cal/(K·g-atom) rule.",
+        "audit_locator": "audit-C.md § Mg2TiO4"
       }
     },
     "MgAl2O4": {
@@ -3545,10 +3667,10 @@
             },
             {
               "tier": 3,
-              "value": 65.03325802800977,
+              "value": 58.082713983039696,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 7 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Al-089.txt",
                 "https://janaf.nist.gov/tables/Al-090.txt"
@@ -3616,6 +3738,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "JANAF liquid is class B (46 ± 5 kcal/mol BeAl2O4 analogy; estimated Cp). The census ΔS is Shornikov 2017 Table 2, 55.81 ± 4.62 kJ/mol at the retained 2408 K marker. Not class C, because liquid Cp is still the JANAF estimate.",
+        "audit_locator": "audit-C.md § MgAl2O4; data-src/liquid-from-solid-inputs.json MgAl2O4 fusion_entropy"
       }
     },
     "MgO": {
@@ -3743,10 +3871,10 @@
             },
             {
               "tier": 3,
-              "value": 18.188567128638653,
+              "value": 16.595061138011342,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 2 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Mg-008.txt",
                 "https://janaf.nist.gov/tables/Mg-009.txt"
@@ -3813,6 +3941,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "No calorimetric ΔfusH. Assumed ΔfusS = 6 cal/(mol·K), printed [77.822 ± 16.7] kJ/mol. Liquid Cp assumed.",
+        "audit_locator": "audit-B.md § MgO; mgo-cao-liquid-review.md"
       }
     },
     "MgSiO3": {
@@ -3872,10 +4006,10 @@
             },
             {
               "tier": 3,
-              "value": 45.93840050617601,
+              "value": 41.48765284502836,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 5 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Mg-012.txt",
                 "https://janaf.nist.gov/tables/Mg-013.txt"
@@ -3943,6 +4077,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "Bracketed ΔfusH from MacGregor's 10 and 20 kbar diagrams, transferred to 1 bar. Liquid Cp is the 7 cal/(K·g-atom) rule.",
+        "audit_locator": "audit-C.md § MgSiO3"
       }
     },
     "MgTi2O5": {
@@ -4002,10 +4142,10 @@
             },
             {
               "tier": 3,
-              "value": 73.30006382103451,
+              "value": 66.38024455204537,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 8 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Mg-022.txt",
                 "https://janaf.nist.gov/tables/Mg-023.txt"
@@ -4074,6 +4214,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "Bracketed ΔfusH from Naylor's sodium titanates and King's sphene. Liquid Cp is the 7.8 cal/(K·g-atom) rule.",
+        "audit_locator": "audit-C.md § MgTi2O5"
       }
     },
     "MgTiO3": {
@@ -4133,10 +4279,10 @@
             },
             {
               "tier": 3,
-              "value": 45.819999338221386,
+              "value": 41.48765284502836,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 5 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Mg-015.txt",
                 "https://janaf.nist.gov/tables/Mg-016.txt"
@@ -4204,6 +4350,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "Bracketed ΔfusH from the same titanate analogues. Liquid Cp is the 7.8 cal/(K·g-atom) rule.",
+        "audit_locator": "audit-C.md § MgTiO3"
       }
     },
     "MnO": {
@@ -4239,23 +4391,27 @@
           ]
         },
         "fusion_entropy": {
-          "value": 18.331785938187277,
+          "value": 16.595061138011342,
           "tier": 3,
-          "spread": 8.204561846125934,
+          "spread": 46.40126014755481,
           "unit": "J mol^-1 K^-1",
           "flag": "red",
-          "source": "Tool Tier 3 leave-one-out mean fusion entropy per formula atom over 48 validation pairs, multiplied by two atoms; spread is the maximum absolute entropy residual over the seven measured rock-salt monoxides BaO, CaO, FeO, MgO, SrO, TiO, and VO. IVTAN's 40 ± 5 kJ/mol fusion enthalpy is retained as a cross-check only.",
+          "source": "Tier-3 estimate: 8.297530569 J/(mol K) per atom from the 17 measured class-C pairs, multiplied by 2 atoms. The former 8.204561846 J/(mol K) monoxide spread used seven class-A/B pairs; use the class-C leave-one-out maximum residual, 46.401260148 J/(mol K), instead. IVTAN's 40 ± 5 kJ/mol fusion enthalpy remains a cross-check only.",
           "ladder": [
             {
               "tier": 3,
-              "value": 18.331785938187277,
-              "spread": 8.204561846125934,
+              "value": 16.595061138011342,
+              "spread": 46.40126014755481,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by two; the maximum absolute residual among seven rock-salt monoxide homologues supplies the spread.",
+              "source": "Leave-one-out mean over the 17 measured class-C pairs, normalized per formula atom including oxygen and multiplied by 2 atoms. The seven rock-salt monoxide pairs are class A/B estimates, so the class-C leave-one-out maximum residual 46.401260148 J/(mol K) supplies the spread.",
               "references": [
                 "https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html"
               ]
             }
+          ],
+          "training_count": 17,
+          "references": [
+            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3/census_summary"
           ]
         },
         "liquid_heat_capacity": {
@@ -4343,24 +4499,28 @@
           ]
         },
         "fusion_entropy": {
-          "value": 64.16125078365548,
+          "value": 58.082713983039696,
           "tier": 3,
-          "spread": 41.856347729006444,
+          "spread": 34.90580368403637,
           "unit": "J mol^-1 K^-1",
           "flag": "red",
-          "source": "Tier 3 leave-one-out mean fusion entropy per formula atom, including oxygen, multiplied by seven atoms. Spread is the maximum absolute measured residual over MgAl2O4 (Al-090, corrected from Shornikov 2017 Knudsen ΔH_fus/T_m) and Mg2TiO4 (Mg-032), N=2; no activity residual is used as a selection gate.",
+          "source": "Tier-3 estimate: 8.297530569 J/(mol K) per atom from the 17 measured class-C pairs, multiplied by 7 atoms. The local homologue residual spread is recalculated against the directly measured MgAl2O4 fusion entropy; the Mg2TiO4 homologue remains inside that maximum.",
           "ladder": [
             {
               "tier": 3,
-              "value": 64.16125078365548,
-              "spread": 41.856347729006444,
+              "value": 58.082713983039696,
+              "spread": 34.90580368403637,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by seven; spread is the maximum absolute measured residual over MgAl2O4 (Al-090, corrected from Shornikov 2017) and Mg2TiO4 (Mg-032), N=2.",
+              "source": "Leave-one-out mean over the 17 measured class-C pairs, normalized per formula atom including oxygen and multiplied by 7 atoms. The maximum homologous entropy residual is recalculated as 34.905803684 J/(mol K).",
               "references": [
                 "https://doi.org/10.1016/j.calphad.2011.12.008",
                 "https://doi.org/10.1016/j.jmrt.2020.02.046"
               ]
             }
+          ],
+          "training_count": 17,
+          "references": [
+            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3/census_summary"
           ]
         },
         "liquid_heat_capacity": {
@@ -4448,23 +4608,27 @@
           ]
         },
         "fusion_entropy": {
-          "value": 64.16125078365548,
+          "value": 58.082713983039696,
           "tier": 3,
-          "spread": 54.1349436118,
+          "spread": 46.40126014755481,
           "unit": "J mol^-1 K^-1",
           "flag": "red",
-          "source": "Tool Tier 3 leave-one-out mean fusion entropy per formula atom over 48 validation pairs, multiplied by seven atoms; spread is the measured maximum absolute entropy residual over those pairs.",
+          "source": "Tier-3 estimate: 8.297530569 J/(mol K) per atom from the 17 measured class-C pairs, multiplied by 7 atoms. The class-C leave-one-out maximum residual supplies the spread: 46.401260148 J/(mol K).",
           "ladder": [
             {
               "tier": 3,
-              "value": 64.16125078365548,
-              "spread": 54.1349436118,
+              "value": 58.082713983039696,
+              "spread": 46.40126014755481,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by seven; use the 48-pair maximum absolute entropy residual as the spread.",
+              "source": "Leave-one-out mean over the 17 measured class-C pairs, normalized per formula atom including oxygen and multiplied by 7 atoms. The class-C leave-one-out maximum residual 46.401260148 J/(mol K) supplies the spread.",
               "references": [
                 "https://msaweb.org/AmMin/AM67/AM67_470.pdf"
               ]
             }
+          ],
+          "training_count": 17,
+          "references": [
+            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3/census_summary"
           ]
         },
         "liquid_heat_capacity": {
@@ -4551,23 +4715,27 @@
           ]
         },
         "fusion_entropy": {
-          "value": 45.829464845468195,
+          "value": 41.48765284502836,
           "tier": 3,
-          "spread": 54.1349436118,
+          "spread": 46.40126014755481,
           "unit": "J mol^-1 K^-1",
           "flag": "red",
-          "source": "Tool Tier 3 leave-one-out mean fusion entropy per formula atom over 48 validation pairs, multiplied by five atoms; spread is the measured maximum absolute entropy residual over those pairs.",
+          "source": "Tier-3 estimate: 8.297530569 J/(mol K) per atom from the 17 measured class-C pairs, multiplied by 5 atoms. The class-C leave-one-out maximum residual supplies the spread: 46.401260148 J/(mol K).",
           "ladder": [
             {
               "tier": 3,
-              "value": 45.829464845468195,
-              "spread": 54.1349436118,
+              "value": 41.48765284502836,
+              "spread": 46.40126014755481,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by five; use the 48-pair maximum absolute entropy residual as the spread.",
+              "source": "Leave-one-out mean over the 17 measured class-C pairs, normalized per formula atom including oxygen and multiplied by 5 atoms. The class-C leave-one-out maximum residual 46.401260148 J/(mol K) supplies the spread.",
               "references": [
                 "https://rruff.info/uploads/AM80_560.pdf"
               ]
             }
+          ],
+          "training_count": 17,
+          "references": [
+            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3/census_summary"
           ]
         },
         "liquid_heat_capacity": {
@@ -4692,10 +4860,10 @@
             },
             {
               "tier": 3,
-              "value": 36.48220310718927,
+              "value": 32.44026091651892,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/Mo-014.txt",
                 "https://janaf.nist.gov/tables/Mo-015.txt"
@@ -4759,6 +4927,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "King et al. liquid enthalpy 1074–1392 K (USBM RI 5664), corroborated by Cosgrove and Snyder. Fusion entropy is the table jump on that enthalpy construction.",
+        "audit_locator": "audit-A.md MoO3; janaf-condensed-notes.md § Mo-015"
       }
     },
     "Na2B4O7": {
@@ -4842,10 +5016,10 @@
             },
             {
               "tier": 3,
-              "value": 120.08114848972028,
+              "value": 109.87818887829229,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/B-122.txt",
                 "https://janaf.nist.gov/tables/B-123.txt"
@@ -4909,6 +5083,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Liquid formation enthalpy from Shartsis and Capps; Cp from Smith, with an observed glass transition. ΔfusH from the crystal/liquid formation enthalpies plus H(1015)−H(298).",
+        "audit_locator": "audit-C.md § Na2B4O7"
       }
     },
     "Na2O": {
@@ -4991,10 +5171,10 @@
             },
             {
               "tier": 3,
-              "value": 27.36052986158049,
+              "value": 24.89259170701701,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 3 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Na-012.txt",
                 "https://janaf.nist.gov/tables/Na-013.txt"
@@ -5061,6 +5241,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "Bouaziz measured the fusion enthalpy (adopted average of 10.8–12.0 kcal/mol). Liquid Cp is estimated from Na2SiO3 and SiO2, so the liquid is class B.",
+        "audit_locator": "audit-B.md § Na2O"
       }
     },
     "Na2Si2O5": {
@@ -5133,10 +5319,10 @@
             },
             {
               "tier": 3,
-              "value": 83.58850556987069,
+              "value": 77.40726101208367,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/Na-028.txt",
                 "https://janaf.nist.gov/tables/Na-029.txt"
@@ -5205,6 +5391,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Adopted ΔfusH is a selection among measured fusion enthalpies. Liquid Cp from Naylor's glass and premelting enthalpies, then held constant.",
+        "audit_locator": "audit-C.md § Na2Si2O5"
       }
     },
     "Na2SiO3": {
@@ -5288,10 +5480,10 @@
             },
             {
               "tier": 3,
-              "value": 55.35627439573785,
+              "value": 50.51973997120561,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/Na-016.txt",
                 "https://janaf.nist.gov/tables/Na-017.txt"
@@ -5371,6 +5563,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Naylor drop enthalpies 1414–1747 K. ΔfusH evaluated from those drops. Kelley phase-diagram values are a second, lower measurement.",
+        "audit_locator": "audit-C.md § Na2SiO3"
       }
     },
     "NaBO2": {
@@ -5454,10 +5652,10 @@
             },
             {
               "tier": 3,
-              "value": 36.86932044792092,
+              "value": 33.190122276022684,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 4 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/B-074.txt",
                 "https://janaf.nist.gov/tables/B-075.txt"
@@ -5521,6 +5719,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH = 8.0 ± 0.5 kcal/mol from phase-diagram analysis. Liquid Cp copied from LiBO2(l).",
+        "audit_locator": "audit-C.md § NaBO2"
       }
     },
     "Nb2O5": {
@@ -5604,10 +5808,10 @@
             },
             {
               "tier": 3,
-              "value": 64.28355940114365,
+              "value": 58.06208699687275,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/Nb-016.txt",
                 "https://janaf.nist.gov/tables/Nb-017.txt"
@@ -5671,6 +5875,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "ΔfusH = 24.31 ± 0.5 kcal/mol from enthalpy work (Orr; Gel'd and Kusenko). Liquid enthalpy measured.",
+        "audit_locator": "audit-A.md Nb2O5"
       }
     },
     "NbO": {
@@ -5730,10 +5940,10 @@
             },
             {
               "tier": 3,
-              "value": 17.90008468114782,
+              "value": 16.595061138011342,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 2 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Nb-008.txt",
                 "https://janaf.nist.gov/tables/Nb-009.txt"
@@ -5797,6 +6007,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "Adopted ΔfusH is a vapor-pressure second-law split (Shchukarev), preferred to a NaCl analogy. Liquid Cp estimated. Not calorimetry.",
+        "audit_locator": "nonstoich-liquids.md § NbO"
       }
     },
     "NbO2": {
@@ -5880,10 +6096,10 @@
             },
             {
               "tier": 3,
-              "value": 27.18229769877552,
+              "value": 24.89259170701701,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 3 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/Nb-012.txt",
                 "https://janaf.nist.gov/tables/Nb-013.txt"
@@ -5947,6 +6163,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH = 22.0 kcal/mol suggested by vapor-pressure data. Liquid Cp estimated at 7.5 cal/(K·g-atom).",
+        "audit_locator": "audit-A.md NbO2"
       }
     },
     "PbO": {
@@ -6006,10 +6228,10 @@
             },
             {
               "tier": 3,
-              "value": 18.25329066359554,
+              "value": 16.255935968887123,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/O-006.txt",
                 "https://janaf.nist.gov/tables/O-007.txt"
@@ -6073,6 +6295,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "ΔfusH = 25.522 ± 0.4 kJ/mol from Rodigina's enthalpy equations. Liquid Cp from Rodigina and from Knacke and Prescher.",
+        "audit_locator": "audit-B.md § PbO"
       }
     },
     "SiO2": {
@@ -6132,10 +6360,10 @@
             },
             {
               "tier": 3,
-              "value": 28.02176029804056,
+              "value": 26.26926284235699,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/O-035.txt",
                 "https://janaf.nist.gov/tables/O-038.txt"
@@ -6202,6 +6430,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Glass and liquid enthalpy measured. The census stores the O-038 minus O-035 entropy at the 1696 K II↔LIQUID marker (2.866 J/(mol·K)), not the within-table high-quartz jump of 4.527 J/(mol·K) = 7.699 kJ / 1696 K.",
+        "audit_locator": "audit-B.md § SiO2"
       }
     },
     "SrO": {
@@ -6329,10 +6563,10 @@
             },
             {
               "tier": 3,
-              "value": 18.176422684758574,
+              "value": 16.595061138011342,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 2 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-013.txt",
                 "https://janaf.nist.gov/tables/O-014.txt"
@@ -6396,6 +6630,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH = [18] kcal/mol so that ΔfusS ≈ 6 cal/(mol·K). Liquid Cp estimated at 8 cal/(K·g-atom).",
+        "audit_locator": "audit-B.md § SrO"
       }
     },
     "Ta2O5": {
@@ -6479,10 +6719,10 @@
             },
             {
               "tier": 3,
-              "value": 64.28490591958496,
+              "value": 58.082713983039696,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 7 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-077.txt",
                 "https://janaf.nist.gov/tables/O-078.txt"
@@ -6546,6 +6786,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH estimated by transferring the Nb2O5 fusion entropy. Liquid Cp estimated by analogy with Nb2O5.",
+        "audit_locator": "nonstoich-liquids.md § Ta2O5"
       }
     },
     "Ti2O3": {
@@ -6640,10 +6886,10 @@
             },
             {
               "tier": 3,
-              "value": 45.75229445802397,
+              "value": 41.48765284502836,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 5 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-059.txt",
                 "https://janaf.nist.gov/tables/O-060.txt"
@@ -6707,6 +6953,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH estimated to impose ΔfusS = 12 cal/(mol·K), the borrowed Al2O3 value. Liquid Cp estimated.",
+        "audit_locator": "audit-A.md Ti2O3"
       }
     },
     "Ti3O5": {
@@ -6766,10 +7018,10 @@
             },
             {
               "tier": 3,
-              "value": 73.10687721749947,
+              "value": 66.38024455204537,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 8 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-081.txt",
                 "https://janaf.nist.gov/tables/O-082.txt"
@@ -6833,6 +7085,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH is bracketed [171.544] kJ/mol (41 kcal, a round figure). Tfus adopted from Wahlbeck and Gilles. Liquid Cp estimated at 8 cal/(K·g-atom). Incongruent melting.",
+        "audit_locator": "audit-A.md Ti3O5; janaf-condensed-notes.md § O-082"
       }
     },
     "Ti4O7": {
@@ -6892,10 +7150,10 @@
             },
             {
               "tier": 3,
-              "value": 100.5048284483051,
+              "value": 91.27283625906239,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 11 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-089.txt",
                 "https://janaf.nist.gov/tables/O-090.txt"
@@ -6959,6 +7217,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH is bracketed [225.936] kJ/mol (54 kcal). Tfus is cited to Hampson and Gilles; the fusion sentence in the extracted note is truncated. Liquid Cp estimated at 8 cal/(K·g-atom).",
+        "audit_locator": "audit-A.md Ti4O7; janaf-condensed-notes.md § O-090"
       }
     },
     "TiO": {
@@ -7086,10 +7350,10 @@
             },
             {
               "tier": 3,
-              "value": 18.281770812689363,
+              "value": 16.595061138011342,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 2 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-019.txt",
                 "https://janaf.nist.gov/tables/O-020.txt"
@@ -7153,6 +7417,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH estimated so that ΔfusS = 2.5 cal/(K·g-atom). Liquid Cp estimated at 8 cal/(K·g-atom).",
+        "audit_locator": "nonstoich-liquids.md § TiO"
       }
     },
     "TiO2": {
@@ -7236,10 +7506,10 @@
             },
             {
               "tier": 3,
-              "value": 27.41402106870297,
+              "value": 24.89259170701701,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 3 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-043.txt",
                 "https://janaf.nist.gov/tables/O-044.txt"
@@ -7306,6 +7576,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH estimated to impose ΔfusS = 7.5 cal/(mol·K) by analogy with V2O4. Liquid Cp estimated at 8 cal/(K·g-atom).",
+        "audit_locator": "audit-A.md TiO2"
       }
     },
     "V2O3": {
@@ -7400,10 +7676,10 @@
             },
             {
               "tier": 3,
-              "value": 45.739355364241106,
+              "value": 41.48765284502836,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 5 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-062.txt",
                 "https://janaf.nist.gov/tables/O-063.txt"
@@ -7467,6 +7743,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH estimated to impose ΔfusS = 12 cal/(mol·K), the Al2O3 analogy. Liquid Cp estimated.",
+        "audit_locator": "audit-A.md V2O3"
       }
     },
     "V2O4": {
@@ -7550,10 +7832,10 @@
             },
             {
               "tier": 3,
-              "value": 54.853904621539925,
+              "value": 49.044028759499206,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/O-073.txt",
                 "https://janaf.nist.gov/tables/O-074.txt"
@@ -7617,6 +7899,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Cook liquid enthalpy 1829.7–1856.8 K. ΔfusH from the crystal/liquid enthalpy difference.",
+        "audit_locator": "audit-A.md V2O4"
       }
     },
     "V2O5": {
@@ -7700,10 +7988,10 @@
             },
             {
               "tier": 3,
-              "value": 64.07070266298723,
+              "value": 57.43682032853827,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/O-084.txt",
                 "https://janaf.nist.gov/tables/O-085.txt"
@@ -7767,6 +8055,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "Cook measured enthalpy. Fusion derived from the crystal/liquid enthalpy curves. Tfus = 943 K.",
+        "audit_locator": "audit-A.md V2O5"
       }
     },
     "VO": {
@@ -7894,10 +8188,10 @@
             },
             {
               "tier": 3,
-              "value": 18.160857566392984,
+              "value": 16.595061138011342,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 2 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-023.txt",
                 "https://janaf.nist.gov/tables/O-024.txt"
@@ -7961,6 +8255,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "ΔfusH estimated from ΔfusS = 6.3 cal/(mol·K), copied from NaCl. Liquid Cp estimated.",
+        "audit_locator": "nonstoich-liquids.md § VO"
       }
     },
     "WO3": {
@@ -8033,10 +8333,10 @@
             },
             {
               "tier": 3,
-              "value": 36.54832847408347,
+              "value": 32.63450418177064,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Leave-one-out mean over the other 16 measured class-C pairs, normalized per formula atom including oxygen and multiplied by this formula atom count.",
               "references": [
                 "https://janaf.nist.gov/tables/O-065.txt",
                 "https://janaf.nist.gov/tables/O-066.txt"
@@ -8100,6 +8400,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "C",
+        "membership": "included: measured",
+        "reason": "King et al. measured liquid enthalpy from the melting point to 1836 K. Heat and temperature of melting are from that work.",
+        "audit_locator": "nonstoich-liquids.md § WO3"
       }
     },
     "ZrO2": {
@@ -8159,10 +8465,10 @@
             },
             {
               "tier": 3,
-              "value": 27.455057350508888,
+              "value": 24.89259170701701,
               "spread": 0.0,
               "flag": "red",
-              "source": "Leave-one-out mean measured fusion entropy per formula atom, including oxygen, multiplied by this formula's atom count; Richards-type fallback.",
+              "source": "Tier-3 class-C mean 8.297530569 J/(mol K) per atom, including oxygen, multiplied by 3 atoms; estimated pairs are excluded from calibration.",
               "references": [
                 "https://janaf.nist.gov/tables/O-052.txt",
                 "https://janaf.nist.gov/tables/O-053.txt"
@@ -8226,6 +8532,12 @@
         "miss": null,
         "miss_to_band_ratio": null,
         "reason": "This row supplies an input to a liquid construction; no row-specific equilibrium check is recorded."
+      },
+      "tier3_census": {
+        "class": "B",
+        "membership": "excluded: estimated",
+        "reason": "Calorimetric ΔfusH unavailable. Header ΔfusH is bracketed [87.027] kJ/mol, taken from NBS Circular 500. Liquid Cp estimated (Kubaschewski). Audit-A's 18.6 kcal / 6 cal sentence does not match this table; the census uses the table jump, 29.501 J/(mol·K).",
+        "audit_locator": "audit-A.md ZrO2; janaf-condensed-notes.md § O-052"
       }
     },
     "ZnO": {
@@ -8557,14 +8869,14 @@
           ]
         },
         "fusion_entropy": {
-          "value": 45.829464845468195,
+          "value": 41.48765284502836,
           "tier": 3,
           "spread": 0.0,
           "unit": "J mol^-1 K^-1",
-          "source": "No Sb2O3 fusion enthalpy or entropy is tabulated. Tier-3 estimate: the 48-pair per-atom mean 9.165892969 J/(mol K) times five atoms per Sb2O3 formula unit. The matching five-atom leave-one-out Gibbs-error envelope is retained below.",
-          "training_count": 48,
+          "source": "Tier-3 estimate: 8.297530569 J/(mol K) per atom from the 17 measured class-C pairs, multiplied by 5 atoms.",
+          "training_count": 17,
           "references": [
-            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"
+            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3/census_summary"
           ]
         },
         "liquid_heat_capacity": {
@@ -8591,17 +8903,18 @@
       },
       "accuracy_band": {
         "value": {
-          "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs",
+          "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against 17 measured class-C JANAF pairs",
           "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
-          "method": "Evaluate the tier-3 leave-one-out Gibbs envelope at each listed temperature's offset from the constructed 928 K transition: interpolate the measured maxima at offsets 0, +300, and +800 K, then continue the final measured slope above +800 K.",
+          "method": "Interpolate class-C measured maximum leave-one-out Gibbs errors at offsets 0, +300, and +800 K from the construction transition; continue the +300-to-+800 K slope above +800 K. This construction uncertainty is not a fit residual.",
           "values_J_per_mol": {
-            "1200": 14612.692577480588,
-            "1500": 30269.043129316273,
-            "1800": 46009.10777675662,
-            "2000": 56502.48420838351,
-            "2500": 82735.92528745074,
-            "3000": 108969.36636651798
-          }
+            "1200": 12931.394057762256,
+            "1500": 26733.371242262045,
+            "1800": 40619.06252236654,
+            "2000": 49876.1900424362,
+            "2500": 73019.00884261036,
+            "3000": 96161.82764278451
+          },
+          "coverage": "Tier-3 leave-one-out liquid_from_solid Gibbs error calibrated on the 17 measured class-C JANAF pairs."
         },
         "unit": "J mol^-1",
         "temperature_points_or_range": [
@@ -8612,7 +8925,7 @@
           "2500",
           "3000"
         ],
-        "coverage": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs"
+        "coverage": "Tier-3 leave-one-out liquid_from_solid Gibbs error calibrated on the 17 measured class-C JANAF pairs."
       },
       "band_basis": {
         "kind": "measured_construction",
@@ -8654,14 +8967,14 @@
           ]
         },
         "fusion_entropy": {
-          "value": 27.497678907280914,
+          "value": 24.89259170701701,
           "tier": 3,
           "spread": 0.0,
           "unit": "J mol^-1 K^-1",
-          "source": "No Ag2O transition entropy is published. Apply the repository tier-3 per-atom mean of 9.165892969 J/(mol K) to the three atoms in Ag2O; this is a construction input, not a measured fusion entropy.",
-          "training_count": 48,
+          "source": "Tier-3 estimate: 8.297530569 J/(mol K) per atom from the 17 measured class-C pairs, multiplied by 3 atoms.",
+          "training_count": 17,
           "references": [
-            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"
+            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3/census_summary"
           ]
         },
         "liquid_heat_capacity": {
@@ -8688,17 +9001,18 @@
       },
       "accuracy_band": {
         "value": {
-          "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs",
+          "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against 17 measured class-C JANAF pairs",
           "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
-          "method": "Evaluate the tier-3 leave-one-out Gibbs envelope at each listed temperature's offset from the 500 K hypothetical anchor: interpolate the measured maxima at offsets 0, +300, and +800 K, then continue the final measured slope above +800 K. This construction uncertainty is not a fit residual; its +800 K-calibrated slope is extended 1500-2500 K past the decomposition near 500 K.",
+          "method": "Interpolate class-C measured maximum leave-one-out Gibbs errors at offsets 0, +300, and +800 K from the construction transition; continue the +300-to-+800 K slope above +800 K. This construction uncertainty is not a fit residual.",
           "values_J_per_mol": {
-            "1200": 36984.80404555748,
-            "1500": 52724.86869299782,
-            "1800": 68464.93334043816,
-            "2000": 78958.30977206507,
-            "2500": 105191.7508511323,
-            "3000": 131425.19193019954
-          }
+            "1200": 32657.93285510663,
+            "1500": 46543.62413521112,
+            "1800": 60429.315415315614,
+            "2000": 69686.44293538529,
+            "2500": 92829.26173555944,
+            "3000": 115972.08053573358
+          },
+          "coverage": "Tier-3 leave-one-out liquid_from_solid Gibbs error calibrated on the 17 measured class-C JANAF pairs."
         },
         "unit": "J mol^-1",
         "temperature_points_or_range": [
@@ -8709,7 +9023,7 @@
           "2500",
           "3000"
         ],
-        "coverage": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs"
+        "coverage": "Tier-3 leave-one-out liquid_from_solid Gibbs error calibrated on the 17 measured class-C JANAF pairs."
       },
       "band_basis": {
         "kind": "measured_construction",
@@ -8751,14 +9065,14 @@
           ]
         },
         "fusion_entropy": {
-          "value": 45.829464845468195,
+          "value": 41.48765284502836,
           "tier": 3,
           "spread": 0.0,
           "unit": "J mol^-1 K^-1",
-          "source": "No As2O3 fusion enthalpy or fusion entropy was located. Apply the documented tier-3 Richards-type estimate: 27.497678907 J/(mol K) for K2O divided by its three atoms gives the repository's 48-pair mean per formula atom; multiply by the five atoms in As2O3. The leave-one-out construction band is recorded separately.",
-          "training_count": 48,
+          "source": "Tier-3 estimate: 8.297530569 J/(mol K) per atom from the 17 measured class-C pairs, multiplied by 5 atoms.",
+          "training_count": 17,
           "references": [
-            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3"
+            "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3/census_summary"
           ]
         },
         "liquid_heat_capacity": {
@@ -8785,17 +9099,18 @@
       },
       "accuracy_band": {
         "value": {
-          "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs",
+          "kind": "tier-3 liquid_from_solid leave-one-out Gibbs error against 17 measured class-C JANAF pairs",
           "source": "data-src/liquid-from-solid-inputs.json#tier_error_bands/fusion_entropy_tier3",
-          "method": "Interpolate the measured maximum absolute leave-one-out Gibbs error between +300 and +800 K from fusion; above +800 K, continue its final measured slope as a flagged uncertainty estimate.",
+          "method": "Interpolate class-C measured maximum leave-one-out Gibbs errors at offsets 0, +300, and +800 K from the construction transition; continue the +300-to-+800 K slope above +800 K. This construction uncertainty is not a fit residual.",
           "values_J_per_mol": {
-            "1200": 34308.99305549262,
-            "1500": 50049.05770293297,
-            "1800": 65789.1223503733,
-            "2000": 76282.4987820002,
-            "2500": 102515.93986106744,
-            "3000": 128749.38094013464
-          }
+            "1200": 30297.365337488864,
+            "1500": 44183.056617593356,
+            "1800": 58068.747897697845,
+            "2000": 67325.87541776751,
+            "2500": 90468.69421794168,
+            "3000": 113611.51301811583
+          },
+          "coverage": "Tier-3 leave-one-out liquid_from_solid Gibbs error calibrated on the 17 measured class-C JANAF pairs."
         },
         "unit": "J mol^-1",
         "temperature_points_or_range": [
@@ -8806,7 +9121,7 @@
           "2500",
           "3000"
         ],
-        "coverage": "tier-3 liquid_from_solid leave-one-out Gibbs error against the 48 JANAF crystal/liquid pairs"
+        "coverage": "Tier-3 leave-one-out liquid_from_solid Gibbs error calibrated on the 17 measured class-C JANAF pairs."
       },
       "band_basis": {
         "kind": "measured_construction",

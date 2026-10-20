@@ -656,9 +656,9 @@ predicting whether the current loader accepts a pack.
 
 ## Redox thermochemistry component
 
-`openimcc-redox-v2.json` is the default, separate, versioned thermochemistry
-component. `openimcc-redox-v1.json` remains available as the frozen historical
-version.
+`openimcc-redox-v3.json` is the default, separate, versioned thermochemistry
+component. `openimcc-redox-v1.json` and `openimcc-redox-v2.json` remain
+available as frozen historical versions.
 The legacy `load_datapack()` path does not load it and the legacy eight-parent
 pack identity remains unchanged. `openimcc.redox_pack.load_redox_pack()` reads
 this schema and validates the N-parent registry, row balances, reference-state
@@ -673,8 +673,13 @@ identity independent of JSON whitespace, while the manifest catches any byte
 change.
 
 The opt-in Cr, Ti, and combined Cr+Ti redox candidate packs keep anchor datasets
-separate from held-out checks in `dataset_provenance`. Candidate-only
-composition-conditioned rows have no composition-independent Gibbs function;
+separate from held-out checks in `dataset_provenance`. The current candidate
+versions are Cr v3 (`1.6.0-cr-candidate`), Ti v3 (`1.7.0-ti-candidate`), and
+Cr+Ti v3 (`1.8.0-cr-ti-candidate`); the earlier v1/v2 files remain frozen.
+The FeO-liquid candidate current redox record is
+`openimcc-redox-feo-liquid-candidate-v2.json` (`1.6.0-feo-liquid-candidate`);
+its unversioned v1 file remains frozen. Candidate-only composition-conditioned
+rows have no composition-independent Gibbs function;
 their effective K values are solved with the melt rows through a fixed point.
 The default redox pack does not accept candidate-only fields.
 
@@ -684,6 +689,7 @@ Top-level redox fields:
 |---|---|---|
 | schema | string | Versioned schema identifier, currently `openimcc-redox-pack.v2`. |
 | version | string | Version of this thermochemistry component. |
+| errata | array of objects | Pack-specific correction records with `change`, `date`, and `version`; present on redox versions that revise shipped thermochemistry. |
 | candidate_only | boolean | Candidate-pack gate for composition-conditioned empirical effective-K rows; only recognized candidate versions accept this field. |
 | dataset_provenance | object | Candidate-only split of anchor datasets and held-out independent datasets, each with citation, role, and source URL. |
 | created | string | Date the component record was created. |

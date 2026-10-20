@@ -145,9 +145,15 @@ def _tier_estimate(row: dict, key: str, tier: int, training: list[dict]):
             if not values:
                 return None
             return sum(values) / len(values)
+        measured_census = [
+            other
+            for other in training
+            if other.get("tier3_census", {}).get("membership")
+            == "included: measured"
+        ]
         per_atom = [
             other["inputs"]["fusion_entropy"]["value"] / other["total_atoms"]
-            for other in training
+            for other in measured_census
             if other is not row
         ]
         return sum(per_atom) / len(per_atom) * row["total_atoms"]
@@ -177,6 +183,13 @@ def _measured_error_band(input_key: str, tier: int) -> dict[str, object]:
         for row in INPUTS["rows"].values()
         if "liquid_table_id" in row
     ]
+    if input_key == "fusion_entropy" and tier == 3:
+        rows = [
+            row
+            for row in rows
+            if row.get("tier3_census", {}).get("membership")
+            == "included: measured"
+        ]
     errors_by_offset = {offset: [] for offset in (0, 300, 800)}
     dex_by_offset = {offset: [] for offset in (0, 300, 800)}
     for row in rows:
@@ -272,7 +285,54 @@ def test_pair_records_have_canonical_source_provenance():
         assert not re.search(r'(?m)^\s*["\']?source_cache_path["\']?\s*:', text)
 
 
-def test_k2o_per_atom_entropy_rung_uses_the_full_census():
+def test_tier3_census_records_measured_membership_and_mean():
+    pairs = [
+        row for row in INPUTS["rows"].values() if "liquid_table_id" in row
+    ]
+    assert len(pairs) == 48
+    for row in pairs:
+        census = row["tier3_census"]
+        assert census["class"] in {"A", "B", "C"}
+        assert census["reason"]
+        assert census["audit_locator"]
+        assert census["membership"] == (
+            "included: measured"
+            if census["class"] == "C"
+            else "excluded: estimated"
+        )
+
+    measured = [
+        row
+        for row in pairs
+        if row["tier3_census"]["membership"] == "included: measured"
+    ]
+    assert {row["formula"] for row in measured} == {
+        "Al2O3", "B2O3", "Cu2O", "K2B4O7", "Li2B4O7", "Li2TiO3",
+        "LiBO2", "MoO3", "Na2B4O7", "Na2Si2O5", "Na2SiO3", "Nb2O5",
+        "PbO", "SiO2", "V2O4", "V2O5", "WO3",
+    }
+    mean = sum(
+        row["inputs"]["fusion_entropy"]["value"] / row["total_atoms"]
+        for row in measured
+    ) / len(measured)
+    summary = INPUTS["tier_error_bands"]["fusion_entropy_tier3"][
+        "census_summary"
+    ]
+    assert len(measured) == summary["training_count"] == 17
+    assert mean == pytest.approx(8.297530569005671, abs=1e-12)
+    assert summary["mean_per_atom_j_mol_k"] == pytest.approx(mean, abs=1e-12)
+    residuals = [
+        row["inputs"]["fusion_entropy"]["value"]
+        - _tier_estimate(row, "fusion_entropy", 3, measured)
+        for row in measured
+    ]
+    assert max(map(abs, residuals)) == pytest.approx(46.40126014755481)
+    assert math.sqrt(sum(value**2 for value in residuals) / len(residuals)) == pytest.approx(
+        17.84520529327536
+    )
+
+
+def test_k2o_per_atom_entropy_rung_uses_the_measured_census():
     row = INPUTS["rows"]["K2O"]
     rung = next(
         entry
@@ -282,25 +342,29 @@ def test_k2o_per_atom_entropy_rung_uses_the_full_census():
     training = [
         candidate
         for candidate in INPUTS["rows"].values()
-        if "liquid_table_id" in candidate
+        if candidate.get("tier3_census", {}).get("membership")
+        == "included: measured"
     ]
-    assert len(training) == 48
+    assert len(training) == 17
     assert all(candidate["formula"] != "K2O" for candidate in training)
     provenance = rung["training_provenance"]
-    assert provenance["training_count"] == 48
+    assert provenance["training_count"] == 17
     assert "excluded_formula" not in provenance
     expected = 3 * sum(
         candidate["inputs"]["fusion_entropy"]["value"]
         / candidate["total_atoms"]
         for candidate in training
     ) / len(training)
-    assert rung["value"] == pytest.approx(27.497678907, abs=1e-9)
+    assert rung["value"] == pytest.approx(24.89259170701701, abs=1e-9)
     assert rung["value"] == pytest.approx(expected, abs=1e-9)
 
 
 def test_constructed_tier3_fusion_entropies_use_the_per_atom_mean_once():
     training = [
-        row for row in INPUTS["rows"].values() if "liquid_table_id" in row
+        row
+        for row in INPUTS["rows"].values()
+        if row.get("tier3_census", {}).get("membership")
+        == "included: measured"
     ]
     per_atom_mean = sum(
         row["inputs"]["fusion_entropy"]["value"] / row["total_atoms"]
@@ -708,11 +772,11 @@ def test_below_fusion_is_labeled_as_supercooled_extrapolation():
             "fusion_entropy",
             3,
             {
-                "sample_size_by_offset": [48, 48, 45],
-                "max": [1.154923273, 15.998051182, 42.231492261],
-                "rms": [0.166756612, 5.126627961, 13.439587513],
-                "dex_max_per_metal_atom": [0.035569471, 0.227978818, 0.445472337],
-                "dex_rms_per_metal_atom": [0.005134217, 0.063576052, 0.123292719],
+                "sample_size_by_offset": [17, 17, 16],
+                "max": [1.154923273, 14.143677815, 37.286496615],
+                "rms": [0.280205242, 5.485899744, 14.178216804],
+                "dex_max_per_metal_atom": [0.035569471, 0.214220408, 0.416132822],
+                "dex_rms_per_metal_atom": [0.008627193, 0.083027778, 0.163397143],
             },
         ),
         (
@@ -766,23 +830,16 @@ def test_tier_error_bands_are_recomputed_and_pinned(input_key, tier, expected):
         assert recomputed[metric] == pytest.approx(expected[metric], abs=1e-9)
 
 
-def test_mno_input_spreads_use_the_maximum_residual_of_rock_salt_monoxides():
+def test_mno_entropy_spread_uses_measured_census_and_cp_spread_stays_separate():
     names = ("BaO", "CaO", "FeO", "MgO", "SrO", "TiO", "VO")
     training = [
         row for row in INPUTS["rows"].values() if "liquid_table_id" in row
     ]
     homologues = [INPUTS["rows"][name] for name in names]
-    entropy_residuals = []
     cp_residuals = []
     for row in homologues:
-        entropy_estimate = _tier_estimate(
-            row, "fusion_entropy", 3, training
-        )
         cp_estimate = _tier_estimate(
             row, "liquid_heat_capacity", 3, training
-        )
-        entropy_residuals.append(
-            abs(entropy_estimate - row["inputs"]["fusion_entropy"]["value"])
         )
         cp_residuals.append(
             abs(cp_estimate - row["inputs"]["liquid_heat_capacity"]["value"])
@@ -790,8 +847,12 @@ def test_mno_input_spreads_use_the_maximum_residual_of_rock_salt_monoxides():
 
     manganese = INPUTS["rows"]["MnO"]["inputs"]
     assert len(homologues) == 7
+    assert {row["tier3_census"]["class"] for row in homologues} <= {"A", "B"}
     assert manganese["fusion_entropy"]["spread"] == pytest.approx(
-        max(entropy_residuals), abs=1e-12
+        INPUTS["tier_error_bands"]["fusion_entropy_tier3"]["census_summary"][
+            "leave_one_out_entropy_residual_max_j_mol_k"
+        ],
+        abs=1e-12,
     )
     assert manganese["liquid_heat_capacity"]["spread"] == pytest.approx(
         max(cp_residuals), abs=1e-12

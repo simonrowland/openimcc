@@ -68,11 +68,11 @@ Cs₂O 763–768 K (Gurvich)—supports this value over Lamoreaux and Hildenbran
 Journal of Chemistry* 48, 1955–1958); silica contamination makes this a
 one-sided lower bound. The selected K₂O temperature band is therefore
 [919, 1190] K, with 919 K as the lower bound. Its tier-3 formula entropy is
-27.497678907 J/(mol K), equal to three atoms times the mean fusion entropy of
-9.165892969 J/(mol K) per atom across all 48 pairs in the declared census.
-K₂O is not in that census, so it
-is excluded by construction; this is not a leave-one-out estimate for K₂O. It
-is red-flagged because the rule is known to perform poorly.
+24.892591707 J/(mol K), equal to three atoms times the mean fusion entropy of
+8.297530569 J/(mol K) per atom across the 17 measured class-C pairs. K₂O is
+outside the calibration set, so this is the class-C mean, not a leave-one-out
+estimate for K₂O. It remains red-flagged because the rule is known to perform
+poorly.
 
 The Tier 3 temperature rung records a hypothetical fusion temperature for an
 incongruently melting or decomposing solid. Its band uses the minimum and
@@ -185,7 +185,7 @@ Cells below give maximum / RMS absolute error in kJ/mol. Sample counts are for
 | --- | ---: | ---: | ---: | ---: |
 | Fusion temperature, entropy, and Cp, tier 1 control | 48 / 48 / 45 | 1.155 / 0.167 | 16.996 / 2.461 | 45.375 / 6.799 |
 | Fusion entropy, tier 2 family | 32 / 32 / 31 | 0.002 / 0.001 | 7.357 / 2.947 | 19.757 / 8.141 |
-| Fusion entropy, tier 3 per formula atom | 48 / 48 / 45 | 1.155 / 0.167 | 15.998 / 5.127 | 42.231 / 13.440 |
+| Fusion entropy, tier 3 per formula atom | 17 / 17 / 16 | 1.155 / 0.280 | 14.144 / 5.486 | 37.286 / 14.178 |
 | Liquid Cp, tier 2 additive | 15 / 15 / 15 | 1.155 / 0.298 | 16.255 / 4.281 | 40.417 / 11.564 |
 | Liquid Cp, tier 3 crystal carry-over | 48 / 48 / 45 | 1.155 / 0.167 | 16.778 / 2.910 | 45.198 / 12.799 |
 
@@ -195,7 +195,7 @@ The paired maximum / RMS errors in dex per metal atom are:
 | --- | ---: | ---: | ---: |
 | Fusion temperature, entropy, and Cp, tier 1 control | 0.035569 / 0.005134 | 0.109275 / 0.016426 | 0.246271 / 0.037023 |
 | Fusion entropy, tier 2 family | 0.000035 / 0.000014 | 0.133452 / 0.040429 | 0.293746 / 0.087499 |
-| Fusion entropy, tier 3 per formula atom | 0.035569 / 0.005134 | 0.227979 / 0.063576 | 0.445472 / 0.123293 |
+| Fusion entropy, tier 3 per formula atom | 0.035569 / 0.008627 | 0.214220 / 0.083028 | 0.416132 / 0.163397 |
 | Liquid Cp, tier 2 additive | 0.035569 / 0.009184 | 0.104513 / 0.028828 | 0.219363 / 0.067897 |
 | Liquid Cp, tier 3 crystal carry-over | 0.035569 / 0.005134 | 0.107876 / 0.020488 | 0.238365 / 0.073963 |
 
@@ -256,21 +256,24 @@ For a constructed liquid evaluated below its fusion temperature, constant
 
 The band is the measured leave-one-out maximum at `T_fus`, plus the absolute
 fusion-entropy, heat-capacity-difference, and fusion-temperature sensitivities
-times their selected input spreads. The 48-pair validation census gives a
-maximum absolute leave-one-out residual of 54.1349 J/(mol K) for the Tier 3
-per-formula-atom fusion-entropy estimator (RMS 17.3520 J/(mol K)). For Tier 3
+times their selected input spreads. The Tier 3 fusion-entropy census uses the
+17 measured class-C pairs under d-071 criterion 2 and d-070 calibration on
+real data; targets without their own measurement remain eligible under d-071
+criterion 4. Its maximum absolute leave-one-out residual is 46.4013 J/(mol K)
+(RMS 17.8452 J/(mol K)). For Tier 3
 crystal-Cp carry-over, the maximum absolute residual in `ΔCp` is 170.200
 J/(mol K) (RMS 45.2682 J/(mol K)). Those census maxima remain the fallback
 spreads where no closer measured homologues apply. The measured Tier 3
-leave-one-out Gibbs maximum at `T_fus` is 1.154923 kJ/mol across the same 48
-pairs. At `T = T_fus`, `ΔG_fus` and all propagated terms vanish, so the band
+leave-one-out Gibbs maximum at `T_fus` is 1.154923 kJ/mol across the 17
+class-C pairs. At `T = T_fus`, `ΔG_fus` and all propagated terms vanish, so the band
 equals that measured leave-one-out maximum.
 
-For MnO, the selected entropy and `ΔCp` spreads are the maximum absolute
-leave-one-out residuals over the seven measured rock-salt monoxides BaO, CaO,
-FeO, MgO, SrO, TiO, and VO: 7.8596 J/(mol K) and 14.0011 J/(mol K). The
-48-pair Gibbs anchor at `T_fus` remains 1.154923 kJ/mol. The construction uses
-the homologue maxima, not the census-wide maxima or RMS values.
+For MnO, the entropy spread is the measured class-C leave-one-out maximum,
+46.4013 J/(mol K). Its `ΔCp` spread remains the maximum residual across the
+seven rock-salt monoxides BaO, CaO, FeO, MgO, SrO, TiO, and VO: 14.0011 J/(mol
+K). Those homologues are class A or B, but this spread describes the separate
+crystal-Cp carry-over estimate, so the class-C restriction does not apply to
+it. The class-C Gibbs anchor at `T_fus` remains 1.154923 kJ/mol.
 
 Above fusion, an association species uses the Tier 3 leave-one-out entropy and
 heat-capacity Gibbs columns linearly interpolated in `T - T_fus` over that

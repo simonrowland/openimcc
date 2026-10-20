@@ -77,9 +77,9 @@ is returned as `melt_pack_binding_digest`.
 
 ## Chromium candidate pack
 
-`src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json` is opt-in and is
+`src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json` is opt-in and is
 not the default. Select it with
-`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json")`.
+`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json")`.
 It adds `1/2 Cr2O3 = CrO + 1/4 O2` using O’Neill & Berry (2021)'s 1-bar
 composition and temperature relation. The Cr K is conditioned on normalized
 single-cation oxide fractions. Since the Fe and Cr rows are solved together,
@@ -100,9 +100,9 @@ composition-independent CrO Gibbs function.
 ## Titanium candidate packs
 
 Two additional packs are opt-in. Select the Ti-only row with
-`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-ti-candidate-v2.json")`,
+`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json")`,
 or select the combined Cr+Ti candidate with
-`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json")`.
+`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json")`.
 Neither is the packaged default. The Ti-only pack starts from the default
 redox pack; the combined pack carries both empirical rows.
 

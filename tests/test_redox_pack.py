@@ -25,7 +25,7 @@ from tools.liquid_from_solid import liquid_from_solid
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v2.json"
+PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
 SOURCE_PATH = ROOT / "data-src/redox-thermochemistry.json"
 
 
@@ -38,7 +38,7 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
     pack = load_redox_pack(PACK_PATH)
     elements = [parent["element"] for parent in pack.parents]
 
-    assert pack.version == "1.5.0"
+    assert pack.version == "1.6.0"
     assert pack.content["schema"] == "openimcc-redox-pack.v2"
     assert elements == [
         "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K", "Cr", "Ni",
@@ -695,10 +695,10 @@ def test_manganese_parent_and_association_reactions_have_expected_constants():
     assert parent_row["role"] == "parent_reference"
     assert parent_row["external_oxygen_stoich_product_positive"] == -0.5
     expected = {
-        "Mn(l) + 1/2 O2(g) = MnO(l)": (17.9511364516, 13.6470058316),
-        "MnO(l) + SiO2(l) = MnSiO3(l)": (2.6716830690, 2.6381040737),
-        "2 MnO(l) + SiO2(l) = Mn2SiO4(l)": (4.3188950299, 3.8369262773),
-        "MnO(l) + Al2O3(l) = MnAl2O4(l)": (4.5482119849, 4.0401943583),
+        "Mn(l) + 1/2 O2(g) = MnO(l)": (18.0069480442, 13.6595399686),
+        "MnO(l) + SiO2(l) = MnSiO3(l)": (2.5818472401, 2.5117257936),
+        "2 MnO(l) + SiO2(l) = Mn2SiO4(l)": (4.1823611826, 3.6714840694),
+        "MnO(l) + Al2O3(l) = MnAl2O4(l)": (4.6353020697, 4.0276646397),
     }
     for reaction, (at_1673, at_2000) in expected.items():
         row = by_reaction[reaction]
