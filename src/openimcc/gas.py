@@ -4169,6 +4169,17 @@ def _source_model_flag(
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
+    if row_name == "FeO(l)" and phase == "l":
+        fit_range, fit_row = _selected_redox_feo_fit()
+        # Ref is provenance; the coefficients identify whether this fit applies.
+        if all(float(row[column]) == value for column, value in fit_row):
+            low, high = fit_range
+            if T < low or T > high:
+                return (
+                    f"{row_name} uses the D&G/Masson correction extrapolated "
+                    f"outside its {low:g}-{high:g} K fit range "
+                    f"(Ref={source_ref})"
+                )
     if source_ref.startswith("P677-Re2O7-g-SMITH-EST-"):
         uncertainty_kj = (
             R_J_MOL_K * math.log(10.0) * T * 0.131479893726766 / 1000.0
@@ -4272,6 +4283,24 @@ def _source_model_flag(
             f"{limit:g} K from {source_table}"
         )
     return None
+
+
+@lru_cache(maxsize=1)
+def _selected_redox_feo_fit() -> tuple[
+    tuple[float, float], tuple[tuple[str, float], ...]
+]:
+    """Return the selected FeO(l) redox row and its measured fit interval."""
+    from openimcc.redox_pack import load_redox_pack
+
+    record = load_redox_pack().content["thermo_species"]["FeO(l)"]
+    fit_range = tuple(
+        float(value) for value in record["fit_residual"]["temperature_range"]
+    )
+    fit_columns = ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
+    fit_row = tuple((key, float(record["row"][key])) for key in fit_columns)
+    if len(fit_range) != 2:
+        raise ValueError("selected redox FeO(l) fit metadata is incomplete")
+    return (fit_range[0], fit_range[1]), fit_row
 
 
 @lru_cache(maxsize=1)

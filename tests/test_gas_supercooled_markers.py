@@ -63,6 +63,48 @@ def test_source_liquid_marker_derivation_finds_exact_expected_names() -> None:
     assert "FeO(l)" in _derived_source_supercooled_liquid_markers(legacy)
 
 
+def test_feo_redox_fit_range_flags_default_without_ref_matching() -> None:
+    pack = load_gas_datapack()
+    feo_row = pack.oxide_df.loc["FeO(l)"]
+    result = evaluate_gas(
+        {"FeO": 1.0e-3}, 1200.0, 1.0e-8, pack,
+        parent_oxides=("FeO",), gas_species=("Fe", "FeO"),
+    )
+    for channel in ("Fe", "FeO"):
+        flag = result.domain_flags[channel]
+        assert flag is not None
+        assert "D&G/Masson correction extrapolated" in flag
+        assert "1649.15-1766.15 K" in flag
+        assert "Ref=DG46-MASSON65" in flag
+
+    renamed_row = feo_row.copy()
+    renamed_row["Ref"] = "RENAMED-SOURCE"
+    renamed_flag = _source_model_flag(
+        "FeO(l)", 1200.0, renamed_row, phase="l"
+    )
+    assert renamed_flag is not None
+    assert "Ref=RENAMED-SOURCE" in renamed_flag
+
+    legacy = load_gas_datapack(
+        oxide_path="src/openimcc/data/gas/condensate-feo-janaf-legacy.csv"
+    )
+    legacy_result = evaluate_gas(
+        {"FeO": 1.0e-3}, 1200.0, 1.0e-8, legacy,
+        parent_oxides=("FeO",), gas_species=("Fe", "FeO"),
+    )
+    for channel in ("Fe", "FeO"):
+        assert "source-tabulated supercooled liquid branch" in (
+            legacy_result.domain_flags[channel] or ""
+        )
+
+    in_band = evaluate_gas(
+        {"FeO": 1.0e-3}, 1700.0, 1.0e-8, pack,
+        parent_oxides=("FeO",), gas_species=("Fe", "FeO"),
+    )
+    assert in_band.domain_flags["Fe"] is None
+    assert in_band.domain_flags["FeO"] is None
+
+
 @pytest.mark.parametrize(
     ("species", "marker", "row", "temperature"), _marker_cases(),
     ids=lambda value: value if isinstance(value, str) else None,
