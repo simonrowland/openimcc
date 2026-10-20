@@ -1,6 +1,6 @@
-# FeO(l) liquid re-anchor candidate
+# FeO(l) liquid re-anchor
 
-**Decision: keep opt-in.** The D&G-derived candidate improves the held-out Kress–Carmichael and Matzen scores and the Sossi fitted relation, but worsens Aithala. The source data used to anchor FeO carry no formal pointwise activity uncertainty, the Distin stoichiometric correction is method-dependent, and the validation is mixed. The candidate remains separate from every default pack.
+**Decision: promote the D&G/Masson FeO(l) standard to the default.** Criterion 2 (primary measurements) selects Darken & Gurry's iron-saturated equilibria, reduced via Masson, over JANAF Fe-019's 1965 construction. Fe-019 assigns wüstite fusion to oxygen release at 1 bar. The existing correction, ΔG° = 27778.965828 − 10.961554232 T J/mol, is adopted without refitting; residuals are reported and never gate the source choice. The source has no formal pointwise uncertainty for the equilibrium gas ratio or oxide analysis, and the Distin composition extrapolation is method-dependent. The held-out scorecard is mixed: Aithala gets worse. The old candidate files remain loadable for reproducibility, but their chemistry is now redundant with the promoted default.
 
 ## Source transcriptions and uncertainty
 
@@ -86,13 +86,13 @@ That produces ΔA = −0.572561660·ν_FeO and ΔB = 1450.995948·ν_FeO K for l
 
 The FeO candidate's melt-pack v2 also updates MgAl₂O₄ row 3 to the measured Shornikov fusion enthalpy used by the current default pack. FeAl₂O₄ row 21 retains FC87 R21's own estimated melting entropy and liquid Cp; those estimates do not define a quantitative transfer from MgAl₂O₄'s measured fusion enthalpy. Its FeO-parent transformation remains the separate D&G standard-state adjustment shown above. The earlier candidate melt pack remains frozen.
 
-The candidate bundle is opt-in in the existing pack formats:
+The historical candidate bundle remains loadable in the existing pack formats:
 
 - src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate-v2.json
 - src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate-v2.json
 - src/openimcc/data/gas/condensate-feo-liquid-candidate.csv
 
-Select the redox and melt JSON paths together in `evaluate_redox(..., redox_pack_path=..., melt_pack_path=...)`; pass the candidate condensate file to the gas loader for gas calculations. The earlier pack files remain frozen; the current default D066 and redox packs are versioned v2 files. This FeO candidate uses its own versioned melt pack. Its redox canonical digest is `cb84e1a40e4fb41b4b964534f9cee40a6c0da412738217e866b0e618ec08a349`; its v2 melt binding digest is `9b709c5ac1ec04ca839463bae098b957b2fa7088d8afa1a326312ca8137d6061`.
+Select the redox and melt JSON paths together in `evaluate_redox(..., redox_pack_path=..., melt_pack_path=...)`; pass the candidate condensate file to the gas loader for gas calculations. Shipped packs are immutable, so the promoted default is D066 v3 and redox v3; v1/v2 and the candidate files remain available for explicit historical calculations. The candidate bundle's recorded redox canonical digest is `cb84e1a40e4fb41b4b964534f9cee40a6c0da412738217e866b0e618ec08a349`; its v2 melt binding digest is `9b709c5ac1ec04ca839463bae098b957b2fa7088d8afa1a326312ca8137d6061`.
 
 ## Held-out comparison
 

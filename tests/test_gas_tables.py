@@ -7840,7 +7840,12 @@ def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation(
     default_crystal = species_thermo(
         "SiO2", "cr", 1500.0, load_gas_datapack()
     )
-    janaf_liquid = species_thermo("FeO", "l", 2200.0, pack)
+    feo_liquid = species_thermo("FeO", "l", 2200.0, pack)
+    default_feo = species_thermo("FeO", "l", 2200.0, load_gas_datapack())
+    legacy_feo = species_thermo(
+        "FeO", "l", 2200.0,
+        load_gas_datapack(oxide_path=GAS_DATA / "condensate-feo-janaf-legacy.csv"),
+    )
     assert liquid.source_row_id == "LAM1987"
     assert crystal.source_row_id == "LAM1987"
     assert default_crystal == crystal
@@ -7848,9 +7853,13 @@ def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation(
     assert default_crystal.source_table_id == "LH87 Table 2"
     assert liquid.derivatives_fit_implied is True
     assert crystal.derivatives_fit_implied is True
-    assert janaf_liquid.derivatives_fit_implied is True
-    assert janaf_liquid.source_row_id == "JANAF"
-    assert janaf_liquid.source_table_id == "Fe-019"
+    assert feo_liquid.derivatives_fit_implied is True
+    assert feo_liquid.source_row_id == "JANAF"
+    assert feo_liquid.source_table_id == "Fe-019"
+    assert default_feo.source_row_id == "DG46-MASSON65"
+    assert default_feo.source_table_id == "DG46-MASSON65"
+    assert legacy_feo.source_row_id == "JANAF"
+    assert legacy_feo.source_table_id == "Fe-019"
     assert species_thermo("TiO2", "l", 2000.0, pack).source_table_id == "O-044"
     assert species_thermo("O2", "g", 1500.0, pack).source_table_id == "O-029"
     assert species_thermo("Na2O", "g", 1500.0, pack).source_table_id == "NG-0905"
@@ -7979,6 +7988,9 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
 
 def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None:
     pack = load_gas_datapack()
+    legacy_pack = load_gas_datapack(
+        oxide_path=GAS_DATA / "condensate-feo-janaf-legacy.csv"
+    )
     expected_nodes = {
         ("FeO(l)", 1000.0): 39,
         ("TiO2(l)", 1500.0): 15,
@@ -8014,13 +8026,14 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
             if item["temperature"] == 298.15
         )
         ambiguous = _ambiguous_temperatures(table_id)
-        rows = pack.oxide_df.loc[[species_name]]
+        source_pack = legacy_pack if species_name == "FeO(l)" else pack
+        rows = source_pack.oxide_df.loc[[species_name]]
         for _, row in rows.iterrows():
             if str(row["Ref"]).endswith("-SC-CP"):
                 continue
             low, high = float(row["T_min"]), float(row["T_max"])
             row_pack = replace(
-                pack,
+                source_pack,
                 oxide_df=rows.loc[rows["T_min"].astype(float) == low],
             )
             maximum_g_residual = 0.0

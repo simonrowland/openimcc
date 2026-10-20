@@ -121,6 +121,26 @@
       "sha256": "57e89a440481edeafc79822da63558e180b207194be5ebe542aaf765b5feb337"
     },
     {
+      "bytes": 79679,
+      "datapack_version": "1.0.5-d066-v3",
+      "file": "imcc-sf04-d066-v3.json",
+      "model": "IMCC ideal associated solution with the D066 translations, the measured MgAl2O4 fusion correction, and the D&G/Masson FeO(l) standard-state re-anchor applied consistently to Fe-bearing associations.",
+      "n_rows": 38,
+      "n_screened_not_activated": 0,
+      "provenance_classes": {
+        "authority_by_publication": 28,
+        "janaf_direct_liquid": 9,
+        "partial_non_janaf_direct_liquid": 1
+      },
+      "provenance_split": {
+        "authority_by_publication": 28,
+        "janaf_direct_liquid": 9,
+        "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as internal consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition (scout section 2).",
+        "partial_non_janaf_direct_liquid": 1
+      },
+      "sha256": "a8a0d0720a9c31b228a8455cbf42afc269482eea5e4e5d48d6fd2edee740284d"
+    },
+    {
       "bytes": 76455,
       "datapack_version": "1.0.2-ext-sp-2",
       "file": "imcc-sf04-ext-v4.json",
@@ -176,6 +196,21 @@
       "sha256": "138aa08cf1ca7be316f6f6ee70cc35aeb41f0069f619e1f41d9e84a12cf8b72b"
     },
     {
+      "bytes": 101963,
+      "datapack_version": "1.6.0-cr-candidate",
+      "file": "openimcc-redox-cr-candidate-v3.json",
+      "model": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
+      "n_rows": 7,
+      "n_screened_not_activated": 0,
+      "provenance_classes": {
+        "extension-compound-thermo": 5,
+        "janaf_direct_liquid": 1,
+        "measured-melt-composition-conditioned-effective-k": 1
+      },
+      "provenance_split": null,
+      "sha256": "3dd18d7bedf15965bde848fc719693751a38a79bd68c918988d65452ff0a865e"
+    },
+    {
       "bytes": 101192,
       "datapack_version": "1.4.0-cr-candidate",
       "file": "openimcc-redox-cr-candidate.json",
@@ -204,6 +239,21 @@
       },
       "provenance_split": null,
       "sha256": "5e1a90753766e511d46b7520746a85f7b36c77de987de35dcd55ed7c44bf9332"
+    },
+    {
+      "bytes": 114568,
+      "datapack_version": "1.8.0-cr-ti-candidate",
+      "file": "openimcc-redox-cr-ti-candidate-v3.json",
+      "model": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack.; D&G/Masson FeO(l) standard-state reference",
+      "n_rows": 8,
+      "n_screened_not_activated": 0,
+      "provenance_classes": {
+        "extension-compound-thermo": 5,
+        "janaf_direct_liquid": 1,
+        "measured-melt-composition-conditioned-effective-k": 2
+      },
+      "provenance_split": null,
+      "sha256": "2688cabae164c0f52172c855c86338bfc1d5810b6a8c14e8f42fa96b41f03403"
     },
     {
       "bytes": 113797,
@@ -264,6 +314,21 @@
       "sha256": "b25ea28d9db7b8a0668811dfd70e784d5551fd689bb2d2f8ac09b6b23256ff30"
     },
     {
+      "bytes": 106261,
+      "datapack_version": "1.7.0-ti-candidate",
+      "file": "openimcc-redox-ti-candidate-v3.json",
+      "model": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack.; D&G/Masson FeO(l) standard-state reference",
+      "n_rows": 7,
+      "n_screened_not_activated": 0,
+      "provenance_classes": {
+        "extension-compound-thermo": 5,
+        "janaf_direct_liquid": 1,
+        "measured-melt-composition-conditioned-effective-k": 1
+      },
+      "provenance_split": null,
+      "sha256": "3d3ba4d3bbe1b5c941f3d727f2864184a616cf9395fd1c7c2c6a91d1fc6b28aa"
+    },
+    {
       "bytes": 105490,
       "datapack_version": "1.5.0-ti-candidate",
       "file": "openimcc-redox-ti-candidate.json",
@@ -305,6 +370,20 @@
       },
       "provenance_split": null,
       "sha256": "bf8d0ea279ebf52e85562d060033eedec94f27f3f10d2421ca6cfc5eec6c07c2"
+    },
+    {
+      "bytes": 93983,
+      "datapack_version": "1.6.0",
+      "file": "openimcc-redox-v3.json",
+      "model": "Element-based redox thermochemistry with standard-state reaction rows",
+      "n_rows": 6,
+      "n_screened_not_activated": 0,
+      "provenance_classes": {
+        "extension-compound-thermo": 5,
+        "janaf_direct_liquid": 1
+      },
+      "provenance_split": null,
+      "sha256": "a3a9e57f73d3fee9f13eb497cf4f26174b15e066af98e665b25338a143b5acba"
     }
   ],
   "schema": "openimcc-pack-manifest.v1"

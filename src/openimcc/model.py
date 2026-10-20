@@ -583,7 +583,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         resources.files("openimcc")
         / "data"
         / "packs"
-        / "imcc-sf04-d066-v2.json"
+        / "imcc-sf04-d066-v3.json"
         if path is None
         else Path(path)
     )

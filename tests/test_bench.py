@@ -43,6 +43,7 @@ _K_CMAS_WT = {**_CMAS_WT, "K2O": 1.0}
         "imcc-sf04-ext-v4.json",
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-d066-v2.json",
+        "imcc-sf04-d066-v3.json",
         "imcc-sf04-d066-v1-kcaalsi2o7.json",
         "imcc-sf04-d066-ext-v1.json",
     ],

@@ -17,10 +17,10 @@ from openimcc.redox_pack import (
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src/openimcc/data/packs"
-TI = PACK_DIR / "openimcc-redox-ti-candidate-v2.json"
-CR = PACK_DIR / "openimcc-redox-cr-candidate-v2.json"
-CR_TI = PACK_DIR / "openimcc-redox-cr-ti-candidate-v2.json"
-DEFAULT = PACK_DIR / "openimcc-redox-v2.json"
+TI = PACK_DIR / "openimcc-redox-ti-candidate-v3.json"
+CR = PACK_DIR / "openimcc-redox-cr-candidate-v3.json"
+CR_TI = PACK_DIR / "openimcc-redox-cr-ti-candidate-v3.json"
+DEFAULT = PACK_DIR / "openimcc-redox-v3.json"
 
 
 _MW = {
@@ -432,13 +432,13 @@ def test_tagged_linear_term_preserves_cr_candidate_result(tmp_path):
     assert before.element_moles_by_oxidation_state == after.element_moles_by_oxidation_state
 
 
-def test_cr_candidate_v2_output_digests_pin_corrected_homologue():
+def test_cr_candidate_v3_output_digests_pin_corrected_homologue():
     feed = {"Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
             "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05}
     expected = (
-        "ca9a396b5acf25bc5cb69cc1ff2223d00ed087ad59af4322dde480d10fbdf866",
-        "daf491c70b2eb72186afd423effaffcd3c61fb4146d308dc7f75a6f19c5b6121",
-        "2d1a7f3ca3e69f31f75e61c1940fa1db40e8286164f35eda30f08eb992f64cc1",
+        "ac8f73f1efc953729585343ce24b0d1f438037d42fac42008d0e65b4ab9ca797",
+        "9b67642136b02ff28aa0455472b0a33801de6974374a55e85bbd875a3adbac22",
+        "7a270768506afa394672d82ad6b237651943b902c0ac189b03beed0e8d404000",
     )
     actual = []
     for temperature, logf in ((1673.0, -10.0), (1700.0, -8.0), (1773.0, -6.0)):
@@ -455,12 +455,12 @@ def test_default_output_digests_pin_corrected_redox_homologue():
         (2200.0, {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65}),
         (2500.0, {"Fe": 0.7, "Si": 0.2, "Mg": 0.1, "O": 1.0}),
     ]
-    # The middle case includes MgAl2O4 and follows the corrected homologue;
-    # the Fe-only endpoints remain bit-identical.
+    # The middle case includes MgAl2O4 and Fe-bearing associations; the Fe-only
+    # endpoints also move because the FeO standard state changed in v3.
     expected = (
-        "55e89d0cba18a35b40bcaa67263c28f4cbbe9dd45878bcfeb434605946e7fdfd",
-        "9248a495c45fd33f758fd5e32be5c5246212180d34be37b237f97ec83af650e4",
-        "d9d5224aefeedaf222550f2bffb96c528e08a9fbf66bb1e30ddcaa9c0e8ba79d",
+        "22aa16d3e716accfa736676672a97b25cd503eeef5183fa07e9d79f7bec819a1",
+        "fd729d1c4877551ca2d16c974fab070dd268f6d2ec36d87427f07323a0167e3b",
+        "051dbd2627182bcda02c5b25d6e3b01bdb266edb6c56cf337fd3c865d2464839",
     )
     actual = [
         _legacy_output_digest(evaluate_redox(feed, temperature, "closed"))
@@ -498,8 +498,8 @@ def test_default_pack_rejects_the_new_composition_term(tmp_path):
 
 
 def test_new_candidate_packs_select_explicitly_and_default_pack_is_unchanged():
-    assert load_redox_pack(TI).version == "1.6.0-ti-candidate"
-    assert load_redox_pack(CR_TI).version == "1.7.0-cr-ti-candidate"
+    assert load_redox_pack(TI).version == "1.7.0-ti-candidate"
+    assert load_redox_pack(CR_TI).version == "1.8.0-cr-ti-candidate"
     combined = _imposed(
         {"Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
          "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05},

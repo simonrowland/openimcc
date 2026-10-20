@@ -1049,7 +1049,7 @@ with as_file(candidate) as candidate_path:
 ```
 
 Leaving `redox_pack_path` unset continues to use the packaged default
-`openimcc-redox-v2.json`.
+`openimcc-redox-v3.json`.
 
 ## The empirical bench
 
@@ -1304,9 +1304,9 @@ MgAl2O4 (at 1700 K, on the glass segments of the JANAF liquid tables),
 1.1 kJ/mol for Mg2SiO4, 0.7 kJ/mol for MgTi2O5, and 0.3–0.4 kJ/mol for
 MgTiO3, Mg2TiO4 and MgSiO3 (0.27 kJ/mol). On the liquid branch at
 2600–3000 K, its MgAl2O4 row differs by +5.0 to +6.0 kJ/mol (0.10–0.11 dex).
-The current default D066 v2 pack corrects MgAl2O4 row 3 using Shornikov's
-primary fusion measurement; the frozen published pack and D066 v1 remain
-available with their original JANAF-derived row. See
+The current default D066 v3 pack combines Shornikov's primary MgAl2O4
+fusion measurement and the D&G/Masson FeO(l) re-anchor; the frozen published
+pack and D066 v1/v2 remain available with their historical rows. See
 [`docs/liquid-from-solid.md`](docs/liquid-from-solid.md) for the source choice
 and derivation.
 
@@ -1320,8 +1320,8 @@ source liquid nodes below 1800 K; its 1200–1800 K parent row is therefore an
 explicit constant-Cp continuation, which every affected gas result flags.
 
 The frozen published reproduction pack remains unchanged: every row is its
-source's published value. D066 v2 is a separately versioned default with the
-MgAl2O4 source correction and its erratum recorded in the pack.
+source's published value. D066 v3 is a separately versioned default with the MgAl2O4 and FeO(l)
+source corrections and their provenance recorded in the pack.
 
 ### Independently pinned behaviour
 

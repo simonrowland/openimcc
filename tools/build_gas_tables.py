@@ -5047,6 +5047,17 @@ def build_condensate_rows(
             )
         else:
             rows.append(_fit_condensate_row(source_dir, *source))
+    # FeO(l) keeps the existing D&G/Masson candidate coefficients. This is
+    # the selected primary-measurement standard-state reduction, not a refit
+    # of the JANAF Fe-019 construction.
+    rows.append({
+        "species_name": "FeO(l)", "state": "l", "cation": "Fe",
+        "cat_num": "1", "oxy_num": "1", "T_min": "1000", "T_max": "5000",
+        "dH298_R": "-26.668958359186785",
+        "dG_A": "8.03837194242113", "dG_B": "6.588",
+        "dG_C": "-1.248", "dG_D": "0.150", "dG_E": "-0.007697",
+        "Ref": "DG46-MASSON65",
+    })
     for source in TRACE_CONDENSED_SOURCES:
         rows.append(
             _fit_condensate_row(

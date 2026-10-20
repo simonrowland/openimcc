@@ -1420,7 +1420,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "SiO2(cr)": "lam1987_transcribed",
     "Na2O": "janaf_fitted",
     "K2O": "estimated_systematic",
-    "FeO": "janaf_transcribed",
+    "FeO": "primary_measurement_reanchored",
     "TiO2": "janaf_fitted",
     "Cr2O3": "janaf_fitted",
     "V2O3": "janaf_fitted",
@@ -1492,7 +1492,7 @@ _OXIDE_SOURCE_TABLE_IDS = {
     "CaO": "Ca-028",
     "Al2O3": "Al-100",
     "SiO2": "O-038",
-    "FeO": "Fe-019",
+    "FeO": "DG46-MASSON65",
     "TiO2": "O-044",
     "Cr2O3": "Cr-015",
     "V2O3": "O-063",
@@ -1556,6 +1556,7 @@ _PROVENANCE_AUTHORITY_RANK = {
     "lam1984_transcribed": 1,
     "lam1987_transcribed": 1,
     "janaf_transcribed": 2,
+    "primary_measurement_reanchored": 4,
     "janaf_fitted": 3,
     "janaf_fitted_ionisation": 3,
     "nasa_glenn_fitted": 3,
@@ -4398,7 +4399,9 @@ def _condensate_source_table_id(
     row cannot inherit the packaged table id.
     """
     mapped = _OXIDE_SOURCE_TABLE_IDS.get(species)
-    if source_ref in {"JANAF"} or source_ref.startswith("LFS["):
+    if source_ref == "JANAF" and species == "FeO":
+        return "Fe-019"
+    if source_ref == "JANAF" or source_ref.startswith("LFS["):
         return mapped
     if mapped is not None and (
         source_ref == mapped or _ref_continues_table(source_ref, mapped)
@@ -4704,8 +4707,10 @@ def species_thermo(
     Cp, H and S directly, so their flag is false. For condensate rows the
     source-comparison gate therefore checks G_app only; derivative residuals
     are fit-implied information, not source-quantity gates.
-    The regression gate checks FeO(l) against JANAF Fe-019 and Na2O(l) against
-    Na-013. Al2O3(l) is a LAM-source exception compared with Al-100.
+    The default FeO(l) row uses the D&G/Masson primary-measurement reduction;
+    JANAF Fe-019 remains available through its explicit legacy condensate
+    table. Na2O(l) is checked against Na-013. Al2O3(l) is a LAM-source
+    exception compared with Al-100.
     """
     if phase not in {"g", "l", "cr"}:
         raise ValueError("phase must be 'g', 'l', or 'cr'")

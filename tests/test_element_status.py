@@ -1453,11 +1453,20 @@ def _c4_rows_cover_domain(
             "lam1984_transcribed",
             "lam1987_transcribed",
             "secondary_transcription_unverified_primary",
+            "primary_measurement_reanchored",
         } or source["method"] not in {
             "transcribed",
             "transcribed_secondary_unverified_primary",
+            "standard_state_reduction",
         }:
             return False
+        if source["authority"] == "primary_measurement_reanchored":
+            citation_dois = source.get("source", {}).get("doi", [])
+            if (
+                "10.1021/ja01209a030" not in citation_dois
+                or "10.1098/rspa.1965.0176" not in citation_dois
+            ):
+                return False
         coverage_end = max(coverage_end, row_end)
     return coverage_end >= domain_end
 

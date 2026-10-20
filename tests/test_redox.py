@@ -34,7 +34,7 @@ from openimcc.model import ImccMalformedDatapackError
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v2.json"
+DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
 
 
 def _formula_atoms() -> dict[str, dict[str, float]]:
@@ -307,7 +307,7 @@ def test_manganese_zero_delta_sharing_does_not_call_the_oxygen_window_lp(
 
 def test_redox_reference_outputs_before_generalized_rows() -> None:
     fe_closed = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
-    assert fe_closed.lambda_ln_f_o2 == pytest.approx(-0.7193904586464315, rel=1.0e-12)
+    assert fe_closed.lambda_ln_f_o2 == pytest.approx(-1.5205238540751636, rel=1.0e-12)
     assert fe_closed.metal_moles == 0.0
     assert fe_closed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
         0.03125, rel=1.0e-12
@@ -319,16 +319,15 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     assert species["FeO"] == pytest.approx(0.49999999999999967, rel=1.0e-12, abs=0.0)
     assert species["FeO1.5(l)"] == pytest.approx(0.5000000000000003, rel=1.0e-12, abs=0.0)
 
-    # Fe reference functions are refit directly to JANAF. The previous rows
-    # missed their JANAF source by up to 79 J/mol (a fusion-anchor offset on
-    # Fe(l); a single polynomial across the Fe(cr) delta phase); these pins
-    # record the resulting source-accurate change.
+    # The default FeO(l) standard now uses the D&G/Masson primary-measurement
+    # re-anchor, so the pure-iron fugacity root changes while speciation stays
+    # fixed by the oxygen inventory.
     fe_buffered = evaluate_redox({"Fe": 1.0, "O": 1.0}, 2200.0, "closed")
     assert fe_buffered.lambda_ln_f_o2 == pytest.approx(
-        -15.119336858668342, rel=1.0e-12
+        -14.73700130009624, rel=1.0e-12
     )
     assert fe_buffered.metal_moles == pytest.approx(
-        0.01312413668273617, rel=1.0e-12, abs=0.0
+        0.01740670941462437, rel=1.0e-12, abs=0.0
     )
     assert fe_buffered.oxygen_residual_mol is not None
     assert abs(fe_buffered.oxygen_residual_mol) <= 5.0e-13
@@ -337,8 +336,8 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
         name: amount for name, amount in fe_buffered.species_moles.items() if amount
     }
     expected_buffered_species = {
-        "FeO": 0.9606275899489891,
-        "FeO1.5(l)": 0.026248273367340567,
+        "FeO": 0.9477798717561269,
+        "FeO1.5(l)": 0.03481341882924876,
     }
     assert set(buffered_species) == set(expected_buffered_species)
     assert [buffered_species[name] for name in expected_buffered_species] == pytest.approx(
@@ -349,14 +348,14 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
         {"Fe": 1.0}, 2200.0, "imposed", lambda_imposed=-4.0
     )
     assert fe_imposed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
-        0.026532459689033592, rel=1.0e-12
+        0.028430416956842466, rel=1.0e-12
     )
     imposed_species = {
         name: amount for name, amount in fe_imposed.species_moles.items() if amount
     }
     expected_imposed_species = {
-        "FeO": 0.6942686863283202,
-        "FeO1.5(l)": 0.3057313136716798,
+        "FeO": 0.6501887623800805,
+        "FeO1.5(l)": 0.34981123761991945,
     }
     assert set(imposed_species) == set(expected_imposed_species)
     assert [imposed_species[name] for name in expected_imposed_species] == pytest.approx(
@@ -382,14 +381,14 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
         for element, amount in mixed.items()
     ) + 0.002
     mixed_closed = evaluate_redox(mixed, 2500.0, "closed")
-    # The corrected MgAl2O4 homologue changes the shared Tier-3 redox basis;
-    # pin the resulting species inventory on the default pack.
+    # The MgAl2O4 correction and FeO(l) re-anchor change the shared redox
+    # solution; pin the resulting species inventory on the v3 default pack.
     assert mixed_closed.lambda_ln_f_o2 == pytest.approx(
-        -11.136071110330729, rel=1.0e-12
+        -11.171376087683274, rel=1.0e-12
     )
     assert mixed_closed.metal_moles == 0.0
     assert mixed_closed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
-        0.0004897065426424909, rel=1.0e-12
+        0.0004897556789764402, rel=1.0e-12
     )
     assert mixed_closed.solver_path == "newton"
     assert mixed_closed.fallback_fired is False
@@ -397,52 +396,52 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
         name: amount for name, amount in mixed_closed.species_moles.items() if amount
     }
     expected_mixed_species = {
-        "Al2O3": 0.012210038197781221,
-        "Al6Si2O13": 3.899066483235894e-06,
-        "Ca12Al14O33": 1.3561661995373539e-30,
-        "Ca2Al2SiO7": 0.0011765930043528417,
-        "Ca2MgSi2O7": 0.0009120468191586799,
-        "Ca2SiO4": 0.00025522329973434797,
-        "CaAl12O19": 5.977139915114933e-09,
-        "CaAl2O4": 0.0006685959000232317,
-        "CaAl2Si2O8": 0.025917639317565355,
-        "CaAl4O7": 0.00022514880781666875,
-        "CaMgSi2O6": 0.028104149470170314,
-        "CaO": 0.0002113770178411161,
-        "CaSiO3": 0.03743463757085856,
-        "CaTiO3": 0.0005651345543532173,
-        "CaTiSiO5": 0.002185585137739908,
-        "Fe2SiO4": 0.020674421670783174,
-        "FeAl2O4": 0.007158470413619166,
-        "FeO": 0.09373769967795616,
-        "FeO1.5(l)": 0.004000000000012886,
-        "FeTiO3": 0.003754986566845878,
-        "K2O": 6.596331433210636e-13,
-        "K2Si2O5": 1.012358191543045e-07,
-        "K2Si4O9": 6.4888230925001876e-09,
-        "K2SiO3": 4.6165584127210867e-08,
-        "KAlO2": 2.858006558469875e-05,
-        "KAlSi2O6": 0.002549734460928238,
-        "KAlSi3O8": 0.0008111680192520515,
-        "KAlSiO4": 0.0006102096724630027,
-        "Mg2Al4Si5O18": 0.008979748878991384,
-        "Mg2SiO4": 0.007089063086164348,
-        "Mg2TiO4": 0.00016438684897349533,
-        "MgAl2O4": 0.004476239113312274,
-        "MgO": 0.010673135608512564,
-        "MgSiO3": 0.07259519794153069,
-        "MgTi2O5": 1.1129616999768639e-05,
-        "MgTiO3": 0.0007617038020572047,
-        "Na2O": 2.7681713218702393e-09,
-        "Na2Si2O5": 1.426345373264527e-05,
-        "Na2SiO3": 1.3842318296540855e-05,
-        "Na2TiO3": 8.419514728873898e-07,
-        "NaAlO2": 0.0003448696639313994,
-        "NaAlSi2O6": 0.00035423113157622067,
-        "NaAlSi3O8": 0.010296807480037756,
-        "NaAlSiO4": 0.004946190741107817,
-        "SiO2": 0.15908416263239833,
-        "TiO2": 0.0025451019045578745,
+        "SiO2": 0.15877061903397566,
+        "MgO": 0.010674904930005568,
+        "FeO": 0.09287755225886328,
+        "CaO": 0.00021145355073511968,
+        "Al2O3": 0.012189883980140362,
+        "TiO2": 0.0025338408412764967,
+        "Na2O": 2.7792426557685566e-09,
+        "K2O": 6.621113416654896e-13,
+        "Mg2SiO4": 0.00709809817966482,
+        "MgSiO3": 0.07256982404890523,
+        "MgAl2O4": 0.004476110630640569,
+        "MgTiO3": 0.0007595655585038194,
+        "MgTi2O5": 1.106538456872014e-05,
+        "Mg2TiO4": 0.0001641916987056567,
+        "Al6Si2O13": 3.8871084452693764e-06,
+        "CaAl2O4": 0.0006687079255409409,
+        "CaAl4O7": 0.0002251427460087374,
+        "Ca12Al14O33": 1.3822012518362076e-30,
+        "CaSiO3": 0.03742889764032268,
+        "CaAl2Si2O8": 0.025895278065716607,
+        "CaMgSi2O6": 0.028130990407799542,
+        "Ca2MgSi2O7": 0.0009145804653587544,
+        "Ca2Al2SiO7": 0.00117832589813023,
+        "CaTiO3": 0.0005636587203096089,
+        "Ca2SiO4": 0.00025564890375263797,
+        "CaTiSiO5": 0.0021787544367519863,
+        "FeTiO3": 0.003777015169128573,
+        "Fe2SiO4": 0.021062452179899136,
+        "FeAl2O4": 0.0072205282122018615,
+        "CaAl12O19": 5.972331584925231e-09,
+        "Mg2Al4Si5O18": 0.008969189408738417,
+        "Na2SiO3": 1.3890520536263423e-05,
+        "Na2Si2O5": 1.4305748148928501e-05,
+        "NaAlSiO4": 0.004949428714728691,
+        "NaAlSi3O8": 0.010292933856950159,
+        "NaAlO2": 0.00034527331891077057,
+        "Na2TiO3": 8.428061864204705e-07,
+        "NaAlSi2O6": 0.0003542804011818307,
+        "K2SiO3": 4.631515068963723e-08,
+        "K2Si2O5": 1.0151147436893495e-07,
+        "KAlSiO4": 0.0006105353705662093,
+        "KAlSi3O8": 0.0008107648979617386,
+        "KAlO2": 2.861006042898239e-05,
+        "KAlSi2O6": 0.0025497810168911717,
+        "K2Si4O9": 6.499788781627373e-09,
+        "FeO1.5(l)": 0.0040000000000082895,
     }
     assert set(mixed_species) == set(expected_mixed_species)
     assert [mixed_species[name] for name in expected_mixed_species] == pytest.approx(
@@ -608,9 +607,9 @@ def test_oxygen_response_is_continuous_across_pure_fe_saturation() -> None:
         {"Fe": 1.0}, temperature, "imposed", lambda_imposed=0.0
     )
     at_saturation = evaluate_redox(
-        # The source-refitted Fe(l) function moves the saturation boundary;
-        # this inventory sits just below its zero-metal endpoint.
-        {"Fe": 1.0, "O": 1.0132986},
+        # The D&G/Masson FeO(l) standard moves the saturation boundary; this
+        # inventory sits just below its zero-metal endpoint.
+        {"Fe": 1.0, "O": 1.017715},
         temperature,
         "imposed",
         lambda_imposed=imposed.lambda_sat,
@@ -782,8 +781,8 @@ def test_imposed_mixed_melt_predicts_buffered_metal_without_oxygen() -> None:
         "imposed",
         lambda_imposed=-17.931129807709393,
     )
-    # The corrected MgAl2O4 homologue changes the mixed default-pack solution.
-    assert result.metal_moles == pytest.approx(0.5001323593314736, abs=2.0e-9)
+    # The MgAl2O4 correction and FeO(l) re-anchor change the mixed default-pack solution.
+    assert result.metal_moles == pytest.approx(0.5664845606079324, abs=2.0e-9)
     assert result.oxygen_inventory_mol is None
     assert result.oxygen_residual_mol is None
     assert result.lambda_sat == pytest.approx(-17.931129807709393, abs=1.0e-9)
@@ -791,22 +790,22 @@ def test_imposed_mixed_melt_predicts_buffered_metal_without_oxygen() -> None:
 
 def test_finite_closed_root_above_one_bar_standard_state() -> None:
     result = evaluate_redox({"Fe": 1.0, "O": 1.4}, 2200.0, "closed")
-    assert result.lambda_ln_f_o2 == pytest.approx(4.825786986, abs=2.0e-8)
+    assert result.lambda_ln_f_o2 == pytest.approx(4.024653590402665, abs=2.0e-8)
     assert result.oxygen_residual_mol == pytest.approx(0.0, abs=2.0e-12)
 
 
 @pytest.mark.parametrize(
     ("oxygen", "expected_lambda"),
     [
-        (1.4999999999999998, 140.6826343756),
-        (1.499999999999, 107.0317496963),
+        (1.4999999999999998, 139.88150098015197),
+        (1.499999999999, 106.23061630086589),
     ],
 )
 def test_closed_mode_solves_representable_states_near_oxidised_endpoint(
     oxygen: float, expected_lambda: float
 ) -> None:
-    # Independent Fe-only mass action for FeO + 1/4 O2 = FeO1.5, evaluated
-    # at high precision, gives these roots for O = 1 + 0.5*x_FeO1.5.
+    # Fe-only mass action with the selected D&G/Masson FeO(l) standard gives
+    # these roots for O = 1 + 0.5*x_FeO1.5.
     near_fully_oxidised = evaluate_redox(
         {"Fe": 1.0, "O": oxygen}, 2200.0, "closed"
     )
@@ -817,8 +816,8 @@ def test_closed_mode_solves_representable_states_near_oxidised_endpoint(
 
 def test_imposed_and_closed_match_at_nextafter_oxidised_fe_endpoint() -> None:
     inventory = {"Fe": 1.0, "O": 1.4999999999999998}
-    # Independent Fe-only mass action at 2200 K, with
-    # O = 1 + 0.5*x_FeO1.5, gives lambda = 140.6826343756.
+    # Fe-only mass action with the selected FeO(l) standard gives lambda
+    # = 139.88150098015197 for this nearly fully oxidized inventory.
     closed = evaluate_redox(inventory, 2200.0, "closed")
     imposed = evaluate_redox(
         inventory,
@@ -827,7 +826,7 @@ def test_imposed_and_closed_match_at_nextafter_oxidised_fe_endpoint() -> None:
         lambda_imposed=closed.lambda_ln_f_o2,
     )
 
-    assert closed.lambda_ln_f_o2 == pytest.approx(140.6826343756, abs=2.0e-8)
+    assert closed.lambda_ln_f_o2 == pytest.approx(139.88150098015197, abs=2.0e-8)
     assert imposed.lambda_ln_f_o2 == closed.lambda_ln_f_o2
     assert imposed.species_moles == pytest.approx(closed.species_moles, rel=1.0e-12)
     assert imposed.oxygen_mol == pytest.approx(closed.oxygen_mol, abs=1.0e-12)
@@ -842,10 +841,10 @@ def test_mixed_inventory_signed_oxygen_cancellation_uses_unrounded_terms() -> No
         "Ca": 0.1,
         "O": 3.7999999999999994,
     }
-    # The corrected MgAl2O4 homologue shifts this default-pack redox root.
+    # The MgAl2O4 correction and FeO(l) re-anchor shift this default root.
     result = evaluate_redox(inventory, 2200.0, "closed")
 
-    assert result.lambda_ln_f_o2 == pytest.approx(136.5227100995211, abs=1.0e-8)
+    assert result.lambda_ln_f_o2 == pytest.approx(135.83481406384772, abs=1.0e-8)
 
 
 def test_closed_residual_reconstructs_compensated_species_oxygen_ledger() -> None:

@@ -27,6 +27,9 @@ LEGACY_BINDING_SHA256 = {
     "imcc-sf04-ext-v4.json": "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770",
 }
 D066_MANIFEST_SHA256 = {
+    "imcc-sf04-d066-v3.json": (
+        "076e1c1c73fe5adcafa83ee27ef9481674231cfbd13adf5bf94375100ab1cd6a"
+    ),
     "imcc-sf04-d066-v2.json": (
         "efd2330f57d366b660e100d821806054b59134cb95b6404e1f9c27b5e468893e"
     ),
@@ -41,7 +44,7 @@ D066_MANIFEST_SHA256 = {
     ),
 }
 D066_BINDING_SHA256 = D066_MANIFEST_SHA256
-D066_DEFAULT_K_PRESSURE_BAR = float.fromhex("0x1.0c82fc7be3decp-11")
+D066_DEFAULT_K_PRESSURE_BAR = float.fromhex("0x1.1dcc45205e970p-11")
 COMPOSITIONS = (
     {
         "SiO2": 0.45,
@@ -155,9 +158,9 @@ def test_default_d066_k_pressure_is_pinned_after_data_change() -> None:
         load_gas_datapack(),
         gas_species=("K",),
     )["K"]
-    # The previous CI matrix showed about 5e-17 backend movement in one
-    # legacy activity. Keep the existing portable-golden convention: a tight
-    # relative bound with no absolute allowance; pack and digest pins stay exact.
+    # This intentionally moves with the v3 MgAl2O4 and FeO(l) corrections.
+    # Keep the portable-golden convention: a tight relative bound with no
+    # absolute allowance; pack and digest pins stay exact.
     assert float(pressure) == pytest.approx(
         D066_DEFAULT_K_PRESSURE_BAR,
         rel=EVALUATION_RTOL,
