@@ -92,6 +92,51 @@ def test_corrected_mgal2o4_depleted_feo_trace_root_is_polished(
     )
 
 
+def test_highland_normal_run_trace_root_is_polished_and_certified() -> None:
+    # Parent-oxide projection of the captured normal-run bulk, with ferric
+    # iron already folded into the FeO-equivalent input. Keep the trace Na2O
+    # amount: this case fails at the pre-polish solver revision.
+    composition = {
+        "SiO2": 278.41036377176334,
+        "MgO": 1462.4326109015108,
+        "FeO": 0.025620374070120855,
+        "CaO": 2780.0948143537,
+        "Al2O3": 2614.2535001541282,
+        "TiO2": 56.660319985140646,
+        "Na2O": 4.2184025412391715e-11,
+        "K2O": 8.46987830123445,
+    }
+    pack = load_datapack()
+    result = evaluate(
+        composition,
+        2473.15,
+        pack,
+        basis_type="mol",
+        enable_sp_extension=False,
+        allow_extrapolation=False,
+        allow_out_of_envelope=False,
+    )
+
+    assert result.convergence.status == "converged"
+    assert result.convergence.residual_inf <= 1.0e-12
+
+    active = result.parent_x > 0.0
+    balance = (
+        result.parent_x_star
+        + pack.kernel_datapack.nu @ result.complex_x
+        - result.D * result.parent_x
+    )
+    relative_inventory_error = (
+        result.parent_x_star + pack.kernel_datapack.nu @ result.complex_x
+    ) / (result.D * result.parent_x) - 1.0
+    assert np.linalg.norm(balance, ord=np.inf) <= 1.0e-12
+    assert np.max(np.abs(relative_inventory_error[active])) <= 1.0e-12
+    assert np.all(
+        result.parent_activity[active]
+        <= result.D * result.parent_x[active]
+    )
+
+
 def test_v1_depleted_feo_1710k_uses_seven_continuation_stages() -> None:
     pack = load_datapack(V1_PACK_PATH)
     result = evaluate(
