@@ -10,6 +10,7 @@ positives for names that are documented but are not JSON keys.
 from __future__ import annotations
 
 import json
+import csv
 import re
 import tomllib
 from pathlib import Path
@@ -249,6 +250,26 @@ def test_kernel_docstring_references_the_tracked_model_spec() -> None:
     assert "``docs/spec.md``" in kernel
     assert (ROOT / "docs/spec.md").is_file()
     assert "docs/imcc-sf04-spec.md" not in kernel
+
+
+def test_gas_table_validity_columns_are_documented() -> None:
+    gas_dir = ROOT / "src/openimcc/data/gas"
+    runtime_tables = ("gas-shomate.csv", "condensate.csv")
+    columns = set()
+    for filename in runtime_tables:
+        with (gas_dir / filename).open(encoding="utf-8", newline="") as handle:
+            columns.update(next(csv.reader(handle)))
+    validity_columns = {
+        "validity_kind", "source_fit_min_K", "source_fit_max_K", "source_limit_K",
+        "continuation_kind", "fusion_temperature_K", "supercooled_segment_min_K",
+        "supercooled_segment_max_K", "supercooled_continuation", "cp_extension",
+        "construction_method", "construction_tier", "table_id", "source_label",
+        "source_liquid_marker", "glass_join_temperature_K",
+    }
+    document = DOC.read_text(encoding="utf-8")
+    assert validity_columns <= columns
+    assert all(f"`{column}`" in document for column in validity_columns)
+    assert "ImccGasValidityMetadataError" in document
 
 
 def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:

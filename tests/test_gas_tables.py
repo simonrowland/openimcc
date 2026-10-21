@@ -3496,7 +3496,8 @@ def test_k_gas_apparent_gibbs_uses_its_298_k_anchor_across_1032_k() -> None:
 
 def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
     lines = (GAS_DATA / "gas-shomate.csv").read_bytes().splitlines(keepends=True)
-    retained = [lines[0]]
+    header = next(csv.reader([lines[0].decode("utf-8")]))
+    retained = [",".join(header[:17]).encode("utf-8") + b"\n"]
     intervals = []
     ion_species = {
         name.removesuffix("(g)") for name in _ION_GAS_PROVENANCE_SPECIES
@@ -3527,12 +3528,12 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
             continue
         interval = values[2]
         intervals.append(interval)
-        if interval == "1" and values[-1] not in ps_table_ids:
+        if interval == "1" and values[16] not in ps_table_ids:
             if values[0] == "Cr(g)":
                 values[7] = "2900"
-                retained.append(",".join(values).encode("utf-8") + b"\n")
+                retained.append(",".join(values[:17]).encode("utf-8") + b"\n")
                 continue
-            retained.append(line)
+            retained.append(",".join(values[:17]).encode("utf-8") + b"\n")
 
     assert intervals[: intervals.index("2")] == ["1"] * 63
     assert all(interval == "2" for interval in intervals[intervals.index("2") :])
@@ -3578,7 +3579,7 @@ def test_existing_gas_coefficient_rows_are_text_identical_to_base() -> None:
         current = current_by_key[key]
         if row["species_name"] == "Cr(g)" and row["T_interval"] == "1":
             current = {**current, "T_max": row["T_max"]}
-        assert current == row
+        assert {column: current[column] for column in row} == row
 
 
 def _hand_nasa7_properties(record: dict, temperature: float) -> tuple[float, float, float]:
@@ -6439,7 +6440,7 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
         )
         assert len(expected) == len(fitted)
         for packaged_row, generated_row in zip(expected, fitted):
-            for column in build_gas_tables.CONDENSATE_COLUMNS:
+            for column in build_gas_tables.CONDENSATE_COLUMNS[:14]:
                 if column not in fit_coefficients:
                     assert packaged_row[column] == generated_row[column]
             _assert_fit_gibbs_matches(
@@ -6472,10 +6473,10 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
         if not row["Ref"].endswith(continuation_suffix)
     ]
     assert sorted(
-        tuple(row[column] for column in build_gas_tables.CONDENSATE_COLUMNS)
+            tuple(row[column] for column in build_gas_tables.CONDENSATE_COLUMNS[:14])
         for row in expected_unchanged_rows
     ) == sorted(
-        tuple(row[column] for column in build_gas_tables.CONDENSATE_COLUMNS)
+            tuple(row[column] for column in build_gas_tables.CONDENSATE_COLUMNS[:14])
         for row in research_unchanged_rows
     )
     crystal_rows = [row for row in packaged if row["species_name"] == "SiO2(cr)"]
@@ -6502,6 +6503,8 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
         for row in (regenerated_row, packaged_row):
             row["T_min"], row["T_max"] = key[1:]
         for column in packaged_table.columns:
+            if column in build_gas_tables.SOURCE_VALIDITY_COLUMNS:
+                continue
             if column not in fit_columns:
                 assert regenerated_row[column] == packaged_row[column]
         _assert_fit_gibbs_matches(
@@ -6509,22 +6512,33 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
         )
 
 
-def test_source_liquid_marker_metadata_matches_vendored_tables(
-    tmp_path: Path,
-) -> None:
-    generated = tmp_path / "source-liquid-markers.json"
+def test_source_validity_columns_match_vendored_tables(tmp_path: Path) -> None:
+    gas_copy = tmp_path / "gas-shomate.csv"
+    condensate_copy = tmp_path / "condensate.csv"
+    legacy_copy = tmp_path / "condensate-feo-janaf-legacy.csv"
+    published_copy = tmp_path / "sf04-published-condensate.csv"
+    gas_copy.write_bytes((GAS_DATA / "gas-shomate.csv").read_bytes())
+    condensate_copy.write_bytes((GAS_DATA / "condensate.csv").read_bytes())
+    legacy_copy.write_bytes((GAS_DATA / "condensate-feo-janaf-legacy.csv").read_bytes())
+    published_copy.write_bytes(
+        (ROOT / "src/openimcc/data/packs/sf04-published/condensate.csv").read_bytes()
+    )
     markers = build_gas_tables.build_source_liquid_markers(JANAF_DATA)
     validity = build_gas_tables.build_source_liquid_validity_rows(
-        GAS_DATA / "gas-shomate.csv",
-        GAS_DATA / "condensate.csv",
+        gas_copy,
+        condensate_copy,
         markers=markers,
-        additional_condensate_csvs=(
-            GAS_DATA / "condensate-feo-janaf-legacy.csv",
-        ),
+        additional_condensate_csvs=(legacy_copy, published_copy),
     )
-    build_gas_tables.write_source_liquid_markers(markers, generated, validity)
-    assert generated.read_bytes() == (
-        GAS_DATA / "source-liquid-markers.json"
+    build_gas_tables.write_source_validity_columns(gas_copy, validity, phase="gas")
+    build_gas_tables.write_source_validity_columns(condensate_copy, validity, phase="condensate")
+    build_gas_tables.write_source_validity_columns(legacy_copy, validity, phase="condensate")
+    build_gas_tables.write_source_validity_columns(published_copy, validity, phase="condensate")
+    assert gas_copy.read_bytes() == (GAS_DATA / "gas-shomate.csv").read_bytes()
+    assert condensate_copy.read_bytes() == (GAS_DATA / "condensate.csv").read_bytes()
+    assert legacy_copy.read_bytes() == (GAS_DATA / "condensate-feo-janaf-legacy.csv").read_bytes()
+    assert published_copy.read_bytes() == (
+        ROOT / "src/openimcc/data/packs/sf04-published/condensate.csv"
     ).read_bytes()
 
 
@@ -6886,7 +6900,10 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
         for row in (regenerated_row, packaged_row):
             row["T_min"], row["T_max"] = key[1:]
         for column in packaged_table.columns:
-            if column not in fit_columns:
+            if (
+                column not in fit_columns
+                and column not in build_gas_tables.SOURCE_VALIDITY_COLUMNS
+            ):
                 assert regenerated_row[column] == packaged_row[column]
         _assert_fit_gibbs_matches(
             _condensate_gibbs, packaged_row, regenerated_row
@@ -6921,7 +6938,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
                 & (packaged["T_max"].astype(float) == T_max)
             ].iloc[0]
             fit_columns = {f"dG_{coefficient}" for coefficient in "ABCDE"}
-            for column in build_gas_tables.CONDENSATE_COLUMNS:
+            for column in build_gas_tables.CONDENSATE_COLUMNS[:14]:
                 if column not in fit_columns:
                     assert str(packaged_row[column]) == fitted[column]
             _assert_fit_gibbs_matches(_condensate_gibbs, packaged_row, fitted)

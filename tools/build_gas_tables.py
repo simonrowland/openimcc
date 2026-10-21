@@ -101,6 +101,11 @@ RUNTIME_COLUMNS = (
     "G",
     "H",
     "Ref",
+    "validity_kind", "continuation_kind", "cp_extension", "construction_method",
+    "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
+    "source_fit_min_K", "source_fit_max_K", "source_limit_K",
+    "fusion_temperature_K", "supercooled_segment_min_K",
+    "supercooled_segment_max_K", "construction_tier", "glass_join_temperature_K",
 )
 
 # The table IDs are the verified rows named in the task brief.  The explicit
@@ -657,6 +662,11 @@ CONDENSATE_COLUMNS = (
     "dG_D",
     "dG_E",
     "Ref",
+    "validity_kind", "continuation_kind", "cp_extension", "construction_method",
+    "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
+    "source_fit_min_K", "source_fit_max_K", "source_limit_K",
+    "fusion_temperature_K", "supercooled_segment_min_K",
+    "supercooled_segment_max_K", "construction_tier", "glass_join_temperature_K",
 )
 
 # Reference metal rows are generated for the independent redox data component.
@@ -5674,26 +5684,9 @@ def build_source_liquid_markers(
         markers[species_name] = {
             "table_id": table_id,
             "fusion_temperature_K": fusion,
-            "fusion_line": fusion_line,
             "glass_join_temperature_K": glass[0] if glass else None,
-            "glass_join_line": glass[1] if glass else None,
         }
     return markers
-
-
-def write_source_liquid_markers(
-    markers: dict[str, dict[str, Any]], output: Path,
-    validity_rows: dict[str, list[dict[str, Any]]] | None = None,
-) -> None:
-    output.write_text(
-        json.dumps({
-            "schema": "openimcc.source-liquid-markers.v2",
-            "rows": markers,
-            "validity_rows": validity_rows or {},
-        },
-                   indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
 
 
 def _validity_display_source_table(runtime_ref: str) -> str:
@@ -5711,25 +5704,20 @@ def build_source_liquid_validity_rows(
     provenance_path: Path | None = None,
     markers: dict[str, dict[str, Any]] | None = None,
     additional_condensate_csvs: tuple[Path, ...] = (),
-) -> dict[str, list[dict[str, Any]]]:
-    """Join provenance validity facts to runtime rows once, during table build.
-
-    Runtime references identify the source record during generation only.
-    The emitted row key uses species and the unique runtime interval, so
-    changing a Ref at runtime does not detach its validity.
-    """
+) -> dict[str, list[dict[str, Any] | None]]:
+    """Build typed validity facts in runtime CSV row order."""
     repository = Path(__file__).resolve().parents[1]
     provenance_path = provenance_path or (
         repository / "src/openimcc/data/gas/PROVENANCE.yaml"
     )
     provenance = _load_record(provenance_path)
     markers = markers or {}
-    result: dict[str, list[dict[str, Any]]] = {}
-    for table_name, path, coefficient_columns in (
-        ("gas", gas_csv, tuple("ABCDEFGH")),
-        ("condensate", condensate_csv, ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")),
+    result: dict[str, list[dict[str, Any] | None]] = {}
+    for table_name, path in (
+        ("gas", gas_csv),
+        ("condensate", condensate_csv),
         *(
-            ("condensate", path, ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E"))
+            ("condensate", path)
             for path in additional_condensate_csvs
         ),
     ):
@@ -5739,18 +5727,64 @@ def build_source_liquid_validity_rows(
             row for row in provenance.get("rows", [])
             if row.get("table") == table_name
         ]
+        row_validity: list[dict[str, Any] | None] = []
         for runtime in runtime_rows:
             species = runtime["species_name"]
             ref = runtime["Ref"]
             low, high = float(runtime["T_min"]), float(runtime["T_max"])
-            interval_records = [
+            species_records = [
                 record for record in records
                 if record.get("species_name") == species
                 and record.get("T_range_K")
-                and float(record["T_range_K"][0]) <= low
+            ]
+            interval_records = [
+                record for record in species_records
+                if float(record["T_range_K"][0]) <= low
                 and float(record["T_range_K"][1]) >= high
             ]
-            candidates = [r for r in interval_records if r.get("runtime_ref") == ref]
+            candidates = [r for r in species_records if r.get("runtime_ref") == ref]
+            direct_candidates = [
+                record for record in candidates
+                if float(record["T_range_K"][0]) <= low
+                and float(record["T_range_K"][1]) >= high
+            ]
+            if direct_candidates:
+                candidates = direct_candidates
+            elif candidates:
+                overlapping = sorted(
+                    (
+                        record for record in candidates
+                        if float(record["T_range_K"][0]) < high
+                        and float(record["T_range_K"][1]) > low
+                    ),
+                    key=lambda record: float(record["T_range_K"][0]),
+                )
+                cursor = low
+                for candidate in overlapping:
+                    candidate_low, candidate_high = (
+                        float(value) for value in candidate["T_range_K"]
+                    )
+                    if candidate_low > cursor:
+                        break
+                    cursor = max(cursor, candidate_high)
+                fact_fields = (
+                    "table_id", "source_table_id", "source_fit_range_K", "source_limit_K",
+                    "extrapolation_source_limit_K", "fusion_temperature_K", "tier",
+                    "flags", "method", "source_path", "source_data",
+                )
+                signatures = {
+                    json.dumps(
+                        {key: record.get(key) for key in fact_fields},
+                        sort_keys=True, separators=(",", ":"),
+                    )
+                    for record in overlapping
+                }
+                if overlapping and cursor >= high and len(signatures) == 1:
+                    combined = dict(overlapping[0])
+                    combined["T_range_K"] = [low, high]
+                    candidates = [combined]
+                else:
+                    candidates = []
             if not candidates:
                 candidates = [
                     r for r in interval_records
@@ -5770,10 +5804,20 @@ def build_source_liquid_validity_rows(
                 else:
                     candidates = interval_records
             if record is None and not candidates:
-                raise ValueError(
-                    f"{table_name} row {species} [{low:g}, {high:g}] {ref!r} "
-                    "has no matching provenance validity record"
-                )
+                coverage_tagged = any(
+                    tag in ref
+                    for tag in (
+                        "P677-Re2O7-g-", "K-012", "-CONT-", "Konings-Table88-Tf",
+                        "-CP-EXT-", "LFS", "-SC-CP",
+                    )
+                ) or ("TSIV-" in ref and "-SC-" in ref)
+                if coverage_tagged:
+                    raise ValueError(
+                        f"{table_name} row {species} [{low:g}, {high:g}] {ref!r} "
+                        "has no matching provenance validity record"
+                    )
+                row_validity.append(None)
+                continue
             if record is None:
                 record = min(
                     candidates,
@@ -5864,15 +5908,7 @@ def build_source_liquid_validity_rows(
                     f"{table_name} row {species} [{low:g}, {high:g}] {ref!r} "
                     "has source marker metadata without a fusion temperature"
                 )
-            row_key_data = [
-                species, format(low, ".12g"), format(high, ".12g"),
-                *[format(float(runtime[column]), ".12g") for column in coefficient_columns],
-            ]
-            row_key = hashlib.sha256(
-                json.dumps(row_key_data, separators=(",", ":")).encode("utf-8")
-            ).hexdigest()
             validity = {
-                "row_key": row_key,
                 "T_range_K": [float(value) for value in record["T_range_K"]],
                 "source_fit_range_K": record.get("source_fit_range_K"),
                 "source_limit_K": source_limit,
@@ -5887,10 +5923,8 @@ def build_source_liquid_validity_rows(
                 "liquid_from_solid": liquid_from_solid,
                 "method": method,
                 "tier": tier,
-                "authority": record.get("authority"),
                 "table_id": table_id,
                 "display_source_table": _validity_display_source_table(ref),
-                "flags": flags,
                 "source_marker": source_marker,
             }
             if not (
@@ -5902,18 +5936,65 @@ def build_source_liquid_validity_rows(
                 or method.startswith("constructed_from_")
                 or source_marker is not None
             ):
+                row_validity.append(None)
                 continue
-            result.setdefault(species, []).append(validity)
-    for species, rows in result.items():
-        unique: dict[str, dict[str, Any]] = {}
-        for row in rows:
-            key = str(row["row_key"])
-            previous = unique.get(key)
-            if previous is not None and previous != row:
-                raise ValueError(f"{species}: duplicate runtime key has conflicting validity")
-            unique[key] = row
-        result[species] = list(unique.values())
+            row_validity.append(validity)
+        result[f"{table_name}:{path.name}"] = row_validity
     return result
+
+
+def write_source_validity_columns(
+    table_path: Path,
+    validity_rows: dict[str, list[dict[str, Any] | None]],
+    *,
+    phase: str,
+) -> None:
+    """Write generated validity facts directly onto their runtime CSV rows."""
+    row_validity = validity_rows[f"{phase}:{table_path.name}"]
+    with table_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = list(reader.fieldnames or [])
+        rows = list(reader)
+    expected = set(SOURCE_VALIDITY_COLUMNS)
+    if not expected.issubset(fieldnames):
+        raise ValueError(f"{table_path} lacks source-validity columns")
+    if len(row_validity) != len(rows):
+        raise ValueError(f"{table_path} validity row count does not match runtime rows")
+    for row, validity in zip(rows, row_validity):
+        fields = _empty_source_validity_fields()
+        if validity is not None:
+            source_fit = validity.get("source_fit_range_K") or validity["T_range_K"]
+            segment = validity.get("supercooled_segment_K") or (0.0, 0.0)
+            marker = validity.get("source_marker") or {}
+            fields.update({
+                "validity_kind": "coverage",
+                "continuation_kind": validity.get("continuation_kind") or "none",
+                "cp_extension": "true" if validity.get("cp_extension") else "false",
+                "construction_method": validity.get("method") or "none",
+                "table_id": validity.get("table_id") or "none",
+                "source_label": validity.get("display_source_table") or validity.get("table_id") or "none",
+                "source_liquid_marker": "true" if marker else "false",
+                "supercooled_continuation": (
+                    "true" if validity.get("supercooled_continuation") else "false"
+                ),
+                "source_fit_min_K": str(source_fit[0]),
+                "source_fit_max_K": str(source_fit[1]),
+                "source_limit_K": str(validity.get("source_limit_K") or 0),
+                "fusion_temperature_K": str(
+                    validity.get("fusion_temperature_K")
+                    or marker.get("fusion_temperature_K")
+                    or 0
+                ),
+                "supercooled_segment_min_K": str(segment[0]),
+                "supercooled_segment_max_K": str(segment[1]),
+                "construction_tier": str(validity.get("tier") or 0),
+                "glass_join_temperature_K": str(marker.get("glass_join_temperature_K") or 0),
+            })
+        row.update(fields)
+    with table_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def _fit_k2o_from_solid(source_dir: Path) -> list[dict[str, str]]:
@@ -5967,10 +6048,39 @@ def _fit_k2o_from_solid(source_dir: Path) -> list[dict[str, str]]:
 
 def write_csv(rows: list[dict[str, str]], output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
+    defaults = _empty_source_validity_fields()
     with output.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=RUNTIME_COLUMNS, lineterminator="\n")
         writer.writeheader()
-        writer.writerows({column: row[column] for column in RUNTIME_COLUMNS} for row in rows)
+        writer.writerows(
+            {
+                column: row.get(column, defaults.get(column, ""))
+                for column in RUNTIME_COLUMNS
+            }
+            for row in rows
+        )
+
+
+SOURCE_VALIDITY_COLUMNS = (
+    "validity_kind", "continuation_kind", "cp_extension", "construction_method",
+    "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
+    "source_fit_min_K", "source_fit_max_K", "source_limit_K",
+    "fusion_temperature_K", "supercooled_segment_min_K",
+    "supercooled_segment_max_K", "construction_tier", "glass_join_temperature_K",
+)
+
+
+def _empty_source_validity_fields() -> dict[str, str]:
+    return {
+        "validity_kind": "none", "continuation_kind": "none", "cp_extension": "false",
+        "construction_method": "none", "table_id": "none", "source_label": "none",
+        "source_liquid_marker": "false", "supercooled_continuation": "false",
+        "source_fit_min_K": "0",
+        "source_fit_max_K": "0", "source_limit_K": "0",
+        "fusion_temperature_K": "0", "supercooled_segment_min_K": "0",
+        "supercooled_segment_max_K": "0", "construction_tier": "0",
+        "glass_join_temperature_K": "0",
+    }
 
 
 def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
@@ -5994,7 +6104,7 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
             not in REPLACED_DEFAULT_CONDENSATE_SPECIES
             and not (
                 fields[0] in ALL_SUPERCOOLED_LIQUID_SPECIES
-                and fields[-1].endswith(SUPERCOOLED_LIQUID_REF_SUFFIX)
+                and fields[13].endswith(SUPERCOOLED_LIQUID_REF_SUFFIX)
                 and fields[0] not in generated_continuations
             )
         ),
@@ -6004,7 +6114,7 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
         for row in species_rows:
             buffer = io.StringIO()
             csv.writer(buffer, lineterminator="\n").writerow(
-                [row[column] for column in CONDENSATE_COLUMNS]
+                [{**_empty_source_validity_fields(), **row}.get(column, "") for column in CONDENSATE_COLUMNS]
             )
             serialized_rows.append(buffer.getvalue().rstrip("\n"))
         generated_starts = {str(row["T_min"]) for row in species_rows}
@@ -6030,7 +6140,7 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
             )
             # A singleton generated reference owns one complete interval. Let
             # it replace a stale interval whose T_min changed, as for O-063.
-            replaced_interval |= generated_refs.get(fields[-1]) == 1
+            replaced_interval |= generated_refs.get(fields[13]) == 1
             if replaced_interval:
                 matching_intervals.append(index)
         if matching_intervals:
@@ -6073,40 +6183,29 @@ def main() -> None:
             "packaged default, so a scratch --output never edits the package"
         ),
     )
-    parser.add_argument(
-        "--source-liquid-markers-output",
-        type=Path,
-        default=None,
-        help="JSON output for condensate phase-transition markers",
-    )
     args = parser.parse_args()
     if args.condensate_output is None and args.output == packaged_gas:
         args.condensate_output = repository / "src/openimcc/data/gas/condensate.csv"
-    if args.source_liquid_markers_output is None and args.output == packaged_gas:
-        args.source_liquid_markers_output = (
-            repository / "src/openimcc/data/gas/source-liquid-markers.json"
-        )
     rows = build_rows(args.source_dir, args.nasa_source_dir, args.lh84_source_dir)
     write_csv(rows, args.output)
     condensate_rows = build_condensate_rows(args.source_dir, args.nasa_source_dir)
     if args.condensate_output is not None:
         merge_condensate_csv(condensate_rows, args.condensate_output)
-    if args.source_liquid_markers_output is not None:
+    if args.condensate_output is not None:
         markers = build_source_liquid_markers(args.source_dir)
-        args.source_liquid_markers_output.parent.mkdir(parents=True, exist_ok=True)
-        condensate_table = args.condensate_output or (
-            repository / "src/openimcc/data/gas/condensate.csv"
-        )
+        additional_condensate_csvs: tuple[Path, ...] = ()
+        if args.output == packaged_gas:
+            legacy_condensate = repository / "src/openimcc/data/gas/condensate-feo-janaf-legacy.csv"
+            published_condensate = repository / "src/openimcc/data/packs/sf04-published/condensate.csv"
+            additional_condensate_csvs = (legacy_condensate, published_condensate)
         validity_rows = build_source_liquid_validity_rows(
-            args.output, condensate_table, markers=markers,
-            additional_condensate_csvs=(
-                (repository / "src/openimcc/data/gas/condensate-feo-janaf-legacy.csv",)
-                if args.output == packaged_gas else ()
-            ),
+            args.output, args.condensate_output, markers=markers,
+            additional_condensate_csvs=additional_condensate_csvs,
         )
-        write_source_liquid_markers(
-            markers, args.source_liquid_markers_output, validity_rows
-        )
+        write_source_validity_columns(args.output, validity_rows, phase="gas")
+        write_source_validity_columns(args.condensate_output, validity_rows, phase="condensate")
+        for path in additional_condensate_csvs:
+            write_source_validity_columns(path, validity_rows, phase="condensate")
     for row in [*rows, *condensate_rows]:
         if "_max_residual_J_per_mol" not in row:
             continue

@@ -847,17 +847,20 @@ tables. `ImccGasDatapack` canonicalizes both complete frames once in
 (`species_name`, `state`, `T_interval`, `cation`, `cat_num`, `oxy_num`,
 `T_min`, `T_max`, `A`–`H`, `Ref`) and condensate schema (`species_name`,
 `state`, `cation`, `cat_num`, `oxy_num`, `T_min`, `T_max`, `dH298_R`,
-`dG_A`–`dG_E`, `Ref`). Missing and extra columns are refused.
+`dG_A`–`dG_E`, `Ref`), plus the source-validity columns documented below.
+Missing and extra columns are refused.
 
 During CSV loading, blank-header columns are dropped and reported through an
 `ImccGasIngestionWarning` that lists the columns and any non-empty values.
 
-Every numeric column is stored as float64. Conversion must be exact; float16
+Every numeric column, including the temperature-valued source-validity fields,
+is stored as float64. Conversion must be exact; float16
 and float32 widen exactly, integers are accepted through absolute value
 2**53, and pandas nullable Float64/Int64 columns are accepted when they have
 no missing values. Missing, inexact, and non-finite numeric cells are refused
 in every row. Species names, state, cation, and Ref are stored as Python
-strings. Empty cation cells denote no cation and are retained as the empty
+strings. The source-validity kind, continuation, boolean, method, table, and
+label fields are retained as strings. Empty cation cells denote no cation and are retained as the empty
 string; other missing or blank labels are refused. Numeric Ref values use one
 stable float64-to-string form, so a float32 value and its exact float64
 widening have the same identity and returned provenance.
@@ -871,17 +874,29 @@ so row and CSV column order, quoting, line endings, and a trailing newline do
 not identify the content. `gas_path` and `oxide_path` identify source
 locations for diagnostics; they are not content identity.
 
-The packaged `source-liquid-markers.json` sidecar uses
-`openimcc.source-liquid-markers.v2`. Its `validity_rows` entries carry each
-runtime row's fit range, source limit, fusion boundary, construction method,
-estimate tier, and typed continuation or supercooled segment. The builder joins
-these facts from `PROVENANCE.yaml` and the source liquid markers. A row key
-combines its species, temperature interval, and rounded fitted coefficients;
-runtime flags use that key and do not select validity from `Ref`. Source
-references remain provenance and can be changed without dropping a flag.
-Rows with recognized coverage tags but no matching validity entry raise an
-error. The sidecar is separate from the parsed gas and condensate frames, so
-these metadata fields do not alter either gas table content digest.
+Both packaged tables carry these typed source-validity columns on each row:
+
+| Field | Meaning |
+| --- | --- |
+| `validity_kind` | `coverage` when typed source limits or construction facts apply; otherwise the explicit value `none`. |
+| `source_fit_min_K`, `source_fit_max_K` | Source fit interval; zero when `validity_kind` is `none`. |
+| `source_limit_K` | Upper source-data limit; zero when not applicable. |
+| `continuation_kind` | `phase`, `liquid_metal`, or explicit `none`. |
+| `fusion_temperature_K` | Fusion boundary; zero when not applicable. |
+| `supercooled_segment_min_K`, `supercooled_segment_max_K` | Supercooled segment; both zero when not applicable. |
+| `supercooled_continuation` | Explicit `true` or `false` for a labelled constant-Cp supercooled continuation. |
+| `cp_extension` | Explicit `true` or `false` for a labelled Cp extension. |
+| `construction_method`, `construction_tier` | Construction method and estimate tier; `none` and zero when not applicable. |
+| `table_id`, `source_label` | Stable source table identifier and the label used in existing coverage flag text; `none` when not applicable. |
+| `source_liquid_marker`, `glass_join_temperature_K` | Explicit marker presence and glass/liquid join; false and zero when not applicable. |
+
+The table builder generates these facts from `PROVENANCE.yaml`, runtime
+construction records, and the source liquid markers. Runtime flags read the
+selected row's fields directly and do not match by species, interval,
+coefficients, or `Ref`. A missing or malformed field raises the typed
+`ImccGasValidityMetadataError`; ordinary rows carry `validity_kind=none`, so
+absence is not used to mean “no caveat.” The columns are part of parsed table
+content and therefore change the gas and condensate table digests.
 
 The dataclass is frozen, but pandas frames remain mutable. In-place mutation
 of a constructed pack's frames is outside the contract and does not update its

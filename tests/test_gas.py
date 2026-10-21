@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import dataclasses
 import hashlib
 import inspect
@@ -448,8 +449,8 @@ def test_vaporock_override_drops_synthetic_unnamed_columns_with_notice(
     condensate_bytes = fixture.read_bytes()
     assert condensate_bytes.startswith(b"\xef\xbb\xbf")
     assert b"\r\n" in condensate_bytes
-    assert b"Ref,,,\r\n" in condensate_bytes
-    assert b"SYNTHETIC,,,not-source-data\r\n" in condensate_bytes
+    assert b"Ref,,,,validity_kind" in condensate_bytes
+    assert b"SYNTHETIC,,,not-source-data,none,none,false" in condensate_bytes
     root = tmp_path / "vaporock"
     gas_target = root / "src" / "vaporock" / "data"
     oxide_target = root / "data"
@@ -594,6 +595,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         "G",
         "H",
         "Ref",
+        *build_gas_tables.SOURCE_VALIDITY_COLUMNS,
     )
     assert tuple(gas_pack.oxide_df.columns) == (
         "state",
@@ -609,6 +611,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         "dG_D",
         "dG_E",
         "Ref",
+        *build_gas_tables.SOURCE_VALIDITY_COLUMNS,
     )
     public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES)
     assert set(gas_pack.gas_df.index) == {
@@ -1344,12 +1347,12 @@ def test_non_na_gas_channels_match_the_base_na2o_row_bit_for_bit(
     base_na2o = pd.DataFrame(
         [
             {
-                    "state": "l",
-                    "cation": "Na",
-                    "cat_num": 2,
-                    "oxy_num": 1,
-                    "T_min": 1405,
-                    "T_max": 3000,
+                "state": "l",
+                "cation": "Na",
+                "cat_num": 2,
+                "oxy_num": 1,
+                "T_min": 1405,
+                "T_max": 3000,
                 "dH298_R": -50.17,
                 "dG_A": 7.67,
                 "dG_B": 6.193,
@@ -1357,6 +1360,7 @@ def test_non_na_gas_channels_match_the_base_na2o_row_bit_for_bit(
                 "dG_D": 0.0,
                 "dG_E": 0.0,
                 "Ref": "LAM1984",
+                **build_gas_tables._empty_source_validity_fields(),
             }
         ],
         index=pd.Index(["Na2O(l)"], name=gas_pack.oxide_df.index.name),
@@ -4014,12 +4018,17 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         ).stdout
         old_lines = original.splitlines()
         current_lines = current_path.read_text(encoding="utf-8").splitlines()
-        assert current_lines[0] == old_lines[0]
+        old_columns = old_lines[0].split(",")
+        assert current_lines[0].split(",")[:len(old_columns)] == old_columns
         unchanged = [
-            line for line in old_lines[1:]
+            tuple(line.split(",")[:len(old_columns)])
+            for line in old_lines[1:]
             if line.split(",", 1)[0] not in rebuilt_lfs | {"FeO(l)"}
         ]
-        assert Counter(unchanged) <= Counter(current_lines[1:])
+        current_rows = [
+            tuple(line.split(",")[:len(old_columns)]) for line in current_lines[1:]
+        ]
+        assert Counter(unchanged) <= Counter(current_rows)
 
 
 def _trace_janaf_apparent_gibbs(table_id: str, temperature: float) -> float:
@@ -6021,11 +6030,13 @@ def test_unrecognised_condensate_reference_does_not_inherit_the_packaged_table(
 ) -> None:
     source = gas_pack.oxide_path.read_text(encoding="utf-8").splitlines(True)
     rewritten = []
+    ref_column = source[0].rstrip("\r\n").split(",").index("Ref")
     for line in source:
         if line.startswith("MgO(l),"):
-            prefix, _separator, _old = line.rstrip("\r\n").rpartition(",")
             ending = line[len(line.rstrip("\r\n")):]
-            rewritten.append(f"{prefix},CUSTOM-THERMO-42{ending}")
+            fields = line.rstrip("\r\n").split(",")
+            fields[ref_column] = "CUSTOM-THERMO-42"
+            rewritten.append(",".join(fields) + ending)
         else:
             rewritten.append(line)
     oxide_path = tmp_path / "condensate.csv"
@@ -6048,9 +6059,10 @@ def test_unrecognised_condensate_reference_does_not_inherit_the_packaged_table(
     silica = []
     for line in source:
         if line.startswith("SiO2(l),"):
-            prefix, _separator, _old = line.rstrip("\r\n").rpartition(",")
             ending = line[len(line.rstrip("\r\n")):]
-            silica.append(f"{prefix},O-999-NOT-JANAF{ending}")
+            fields = line.rstrip("\r\n").split(",")
+            fields[ref_column] = "O-999-NOT-JANAF"
+            silica.append(",".join(fields) + ending)
         else:
             silica.append(line)
     silica_path = tmp_path / "silica.csv"
@@ -6178,6 +6190,28 @@ def _load_task_base_gas_pack(tmp_path: Path) -> ImccGasDatapack:
         path = baseline_dir / filename
         path.write_bytes(payload)
         baseline_paths[filename] = path
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            old_columns = list(reader.fieldnames or [])
+            rows = list(reader)
+        defaults = build_gas_tables._empty_source_validity_fields()
+        columns = [*old_columns, *build_gas_tables.SOURCE_VALIDITY_COLUMNS]
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=columns, lineterminator="\n")
+            writer.writeheader()
+            writer.writerows({**defaults, **row} for row in rows)
+    markers = build_gas_tables.build_source_liquid_markers(root / "data-src/janaf")
+    validity = build_gas_tables.build_source_liquid_validity_rows(
+        baseline_paths["gas-shomate.csv"],
+        baseline_paths["condensate.csv"],
+        markers=markers,
+    )
+    build_gas_tables.write_source_validity_columns(
+        baseline_paths["gas-shomate.csv"], validity, phase="gas"
+    )
+    build_gas_tables.write_source_validity_columns(
+        baseline_paths["condensate.csv"], validity, phase="condensate"
+    )
     return load_gas_datapack(
         gas_path=baseline_paths["gas-shomate.csv"],
         oxide_path=baseline_paths["condensate.csv"],

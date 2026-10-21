@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-import openimcc.gas as gas_module
 from openimcc.gas import (
     ImccGasDatapack,
+    ImccGasValidityMetadataError,
     _SF04_REACTIONS,
     _derived_source_supercooled_liquid_markers,
     _source_model_flag,
@@ -258,31 +258,61 @@ def test_supercooled_constant_cp_flag_survives_ref_swap() -> None:
     assert set(result.domain_flags.values()) == {expected}
 
 
-def test_tagged_row_without_validity_metadata_fails_loud(monkeypatch) -> None:
+def test_row_without_typed_validity_columns_fails_loud() -> None:
     pack = load_gas_datapack()
-    row = _row_at(pack, "Hg(l)", "l", 1400.0)
-    monkeypatch.setattr(gas_module, "_source_validity_rows", lambda: {})
-    with pytest.raises(ValueError, match="no typed validity metadata"):
+    row = _row_at(pack, "Hg(l)", "l", 1400.0).drop(
+        labels=["validity_kind", "continuation_kind", "cp_extension", "construction_method",
+                "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
+                "source_fit_min_K", "source_fit_max_K", "source_limit_K", "fusion_temperature_K",
+                "supercooled_segment_min_K", "supercooled_segment_max_K", "construction_tier",
+                "glass_join_temperature_K"]
+    )
+    row["Ref"] = "SOURCE-SWAP-PROBE"
+    with pytest.raises(ImccGasValidityMetadataError, match="lacks typed source-validity columns"):
         _source_model_flag("Hg(l)", 1400.0, row, phase="l")
 
 
-def test_packaged_tagged_rows_all_have_generated_validity_metadata() -> None:
+def test_source_validity_survives_refit_and_source_swap_on_every_coverage_row() -> None:
     pack = load_gas_datapack()
+    coverage_rows = 0
     for phase, table in (("g", pack.gas_df), ("l", pack.oxide_df)):
         for row_name, rows in table.groupby(level=0, sort=False):
             for _, row in rows.iterrows():
-                source_ref = str(row["Ref"])
-                if not any(
-                    tag in source_ref
-                    for tag in (
-                        "P677-Re2O7-g-", "K-012", "-CONT-", "Konings-Table88-Tf",
-                        "TSIV-", "-CP-EXT-", "LFS", "-SC-CP",
-                    )
-                ) or ("TSIV-" in source_ref and "-SC-" not in source_ref):
+                if row["validity_kind"] != "coverage":
                     continue
-                row_phase = "g" if phase == "g" else (
-                    "s" if str(row["state"]) == "s" else "l"
+                coverage_rows += 1
+                row_phase = phase if phase == "g" else ("s" if str(row["state"]) == "s" else "l")
+                coefficient = "A" if phase == "g" else "dG_A"
+                refit = row.copy()
+                refit[coefficient] = float(refit[coefficient]) + 0.001
+                refit["Ref"] = "SOURCE-SWAP-PROBE"
+                temperatures = (
+                    float(row["T_min"]) - 1.0,
+                    (float(row["T_min"]) + float(row["T_max"])) / 2.0,
+                    float(row["T_max"]) + 1.0,
                 )
-                assert _source_validity_for_row(
-                    str(row_name), row, phase=row_phase
-                ) is not None
+                for temperature in temperatures:
+                    assert _source_model_flag(
+                        str(row_name), temperature, refit, phase=row_phase
+                    ) == _source_model_flag(
+                        str(row_name), temperature, row, phase=row_phase
+                    )
+                assert _source_validity_for_row(str(row_name), refit, phase=row_phase) == (
+                    _source_validity_for_row(str(row_name), row, phase=row_phase)
+                )
+    assert coverage_rows == 204
+
+
+def test_mno_multi_interval_lfs_refit_keeps_typed_supercooled_flag() -> None:
+    pack = load_gas_datapack()
+    rows = pack.oxide_df.loc["MnO(l)"]
+    assert len(rows) == 3
+    expected = (
+        "MnO(l) uses a supercooled liquid_from_solid branch below the "
+        "2120 K fusion temperature"
+    )
+    for _, row in rows.iterrows():
+        refit = row.copy()
+        refit["dG_A"] = float(refit["dG_A"]) + 0.001
+        refit["Ref"] = "SOURCE-SWAP-PROBE"
+        assert _supercooled_liquid_from_solid_flag("MnO(l)", 1800.0, refit) == expected

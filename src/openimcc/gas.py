@@ -49,10 +49,6 @@ R_J_MOL_K = 8.314462618
 
 _SUPERCOOLED_EXTENSION_REF_SUFFIX = "-SC-CP"
 _SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
-_SOURCE_VALIDITY_TAG_RE = re.compile(
-    r"(?:P677-Re2O7-g-(?:SMITH-EST-|BATTLES-EST-|EST-CONT-)|K-012|-CONT-|"
-    r"Konings-Table88-Tf|TSIV-[0-9]+-SC-|-CP-EXT-|LFS|(?:^|-)SC-CP$)"
-)
 _LIQUID_FROM_SOLID_REF_RE = re.compile(
     r"^LFS\[(?P<source>[^;\]]+);Tf=(?P<temperature>[0-9]+(?:\.[0-9]+)?)\]$"
 )
@@ -87,6 +83,12 @@ class ImccGasInvalidIntervalError(ImccRefusal):
     """Raised when a table interval has invalid or non-finite bounds."""
 
     code = "imcc_gas_invalid_interval"
+
+
+class ImccGasValidityMetadataError(ImccRefusal):
+    """Raised when a runtime gas row lacks typed source-validity columns."""
+
+    code = "imcc_gas_validity_metadata_missing"
 
 
 class ImccGasTemperatureOutsideDomainError(ImccRefusal):
@@ -144,28 +146,39 @@ _CONDENSATE_TABLE_RELPATH = Path("data") / "condensate-thermo-data.csv"
 _PACKAGED_DATA_PACKAGE = "openimcc.data.gas"
 _PACKAGED_GAS_NAME = "gas-shomate.csv"
 _PACKAGED_CONDENSATE_NAME = "condensate.csv"
-_PACKAGED_SOURCE_LIQUID_MARKERS_NAME = "source-liquid-markers.json"
+_SOURCE_VALIDITY_TEXT_COLUMNS = (
+    "validity_kind", "continuation_kind", "cp_extension", "construction_method",
+    "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
+)
+_SOURCE_VALIDITY_NUMERIC_COLUMNS = (
+    "source_fit_min_K", "source_fit_max_K", "source_limit_K",
+    "fusion_temperature_K", "supercooled_segment_min_K",
+    "supercooled_segment_max_K", "construction_tier", "glass_join_temperature_K",
+)
 _GAS_TABLE_SCHEMA = frozenset(
     {
         "species_name", "state", "T_interval", "cation", "cat_num", "oxy_num",
         "T_min", "T_max", "A", "B", "C", "D", "E", "F", "G", "H", "Ref",
+        *_SOURCE_VALIDITY_TEXT_COLUMNS, *_SOURCE_VALIDITY_NUMERIC_COLUMNS,
     }
 )
 _CONDENSATE_TABLE_SCHEMA = frozenset(
     {
         "species_name", "state", "cation", "cat_num", "oxy_num", "T_min", "T_max",
         "dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E", "Ref",
+        *_SOURCE_VALIDITY_TEXT_COLUMNS, *_SOURCE_VALIDITY_NUMERIC_COLUMNS,
     }
 )
 _GAS_NUMERIC_COLUMNS = (
-    "T_interval", "cat_num", "oxy_num", "T_min", "T_max", *tuple("ABCDEFGH")
+    "T_interval", "cat_num", "oxy_num", "T_min", "T_max", *tuple("ABCDEFGH"),
+    *_SOURCE_VALIDITY_NUMERIC_COLUMNS,
 )
 _CONDENSATE_NUMERIC_COLUMNS = (
     "cat_num", "oxy_num", "T_min", "T_max", "dH298_R", "dG_A", "dG_B", "dG_C",
-    "dG_D", "dG_E",
+    "dG_D", "dG_E", *_SOURCE_VALIDITY_NUMERIC_COLUMNS,
 )
-_GAS_TEXT_COLUMNS = ("state", "cation", "Ref")
-_CONDENSATE_TEXT_COLUMNS = ("state", "cation", "Ref")
+_GAS_TEXT_COLUMNS = ("state", "cation", "Ref", *_SOURCE_VALIDITY_TEXT_COLUMNS)
+_CONDENSATE_TEXT_COLUMNS = ("state", "cation", "Ref", *_SOURCE_VALIDITY_TEXT_COLUMNS)
 
 
 class ImccGasDataUnavailableError(ImccRefusal):
@@ -3713,6 +3726,20 @@ def _canonicalize_gas_table(
         )
     expected_columns = schema - {"species_name"}
     actual_columns = list(table.columns)
+    validity_columns = (*_SOURCE_VALIDITY_TEXT_COLUMNS, *_SOURCE_VALIDITY_NUMERIC_COLUMNS)
+    missing_validity = sorted(set(validity_columns) - set(actual_columns))
+    if missing_validity:
+        raise ImccGasValidityMetadataError(
+            f"{table_name} database {table_path} lacks typed source-validity columns "
+            f"{missing_validity}"
+        )
+    for column in validity_columns:
+        values = table[column].array
+        if any(pd.isna(value) for value in values):
+            raise ImccGasValidityMetadataError(
+                f"{table_name} database {table_path} has missing typed source-validity "
+                f"values in {column}"
+            )
     if (
         len(actual_columns) != len(set(actual_columns))
         or set(actual_columns) != expected_columns
@@ -4223,7 +4250,7 @@ def _source_model_flag(
         )
     continuation_limit = validity.get("source_limit_K")
     if (
-        validity.get("continuation_kind") is not None
+        validity.get("continuation_kind") != "none"
         and continuation_limit is not None
         and T >= float(continuation_limit)
     ):
@@ -4309,80 +4336,94 @@ def _source_model_flag(
     return None
 
 
-def _source_validity_key(row_name: str, row: pd.Series, *, phase: str) -> str:
-    columns = tuple("ABCDEFGH") if phase == "g" else (
-        "dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E"
-    )
-    payload = [
-        row_name, format(float(row["T_min"]), ".12g"),
-        format(float(row["T_max"]), ".12g"),
-        *[format(float(row[column]), ".12g") for column in columns],
-    ]
-    return hashlib.sha256(
-        json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
-
-
-@lru_cache(maxsize=1)
-def _source_liquid_metadata() -> dict[str, Any]:
-    resource = _packaged_resource(_PACKAGED_SOURCE_LIQUID_MARKERS_NAME)
-    metadata = json.loads(resource.read_text(encoding="utf-8"))
-    if metadata.get("schema") != "openimcc.source-liquid-markers.v2":
-        raise ValueError("unsupported source-liquid metadata schema")
-    return metadata
-
-
-def _source_validity_rows() -> dict[str, list[dict[str, Any]]]:
-    return _source_liquid_metadata()["validity_rows"]
-
-
 def _source_validity_for_row(
     row_name: str, row: pd.Series, *, phase: str
 ) -> dict[str, Any] | None:
-    key = _source_validity_key(row_name, row, phase=phase)
-    row_validity = _source_validity_rows().get(row_name, [])
-    for validity in row_validity:
-        if validity.get("row_key") == key:
-            return validity
-    # Published comparison packs can refit an unchanged source interval. Use
-    # its source-table identity and typed interval only when they select one
-    # packaged validity record.
-    source_ref = str(row.get("Ref", ""))
-    display_source_table = _source_table_identifier(source_ref)
-    interval_matches = sorted(
-        (
-            validity for validity in row_validity
-            if validity.get("display_source_table") == display_source_table
-            and validity.get("T_range_K") is not None
-            and float(validity["T_range_K"][0]) < float(row["T_max"])
-            and float(validity["T_range_K"][1]) > float(row["T_min"])
-        ),
-        key=lambda validity: float(validity["T_range_K"][0]),
-    )
-    cursor = float(row["T_min"])
-    for validity in interval_matches:
-        low, high = (float(value) for value in validity["T_range_K"])
-        if low > cursor:
-            break
-        cursor = max(cursor, high)
-        if cursor >= float(row["T_max"]):
-            break
-    if interval_matches and cursor >= float(row["T_max"]):
-        signatures = {
-            json.dumps(
-                {key: value for key, value in validity.items() if key not in {"row_key", "T_range_K"}},
-                sort_keys=True,
-                separators=(",", ":"),
-            )
-            for validity in interval_matches
-        }
-        if len(signatures) == 1:
-            return interval_matches[0]
-    if _SOURCE_VALIDITY_TAG_RE.search(source_ref):
-        raise ValueError(
-            f"{row_name} has source-tagged coverage but no typed validity metadata"
+    required = (*_SOURCE_VALIDITY_TEXT_COLUMNS, *_SOURCE_VALIDITY_NUMERIC_COLUMNS)
+    if any(column not in row.index for column in required):
+        raise ImccGasValidityMetadataError(
+            f"{row_name} {phase}-phase row lacks typed source-validity columns"
         )
-    return None
+    kind = str(row["validity_kind"])
+    boolean_values = {
+        column: str(row[column]).casefold()
+        for column in ("cp_extension", "source_liquid_marker", "supercooled_continuation")
+    }
+    if kind not in {"none", "coverage"} or any(
+        value not in {"true", "false"} for value in boolean_values.values()
+    ):
+        raise ImccGasValidityMetadataError(
+            f"{row_name} {phase}-phase row has invalid typed source-validity values"
+        )
+    if kind == "none":
+        return None
+    try:
+        values = {column: float(row[column]) for column in _SOURCE_VALIDITY_NUMERIC_COLUMNS}
+    except (TypeError, ValueError) as exc:
+        raise ImccGasValidityMetadataError(
+            f"{row_name} {phase}-phase row has incomplete typed source-validity values"
+        ) from exc
+    if not all(math.isfinite(value) for value in values.values()):
+        raise ImccGasValidityMetadataError(
+            f"{row_name} {phase}-phase row has non-finite typed source-validity values"
+        )
+    method = str(row["construction_method"])
+    table_id = str(row["table_id"])
+    source_label = str(row["source_label"])
+    continuation_kind = str(row["continuation_kind"])
+    if (
+        method in {"", "none"}
+        or table_id in {"", "none"}
+        or source_label in {"", "none"}
+        or continuation_kind not in {"none", "phase", "liquid_metal"}
+        or values["source_fit_min_K"] > values["source_fit_max_K"]
+        or not values["construction_tier"].is_integer()
+    ):
+        raise ImccGasValidityMetadataError(
+            f"{row_name} {phase}-phase row has incomplete typed source-validity facts"
+        )
+    if boolean_values["source_liquid_marker"] == "true" and not values["fusion_temperature_K"]:
+        raise ImccGasValidityMetadataError(
+            f"{row_name} {phase}-phase source marker lacks its fusion temperature"
+        )
+    if (
+        (continuation_kind != "none" or boolean_values["cp_extension"] == "true")
+        and not values["source_limit_K"]
+    ):
+        raise ImccGasValidityMetadataError(
+            f"{row_name} {phase}-phase continuation lacks its source limit"
+        )
+    if method in {"liquid_from_solid", "liquid_from_solid_construction"} and not values["construction_tier"]:
+        raise ImccGasValidityMetadataError(
+            f"{row_name} liquid_from_solid validity lacks its estimate tier"
+        )
+    return {
+        "method": method,
+        "source_fit_range_K": [values["source_fit_min_K"], values["source_fit_max_K"]],
+        "source_limit_K": values["source_limit_K"] or None,
+        "continuation_kind": continuation_kind,
+        "fusion_temperature_K": values["fusion_temperature_K"] or None,
+        "supercooled_segment_K": (
+            [values["supercooled_segment_min_K"], values["supercooled_segment_max_K"]]
+            if values["supercooled_segment_max_K"] else None
+        ),
+        "cp_extension": boolean_values["cp_extension"] == "true",
+        "liquid_from_solid": method in {
+            "liquid_from_solid", "liquid_from_solid_construction"
+        },
+        "tier": int(values["construction_tier"]) if values["construction_tier"] else None,
+        "table_id": table_id,
+        "display_source_table": source_label,
+        "source_marker": (
+            {
+                "table_id": table_id,
+                "fusion_temperature_K": values["fusion_temperature_K"],
+                "glass_join_temperature_K": values["glass_join_temperature_K"] or None,
+            }
+            if boolean_values["source_liquid_marker"] == "true" else None
+        ),
+        "supercooled_continuation": boolean_values["supercooled_continuation"] == "true",
+    }
 
 
 @lru_cache(maxsize=1)
@@ -4403,31 +4444,20 @@ def _selected_redox_feo_fit() -> tuple[
     return (fit_range[0], fit_range[1]), fit_row
 
 
-def _source_supercooled_liquid_markers() -> dict[str, dict[str, Any]]:
-    return _source_liquid_metadata()["rows"]
-
-
 def _derived_source_supercooled_liquid_markers(
     datapack: ImccGasDatapack,
 ) -> dict[str, dict[str, object]]:
-    """Select source liquids whose typed row metadata extends below fusion."""
+    """Summarize source-liquid marker facts already stored on condensate rows."""
     derived = {}
-    for species, marker in _source_supercooled_liquid_markers().items():
-        if species not in datapack.oxide_df.index:
-            continue
-        rows = datapack.oxide_df.loc[species]
-        if getattr(rows, "ndim", 1) == 1:
-            species_rows = [rows]
-        else:
-            species_rows = [row for _, row in rows.iterrows()]
+    for species, rows in datapack.oxide_df.groupby(level=0, sort=False):
+        species_rows = [rows] if getattr(rows, "ndim", 1) == 1 else [
+            row for _, row in rows.iterrows()
+        ]
         for row in species_rows:
-            validity = _source_validity_for_row(species, row, phase="l")
-            source_marker = validity.get("source_marker") if validity else None
-            if (
-                source_marker is not None
-                and float(row["T_min"]) < float(marker["fusion_temperature_K"])
-            ):
-                derived[species] = marker
+            validity = _source_validity_for_row(str(species), row, phase="l")
+            marker = validity.get("source_marker") if validity else None
+            if marker is not None and float(row["T_min"]) < marker["fusion_temperature_K"]:
+                derived[str(species)] = marker
                 break
     return derived
 
