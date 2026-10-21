@@ -16,9 +16,11 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import io
 import json
 import math
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -5680,13 +5682,238 @@ def build_source_liquid_markers(
 
 
 def write_source_liquid_markers(
-    markers: dict[str, dict[str, Any]], output: Path
+    markers: dict[str, dict[str, Any]], output: Path,
+    validity_rows: dict[str, list[dict[str, Any]]] | None = None,
 ) -> None:
     output.write_text(
-        json.dumps({"schema": "openimcc.source-liquid-markers.v1", "rows": markers},
+        json.dumps({
+            "schema": "openimcc.source-liquid-markers.v2",
+            "rows": markers,
+            "validity_rows": validity_rows or {},
+        },
                    indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def _validity_display_source_table(runtime_ref: str) -> str:
+    """Transfer the legacy display identifier into typed row metadata."""
+    base = re.sub(r"-CP-EXT-[0-9]+(?:\.[0-9]+)?$", "", runtime_ref)
+    bracketed = re.fullmatch(r"LFS\[([^;\]]+)(?:;Tf=[^\]]+)?\]", base)
+    if bracketed is not None:
+        return bracketed[1]
+    return base.removesuffix("-LFS").removesuffix("-SC-CP")
+
+
+def build_source_liquid_validity_rows(
+    gas_csv: Path,
+    condensate_csv: Path,
+    provenance_path: Path | None = None,
+    markers: dict[str, dict[str, Any]] | None = None,
+    additional_condensate_csvs: tuple[Path, ...] = (),
+) -> dict[str, list[dict[str, Any]]]:
+    """Join provenance validity facts to runtime rows once, during table build.
+
+    Runtime references identify the source record during generation only.
+    The emitted row key uses species and the unique runtime interval, so
+    changing a Ref at runtime does not detach its validity.
+    """
+    repository = Path(__file__).resolve().parents[1]
+    provenance_path = provenance_path or (
+        repository / "src/openimcc/data/gas/PROVENANCE.yaml"
+    )
+    provenance = _load_record(provenance_path)
+    markers = markers or {}
+    result: dict[str, list[dict[str, Any]]] = {}
+    for table_name, path, coefficient_columns in (
+        ("gas", gas_csv, tuple("ABCDEFGH")),
+        ("condensate", condensate_csv, ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E")),
+        *(
+            ("condensate", path, ("dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E"))
+            for path in additional_condensate_csvs
+        ),
+    ):
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            runtime_rows = list(csv.DictReader(handle))
+        records = [
+            row for row in provenance.get("rows", [])
+            if row.get("table") == table_name
+        ]
+        for runtime in runtime_rows:
+            species = runtime["species_name"]
+            ref = runtime["Ref"]
+            low, high = float(runtime["T_min"]), float(runtime["T_max"])
+            interval_records = [
+                record for record in records
+                if record.get("species_name") == species
+                and record.get("T_range_K")
+                and float(record["T_range_K"][0]) <= low
+                and float(record["T_range_K"][1]) >= high
+            ]
+            candidates = [r for r in interval_records if r.get("runtime_ref") == ref]
+            if not candidates:
+                candidates = [
+                    r for r in interval_records
+                    if str(r.get("table_id", ""))
+                    and ref.startswith(str(r.get("table_id")))
+                ]
+            record = None
+            if not candidates:
+                marker = markers.get(species)
+                if marker is not None and ref in {marker["table_id"], "JANAF"}:
+                    record = {
+                        "T_range_K": [low, high], "source_fit_range_K": [low, high],
+                        "method": "fitted", "table_id": marker["table_id"],
+                        "source_path": "data-src/janaf/", "source_data": True,
+                        "flags": [],
+                    }
+                else:
+                    candidates = interval_records
+            if record is None and not candidates:
+                raise ValueError(
+                    f"{table_name} row {species} [{low:g}, {high:g}] {ref!r} "
+                    "has no matching provenance validity record"
+                )
+            if record is None:
+                record = min(
+                    candidates,
+                    key=lambda item: float(item["T_range_K"][1]) - float(item["T_range_K"][0]),
+                )
+            source_limit = record.get("extrapolation_source_limit_K")
+            if source_limit is None:
+                source_limit = record.get("source_limit_K")
+            fusion_temperature = record.get("fusion_temperature_K")
+            if fusion_temperature is None:
+                fusion_temperature = (
+                    record.get("inputs", {})
+                    .get("fusion_temperature", {})
+                    .get("value_K")
+                )
+            if fusion_temperature is None:
+                match = re.search(r"(?:;Tf=|-Tf)([0-9]+(?:\.[0-9]+)?)", ref)
+                if match:
+                    fusion_temperature = float(match.group(1))
+            method = str(record.get("method", ""))
+            table_id = record.get("table_id") or record.get("source_table_id")
+            flags = [str(flag) for flag in record.get("flags", [])]
+            continuation_kind = None
+            if "-CONT-" in ref:
+                continuation_kind = (
+                    "liquid_metal" if "-METAL-CONT-" in ref else "phase"
+                )
+            supercooled = (
+                "supercooled" in method.lower()
+                or any("supercooled" in flag.lower() for flag in flags)
+            )
+            liquid_from_solid = method in {
+                "liquid_from_solid", "liquid_from_solid_construction"
+            }
+            tier = record.get("tier")
+            if tier is None and method == "liquid_from_solid":
+                # Preserve the legacy K-012 construction's existing tier-4 flag.
+                tier = 4
+            cp_extension = "-CP-EXT-" in ref
+            if supercooled and fusion_temperature is None and str(record.get("table_id", "")).startswith("TSIV-"):
+                fusion_temperature = high
+            marker = markers.get(species)
+            source_marker = None
+            if (
+                marker is not None
+                and table_id == marker.get("table_id")
+                and ref in {marker.get("table_id"), "JANAF"}
+                and str(record.get("source_path", "")).startswith("data-src/janaf/")
+                and record.get("source_data", True)
+            ):
+                source_marker = marker
+            source_tagged = any(
+                tag in ref
+                for tag in (
+                    "P677-Re2O7-g-", "K-012", "-CONT-", "Konings-Table88-Tf",
+                    "-CP-EXT-", "LFS", "-SC-CP",
+                )
+            ) or ("TSIV-" in ref and "-SC-" in ref)
+            validity_required = bool(
+                continuation_kind
+                or cp_extension
+                or supercooled
+                or ref.endswith(SUPERCOOLED_LIQUID_REF_SUFFIX)
+                or liquid_from_solid
+                or method.startswith("constructed_from_")
+                or source_marker is not None
+            )
+            if source_tagged and not validity_required:
+                raise ValueError(
+                    f"{table_name} row {species} [{low:g}, {high:g}] {ref!r} "
+                    "has a coverage tag but no typed validity facts"
+                )
+            if (continuation_kind or cp_extension) and source_limit is None:
+                raise ValueError(
+                    f"{table_name} row {species} [{low:g}, {high:g}] {ref!r} "
+                    "has no typed continuation source limit"
+                )
+            if liquid_from_solid and tier is None:
+                raise ValueError(
+                    f"{table_name} row {species} [{low:g}, {high:g}] {ref!r} "
+                    "has no typed liquid_from_solid estimate tier"
+                )
+            if (
+                source_marker is not None
+                and source_marker.get("fusion_temperature_K") is None
+            ):
+                raise ValueError(
+                    f"{table_name} row {species} [{low:g}, {high:g}] {ref!r} "
+                    "has source marker metadata without a fusion temperature"
+                )
+            row_key_data = [
+                species, format(low, ".12g"), format(high, ".12g"),
+                *[format(float(runtime[column]), ".12g") for column in coefficient_columns],
+            ]
+            row_key = hashlib.sha256(
+                json.dumps(row_key_data, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()
+            validity = {
+                "row_key": row_key,
+                "T_range_K": [float(value) for value in record["T_range_K"]],
+                "source_fit_range_K": record.get("source_fit_range_K"),
+                "source_limit_K": source_limit,
+                "fusion_temperature_K": fusion_temperature,
+                "supercooled_segment_K": (
+                    [low, float(fusion_temperature)]
+                    if supercooled and fusion_temperature is not None else None
+                ),
+                "continuation_kind": continuation_kind,
+                "cp_extension": cp_extension,
+                "supercooled_continuation": ref.endswith(SUPERCOOLED_LIQUID_REF_SUFFIX),
+                "liquid_from_solid": liquid_from_solid,
+                "method": method,
+                "tier": tier,
+                "authority": record.get("authority"),
+                "table_id": table_id,
+                "display_source_table": _validity_display_source_table(ref),
+                "flags": flags,
+                "source_marker": source_marker,
+            }
+            if not (
+                continuation_kind
+                or cp_extension
+                or supercooled
+                or validity["supercooled_continuation"]
+                or liquid_from_solid
+                or method.startswith("constructed_from_")
+                or source_marker is not None
+            ):
+                continue
+            result.setdefault(species, []).append(validity)
+    for species, rows in result.items():
+        unique: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            key = str(row["row_key"])
+            previous = unique.get(key)
+            if previous is not None and previous != row:
+                raise ValueError(f"{species}: duplicate runtime key has conflicting validity")
+            unique[key] = row
+        result[species] = list(unique.values())
+    return result
 
 
 def _fit_k2o_from_solid(source_dir: Path) -> list[dict[str, str]]:
@@ -5867,7 +6094,19 @@ def main() -> None:
     if args.source_liquid_markers_output is not None:
         markers = build_source_liquid_markers(args.source_dir)
         args.source_liquid_markers_output.parent.mkdir(parents=True, exist_ok=True)
-        write_source_liquid_markers(markers, args.source_liquid_markers_output)
+        condensate_table = args.condensate_output or (
+            repository / "src/openimcc/data/gas/condensate.csv"
+        )
+        validity_rows = build_source_liquid_validity_rows(
+            args.output, condensate_table, markers=markers,
+            additional_condensate_csvs=(
+                (repository / "src/openimcc/data/gas/condensate-feo-janaf-legacy.csv",)
+                if args.output == packaged_gas else ()
+            ),
+        )
+        write_source_liquid_markers(
+            markers, args.source_liquid_markers_output, validity_rows
+        )
     for row in [*rows, *condensate_rows]:
         if "_max_residual_J_per_mol" not in row:
             continue

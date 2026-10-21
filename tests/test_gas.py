@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import inspect
 import json
 import math
 import os
@@ -176,6 +177,28 @@ _VNB_AGAINST_JANAF_PRINTED_FORMATION_GIBBS = {
 @pytest.fixture(scope="module")
 def gas_pack() -> ImccGasDatapack:
     return load_gas_datapack()
+
+
+def test_default_reactions_name_signature_and_return_shape_are_stable(gas_pack) -> None:
+    assert _default_reactions.__name__ == "_default_reactions"
+    signature = inspect.signature(_default_reactions)
+    assert tuple(signature.parameters) == ("available_parents", "datapack", "T_K")
+    assert signature.parameters["T_K"].default is None
+    selected, omitted = _default_reactions(("K2O",), gas_pack)
+    assert isinstance(selected, tuple) and selected
+    assert all(
+        isinstance(item, tuple)
+        and len(item) == 2
+        and isinstance(item[0], str)
+        and isinstance(item[1], tuple)
+        and len(item[1]) == 3
+        for item in selected
+    )
+    assert isinstance(omitted, dict)
+    assert all(
+        isinstance(name, str) and isinstance(reason, str)
+        for name, reason in omitted.items()
+    )
 
 
 @pytest.mark.parametrize("value", [True, False, np.bool_(True), np.bool_(False)])

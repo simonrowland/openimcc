@@ -6514,7 +6514,15 @@ def test_source_liquid_marker_metadata_matches_vendored_tables(
 ) -> None:
     generated = tmp_path / "source-liquid-markers.json"
     markers = build_gas_tables.build_source_liquid_markers(JANAF_DATA)
-    build_gas_tables.write_source_liquid_markers(markers, generated)
+    validity = build_gas_tables.build_source_liquid_validity_rows(
+        GAS_DATA / "gas-shomate.csv",
+        GAS_DATA / "condensate.csv",
+        markers=markers,
+        additional_condensate_csvs=(
+            GAS_DATA / "condensate-feo-janaf-legacy.csv",
+        ),
+    )
+    build_gas_tables.write_source_liquid_markers(markers, generated, validity)
     assert generated.read_bytes() == (
         GAS_DATA / "source-liquid-markers.json"
     ).read_bytes()

@@ -28,7 +28,7 @@ from importlib import resources
 from numbers import Number
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Callable, Literal, Mapping, NamedTuple, Sequence
+from typing import Any, TYPE_CHECKING, Callable, Literal, Mapping, NamedTuple, Sequence
 
 import numpy as np
 from scipy.optimize import brentq
@@ -49,6 +49,10 @@ R_J_MOL_K = 8.314462618
 
 _SUPERCOOLED_EXTENSION_REF_SUFFIX = "-SC-CP"
 _SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
+_SOURCE_VALIDITY_TAG_RE = re.compile(
+    r"(?:P677-Re2O7-g-(?:SMITH-EST-|BATTLES-EST-|EST-CONT-)|K-012|-CONT-|"
+    r"Konings-Table88-Tf|TSIV-[0-9]+-SC-|-CP-EXT-|LFS|(?:^|-)SC-CP$)"
+)
 _LIQUID_FROM_SOLID_REF_RE = re.compile(
     r"^LFS\[(?P<source>[^;\]]+);Tf=(?P<temperature>[0-9]+(?:\.[0-9]+)?)\]$"
 )
@@ -1149,6 +1153,8 @@ _REACTION_PARENT_OXIDES = frozenset(
 )
 
 
+# The simulator imports this private helper as a cross-repo API; pin its name
+# and call signature in tests before changing it.
 def _default_reactions(
     available_parents: Sequence[str],
     datapack: ImccGasDatapack,
@@ -4169,6 +4175,7 @@ def _source_model_flag(
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
+    validity = _source_validity_for_row(row_name, row, phase=phase)
     if row_name == "FeO(l)" and phase == "l":
         fit_range, fit_row = _selected_redox_feo_fit()
         # Ref is provenance; the coefficients identify whether this fit applies.
@@ -4180,18 +4187,24 @@ def _source_model_flag(
                     f"outside its {low:g}-{high:g} K fit range "
                     f"(Ref={source_ref})"
                 )
-    if source_ref.startswith("P677-Re2O7-g-SMITH-EST-"):
+    if validity is None:
+        return None
+    method = str(validity["method"])
+    fit_range = validity.get("source_fit_range_K") or validity["T_range_K"]
+    if method == "constructed_from_vapor_pressure_and_condensed_function":
         uncertainty_kj = (
             R_J_MOL_K * math.log(10.0) * T * 0.131479893726766 / 1000.0
         )
-        measured_range = "503-598 K" if source_ref.endswith("598") else "613-633 K"
+        measured_range = (
+            f"{round(float(fit_range[0])):g}-{round(float(fit_range[1])):g} K"
+        )
         return (
             "constructed Re2O7(g) from Smith 1952 measured vapor pressure and "
             f"B677 condensed functions over {measured_range}; maximum log-pressure "
             "fit scatter propagated as "
             f"±{uncertainty_kj:.1f} kJ/mol at {T:g} K"
         )
-    if source_ref == "P677-Re2O7-g-BATTLES-EST-961-1087":
+    if method == "constructed_from_equilibrium_and_condensed_function":
         uncertainty_kj = R_J_MOL_K * math.log(10.0) * (0.145 * T + 143.0) / 1000.0
         return (
             "constructed Re2O7(g) from Battles vapor-pressure equilibrium measured "
@@ -4199,7 +4212,7 @@ def _source_model_flag(
             "condensed-function reconstruction; propagated regression coefficient "
             f"band ±{uncertainty_kj:.1f} kJ/mol at {T:g} K"
         )
-    if source_ref == "P677-Re2O7-g-EST-CONT-1087":
+    if method == "constructed_from_equilibrium_and_condensed_function_with_held_cp_continuation":
         uncertainty_kj = R_J_MOL_K * math.log(10.0) * (0.145 * T + 143.0) / 1000.0
         return (
             "constructed Re2O7(g) from Battles vapor-pressure equilibrium measured "
@@ -4208,12 +4221,14 @@ def _source_model_flag(
             "reconstruction; propagated "
             f"vapor-pressure regression bound ±{uncertainty_kj:.1f} kJ/mol at {T:g} K"
         )
-    declared_continuation = re.fullmatch(
-        r"(.+)-CONT-(\d+(?:\.\d+)?)", source_ref
-    )
-    if declared_continuation is not None and T >= float(declared_continuation.group(2)):
-        continuation_limit = float(declared_continuation.group(2))
-        if phase == "l" and "-METAL-CONT-" in source_ref:
+    continuation_limit = validity.get("source_limit_K")
+    if (
+        validity.get("continuation_kind") is not None
+        and continuation_limit is not None
+        and T >= float(continuation_limit)
+    ):
+        continuation_limit = float(continuation_limit)
+        if validity["continuation_kind"] == "liquid_metal":
             return (
                 f"{row_name} uses a flagged liquid-metal continuation above the "
                 f"{continuation_limit:g} K source limit"
@@ -4222,44 +4237,53 @@ def _source_model_flag(
             f"{row_name} uses a flagged {phase}-phase continuation above the "
             f"{continuation_limit:g} K source limit"
         )
-    konings_liquid = re.fullmatch(r"Konings-Table88-Tf(\d+(?:\.\d+)?)", source_ref)
-    if phase == "l" and konings_liquid is not None and T < float(konings_liquid[1]):
+    fusion_temperature = validity.get("fusion_temperature_K")
+    if (
+        phase == "l"
+        and method == "integrated_phase_chain_and_supercooled_liquid"
+        and fusion_temperature is not None
+        and T < float(fusion_temperature)
+    ):
         return (
             f"{row_name} uses the printed constant-Cp liquid branch as a "
-            f"supercooled continuation below {float(konings_liquid[1]):g} K"
+            f"supercooled continuation below {float(fusion_temperature):g} K"
         )
-    supercooled = re.fullmatch(r"(TSIV-\d+)-SC-(\d+(?:\.\d+)?)", source_ref)
-    if phase == "l" and supercooled is not None:
+    supercooled_segment = validity.get("supercooled_segment_K")
+    if (
+        phase == "l"
+        and supercooled_segment is not None
+        and str(validity.get("table_id", "")).startswith("TSIV-")
+    ):
         return (
             f"{row_name} uses the TSIV liquid function as a supercooled branch "
-            f"below {float(supercooled.group(2)):g} K"
+            f"below {float(supercooled_segment[1]):g} K"
         )
-    extension = _SOURCE_CP_EXTENSION_RE.search(source_ref)
-    source_table = _source_table_identifier(source_ref)
-    if phase == "l" and _liquid_from_solid_reference(source_ref) is not None:
-        if extension is None:
+    source_table = str(validity.get("display_source_table") or validity.get("table_id") or "")
+    if phase == "l" and validity.get("liquid_from_solid"):
+        tier = validity.get("tier")
+        if tier is None:
+            raise ValueError(f"{row_name} liquid_from_solid validity has no estimate tier")
+        if not validity.get("cp_extension"):
             return (
-                f"{row_name} uses a tier-4 liquid_from_solid construction "
+                f"{row_name} uses a tier-{tier} liquid_from_solid construction "
                 f"from {source_table}"
             )
-        limit = float(extension["limit"])
+        limit = float(validity["source_limit_K"])
         if source_table == "TSIV-1603":
             return (
-                f"{row_name} uses a tier-4 liquid_from_solid construction from "
+                f"{row_name} uses a tier-{tier} liquid_from_solid construction from "
                 f"{source_table}; the central liquid uses the printed 2250 K "
                 "node, and the quadratic crystal-Cp extension is its uncertainty bound"
             )
         return (
-            f"{row_name} uses a tier-4 liquid_from_solid construction from "
+            f"{row_name} uses a tier-{tier} liquid_from_solid construction from "
             f"{source_table}; its crystal Cp was extended above {limit:g} K "
             "to the estimated fusion temperature"
         )
-    source_marker = _source_supercooled_liquid_markers().get(row_name)
+    source_marker = validity.get("source_marker")
     if (
         phase == "l"
         and source_marker is not None
-        and source_ref in {source_marker["table_id"], "JANAF"}
-        and not source_ref.endswith(_SUPERCOOLED_EXTENSION_REF_SUFFIX)
         # Below the packaged row's own floor the source branch is not
         # tabulated; the outside-interval flag already describes that case.
         and T >= float(row["T_min"])
@@ -4276,11 +4300,87 @@ def _source_model_flag(
             f"below the {source_marker['fusion_temperature_K']:g} K fusion "
             f"marker ({source_marker['table_id']})"
         )
-    if extension is not None and T > float(extension["limit"]):
-        limit = float(extension["limit"])
+    if validity.get("cp_extension") and continuation_limit is not None and T > float(continuation_limit):
+        limit = float(continuation_limit)
         return (
             f"{row_name} uses a labelled constant-Cp continuation above "
             f"{limit:g} K from {source_table}"
+        )
+    return None
+
+
+def _source_validity_key(row_name: str, row: pd.Series, *, phase: str) -> str:
+    columns = tuple("ABCDEFGH") if phase == "g" else (
+        "dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E"
+    )
+    payload = [
+        row_name, format(float(row["T_min"]), ".12g"),
+        format(float(row["T_max"]), ".12g"),
+        *[format(float(row[column]), ".12g") for column in columns],
+    ]
+    return hashlib.sha256(
+        json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+@lru_cache(maxsize=1)
+def _source_liquid_metadata() -> dict[str, Any]:
+    resource = _packaged_resource(_PACKAGED_SOURCE_LIQUID_MARKERS_NAME)
+    metadata = json.loads(resource.read_text(encoding="utf-8"))
+    if metadata.get("schema") != "openimcc.source-liquid-markers.v2":
+        raise ValueError("unsupported source-liquid metadata schema")
+    return metadata
+
+
+def _source_validity_rows() -> dict[str, list[dict[str, Any]]]:
+    return _source_liquid_metadata()["validity_rows"]
+
+
+def _source_validity_for_row(
+    row_name: str, row: pd.Series, *, phase: str
+) -> dict[str, Any] | None:
+    key = _source_validity_key(row_name, row, phase=phase)
+    row_validity = _source_validity_rows().get(row_name, [])
+    for validity in row_validity:
+        if validity.get("row_key") == key:
+            return validity
+    # Published comparison packs can refit an unchanged source interval. Use
+    # its source-table identity and typed interval only when they select one
+    # packaged validity record.
+    source_ref = str(row.get("Ref", ""))
+    display_source_table = _source_table_identifier(source_ref)
+    interval_matches = sorted(
+        (
+            validity for validity in row_validity
+            if validity.get("display_source_table") == display_source_table
+            and validity.get("T_range_K") is not None
+            and float(validity["T_range_K"][0]) < float(row["T_max"])
+            and float(validity["T_range_K"][1]) > float(row["T_min"])
+        ),
+        key=lambda validity: float(validity["T_range_K"][0]),
+    )
+    cursor = float(row["T_min"])
+    for validity in interval_matches:
+        low, high = (float(value) for value in validity["T_range_K"])
+        if low > cursor:
+            break
+        cursor = max(cursor, high)
+        if cursor >= float(row["T_max"]):
+            break
+    if interval_matches and cursor >= float(row["T_max"]):
+        signatures = {
+            json.dumps(
+                {key: value for key, value in validity.items() if key not in {"row_key", "T_range_K"}},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            for validity in interval_matches
+        }
+        if len(signatures) == 1:
+            return interval_matches[0]
+    if _SOURCE_VALIDITY_TAG_RE.search(source_ref):
+        raise ValueError(
+            f"{row_name} has source-tagged coverage but no typed validity metadata"
         )
     return None
 
@@ -4303,19 +4403,14 @@ def _selected_redox_feo_fit() -> tuple[
     return (fit_range[0], fit_range[1]), fit_row
 
 
-@lru_cache(maxsize=1)
-def _source_supercooled_liquid_markers() -> dict[str, dict[str, object]]:
-    resource = _packaged_resource(_PACKAGED_SOURCE_LIQUID_MARKERS_NAME)
-    metadata = json.loads(resource.read_text(encoding="utf-8"))
-    if metadata.get("schema") != "openimcc.source-liquid-markers.v1":
-        raise ValueError("unsupported source-liquid marker metadata schema")
-    return metadata["rows"]
+def _source_supercooled_liquid_markers() -> dict[str, dict[str, Any]]:
+    return _source_liquid_metadata()["rows"]
 
 
 def _derived_source_supercooled_liquid_markers(
     datapack: ImccGasDatapack,
 ) -> dict[str, dict[str, object]]:
-    """Select packaged source liquids with runtime rows below fusion."""
+    """Select source liquids whose typed row metadata extends below fusion."""
     derived = {}
     for species, marker in _source_supercooled_liquid_markers().items():
         if species not in datapack.oxide_df.index:
@@ -4326,44 +4421,33 @@ def _derived_source_supercooled_liquid_markers(
         else:
             species_rows = [row for _, row in rows.iterrows()]
         for row in species_rows:
-            source_ref = str(row["Ref"])
-            if source_ref not in {marker["table_id"], "JANAF"}:
-                continue
-            if _liquid_from_solid_reference(source_ref) is not None:
-                continue
-            if source_ref.endswith(_SUPERCOOLED_EXTENSION_REF_SUFFIX):
-                continue
-            if float(row["T_min"]) < float(marker["fusion_temperature_K"]):
+            validity = _source_validity_for_row(species, row, phase="l")
+            source_marker = validity.get("source_marker") if validity else None
+            if (
+                source_marker is not None
+                and float(row["T_min"]) < float(marker["fusion_temperature_K"])
+            ):
                 derived[species] = marker
                 break
     return derived
-
-
-def _liquid_from_solid_reference(
-    source_ref: str,
-) -> tuple[str, float | None] | None:
-    """Read explicit liquid-from-solid metadata, retaining legacy table refs."""
-    base_ref = _SOURCE_CP_EXTENSION_RE.sub("", source_ref)
-    match = _LIQUID_FROM_SOLID_REF_RE.fullmatch(base_ref)
-    if match is not None:
-        return match["source"], float(match["temperature"])
-    if source_ref == "K-012":
-        return "K-012", None
-    if "-LFS" in source_ref:
-        return _source_table_identifier(source_ref), None
-    return None
 
 
 def _supercooled_liquid_from_solid_flag(
     row_name: str, T: float, row: pd.Series
 ) -> str | None:
     """Flag a constructed liquid below its measured or selected fusion point."""
-    construction = _liquid_from_solid_reference(str(row.get("Ref", "")))
-    if construction is None or construction[1] is None or T >= construction[1]:
+    validity = _source_validity_for_row(row_name, row, phase="l")
+    fusion_temperature = validity.get("fusion_temperature_K") if validity else None
+    if (
+        not validity
+        or not validity.get("liquid_from_solid")
+        or fusion_temperature is None
+        or T >= float(fusion_temperature)
+    ):
         return None
     return (
         f"{row_name} uses a supercooled liquid_from_solid branch below "
-        f"the {construction[1]:g} K fusion temperature"
+        f"the {float(fusion_temperature):g} K fusion temperature"
     )
 
 
@@ -5370,15 +5454,14 @@ def evaluate_gas(
             a_oxide = act[oxide]
             if flag is not None:
                 flags.append(flag)
-            if (
-                oxide_row is not None
-                and str(oxide_row["Ref"]).endswith(
-                    _SUPERCOOLED_EXTENSION_REF_SUFFIX
+            validity = (
+                _source_validity_for_row(
+                    oxide_name, oxide_row, phase=("s" if str(oxide_row["state"]) == "s" else "l")
                 )
-            ):
-                source_table = str(oxide_row["Ref"]).removesuffix(
-                    _SUPERCOOLED_EXTENSION_REF_SUFFIX
-                )
+                if oxide_row is not None else None
+            )
+            if oxide_row is not None and validity and validity.get("supercooled_continuation"):
+                source_table = str(validity.get("table_id") or "")
                 source_name = "NASA Glenn/CEA" if source_table.startswith("NG-") else "JANAF"
                 source_name = (
                     "NASA Glenn card"

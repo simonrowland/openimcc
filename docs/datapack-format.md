@@ -871,6 +871,18 @@ so row and CSV column order, quoting, line endings, and a trailing newline do
 not identify the content. `gas_path` and `oxide_path` identify source
 locations for diagnostics; they are not content identity.
 
+The packaged `source-liquid-markers.json` sidecar uses
+`openimcc.source-liquid-markers.v2`. Its `validity_rows` entries carry each
+runtime row's fit range, source limit, fusion boundary, construction method,
+estimate tier, and typed continuation or supercooled segment. The builder joins
+these facts from `PROVENANCE.yaml` and the source liquid markers. A row key
+combines its species, temperature interval, and rounded fitted coefficients;
+runtime flags use that key and do not select validity from `Ref`. Source
+references remain provenance and can be changed without dropping a flag.
+Rows with recognized coverage tags but no matching validity entry raise an
+error. The sidecar is separate from the parsed gas and condensate frames, so
+these metadata fields do not alter either gas table content digest.
+
 The dataclass is frozen, but pandas frames remain mutable. In-place mutation
 of a constructed pack's frames is outside the contract and does not update its
 cached digests. Use `dataclasses.replace` with changed frames to construct and
