@@ -771,19 +771,19 @@ SUPERCOOLED_LIQUID_SOURCES = (
     ),
     (
         "SiO2(l)", "O-038", "Si", 1, 2, 1800.0,
-        ((1200.0, 1500.0), (1500.0, 1800.0)),
+        ((1200.0, 1500.0), (1500.0, 1800.0), (1000.0, 1200.0)),
     ),
     (
         "Al2O3(l)", "Al-100", "Al", 2, 3, 2500.0,
-        ((1200.0, 1500.0), (1500.0, 2000.0), (2000.0, 2500.0)),
+        ((1200.0, 1500.0), (1500.0, 2000.0), (2000.0, 2500.0), (1000.0, 1200.0)),
     ),
     (
         "MgO(l)", "Mg-009", "Mg", 1, 1, 2200.0,
-        ((1200.0, 1500.0), (1500.0, 1800.0), (1800.0, 2200.0)),
+        ((1200.0, 1500.0), (1500.0, 1800.0), (1800.0, 2200.0), (1000.0, 1200.0)),
     ),
     (
         "CaO(l)", "Ca-028", "Ca", 1, 1, 2200.0,
-        ((1200.0, 1500.0), (1500.0, 1800.0), (1800.0, 2200.0)),
+        ((1200.0, 1500.0), (1500.0, 1800.0), (1800.0, 2200.0), (1000.0, 1200.0)),
     ),
 )
 NASA_SUPERCOOLED_LIQUID_SOURCES = (
@@ -3218,6 +3218,9 @@ def _fit_condensate_values(
     ref: str | None = None,
     allow_missing_nodes: bool = False,
     fit_temperatures: Sequence[float] | None = None,
+    upper_g_cp: tuple[float, float] | None = None,
+    endpoint_g_s: Sequence[tuple[float, float, float]] | None = None,
+    endpoint_cp: tuple[float, float] | None = None,
 ) -> dict[str, str]:
     """Fit source Cp/S/H increments to the existing condensate row form.
 
@@ -3266,9 +3269,85 @@ def _fit_condensate_values(
     # regular grid fits keep the historical quartic path byte-for-byte.
     degree = 4 if fit_temperatures is None else min(4, len(temperatures) - 1)
     fit_design = np.column_stack([tau**power for power in range(degree + 1)])
-    fitted_coefficients = np.linalg.lstsq(
-        fit_design, phi / R_J_MOL_K, rcond=None
-    )[0]
+    if endpoint_g_s is not None:
+        if upper_g_cp is not None or degree != 4:
+            raise ValueError(
+                f"{table_id}: G/S endpoint fit requires an unconstrained quartic"
+            )
+        constraints = []
+        constraint_values = []
+        for temperature, anchor_g, anchor_s in endpoint_g_s:
+            anchor_tau = temperature / 1000.0
+            powers = [anchor_tau**power for power in range(5)]
+            constraints.extend((
+                powers,
+                [powers[0], 2.0 * powers[1], 3.0 * powers[2],
+                 4.0 * powers[3], 5.0 * powers[4]],
+            ))
+            # G=-RT*P and S/R=P+tau*P'; coefficients are dimensionless.
+            constraint_values.extend((
+                (1000.0 * reference_kJ_mol - anchor_g)
+                / (R_J_MOL_K * temperature),
+                anchor_s / R_J_MOL_K,
+            ))
+        if endpoint_cp is not None:
+            temperature, anchor_cp = endpoint_cp
+            anchor_tau = temperature / 1000.0
+            constraints.append(
+                [0.0, 2.0 * anchor_tau, 6.0 * anchor_tau**2,
+                 12.0 * anchor_tau**3, 20.0 * anchor_tau**4]
+            )
+            constraint_values.append(anchor_cp / R_J_MOL_K)
+        constraints_array = np.asarray(constraints)
+        normal = fit_design.T @ fit_design
+        target = fit_design.T @ (phi / R_J_MOL_K)
+        kkt = np.block([
+            [normal, constraints_array.T],
+            [constraints_array, np.zeros((len(constraint_values), len(constraint_values)))],
+        ])
+        fitted_coefficients = np.linalg.solve(
+            kkt, np.concatenate((target, np.asarray(constraint_values)))
+        )[:5]
+    elif upper_g_cp is None:
+        fitted_coefficients = np.linalg.lstsq(
+            fit_design, phi / R_J_MOL_K, rcond=None
+        )[0]
+    else:
+        if degree != 4:
+            raise ValueError(
+                f"{table_id}: endpoint-constrained condensate fit needs a quartic"
+            )
+        # The next runtime interval owns the seam. Constrain this fit to its
+        # G and Cp there while least-squares fitting the source Phi nodes.
+        # G fixes P(tau); Cp/R=2*tau*P'+tau^2*P'' supplies the derivative
+        # constraint. G uses J/mol, Cp uses J/(mol K), and P is dimensionless.
+        anchor_g, anchor_cp = upper_g_cp
+        anchor_tau = runtime_t_max / 1000.0
+        constraints = np.asarray(
+            [
+                [anchor_tau**power for power in range(5)],
+                [0.0, 2.0 * anchor_tau, 6.0 * anchor_tau**2,
+                 12.0 * anchor_tau**3, 20.0 * anchor_tau**4],
+            ]
+        )
+        constraint_values = np.asarray(
+            [
+                (1000.0 * reference_kJ_mol - anchor_g)
+                / (R_J_MOL_K * runtime_t_max),
+                anchor_cp / R_J_MOL_K,
+            ]
+        )
+        normal = fit_design.T @ fit_design
+        target = fit_design.T @ (phi / R_J_MOL_K)
+        kkt = np.block(
+            [
+                [normal, constraints.T],
+                [constraints, np.zeros((2, 2))],
+            ]
+        )
+        fitted_coefficients = np.linalg.solve(
+            kkt, np.concatenate((target, constraint_values))
+        )[:5]
     coefficients = np.zeros(5, dtype=float)
     coefficients[: degree + 1] = fitted_coefficients
     design = np.column_stack((np.ones_like(tau), tau, tau**2, tau**3, tau**4))
@@ -3885,6 +3964,9 @@ def _fit_supercooled_liquid_row(
     runtime_t_max: float,
     *,
     runtime_t_min: float = 1200.0,
+    upper_g_cp: tuple[float, float] | None = None,
+    upper_g_s: tuple[float, float] | None = None,
+    upper_cp: float | None = None,
     nasa_source_dir: Path | None = None,
 ) -> dict[str, str]:
     """Fit the generated constant-Cp continuation to the condensate form.
@@ -4049,41 +4131,96 @@ def _fit_supercooled_liquid_row(
         )
         anchor_temperature = runtime_t_max
         anchor_tau = anchor_temperature / 1000.0
-        anchor_entropy = entropy_0 + cp * math.log(anchor_temperature / T0)
-        anchor_design = np.asarray(
-            [
-                [1.0, anchor_tau, anchor_tau**2, anchor_tau**3, anchor_tau**4],
+        if upper_g_cp is None:
+            anchor_g, anchor_entropy = (
+                upper_g_s
+                if upper_g_s is not None
+                else (
+                    (reference + enthalpy_0 + cp * (anchor_temperature - T0) / 1000.0)
+                    * 1000.0
+                    - anchor_temperature
+                    * (entropy_0 + cp * math.log(anchor_temperature / T0)),
+                    entropy_0 + cp * math.log(anchor_temperature / T0),
+                )
+            )
+            anchor_design = np.asarray(
                 [
-                    1.0,
-                    2.0 * anchor_tau,
-                    3.0 * anchor_tau**2,
-                    4.0 * anchor_tau**3,
-                    5.0 * anchor_tau**4,
-                ],
-            ]
-        )
-        anchor_phi = phi(anchor_temperature) / R_J_MOL_K
-        constraints = anchor_design[1, 1:] - anchor_design[0, 1:]
-        constraint_value = anchor_entropy / R_J_MOL_K - anchor_phi
-        # G=-RT*P gives S/R=P+tau*P' and Cp/R=2*tau*P'+tau^2*P''.
-        # The constraints match Gibbs energy and entropy at this interval seam.
-        normal = heat_capacity_design.T @ heat_capacity_design
-        target = heat_capacity_design.T @ np.full(len(tau), cp / R_J_MOL_K)
-        kkt = np.block(
-            [
-                [normal, constraints[:, None]],
-                [constraints[None, :], np.zeros((1, 1))],
-            ]
-        )
-        coefficients_tail = np.linalg.solve(
-            kkt, np.concatenate((target, [constraint_value]))
-        )[:4]
-        coefficients = np.concatenate(
-            ([anchor_phi - anchor_tau * coefficients_tail[0]
-              - anchor_tau**2 * coefficients_tail[1]
-              - anchor_tau**3 * coefficients_tail[2]
-              - anchor_tau**4 * coefficients_tail[3]], coefficients_tail)
-        )
+                    [1.0, anchor_tau, anchor_tau**2, anchor_tau**3, anchor_tau**4],
+                    [
+                        1.0,
+                        2.0 * anchor_tau,
+                        3.0 * anchor_tau**2,
+                        4.0 * anchor_tau**3,
+                        5.0 * anchor_tau**4,
+                    ],
+                ]
+            )
+            anchor_phi = (1000.0 * reference - anchor_g) / (
+                R_J_MOL_K * anchor_temperature
+            )
+            constraints = [anchor_design[1, 1:] - anchor_design[0, 1:]]
+            constraint_values = [anchor_entropy / R_J_MOL_K - anchor_phi]
+            if upper_cp is not None:
+                constraints.append(heat_capacity_design[-1])
+                constraint_values.append(upper_cp / R_J_MOL_K)
+            constraints = np.asarray(constraints)
+            # G=-RT*P gives S/R=P+tau*P'. The constraint matches Gibbs
+            # energy and entropy at this interval's upper seam.
+            normal = heat_capacity_design.T @ heat_capacity_design
+            target = heat_capacity_design.T @ np.full(len(tau), cp / R_J_MOL_K)
+            kkt = np.block(
+                [
+                    [normal, constraints.T],
+                    [constraints, np.zeros((len(constraint_values), len(constraint_values)))],
+                ]
+            )
+            coefficients_tail = np.linalg.solve(
+                kkt, np.concatenate((target, np.asarray(constraint_values)))
+            )[:4]
+            coefficients = np.concatenate(
+                ([anchor_phi - anchor_tau * coefficients_tail[0]
+                  - anchor_tau**2 * coefficients_tail[1]
+                  - anchor_tau**3 * coefficients_tail[2]
+                  - anchor_tau**4 * coefficients_tail[3]], coefficients_tail)
+            )
+        else:
+            # The adjacent packaged interval owns this seam. Minimize the
+            # source G residual directly, subject to exact endpoint G and Cp;
+            # the two constraints are P(tau) and Cp/R=2*tau*P'+tau^2*P''.
+            # G is J/mol, Cp is J/(mol K), and P is dimensionless.
+            anchor_g, anchor_cp = upper_g_cp
+            source_g = np.asarray([
+                (reference + enthalpy_0 + cp * (temperature - T0) / 1000.0)
+                * 1000.0
+                - temperature * (entropy_0 + cp * math.log(temperature / T0))
+                for temperature in fit_temperatures
+            ])
+            gibbs_design = -R_J_MOL_K * np.asarray(fit_temperatures)[:, None] * design
+            constraints = np.asarray(
+                [
+                    [anchor_tau**power for power in range(5)],
+                    [0.0, 2.0 * anchor_tau, 6.0 * anchor_tau**2,
+                     12.0 * anchor_tau**3, 20.0 * anchor_tau**4],
+                ]
+            )
+            constraint_values = np.asarray(
+                [
+                    (1000.0 * reference - anchor_g)
+                    / (R_J_MOL_K * anchor_temperature),
+                    anchor_cp / R_J_MOL_K,
+                ]
+            )
+            normal = gibbs_design.T @ gibbs_design
+            target = gibbs_design.T @ (source_g - 1000.0 * reference)
+            kkt = np.block(
+                [
+                    [normal, constraints.T],
+                    [constraints, np.zeros((len(constraint_values), len(constraint_values)))],
+                ]
+            )
+            coefficients = np.linalg.solve(
+                kkt, np.concatenate((target, constraint_values))
+            )[:5]
     else:
         coefficients = np.linalg.lstsq(
             design, np.asarray([phi(T) for T in fit_temperatures]) / R_J_MOL_K,
@@ -4317,7 +4454,10 @@ def build_rows(
             t_interval=2,
             fit_t_min=LOW_FIT_T_MIN,
             fit_t_max=LOW_FIT_T_MAX,
-            runtime_t_min=1200.0,
+            runtime_t_min=(
+                1000.0 if source[0] in {"Zn(g)", "Pb(g)", "PbO(g)"}
+                else 1200.0
+            ),
         )
         for source in TRACE_JANAF_GAS_SOURCES
     )
@@ -4332,7 +4472,7 @@ def build_rows(
             fit_t_max=LOW_FIT_T_MAX,
             minimum_rows=11,
         )
-        low_row["T_min"] = "1200"
+        low_row["T_min"] = "1000" if source[0] == "H2O(g)" else "1200"
         rows.append(low_row)
     rows.extend(
         _fit_nasa_card_gas_row(
@@ -4341,7 +4481,10 @@ def build_rows(
             t_interval=2,
             fit_t_min=LOW_FIT_T_MIN,
             fit_t_max=LOW_FIT_T_MAX,
-            runtime_t_min=1200.0,
+            runtime_t_min=(
+                1000.0 if source[0] in {"Cd(g)", "PbO2(g)"}
+                else 1200.0
+            ),
         )
         for source in TRACE_NASA_GAS_SOURCES
         if source[1] not in HALOGEN_NASA_TABLES
@@ -4487,6 +4630,25 @@ def build_rows(
         for source in TRACE_JANAF_YAML_GAS_SOURCES
         if source[1] in HALOGEN_JANAF_TABLES
     )
+    # These JANAF halogen rows have source nodes from 298 K onward. Fit a
+    # distinct 1000-1200 K low interval from the 1000-1500 K source cells;
+    # the existing 1200-3000 K row remains byte-identical above the seam.
+    for source in TRACE_JANAF_YAML_GAS_SOURCES:
+        if source[0] not in {
+            "HCl(g)", "HF(g)", "NaCl(g)", "(NaCl)2(g)", "KCl(g)",
+            "(KCl)2(g)", "NaF(g)", "(NaF)2(g)", "KF(g)", "(KF)2(g)",
+        }:
+            continue
+        low_row = _fit_row(
+            source_dir,
+            *source,
+            t_interval=2,
+            fit_t_min=1000.0,
+            fit_t_max=1500.0,
+            minimum_rows=6,
+        )
+        low_row["T_max"] = "1200"
+        rows.append(low_row)
     rows.extend(
         _fit_nasa_card_gas_row(
             nasa_source_dir,
@@ -4501,13 +4663,19 @@ def build_rows(
         intervals = (
             ((1, 1500.0, 1900.0), (2, 1200.0, 1500.0), (3, 1900.0, 3000.0))
             if species_name == "PtO2(g)"
-            else ((1, 1500.0, 3000.0), (2, 1200.0, 1500.0))
+            else (
+                ((1, 1500.0, 3000.0), (2, 1200.0, 1500.0), (3, 1000.0, 1500.0))
+                if species_name == "Hg(g)"
+                else ((1, 1500.0, 3000.0), (2, 1200.0, 1500.0))
+            )
         )
         for interval, fit_min, fit_max in intervals:
             row = _fit_burcat_metal_gas_row(
                 species_name, filename, record_key, cation, cat_num, oxy_num,
                 interval=interval, fit_t_min=fit_min, fit_t_max=fit_max,
             )
+            if species_name == "Hg(g)" and interval == 3:
+                row["T_max"] = "1200"
             if species_name == "PtO2(g)" and interval == 3:
                 row["Ref"] = f"{row['Ref']}-CONT-2000"
             rows.append(row)
@@ -5202,7 +5370,7 @@ def build_condensate_rows(
             fit_t_min=1000.0,
             fit_t_max=1500.0,
             minimum_rows=6,
-            runtime_t_min=1200.0,
+            runtime_t_min=1000.0,
             runtime_t_max=1500.0,
         )
     )
@@ -5231,6 +5399,20 @@ def build_condensate_rows(
         intervals,
     ) in SUPERCOOLED_LIQUID_SOURCES:
         for runtime_t_min, runtime_t_max in intervals:
+            upper_g_cp = None
+            upper_g_s = None
+            upper_cp = None
+            if species_name in {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"} and (
+                runtime_t_min == 1000.0 and runtime_t_max == 1200.0
+            ):
+                seam_row = next(
+                    row for row in rows
+                    if row["species_name"] == species_name
+                    and float(row["T_min"]) == 1200.0
+                    and float(row["T_max"]) == 1500.0
+                )
+                upper_g_s = _condensate_row_g_s(seam_row, 1200.0)
+                upper_cp = _condensate_row_g_cp(seam_row, 1200.0)[1]
             rows.append(
                 _fit_supercooled_liquid_row(
                     source_dir,
@@ -5242,6 +5424,9 @@ def build_condensate_rows(
                     T0,
                     runtime_t_max,
                     runtime_t_min=runtime_t_min,
+                    upper_g_cp=upper_g_cp,
+                    upper_g_s=upper_g_s,
+                    upper_cp=upper_cp,
                 )
             )
     rows.extend(
@@ -5742,6 +5927,13 @@ def build_source_liquid_validity_rows(
                 if float(record["T_range_K"][0]) <= low
                 and float(record["T_range_K"][1]) >= high
             ]
+            needs_typed_validity = any(
+                tag in ref
+                for tag in (
+                    "P677-Re2O7-g-", "K-012", "-CONT-", "Konings-Table88-Tf",
+                    "-CP-EXT-", "LFS", "-SC-CP",
+                )
+            ) or ("TSIV-" in ref and "-SC-" in ref)
             candidates = [r for r in species_records if r.get("runtime_ref") == ref]
             direct_candidates = [
                 record for record in candidates
@@ -5787,10 +5979,18 @@ def build_source_liquid_validity_rows(
                     candidates = []
             if not candidates:
                 candidates = [
-                    r for r in interval_records
-                    if str(r.get("table_id", ""))
-                    and ref.startswith(str(r.get("table_id")))
+                    candidate for candidate in interval_records
+                    if any(
+                        identifier
+                        and (ref == identifier or ref.startswith(identifier))
+                        for identifier in (
+                            str(candidate.get("table_id", "")),
+                            str(candidate.get("source_table_id", "")),
+                        )
+                    )
                 ]
+            if not candidates and needs_typed_validity:
+                candidates = interval_records
             record = None
             if not candidates:
                 marker = markers.get(species)
@@ -5802,16 +6002,9 @@ def build_source_liquid_validity_rows(
                         "flags": [],
                     }
                 else:
-                    candidates = interval_records
+                    candidates = []
             if record is None and not candidates:
-                coverage_tagged = any(
-                    tag in ref
-                    for tag in (
-                        "P677-Re2O7-g-", "K-012", "-CONT-", "Konings-Table88-Tf",
-                        "-CP-EXT-", "LFS", "-SC-CP",
-                    )
-                ) or ("TSIV-" in ref and "-SC-" in ref)
-                if coverage_tagged:
+                if needs_typed_validity:
                     raise ValueError(
                         f"{table_name} row {species} [{low:g}, {high:g}] {ref!r} "
                         "has no matching provenance validity record"
@@ -5857,6 +6050,10 @@ def build_source_liquid_validity_rows(
                 # Preserve the legacy K-012 construction's existing tier-4 flag.
                 tier = 4
             cp_extension = "-CP-EXT-" in ref
+            supercooled_continuation = bool(
+                record.get("supercooled_continuation")
+                or ref.endswith(SUPERCOOLED_LIQUID_REF_SUFFIX)
+            )
             if supercooled and fusion_temperature is None and str(record.get("table_id", "")).startswith("TSIV-"):
                 fusion_temperature = high
             marker = markers.get(species)
@@ -5864,7 +6061,6 @@ def build_source_liquid_validity_rows(
             if (
                 marker is not None
                 and table_id == marker.get("table_id")
-                and ref in {marker.get("table_id"), "JANAF"}
                 and str(record.get("source_path", "")).startswith("data-src/janaf/")
                 and record.get("source_data", True)
             ):
@@ -5880,7 +6076,7 @@ def build_source_liquid_validity_rows(
                 continuation_kind
                 or cp_extension
                 or supercooled
-                or ref.endswith(SUPERCOOLED_LIQUID_REF_SUFFIX)
+                or supercooled_continuation
                 or liquid_from_solid
                 or method.startswith("constructed_from_")
                 or source_marker is not None
@@ -5919,7 +6115,7 @@ def build_source_liquid_validity_rows(
                 ),
                 "continuation_kind": continuation_kind,
                 "cp_extension": cp_extension,
-                "supercooled_continuation": ref.endswith(SUPERCOOLED_LIQUID_REF_SUFFIX),
+                "supercooled_continuation": supercooled_continuation,
                 "liquid_from_solid": liquid_from_solid,
                 "method": method,
                 "tier": tier,
@@ -5939,7 +6135,7 @@ def build_source_liquid_validity_rows(
                 row_validity.append(None)
                 continue
             row_validity.append(validity)
-        result[f"{table_name}:{path.name}"] = row_validity
+        result[f"{table_name}:{path.resolve()}"] = row_validity
     return result
 
 
@@ -5950,7 +6146,7 @@ def write_source_validity_columns(
     phase: str,
 ) -> None:
     """Write generated validity facts directly onto their runtime CSV rows."""
-    row_validity = validity_rows[f"{phase}:{table_path.name}"]
+    row_validity = validity_rows[f"{phase}:{table_path.resolve()}"]
     with table_path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         fieldnames = list(reader.fieldnames or [])
@@ -6043,7 +6239,76 @@ def _fit_k2o_from_solid(source_dir: Path) -> list[dict[str, str]]:
                 f"K2O(l): condensate fit residual {residual:g} J/mol exceeds 10"
             )
         result.append(row)
+
+    # Fit the lower interval against the constructed continuation at 1 K spacing.
+    lower_nodes = np.arange(1000.0, 1200.0 + 1.0, 1.0)
+    lower_source = construction.source_rows(lower_nodes.tolist())
+    upper_g, upper_s = _condensate_row_g_s(result[0], 1200.0)
+    upper_cp = _condensate_row_g_cp(result[0], 1200.0)[1]
+    fusion_state = construction.source_rows([1013.0])[1013.0]
+    fusion_s = fusion_state["entropy"]
+    row = _fit_condensate_values(
+        "K2O(l)",
+        str(fit["table_id"]),
+        str(fit["cation"]),
+        int(fit["cat_num"]),
+        int(fit["oxy_num"]),
+        lower_source,
+        construction.dfh298_kj_mol,
+        fit_t_min=1000.0,
+        fit_t_max=1200.0,
+        runtime_t_min=1000.0,
+        runtime_t_max=1200.0,
+        ref="LFS[K-012;Tf=1013]",
+        fit_temperatures=lower_nodes,
+        endpoint_g_s=(
+            (1013.0, construction.at(1013.0).gibbs_kj_mol * 1000.0, fusion_s),
+            (1200.0, upper_g, upper_s),
+        ),
+        endpoint_cp=(1200.0, upper_cp),
+    )
+    residual = float(row["_max_residual_J_per_mol"])
+    if residual > 10.0:
+        raise ValueError(
+            f"K2O(l): 1000-1200 K source-fit residual {residual:g} J/mol exceeds 10"
+        )
+    result.append(row)
     return result
+
+
+def _condensate_row_g_cp(
+    row: dict[str, str], temperature: float
+) -> tuple[float, float]:
+    """Evaluate one condensate Shomate row's Gibbs energy and heat capacity."""
+    tau = temperature / 1000.0
+    coefficients = [float(row[f"dG_{name}"]) for name in "ABCDE"]
+    A, B, C, D, E = coefficients
+    polynomial = A + B * tau + C * tau**2 + D * tau**3 + E * tau**4
+    cp = R_J_MOL_K * (
+        2.0 * B * tau + 6.0 * C * tau**2
+        + 12.0 * D * tau**3 + 20.0 * E * tau**4
+    )
+    gibbs = (
+        1000.0 * R_J_MOL_K * float(row["dH298_R"])
+        - R_J_MOL_K * temperature * polynomial
+    )
+    return gibbs, cp
+
+
+def _condensate_row_g_s(
+    row: dict[str, str], temperature: float
+) -> tuple[float, float]:
+    """Evaluate stored condensate Gibbs energy and entropy (−dG/dT)."""
+    tau = temperature / 1000.0
+    coefficients = [float(row[f"dG_{name}"]) for name in "ABCDE"]
+    polynomial = sum(value * tau**power for power, value in enumerate(coefficients))
+    derivative = sum(
+        power * coefficients[power] * tau ** (power - 1)
+        for power in range(1, 5)
+    )
+    gibbs = 1000.0 * float(row["dH298_R"]) * R_J_MOL_K - R_J_MOL_K * temperature * polynomial
+    entropy = R_J_MOL_K * (polynomial + tau * derivative)
+    return gibbs, entropy
 
 
 def write_csv(rows: list[dict[str, str]], output: Path) -> None:
@@ -6088,6 +6353,17 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
     lines = output.read_text(encoding="utf-8").splitlines()
     if not lines or tuple(lines[0].split(",")) != CONDENSATE_COLUMNS:
         raise ValueError(f"{output} does not have the condensate header")
+    coefficient_columns = ("dH298_R", *(f"dG_{name}" for name in "ABCDE"))
+    existing_coefficients = {}
+    for line in lines[1:]:
+        existing = next(csv.reader([line]))
+        key = (
+            existing[0], existing[1], existing[2], existing[3], existing[4],
+            float(existing[5]), float(existing[6]), existing[13],
+        )
+        existing_coefficients[key] = dict(
+            zip(coefficient_columns, (existing[7], *existing[8:13]))
+        )
     grouped_rows: dict[str, list[dict[str, str]]] = {}
     for row in rows:
         grouped_rows.setdefault(row["species_name"], []).append(row)
@@ -6112,6 +6388,21 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
     for species_name, species_rows in grouped_rows.items():
         serialized_rows = []
         for row in species_rows:
+            row = row.copy()
+            key = (
+                row["species_name"], row["state"], row["cation"],
+                row["cat_num"], row["oxy_num"], float(row["T_min"]),
+                float(row["T_max"]), row["Ref"],
+            )
+            refit_low_oxide = (
+                row["species_name"] in {
+                    "K2O(l)", "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"
+                }
+                and float(row["T_min"]) == 1000.0
+                and float(row["T_max"]) == 1200.0
+            )
+            if not refit_low_oxide:
+                row.update(existing_coefficients.get(key, {}))
             buffer = io.StringIO()
             csv.writer(buffer, lineterminator="\n").writerow(
                 [{**_empty_source_validity_fields(), **row}.get(column, "") for column in CONDENSATE_COLUMNS]

@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
-import hashlib
 import math
 import os
 import re
+import struct
 import subprocess
 import sys
 from dataclasses import FrozenInstanceError, replace
@@ -185,7 +186,7 @@ JANAF_CONDENSATE_G_RESIDUALS = {
     ("V2O3(l)", 1700.0): 0.00129979831143282,
     ("NbO2(l)", 1200.0): 3.4924596548080445e-13,
     ("NbO2(l)", 1500.0): 0.001405104221543297,
-    ("Na2O(l)", 1200.0): 0.0004841441633179784,
+    ("Na2O(l)", 1000.0): 0.0004841441633179784,
     ("Na2O(l)", 1500.0): 0.005218239571899176,
     ("Ta2O5(l)", 1200.0): 2.7939677238464356e-12,
     ("Ta2O5(l)", 1500.0): 0.00020330544793978333,
@@ -661,6 +662,10 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "Tm", "TmO", "Yb", "YbO", "Lu", "LuO",
         }
         | {"Hg", "Au", "Pd", "Pt", "PtO2", "Ir", "Os", "Re2O7"}
+        | {
+            "HCl", "HF", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
+            "NaF", "(NaF)2", "KF", "(KF)2",
+        }
     )
     assert len(oxide_rows) == 78
 
@@ -964,7 +969,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         for row in rows
         if row["table"] == "condensate"
         and row["species_name"] == "Na2O(l)"
-        and row["T_range_K"] == [1200, 1500]
+        and row["T_range_K"] == [1000, 1500]
     )
     na_source = _record("Na-013")
     assert na_low["source_path"] == "data-src/janaf/Na-013.yaml"
@@ -1100,14 +1105,16 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
         species_name, table_id, *_ = source
         source_path = JANAF_DATA / f"{table_id}.txt"
         expected_sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
-        intervals = (
-            ((1, [1200, 3000], [1200, 3000]),)
-            if table_id in build_gas_tables.HALOGEN_JANAF_TABLES
-            else (
+        if species_name in {"Zn(g)", "Pb(g)", "PbO(g)"}:
+            intervals = (
+                (1, [1500, 3000], [1500, 3000]),
+                (2, [1000, 1500], [500, 1500]),
+            )
+        else:
+            intervals = (
                 (1, [1500, 3000], [1500, 3000]),
                 (2, [1200, 1500], [500, 1500]),
             )
-        )
         for interval, runtime_range, source_range in intervals:
             record = next(
                 row for row in gas_records
@@ -1132,14 +1139,23 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
         source_path = JANAF_DATA / f"{table_id}.yaml"
         source_record = _record(table_id)
         expected_sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
-        intervals = (
-            ((1, [1200, 3000], [1200, 3000]),)
-            if table_id in build_gas_tables.HALOGEN_JANAF_TABLES
-            else (
-                (1, [1500, 3000], [1500, 3000]),
-                (2, [1200, 1500], [500, 1500]),
+        low_halogen_species = {
+            "HCl(g)", "HF(g)", "NaCl(g)", "(NaCl)2(g)", "KCl(g)",
+            "(KCl)2(g)", "NaF(g)", "(NaF)2(g)", "KF(g)", "(KF)2(g)",
+        }
+        if species_name in low_halogen_species:
+            intervals = (
+                (1, [1200, 3000], [1200, 3000]),
+                (2, [1000, 1200], [1000, 1500]),
             )
-        )
+        elif table_id in build_gas_tables.HALOGEN_JANAF_TABLES:
+            intervals = ((1, [1200, 3000], [1200, 3000]),)
+        else:
+            low_runtime = [1000, 1500] if species_name == "H2O(g)" else [1200, 1500]
+            intervals = (
+                (1, [1500, 3000], [1500, 3000]),
+                (2, low_runtime, [500, 1500]),
+            )
         for interval, runtime_range, source_range in intervals:
             record = next(
                 row for row in gas_records
@@ -1179,12 +1195,13 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
         ) == (
             "fa7746572952d74e249e818a82a35c113829742fb421a308e167185528884363"
         )
+        low_runtime = [1000, 1500] if species_name in {"Cd(g)", "PbO2(g)"} else [1200, 1500]
         intervals = (
             ((1, [1200, 3000], [1200, 3000]),)
             if table_id in build_gas_tables.HALOGEN_NASA_TABLES
             else (
                 (1, [1500, 3000], [1500, 3000]),
-                (2, [1200, 1500], [1200, 1500] if species_name == "NiO(g)" else [500, 1500]),
+                (2, low_runtime, [1200, 1500] if species_name == "NiO(g)" else [500, 1500]),
             )
         )
         for interval, runtime_range, source_range in intervals:
@@ -1287,29 +1304,37 @@ def test_trace_gas_fits_match_every_declared_source_node() -> None:
     for species_name, table_id, *_ in build_gas_tables.TRACE_JANAF_YAML_GAS_SOURCES:
         source_rows = _complete_rows(table_id)
         reference = next(row for row in source_rows if row["temperature"] == 298.15)
-        row = _gas_row_for_interval(pack, species_name.removesuffix("(g)"), 1)
-        record = rows[(species_name, 1)]
-        runtime_min, runtime_max = record["T_range_K"]
-        residuals = []
-        log_residuals = []
-        for source in source_rows:
-            temperature = source["temperature"]
-            if not runtime_min <= temperature <= runtime_max:
-                continue
-            source_g = (
-                reference["formation_enthalpy"] + source["enthalpy_increment"]
-            ) * 1000.0 - temperature * source["entropy"]
-            residual = _janaf_gibbs(temperature, row) - source_g
-            residuals.append(abs(residual))
-            log_residuals.append(
-                abs(residual) / (R_J_MOL_K * temperature * math.log(10.0))
+        for record in (
+            item for item in provenance["rows"]
+            if item["table"] == "gas" and item["species_name"] == species_name
+        ):
+            interval = record.get("T_interval", 1)
+            source_min, source_max = record.get(
+                "source_fit_range_K", record["T_range_K"]
             )
-        assert max(residuals) == pytest.approx(
-            _fit_residual_metric(record, "max_residual_J_per_mol"), abs=1.0e-7
-        )
-        assert max(log_residuals) == pytest.approx(
-            _fit_residual_metric(record, "max_residual_log10_K"), abs=1.0e-10
-        )
+            row = _gas_row_for_interval(
+                pack, species_name.removesuffix("(g)"), interval
+            )
+            residuals = []
+            log_residuals = []
+            for source in source_rows:
+                temperature = source["temperature"]
+                if not source_min <= temperature <= source_max:
+                    continue
+                source_g = (
+                    reference["formation_enthalpy"] + source["enthalpy_increment"]
+                ) * 1000.0 - temperature * source["entropy"]
+                residual = _janaf_gibbs(temperature, row) - source_g
+                residuals.append(abs(residual))
+                log_residuals.append(
+                    abs(residual) / (R_J_MOL_K * temperature * math.log(10.0))
+                )
+            assert max(residuals) == pytest.approx(
+                _fit_residual_metric(record, "max_residual_J_per_mol"), abs=1.0e-7
+            )
+            assert max(log_residuals) == pytest.approx(
+                _fit_residual_metric(record, "max_residual_log10_K"), abs=1.0e-10
+            )
 
     for species_name, table_id, *_ in (
         *build_gas_tables.TRACE_NASA_GAS_SOURCES,
@@ -3046,16 +3071,22 @@ def test_constructed_condensate_bands_match_liquid_construction_inputs() -> None
 
 
 def test_k2o_from_solid_builder_fits_the_full_runtime_interval() -> None:
-    rows = [
-        row
-        for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
-        if row["species_name"] == "K2O(l)"
-    ]
+    rows = sorted(
+        (
+            row
+            for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
+            if row["species_name"] == "K2O(l)"
+        ),
+        key=lambda row: float(row["T_min"]),
+    )
     assert [(int(row["T_min"]), int(row["T_max"])) for row in rows] == [
+        (1000, 1200),
         (1200, 2000),
         (2000, 3000),
     ]
-    assert all(row["Ref"] == "K-012" for row in rows)
+    assert [row["Ref"] for row in rows] == [
+        "LFS[K-012;Tf=1013]", "K-012", "K-012"
+    ]
     assert all(float(row["_max_residual_J_per_mol"]) < 10.0 for row in rows)
 
 
@@ -3390,6 +3421,9 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         "Hg(g)", "Au(g)", "Pd(g)", "Pt(g)", "PtO2(g)", "Ir(g)",
         "Os(g)", "Re2O7(g)",
     } | {
+        "HCl(g)", "HF(g)", "NaCl(g)", "(NaCl)2(g)", "KCl(g)",
+        "(KCl)2(g)", "NaF(g)", "(NaF)2(g)", "KF(g)", "(KF)2(g)",
+    } | {
         source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
     }
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
@@ -3540,46 +3574,238 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
     assert hashlib.sha256(b"".join(retained)).hexdigest() == _BASE_INTERVAL_1_SHA256
 
 
-def test_existing_gas_coefficient_rows_are_text_identical_to_base() -> None:
-    baseline = subprocess.run(
-        [
-            "git",
-            "show",
-            "e724b6b:src/openimcc/data/gas/gas-shomate.csv",
-        ],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
-    baseline_rows = list(csv.DictReader(io.StringIO(baseline)))
-    current_rows = list(
-        csv.DictReader(
-            io.StringIO(
-                (GAS_DATA / "gas-shomate.csv").read_text(encoding="utf-8")
+def test_existing_table_rows_are_bit_identical_to_base() -> None:
+    current_by_table = {}
+    for filename in ("gas-shomate.csv", "condensate.csv"):
+        current_by_table[filename] = list(
+            csv.DictReader(
+                io.StringIO((GAS_DATA / filename).read_text(encoding="utf-8"))
             )
         )
-    )
-    current_by_key = {
-        (
-            row["species_name"],
-            row["state"],
-            row["T_min"],
-            row["T_interval"],
-        ): row
-        for row in current_rows
-    }
-    for row in baseline_rows:
-        key = (
-            row["species_name"],
-            row["state"],
-            row["T_min"],
-            row["T_interval"],
+    baseline_tables = {
+        filename: list(
+            csv.DictReader(
+                io.StringIO(
+                    subprocess.run(
+                        ["git", "show", f"ec31045:src/openimcc/data/gas/{filename}"],
+                        cwd=ROOT,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    ).stdout
+                )
+            )
         )
-        current = current_by_key[key]
-        if row["species_name"] == "Cr(g)" and row["T_interval"] == "1":
-            current = {**current, "T_max": row["T_max"]}
-        assert {column: current[column] for column in row} == row
+        for filename in current_by_table
+    }
+    changed_minima = {
+        "H2O(g)": 1000.0,
+        "Zn(g)": 1000.0,
+        "Cd(g)": 1000.0,
+        "Pb(g)": 1000.0,
+        "PbO(g)": 1000.0,
+        "PbO2(g)": 1000.0,
+    }
+
+    for filename, old_rows in baseline_tables.items():
+        current_rows = current_by_table[filename]
+        for old in old_rows:
+            matching = [
+                row
+                for row in current_rows
+                if row["species_name"] == old["species_name"]
+                and row["state"] == old["state"]
+                and row["T_max"] == old["T_max"]
+                and row["Ref"] == old["Ref"]
+                and row.get("T_interval") == old.get("T_interval")
+            ]
+            assert len(matching) == 1, (filename, old, matching)
+            current = matching[0]
+            expected = dict(old)
+            if (
+                filename == "gas-shomate.csv"
+                and old["T_max"] == "1500"
+                and old["species_name"] in changed_minima
+            ):
+                expected["T_min"] = str(
+                    int(changed_minima.get(old["species_name"], float(old["T_min"])))
+                )
+            elif old["species_name"] == "Na2O(l)" and old["T_max"] == "1500":
+                expected["T_min"] = "1000"
+            if filename == "gas-shomate.csv" and old["species_name"] == "Cr(g)" and old["T_interval"] == "1":
+                expected["T_max"] = current["T_max"]
+            assert {column: current[column] for column in expected} == expected
+
+            # The only old-row change is its runtime lower bound. Identical
+            # coefficients therefore preserve its evaluated G and Cp bitwise.
+            lower = float(old["T_min"])
+            upper = float(old["T_max"])
+            for temperature in (lower, (lower + upper) / 2.0, upper):
+                if filename == "gas-shomate.csv":
+                    old_g, new_g = _shomate_g(old, temperature), _shomate_g(current, temperature)
+                    t = temperature / 1000.0
+                    old_cp = sum(
+                        float(old[key]) * term
+                        for key, term in (
+                            ("A", 1.0), ("B", t), ("C", t**2),
+                            ("D", t**3), ("E", 1.0 / t**2),
+                        )
+                    )
+                    new_cp = sum(
+                        float(current[key]) * term
+                        for key, term in (
+                            ("A", 1.0), ("B", t), ("C", t**2),
+                            ("D", t**3), ("E", 1.0 / t**2),
+                        )
+                    )
+                else:
+                    old_g = _condensate_gibbs(old, temperature)
+                    new_g = _condensate_gibbs(current, temperature)
+                    t = temperature / 1000.0
+                    old_cp = R_J_MOL_K * sum(
+                        float(old[f"dG_{key}"]) * term
+                        for key, term in (
+                            ("B", 2.0 * t), ("C", 6.0 * t**2),
+                            ("D", 12.0 * t**3), ("E", 20.0 * t**4),
+                        )
+                    )
+                    new_cp = R_J_MOL_K * sum(
+                        float(current[f"dG_{key}"]) * term
+                        for key, term in (
+                            ("B", 2.0 * t), ("C", 6.0 * t**2),
+                            ("D", 12.0 * t**3), ("E", 20.0 * t**4),
+                        )
+                    )
+                assert struct.pack(">d", old_g) == struct.pack(">d", new_g)
+                assert struct.pack(">d", old_cp) == struct.pack(">d", new_cp)
+
+
+def test_new_low_gas_rows_have_source_fits_and_continuous_seams() -> None:
+    gas_pack = load_gas_datapack()
+    seam_species = (
+        "HCl", "HF", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
+        "NaF", "(NaF)2", "KF", "(KF)2", "Hg",
+    )
+    janaf_sources = {
+        source[0].removesuffix("(g)"): source
+        for source in build_gas_tables.TRACE_JANAF_YAML_GAS_SOURCES
+    }
+    for species in seam_species:
+        rows = gas_pack.gas_df.loc[gas_pack.gas_df.index == f"{species}(g)"]
+        low = rows.loc[
+            (rows["T_min"].astype(float) == 1000.0)
+            & (rows["T_max"].astype(float) == 1200.0)
+        ].iloc[0]
+        upper = rows.loc[rows["T_min"].astype(float) == 1200.0].iloc[0]
+        delta_g = abs(_shomate_g(low, 1200.0) - _shomate_g(upper, 1200.0))
+        t = 1.2
+        low_cp = sum(
+            float(low[key]) * term
+            for key, term in (("A", 1.0), ("B", t), ("C", t**2), ("D", t**3), ("E", 1.0 / t**2))
+        )
+        upper_cp = sum(
+            float(upper[key]) * term
+            for key, term in (("A", 1.0), ("B", t), ("C", t**2), ("D", t**3), ("E", 1.0 / t**2))
+        )
+        assert delta_g < 1.0
+        assert abs(low_cp - upper_cp) < 0.01
+
+        if species == "Hg":
+            fitted = build_gas_tables._fit_burcat_metal_gas_row(
+                "Hg(g)", "burcat-hg.json", "Hg(g)", "Hg", 1, 0,
+                interval=3, fit_t_min=1000.0, fit_t_max=1500.0,
+            )
+        else:
+            fitted = build_gas_tables._fit_row(
+                JANAF_DATA,
+                *janaf_sources[species],
+                t_interval=2,
+                fit_t_min=1000.0,
+                fit_t_max=1500.0,
+                minimum_rows=6,
+            )
+        fitted["T_max"] = "1200"
+        assert float(fitted["_max_residual_J_per_mol"]) < 10.0
+        _assert_fit_gibbs_matches(_shomate_g, low.to_dict(), fitted)
+
+
+def test_low_oxide_condensate_rows_fit_source_and_close_gibbs_cp_seams() -> None:
+    gas_pack = load_gas_datapack()
+    species_names = ("K2O(l)", "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)")
+    generated = build_gas_tables.build_condensate_rows(JANAF_DATA)
+
+    def entropy(row: dict, temperature: float) -> float:
+        tau = temperature / 1000.0
+        coefficients = [float(row[f"dG_{key}"]) for key in "ABCDE"]
+        polynomial = sum(value * tau**power for power, value in enumerate(coefficients))
+        derivative = sum(
+            power * coefficients[power] * tau ** (power - 1)
+            for power in range(1, 5)
+        )
+        return R_J_MOL_K * (polynomial + tau * derivative)
+
+    for species in species_names:
+        rows = gas_pack.oxide_df.loc[gas_pack.oxide_df.index == species]
+        low = rows.loc[
+            (rows["T_min"].astype(float) == 1000.0)
+            & (rows["T_max"].astype(float) == 1200.0)
+        ].iloc[0]
+        upper = rows.loc[rows["T_min"].astype(float) == 1200.0].iloc[0]
+        generated_row = next(
+            row for row in generated
+            if row["species_name"] == species
+            and float(row["T_min"]) == 1000.0
+            and float(row["T_max"]) == 1200.0
+        )
+        assert float(generated_row["_max_residual_J_per_mol"]) < 10.0
+        assert abs(
+            _condensate_gibbs(low.to_dict(), 1200.0)
+            - _condensate_gibbs(upper.to_dict(), 1200.0)
+        ) < 1.0e-5
+        assert abs(entropy(low.to_dict(), 1200.0) - entropy(upper.to_dict(), 1200.0)) < 1.0e-5
+
+        t = 1.2
+        low_cp = R_J_MOL_K * sum(
+            float(low[f"dG_{key}"]) * term
+            for key, term in (
+                ("B", 2.0 * t), ("C", 6.0 * t**2),
+                ("D", 12.0 * t**3), ("E", 20.0 * t**4),
+            )
+        )
+        upper_cp = R_J_MOL_K * sum(
+            float(upper[f"dG_{key}"]) * term
+            for key, term in (
+                ("B", 2.0 * t), ("C", 6.0 * t**2),
+                ("D", 12.0 * t**3), ("E", 20.0 * t**4),
+            )
+        )
+        assert abs(low_cp - upper_cp) < 1.0e-5
+
+    # The K2O liquid entropy at its selected fusion anchor includes the
+    # measured crystal entropy and the selected 33.74 J/(mol K) fusion jump.
+    from tools.liquid_from_solid import liquid_from_solid
+
+    inputs = json.loads((ROOT / "data-src/liquid-from-solid-inputs.json").read_text())[
+        "rows"
+    ]["K2O"]
+    crystal = build_gas_tables._load_record(
+        JANAF_DATA / f"{inputs['crystal_table_id']}.yaml"
+    )
+    construction = liquid_from_solid("K2O", crystal, inputs["inputs"])
+    k2o_low = gas_pack.oxide_df.loc["K2O(l)"]
+    k2o_low = k2o_low.loc[
+        (k2o_low["T_min"].astype(float) == 1000.0)
+        & (k2o_low["T_max"].astype(float) == 1200.0)
+    ].iloc[0].to_dict()
+    fusion_temperature = construction.fusion_temperature_k
+    assert abs(
+        entropy(k2o_low, fusion_temperature)
+        - (construction.crystal_entropy_at_fusion_j_mol_k + 33.74)
+    ) < 1.0e-5
+    assert abs(
+        _condensate_gibbs(k2o_low, fusion_temperature)
+        - construction.at(fusion_temperature).gibbs_kj_mol * 1000.0
+    ) < 1.0e-5
 
 
 def _hand_nasa7_properties(record: dict, temperature: float) -> tuple[float, float, float]:
@@ -4253,7 +4479,7 @@ def test_na_condensate_recovers_1500_thermal_cells_for_both_intervals() -> None:
 
     pack = load_gas_datapack()
     na_rows = pack.oxide_df.loc[["Na2O(l)"]]
-    low_row = na_rows.loc[na_rows["T_min"].astype(float) == 1200.0].iloc[0]
+    low_row = na_rows.loc[na_rows["T_min"].astype(float) == 1000.0].iloc[0]
     high_row = na_rows.loc[na_rows["T_min"].astype(float) == 1500.0].iloc[0]
     selected = _oxide_row_for_T(pack.oxide_df, "Na2O(l)", 1500.0)
     assert float(selected["T_min"]) == 1500.0
@@ -6372,10 +6598,12 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     fitted_prefixes = tuple(
         f"{species},".encode() for species in sorted(fitted_condensate_species)
     )
+    preserved_fit_prefix = b"Ga2O3(l),"
     stripped_condensate_bytes = b"".join(
         line
         for line in packaged_condensate_bytes.splitlines(keepends=True)
         if not line.startswith(fitted_prefixes)
+        or line.startswith(preserved_fit_prefix)
     )
     condensate.write_bytes(stripped_condensate_bytes)
     command = [
@@ -6415,6 +6643,21 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
         evaluator=_condensate_gibbs,
         ignore_row_order=True,
     )
+    coefficient_columns = ("dH298_R", *(f"dG_{name}" for name in "ABCDE"))
+    row_key_columns = ["species_name", "T_min", "T_max", "Ref"]
+    preserved_packaged = (
+        pd.read_csv(packaged_condensate, dtype=str, keep_default_na=False)
+        .loc[lambda table: table["species_name"] == "Ga2O3(l)"]
+        .set_index(row_key_columns)
+    )
+    preserved_generated = (
+        pd.read_csv(condensate, dtype=str, keep_default_na=False)
+        .loc[lambda table: table["species_name"] == "Ga2O3(l)"]
+        .set_index(row_key_columns)
+    )
+    assert preserved_generated.loc[:, coefficient_columns].equals(
+        preserved_packaged.loc[:, coefficient_columns]
+    )
 
 def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
     major_species = {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"}
@@ -6427,7 +6670,7 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
     with default_path.open(encoding="utf-8", newline="") as handle:
         packaged = list(csv.DictReader(handle))
     expected_rows = [row for row in packaged if row["species_name"] in major_species]
-    assert len(expected_rows) == len(generated) == 15
+    assert len(expected_rows) == len(generated) == 19
     fit_coefficients = {f"dG_{coefficient}" for coefficient in "ABCDE"}
     for species in major_species:
         expected = sorted(
@@ -6516,7 +6759,8 @@ def test_source_validity_columns_match_vendored_tables(tmp_path: Path) -> None:
     gas_copy = tmp_path / "gas-shomate.csv"
     condensate_copy = tmp_path / "condensate.csv"
     legacy_copy = tmp_path / "condensate-feo-janaf-legacy.csv"
-    published_copy = tmp_path / "sf04-published-condensate.csv"
+    published_copy = tmp_path / "published" / "condensate.csv"
+    published_copy.parent.mkdir()
     gas_copy.write_bytes((GAS_DATA / "gas-shomate.csv").read_bytes())
     condensate_copy.write_bytes((GAS_DATA / "condensate.csv").read_bytes())
     legacy_copy.write_bytes((GAS_DATA / "condensate-feo-janaf-legacy.csv").read_bytes())
@@ -6540,6 +6784,12 @@ def test_source_validity_columns_match_vendored_tables(tmp_path: Path) -> None:
     assert published_copy.read_bytes() == (
         ROOT / "src/openimcc/data/packs/sf04-published/condensate.csv"
     ).read_bytes()
+    with published_copy.open(newline="", encoding="utf-8-sig") as handle:
+        published_k2o = next(
+            row for row in csv.DictReader(handle) if row["species_name"] == "K2O(l)"
+        )
+    assert published_k2o["Ref"] == "LAM1984"
+    assert published_k2o["validity_kind"] == "none"
 
 
 def _shomate_g(row: dict[str, str], T: float) -> float:
@@ -7122,6 +7372,16 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
         )
         return R_J_MOL_K * (polynomial + tau * derivative)
 
+    def cp_at(row, temperature: float) -> float:
+        tau = temperature / 1000.0
+        return R_J_MOL_K * sum(
+            float(row[f"dG_{key}"]) * term
+            for key, term in (
+                ("B", 2.0 * tau), ("C", 6.0 * tau**2),
+                ("D", 12.0 * tau**3), ("E", 20.0 * tau**4),
+            )
+        )
+
     # The existing In2O3 row is the largest at 7.258 J/(mol K).
     maximum_cp_error_J_molK = 8.0
 
@@ -7154,6 +7414,19 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
             float(continuation["T_max"]),
             max_cp_error,
         )
+
+        # These new low rows are constrained to the adjacent published row at
+        # 1200 K in G and Cp. Their separate source-fit objective does not pin
+        # entropy or the original distant liquid anchor.
+        if float(continuation["T_min"]) == 1000.0:
+            seam = float(continuation["T_max"])
+            adjacent = rows.loc[rows["T_min"].astype(float) == seam].iloc[0]
+            assert abs(
+                _lamor_gibbs(seam, continuation)
+                - _lamor_gibbs(seam, adjacent)
+            ) <= 1.0e-5
+            assert abs(cp_at(continuation, seam) - cp_at(adjacent, seam)) <= 1.0e-5
+            continue
 
         source_anchor_temperature = float(generated["_T0_K"])
         anchor_temperature = float(generated["T_max"])
@@ -8001,9 +8274,9 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
         per_row_max[(species_name, interval)] = maxima
 
     # Metal and halide additions expand the packaged JANAF gas-node audit.
-    assert checked_rows == 286
-    assert checked_nodes == 3942
-    assert checked_nodes * 3 == 11826
+    assert checked_rows == 296
+    assert checked_nodes == 3974
+    assert checked_nodes * 3 == 11922
     assert overall_max["Cp_J_molK"] == pytest.approx(0.7432227428, abs=1e-9)
     assert overall_max["S_J_molK"] == pytest.approx(0.0345525573, abs=1e-9)
     assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0832967405, abs=1e-9)
@@ -8023,7 +8296,7 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
         ("V2O3(l)", 1700.0): 13,
         ("NbO2(l)", 1200.0): 4,
         ("NbO2(l)", 1500.0): 15,
-        ("Na2O(l)", 1200.0): 4,
+        ("Na2O(l)", 1000.0): 6,
         ("Na2O(l)", 1500.0): 16,
         ("Ta2O5(l)", 1200.0): 3,
         ("Ta2O5(l)", 1500.0): 6,

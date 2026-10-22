@@ -291,8 +291,9 @@ def test_default_tables_are_packaged_and_load_without_environment(
         + 2  # Ir gas rows; Ru and Rh are counted with trace gas species.
         + 2  # Os gas fit intervals.
         + 4  # Four Re2O7 constructed intervals.
+        + 11  # Ten low JANAF halogen fits and the low Hg Burcat interval.
     )
-    assert len(gas_pack.oxide_df) == 201
+    assert len(gas_pack.oxide_df) == 206
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
@@ -643,7 +644,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         + len(build_gas_tables.TRACE_ION_GAS_YAML_SOURCES)
         + len(build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES)
         + 3
-        # Halogen rows use one 1200-3000 K interval and have no low interval.
+        + 10  # JANAF HCl/HF and alkali-halide low rows.
         + len(_RARE_EARTH_CHANNELS)
         + 6
         + 1  # Os(g) has one low interval; Re2O7(g) is excluded above.
@@ -652,6 +653,11 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
     } | {"Na2O(g)", "K2O(g)"} | {
         f"{species}(g)" for species in low_trace_species
+    } | {
+        f"{species}(g)" for species in (
+            "HCl", "HF", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
+            "NaF", "(NaF)2", "KF", "(KF)2",
+        )
     } | {
         f"{species}(g)" for species in _RARE_EARTH_CHANNELS
     } | {f"{species}(g)" for species in ("Hg", "Au", "Pd", "Pt", "PtO2", "Ir")} | {
@@ -717,10 +723,30 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     trace_low_species |= {
         "Hg(g)", "Au(g)", "Pd(g)", "Pt(g)", "PtO2(g)", "Ir(g)", "Os(g)"
     }
+    lowered_trace_species = {
+        "H2O(g)", "Zn(g)", "Cd(g)", "Pb(g)", "PbO(g)", "PbO2(g)",
+        "HCl(g)", "HF(g)", "NaCl(g)", "(NaCl)2(g)", "KCl(g)", "(KCl)2(g)",
+        "NaF(g)", "(NaF)2(g)", "KF(g)", "(KF)2(g)",
+    }
     legacy_low_rows = low_rows.loc[~low_rows.index.isin(trace_low_species)]
-    trace_low_rows = low_rows.loc[low_rows.index.isin(trace_low_species)]
+    trace_low_rows = low_rows.loc[
+        low_rows.index.isin(trace_low_species - lowered_trace_species)
+    ]
+    lowered_trace_rows = low_rows.loc[
+        low_rows.index.isin(lowered_trace_species)
+    ]
     assert (legacy_low_rows["T_min"] == build_gas_tables.LOW_FIT_T_MIN).all()
     assert (trace_low_rows["T_min"] == 1200.0).all()
+    assert (lowered_trace_rows["T_min"] == 1000.0).all()
+    low_halide_rows = lowered_trace_rows.loc[
+        lowered_trace_rows.index.isin(
+            {
+                "HCl(g)", "HF(g)", "NaCl(g)", "(NaCl)2(g)", "KCl(g)",
+                "(KCl)2(g)", "NaF(g)", "(NaF)2(g)", "KF(g)", "(KF)2(g)",
+            }
+        )
+    ]
+    assert (low_halide_rows["T_max"] == 1200.0).all()
     assert (legacy_low_rows["T_max"] == build_gas_tables.LOW_FIT_T_MAX).all()
     expected_t_max = high_rows["Ref"].map(
         lambda table_id: build_gas_tables._DECLARED_T_MAX_BY_TABLE.get(
@@ -852,14 +878,22 @@ def test_parent_domain_gaps_use_labelled_extensions(
 def test_major_parent_calls_below_continuations_still_refuse(
     gas_pack: ImccGasDatapack, oxide: str, species: str
 ) -> None:
+    result = evaluate_gas(
+        {oxide: 1.0},
+        1199.0,
+        1.0e-10,
+        gas_pack,
+        gas_species=(species,),
+        allow_extrapolation=False,
+    )
+    assert math.isfinite(result[species])
+    assert "constant-Cp supercooled-liquid continuation" in (
+        result.domain_flags[species] or ""
+    )
     with pytest.raises(ImccGasTemperatureOutsideDomainError):
         evaluate_gas(
-            {oxide: 1.0},
-            1199.0,
-            1.0e-10,
-            gas_pack,
-            gas_species=(species,),
-            allow_extrapolation=False,
+            {oxide: 1.0}, 999.0, 1.0e-10, gas_pack,
+            gas_species=(species,), allow_extrapolation=False,
         )
 
 
@@ -4003,9 +4037,10 @@ def test_default_outputs_are_unchanged_when_trace_rows_are_removed(
 def test_existing_coefficient_rows_match_the_base_pack_exactly(
     gas_pack: ImccGasDatapack,
 ) -> None:
-    """Keep unchanged rows exact while rebuilding the four LFS dependents."""
+    """Keep untouched rows exact while extending only their lower bounds."""
     base = "ccabd0b"
     rebuilt_lfs = {"MnO(l)", "As2O3(l)", "Sb2O3(l)", "Ag2O(l)"}
+    lowered_gas_rows = {"H2O(g)", "Zn(g)", "Cd(g)", "Pb(g)", "PbO(g)", "PbO2(g)"}
     root = Path(__file__).resolve().parents[1]
     for relpath, current_path in (
         ("src/openimcc/data/gas/gas-shomate.csv", gas_pack.gas_path),
@@ -4022,11 +4057,17 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         current_lines = current_path.read_text(encoding="utf-8").splitlines()
         old_columns = old_lines[0].split(",")
         assert current_lines[0].split(",")[:len(old_columns)] == old_columns
-        unchanged = [
-            tuple(line.split(",")[:len(old_columns)])
-            for line in old_lines[1:]
-            if line.split(",", 1)[0] not in rebuilt_lfs | {"FeO(l)"}
-        ]
+        unchanged = []
+        for line in old_lines[1:]:
+            fields = line.split(",")
+            species = fields[0]
+            if species in rebuilt_lfs | {"FeO(l)"}:
+                continue
+            if relpath.endswith("gas-shomate.csv") and species in lowered_gas_rows and fields[2] == "2":
+                continue
+            if relpath.endswith("condensate.csv") and species == "Na2O(l)" and fields[5] == "1200":
+                continue
+            unchanged.append(tuple(fields[:len(old_columns)]))
         current_rows = [
             tuple(line.split(",")[:len(old_columns)]) for line in current_lines[1:]
         ]
@@ -5756,56 +5797,56 @@ _OXYGEN_BALANCE_DEFAULT_NUMERIC_HEX_SHA256 = (
 
 # Result pins include the default FeO(l) fit-range domain warning.
 _OXYGEN_BALANCE_DEFAULT_RESULT_HEX_SHA256 = (
-    "b1c526838391766ecdcb006143f3ef9d332420c9f6eee4819769656f593b994c",
-    "6376ce0ca51410a6be7023c110af4870bf1749195d898c937af58cc1fa605669",
-    "a4fca0b90b483d96aee713bcb45bb0181c46988dda03fe98ca1ae0dbe44e53d7",
-    "720a52136f49176fcadf7dd5af469c051e059ee95123b144194a9c5d05a98b70",
-    "65913148d70c31b64e2a470618254527f2833ad182f2f7ca4adc9a272574ccf1",
-    "8d7cd9efa8e05b392055b44a22965807be4006ebee5451a5293d232adc103761",
-    "721a605b768d90986b84bc96632e59ffb632829083640f6db60c697b0fc45423",
-    "5b4be9fec03bf5d543ead1934fd5ec6c5bab2ae9319c7a314a224e81ef0ce5dd",
-    "862adf56a09e2b9bcc1a27452534a25e663107462116cd57e026f2ba10538478",
-    "6a5566834bbcda88f571aa44cacf31a193604c2d3450bab034536e5e01191d26",
-    "d2622d4255c7bf71bc136c0b35b653dc6eb1d55308276733602d22f7ccc35a9d",
-    "ac7bd07891b4bbacbf35f8a643a086357fa7e42a1aee129075c0aaa634a88d90",
-    "765e42a41ca8dead68120e0277e3708c7f30b4c631cf03b8d11db48f985db263",
-    "216925ef2914a628d3fb8c4c393b49b2a32ca83b3d043332640264e985a3e7ab",
-    "23091242c59a752f4769bf06b8790470778d5a6015ceddd86ad5bb1fdf2bea92",
-    "429865a676d013cc09c30cabf61770ebd4dc6daf0cb9eb71394c01172c2f6186",
-    "ce4e4312b65d1fecff714f1d6e02dff1f769a93c38117763465bfb0f4b51fa86",
-    "d86e19f6b35a0f624756752a4b3c4e253d6d19996db8b957becbfc5ab18dc920",
-    "c22fe003fbe691bc31f8389100cecbbb7a3369b2f58ec956a656cd2f42178e17",
-    "687fa5877d41530c5398552d0a85389b90dc0b2d948cba6c0985ac69aa018638",
-    "c07c84ddcf4ef808548b36255a3545a81d037b7d758114cfe28469c42ee408de",
-    "d6421144d17801a7f872e6d51b13f1be423f11121411a55512fc5cc3713c161f",
-    "f6b58d42fcb48d35ab7f504be57afbecbfa76540a12d63cb03919f5b428291ad",
-    "b0a8719f33c8fa0ed3748e035a8c0c8e55081f3b1a09e5262a5ebae507c68e0d",
-    "528a98cfb00bc08aebd6f1bee880c2ad4a5a3d17723f5b6ac913e59d0669f1ec",
-    "9b41028d0b81c5aadce122c069d8ba673561a91a4bea8a2515673401250a396b",
-    "453461c25e529df8890b6f8ad2c86f7087490c5011accbf105fcf7ac096213f2",
-    "38b04c785db02ce5bdcf572d358ad5197236d4e5c1991cbb980fcc2e5ebb9f1d",
-    "740646e497582e534cbadb0ddcc336dcec28f29ed7ae7f832c71832e367612d0",
-    "3ca8971b589b3e4e7461e4ee71628b7c59f23526d952d69c9fa5062c82641442",
-    "2aa8bb9c2a49424d26747589e2d65714af22e9b00fbfc748fc1cd2b52630a3cc",
-    "df6c055130c2589ff74d629a8bd616985f219ebe27fcd2aff1a2c81a655c1f66",
+    "1842cf943bea2d55ce7c976a62b146f6e7cce58fdea2b972f95b45f382b757f5",
+    "c5ba838d62312415a3490f558ef61e36ffddea31724f19daf2ad1b0428d054c9",
+    "5a8b2c3625006280c76c19ee1628f1e843f389a9908d409c39e0c5240e1de1a6",
+    "190918823bbe8ba3efe43b586fe20bb800b51d87aa70aef9b1d22f8e845c8389",
+    "57544e4e4ef844f7a94caa965e6fe7e269760c0056088b1791ab777218e1b3f9",
+    "64bc663ba00f09fb39ffc55030b45bd0ef1964440f95b446d7cbc27d904762c4",
+    "956dd6e6c8ba57e3123e0861225d0c2e571371c6f1be0cb9fd5abce1e89c2c61",
+    "c906bf36117faf21651d0be9775f0362a81f0ebe561e3587a169f175e5c8e311",
+    "a9c9fe2383bc8518e0bfcc7e60b69c8d6ac94484c1b87a4b34e638b80911b131",
+    "c9678117db5f08fc3469c4442d92d5aa0c5c0cb79541c9b8deb8de60aef27e5d",
+    "e8fb1f156bb37605d1be75328afcd1cbce88be46e092dee555a5d1171570ca78",
+    "8b6d3a21ba2da70bced4787888e575310ffc58cec0f5a1d27905763796b5b87a",
+    "bd431d5575725bc838ce3c2dbd3c8c8515b84295dae2d993d5e950f7d49dc909",
+    "4b03f7abbf8eae646598fea0ac034c1cc1ad68d08ea0bd390d84e4ad576dbfa4",
+    "c5e98cffb8b3f57cb23154e78d0e32ab2c5b642a5c46cc3c4265ad88ff67ca78",
+    "23a7cb4f07bb912bad04c886b867278ce4de5b81dfd5321da5c96b4f789c8422",
+    "e654deec561c68bbf02f9311a3eb67d08cb633fd6b4ca72cf7c90bd5d9dfdaac",
+    "6b660745b5d96cce0a7e5d97a389b666825485557e2ea9450399c7f814d053e5",
+    "ad7e15eac2606f3a59c66d5db6a632bc7661074341ef0b5fea2e4b2a1ed679d0",
+    "d0d486902a46e32cec24ca89d8e122090f068853aa57c3cd40e0092ebd0b5129",
+    "a7b30990d115d35eee65f8c3dc3593b0a36d9fea09af48494ed49bec5eb4b347",
+    "7ac67c38bb8f2c15257019fddf43752eda248f29b2d3c9a512d96988c8c1d9f1",
+    "a498813dcab338ddfb7cbce7964c3ccf1a98f9c469bad427f1bb8e72aea74094",
+    "5c1ad4a2f9c21bae4030ced724533ea2c2dd5666a1c21abd3519f1132d6983e5",
+    "f1d18cd9bb629b4e3b91ca96a1c7e44ca4bc64667169888587fd8e55249433bc",
+    "650ba85189ee6d70e434d96ca58449710bded519bce5f5d09505d8b67764eea3",
+    "cda086c13f8860c75377f9e126a5d77d4252d80256f3bbd76dbb7015cd3517f3",
+    "67b98c844b3bbf881ebafc6f3ef6112e2830be5afeae41d23f19a337b736fbc9",
+    "abb4162ba38e2ac9de8d26af28332546975b20bbc5b5f43a7a747755ec705c1c",
+    "dab52aaf17b241bb9f2d313e302ea71eee4771aeb63a5ee5ecb85114e5beddbd",
+    "43ea647d18b68904944d531e0b685c0aaee7e9bee937fab29ecd3086b2ac9f63",
+    "8433cdba1c0822acc776992674077cc5b9ecfc3b39c4a0b1330f3485a08b69a6",
     "3891ce62ebbce3c8b3b4abd421e646ba76b24b48c6e5296f429f9c59c4ac33f5",
-    "efb3556fba2b04402ca045a5a98c9e55853306dad1c55b76627db280987fe4e9",
+    "273fd69ed08fc71243c58ac1b0c68c20f029b9a55330966047a785a627a79fc1",
     "fd08b600be39c8f4b4d7b0083bee2813eb543c91da67fadcd11cc2dc2a947e3f",
     "e29a5f168a10271d107f6b121e503c3e6322663f5e3303b10eccc6113f2284dd",
-    "2e84efe6d496b4cabff9add9448547d9d783bf56cb185ec7cfbefef9638eaa20",
-    "5585d37efcd68d647f2c93f6c6863b6b1caf310390cf8029a27d5f34667f3519",
+    "77573d504e45c5d832d80d21d8a021c86e82e6f8d5bb323bc797c46b21919b25",
+    "52733e2ac31c94c948192f215c166fbdb19e5fb4fa39c17de32eceb162a2ac35",
     "7cad91a281186d59f4c20632d0082a5929865c27c216209fc97be0f779fe7ef7",
-    "d57136f681e719db0b891742a945e293d1c86f5fbb6519166e39cd507345df9a",
-    "f64664626149dc7846e409b7a0f4a8022bb7d710b5f4945e8f43242204c8c885",
-    "98da668644d10539c7316b9757a1d91c964124db9692669524147e438e06304d",
-    "6d706c4006163926030100e3b35fd50b10a75df30854c800d47da363673692c7",
+    "ff8fb3ed52ec87b29b3a762a13ad85aa5d1ff0cd1df6f280bafb5ff9e5260565",
+    "5c5431e32cdcd83b8c4d2f394281e44a5051b5303aa85016a12d12806f67f959",
+    "73c873e7e7ffb50023161ceebdecebd283213f89375af7702d78be66f5803d01",
+    "7483786b67c5b40e75ecb157904cb391d696cbeea3c570113176d384d354a49a",
     "7bfc1fe937d836e6012b9cb23c7ac56e6fada79b2c2247507790910f50b57a0a",
     "8e631bc346d3ffc5253089d5aed5a54820d5602b1a995f9a7fb7b342a5541462",
-    "49c68a74627039565576cb787d86b2ea3222cc4440ec052c50748378ff6bbb99",
-    "9ebda7fb8c96730a6c9bda1e9e3a2aa7a198eaa87085aea1d24c472e22fdf0ac",
-    "6d3ebd6cabf25972bd29f451d2882a0a21574b67bc1790018a5a63c20f9689c4",
-    "7665b0cb1f6775d9ba7ed68d17b7833d46dc8a2dd1389d82cc71f3c0153983bf",
-    "257c860e817a4bdde7f4cb25559efdecf9894efa197315a3e7af51c8186a7e28",
+    "a5ccf06aa015be1fbbb2dad8ab26b499e42867537d8b26bc71f2b0cb502b933f",
+    "8f24c051867a1d5b601eeaf4bc6dfc13a074486a43e7f515751d3d9fdd76144c",
+    "1626f1c61263eec763e7daa5d91be55d6ea3338493d58eb701a0290454991471",
+    "48a9bcd607a111d74eddb452b1879ac178cb1d87214dc2c9dc2a8c3212598fae",
+    "590c5502bb92508f5ca475149510b92ede6eb4dee8267834b09af4acc439b87e",
 )
 
 
@@ -6250,6 +6291,8 @@ def test_sf04_pack_reproduces_base_default_and_default_keeps_other_channels(
     new_low_temperature_channels = {
         "Al2", "Co", "Cr", "CrO", "CrO2", "CrO3", "Mn", "Nb", "NbO",
         "NbO2", "Ni", "Si2", "Si3", "Ti", "TiO", "TiO2", "V", "VO", "VO2",
+        "H2O", "Zn", "Cd", "Pb", "PbO", "PbO2",
+        "Na", "Na2", "NaO", "Na2O",
     }
 
     for temperature in range(1200, 3001):
@@ -6465,3 +6508,54 @@ def test_default_oxygen_balance_counts_auto_included_oxide_parents(
     assert default[1] == explicit[1]
     # ZnO gas carries real oxygen demand at this activity, so the root moves.
     assert abs(math.log10(default[0] / without_zno[0])) > 0.1
+
+
+def test_refining_temperature_seam_rows_evaluate_with_supercooling_notices() -> None:
+    pack = load_gas_datapack()
+    gas_rows = (
+        "H2O", "HCl", "HF", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
+        "NaF", "(NaF)2", "KF", "(KF)2", "Hg",
+        "Zn", "Cd", "Pb", "PbO", "PbO2",
+    )
+    oxide_channels = (
+        ("Na2O", ("Na",), "source-tabulated supercooled liquid branch"),
+        ("K2O", ("K",), "tier-4 liquid_from_solid construction"),
+        ("CaO", ("Ca",), "constant-Cp supercooled-liquid continuation"),
+        ("MgO", ("Mg",), "constant-Cp supercooled-liquid continuation"),
+        ("SiO2", ("SiO",), "constant-Cp supercooled-liquid continuation"),
+        ("Al2O3", ("Al",), "constant-Cp supercooled-liquid continuation"),
+    )
+    for temperature in (1033.0, 1053.0, 1093.0):
+        for species in gas_rows:
+            value = species_thermo(species, "g", temperature, pack)
+            assert math.isfinite(value.G_J_mol)
+            assert math.isfinite(value.Cp_J_molK)
+        for parent, channels, expected_notice in oxide_channels:
+            liquid = species_thermo(parent, "l", temperature, pack)
+            assert math.isfinite(liquid.G_J_mol)
+            assert math.isfinite(liquid.Cp_J_molK)
+            result = evaluate_gas(
+                {parent: 1.0}, temperature, 1.0e-10, pack, gas_species=channels
+            )
+            for channel in channels:
+                assert math.isfinite(result[channel])
+                assert expected_notice in result.domain_flags[channel]
+                if parent in {"CaO", "MgO", "SiO2", "Al2O3"}:
+                    assert "hypothetical reference" in result.domain_flags[channel]
+                    assert (
+                        "not a prediction of a liquid condensate"
+                        in result.domain_flags[channel]
+                    )
+                elif parent == "Na2O":
+                    assert "stable deposit" in result.domain_flags[channel]
+                    assert "crystalline" in result.domain_flags[channel]
+                elif parent == "K2O":
+                    assert "1190 ± 50 K fusion estimate" in result.domain_flags[channel]
+
+    below_selected_k2o_fusion = evaluate_gas(
+        {"K2O": 1.0}, 1000.0, 1.0e-10, pack, gas_species=("K",)
+    )
+    assert "supercooled liquid_from_solid branch below the 1013 K fusion temperature" in (
+        below_selected_k2o_fusion.domain_flags["K"]
+    )
+    assert species_thermo("K2O", "l", 1033.0, pack).source_table_id == "K-012"

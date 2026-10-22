@@ -464,19 +464,28 @@ Li2O(l), PbO(l), Cu2O(l), and B2O3(l) are fitted from JANAF liquid tables by
 the same generator. Rb2O(l), Cs2O(l), SnO(l), Ga2O3(l), GeO2(l), and In2O3(l)
 use NASA CEA liquid cards. The default table adds explicitly labelled
 constant-Cp continuations for TiO2(l), Cr2O3(l), V2O3(l), SiO2(l), Al2O3(l),
-MgO(l), CaO(l), Ga2O3(l), GeO2(l), In2O3(l), and SnO(l), down to 1200 K.
+MgO(l), CaO(l), Ga2O3(l), GeO2(l), In2O3(l), and SnO(l), down to 1000 K
+for SiO2(l), Al2O3(l), MgO(l), and CaO(l), and 1200 K for the other rows.
 Li2O(l) uses JANAF's complete liquid-branch cells from 700–3000 K directly;
 its runtime fit intervals begin at 1200 K. The Cu2O(l) fit uses JANAF through
 2000 K and a NASA H/S-increment tail above it. These continuations are
-generated extrapolations, not source data. The seven older continuations now
-fit Cp directly while constraining Gibbs energy and entropy at each segment's
-upper endpoint. Their maximum Cp error is 1.043 J/(mol K), and their maximum
-Gibbs residual is 1.618 J/mol. The four other continuations retain their
+generated extrapolations, not source data. The four 1000–1200 K oxide
+continuations constrain Gibbs energy and entropy at their upper endpoint; the
+seven older continuations use the same Gibbs-and-entropy endpoint constraint.
+For those seven the maximum Cp error is 1.043 J/(mol K) and the maximum Gibbs
+residual is 1.618 J/mol; the four 1000–1200 K fits have Gibbs residuals of
+1.262 (SiO2), 3.901 (Al2O3), 1.387 (MgO), and 0.824 J/mol (CaO) against their
+constant-Cp targets. The four other continuations retain their
 Cp-constrained fits; maximum Cp errors are 5.01 (Ga2O3), 0.069 (GeO2), 7.26
 (In2O3), and 0.001 J/(mol K) (SnO). The generic continuation test applies one
 8.0 J/(mol K) ceiling to every row; the largest measured error is 7.258
 J/(mol K) for In2O3. When selected, continuations add a distinct
-supercooled-liquid notice to each affected gas channel's `domain_flags`.
+supercooled-liquid notice to each affected gas channel's `domain_flags`. In
+the 1033–1093 K alkali-injection and Ca-condenser band, the CaO(l), MgO(l),
+SiO2(l), and Al2O3(l) liquid extensions are hypothetical references, not
+predictions of liquid condensates. Na2O's stable deposit in this band is
+crystalline. K2O's selected 1013 K fusion estimate is accompanied by a
+competing 1190 ± 50 K estimate, so its stable phase remains uncertain there.
 Row-level source hashes, methods, temperature ranges, fit residuals, Cp errors,
 and Gibbs/entropy seams are in `src/openimcc/data/gas/PROVENANCE.yaml`.
 
@@ -916,12 +925,12 @@ condensates:
 | Cr2O3(l), 1900–3000 K | 1.315 | 0.036 | 0.105 | 0.001551 |
 | V2O3(l), 1700–3000 K | 0.626 | 0.026 | 0.044 | 0.001300 |
 | NbO2(l), 1500–3000 K | 0.911 | 0.047 | 0.070 | 0.001405 |
-| Na2O(l), 1200–1500 K | 0.408 | 0.008 | 0.011 | 0.000484 |
+| Na2O(l), 1000–1500 K | 0.408 | 0.008 | 0.011 | 0.000484 |
 | Na2O(l), 1500–3000 K | 5.401 | 0.167 | 0.497 | 0.005218 |
 
 NbO2(l)'s separate 1200–1500 K interval has its own measured maximum G_app
 residual, 3.49e-13 kJ/mol; it is not grouped with the 1500–3000 K interval.
-Na2O(l) has separate 1200–1500 K and 1500–3000 K runtime intervals. Both fits
+Na2O(l) has separate 1000–1500 K and 1500–3000 K runtime intervals. Both fits
 include the recovered 1500 K thermal cells; the low fit uses six nodes from
 1000–1500 K, and the high fit uses 16 nodes from 1500–3000 K. The 1500 K
 source line has ambiguous formation columns, which remain unused. Maximum

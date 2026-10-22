@@ -4325,6 +4325,12 @@ def _source_model_flag(
         if tier is None:
             raise ValueError(f"{row_name} liquid_from_solid validity has no estimate tier")
         if not validity.get("cp_extension"):
+            if row_name == "K2O(l)" and 1033.0 <= T <= 1093.0:
+                return (
+                    f"{row_name} uses a tier-{tier} liquid_from_solid construction "
+                    f"from {source_table}; a competing 1190 ± 50 K fusion estimate "
+                    "leaves the stable phase uncertain in this temperature band"
+                )
             return (
                 f"{row_name} uses a tier-{tier} liquid_from_solid construction "
                 f"from {source_table}"
@@ -4360,6 +4366,11 @@ def _source_model_flag(
             f"{row_name} uses a source-tabulated supercooled liquid branch "
             f"below the {source_marker['fusion_temperature_K']:g} K fusion "
             f"marker ({source_marker['table_id']})"
+            + (
+                "; the stable deposit in the 1033–1093 K process band is crystalline"
+                if row_name == "Na2O(l)" and 1033.0 <= T <= 1093.0
+                else ""
+            )
         )
     if validity.get("cp_extension") and continuation_limit is not None and T > float(continuation_limit):
         limit = float(continuation_limit)
@@ -4578,8 +4589,10 @@ def _condensate_source_table_id(
     mapped = _OXIDE_SOURCE_TABLE_IDS.get(species)
     if source_ref == "JANAF" and species == "FeO":
         return "Fe-019"
-    if source_ref == "JANAF" or source_ref.startswith("LFS["):
+    if source_ref == "JANAF":
         return mapped
+    if source_ref.startswith("LFS["):
+        return mapped or _source_table_identifier(source_ref)
     if mapped is not None and (
         source_ref == mapped or _ref_continues_table(source_ref, mapped)
     ):
@@ -5535,6 +5548,12 @@ def evaluate_gas(
                 flags.append(
                     f"{oxide_name} uses a labelled constant-Cp supercooled-liquid "
                     f"continuation from {source_name} {source_table}"
+                    + (
+                        "; this is a hypothetical reference, not a prediction of a "
+                        "liquid condensate"
+                        if oxide_name in {"CaO(l)", "MgO(l)", "SiO2(l)", "Al2O3(l)"}
+                        else ""
+                    )
                 )
             elif oxide_row is not None:
                 parent_phase = "s" if str(oxide_row["state"]) == "s" else "l"

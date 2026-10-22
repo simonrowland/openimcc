@@ -679,6 +679,7 @@ def test_manganese_liquid_rows_reproduce_crystal_constructions_and_bands():
                 row
                 for row in gas_rows
                 if row["species_name"] == gas_name
+                and int(row["T_min"]) >= 1200
                 and (
                     gas_name != "SiO2(l)"
                     or (

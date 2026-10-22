@@ -108,10 +108,12 @@ def test_k2o_liquid_band_units_and_interval_fit_residual_are_explicit() -> None:
     )
     residual = row["fit_residual"]
     assert residual["value"]["max_residual_J_per_mol_by_interval"] == [
-        3.19386472436599, 1.54911242239177,
+        9.56932283600327, 3.19386472436599, 1.54911242239177,
     ]
     assert residual["unit"]["max_residual_J_per_mol_by_interval"] == "J mol^-1"
-    assert residual["temperature_range"] == [[1200, 2000], [2000, 3000]]
+    assert residual["temperature_range"] == [
+        [1000, 1200], [1200, 2000], [2000, 3000],
+    ]
     assert row["accuracy_band"]["unit"] == "kJ mol^-1"
     assert row["band_basis"]["kind"] == "measured_construction"
     assert "Tier-2" in row["band_basis"]["explanation"]
@@ -249,6 +251,20 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                 row
                 for row in document["rows"]
                 if row.get("species_name") not in {"PS(g)", "P2O5(l)"}
+                and not (
+                    row.get("table") == "gas"
+                    and row.get("species_name") in {
+                        "H2O(g)", "Zn(g)", "Cd(g)", "Pb(g)",
+                        "PbO(g)", "PbO2(g)",
+                    }
+                )
+                and not (
+                    row.get("table") == "condensate"
+                    and row.get("species_name") in {
+                        "Na2O(l)", "K2O(l)", "CaO(l)", "MgO(l)",
+                        "SiO2(l)", "Al2O3(l)",
+                    }
+                )
             ]
         committed_provenance["rows"] = [
             row
@@ -263,6 +279,17 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
             ("gas", "SbO(g)", "Kelley-584-SbO", 2),
             ("gas", "TeO(g)", "NUREG-4308-TeO", 1),
             ("gas", "TeO(g)", "NUREG-4308-TeO", 2),
+            ("gas", "HCl(g)", "Cl-026", 2),
+            ("gas", "HF(g)", "F-005", 2),
+            ("gas", "NaCl(g)", "Cl-056", 2),
+            ("gas", "(NaCl)2(g)", "Cl-098", 2),
+            ("gas", "KCl(g)", "Cl-039", 2),
+            ("gas", "(KCl)2(g)", "Cl-091", 2),
+            ("gas", "NaF(g)", "F-036", 2),
+            ("gas", "(NaF)2(g)", "F-082", 2),
+            ("gas", "KF(g)", "F-020", 2),
+            ("gas", "(KF)2(g)", "F-069", 2),
+            ("gas", "Hg(g)", "BU-2587", 3),
         }
 
         migrated_rows = {row_key(row): row for row in migrated_provenance["rows"]}
@@ -274,11 +301,11 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
             "primary_measurement_reanchored"
         )
         assert migrated_rows[selected_feo]["authority"] == "janaf_transcribed"
-        assert all(
-            committed_rows[key] == row
-            for key, row in migrated_rows.items()
-            if key != selected_feo
-        )
+        mismatched_keys = {
+            key for key, row in migrated_rows.items()
+            if key != selected_feo and committed_rows[key] != row
+        }
+        assert not mismatched_keys
         for key in set(migrated_provenance) - {"rows", "source_notes"}:
             assert committed_provenance[key] == migrated_provenance[key]
         assert set(committed_provenance["source_notes"]) == set(
