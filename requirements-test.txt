@@ -1,0 +1,9 @@
+# Test environment for CI runners that bootstrap from a requirements file.
+# Mirrors the "dev" extra in pyproject.toml (core + gas + bench + test tools).
+numpy>=1.24
+scipy>=1.10
+pandas>=2.0
+pyyaml>=6.0
+pytest>=7.4
+pytest-cov
+pytest-timeout
