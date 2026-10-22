@@ -518,3 +518,194 @@ def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
     assert not any(marker in notice for notice in inside.labels.notices)
     sodium_free = evaluate({"MgO": 40.0, "SiO2": 60.0}, 1500.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in sodium_free.labels.notices)
+
+
+def _cao_sio2_bias_notices(result) -> tuple[str, ...]:
+    return tuple(
+        notice
+        for notice in result.labels.notices
+        if notice.startswith("cao-sio2-activity-bias:")
+    )
+
+
+_CAO_SIO2_MODERATE = (
+    "cao-sio2-activity-bias: moderate — effectively binary CaO–SiO2 melt "
+    "with x(CaO) in [0.42, 0.56) on the CaO–SiO2 sub-basis at 1873–1933 K; "
+    "Kume 2000 and Omori–Sanbongi 1961 show a(SiO2) about 0.45–0.5 dex low"
+)
+_CAO_SIO2_STRONG = (
+    "cao-sio2-activity-bias: strong — effectively binary CaO–SiO2 melt "
+    "with x(CaO) in [0.56, 0.70] on the CaO–SiO2 sub-basis at 1873–1933 K, "
+    "near Ca2SiO4; no Ca3SiO5 associate. Stolyarova 1991 Table IIb is about "
+    "0.6–1.0 dex low, but that absolute scale conflicts with Table Ib; at "
+    "x(CaO)=0.62 the pressure-implied residual is 0.25–0.29 dex low"
+)
+
+
+def test_cao_sio2_activity_bias_notice_severities_at_1933() -> None:
+    """x(CaO)=0.50 is moderate and x(CaO)=0.62 is strong; values stay put."""
+    moderate = evaluate({"CaO": 0.50, "SiO2": 0.50}, 1933.0)
+    assert _cao_sio2_bias_notices(moderate) == (_CAO_SIO2_MODERATE,)
+    assert moderate.parent_activity[moderate.parent_oxides.index("SiO2")].hex() == (
+        "0x1.8c020306dedb5p-4"
+    )
+    assert moderate.parent_activity[moderate.parent_oxides.index("CaO")].hex() == (
+        "0x1.9f4941bc1d080p-9"
+    )
+
+    strong = evaluate({"CaO": 0.62, "SiO2": 0.38}, 1933.0)
+    assert _cao_sio2_bias_notices(strong) == (_CAO_SIO2_STRONG,)
+    assert strong.parent_activity[strong.parent_oxides.index("SiO2")].hex() == (
+        "0x1.ddd9adb41489cp-9"
+    )
+    assert strong.parent_activity[strong.parent_oxides.index("CaO")].hex() == (
+        "0x1.49dc1349a1c01p-5"
+    )
+
+    # Equal moles from a weight input: masses are the oxide molar masses.
+    from openimcc.model import _OXIDE_MOLAR_MASS_G_MOL
+
+    by_weight = evaluate(
+        {
+            "CaO": _OXIDE_MOLAR_MASS_G_MOL["CaO"],
+            "SiO2": _OXIDE_MOLAR_MASS_G_MOL["SiO2"],
+        },
+        1933.0,
+        basis_type="wt",
+    )
+    assert _cao_sio2_bias_notices(by_weight) == (_CAO_SIO2_MODERATE,)
+
+
+def test_cao_sio2_activity_bias_notice_skips_lunar_basalts_and_low_xcao() -> None:
+    lunar_mare = {
+        "Al2O3": 14.2,
+        "CaO": 11.4,
+        "FeO": 10.9,
+        "K2O": 0.1,
+        "MgO": 8.1,
+        "Na2O": 0.4,
+        "SiO2": 45.4,
+        "TiO2": 3.2,
+    }
+    low_ti_mare = {
+        "Al2O3": 14.214,
+        "CaO": 11.637,
+        "FeO": 16.353,
+        "MgO": 9.463,
+        "Na2O": 0.182,
+        "SiO2": 46.234,
+        "TiO2": 1.587,
+    }
+    for composition in (lunar_mare, low_ti_mare):
+        result = evaluate(composition, 1933.0, basis_type="wt")
+        assert _cao_sio2_bias_notices(result) == ()
+
+    low_x = evaluate({"CaO": 0.30, "SiO2": 0.70}, 1933.0)
+    assert _cao_sio2_bias_notices(low_x) == ()
+
+
+def test_cao_sio2_activity_bias_notice_boundaries() -> None:
+    """Closed x(CaO) and T ends fire; the shared 0.56 edge is strong."""
+    assert _cao_sio2_bias_notices(
+        evaluate({"CaO": 0.42, "SiO2": 0.58}, 1933.0)
+    ) == (_CAO_SIO2_MODERATE,)
+    assert _cao_sio2_bias_notices(
+        evaluate({"CaO": 0.419, "SiO2": 0.581}, 1933.0)
+    ) == ()
+    assert _cao_sio2_bias_notices(
+        evaluate({"CaO": 0.559, "SiO2": 0.441}, 1933.0)
+    ) == (_CAO_SIO2_MODERATE,)
+    assert _cao_sio2_bias_notices(
+        evaluate({"CaO": 0.56, "SiO2": 0.44}, 1933.0)
+    ) == (_CAO_SIO2_STRONG,)
+    assert _cao_sio2_bias_notices(
+        evaluate({"CaO": 0.70, "SiO2": 0.30}, 1933.0)
+    ) == (_CAO_SIO2_STRONG,)
+    assert _cao_sio2_bias_notices(
+        evaluate({"CaO": 0.701, "SiO2": 0.299}, 1933.0)
+    ) == ()
+
+    binary = {"CaO": 0.50, "SiO2": 0.50}
+    assert _cao_sio2_bias_notices(evaluate(binary, 1873.0)) == (_CAO_SIO2_MODERATE,)
+    assert _cao_sio2_bias_notices(evaluate(binary, 1933.0)) == (_CAO_SIO2_MODERATE,)
+    assert _cao_sio2_bias_notices(evaluate(binary, 1872.0)) == ()
+    assert _cao_sio2_bias_notices(evaluate(binary, 1934.0)) == ()
+    # 1973 K is an unvalidated model map, not a notice boundary.
+    assert _cao_sio2_bias_notices(evaluate(binary, 1973.0)) == ()
+
+    # Share 0.98 exactly, each other parent below 0.01, x(CaO)=0.50.
+    at_share = evaluate(
+        {"CaO": 490.0, "SiO2": 490.0, "MgO": 9.0, "FeO": 9.0, "Al2O3": 2.0},
+        1933.0,
+    )
+    assert _cao_sio2_bias_notices(at_share) == (_CAO_SIO2_MODERATE,)
+    below_share = evaluate(
+        {"CaO": 489.0, "SiO2": 490.0, "MgO": 9.0, "FeO": 9.0, "Al2O3": 3.0},
+        1933.0,
+    )
+    assert _cao_sio2_bias_notices(below_share) == ()
+
+    # Another parent at exactly 0.01 is outside the binary gate.
+    at_other = evaluate({"CaO": 495.0, "SiO2": 495.0, "MgO": 10.0}, 1933.0)
+    assert _cao_sio2_bias_notices(at_other) == ()
+    under_other = evaluate({"CaO": 496.0, "SiO2": 495.0, "MgO": 9.0}, 1933.0)
+    assert _cao_sio2_bias_notices(under_other) == (_CAO_SIO2_MODERATE,)
+
+
+# Evidence identity for the measured CaO–SiO2 residuals. A default-pack
+# change must fail here until the evidence is re-scored and this pin, plus
+# the measured identity in model.py, is updated on purpose.
+_CAO_SIO2_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
+_CAO_SIO2_EVIDENCE_BINDING_DIGEST = (
+    "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"
+)
+_CAO_SIO2_UNSCORED = (
+    "cao-sio2-activity-bias-unscored: the CaO–SiO2 silica-activity bias was "
+    f"measured on {_CAO_SIO2_EVIDENCE_MODEL_ID} "
+    f"(binding digest {_CAO_SIO2_EVIDENCE_BINDING_DIGEST}) and has not "
+    "been re-scored for this IMCC-SF04-D066 pack"
+)
+
+
+def test_cao_sio2_evidence_identity_matches_the_default_pack() -> None:
+    """A new default pack must not silently demote the measured notice."""
+    pack = load_datapack()
+    loaded = (pack.model_id, pack.binding_digest)
+    evidence = (_CAO_SIO2_EVIDENCE_MODEL_ID, _CAO_SIO2_EVIDENCE_BINDING_DIGEST)
+    assert loaded == evidence, (
+        "the default melt pack identity no longer matches the CaO-SiO2 "
+        f"evidence identity {evidence[0]} {evidence[1]}; loaded "
+        f"{loaded[0]} {loaded[1]}. Re-score the CaO-SiO2 evidence and "
+        "update the measured identity."
+    )
+    assert (
+        model._CAO_SIO2_MEASURED_MODEL_ID,
+        model._CAO_SIO2_MEASURED_BINDING_DIGEST,
+    ) == evidence, (
+        "the measured CaO-SiO2 notice identity no longer matches the "
+        "evidence digest. Re-score the CaO-SiO2 evidence and update the "
+        "measured identity."
+    )
+
+
+def test_cao_sio2_other_pack_gets_the_unscored_notice() -> None:
+    """A different candidate digest does not inherit the measured residuals."""
+    candidate = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
+    assert candidate.model_id == _CAO_SIO2_EVIDENCE_MODEL_ID
+    assert candidate.binding_digest != _CAO_SIO2_EVIDENCE_BINDING_DIGEST
+
+    scored = evaluate({"CaO": 0.50, "SiO2": 0.50}, 1933.0, candidate)
+    assert _cao_sio2_bias_notices(scored) == ()
+    unscored = tuple(
+        notice
+        for notice in scored.labels.notices
+        if notice.startswith("cao-sio2-activity-bias-unscored:")
+    )
+    assert unscored == (_CAO_SIO2_UNSCORED,)
+
+    outside = evaluate({"CaO": 0.30, "SiO2": 0.70}, 1933.0, candidate)
+    assert _cao_sio2_bias_notices(outside) == ()
+    assert not any(
+        notice.startswith("cao-sio2-activity-bias-unscored:")
+        for notice in outside.labels.notices
+    )

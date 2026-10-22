@@ -769,6 +769,27 @@ temperature domain. It identifies the continued ΔrCp = 0 assumption, the
 declared domains of the active rows below their lower bounds, and the
 unavailable uncertainty band; it does not alter the calculated activities.
 
+It also reports a `cao-sio2-activity-bias` notice for an effectively binary
+CaO–SiO2 melt, and that notice does not change activities. The measured
+moderate and strong text applies only to the scored default D066 pack
+identity. Any other pack inside the same composition and temperature gate
+carries `cao-sio2-activity-bias-unscored`, which says the bias was measured
+on that default pack and has not been re-scored. After
+weight-to-mole conversion, CaO+SiO2 must be at least 0.98 of the parent
+moles and every other parent must be below 0.01. On that sub-basis,
+x(CaO) = n(CaO)/(n(CaO)+n(SiO2)). The notice fires only for T in
+1873–1933 K, including both ends. Moderate severity is x(CaO) in
+[0.42, 0.56): Kume 2000 and Omori–Sanbongi 1961 show a(SiO2) about
+0.45–0.5 dex low. Strong severity is x(CaO) in [0.56, 0.70], including
+both ends: the composition is near Ca2SiO4, the pack has no Ca3SiO5
+associate, and the Stolyarova 1991 Table IIb scale (about 0.6–1.0 dex
+low) conflicts with Table Ib. At x(CaO)=0.62 the pressure-implied residual
+is still 0.25–0.29 dex low. The notice does not fire below x(CaO)=0.42,
+above 0.70, below 1873 K, or above 1933 K. That includes x(CaO)=0.30,
+lunar basalt compositions, and the unvalidated 1973 K map. A parent at
+exactly 0.01 of parent moles, or a CaO+SiO2 share below 0.98, is outside
+the binary gate.
+
 ### Oxygen-balance (Knudsen) effusion
 
 `evaluate_gas_oxygen_balance(activities, T, datapack)` solves the oxygen

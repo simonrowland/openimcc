@@ -231,6 +231,120 @@ def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
     )
 
 
+# CaO–SiO2 activity-bias notice. Derivation from Kume 2000, Omori and
+# Sanbongi 1961, and Stolyarova 1991. The residuals support a notice, not
+# a coefficient change. The measured text is only for the typed default
+# identity below (model_id + binding_digest). Any other loaded identity
+# inside the same composition and temperature gate gets the unscored
+# code, so a later pack cannot inherit this evidence.
+#
+# Independent silica activities support a moderate low bias of about
+# 0.45–0.5 dex from roughly x(CaO)=0.42: Kume 2000 Table 1 at 1873 K has
+# mean residual −0.507 dex (range −0.641 to −0.334), and Omori–Sanbongi
+# 1961 silica activities, converted from β-cristobalite to liquid, have
+# mean residual −0.441 dex (range −0.722 to −0.192). The basic side
+# approaches Ca2SiO4. There the direct Stolyarova 1991 Table IIb
+# comparison reaches about 0.6–1.0 dex low for x(CaO)≈0.56–0.67, but
+# Table IIb's absolute scale conflicts with the same paper's Table Ib
+# pSiO and atomic-oxygen pressures. At x(CaO)=0.62 the pressure-implied
+# residual is 0.25–0.29 dex low. The pack has no Ca3SiO5 associate; the
+# notice continues through x(CaO)=0.70. No target data were available at
+# 1973 K, so that map is outside the notice window.
+#
+# Gates use the loaded parent mole vector after wt→mol conversion,
+# including extension parents when they are present. Let sum(n) be that
+# vector's total. Effectively binary when both of the following hold:
+#   (n_CaO + n_SiO2) / sum(n) >= 0.98   (inclusive)
+#   every other parent n_i / sum(n) < 0.01
+# Sub-basis x(CaO) = n_CaO / (n_CaO + n_SiO2), and both amounts must be
+# positive:
+#   moderate: 0.42 <= x(CaO) < 0.56
+#   strong:   0.56 <= x(CaO) <= 0.70
+# Temperature is inclusive on [1873, 1933] K. Below 1873 K, above 1933 K,
+# and at the unvalidated 1973 K map, the notice is absent. A miss on any
+# gate emits nothing. The notice does not alter activities.
+_CAO_SIO2_BINARY_SHARE = 0.98
+_CAO_SIO2_OTHER_PARENT_MAX = 0.01
+_CAO_SIO2_XCAO_MODERATE_MIN = 0.42
+_CAO_SIO2_XCAO_STRONG_MIN = 0.56
+_CAO_SIO2_XCAO_MAX = 0.70
+_CAO_SIO2_T_MIN_K = 1873.0
+_CAO_SIO2_T_MAX_K = 1933.0
+# Scored on the current default D066 melt pack only. A different
+# model_id or binding_digest does not inherit these residuals.
+_CAO_SIO2_MEASURED_MODEL_ID = "IMCC-SF04-D066"
+_CAO_SIO2_MEASURED_BINDING_DIGEST = (
+    "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"
+)
+_CAO_SIO2_NOTICE_CODE = "cao-sio2-activity-bias"
+_CAO_SIO2_UNSCORED_CODE = "cao-sio2-activity-bias-unscored"
+_CAO_SIO2_MODERATE_NOTICE = (
+    f"{_CAO_SIO2_NOTICE_CODE}: moderate — effectively binary CaO–SiO2 melt "
+    "with x(CaO) in [0.42, 0.56) on the CaO–SiO2 sub-basis at 1873–1933 K; "
+    "Kume 2000 and Omori–Sanbongi 1961 show a(SiO2) about 0.45–0.5 dex low"
+)
+_CAO_SIO2_STRONG_NOTICE = (
+    f"{_CAO_SIO2_NOTICE_CODE}: strong — effectively binary CaO–SiO2 melt "
+    "with x(CaO) in [0.56, 0.70] on the CaO–SiO2 sub-basis at 1873–1933 K, "
+    "near Ca2SiO4; no Ca3SiO5 associate. Stolyarova 1991 Table IIb is about "
+    "0.6–1.0 dex low, but that absolute scale conflicts with Table Ib; at "
+    "x(CaO)=0.62 the pressure-implied residual is 0.25–0.29 dex low"
+)
+
+
+def _cao_sio2_unscored_notice(model_id: str) -> str:
+    return (
+        f"{_CAO_SIO2_UNSCORED_CODE}: the CaO–SiO2 silica-activity bias was "
+        f"measured on {_CAO_SIO2_MEASURED_MODEL_ID} "
+        f"(binding digest {_CAO_SIO2_MEASURED_BINDING_DIGEST}) and has not "
+        f"been re-scored for this {model_id} pack"
+    )
+
+
+def _cao_sio2_activity_bias_notice(
+    parent_oxides: Sequence[str],
+    moles: np.ndarray,
+    temperature_K: float,
+    model_id: str,
+    binding_digest: str,
+) -> str | None:
+    """Return the binary CaO–SiO2 activity-bias notice, or None."""
+    temperature_K = float(temperature_K)
+    if temperature_K < _CAO_SIO2_T_MIN_K or temperature_K > _CAO_SIO2_T_MAX_K:
+        return None
+    try:
+        cao_index = parent_oxides.index("CaO")
+        silica_index = parent_oxides.index("SiO2")
+    except ValueError:
+        return None
+    total = float(moles.sum())
+    if total <= 0.0:
+        return None
+    cao = float(moles[cao_index])
+    silica = float(moles[silica_index])
+    if cao <= 0.0 or silica <= 0.0:
+        return None
+    binary = cao + silica
+    if binary / total < _CAO_SIO2_BINARY_SHARE:
+        return None
+    for index, name in enumerate(parent_oxides):
+        if name in ("CaO", "SiO2"):
+            continue
+        if float(moles[index]) / total >= _CAO_SIO2_OTHER_PARENT_MAX:
+            return None
+    x_cao = cao / binary
+    if x_cao < _CAO_SIO2_XCAO_MODERATE_MIN or x_cao > _CAO_SIO2_XCAO_MAX:
+        return None
+    if (
+        model_id != _CAO_SIO2_MEASURED_MODEL_ID
+        or binding_digest != _CAO_SIO2_MEASURED_BINDING_DIGEST
+    ):
+        return _cao_sio2_unscored_notice(model_id)
+    if x_cao < _CAO_SIO2_XCAO_STRONG_MIN:
+        return _CAO_SIO2_MODERATE_NOTICE
+    return _CAO_SIO2_STRONG_NOTICE
+
+
 class ImccMalformedDatapackError(ImccRefusal):
     """Raised when a datapack JSON file is malformed or schema-invalid."""
 
@@ -1656,6 +1770,12 @@ def evaluate(
         if name in parent_oxides
     ):
         notices.append(_alkali_bias_notice(model_id, binding_digest))
+
+    cao_sio2_notice = _cao_sio2_activity_bias_notice(
+        parent_oxides, vector, T_K, model_id, binding_digest
+    )
+    if cao_sio2_notice is not None:
+        notices.append(cao_sio2_notice)
 
     if result.extrapolated:
         active_parent = vector > 0.0

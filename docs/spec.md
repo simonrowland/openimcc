@@ -326,7 +326,17 @@ separately gated and carry their extension identity and certification status.
 
 The public melt result labels contain `identity`, `coverage`,
 `envelope_status`, `flags`, `notices`, `acid_sink_ratio`, and `inactive_rows`;
-there is no result `trust` field. Coverage is a lineage class, such as
+there is no result `trust` field. `cao-sio2-activity-bias` is a typed
+composition notice for an effectively binary CaO–SiO2 melt, at `moderate`
+or `strong` severity, inside the stated x(CaO) and 1873–1933 K window. Those
+severities apply only to the scored default-pack identity (`model_id` plus
+binding digest). Any other identity inside the same gate carries
+`cao-sio2-activity-bias-unscored` and does not inherit the measured
+residuals. Neither notice changes solved activities. The gates, including
+the behaviour outside that window, are the evaluation-time rules in the
+datapack format.
+
+Coverage is a lineage class, such as
 `A-published-imcc`, `D-translated-d066`, `D-reference-unknown`,
 `D-e25-kcaalsi2o7`, `D-carried-published`, or `EXT-SP`, rather than a report
 of row or screen availability. The kernel's internal evidence class is
