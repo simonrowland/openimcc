@@ -44,8 +44,8 @@ def _element_inventory(
     return elements
 
 
-# Cold-cost baselines keyed by CPU model. Each value is the median and the
-# max-minus-min process CPU over seven cold calls, with no warm start.
+# Cold-cost baselines keyed by CPU model. Each value is the median and a
+# measured process-CPU spread; see the class comment for the sampling formula.
 # The key is the public chip name (on Darwin, `sysctl -n machdep.cpu.brand_string`),
 # never a host name: the same chip shares a ceiling, and a different chip does not.
 # Recorded after the cold-start fix on the development laptop's chip.
@@ -55,6 +55,14 @@ _COLD_COST_BASELINES: dict[str, dict[str, tuple[float, float]]] = {
         "basalt": (0.009259, 0.027440),
         "basalt_with_traces": (0.009416, 0.001370),
         "closed_natural_melt": (0.022004, 0.003787),
+    },
+    # N=5 independent remote runs on 2026-10-22, loadavg 1m 6.55–13.45.
+    # Median is the median of per-run seven-call medians; spread is the
+    # max-minus-min of those five medians (process CPU seconds).
+    "Apple M3 Ultra": {
+        "basalt": (0.007062, 0.001293),
+        "basalt_with_traces": (0.010584, 0.001124),
+        "closed_natural_melt": (0.016575, 0.001037),
     },
 }
 
