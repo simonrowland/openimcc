@@ -49,6 +49,16 @@ from openimcc.redox import (
     RedoxResult,
     evaluate_redox,
 )
+from openimcc.diagnostics import (
+    CrystalNotice,
+    CrystalStatus,
+    LiquidOnlyNotice,
+    LiquidusBracket,
+    SaturationIndex,
+    liquid_only_notice,
+    liquidus_bracket,
+    saturation_indices,
+)
 from openimcc.trace_melt import Cr3TraceActivity, cr3_trace_activity
 from openimcc.p2o5 import (
     P2O5ActivityNotice,
@@ -202,6 +212,15 @@ __all__ = [
     "ImccUnprovenDatapackError",
     "ImccNonconvergenceError",
     "ImccInvalidWarmStartError",
+    # --- crystal saturation and liquidus diagnostics --------------------
+    "CrystalStatus",
+    "CrystalNotice",
+    "SaturationIndex",
+    "LiquidusBracket",
+    "LiquidOnlyNotice",
+    "saturation_indices",
+    "liquidus_bracket",
+    "liquid_only_notice",
     # --- opt-in Fe redox --------------------------------------------------
     "evaluate_redox",
     "RedoxResult",

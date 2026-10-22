@@ -16,6 +16,9 @@
   `cao-sio2-activity-bias-unscored`. Solved values are unchanged.
 - Added a reported implied heat-capacity diagnostic with corrected calorimetry scoring, a CSV receipt, and a non-gating CI artifact.
 - Added a reported crystal melting-point closure diagnostic with source-bounded fusion functions, pure-oxide controls, and a non-gating CI artifact.
+- Exposed source-bounded crystal saturation indices, liquidus brackets, and a typed liquid-only coexistence notice for Python callers.
+- Added sourced Robie and Hemingway (1995) Fe/Ti crystal Gibbs nodes and typed notices listing unsupported composition parents and their input wt% for crystal SI and liquidus results.
+- Rebuilt Fe/Ti crystal fusion nodes on the packaged liquid-parent and JANAF elemental-reference Gibbs scale, and included adjacent printed fayalite and hercynite crystal rows.
 
 - Added TeO(g) with caller-supplied TeO2(l) activity, fitted from NUREG/CR-4308
   Table 30 Gibbs nodes and anchored to the primary 2005 TeO formation-enthalpy

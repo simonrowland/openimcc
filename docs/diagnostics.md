@@ -85,6 +85,11 @@ product. Free-oxide activities and the liquid-standard Gibbs terms are
 confounded in this comparison, so the residual alone does not identify which
 side accounts for a mismatch.
 
+The public `saturation_indices`, `liquidus_bracket`, and `liquid_only_notice`
+helpers expose the same source-bounded calculation to Python callers. See
+[Crystal saturation and liquidus brackets](liquidus.md) for the typed results,
+range behavior, current melting-point misses, and phases that still lack data.
+
 The zero of SI is reported as a liquidus on cooling: SI is positive on its
 lower-temperature side. The melting-point residual and last in-source-node
 residual are both reported without fitting or pass/fail scoring. A pure oxide

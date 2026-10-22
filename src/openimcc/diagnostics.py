@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 import math
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from enum import Enum
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -212,6 +214,236 @@ _OXIDE_MOLAR_MASS = {
 }
 
 
+class CrystalStatus(str, Enum):
+    AVAILABLE = "available"
+    OUT_OF_RANGE = "out-of-range"
+    NO_SUPPORTED_CROSSING = "no-supported-crossing"
+    NO_SUPPORTED_COMPOSITION = "no-supported-composition"
+
+
+@dataclass(frozen=True)
+class CrystalNotice:
+    code: str
+    dropped_oxides_wt_percent: Mapping[str, float]
+    pack_used: str
+
+
+@dataclass(frozen=True)
+class SaturationIndex:
+    phase: str
+    formula: str
+    parent_stoichiometry: Mapping[str, float]
+    source: Mapping[str, Any]
+    temperature_range_K: tuple[float, float]
+    temperature_K: float
+    SI: float | None
+    status: CrystalStatus
+    solid_solution_bound: bool
+    notices: tuple[CrystalNotice, ...] = ()
+
+
+@dataclass(frozen=True)
+class LiquidusBracket:
+    status: CrystalStatus
+    T_low_K: float
+    T_high_K: float
+    liquidus_K: float | None
+    controlling_phase: str | None
+    missing_feed_relevant_phases: tuple[str, ...]
+    notices: tuple[CrystalNotice, ...] = ()
+
+
+@dataclass(frozen=True)
+class LiquidOnlyNotice:
+    code: str = "crystals-may-coexist"
+    message: str = "crystals may coexist; liquid-only model"
+
+
+def _crystal_thermo_context(condensate: str | Path | None):
+    from openimcc.gas import (
+        default_condensate_database_path, default_gas_database_path,
+        load_gas_datapack,
+    )
+    oxide_path = Path(condensate) if condensate else default_condensate_database_path()
+    return (
+        load_gas_datapack(default_gas_database_path(), oxide_path),
+        load_gas_datapack(default_gas_database_path(), default_condensate_database_path()),
+    )
+
+
+def _prepare_crystal_composition(composition, pack):
+    auto_pack = pack is None
+    if pack is None:
+        pack = load_datapack()
+    values = {str(name): float(value) for name, value in composition.items()}
+    if any(not math.isfinite(value) or value < 0.0 for value in values.values()):
+        raise ValueError("composition values must be finite and non-negative")
+    use_sp_extension = False
+    if auto_pack and values.get("P2O5", 0.0) > 0.0:
+        extension_path = resources.files("openimcc").joinpath(
+            "data/packs/imcc-sf04-d066-ext-v1.json"
+        )
+        pack = load_datapack(str(extension_path))
+        use_sp_extension = True
+    elif "P2O5" in pack.extension_parents and values.get("P2O5", 0.0) > 0.0:
+        use_sp_extension = True
+
+    supported = set(pack.parent_oxides)
+    if use_sp_extension:
+        supported.update(pack.extension_parents)
+    total = sum(values.values())
+    dropped = {
+        name: 100.0 * value / total
+        for name, value in values.items()
+        if value > 0.0 and name not in supported
+    } if total > 0.0 else {}
+    retained = {name: value for name, value in values.items() if name in supported}
+    identity = pack.model_id
+    if pack.binding_digest:
+        identity = f"{identity}@{pack.binding_digest}"
+    notices = ((CrystalNotice("crystal_si_dropped_parents", dropped, identity),)
+               if dropped else ())
+    return pack, retained, use_sp_extension, notices
+
+
+def _crystal_si(phase, temp, composition, pack, gas_pack, reference_pack,
+                enable_sp_extension=False):
+    from openimcc.gas import species_thermo
+    bounds = phase["valid_temperature_K"]
+    if not float(bounds[0]) <= temp <= float(bounds[1]):
+        raise ValueError(f"{phase['id']} crystal function is valid only in {bounds} K")
+    dg_kj = _interpolate_crystal_fusion_nodes(phase, temp)
+    if gas_pack.condensate_table_digest != reference_pack.condensate_table_digest:
+        dg_kj += sum(float(nu) * (
+            species_thermo(oxide, "l", temp, gas_pack).G_J_mol
+            - species_thermo(oxide, "l", temp, reference_pack).G_J_mol
+        ) / 1000.0 for oxide, nu in phase["oxide_stoichiometry"].items())
+    weights = composition or {
+        oxide: float(nu) * _OXIDE_MOLAR_MASS[oxide]
+        for oxide, nu in phase["oxide_stoichiometry"].items()
+    }
+    melt = evaluate(weights, temp, pack, basis_type="wt", allow_extrapolation=True,
+                    allow_out_of_envelope=True,
+                    enable_sp_extension=enable_sp_extension)
+    dg = dg_kj * 1000.0
+    activities = [melt.activity(oxide) for oxide in phase["oxide_stoichiometry"]]
+    if any(activity <= 0.0 for activity in activities):
+        return {"temperature_K": temp, "SI": -math.inf, "residual_kJ_mol": -math.inf,
+                "delta_log10_vapor_product": -math.inf, "deltaG_fusion_J_mol": dg,
+                "log10_activity_product": -math.inf}
+    logq = sum(float(nu) * math.log10(melt.activity(oxide))
+               for oxide, nu in phase["oxide_stoichiometry"].items())
+    si = logq + dg / (R * math.log(10.0) * temp)
+    residual_kj = (dg + logq * R * math.log(10.0) * temp) / 1000.0
+    residual_si = residual_kj * 1000.0 / (R * math.log(10.0) * temp)
+    if not math.isclose(si, residual_si, rel_tol=0.0, abs_tol=1e-12):
+        raise ArithmeticError(f"SI/residual unit mismatch for {phase['id']} at {temp:g} K")
+    return {"temperature_K": temp, "SI": si, "residual_kJ_mol": residual_kj,
+            "delta_log10_vapor_product": residual_si, "deltaG_fusion_J_mol": dg,
+            "log10_activity_product": logq}
+
+
+def saturation_indices(composition, T_K, pack=None, *, condensate=None):
+    """Return sourced, range-checked crystal saturation indices for a melt."""
+    pack, composition, enable_sp_extension, notices = _prepare_crystal_composition(
+        composition, pack
+    )
+    gas_pack, reference_pack = _crystal_thermo_context(condensate)
+    has_supported_input = any(value > 0.0 for value in composition.values())
+    rows = []
+    for phase in load_crystal_dataset()["phases"]:
+        lo, hi = map(float, phase["valid_temperature_K"])
+        source_nodes = sorted(float(node) for node in phase["fusion_gibbs_nodes_kJ_mol"])
+        lo, hi = max(lo, source_nodes[0]), min(hi, source_nodes[-1])
+        in_range = lo <= float(T_K) <= hi
+        parents_supported = set(phase["oxide_stoichiometry"]).issubset(
+            set(pack.parent_oxides) | (set(pack.extension_parents) if enable_sp_extension else set())
+        )
+        state = (_crystal_si(phase, float(T_K), composition, pack, gas_pack,
+                             reference_pack, enable_sp_extension)
+                 if in_range and has_supported_input and parents_supported else None)
+        if not has_supported_input or not parents_supported:
+            status = CrystalStatus.NO_SUPPORTED_COMPOSITION
+        elif in_range:
+            status = CrystalStatus.AVAILABLE
+        else:
+            status = CrystalStatus.OUT_OF_RANGE
+        rows.append(SaturationIndex(
+            phase["id"], phase["formula"], dict(phase["oxide_stoichiometry"]),
+            dict(phase["source"]), (lo, hi), float(T_K),
+            None if state is None else state["SI"],
+            status,
+            phase.get("solid_solution_bound", phase["id"] in {
+                "forsterite", "enstatite", "diopside", "anorthite",
+                "spinel", "akermanite", "gehlenite",
+            }),
+            notices,
+        ))
+    return rows
+
+
+def liquidus_bracket(composition, T_low, T_high, pack=None, *, condensate=None):
+    """Bracket the highest supported SI zero, positive on its cooling side."""
+    from scipy.optimize import brentq
+    if not math.isfinite(T_low) or not math.isfinite(T_high) or T_low >= T_high:
+        raise ValueError("require finite T_low < T_high")
+    pack, composition, enable_sp_extension, notices = _prepare_crystal_composition(
+        composition, pack
+    )
+    gas_pack, reference_pack = _crystal_thermo_context(condensate)
+    missing = {
+        "fayalite": ("FeO", "SiO2"), "ferrosilite": ("FeO", "SiO2"),
+        "hedenbergite": ("CaO", "FeO", "SiO2"), "hercynite": ("FeO", "Al2O3"),
+        "ilmenite": ("FeO", "TiO2"), "ulvospinel": ("FeO", "TiO2"),
+        "magnetite": ("FeO",), "perovskite": ("CaO", "TiO2"),
+        "armalcolite": ("FeO", "TiO2"),
+    }
+    available_phase_ids = {row["id"] for row in load_crystal_dataset()["phases"]}
+    feed_relevant_missing = tuple(
+        phase for phase, parents in missing.items()
+        if phase not in available_phase_ids
+        and all(float(composition.get(parent, 0.0)) > 0.0 for parent in parents)
+    )
+    if not any(value > 0.0 for value in composition.values()):
+        return LiquidusBracket(CrystalStatus.NO_SUPPORTED_CROSSING, float(T_low),
+                               float(T_high), None, None, feed_relevant_missing, notices)
+    roots = []
+    supported_parents = set(pack.parent_oxides) | (
+        set(pack.extension_parents) if enable_sp_extension else set()
+    )
+    for phase in load_crystal_dataset()["phases"]:
+        if not set(phase["oxide_stoichiometry"]).issubset(supported_parents):
+            continue
+        lo, hi = map(float, phase["valid_temperature_K"])
+        source_nodes = sorted(float(node) for node in phase["fusion_gibbs_nodes_kJ_mol"])
+        lo, hi = max(lo, source_nodes[0]), min(hi, source_nodes[-1])
+        a, b = max(float(T_low), lo), min(float(T_high), hi)
+        if a >= b:
+            continue
+        fn = lambda t: _crystal_si(phase, t, composition, pack, gas_pack, reference_pack,
+                                   enable_sp_extension)["SI"]
+        nodes = sorted({a, b, *(float(t) for t in phase["source_node_temperatures_K"] if a < float(t) < b)})
+        vals = [fn(t) for t in nodes]
+        for left, right, yl, yr in zip(nodes, nodes[1:], vals, vals[1:]):
+            if yl * yr <= 0:
+                roots.append((float(brentq(fn, left, right)), phase["id"], yl > 0))
+    cooling_crossings = [row for row in roots if row[2]]
+    if cooling_crossings:
+        root, phase, _ = max(cooling_crossings)
+        return LiquidusBracket(CrystalStatus.AVAILABLE, float(T_low), float(T_high), root,
+                               phase, feed_relevant_missing, notices)
+    return LiquidusBracket(CrystalStatus.NO_SUPPORTED_CROSSING, float(T_low), float(T_high),
+                           None, None, feed_relevant_missing, notices)
+
+
+def liquid_only_notice(temperature_K, bracket):
+    """Return a typed coexistence notice below a known or unsupported liquidus."""
+    if (bracket.status is CrystalStatus.NO_SUPPORTED_CROSSING
+            or (bracket.liquidus_K is not None and temperature_K < bracket.liquidus_K)):
+        return LiquidOnlyNotice()
+    return None
+
+
 def load_crystal_dataset() -> dict[str, Any]:
     path = resources.files("openimcc").joinpath("data/diagnostics/crystal-phases.json")
     return json.loads(path.read_text(encoding="utf-8"))
@@ -244,56 +476,20 @@ def crystal_closure(
     At a pure oxide's JANAF fusion anchor, a=1 and G(liquid)-G(crystal)=0,
     so SI=0. The residual-derived SI is computed independently as a unit check.
     """
-    from openimcc.gas import (
-        default_condensate_database_path, default_gas_database_path,
-        load_gas_datapack, species_thermo,
-    )
-
     dataset = load_crystal_dataset()
-    oxide_path = Path(condensate_path) if condensate_path else default_condensate_database_path()
-    gas_pack = load_gas_datapack(default_gas_database_path(), oxide_path)
-    reference_pack = load_gas_datapack(default_gas_database_path(), default_condensate_database_path())
+    gas_pack, reference_pack = _crystal_thermo_context(condensate_path)
     digest = gas_pack.condensate_table_digest
-    Rln10 = R * math.log(10.0)
-
-    def delta_g(phase: Mapping[str, Any], temp: float) -> float:
-        bounds = phase["valid_temperature_K"]
-        if not float(bounds[0]) <= temp <= float(bounds[1]):
-            raise ValueError(f"{phase['id']} crystal function is valid only in {bounds} K")
-        reference_g = _interpolate_crystal_fusion_nodes(phase, temp)
-        # The tabulated ΔG nodes use the packaged liquid standards. A custom
-        # condensate table shifts only the second leg by ΔG_liquid(custom) −
-        # ΔG_liquid(packaged), with the same oxide stoichiometry and units.
-        if digest != reference_pack.condensate_table_digest:
-            reference_g += sum(float(nu) * (
-                species_thermo(oxide, "l", temp, gas_pack).G_J_mol
-                - species_thermo(oxide, "l", temp, reference_pack).G_J_mol
-            ) / 1000.0 for oxide, nu in phase["oxide_stoichiometry"].items())
-        return reference_g * 1000.0
 
     def phase_state(
         phase: Mapping[str, Any], temp: float,
         composition: Mapping[str, float] | None = None,
     ) -> dict[str, Any]:
-        sto = phase["oxide_stoichiometry"]
-        weights = composition or {
-            oxide: float(nu) * _OXIDE_MOLAR_MASS[oxide] for oxide, nu in sto.items()
-        }
-        melt = evaluate(weights, temp, pack, basis_type="wt", allow_extrapolation=True,
-                        allow_out_of_envelope=True)
-        logq = sum(float(nu) * math.log10(melt.activity(oxide)) for oxide, nu in sto.items())
-        dg = delta_g(phase, temp)
-        si = logq + dg / (Rln10 * temp)
-        residual_kj = (dg + logq * Rln10 * temp) / 1000.0
-        residual_si = residual_kj * 1000.0 / (Rln10 * temp)
-        if not math.isclose(si, residual_si, rel_tol=0.0, abs_tol=1e-12):
-            raise ArithmeticError(f"SI/residual unit mismatch for {phase['id']} at {temp:g} K")
-        return {"temperature_K": temp, "SI": si, "residual_kJ_mol": residual_kj,
-                "delta_log10_vapor_product": residual_si, "deltaG_fusion_J_mol": dg,
-                "log10_activity_product": logq}
+        return _crystal_si(phase, temp, composition, pack, gas_pack, reference_pack)
 
     results = []
     for phase in dataset["phases"]:
+        if phase.get("closure_diagnostic") is False:
+            continue
         tm = float(phase["melting_point"]["temperature_K"])
         at_tm = phase_state(phase, tm)
         grid = sorted(set(float(t) for t in phase["source_node_temperatures_K"] if t < tm))
@@ -336,7 +532,7 @@ def crystal_closure(
                         basis_type="wt", allow_extrapolation=True,
                         allow_out_of_envelope=True)
         fusion_g = float(control["fusion_gibbs_at_melting_kJ_mol"]) * 1000.0
-        si = math.log10(melt.activity(oxide)) + fusion_g / (Rln10 * temp)
+        si = math.log10(melt.activity(oxide)) + fusion_g / (R * math.log(10.0) * temp)
         controls.append({"phase": oxide, "temperature_K": temp, "SI": si,
                          "activity": melt.activity(oxide), "source": control["source"]})
     return results, {"condensate_table_digest": digest, "pure_oxide_controls": controls,

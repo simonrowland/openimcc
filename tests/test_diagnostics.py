@@ -188,6 +188,180 @@ def test_crystal_fusion_function_refuses_out_of_source_range():
             _interpolate_crystal_fusion_nodes(sourced_phase, upper + 0.01)
 
 
+def test_public_saturation_and_liquidus_api():
+    from openimcc import (
+        CrystalNotice, CrystalStatus, liquid_only_notice, liquidus_bracket,
+        saturation_indices,
+    )
+    from openimcc.model import load_datapack
+
+    pack = load_datapack()
+    rows = saturation_indices({"SiO2": 100.0}, 1500.0, pack)
+    silica = next(row for row in rows if row.phase == "quartz_beta")
+    assert silica.status is CrystalStatus.AVAILABLE
+    assert silica.parent_stoichiometry == {"SiO2": 1}
+    assert silica.source
+    assert silica.notices == ()
+    assert isinstance(CrystalNotice("test", {}, pack.model_id), CrystalNotice)
+    unavailable = next(row for row in saturation_indices(
+        {"SiO2": 100.0}, 1200.0, pack
+    ) if row.phase == "anorthite")
+    assert unavailable.status is CrystalStatus.OUT_OF_RANGE
+    assert unavailable.SI is None
+    result = liquidus_bracket({"SiO2": 100.0}, 1323.0, 2000.0, pack)
+    assert result.status is CrystalStatus.AVAILABLE
+    assert result.controlling_phase == "cristobalite_beta"
+    assert result.notices == ()
+    assert liquid_only_notice(result.liquidus_K - 1.0, result) is not None
+    assert liquid_only_notice(result.liquidus_K + 1.0, result) is None
+
+
+def test_anorthite_and_forsterite_liquidus_misses_are_reported():
+    from openimcc import liquidus_bracket
+    from openimcc.model import load_datapack
+
+    pack = load_datapack()
+    anorthite = liquidus_bracket(
+        {"CaO": 20.15, "Al2O3": 36.65, "SiO2": 43.20}, 1323.0, 1900.0, pack
+    )
+    forsterite = liquidus_bracket(
+        {"MgO": 57.30, "SiO2": 42.70}, 1323.0, 2100.0, pack
+    )
+    assert anorthite.liquidus_K == pytest.approx(1691.4, abs=0.1)
+    assert forsterite.liquidus_K == pytest.approx(1799.1, abs=0.1)
+    # Current SI roots miss the measured melting points; they are not fitted here.
+    assert anorthite.liquidus_K - 1826.0 == pytest.approx(-134.6, abs=0.1)
+    assert forsterite.liquidus_K - 2163.0 == pytest.approx(-364.0, abs=1.0)
+
+
+def test_cleaned_feed_liquidus_regression_and_dropped_parent_notices():
+    from openimcc import CrystalStatus, liquidus_bracket
+
+    feeds = {
+        "lunar_low_ti": {
+            "SiO2": 45.76, "TiO2": 1.54, "Al2O3": 13.88, "FeO": 16.97,
+            "MgO": 9.26, "CaO": 11.31, "Na2O": 0.41, "K2O": 0.10,
+            "Cr2O3": 0.36, "MnO": 0.21, "P2O5": 0.10,
+        },
+        "mars_basalt": {
+            "SiO2": 47.16, "TiO2": 1.04, "Al2O3": 10.88, "FeO": 18.66,
+            "MgO": 9.24, "CaO": 7.85, "Na2O": 3.77, "K2O": 0.52,
+            "P2O5": 0.88,
+        },
+        "ci": {
+            "SiO2": 41.70, "Al2O3": 2.90, "FeO": 20.65, "MgO": 28.32,
+            "CaO": 3.33, "Na2O": 0.80, "NiO": 2.32,
+        },
+    }
+    results = {name: liquidus_bracket(values, 1323.0, 2100.0)
+               for name, values in feeds.items()}
+    assert (results["lunar_low_ti"].status, results["lunar_low_ti"].liquidus_K,
+            results["lunar_low_ti"].controlling_phase) == (
+                CrystalStatus.NO_SUPPORTED_CROSSING, None, None)
+    assert (results["mars_basalt"].status, results["mars_basalt"].liquidus_K,
+            results["mars_basalt"].controlling_phase) == (
+                CrystalStatus.NO_SUPPORTED_CROSSING, None, None)
+    # Recomputed after the Fe/Ti nodes were rebuilt on the JANAF elemental
+    # reference chain; the supported feed statuses remain unchanged.
+    assert results["ci"].status is CrystalStatus.AVAILABLE
+    assert results["ci"].liquidus_K == pytest.approx(1533.6888743, abs=1e-6)
+    assert results["ci"].controlling_phase == "forsterite"
+    dropped = results["lunar_low_ti"].notices[0]
+    assert dropped.code == "crystal_si_dropped_parents"
+    assert dropped.dropped_oxides_wt_percent == pytest.approx(
+        {"Cr2O3": 0.36036036, "MnO": 0.21021021})
+    assert results["mars_basalt"].notices == ()
+    ci_dropped = results["ci"].notices[0]
+    assert ci_dropped.dropped_oxides_wt_percent == pytest.approx({"NiO": 2.31953609})
+    assert ci_dropped.pack_used.startswith("IMCC-SF04-D066@")
+
+
+def test_fe_ti_fusion_nodes_use_the_janaf_elemental_reference_chain():
+    from openimcc.diagnostics import load_crystal_dataset
+    from openimcc.gas import load_gas_datapack, species_thermo
+
+    dataset = load_crystal_dataset()
+    gas_pack = load_gas_datapack()
+    elements = dataset["element_reference_g_app_nodes_kJ_mol"]
+    printed_crystal_nodes = {
+        "fayalite": {"1300": -1056.8, "1400": -1025.2},
+        "hercynite": {"1300": -1460.1, "1400": -1421.6},
+        "ilmenite": {"1300": -908.5, "1400": -884.2,
+                     "1500": -860.2, "1600": -836.3},
+        "ulvospinel": {"1300": -1096.9, "1400": -1067.2,
+                       "1500": -1037.9, "1600": -1009.0,
+                       "1700": -980.6, "1800": -952.5},
+        "perovskite": {"1500": -1239.4, "1600": -1211.8,
+                       "1700": -1184.1, "1800": -1154.3},
+    }
+    element_stoichiometry = {
+        "fayalite": {"Fe": 2, "Si": 1, "O2": 2},
+        "hercynite": {"Fe": 1, "Al": 2, "O2": 2},
+        "ilmenite": {"Fe": 1, "Ti": 1, "O2": 1.5},
+        "ulvospinel": {"Fe": 2, "Ti": 1, "O2": 2},
+        "perovskite": {"Ca": 1, "Ti": 1, "O2": 1.5},
+    }
+    phases = {row["id"]: row for row in dataset["phases"]}
+    for phase_id, crystal_nodes in printed_crystal_nodes.items():
+        phase = phases[phase_id]
+        assert phase["source_crystal_gibbs_nodes_kJ_mol"] == crystal_nodes
+        assert phase["solid_solution_bound"] is (phase_id != "perovskite")
+        assert phase["source"]["table_page"]
+        for t_text, crystal_g in crystal_nodes.items():
+            temp = float(t_text)
+            liquid_g_app = sum(
+                amount * species_thermo(oxide, "l", temp, gas_pack).G_J_mol / 1000
+                for oxide, amount in phase["oxide_stoichiometry"].items()
+            )
+            element_g_app = sum(
+                amount * elements[element][t_text]
+                for element, amount in element_stoichiometry[phase_id].items()
+            )
+            fusion_g = liquid_g_app - element_g_app - crystal_g
+            assert phase["fusion_gibbs_nodes_kJ_mol"][t_text] == pytest.approx(
+                fusion_g, abs=0.05
+            )
+
+    # Fayalite p. 332, 1400 K: pack parent G_app minus the printed JANAF
+    # Fe, Si, and O2 reference functions gives formation Gibbs at T. Subtract
+    # the printed R&H crystal formation Gibbs on that same reference.
+    fayalite = phases["fayalite"]
+    temp = 1400.0
+    feo = species_thermo("FeO", "l", temp, gas_pack).G_J_mol / 1000
+    silica = species_thermo("SiO2", "l", temp, gas_pack).G_J_mol / 1000
+    hand = (2 * (feo - elements["Fe"]["1400"] - 0.5 * elements["O2"]["1400"])
+            + silica - elements["Si"]["1400"] - elements["O2"]["1400"]
+            - fayalite["source_crystal_gibbs_nodes_kJ_mol"]["1400"])
+    assert hand == pytest.approx(34.017, abs=0.05)
+    assert 0 < hand < 50  # 90 K below fayalite's incongruent melting point.
+
+    # The same conversion on SiO2(l) agrees with the printed JANAF liquid
+    # formation value at 1400 K (p. 1754) within the packaged fit residual.
+    silica_formation_g = silica - elements["Si"]["1400"] - elements["O2"]["1400"]
+    silica_janaf_printed_g = -659.670
+    assert silica_formation_g == pytest.approx(-659.823, abs=0.001)
+    assert silica_formation_g - silica_janaf_printed_g == pytest.approx(-0.153, abs=0.001)
+
+    # Just below congruent SiO2 melting (JANAF, 1996 K), the liquid-minus-
+    # crystal Gibbs difference is small and positive on the packaged standard.
+    near_melt = 1995.9
+    silica_crystal = species_thermo("SiO2", "cr", near_melt, gas_pack).G_J_mol
+    silica_liquid = species_thermo("SiO2", "l", near_melt, gas_pack).G_J_mol
+    fusion_near_melt = silica_liquid - silica_crystal
+    assert 0 < fusion_near_melt < 5000
+
+
+def test_unsupported_only_composition_returns_typed_notice_instead_of_refusal():
+    from openimcc import CrystalStatus, liquidus_bracket, saturation_indices
+
+    result = liquidus_bracket({"NiO": 2.32}, 1323.0, 2100.0)
+    assert result.status is CrystalStatus.NO_SUPPORTED_CROSSING
+    assert result.notices[0].dropped_oxides_wt_percent == {"NiO": 100.0}
+    rows = saturation_indices({"NiO": 2.32}, 1500.0)
+    assert all(row.status is CrystalStatus.NO_SUPPORTED_COMPOSITION for row in rows)
+    assert all(row.notices == result.notices for row in rows)
+
+
 def test_crystal_closure_cli_writes_pack_and_condensate_identities(tmp_path):
     from openimcc.model import load_datapack
 
