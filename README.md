@@ -41,6 +41,11 @@ mixing).
 
 The reported derived-property checks are documented in [Diagnostics](docs/diagnostics.md).
 
+The opt-in sulfur extension estimates sulfide/sulfate speciation and sulfide-
+liquid saturation from melt composition, temperature, and sulfur fugacity or
+inventory. See [Sulfur capacity and matte saturation](docs/sulfur.md) for its
+equations, calibration limits, and typed notices.
+
 ## What it is *not*
 
 **This is not a phase-equilibrium code, and it is not a MELTS.** alphaMELTS,

@@ -14,6 +14,9 @@
   typed domain notices, separate Turkdogan comparison regressions, and
   gas-layer integration through the existing P2O5 parent channels.
 
+- Added the opt-in sulfur capacity, species-split, and sulfide-liquid saturation
+  estimate with calibrated-domain notices. See `docs/sulfur.md` for equations,
+  input behavior, and model limits.
 - Added a `cao-sio2-activity-bias` melt notice for effectively binary
   CaO–SiO2 melts with x(CaO) in [0.42, 0.70] at 1873–1933 K. Moderate and
   strong severities cite the silica-activity evidence and apply only to the

@@ -66,6 +66,12 @@ from openimcc.p2o5 import (
     P2O5FeIIINotice,
     evaluate_p2o5_activity,
 )
+from openimcc.sulfur import (
+    SulfurComparisonBand,
+    SulfurNotice,
+    SulfurResult,
+    evaluate_sulfur,
+)
 
 
 def _resolve_version() -> str:
@@ -236,6 +242,11 @@ __all__ = [
     "P2O5ActivityResult",
     "P2O5FeIIINotice",
     "evaluate_p2o5_activity",
+    # --- opt-in sulfur solubility and matte saturation -------------------
+    "SulfurNotice",
+    "SulfurComparisonBand",
+    "SulfurResult",
+    "evaluate_sulfur",
     # --- gas (lazy; needs the [gas] extra) --------------------------------
     "load_gas_datapack",
     "evaluate_gas",
