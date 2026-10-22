@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added source-bounded subsolidus equilibrium calculations for troilite,
+  anhydrite, and crystalline anhydrous magnesium sulfate, with balanced
+  stoichiometry, one driving-gas pressure, typed refusals, and no rate model.
 - Added a `cao-sio2-activity-bias` melt notice for effectively binary
   CaO–SiO2 melts with x(CaO) in [0.42, 0.70] at 1873–1933 K. Moderate and
   strong severities cite the silica-activity evidence and apply only to the

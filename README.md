@@ -880,6 +880,10 @@ props = species_thermo("FeO", "g", 2000.0)
 channels, omitted = default_gas_channels(("SiO2", "MgO"))
 ```
 
+For thermodynamic ceilings on troilite, anhydrite, and crystalline anhydrous
+magnesium sulfate decomposition, see
+[`evaluate_subsolidus_reactions`](docs/subsolidus-reactions.md).
+
 `species_thermo(species, phase, T_K, datapack=None)` selects the same row the
 runtime selector uses and raises `ImccGasTemperatureOutsideDomainError` outside
 that row's declared interval. `species` is the bare formula; `phase` is `"g"`,
