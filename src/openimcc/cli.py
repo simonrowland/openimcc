@@ -361,6 +361,43 @@ def _cmd_diagnose_crystal_closure(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _cmd_diagnose_mixing_enthalpy(args: argparse.Namespace) -> int:
+    from openimcc.diagnostics import run_mixing_enthalpy
+
+    pack, rows = run_mixing_enthalpy(args.pack)
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = out_dir / "mixing-enthalpy.csv"
+    fields = ["dataset_id", "observation_id", "measurement_type", "temperature_K",
+              "measured_kJ_mol", "measured_solution_kJ_mol", "uncertainty_kJ_mol", "fusion_enthalpy_kJ_mol",
+              "measured_mixing_partial_kJ_mol", "model_mixing_partial_kJ_mol",
+              "excess_enthalpy_kJ", "excess_enthalpy_kJ_per_mol_endmember",
+              "residual_kJ_mol", "standardized_residual", "association_enthalpy_kJ",
+              "association_enthalpy_kJ_per_mol_parent", "composition", "flags",
+              "extrapolated", "composition_envelope", "association_breakdown",
+              "endmember_endpoints"]
+    with csv_path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: json.dumps(row.get(key), sort_keys=True)
+                             if isinstance(row.get(key), (dict, list)) else row.get(key, "")
+                             for key in fields})
+    digest = pack.binding_digest or "unavailable"
+    receipt = out_dir / "mixing-enthalpy.md"
+    receipt.write_text(
+        "# Liquid mixing enthalpy diagnostic\n\n"
+        f"Pack: `{pack.model_id}` (version {pack.version})\n\n"
+        f"Binding digest: `{digest}`\n\n"
+        f"Rows: {len(rows)}. Association enthalpies and source residuals are reported only; "
+        "they do not fit or select data. See the CSV for per-association contributions, "
+        "uncertainties, and model-domain flags.\n",
+        encoding="utf-8",
+    )
+    print(f"wrote {csv_path} and {receipt}")
+    return EXIT_OK
+
+
 def _cmd_solve(args: argparse.Namespace) -> int:
     composition = _load_composition(args.composition, args.oxide)
     pack = load_datapack(args.pack)
@@ -508,6 +545,13 @@ def build_parser() -> argparse.ArgumentParser:
     crystal_closure.add_argument("--out", default="diagnostics",
         help="output directory (default: diagnostics)")
     crystal_closure.set_defaults(func=_cmd_diagnose_crystal_closure)
+
+    mixing_enthalpy = diagnose_sub.add_parser(
+        "mixing-enthalpy", help="report liquid mixing enthalpy comparisons"
+    )
+    mixing_enthalpy.add_argument("--pack", default=None, help="datapack path (default: packaged diagnostic pack)")
+    mixing_enthalpy.add_argument("--out", default="diagnostics", help="output directory (default: diagnostics)")
+    mixing_enthalpy.set_defaults(func=_cmd_diagnose_mixing_enthalpy)
 
     solve = sub.add_parser(
         "solve", parents=[common], help="solve melt activities at one T"

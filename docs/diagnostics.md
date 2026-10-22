@@ -54,10 +54,34 @@ estimate; a large difference flags finite-difference sensitivity. Scores are
 reported only and are never used to choose coefficients. Dataset choice follows
 source fidelity.
 
-The next diagnostics in this family are implied mixing enthalpy,
-`H_mix = Σ n_j ΔrH_j`, against solution/drop calorimetry, and implied partial
-molar enthalpy, `d ln a/d(1/T)`, against EMF temperature coefficients. They are
-not implemented here.
+## Liquid mixing enthalpy
+
+`openimcc diagnose mixing-enthalpy` writes `mixing-enthalpy.csv` and
+`mixing-enthalpy.md`. Use `--pack PATH` and `--out DIR` to select the datapack
+and output directory. The receipt records the pack id and binding digest.
+
+The diagnostic reports `H_assoc = Σ n_j ΔrH_j`, with
+`ΔrH_j = −R ln(10) B_j` for the pack's `log10 K=A+B/T` rows and the model's
+`ΔrCp=0` assumption. It compares endpoint-subtracted liquid excess enthalpy
+with Sugawara & Akaogi's silicate-liquid measurements, and compares association
+partial enthalpies with oxide-dissolution partial enthalpies after subtracting
+the JANAF crystal-to-liquid oxide enthalpy. Each observation carries its source
+uncertainty, residual, per-association breakdown, and model-domain flags. The
+source rows and references are in
+`src/openimcc/data/diagnostics/liquid-mixing-enthalpies.json`.
+
+This tests association enthalpies only. Association entropies (the `A`
+coefficients) still move the extents `n_j` and so the predicted enthalpy, but a
+residual here cannot be attributed to `A` rather than `B`. Liquid-standard
+Gibbs energies are not an input: the dissolution comparison subtracts fusion
+enthalpies, so its residual splits between liquid-standard enthalpy and
+association enthalpy. The dissolution `standardized_residual` uses the source
+uncertainty only; it omits the fusion-standard uncertainty and is not a
+significance test. It complements the
+implied heat-capacity diagnostic, which tests temperature derivatives of
+association extents, and crystal closure, which compares sourced crystal
+fusion functions with liquid activities. Like those diagnostics, the results
+are reported only and never fit or select data.
 
 ## Crystal melting-point closure
 

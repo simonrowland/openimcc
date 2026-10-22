@@ -209,6 +209,218 @@ def run_cp_implied(pack_path: str | Path | None = None) -> tuple[ImccLoadedDatap
     return pack, results, score_against_calorimetry(results, dataset)
 
 
+def load_mixing_enthalpy_dataset() -> dict[str, Any]:
+    path = resources.files("openimcc").joinpath(
+        "data/diagnostics/liquid-mixing-enthalpies.json"
+    )
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _association_enthalpy(
+    pack: ImccLoadedDatapack, composition: Mapping[str, float], temperature_K: float
+) -> dict[str, Any]:
+    """Return extensive association enthalpy and reaction contributions in kJ.
+
+    With log10 K=A+B/T and ΔrCp=0, the van't Hoff relation gives
+    ΔrH=−R ln(10) B J/mol complex. Solver ``complex_x`` is a species mole
+    fraction; dividing by D gives moles of complex per analytical parent mole.
+    Multiplication by total analytical parent moles therefore gives an extensive
+    enthalpy. The amount basis scales linearly and is homogeneous under scaling.
+    """
+    result = evaluate(
+        composition, temperature_K, pack, basis_type="mol",
+        allow_extrapolation=True, allow_out_of_envelope=True,
+    )
+    kernel_pack = pack.kernel_datapack
+    enthalpies_kJ = -R * math.log(10.0) * np.asarray(kernel_pack.B) / 1000.0
+    extents = np.asarray(result.complex_x, dtype=float) / float(result.D)
+    scale = sum(float(value) for value in composition.values())
+    contributions = extents * enthalpies_kJ * scale
+    return {
+        "total_kJ": float(np.sum(contributions)),
+        "per_parent_mol_kJ": float(np.sum(contributions)) / scale,
+        "breakdown": [
+            {"association": name, "extent_mol_per_mol_parent": float(extent),
+             "delta_rH_kJ_per_mol_complex": float(dh),
+             "contribution_kJ": float(contribution)}
+            for name, extent, dh, contribution in zip(
+                kernel_pack.reactions, extents, enthalpies_kJ, contributions
+            )
+        ],
+        "evaluation": result,
+    }
+
+
+def _fusion_enthalpy(dataset: Mapping[str, Any], oxide: str, temperature_K: float) -> float:
+    nodes = [(float(t), float(h)) for t, h in dataset["fusion_nodes_kJ_mol"][oxide]]
+    if not nodes[0][0] <= temperature_K <= nodes[-1][0]:
+        raise ValueError(f"no fusion-standard coverage for {oxide} at {temperature_K:g} K")
+    for (t0, h0), (t1, h1) in zip(nodes, nodes[1:]):
+        if t0 <= temperature_K <= t1:
+            return h0 + (h1 - h0) * (temperature_K - t0) / (t1 - t0)
+    return nodes[-1][1]
+
+
+def mixing_enthalpy(
+    pack: ImccLoadedDatapack,
+    composition: Mapping[str, float],
+    temperature_K: float,
+    *,
+    endmembers: Mapping[str, Mapping[str, float]] | None = None,
+    endmember_fractions: Mapping[str, float] | None = None,
+    oxide_standard_enthalpies_kJ_mol: Mapping[str, float] | None = None,
+) -> dict[str, Any]:
+    """Evaluate association enthalpy; optionally subtract liquid endmember endpoints.
+
+    The model's association enthalpy is Σ n_j ΔrH_j. For a mixture of pure
+    silicate endmembers, excess enthalpy is H(mix)−Σ X_e H(e) at the same T.
+    Liquid-minus-crystal oxide standard terms are linear in parent amounts, so
+    they cancel exactly in this endpoint subtraction; they remain explicit for
+    the dissolution conversion below. Units are kJ per supplied analytical
+    amount. Pure endmembers have zero excess, and scaling every component leaves
+    intensive values unchanged while scaling extensive enthalpy homogeneously.
+    This tests association enthalpies only; it does not identify association
+    entropy or liquid-standard Gibbs-energy errors.
+    """
+    normalized = {str(name): float(value) for name, value in composition.items()}
+    if (not normalized or any(not math.isfinite(v) or v < 0 for v in normalized.values())
+            or sum(normalized.values()) <= 0 or not math.isfinite(temperature_K)):
+        raise ValueError("composition must be finite, non-negative, and have positive sum")
+    mixture = _association_enthalpy(pack, normalized, float(temperature_K))
+    standard = {name: float(value) for name, value in (oxide_standard_enthalpies_kJ_mol or {}).items()}
+    mixture_standard = sum(normalized.get(name, 0.0) * value for name, value in standard.items())
+    output: dict[str, Any] = {
+        "composition_mol": normalized, "temperature_K": float(temperature_K),
+        "association_enthalpy_kJ": mixture["total_kJ"],
+        "association_enthalpy_kJ_per_mol_parent": mixture["per_parent_mol_kJ"],
+        "association_breakdown": mixture["breakdown"],
+        "extrapolated": bool(mixture["evaluation"].extrapolated),
+        "composition_envelope": mixture["evaluation"].labels.envelope_status,
+        "flags": list(mixture["evaluation"].labels.flags),
+        "notices": list(mixture["evaluation"].labels.notices),
+        "liquid_standard_enthalpy_kJ": mixture_standard,
+    }
+    if endmembers is not None:
+        mixture_names = set(normalized)
+        if any(set(formula) - mixture_names for formula in endmembers.values()):
+            raise ValueError("endmember components must be present in mixture composition")
+        fractions = ({name: float(value) for name, value in endmember_fractions.items()}
+                     if endmember_fractions is not None else {})
+        denom = sum(fractions.values())
+        if set(fractions) != set(endmembers) or denom <= 0:
+            raise ValueError("endmember proportions must have positive sum")
+        fractions = {name: value / denom for name, value in fractions.items()}
+        endpoints = {}
+        expected_composition: dict[str, float] = {}
+        for name, fraction in fractions.items():
+            formula = {oxide: float(value) for oxide, value in endmembers[name].items()}
+            formula_total = sum(formula.values())
+            if formula_total <= 0:
+                raise ValueError(f"endmember {name} has no parent components")
+            for oxide, value in formula.items():
+                expected_composition[oxide] = expected_composition.get(oxide, 0.0) + fraction * value
+            endpoint = _association_enthalpy(pack, formula, float(temperature_K))
+            endpoint_standard = sum(formula.get(oxide, 0.0) * value for oxide, value in standard.items())
+            endpoints[name] = {
+                "fraction": fraction,
+                "association_enthalpy_kJ_per_formula": endpoint["per_parent_mol_kJ"] * formula_total,
+                "standard_enthalpy_kJ_per_formula": endpoint_standard,
+                "association_breakdown": endpoint["breakdown"],
+            }
+        actual_total = sum(normalized.values())
+        expected_total = sum(expected_composition.values())
+        total_formula_moles = actual_total / expected_total
+        if any(not math.isclose(normalized.get(oxide, 0.0), total_formula_moles * value,
+                                rel_tol=1e-8, abs_tol=1e-10)
+               for oxide, value in expected_composition.items()) or any(
+                   oxide not in expected_composition and value > 1e-10
+                   for oxide, value in normalized.items()
+               ):
+            raise ValueError("mixture composition does not match the supplied endmember fractions")
+        baseline = sum(
+            item["fraction"] * (item["association_enthalpy_kJ_per_formula"]
+                                + item["standard_enthalpy_kJ_per_formula"])
+            for item in endpoints.values()
+        )
+        output["endmember_fractions"] = fractions
+        output["endmember_formula_moles"] = total_formula_moles
+        output["endmember_endpoints"] = endpoints
+        output["excess_enthalpy_kJ"] = mixture["total_kJ"] + mixture_standard - baseline * total_formula_moles
+        output["excess_enthalpy_kJ_per_mol_endmember"] = output["excess_enthalpy_kJ"] / total_formula_moles
+    return output
+
+
+def run_mixing_enthalpy(
+    pack_path: str | Path | None = None,
+) -> tuple[ImccLoadedDatapack, list[dict[str, Any]]]:
+    """Run reported liquid excess and oxide-dissolution enthalpy comparisons."""
+    if pack_path is None:
+        pack_path = resources.files("openimcc").joinpath(
+            "data/packs/imcc-sf04-d066-v3.json"
+        )
+    pack = load_datapack(str(pack_path))
+    datasets = load_mixing_enthalpy_dataset()["datasets"]
+    rows: list[dict[str, Any]] = []
+    for dataset in datasets:
+        if dataset["type"] == "endmember-liquid-excess-enthalpy":
+            for observation in dataset["observations"]:
+                weights = observation["weight_percent"]
+                amounts = {name: float(weight) / float(dataset["endmembers"][name]["formula_mass_g_mol"])
+                           for name, weight in weights.items()}
+                total = sum(amounts.values())
+                formula_fractions = {name: amount / total for name, amount in amounts.items()}
+                parent: dict[str, float] = {}
+                for name, fraction in formula_fractions.items():
+                    for oxide, coeff in dataset["endmembers"][name]["composition_mol"].items():
+                        parent[oxide] = parent.get(oxide, 0.0) + fraction * float(coeff)
+                rows.append({
+                    "dataset_id": dataset["id"], "observation_id": observation["id"],
+                    "measurement_type": dataset["type"], "temperature_K": observation["temperature_K"],
+                    "measured_kJ_mol": observation["measured_kJ_mol"],
+                    "uncertainty_kJ_mol": observation["uncertainty_kJ_mol"],
+                    "composition": parent, "endmember_formula_fractions": formula_fractions,
+                    **mixing_enthalpy(
+                        pack, parent, observation["temperature_K"],
+                        endmembers={name: dataset["endmembers"][name]["composition_mol"]
+                                    for name in formula_fractions},
+                        endmember_fractions=formula_fractions,
+                    ),
+                })
+                rows[-1]["residual_kJ_mol"] = rows[-1]["excess_enthalpy_kJ_per_mol_endmember"] - rows[-1]["measured_kJ_mol"]
+                rows[-1]["standardized_residual"] = rows[-1]["residual_kJ_mol"] / rows[-1]["uncertainty_kJ_mol"]
+                rows[-1]["flags"].extend(observation.get("flags", []))
+        elif dataset["type"] == "oxide-dissolution-partial-enthalpy":
+            composition = dataset["composition_mol_fraction"]
+            temp = float(dataset["temperature_K"])
+            fusion = {oxide: _fusion_enthalpy(dataset, oxide, temp) for oxide in composition}
+            for obs in dataset["observations"]:
+                oxide = obs["id"]
+                measured = float(obs["measured_solution_kJ_mol_oxide"]) - fusion[oxide]
+                h = 1.0e-3
+                plus = dict(composition); minus = dict(composition)
+                plus[oxide] += h; minus[oxide] -= h
+                hp = _association_enthalpy(pack, plus, temp)["per_parent_mol_kJ"] * sum(plus.values())
+                hm = _association_enthalpy(pack, minus, temp)["per_parent_mol_kJ"] * sum(minus.values())
+                partial = (hp - hm) / (2.0 * h)
+                base = _association_enthalpy(pack, composition, temp)
+                rows.append({
+                    "dataset_id": dataset["id"], "observation_id": oxide,
+                    "measurement_type": dataset["type"], "temperature_K": temp,
+                    "measured_solution_kJ_mol": obs["measured_solution_kJ_mol_oxide"],
+                    "uncertainty_kJ_mol": obs["uncertainty_kJ_mol_oxide"],
+                    "fusion_enthalpy_kJ_mol": fusion[oxide],
+                    "measured_mixing_partial_kJ_mol": measured,
+                    "model_mixing_partial_kJ_mol": partial,
+                    "residual_kJ_mol": partial - measured,
+                    "standardized_residual": (partial - measured) / obs["uncertainty_kJ_mol_oxide"],
+                    "composition": dict(composition), "association_enthalpy_kJ_per_mol_parent": base["per_parent_mol_kJ"],
+                    "association_breakdown": base["breakdown"], "extrapolated": bool(base["evaluation"].extrapolated),
+                    "composition_envelope": base["evaluation"].labels.envelope_status,
+                    "flags": list(base["evaluation"].labels.flags) + list(obs.get("flags", [])),
+                })
+    return pack, rows
+
+
 _OXIDE_MOLAR_MASS = {
     "SiO2": 60.0843, "MgO": 40.3044, "CaO": 56.0774, "Al2O3": 101.9613,
 }

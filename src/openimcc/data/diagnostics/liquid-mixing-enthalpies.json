@@ -1,0 +1,66 @@
+{
+  "schema": "openimcc-liquid-mixing-enthalpies-v1",
+  "datasets": [
+    {
+      "id": "sugawara-akaogi-2003-liquid-excess",
+      "type": "endmember-liquid-excess-enthalpy",
+      "reference_phase": "pure silicate endmember liquids",
+      "component_basis": "kJ per mol silicate endmember mixture",
+      "source": {
+        "authors": "Sugawara & Akaogi",
+        "year": 2003,
+        "title": "Heats of mixing of silicate liquid in the systems diopside-anorthite-akermanite, diopside-anorthite-forsterite, and diopside-silica",
+        "journal": "American Mineralogist",
+        "volume_pages": "88, 1020-1024",
+        "doi": "10.2138/am-2003-0710",
+        "citation": "Table 1, p. 1022; definition and calculation, Eqs. 4-7, pp. 1022-1023"
+      },
+      "endmembers": {
+        "An": {"composition_mol": {"CaO": 1, "Al2O3": 1, "SiO2": 2}, "formula_mass_g_mol": 278.2073},
+        "Di": {"composition_mol": {"CaO": 1, "MgO": 1, "SiO2": 2}, "formula_mass_g_mol": 216.5504},
+        "Fo": {"composition_mol": {"MgO": 2, "SiO2": 1}, "formula_mass_g_mol": 140.6931},
+        "Ak": {"composition_mol": {"CaO": 2, "MgO": 1, "SiO2": 2}, "formula_mass_g_mol": 272.6278},
+        "Qt": {"composition_mol": {"SiO2": 1}, "formula_mass_g_mol": 60.0843}
+      },
+      "observations": [
+        {"id": "An43.5Di49Fo7.5", "weight_percent": {"An": 43.5, "Di": 49, "Fo": 7.5}, "temperature_K": 1547, "measured_kJ_mol": -3.8, "uncertainty_kJ_mol": 5.0, "akermanite_fusion_kJ_mol": null, "flags": []},
+        {"id": "An42Di58", "weight_percent": {"An": 42, "Di": 58}, "temperature_K": 1550, "measured_kJ_mol": -4.3, "uncertainty_kJ_mol": 2.6, "akermanite_fusion_kJ_mol": null, "flags": []},
+        {"id": "Di58Ak42-Ak133.1", "weight_percent": {"Di": 58, "Ak": 42}, "temperature_K": 1638, "measured_kJ_mol": -1.1, "uncertainty_kJ_mol": 2.3, "akermanite_fusion_kJ_mol": 133.1, "flags": ["alternative-akermanite-fusion-assumption"]},
+        {"id": "Di58Ak42-Ak139.8", "weight_percent": {"Di": 58, "Ak": 42}, "temperature_K": 1638, "measured_kJ_mol": -3.6, "uncertainty_kJ_mol": 2.3, "akermanite_fusion_kJ_mol": 139.8, "flags": ["alternative-akermanite-fusion-assumption"]},
+        {"id": "An46Ak54-Ak133.1", "weight_percent": {"An": 46, "Ak": 54}, "temperature_K": 1518, "measured_kJ_mol": -6.2, "uncertainty_kJ_mol": 5.7, "akermanite_fusion_kJ_mol": 133.1, "flags": ["alternative-akermanite-fusion-assumption"]},
+        {"id": "An46Ak54-Ak139.8", "weight_percent": {"An": 46, "Ak": 54}, "temperature_K": 1518, "measured_kJ_mol": -9.8, "uncertainty_kJ_mol": 5.7, "akermanite_fusion_kJ_mol": 139.8, "flags": ["alternative-akermanite-fusion-assumption"]},
+        {"id": "Di84Qt16", "weight_percent": {"Di": 84, "Qt": 16}, "temperature_K": 1647, "measured_kJ_mol": 5.0, "uncertainty_kJ_mol": 1.7, "akermanite_fusion_kJ_mol": null, "flags": []}
+      ]
+    },
+    {
+      "id": "koryttseva-navrotsky-2017-cmas-dissolution",
+      "type": "oxide-dissolution-partial-enthalpy",
+      "reference_phase": "crystalline oxide dissolved into CMAS liquid",
+      "component_basis": "kJ per mol oxide formula",
+      "temperature_K": 1723.15,
+      "composition_mol_fraction": {"CaO": 0.459, "SiO2": 0.351, "Al2O3": 0.083, "MgO": 0.107},
+      "source": {
+        "authors": "Koryttseva & Navrotsky",
+        "year": 2017,
+        "title": "High-temperature calorimetric study of oxide component dissolution in a CaO-MgO-Al2O3-SiO2 slag at 1450 C",
+        "journal": "Journal of the American Ceramic Society",
+        "volume_pages": "100, 1172-1177",
+        "doi": "10.1111/jace.14656",
+        "citation": "Abstract, p. 1172, for CMAS composition, formula-mole enthalpies of solution, and uncertainties; Navrotsky & Koryttseva (2023), Table 2 (reported per mole oxygen atom; values cross-checked and converted to formula-mole basis)."
+      },
+      "fusion_enthalpy_source": "Chase (1998), NIST-JANAF 4th ed., paired crystalline and liquid enthalpy tables; values are liquid minus crystal, interpolated at shared source nodes.",
+      "fusion_nodes_kJ_mol": {
+        "CaO": [[1700, 77.754], [1800, 77.754]],
+        "SiO2": [[1600, 5.003], [1800, 7.274]],
+        "Al2O3": [[1700, 76.112], [1800, 81.885]],
+        "MgO": [[1700, 68.631], [1800, 68.631]]
+      },
+      "observations": [
+        {"id": "CaO", "measured_solution_kJ_mol_oxide": -4.3, "uncertainty_kJ_mol_oxide": 2.3, "review_table_value_kJ_mol_O": -4.3, "oxygen_atoms_per_formula": 1, "flags": []},
+        {"id": "SiO2", "measured_solution_kJ_mol_oxide": -20.4, "uncertainty_kJ_mol_oxide": 4.4, "review_table_value_kJ_mol_O": -10.2, "oxygen_atoms_per_formula": 2, "flags": ["review-table-per-oxygen-value-converted-to-formula-basis"]},
+        {"id": "Al2O3", "measured_solution_kJ_mol_oxide": 41.6, "uncertainty_kJ_mol_oxide": 11.3, "review_table_value_kJ_mol_O": 13.8666666667, "oxygen_atoms_per_formula": 3, "flags": ["review-table-per-oxygen-value-converted-to-formula-basis"]},
+        {"id": "MgO", "measured_solution_kJ_mol_oxide": 56.7, "uncertainty_kJ_mol_oxide": 9.1, "review_table_value_kJ_mol_O": 56.7, "oxygen_atoms_per_formula": 1, "flags": []}
+      ]
+    }
+  ]
+}

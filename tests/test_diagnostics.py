@@ -10,7 +10,11 @@ import pytest
 
 from openimcc import diagnostics
 from openimcc.cli import main
-from openimcc.diagnostics import implied_heat_capacity, run_cp_implied, score_against_calorimetry
+from openimcc.diagnostics import (
+    _association_enthalpy, _fusion_enthalpy, implied_heat_capacity,
+    load_mixing_enthalpy_dataset, mixing_enthalpy, run_cp_implied,
+    run_mixing_enthalpy, score_against_calorimetry,
+)
 
 
 def _score_fixture(curve):
@@ -375,3 +379,83 @@ def test_crystal_closure_cli_writes_pack_and_condensate_identities(tmp_path):
     assert pack.model_id in receipt
     assert pack.binding_digest in receipt
     assert "Condensate table digest:" in receipt
+
+
+def test_mixing_enthalpy_reaction_enthalpy_basis_and_scaling():
+    from openimcc.model import load_datapack
+
+    pack = load_datapack()
+    composition = {"CaO": 1.0, "MgO": 1.0, "SiO2": 2.0}
+    row = _association_enthalpy(pack, composition, 1800.0)
+    expected = -diagnostics.R * math.log(10.0) * pack.kernel_datapack.B / 1000.0
+    assert [item["delta_rH_kJ_per_mol_complex"] for item in row["breakdown"]] == pytest.approx(expected)
+    assert row["breakdown"][0]["extent_mol_per_mol_parent"] == pytest.approx(
+        row["evaluation"].complex_x[0] / row["evaluation"].D
+    )
+    scaled = _association_enthalpy(pack, {key: 7.0 * value for key, value in composition.items()}, 1800.0)
+    assert scaled["total_kJ"] == pytest.approx(7.0 * row["total_kJ"], rel=2e-10)
+    assert scaled["per_parent_mol_kJ"] == pytest.approx(row["per_parent_mol_kJ"], rel=2e-10)
+
+
+def test_mixing_enthalpy_pure_endpoint_and_additive_standard_cancellation():
+    from openimcc.model import load_datapack
+
+    pack = load_datapack()
+    composition = {"CaO": 1.0, "MgO": 1.0, "SiO2": 2.0}
+    endmembers = {"Di": composition}
+    kwargs = {"endmembers": endmembers, "endmember_fractions": {"Di": 1.0}}
+    pure = mixing_enthalpy(pack, composition, 1800.0, **kwargs)
+    assert pure["excess_enthalpy_kJ"] == pytest.approx(0.0, abs=1e-12)
+    mixed_composition = {"CaO": 1.0, "MgO": 0.6, "Al2O3": 0.4, "SiO2": 2.0}
+    baseline = mixing_enthalpy(pack, mixed_composition, 1800.0, endmembers={
+        "An": {"CaO": 1, "Al2O3": 1, "SiO2": 2},
+        "Di": {"CaO": 1, "MgO": 1, "SiO2": 2},
+    }, endmember_fractions={"An": 0.4, "Di": 0.6})
+    shifted = mixing_enthalpy(pack, mixed_composition, 1800.0, endmembers={
+        "An": {"CaO": 1, "Al2O3": 1, "SiO2": 2},
+        "Di": {"CaO": 1, "MgO": 1, "SiO2": 2},
+    }, endmember_fractions={"An": 0.4, "Di": 0.6},
+        oxide_standard_enthalpies_kJ_mol={"CaO": 12, "MgO": -3, "Al2O3": 8, "SiO2": 1.5})
+    assert shifted["excess_enthalpy_kJ"] == pytest.approx(baseline["excess_enthalpy_kJ"], abs=1e-12)
+    scaled = mixing_enthalpy(pack, {key: 5.0 * value for key, value in mixed_composition.items()},
+                             1800.0, endmembers={
+                                 "An": {"CaO": 1, "Al2O3": 1, "SiO2": 2},
+                                 "Di": {"CaO": 1, "MgO": 1, "SiO2": 2},
+                             }, endmember_fractions={"An": 0.4, "Di": 0.6})
+    assert scaled["excess_enthalpy_kJ"] == pytest.approx(5.0 * baseline["excess_enthalpy_kJ"], rel=2e-10)
+
+
+def test_mixing_enthalpy_dissolution_conversion_and_pinned_residuals():
+    dataset = load_mixing_enthalpy_dataset()["datasets"][1]
+    assert _fusion_enthalpy(dataset, "CaO", 1723.15) == pytest.approx(77.754)
+    pack, rows = run_mixing_enthalpy()
+    cmas = next(row for row in rows if row["observation_id"] == "CaO")
+    assert cmas["measured_mixing_partial_kJ_mol"] == pytest.approx(-4.3 - 77.754, abs=1e-9)
+    assert cmas["residual_kJ_mol"] == pytest.approx(11.323359, abs=0.002)
+    expected = {
+        "An43.5Di49Fo7.5": -0.913601,
+        "An42Di58": 0.999689,
+        "Di58Ak42-Ak133.1": -2.749887,
+        "Di58Ak42-Ak139.8": -0.249887,
+        "An46Ak54-Ak133.1": -1.089230,
+        "An46Ak54-Ak139.8": 2.510770,
+        "Di84Qt16": -2.871472,
+        "CaO": 11.323359,
+        "SiO2": -4.208731,
+        "Al2O3": -40.092682,
+        "MgO": -59.454518,
+    }
+    actual = {row["observation_id"]: row["residual_kJ_mol"] for row in rows}
+    assert actual == pytest.approx(expected, abs=0.002)
+    assert pack.model_id == "IMCC-SF04-D066"
+
+
+def test_mixing_enthalpy_cli_receipt_and_csv(tmp_path):
+    assert main(["diagnose", "mixing-enthalpy", "--out", str(tmp_path)]) == 0
+    with (tmp_path / "mixing-enthalpy.csv").open(encoding="utf-8", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    assert len(rows) == 11
+    assert all(row["standardized_residual"] for row in rows)
+    receipt = (tmp_path / "mixing-enthalpy.md").read_text(encoding="utf-8")
+    assert "IMCC-SF04-D066" in receipt
+    assert "Binding digest:" in receipt
