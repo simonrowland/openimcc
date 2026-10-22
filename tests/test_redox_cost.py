@@ -501,7 +501,18 @@ def test_closed_solver_cost_against_local_legacy_baseline(
     basis_type: str,
     metal_bearing: bool,
 ) -> None:
-    repetitions = 7
+    """Keep closed CPU cost within 1.3x of legacy on the same case.
+
+    This is a relative budget against the legacy solver, not a 1.5x regression
+    budget against prior closed-solver runtime. The CPU-model-keyed cold-cost
+    test covers the latter. The robust MAD margin stays below 0.2 so a measured
+    closed/legacy ratio of 1.5 cannot pass.
+    """
+    repetitions = 9
+    # At the measured 5–13 ms per-call cost, k=20 makes each timed batch
+    # roughly 0.1–0.25 CPU seconds, well above timer granularity and short
+    # scheduler interruptions.
+    calls_per_sample = 20
     inventory = _element_inventory(
         composition, temperature, basis_type, metal_bearing=metal_bearing
     )
@@ -513,62 +524,85 @@ def test_closed_solver_cost_against_local_legacy_baseline(
     assert first.metal_buffered is metal_bearing
     warm_start = first.warm_start
 
+    pair_ratios: list[float] = []
     legacy_cpu: list[float] = []
     redox_cpu: list[float] = []
     redox_wall: list[float] = []
-    gc_was_enabled = gc.isenabled()
-    gc.disable()
-    try:
-        for _ in range(repetitions):
-            started = time.process_time()
+    pair_wall: list[float] = []
+    load_start = os.getloadavg()[0]
+    wall_started = time.perf_counter()
+
+    def measure_legacy_batch() -> float:
+        started = time.process_time()
+        for _ in range(calls_per_sample):
             evaluate(
                 composition,
                 temperature,
                 basis_type=basis_type,
                 allow_out_of_envelope=True,
             )
-            legacy_cpu.append(time.process_time() - started)
+        return time.process_time() - started
 
-            cpu_started = time.process_time()
-            wall_started = time.perf_counter()
+    def measure_closed_batch() -> tuple[float, float]:
+        cpu_started = time.process_time()
+        wall_started = time.perf_counter()
+        for _ in range(calls_per_sample):
             result = evaluate_redox(
                 inventory,
                 temperature,
                 "closed",
                 warm_start=warm_start,
             )
-            redox_wall.append(time.perf_counter() - wall_started)
-            redox_cpu.append(time.process_time() - cpu_started)
             assert result.metal_buffered is metal_bearing
+        return time.process_time() - cpu_started, time.perf_counter() - wall_started
+
+    gc_was_enabled = gc.isenabled()
+    gc.disable()
+    try:
+        for pair_index in range(repetitions):
+            pair_started = time.perf_counter()
+            if pair_index % 2 == 0:
+                legacy_elapsed = measure_legacy_batch()
+                closed_elapsed, closed_wall = measure_closed_batch()
+            else:
+                closed_elapsed, closed_wall = measure_closed_batch()
+                legacy_elapsed = measure_legacy_batch()
+            redox_wall.append(closed_wall)
+            legacy_cpu.append(legacy_elapsed)
+            redox_cpu.append(closed_elapsed)
+            pair_ratios.append(closed_elapsed / legacy_elapsed)
+            pair_wall.append(time.perf_counter() - pair_started)
     finally:
         if gc_was_enabled:
             gc.enable()
 
-    legacy_median = statistics.median(legacy_cpu)
-    redox_median = statistics.median(redox_cpu)
-    legacy_spread = max(legacy_cpu) - min(legacy_cpu)
-    redox_spread = max(redox_cpu) - min(redox_cpu)
-    ratio = redox_median / legacy_median
+    load_end = os.getloadavg()[0]
+    total_wall = time.perf_counter() - wall_started
+    ratio = statistics.median(pair_ratios)
+    mad = statistics.median(abs(value - ratio) for value in pair_ratios)
+    robust_spread = 1.4826 * mad
+    noise_margin = 2.0 * robust_spread
+    legacy_median = statistics.median(legacy_cpu) / calls_per_sample
+    redox_median = statistics.median(redox_cpu) / calls_per_sample
     max_wall = max(redox_wall)
-    wall_cpu_ratio = max_wall / redox_median
+    wall_cpu_ratio = max_wall / (redox_median * calls_per_sample)
     print(
-        f"{name}: legacy CPU median={legacy_median * 1000:.3f} ms "
-        f"spread={legacy_spread * 1000:.3f} ms; closed CPU median="
-        f"{redox_median * 1000:.3f} ms spread={redox_spread * 1000:.3f} ms; "
-        f"ratio={ratio:.3f}; closed max wall={max_wall * 1000:.3f} ms "
-        f"max wall/median CPU={wall_cpu_ratio:.3f}"
+        f"{name}: {repetitions} paired samples x k={calls_per_sample}; "
+        f"median CPU ratio={ratio:.3f}; scaled MAD={robust_spread:.3f}; "
+        f"noise margin={noise_margin:.3f}; "
+        f"legacy CPU median={legacy_median * 1000:.3f} ms; "
+        f"closed CPU median={redox_median * 1000:.3f} ms; "
+        f"total wall={total_wall:.3f} s; max paired wall={max(pair_wall) * 1000:.3f} ms; "
+        f"max closed wall={max_wall * 1000:.3f} ms; "
+        f"max wall/median CPU={wall_cpu_ratio:.3f}; "
+        f"load average start/end={load_start:.2f}/{load_end:.2f}"
     )
-    if metal_bearing:
-        assert ratio <= 1.3
-    else:
-        # The metal-free case adds an outer oxygen root. Keep its 1.3x median
-        # target, with two observed combined ranges as a load-variation margin:
-        # each range is the measured max-minus-min over these seven samples.
-        # The allowance is capped at 1.9x legacy so a genuine 2x regression
-        # (every closed call doing double work) still fails however noisy the
-        # run: ceiling = min(1.3*L + 2*(range_L + range_R), 1.9*L).
-        combined_spread = legacy_spread + redox_spread
-        ceiling = min(
-            1.3 * legacy_median + 2.0 * combined_spread, 1.9 * legacy_median
-        )
-        assert redox_median <= ceiling
+    # MAD is robust to one scheduler interruption. If its two-sigma allowance
+    # reaches 0.2, the resulting ceiling could admit a 1.5 ratio; reject that
+    # sample and require a larger k instead of silently widening the gate.
+    assert noise_margin < 0.2, (
+        f"{name}: measurement too noisy here (scaled MAD={robust_spread:.3f}); "
+        f"increase k above {calls_per_sample}"
+    )
+    ceiling = 1.3 + noise_margin
+    assert ratio <= ceiling
