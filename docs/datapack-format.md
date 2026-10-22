@@ -86,6 +86,7 @@ when absent, although they are present in the shipped packs as noted.
 | model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults it to IMCC-SF04. IMCC-SF04-D066 uses the D066 row-set validation; either published or D066 identity may carry a valid sp_extension object. |
 | pack_arithmetic | string | No | Prose describing how the pack's rows and coefficient revisions were assembled. It does not alter arithmetic. |
 | parents | array of strings | Yes | Ordered parent-oxide basis. The current loader requires exactly ["SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"], in that order. sp_extension adds S and P2O5 only on its own extension path. |
+| parent_standard_candidates | object | No | Provenance for opt-in candidate parent-standard revisions, including source values, retained anchors, and construction details. The loader does not read this field; candidate coefficients and condensate tables carry the numerical changes. |
 | provenance_split | object | No | Pack-level provenance summary. v1.0.2 and ext-v4 use numeric class counts plus a note; retired ext-v1 through ext-v3 used prose `published`/`extension` mappings. It is descriptive; row-level provenance_class remains the audit record. |
 | rows | array of objects | Yes | Published-core or D066 reaction rows. Both current identities require the exact 38-row SF04 row set; inactive rows still count toward that set. The retired ext-v2 record had 39 rows and was not loadable by the current fixed production path. |
 | screens | array of objects | No | Candidate components considered for a deliberately gated, non-active screen. The loader neither activates nor validates these candidates. |
@@ -206,6 +207,7 @@ pack, but those fields are not required to construct the kernel datapack.
 | row | number | No | Stable/display row number from the source or pack record. It is not used as the array index by the loader. |
 | source | string | No | Primary source URL or source identifier for the row. |
 | source_refs | array of strings | No | D066 v3 provenance keys into the top-level `sources` object. Every D066 v3 row has at least one reference; the loader does not use these references in numerical evaluation. |
+| standard_state_refit | object | No | Audit record for association coefficients re-referenced to candidate parent standards. It records affected parents, the row's fit interval and method, maximum absolute log10 K residual in dex, and whether the 0.01-dex threshold is exceeded; the active `A` and `B` fields contain the refit. |
 | source_access_copy | string | No | Access-copy URL for a supporting source, used by one extension row. Its semantics are provenance metadata only. |
 | source_compilation | string | No | Name/edition of the supporting thermochemical compilation, used by one extension row. |
 | source_provenance_class | string | No | Provenance class of the source being replaced or compared, distinct from this row's provenance_class. |

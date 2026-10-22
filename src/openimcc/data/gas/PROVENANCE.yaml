@@ -2376,3 +2376,17 @@ certification_items:
       LH84 Table 4 supplies the formation reference while NASA Glenn supplies
       the Cp(T) shape; NASA's dfH298 is -74.086902 kJ/mol versus LH84's
       -7.05 kK*R, a disagreement of about 15 kJ/mol.
+
+candidate_condensate_files:
+  - file: condensate-sio2-na2o-liquid-candidate.csv
+    status: opt_in_candidate
+    source: >-
+      Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8,
+      DOI 10.1111/j.1151-2916.1984.tb19155.x; constant measured silicate-liquid
+      partial heat capacities of 81.37 J mol^-1 K^-1 for SiO2 and 100.6 J mol^-1 K^-1
+      for Na2O. Retains the JANAF fusion anchors: SiO2 Tm=1996 K, ΔHfus=9.581 kJ/mol;
+      Na2O Tm=1405.2 K, ΔHfus=47.698 kJ/mol.
+    construction: >-
+      Shared liquid_from_solid construction and endpoint-constrained condensate
+      fits; source Cp measured from 900 to 1800 K and extrapolated beyond 1800 K.
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)

@@ -281,6 +281,7 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
     assert names == {
         "imcc-sf04-d066-ext-v1.json",
         "imcc-sf04-d066-feo-liquid-candidate.json",
+        "imcc-sf04-d066-sio2-na2o-candidate.json",
         "imcc-sf04-d066-v1-kcaalsi2o7.json",
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-d066-v2.json",
@@ -295,6 +296,7 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         "openimcc-redox-cr-ti-candidate.json",
         "openimcc-redox-feo-liquid-candidate-v2.json",
         "openimcc-redox-feo-liquid-candidate.json",
+        "openimcc-redox-sio2-na2o-candidate.json",
         "openimcc-redox-ti-candidate-v2.json",
         "openimcc-redox-ti-candidate-v3.json",
         "openimcc-redox-ti-candidate.json",
@@ -413,6 +415,7 @@ def test_every_shipped_pack_loads() -> None:
     assert names == [
         "imcc-sf04-d066-ext-v1.json",
         "imcc-sf04-d066-feo-liquid-candidate.json",
+        "imcc-sf04-d066-sio2-na2o-candidate.json",
         "imcc-sf04-d066-v1-kcaalsi2o7.json",
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-d066-v2.json",
@@ -427,6 +430,7 @@ def test_every_shipped_pack_loads() -> None:
         "openimcc-redox-cr-ti-candidate.json",
         "openimcc-redox-feo-liquid-candidate-v2.json",
         "openimcc-redox-feo-liquid-candidate.json",
+        "openimcc-redox-sio2-na2o-candidate.json",
         "openimcc-redox-ti-candidate-v2.json",
         "openimcc-redox-ti-candidate-v3.json",
         "openimcc-redox-ti-candidate.json",

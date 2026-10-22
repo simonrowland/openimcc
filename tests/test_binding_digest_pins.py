@@ -27,6 +27,9 @@ LEGACY_BINDING_SHA256 = {
     "imcc-sf04-ext-v4.json": "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770",
 }
 D066_MANIFEST_SHA256 = {
+    "imcc-sf04-d066-sio2-na2o-candidate.json": (
+        "51179602bfd1bbc8be071bead0f40f9d8ff407227e5a4a904ab8a158fe471efd"
+    ),
     "imcc-sf04-d066-v3.json": (
         "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"
     ),

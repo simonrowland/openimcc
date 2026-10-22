@@ -154,10 +154,17 @@ class LiquidConstruction:
             + delta_s
             + cp * math.log(temperature / tfus)
         )
-        # Premise: apparent JANAF Gibbs energy uses the crystal's ΔfH°298
-        # anchor. Algebra: G_app = ΔfH°298 + [H-H(298)] - T*S. Unit check:
-        # H is kJ/mol, S is J/(mol K), so TS is divided by 1000. Sanity: at
-        # T_fus the construction adds T_fus*ΔS_fus to H and ΔS_fus to S.
+        # Premise: the liquid and crystal share G_s(T_m), fusion adds
+        # ΔS_fus=ΔH_fus/T_m, and liquid Cp is constant. Integrating Cp_l gives
+        # H_l(T)=H_s(T_m)+ΔH_fus+Cp_l(T−T_m) and
+        # S_l(T)=S_s(T_m)+ΔH_fus/T_m+Cp_l ln(T/T_m). Subtracting T*S yields
+        # G_l(T)=G_s(T_m)−S_s(T_m)(T−T_m)+ΔH_fus(1−T/T_m)
+        #   +Cp_l[(T−T_m)−T ln(T/T_m)]. Crystal-table H and S at T_m supply
+        # G_s(T_m); no crystal Cp term is added beyond that anchor. Unit check:
+        # every term in the closed form is J/mol; apparent G below is returned
+        # in kJ/mol after division by 1000. Sanity: at T_m the added terms
+        # vanish, recovering G_s(T_m) and S_l(T_m)=S_s(T_m)+ΔH_fus/T_m.
+        # The apparent JANAF form below retains the same ΔfH°298 anchor.
         gibbs = self.dfh298_kj_mol + h_increment - temperature * entropy / 1000.0
         branch = "liquid" if temperature >= tfus else "supercooled_extrapolation"
         return LiquidPoint(temperature, gibbs, branch)
