@@ -50,6 +50,12 @@ from openimcc.redox import (
     evaluate_redox,
 )
 from openimcc.trace_melt import Cr3TraceActivity, cr3_trace_activity
+from openimcc.p2o5 import (
+    P2O5ActivityNotice,
+    P2O5ActivityResult,
+    P2O5FeIIINotice,
+    evaluate_p2o5_activity,
+)
 
 
 def _resolve_version() -> str:
@@ -100,6 +106,7 @@ _GAS_EXPORTS = frozenset({
     "ImccGasEquilibriumRangeError",
     "ImccGasOxygenBalanceError",
     "ImccGasResult",
+    "PGasPressureNotice",
     "ImccGasSpeciesNotFoundError",
     "ImccGasTemperatureOutsideDomainError",
     "R_J_MOL_K",
@@ -132,6 +139,7 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         ImccGasEquilibriumRangeError,
         ImccGasOxygenBalanceError,
         ImccGasResult,
+        PGasPressureNotice,
         ImccGasSpeciesNotFoundError,
         ImccGasTemperatureOutsideDomainError,
         R_J_MOL_K,
@@ -204,6 +212,11 @@ __all__ = [
     # --- opt-in trace-melt activity candidates ---------------------------
     "Cr3TraceActivity",
     "cr3_trace_activity",
+    # --- opt-in dilute P2O5 activity ------------------------------------
+    "P2O5ActivityNotice",
+    "P2O5ActivityResult",
+    "P2O5FeIIINotice",
+    "evaluate_p2o5_activity",
     # --- gas (lazy; needs the [gas] extra) --------------------------------
     "load_gas_datapack",
     "evaluate_gas",
@@ -222,6 +235,7 @@ __all__ = [
     "ImccGasEquilibriumRangeError",
     "ImccGasOxygenBalanceError",
     "ImccGasResult",
+    "PGasPressureNotice",
     "ImccGasSpeciesNotFoundError",
     "ImccGasTemperatureOutsideDomainError",
     "SpeciesThermo",

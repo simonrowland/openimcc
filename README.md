@@ -214,7 +214,16 @@ The P gas channels now include `P`, `P2`, `P4`, `PO`, `PO2`, `P4O6`, `P4O10`,
 and JANAF `PS`. Their parent is a fitted pure-liquid `P2O5(l)` reference from
 the Jung-Hudon assessment over 1200-3000 K. Callers supply `a(P2O5)` on this
 liquid standard; `PS` also needs caller-supplied `a(S2)` on the JANAF 1-bar gas
-standard. OpenIMCC still does not calculate phosphorus activity in a melt.
+standard. The opt-in `evaluate_p2o5_activity(composition_moles, T_K)` estimates
+dilute-solute P2O5 activity with Suito & Inoue (1984) Eq. 14 and returns typed
+domain notices plus Turkdogan Eq. 13 and Eq. 25 as two comparison regressions,
+not an uncertainty interval around Suito; Suito can lie outside their spread.
+P-gas pressures above 1 bar carry a notice that phosphorus would leave
+essentially completely and the fixed-composition dilute equilibrium is not
+physical there. See
+[`docs/p2o5-dilute-solute.md`](docs/p2o5-dilute-solute.md). The default solver
+still does not compute phosphorus melt activity; this opt-in extension does.
+The extension does not model Fe-P alloy partitioning or Fe(III) phosphates.
 
 The `sp_extension` melt packs keep their existing `P2O5` rows, whose activity
 reference is half `P4O10(cr)`. That crystal-based melt reference is distinct

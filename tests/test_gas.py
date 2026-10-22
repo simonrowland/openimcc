@@ -3011,7 +3011,9 @@ def test_ps_uses_both_parent_activities_and_propagates_source_domains(
         gas_species=("PS",),
     )
     assert result["PS"] == pytest.approx(expected, rel=1.0e-12)
-    assert result.domain_flags["PS"] is None
+    assert result["PS"] > 1.0
+    assert result.notices[0].code == "p_gas_exceeds_one_bar_complete_volatilisation"
+    assert result.domain_flags["PS"] is not None
     assert gas_species_provenance("PS")["authority"] == "published_fitted"
 
     balance_metadata = oxygen_balance_species_metadata({"PS": "P2O5"})["PS"]

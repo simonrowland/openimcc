@@ -188,6 +188,16 @@ class ImccGasDataUnavailableError(ImccRefusal):
 
 
 @dataclass(frozen=True)
+class PGasPressureNotice:
+    """Typed warning that dilute fixed-composition P-gas pressures exceed 1 bar."""
+
+    code: str
+    message: str
+    species: tuple[str, ...]
+    total_pressure_bar: float
+
+
+@dataclass(frozen=True)
 class ImccGasResult(MappingABC[str, float]):
     """Immutable gas pressures and channel metadata, including default omissions."""
 
@@ -221,6 +231,28 @@ class ImccGasResult(MappingABC[str, float]):
 
     def __len__(self) -> int:
         return len(self._values)
+
+    @property
+    def notices(self) -> tuple[PGasPressureNotice, ...]:
+        """Typed notices derived from existing per-channel domain flags."""
+        p_species = tuple(
+            name for name in ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10", "PS")
+            if name in self._values
+        )
+        code = "p_gas_exceeds_one_bar_complete_volatilisation"
+        affected = tuple(
+            name for name in p_species if code in (self.domain_flags.get(name) or "")
+        )
+        if not affected:
+            return ()
+        total = math.fsum(self._values[name] for name in p_species)
+        return (PGasPressureNotice(
+            code,
+            "P would leave essentially completely; the fixed-composition dilute "
+            "equilibrium is not physical above 1 bar.",
+            affected,
+            total,
+        ),)
 
 
 @dataclass(frozen=True)
@@ -1862,8 +1894,10 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
              'reason': 'Jung and Hudon (2012) supply the assessed P2O5(l) reaction function, fitted '
                        'here to JANAF\'s 1-bar P2(g)/O2(g) references over 1200-3000 K. JANAF P, P2, '
                        'P4, PO, PO2, P4O6, P4O10, and PS(g) channels are available; PS also uses '
-                       'caller-supplied a(S2). C1 stays no because phosphorus melt activity is not '
-                       'computed. sp_extension P2O5 melt activity uses half-P4O10(cr), a different '
+                       'caller-supplied a(S2). The default solver does not compute phosphorus melt '
+                       'activity; the opt-in dilute-solute P2O5 extension does. C1 stays no because '
+                       'that extension is opt-in and unvalidated. sp_extension P2O5 melt activity '
+                       'uses half-P4O10(cr), a different '
                        'reference from this liquid standard.',
              'c3_ion_bound': {   'status': 'not computed',
                                  'reason': 'not computed: ionized phosphorus channels are outside '
@@ -5690,16 +5724,34 @@ def evaluate_gas(
             }
 
         if closure_neutral_pressure > 1.0:
-            notice = (
+            closure_notice = (
                 f"summed neutral pressure {closure_neutral_pressure:.6g} bar "
                 "exceeds 1 bar; "
                 "ideal-gas ion closure is not credible at this pressure"
             )
             domain_flags = {
-                name: "; ".join(filter(None, (flag, notice)))
+                name: "; ".join(filter(None, (flag, closure_notice)))
                 for name, flag in domain_flags.items()
                 if name.endswith(("+", "-"))
             }
+
+    p_species = tuple(
+        name for name in ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10", "PS")
+        if name in result
+    )
+    p_total = math.fsum(result[name] for name in p_species)
+    exceeded = tuple(name for name in p_species if result[name] > 1.0)
+    if exceeded or p_total > 1.0:
+        notice = PGasPressureNotice(
+            "p_gas_exceeds_one_bar_complete_volatilisation",
+            "P would leave essentially completely; the fixed-composition dilute "
+            "equilibrium is not physical above 1 bar.",
+            exceeded or p_species,
+            p_total,
+        )
+        flag = f"{notice.code}: {notice.message}"
+        for species in p_species:
+            domain_flags[species] = "; ".join(filter(None, (domain_flags.get(species), flag)))
 
     return ImccGasResult(
         result,
