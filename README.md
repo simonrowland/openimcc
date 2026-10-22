@@ -39,6 +39,8 @@ species vector, and the **degree of association D** (total moles in, moles of
 species out — D > 1 means an associated solution, D = 1 would be ideal oxide
 mixing).
 
+The reported derived-property checks are documented in [Diagnostics](docs/diagnostics.md).
+
 ## What it is *not*
 
 **This is not a phase-equilibrium code, and it is not a MELTS.** alphaMELTS,

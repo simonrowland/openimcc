@@ -29,6 +29,7 @@ Examples
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import sys
 from pathlib import Path
@@ -246,6 +247,81 @@ def _cmd_validate_pack(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _cmd_diagnose_cp_implied(args: argparse.Namespace) -> int:
+    from openimcc.diagnostics import run_cp_implied
+
+    pack, rows, scores = run_cp_implied(args.pack)
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = out_dir / "cp-implied.csv"
+    fields = [
+        "dataset_id", "composition", "temperature_K", "cp_parent_J_mol_K",
+        "cp_conf_J_mol_K", "cp_total_J_mol_K", "cp_conf_half_step_J_mol_K",
+        "step_K", "half_step_K", "step_check_delta_J_mol_K", "extrapolated",
+        "paper_demonstrated_window", "flags", "notices", "association_cp_J_mol_K",
+        "absolute_total_residual_J_mol_K", "absolute_verdict",
+        "curvature_residual_J_mol_K", "curvature_verdict",
+        "temperature_flatness_max_deviation_J_mol_K", "temperature_flatness_verdict",
+        "pure_standard_offset_J_mol_K", "pure_control_verdict",
+    ]
+    scores_by_key = {}
+    for score_name, rows_for_score in (
+        ("absolute", scores["absolute_total"]),
+        ("curvature", scores["curvature"]),
+        ("control", scores["pure_end_member_controls"]),
+    ):
+        for score in rows_for_score:
+            key = (score["composition"], score.get("temperature_K"))
+            scores_by_key.setdefault(key, {})[score_name] = score
+    flatness_by_composition = {
+        score["composition"]: score for score in scores["temperature_flatness"]
+    }
+    with csv_path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        for row in rows:
+            values = {
+                key: json.dumps(row[key], sort_keys=True)
+                if key in {"composition", "flags", "notices", "association_cp_J_mol_K"}
+                else row.get(key, "")
+                for key in fields
+            }
+            score = scores_by_key.get((row["dataset_id"], row["temperature_K"]), {})
+            score["flatness"] = flatness_by_composition.get(row["dataset_id"])
+            for name, value_key, verdict_key in (
+                ("absolute", "absolute_total_residual_J_mol_K", "absolute_verdict"),
+                ("curvature", "curvature_residual_J_mol_K", "curvature_verdict"),
+                ("flatness", "temperature_flatness_max_deviation_J_mol_K", "temperature_flatness_verdict"),
+                ("control", "pure_standard_offset_J_mol_K", "pure_control_verdict"),
+            ):
+                item = score.get(name)
+                if item:
+                    metric = "max_deviation_J_mol_K" if name == "flatness" else (
+                        "standard_state_offset_J_mol_K" if name == "control" else "residual_J_mol_K"
+                    )
+                    values[value_key] = item.get(metric, "")
+                    values[verdict_key] = item["verdict"]
+            writer.writerow(values)
+    receipt = out_dir / "cp-implied.md"
+    digest = pack.binding_digest or "unavailable"
+    scored_b = sum(item["verdict"].startswith("(b) CURVATURE") for item in scores["curvature"])
+    scored_c = sum(item["verdict"].startswith("(c) T-DEPENDENCE") for item in scores["temperature_flatness"])
+    text = (f"# Implied heat-capacity diagnostic\n\n"
+            f"Pack: `{pack.model_id}` (version {pack.version})\n\n"
+            f"Binding digest: `{digest}`\n\n"
+            f"Dataset: Richet, Bottinga & Téqui (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; "
+            f"reported envelope ±0.5%.\n\n"
+            f"Rows: {len(rows)}. Curvature points outside envelope (b): {scored_b}/"
+            f"{len(scores['curvature'])}; T-flatness points outside envelope (c): {scored_c}/"
+            f"{len(scores['temperature_flatness'])}. See CSV for per-state values and h/h/2 check.\n\n"
+            f"Absolute-total results (a) include parent-standard offsets. Pure-end-member controls (d) "
+            f"are reported separately. These diagnostic results are reported only and are not used "
+            f"to fit or select data.\n")
+    receipt.write_text(text, encoding="utf-8")
+    print(f"wrote {csv_path} and {receipt}")
+    return EXIT_OK
+
+
 def _cmd_solve(args: argparse.Namespace) -> int:
     composition = _load_composition(args.composition, args.oxide)
     pack = load_datapack(args.pack)
@@ -368,6 +444,20 @@ def build_parser() -> argparse.ArgumentParser:
         "--pack", default=None, help="path to a datapack JSON (default: packaged SF04)"
     )
     validate.set_defaults(func=_cmd_validate_pack)
+
+    diagnose = sub.add_parser(
+        "diagnose", parents=[common], help="run a reported model diagnostic"
+    )
+    diagnose_sub = diagnose.add_subparsers(dest="diagnostic", required=True)
+    cp_implied = diagnose_sub.add_parser("cp-implied", help="report implied heat capacity")
+    cp_implied.add_argument(
+        "--pack", default=None,
+        help="path to a datapack JSON (default: packaged D066 primary pack)",
+    )
+    cp_implied.add_argument(
+        "--out", default="diagnostics", help="output directory (default: diagnostics)"
+    )
+    cp_implied.set_defaults(func=_cmd_diagnose_cp_implied)
 
     solve = sub.add_parser(
         "solve", parents=[common], help="solve melt activities at one T"
