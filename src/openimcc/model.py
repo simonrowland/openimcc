@@ -291,6 +291,78 @@ _CAO_SIO2_STRONG_NOTICE = (
     "x(CaO)=0.62 the pressure-implied residual is 0.25–0.29 dex low"
 )
 
+_MELT_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
+_MELT_EVIDENCE_BINDING_DIGEST = (
+    "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"
+)
+_SILICATE_PRODUCT_ROWS = (
+    ("diopside", {"CaO": 1, "MgO": 1, "SiO2": 2}, 1668.0, "−0.79"),
+    ("akermanite", {"CaO": 2, "MgO": 1, "SiO2": 2}, 1727.0, "−0.50"),
+    ("gehlenite", {"CaO": 2, "Al2O3": 1, "SiO2": 1}, 1823.0, "−0.61"),
+    ("anorthite", {"CaO": 1, "Al2O3": 1, "SiO2": 2}, 1826.0, "−0.41"),
+    ("wollastonite", {"CaO": 1, "SiO2": 1}, 1817.0, "−0.21"),
+)
+
+
+def _silicate_vapour_product_notice(
+    parent_oxides: Sequence[str],
+    moles: np.ndarray,
+    temperature_K: float,
+    model_id: str,
+    binding_digest: str,
+) -> str | None:
+    if not 1618.0 <= float(temperature_K) <= 1876.0:
+        return None
+    total = float(moles.sum())
+    if total <= 0:
+        return None
+    for phase, formula, melting_K, miss in _SILICATE_PRODUCT_ROWS:
+        if abs(float(temperature_K) - melting_K) > 50.0:
+            continue
+        indices = {
+            name: parent_oxides.index(name)
+            for name in formula
+            if name in parent_oxides
+        }
+        if len(indices) != len(formula):
+            continue
+        formula_sum = sum(formula.values())
+        basis_total = sum(float(moles[indices[name]]) for name in formula)
+        if basis_total <= 0.0 or basis_total / total < 0.98:
+            continue
+        distance = sum(
+            abs(float(moles[indices[name]]) / basis_total - amount / formula_sum)
+            for name, amount in formula.items()
+        )
+        if distance > 0.02 + 1e-12 or any(
+            float(moles[i]) / total >= 0.01
+            for i, name in enumerate(parent_oxides)
+            if name not in formula
+        ):
+            continue
+        if (
+            model_id != _MELT_EVIDENCE_MODEL_ID
+            or binding_digest != _MELT_EVIDENCE_BINDING_DIGEST
+        ):
+            return (
+                "silicate-vapour-product-low-near-liquidus-unscored: crystal–melt "
+                "closure evidence is unscored for this pack"
+            )
+        melting_description = (
+            f"nominal {melting_K:g} K incongruent-melting onset, diagnostic "
+            "rather than congruent coexistence"
+            if phase == "diopside"
+            else f"nominal melting point {melting_K:g} K"
+        )
+        return (
+            f"silicate-vapour-product-low-near-liquidus: {phase} SI at its "
+            f"{melting_description} is {miss} using crystal data extended to "
+            f"that temperature; the combined vapour product over the melt is "
+            f"low by {miss.lstrip('−')} log10 units, with the split between "
+            "melt activities and liquid standards unresolved"
+        )
+    return None
+
 
 def _cao_sio2_unscored_notice(model_id: str) -> str:
     return (
@@ -1777,6 +1849,12 @@ def evaluate(
     if cao_sio2_notice is not None:
         notices.append(cao_sio2_notice)
 
+    silicate_product_notice = _silicate_vapour_product_notice(
+        parent_oxides, vector, T_K, model_id, binding_digest
+    )
+    if silicate_product_notice is not None:
+        notices.append(silicate_product_notice)
+
     if result.extrapolated:
         active_parent = vector > 0.0
         active_complex = ~np.any(
@@ -1818,14 +1896,24 @@ def evaluate(
             if any(
                 reaction_names[index] == "Na2Si2O5" for index in below_domain_rows
             ):
-                notices.append(
-                    "low-temperature-uncertain: the Na2Si2O5 association is "
-                    "evaluated below its declared domain; held-out Zaitsev et al. "
-                    "KEMS Table 4 activities exceed the reported 1-3% error "
-                    "at 55 of 56 Na2O/SiO2 values through 1673 K, and independent "
-                    "liquidus residuals reach about 17 kJ/mol near 1080-1150 K; "
-                    "treat Na-silicate activities below 1700 K as uncertain"
-                )
+                if (model_id, binding_digest) == (
+                    _MELT_EVIDENCE_MODEL_ID,
+                    _MELT_EVIDENCE_BINDING_DIGEST,
+                ):
+                    notices.append(
+                        "low-temperature-uncertain: the Na2Si2O5 association is "
+                        "evaluated below its declared domain; Piacente and Matoušek "
+                        "(1973) MgO-cell p(Na) is about 0.54 dex low at 1278–1530 K, "
+                        "and Richet, Bottinga and Téqui (1984) sodium-silicate "
+                        "calorimetric curvature misses its envelope by 1.5–3x at "
+                        "1323–1700 K; treat Na-silicate activities below 1700 K "
+                        "as uncertain"
+                    )
+                else:
+                    notices.append(
+                        "low-temperature-uncertain-unscored: Na-silicate low-temperature "
+                        "evidence is unscored for this pack"
+                    )
 
     adapter_labels = ImccAdapterLabels(
         identity=identity,

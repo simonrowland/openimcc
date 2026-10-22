@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added an identity-scoped crystal–melt vapour-product notice near measured
+  Ca/Mg silicate melting points and updated the sodium-silicate low-temperature
+  notice with Piacente–Matoušek and Richet–Bottinga–Téqui evidence. Solved values
+  are unchanged; see `docs/melt-notices.md` for gates and citations.
+
 - Added source-bounded subsolidus equilibrium calculations for troilite,
   anhydrite, and crystalline anhydrous magnesium sulfate, with balanced
   stoichiometry, one driving-gas pressure, typed refusals, and no rate model.

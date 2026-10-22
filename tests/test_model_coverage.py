@@ -509,6 +509,9 @@ def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
     assert sum(marker in notice for notice in floor.labels.notices) == 1
     # Flagging is metadata only: pin default parent activities at the cutoff.
     assert floor.parent_activity[0].hex() == "0x1.1d981753f79bep-2"
+    measured = next(n for n in below.labels.notices if marker in n)
+    assert "Piacente and Matoušek (1973)" in measured
+    assert "1.5–3x" in measured
     assert floor.parent_activity[6].hex() == "0x1.2250cb159e740p-23"
     at_floor = evaluate(melt, 1700.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in at_floor.labels.notices)
@@ -518,6 +521,9 @@ def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
     assert not any(marker in notice for notice in inside.labels.notices)
     sodium_free = evaluate({"MgO": 40.0, "SiO2": 60.0}, 1500.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in sodium_free.labels.notices)
+    candidate = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
+    other_pack = evaluate(melt, 1500.0, candidate, allow_extrapolation=True)
+    assert any(n.startswith("low-temperature-uncertain-unscored:") for n in other_pack.labels.notices)
 
 
 def _cao_sio2_bias_notices(result) -> tuple[str, ...]:
@@ -709,3 +715,107 @@ def test_cao_sio2_other_pack_gets_the_unscored_notice() -> None:
         notice.startswith("cao-sio2-activity-bias-unscored:")
         for notice in outside.labels.notices
     )
+
+
+def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None:
+    diopside = {"CaO": 1.0, "MgO": 1.0, "SiO2": 2.0}
+    result = evaluate(diopside, 1668.0, allow_extrapolation=True)
+    notices = [n for n in result.labels.notices if n.startswith("silicate-vapour-product-low-near-liquidus:")]
+    assert len(notices) == 1
+    assert "−0.79" in notices[0]
+    assert "low by 0.79 log10 units" in notices[0]
+    assert "split between melt activities and liquid standards unresolved" in notices[0]
+    assert "incongruent-melting onset" in notices[0]
+    assert "crystal data extended" in notices[0]
+    assert tuple(value.hex() for value in result.parent_activity) == (
+        "0x1.768ef95dfe3a6p-3",
+        "0x1.8967ba7284045p-7",
+        "0x0.0p+0",
+        "0x1.6fc9a649d1c34p-13",
+        "0x0.0p+0",
+        "0x0.0p+0",
+        "0x0.0p+0",
+        "0x0.0p+0",
+    )
+
+    phase_cases = (
+        ("diopside", diopside, 1668.0, "−0.79"),
+        ("akermanite", {"CaO": 2.0, "MgO": 1.0, "SiO2": 2.0}, 1727.0, "−0.50"),
+        ("gehlenite", {"CaO": 2.0, "Al2O3": 1.0, "SiO2": 1.0}, 1823.0, "−0.61"),
+        ("anorthite", {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1826.0, "−0.41"),
+        ("wollastonite", {"CaO": 1.0, "SiO2": 1.0}, 1817.0, "−0.21"),
+    )
+    for phase, composition, melting_point, miss in phase_cases:
+        notice = next(
+            n for n in evaluate(
+                composition, melting_point, allow_extrapolation=True
+            ).labels.notices
+            if n.startswith("silicate-vapour-product-low-near-liquidus:")
+        )
+        assert phase in notice
+        assert miss in notice
+        assert f"low by {miss.lstrip('−')} log10 units" in notice
+
+    assert any(
+        n.startswith("silicate-vapour-product-low-near-liquidus:")
+        for n in evaluate(diopside, 1618.0, allow_extrapolation=True).labels.notices
+    )
+    assert any(
+        n.startswith("silicate-vapour-product-low-near-liquidus:")
+        for n in evaluate(diopside, 1718.0, allow_extrapolation=True).labels.notices
+    )
+    assert not any(
+        n.startswith("silicate-vapour-product-low-near-liquidus")
+        for n in evaluate(diopside, 1718.1, allow_extrapolation=True).labels.notices
+    )
+    boundary_distance = {"CaO": 1.04, "MgO": 0.96, "SiO2": 2.0}
+    outside_distance = {"CaO": 1.046875, "MgO": 0.953125, "SiO2": 2.0}
+    assert any(
+        n.startswith("silicate-vapour-product-low-near-liquidus:")
+        for n in evaluate(boundary_distance, 1668.0, allow_extrapolation=True).labels.notices
+    )
+    assert not any(
+        n.startswith("silicate-vapour-product-low-near-liquidus")
+        for n in evaluate(outside_distance, 1668.0, allow_extrapolation=True).labels.notices
+    )
+    at_share_boundary = {
+        "CaO": 0.98, "MgO": 0.98, "SiO2": 1.96,
+        "FeO": 0.02, "Na2O": 0.02, "K2O": 0.02, "TiO2": 0.02,
+    }
+    below_share_boundary = {
+        "CaO": 0.979, "MgO": 0.979, "SiO2": 1.958,
+        "FeO": 0.021, "Na2O": 0.021, "K2O": 0.021, "TiO2": 0.021,
+    }
+    assert any(
+        n.startswith("silicate-vapour-product-low-near-liquidus:")
+        for n in evaluate(at_share_boundary, 1668.0, allow_extrapolation=True).labels.notices
+    )
+    assert not any(
+        n.startswith("silicate-vapour-product-low-near-liquidus")
+        for n in evaluate(below_share_boundary, 1668.0, allow_extrapolation=True).labels.notices
+    )
+    at_other_parent_limit = {"CaO": 0.99, "MgO": 0.99, "SiO2": 1.98, "FeO": 0.04}
+    below_other_parent_limit = {"CaO": 0.991, "MgO": 0.991, "SiO2": 1.982, "FeO": 0.036}
+    assert not any(
+        n.startswith("silicate-vapour-product-low-near-liquidus")
+        for n in evaluate(at_other_parent_limit, 1668.0, allow_extrapolation=True).labels.notices
+    )
+    assert any(
+        n.startswith("silicate-vapour-product-low-near-liquidus:")
+        for n in evaluate(below_other_parent_limit, 1668.0, allow_extrapolation=True).labels.notices
+    )
+    other_pack = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
+    unscored = evaluate(diopside, 1668.0, other_pack, allow_extrapolation=True)
+    assert any(n.startswith("silicate-vapour-product-low-near-liquidus-unscored:") for n in unscored.labels.notices)
+
+    lunar_basalt = {"Al2O3": 14.2, "CaO": 11.4, "FeO": 10.9, "K2O": 0.1, "MgO": 8.1, "Na2O": 0.4, "SiO2": 45.4, "TiO2": 3.2}
+    assert not any(n.startswith("silicate-vapour-product-low-near-liquidus") for n in evaluate(lunar_basalt, 1668.0, basis_type="wt", allow_extrapolation=True).labels.notices)
+    assert not any(n.startswith("silicate-vapour-product-low-near-liquidus") for n in evaluate(diopside, 1617.9, allow_extrapolation=True).labels.notices)
+    assert not any(n.startswith("silicate-vapour-product-low-near-liquidus") for n in evaluate({"CaO": 1.0, "MgO": 1.0, "SiO2": 1.8, "Al2O3": 0.2}, 1668.0, allow_extrapolation=True).labels.notices)
+
+
+def test_silicate_product_evidence_identity_is_pinned() -> None:
+    pack = load_datapack()
+    assert (pack.model_id, pack.binding_digest) == (
+        model._MELT_EVIDENCE_MODEL_ID, model._MELT_EVIDENCE_BINDING_DIGEST
+    ), "default pack moved; re-score melt notice evidence before retaining measured claims"
