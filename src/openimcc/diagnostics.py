@@ -205,3 +205,139 @@ def run_cp_implied(pack_path: str | Path | None = None) -> tuple[ImccLoadedDatap
         for row in values:
             results.append({"dataset_id": entry["id"], **row})
     return pack, results, score_against_calorimetry(results, dataset)
+
+
+_OXIDE_MOLAR_MASS = {
+    "SiO2": 60.0843, "MgO": 40.3044, "CaO": 56.0774, "Al2O3": 101.9613,
+}
+
+
+def load_crystal_dataset() -> dict[str, Any]:
+    path = resources.files("openimcc").joinpath("data/diagnostics/crystal-phases.json")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _interpolate_crystal_fusion_nodes(phase: Mapping[str, Any], temperature_K: float) -> float:
+    nodes = sorted((float(t), float(g)) for t, g in phase["fusion_gibbs_nodes_kJ_mol"].items())
+    if temperature_K < nodes[0][0] or temperature_K > nodes[-1][0]:
+        raise ValueError(
+            f"{phase['id']} fusion function has no source node at {temperature_K:g} K"
+        )
+    for temp, value in nodes:
+        if temp == temperature_K:
+            return value
+    lo, hi = next((a, b) for a, b in zip(nodes, nodes[1:])
+                  if a[0] <= temperature_K <= b[0])
+    return lo[1] + (hi[1] - lo[1]) * (temperature_K - lo[0]) / (hi[0] - lo[0])
+
+
+def crystal_closure(
+    pack: ImccLoadedDatapack,
+    condensate_path: str | Path | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Report sourced crystal saturation and melting-point closure values.
+
+    For a crystal φ, the balanced chain φ(cr) -> crystalline parent oxides ->
+    the melt pack's pure-liquid parent standards cancels Berman's elemental
+    reference terms on the first leg. SI = Σν log10(a_i) + ΔG°/(RT ln 10).
+    ΔG° is J/mol and the residual is RT ln(10) SI, converted to kJ/mol.
+    At a pure oxide's JANAF fusion anchor, a=1 and G(liquid)-G(crystal)=0,
+    so SI=0. The residual-derived SI is computed independently as a unit check.
+    """
+    from openimcc.gas import (
+        default_condensate_database_path, default_gas_database_path,
+        load_gas_datapack, species_thermo,
+    )
+
+    dataset = load_crystal_dataset()
+    oxide_path = Path(condensate_path) if condensate_path else default_condensate_database_path()
+    gas_pack = load_gas_datapack(default_gas_database_path(), oxide_path)
+    reference_pack = load_gas_datapack(default_gas_database_path(), default_condensate_database_path())
+    digest = gas_pack.condensate_table_digest
+    Rln10 = R * math.log(10.0)
+
+    def delta_g(phase: Mapping[str, Any], temp: float) -> float:
+        bounds = phase["valid_temperature_K"]
+        if not float(bounds[0]) <= temp <= float(bounds[1]):
+            raise ValueError(f"{phase['id']} crystal function is valid only in {bounds} K")
+        reference_g = _interpolate_crystal_fusion_nodes(phase, temp)
+        # The tabulated ΔG nodes use the packaged liquid standards. A custom
+        # condensate table shifts only the second leg by ΔG_liquid(custom) −
+        # ΔG_liquid(packaged), with the same oxide stoichiometry and units.
+        if digest != reference_pack.condensate_table_digest:
+            reference_g += sum(float(nu) * (
+                species_thermo(oxide, "l", temp, gas_pack).G_J_mol
+                - species_thermo(oxide, "l", temp, reference_pack).G_J_mol
+            ) / 1000.0 for oxide, nu in phase["oxide_stoichiometry"].items())
+        return reference_g * 1000.0
+
+    def phase_state(
+        phase: Mapping[str, Any], temp: float,
+        composition: Mapping[str, float] | None = None,
+    ) -> dict[str, Any]:
+        sto = phase["oxide_stoichiometry"]
+        weights = composition or {
+            oxide: float(nu) * _OXIDE_MOLAR_MASS[oxide] for oxide, nu in sto.items()
+        }
+        melt = evaluate(weights, temp, pack, basis_type="wt", allow_extrapolation=True,
+                        allow_out_of_envelope=True)
+        logq = sum(float(nu) * math.log10(melt.activity(oxide)) for oxide, nu in sto.items())
+        dg = delta_g(phase, temp)
+        si = logq + dg / (Rln10 * temp)
+        residual_kj = (dg + logq * Rln10 * temp) / 1000.0
+        residual_si = residual_kj * 1000.0 / (Rln10 * temp)
+        if not math.isclose(si, residual_si, rel_tol=0.0, abs_tol=1e-12):
+            raise ArithmeticError(f"SI/residual unit mismatch for {phase['id']} at {temp:g} K")
+        return {"temperature_K": temp, "SI": si, "residual_kJ_mol": residual_kj,
+                "delta_log10_vapor_product": residual_si, "deltaG_fusion_J_mol": dg,
+                "log10_activity_product": logq}
+
+    results = []
+    for phase in dataset["phases"]:
+        tm = float(phase["melting_point"]["temperature_K"])
+        at_tm = phase_state(phase, tm)
+        grid = sorted(set(float(t) for t in phase["source_node_temperatures_K"] if t < tm))
+        grid += [tm]
+        values = [phase_state(phase, t) for t in grid]
+        root = None
+        for lo, hi, left, right in zip(grid, grid[1:], values, values[1:]):
+            if left["SI"] == 0:
+                root = lo; break
+            if left["SI"] * right["SI"] <= 0:
+                from scipy.optimize import brentq
+                root = float(brentq(lambda t: phase_state(phase, t)["SI"], lo, hi))
+                break
+        in_range = next((v for v in reversed(values[:-1]) if v["temperature_K"] <= 1800), None)
+        results.append({"phase": phase["id"], "formula": phase["formula"],
+            "melting_point_K": tm, "congruent": phase["melting_point"]["congruent"],
+            "source": phase["source"], "SI_at_melting_point": at_tm["SI"],
+            "residual_at_melting_point_kJ_mol": at_tm["residual_kJ_mol"],
+            "delta_log10_vapor_product_at_melting_point": at_tm["delta_log10_vapor_product"],
+            "root_K": root, "in_range_node": in_range,
+            "SI_positive_below_root": (
+                phase_state(phase, max(grid[0], root - 1.0))["SI"] > 0
+                if root is not None else None
+            ),
+            "source_temperature_range_K": phase["valid_temperature_K"]})
+    eutectic_composition = {oxide: 0.0 for oxide in _OXIDE_MOLAR_MASS}
+    phase_by_id = {phase["id"]: phase for phase in dataset["phases"]}
+    for fraction, phase_id in ((0.42, "anorthite"), (0.58, "diopside")):
+        sto = phase_by_id[phase_id]["oxide_stoichiometry"]
+        phase_mass = sum(float(nu) * _OXIDE_MOLAR_MASS[oxide] for oxide, nu in sto.items())
+        for oxide, nu in sto.items():
+            eutectic_composition[oxide] += fraction * float(nu) * _OXIDE_MOLAR_MASS[oxide] / phase_mass * 100.0
+    eutectic = {phase_id: phase_state(phase_by_id[phase_id], 1547.0, eutectic_composition)
+                for phase_id in ("anorthite", "diopside")}
+    controls = []
+    for control in dataset["pure_oxide_controls"]:
+        temp = float(control["melting_point"]["temperature_K"])
+        oxide = control["id"]
+        melt = evaluate({oxide: _OXIDE_MOLAR_MASS[oxide]}, temp, pack,
+                        basis_type="wt", allow_extrapolation=True,
+                        allow_out_of_envelope=True)
+        fusion_g = float(control["fusion_gibbs_at_melting_kJ_mol"]) * 1000.0
+        si = math.log10(melt.activity(oxide)) + fusion_g / (Rln10 * temp)
+        controls.append({"phase": oxide, "temperature_K": temp, "SI": si,
+                         "activity": melt.activity(oxide), "source": control["source"]})
+    return results, {"condensate_table_digest": digest, "pure_oxide_controls": controls,
+                     "An42Di58_1547K": eutectic}

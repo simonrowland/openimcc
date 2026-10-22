@@ -126,3 +126,78 @@ def test_cli_csv_contains_flatness_and_evaluation_metadata(tmp_path):
                        if row["dataset_id"] == "Na2Si2O5" and row["temperature_K"] == "1700.0")
     assert sodium_1700["extrapolated"] == "False"
     assert sodium_1700["paper_demonstrated_window"] == "True"
+
+
+def test_crystal_closure_units_controls_and_default_regression():
+    from openimcc.diagnostics import crystal_closure, load_crystal_dataset
+    from openimcc.model import load_datapack
+
+    pack = load_datapack()
+    rows, details = crystal_closure(pack)
+    by_phase = {row["phase"]: row for row in rows}
+    for row in rows:
+        tm = row["melting_point_K"]
+        assert row["SI_at_melting_point"] == pytest.approx(
+            row["residual_at_melting_point_kJ_mol"] * 1000
+            / (8.31446261815324 * tm * math.log(10)), abs=1e-12,
+        )
+        assert row["delta_log10_vapor_product_at_melting_point"] == pytest.approx(
+            row["SI_at_melting_point"], abs=1e-12,
+        )
+        node = row["in_range_node"]
+        assert node["SI"] == pytest.approx(
+            node["residual_kJ_mol"] * 1000 / (8.31446261815324 * node["temperature_K"] * math.log(10)),
+            abs=1e-12,
+        )
+        assert node["delta_log10_vapor_product"] == pytest.approx(node["SI"], abs=1e-12)
+    assert by_phase["forsterite"]["root_K"] == pytest.approx(1799, abs=1)
+    assert by_phase["forsterite"]["SI_positive_below_root"] is True
+    assert by_phase["anorthite"]["in_range_node"]["residual_kJ_mol"] == pytest.approx(-11.79, abs=0.02)
+    assert all(control["activity"] == pytest.approx(1.0) for control in details["pure_oxide_controls"])
+    assert all(control["SI"] == pytest.approx(0.0, abs=1e-12)
+               for control in details["pure_oxide_controls"])
+    eutectic = details["An42Di58_1547K"]
+    assert eutectic["anorthite"]["SI"] == pytest.approx(-0.203, abs=0.001)
+    assert eutectic["diopside"]["SI"] == pytest.approx(-0.744, abs=0.001)
+    assert details["condensate_table_digest"]
+    data = load_crystal_dataset()
+    parameters = {phase["id"]: phase["berman_parameters"]
+                  for phase in data["phases"] if phase.get("berman_parameters") is not None}
+    for phase_parameters in parameters.values():
+        assert phase_parameters["HfPrTr_J_mol"] != 0
+        assert phase_parameters["SPrTr_J_mol_K"] != 0
+        assert phase_parameters["k0"] != 0
+    assert parameters["pseudowollastonite"]["HfPrTr_J_mol"] == -1627427.0
+    assert parameters["pseudowollastonite"]["k0"] == 141.16
+    differences = [p["rh_crosscheck"]["crystal_to_oxide_leg_difference_kJ_mol"]
+                   for p in data["phases"] if p["rh_crosscheck"].get("crystal_to_oxide_leg_difference_kJ_mol") is not None]
+    assert differences == pytest.approx([0.621, -0.675, -0.45], abs=0.01)
+
+
+def test_crystal_fusion_function_refuses_out_of_source_range():
+    from openimcc.diagnostics import _interpolate_crystal_fusion_nodes, load_crystal_dataset
+
+    phase = {"id": "test", "fusion_gibbs_nodes_kJ_mol": {"1500": 10, "1800": 4}}
+    assert _interpolate_crystal_fusion_nodes(phase, 1650) == pytest.approx(7)
+    with pytest.raises(ValueError, match="no source node"):
+        _interpolate_crystal_fusion_nodes(phase, 1800.1)
+    for sourced_phase in load_crystal_dataset()["phases"]:
+        upper = max(map(float, sourced_phase["fusion_gibbs_nodes_kJ_mol"]))
+        _interpolate_crystal_fusion_nodes(sourced_phase, upper)
+        with pytest.raises(ValueError, match="no source node"):
+            _interpolate_crystal_fusion_nodes(sourced_phase, upper + 0.01)
+
+
+def test_crystal_closure_cli_writes_pack_and_condensate_identities(tmp_path):
+    from openimcc.model import load_datapack
+
+    assert main(["diagnose", "crystal-closure", "--out", str(tmp_path)]) == 0
+    with (tmp_path / "crystal-closure.csv").open(encoding="utf-8", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    assert len(rows) == 14
+    assert "delta_log10_vapor_product_at_melting_point" in rows[0]
+    receipt = (tmp_path / "crystal-closure.md").read_text(encoding="utf-8")
+    pack = load_datapack()
+    assert pack.model_id in receipt
+    assert pack.binding_digest in receipt
+    assert "Condensate table digest:" in receipt

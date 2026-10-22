@@ -1,0 +1,1137 @@
+{
+  "schema": "openimcc-crystal-phases-v1",
+  "units": {
+    "temperature": "K",
+    "berman_HfPrTr_J_mol": "J mol-1",
+    "berman_SPrTr_J_mol_K": "J mol-1 K-1",
+    "berman_Cp_equation": "Cp = k0 + k1*T^-1/2 + k2*T^-2 + k3*T^-3 + k4*T^-1 + k5*T + k6*T^2",
+    "berman_k0": "J mol-1 K-1",
+    "berman_k1": "J mol-1 K-1/2",
+    "berman_k2": "J mol-1 K",
+    "berman_k3": "J mol-1 K2",
+    "berman_k4": "J mol-1",
+    "berman_k5": "J mol-1 K-2",
+    "berman_k6": "J mol-1 K-3",
+    "transition_enthalpy": "J mol-1",
+    "disorder_d_coefficients": "Table 5 Cp_dis equation units, derived from Cp_dis = d0 + d1*T^-1/2 + d2*T^-2 + d3*T + d4*T^2",
+    "fusion_gibbs_nodes_kJ_mol": "kJ mol-1 crystal formula unit",
+    "residuals": "kJ mol-1 crystal formula unit",
+    "oxide_stoichiometry": "mol parent oxide per mol crystal formula unit",
+    "berman_lambda_l1_l2": "Table 3b scaled coefficients; used in Cp_lambda = T*(l1+l2*T)^2, with the resulting Cp in J mol-1 K-1",
+    "disorder_d0": "J mol-1 K-1",
+    "disorder_d1": "J mol-1 K-1/2",
+    "disorder_d2": "J mol-1 K",
+    "disorder_d3": "J mol-1 K-2",
+    "disorder_d4": "J mol-1 K-3"
+  },
+  "phases": [
+    {
+      "id": "forsterite",
+      "formula": "Mg2SiO4",
+      "oxide_stoichiometry": {
+        "MgO": 2,
+        "SiO2": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "458",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -2174420.0,
+        "SPrTr_J_mol_K": 94.01,
+        "k0": 238.64,
+        "k1": -2001.3,
+        "k2": 0.0,
+        "k3": -116240000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        2163.0
+      ],
+      "melting_point": {
+        "temperature_K": 2163,
+        "source": "Navrotsky et al. (1989), fusion calorimetry at 2163 K; exact DOI/page not transcribed (citation gap).",
+        "congruent": true
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": "335",
+        "G_crystal_1800_kJ_mol": -1366.2,
+        "crystal_to_oxide_leg_difference_kJ_mol": 0.621
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0,
+        1900.0,
+        2000.0,
+        2100.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 139.09494496737392,
+        "1400": 135.2675144702444,
+        "1500": 130.3262061221128,
+        "1600": 125.42638667029469,
+        "1700": 121.74353404241079,
+        "1800": 115.62973572818795,
+        "1900": 110.71177954758588,
+        "2000": 105.78322271228838,
+        "2100": 100.85194475525664,
+        "2163": 97.70570455076668
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -2.783400700418709
+      }
+    },
+    {
+      "id": "enstatite",
+      "formula": "MgSiO3",
+      "oxide_stoichiometry": {
+        "MgO": 1,
+        "SiO2": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "458",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -1545552.0,
+        "SPrTr_J_mol_K": 66.17,
+        "k0": 166.58,
+        "k1": -1200.6,
+        "k2": -2270600.0,
+        "k3": 279150000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        1830.0
+      ],
+      "melting_point": {
+        "temperature_K": 1830,
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131, p. 353",
+        "congruent": true
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 72.79922669796967,
+        "1400": 70.85887619525369,
+        "1500": 68.37777506410761,
+        "1600": 65.94326235964405,
+        "1700": 64.72968739332073,
+        "1800": 61.08834848578297,
+        "1830": 60.348685252770174
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -2.09849439799966
+      }
+    },
+    {
+      "id": "diopside",
+      "formula": "CaMgSi2O6",
+      "oxide_stoichiometry": {
+        "CaO": 1,
+        "MgO": 1,
+        "SiO2": 2
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "458",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -3200583.0,
+        "SPrTr_J_mol_K": 142.5,
+        "k0": 305.41,
+        "k1": -1604.9,
+        "k2": -7166000.0,
+        "k3": 921840000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        1668.0
+      ],
+      "melting_point": {
+        "temperature_K": 1668,
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131, p. 347; incongruent onset",
+        "congruent": false
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 222.56182976002378,
+        "1400": 217.84996348771756,
+        "1500": 211.75063070597756,
+        "1600": 205.67738304965664,
+        "1668": 203.15960725770935
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -7.152263174519544
+      }
+    },
+    {
+      "id": "anorthite",
+      "formula": "CaAl2Si2O8",
+      "oxide_stoichiometry": {
+        "CaO": 1,
+        "Al2O3": 1,
+        "SiO2": 2
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "458",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -4228730.0,
+        "SPrTr_J_mol_K": 200.186,
+        "k0": 439.37,
+        "k1": -3734.1,
+        "k2": 0.0,
+        "k3": -317020000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        1826.0
+      ],
+      "melting_point": {
+        "temperature_K": 1826,
+        "source": "Namur et al. (2012), Table 2, DOI 10.1007/s00410-011-0699-9",
+        "congruent": true
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": "362",
+        "G_crystal_1800_kJ_mol": -2860.5,
+        "crystal_to_oxide_leg_difference_kJ_mol": -0.675
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 213.0761905494811,
+        "1400": 211.1385072013682,
+        "1500": 208.27745303174316,
+        "1600": 205.0601066750041,
+        "1700": 203.87366570765758,
+        "1800": 197.4545192418173,
+        "1826": 196.30727863614945
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -6.022657047257276
+      }
+    },
+    {
+      "id": "spinel",
+      "formula": "MgAl2O4",
+      "oxide_stoichiometry": {
+        "MgO": 1,
+        "Al2O3": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "459",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -2300313.0,
+        "SPrTr_J_mol_K": 84.535,
+        "k0": 235.9,
+        "k1": -1766.6,
+        "k2": -1710400.0,
+        "k3": 40620000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        2408.0
+      ],
+      "melting_point": {
+        "temperature_K": 2408,
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131; exact melting-point page gap (citation gap)",
+        "congruent": true
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0,
+        1900.0,
+        2000.0,
+        2100.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 105.59567852374042,
+        "1400": 103.21357868965202,
+        "1500": 99.76258740203617,
+        "1600": 95.94033667538478,
+        "1700": 91.77651354808873,
+        "1800": 87.30057103727525,
+        "1900": 82.53677981989458,
+        "2000": 77.5042681347623,
+        "2100": 72.2230527653608,
+        "2408": 54.22103758128582
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -1.5502925977470536
+      }
+    },
+    {
+      "id": "akermanite",
+      "formula": "Ca2MgSi2O7",
+      "oxide_stoichiometry": {
+        "CaO": 2,
+        "MgO": 1,
+        "SiO2": 2
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "458",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -3860441.0,
+        "SPrTr_J_mol_K": 212.0,
+        "k0": 387.06,
+        "k1": -2938.8,
+        "k2": 0.0,
+        "k3": -40790000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 358.0,
+        "Tref_K": 298.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 452.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        1727.0
+      ],
+      "melting_point": {
+        "temperature_K": 1727,
+        "source": "USGS Bulletin 1259, p. 211",
+        "congruent": true
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 332.59336678137106,
+        "1400": 327.9529643109499,
+        "1500": 321.9129882821527,
+        "1600": 315.8673845689865,
+        "1700": 312.17504108208465,
+        "1727": 309.8408296107028
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -9.87341185602983
+      }
+    },
+    {
+      "id": "gehlenite",
+      "formula": "Ca2Al2SiO7",
+      "oxide_stoichiometry": {
+        "CaO": 2,
+        "Al2O3": 1,
+        "SiO2": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "458",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": "Table 5, published p. 471"
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -3988158.0,
+        "SPrTr_J_mol_K": 198.6,
+        "k0": 373.09,
+        "k1": -2276.8,
+        "k2": -4778500.0,
+        "k3": 477910000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0,
+        "Tmin_K": 698.0,
+        "Tmax_K": 1600.0
+      },
+      "disorder_parameters": {
+        "d0": -221.74,
+        "d1": 0.0,
+        "d2": 17291000.0,
+        "d3": 0.3695,
+        "d4": -0.0001469
+      },
+      "valid_temperature_K": [
+        1323.0,
+        1823.0
+      ],
+      "melting_point": {
+        "temperature_K": 1823,
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131; exact melting-point page gap (citation gap)",
+        "congruent": true
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null,
+        "crystal_to_oxide_leg_difference_kJ_mol": -0.45
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 294.6684622944573,
+        "1400": 291.6180712547948,
+        "1500": 287.3484927835141,
+        "1600": 282.7144572246464,
+        "1700": 278.8762477517094,
+        "1800": 272.20320301783164,
+        "1823": 270.85677071919145
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -8.369254039455924
+      }
+    },
+    {
+      "id": "merwinite",
+      "formula": "Ca3MgSi2O8",
+      "oxide_stoichiometry": {
+        "CaO": 3,
+        "MgO": 1,
+        "SiO2": 2
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "459",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -4537497.0,
+        "SPrTr_J_mol_K": 251.777,
+        "k0": 453.62,
+        "k1": -3250.0,
+        "k2": 0.0,
+        "k3": -344230000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        1840.0
+      ],
+      "melting_point": {
+        "temperature_K": 1840,
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131; exact melting-point page gap (citation gap)",
+        "congruent": true
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 422.3459419172801,
+        "1400": 416.0587863804011,
+        "1500": 407.9020373484225,
+        "1600": 399.7635426744558,
+        "1700": 394.00235269294495,
+        "1800": 383.31866418125713,
+        "1840": 379.973351435918
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -10.80494912697877
+      }
+    },
+    {
+      "id": "monticellite",
+      "formula": "CaMgSiO4",
+      "oxide_stoichiometry": {
+        "CaO": 1,
+        "MgO": 1,
+        "SiO2": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "459",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -2250027.0,
+        "SPrTr_J_mol_K": 108.3,
+        "k0": 226.34,
+        "k1": -1542.7,
+        "k2": -1179700.0,
+        "k3": -23290000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        1573.0
+      ],
+      "melting_point": {
+        "temperature_K": 1573,
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131; exact melting-point page gap (citation gap)",
+        "congruent": true
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 191.441914280564,
+        "1400": 187.64220735327376,
+        "1500": 182.72373801015655,
+        "1573": 179.14666179116048
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -5.713097500907286
+      }
+    },
+    {
+      "id": "wollastonite",
+      "formula": "CaSiO3",
+      "oxide_stoichiometry": {
+        "CaO": 1,
+        "SiO2": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "459",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -1631500.0,
+        "SPrTr_J_mol_K": 81.81,
+        "k0": 149.07,
+        "k1": -690.3,
+        "k2": -3659300.0,
+        "k3": 484350000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        1817.0
+      ],
+      "melting_point": {
+        "temperature_K": 1817,
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131; polymorph-specific melting point needs verification",
+        "congruent": false
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 134.84175580724624,
+        "1400": 132.69054646002581,
+        "1500": 129.89792309859175,
+        "1600": 127.10717907140311,
+        "1700": 125.4958661494758,
+        "1800": 121.4144548717481,
+        "1817": 120.91587686271257
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -3.6891163860454586
+      }
+    },
+    {
+      "id": "pseudowollastonite",
+      "formula": "CaSiO3",
+      "oxide_stoichiometry": {
+        "CaO": 1,
+        "SiO2": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "459",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -1627427.0,
+        "SPrTr_J_mol_K": 85.279,
+        "k0": 141.16,
+        "k1": -417.2,
+        "k2": -5857600.0,
+        "k3": 940740000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        1817.0
+      ],
+      "melting_point": {
+        "temperature_K": 1817,
+        "source": "Tarina, Navrotsky & Gan (1994), DOI 10.1016/0016-7036(94)90157-0",
+        "congruent": true
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 134.6726909315667,
+        "1400": 132.69036685214297,
+        "1500": 130.10716479495738,
+        "1600": 127.51451013340429,
+        "1700": 126.08985387705266,
+        "1800": 122.18360743699712,
+        "1817": 121.71366242252653
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": -3.6891163860454586
+      }
+    },
+    {
+      "id": "quartz_beta",
+      "formula": "SiO2",
+      "oxide_stoichiometry": {
+        "SiO2": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "459",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -908627.0,
+        "SPrTr_J_mol_K": 44.207,
+        "k0": 80.01,
+        "k1": -240.3,
+        "k2": -3546700.0,
+        "k3": 491570000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        1986.0
+      ],
+      "melting_point": {
+        "temperature_K": 1986,
+        "source": "Nominal comparison temperature in the cited high-temperature phase tables; not a verified congruent melting anchor (citation gap).",
+        "congruent": false
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0,
+        1900.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 1.6443453191015402,
+        "1400": 1.3388798372686141,
+        "1500": 0.9287051966469735,
+        "1600": 0.5035197101938538,
+        "1700": 1.2396207284720149,
+        "1800": -0.5096572907876691,
+        "1900": -1.1239481705087238,
+        "1986": -1.7067300642633625
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": 0.0
+      }
+    },
+    {
+      "id": "tridymite_high",
+      "formula": "SiO2",
+      "oxide_stoichiometry": {
+        "SiO2": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "459",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -907045.0,
+        "SPrTr_J_mol_K": 45.524,
+        "k0": 75.37,
+        "k1": 0.0,
+        "k2": -5958100.0,
+        "k3": 958250000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        2000.0
+      ],
+      "melting_point": {
+        "temperature_K": 2000,
+        "source": "Nominal comparison temperature in the cited high-temperature phase tables; not a verified congruent melting anchor (citation gap).",
+        "congruent": false
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0,
+        1900.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 1.990134957169718,
+        "1400": 1.8365912360835355,
+        "1500": 1.6282209180550418,
+        "1600": 1.4090564347465988,
+        "1700": 2.354558813797077,
+        "1800": 0.8173292881886007,
+        "1900": 0.41709177888347765,
+        "2000": -0.04532332007936204
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": 0.0
+      }
+    },
+    {
+      "id": "cristobalite_beta",
+      "formula": "SiO2",
+      "oxide_stoichiometry": {
+        "SiO2": 1
+      },
+      "source": {
+        "authors": "Berman",
+        "year": 1988,
+        "journal": "Journal of Petrology, 29(2), 445–522",
+        "doi": "10.1093/petrology/29.2.445",
+        "table2_page": "458",
+        "heat_capacity_tables": "Tables 3a/3b, pp. 460–464",
+        "disorder_table": null
+      },
+      "berman_parameters": {
+        "HfPrTr_J_mol": -906377.0,
+        "SPrTr_J_mol_K": 46.029,
+        "k0": 83.51,
+        "k1": -374.7,
+        "k2": -2455400.0,
+        "k3": 280070000.0,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "Tlambda_K": 0.0,
+        "Tref_K": 0.0,
+        "l1": 0.0,
+        "l2": 0.0,
+        "DtH_J_mol": 0.0
+      },
+      "disorder_parameters": null,
+      "valid_temperature_K": [
+        1323.0,
+        2000.0
+      ],
+      "melting_point": {
+        "temperature_K": 2000,
+        "source": "Nominal comparison temperature in the cited high-temperature phase tables; not a verified congruent melting anchor (citation gap).",
+        "congruent": false
+      },
+      "rh_crosscheck": {
+        "source": "Robie & Hemingway (1995), USGS Bulletin 2131",
+        "page": null,
+        "G_crystal_1800_kJ_mol": null
+      },
+      "source_node_temperatures_K": [
+        1323.0,
+        1400.0,
+        1500.0,
+        1600.0,
+        1700.0,
+        1800.0,
+        1900.0
+      ],
+      "fusion_gibbs_nodes_kJ_mol": {
+        "1323": 1.9583,
+        "1400": 1.812,
+        "1500": 1.611,
+        "1600": 1.398,
+        "1700": 2.3495,
+        "1800": 0.8189999999999997,
+        "1900": 0.427,
+        "2000": -0.025000000000000022
+      },
+      "default_pack_anchor": {
+        "model_id": "IMCC-SF04-D066",
+        "binding_digest": "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
+        "log10_activity_product_at_Tm": 0.0
+      }
+    }
+  ],
+  "pure_oxide_controls": [
+    {
+      "id": "SiO2",
+      "formula": "SiO2",
+      "oxide_stoichiometry": {
+        "SiO2": 1.0
+      },
+      "source": {
+        "authors": "Chase",
+        "year": 1998,
+        "journal": "NIST-JANAF Thermochemical Tables, 4th edition",
+        "doi": "10.18434/T42S31"
+      },
+      "crystal_species": "cristobalite(cr)",
+      "liquid_species": "SiO2(l)",
+      "valid_temperature_K": [
+        298.15,
+        1996
+      ],
+      "melting_point": {
+        "temperature_K": 1996,
+        "source": "JANAF crystal/liquid reference function",
+        "congruent": true
+      },
+      "fusion_gibbs_at_melting_kJ_mol": 0.0
+    },
+    {
+      "id": "MgO",
+      "formula": "MgO",
+      "oxide_stoichiometry": {
+        "MgO": 1.0
+      },
+      "source": {
+        "authors": "Chase",
+        "year": 1998,
+        "journal": "NIST-JANAF Thermochemical Tables, 4th edition",
+        "doi": "10.18434/T42S31"
+      },
+      "crystal_species": "periclase(cr)",
+      "liquid_species": "MgO(l)",
+      "valid_temperature_K": [
+        298.15,
+        3105
+      ],
+      "melting_point": {
+        "temperature_K": 3105,
+        "source": "JANAF crystal/liquid reference function",
+        "congruent": true
+      },
+      "fusion_gibbs_at_melting_kJ_mol": 0.0
+    },
+    {
+      "id": "CaO",
+      "formula": "CaO",
+      "oxide_stoichiometry": {
+        "CaO": 1.0
+      },
+      "source": {
+        "authors": "Chase",
+        "year": 1998,
+        "journal": "NIST-JANAF Thermochemical Tables, 4th edition",
+        "doi": "10.18434/T42S31"
+      },
+      "crystal_species": "lime(cr)",
+      "liquid_species": "CaO(l)",
+      "valid_temperature_K": [
+        298.15,
+        3200
+      ],
+      "melting_point": {
+        "temperature_K": 3200,
+        "source": "JANAF crystal/liquid reference function",
+        "congruent": true
+      },
+      "fusion_gibbs_at_melting_kJ_mol": 0.0
+    },
+    {
+      "id": "Al2O3",
+      "formula": "Al2O3",
+      "oxide_stoichiometry": {
+        "Al2O3": 1.0
+      },
+      "source": {
+        "authors": "Chase",
+        "year": 1998,
+        "journal": "NIST-JANAF Thermochemical Tables, 4th edition",
+        "doi": "10.18434/T42S31"
+      },
+      "crystal_species": "corundum(cr)",
+      "liquid_species": "Al2O3(l)",
+      "valid_temperature_K": [
+        298.15,
+        2327
+      ],
+      "melting_point": {
+        "temperature_K": 2327,
+        "source": "JANAF crystal/liquid reference function",
+        "congruent": true
+      },
+      "fusion_gibbs_at_melting_kJ_mol": 0.0
+    }
+  ],
+  "fusion_node_method": {
+    "method": "For each node, Berman apparent Gibbs energies give crystal -> crystalline parent oxides within the internally consistent crystal dataset; JANAF fusion Gibbs nodes give each oxide crystal -> its pure-liquid parent standard. The sum is the tabulated parent-liquid fusion Gibbs energy.",
+    "liquid_standard_source": "Packaged condensate standards evaluated by the gas layer Gibbs helper on the JANAF basis; alternate condensate tables shift the liquid leg using the same helper.",
+    "source": "Berman (1988), Tables 2, 3a/3b, and Table 5 where applicable; Chase (1998), NIST-JANAF Thermochemical Tables, 4th edition.",
+    "interpolation": "Piecewise linear only between listed source nodes; no endpoint extrapolation."
+  }
+}

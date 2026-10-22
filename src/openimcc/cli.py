@@ -322,6 +322,45 @@ def _cmd_diagnose_cp_implied(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _cmd_diagnose_crystal_closure(args: argparse.Namespace) -> int:
+    from openimcc.diagnostics import crystal_closure
+
+    pack = load_datapack(args.pack)
+    rows, details = crystal_closure(pack, args.condensate)
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = out_dir / "crystal-closure.csv"
+    fields = ["phase", "formula", "melting_point_K", "congruent",
+              "SI_at_melting_point", "residual_at_melting_point_kJ_mol",
+              "delta_log10_vapor_product_at_melting_point", "root_K",
+              "in_range_node", "source_temperature_range_K", "source"]
+    with csv_path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({key: row[key] for key in fields if key not in {"in_range_node", "source_temperature_range_K", "source"}} | {
+                "in_range_node": json.dumps(row["in_range_node"], sort_keys=True),
+                "source_temperature_range_K": json.dumps(row["source_temperature_range_K"]),
+                "source": json.dumps(row["source"], sort_keys=True)})
+    receipt = out_dir / "crystal-closure.md"
+    out_pack = pack.model_id
+    binding = pack.binding_digest or "unavailable"
+    controls = details["pure_oxide_controls"]
+    max_control = max((abs(float(c["SI"])) for c in controls), default=0.0)
+    receipt.write_text(
+        "# Crystal melting-point closure diagnostic\n\n"
+        f"Melt pack: `{out_pack}`\n\nBinding digest: `{binding}`\n\n"
+        f"Condensate table digest: `{details['condensate_table_digest']}`\n\n"
+        f"Phases: {len(rows)}. Pure-oxide controls: {len(controls)}; "
+        f"maximum |SI| at JANAF melting anchors: {max_control:.6g}.\n\n"
+        "A negative residual means the stoichiometric liquid is undersaturated at the "
+        "reported melting point. Values are reported only and do not tune or select "
+        "thermodynamic data. See the CSV for per-phase values and source ranges.\n",
+        encoding="utf-8")
+    print(f"wrote {csv_path} and {receipt}")
+    return EXIT_OK
+
+
 def _cmd_solve(args: argparse.Namespace) -> int:
     composition = _load_composition(args.composition, args.oxide)
     pack = load_datapack(args.pack)
@@ -458,6 +497,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--out", default="diagnostics", help="output directory (default: diagnostics)"
     )
     cp_implied.set_defaults(func=_cmd_diagnose_cp_implied)
+
+    crystal_closure = diagnose_sub.add_parser(
+        "crystal-closure", help="report crystal melting-point closure"
+    )
+    crystal_closure.add_argument("--pack", default=None,
+        help="path to a melt datapack JSON (default: packaged SF04)")
+    crystal_closure.add_argument("--condensate", default=None,
+        help="path to a condensate table CSV (default: packaged table)")
+    crystal_closure.add_argument("--out", default="diagnostics",
+        help="output directory (default: diagnostics)")
+    crystal_closure.set_defaults(func=_cmd_diagnose_crystal_closure)
 
     solve = sub.add_parser(
         "solve", parents=[common], help="solve melt activities at one T"

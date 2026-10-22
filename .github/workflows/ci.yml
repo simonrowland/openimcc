@@ -33,10 +33,14 @@ jobs:
         if: always()
         continue-on-error: true
         run: openimcc diagnose cp-implied --out diagnostics
+      - name: crystal closure report (non-gating)
+        if: always()
+        continue-on-error: true
+        run: openimcc diagnose crystal-closure --out diagnostics
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cp-implied-${{ matrix.python-version }}
+          name: diagnostics-${{ matrix.python-version }}
           path: diagnostics/
           if-no-files-found: ignore
 

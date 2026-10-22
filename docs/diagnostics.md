@@ -59,6 +59,45 @@ The next diagnostics in this family are implied mixing enthalpy,
 molar enthalpy, `d ln a/d(1/T)`, against EMF temperature coefficients. They are
 not implemented here.
 
+## Crystal melting-point closure
+
+`openimcc diagnose crystal-closure` writes `crystal-closure.csv` and
+`crystal-closure.md`. The receipt identifies the melt pack, its binding digest,
+and the content digest of the condensate table used for pure-liquid parent
+standards. Use `--pack PATH`, `--condensate PATH`, and `--out DIR` to select
+inputs and the output directory. This diagnostic uses the optional gas extra
+for condensate-table loading.
+
+For each sourced crystal φ, the reported saturation index is
+
+`SI(T) = Σνᵢ log₁₀ aᵢ + ΔG°fus,parents(T)/(R T ln 10)`.
+
+The Gibbs chain is crystal → crystalline oxide parents, evaluated within the
+internally consistent Berman (1988) dataset so elemental reference terms
+cancel, followed by crystalline oxide parents → the pack's pure-liquid parent
+standards on the JANAF basis. SI is dimensionless; `ΔG°fus,parents` and the
+closure residual are per mole of crystal formula units. The residual is
+`r = ΔG°fus,parents + R T ln(10) Σνᵢ log₁₀ aᵢ`, reported in kJ mol⁻¹. The
+CSV also reports `r/(R T ln 10)` as the vapour-product equivalent
+`Δlog₁₀ Π pᵢ^νᵢ`. At coexistence, this is the difference between the vapour
+product above the melt and crystal; it constrains the complete `aᵢKφ`
+product. Free-oxide activities and the liquid-standard Gibbs terms are
+confounded in this comparison, so the residual alone does not identify which
+side accounts for a mismatch.
+
+The zero of SI is reported as a liquidus on cooling: SI is positive on its
+lower-temperature side. The melting-point residual and last in-source-node
+residual are both reported without fitting or pass/fail scoring. A pure oxide
+at its JANAF melting anchor has activity one and zero fusion Gibbs energy, so
+its control SI is zero. Crystal functions refuse temperatures outside their
+row-specific source range rather than silently extrapolating.
+
+The source rows and units are recorded in
+`src/openimcc/data/diagnostics/crystal-phases.json`. Berman's assessed crystal
+functions are compared with Robie & Hemingway (1995) where the corresponding
+published values are available; the comparison is a source check, not a fit
+target.
+
 ## Sources without numeric scores
 
 The data file also records Richet & Bottinga (1985), Stebbins, Carmichael & Moret
