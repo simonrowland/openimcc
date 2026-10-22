@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src/openimcc/data/packs"
 LEGACY_PATH = PACK_DIR / "imcc-sf04-ext-v4.json"
 PUBLISHED_PATH = PACK_DIR / "imcc-sf04-v1.0.2.json"
-DEFAULT_PATH = PACK_DIR / "imcc-sf04-d066-v3.json"
+DEFAULT_PATH = PACK_DIR / "imcc-sf04-d066-v4.json"
+D066_V3_PATH = PACK_DIR / "imcc-sf04-d066-v3.json"
 FEO_CANDIDATE_PATH = PACK_DIR / "imcc-sf04-d066-feo-liquid-candidate.json"
 SENSITIVITY_PATH = PACK_DIR / "imcc-sf04-d066-v1-kcaalsi2o7.json"
 EXTENSION_PATH = PACK_DIR / "imcc-sf04-d066-ext-v1.json"
@@ -122,7 +123,7 @@ def test_loader_defaults_unmarked_published_rows_to_active() -> None:
 def test_default_is_d066_and_legacy_packs_remain_selectable() -> None:
     default_pack = load_datapack()
     assert default_pack.model_id == "IMCC-SF04-D066"
-    assert default_pack.version == "1.0.5-d066-v3"
+    assert default_pack.version == "1.0.6-d066-v4"
     data = json.loads(DEFAULT_PATH.read_text(encoding="utf-8"))
     rows = {row["complex"]: row for row in data["rows"]}
     source_suffix = (
@@ -207,7 +208,7 @@ def test_d066_extension_k_rows_match_the_core_arm() -> None:
 
 def test_d066_v2_packs_preserve_v1_k_row_translations() -> None:
     v1 = _rows(D066_V1_PATH)
-    for pack_path in (DEFAULT_PATH, FEO_CANDIDATE_PATH):
+    for pack_path in (D066_V3_PATH, FEO_CANDIDATE_PATH):
         corrected = _rows(pack_path)
         for name in TRANSLATED_COMPLEXES:
             for field in ("A", "B", "k_translation", "fit_residual"):
@@ -217,7 +218,7 @@ def test_d066_v2_packs_preserve_v1_k_row_translations() -> None:
 @pytest.mark.parametrize(
     ("source_path", "arm", "output_path"),
     [
-        (PUBLISHED_PATH, "primary", DEFAULT_PATH),
+        (PUBLISHED_PATH, "primary", D066_V3_PATH),
         (PUBLISHED_PATH, "sensitivity", SENSITIVITY_PATH),
         (LEGACY_PATH, "primary", EXTENSION_PATH),
     ],
@@ -260,7 +261,7 @@ def test_translation_tool_reproduces_each_shipped_d066_pack(
         else:
             assert actual == wanted
 
-    if output_path == DEFAULT_PATH:
+    if output_path == D066_V3_PATH:
         generated_rows = {row["complex"]: row for row in generated["rows"]}
         expected_rows = {row["complex"]: row for row in expected["rows"]}
         for name in TRANSLATED_COMPLEXES:
@@ -292,7 +293,7 @@ def test_translation_preserves_absolute_complex_g_on_the_domain_grid() -> None:
     )
 
     old = _rows(PUBLISHED_PATH)
-    new = _rows(DEFAULT_PATH)
+    new = _rows(D066_V3_PATH)
     gas = load_gas_datapack()
     fit_row = old[TRANSLATED_COMPLEXES[0]]
     fc87_fit = _fit_reference_shift(fit_row, gas, gas, "FC87")
@@ -346,7 +347,7 @@ def test_translation_preserves_absolute_complex_g_on_the_domain_grid() -> None:
 
 def test_unknown_reference_rows_are_unchanged_and_carry_candidates() -> None:
     old = _rows(PUBLISHED_PATH)
-    new = _rows(DEFAULT_PATH)
+    new = _rows(D066_V3_PATH)
     for name in REFERENCE_UNKNOWN_COMPLEXES:
         assert new[name]["A"] == old[name]["A"]
         assert new[name]["B"] == old[name]["B"]
@@ -595,10 +596,10 @@ def test_default_v3_changes_non_k_composition_from_frozen_d066_v1() -> None:
     corrected_species = dict(zip(corrected.species_names, corrected.species_x))
     assert frozen_activity["MgO"] == pytest.approx(0.030035248299845278, abs=1e-14)
     assert frozen_activity["Al2O3"] == pytest.approx(0.01691805447658924, abs=1e-14)
-    assert corrected_activity["MgO"] == pytest.approx(0.028323738820953258, abs=1e-14)
-    assert corrected_activity["Al2O3"] == pytest.approx(0.011634426113350617, abs=1e-14)
+    assert corrected_activity["MgO"] == pytest.approx(0.02831080602000368, abs=1e-14)
+    assert corrected_activity["Al2O3"] == pytest.approx(0.01163566609529646, abs=1e-14)
     assert corrected_species["MgAl2O4"] == pytest.approx(
-        0.03424555169154322, abs=1e-14
+        0.034233563132472944, abs=1e-14
     )
 
 

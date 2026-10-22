@@ -14,6 +14,7 @@ from openimcc.redox_pack import canonical_redox_digest, load_redox_pack
 ROOT = Path(__file__).resolve().parents[1]
 CANDIDATE = ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json"
 DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
+CURRENT_DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v4.json"
 
 
 def _candidate_result(T: float, log10_f_o2: float, inventory=None):
@@ -170,7 +171,7 @@ def test_candidate_oxygen_capacity_matches_total_fixed_point_difference():
 
 def test_candidate_loader_and_default_outputs_remain_identical_across_sweep():
     candidate = load_redox_pack(CANDIDATE)
-    default = load_redox_pack(DEFAULT)
+    default = load_redox_pack(CURRENT_DEFAULT)
     assert candidate.rows[-1]["composition_coefficients"]["Fe3+O1.5"] == 0.37
     assert not any("Cr" in row["complex"] for row in default.rows)
     for T, inventory in [
@@ -180,9 +181,12 @@ def test_candidate_loader_and_default_outputs_remain_identical_across_sweep():
     ]:
         default_result = evaluate_redox(inventory, T, "closed")
         assert default_result == evaluate_redox(
+            inventory, T, "closed", redox_pack_path=CURRENT_DEFAULT
+        )
+        prior_default_result = evaluate_redox(
             inventory, T, "closed", redox_pack_path=DEFAULT
         )
-        assert default_result.oxygen_capacity_mol_per_ln_f_o2 == evaluate_redox(
+        assert prior_default_result.oxygen_capacity_mol_per_ln_f_o2 == evaluate_redox(
             inventory, T, "closed", redox_pack_path=CANDIDATE
         ).oxygen_capacity_mol_per_ln_f_o2
 

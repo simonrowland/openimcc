@@ -293,27 +293,31 @@ uncertified (`certification: denied`) and records that redox and sulfur-
 solubility behavior remain out of scope.
 
 The default `load_datapack()` resource is the nonpublished D066 primary pack,
-imcc-sf04-d066-v3.json, which combines the MgAl2O4 correction and D&G/Masson
-FeO(l) re-anchor. D066 v2 remains available as the previous default, and D066
-v1 remains available as a historical pack. The released historical model is
-D066 v1 paired with the condensate table shipped at f55617a. Its sibling KCa
+imcc-sf04-d066-v4.json, which adds the measured SiO2(l) and Na2O(l) heat
+capacities and re-references the D066 associations. D066 v3 remains available
+as the previous default, with v2 and v1 available as historical packs. The
+released historical model is D066 v1 paired with the condensate table shipped
+at f55617a. Its sibling KCa
 sensitivity pack is imcc-sf04-d066-v1-kcaalsi2o7.json. The D066 S/P extension pack,
 imcc-sf04-d066-ext-v1.json, carries the ext-v4 sp_extension unchanged and
 requires `enable_sp_extension=True`. All three use model_id IMCC-SF04-D066 and
 the loader validates their explicit 38-row core structure and row coverage.
+The earlier SiO2/Na2O opt-in melt, redox, and condensate files remain available
+under their candidate paths for callers that load those identifiers.
 The published reproduction remains selectable as
 imcc-sf04-v1.0.2.json. Pair that melt pack with the SF04-published gas
 condensate table (`gas/gas-shomate.csv` plus
 `packs/sf04-published/condensate.csv`) to reproduce the published LAM K2O(l)
 gas pressures; the default D066 pack pairs with the packaged condensate.
 The file `gas/condensate-feo-janaf-legacy.csv` keeps the other rows from the
-249fde5 condensate table and substitutes only its JANAF Fe-019 FeO(l) row.
-Selecting it with
-`load_gas_datapack(oxide_path=...)` restores the gas FeO standard only; it does
-not restore melt associations or redox thermochemistry. For the released
-historical model, use D066 v1 with the f55617a condensate instead. The legacy
-file is retained for explicit Fe-019 gas comparisons and the source-pinned
-element-status regression.
+previous condensate table and substitutes only its JANAF Fe-019 FeO(l) row.
+The file `gas/condensate-sio2-na2o-janaf-legacy.csv` restores the prior
+SiO2(l) and Na2O(l) rows; pair it with D066 v3 to reproduce the prior default.
+Selecting the FeO legacy file with `load_gas_datapack(oxide_path=...)` restores
+the gas FeO standard only; it does not restore melt associations or redox
+thermochemistry. For the released historical model, use D066 v1 with the
+f55617a condensate instead. The FeO legacy file is retained for explicit Fe-019
+gas comparisons and the source-pinned element-status regression.
 
 The ext-v1, ext-v2, and ext-v3 records are retired and no longer shipped:
 ext-v1 and ext-v3 fail the frozen canonical hash, while ext-v2 fails the fixed
@@ -666,8 +670,9 @@ predicting whether the current loader accepts a pack.
 
 ## Redox thermochemistry component
 
-`openimcc-redox-v3.json` is the default, separate, versioned thermochemistry
-component. `openimcc-redox-v1.json` and `openimcc-redox-v2.json` remain
+`openimcc-redox-v4.json` (`1.7.0`) is the default, separate, versioned
+thermochemistry component. The previous default, `openimcc-redox-v3.json`
+(`1.6.0`), and `openimcc-redox-v1.json` and `openimcc-redox-v2.json` remain
 available as frozen historical versions.
 The legacy `load_datapack()` path does not load it and the legacy eight-parent
 pack identity remains unchanged. `openimcc.redox_pack.load_redox_pack()` reads

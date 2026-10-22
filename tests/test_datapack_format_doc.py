@@ -286,6 +286,7 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-d066-v2.json",
         "imcc-sf04-d066-v3.json",
+        "imcc-sf04-d066-v4.json",
         "imcc-sf04-ext-v4.json",
         "imcc-sf04-v1.0.2.json",
         "openimcc-redox-cr-candidate-v2.json",
@@ -303,6 +304,7 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         "openimcc-redox-v1.json",
         "openimcc-redox-v2.json",
         "openimcc-redox-v3.json",
+        "openimcc-redox-v4.json",
     }
 
     ext4 = json.loads(
@@ -420,6 +422,7 @@ def test_every_shipped_pack_loads() -> None:
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-d066-v2.json",
         "imcc-sf04-d066-v3.json",
+        "imcc-sf04-d066-v4.json",
         "imcc-sf04-ext-v4.json",
         "imcc-sf04-v1.0.2.json",
         "openimcc-redox-cr-candidate-v2.json",
@@ -437,6 +440,7 @@ def test_every_shipped_pack_loads() -> None:
         "openimcc-redox-v1.json",
         "openimcc-redox-v2.json",
         "openimcc-redox-v3.json",
+        "openimcc-redox-v4.json",
     ]
     for name in names:
         if name.startswith("openimcc-redox-"):

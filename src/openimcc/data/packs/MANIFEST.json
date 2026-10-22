@@ -53,10 +53,10 @@
         "partial_non_janaf_direct_liquid": 1
       },
       "provenance_split": {
-        "janaf_direct_liquid": 9,
-        "partial_non_janaf_direct_liquid": 1,
         "authority_by_publication": 28,
-        "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition."
+        "janaf_direct_liquid": 9,
+        "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition.",
+        "partial_non_janaf_direct_liquid": 1
       },
       "sha256": "0546f694b54e9c415be05a9c178af10e43d2c8abfb8a066035843d16427c1fd7"
     },
@@ -139,6 +139,26 @@
         "partial_non_janaf_direct_liquid": 1
       },
       "sha256": "ac4911747211e89cae2a0738c2b0b7943d9705477e21fa38752075668616aa10"
+    },
+    {
+      "bytes": 93681,
+      "datapack_version": "1.0.6-d066-v4",
+      "file": "imcc-sf04-d066-v4.json",
+      "model": "IMCC ideal associated solution with measured silicate-liquid SiO2(l) and Na2O(l) heat capacities and re-referenced D066 associations.",
+      "n_rows": 38,
+      "n_screened_not_activated": 0,
+      "provenance_classes": {
+        "authority_by_publication": 28,
+        "janaf_direct_liquid": 9,
+        "partial_non_janaf_direct_liquid": 1
+      },
+      "provenance_split": {
+        "authority_by_publication": 28,
+        "janaf_direct_liquid": 9,
+        "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition.",
+        "partial_non_janaf_direct_liquid": 1
+      },
+      "sha256": "5ad550f626a49ebd683211b6f5fd6d0269eb3f2eec93d714bf7ccb2475e82d29"
     },
     {
       "bytes": 76455,
@@ -398,6 +418,20 @@
       },
       "provenance_split": null,
       "sha256": "8f7b2a74533252a868bd1eea8ee6112c72b8c75b2172f8e655ceca6dbb619b20"
+    },
+    {
+      "bytes": 96545,
+      "datapack_version": "1.7.0",
+      "file": "openimcc-redox-v4.json",
+      "model": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity.",
+      "n_rows": 6,
+      "n_screened_not_activated": 0,
+      "provenance_classes": {
+        "extension-compound-thermo": 5,
+        "janaf_direct_liquid": 1
+      },
+      "provenance_split": null,
+      "sha256": "fe39de4bed783ad3f15fc6581371ea35a21eb58c9f3ae9ed1e489aaf70b16dfe"
     }
   ],
   "schema": "openimcc-pack-manifest.v1"

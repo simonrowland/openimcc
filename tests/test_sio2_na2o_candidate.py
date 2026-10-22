@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import math
@@ -33,8 +34,39 @@ def test_candidate_pack_identity_and_default_remain_separate() -> None:
     assert candidate.version == "1.0.6-d066-sio2-na2o-candidate"
     assert candidate.kernel_datapack.binding_digest == "51179602bfd1bbc8be071bead0f40f9d8ff407227e5a4a904ab8a158fe471efd"
     assert entries[candidate_path.name]["sha256"] == hashlib.sha256(candidate_path.read_bytes()).hexdigest()
-    assert default.version == "1.0.5-d066-v3"
+    assert default.version == "1.0.6-d066-v4"
+    assert default.kernel_datapack.binding_digest == "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
     assert default.kernel_datapack.binding_digest != candidate.kernel_datapack.binding_digest
+
+
+def test_previous_defaults_and_condensate_remain_loadable() -> None:
+    previous_melt = load_datapack(PACKS / "imcc-sf04-d066-v3.json")
+    previous_redox = load_redox_pack(PACKS / "openimcc-redox-v3.json")
+    assert previous_melt.version == "1.0.5-d066-v3"
+    assert previous_redox.version == "1.6.0"
+
+    legacy = load_gas_datapack(
+        oxide_path=GAS / "condensate-sio2-na2o-janaf-legacy.csv"
+    )
+    current = load_gas_datapack()
+    assert legacy.condensate_table_digest != current.condensate_table_digest
+    for species, table_id in (
+        ("SiO2(l)", "SiO2-RBT84-CANDIDATE"),
+        ("Na2O(l)", "Na2O-RBT84-CANDIDATE"),
+    ):
+        current_rows = current.oxide_df.loc[species]
+        if getattr(current_rows, "ndim", 1) == 1:
+            current_rows = [current_rows]
+        else:
+            current_rows = [row for _, row in current_rows.iterrows()]
+        assert {row["table_id"] for row in current_rows} == {table_id}
+    with (GAS / "condensate-sio2-na2o-janaf-legacy.csv").open(
+        newline="", encoding="utf-8"
+    ) as stream:
+        rows = list(csv.DictReader(stream))
+    for species in ("SiO2(l)", "Na2O(l)"):
+        assert all(row["table_id"] not in {"SiO2-RBT84-CANDIDATE", "Na2O-RBT84-CANDIDATE"}
+                   for row in rows if row["species_name"] == species)
 
 
 def test_candidate_liquids_match_shared_construction_and_join_in_g_and_s() -> None:
@@ -146,7 +178,7 @@ def test_association_refit_uses_the_stored_candidate_parent_functions() -> None:
     candidate_row = next(row for row in candidate_data["rows"] if row["complex"] == "Na2SiO3")
     default_row = next(row for row in default_data["rows"] if row["complex"] == "Na2SiO3")
     candidate_gas = _candidate_gas()
-    default_gas = load_gas_datapack()
+    default_gas = load_gas_datapack(oxide_path=GAS / "condensate-sio2-na2o-janaf-legacy.csv")
     residuals = []
     for index in range(1001):
         temperature = 1700 + (3000 - 1700) * index / 1000
@@ -179,7 +211,8 @@ def test_redox_candidate_uses_the_same_silica_standard() -> None:
     gas = _candidate_gas()
     assert candidate.version == "1.7.0-sio2-na2o-candidate"
     assert candidate.canonical_digest == "78de6c0591af964d39d2f1282534e23eb78a7c2334e74d4ad6510f91f0e20fe1"
-    assert default.version == "1.6.0"
+    assert default.version == "1.7.0"
+    assert default.canonical_digest == "9dd2422e618d74ae0a5761f9b4343e38d5b88f5986a6ffd801cdabd8002334c4"
     wrapper = candidate.content["thermo_species"]["SiO2(l)"]
     assert "Candidate SiO2(l) standard" in wrapper["range_flags"][0]
     assert "Richet, Bottinga & Tequi" in wrapper["provenance"]["source"]

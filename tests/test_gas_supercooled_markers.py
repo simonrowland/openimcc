@@ -30,6 +30,8 @@ EXPECTED_SOURCE_SUPERCOOLED_LIQUIDS = {
     "MgO(l)",
     "CaO(l)",
     "Ta2O5(l)",
+    "Na2O(l)",
+    "SiO2(l)",
 }
 
 
@@ -45,7 +47,13 @@ def _marker_cases():
             rows = [row for _, row in rows.iterrows()]
         source_rows = [
             row for row in rows
-            if str(row["Ref"]) in {marker["table_id"], "JANAF"}
+            if (
+                (
+                    str(row["table_id"]) == marker["table_id"]
+                    and row["construction_method"] == "liquid_from_solid_construction"
+                )
+                or str(row["Ref"]) in {marker["table_id"], "JANAF"}
+            )
             and float(row["T_min"]) < marker["fusion_temperature_K"]
         ]
         row = min(source_rows, key=lambda candidate: float(candidate["T_min"]))
@@ -128,18 +136,30 @@ def test_source_tabulated_liquid_branches_use_source_thresholds(
     )
     flag = result.domain_flags[channel]
     assert flag is not None
-    assert marker["table_id"] in flag
+    if row["construction_method"] == "liquid_from_solid_construction":
+        assert "supercooled liquid_from_solid branch" in flag
+        assert "Richet-Bottinga-Tequi-1984" in flag
+    else:
+        assert marker["table_id"] in flag
     glass_join = marker["glass_join_temperature_K"]
-    if glass_join is not None and temperature < glass_join:
+    if row["construction_method"] == "liquid_from_solid_construction":
+        assert "tier-1 liquid_from_solid construction" in flag
+    elif glass_join is not None and temperature < glass_join:
         assert "source-tabulated glass cells" in flag
         assert f"{glass_join:g} K glass/liquid join" in flag
     else:
         assert "source-tabulated supercooled liquid branch" in flag
         assert f"{marker['fusion_temperature_K']:g} K fusion marker" in flag
 
-    assert _source_model_flag(
+    at_fusion = _source_model_flag(
         species, float(marker["fusion_temperature_K"]), row, phase="l"
-    ) is None
+    )
+    if row["construction_method"] == "liquid_from_solid_construction":
+        assert at_fusion is not None
+        assert "tier-1 liquid_from_solid construction" in at_fusion
+        assert "supercooled liquid_from_solid branch" not in at_fusion
+    else:
+        assert at_fusion is None
 
 
 @pytest.mark.parametrize(
@@ -300,7 +320,7 @@ def test_source_validity_survives_refit_and_source_swap_on_every_coverage_row() 
                 assert _source_validity_for_row(str(row_name), refit, phase=row_phase) == (
                     _source_validity_for_row(str(row_name), row, phase=row_phase)
                 )
-    assert coverage_rows == 209
+    assert coverage_rows == 215
 
 
 def test_mno_multi_interval_lfs_refit_keeps_typed_supercooled_flag() -> None:

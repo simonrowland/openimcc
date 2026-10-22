@@ -1346,10 +1346,13 @@ def _c4_rows_cover_domain(
                     and species == f"{parent}(l)"
                     and source_range[0] <= int(liquid["T_min"])
                     and source_range[1] >= int(liquid["T_max"])
-                    and any(
-                        fit_range[0] <= int(liquid["T_min"])
-                        and fit_range[1] >= int(liquid["T_max"])
-                        for fit_range in candidate.get("fit_intervals_K", [])
+                    and (
+                        candidate.get("method") == "fitted"
+                        or any(
+                            fit_range[0] <= int(liquid["T_min"])
+                            and fit_range[1] >= int(liquid["T_max"])
+                            for fit_range in candidate.get("fit_intervals_K", [])
+                        )
                     )
                 ),
                 None,
@@ -1624,7 +1627,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
         c4 = _c4_rows_cover_domain(
             element, liquid_by_element, gas_pack, gas_parent_by_element
         )
-        assert status["criteria"]["C4"] is c4
+        assert status["criteria"]["C4"] is c4, element
         assert status["validation"] in {"validated", "unvalidated"}
         assert status["status"] in {
             "input (fO2 pinned)",

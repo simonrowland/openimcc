@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Promoted Richet, Bottinga & Tequi (1984) measured liquid heat capacities
+  for SiO2(l) and Na2O(l) to D066 v4 and redox 1.7.0. Default liquid Cp changes
+  from 85.772 to 81.37 J mol^-1 K^-1 for SiO2 and from 104.6 to 100.6 J mol^-1 K^-1
+  for Na2O; the largest reported activity move is +0.10460 dex for Na2O at
+  1323 K. Load the previous melt and redox defaults from
+  `imcc-sf04-d066-v3.json` and `openimcc-redox-v3.json`; pair the melt pack
+  with `gas/condensate-sio2-na2o-janaf-legacy.csv` to restore its condensate
+  rows.
+
 - Added an identity-scoped crystal–melt vapour-product notice near measured
   Ca/Mg silicate melting points and updated the sodium-silicate low-temperature
   notice with Piacente–Matoušek and Richet–Bottinga–Téqui evidence. Solved values

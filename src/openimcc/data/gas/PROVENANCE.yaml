@@ -2377,9 +2377,17 @@ certification_items:
       the Cp(T) shape; NASA's dfH298 is -74.086902 kJ/mol versus LH84's
       -7.05 kK*R, a disagreement of about 15 kJ/mol.
 
+default_condensate_promotion:
+  source: >-
+    Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8,
+    DOI 10.1111/j.1151-2916.1984.tb19155.x.
+  promoted_file: condensate.csv
+  previous_rows_file: condensate-sio2-na2o-janaf-legacy.csv
+  previous_rows: >-
+    Restores the JANAF SiO2(l) and Na2O(l) rows used by the prior D066 default.
 candidate_condensate_files:
   - file: condensate-sio2-na2o-liquid-candidate.csv
-    status: opt_in_candidate
+    status: promoted_default_alias
     source: >-
       Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8,
       DOI 10.1111/j.1151-2916.1984.tb19155.x; constant measured silicate-liquid

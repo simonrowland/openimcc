@@ -560,5 +560,5 @@ def test_default_openimcc_solve_remains_unchanged_without_sulfur_call():
         _MORB, 1800.0, basis_type="wt", allow_extrapolation=True,
         allow_out_of_envelope=True,
     )
-    assert result.activity("FeO") == pytest.approx(0.06187526636579102)
-    assert result.D == pytest.approx(2.170385121553899)
+    assert result.activity("FeO") == pytest.approx(0.06190069598158437)
+    assert result.D == pytest.approx(2.1691550711268723)

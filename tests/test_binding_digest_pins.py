@@ -33,6 +33,9 @@ D066_MANIFEST_SHA256 = {
     "imcc-sf04-d066-v3.json": (
         "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"
     ),
+    "imcc-sf04-d066-v4.json": (
+        "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
+    ),
     "imcc-sf04-d066-v2.json": (
         "ac88aa2272c50d1cbf300634737c5d0071bddee0cd0f0483a6530c4a4992c393"
     ),
@@ -47,7 +50,7 @@ D066_MANIFEST_SHA256 = {
     ),
 }
 D066_BINDING_SHA256 = D066_MANIFEST_SHA256
-D066_DEFAULT_K_PRESSURE_BAR = float.fromhex("0x1.1dcc45205e970p-11")
+D066_DEFAULT_K_PRESSURE_BAR = 0.0005443182232782201
 COMPOSITIONS = (
     {
         "SiO2": 0.45,

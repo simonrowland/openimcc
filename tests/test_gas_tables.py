@@ -46,6 +46,7 @@ from openimcc.gas import (
 
 ROOT = Path(__file__).resolve().parents[1]
 GAS_DATA = ROOT / "src" / "openimcc" / "data" / "gas"
+LEGACY_JANAF_CONDENSATE = GAS_DATA / "condensate-sio2-na2o-janaf-legacy.csv"
 JANAF_DATA = ROOT / "data-src" / "janaf"
 NASA_DATA = ROOT / "data-src" / "nasa-glenn"
 PUBLISHED_DATA = ROOT / "data-src" / "published-thermo"
@@ -3231,7 +3232,7 @@ def test_reference_solid_tables_give_printed_fusion_gibbs(
 
 
 def test_condensate_builder_reproduces_shipped_gibbs_values(tmp_path: Path) -> None:
-    shipped = GAS_DATA / "condensate.csv"
+    shipped = LEGACY_JANAF_CONDENSATE
     rebuilt = tmp_path / "condensate.csv"
     rebuilt.write_bytes(shipped.read_bytes())
     rows = build_gas_tables.build_condensate_rows(JANAF_DATA, NASA_DATA)
@@ -3610,6 +3611,10 @@ def test_existing_table_rows_are_bit_identical_to_base() -> None:
     for filename, old_rows in baseline_tables.items():
         current_rows = current_by_table[filename]
         for old in old_rows:
+            if filename == "condensate.csv" and old["species_name"] in {
+                "SiO2(l)", "Na2O(l)"
+            }:
+                continue
             matching = [
                 row
                 for row in current_rows
@@ -3730,7 +3735,7 @@ def test_new_low_gas_rows_have_source_fits_and_continuous_seams() -> None:
 
 
 def test_low_oxide_condensate_rows_fit_source_and_close_gibbs_cp_seams() -> None:
-    gas_pack = load_gas_datapack()
+    gas_pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
     species_names = ("K2O(l)", "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)")
     generated = build_gas_tables.build_condensate_rows(JANAF_DATA)
 
@@ -4084,6 +4089,7 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
     from openimcc.gas import _lamor_gibbs
 
     pack = load_gas_datapack()
+    legacy_pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     recorded = {
         (row["species_name"], tuple(row["T_range_K"])): row
@@ -4095,7 +4101,10 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
             table_id, build_gas_tables.FIT_T_MIN
         )
         runtime_t_min = 1500.0 if species == "Na2O(l)" else fit_t_min
-        fitted_rows = pack.oxide_df.loc[[species]]
+        source_pack = (
+            legacy_pack if species in {"SiO2(l)", "Na2O(l)"} else pack
+        )
+        fitted_rows = source_pack.oxide_df.loc[[species]]
         fitted_rows = fitted_rows.loc[
             fitted_rows["T_min"].astype(float) >= runtime_t_min
         ]
@@ -4477,7 +4486,7 @@ def test_na_condensate_recovers_1500_thermal_cells_for_both_intervals() -> None:
         continued_g = (reference_h + continued_h) * 1000.0 - 1500.0 * continued_s
         assert abs(continued_g - expected_g) < 1.0
 
-    pack = load_gas_datapack()
+    pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
     na_rows = pack.oxide_df.loc[["Na2O(l)"]]
     low_row = na_rows.loc[na_rows["T_min"].astype(float) == 1000.0].iloc[0]
     high_row = na_rows.loc[na_rows["T_min"].astype(float) == 1500.0].iloc[0]
@@ -6549,7 +6558,7 @@ def test_cr_channels_against_janaf_cells() -> None:
 def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path) -> None:
     generated = tmp_path / "gas-shomate.csv"
     condensate = tmp_path / "condensate.csv"
-    packaged_condensate = GAS_DATA / "condensate.csv"
+    packaged_condensate = LEGACY_JANAF_CONDENSATE
     packaged_gas = GAS_DATA / "gas-shomate.csv"
 
     def assert_table_matches(
@@ -6660,7 +6669,7 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     )
 
 def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
-    major_species = {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"}
+    major_species = {"Al2O3(l)", "MgO(l)", "CaO(l)"}
     generated = [
         row
         for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
@@ -6670,7 +6679,7 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
     with default_path.open(encoding="utf-8", newline="") as handle:
         packaged = list(csv.DictReader(handle))
     expected_rows = [row for row in packaged if row["species_name"] in major_species]
-    assert len(expected_rows) == len(generated) == 19
+    assert len(expected_rows) == len(generated)
     fit_coefficients = {f"dG_{coefficient}" for coefficient in "ABCDE"}
     for species in major_species:
         expected = sorted(
@@ -6734,6 +6743,11 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
     regenerated = pd.read_csv(regenerated_path, dtype=str, keep_default_na=False)
     packaged_table = pd.read_csv(default_path, dtype=str, keep_default_na=False)
     assert regenerated.columns.tolist() == packaged_table.columns.tolist()
+    promoted_species = {"SiO2(l)", "Na2O(l)"}
+    regenerated = regenerated.loc[~regenerated["species_name"].isin(promoted_species)]
+    packaged_table = packaged_table.loc[
+        ~packaged_table["species_name"].isin(promoted_species)
+    ]
     assert len(regenerated) == len(packaged_table)
     row_key = ["species_name", "T_min", "T_max"]
     regenerated = regenerated.set_index(row_key).sort_index()
@@ -6779,7 +6793,14 @@ def test_source_validity_columns_match_vendored_tables(tmp_path: Path) -> None:
     build_gas_tables.write_source_validity_columns(legacy_copy, validity, phase="condensate")
     build_gas_tables.write_source_validity_columns(published_copy, validity, phase="condensate")
     assert gas_copy.read_bytes() == (GAS_DATA / "gas-shomate.csv").read_bytes()
-    assert condensate_copy.read_bytes() == (GAS_DATA / "condensate.csv").read_bytes()
+    promoted_species = {"SiO2(l)", "Na2O(l)"}
+    with condensate_copy.open(newline="", encoding="utf-8") as handle:
+        rewritten_condensate = list(csv.DictReader(handle))
+    with (GAS_DATA / "condensate.csv").open(newline="", encoding="utf-8") as handle:
+        packaged_condensate = list(csv.DictReader(handle))
+    assert [row for row in rewritten_condensate if row["species_name"] not in promoted_species] == [
+        row for row in packaged_condensate if row["species_name"] not in promoted_species
+    ]
     assert legacy_copy.read_bytes() == (GAS_DATA / "condensate-feo-janaf-legacy.csv").read_bytes()
     assert published_copy.read_bytes() == (
         ROOT / "src/openimcc/data/packs/sf04-published/condensate.csv"
@@ -7117,7 +7138,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
     datasets = (
         (
             default_generated,
-            pd.read_csv(GAS_DATA / "condensate.csv"),
+            pd.read_csv(LEGACY_JANAF_CONDENSATE),
             yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8")),
                 build_gas_tables.SUPERCOOLED_LIQUID_SOURCES,
             {
@@ -7129,13 +7150,13 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
         ),
     )
     default_copy = tmp_path / "default-condensate.csv"
-    default_copy.write_bytes((GAS_DATA / "condensate.csv").read_bytes())
+    default_copy.write_bytes(LEGACY_JANAF_CONDENSATE.read_bytes())
     build_gas_tables.merge_condensate_csv(
         build_gas_tables.build_condensate_rows(JANAF_DATA), default_copy
     )
     regenerated_table = pd.read_csv(default_copy, dtype=str, keep_default_na=False)
     packaged_table = pd.read_csv(
-        GAS_DATA / "condensate.csv", dtype=str, keep_default_na=False
+        LEGACY_JANAF_CONDENSATE, dtype=str, keep_default_na=False
     )
     assert regenerated_table.columns.tolist() == packaged_table.columns.tolist()
     assert len(regenerated_table) == len(packaged_table)
@@ -7297,7 +7318,7 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
 
 
 def _assert_snol_constant_cp_continuation_uses_the_nasa_liquid_anchor() -> None:
-    pack = load_gas_datapack()
+    pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
     generated = next(
         row
         for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
@@ -7355,7 +7376,7 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
     """
     from openimcc.gas import _lamor_gibbs
 
-    pack = load_gas_datapack()
+    pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
     generated_rows = [
         row
         for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
@@ -8286,7 +8307,8 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
 
 def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None:
     pack = load_gas_datapack()
-    legacy_pack = load_gas_datapack(
+    legacy_pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
+    feo_legacy_pack = load_gas_datapack(
         oxide_path=GAS_DATA / "condensate-feo-janaf-legacy.csv"
     )
     expected_nodes = {
@@ -8324,7 +8346,13 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
             if item["temperature"] == 298.15
         )
         ambiguous = _ambiguous_temperatures(table_id)
-        source_pack = legacy_pack if species_name == "FeO(l)" else pack
+        source_pack = (
+            legacy_pack
+            if species_name in {"SiO2(l)", "Na2O(l)"}
+            else feo_legacy_pack
+            if species_name == "FeO(l)"
+            else pack
+        )
         rows = source_pack.oxide_df.loc[[species_name]]
         for _, row in rows.iterrows():
             if str(row["Ref"]).endswith("-SC-CP"):

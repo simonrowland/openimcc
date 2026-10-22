@@ -20,7 +20,7 @@ PACK_DIR = ROOT / "src/openimcc/data/packs"
 TI = PACK_DIR / "openimcc-redox-ti-candidate-v3.json"
 CR = PACK_DIR / "openimcc-redox-cr-candidate-v3.json"
 CR_TI = PACK_DIR / "openimcc-redox-cr-ti-candidate-v3.json"
-DEFAULT = PACK_DIR / "openimcc-redox-v3.json"
+DEFAULT = PACK_DIR / "openimcc-redox-v4.json"
 
 
 _MW = {
@@ -447,9 +447,9 @@ def test_cr_candidate_v3_outputs_pin_corrected_homologue():
     feed = {"Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
             "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05}
     expected = (
-        (0.0015149444760261237, 0.00048505552397387614, 0.0007574722380130619),
-        (0.0010971867335145466, 0.0009028132664854531, 0.0005485933667572733),
-        (0.0007886843932407144, 0.0012113156067592842, 0.0003943421966203572),
+        (0.0015149463419878112, 0.0004850536580121895, 0.0007574731709939056),
+        (0.0010971925842934232, 0.0009028074157065767, 0.0005485962921467116),
+        (0.000788691536363373, 0.0012113084636366253, 0.0003943457681816865),
     )
     actual = []
     for temperature, logf in ((1673.0, -10.0), (1700.0, -8.0), (1773.0, -6.0)):
@@ -492,8 +492,8 @@ def test_default_output_digests_pin_corrected_redox_homologue():
     # Fe-only endpoints retain their prior values.
     expected = (
         "22aa16d3e716accfa736676672a97b25cd503eeef5183fa07e9d79f7bec819a1",
-        "af75c3f5dfd6f3b85becfb951b87eaa0f54a8d68e0226d6612107897d3882334",
-        "051dbd2627182bcda02c5b25d6e3b01bdb266edb6c56cf337fd3c865d2464839",
+        "18340e4531b21326f5e21005c3565dd2f9f377d98d01ab18e409d97dc473391b",
+        "cc2276fb2152a13ca17d1d9eefbaf97999a6c4b13705a8141f5f4278ee437acf",
     )
     actual = [
         _legacy_output_digest(evaluate_redox(feed, temperature, "closed"))

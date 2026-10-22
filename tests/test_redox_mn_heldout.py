@@ -20,6 +20,7 @@ REPORT_PATH = ROOT / "tests/data/redox-mn-heldout-residuals.json"
 INPUTS_PATH = ROOT / "data-src/liquid-from-solid-inputs.json"
 CRYSTALS_PATH = ROOT / "data-src/crystal-thermochemistry.json"
 PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
+MELT_PACK_PATH = ROOT / "src/openimcc/data/packs/imcc-sf04-d066-v3.json"
 FORMULA_WEIGHT_G_MOL = {
     "MnO": 54.938044 + 15.999,
     "FeO": 55.845 + 15.999,
@@ -46,7 +47,9 @@ def _heldout_residuals(
         inputs["tier_error_bands"]["fusion_entropy_tier3"]["max"][0]
     )
 
-    base = load_datapack().kernel_datapack
+    # The archived held-out report and its candidate redox components were
+    # scored on the prior default identity; keep that historical evidence pair.
+    base = load_datapack(MELT_PACK_PATH).kernel_datapack
     if removed_complexes:
         if temporary_directory is None:
             raise ValueError("temporary_directory is required for a reduced pack")

@@ -587,30 +587,32 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
     in_domain = by_id["pp_sio_2000"]
     assert in_domain.status == "ok", in_domain.reason
     assert in_domain.predicted is not None
-    assert in_domain.domain_flag is None
+    assert "tier-1 liquid_from_solid construction" in in_domain.domain_flag
     assert in_domain.provenance_class == "janaf_fitted"
 
     flagged = by_id["pp_sio_1700"]
     assert flagged.status == "ok", flagged.reason
     assert flagged.predicted is not None
     assert flagged.residual is not None
-    assert "constant-Cp supercooled-liquid continuation" in flagged.domain_flag
+    assert "supercooled liquid_from_solid branch" in flagged.domain_flag
     assert flagged.provenance_class == "janaf_fitted"
 
-    headline_residuals = [activity.residual, in_domain.residual]
+    headline_residuals = [activity.residual]
     expected_headline_rmse = math.sqrt(
-        sum(float(value) ** 2 for value in headline_residuals) / 2.0
+        sum(float(value) ** 2 for value in headline_residuals) / len(headline_residuals)
     )
     assert report.n_ok == 3
-    assert report.n_flagged == 1
+    assert report.n_flagged == 2
     assert report.status_counts["refused"] == 0
     assert report.rmse == pytest.approx(expected_headline_rmse)
-    assert report.flagged_rmse == pytest.approx(abs(flagged.residual))
+    assert report.flagged_rmse == pytest.approx(
+        math.sqrt((float(in_domain.residual) ** 2 + float(flagged.residual) ** 2) / 2.0)
+    )
 
     rendered = render_report(report)
-    assert "flagged=1" in rendered
+    assert "flagged=2" in rendered
     assert "flagged_RMSE=" in rendered
-    assert "constant-Cp supercooled-liquid continuation" in rendered
+    assert "supercooled liquid_from_solid branch" in rendered
 
 
 def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:

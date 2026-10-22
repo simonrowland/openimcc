@@ -51,21 +51,21 @@ PACKAGED_GAS_TABLE_DIGEST = (
     "db3f4c8956ba5652d7abadebe238e2568b320d76a5ea4f5d25ea430bcb45bb68"
 )
 PACKAGED_CONDENSATE_TABLE_DIGEST = (
-    "628e58bcce97a0194da9c9efc6c8d92b9df5244642d720b4447d4d726db104ac"
+    "d33fb01d8999613e76fe7dcc76b070f3c0b20508a93954696775863476575171"
 )
 PACKAGED_FULL_GAS_TABLE_DIGEST = (
     "1f5f38136f41f5cfb061f27a6c6b68aeceb2d2c6fe5de720235278cce5bfab1c"
 )
 PACKAGED_FULL_CONDENSATE_TABLE_DIGEST = (
-    "8f2e9c84f5d39ea9fa3399a1e6199180f59024f2c2dcf2b83a29cc258abbd803"
+    "37d776a9066f4909d9a6e85c8756b8a5df7395ef0a7ae18ea50f01bdfa86bfd3"
 )
 PACKAGED_ENGINE_BINDING_DIGESTS = {
     "v1": "1c35c457b093a500fac252d41ee3a575f03579b5504fd45c775796061f078c77",
     "ext": "fabb9b95108fd08c0290f73d5a9f510dc3efa3a4d0c10ebc43b13b0710bce817",
 }
 PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
-    "v1": "22fcd6d6205b0f4b3ce2e421e92bb9bd8bf17617d77aff16c36e6a535b810274",
-    "ext": "ef721d37001adf62accc67cb125a34da6ff424c4c58cc4a91008e6c3a7f3a7a9",
+    "v1": "07f79ecd5fb7506a6f5325cedfe6588809517273a46076d38703ac057e091f93",
+    "ext": "5911844f3f6eb42f26708d80e2867e7f9d8c6929bcc0d5f3721d41cdac1e5116",
 }
 ADDED_GAS_SPECIES = {
     "TeO(g)", "SbO(g)",
@@ -94,6 +94,16 @@ ADDED_CONDENSATE_SPECIES = {
     "Rh(cr)", "Rh(l)", "Ir(cr)", "Ir(l)", "Os(cr)", "Re(cr)",
     "P2O5(l)", "FeO(l)",
 }
+
+
+def _legacy_condensate_rows(pack):
+    legacy_path = GAS_DATA / "condensate-sio2-na2o-janaf-legacy.csv"
+    legacy = pd.read_csv(legacy_path, index_col="species_name")
+    changed_species = {"SiO2(l)", "Na2O(l)"}
+    retained = pack.oxide_df.loc[
+        ~pack.oxide_df.index.isin(ADDED_CONDENSATE_SPECIES | changed_species)
+    ]
+    return pd.concat([retained, legacy.loc[legacy.index.isin(changed_species)]])
 V1_COMPOSITION = {
     "SiO2": 0.45,
     "MgO": 0.20,
@@ -186,9 +196,7 @@ def test_packaged_table_content_digests_match_current_tables() -> None:
     assert pack.gas_table_digest == PACKAGED_FULL_GAS_TABLE_DIGEST
     assert pack.condensate_table_digest == PACKAGED_FULL_CONDENSATE_TABLE_DIGEST
     retained_gas = pack.gas_df.loc[~pack.gas_df.index.isin(ADDED_GAS_SPECIES)]
-    retained_condensate = pack.oxide_df.loc[
-        ~pack.oxide_df.index.isin(ADDED_CONDENSATE_SPECIES)
-    ]
+    retained_condensate = _legacy_condensate_rows(pack)
     assert _gas_table_digest("gas", retained_gas) == PACKAGED_GAS_TABLE_DIGEST
     assert (
         _gas_table_digest("condensate", retained_condensate)
@@ -247,9 +255,7 @@ def test_combined_identity_includes_the_published_melt_binding_digest() -> None:
     legacy_pack = replace(
         gas_pack,
         gas_df=gas_pack.gas_df.loc[~gas_pack.gas_df.index.isin(ADDED_GAS_SPECIES)],
-        oxide_df=gas_pack.oxide_df.loc[
-            ~gas_pack.oxide_df.index.isin(ADDED_CONDENSATE_SPECIES)
-        ],
+        oxide_df=_legacy_condensate_rows(gas_pack),
     )
     v1 = load_datapack(PACK_DIR / "imcc-sf04-v1.0.2.json")
     extension = load_datapack(PACK_DIR / "imcc-sf04-ext-v4.json")
@@ -490,7 +496,10 @@ def test_loader_refuses_duplicate_starts_after_float64_normalization(
             if source == condensate_path:
                 with source.open(encoding="utf-8", newline="") as stream:
                     raw_rows = list(csv.DictReader(stream))
-                frame["T_min"] = [row["T_min"] for row in raw_rows]
+                frame["T_min"] = [
+                    row["T_min"] if row["species_name"] == species else frame.iloc[index]["T_min"]
+                    for index, row in enumerate(raw_rows)
+                ]
             return frame
 
         monkeypatch.setattr(pd, "read_csv", read_csv_with_raw_bound)
@@ -507,10 +516,11 @@ def test_numeric_bound_spellings_have_one_evaluation_and_digest(
     def read_csv_preserving_bound_text(*args, **kwargs):
         frame = original_read_csv(*args, **kwargs)
         source = Path(args[0])
-        with source.open(encoding="utf-8", newline="") as stream:
-            raw_rows = list(csv.DictReader(stream))
-        for column in ("T_min", "T_max"):
-            frame[column] = [row[column] for row in raw_rows]
+        if source.name == "gas-shomate.csv":
+            with source.open(encoding="utf-8", newline="") as stream:
+                raw_rows = list(csv.DictReader(stream))
+            for column in ("T_min", "T_max"):
+                frame[column] = [row[column] for row in raw_rows]
         return frame
 
     monkeypatch.setattr(pd, "read_csv", read_csv_preserving_bound_text)

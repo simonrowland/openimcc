@@ -667,11 +667,12 @@ def _association_continuation_log_lambdas(
     nu: np.ndarray,
     lnK: np.ndarray,
     ideal_y: np.ndarray,
+    max_logk_step: float = _CONTINUATION_LOGK_STEP,
 ) -> np.ndarray:
     # Premise: g_j = K_j exp(nu_j·y). Algebra: choose ln(lambda) so every
-    # ideal-seed complex is <= 1e-4, then raise ln(lambda) by at most 2 ln(10)
-    # per stage. Units check: lambda is dimensionless; sanity: lambda -> 0
-    # removes association and makes y=ln(x) the exact root.
+    # ideal-seed complex is <= 1e-4, then raise ln(lambda) by at most the
+    # configured step per stage. Units check: lambda is dimensionless; sanity:
+    # lambda -> 0 removes association and makes y=ln(x) the exact root.
     max_log_complex_at_ideal = float(np.max(lnK + nu.T @ ideal_y))
     start_log_lambda = min(
         0.0,
@@ -679,7 +680,7 @@ def _association_continuation_log_lambdas(
     )
     stage_count = max(
         1,
-        math.ceil(-start_log_lambda / _CONTINUATION_LOGK_STEP),
+        math.ceil(-start_log_lambda / max_logk_step),
     )
     return np.linspace(start_log_lambda, 0.0, stage_count + 1)
 
@@ -812,7 +813,8 @@ def _solve_active(
     At ``lambda -> 0``, complexes vanish and ``y = ln(x)`` is the exact
     solution.  We choose the first log(lambda) so every complex evaluated at
     that ideal solution is at most 1e-4, then increase log(lambda) by no more
-    than two decades per stage until lambda = 1.  This follows the same
+    than two decades per stage until lambda = 1. If that path stalls above
+    tolerance, it retries with one-decade stages. This follows the same
     equilibrium branch instead of guessing composition-specific starts.  All
     residuals are dimensionless; lambda is dimensionless.  Direct and
     continuation each receive the original evaluation allowance.  If
@@ -981,55 +983,84 @@ def _solve_active(
         return (*first[:7], "direct", 0)
 
     total_nfev = first[3]
-    continuation_nfev = 0
-    continuation_stages = 0
-    continuation = [
-        {
-            "log_lambda": 0.0,
-            "iterations": first[3],
-            "residual_inf": first[4],
-        }
-    ]
-    log_lambdas = _association_continuation_log_lambdas(nu, lnK, y0)
 
-    best = first
-    y_stage = y0
-    for log_lambda in log_lambdas:
-        # Keep the direct fast path's full allowance so every previously
-        # converged direct result stays bit-identical. A stalled direct solve
-        # gets no more than that same allowance for continuation, preventing
-        # its stagnated evaluations from starving the connected-root retry.
-        remaining_nfev = max_nfev - continuation_nfev
-        attempt = _attempt(y_stage, lnK + log_lambda, remaining_nfev)
-        if attempt is None:
-            break
-        continuation_stages += 1
-        continuation_nfev += attempt[3]
-        total_nfev += attempt[3]
-        continuation.append(
+    def _run_continuation(
+        log_lambdas: np.ndarray,
+    ) -> tuple[
+        tuple[np.ndarray, np.ndarray, float, int, float, float, float, str] | None,
+        tuple[np.ndarray, np.ndarray, float, int, float, float, float, str],
+        int,
+        int,
+        list[dict[str, float | int]],
+    ]:
+        continuation_nfev = 0
+        stages = 0
+        records = [
             {
-                "log_lambda": float(log_lambda),
-                "iterations": attempt[3],
-                "residual_inf": attempt[4],
+                "log_lambda": 0.0,
+                "iterations": first[3],
+                "residual_inf": first[4],
             }
-        )
-        if log_lambda == 0.0 and attempt[4] < best[4]:
-            best = attempt
-        if attempt[4] > tol:
-            break
-        y_stage = attempt[0]
-        if log_lambda == 0.0:
-            return (
-                attempt[0],
-                attempt[1],
-                attempt[2],
-                total_nfev,
-                attempt[4],
-                attempt[5],
-                attempt[6],
-                "continuation",
-                continuation_stages,
+        ]
+        best = first
+        y_stage = y0
+        for log_lambda in log_lambdas:
+            # Keep the direct fast path's full allowance so every previously
+            # converged direct result stays bit-identical. A stalled direct solve
+            # gets no more than that same allowance for continuation.
+            remaining_nfev = max_nfev - continuation_nfev
+            attempt = _attempt(y_stage, lnK + log_lambda, remaining_nfev)
+            if attempt is None:
+                break
+            stages += 1
+            continuation_nfev += attempt[3]
+            records.append(
+                {
+                    "log_lambda": float(log_lambda),
+                    "iterations": attempt[3],
+                    "residual_inf": attempt[4],
+                }
             )
+            if log_lambda == 0.0 and attempt[4] < best[4]:
+                best = attempt
+            if attempt[4] > tol:
+                break
+            y_stage = attempt[0]
+            if log_lambda == 0.0:
+                return attempt, best, continuation_nfev, stages, records
+        return None, best, continuation_nfev, stages, records
+
+    log_lambdas = _association_continuation_log_lambdas(nu, lnK, y0)
+    continued, best, continuation_nfev, continuation_stages, continuation = (
+        _run_continuation(log_lambdas)
+    )
+    total_nfev += continuation_nfev
+    if continued is None and log_lambdas[-1] == 0.0:
+        # Keep ordinary roots bit-identical on the established coarse path. A
+        # stalled full-strength endpoint gets one retry on a finer connected
+        # path, which can resolve trace-parent roots that the coarse rung misses.
+        fine_lambdas = _association_continuation_log_lambdas(
+            nu, lnK, y0, _CONTINUATION_LOGK_STEP / 2.0
+        )
+        continued, fine_best, retry_nfev, continuation_stages, continuation = (
+            _run_continuation(fine_lambdas)
+        )
+        total_nfev += retry_nfev
+        if fine_best[4] < best[4]:
+            best = fine_best
+
+    if continued is not None:
+        return (
+            continued[0],
+            continued[1],
+            continued[2],
+            total_nfev,
+            continued[4],
+            continued[5],
+            continued[6],
+            "continuation",
+            continuation_stages,
+        )
 
     # Continuation did not reach lambda=1 at tolerance. Diagnostics remain for
     # the full-strength system; intermediate homotopy residuals are a trajectory,

@@ -508,15 +508,15 @@ def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
     floor = evaluate(melt, 1699.0, allow_extrapolation=True)
     assert sum(marker in notice for notice in floor.labels.notices) == 1
     # Flagging is metadata only: pin default parent activities at the cutoff.
-    assert floor.parent_activity[0].hex() == "0x1.1d981753f79bep-2"
+    assert floor.parent_activity[0].hex() == "0x1.1e4d6865ca4a5p-2"
     measured = next(n for n in below.labels.notices if marker in n)
     assert "Piacente and Matoušek (1973)" in measured
     assert "1.5–3x" in measured
-    assert floor.parent_activity[6].hex() == "0x1.2250cb159e740p-23"
+    assert floor.parent_activity[6].hex() == "0x1.26bb82ace2059p-23"
     at_floor = evaluate(melt, 1700.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in at_floor.labels.notices)
-    assert at_floor.parent_activity[0].hex() == "0x1.1db1ef283bdeap-2"
-    assert at_floor.parent_activity[6].hex() == "0x1.258e458b5eb31p-23"
+    assert at_floor.parent_activity[0].hex() == "0x1.1e663f767ac79p-2"
+    assert at_floor.parent_activity[6].hex() == "0x1.29f72888d2c67p-23"
     inside = evaluate(melt, 1800.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in inside.labels.notices)
     sodium_free = evaluate({"MgO": 40.0, "SiO2": 60.0}, 1500.0, allow_extrapolation=True)
@@ -553,19 +553,19 @@ def test_cao_sio2_activity_bias_notice_severities_at_1933() -> None:
     moderate = evaluate({"CaO": 0.50, "SiO2": 0.50}, 1933.0)
     assert _cao_sio2_bias_notices(moderate) == (_CAO_SIO2_MODERATE,)
     assert moderate.parent_activity[moderate.parent_oxides.index("SiO2")].hex() == (
-        "0x1.8c020306dedb5p-4"
+        "0x1.8bcda4054b286p-4"
     )
     assert moderate.parent_activity[moderate.parent_oxides.index("CaO")].hex() == (
-        "0x1.9f4941bc1d080p-9"
+        "0x1.9f059c41c1c6cp-9"
     )
 
     strong = evaluate({"CaO": 0.62, "SiO2": 0.38}, 1933.0)
     assert _cao_sio2_bias_notices(strong) == (_CAO_SIO2_STRONG,)
     assert strong.parent_activity[strong.parent_oxides.index("SiO2")].hex() == (
-        "0x1.ddd9adb41489cp-9"
+        "0x1.dd4363471f2d3p-9"
     )
     assert strong.parent_activity[strong.parent_oxides.index("CaO")].hex() == (
-        "0x1.49dc1349a1c01p-5"
+        "0x1.49d9db3a5b66fp-5"
     )
 
     # Equal moles from a weight input: masses are the oxide molar masses.
@@ -663,7 +663,7 @@ def test_cao_sio2_activity_bias_notice_boundaries() -> None:
 # the measured identity in model.py, is updated on purpose.
 _CAO_SIO2_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
 _CAO_SIO2_EVIDENCE_BINDING_DIGEST = (
-    "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"
+    "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
 )
 _CAO_SIO2_UNSCORED = (
     "cao-sio2-activity-bias-unscored: the CaO–SiO2 silica-activity bias was "
@@ -722,16 +722,16 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
     result = evaluate(diopside, 1668.0, allow_extrapolation=True)
     notices = [n for n in result.labels.notices if n.startswith("silicate-vapour-product-low-near-liquidus:")]
     assert len(notices) == 1
-    assert "−0.79" in notices[0]
-    assert "low by 0.79 log10 units" in notices[0]
+    assert "−0.77" in notices[0]
+    assert "low by 0.77 log10 units" in notices[0]
     assert "split between melt activities and liquid standards unresolved" in notices[0]
     assert "incongruent-melting onset" in notices[0]
     assert "crystal data extended" in notices[0]
     assert tuple(value.hex() for value in result.parent_activity) == (
-        "0x1.768ef95dfe3a6p-3",
-        "0x1.8967ba7284045p-7",
+        "0x1.77b3ef86e6f99p-3",
+        "0x1.8b33d865ab2d9p-7",
         "0x0.0p+0",
-        "0x1.6fc9a649d1c34p-13",
+        "0x1.720b49134104ap-13",
         "0x0.0p+0",
         "0x0.0p+0",
         "0x0.0p+0",
@@ -739,10 +739,10 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
     )
 
     phase_cases = (
-        ("diopside", diopside, 1668.0, "−0.79"),
-        ("akermanite", {"CaO": 2.0, "MgO": 1.0, "SiO2": 2.0}, 1727.0, "−0.50"),
+        ("diopside", diopside, 1668.0, "−0.77"),
+        ("akermanite", {"CaO": 2.0, "MgO": 1.0, "SiO2": 2.0}, 1727.0, "−0.49"),
         ("gehlenite", {"CaO": 2.0, "Al2O3": 1.0, "SiO2": 1.0}, 1823.0, "−0.61"),
-        ("anorthite", {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1826.0, "−0.41"),
+        ("anorthite", {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1826.0, "−0.40"),
         ("wollastonite", {"CaO": 1.0, "SiO2": 1.0}, 1817.0, "−0.21"),
     )
     for phase, composition, melting_point, miss in phase_cases:

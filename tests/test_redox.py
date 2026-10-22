@@ -34,7 +34,7 @@ from openimcc.model import ImccMalformedDatapackError
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v3.json"
+DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v4.json"
 
 
 def _formula_atoms() -> dict[str, dict[str, float]]:
@@ -381,68 +381,66 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
         for element, amount in mixed.items()
     ) + 0.002
     mixed_closed = evaluate_redox(mixed, 2500.0, "closed")
-    # The MgAl2O4 correction and FeO(l) re-anchor change the shared redox
-    # solution; pin the resulting species inventory on the v3 default pack.
+    # The MgAl2O4 and FeO(l) corrections plus the v4 Na2O standard change this
+    # shared redox solution; pin the resulting inventory on the current default.
     assert mixed_closed.lambda_ln_f_o2 == pytest.approx(
-        -11.171376087683274, rel=1.0e-12
+        -11.15857072427465, rel=1.0e-12
     )
     assert mixed_closed.metal_moles == 0.0
     assert mixed_closed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
-        0.0004897556789764402, rel=1.0e-12
+        0.0004897791310697892, rel=1.0e-12
     )
     assert mixed_closed.solver_path == "newton"
     assert mixed_closed.fallback_fired is False
     mixed_species = {
         name: amount for name, amount in mixed_closed.species_moles.items() if amount
     }
-    expected_mixed_species = {
-        "SiO2": 0.15877061903397566,
-        "MgO": 0.010674904930005568,
-        "FeO": 0.09287755225886328,
-        "CaO": 0.00021145355073511968,
-        "Al2O3": 0.012189883980140362,
-        "TiO2": 0.0025338408412764967,
-        "Na2O": 2.7792426557685566e-09,
-        "K2O": 6.621113416654896e-13,
-        "Mg2SiO4": 0.00709809817966482,
-        "MgSiO3": 0.07256982404890523,
-        "MgAl2O4": 0.004476110630640569,
-        "MgTiO3": 0.0007595655585038194,
-        "MgTi2O5": 1.106538456872014e-05,
-        "Mg2TiO4": 0.0001641916987056567,
-        "Al6Si2O13": 3.8871084452693764e-06,
-        "CaAl2O4": 0.0006687079255409409,
-        "CaAl4O7": 0.0002251427460087374,
-        "Ca12Al14O33": 1.3822012518362076e-30,
-        "CaSiO3": 0.03742889764032268,
-        "CaAl2Si2O8": 0.025895278065716607,
-        "CaMgSi2O6": 0.028130990407799542,
-        "Ca2MgSi2O7": 0.0009145804653587544,
-        "Ca2Al2SiO7": 0.00117832589813023,
-        "CaTiO3": 0.0005636587203096089,
-        "Ca2SiO4": 0.00025564890375263797,
-        "CaTiSiO5": 0.0021787544367519863,
-        "FeTiO3": 0.003777015169128573,
-        "Fe2SiO4": 0.021062452179899136,
-        "FeAl2O4": 0.0072205282122018615,
-        "CaAl12O19": 5.972331584925231e-09,
-        "Mg2Al4Si5O18": 0.008969189408738417,
-        "Na2SiO3": 1.3890520536263423e-05,
-        "Na2Si2O5": 1.4305748148928501e-05,
-        "NaAlSiO4": 0.004949428714728691,
-        "NaAlSi3O8": 0.010292933856950159,
-        "NaAlO2": 0.00034527331891077057,
-        "Na2TiO3": 8.428061864204705e-07,
-        "NaAlSi2O6": 0.0003542804011818307,
-        "K2SiO3": 4.631515068963723e-08,
-        "K2Si2O5": 1.0151147436893495e-07,
-        "KAlSiO4": 0.0006105353705662093,
-        "KAlSi3O8": 0.0008107648979617386,
-        "KAlO2": 2.861006042898239e-05,
-        "KAlSi2O6": 0.0025497810168911717,
-        "K2Si4O9": 6.499788781627373e-09,
-        "FeO1.5(l)": 0.0040000000000082895,
-    }
+    expected_mixed_species = {'SiO2': 0.15743154674485796,
+ 'MgO': 0.010542413652784048,
+ 'FeO': 0.09258069498078456,
+ 'CaO': 0.00020878378768508817,
+ 'Al2O3': 0.012032094374581378,
+ 'TiO2': 0.002535864047328549,
+ 'Na2O': 2.483880460842614e-09,
+ 'K2O': 6.387433789637899e-13,
+ 'Mg2SiO4': 0.007031033852972963,
+ 'MgSiO3': 0.07253520332236642,
+ 'MgAl2O4': 0.004378515522115164,
+ 'MgTiO3': 0.0007533491848373534,
+ 'MgTi2O5': 1.1021801690465545e-05,
+ 'Mg2TiO4': 0.0001613863051985614,
+ 'Al6Si2O13': 3.855687757442965e-06,
+ 'CaAl2O4': 0.000653985780177539,
+ 'CaAl4O7': 0.00021809205198459753,
+ 'Ca12Al14O33': 1.1531753176468137e-30,
+ 'CaSiO3': 0.037402923781308474,
+ 'CaAl2Si2O8': 0.02594094934605349,
+ 'CaMgSi2O6': 0.02819581735200115,
+ 'Ca2MgSi2O7': 0.0009082632963569527,
+ 'Ca2Al2SiO7': 0.0011555910278941298,
+ 'CaTiO3': 0.000558924365144641,
+ 'Ca2SiO4': 0.00025312359386873843,
+ 'CaTiSiO5': 0.002186562131062462,
+ 'FeTiO3': 0.003781058757433829,
+ 'Fe2SiO4': 0.02125462251660721,
+ 'FeAl2O4': 0.0071290012285583635,
+ 'CaAl12O19': 5.568342905368291e-09,
+ 'Mg2Al4Si5O18': 0.0091452877757527,
+ 'Na2SiO3': 1.3480237764434934e-05,
+ 'Na2Si2O5': 1.4050970839506507e-05,
+ 'NaAlSiO4': 0.0048733071112726815,
+ 'NaAlSi3O8': 0.010381051398488357,
+ 'NaAlO2': 0.0003359038649820774,
+ 'Na2TiO3': 8.116056136759532e-07,
+ 'NaAlSi2O6': 0.0003530470290607035,
+ 'K2SiO3': 4.5220482456241054e-08,
+ 'K2Si2O5': 1.0030994022923592e-07,
+ 'KAlSiO4': 0.0006029705153296003,
+ 'KAlSi3O8': 0.0008201884256782557,
+ 'KAlO2': 2.7918192404249955e-05,
+ 'KAlSi2O6': 0.002548618646415183,
+ 'K2Si4O9': 6.579024926907783e-09,
+ 'FeO1.5(l)': 0.004000000000009111}
     assert set(mixed_species) == set(expected_mixed_species)
     assert [mixed_species[name] for name in expected_mixed_species] == pytest.approx(
         list(expected_mixed_species.values()), rel=1.0e-12, abs=0.0
@@ -782,7 +780,7 @@ def test_imposed_mixed_melt_predicts_buffered_metal_without_oxygen() -> None:
         lambda_imposed=-17.931129807709393,
     )
     # The MgAl2O4 correction and FeO(l) re-anchor change the mixed default-pack solution.
-    assert result.metal_moles == pytest.approx(0.5664845606079324, abs=2.0e-9)
+    assert result.metal_moles == pytest.approx(0.5657854856690391, abs=2.0e-9)
     assert result.oxygen_inventory_mol is None
     assert result.oxygen_residual_mol is None
     assert result.lambda_sat == pytest.approx(-17.931129807709393, abs=1.0e-9)
@@ -844,7 +842,7 @@ def test_mixed_inventory_signed_oxygen_cancellation_uses_unrounded_terms() -> No
     # The MgAl2O4 correction and FeO(l) re-anchor shift this default root.
     result = evaluate_redox(inventory, 2200.0, "closed")
 
-    assert result.lambda_ln_f_o2 == pytest.approx(135.83481406384772, abs=1.0e-8)
+    assert result.lambda_ln_f_o2 == pytest.approx(135.8339280156028, abs=1.0e-8)
 
 
 def test_closed_residual_reconstructs_compensated_species_oxygen_ledger() -> None:

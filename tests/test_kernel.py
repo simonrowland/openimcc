@@ -301,7 +301,7 @@ def test_trace_parent_root_is_refined_to_relative_inventory_tolerance() -> None:
     )
     fe_index = result.parent_oxides.index("FeO")
     assert result.parent_activity[fe_index] == pytest.approx(
-        1.4968315827983814e-12, rel=1.0e-12, abs=0.0
+        1.4968572547333724e-12, rel=1.0e-12, abs=0.0
     )
 
 
@@ -355,7 +355,7 @@ def test_corrected_default_pack_bulk_root_bytes_are_pinned() -> None:
     ).hexdigest()
     # This versioned pin reflects the MgAl2O4 and FeO(l) corrections in D066 v2.
     assert digest == (
-        "b58034a0c1cf02e961387e6257312ab6333a717dfd6f7bfa4d7aa289799aea83"
+        "b53df305cc303eaea8e969db63d1e72204fd9f361f63cc91a8f17c415f38c440"
     )
 
 

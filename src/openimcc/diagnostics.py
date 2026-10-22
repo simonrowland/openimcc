@@ -20,11 +20,15 @@ import numpy as np
 from openimcc.model import ImccLoadedDatapack, evaluate, load_datapack
 
 R = 8.31446261815324
-_PARENT_CP = {
-    # Printed constant liquid branches of the JANAF parent standards used here:
-    # SiO2 85.772 from 1800 K, Na2O 104.600 at liquid nodes, MgO 66.944
-    # from 2200 K, and CaO 62.760 from 2200 K; continued as supercooled liquids.
-    "SiO2": 85.772, "Na2O": 104.600, "MgO": 66.944, "CaO": 62.760,
+_PARENT_CP_BY_PACK = {
+    "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2": {
+        # Prior D066 default: JANAF parent liquid branches.
+        "SiO2": 85.772, "Na2O": 104.600, "MgO": 66.944, "CaO": 62.760,
+    },
+    "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0": {
+        # Promoted measured silicate-liquid Cp for SiO2 and Na2O.
+        "SiO2": 81.37, "Na2O": 100.6, "MgO": 66.944, "CaO": 62.760,
+    },
 }
 
 def implied_heat_capacity(
@@ -49,11 +53,19 @@ def implied_heat_capacity(
     total = sum(normalized.values())
     if total <= 0 or any(value < 0 for value in normalized.values()):
         raise ValueError("composition values must be non-negative with positive sum")
-    missing_cp = sorted(set(normalized) - set(_PARENT_CP))
+    binding_digest = getattr(pack, "binding_digest", None)
+    parent_cp_by_name = (
+        _PARENT_CP_BY_PACK["252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"]
+        if binding_digest is None
+        else _PARENT_CP_BY_PACK.get(binding_digest)
+    )
+    if parent_cp_by_name is None:
+        raise ValueError("no liquid parent-standard Cp recorded for this pack identity")
+    missing_cp = sorted(set(normalized) - set(parent_cp_by_name))
     if missing_cp:
         raise ValueError(f"no liquid parent-standard Cp recorded for {missing_cp}")
     parent_cp = sum(
-        value / total * _PARENT_CP[name] for name, value in normalized.items()
+        value / total * parent_cp_by_name[name] for name, value in normalized.items()
     )
     kernel_pack = pack.kernel_datapack
     reaction_enthalpies = -R * math.log(10.0) * np.asarray(kernel_pack.B)
@@ -197,7 +209,7 @@ def load_calorimetry_dataset() -> dict[str, Any]:
 def run_cp_implied(pack_path: str | Path | None = None) -> tuple[ImccLoadedDatapack, list[dict[str, Any]], dict[str, Any]]:
     """Evaluate the packaged sodium calorimetry points and produce scored rows."""
     if pack_path is None:
-        pack_path = resources.files("openimcc").joinpath("data/packs/imcc-sf04-d066-v3.json")
+        pack_path = resources.files("openimcc").joinpath("data/packs/imcc-sf04-d066-v4.json")
     pack = load_datapack(str(pack_path))
     dataset = load_calorimetry_dataset()
     temperatures = (900., 1323., 1500., 1700., 1800.)
@@ -356,7 +368,7 @@ def run_mixing_enthalpy(
     """Run reported liquid excess and oxide-dissolution enthalpy comparisons."""
     if pack_path is None:
         pack_path = resources.files("openimcc").joinpath(
-            "data/packs/imcc-sf04-d066-v3.json"
+            "data/packs/imcc-sf04-d066-v4.json"
         )
     pack = load_datapack(str(pack_path))
     datasets = load_mixing_enthalpy_dataset()["datasets"]

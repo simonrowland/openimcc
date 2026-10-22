@@ -210,6 +210,10 @@ _ALKALI_BIAS_BENCHMARKS = MappingProxyType(
         ): "−1.18 to −1.24 dex",
         (
             "IMCC-SF04-D066",
+            "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0",
+        ): "−1.18 to −1.24 dex",
+        (
+            "IMCC-SF04-D066",
             "ac88aa2272c50d1cbf300634737c5d0071bddee0cd0f0483a6530c4a4992c393",
         ): "−1.18 to −1.24 dex",
     }
@@ -239,10 +243,15 @@ def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
 # code, so a later pack cannot inherit this evidence.
 #
 # Independent silica activities support a moderate low bias of about
-# 0.45–0.5 dex from roughly x(CaO)=0.42: Kume 2000 Table 1 at 1873 K has
-# mean residual −0.507 dex (range −0.641 to −0.334), and Omori–Sanbongi
-# 1961 silica activities, converted from β-cristobalite to liquid, have
-# mean residual −0.441 dex (range −0.722 to −0.192). The basic side
+# 0.45–0.5 dex from roughly x(CaO)=0.42. On the prior D066 default, Kume 2000
+# Table 1 at 1873 K had mean residual −0.507 dex (range −0.641 to −0.334),
+# and Omori–Sanbongi 1961 silica activities, converted from β-cristobalite to
+# liquid, had mean residual −0.441 dex (range −0.722 to −0.192). Re-scored
+# held-out errors move Kume 0.48438→0.48353 dex and Omori 0.35077→0.35036 dex;
+# the notice remains 0.45–0.5 dex low at its displayed
+# precision. Across x(CaO)=0.42–0.56, the default-to-default predicted
+# log10(a(SiO2)) shift ranges +0.00002 to +0.00034 dex at 1873 K and −0.00003
+# to −0.00046 dex at 1933 K. The basic side
 # approaches Ca2SiO4. There the direct Stolyarova 1991 Table IIb
 # comparison reaches about 0.6–1.0 dex low for x(CaO)≈0.56–0.67, but
 # Table IIb's absolute scale conflicts with the same paper's Table Ib
@@ -274,7 +283,7 @@ _CAO_SIO2_T_MAX_K = 1933.0
 # model_id or binding_digest does not inherit these residuals.
 _CAO_SIO2_MEASURED_MODEL_ID = "IMCC-SF04-D066"
 _CAO_SIO2_MEASURED_BINDING_DIGEST = (
-    "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"
+    "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
 )
 _CAO_SIO2_NOTICE_CODE = "cao-sio2-activity-bias"
 _CAO_SIO2_UNSCORED_CODE = "cao-sio2-activity-bias-unscored"
@@ -293,13 +302,13 @@ _CAO_SIO2_STRONG_NOTICE = (
 
 _MELT_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
 _MELT_EVIDENCE_BINDING_DIGEST = (
-    "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2"
+    "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
 )
 _SILICATE_PRODUCT_ROWS = (
-    ("diopside", {"CaO": 1, "MgO": 1, "SiO2": 2}, 1668.0, "−0.79"),
-    ("akermanite", {"CaO": 2, "MgO": 1, "SiO2": 2}, 1727.0, "−0.50"),
+    ("diopside", {"CaO": 1, "MgO": 1, "SiO2": 2}, 1668.0, "−0.77"),
+    ("akermanite", {"CaO": 2, "MgO": 1, "SiO2": 2}, 1727.0, "−0.49"),
     ("gehlenite", {"CaO": 2, "Al2O3": 1, "SiO2": 1}, 1823.0, "−0.61"),
-    ("anorthite", {"CaO": 1, "Al2O3": 1, "SiO2": 2}, 1826.0, "−0.41"),
+    ("anorthite", {"CaO": 1, "Al2O3": 1, "SiO2": 2}, 1826.0, "−0.40"),
     ("wollastonite", {"CaO": 1, "SiO2": 1}, 1817.0, "−0.21"),
 )
 
@@ -777,7 +786,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         resources.files("openimcc")
         / "data"
         / "packs"
-        / "imcc-sf04-d066-v3.json"
+        / "imcc-sf04-d066-v4.json"
         if path is None
         else Path(path)
     )
