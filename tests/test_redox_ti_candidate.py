@@ -93,6 +93,14 @@ def _imposed(inventory: dict[str, float], temperature: float, logf: float, pack=
 
 
 def _legacy_output_digest(result) -> str:
+    """Hash repr() of the numeric result fields.
+
+    test_cr_candidate_v3_output_digests_pin_corrected_homologue and
+    test_default_output_digests_pin_corrected_redox_homologue depend on these
+    exact float bits. The expected digests are for the numpy/scipy pin in
+    requirements-test.txt (and that build's BLAS). Bump the digests with the
+    pin. Do not replace this check with a tolerance.
+    """
     old_fields = (
         result.temperature_K, result.mode, result.lambda_ln_f_o2, result.lambda_sat,
         tuple(result.parent_moles.items()), tuple(result.parent_activity.items()),

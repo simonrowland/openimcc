@@ -17,6 +17,13 @@
 #                 that for users while every local test still passes, because
 #                 the dev environment has the extras installed.
 #
+# The test-matrix venv installs the dev extra with requirements-test.txt as a
+# constraint, so it resolves the same versions as a runner that installs that
+# file directly. Bump those pins, and any exact float-bit digest that moves,
+# together; the file names the tests. The core-only venv stays unpinned: the
+# gate proves numpy and scipy are sufficient, not that a particular build is
+# frozen.
+#
 # Usage:  scripts/ci-local.sh [--quick]
 #           --quick   current interpreter only; skip the version matrix
 set -uo pipefail
@@ -65,22 +72,29 @@ for V in "${VERSIONS[@]}"; do
     if [ "$HAVE_UV" = "1" ]; then
         uv venv --python "$V" "$VENV" >/dev/null 2>&1 || { skip "tests on $V" "interpreter unavailable"; continue; }
         VPY="$VENV/bin/python"
-        uv pip install --python "$VPY" -q -e ".[dev]" >/dev/null 2>&1 || { fail "install on $V"; continue; }
+        # -c pins the dev extra to requirements-test.txt. The core-only gate
+        # below does not use that constraint.
+        uv pip install --python "$VPY" -q -c requirements-test.txt -e ".[dev]" >/dev/null 2>&1 || { fail "install on $V"; continue; }
     else
         command -v "python$V" >/dev/null 2>&1 || { skip "tests on $V" "no python$V and no uv"; continue; }
         "python$V" -m venv "$VENV" >/dev/null 2>&1 || { skip "tests on $V" "venv creation failed"; continue; }
         VPY="$VENV/bin/python"
-        "$VPY" -m pip install -q -e ".[dev]" >/dev/null 2>&1 || { fail "install on $V"; continue; }
+        "$VPY" -m pip install -q -c requirements-test.txt -e ".[dev]" >/dev/null 2>&1 || { fail "install on $V"; continue; }
     fi
     # Gate on pytest's exit status, not on the summary text alone: a run that
     # ends "1 passed, 1 error" still matches '^[0-9]+ passed'. Exit 0 is the
     # only pass; the summary must also carry no failed/error count.
-    OUT="$("$VPY" -m pytest tests/ -q -W error 2>&1)"
+    # -rs keeps an unrecorded cold-cost CPU class visible: that test skips
+    # with the measured numbers and how to record a baseline.
+    OUT="$("$VPY" -m pytest tests/ -q -W error -rs 2>&1)"
     RC=$?
     LAST="$(printf '%s' "$OUT" | tail -1)"
     RAN=$((RAN + 1))
     if [ "$RC" -eq 0 ] && printf '%s' "$LAST" | grep -qE '^[0-9]+ passed' \
         && ! printf '%s' "$LAST" | grep -qE '[0-9]+ (failed|errors?)'; then
+        # A green run still prints skip reasons, including an unrecorded
+        # cold-cost CPU class (measured numbers and how to record them).
+        printf '%s\n' "$OUT" | grep 'SKIPPED' | sed 's/^/        /' || true
         pass "tests on $V  $DIM$(printf '%s' "$OUT" | tail -1)$OFF"
     else
         fail "tests on $V"

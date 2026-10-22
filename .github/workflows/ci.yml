@@ -22,13 +22,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
+      # Same constraint as scripts/ci-local.sh. The core-only job below stays
+      # unpinned: it proves numpy and scipy are sufficient.
+      - run: pip install -c requirements-test.txt -e ".[dev]"
       - name: datapack drift gate
         # Runs before the tests on purpose: a drifted pack makes every residual
         # below it meaningless, so fail on that first rather than reporting a
         # confusing test failure downstream.
         run: python tools/packmanifest.py --check
-      - run: pytest -q -W error
+      - run: pytest -q -W error -rs
       - name: implied Cp report (non-gating)
         if: always()
         continue-on-error: true

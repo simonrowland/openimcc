@@ -3,7 +3,10 @@ from __future__ import annotations
 import gc
 import math
 import os
+import platform
 import statistics
+import subprocess
+import sys
 import time
 from typing import Literal
 
@@ -41,13 +44,67 @@ def _element_inventory(
     return elements
 
 
-# Recorded after the cold-start fix: median and max-minus-min process CPU
-# spread over seven cold calls per fixture, with no warm start.
-_COLD_COST_BASELINES = {
-    "basalt": (0.009259, 0.027440),
-    "basalt_with_traces": (0.009416, 0.001370),
-    "closed_natural_melt": (0.022004, 0.003787),
+# Cold-cost baselines keyed by CPU model. Each value is the median and the
+# max-minus-min process CPU over seven cold calls, with no warm start.
+# The key is the public chip name (on Darwin, `sysctl -n machdep.cpu.brand_string`),
+# never a host name: the same chip shares a ceiling, and a different chip does not.
+# Recorded after the cold-start fix on the development laptop's chip.
+_DEV_CPU_CLASS = "Apple M5 Max"
+_COLD_COST_BASELINES: dict[str, dict[str, tuple[float, float]]] = {
+    _DEV_CPU_CLASS: {
+        "basalt": (0.009259, 0.027440),
+        "basalt_with_traces": (0.009416, 0.001370),
+        "closed_natural_melt": (0.022004, 0.003787),
+    },
 }
+
+
+def _cpu_class() -> str:
+    """Public CPU model used as the cold-cost machine class."""
+    if sys.platform == "darwin":
+        try:
+            brand = subprocess.check_output(
+                ["sysctl", "-n", "machdep.cpu.brand_string"],
+                text=True,
+                stderr=subprocess.DEVNULL,
+            ).strip()
+        except (OSError, subprocess.CalledProcessError):
+            brand = ""
+        if brand:
+            return brand
+    return platform.machine() or "unknown"
+
+
+def _cold_baseline(cpu_class: str, name: str) -> tuple[float, float] | None:
+    """Return the recorded (median, spread) for this chip and fixture.
+
+    An unknown chip or fixture returns None. Callers must not substitute
+    another class's numbers: that would silently apply the wrong ceiling.
+    """
+    return _COLD_COST_BASELINES.get(cpu_class, {}).get(name)
+
+
+def _missing_cold_baseline_message(
+    cpu_class: str,
+    name: str,
+    median: float,
+    spread: float,
+    wall_max: float,
+    load_start: float,
+    load_end: float,
+) -> str:
+    return (
+        f"{name}: no cold-cost baseline for CPU class {cpu_class!r}. "
+        f"cold CPU median={median * 1000:.3f} ms "
+        f"spread={spread * 1000:.3f} ms; "
+        f"max wall={wall_max * 1000:.3f} ms; "
+        f"loadavg start/end={load_start:.2f}/{load_end:.2f}. "
+        "To record one, add "
+        f"({median:.6f}, {spread:.6f}) under "
+        f"_COLD_COST_BASELINES[{cpu_class!r}][{name!r}] "
+        "(median, max-minus-min process CPU over these seven cold calls). "
+        "Do not copy another CPU class's numbers."
+    )
 
 
 def _cold_cost_ceiling(
@@ -59,12 +116,30 @@ def _cold_cost_ceiling(
     )
 
 
+def test_cold_cost_baseline_lookup_does_not_cross_cpu_classes() -> None:
+    assert _cold_baseline(_DEV_CPU_CLASS, "basalt") == (0.009259, 0.027440)
+    assert _cold_baseline(_DEV_CPU_CLASS, "basalt_with_traces") == (
+        0.009416,
+        0.001370,
+    )
+    assert _cold_baseline("not-a-recorded-chip", "basalt") is None
+    assert _cold_baseline(_DEV_CPU_CLASS, "missing-fixture") is None
+
+
 @pytest.mark.parametrize(
     ("name", "baseline", "pre_fix_median"),
     [
-        ("basalt", _COLD_COST_BASELINES["basalt"], 0.035180),
-        ("basalt_with_traces", _COLD_COST_BASELINES["basalt_with_traces"], 0.029706),
-        ("closed_natural_melt", _COLD_COST_BASELINES["closed_natural_melt"], 0.077567),
+        ("basalt", _COLD_COST_BASELINES[_DEV_CPU_CLASS]["basalt"], 0.035180),
+        (
+            "basalt_with_traces",
+            _COLD_COST_BASELINES[_DEV_CPU_CLASS]["basalt_with_traces"],
+            0.029706,
+        ),
+        (
+            "closed_natural_melt",
+            _COLD_COST_BASELINES[_DEV_CPU_CLASS]["closed_natural_melt"],
+            0.077567,
+        ),
     ],
 )
 def test_cold_cost_budget_retains_the_old_zero_spread_ceiling(
@@ -118,28 +193,25 @@ _CLOSED_NATURAL_MELT_INVENTORY = {
 
 
 @pytest.mark.parametrize(
-    ("name", "inventory", "temperature", "mode", "baseline"),
+    ("name", "inventory", "temperature", "mode"),
     [
         (
             "basalt",
             _COLD_BASALT_INVENTORY,
             1734.15,
             "imposed",
-            _COLD_COST_BASELINES["basalt"],
         ),
         (
             "basalt_with_traces",
             _COLD_TRACE_BASALT_INVENTORY,
             1734.15,
             "imposed",
-            _COLD_COST_BASELINES["basalt_with_traces"],
         ),
         (
             "closed_natural_melt",
             _CLOSED_NATURAL_MELT_INVENTORY,
             1572.15,
             "closed",
-            _COLD_COST_BASELINES["closed_natural_melt"],
         ),
     ],
 )
@@ -148,9 +220,22 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     inventory: dict[str, float],
     temperature: float,
     mode: Literal["closed", "imposed"],
-    baseline: tuple[float, float],
 ) -> None:
-    baseline_median, baseline_spread = baseline
+    """Gate cold CPU time on the baseline recorded for this CPU model.
+
+    Process CPU time is the figure of merit: the median of seven cold calls,
+    with the ceiling built from the recorded median and both spreads. Wall
+    time and load average are printed only as a tripwire. The gate does not
+    ask for a quiet machine.
+
+    The same calls take different CPU time on a different chip, so baselines
+    are keyed by CPU model. Applying the development-laptop ceiling on the
+    CI hosts failed those hosts without a solver regression. A model with no
+    entry reports the measured median, spread, wall, and load, and how to
+    record an entry; it does not fail. A model that has an entry still fails
+    when its median exceeds that entry's ceiling. An unrecorded model is not
+    a pass for a model that has a baseline.
+    """
     repetitions = 7
     cpu_samples: list[float] = []
     wall_samples: list[float] = []
@@ -182,13 +267,23 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     median = statistics.median(cpu_samples)
     spread = max(cpu_samples) - min(cpu_samples)
     load_end = os.getloadavg()[0]
+    wall_max = max(wall_samples)
+    cpu_class = _cpu_class()
+    recorded = _cold_baseline(cpu_class, name)
+    if recorded is None:
+        message = _missing_cold_baseline_message(
+            cpu_class, name, median, spread, wall_max, load_start, load_end
+        )
+        print(message)
+        pytest.skip(message)
+    baseline_median, baseline_spread = recorded
     ceiling = _cold_cost_ceiling(baseline_median, baseline_spread, spread)
     print(
         f"{name}: cold CPU median={median * 1000:.3f} ms "
         f"spread={spread * 1000:.3f} ms; baseline="
         f"{baseline_median * 1000:.3f} ms spread="
         f"{baseline_spread * 1000:.3f} ms; ceiling={ceiling * 1000:.3f} ms; "
-        f"max wall={max(wall_samples) * 1000:.3f} ms; "
+        f"max wall={wall_max * 1000:.3f} ms; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
     )
     assert median <= ceiling

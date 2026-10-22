@@ -1,9 +1,38 @@
-# Test environment for CI runners that bootstrap from a requirements file.
-# Mirrors the "dev" extra in pyproject.toml (core + gas + bench + test tools).
-numpy>=1.24
-scipy>=1.10
-pandas>=2.0
-pyyaml>=6.0
-pytest>=7.4
-pytest-cov
-pytest-timeout
+# Exact pins for the CI test environment.
+#
+# Two installs must resolve these versions:
+#   - a runner that bootstraps from this file (`pip install -r requirements-test.txt`)
+#   - the test-matrix venv in scripts/ci-local.sh, which installs the dev extra
+#     with this file as a constraint (`-c requirements-test.txt`)
+# The core-only install check stays unpinned. It proves the core package needs
+# only numpy and scipy, not that those builds are frozen.
+#
+# Bump the pins together. Several tests hash exact float bits of solver output
+# and are tied to this numpy/scipy (and their BLAS). When a bump moves a
+# result, update the expected digest in the same change. Do not loosen those
+# tests to a tolerance.
+#
+# Repr digests (sha256 of repr() of the numeric result fields):
+#   tests/test_redox_ti_candidate.py::test_cr_candidate_v3_output_digests_pin_corrected_homologue
+#   tests/test_redox_ti_candidate.py::test_default_output_digests_pin_corrected_redox_homologue
+# Bit digests (sha256 over float.hex() / array bytes):
+#   tests/test_kernel.py::test_corrected_default_pack_bulk_root_bytes_are_pinned
+#   tests/test_solver_polish.py::test_ordinary_v1_root_keeps_its_pre_polish_bits
+#   tests/test_gas.py::test_oxygen_balance_sf04_pack_matches_hash_pins
+#   tests/test_gas.py::test_oxygen_balance_default_pack_matches_hash_pins
+# Other exact float.hex() pins that move with the same stack:
+#   tests/test_model_coverage.py::test_na2si2o5_low_temperature_notice_fires_only_below_its_domain
+#   tests/test_model_coverage.py::test_cao_sio2_activity_bias_notice_severities_at_1933
+#   tests/test_trace_melt.py::test_existing_eight_parent_gas_outputs_and_cr2o3_pass_through
+#   tests/test_k_translations.py::test_published_melt_and_lam_gas_pair_reproduces_its_k_pressure_pin
+#   tests/test_gas.py::test_oxygen_balance_includes_each_dict_only_nonoxide_parent
+#
+# Pinned stack: numpy 2.5.3, scipy 1.18.1, pandas 3.0.6, PyYAML 6.0.3,
+# pytest 9.1.1, pytest-cov 7.1.0, pytest-timeout 2.4.0.
+numpy==2.5.3
+scipy==1.18.1
+pandas==3.0.6
+pyyaml==6.0.3
+pytest==9.1.1
+pytest-cov==7.1.0
+pytest-timeout==2.4.0
