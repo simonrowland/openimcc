@@ -1801,6 +1801,7 @@ def _insert_gas_transition(
     """Split a short Shomate window off the side that can absorb the join."""
     join = float(left["T_max"])
     candidates = []
+    rejected = []
     for donor, frozen, high_side in ((right, left, True), (left, right, False)):
         t_min = float(donor["T_min"])
         t_max = float(donor["T_max"])
@@ -1821,12 +1822,22 @@ def _insert_gas_transition(
                 continue
             move = _gas_window_move(delta, low, high)
             fits = move <= budget + 1e-6
-            record = (0 if fits else 1, 0 if high_side else 1, move, far, delta, high_side)
+            if not fits:
+                rejected.append((move, budget))
+                continue
+            record = (0, 0 if high_side else 1, move, far, delta, high_side)
             if best is None or record[:3] < best[:3]:
                 best = record
         if best is not None:
             candidates.append((best, donor))
     if not candidates:
+        if rejected:
+            move, budget = min(rejected, key=lambda item: (item[0] - item[1], item[0]))
+            raise ValueError(
+                f"{left['species_name']} {left['Ref']}: gas transition at {join:g} K "
+                f"requires Gibbs move {move:g} J/mol, exceeding donor budget "
+                f"{budget:g} J/mol"
+            )
         raise ValueError(
             f"{left['species_name']} {left['Ref']}: no gas transition at {join:g} K"
         )

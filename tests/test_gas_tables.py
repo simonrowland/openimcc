@@ -3973,6 +3973,66 @@ def test_condensate_transition_refuses_a_window_outside_the_donor_residual() -> 
     assert [float(item["T_min"]) for item in rows] == [1200.0, 1500.0]
 
 
+def test_gas_transition_refuses_a_window_outside_the_donor_residual() -> None:
+    def row(a: float, t_min: float, t_max: float) -> dict[str, str]:
+        return {
+            "species_name": "A(g)",
+            "state": "g",
+            "Ref": "example",
+            "T_min": format(t_min, ".15g"),
+            "T_max": format(t_max, ".15g"),
+            "dH298_R": "0",
+            "A": format(a, ".15g"),
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "E": "0",
+            "F": "0",
+            "G": "0",
+            "H": "0",
+            "_max_residual_J_per_mol": "0.01",
+        }
+
+    left = row(0.0, 1000.0, 1500.0)
+    right = row(20.0, 1500.0, 3000.0)
+    rows = [left, right]
+    before = [dict(item) for item in rows]
+
+    with pytest.raises(ValueError, match=r"A\(g\).*1500 K.*Gibbs move.*donor budget"):
+        build_gas_tables._insert_gas_transition(rows, [left, right], left, right)
+
+    assert rows == before
+
+
+def test_gas_seam_pin_propagates_an_out_of_residual_window_error() -> None:
+    def row(a: float, t_min: float, t_max: float) -> dict[str, str]:
+        return {
+            "species_name": "A(g)",
+            "state": "g",
+            "Ref": "example",
+            "T_min": format(t_min, ".15g"),
+            "T_max": format(t_max, ".15g"),
+            "dH298_R": "0",
+            "A": format(a, ".15g"),
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "E": "0",
+            "F": "0",
+            "G": "0",
+            "H": "0",
+            "_max_residual_J_per_mol": "0.01",
+            "_source_rows": [],
+        }
+
+    left = row(0.0, 1000.0, 1500.0)
+    right = row(20.0, 1500.0, 3000.0)
+    rows = [left, right]
+
+    with pytest.raises(ValueError, match=r"gas transition at 1500 K.*donor budget"):
+        build_gas_tables._pin_gas_same_ref_seams(rows)
+
+
 def test_condensate_transition_inserts_when_g_and_cp_stay_inside_the_donor() -> None:
     """A small join closes with a window that stays on the donor polynomial."""
 
