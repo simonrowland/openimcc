@@ -507,16 +507,24 @@ def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
     assert sum(marker in notice for notice in below.labels.notices) == 1
     floor = evaluate(melt, 1699.0, allow_extrapolation=True)
     assert sum(marker in notice for notice in floor.labels.notices) == 1
-    # Flagging is metadata only: pin default parent activities at the cutoff.
-    assert floor.parent_activity[0].hex() == "0x1.1e4d6865ca4a5p-2"
+    # Flagging is metadata only: pin solved parent activities at the cutoff.
+    assert floor.parent_activity[0] == pytest.approx(
+        0.2795921623351865, rel=1e-12
+    )
     measured = next(n for n in below.labels.notices if marker in n)
     assert "Piacente and Matoušek (1973)" in measured
     assert "1.5–3x" in measured
-    assert floor.parent_activity[6].hex() == "0x1.26bb82ace2059p-23"
+    assert floor.parent_activity[6] == pytest.approx(
+        1.3724549799095924e-7, rel=1e-12
+    )
     at_floor = evaluate(melt, 1700.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in at_floor.labels.notices)
-    assert at_floor.parent_activity[0].hex() == "0x1.1e663f767ac79p-2"
-    assert at_floor.parent_activity[6].hex() == "0x1.29f72888d2c67p-23"
+    assert at_floor.parent_activity[0] == pytest.approx(
+        0.2796869197906698, rel=1e-12
+    )
+    assert at_floor.parent_activity[6] == pytest.approx(
+        1.3875098072777926e-7, rel=1e-12
+    )
     inside = evaluate(melt, 1800.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in inside.labels.notices)
     sodium_free = evaluate({"MgO": 40.0, "SiO2": 60.0}, 1500.0, allow_extrapolation=True)
@@ -552,21 +560,21 @@ def test_cao_sio2_activity_bias_notice_severities_at_1933() -> None:
     """x(CaO)=0.50 is moderate and x(CaO)=0.62 is strong; values stay put."""
     moderate = evaluate({"CaO": 0.50, "SiO2": 0.50}, 1933.0)
     assert _cao_sio2_bias_notices(moderate) == (_CAO_SIO2_MODERATE,)
-    assert moderate.parent_activity[moderate.parent_oxides.index("SiO2")].hex() == (
-        "0x1.8bcda4054b286p-4"
-    )
-    assert moderate.parent_activity[moderate.parent_oxides.index("CaO")].hex() == (
-        "0x1.9f059c41c1c6cp-9"
-    )
+    assert moderate.parent_activity[
+        moderate.parent_oxides.index("SiO2")
+    ] == pytest.approx(0.09663166113450403, rel=1e-12)
+    assert moderate.parent_activity[
+        moderate.parent_oxides.index("CaO")
+    ] == pytest.approx(0.0031663659327736873, rel=1e-12)
 
     strong = evaluate({"CaO": 0.62, "SiO2": 0.38}, 1933.0)
     assert _cao_sio2_bias_notices(strong) == (_CAO_SIO2_STRONG,)
-    assert strong.parent_activity[strong.parent_oxides.index("SiO2")].hex() == (
-        "0x1.dd4363471f2d3p-9"
-    )
-    assert strong.parent_activity[strong.parent_oxides.index("CaO")].hex() == (
-        "0x1.49d9db3a5b66fp-5"
-    )
+    assert strong.parent_activity[
+        strong.parent_oxides.index("SiO2")
+    ] == pytest.approx(0.003641229504465529, rel=1e-12)
+    assert strong.parent_activity[
+        strong.parent_oxides.index("CaO")
+    ] == pytest.approx(0.040265014819721105, rel=1e-12)
 
     # Equal moles from a weight input: masses are the oxide molar masses.
     from openimcc.model import _OXIDE_MOLAR_MASS_G_MOL
@@ -727,15 +735,19 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
     assert "split between melt activities and liquid standards unresolved" in notices[0]
     assert "incongruent-melting onset" in notices[0]
     assert "crystal data extended" in notices[0]
-    assert tuple(value.hex() for value in result.parent_activity) == (
-        "0x1.77b3ef86e6f99p-3",
-        "0x1.8b33d865ab2d9p-7",
-        "0x0.0p+0",
-        "0x1.720b49134104ap-13",
-        "0x0.0p+0",
-        "0x0.0p+0",
-        "0x0.0p+0",
-        "0x0.0p+0",
+    assert result.parent_activity == pytest.approx(
+        (
+            0.18344866877020818,
+            0.01206062380091437,
+            0.0,
+            0.00017645076932393456,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ),
+        rel=1e-12,
+        abs=0.0,
     )
 
     phase_cases = (

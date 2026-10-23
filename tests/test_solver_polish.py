@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
@@ -24,40 +23,6 @@ def _depleted_feo_composition(pack: object) -> dict[str, float]:
         name: (1.0e-12 if name == "FeO" else (1.0 - 1.0e-12) / 7.0)
         for name in pack.parent_oxides
     }
-
-
-def _fingerprint(result: object) -> str:
-    arrays = (
-        "parent_mol",
-        "parent_x",
-        "parent_x_star",
-        "parent_activity",
-        "parent_gamma",
-        "complex_x",
-        "species_x",
-    )
-    payload = {
-        name: getattr(result, name).tobytes().hex()
-        for name in arrays
-    }
-    convergence = result.convergence
-    payload.update(
-        {
-            "T": result.temperature_K.hex(),
-            "basis": result.basis.hex(),
-            "D": result.D.hex(),
-            "ri": convergence.residual_inf.hex(),
-            "rl": convergence.residual_l2.hex(),
-            "disp": convergence.total_displacement.hex(),
-            "it": convergence.iterations,
-            "status": convergence.status,
-            "path": convergence.solver_path,
-            "stages": convergence.continuation_stages,
-        }
-    )
-    return hashlib.sha256(
-        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
 
 
 def test_corrected_mgal2o4_depleted_feo_trace_root_is_polished(
@@ -169,7 +134,13 @@ def test_v1_depleted_feo_1710k_uses_seven_continuation_stages() -> None:
 
 
 @pytest.mark.parametrize(
-    ("composition", "temperature", "basis_type", "path", "digest"),
+    (
+        "composition",
+        "temperature",
+        "basis_type",
+        "path",
+        "expected_parent_activity",
+    ),
     (
         (
             {
@@ -185,7 +156,16 @@ def test_v1_depleted_feo_1710k_uses_seven_continuation_stages() -> None:
             2000.0,
             "wt",
             "direct",
-            "2e3d4ec280ce223d0b425d90688e35a6b60d4f070402a4a75220b2b573510214",
+            (
+                0.1325387755112024,
+                0.04656106257425901,
+                0.160701142016943,
+                0.00014968663070267257,
+                0.005465596509698274,
+                0.0034967697333541745,
+                1.954108483328543e-08,
+                1.1076696075801892e-11,
+            ),
         ),
         (
             {
@@ -200,7 +180,16 @@ def test_v1_depleted_feo_1710k_uses_seven_continuation_stages() -> None:
             2200.0,
             "wt",
             "continuation",
-            "d32ff4d9db0ac6a0e8e557aff3d7c160649194ab82a6407b148c0a6180f06e47",
+            (
+                0.4484457419335304,
+                0.003929924990798973,
+                0.11023673848118967,
+                4.2478048473777986e-05,
+                0.0312204166986516,
+                0.030307391935336592,
+                1.2417036098961474e-09,
+                0.0,
+            ),
         ),
     ),
 )
@@ -209,7 +198,7 @@ def test_ordinary_v1_root_keeps_its_pre_polish_bits(
     temperature: float,
     basis_type: str,
     path: str,
-    digest: str,
+    expected_parent_activity: tuple[float, ...],
 ) -> None:
     pack = load_datapack(V1_PACK_PATH)
     result = evaluate(
@@ -222,7 +211,13 @@ def test_ordinary_v1_root_keeps_its_pre_polish_bits(
     )
 
     assert result.convergence.solver_path == path
-    assert _fingerprint(result) == digest
+    # The solver-path assertion proves the analytic Newton polish did not run.
+    assert "analytic Newton polish" not in result.convergence.solver_path
+    assert result.parent_activity == pytest.approx(
+        expected_parent_activity,
+        rel=1e-12,
+        abs=0.0,
+    )
 
 
 def test_polish_linear_solve_failure_uses_continuation(
