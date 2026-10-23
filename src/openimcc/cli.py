@@ -332,8 +332,11 @@ def _cmd_diagnose_crystal_closure(args: argparse.Namespace) -> int:
     csv_path = out_dir / "crystal-closure.csv"
     fields = ["phase", "formula", "melting_point_K", "congruent",
               "SI_at_melting_point", "residual_at_melting_point_kJ_mol",
-              "delta_log10_vapor_product_at_melting_point", "root_K",
-              "in_range_node", "source_temperature_range_K", "source"]
+              "delta_log10_vapor_product_at_melting_point",
+              "independent_deltaG_fusion_kJ_mol", "independent_fusion_method",
+              "independent_fusion_flag", "closure_miss_kJ_mol",
+              "closure_miss_vapor_product", "root_K", "in_range_node",
+              "source_temperature_range_K", "source"]
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()

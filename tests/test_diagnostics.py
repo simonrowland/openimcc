@@ -155,6 +155,11 @@ def test_crystal_closure_units_controls_and_default_regression():
         )
         assert node["delta_log10_vapor_product"] == pytest.approx(node["SI"], abs=1e-12)
     assert by_phase["forsterite"]["root_K"] == pytest.approx(1801, abs=1)
+    for phase in ("forsterite", "anorthite", "diopside", "pseudowollastonite",
+                   "spinel", "akermanite", "gehlenite"):
+        assert "independent_deltaG_fusion_kJ_mol" in by_phase[phase]["in_range_node"]
+        assert "closure_miss_kJ_mol" in by_phase[phase]["in_range_node"]
+        assert by_phase[phase]["in_range_node"]["independent_fusion_method"] == "linear-enthalpy"
     assert by_phase["forsterite"]["SI_positive_below_root"] is True
     assert by_phase["anorthite"]["in_range_node"]["residual_kJ_mol"] == pytest.approx(-11.61, abs=0.02)
     assert all(control["activity"] == pytest.approx(1.0) for control in details["pure_oxide_controls"])
@@ -176,6 +181,23 @@ def test_crystal_closure_units_controls_and_default_regression():
     differences = [p["rh_crosscheck"]["crystal_to_oxide_leg_difference_kJ_mol"]
                    for p in data["phases"] if p["rh_crosscheck"].get("crystal_to_oxide_leg_difference_kJ_mol") is not None]
     assert differences == pytest.approx([0.621, -0.675, -0.45], abs=0.01)
+
+
+def test_closure_miss_uses_independent_fusion_target():
+    phase = {"independent_fusion": {"enthalpy_kJ_mol": 142.0,
+                                    "melting_temperature_K": 2174.0,
+                                    "method": "linear-enthalpy",
+                                    "flag": "linear ΔCp approximation"}}
+    tm = diagnostics._closure_miss(4.2, 2174.0, phase)
+    assert tm["independent_deltaG_fusion_kJ_mol"] == pytest.approx(0.0)
+    assert tm["closure_miss_kJ_mol"] == pytest.approx(4.2)
+    t = 1800.0
+    fusion = 142.0 * (1.0 - t / 2174.0)
+    below = diagnostics._closure_miss(fusion, t, phase)
+    assert below["independent_deltaG_fusion_kJ_mol"] == pytest.approx(fusion)
+    assert below["closure_miss_kJ_mol"] == pytest.approx(0.0, abs=1e-12)
+    assert below["closure_miss_vapor_product"] == pytest.approx(0.0, abs=1e-12)
+    assert fusion > 0.0
 
 
 def test_crystal_fusion_function_refuses_out_of_source_range():
@@ -374,6 +396,10 @@ def test_crystal_closure_cli_writes_pack_and_condensate_identities(tmp_path):
         rows = list(csv.DictReader(stream))
     assert len(rows) == 14
     assert "delta_log10_vapor_product_at_melting_point" in rows[0]
+    assert "closure_miss_kJ_mol" in rows[0]
+    assert "closure_miss_vapor_product" in rows[0]
+    forsterite = next(row for row in rows if row["phase"] == "forsterite")
+    assert forsterite["independent_fusion_method"] == "linear-enthalpy"
     receipt = (tmp_path / "crystal-closure.md").read_text(encoding="utf-8")
     pack = load_datapack()
     assert pack.model_id in receipt

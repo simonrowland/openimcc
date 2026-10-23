@@ -100,14 +100,26 @@ The Gibbs chain is crystal → crystalline oxide parents, evaluated within the
 internally consistent Berman (1988) dataset so elemental reference terms
 cancel, followed by crystalline oxide parents → the pack's pure-liquid parent
 standards on the JANAF basis. SI is dimensionless; `ΔG°fus,parents` and the
-closure residual are per mole of crystal formula units. The residual is
-`r = ΔG°fus,parents + R T ln(10) Σνᵢ log₁₀ aᵢ`, reported in kJ mol⁻¹. The
-CSV also reports `r/(R T ln 10)` as the vapour-product equivalent
-`Δlog₁₀ Π pᵢ^νᵢ`. At coexistence, this is the difference between the vapour
-product above the melt and crystal; it constrains the complete `aᵢKφ`
-product. Free-oxide activities and the liquid-standard Gibbs terms are
-confounded in this comparison, so the residual alone does not identify which
-side accounts for a mismatch.
+closure residual are per mole of crystal formula units. At the crystal's
+melting point, compare `r` with zero. Below melting, a stoichiometric liquid is supercooled, so compare `r` with the independent
+mineral fusion Gibbs energy `ΔG_fus,mineral(T) = G_liq − G_cr`. For a
+stoichiometric liquid, `ΣνᵢG°ᵢ + RT ln(10)Σνᵢlog₁₀aᵢ = G_model,liq`; by
+definition `ΔG°fus,parents = ΣνᵢG°ᵢ − G_cr`, so `r = G_model,liq − G_cr`.
+Thus `miss = r − ΔG_fus,mineral(T) = G_model,liq − G_independent,liq`. The
+report includes this `closure_miss_kJ_mol` and its vapour-product equivalent
+`closure_miss_vapor_product = miss/(R T ln 10)`. The equivalent
+`r/(R T ln 10)` is a vapour-product difference only at coexistence, where the
+target is zero. Both Gibbs terms and miss use kJ mol⁻¹ of mineral formula
+units; the vapour-product equivalent is dimensionless.
+
+For the seven minerals with sourced fusion enthalpy and melting anchors, the
+independent target uses measured `ΔCp` when available; otherwise it uses the
+flagged linear approximation `ΔG_fus(T) = ΔH_fus(Tm)(1 − T/Tm)`. The present
+phase data have no measured fusion `ΔCp` for these rows, so their target is
+flagged as a linear approximation. Diopside's anchor is incongruent and is
+flagged accordingly. As `T → Tm`, `ΔG_fus → 0`, so the miss approaches `r`
+and the melting-point zero target is recovered. The residual still cannot identify whether a mismatch comes from free-oxide activities or
+the liquid-standard Gibbs terms.
 
 The public `saturation_indices`, `liquidus_bracket`, and `liquid_only_notice`
 helpers expose the same source-bounded calculation to Python callers. See

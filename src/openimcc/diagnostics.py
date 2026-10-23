@@ -687,6 +687,33 @@ def _interpolate_crystal_fusion_nodes(phase: Mapping[str, Any], temperature_K: f
     return lo[1] + (hi[1] - lo[1]) * (temperature_K - lo[0]) / (hi[0] - lo[0])
 
 
+def _closure_miss(
+    residual_kJ_mol: float, temperature_K: float, phase: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """Compare the parent-based residual with mineral fusion Gibbs energy.
+
+    Without measured fusion ΔCp, approximate ΔG_fus(T) as
+    ΔH_fus(Tm)(1−T/Tm). This is kJ per mole of mineral formula units; dividing
+    the miss in J/mol by RT ln(10) gives a dimensionless log10 product.
+    """
+    fusion = phase.get("independent_fusion")
+    if fusion is None:
+        return None
+    tm = float(fusion["melting_temperature_K"])
+    hfus = float(fusion["enthalpy_kJ_mol"])
+    delta_g = hfus * (1.0 - temperature_K / tm)
+    miss = residual_kJ_mol - delta_g
+    return {
+        "independent_deltaG_fusion_kJ_mol": delta_g,
+        "independent_fusion_method": fusion.get("method", "linear-enthalpy"),
+        "independent_fusion_flag": fusion.get(
+            "flag", "linear ΔHfus(1 − T/Tm); no measured fusion ΔCp"
+        ),
+        "closure_miss_kJ_mol": miss,
+        "closure_miss_vapor_product": miss * 1000.0 / (R * temperature_K * math.log(10.0)),
+    }
+
+
 def crystal_closure(
     pack: ImccLoadedDatapack,
     condensate_path: str | Path | None = None,
@@ -728,12 +755,25 @@ def crystal_closure(
                 root = float(brentq(lambda t: phase_state(phase, t)["SI"], lo, hi))
                 break
         in_range = next((v for v in reversed(values[:-1]) if v["temperature_K"] <= 1800), None)
+        if in_range is not None:
+            in_range = {
+                **in_range,
+                **(_closure_miss(
+                    in_range["residual_kJ_mol"], in_range["temperature_K"], phase
+                ) or {}),
+            }
+        at_tm = {**at_tm, **(_closure_miss(at_tm["residual_kJ_mol"], tm, phase) or {})}
         results.append({"phase": phase["id"], "formula": phase["formula"],
             "melting_point_K": tm, "congruent": phase["melting_point"]["congruent"],
             "source": phase["source"], "SI_at_melting_point": at_tm["SI"],
             "residual_at_melting_point_kJ_mol": at_tm["residual_kJ_mol"],
             "delta_log10_vapor_product_at_melting_point": at_tm["delta_log10_vapor_product"],
             "root_K": root, "in_range_node": in_range,
+            "independent_deltaG_fusion_kJ_mol": at_tm.get("independent_deltaG_fusion_kJ_mol"),
+            "independent_fusion_method": at_tm.get("independent_fusion_method"),
+            "independent_fusion_flag": at_tm.get("independent_fusion_flag"),
+            "closure_miss_kJ_mol": at_tm.get("closure_miss_kJ_mol"),
+            "closure_miss_vapor_product": at_tm.get("closure_miss_vapor_product"),
             "SI_positive_below_root": (
                 phase_state(phase, max(grid[0], root - 1.0))["SI"] > 0
                 if root is not None else None
