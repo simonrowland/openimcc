@@ -56,13 +56,14 @@ _COLD_COST_BASELINES: dict[str, dict[str, tuple[float, float]]] = {
         "basalt_with_traces": (0.009416, 0.001370),
         "closed_natural_melt": (0.022004, 0.003787),
     },
-    # N=5 independent remote runs on 2026-10-23, loadavg 1m 24.1–29.9.
-    # Each run takes five trial medians, each from seven calls. The baseline
-    # median and spread are the median and range of those five run medians.
+    # Historical N=5 remote-run median and range, recorded on 2026-10-22 at
+    # loadavg 1m 6.55–13.45. Each run was the median of five trial medians,
+    # each from seven cold calls. The five source run medians were not saved.
+    # The spread-derived allowance is capped at 1.9x, so a 2x regression fails.
     "Apple M3 Ultra": {
-        "basalt": (0.020410, 0.004735),
-        "basalt_with_traces": (0.027084, 0.006953),
-        "closed_natural_melt": (0.045677, 0.006232),
+        "basalt": (0.007062, 0.001293),
+        "basalt_with_traces": (0.010584, 0.001124),
+        "closed_natural_melt": (0.016575, 0.001037),
     },
 }
 
@@ -99,7 +100,7 @@ def _missing_cold_baseline_message(
     spread: float,
     wall_max: float,
     wall_cpu_ratio: float,
-    solver_calls: int,
+    newton_iterations: int,
     load_start: float,
     load_end: float,
 ) -> str:
@@ -109,7 +110,7 @@ def _missing_cold_baseline_message(
         f"spread={spread * 1000:.3f} ms; "
         f"max wall={wall_max * 1000:.3f} ms; "
         f"max wall/median CPU={wall_cpu_ratio:.3f}; "
-        f"solver inner calls={solver_calls}; "
+        f"Newton iterations={newton_iterations}; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}. "
         "To record one, add "
         f"({median:.6f}, {spread:.6f}) under "
@@ -256,17 +257,18 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     repetitions_per_trial = 7
     trial_medians: list[float] = []
     wall_samples: list[float] = []
-    solver_calls = 0
+    newton_iterations = 0
     import openimcc.redox as redox_module
 
-    original_active_inner_once = redox_module._active_inner_once
+    original_solve_active_warm = redox_module.solve_active_warm
 
-    def count_solver_call(*args, **kwargs):
-        nonlocal solver_calls
-        solver_calls += 1
-        return original_active_inner_once(*args, **kwargs)
+    def count_newton_iterations(*args, **kwargs):
+        nonlocal newton_iterations
+        solution = original_solve_active_warm(*args, **kwargs)
+        newton_iterations += int(solution[3])
+        return solution
 
-    monkeypatch.setattr(redox_module, "_active_inner_once", count_solver_call)
+    monkeypatch.setattr(redox_module, "solve_active_warm", count_newton_iterations)
     load_start = os.getloadavg()[0]
     gc_was_enabled = gc.isenabled()
     gc.disable()
@@ -274,6 +276,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         for _ in range(trials):
             trial_cpu: list[float] = []
             for _ in range(repetitions_per_trial):
+                iterations_before = newton_iterations
                 cpu_started = time.process_time()
                 wall_started = time.perf_counter()
                 result = evaluate_redox(
@@ -283,6 +286,9 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
                     lambda_imposed=(
                         -7.17 * math.log(10) if mode == "imposed" else None
                     ),
+                )
+                assert newton_iterations > iterations_before, (
+                    f"{name}: evaluate_redox call performed no Newton iterations"
                 )
                 wall_samples.append(time.perf_counter() - wall_started)
                 cpu_elapsed = time.process_time() - cpu_started
@@ -296,10 +302,6 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         if gc_was_enabled:
             gc.enable()
 
-    assert solver_calls >= trials * repetitions_per_trial, (
-        f"{name}: solver work counter={solver_calls}; expected at least "
-        f"{trials * repetitions_per_trial} inner solves"
-    )
     median = statistics.median(trial_medians)
     spread = max(trial_medians) - min(trial_medians)
     load_end = os.getloadavg()[0]
@@ -315,7 +317,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
             spread,
             wall_max,
             wall_cpu_ratio,
-            solver_calls,
+            newton_iterations,
             load_start,
             load_end,
         )
@@ -330,7 +332,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         f"{baseline_spread * 1000:.3f} ms; ceiling={ceiling * 1000:.3f} ms; "
         f"max wall={wall_max * 1000:.3f} ms; "
         f"max wall/median CPU={wall_cpu_ratio:.3f}; "
-        f"solver inner calls={solver_calls}; "
+        f"Newton iterations={newton_iterations}; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
     )
     assert median <= ceiling, (
@@ -338,7 +340,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         f"{ceiling * 1000:.3f} ms ceiling; spread={spread * 1000:.3f} ms; "
         f"max wall={wall_max * 1000:.3f} ms; "
         f"max wall/median CPU={wall_cpu_ratio:.3f}; "
-        f"solver inner calls={solver_calls}; "
+        f"Newton iterations={newton_iterations}; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
     )
 
@@ -557,10 +559,10 @@ def test_closed_solver_cost_against_local_legacy_baseline(
 ) -> None:
     """Keep closed CPU cost within 1.3x of legacy on the same case.
 
-    This is a relative budget against the legacy solver, not a 1.5x regression
-    budget against prior closed-solver runtime. The CPU-model-keyed cold-cost
-    test covers the latter. The robust MAD margin stays below 0.2 so a measured
-    closed/legacy ratio of 1.5 cannot pass.
+    This is a relative budget against the legacy solver, not a regression
+    budget against prior closed-solver runtime. The two-scaled-MAD allowance
+    is capped at 0.15, so the largest ceiling is 1.45 and any ratio of 1.46
+    or greater is guaranteed to fail regardless of co-tenant spread.
     """
     repetitions = 9
     # At the measured 5–13 ms per-call cost, k=20 makes each timed batch
@@ -635,7 +637,8 @@ def test_closed_solver_cost_against_local_legacy_baseline(
     ratio = statistics.median(pair_ratios)
     mad = statistics.median(abs(value - ratio) for value in pair_ratios)
     robust_spread = 1.4826 * mad
-    noise_margin = 2.0 * robust_spread
+    raw_noise_margin = 2.0 * robust_spread
+    noise_margin = min(raw_noise_margin, 0.15)
     legacy_median = statistics.median(legacy_cpu) / calls_per_sample
     redox_median = statistics.median(redox_cpu) / calls_per_sample
     max_wall = max(redox_wall)
@@ -643,7 +646,7 @@ def test_closed_solver_cost_against_local_legacy_baseline(
     print(
         f"{name}: {repetitions} paired samples x k={calls_per_sample}; "
         f"median CPU ratio={ratio:.3f}; scaled MAD={robust_spread:.3f}; "
-        f"noise margin={noise_margin:.3f}; "
+        f"raw/capped noise margin={raw_noise_margin:.3f}/{noise_margin:.3f}; "
         f"legacy CPU median={legacy_median * 1000:.3f} ms; "
         f"closed CPU median={redox_median * 1000:.3f} ms; "
         f"total wall={total_wall:.3f} s; max paired wall={max(pair_wall) * 1000:.3f} ms; "
@@ -651,12 +654,7 @@ def test_closed_solver_cost_against_local_legacy_baseline(
         f"max wall/median CPU={wall_cpu_ratio:.3f}; "
         f"load average start/end={load_start:.2f}/{load_end:.2f}"
     )
-    # MAD is robust to one scheduler interruption. If its two-sigma allowance
-    # reaches 0.2, the resulting ceiling could admit a 1.5 ratio; reject that
-    # sample and require a larger k instead of silently widening the gate.
-    assert noise_margin < 0.2, (
-        f"{name}: measurement too noisy here (scaled MAD={robust_spread:.3f}); "
-        f"increase k above {calls_per_sample}"
-    )
+    # The capped allowance admits noisy paired samples without allowing a
+    # ratio of 1.46 or more to pass.
     ceiling = 1.3 + noise_margin
     assert ratio <= ceiling
