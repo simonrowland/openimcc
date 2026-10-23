@@ -509,21 +509,21 @@ def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
     assert sum(marker in notice for notice in floor.labels.notices) == 1
     # Flagging is metadata only: pin solved parent activities at the cutoff.
     assert floor.parent_activity[0] == pytest.approx(
-        0.2795921623351865, rel=1e-12
+        0.2795921623351865, rel=1e-12, abs=0.0
     )
     measured = next(n for n in below.labels.notices if marker in n)
     assert "Piacente and Matoušek (1973)" in measured
     assert "1.5–3x" in measured
     assert floor.parent_activity[6] == pytest.approx(
-        1.3724549799095924e-7, rel=1e-12
+        1.3724549799095924e-7, rel=1e-12, abs=0.0
     )
     at_floor = evaluate(melt, 1700.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in at_floor.labels.notices)
     assert at_floor.parent_activity[0] == pytest.approx(
-        0.2796869197906698, rel=1e-12
+        0.2796869197906698, rel=1e-12, abs=0.0
     )
     assert at_floor.parent_activity[6] == pytest.approx(
-        1.3875098072777926e-7, rel=1e-12
+        1.3875098072777926e-7, rel=1e-12, abs=0.0
     )
     inside = evaluate(melt, 1800.0, allow_extrapolation=True)
     assert not any(marker in notice for notice in inside.labels.notices)
@@ -562,19 +562,19 @@ def test_cao_sio2_activity_bias_notice_severities_at_1933() -> None:
     assert _cao_sio2_bias_notices(moderate) == (_CAO_SIO2_MODERATE,)
     assert moderate.parent_activity[
         moderate.parent_oxides.index("SiO2")
-    ] == pytest.approx(0.09663166113450403, rel=1e-12)
+    ] == pytest.approx(0.09663166113450403, rel=1e-12, abs=0.0)
     assert moderate.parent_activity[
         moderate.parent_oxides.index("CaO")
-    ] == pytest.approx(0.0031663659327736873, rel=1e-12)
+    ] == pytest.approx(0.0031663659327736873, rel=1e-12, abs=0.0)
 
     strong = evaluate({"CaO": 0.62, "SiO2": 0.38}, 1933.0)
     assert _cao_sio2_bias_notices(strong) == (_CAO_SIO2_STRONG,)
     assert strong.parent_activity[
         strong.parent_oxides.index("SiO2")
-    ] == pytest.approx(0.003641229504465529, rel=1e-12)
+    ] == pytest.approx(0.003641229504465529, rel=1e-12, abs=0.0)
     assert strong.parent_activity[
         strong.parent_oxides.index("CaO")
-    ] == pytest.approx(0.040265014819721105, rel=1e-12)
+    ] == pytest.approx(0.040265014819721105, rel=1e-12, abs=0.0)
 
     # Equal moles from a weight input: masses are the oxide molar masses.
     from openimcc.model import _OXIDE_MOLAR_MASS_G_MOL
