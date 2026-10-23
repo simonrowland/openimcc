@@ -60,8 +60,9 @@ stoichiometric phase.
 
 After rebuilding the Fe/Ti fusion nodes on the JANAF elemental-reference
 chain, the cleaned-melt brackets were recomputed over 1323–2100 K. The lunar
-low-Ti and Mars feeds remain `NO_SUPPORTED_CROSSING`; CI remains controlled by
-forsterite at 1948.2335139 K. The supported statuses did not change. At 1500 K,
+low-Ti feed is `AVAILABLE`, controlled by anorthite at 1334.686173 K; the Mars
+feed remains `NO_SUPPORTED_CROSSING`; CI is controlled by forsterite at
+1948.2335139 K. At 1500 K,
 corrected SI values on the lunar feed are −2.681 for ilmenite, −3.243 for
 ulvöspinel, and −2.676 for perovskite; on the Mars feed they are −2.630,
 −2.969, and −2.629, respectively.
