@@ -555,10 +555,12 @@ def test_capacity_calibration_notice_survives_scss_cap():
     assert notice.distance_beyond_interval == pytest.approx(notice.value - 3500.0)
 
 
-def test_default_openimcc_solve_remains_unchanged_without_sulfur_call():
+def test_default_openimcc_solve_without_sulfur_call_pins_v5():
     result = evaluate(
         _MORB, 1800.0, basis_type="wt", allow_extrapolation=True,
         allow_out_of_envelope=True,
     )
-    assert result.activity("FeO") == pytest.approx(0.06190069598158437)
-    assert result.D == pytest.approx(2.1691550711268723)
+    # This is the D066 v5 default solve; the five reviewed association A
+    # refits change its activity and bulk root independently of sulfur.
+    assert result.activity("FeO") == pytest.approx(0.05700402442549344)
+    assert result.D == pytest.approx(2.1787222992077693)

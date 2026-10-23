@@ -2572,7 +2572,9 @@ def test_oxygen_balance_includes_each_dict_only_nonoxide_parent(
         ),
     )
     assert no_extra_calls[0] == no_extra_calls[1] == no_extra_calls[2]
-    assert no_extra_calls[0][0] == pytest.approx(5.153813984425113e-06, rel=1e-12)
+    # The default D066 v5 association refit changes the basalt activities
+    # supplied to this oxygen balance; the gas data and balance method are unchanged.
+    assert no_extra_calls[0][0] == pytest.approx(4.044113669939106e-06, rel=1e-12)
 
     # The explicit oxide subset keeps excluding every other oxide activity.
     root, pressures, _ = evaluate_gas_oxygen_balance(
@@ -2581,7 +2583,7 @@ def test_oxygen_balance_includes_each_dict_only_nonoxide_parent(
         gas_pack,
         parent_oxides=("SiO2", "MgO"),
     )
-    assert root == pytest.approx(5.2556661572007086e-08, rel=1e-12)
+    assert root == pytest.approx(5.4130789404751755e-08, rel=1e-12)
     assert len(pressures) == 9
     assert "Na" not in pressures
 

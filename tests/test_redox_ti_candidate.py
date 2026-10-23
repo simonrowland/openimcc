@@ -446,10 +446,13 @@ def test_cr_candidate_v3_outputs_pin_corrected_homologue():
     """
     feed = {"Si": 0.3, "Mg": 0.1, "Fe": 0.1, "Ca": 0.15, "Al": 0.1,
             "Ti": 0.01, "Na": 0.01, "K": 0.001, "Cr": 0.002, "O": 1.05}
+    # The default melt component is D066 v5. Its five association A refits
+    # change the composition-dependent redox inputs; the Cr candidate rows
+    # and redox equations are unchanged.
     expected = (
-        (0.0015149463419878112, 0.0004850536580121895, 0.0007574731709939056),
-        (0.0010971925842934232, 0.0009028074157065767, 0.0005485962921467116),
-        (0.000788691536363373, 0.0012113084636366253, 0.0003943457681816865),
+        (0.0015149535635929346, 0.00048504643640706716, 0.0007574767817964673),
+        (0.0010971972025757852, 0.0009028027974242138, 0.0005485986012878926),
+        (0.0007885946163817768, 0.0012114053836182219, 0.0003942973081908884),
     )
     actual = []
     for temperature, logf in ((1673.0, -10.0), (1700.0, -8.0), (1773.0, -6.0)):
@@ -488,12 +491,12 @@ def test_default_output_digests_pin_corrected_redox_homologue():
         (2200.0, {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65}),
         (2500.0, {"Fe": 0.7, "Si": 0.2, "Mg": 0.1, "O": 1.0}),
     ]
-    # The middle case includes the refreshed manganese associations; the
-    # Fe-only endpoints retain their prior values.
+    # D066 v5's five association A refits change the mixed Fe-Mg-Si endpoint;
+    # the redox datapack and equations remain unchanged.
     expected = (
         "22aa16d3e716accfa736676672a97b25cd503eeef5183fa07e9d79f7bec819a1",
         "18340e4531b21326f5e21005c3565dd2f9f377d98d01ab18e409d97dc473391b",
-        "cc2276fb2152a13ca17d1d9eefbaf97999a6c4b13705a8141f5f4278ee437acf",
+        "0970c5620b101dcc24fc04cc0b10221c0d4121ff096a327f6fa9bc2922e9f288",
     )
     actual = [
         _legacy_output_digest(evaluate_redox(feed, temperature, "closed"))

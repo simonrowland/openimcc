@@ -14,6 +14,8 @@ from openimcc import model
 
 
 CASES = (
+    # Expected silica activities are pinned to D066 v5. Its five reviewed A
+    # refits move these equilibrium values while retaining continuation here.
     (
         {
             "SiO2": 0.011138886562497141,
@@ -26,7 +28,7 @@ CASES = (
             "K2O": 8.844980280923895,
         },
         2445.65,
-        3.4974271192541507e-09,
+        4.660183622030195e-09,
     ),
     (
         {
@@ -40,7 +42,7 @@ CASES = (
             "K2O": 8.96629272065383,
         },
         2400.65,
-        6.786596702235709e-05,
+        9.436879517699633e-05,
     ),
     (
         {
@@ -54,7 +56,7 @@ CASES = (
             "K2O": 8.966292720650552,
         },
         2400.65,
-        6.786596702235624e-05,
+        9.436879517699549e-05,
     ),
 )
 
@@ -132,8 +134,9 @@ def test_lunar_trace_state_converges_with_corrected_default_pack() -> None:
     assert result.convergence.solver_path == "direct"
     assert result.convergence.continuation_stages == 0
     assert result.convergence.residual_inf <= 1.0e-12
+    # The five D066 v5 A refits change this composition's silica activity.
     assert result.parent_activity[result.parent_oxides.index("SiO2")] == pytest.approx(
-        0.005834462351477136, rel=2.0e-5
+        0.009453263630275925, rel=2.0e-5
     )
 
 
@@ -190,7 +193,7 @@ def test_non_silica_trace_parent_uses_corrected_direct_root() -> None:
     assert result.convergence.residual_inf <= 1.0e-12
 
 
-def test_association_continuation_recovers_above_floor_feo_trace(
+def test_association_root_converges_directly_above_floor_feo_trace(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     oxides = (
@@ -218,8 +221,9 @@ def test_association_continuation_recovers_above_floor_feo_trace(
         allow_out_of_envelope=True,
     )
 
-    assert result.convergence.solver_path == "continuation"
-    assert result.convergence.continuation_stages == 8
+    # D066 v5's five A refits let this same trace solve converge directly.
+    assert result.convergence.solver_path == "direct"
+    assert result.convergence.continuation_stages == 0
     assert result.convergence.residual_inf <= 1.0e-12
     assert len(calls) == 1
     assert np.array_equal(calls[0], calls[-1])
@@ -299,11 +303,12 @@ def test_depleted_feo_trace_root_is_polished_to_inventory_tolerance() -> None:
         allow_out_of_envelope=True,
     )
 
-    assert result.convergence.solver_path == "composition-continuation"
-    assert result.convergence.continuation_stages > 0
+    # The v5 refit makes the depleted FeO root converge on the direct path.
+    assert result.convergence.solver_path == "direct"
+    assert result.convergence.continuation_stages == 0
     assert result.convergence.residual_inf <= 1.0e-12
     assert result.parent_activity[result.parent_oxides.index("FeO")] == pytest.approx(
-        1.5821408506471291e-12, rel=2.0e-12
+        1.5401486566755223e-12, rel=2.0e-12
     )
 
 
