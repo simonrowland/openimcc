@@ -623,4 +623,4 @@ def test_published_melt_and_lam_gas_pair_reproduces_its_k_pressure_pin() -> None
         published_gas,
         gas_species=("K",),
     )["K"]
-    assert float(pressure).hex() == "0x1.2786df7af2be4p-18"
+    assert float(pressure).hex() == "0x1.2786c8da97d5ep-18"

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Refreshed the Hastie case-4 K pressure residual pins and derived gas-status
+  estimates after same-reference gas seams closed. K residuals move by less
+  than 3.6e-7 dex; the rounded notice ranges remain unchanged, and published
+  melt-pack files remain byte-identical.
+
 - Promoted Richet, Bottinga & Tequi (1984) measured liquid heat capacities
   for SiO2(l) and Na2O(l) to D066 v4 and redox 1.7.0. Default liquid Cp changes
   from 85.772 to 81.37 J mol^-1 K^-1 for SiO2 and from 104.6 to 100.6 J mol^-1 K^-1

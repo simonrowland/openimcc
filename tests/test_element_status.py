@@ -232,8 +232,8 @@ def test_janaf_neutral_oxide_sources_are_included_or_measured_screens() -> None:
 def test_janaf_b2_and_cs2_neutral_dimers_are_below_the_gas_share_cutoff() -> None:
     """Keep JANAF elemental dimers screened without adding runtime rows."""
     cases = (
-        ("B", "B2O3", "B-083", "B-096", 1.5, "d4b699aefa6a314b1318638581f9aab10a32c8ec85173afc17df2b7a2874ed09", 3.835888945149373e-6, (2600.0, 1.0e-12)),
-        ("Cs", "Cs2O", "Cs-018", "NG-1842", 0.5, "8ece1162a62bc74f2c47f145590897c1fe9baf1cc76362ced4f34762d5620d3b", 4.866278816766107e-23, (1200.0, 1.0e-12)),
+        ("B", "B2O3", "B-083", "B-096", 1.5, "d4b699aefa6a314b1318638581f9aab10a32c8ec85173afc17df2b7a2874ed09", 3.835911646719254e-6, (2600.0, 1.0e-12)),
+        ("Cs", "Cs2O", "Cs-018", "NG-1842", 0.5, "8ece1162a62bc74f2c47f145590897c1fe9baf1cc76362ced4f34762d5620d3b", 4.866283621514257e-23, (1200.0, 1.0e-12)),
     )
     pack = load_gas_datapack()
     for element, parent, gas_table, parent_table, n_o2, source_sha, expected, location in cases:

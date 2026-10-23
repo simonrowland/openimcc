@@ -194,14 +194,14 @@ def test_existing_eight_parent_gas_outputs_and_cr2o3_pass_through():
         activities, 1800.0, 1.0e-8, pack, gas_species=species
     )
     assert tuple(float(baseline[name]).hex() for name in species) == (
-        "0x1.c31f1c387bffbp-29",
-        "0x1.fdaad60d56666p-22",
-        "0x1.4c8a33a9ff2f6p-20",
-        "0x1.094053d32a5d2p-22",
-        "0x1.2fb51a1637602p-41",
-        "0x1.4c45c8294ecd4p-58",
-        "0x1.699b4958391c9p-1",
-        "0x1.b993b8a9db241p+1",
+        "0x1.c31eb645379abp-29",
+        "0x1.fdab104f4204ap-22",
+        "0x1.4c89b0ed4f437p-20",
+        "0x1.09404c17e53b6p-22",
+        "0x1.2fb4e133cb751p-41",
+        "0x1.4c451ddf3c66dp-58",
+        "0x1.699b3912dd523p-1",
+        "0x1.b993c96210cd0p+1",
     )
 
     trace = cr3_trace_activity(_COMP_MOL_B1, _T_K, _FO2_BAR, 0.001)
