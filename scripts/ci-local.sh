@@ -85,8 +85,10 @@ for V in "${VERSIONS[@]}"; do
     # ends "1 passed, 1 error" still matches '^[0-9]+ passed'. Exit 0 is the
     # only pass; the summary must also carry no failed/error count.
     # -rs keeps an unrecorded cold-cost CPU class visible: that test skips
-    # with the measured numbers and how to record a baseline.
-    OUT="$("$VPY" -m pytest tests/ -q -W error -rs 2>&1)"
+    # with the measured numbers and how to record a baseline. -rfE lists
+    # every failing and erroring node id in the summary, so a remote run's
+    # captured tail names what failed.
+    OUT="$("$VPY" -m pytest tests/ -q -W error -rfEs 2>&1)"
     RC=$?
     LAST="$(printf '%s' "$OUT" | tail -1)"
     RAN=$((RAN + 1))
@@ -98,7 +100,10 @@ for V in "${VERSIONS[@]}"; do
         pass "tests on $V  $DIM$(printf '%s' "$OUT" | tail -1)$OFF"
     else
         fail "tests on $V"
-        printf '%s' "$OUT" | tail -12 | sed 's/^/        /'
+        # Name every failing and erroring node (the -rfE summary lines), then
+        # the final count line; a plain tail would show only the skip list.
+        printf '%s\n' "$OUT" | grep -E '^(FAILED|ERROR) ' | sed 's/^/        /' || true
+        printf '%s' "$OUT" | tail -1 | sed 's/^/        /'
     fi
 done
 
