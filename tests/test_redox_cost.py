@@ -56,13 +56,13 @@ _COLD_COST_BASELINES: dict[str, dict[str, tuple[float, float]]] = {
         "basalt_with_traces": (0.009416, 0.001370),
         "closed_natural_melt": (0.022004, 0.003787),
     },
-    # N=5 independent remote runs on 2026-10-22, loadavg 1m 6.55–13.45.
-    # Median is the median of per-run seven-call medians; spread is the
-    # max-minus-min of those five medians (process CPU seconds).
+    # N=5 independent remote runs on 2026-10-23, loadavg 1m 24.1–29.9.
+    # Each run takes five trial medians, each from seven calls. The baseline
+    # median and spread are the median and range of those five run medians.
     "Apple M3 Ultra": {
-        "basalt": (0.007062, 0.001293),
-        "basalt_with_traces": (0.010584, 0.001124),
-        "closed_natural_melt": (0.016575, 0.001037),
+        "basalt": (0.020410, 0.004735),
+        "basalt_with_traces": (0.027084, 0.006953),
+        "closed_natural_melt": (0.045677, 0.006232),
     },
 }
 
@@ -98,6 +98,8 @@ def _missing_cold_baseline_message(
     median: float,
     spread: float,
     wall_max: float,
+    wall_cpu_ratio: float,
+    solver_calls: int,
     load_start: float,
     load_end: float,
 ) -> str:
@@ -106,11 +108,14 @@ def _missing_cold_baseline_message(
         f"cold CPU median={median * 1000:.3f} ms "
         f"spread={spread * 1000:.3f} ms; "
         f"max wall={wall_max * 1000:.3f} ms; "
+        f"max wall/median CPU={wall_cpu_ratio:.3f}; "
+        f"solver inner calls={solver_calls}; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}. "
         "To record one, add "
         f"({median:.6f}, {spread:.6f}) under "
         f"_COLD_COST_BASELINES[{cpu_class!r}][{name!r}] "
-        "(median, max-minus-min process CPU over these seven cold calls). "
+        "(median, max-minus-min process CPU across five independent runs, "
+        "each the median of five trial medians, each from seven cold calls). "
         "Do not copy another CPU class's numbers."
     )
 
@@ -228,13 +233,16 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     inventory: dict[str, float],
     temperature: float,
     mode: Literal["closed", "imposed"],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Gate cold CPU time on the baseline recorded for this CPU model.
 
-    Process CPU time is the figure of merit: the median of seven cold calls,
-    with the ceiling built from the recorded median and both spreads. Wall
-    time and load average are printed only as a tripwire. The gate does not
-    ask for a quiet machine.
+    Process CPU per solve call is the figure of merit. Five independent trial
+    medians, each from seven cold calls, are compared with the five-run
+    baseline. The ceiling adds twice the sum of baseline and measured ranges,
+    then caps that allowance at 1.9x the baseline median: the measured spread
+    sets the noise margin, while the cap still rejects a deliberate 2x cost.
+    Wall/CPU and load average are reported as tripwires and never gate a pass.
 
     The same calls take different CPU time on a different chip, so baselines
     are keyed by CPU model. Applying the development-laptop ceiling on the
@@ -244,43 +252,72 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     when its median exceeds that entry's ceiling. An unrecorded model is not
     a pass for a model that has a baseline.
     """
-    repetitions = 7
-    cpu_samples: list[float] = []
+    trials = 5
+    repetitions_per_trial = 7
+    trial_medians: list[float] = []
     wall_samples: list[float] = []
+    solver_calls = 0
+    import openimcc.redox as redox_module
+
+    original_active_inner_once = redox_module._active_inner_once
+
+    def count_solver_call(*args, **kwargs):
+        nonlocal solver_calls
+        solver_calls += 1
+        return original_active_inner_once(*args, **kwargs)
+
+    monkeypatch.setattr(redox_module, "_active_inner_once", count_solver_call)
     load_start = os.getloadavg()[0]
     gc_was_enabled = gc.isenabled()
     gc.disable()
     try:
-        for _ in range(repetitions):
-            cpu_started = time.process_time()
-            wall_started = time.perf_counter()
-            result = evaluate_redox(
-                inventory,
-                temperature,
-                mode,
-                lambda_imposed=(
-                    -7.17 * math.log(10) if mode == "imposed" else None
-                ),
-            )
-            wall_samples.append(time.perf_counter() - wall_started)
-            cpu_samples.append(time.process_time() - cpu_started)
-            assert result.solver_path == "newton"
-            assert result.fallback_fired is False
-            if name == "closed_natural_melt":
-                assert abs(result.oxygen_residual_mol) <= 1.0e-10
+        for _ in range(trials):
+            trial_cpu: list[float] = []
+            for _ in range(repetitions_per_trial):
+                cpu_started = time.process_time()
+                wall_started = time.perf_counter()
+                result = evaluate_redox(
+                    inventory,
+                    temperature,
+                    mode,
+                    lambda_imposed=(
+                        -7.17 * math.log(10) if mode == "imposed" else None
+                    ),
+                )
+                wall_samples.append(time.perf_counter() - wall_started)
+                cpu_elapsed = time.process_time() - cpu_started
+                trial_cpu.append(cpu_elapsed)
+                assert result.solver_path == "newton"
+                assert result.fallback_fired is False
+                if name == "closed_natural_melt":
+                    assert abs(result.oxygen_residual_mol) <= 1.0e-10
+            trial_medians.append(statistics.median(trial_cpu))
     finally:
         if gc_was_enabled:
             gc.enable()
 
-    median = statistics.median(cpu_samples)
-    spread = max(cpu_samples) - min(cpu_samples)
+    assert solver_calls >= trials * repetitions_per_trial, (
+        f"{name}: solver work counter={solver_calls}; expected at least "
+        f"{trials * repetitions_per_trial} inner solves"
+    )
+    median = statistics.median(trial_medians)
+    spread = max(trial_medians) - min(trial_medians)
     load_end = os.getloadavg()[0]
     wall_max = max(wall_samples)
+    wall_cpu_ratio = wall_max / median
     cpu_class = _cpu_class()
     recorded = _cold_baseline(cpu_class, name)
     if recorded is None:
         message = _missing_cold_baseline_message(
-            cpu_class, name, median, spread, wall_max, load_start, load_end
+            cpu_class,
+            name,
+            median,
+            spread,
+            wall_max,
+            wall_cpu_ratio,
+            solver_calls,
+            load_start,
+            load_end,
         )
         print(message)
         pytest.skip(message)
@@ -292,9 +329,18 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         f"{baseline_median * 1000:.3f} ms spread="
         f"{baseline_spread * 1000:.3f} ms; ceiling={ceiling * 1000:.3f} ms; "
         f"max wall={wall_max * 1000:.3f} ms; "
+        f"max wall/median CPU={wall_cpu_ratio:.3f}; "
+        f"solver inner calls={solver_calls}; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
     )
-    assert median <= ceiling
+    assert median <= ceiling, (
+        f"{name}: cold CPU median {median * 1000:.3f} ms exceeds "
+        f"{ceiling * 1000:.3f} ms ceiling; spread={spread * 1000:.3f} ms; "
+        f"max wall={wall_max * 1000:.3f} ms; "
+        f"max wall/median CPU={wall_cpu_ratio:.3f}; "
+        f"solver inner calls={solver_calls}; "
+        f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
+    )
 
 
 # Fe saturation pins follow the direct JANAF Fe refit; the previous Fe
