@@ -131,14 +131,14 @@ def test_pack_and_evaluate_default_to_the_shipped_resource() -> None:
     default_pack = load_datapack()
     explicit_pack = load_datapack(DATAPACK_PATH)
     assert default_pack.model_id == "IMCC-SF04-D066"
-    assert default_pack.version == "1.0.6-d066-v4"
+    assert default_pack.version == "1.0.7-d066-v5"
     assert explicit_pack.version == "1.0.2"
 
     result = evaluate({"SiO2": 1.0}, 2500.0)
     assert result.convergence.solver_path == "direct"
     assert result.convergence.continuation_stages == 0
     assert result.labels.identity["model_id"] == "IMCC-SF04-D066"
-    assert result.labels.identity["datapack_version"] == "1.0.6-d066-v4"
+    assert result.labels.identity["datapack_version"] == "1.0.7-d066-v5"
     assert result.labels.acid_sink_ratio == pytest.approx(1.0)
 
     legacy_result = evaluate({"SiO2": 1.0}, 2500.0, explicit_pack)
@@ -161,8 +161,8 @@ def test_oprl2n_2200k_uses_continuation_without_root_jump() -> None:
     upper = evaluate(composition, 2225.0, basis_type="wt")
 
     assert result.convergence.residual_inf <= 1.0e-12
-    assert result.convergence.solver_path == "direct"
-    assert result.convergence.continuation_stages == 0
+    assert result.convergence.solver_path == "continuation"
+    assert result.convergence.continuation_stages == 5
     # Use half of the neighbor-derived 50 K slope across the 25 K half-step;
     # this allows only local interpolation-sized curvature around the midpoint.
     for name in result.parent_oxides:
@@ -273,7 +273,7 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
         (
             None,
             "K predictions from IMCC-SF04-D066 remain low against Hastie "
-            "1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see "
+            "1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see "
             "https://github.com/simonrowland/openimcc",
         ),
         (

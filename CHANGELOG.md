@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Promoted five constant association-A refits to D066 v5: Mg2SiO4 −1.106834,
+  CaSiO3 −0.276518, CaAl2Si2O8 −0.941619, Ca2MgSi2O7 −0.814553, and MgAl2O4
+  −0.670272 log10 K; all B values and all other association rows are unchanged.
+  The shifts come from Hess cycles using Berman (1988) and Robie & Hemingway
+  (1995) crystal formation functions, measured fusion enthalpies (Richet,
+  Leclerc & Benoist 1993 for forsterite and spinel; Richet & Bottinga 1984 for
+  anorthite; the reviewed pseudowollastonite anchor; Proks, Eliášová & Kosa
+  1977 for akermanite), and liquid Cp. The fit uses independent
+  mineral-composition liquid formation energies at 1600, 1800 and 2000 K with
+  B fixed; activity and vapour data were not fitted. The JANAF CaO/MgO liquid
+  fusion terms are assumed (±16.7 kJ/mol per oxide); wollastonite and akermanite
+  shifts fall inside that band. D066 v4 remains loadable by version. Identity-
+  scoped CaO–SiO2, Hastie, low-temperature and crystal-closure evidence is
+  keyed to or re-scored for v5; see `docs/melt-notices.md`.
+
 - Refreshed the Hastie case-4 K pressure residual pins and derived gas-status
   estimates after same-reference gas seams closed. K residuals move by less
   than 3.6e-7 dex; the rounded notice ranges remain unchanged, and published

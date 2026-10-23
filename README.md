@@ -804,12 +804,14 @@ weight-to-mole conversion, CaO+SiO2 must be at least 0.98 of the parent
 moles and every other parent must be below 0.01. On that sub-basis,
 x(CaO) = n(CaO)/(n(CaO)+n(SiO2)). The notice fires only for T in
 1873–1933 K, including both ends. Moderate severity is x(CaO) in
-[0.42, 0.56): Kume 2000 and Omori–Sanbongi 1961 show a(SiO2) about
-0.45–0.5 dex low. Strong severity is x(CaO) in [0.56, 0.70], including
+[0.42, 0.56): Kume 2000 and Omori–Sanbongi 1961 show low silica activity;
+this pack raises predicted log10(a(SiO2)) by 0.045–0.210 dex over
+x(CaO)=0.42–0.56. Strong severity is x(CaO) in [0.56, 0.70], including
 both ends: the composition is near Ca2SiO4, the pack has no Ca3SiO5
 associate, and the Stolyarova 1991 Table IIb scale (about 0.6–1.0 dex
-low) conflicts with Table Ib. At x(CaO)=0.62 the pressure-implied residual
-is still 0.25–0.29 dex low. The notice does not fire below x(CaO)=0.42,
+low) conflicts with Table Ib. Prior default residuals are not carried as v5
+scores; this pack raises predicted log10(a(SiO2)) by 0.40–0.48 dex in this
+range. The notice does not fire below x(CaO)=0.42,
 above 0.70, below 1873 K, or above 1933 K. That includes x(CaO)=0.30,
 lunar basalt compositions, and the unvalidated 1973 K map. A parent at
 exactly 0.01 of parent moles, or a CaO+SiO2 share below 0.98, is outside

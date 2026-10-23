@@ -545,14 +545,16 @@ def _cao_sio2_bias_notices(result) -> tuple[str, ...]:
 _CAO_SIO2_MODERATE = (
     "cao-sio2-activity-bias: moderate — effectively binary CaO–SiO2 melt "
     "with x(CaO) in [0.42, 0.56) on the CaO–SiO2 sub-basis at 1873–1933 K; "
-    "Kume 2000 and Omori–Sanbongi 1961 show a(SiO2) about 0.45–0.5 dex low"
+    "Kume 2000 and Omori–Sanbongi 1961 show low a(SiO2); this pack raises "
+    "predicted log10(a(SiO2)) by 0.045–0.210 dex over x(CaO)=0.42–0.56"
 )
 _CAO_SIO2_STRONG = (
     "cao-sio2-activity-bias: strong — effectively binary CaO–SiO2 melt "
     "with x(CaO) in [0.56, 0.70] on the CaO–SiO2 sub-basis at 1873–1933 K, "
-    "near Ca2SiO4; no Ca3SiO5 associate. Stolyarova 1991 Table IIb is about "
-    "0.6–1.0 dex low, but that absolute scale conflicts with Table Ib; at "
-    "x(CaO)=0.62 the pressure-implied residual is 0.25–0.29 dex low"
+    "near Ca2SiO4; no Ca3SiO5 associate. Stolyarova 1991 Table IIb's "
+    "0.6–1.0 dex low scale conflicts with Table Ib. That comparison's prior "
+    "default residuals are not carried as v5 scores; this pack raises predicted "
+    "log10(a(SiO2)) by 0.40–0.48 dex over this composition range"
 )
 
 
@@ -562,19 +564,19 @@ def test_cao_sio2_activity_bias_notice_severities_at_1933() -> None:
     assert _cao_sio2_bias_notices(moderate) == (_CAO_SIO2_MODERATE,)
     assert moderate.parent_activity[
         moderate.parent_oxides.index("SiO2")
-    ] == pytest.approx(0.09663166113450403, rel=1e-12, abs=0.0)
+    ] == pytest.approx(0.15517084002355458, rel=1e-12, abs=0.0)
     assert moderate.parent_activity[
         moderate.parent_oxides.index("CaO")
-    ] == pytest.approx(0.0031663659327736873, rel=1e-12, abs=0.0)
+    ] == pytest.approx(0.003186326308813352, rel=1e-12, abs=0.0)
 
     strong = evaluate({"CaO": 0.62, "SiO2": 0.38}, 1933.0)
     assert _cao_sio2_bias_notices(strong) == (_CAO_SIO2_STRONG,)
     assert strong.parent_activity[
         strong.parent_oxides.index("SiO2")
-    ] == pytest.approx(0.003641229504465529, rel=1e-12, abs=0.0)
+    ] == pytest.approx(0.010778776205447687, rel=1e-12, abs=0.0)
     assert strong.parent_activity[
         strong.parent_oxides.index("CaO")
-    ] == pytest.approx(0.040265014819721105, rel=1e-12, abs=0.0)
+    ] == pytest.approx(0.024082042568103465, rel=1e-12, abs=0.0)
 
     # Equal moles from a weight input: masses are the oxide molar masses.
     from openimcc.model import _OXIDE_MOLAR_MASS_G_MOL
@@ -671,7 +673,7 @@ def test_cao_sio2_activity_bias_notice_boundaries() -> None:
 # the measured identity in model.py, is updated on purpose.
 _CAO_SIO2_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
 _CAO_SIO2_EVIDENCE_BINDING_DIGEST = (
-    "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
 )
 _CAO_SIO2_UNSCORED = (
     "cao-sio2-activity-bias-unscored: the CaO–SiO2 silica-activity bias was "
@@ -730,32 +732,23 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
     result = evaluate(diopside, 1668.0, allow_extrapolation=True)
     notices = [n for n in result.labels.notices if n.startswith("silicate-vapour-product-low-near-liquidus:")]
     assert len(notices) == 1
-    assert "−0.77" in notices[0]
-    assert "low by 0.77 log10 units" in notices[0]
+    assert "−0.53" in notices[0]
+    assert "low by 0.53 log10 units" in notices[0]
     assert "split between melt activities and liquid standards unresolved" in notices[0]
     assert "incongruent-melting onset" in notices[0]
     assert "crystal data extended" in notices[0]
     assert result.parent_activity == pytest.approx(
-        (
-            0.18344866877020818,
-            0.01206062380091437,
-            0.0,
-            0.00017645076932393456,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ),
-        rel=1e-12,
-        abs=0.0,
+        (0.1060781382929233, 0.02639230008993675, 0.0,
+         0.00041927848957406914, 0.0, 0.0, 0.0, 0.0),
+        rel=1e-12, abs=0.0,
     )
 
     phase_cases = (
-        ("diopside", diopside, 1668.0, "−0.77"),
-        ("akermanite", {"CaO": 2.0, "MgO": 1.0, "SiO2": 2.0}, 1727.0, "−0.49"),
-        ("gehlenite", {"CaO": 2.0, "Al2O3": 1.0, "SiO2": 1.0}, 1823.0, "−0.61"),
-        ("anorthite", {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1826.0, "−0.40"),
-        ("wollastonite", {"CaO": 1.0, "SiO2": 1.0}, 1817.0, "−0.21"),
+        ("diopside", diopside, 1668.0, "−0.53"),
+        ("akermanite", {"CaO": 2.0, "MgO": 1.0, "SiO2": 2.0}, 1727.0, "+0.11"),
+        ("gehlenite", {"CaO": 2.0, "Al2O3": 1.0, "SiO2": 1.0}, 1823.0, "−0.51"),
+        ("anorthite", {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}, 1826.0, "+0.044"),
+        ("wollastonite", {"CaO": 1.0, "SiO2": 1.0}, 1817.0, "+0.0028"),
     )
     for phase, composition, melting_point, miss in phase_cases:
         notice = next(
@@ -766,7 +759,8 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
         )
         assert phase in notice
         assert miss in notice
-        assert f"low by {miss.lstrip('−')} log10 units" in notice
+        direction = "low" if miss.startswith("−") else "high"
+        assert f"{direction} by {abs(float(miss.replace('−', '-'))):g} log10 units" in notice
 
     assert any(
         n.startswith("silicate-vapour-product-low-near-liquidus:")

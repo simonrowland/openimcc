@@ -29,6 +29,10 @@ _PARENT_CP_BY_PACK = {
         # Promoted measured silicate-liquid Cp for SiO2 and Na2O.
         "SiO2": 81.37, "Na2O": 100.6, "MgO": 66.944, "CaO": 62.760,
     },
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf": {
+        # D066 v5 keeps the measured silicate-liquid Cp standards.
+        "SiO2": 81.37, "Na2O": 100.6, "MgO": 66.944, "CaO": 62.760,
+    },
 }
 
 def implied_heat_capacity(
@@ -209,7 +213,7 @@ def load_calorimetry_dataset() -> dict[str, Any]:
 def run_cp_implied(pack_path: str | Path | None = None) -> tuple[ImccLoadedDatapack, list[dict[str, Any]], dict[str, Any]]:
     """Evaluate the packaged sodium calorimetry points and produce scored rows."""
     if pack_path is None:
-        pack_path = resources.files("openimcc").joinpath("data/packs/imcc-sf04-d066-v4.json")
+        pack_path = resources.files("openimcc").joinpath("data/packs/imcc-sf04-d066-v5.json")
     pack = load_datapack(str(pack_path))
     dataset = load_calorimetry_dataset()
     temperatures = (900., 1323., 1500., 1700., 1800.)
@@ -368,7 +372,7 @@ def run_mixing_enthalpy(
     """Run reported liquid excess and oxide-dissolution enthalpy comparisons."""
     if pack_path is None:
         pack_path = resources.files("openimcc").joinpath(
-            "data/packs/imcc-sf04-d066-v4.json"
+            "data/packs/imcc-sf04-d066-v5.json"
         )
     pack = load_datapack(str(pack_path))
     datasets = load_mixing_enthalpy_dataset()["datasets"]

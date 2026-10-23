@@ -154,20 +154,20 @@ def test_crystal_closure_units_controls_and_default_regression():
             abs=1e-12,
         )
         assert node["delta_log10_vapor_product"] == pytest.approx(node["SI"], abs=1e-12)
-    assert by_phase["forsterite"]["root_K"] == pytest.approx(1801, abs=1)
+    assert by_phase["forsterite"]["root_K"] is None
     for phase in ("forsterite", "anorthite", "diopside", "pseudowollastonite",
                    "spinel", "akermanite", "gehlenite"):
         assert "independent_deltaG_fusion_kJ_mol" in by_phase[phase]["in_range_node"]
         assert "closure_miss_kJ_mol" in by_phase[phase]["in_range_node"]
         assert by_phase[phase]["in_range_node"]["independent_fusion_method"] == "linear-enthalpy"
-    assert by_phase["forsterite"]["SI_positive_below_root"] is True
-    assert by_phase["anorthite"]["in_range_node"]["residual_kJ_mol"] == pytest.approx(-11.61, abs=0.02)
+    assert by_phase["forsterite"]["SI_positive_below_root"] is None
+    assert by_phase["anorthite"]["in_range_node"]["residual_kJ_mol"] == pytest.approx(3.6066, abs=0.001)
     assert all(control["activity"] == pytest.approx(1.0) for control in details["pure_oxide_controls"])
     assert all(control["SI"] == pytest.approx(0.0, abs=1e-12)
                for control in details["pure_oxide_controls"])
     eutectic = details["An42Di58_1547K"]
-    assert eutectic["anorthite"]["SI"] == pytest.approx(-0.177, abs=0.001)
-    assert eutectic["diopside"]["SI"] == pytest.approx(-0.715, abs=0.001)
+    assert eutectic["anorthite"]["SI"] == pytest.approx(0.212738, abs=0.001)
+    assert eutectic["diopside"]["SI"] == pytest.approx(-0.515303, abs=0.001)
     assert details["condensate_table_digest"]
     data = load_crystal_dataset()
     parameters = {phase["id"]: phase["berman_parameters"]
@@ -243,7 +243,7 @@ def test_public_saturation_and_liquidus_api():
 
 
 def test_anorthite_and_forsterite_liquidus_misses_are_reported():
-    from openimcc import liquidus_bracket
+    from openimcc import CrystalStatus, liquidus_bracket
     from openimcc.model import load_datapack
 
     pack = load_datapack()
@@ -253,11 +253,10 @@ def test_anorthite_and_forsterite_liquidus_misses_are_reported():
     forsterite = liquidus_bracket(
         {"MgO": 57.30, "SiO2": 42.70}, 1323.0, 2100.0, pack
     )
-    assert anorthite.liquidus_K == pytest.approx(1697.9, abs=0.1)
-    assert forsterite.liquidus_K == pytest.approx(1801.2, abs=0.1)
-    # Current SI roots miss the measured melting points; they are not fitted here.
-    assert anorthite.liquidus_K - 1826.0 == pytest.approx(-128.1, abs=0.1)
-    assert forsterite.liquidus_K - 2163.0 == pytest.approx(-361.8, abs=1.0)
+    assert anorthite.liquidus_K == pytest.approx(1406.329663970257, abs=1e-6)
+    assert anorthite.controlling_phase == "pseudowollastonite"
+    assert forsterite.status is CrystalStatus.NO_SUPPORTED_CROSSING
+    assert forsterite.liquidus_K is None
 
 
 def test_cleaned_feed_liquidus_regression_and_dropped_parent_notices():
@@ -290,7 +289,7 @@ def test_cleaned_feed_liquidus_regression_and_dropped_parent_notices():
     # Recomputed after the Fe/Ti nodes were rebuilt on the JANAF elemental
     # reference chain; the supported feed statuses remain unchanged.
     assert results["ci"].status is CrystalStatus.AVAILABLE
-    assert results["ci"].liquidus_K == pytest.approx(1542.9466545748282, abs=1e-6)
+    assert results["ci"].liquidus_K == pytest.approx(1948.2335138534745, abs=1e-6)
     assert results["ci"].controlling_phase == "forsterite"
     dropped = results["lunar_low_ti"].notices[0]
     assert dropped.code == "crystal_si_dropped_parents"
@@ -465,19 +464,19 @@ def test_mixing_enthalpy_dissolution_conversion_and_pinned_residuals():
     pack, rows = run_mixing_enthalpy()
     cmas = next(row for row in rows if row["observation_id"] == "CaO")
     assert cmas["measured_mixing_partial_kJ_mol"] == pytest.approx(-4.3 - 77.754, abs=1e-9)
-    assert cmas["residual_kJ_mol"] == pytest.approx(11.374626, abs=0.002)
+    assert cmas["residual_kJ_mol"] == pytest.approx(10.709970, abs=0.002)
     expected = {
-        "An43.5Di49Fo7.5": -1.027633,
-        "An42Di58": 0.870437,
-        "Di58Ak42-Ak133.1": -2.664967,
-        "Di58Ak42-Ak139.8": -0.164967,
-        "An46Ak54-Ak133.1": -1.069885,
-        "An46Ak54-Ak139.8": 2.530115,
-        "Di84Qt16": -2.795509,
-        "CaO": 11.374626,
-        "SiO2": -3.168378,
-        "Al2O3": -40.138551,
-        "MgO": -59.411074,
+        "An43.5Di49Fo7.5": 0.983864,
+        "An42Di58": 3.268408,
+        "Di58Ak42-Ak133.1": -4.064451,
+        "Di58Ak42-Ak139.8": -1.564451,
+        "An46Ak54-Ak133.1": 1.562120,
+        "An46Ak54-Ak139.8": 5.162120,
+        "Di84Qt16": -4.409133,
+        "CaO": 10.709970,
+        "SiO2": -0.320730,
+        "Al2O3": -32.437843,
+        "MgO": -41.386681,
     }
     actual = {row["observation_id"]: row["residual_kJ_mol"] for row in rows}
     assert actual == pytest.approx(expected, abs=0.002)

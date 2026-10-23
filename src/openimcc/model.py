@@ -214,6 +214,10 @@ _ALKALI_BIAS_BENCHMARKS = MappingProxyType(
         ): "−1.18 to −1.24 dex",
         (
             "IMCC-SF04-D066",
+            "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf",
+        ): "−1.17 to −1.22 dex",
+        (
+            "IMCC-SF04-D066",
             "ac88aa2272c50d1cbf300634737c5d0071bddee0cd0f0483a6530c4a4992c393",
         ): "−1.18 to −1.24 dex",
     }
@@ -242,21 +246,20 @@ def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
 # inside the same composition and temperature gate gets the unscored
 # code, so a later pack cannot inherit this evidence.
 #
-# Independent silica activities support a moderate low bias of about
-# 0.45–0.5 dex from roughly x(CaO)=0.42. On the prior D066 default, Kume 2000
+# Independent silica activities support a low bias from roughly x(CaO)=0.42.
+# On the prior D066 default, Kume 2000
 # Table 1 at 1873 K had mean residual −0.507 dex (range −0.641 to −0.334),
 # and Omori–Sanbongi 1961 silica activities, converted from β-cristobalite to
-# liquid, had mean residual −0.441 dex (range −0.722 to −0.192). Re-scored
-# held-out errors move Kume 0.48438→0.48353 dex and Omori 0.35077→0.35036 dex;
-# the notice remains 0.45–0.5 dex low at its displayed
-# precision. Across x(CaO)=0.42–0.56, the default-to-default predicted
-# log10(a(SiO2)) shift ranges +0.00002 to +0.00034 dex at 1873 K and −0.00003
-# to −0.00046 dex at 1933 K. The basic side
+# liquid, had mean residual −0.441 dex (range −0.722 to −0.192). On the new
+# default, predicted log10(a(SiO2)) rises 0.045–0.210 dex over
+# x(CaO)=0.42–0.56 at 1873–1933 K. The cited measurements still show a low
+# silica activity, but prior residual magnitudes are not carried as current
+# pack scores. The basic side
 # approaches Ca2SiO4. There the direct Stolyarova 1991 Table IIb
 # comparison reaches about 0.6–1.0 dex low for x(CaO)≈0.56–0.67, but
 # Table IIb's absolute scale conflicts with the same paper's Table Ib
 # pSiO and atomic-oxygen pressures. At x(CaO)=0.62 the pressure-implied
-# residual is 0.25–0.29 dex low. The pack has no Ca3SiO5 associate; the
+# prior-default pressure-implied residual is 0.25–0.29 dex low. The pack has no Ca3SiO5 associate; the
 # notice continues through x(CaO)=0.70. No target data were available at
 # 1973 K, so that map is outside the notice window.
 #
@@ -283,33 +286,35 @@ _CAO_SIO2_T_MAX_K = 1933.0
 # model_id or binding_digest does not inherit these residuals.
 _CAO_SIO2_MEASURED_MODEL_ID = "IMCC-SF04-D066"
 _CAO_SIO2_MEASURED_BINDING_DIGEST = (
-    "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
 )
 _CAO_SIO2_NOTICE_CODE = "cao-sio2-activity-bias"
 _CAO_SIO2_UNSCORED_CODE = "cao-sio2-activity-bias-unscored"
 _CAO_SIO2_MODERATE_NOTICE = (
     f"{_CAO_SIO2_NOTICE_CODE}: moderate — effectively binary CaO–SiO2 melt "
     "with x(CaO) in [0.42, 0.56) on the CaO–SiO2 sub-basis at 1873–1933 K; "
-    "Kume 2000 and Omori–Sanbongi 1961 show a(SiO2) about 0.45–0.5 dex low"
+    "Kume 2000 and Omori–Sanbongi 1961 show low a(SiO2); this pack raises "
+    "predicted log10(a(SiO2)) by 0.045–0.210 dex over x(CaO)=0.42–0.56"
 )
 _CAO_SIO2_STRONG_NOTICE = (
     f"{_CAO_SIO2_NOTICE_CODE}: strong — effectively binary CaO–SiO2 melt "
     "with x(CaO) in [0.56, 0.70] on the CaO–SiO2 sub-basis at 1873–1933 K, "
-    "near Ca2SiO4; no Ca3SiO5 associate. Stolyarova 1991 Table IIb is about "
-    "0.6–1.0 dex low, but that absolute scale conflicts with Table Ib; at "
-    "x(CaO)=0.62 the pressure-implied residual is 0.25–0.29 dex low"
+    "near Ca2SiO4; no Ca3SiO5 associate. Stolyarova 1991 Table IIb's "
+    "0.6–1.0 dex low scale conflicts with Table Ib. That comparison's prior "
+    "default residuals are not carried as v5 scores; this pack raises predicted "
+    "log10(a(SiO2)) by 0.40–0.48 dex over this composition range"
 )
 
 _MELT_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
 _MELT_EVIDENCE_BINDING_DIGEST = (
-    "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
 )
 _SILICATE_PRODUCT_ROWS = (
-    ("diopside", {"CaO": 1, "MgO": 1, "SiO2": 2}, 1668.0, "−0.77"),
-    ("akermanite", {"CaO": 2, "MgO": 1, "SiO2": 2}, 1727.0, "−0.49"),
-    ("gehlenite", {"CaO": 2, "Al2O3": 1, "SiO2": 1}, 1823.0, "−0.61"),
-    ("anorthite", {"CaO": 1, "Al2O3": 1, "SiO2": 2}, 1826.0, "−0.40"),
-    ("wollastonite", {"CaO": 1, "SiO2": 1}, 1817.0, "−0.21"),
+    ("diopside", {"CaO": 1, "MgO": 1, "SiO2": 2}, 1668.0, "−0.53"),
+    ("akermanite", {"CaO": 2, "MgO": 1, "SiO2": 2}, 1727.0, "+0.11"),
+    ("gehlenite", {"CaO": 2, "Al2O3": 1, "SiO2": 1}, 1823.0, "−0.51"),
+    ("anorthite", {"CaO": 1, "Al2O3": 1, "SiO2": 2}, 1826.0, "+0.044"),
+    ("wollastonite", {"CaO": 1, "SiO2": 1}, 1817.0, "+0.0028"),
 )
 
 
@@ -363,11 +368,13 @@ def _silicate_vapour_product_notice(
             if phase == "diopside"
             else f"nominal melting point {melting_K:g} K"
         )
+        signed_miss = float(miss.replace("−", "-"))
+        direction = "low" if signed_miss < 0.0 else "high"
         return (
             f"silicate-vapour-product-low-near-liquidus: {phase} SI at its "
             f"{melting_description} is {miss} using crystal data extended to "
             f"that temperature; the combined vapour product over the melt is "
-            f"low by {miss.lstrip('−')} log10 units, with the split between "
+            f"{direction} by {abs(signed_miss):g} log10 units, with the split between "
             "melt activities and liquid standards unresolved"
         )
     return None
@@ -786,7 +793,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         resources.files("openimcc")
         / "data"
         / "packs"
-        / "imcc-sf04-d066-v4.json"
+        / "imcc-sf04-d066-v5.json"
         if path is None
         else Path(path)
     )

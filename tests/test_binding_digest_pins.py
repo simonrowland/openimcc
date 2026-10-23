@@ -36,6 +36,9 @@ D066_MANIFEST_SHA256 = {
     "imcc-sf04-d066-v4.json": (
         "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
     ),
+    "imcc-sf04-d066-v5.json": (
+        "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
+    ),
     "imcc-sf04-d066-v2.json": (
         "ac88aa2272c50d1cbf300634737c5d0071bddee0cd0f0483a6530c4a4992c393"
     ),
@@ -50,7 +53,7 @@ D066_MANIFEST_SHA256 = {
     ),
 }
 D066_BINDING_SHA256 = D066_MANIFEST_SHA256
-D066_DEFAULT_K_PRESSURE_BAR = 0.0005443175873747186
+D066_DEFAULT_K_PRESSURE_BAR = 0.0005914655746591656
 COMPOSITIONS = (
     {
         "SiO2": 0.45,
@@ -145,6 +148,30 @@ def test_d066_manifest_and_binding_digests_are_pinned() -> None:
         assert pack.model_id == "IMCC-SF04-D066"
         assert actual_manifest == expected_manifest
         assert pack.kernel_datapack.binding_digest == D066_BINDING_SHA256[filename]
+
+
+def test_d066_v5_changes_only_the_five_source_refit_a_values() -> None:
+    previous = load_datapack(PACK_DIR / "imcc-sf04-d066-v4.json").kernel_datapack
+    current = load_datapack(PACK_DIR / "imcc-sf04-d066-v5.json").kernel_datapack
+    moved = {"Mg2SiO4", "CaSiO3", "CaAl2Si2O8", "Ca2MgSi2O7", "MgAl2O4"}
+    changed = {
+        name for i, name in enumerate(current.reactions)
+        if current.A[i] != previous.A[i]
+    }
+    assert changed == moved
+    np.testing.assert_array_equal(current.B, previous.B)
+    expected_delta_A = {
+        "Mg2SiO4": -1.106834313836493,
+        "CaSiO3": -0.2765176335401777,
+        "CaAl2Si2O8": -0.94161923030176,
+        "Ca2MgSi2O7": -0.81455303243265,
+        "MgAl2O4": -0.670271821871233,
+    }
+    for i, name in enumerate(current.reactions):
+        if name not in moved:
+            assert current.A[i] == previous.A[i]
+        else:
+            assert current.A[i] - previous.A[i] == pytest.approx(expected_delta_A[name])
 
 
 def test_d066_source_refs_are_complete_and_do_not_change_numeric_results(

@@ -323,6 +323,9 @@ identity gate before band-field validation. The shipped D066 default pack
 first passes its own row-set gate and then the band-field checks; it is not
 represented as the unchanged published identity. Extension rows are
 separately gated and carry their extension identity and certification status.
+The default is D066 v5. Its five constant A refits (forsterite, wollastonite,
+anorthite, akermanite and spinel) use independent Hess-cycle formation-energy
+targets with B fixed; D066 v4 remains loadable by its versioned file.
 
 The public melt result labels contain `identity`, `coverage`,
 `envelope_status`, `flags`, `notices`, `acid_sink_ratio`, and `inactive_rows`;

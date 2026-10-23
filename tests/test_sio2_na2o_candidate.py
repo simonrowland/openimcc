@@ -34,8 +34,8 @@ def test_candidate_pack_identity_and_default_remain_separate() -> None:
     assert candidate.version == "1.0.6-d066-sio2-na2o-candidate"
     assert candidate.kernel_datapack.binding_digest == "51179602bfd1bbc8be071bead0f40f9d8ff407227e5a4a904ab8a158fe471efd"
     assert entries[candidate_path.name]["sha256"] == hashlib.sha256(candidate_path.read_bytes()).hexdigest()
-    assert default.version == "1.0.6-d066-v4"
-    assert default.kernel_datapack.binding_digest == "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
+    assert default.version == "1.0.7-d066-v5"
+    assert default.kernel_datapack.binding_digest == "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
     assert default.kernel_datapack.binding_digest != candidate.kernel_datapack.binding_digest
 
 
