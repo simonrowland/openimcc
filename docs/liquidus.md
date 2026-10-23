@@ -61,14 +61,14 @@ stoichiometric phase.
 After rebuilding the Fe/Ti fusion nodes on the JANAF elemental-reference
 chain, the cleaned-melt brackets were recomputed over 1323–2100 K. The lunar
 low-Ti and Mars feeds remain `NO_SUPPORTED_CROSSING`; CI remains controlled by
-forsterite at 1533.6888743 K. The supported statuses did not change. At 1500 K,
+forsterite at 1948.2335139 K. The supported statuses did not change. At 1500 K,
 corrected SI values on the lunar feed are −2.681 for ilmenite, −3.243 for
 ulvöspinel, and −2.676 for perovskite; on the Mars feed they are −2.630,
 −2.969, and −2.629, respectively.
 
-Pure anorthite and forsterite tests pin the current roots
-at 1691.4 K and 1799.1 K against measured melting points of 1826 K and 2163 K;
-these are reported standard-state misses and are not tuned away.
+Pure anorthite brackets pseudowollastonite at 1406.329664 K. Pure forsterite
+has no supported crossing through 2100 K; its SI is +0.100 at the measured
+2163 K melting point, and the crystal window has no root.
 
 `liquid_only_notice(T_K, bracket)` returns a typed `LiquidOnlyNotice` below a
 supported bracketed liquidus, or when there is no supported crossing. It does

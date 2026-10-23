@@ -251,15 +251,17 @@ def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
 # Table 1 at 1873 K had mean residual −0.507 dex (range −0.641 to −0.334),
 # and Omori–Sanbongi 1961 silica activities, converted from β-cristobalite to
 # liquid, had mean residual −0.441 dex (range −0.722 to −0.192). On the new
-# default, predicted log10(a(SiO2)) rises 0.045–0.210 dex over
-# x(CaO)=0.42–0.56 at 1873–1933 K. The cited measurements still show a low
+# default, predicted log10(a(SiO2)) rises 0.045–0.410 dex over
+# x(CaO)=[0.42, 0.56) at 1873–1933 K. In the strong interval the shift is
+# non-monotonic, spanning 0.076–0.479 dex and peaking near x(CaO)=0.614.
+# The cited measurements still show a low
 # silica activity, but prior residual magnitudes are not carried as current
 # pack scores. The basic side
 # approaches Ca2SiO4. There the direct Stolyarova 1991 Table IIb
 # comparison reaches about 0.6–1.0 dex low for x(CaO)≈0.56–0.67, but
 # Table IIb's absolute scale conflicts with the same paper's Table Ib
-# pSiO and atomic-oxygen pressures. At x(CaO)=0.62 the pressure-implied
-# prior-default pressure-implied residual is 0.25–0.29 dex low. The pack has no Ca3SiO5 associate; the
+# pSiO and atomic-oxygen pressures. At x(CaO)=0.62 the prior-default
+# pressure-implied residual is 0.25–0.29 dex low. The pack has no Ca3SiO5 associate; the
 # notice continues through x(CaO)=0.70. No target data were available at
 # 1973 K, so that map is outside the notice window.
 #
@@ -294,15 +296,16 @@ _CAO_SIO2_MODERATE_NOTICE = (
     f"{_CAO_SIO2_NOTICE_CODE}: moderate — effectively binary CaO–SiO2 melt "
     "with x(CaO) in [0.42, 0.56) on the CaO–SiO2 sub-basis at 1873–1933 K; "
     "Kume 2000 and Omori–Sanbongi 1961 show low a(SiO2); this pack raises "
-    "predicted log10(a(SiO2)) by 0.045–0.210 dex over x(CaO)=0.42–0.56"
+    "predicted log10(a(SiO2)) by 0.045–0.410 dex over x(CaO)=[0.42, 0.56)"
 )
 _CAO_SIO2_STRONG_NOTICE = (
     f"{_CAO_SIO2_NOTICE_CODE}: strong — effectively binary CaO–SiO2 melt "
     "with x(CaO) in [0.56, 0.70] on the CaO–SiO2 sub-basis at 1873–1933 K, "
     "near Ca2SiO4; no Ca3SiO5 associate. Stolyarova 1991 Table IIb's "
     "0.6–1.0 dex low scale conflicts with Table Ib. That comparison's prior "
-    "default residuals are not carried as v5 scores; this pack raises predicted "
-    "log10(a(SiO2)) by 0.40–0.48 dex over this composition range"
+    "default residuals are not carried as v5 scores; this pack shifts predicted "
+    "log10(a(SiO2)) non-monotonically by 0.076–0.479 dex, peaking near "
+    "x(CaO)=0.614"
 )
 
 _MELT_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"

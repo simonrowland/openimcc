@@ -169,6 +169,7 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
             "imcc-sf04-d066-v2.json",
             "imcc-sf04-d066-v3.json",
             "imcc-sf04-d066-v4.json",
+            "imcc-sf04-d066-v5.json",
         }
     )
     archive = subprocess.run(

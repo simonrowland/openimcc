@@ -546,15 +546,16 @@ _CAO_SIO2_MODERATE = (
     "cao-sio2-activity-bias: moderate — effectively binary CaO–SiO2 melt "
     "with x(CaO) in [0.42, 0.56) on the CaO–SiO2 sub-basis at 1873–1933 K; "
     "Kume 2000 and Omori–Sanbongi 1961 show low a(SiO2); this pack raises "
-    "predicted log10(a(SiO2)) by 0.045–0.210 dex over x(CaO)=0.42–0.56"
+    "predicted log10(a(SiO2)) by 0.045–0.410 dex over x(CaO)=[0.42, 0.56)"
 )
 _CAO_SIO2_STRONG = (
     "cao-sio2-activity-bias: strong — effectively binary CaO–SiO2 melt "
     "with x(CaO) in [0.56, 0.70] on the CaO–SiO2 sub-basis at 1873–1933 K, "
     "near Ca2SiO4; no Ca3SiO5 associate. Stolyarova 1991 Table IIb's "
     "0.6–1.0 dex low scale conflicts with Table Ib. That comparison's prior "
-    "default residuals are not carried as v5 scores; this pack raises predicted "
-    "log10(a(SiO2)) by 0.40–0.48 dex over this composition range"
+    "default residuals are not carried as v5 scores; this pack shifts predicted "
+    "log10(a(SiO2)) non-monotonically by 0.076–0.479 dex, peaking near "
+    "x(CaO)=0.614"
 )
 
 

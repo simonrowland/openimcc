@@ -741,10 +741,10 @@ temperature.
 Output:
 
 ```text
-activities: {'SiO2': '0.315634', 'MgO': '0.00434375', 'FeO': '0.0759', 'CaO': '7.42238e-05', 'Al2O3': '0.0128061', 'TiO2': '0.00252514', 'Na2O': '4.28163e-10', 'K2O': '8.22663e-15'}
+activities: {'SiO2': '0.32943', 'MgO': '0.00422664', 'FeO': '0.0714214', 'CaO': '0.000109952', 'Al2O3': '0.0186766', 'TiO2': '0.00195415', 'Na2O': '2.34818e-10', 'K2O': '4.61106e-15'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
-melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see https://github.com/simonrowland/openimcc',)
-gas: bar {'Na': '0.000266815', 'K': '6.99669e-06'}
+melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see https://github.com/simonrowland/openimcc',)
+gas: bar {'Na': '0.000197593', 'K': '5.2382e-06'}
 Mg domain flag: MgO(l) uses a labelled constant-Cp supercooled-liquid continuation from JANAF Mg-009
 ```
 
@@ -762,9 +762,9 @@ pressures are:
 
 | T (K) | p(Na) (bar) | p(NaO) (bar) | p(Na2) (bar) | p(Na2O) (bar) |
 |---:|---:|---:|---:|---:|
-| 1800 | 2.01453e-4 | 3.79925e-10 | 3.36639e-10 | 1.22956e-13 |
-| 2200 | 2.77842e-2 | 3.91481e-8 | 2.43405e-6 | 1.23175e-10 |
-| 2600 | 7.94594e-1 | 9.12685e-7 | 9.86681e-4 | 1.31905e-8 |
+| 1800 | 1.97593e-4 | 3.72645e-10 | 3.23863e-10 | 1.18289e-13 |
+| 2200 | 2.25338e-2 | 3.17503e-8 | 1.60107e-6 | 8.10214e-11 |
+| 2600 | 6.10830e-1 | 7.01611e-7 | 5.83085e-4 | 7.79494e-9 |
 
 Here `fO2 = 1e-10` is bar-relative (`pO2 / 1 bar`), not `log10(fO2)` and not a
 buffer offset such as ΔIW.
@@ -805,13 +805,13 @@ moles and every other parent must be below 0.01. On that sub-basis,
 x(CaO) = n(CaO)/(n(CaO)+n(SiO2)). The notice fires only for T in
 1873–1933 K, including both ends. Moderate severity is x(CaO) in
 [0.42, 0.56): Kume 2000 and Omori–Sanbongi 1961 show low silica activity;
-this pack raises predicted log10(a(SiO2)) by 0.045–0.210 dex over
-x(CaO)=0.42–0.56. Strong severity is x(CaO) in [0.56, 0.70], including
+the v5−v4 change raises predicted log10(a(SiO2)) by 0.045–0.410 dex over
+that interval. Strong severity is x(CaO) in [0.56, 0.70], including
 both ends: the composition is near Ca2SiO4, the pack has no Ca3SiO5
 associate, and the Stolyarova 1991 Table IIb scale (about 0.6–1.0 dex
 low) conflicts with Table Ib. Prior default residuals are not carried as v5
-scores; this pack raises predicted log10(a(SiO2)) by 0.40–0.48 dex in this
-range. The notice does not fire below x(CaO)=0.42,
+scores; this pack shifts predicted log10(a(SiO2)) non-monotonically by
+0.076–0.479 dex, peaking near x(CaO)=0.614. The notice does not fire below x(CaO)=0.42,
 above 0.70, below 1873 K, or above 1933 K. That includes x(CaO)=0.30,
 lunar basalt compositions, and the unvalidated 1973 K map. A parent at
 exactly 0.01 of parent moles, or a CaO+SiO2 share below 0.98, is outside
