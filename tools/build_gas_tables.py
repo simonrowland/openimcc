@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from scipy.optimize import linprog
 
 # Keep package imports available when this file is invoked as a script.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -803,6 +804,20 @@ REPLACED_DEFAULT_CONDENSATE_SPECIES = {
     "ZnO(l)", "CdO(l)", "Bi2O3(l)",
     "TeO2(l)",
 }
+# Shipped packs name these liquids as a standard-state reference. A coefficient
+# change would force a new pack version, so their packaged rows stay byte for
+# byte and any discontinuous join is reported open.
+# K2O(l): FC87 new_reference of every D066 pack.
+# SiO2(l), Na2O(l): the liquids the default v4 packs were re-referenced to.
+# FeO(l): D&G/Masson standard of the FeO-liquid candidate and the v3 re-anchor.
+# Al2O3(l), MnO(l): copied into the shipped redox packs.
+PACK_REFERENCE_LIQUIDS = frozenset({
+    "K2O(l)", "SiO2(l)", "Na2O(l)", "FeO(l)", "Al2O3(l)", "MnO(l)",
+})
+# FC87 Table 1 K2O(l), the reference every shipped D066 pack is translated
+# against, is 2*G(K, g) + G(O, g) plus a closed-form term. Refitting these
+# rows changes that basis, so the packaged lines stay byte for byte.
+PACK_REFERENCE_GAS = frozenset({"K(g)", "O(g)"})
 
 REQUIRED_FIELDS = (
     "temperature",
@@ -1239,6 +1254,7 @@ def _fit_burcat_metal_gas_row(
         "Ref": source["record_id"],
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        **_shomate_source_fields(fit),
     }
 
 
@@ -1421,7 +1437,573 @@ def _fit_shomate_values(
         "G": G,
         "max_residual_J_per_mol": residual_j,
         "max_residual_log10_K": residual_log10,
+        "_source_rows": [
+            {
+                "temperature": float(row["temperature"]),
+                "heat_capacity": float(row["heat_capacity"]),
+                "entropy": float(row["entropy"]),
+                "enthalpy_increment": float(row["enthalpy_increment"]),
+            }
+            for row in rows
+        ],
+        "_reference_kJ": float(reference),
     }
+
+
+def _shomate_source_fields(fit: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "_source_rows": fit["_source_rows"],
+        "_reference_kJ": fit["_reference_kJ"],
+    }
+
+
+def _shomate_primitives(
+    coefficients: Sequence[float], temperature: float
+) -> tuple[float, float]:
+    """Return the Shomate enthalpy and entropy primitives at one temperature.
+
+    Premise: Cp = A + B*t + C*t² + D*t³ + E/t² with t = T/1000. Algebra:
+    I_H = A*t + B*t²/2 + C*t³/3 + D*t⁴/4 - E/t and
+    I_S = A*ln(t) + B*t + C*t²/2 + D*t³/3 - E/(2*t²). The runtime enthalpy
+    in kJ/mol is I_H + F - H, and the entropy in J/(mol K) is I_S + G.
+    """
+    A, B, C, D, E = coefficients
+    t = temperature / 1000.0
+    enthalpy = A * t + B * t**2 / 2.0 + C * t**3 / 3.0 + D * t**4 / 4.0 - E / t
+    entropy = (
+        A * math.log(t)
+        + B * t
+        + C * t**2 / 2.0
+        + D * t**3 / 3.0
+        - E / (2.0 * t**2)
+    )
+    return enthalpy, entropy
+
+
+# Temperatures at which a seam refit must stay inside the row's old residual.
+_SEAM_AUDIT_TEMPERATURES_K = (1323.0, 1700.0, 2200.0, 2473.0)
+
+
+def _seam_sample_temperatures(t_min: float, t_max: float) -> list[float]:
+    temps = [float(t_min), float(t_max)]
+    step = 25.0
+    value = math.ceil(t_min / step) * step
+    while value < t_max - 1e-9:
+        temps.append(float(value))
+        value += step
+    for temperature in _SEAM_AUDIT_TEMPERATURES_K:
+        if t_min - 1e-9 <= temperature <= t_max + 1e-9:
+            temps.append(float(temperature))
+    unique = sorted(set(round(temperature, 6) for temperature in temps))
+    return unique
+
+
+def _stated_gibbs_budget(row: dict[str, Any], temperature: float) -> float:
+    """Largest |ΔG| this row may take at one temperature.
+
+    The cap is the unconstrained fit residual in J/mol, tightened by the
+    stated log10(K) residual when that field was recorded.
+    """
+    raw = row.get("_max_residual_J_per_mol")
+    if raw is None:
+        raise ValueError(f"{row['species_name']}: seam row has no fit residual")
+    budget = float(raw)
+    log_raw = row.get("_max_residual_log10_K")
+    if log_raw not in (None, ""):
+        budget = min(
+            budget,
+            float(log_raw) * R_J_MOL_K * temperature * math.log(10.0),
+        )
+    return max(budget, 0.0)
+
+
+def _refreshed_residual_within_previous(refreshed: float, previous: float) -> bool:
+    """A seam shift may use the old residual, not grow past it by more than that.
+
+    Rows that already publish a residual above 10 J/mol keep that allowance.
+    A row that started at or below 10 stays there: the existing fit gates
+    reject a larger published residual.
+    """
+    allowance = previous + max(previous, 1e-8) + 1e-5
+    if previous <= 10.0:
+        allowance = min(allowance, 10.0 + 1e-8)
+    return refreshed <= allowance
+
+
+def _condensate_fit_node_temperatures(row: dict[str, Any]) -> list[float] | None:
+    """Temperatures that set a condensate row's stored fit residual.
+
+    The runtime interval can start above the fit. Those colder nodes are part
+    of the residual the tables publish, so a seam shift has to keep them.
+    """
+    sources = row.get("_source_rows")
+    if not isinstance(sources, dict):
+        return None
+    explicit = row.get("_fit_temperatures")
+    if explicit:
+        candidates = [float(temperature) for temperature in explicit]
+    elif "_fit_t_min" in row and "_fit_t_max" in row:
+        candidates = [
+            float(temperature)
+            for temperature in np.arange(
+                float(row["_fit_t_min"]),
+                float(row["_fit_t_max"]) + 50.0,
+                JANAF_GRID_STEP_K,
+            )
+        ]
+    else:
+        return None
+    found = []
+    for temperature in candidates:
+        if temperature in sources:
+            found.append(temperature)
+            continue
+        if any(abs(float(key) - temperature) <= 1e-6 for key in sources):
+            found.append(temperature)
+    return found
+
+
+def _seam_constraint_temperatures(segment: dict[str, Any]) -> list[float]:
+    """Sample points where the seam shift must stay inside the stated residual.
+
+    Gas source nodes are a list, and the stored residual scores every node,
+    including nodes below the runtime lower bound. Condensate residuals are
+    scored on the fit nodes, which can also sit below that bound.
+    """
+    t_min = float(segment["T_min"])
+    t_max = float(segment["T_max"])
+    temperatures = set(_seam_sample_temperatures(t_min, t_max))
+    sources = segment.get("_source_rows")
+    if isinstance(sources, dict):
+        for temperature in _condensate_fit_node_temperatures(segment) or []:
+            temperatures.add(float(temperature))
+    elif sources:
+        for node in sources:
+            temperatures.add(float(node["temperature"]))
+    return sorted(temperatures)
+
+
+def _refresh_shomate_residual(row: dict[str, Any]) -> None:
+    coefficients = [float(row[key]) for key in "ABCDEFG"]
+    reference = float(row["_reference_kJ"])
+    column_h = float(row["H"])
+    max_j = 0.0
+    max_log = 0.0
+    for node in row["_source_rows"]:
+        temperature = float(node["temperature"])
+        primitive_h, primitive_s = _shomate_primitives(coefficients[:5], temperature)
+        model_g = (primitive_h + coefficients[5] - column_h) * 1000.0 - temperature * (
+            primitive_s + coefficients[6]
+        )
+        source_g = (
+            reference + float(node["enthalpy_increment"])
+        ) * 1000.0 - temperature * float(node["entropy"])
+        error = abs(model_g - source_g)
+        max_j = max(max_j, error)
+        max_log = max(max_log, error / (R_J_MOL_K * temperature * math.log(10.0)))
+    row["_max_residual_J_per_mol"] = format(max_j, ".15g")
+    row["_max_residual_log10_K"] = format(max_log, ".15g")
+
+
+def _stored_shomate_hs(row: dict[str, Any], temperature: float) -> tuple[float, float]:
+    coefficients = [float(row[key]) for key in "ABCDEFGH"]
+    primitive_h, primitive_s = _shomate_primitives(coefficients[:5], temperature)
+    return primitive_h + coefficients[5] - coefficients[7], primitive_s + coefficients[6]
+
+
+def _shomate_join_open(left: dict[str, Any], right: dict[str, Any], temperature: float) -> bool:
+    left_h, left_s = _stored_shomate_hs(left, temperature)
+    right_h, right_s = _stored_shomate_hs(right, temperature)
+    gap_g = abs((right_h - left_h) * 1000.0 - temperature * (right_s - left_s))
+    return gap_g > 1e-3 or abs(right_s - left_s) > 1e-5
+
+
+def _gas_coefficient_bases(temperature: float) -> tuple[np.ndarray, np.ndarray]:
+    """Jacobian of enthalpy (J/mol) and entropy with respect to A..G."""
+    t = temperature / 1000.0
+    d_h = 1000.0 * np.array([
+        t, t**2 / 2.0, t**3 / 3.0, t**4 / 4.0, -1.0 / t, 1.0, 0.0,
+    ])
+    d_s = np.array([
+        math.log(t), t, t**2 / 2.0, t**3 / 3.0, -1.0 / (2.0 * t**2), 0.0, 1.0,
+    ])
+    return d_h, d_s
+
+
+def _minimum_residual_shift(
+    ordered: list[dict[str, Any]],
+    joins: list[tuple[int, int, float]],
+    *,
+    ncoef: int,
+    gibbs_basis,
+    entropy_basis,
+    frozen,
+    extra=None,
+    join_extra=None,
+) -> np.ndarray | None:
+    """Return per-segment coefficient deltas that close joins inside each residual.
+
+    ``gibbs_basis(T)`` and ``entropy_basis(T)`` map a temperature to the
+    Jacobian of G (J/mol) and S. A frozen segment is held at a zero delta.
+    The result is None when no shift keeps every sample inside its budget.
+    """
+    n = len(ordered)
+    width = n * ncoef + 1
+    slack = width - 1
+    equalities = []
+    equality_values = []
+    for left_index, right_index, temperature in joins:
+        left_g, left_s = gibbs_basis(ordered[left_index], temperature, value=True)
+        right_g, right_s = gibbs_basis(ordered[right_index], temperature, value=True)
+        g_row = entropy_basis(temperature, kind="g")
+        s_row = entropy_basis(temperature, kind="s")
+        row = np.zeros(width)
+        row[left_index * ncoef:(left_index + 1) * ncoef] = g_row
+        row[right_index * ncoef:(right_index + 1) * ncoef] -= g_row
+        equalities.append(row)
+        equality_values.append(right_g - left_g)
+        row = np.zeros(width)
+        row[left_index * ncoef:(left_index + 1) * ncoef] = s_row
+        row[right_index * ncoef:(right_index + 1) * ncoef] -= s_row
+        equalities.append(row)
+        equality_values.append(right_s - left_s)
+    if join_extra is not None:
+        for left_index, right_index, temperature in joins:
+            more_eq, more_values = join_extra(
+                left_index, right_index, temperature, width, ncoef
+            )
+            equalities.extend(more_eq)
+            equality_values.extend(more_values)
+    for index, segment in enumerate(ordered):
+        if not frozen(segment):
+            continue
+        for coefficient in range(ncoef):
+            row = np.zeros(width)
+            row[index * ncoef + coefficient] = 1.0
+            equalities.append(row)
+            equality_values.append(0.0)
+    inequalities = []
+    inequality_values = []
+    for index, segment in enumerate(ordered):
+        if frozen(segment):
+            continue
+        for temperature in _seam_constraint_temperatures(segment):
+            budget = _stated_gibbs_budget(segment, temperature)
+            g_row = entropy_basis(temperature, kind="g")
+            # |ΔG| <= t * budget. A zero budget freezes G at this sample.
+            if budget <= 1e-12:
+                row = np.zeros(width)
+                row[index * ncoef:(index + 1) * ncoef] = g_row
+                inequalities.append(row.copy())
+                inequality_values.append(0.0)
+                inequalities.append(-row)
+                inequality_values.append(0.0)
+                continue
+            row = np.zeros(width)
+            row[index * ncoef:(index + 1) * ncoef] = g_row
+            row[slack] = -budget
+            inequalities.append(row.copy())
+            inequality_values.append(0.0)
+            row = np.zeros(width)
+            row[index * ncoef:(index + 1) * ncoef] = -g_row
+            row[slack] = -budget
+            inequalities.append(row)
+            inequality_values.append(0.0)
+    if extra is not None:
+        for index, segment in enumerate(ordered):
+            more_eq, more_eq_values, more_ub, more_ub_values = extra(
+                index, segment, width, ncoef
+            )
+            equalities.extend(more_eq)
+            equality_values.extend(more_eq_values)
+            inequalities.extend(more_ub)
+            inequality_values.extend(more_ub_values)
+    if not equalities or not inequalities:
+        return None
+    objective = np.zeros(width)
+    objective[slack] = 1.0
+    bounds = [(None, None)] * (width - 1) + [(0.0, None)]
+    solved = linprog(
+        objective,
+        A_ub=np.asarray(inequalities, dtype=float),
+        b_ub=np.asarray(inequality_values, dtype=float),
+        A_eq=np.asarray(equalities, dtype=float),
+        b_eq=np.asarray(equality_values, dtype=float),
+        bounds=bounds,
+        method="highs",
+    )
+    if not solved.success or float(solved.x[slack]) > 1.0 + 1e-6:
+        return None
+    return solved.x[:-1].reshape(n, ncoef)
+
+
+def _gas_window_delta(
+    donor: dict[str, Any],
+    frozen: dict[str, Any],
+    join: float,
+    far: float,
+) -> np.ndarray | None:
+    """Minimum-norm A–G change matching the neighbour at the join and the donor at the far end."""
+
+    def basis(temperature: float) -> tuple[np.ndarray, np.ndarray]:
+        d_h, d_s = _gas_coefficient_bases(temperature)
+        return d_h - temperature * d_s, d_s
+
+    join_g_row, join_s_row = basis(join)
+    far_g_row, far_s_row = basis(far)
+    frozen_h, frozen_s = _stored_shomate_hs(frozen, join)
+    donor_h, donor_s = _stored_shomate_hs(donor, join)
+    frozen_g = frozen_h * 1000.0 - join * frozen_s
+    donor_g = donor_h * 1000.0 - join * donor_s
+    design = np.vstack((join_g_row, join_s_row, far_g_row, far_s_row))
+    target = np.array([frozen_g - donor_g, frozen_s - donor_s, 0.0, 0.0])
+    kkt = np.block([
+        [np.eye(7), design.T],
+        [design, np.zeros((4, 4))],
+    ])
+    try:
+        solved = np.linalg.solve(kkt, np.concatenate((np.zeros(7), target)))
+    except np.linalg.LinAlgError:
+        return None
+    return solved[:7]
+
+
+def _gas_window_move(delta: np.ndarray, low: float, high: float) -> float:
+    worst = 0.0
+    for temperature in np.linspace(low, high, 41):
+        temperature = float(temperature)
+        d_h, d_s = _gas_coefficient_bases(temperature)
+        change = float((d_h - temperature * d_s) @ delta)
+        worst = max(worst, abs(change))
+    return worst
+
+
+def _clip_shomate_sources(row: dict[str, Any]) -> None:
+    t_min = float(row["T_min"])
+    t_max = float(row["T_max"])
+    kept = [
+        node
+        for node in row["_source_rows"]
+        if t_min - 1e-6 <= float(node["temperature"]) <= t_max + 1e-6
+    ]
+    if not kept:
+        return
+    row["_source_rows"] = kept
+    _refresh_shomate_residual(row)
+
+
+def _insert_gas_transition(
+    rows: list[dict[str, Any]],
+    members: list[dict[str, Any]],
+    left: dict[str, Any],
+    right: dict[str, Any],
+) -> None:
+    """Split a short Shomate window off the side that can absorb the join."""
+    join = float(left["T_max"])
+    candidates = []
+    for donor, frozen, high_side in ((right, left, True), (left, right, False)):
+        t_min = float(donor["T_min"])
+        t_max = float(donor["T_max"])
+        budget = _stated_gibbs_budget(donor, join)
+        best = None
+        for width in (20.0, 30.0, 40.0, 50.0, 75.0, 100.0, 150.0, 200.0, 300.0):
+            far = join + width if high_side else join - width
+            if not (t_min + 5.0 < far < t_max - 5.0):
+                continue
+            low, high = sorted((join, far))
+            if any(
+                low + 1e-6 < audit < high - 1e-6
+                for audit in _SEAM_AUDIT_TEMPERATURES_K
+            ):
+                continue
+            delta = _gas_window_delta(donor, frozen, join, far)
+            if delta is None:
+                continue
+            move = _gas_window_move(delta, low, high)
+            fits = move <= budget + 1e-6
+            record = (0 if fits else 1, 0 if high_side else 1, move, far, delta, high_side)
+            if best is None or record[:3] < best[:3]:
+                best = record
+        if best is not None:
+            candidates.append((best, donor))
+    if not candidates:
+        raise ValueError(
+            f"{left['species_name']} {left['Ref']}: no gas transition at {join:g} K"
+        )
+    candidates.sort(key=lambda item: item[0][:3])
+    (_rank, _side, _move, far, delta, high_side), donor = candidates[0]
+    created = donor.copy()
+    created["_source_rows"] = [dict(node) for node in donor["_source_rows"]]
+    used_intervals = [
+        int(row["T_interval"])
+        for row in rows
+        if row["species_name"] == donor["species_name"] and row["state"] == donor["state"]
+    ]
+    created["T_interval"] = str(max(used_intervals) + 1)
+    donor_index = rows.index(donor)
+    if high_side:
+        created["T_min"] = format(join, ".15g")
+        created["T_max"] = format(far, ".15g")
+        donor["T_min"] = format(far, ".15g")
+        rows.insert(donor_index, created)
+    else:
+        created["T_min"] = format(far, ".15g")
+        created["T_max"] = format(join, ".15g")
+        donor["T_max"] = format(far, ".15g")
+        rows.insert(donor_index + 1, created)
+    for name, change in zip("ABCDEFG", delta):
+        created[name] = format(float(donor[name]) + float(change), ".15g")
+    created["_seam_constrained"] = "true"
+    donor["_seam_constrained"] = "true"
+    _clip_shomate_sources(created)
+    _clip_shomate_sources(donor)
+    members.append(created)
+
+
+def _pin_gas_same_ref_seams(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Make adjacent same-Ref gas segments share G and S at the join.
+
+    Premise: each segment already carries its unconstrained Shomate fit.
+    Algebra: a linear program moves A–G by the smallest factor of that fit's
+    residual that makes enthalpy and entropy agree at every shared boundary.
+    H = G + T*S then agrees as well. Segments that already agree, and any
+    same-Ref chain with no stored fit, are left unchanged.
+    """
+    groups: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        groups.setdefault(
+            (row["species_name"], row["state"], row["Ref"]), []
+        ).append(row)
+
+    def gas_values(row: dict[str, Any], temperature: float, *, value: bool):
+        enthalpy, entropy = _stored_shomate_hs(row, temperature)
+        return enthalpy * 1000.0 - temperature * entropy, entropy
+
+    def gas_basis(temperature: float, *, kind: str) -> np.ndarray:
+        d_h, d_s = _gas_coefficient_bases(temperature)
+        if kind == "s":
+            return d_s
+        return d_h - temperature * d_s
+
+    for key, group in groups.items():
+        if len(group) < 2:
+            continue
+        # Packaged K(g) and O(g) are restored after the write. Closing their
+        # joins here would describe rows that are not shipped.
+        if key[0] in PACK_REFERENCE_GAS:
+            continue
+        if not any("_source_rows" in row for row in group):
+            continue
+        if any("_source_rows" not in row for row in group):
+            raise ValueError(f"{key}: same-Ref gas rows lack source nodes")
+        ordered = sorted(group, key=lambda row: float(row["T_min"]))
+        joins = []
+        for index, (left, right) in enumerate(zip(ordered, ordered[1:])):
+            if abs(float(left["T_max"]) - float(right["T_min"])) > 1e-4:
+                continue
+            temperature = float(left["T_max"])
+            if _shomate_join_open(left, right, temperature):
+                joins.append((index, index + 1, temperature))
+        if not joins:
+            continue
+        def low_temperature_cp_match(left_index, right_index, temperature, width, ncoef):
+            # The low-temperature gas rows are checked to share Cp at 1200 K.
+            if abs(temperature - 1200.0) > 1e-6:
+                return [], []
+            if ordered[left_index]["species_name"] not in {
+                "HCl(g)", "HF(g)", "NaCl(g)", "(NaCl)2(g)", "KCl(g)", "(KCl)2(g)",
+                "NaF(g)", "(NaF)2(g)", "KF(g)", "(KF)2(g)", "Hg(g)",
+            }:
+                return [], []
+            t = temperature / 1000.0
+            jacobian = np.array([1.0, t, t**2, t**3, 1.0 / t**2, 0.0, 0.0])
+
+            def heat_capacity(row: dict[str, Any]) -> float:
+                return float(jacobian[:5] @ np.array([float(row[name]) for name in "ABCDE"]))
+
+            row = np.zeros(width)
+            row[left_index * ncoef:(left_index + 1) * ncoef] = jacobian
+            row[right_index * ncoef:(right_index + 1) * ncoef] = -jacobian
+            return [row], [
+                heat_capacity(ordered[right_index]) - heat_capacity(ordered[left_index])
+            ]
+
+        deltas = _minimum_residual_shift(
+            ordered,
+            joins,
+            ncoef=7,
+            gibbs_basis=gas_values,
+            entropy_basis=gas_basis,
+            frozen=lambda _row: False,
+            join_extra=low_temperature_cp_match,
+        )
+        accepted = deltas is not None
+        if accepted:
+            originals = [
+                (
+                    {name: segment[name] for name in "ABCDEFG"},
+                    segment["_max_residual_J_per_mol"],
+                    segment.get("_max_residual_log10_K"),
+                    segment.get("_seam_constrained"),
+                )
+                for segment in ordered
+            ]
+            for segment, delta in zip(ordered, deltas):
+                if float(np.max(np.abs(delta))) == 0.0:
+                    continue
+                for name, change in zip("ABCDEFG", delta):
+                    segment[name] = format(float(segment[name]) + float(change), ".15g")
+                _refresh_shomate_residual(segment)
+                segment["_seam_constrained"] = "true"
+            for segment, (coeffs, old_j, _old_log, _old_flag) in zip(ordered, originals):
+                if _refreshed_residual_within_previous(
+                    float(segment["_max_residual_J_per_mol"]), float(old_j)
+                ):
+                    continue
+                accepted = False
+                break
+            if not accepted:
+                for segment, (coeffs, old_j, old_log, old_flag) in zip(ordered, originals):
+                    for name, value in coeffs.items():
+                        segment[name] = value
+                    segment["_max_residual_J_per_mol"] = old_j
+                    if old_log is None:
+                        segment.pop("_max_residual_log10_K", None)
+                    else:
+                        segment["_max_residual_log10_K"] = old_log
+                    if old_flag is None:
+                        segment.pop("_seam_constrained", None)
+                    else:
+                        segment["_seam_constrained"] = old_flag
+        if not accepted:
+            members = list(group)
+            closed = False
+            for _attempt in range(8):
+                current = sorted(members, key=lambda item: float(item["T_min"]))
+                pair = None
+                for left, right in zip(current, current[1:]):
+                    if abs(float(left["T_max"]) - float(right["T_min"])) > 1e-4:
+                        continue
+                    if _shomate_join_open(left, right, float(left["T_max"])):
+                        pair = (left, right)
+                        break
+                if pair is None:
+                    closed = True
+                    break
+                _insert_gas_transition(rows, members, pair[0], pair[1])
+            if not closed:
+                raise ValueError(
+                    f"{key[0]} {key[2]}: gas seam cannot close inside the fit residual"
+                )
+            continue
+        for left_index, right_index, temperature in joins:
+            if _shomate_join_open(
+                ordered[left_index], ordered[right_index], temperature
+            ):
+                raise ValueError(
+                    f"{key[0]} {key[2]}: gas seam at {temperature:g} K stayed open"
+                )
+    return rows
 
 
 def _nasa_source_rows(
@@ -1672,6 +2254,7 @@ def _fit_nasa_card_gas_row(
         "Ref": table_id,
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        **_shomate_source_fields(fit),
     }
 
 
@@ -1748,6 +2331,7 @@ def _fit_row(
         "Ref": table_id,
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        **_shomate_source_fields(fit),
     }
 
 
@@ -1848,6 +2432,7 @@ def _fit_janaf_text_row(
         "Ref": table_id,
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        **_shomate_source_fields(fit),
     }
 
 
@@ -1916,7 +2501,8 @@ def _fit_konings_gas_row(record: dict[str, Any], species: str, cation: str,
             "T_max": number(fit_t_max), **{key: number(fit[key]) for key in "ABCDEFG"},
             "H": "0", "Ref": f"Konings-{species}",
             "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
-            "_max_residual_log10_K": number(fit["max_residual_log10_K"])}
+            "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+            **_shomate_source_fields(fit)}
 
 
 def _konings_condensate_rows(record: dict[str, Any], species: str, cation: str,
@@ -1982,12 +2568,14 @@ def _konings_condensate_rows(record: dict[str, Any], species: str, cation: str,
     while pending:
         lo, hi = pending.pop(0)
         nodes = [lo, *np.arange(lo + 100.0, hi, 100.0).tolist(), hi]
-        fit = _fit_condensate_values(species, f"Konings-{species}", cation,
-                                     cat_num, oxy_num, source_rows(nodes),
-                                     float(item["dfH298_kJ_mol"]),
-                                     fit_t_min=lo, fit_t_max=hi,
-                                     runtime_t_min=lo, runtime_t_max=hi,
-                                     fit_temperatures=nodes)
+        fit = _fit_condensate_values(
+            species, f"Konings-{species}", cation,
+            cat_num, oxy_num, source_rows(nodes),
+            float(item["dfH298_kJ_mol"]),
+            fit_t_min=lo, fit_t_max=hi,
+            runtime_t_min=lo, runtime_t_max=hi,
+            fit_temperatures=nodes,
+        )
         residual = float(fit["_max_residual_J_per_mol"])
         if residual > 10.0:
             midpoint = round(((lo + hi) / 2.0) / 100.0) * 100.0
@@ -2221,6 +2809,7 @@ def _fit_published_gas_row(
         "Ref": ref,
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        **_shomate_source_fields(fit),
     }
 
 
@@ -2769,6 +3358,7 @@ def _fit_re2o7_constructed_gas_rows(
             "Ref": source_ref,
             "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
             "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+            **_shomate_source_fields(fit),
         }
 
     def smith_row(phase_fit: dict[str, Any]) -> dict[str, str]:
@@ -2975,13 +3565,49 @@ def _fit_bi_plus_row(
         "Ref": "NBS-T22-ASD-BiII",
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        **_shomate_source_fields(fit),
     }
+
+
+def _neutral_row_for_saha(
+    rows: list[dict[str, Any]], element: str, temperature: float
+) -> dict[str, Any]:
+    """Pick the neutral interval the way the runtime selector does.
+
+    The largest T_min that is still <= T wins, which is the upper row at a
+    shared breakpoint. The previously packaged table is not a source: the
+    ion has to follow the neutral fitted in this same build, including
+    before that neutral's seam shift is applied.
+    """
+    name = f"{element}(g)"
+    candidates = [
+        row
+        for row in rows
+        if row["species_name"] == name and row.get("state") == "g"
+    ]
+    if not candidates:
+        raise ValueError(f"{name}: Saha ion has no neutral row in this build")
+    valid = [
+        row for row in candidates if float(row["T_min"]) <= temperature + 1e-12
+    ]
+    selected = (
+        max(valid, key=lambda row: float(row["T_min"]))
+        if valid
+        else min(candidates, key=lambda row: float(row["T_min"]))
+    )
+    if temperature < float(selected["T_min"]) - 1e-9 or temperature > float(selected["T_max"]) + 1e-9:
+        raise ValueError(
+            f"{name}: T={temperature:g} K is outside "
+            f"[{selected['T_min']}, {selected['T_max']}]"
+        )
+    return selected
 
 
 def _constructed_saha_ion_thermal_rows(
     element: str,
     temperatures: list[float],
     published_source_dir: Path,
+    neutral_rows: list[dict[str, Any]],
 ) -> list[dict[str, float]]:
     """Derive flagged M+ H/S/Cp from the neutral function and ASD levels.
 
@@ -2999,8 +3625,6 @@ def _constructed_saha_ion_thermal_rows(
     H+ = H0+IE+5/2*R*T0+(U+-U0); Cp adds Cv,+-Cv,0. Energies are molar
     J and level inputs are 2J+1 with cm^-1 converted by N_A*h*c*100.
     """
-    from openimcc.gas import load_gas_datapack, species_thermo
-
     record = _load_record(
         published_source_dir / "constructed-ion-sources.json"
     )
@@ -3029,7 +3653,6 @@ def _constructed_saha_ion_thermal_rows(
     t0 = NASA_STANDARD_T_K
     electron_reference_shift = 2.5 * r * t0
     h_c_mol_cm = 6.02214076e23 * 6.62607015e-34 * 299792458.0 * 100.0
-    gas_pack = load_gas_datapack()
 
     def electronic(
         levels: tuple[tuple[int, float], ...], temperature: float
@@ -3055,38 +3678,49 @@ def _constructed_saha_ion_thermal_rows(
             variance / (r * temperature**2),
         )
 
-    rows = []
+    thermal = []
     for temperature in temperatures:
-        neutral = species_thermo(element, "g", temperature, gas_pack)
+        neutral = _neutral_row_for_saha(neutral_rows, element, temperature)
+        enthalpy, entropy = _stored_shomate_hs(neutral, temperature)
+        gibbs = enthalpy * 1000.0 - temperature * entropy
+        t = temperature / 1000.0
+        heat_capacity = (
+            float(neutral["A"])
+            + float(neutral["B"]) * t
+            + float(neutral["C"]) * t**2
+            + float(neutral["D"]) * t**3
+            + float(neutral["E"]) / t**2
+        )
         ln_q0, u0, cv0 = electronic(neutral_levels, temperature)
         ln_q_plus, u_plus, cv_plus = electronic(ion_levels, temperature)
         ln_q_ratio = ln_q0 - ln_q_plus
         g_plus = (
-            neutral.G_J_mol
+            gibbs
             + ie_j_mol
             + electron_reference_shift
             + r * temperature * ln_q_ratio
         )
         s_plus = (
-            neutral.S_J_molK
+            entropy
             - r * ln_q_ratio
             - (u0 - u_plus) / temperature
         )
         h_plus = g_plus + temperature * s_plus
-        rows.append(
+        thermal.append(
             {
                 "temperature": temperature,
-                "heat_capacity": neutral.Cp_J_molK + cv_plus - cv0,
+                "heat_capacity": heat_capacity + cv_plus - cv0,
                 "entropy": s_plus,
                 "enthalpy_increment": h_plus / 1000.0,
             }
         )
-    return rows
+    return thermal
 
 
 def _fit_constructed_saha_ion_row(
     element: str,
     published_source_dir: Path,
+    neutral_rows: list[dict[str, Any]],
     *,
     t_interval: int,
     fit_t_min: float,
@@ -3102,7 +3736,7 @@ def _fit_constructed_saha_ion_row(
         )
     ]
     thermal_rows = _constructed_saha_ion_thermal_rows(
-        element, temperatures, published_source_dir
+        element, temperatures, published_source_dir, neutral_rows
     )
     fit = _fit_shomate_values(thermal_rows, 0.0)
 
@@ -3123,6 +3757,7 @@ def _fit_constructed_saha_ion_row(
         "Ref": f"FLAGGED-DERIVED-NIST-ASD-{element}",
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        **_shomate_source_fields(fit),
     }
 
 
@@ -3191,6 +3826,7 @@ def _fit_nasa_row(
         "Ref": table_id,
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        **_shomate_source_fields(fit),
         "_card_gibbs_check_J_per_mol": number(
             checks["card_gibbs_check_J_per_mol"]
         ),
@@ -3267,10 +3903,14 @@ def _fit_condensate_values(
     # Transition intervals can contain fewer than five published nodes. Fit
     # only as many polynomial terms as those independent source nodes support;
     # regular grid fits keep the historical quartic path byte-for-byte.
+    # A G/S seam uses the full quartic even on a short node list: the anchors
+    # supply the missing rank, and an unconstrained short fit is unchanged.
     degree = 4 if fit_temperatures is None else min(4, len(temperatures) - 1)
+    if endpoint_g_s is not None and degree != 4:
+        degree = 4
     fit_design = np.column_stack([tau**power for power in range(degree + 1)])
     if endpoint_g_s is not None:
-        if upper_g_cp is not None or degree != 4:
+        if upper_g_cp is not None:
             raise ValueError(
                 f"{table_id}: G/S endpoint fit requires an unconstrained quartic"
             )
@@ -3388,7 +4028,570 @@ def _fit_condensate_values(
         "Ref": table_id if ref is None else ref,
         "_max_residual_J_per_mol": number(residual_j),
         "_max_residual_log10_K": number(residual_log10),
+        "_source_rows": {
+            float(temperature): {
+                "enthalpy_increment": float(source["enthalpy_increment"]),
+                "entropy": float(source["entropy"]),
+            }
+            for temperature, source in source_rows.items()
+        },
+        "_reference_kJ": float(reference_kJ_mol),
+        "_fit_t_min": float(fit_t_min),
+        "_fit_t_max": float(fit_t_max),
+        "_fit_temperatures": (
+            None
+            if fit_temperatures is None
+            else [float(temperature) for temperature in fit_temperatures]
+        ),
+        "_allow_missing_nodes": allow_missing_nodes,
+        "_fit_table_id": table_id,
     }
+
+
+def _condensate_seam_frozen(row: dict[str, Any]) -> bool:
+    """Rows whose 1200 K state is copied by the low-oxide interval stay put."""
+    if row.get("_seam_frozen") == "true":
+        return True
+    if row["species_name"] not in {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"}:
+        return False
+    bounds = (float(row["T_min"]), float(row["T_max"]))
+    return bounds in {(1000.0, 1200.0), (1200.0, 1500.0)}
+
+
+# Same Cp allowance the packaged continuation test already uses. A seam
+# window has to stay inside this band of the donor heat capacity. Negative
+# Cp is outside the band whenever the donor Cp is positive.
+DONOR_CP_BAND_J_MOL_K = 8.0
+_OPEN_CONDENSATE_JOINS: list[str] = []
+_CLOSED_CONDENSATE_JOINS: list[str] = []
+_OPEN_GAS_JOINS: list[str] = []
+_LAST_WINDOW_MISS = ""
+
+
+def _continuation_polynomial_holds(row: dict[str, Any]) -> bool:
+    """Constant-Cp continuation rows keep that Cp and the upper G/S anchor.
+
+    The packaged continuation test allows 8 J/(mol K) of Cp error and 0.02 J/mol
+    of Gibbs error at the row's own upper temperature. Entropy there is 2e-5
+    J/(mol K), except the two unconstrained continuations at 0.2.
+    """
+    if row.get("_Cp_l_J_molK") is None:
+        return True
+    heat_capacity = float(row["_Cp_l_J_molK"])
+    t_min = float(row["T_min"])
+    t_max = float(row["T_max"])
+    for temperature in np.linspace(t_min, t_max, 201):
+        if abs(_condensate_row_g_cp(row, float(temperature))[1] - heat_capacity) > DONOR_CP_BAND_J_MOL_K:
+            return False
+    anchor_t = float(row["_T0_K"])
+    anchor_h = float(row["_anchor_H_J_per_mol"])
+    anchor_s = float(row["_anchor_S_J_molK"])
+    analytic_s = anchor_s + heat_capacity * math.log(t_max / anchor_t)
+    analytic_g = (
+        anchor_h + heat_capacity * (t_max - anchor_t) - t_max * analytic_s
+    )
+    gibbs, entropy = _condensate_row_g_s(row, t_max)
+    entropy_tolerance = (
+        0.2 if row["species_name"] in {"Sc2O3(l)", "UO2(l)"} else 2.0e-5
+    )
+    return (
+        abs(gibbs - analytic_g) <= 0.02
+        and abs(entropy - analytic_s) <= entropy_tolerance
+    )
+
+
+def _condensate_join_open(
+    left: dict[str, Any], right: dict[str, Any], temperature: float
+) -> bool:
+    left_g, left_s = _condensate_row_g_s(left, temperature)
+    right_g, right_s = _condensate_row_g_s(right, temperature)
+    return abs(right_g - left_g) > 1e-3 or abs(right_s - left_s) > 1e-5
+
+
+def _refresh_condensate_residual(row: dict[str, Any], *, score_fit: bool = False) -> None:
+    """Rewrite the stored residual from the row's current coefficients.
+
+    ``score_fit`` scores the original fit nodes. A split window keeps the
+    default and scores only its own runtime interval.
+    """
+    coefficients = [float(row[f"dG_{name}"]) for name in "ABCDE"]
+    reference_enthalpy = float(row["dH298_R"])
+    t_min = float(row["T_min"])
+    t_max = float(row["T_max"])
+    fit_nodes = _condensate_fit_node_temperatures(row) if score_fit else None
+
+    def model_g(temperature: float) -> float:
+        tau = temperature / 1000.0
+        polynomial = sum(
+            coefficients[power] * tau**power for power in range(5)
+        )
+        return (
+            1000.0 * R_J_MOL_K * reference_enthalpy
+            - R_J_MOL_K * temperature * polynomial
+        )
+
+    samples: list[tuple[float, float]] = []
+    source_rows = row.get("_source_rows")
+    reference = row.get("_reference_kJ")
+    if source_rows and reference is not None:
+        for key, source in source_rows.items():
+            temperature = float(key)
+            if fit_nodes is not None:
+                if not any(abs(temperature - node) <= 1e-6 for node in fit_nodes):
+                    continue
+            elif temperature < t_min - 1e-6 or temperature > t_max + 1e-6:
+                continue
+            gibbs = (
+                float(reference) + float(source["enthalpy_increment"])
+            ) * 1000.0 - temperature * float(source["entropy"])
+            samples.append((temperature, gibbs))
+    elif row.get("_Cp_l_J_molK") is not None:
+        heat_capacity = float(row["_Cp_l_J_molK"])
+        anchor_t = float(row["_T0_K"])
+        anchor_h = float(row["_anchor_H_J_per_mol"])
+        anchor_s = float(row["_anchor_S_J_molK"])
+        grid = np.linspace(t_min, t_max, max(2, int(round(t_max - t_min)) + 1))
+        for temperature in grid:
+            temperature = float(temperature)
+            gibbs = anchor_h + heat_capacity * (temperature - anchor_t) - temperature * (
+                anchor_s + heat_capacity * math.log(temperature / anchor_t)
+            )
+            samples.append((temperature, gibbs))
+    if not samples:
+        return
+    max_j = 0.0
+    max_log = 0.0
+    for temperature, gibbs in samples:
+        error = abs(model_g(temperature) - gibbs)
+        max_j = max(max_j, error)
+        max_log = max(max_log, error / (R_J_MOL_K * temperature * math.log(10.0)))
+    row["_max_residual_J_per_mol"] = format(max_j, ".15g")
+    row["_max_residual_log10_K"] = format(max_log, ".15g")
+
+
+def _transition_quartic(
+    donor: dict[str, Any],
+    start_g: float,
+    start_s: float,
+    start_t: float,
+    end_g: float,
+    end_s: float,
+    end_t: float,
+) -> np.ndarray | None:
+    """Cubic Hermite in a local coordinate, stored as a tau quartic.
+
+    The local coordinate runs from 0 to 1 across the window, so a 20 K slice
+    does not go through a Vandermonde in T/1000. The tau^4 coefficient is 0.
+    """
+    reference_enthalpy = float(donor["dH298_R"])
+
+    def slope_state(gibbs: float, entropy: float, temperature: float) -> tuple[float, float]:
+        tau = temperature / 1000.0
+        value = (
+            1000.0 * R_J_MOL_K * reference_enthalpy - gibbs
+        ) / (R_J_MOL_K * temperature)
+        derivative = (entropy / R_J_MOL_K - value) / tau
+        return value, derivative
+
+    start_value, start_slope = slope_state(start_g, start_s, start_t)
+    end_value, end_slope = slope_state(end_g, end_s, end_t)
+    width = (end_t - start_t) / 1000.0
+    if abs(width) < 1e-12:
+        return None
+    start_moment = start_slope * width
+    end_moment = end_slope * width
+    local = (
+        start_value,
+        start_moment,
+        -3.0 * start_value - 2.0 * start_moment + 3.0 * end_value - end_moment,
+        2.0 * start_value + start_moment - 2.0 * end_value + end_moment,
+    )
+    alpha = 1.0 / width
+    beta = -(start_t / 1000.0) * alpha
+    accumulated = np.zeros(4)
+    power = np.array([1.0])
+    step = np.array([beta, alpha])
+    for coefficient in local:
+        accumulated[: len(power)] += coefficient * power
+        power = np.convolve(power, step)
+    return np.array([accumulated[0], accumulated[1], accumulated[2], accumulated[3], 0.0])
+
+
+def _transition_widths(limit: float, *, continuation: bool) -> list[float]:
+    """Widths from the shortest bridge up to the remainder of the donor segment."""
+    shortest = 8.0 if continuation else 20.0
+    if limit < shortest - 1e-9:
+        return []
+    if continuation:
+        widths = [float(width) for width in np.arange(shortest, limit + 1e-9, 2.0)]
+        if widths and widths[-1] < limit - 1e-6:
+            widths.append(float(limit))
+        return widths
+    widths: list[float] = []
+    width = shortest
+    while width <= limit + 1e-9:
+        widths.append(width)
+        if width < 100.0:
+            width += 10.0
+        elif width < 300.0:
+            width += 25.0
+        else:
+            width += 50.0
+    if widths[-1] < limit - 1.0:
+        widths.append(float(limit))
+    return widths
+
+
+def _transition_window_acceptable(
+    donor: dict[str, Any],
+    coefficients: np.ndarray,
+    low: float,
+    high: float,
+) -> tuple[bool, float, float, float, bool]:
+    """Whether the window stays inside the donor residual and Cp band.
+
+    |ΔG| is measured against the donor polynomial on a 201-point grid and
+    compared with that segment's stated residual at the same temperature.
+    Cp must stay within ``DONOR_CP_BAND_J_MOL_K`` of the donor Cp. A positive
+    donor Cp does not accept a negative window Cp.
+
+    Returns acceptance, the worst |ΔG|, the Gibbs excess over the residual,
+    the Cp excess over the band, and whether Cp went negative.
+    """
+    trial = donor.copy()
+    for name, value in zip("ABCDE", coefficients):
+        trial[f"dG_{name}"] = format(float(value), ".15g")
+    worst = 0.0
+    gibbs_excess = 0.0
+    cp_excess = 0.0
+    negative_cp = False
+    for temperature in np.linspace(low, high, 201):
+        temperature = float(temperature)
+        donor_g, donor_cp = _condensate_row_g_cp(donor, temperature)
+        window_g, window_cp = _condensate_row_g_cp(trial, temperature)
+        error = abs(window_g - donor_g)
+        worst = max(worst, error)
+        gibbs_excess = max(
+            gibbs_excess, error - _stated_gibbs_budget(donor, temperature)
+        )
+        cp_excess = max(cp_excess, abs(window_cp - donor_cp) - DONOR_CP_BAND_J_MOL_K)
+        if donor_cp > 0.0 and window_cp <= 0.0:
+            negative_cp = True
+    acceptable = (
+        gibbs_excess <= 1e-6 and cp_excess <= 1e-8 and not negative_cp
+    )
+    return acceptable, worst, gibbs_excess, cp_excess, negative_cp
+
+
+def _open_condensate_join_report(
+    left: dict[str, Any], right: dict[str, Any], temperature: float
+) -> str:
+    left_g, left_s = _condensate_row_g_s(left, temperature)
+    right_g, right_s = _condensate_row_g_s(right, temperature)
+    return (
+        f"{left['species_name']} {left['Ref']} at {temperature:g} K: "
+        f"|dG|={abs(right_g - left_g):.6g} J/mol "
+        f"|dS|={abs(right_s - left_s):.6g} J/mol/K; "
+        f"left residual {_stated_gibbs_budget(left, temperature):.6g}, "
+        f"right residual {_stated_gibbs_budget(right, temperature):.6g}; "
+        "no window kept G inside the donor residual and Cp inside the donor band"
+        + (f"; widest tried: {_LAST_WINDOW_MISS}" if _LAST_WINDOW_MISS else "")
+    )
+
+
+def _insert_condensate_transition(
+    rows: list[dict[str, Any]],
+    members: list[dict[str, Any]],
+    left: dict[str, Any],
+    right: dict[str, Any],
+) -> bool:
+    """Split off a Hermite window that stays inside the donor residual and Cp band.
+
+    The window matches the untouched segment at the join and the donor
+    polynomial at the interior endpoint. Widths grow until both checks hold.
+    A window that cannot is not inserted. Returns whether a window was added.
+    """
+    global _LAST_WINDOW_MISS
+    join = float(left["T_max"])
+    candidates = []
+    # Widest rejected attempt on each side, so an open join records how far
+    # the search went and which budget it still missed.
+    widest_miss: dict[bool, tuple[float, str]] = {}
+    for donor, frozen, high_side in ((right, left, True), (left, right, False)):
+        side_name = "high" if high_side else "low"
+        if _condensate_seam_frozen(donor):
+            widest_miss[high_side] = (
+                -1.0, f"{side_name} side frozen"
+            )
+            continue
+        t_min = float(donor["T_min"])
+        t_max = float(donor["T_max"])
+        continuation = donor.get("_Cp_l_J_molK") is not None
+        room = (t_max - join) if high_side else (join - t_min)
+        best = None
+        widths = _transition_widths(room - 5.0, continuation=continuation)
+        if not widths:
+            widest_miss[high_side] = (-1.0, f"{side_name} side has no room")
+        for width in widths:
+            far = join + width if high_side else join - width
+            # Leave at least 5 K of the donor segment on the far side.
+            if not (t_min + 5.0 - 1e-6 <= far <= t_max - 5.0 + 1e-6):
+                continue
+            low, high = sorted((join, far))
+            if high_side:
+                join_g, join_s = _condensate_row_g_s(frozen, join)
+                far_g, far_s = _condensate_row_g_s(donor, far)
+                coefficients = _transition_quartic(
+                    donor, join_g, join_s, join, far_g, far_s, far
+                )
+            else:
+                far_g, far_s = _condensate_row_g_s(donor, far)
+                join_g, join_s = _condensate_row_g_s(frozen, join)
+                coefficients = _transition_quartic(
+                    donor, far_g, far_s, far, join_g, join_s, join
+                )
+            if coefficients is None:
+                continue
+            if continuation:
+                trial = donor.copy()
+                if high_side:
+                    trial["T_min"] = format(join, ".15g")
+                    trial["T_max"] = format(far, ".15g")
+                else:
+                    trial["T_min"] = format(far, ".15g")
+                    trial["T_max"] = format(join, ".15g")
+                    remainder = donor.copy()
+                    remainder["T_max"] = format(far, ".15g")
+                    if not _continuation_polynomial_holds(remainder):
+                        widest_miss[high_side] = (
+                            width,
+                            f"{side_name} side {width:g} K: low-side remainder leaves the continuation anchor",
+                        )
+                        continue
+                for name, value in zip("ABCDE", coefficients):
+                    trial[f"dG_{name}"] = format(float(value), ".15g")
+                if not _continuation_polynomial_holds(trial):
+                    widest_miss[high_side] = (
+                        width,
+                        f"{side_name} side {width:g} K: continuation anchor does not hold",
+                    )
+                    continue
+            acceptable, move, gibbs_excess, cp_excess, negative_cp = (
+                _transition_window_acceptable(donor, coefficients, low, high)
+            )
+            if not acceptable:
+                note = (
+                    f"{side_name} side {width:g} K: "
+                    f"Gibbs excess {max(gibbs_excess, 0.0):.6g} J/mol, "
+                    f"Cp excess {max(cp_excess, 0.0):.6g} J/mol/K"
+                )
+                if negative_cp:
+                    note += ", negative Cp"
+                widest_miss[high_side] = (width, note)
+                continue
+            # Shortest window that holds, then the smaller Gibbs move, then
+            # the upper segment so its T_max stays the packaged identity key.
+            record = (width, move, 0 if high_side else 1, far, coefficients, high_side)
+            if best is None or record[:3] < best[:3]:
+                best = record
+        if best is not None:
+            candidates.append((best, donor))
+    if not candidates:
+        _LAST_WINDOW_MISS = "; ".join(
+            widest_miss[side][1] for side in (True, False) if side in widest_miss
+        )
+        return False
+    candidates.sort(key=lambda item: item[0][:3])
+    (_width, _move, _side, far, coefficients, high_side), donor = candidates[0]
+    _LAST_WINDOW_MISS = ""
+    created = donor.copy()
+    donor_index = rows.index(donor)
+    if high_side:
+        created["T_min"] = format(join, ".15g")
+        created["T_max"] = format(far, ".15g")
+        donor["T_min"] = format(far, ".15g")
+        rows.insert(donor_index, created)
+    else:
+        created["T_min"] = format(far, ".15g")
+        created["T_max"] = format(join, ".15g")
+        donor["T_max"] = format(far, ".15g")
+        rows.insert(donor_index + 1, created)
+    for name, value in zip("ABCDE", coefficients):
+        created[f"dG_{name}"] = format(float(value), ".15g")
+    created["_seam_constrained"] = "true"
+    donor["_seam_constrained"] = "true"
+    _refresh_condensate_residual(created)
+    _refresh_condensate_residual(donor)
+    members.append(created)
+    low, high = sorted((join, float(far)))
+    side_name = "high" if high_side else "low"
+    _CLOSED_CONDENSATE_JOINS.append(
+        f"{donor['species_name']} {donor['Ref']} at {join:g} K: "
+        f"closed by {side_name}-side Hermite window {low:g}-{high:g} K "
+        f"(width {_width:g} K, max |dG| {_move:.6g} J/mol)"
+    )
+    return True
+
+
+def _pin_condensate_same_ref_seams(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Make adjacent same-Ref condensate segments share G and S.
+
+    Premise: independently fitted segments of one construction disagree at
+    the shared boundary by more than the runtime tolerance. Algebra: move the
+    quartic by the smallest factor of each segment's unconstrained residual
+    that closes G and S. When that factor would exceed 1, insert a Hermite
+    window only if its Gibbs energy stays inside the donor residual and its
+    heat capacity stays inside the donor band. Otherwise the join stays open
+    and is listed in ``_OPEN_CONDENSATE_JOINS``. H = G + T*S agrees on every
+    window that is inserted. A second call sees closed joins and does not
+    move them again.
+    """
+    _OPEN_CONDENSATE_JOINS.clear()
+    _CLOSED_CONDENSATE_JOINS.clear()
+    groups: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        if "_max_residual_J_per_mol" not in row:
+            continue
+        groups.setdefault(
+            (row["species_name"], row["state"], row["Ref"]), []
+        ).append(row)
+
+    def condensate_values(row: dict[str, Any], temperature: float, *, value: bool):
+        del value
+        return _condensate_row_g_s(row, temperature)
+
+    def condensate_basis(temperature: float, *, kind: str) -> np.ndarray:
+        tau = temperature / 1000.0
+        if kind == "s":
+            return R_J_MOL_K * np.array([(power + 1) * tau**power for power in range(5)])
+        return -R_J_MOL_K * temperature * np.array([tau**power for power in range(5)])
+
+    def continuation_bounds(index: int, segment: dict[str, Any], width: int, ncoef: int):
+        """Keep a continuation row's upper anchor and its constant-Cp band."""
+        if segment.get("_Cp_l_J_molK") is None:
+            return [], [], [], []
+        equalities = []
+        equality_values = []
+        inequalities = []
+        inequality_values = []
+        t_max = float(segment["T_max"])
+        for kind in ("g", "s"):
+            row = np.zeros(width)
+            row[index * ncoef:(index + 1) * ncoef] = condensate_basis(t_max, kind=kind)
+            equalities.append(row)
+            equality_values.append(0.0)
+        anchor = float(segment["_Cp_l_J_molK"])
+        for temperature in _seam_sample_temperatures(
+            float(segment["T_min"]), t_max
+        ):
+            current = _condensate_row_g_cp(segment, temperature)[1]
+            tau = temperature / 1000.0
+            jacobian = R_J_MOL_K * np.array(
+                [0.0, 2.0 * tau, 6.0 * tau**2, 12.0 * tau**3, 20.0 * tau**4]
+            )
+            upper = np.zeros(width)
+            upper[index * ncoef:(index + 1) * ncoef] = jacobian
+            inequalities.append(upper.copy())
+            inequality_values.append(8.0 - (current - anchor))
+            lower = np.zeros(width)
+            lower[index * ncoef:(index + 1) * ncoef] = -jacobian
+            inequalities.append(lower)
+            inequality_values.append(8.0 + (current - anchor))
+        return equalities, equality_values, inequalities, inequality_values
+
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        # Generated fits of a pack-reference liquid are discarded at merge.
+        # Recording a closure here would describe rows that are not written.
+        if group[0]["species_name"] in PACK_REFERENCE_LIQUIDS:
+            continue
+        ordered = sorted(group, key=lambda item: float(item["T_min"]))
+        joins = []
+        for index, (left, right) in enumerate(zip(ordered, ordered[1:])):
+            if abs(float(left["T_max"]) - float(right["T_min"])) > 1e-4:
+                continue
+            temperature = float(left["T_max"])
+            if _condensate_join_open(left, right, temperature):
+                joins.append((index, index + 1, temperature))
+        if not joins:
+            continue
+        deltas = _minimum_residual_shift(
+            ordered,
+            joins,
+            ncoef=5,
+            gibbs_basis=condensate_values,
+            entropy_basis=condensate_basis,
+            frozen=_condensate_seam_frozen,
+            extra=continuation_bounds,
+        )
+        if deltas is not None:
+            trials = []
+            applicable = True
+            for segment, delta in zip(ordered, deltas):
+                trial = segment.copy()
+                if float(np.max(np.abs(delta))) != 0.0:
+                    for name, change in zip("ABCDE", delta):
+                        trial[f"dG_{name}"] = format(
+                            float(segment[f"dG_{name}"]) + float(change), ".15g"
+                        )
+                if not _continuation_polynomial_holds(trial):
+                    applicable = False
+                    break
+                if float(np.max(np.abs(delta))) != 0.0:
+                    _refresh_condensate_residual(trial, score_fit=True)
+                    if not _refreshed_residual_within_previous(
+                        float(trial["_max_residual_J_per_mol"]),
+                        float(segment["_max_residual_J_per_mol"]),
+                    ):
+                        applicable = False
+                        break
+                trials.append((segment, trial, delta))
+            if applicable:
+                for segment, trial, delta in trials:
+                    if float(np.max(np.abs(delta))) == 0.0:
+                        continue
+                    for name in "ABCDE":
+                        segment[f"dG_{name}"] = trial[f"dG_{name}"]
+                    _refresh_condensate_residual(segment, score_fit=True)
+                    segment["_seam_constrained"] = "true"
+                species_name = ordered[0]["species_name"]
+                reference = ordered[0]["Ref"]
+                for _left_index, _right_index, temperature in joins:
+                    _CLOSED_CONDENSATE_JOINS.append(
+                        f"{species_name} {reference} at {temperature:g} K: "
+                        "closed by linear program inside the previous residual"
+                    )
+                continue
+        members = list(group)
+        blocked: set[tuple[int, int]] = set()
+        for _attempt in range(24):
+            current = sorted(members, key=lambda item: float(item["T_min"]))
+            pair = None
+            pair_key = None
+            for left, right in zip(current, current[1:]):
+                if abs(float(left["T_max"]) - float(right["T_min"])) > 1e-4:
+                    continue
+                key = (id(left), id(right))
+                if key in blocked:
+                    continue
+                temperature = float(left["T_max"])
+                if _condensate_join_open(left, right, temperature):
+                    pair = (left, right, temperature)
+                    pair_key = key
+                    break
+            if pair is None:
+                break
+            if not _insert_condensate_transition(rows, members, pair[0], pair[1]):
+                blocked.add(pair_key)
+                _OPEN_CONDENSATE_JOINS.append(
+                    _open_condensate_join_report(pair[0], pair[1], pair[2])
+                )
+        else:
+            raise ValueError(
+                f"{group[0]['species_name']} {group[0]['Ref']}: seam windows did not close"
+            )
+    return rows
 
 
 def build_redox_metal_standard_rows(
@@ -3623,10 +4826,13 @@ def _fit_nasa_card_condensate_row(
         or record.get("phase") not in {"liquid", "L"}
     ):
         raise ValueError(f"{table_id}: NASA record identity does not match {species_name}")
-    temperatures = [
-        float(T)
-        for T in np.arange(fit_t_min, fit_t_max + 50.0, NASA_GRID_STEP_K)
-    ]
+    temperatures = sorted(
+        {float(fit_t_min), float(fit_t_max)}
+        | {
+            float(T)
+            for T in np.arange(fit_t_min, fit_t_max + 50.0, NASA_GRID_STEP_K)
+        }
+    )
     # The NASA-9 H(T)/(R*T) polynomial, including b1, gives the card's
     # assigned element-reference enthalpy H_card(T) directly. Thus
     # G_app(T)=H_card(T)-T*S_card(T); equivalently choose the source-row
@@ -3862,6 +5068,19 @@ def _fit_condensate_row(
         "Ref": table_id,
         "_max_residual_J_per_mol": number(residual_j),
         "_max_residual_log10_K": number(residual_log10),
+        "_source_rows": {
+            float(row["temperature"]): {
+                "enthalpy_increment": float(row["enthalpy_increment"]),
+                "entropy": float(row["entropy"]),
+            }
+            for row in rows
+        },
+        "_reference_kJ": float(reference),
+        "_fit_t_min": float(min(temperatures)),
+        "_fit_t_max": float(max(temperatures)),
+        "_fit_temperatures": sorted(float(temperature) for temperature in temperatures),
+        "_allow_missing_nodes": False,
+        "_fit_table_id": table_id,
     }
 
 
@@ -3953,6 +5172,14 @@ def _fit_janaf_parent_liquid(
     return fitted_rows
 
 
+def _shared_interval_bounds(
+    intervals: Sequence[tuple[float, float]],
+) -> tuple[float, ...]:
+    lows = {float(low) for low, _high in intervals}
+    highs = {float(high) for _low, high in intervals}
+    return tuple(sorted(lows & highs))
+
+
 def _fit_supercooled_liquid_row(
     source_dir: Path,
     species_name: str,
@@ -3968,6 +5195,7 @@ def _fit_supercooled_liquid_row(
     upper_g_s: tuple[float, float] | None = None,
     upper_cp: float | None = None,
     nasa_source_dir: Path | None = None,
+    shared_seams: Sequence[float] = (),
 ) -> dict[str, str]:
     """Fit the generated constant-Cp continuation to the condensate form.
 
@@ -4123,6 +5351,35 @@ def _fit_supercooled_liquid_row(
         entropy = entropy_0 + cp * math.log(temperature / T0)
         return entropy - enthalpy_increment * 1000.0 / temperature
 
+    def analytic_g_s(temperature: float) -> tuple[float, float]:
+        enthalpy_increment = enthalpy_0 + cp * (temperature - T0) / 1000.0
+        entropy = entropy_0 + cp * math.log(temperature / T0)
+        gibbs = (float(reference) + enthalpy_increment) * 1000.0 - temperature * entropy
+        return gibbs, entropy
+
+    shared_here = [
+        float(temperature)
+        for temperature in shared_seams
+        if runtime_t_min - 1e-6 <= float(temperature) <= runtime_t_max + 1e-6
+    ]
+    # The 1000-1200 K oxide row copies the 1200 K row, so that row keeps its
+    # existing upper pin and does not take a second constraint at 1200 K.
+    skip_lower_copy = (
+        species_name in {"SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)"}
+        and abs(runtime_t_min - 1200.0) <= 1e-6
+    )
+    if use_cp_constrained_fit:
+        lower_seams = [
+            temperature
+            for temperature in shared_here
+            if abs(temperature - runtime_t_max) > 1e-6
+            and not (skip_lower_copy and abs(temperature - runtime_t_min) <= 1e-6)
+        ]
+    else:
+        # Unconstrained continuations keep the packaged polynomial. The
+        # same-Ref pass closes their joins without a second least-squares fit.
+        lower_seams = []
+
     tau = np.asarray(fit_temperatures, dtype=float) / 1000.0
     design = np.column_stack((np.ones_like(tau), tau, tau**2, tau**3, tau**4))
     if use_cp_constrained_fit:
@@ -4163,6 +5420,26 @@ def _fit_supercooled_liquid_row(
             if upper_cp is not None:
                 constraints.append(heat_capacity_design[-1])
                 constraint_values.append(upper_cp / R_J_MOL_K)
+            for seam_temperature in lower_seams:
+                seam_tau = seam_temperature / 1000.0
+                seam_g, seam_s = analytic_g_s(seam_temperature)
+                seam_phi = (1000.0 * float(reference) - seam_g) / (
+                    R_J_MOL_K * seam_temperature
+                )
+                constraints.append([
+                    seam_tau - anchor_tau,
+                    seam_tau**2 - anchor_tau**2,
+                    seam_tau**3 - anchor_tau**3,
+                    seam_tau**4 - anchor_tau**4,
+                ])
+                constraint_values.append(seam_phi - anchor_phi)
+                constraints.append([
+                    2.0 * seam_tau - anchor_tau,
+                    3.0 * seam_tau**2 - anchor_tau**2,
+                    4.0 * seam_tau**3 - anchor_tau**3,
+                    5.0 * seam_tau**4 - anchor_tau**4,
+                ])
+                constraint_values.append(seam_s / R_J_MOL_K - anchor_phi)
             constraints = np.asarray(constraints)
             # G=-RT*P gives S/R=P+tau*P'. The constraint matches Gibbs
             # energy and entropy at this interval's upper seam.
@@ -4290,6 +5567,11 @@ def _fit_supercooled_liquid_row(
         "_anchor_H_J_per_mol": number(anchor_h),
         "_anchor_S_J_molK": number(entropy_0),
         "_anchor_G_J_per_mol": number(anchor_g),
+        **(
+            {"_seam_constrained": "true"}
+            if lower_seams
+            else {}
+        ),
     }
 
 
@@ -4683,6 +5965,7 @@ def build_rows(
         _fit_constructed_saha_ion_row(
             element,
             published_source_dir,
+            rows,
             t_interval=interval,
             fit_t_min=fit_t_min,
             fit_t_max=fit_t_max,
@@ -4696,7 +5979,7 @@ def build_rows(
     )
     rows.extend(_fit_nureg_teo_rows(published_source_dir, rows))
     rows.extend(_fit_kelley_sbo_rows(published_source_dir, rows))
-    return rows
+    return _pin_gas_same_ref_seams(rows)
 
 
 def _cd_o_crystal_table(record: dict[str, Any], *, extrapolate_cp: bool) -> dict[str, Any]:
@@ -4910,10 +6193,9 @@ def _fit_liquid_from_solid_parent(
         crystal = crystals[config["crystal_table_id"]]
         construction = liquid_from_solid(species, crystal, config["inputs"])
         fit = config["inputs"]["condensate_fit"]
-        # Keep the measured legacy fit exactly on its original 1600-2200 K
-        # interval. Outside it, fit the same liquid_from_solid construction
-        # on each 100 K source node; every interval remains below the 10 J/mol
-        # residual gate, and the shared endpoint checks continuity.
+        # The 1600-2200 K interval keeps the measured legacy node set. The
+        # same-Ref seam pass then pins every MnO interval, including this one,
+        # to the construction's G and S at each shared endpoint.
         intervals = ((1200.0, 1600.0), (1600.0, 2200.0), (2200.0, 3000.0))
         rows = []
         for fit_t_min, fit_t_max in intervals:
@@ -5427,6 +6709,7 @@ def build_condensate_rows(
                     upper_g_cp=upper_g_cp,
                     upper_g_s=upper_g_s,
                     upper_cp=upper_cp,
+                    shared_seams=_shared_interval_bounds(intervals),
                 )
             )
     rows.extend(
@@ -5538,6 +6821,7 @@ def build_condensate_rows(
                     runtime_t_max,
                     runtime_t_min=runtime_t_min,
                     nasa_source_dir=nasa_source_dir,
+                    shared_seams=_shared_interval_bounds(continuation_intervals),
                 )
             )
         for fit_t_min, fit_t_max in fit_intervals:
@@ -5807,7 +7091,7 @@ def build_condensate_rows(
                 f"{row['_max_residual_J_per_mol']} J/mol exceeds 10"
             )
         rows.append(row)
-    return rows
+    return _pin_condensate_same_ref_seams(rows)
 
 
 def build_source_liquid_markers(
@@ -5874,6 +7158,114 @@ def build_source_liquid_markers(
     return markers
 
 
+def _flat_temperature_pair(span: Any) -> tuple[float, float] | None:
+    if (
+        isinstance(span, (list, tuple))
+        and len(span) == 2
+        and all(
+            isinstance(item, (int, float)) and not isinstance(item, bool)
+            for item in span
+        )
+    ):
+        return float(span[0]), float(span[1])
+    return None
+
+
+def _source_fit_range(record: dict[str, Any]) -> Any:
+    """Fit interval recorded for a runtime row.
+
+    Seam windows omit source_fit_range_K and keep the parent fit's
+    temperature_range. Explicit ranges are returned unchanged so integer
+    bounds keep the text already stored on the tables.
+    """
+    explicit = record.get("source_fit_range_K")
+    if explicit:
+        return explicit
+    residual = record.get("fit_residual")
+    if not isinstance(residual, dict):
+        return None
+    span = _flat_temperature_pair(residual.get("temperature_range"))
+    if span is None:
+        return None
+    low, high = (float(value) for value in record["T_range_K"])
+    if span[0] <= low and span[1] >= high:
+        return [span[0], span[1]]
+    return None
+
+
+_VALIDITY_FACT_FIELDS = (
+    "table_id", "source_table_id", "source_fit_range_K", "source_limit_K",
+    "extrapolation_source_limit_K", "fusion_temperature_K", "tier",
+    "flags", "method", "source_path", "source_data",
+)
+
+
+def _records_covering_interval(
+    records: list[dict[str, Any]],
+    low: float,
+    high: float,
+    *,
+    same_fit_span: bool = False,
+) -> list[dict[str, Any]]:
+    """Records that contain [low, high], or one tile of same-fact pieces."""
+    direct = [
+        record for record in records
+        if float(record["T_range_K"][0]) <= low
+        and float(record["T_range_K"][1]) >= high
+    ]
+    if direct:
+        return direct
+    overlapping = sorted(
+        (
+            record for record in records
+            if float(record["T_range_K"][0]) < high
+            and float(record["T_range_K"][1]) > low
+        ),
+        key=lambda record: float(record["T_range_K"][0]),
+    )
+    cursor = low
+    for candidate in overlapping:
+        candidate_low, candidate_high = (
+            float(value) for value in candidate["T_range_K"]
+        )
+        if candidate_low > cursor:
+            break
+        cursor = max(cursor, candidate_high)
+    signatures = {
+        json.dumps(
+            {key: record.get(key) for key in _VALIDITY_FACT_FIELDS},
+            sort_keys=True, separators=(",", ":"),
+        )
+        for record in overlapping
+    }
+    spans_match = True
+    if same_fit_span:
+        spans = {
+            json.dumps(
+                record["fit_residual"].get("temperature_range")
+                if isinstance(record.get("fit_residual"), dict) else None,
+                sort_keys=True,
+            )
+            for record in overlapping
+        }
+        spans_match = len(spans) == 1
+    if overlapping and cursor >= high and len(signatures) == 1 and spans_match:
+        combined = dict(overlapping[0])
+        combined["T_range_K"] = [low, high]
+        return [combined]
+    return []
+
+
+def _validity_identifier_matches(record: dict[str, Any], ref: str) -> bool:
+    return any(
+        identifier and (ref == identifier or ref.startswith(identifier))
+        for identifier in (
+            str(record.get("table_id", "")),
+            str(record.get("source_table_id", "")),
+        )
+    )
+
+
 def _validity_display_source_table(runtime_ref: str) -> str:
     """Transfer the legacy display identifier into typed row metadata."""
     base = re.sub(r"-CP-EXT-[0-9]+(?:\.[0-9]+)?$", "", runtime_ref)
@@ -5934,61 +7326,25 @@ def build_source_liquid_validity_rows(
                     "-CP-EXT-", "LFS", "-SC-CP",
                 )
             ) or ("TSIV-" in ref and "-SC-" in ref)
-            candidates = [r for r in species_records if r.get("runtime_ref") == ref]
-            direct_candidates = [
-                record for record in candidates
-                if float(record["T_range_K"][0]) <= low
-                and float(record["T_range_K"][1]) >= high
-            ]
-            if direct_candidates:
-                candidates = direct_candidates
-            elif candidates:
-                overlapping = sorted(
-                    (
-                        record for record in candidates
-                        if float(record["T_range_K"][0]) < high
-                        and float(record["T_range_K"][1]) > low
-                    ),
-                    key=lambda record: float(record["T_range_K"][0]),
-                )
-                cursor = low
-                for candidate in overlapping:
-                    candidate_low, candidate_high = (
-                        float(value) for value in candidate["T_range_K"]
-                    )
-                    if candidate_low > cursor:
-                        break
-                    cursor = max(cursor, candidate_high)
-                fact_fields = (
-                    "table_id", "source_table_id", "source_fit_range_K", "source_limit_K",
-                    "extrapolation_source_limit_K", "fusion_temperature_K", "tier",
-                    "flags", "method", "source_path", "source_data",
-                )
-                signatures = {
-                    json.dumps(
-                        {key: record.get(key) for key in fact_fields},
-                        sort_keys=True, separators=(",", ":"),
-                    )
-                    for record in overlapping
-                }
-                if overlapping and cursor >= high and len(signatures) == 1:
-                    combined = dict(overlapping[0])
-                    combined["T_range_K"] = [low, high]
-                    candidates = [combined]
-                else:
-                    candidates = []
+            candidates = _records_covering_interval(
+                [
+                    record for record in species_records
+                    if record.get("runtime_ref") == ref
+                ],
+                low,
+                high,
+            )
             if not candidates:
-                candidates = [
-                    candidate for candidate in interval_records
-                    if any(
-                        identifier
-                        and (ref == identifier or ref.startswith(identifier))
-                        for identifier in (
-                            str(candidate.get("table_id", "")),
-                            str(candidate.get("source_table_id", "")),
-                        )
-                    )
-                ]
+                # An unsplit legacy row tiles the parent fit across seam windows.
+                candidates = _records_covering_interval(
+                    [
+                        record for record in species_records
+                        if _validity_identifier_matches(record, ref)
+                    ],
+                    low,
+                    high,
+                    same_fit_span=True,
+                )
             if not candidates and needs_typed_validity:
                 candidates = interval_records
             record = None
@@ -6106,7 +7462,7 @@ def build_source_liquid_validity_rows(
                 )
             validity = {
                 "T_range_K": [float(value) for value in record["T_range_K"]],
-                "source_fit_range_K": record.get("source_fit_range_K"),
+                "source_fit_range_K": _source_fit_range(record),
                 "source_limit_K": source_limit,
                 "fusion_temperature_K": fusion_temperature,
                 "supercooled_segment_K": (
@@ -6239,6 +7595,10 @@ def _fit_k2o_from_solid(source_dir: Path) -> list[dict[str, str]]:
                 f"K2O(l): condensate fit residual {residual:g} J/mol exceeds 10"
             )
         result.append(row)
+    # The 1000-1200 K row copies this segment at 1200 K. Leave the segment
+    # fixed so that copy stays the shared state; the same-Ref pass closes
+    # 2000 K on the upper segment.
+    result[0]["_seam_frozen"] = "true"
 
     # Fit the lower interval against the constructed continuation at 1 K spacing.
     lower_nodes = np.arange(1000.0, 1200.0 + 1.0, 1.0)
@@ -6348,6 +7708,184 @@ def _empty_source_validity_fields() -> dict[str, str]:
     }
 
 
+def _pack_reference_gas_key(fields: list[str]) -> tuple[str, str, str, str, str, str]:
+    """Identity of one packaged gas row, independent of float text."""
+    return (
+        fields[0],
+        fields[1],
+        fields[2],
+        format(float(fields[6]), ".15g"),
+        format(float(fields[7]), ".15g"),
+        fields[16],
+    )
+
+
+def _pack_reference_gas_lines(path: Path) -> dict[tuple[str, str, str, str, str, str], str]:
+    """Exact CSV lines of gas rows the FC87 pack translation evaluates."""
+    if not path.is_file():
+        raise ValueError(f"{path}: packaged gas table is missing")
+    saved: dict[tuple[str, str, str, str, str, str], str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines()[1:]:
+        if not line:
+            continue
+        fields = next(csv.reader([line]))
+        if fields[0] not in PACK_REFERENCE_GAS:
+            continue
+        key = _pack_reference_gas_key(fields)
+        if key in saved:
+            raise ValueError(f"{path}: duplicate pack-reference gas row {key}")
+        saved[key] = line
+    missing = PACK_REFERENCE_GAS - {key[0] for key in saved}
+    if missing:
+        raise ValueError(f"{path}: pack-reference gas rows missing: {sorted(missing)}")
+    return saved
+
+
+def _restore_pack_reference_gas_lines(
+    path: Path, saved: dict[tuple[str, str, str, str, str, str], str]
+) -> None:
+    """Put the packaged K(g) and O(g) lines back after the table write."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    restored = [lines[0]]
+    seen: set[tuple[str, str, str, str, str, str]] = set()
+    for line in lines[1:]:
+        if not line:
+            continue
+        fields = next(csv.reader([line]))
+        if fields[0] in PACK_REFERENCE_GAS:
+            key = _pack_reference_gas_key(fields)
+            original = saved.get(key)
+            if original is None:
+                raise ValueError(f"{path}: pack-reference gas row {key} has no snapshot")
+            restored.append(original)
+            seen.add(key)
+        else:
+            restored.append(line)
+    missing = set(saved) - seen
+    if missing:
+        raise ValueError(f"{path}: pack-reference gas rows dropped: {sorted(missing)}")
+    path.write_text("\n".join(restored) + "\n", encoding="utf-8")
+
+
+def _record_pack_reference_gas_open_joins(path: Path) -> None:
+    """Append discontinuous joins of the frozen FC87 gas basis."""
+    _OPEN_GAS_JOINS.clear()
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    groups: dict[tuple[str, str, str], list[dict[str, str]]] = {}
+    for row in rows:
+        if row["species_name"] not in PACK_REFERENCE_GAS:
+            continue
+        groups.setdefault(
+            (row["species_name"], row["state"], row["Ref"]), []
+        ).append(row)
+    for members in groups.values():
+        members.sort(key=lambda item: float(item["T_min"]))
+        for left, right in zip(members, members[1:]):
+            if abs(float(left["T_max"]) - float(right["T_min"])) > 1e-4:
+                continue
+            temperature = float(left["T_max"])
+            if not _shomate_join_open(left, right, temperature):
+                continue
+            left_h, left_s = _stored_shomate_hs(left, temperature)
+            right_h, right_s = _stored_shomate_hs(right, temperature)
+            gap_g = abs((right_h - left_h) * 1000.0 - temperature * (right_s - left_s))
+            _OPEN_GAS_JOINS.append(
+                f"{left['species_name']} {left['Ref']} at {temperature:g} K: "
+                f"|dG|={gap_g:.6g} J/mol "
+                f"|dS|={abs(right_s - left_s):.6g} J/mol/K; "
+                "left open because a shipped pack's FC87 translation uses these rows"
+            )
+
+
+def _pack_reference_row_key(fields: list[str]) -> tuple[str, str, str, str, str]:
+    """Identity of one packaged liquid row, independent of float text."""
+    return (
+        fields[0],
+        fields[1],
+        format(float(fields[5]), ".15g"),
+        format(float(fields[6]), ".15g"),
+        fields[13],
+    )
+
+
+def _pack_reference_liquid_lines(path: Path) -> dict[tuple[str, str, str, str, str], str]:
+    """Exact CSV lines of liquids a shipped pack uses as a reference."""
+    saved: dict[tuple[str, str, str, str, str], str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines()[1:]:
+        if not line:
+            continue
+        fields = next(csv.reader([line]))
+        if fields[0] not in PACK_REFERENCE_LIQUIDS:
+            continue
+        key = _pack_reference_row_key(fields)
+        if key in saved:
+            raise ValueError(f"{path}: duplicate pack-reference row {key}")
+        saved[key] = line
+    return saved
+
+
+def _restore_pack_reference_liquid_lines(
+    path: Path, saved: dict[tuple[str, str, str, str, str], str]
+) -> None:
+    """Put the packaged reference-liquid lines back after a validity rewrite."""
+    if not saved:
+        return
+    lines = path.read_text(encoding="utf-8").splitlines()
+    restored = [lines[0]]
+    seen: set[tuple[str, str, str, str, str]] = set()
+    for line in lines[1:]:
+        if not line:
+            continue
+        fields = next(csv.reader([line]))
+        if fields[0] in PACK_REFERENCE_LIQUIDS:
+            key = _pack_reference_row_key(fields)
+            original = saved.get(key)
+            if original is None:
+                raise ValueError(f"{path}: pack-reference row {key} has no snapshot")
+            restored.append(original)
+            seen.add(key)
+        else:
+            restored.append(line)
+    missing = set(saved) - seen
+    if missing:
+        raise ValueError(f"{path}: pack-reference rows dropped: {sorted(missing)}")
+    path.write_text("\n".join(restored) + "\n", encoding="utf-8")
+
+
+def _record_pack_reference_open_joins(path: Path) -> None:
+    """Append discontinuous joins of the frozen reference liquids.
+
+    Seam size is the packaged |ΔG| and |ΔS|. Those rows are not refit, so the
+    report does not quote a donor residual.
+    """
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    groups: dict[tuple[str, str, str], list[dict[str, str]]] = {}
+    for row in rows:
+        if row["species_name"] not in PACK_REFERENCE_LIQUIDS:
+            continue
+        groups.setdefault(
+            (row["species_name"], row["state"], row["Ref"]), []
+        ).append(row)
+    for members in groups.values():
+        members.sort(key=lambda item: float(item["T_min"]))
+        for left, right in zip(members, members[1:]):
+            if abs(float(left["T_max"]) - float(right["T_min"])) > 1e-4:
+                continue
+            temperature = float(left["T_max"])
+            if not _condensate_join_open(left, right, temperature):
+                continue
+            left_g, left_s = _condensate_row_g_s(left, temperature)
+            right_g, right_s = _condensate_row_g_s(right, temperature)
+            _OPEN_CONDENSATE_JOINS.append(
+                f"{left['species_name']} {left['Ref']} at {temperature:g} K: "
+                f"|dG|={abs(right_g - left_g):.6g} J/mol "
+                f"|dS|={abs(right_s - left_s):.6g} J/mol/K; "
+                "left open because a shipped pack uses this liquid as a reference"
+            )
+
+
 def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
     """Replace generated intervals only; retain unrelated source intervals."""
     lines = output.read_text(encoding="utf-8").splitlines()
@@ -6377,7 +7915,7 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
         *(
             line for line in lines[1:]
             if (fields := next(csv.reader([line])))[0]
-            not in REPLACED_DEFAULT_CONDENSATE_SPECIES
+            not in (REPLACED_DEFAULT_CONDENSATE_SPECIES - PACK_REFERENCE_LIQUIDS)
             and not (
                 fields[0] in ALL_SUPERCOOLED_LIQUID_SPECIES
                 and fields[13].endswith(SUPERCOOLED_LIQUID_REF_SUFFIX)
@@ -6386,6 +7924,8 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
         ),
     ]
     for species_name, species_rows in grouped_rows.items():
+        if species_name in PACK_REFERENCE_LIQUIDS:
+            continue
         serialized_rows = []
         for row in species_rows:
             row = row.copy()
@@ -6401,7 +7941,7 @@ def merge_condensate_csv(rows: list[dict[str, str]], output: Path) -> None:
                 and float(row["T_min"]) == 1000.0
                 and float(row["T_max"]) == 1200.0
             )
-            if not refit_low_oxide:
+            if not refit_low_oxide and row.get("_seam_constrained") != "true":
                 row.update(existing_coefficients.get(key, {}))
             buffer = io.StringIO()
             csv.writer(buffer, lineterminator="\n").writerow(
@@ -6478,9 +8018,17 @@ def main() -> None:
     if args.condensate_output is None and args.output == packaged_gas:
         args.condensate_output = repository / "src/openimcc/data/gas/condensate.csv"
     rows = build_rows(args.source_dir, args.nasa_source_dir, args.lh84_source_dir)
+    # A scratch --output must still copy the packaged K(g) and O(g) lines.
+    # Updating the packaged file in place snapshots those lines before write.
+    gas_reference_source = (
+        args.output if args.output.resolve() == packaged_gas.resolve() else packaged_gas
+    )
+    pack_reference_gas_lines = _pack_reference_gas_lines(gas_reference_source)
     write_csv(rows, args.output)
     condensate_rows = build_condensate_rows(args.source_dir, args.nasa_source_dir)
+    pack_reference_lines: dict[tuple[str, str, str, str, str], str] = {}
     if args.condensate_output is not None:
+        pack_reference_lines = _pack_reference_liquid_lines(args.condensate_output)
         merge_condensate_csv(condensate_rows, args.condensate_output)
     if args.condensate_output is not None:
         markers = build_source_liquid_markers(args.source_dir)
@@ -6489,6 +8037,9 @@ def main() -> None:
             legacy_condensate = repository / "src/openimcc/data/gas/condensate-feo-janaf-legacy.csv"
             published_condensate = repository / "src/openimcc/data/packs/sf04-published/condensate.csv"
             additional_condensate_csvs = (legacy_condensate, published_condensate)
+        additional_snapshots = {
+            path: path.read_bytes() for path in additional_condensate_csvs
+        }
         validity_rows = build_source_liquid_validity_rows(
             args.output, args.condensate_output, markers=markers,
             additional_condensate_csvs=additional_condensate_csvs,
@@ -6497,6 +8048,38 @@ def main() -> None:
         write_source_validity_columns(args.condensate_output, validity_rows, phase="condensate")
         for path in additional_condensate_csvs:
             write_source_validity_columns(path, validity_rows, phase="condensate")
+        for path, snapshot in additional_snapshots.items():
+            if path.read_bytes() != snapshot:
+                path.write_bytes(snapshot)
+        _restore_pack_reference_liquid_lines(
+            args.condensate_output, pack_reference_lines
+        )
+        _record_pack_reference_open_joins(args.condensate_output)
+    _restore_pack_reference_gas_lines(args.output, pack_reference_gas_lines)
+    _record_pack_reference_gas_open_joins(args.output)
+    if _CLOSED_CONDENSATE_JOINS:
+        print(
+            f"{len(_CLOSED_CONDENSATE_JOINS)} condensate join(s) closed:",
+            file=sys.stderr,
+        )
+        for line in _CLOSED_CONDENSATE_JOINS:
+            print(line, file=sys.stderr)
+    if _OPEN_CONDENSATE_JOINS:
+        print(
+            f"{len(_OPEN_CONDENSATE_JOINS)} condensate join(s) left open:",
+            file=sys.stderr,
+        )
+        for line in _OPEN_CONDENSATE_JOINS:
+            print(line, file=sys.stderr)
+    if _OPEN_GAS_JOINS:
+        print(
+            f"{len(_OPEN_GAS_JOINS)} gas join(s) left open:",
+            file=sys.stderr,
+        )
+        for line in _OPEN_GAS_JOINS:
+            print(line, file=sys.stderr)
+    if _OPEN_CONDENSATE_JOINS or _OPEN_GAS_JOINS:
+        raise SystemExit(1)
     for row in [*rows, *condensate_rows]:
         if "_max_residual_J_per_mol" not in row:
             continue

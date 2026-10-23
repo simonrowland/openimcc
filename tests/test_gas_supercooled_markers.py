@@ -320,7 +320,7 @@ def test_source_validity_survives_refit_and_source_swap_on_every_coverage_row() 
                 assert _source_validity_for_row(str(row_name), refit, phase=row_phase) == (
                     _source_validity_for_row(str(row_name), row, phase=row_phase)
                 )
-    assert coverage_rows == 215
+    assert coverage_rows == 263
 
 
 def test_mno_multi_interval_lfs_refit_keeps_typed_supercooled_flag() -> None:

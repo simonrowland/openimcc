@@ -295,7 +295,6 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
             ("gas", "(KF)2(g)", "F-069", 2),
             ("gas", "Hg(g)", "BU-2587", 3),
         }
-
         migrated_rows = {row_key(row): row for row in migrated_provenance["rows"]}
         committed_rows = {row_key(row): row for row in committed_provenance["rows"]}
         assert set(committed_rows) - set(migrated_rows) == wave3_rows
@@ -305,9 +304,25 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
             "primary_measurement_reanchored"
         )
         assert migrated_rows[selected_feo]["authority"] == "janaf_transcribed"
+
+        def without_fit_values(row: dict) -> dict:
+            normalized = dict(row)
+            normalized.pop("T_range_K", None)
+            normalized.pop("fit_intervals_K", None)
+            for field in ("fit_residual", "accuracy_band"):
+                value = normalized.get(field)
+                if isinstance(value, dict):
+                    normalized[field] = {
+                        key: item for key, item in value.items()
+                        if key != "value"
+                        and not (field == "fit_residual" and key == "temperature_range")
+                    }
+            return normalized
+
         mismatched_keys = {
             key for key, row in migrated_rows.items()
-            if key != selected_feo and committed_rows[key] != row
+            if key != selected_feo
+            and without_fit_values(committed_rows[key]) != without_fit_values(row)
         }
         assert not mismatched_keys
         for key in set(migrated_provenance) - {"rows", "source_notes"}:

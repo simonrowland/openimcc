@@ -52,7 +52,7 @@ NASA_DATA = ROOT / "data-src" / "nasa-glenn"
 PUBLISHED_DATA = ROOT / "data-src" / "published-thermo"
 LH84_DATA = ROOT / "data-src" / "lh84"
 PROVENANCE_PATH = GAS_DATA / "PROVENANCE.yaml"
-_BASE_INTERVAL_1_SHA256 = "ea3a8db1419140329e36be433453fdc67969a7e3826d9af5a310d284a1526c0a"
+_BASE_INTERVAL_1_SHA256 = "aa46b44c69f6f226f4a18841ae0faf3951c2bf4f0073ed81eab61cd27104884f"
 _ION_GAS_PROVENANCE_SPECIES = tuple(
     source[0]
     for source in (
@@ -177,6 +177,45 @@ GAS_PROPERTY_RESIDUAL_LIMITS = {
     "H_app_kJ_mol": 0.009,
     "G_kJ_mol": 0.0021,
 }
+# Same-Ref closure moves these packaged rows off the single-interval envelope.
+_SEAM_PROPERTY_LIMITS = {
+    ("K2(g)", 1): {"H_app_kJ_mol": 0.0106},
+    ("CaO(g)", 1): {"H_app_kJ_mol": 0.0121},
+    ("Ni(g)", 1): {"H_app_kJ_mol": 0.0147},
+    ("P4O10(g)", 1): {"Cp_J_molK": 0.331, "H_app_kJ_mol": 0.0421},
+    ("MgO(g)", 2): {"H_app_kJ_mol": 0.0107},
+    ("P4O10(g)", 2): {"Cp_J_molK": 0.239},
+    ("ZrO(g)", 2): {"Cp_J_molK": 0.376},
+    ("Co+(g)", 1): {
+        "Cp_J_molK": 1.113,
+        "S_J_molK": 0.0467,
+        "H_app_kJ_mol": 0.142,
+        "G_kJ_mol": 0.00567,
+    },
+    ("Co+(g)", 2): {
+        "Cp_J_molK": 0.792,
+        "S_J_molK": 0.0149,
+        "H_app_kJ_mol": 0.0223,
+    },
+    ("HCl(g)", 1): {"G_kJ_mol": 0.00221},
+    ("OH(g)", 1): {
+        "Cp_J_molK": 0.318,
+        "S_J_molK": 0.0147,
+        "H_app_kJ_mol": 0.0422,
+    },
+    ("SrO(g)", 1): {"H_app_kJ_mol": 0.0135},
+    ("ZrO2(g)", 1): {"H_app_kJ_mol": 0.0093},
+    ("KCl(g)", 1): {"H_app_kJ_mol": 0.0163},
+    ("(KF)2(g)", 1): {"Cp_J_molK": 0.157, "H_app_kJ_mol": 0.0183},
+    ("KCl(g)", 2): {"Cp_J_molK": 0.239},
+    ("HF(g)", 2): {
+        "Cp_J_molK": 1.006,
+        "S_J_molK": 0.0153,
+        "H_app_kJ_mol": 0.0150,
+    },
+    ("NaCl(g)", 2): {"Cp_J_molK": 0.548},
+    ("NaF(g)", 2): {"Cp_J_molK": 0.424},
+}
 
 # Measured maximum absolute Gibbs residuals at complete source nodes, in
 # kJ/mol. Cp/S/H residuals are derivative-fit information and are not gates.
@@ -186,13 +225,17 @@ JANAF_CONDENSATE_G_RESIDUALS = {
     ("Cr2O3(l)", 1900.0): 0.001551177412737161,
     ("V2O3(l)", 1700.0): 0.00129979831143282,
     ("NbO2(l)", 1200.0): 3.4924596548080445e-13,
-    ("NbO2(l)", 1500.0): 0.001405104221543297,
+    ("NbO2(l)", 1500.0): 2.3283064365386963e-13,
+    ("NbO2(l)", 1530.0): 0.001405104221543297,
     ("Na2O(l)", 1000.0): 0.0004841441633179784,
     ("Na2O(l)", 1500.0): 0.005218239571899176,
     ("Ta2O5(l)", 1200.0): 2.7939677238464356e-12,
-    ("Ta2O5(l)", 1500.0): 0.00020330544793978333,
+    ("Ta2O5(l)", 1500.0): 2.7939677238464356e-12,
+    ("Ta2O5(l)", 1520.0): 0.00020330544793978333,
+    ("Ta2O5(l)", 1980.0): 6.51925802230835e-12,
     ("Ta2O5(l)", 2000.0): 5.587935447692871e-12,
-    ("Ta2O5(l)", 2500.0): 0.000711127957329154,
+    ("Ta2O5(l)", 2500.0): 5.587935447692871e-12,
+    ("Ta2O5(l)", 2530.0): 0.000711127957329154,
 }
 
 # G source disagreements are model-minus-JANAF, measured over complete liquid
@@ -547,12 +590,12 @@ def test_cr_3000_thermal_cells_recover_g_app_without_refitting_coefficients() ->
     g_fit = h_app_fit * 1000.0 - 3000.0 * entropy_fit
     assert reference_h == 397.480
     assert source_g == pytest.approx(-215491.0, abs=1.0e-9)
-    assert cp_fit - cp_source == pytest.approx(-0.039868, abs=1.0e-6)
-    assert entropy_fit - entropy_source == pytest.approx(-0.000671, abs=1.0e-6)
+    assert cp_fit - cp_source == pytest.approx(-0.028941446287589656, abs=1.0e-6)
+    assert entropy_fit - entropy_source == pytest.approx(-0.0003727607322616677, abs=1.0e-6)
     assert (h_app_fit - reference_h - enthalpy_increment_source) * 1000.0 == pytest.approx(
-        -2.068, abs=1.0e-3
+        -1.1801753380780156, abs=1.0e-3
     )
-    assert g_fit - source_g == pytest.approx(-0.054033, abs=1.0e-6)
+    assert g_fit - source_g == pytest.approx(-0.061893141304608434, abs=1.0e-6)
     assert float(packaged["T_max"]) == 3000.0
 
 
@@ -616,20 +659,26 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     rows = provenance["rows"]
     gas_records = [row for row in rows if row["table"] == "gas"]
     ion_species = set(_ION_GAS_PROVENANCE_SPECIES)
-    gas_rows = {
-        row["species_name"]: row
-        for row in gas_records
-        if (
-            row["T_range_K"][0] >= 1500
-            or row["table_id"]
-            in {
-                *build_gas_tables.HALOGEN_JANAF_TABLES,
-                *build_gas_tables.HALOGEN_NASA_TABLES,
-            }
-            or row["species_name"] == "Re2O7(g)"
-        )
-        and row["species_name"] not in ion_species
-    }
+    gas_rows = {}
+    for row in gas_records:
+        if not (
+            (
+                row["T_range_K"][0] >= 1500
+                or row["table_id"]
+                in {
+                    *build_gas_tables.HALOGEN_JANAF_TABLES,
+                    *build_gas_tables.HALOGEN_NASA_TABLES,
+                }
+                or row["species_name"] == "Re2O7(g)"
+            )
+            and row["species_name"] not in ion_species
+        ):
+            continue
+        current = gas_rows.get(row["species_name"])
+        # A short seam window shares the species with the long high interval.
+        # Keep the row that reaches the highest temperature.
+        if current is None or row["T_range_K"][1] > current["T_range_K"][1]:
+            gas_rows[row["species_name"]] = row
     low_gas_rows = {
         row["species_name"].removesuffix("(g)"): row
         for row in gas_records
@@ -933,8 +982,11 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
                 and item["species_name"] == species
             ]
             assert sorted(item["T_range_K"] for item in ta_rows) == [
-                [1200, 1500], [1500, 2000], [2000, 2500], [2500, 3000],
+                [1200, 1500], [1500, 1520], [1520, 1980], [1980, 2000],
+                [2000, 2500], [2500, 2530], [2530, 3000],
             ]
+        elif species == "NbO2(l)":
+            assert row["T_range_K"] == [1530, 3000]
         else:
             assert row["T_range_K"] == [runtime_t_min, 3000]
         assert source["source"]["doi"] == "10.18434/T42S31"
@@ -1663,7 +1715,8 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         ("BeO(l)", (2000, 2500)),
         ("BeO(l)", (2500, 2851)),
         ("Tl2O(l)", (1200, 1600)),
-        ("Tl2O(l)", (1600, 3000)),
+        ("Tl2O(l)", (1600, 1650)),
+        ("Tl2O(l)", (1650, 3000)),
     }
 
 
@@ -2356,7 +2409,9 @@ def test_thallium_pankratz_anchors_closure_and_printed_limits() -> None:
         row for row in yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))["rows"]
         if row["table"] == "condensate" and row["species_name"] == "Tl2O(l)"
     ]
-    assert [row["T_range_K"] for row in parent_rows] == [[1200, 1600], [1600, 3000]]
+    assert [row["T_range_K"] for row in parent_rows] == [
+        [1200, 1600], [1600, 1650], [1650, 3000],
+    ]
     assert all(
         row["source_data"] is False
         and row["extrapolation_source_limit_K"] == 1000
@@ -2410,7 +2465,12 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         return residual
 
     li_source = {row["temperature"]: row for row in _complete_rows("Li-015")}
-    for t_min, t_max in ((1200.0, 1400.0), (1400.0, 2000.0), (2000.0, 3000.0)):
+    for t_min, t_max in (
+        (1200.0, 1400.0),
+        (1400.0, 1980.0),
+        (1980.0, 2000.0),
+        (2000.0, 3000.0),
+    ):
         li_nodes = [
             (temperature, source_janaf_g("Li-015", temperature))
             for temperature in li_source
@@ -2456,10 +2516,11 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
             PUBLISHED_DATA, "SeO2", se_config
         )
     )
-    for t_min, t_max in ((1200.0, 1600.0), (1600.0, 3000.0)):
+    for t_min, t_max in ((1200.0, 1600.0), (1600.0, 1650.0), (1650.0, 3000.0)):
         nodes = [
             (float(t), se_construction.at(float(t)).gibbs_kj_mol * 1000.0)
-            for t in np.arange(t_min, t_max + 100.0, 100.0)
+            for t in np.arange(1200.0, 3000.0 + 1.0, 100.0)
+            if t_min <= float(t) <= t_max
         ]
         assert assert_residuals(
             "SeO2(l)", fitted_row("SeO2(l)", t_min), nodes
@@ -2475,10 +2536,11 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
             PUBLISHED_DATA, "As2O3", as_config
         )
     )
-    for t_min, t_max in ((1200.0, 1600.0), (1600.0, 3000.0)):
+    for t_min, t_max in ((1200.0, 1600.0), (1600.0, 1650.0), (1650.0, 3000.0)):
         nodes = [
             (float(t), as_construction.at(float(t)).gibbs_kj_mol * 1000.0)
-            for t in np.arange(t_min, t_max + 100.0, 100.0)
+            for t in np.arange(1200.0, 3000.0 + 1.0, 100.0)
+            if t_min <= float(t) <= t_max
         ]
         assert assert_residuals(
             "As2O3(l)", fitted_row("As2O3(l)", t_min), nodes
@@ -2488,10 +2550,13 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
     for t_min, t_max in (
         (1200.0, 1500.0),
         (1500.0, 2000.0),
-        (2000.0, 3000.0),
+        (2000.0, 2030.0),
+        (2030.0, 3000.0),
     ):
         card_nodes = []
-        for temperature in np.arange(t_min, t_max + 50.0, 100.0):
+        for temperature in np.arange(1200.0, 3000.0 + 1.0, 100.0):
+            if not t_min <= float(temperature) <= t_max:
+                continue
             properties = build_gas_tables._nasa7_properties(
                 rb_record, float(temperature)
             )
@@ -2544,7 +2609,16 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
             - float(temperature) * entropy
         )
         pb_high_nodes.append((float(temperature), source_g))
-    assert_residuals("PbO(l)", fitted_row("PbO(l)", 1500.0), pb_high_nodes)
+    pb_tail_rows = pack.oxide_df.loc[["PbO(l)"]]
+    pb_tail_rows = pb_tail_rows.loc[pb_tail_rows["T_min"].astype(float) >= 1500.0]
+    for _, row in pb_tail_rows.iterrows():
+        t_min = float(row["T_min"])
+        t_max = float(row["T_max"])
+        nodes = [
+            item for item in pb_high_nodes if t_min <= item[0] <= t_max
+        ]
+        assert nodes, (t_min, t_max)
+        assert_residuals("PbO(l)", row, nodes)
 
     for table_id, species_name in (("Mo-015", "MoO3(l)"), ("O-066", "WO3(l)")):
         source_values = _record(table_id)["table"]["values"]
@@ -2599,10 +2673,13 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
         record = build_gas_tables._nasa_liquid_record(
             NASA_DATA, species_name, table_id
         )
+        species_rows = pack.oxide_df.loc[[species_name]]
         for t_min, t_max in fit_intervals:
-            card_nodes = []
             step = 1.0 if species_name == "BeO(l)" else 100.0
+            card_nodes = []
             for temperature in np.arange(t_min, t_max + step / 2.0, step):
+                if float(temperature) > t_max + 1.0e-6:
+                    continue
                 properties = build_gas_tables._nasa7_properties(
                     record, float(temperature)
                 )
@@ -2610,11 +2687,21 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
                     properties["h_rt"] - properties["s_R"]
                 )
                 card_nodes.append((float(temperature), card_gibbs))
-            assert_residuals(
-                species_name,
-                fitted_row(species_name, t_min),
-                card_nodes,
-            )
+            pieces = species_rows.loc[
+                (species_rows["T_min"].astype(float) + 1.0e-6 >= t_min)
+                & (species_rows["T_max"].astype(float) <= t_max + 1.0e-6)
+            ]
+            assert abs(float(pieces["T_min"].astype(float).min()) - t_min) <= 1.0e-6
+            assert abs(float(pieces["T_max"].astype(float).max()) - t_max) <= 1.0e-6
+            for _, piece in pieces.iterrows():
+                piece_min = float(piece["T_min"])
+                piece_max = float(piece["T_max"])
+                piece_nodes = [
+                    item for item in card_nodes
+                    if piece_min <= item[0] <= piece_max
+                ]
+                assert piece_nodes, (species_name, piece_min, piece_max)
+                assert_residuals(species_name, piece, piece_nodes)
     sn_record = _nasa_record("NG-1848")
     sn_nodes = []
     for temperature in np.arange(1250.0, 2000.0, 100.0):
@@ -3232,7 +3319,7 @@ def test_reference_solid_tables_give_printed_fusion_gibbs(
 
 
 def test_condensate_builder_reproduces_shipped_gibbs_values(tmp_path: Path) -> None:
-    shipped = LEGACY_JANAF_CONDENSATE
+    shipped = GAS_DATA / "condensate.csv"
     rebuilt = tmp_path / "condensate.csv"
     rebuilt.write_bytes(shipped.read_bytes())
     rows = build_gas_tables.build_condensate_rows(JANAF_DATA, NASA_DATA)
@@ -3430,13 +3517,23 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
         table_id = GAS_TABLE_IDS[species]
         row = _gas_row_for_interval(pack, species, 2)
-        expected = build_gas_tables._fit_row(
+        high = build_gas_tables._fit_row(
+            JANAF_DATA,
+            *source_by_species[species],
+        )
+        low = build_gas_tables._fit_row(
             JANAF_DATA,
             *source_by_species[species],
             t_interval=2,
             fit_t_min=build_gas_tables.LOW_FIT_T_MIN,
             fit_t_max=build_gas_tables.LOW_FIT_T_MAX,
             minimum_rows=build_gas_tables.LOW_FIT_MINIMUM_ROWS,
+        )
+        # Same-Ref closure moves this low interval off the unconstrained fit.
+        expected = next(
+            pinned
+            for pinned in build_gas_tables._pin_gas_same_ref_seams([high, low])
+            if int(pinned["T_interval"]) == 2
         )
         assert int(row["T_interval"]) == 2
         assert float(row["T_min"]) == build_gas_tables.LOW_FIT_T_MIN
@@ -3575,6 +3672,27 @@ def test_original_gas_interval_1_rows_match_52db3a9_bytes_and_order() -> None:
     assert hashlib.sha256(b"".join(retained)).hexdigest() == _BASE_INTERVAL_1_SHA256
 
 
+def _meets_same_ref_neighbour(row: dict[str, str], rows: list[dict[str, str]]) -> bool:
+    """True when another row of the same species, state, and Ref shares an endpoint."""
+    t_min = float(row["T_min"])
+    t_max = float(row["T_max"])
+    for other in rows:
+        if other is row:
+            continue
+        if (
+            other["species_name"] != row["species_name"]
+            or other["state"] != row["state"]
+            or other["Ref"] != row["Ref"]
+        ):
+            continue
+        if (
+            abs(float(other["T_max"]) - t_min) <= 1.0e-6
+            or abs(float(other["T_min"]) - t_max) <= 1.0e-6
+        ):
+            return True
+    return False
+
+
 def test_existing_table_rows_are_bit_identical_to_base() -> None:
     current_by_table = {}
     for filename in ("gas-shomate.csv", "condensate.csv"):
@@ -3639,7 +3757,19 @@ def test_existing_table_rows_are_bit_identical_to_base() -> None:
                 expected["T_min"] = "1000"
             if filename == "gas-shomate.csv" and old["species_name"] == "Cr(g)" and old["T_interval"] == "1":
                 expected["T_max"] = current["T_max"]
-            assert {column: current[column] for column in expected} == expected
+            if {column: current[column] for column in expected} != expected:
+                # A same-Ref seam refit may change coefficients. Rows that do
+                # not meet another row of the same Ref stay bitwise identical.
+                assert _meets_same_ref_neighbour(current, current_rows), (
+                    filename,
+                    old["species_name"],
+                    old["state"],
+                    old["T_min"],
+                    old["T_max"],
+                    old["Ref"],
+                    old.get("T_interval"),
+                )
+                continue
 
             # The only old-row change is its runtime lower bound. Identical
             # coefficients therefore preserve its evaluated G and Cp bitwise.
@@ -3683,6 +3813,259 @@ def test_existing_table_rows_are_bit_identical_to_base() -> None:
                     )
                 assert struct.pack(">d", old_g) == struct.pack(">d", new_g)
                 assert struct.pack(">d", old_cp) == struct.pack(">d", new_cp)
+
+
+def _condensate_entropy(row: dict, temperature: float) -> float:
+    tau = temperature / 1000.0
+    return R_J_MOL_K * sum(
+        (power + 1) * float(row[f"dG_{name}"]) * tau**power
+        for power, name in enumerate("ABCDE")
+    )
+
+
+def _same_ref_join_failures(
+    rows: list[dict[str, str]], *, phase: str
+) -> list[tuple[str, str, float, float, float, float]]:
+    """Open same-Ref joins as (species, ref, T, |dG|, |dS|, |dH|)."""
+    failures: list[tuple[str, str, float, float, float, float]] = []
+    groups: dict[tuple[str, str, str], list[dict[str, str]]] = {}
+    for row in rows:
+        groups.setdefault(
+            (row["species_name"], row["state"], row["Ref"]), []
+        ).append(row)
+    for key, members in groups.items():
+        members.sort(key=lambda item: float(item["T_min"]))
+        for left, right in zip(members, members[1:]):
+            if abs(float(left["T_max"]) - float(right["T_min"])) > 1.0e-6:
+                continue
+            temperature = float(left["T_max"])
+            if phase == "gas":
+                left_numbers = {name: float(left[name]) for name in "ABCDEFGH"}
+                right_numbers = {name: float(right[name]) for name in "ABCDEFGH"}
+                g_left, g_right = (
+                    _shomate_g(left_numbers, temperature),
+                    _shomate_g(right_numbers, temperature),
+                )
+                s_left = _shomate_entropy(left_numbers, temperature)
+                s_right = _shomate_entropy(right_numbers, temperature)
+            else:
+                g_left = _condensate_gibbs(left, temperature)
+                g_right = _condensate_gibbs(right, temperature)
+                s_left = _condensate_entropy(left, temperature)
+                s_right = _condensate_entropy(right, temperature)
+            g_jump = abs(g_left - g_right)
+            s_jump = abs(s_left - s_right)
+            h_jump = abs((g_left + temperature * s_left) - (g_right + temperature * s_right))
+            if (
+                g_jump >= 1.0e-3
+                or s_jump >= 1.0e-5
+                or h_jump >= 1.0e-3 + temperature * 1.0e-5
+            ):
+                failures.append((key[0], key[2], temperature, g_jump, s_jump, h_jump))
+    return failures
+
+
+def _format_open_joins(
+    failures: list[tuple[str, str, float, float, float, float]], *, phase: str
+) -> str:
+    return "\n".join(
+        f"{phase} {species} {reference} at {temperature:g} K: "
+        f"|dG|={g_jump:.6g} J/mol |dS|={s_jump:.6g} J/mol/K "
+        f"|dH|={h_jump:.6g} J/mol"
+        for species, reference, temperature, g_jump, s_jump, h_jump in failures
+    )
+
+
+def _assert_same_ref_joins_continuous(rows: list[dict[str, str]], *, phase: str) -> None:
+    """Adjacent same-Ref segments share G, S, and therefore H at the join."""
+    failures = _same_ref_join_failures(rows, phase=phase)
+    assert not failures, "open same-Ref joins:\n" + _format_open_joins(
+        failures, phase=phase
+    )
+
+
+# Joins the condensate builder could not close inside the donor residual and
+# the donor Cp band, plus reference liquids a shipped pack still uses.
+# K2O(l) K-012 at 2000 K is the pack-reference seam: |dG| = 1.85546 J/mol,
+# |dS| = 0.107941 J/(mol K). Closing it would move every D066 pack.
+# K(g) K-005 at 1500 K (|dG| = 0.0301251 J/mol, |dS| = 9.53606e-05 J/(mol K))
+# and O(g) O-001 at 1500 K (|dG| = 0.350575 J/mol, |dS| = 0.000219927 J/(mol K))
+# stay open because the FC87 reference is built from those gas rows.
+# Al2O3(l) Al-100-SC-CP at 1500 K (|dG| = 0.34719 J/mol,
+# |dS| = 0.00118767 J/(mol K)) and at 2000 K (|dG| = 0.0431311 J/mol,
+# |dS| = 0.000101609 J/(mol K)), and MnO(l) at 1600 K
+# (|dG| = 0.0268662 J/mol, |dS| = 0.00257461 J/(mol K)) and at 2200 K
+# (|dG| = 0.107096 J/mol, |dS| = 0.00265833 J/(mol K)), stay open because
+# shipped redox packs copy those rows.
+_OPEN_GAS_JOINS = frozenset({
+    ("K(g)", "K-005", 1500.0),
+    ("O(g)", "O-001", 1500.0),
+})
+_OPEN_CONDENSATE_JOINS = frozenset({
+    ("Al2O3(l)", "Al-100-SC-CP", 1500.0),
+    ("Al2O3(l)", "Al-100-SC-CP", 2000.0),
+    ("Ag2O(l)", "P672-Ag2O-LFS", 1600.0),
+    ("Ag2O(l)", "P672-Ag2O-LFS", 2000.0),
+    ("B2O3(l)", "B-096", 1500.0),
+    ("Ce2O3(l)", "Konings-Table88-Tf2512", 1900.0),
+    ("Cs2O(l)", "NG-1842", 1500.0),
+    ("Cu2O(l)", "Cu-020", 1500.0),
+    ("Cu2O(l)", "Cu-020", 2000.0),
+    ("Eu2O3(l)", "Konings-Table88-Tf2622", 1900.0),
+    ("Gd2O3(l)", "Konings-Table88-Tf2693", 1900.0),
+    ("GeO2(l)", "NG-12434", 2400.0),
+    ("HfO2(l)", "LFS[P672-HfO2-c;Tf=3073.15]-CP-EXT-1800", 1600.0),
+    ("HfO2(l)", "LFS[P672-HfO2-c;Tf=3073.15]-CP-EXT-1800", 2000.0),
+    ("Ho2O3(l)", "Konings-Table88-Tf2686", 1900.0),
+    ("K2O(l)", "K-012", 2000.0),
+    ("La2O3(l)", "Konings-Table88-Tf2577", 1900.0),
+    ("Li2O(l)", "Li-015", 1400.0),
+    ("Lu2O3(l)", "Konings-Table88-Tf2762", 2000.0),
+    ("MnO(l)", "LFS[MnO-IVTAN-1435;Tf=2120]", 1600.0),
+    ("MnO(l)", "LFS[MnO-IVTAN-1435;Tf=2120]", 2200.0),
+    ("MoO3(l)", "Mo-015", 1600.0),
+    ("Nd2O3(l)", "Konings-Table88-Tf2577", 1900.0),
+    ("Pr2O3(l)", "Konings-Table88-Tf2583", 1900.0),
+    ("Rb2O(l)", "NG-1841", 1500.0),
+    ("Sb2O3(l)", "P672-Sb2O3-LFS", 1600.0),
+    ("Sb2O3(l)", "P672-Sb2O3-LFS", 2000.0),
+    ("Sm2O3(l)", "Konings-Table88-Tf2613", 1900.0),
+    ("SnO(l)", "NG-1848", 2000.0),
+    ("SrO(l)", "O-014", 1500.0),
+    ("Tb2O3(l)", "Konings-Table88-Tf2682", 1900.0),
+    ("ThO2(l)", "LFS[P672-ThO2-c;Tf=3650]-CP-EXT-2500", 1600.0),
+    ("ThO2(l)", "LFS[P672-ThO2-c;Tf=3650]-CP-EXT-2500", 2000.0),
+    ("UO2(l)", "NG-1977-SC-CP", 1500.0),
+    ("WO3(l)", "O-066", 1500.0),
+    ("WO3(l)", "O-066", 2000.0),
+    ("WO3(l)", "O-066", 2500.0),
+    ("Y2O3(l)", "LFS[P672-Y2O3-c;Tf=2712]-CP-EXT-2000", 1600.0),
+    ("Y2O3(l)", "LFS[P672-Y2O3-c;Tf=2712]-CP-EXT-2000", 2000.0),
+    ("Yb2O3(l)", "Konings-Table88-Tf2707", 2000.0),
+    ("ZrO2(l)", "O-053", 1500.0),
+})
+
+
+def test_condensate_transition_refuses_a_window_outside_the_donor_residual() -> None:
+    """A Hermite window whose Gibbs move exceeds the donor residual is not inserted."""
+
+    def row(shift: float, residual: float, t_min: float, t_max: float) -> dict[str, str]:
+        return {
+            "species_name": "GeO2(l)",
+            "state": "l",
+            "Ref": "NG-12434",
+            "T_min": format(t_min, ".15g"),
+            "T_max": format(t_max, ".15g"),
+            "dH298_R": "0",
+            "dG_A": format(shift, ".15g"),
+            "dG_B": "0",
+            "dG_C": "0",
+            "dG_D": "0",
+            "dG_E": "0",
+            "_max_residual_J_per_mol": format(residual, ".15g"),
+        }
+
+    left = row(0.0, 0.05, 1200.0, 1500.0)
+    right = row(1.0, 0.05, 1500.0, 3000.0)
+    rows = [left, right]
+    inserted = build_gas_tables._insert_condensate_transition(rows, [left, right], left, right)
+    assert inserted is False
+    assert [float(item["T_min"]) for item in rows] == [1200.0, 1500.0]
+
+
+def test_condensate_transition_inserts_when_g_and_cp_stay_inside_the_donor() -> None:
+    """A small join closes with a window that stays on the donor polynomial."""
+
+    def row(shift: float, t_min: float, t_max: float) -> dict[str, str]:
+        return {
+            "species_name": "ZnO(l)",
+            "state": "l",
+            "Ref": "example",
+            "T_min": format(t_min, ".15g"),
+            "T_max": format(t_max, ".15g"),
+            "dH298_R": "0",
+            "dG_A": format(shift, ".15g"),
+            "dG_B": "10",
+            "dG_C": "0",
+            "dG_D": "0",
+            "dG_E": "0",
+            "_max_residual_J_per_mol": "10",
+        }
+
+    left = row(0.0, 1200.0, 1500.0)
+    right = row(1.0e-4, 1500.0, 3000.0)
+    rows = [left, right]
+    inserted = build_gas_tables._insert_condensate_transition(rows, [left, right], left, right)
+    assert inserted is True
+    assert len(rows) == 3
+    _assert_same_ref_joins_continuous(rows, phase="condensate")
+
+
+def test_same_ref_interval_joins_are_continuous_in_g_s_and_h() -> None:
+    gas_rows = list(csv.DictReader(
+        io.StringIO((GAS_DATA / "gas-shomate.csv").read_text(encoding="utf-8"))
+    ))
+    condensate_rows = list(csv.DictReader(
+        io.StringIO((GAS_DATA / "condensate.csv").read_text(encoding="utf-8"))
+    ))
+    gas_failures = _same_ref_join_failures(gas_rows, phase="gas")
+    gas_actual = {
+        (species, reference, temperature)
+        for species, reference, temperature, *_ in gas_failures
+    }
+    assert gas_actual == _OPEN_GAS_JOINS, _format_open_joins(
+        gas_failures, phase="gas"
+    )
+    failures = _same_ref_join_failures(condensate_rows, phase="condensate")
+    actual = {(species, reference, temperature) for species, reference, temperature, *_ in failures}
+    assert actual == _OPEN_CONDENSATE_JOINS, _format_open_joins(
+        failures, phase="condensate"
+    )
+
+
+def test_planted_entropy_jump_fails_same_ref_continuity() -> None:
+    """A 0.1 J/(mol K) entropy step at a closed join must fail the gate.
+
+    Raising dG_A by 0.1/R raises condensate S by 0.1 J/(mol K) at every
+    temperature, including the shared endpoint. The plant is applied on a
+    join the packaged table already closes, so the new failure is the plant.
+    """
+    condensate_rows = list(csv.DictReader(
+        io.StringIO((GAS_DATA / "condensate.csv").read_text(encoding="utf-8"))
+    ))
+    before = {
+        (species, reference, temperature)
+        for species, reference, temperature, *_ in _same_ref_join_failures(
+            condensate_rows, phase="condensate"
+        )
+    }
+    groups: dict[tuple[str, str, str], list[dict[str, str]]] = {}
+    for row in condensate_rows:
+        groups.setdefault(
+            (row["species_name"], row["state"], row["Ref"]), []
+        ).append(row)
+    planted = None
+    planted_key = None
+    for members in groups.values():
+        members.sort(key=lambda item: float(item["T_min"]))
+        for left, right in zip(members, members[1:]):
+            if abs(float(left["T_max"]) - float(right["T_min"])) > 1.0e-6:
+                continue
+            key = (right["species_name"], right["Ref"], float(left["T_max"]))
+            if key not in before:
+                planted = right
+                planted_key = key
+                break
+        if planted is not None:
+            break
+    assert planted is not None and planted_key is not None
+    planted["dG_A"] = format(float(planted["dG_A"]) + 0.1 / R_J_MOL_K, ".16g")
+    after = _same_ref_join_failures(condensate_rows, phase="condensate")
+    planted_failure = next(
+        item for item in after
+        if (item[0], item[1], item[2]) == planted_key
+    )
+    assert planted_failure[4] == pytest.approx(0.1, abs=1.0e-6)
 
 
 def test_new_low_gas_rows_have_source_fits_and_continuous_seams() -> None:
@@ -4108,13 +4491,9 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
         fitted_rows = fitted_rows.loc[
             fitted_rows["T_min"].astype(float) >= runtime_t_min
         ]
-        row = (
-            None
-            if species == "Ta2O5(l)"
-            else fitted_rows.loc[
-                fitted_rows["T_min"].astype(float) == runtime_t_min
-            ].iloc[0]
-        )
+        # Seam windows split the old high interval. Each source node is scored
+        # against the row that contains it.
+        row = None
         maximum_j = 0.0
         maximum_log10 = 0.0
         nodes = 0
@@ -4183,14 +4562,10 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
         }[species]
         assert maximum_log10 <= max_log10_limit
         assert maximum_j < max_j_limit
-        selected_records = (
-            [
-                item for (name, bounds), item in recorded.items()
-                if name == species and bounds[0] >= runtime_t_min
-            ]
-            if species == "Ta2O5(l)"
-            else [recorded[(species, (int(runtime_t_min), 3000))]]
-        )
+        selected_records = [
+            item for (name, bounds), item in recorded.items()
+            if name == species and bounds[0] >= runtime_t_min
+        ]
         assert maximum_j == pytest.approx(
             max(_fit_residual_metric(item, "max_residual_J_per_mol") for item in selected_records),
             abs=1e-6,
@@ -4231,7 +4606,12 @@ def test_ba_sr_zr_janaf_liquids_fit_each_printed_node() -> None:
         intervals = sorted(
             pack.oxide_df.loc[species, "T_min"].astype(float).unique().tolist()
         )
-        assert intervals == [1200.0, 1500.0, 2000.0, 2500.0]
+        expected_intervals = {
+            "BaO(l)": [1200.0, 1500.0, 1560.0, 1970.0, 2000.0, 2500.0, 2520.0],
+            "SrO(l)": [1200.0, 1500.0, 1980.0, 2000.0, 2470.0, 2500.0],
+            "ZrO2(l)": [1200.0, 1500.0, 2000.0, 2030.0, 2500.0, 2520.0],
+        }[species]
+        assert intervals == expected_intervals
         for start in intervals:
             row = pack.oxide_df.loc[[species]]
             row = row.loc[row["T_min"].astype(float) == start].iloc[0]
@@ -4243,7 +4623,7 @@ def test_ba_sr_zr_janaf_liquids_fit_each_printed_node() -> None:
                 for T in in_interval
             ]
             assert max(residuals) < 10.0
-            provenance_row = recorded[(species, (start, fit_end))]
+            provenance_row = recorded[(species, (int(start), int(fit_end)))]
             assert _fit_residual_metric(provenance_row, "max_residual_J_per_mol") < 10.0
             assert _fit_residual_metric(provenance_row, "max_residual_J_per_mol") == pytest.approx(
                 max(residuals), abs=1e-5
@@ -4970,13 +5350,16 @@ def test_sc2o3_liquid_crystal_comparison_recomputes_from_nasa_phase_cards() -> N
         and row["species_name"] == "Sc2O3(l)"
         and row.get("extrapolation") is True
     ]
-    assert len(rows) == 4
+    assert len(rows) == 7
     comparisons = [
         row["liquid_crystal_G_comparison"]
         for row in rows
         if "liquid_crystal_G_comparison" in row
     ]
-    assert len(comparisons) == 1
+    # The 1200 K continuation was split, so the card comparison is copied onto
+    # both pieces of that interval. Both copies are the same card difference.
+    assert len(comparisons) == 2
+    assert comparisons[0] == comparisons[1]
     comparison = comparisons[0]
     assert comparison["label"].startswith("COMPARISON")
     values = comparison["absolute_difference_J_per_mol"]
@@ -5722,10 +6105,10 @@ def test_nasa_trace_ions_match_their_cards_and_neutral_ionisation_reactions() ->
                 - source_gibbs(neutral_table, temperature)
             )
             # This difference sums the charged, electron, and neutral fit
-            # residuals; their maximum over this grid is just over 2 J/mol.
-            # Ag+'s 1200-1500 K fit residual reaches 10.418 J/mol, so its
-            # source-specific reaction check uses a 10.5 J/mol bound.
-            tolerance = 10.5 if ion == "Ag+" else 2.1
+            # residuals. BO- at 2600 K reaches 2.124 J/mol. Ag+'s 1200 K
+            # reaction reaches 5.39 J/mol because its 1200-1500 K fit residual
+            # is 10.418 J/mol, so that ion keeps a 10.5 J/mol bound.
+            tolerance = 10.5 if ion == "Ag+" else 2.124
             assert abs(fitted_delta_g - source_delta_g) <= tolerance
 def test_cu2o_liquid_source_comparison_uses_gibbs_energy() -> None:
     nasa = _nasa_record("NG-1844")
@@ -5762,7 +6145,7 @@ def test_cu2o_liquid_source_comparison_uses_gibbs_energy() -> None:
         for row in provenance["rows"]
         if row["table"] == "condensate"
         and row["species_name"] == "Cu2O(l)"
-        and row["T_range_K"] == [2000, 2500]
+        and row["T_range_K"] == [2000, 2480]
     )
     assert tail["authority"] == "janaf_fitted"
     assert tail["method"] == "janaf_anchored_nasa_tail_fit"
@@ -6558,7 +6941,7 @@ def test_cr_channels_against_janaf_cells() -> None:
 def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path) -> None:
     generated = tmp_path / "gas-shomate.csv"
     condensate = tmp_path / "condensate.csv"
-    packaged_condensate = LEGACY_JANAF_CONDENSATE
+    packaged_condensate = GAS_DATA / "condensate.csv"
     packaged_gas = GAS_DATA / "gas-shomate.csv"
 
     def assert_table_matches(
@@ -6607,12 +6990,20 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
     fitted_prefixes = tuple(
         f"{species},".encode() for species in sorted(fitted_condensate_species)
     )
-    preserved_fit_prefix = b"Ga2O3(l),"
+    # Ga2O3 is transcribed. The four pack-reference liquids stay at the
+    # shipped rows; the generator must not replace them on a rebuild.
+    preserved_fit_prefixes = (
+        b"Ga2O3(l),",
+        *(
+            f"{species},".encode()
+            for species in sorted(build_gas_tables.PACK_REFERENCE_LIQUIDS)
+        ),
+    )
     stripped_condensate_bytes = b"".join(
         line
         for line in packaged_condensate_bytes.splitlines(keepends=True)
         if not line.startswith(fitted_prefixes)
-        or line.startswith(preserved_fit_prefix)
+        or line.startswith(preserved_fit_prefixes)
     )
     condensate.write_bytes(stripped_condensate_bytes)
     command = [
@@ -6623,20 +7014,33 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
         "--condensate-output",
         str(condensate),
     ]
-    first = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
+    def run_generator() -> subprocess.CompletedProcess[str]:
+        completed = subprocess.run(
+            command, cwd=ROOT, capture_output=True, text=True
+        )
+        # Unclosable condensate joins are reported and fail the build. The
+        # tables are still written, and a second run must repeat that report.
+        assert completed.returncode == 1, completed.stderr
+        assert "condensate join(s) left open:" in completed.stderr
+        return completed
+
+    first = run_generator()
     first_gas_bytes = generated.read_bytes()
     first_condensate_bytes = condensate.read_bytes()
     # Rerun from the same stripped input: determinism means identical bytes
     # from identical inputs in this environment.
     condensate.write_bytes(stripped_condensate_bytes)
-    second = subprocess.run(command, cwd=ROOT, check=True, capture_output=True, text=True)
+    second = run_generator()
     assert first.stdout == second.stdout
+    assert first.stderr == second.stderr
     assert generated.read_bytes() == first_gas_bytes
     assert condensate.read_bytes() == first_condensate_bytes
 
     gas_table = pd.read_csv(packaged_gas, dtype=str, keep_default_na=False)
     gas_fit_columns = {
-        species: tuple("ABCDEFG") for species in gas_table["species_name"]
+        species: tuple("ABCDEFG")
+        for species in gas_table["species_name"]
+        if species not in build_gas_tables.PACK_REFERENCE_GAS
     }
     condensate_fit_columns = {
         species: tuple(f"dG_{coefficient}" for coefficient in "ABCDE")
@@ -6681,7 +7085,7 @@ def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
     expected_rows = [row for row in packaged if row["species_name"] in major_species]
     assert len(expected_rows) == len(generated)
     fit_coefficients = {f"dG_{coefficient}" for coefficient in "ABCDE"}
-    for species in major_species:
+    for species in major_species - build_gas_tables.PACK_REFERENCE_LIQUIDS:
         expected = sorted(
             (row for row in expected_rows if row["species_name"] == species),
             key=lambda row: float(row["T_min"]),
@@ -7133,30 +7537,34 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
         ): row
         for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
         if row["Ref"].endswith(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
-        and row["species_name"] != "SnO(l)"
+        and row["species_name"] not in {"SnO(l)"} | set(
+            build_gas_tables.PACK_REFERENCE_LIQUIDS
+        )
     }
     datasets = (
         (
             default_generated,
-            pd.read_csv(LEGACY_JANAF_CONDENSATE),
+            pd.read_csv(
+                GAS_DATA / "condensate.csv", dtype=str, keep_default_na=False
+            ),
             yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8")),
                 build_gas_tables.SUPERCOOLED_LIQUID_SOURCES,
             {
-                "TiO2(l)", "Cr2O3(l)", "V2O3(l)", "SiO2(l)",
-                "Al2O3(l)", "MgO(l)", "CaO(l)",
+                "TiO2(l)", "Cr2O3(l)", "V2O3(l)",
+                "MgO(l)", "CaO(l)",
                 "Ga2O3(l)", "GeO2(l)", "In2O3(l)", "Sc2O3(l)", "UO2(l)",
                 "BeO(l)",
             },
         ),
     )
     default_copy = tmp_path / "default-condensate.csv"
-    default_copy.write_bytes(LEGACY_JANAF_CONDENSATE.read_bytes())
+    default_copy.write_bytes((GAS_DATA / "condensate.csv").read_bytes())
     build_gas_tables.merge_condensate_csv(
         build_gas_tables.build_condensate_rows(JANAF_DATA), default_copy
     )
     regenerated_table = pd.read_csv(default_copy, dtype=str, keep_default_na=False)
     packaged_table = pd.read_csv(
-        LEGACY_JANAF_CONDENSATE, dtype=str, keep_default_na=False
+        GAS_DATA / "condensate.csv", dtype=str, keep_default_na=False
     )
     assert regenerated_table.columns.tolist() == packaged_table.columns.tolist()
     assert len(regenerated_table) == len(packaged_table)
@@ -7186,7 +7594,9 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             if row["table"] == "condensate"
             and row.get("extrapolation") is True
             and row.get("authority") in {"janaf_fitted", "nasa_glenn_fitted"}
-            and row["species_name"] not in {"SnO(l)", "MoO3(l)"}
+            and row["species_name"] not in {"SnO(l)", "MoO3(l)"} | set(
+                build_gas_tables.PACK_REFERENCE_LIQUIDS
+            )
         }
         assert {key[0] for key in generated} == expected_species
         assert set(provenance_rows) == set(generated)
@@ -7198,7 +7608,9 @@ def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
             if row["table"] == "condensate"
             and row.get("extrapolation") is True
             and row.get("authority") in {"janaf_fitted", "nasa_glenn_fitted"}
-            and row["species_name"] not in {"SnO(l)", "MoO3(l)"}
+            and row["species_name"] not in {"SnO(l)", "MoO3(l)"} | set(
+                build_gas_tables.PACK_REFERENCE_LIQUIDS
+            )
         }
         for key, fitted in generated.items():
             species, T_min, T_max = key
@@ -7376,11 +7788,12 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
     """
     from openimcc.gas import _lamor_gibbs
 
-    pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
+    pack = load_gas_datapack()
     generated_rows = [
         row
         for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
         if row["Ref"].endswith(build_gas_tables.SUPERCOOLED_LIQUID_REF_SUFFIX)
+        and row["species_name"] not in build_gas_tables.PACK_REFERENCE_LIQUIDS
     ]
 
     def entropy(row, temperature: float) -> float:
@@ -7519,20 +7932,27 @@ def _assert_nasa_anchored_rows_match_direct_card_evaluation() -> None:
         ("gas", "Na2O(g)", (500, 1500)): "LH84 provides the anchors; NASA supplies Cp(T).",
         ("gas", "K2O(g)", (1500, 3000)): "LH84 provides the anchors; NASA supplies Cp(T).",
         ("gas", "K2O(g)", (500, 1500)): "LH84 provides the anchors; NASA supplies Cp(T).",
-        ("condensate", "PbO(l)", (1500, 3000)): "JANAF anchors the NASA tail at 2500 K.",
-        ("condensate", "Cu2O(l)", (2000, 2500)): "JANAF anchors the NASA tail at 2000 K.",
+        ("condensate", "PbO(l)", (1500, 1530)): "JANAF anchors the NASA tail at 2500 K.",
+        ("condensate", "PbO(l)", (1530, 3000)): "JANAF anchors the NASA tail at 2500 K.",
+        ("condensate", "Cu2O(l)", (2000, 2480)): "JANAF anchors the NASA tail at 2000 K.",
+        ("condensate", "Cu2O(l)", (2480, 2500)): "JANAF anchors the NASA tail at 2000 K.",
         ("condensate", "Cu2O(l)", (2500, 3000)): "JANAF anchors the NASA tail at 2000 K.",
         ("condensate", "Ga2O3(l)", (1200, 2080)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "GeO2(l)", (1200, 1388)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "In2O3(l)", (1200, 2186)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "SnO(l)", (1200, 1250)): "Generated constant-Cp continuation below the NASA liquid card.",
-        ("condensate", "Sc2O3(l)", (1200, 1500)): "Generated constant-Cp continuation below the NASA liquid card.",
-        ("condensate", "Sc2O3(l)", (1500, 2000)): "Generated constant-Cp continuation below the NASA liquid card.",
+        ("condensate", "Sc2O3(l)", (1200, 1402)): "Generated constant-Cp continuation below the NASA liquid card.",
+        ("condensate", "Sc2O3(l)", (1402, 1500)): "Generated constant-Cp continuation below the NASA liquid card.",
+        ("condensate", "Sc2O3(l)", (1500, 1894)): "Generated constant-Cp continuation below the NASA liquid card.",
+        ("condensate", "Sc2O3(l)", (1894, 2000)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "Sc2O3(l)", (2000, 2500)): "Generated constant-Cp continuation below the NASA liquid card.",
-        ("condensate", "Sc2O3(l)", (2500, 2762)): "Generated constant-Cp continuation below the NASA liquid card.",
+        ("condensate", "Sc2O3(l)", (2500, 2598)): "Generated constant-Cp continuation below the NASA liquid card.",
+        ("condensate", "Sc2O3(l)", (2598, 2762)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "UO2(l)", (1200, 1500)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "UO2(l)", (1500, 2000)): "Generated constant-Cp continuation below the NASA liquid card.",
-        ("condensate", "UO2(l)", (2000, 2500)): "Generated constant-Cp continuation below the NASA liquid card.",
+        ("condensate", "UO2(l)", (2000, 2008)): "Generated constant-Cp continuation below the NASA liquid card.",
+        ("condensate", "UO2(l)", (2008, 2492)): "Generated constant-Cp continuation below the NASA liquid card.",
+        ("condensate", "UO2(l)", (2492, 2500)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "UO2(l)", (2500, 3000)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "BeO(l)", (1200, 1500)): "Generated constant-Cp continuation below the NASA liquid card.",
         ("condensate", "BeO(l)", (1500, 2000)): "Generated constant-Cp continuation below the NASA liquid card.",
@@ -8268,20 +8688,12 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
 
         assert row_nodes > 0, (species_name, interval)
         limits = dict(GAS_PROPERTY_RESIDUAL_LIMITS)
-        if species_name == "Co+(g)" and interval == 1:
-            # Co+ has a strongly curved Cp table; retain its single 1500-3000 K
-            # interval and pin the measured source-node envelope explicitly.
-            limits = {
-                "Cp_J_molK": 0.75,
-                "S_J_molK": 0.035,
-                "H_app_kJ_mol": 0.084,
-                "G_kJ_mol": 0.0053,
-            }
         if species_name == "I2(g)":
             # The sharp curvature in the JANAF iodine entropy nodes leaves
             # this 1200-3000 K single-interval fit a 0.0102 kJ/mol H_app
             # residual; the remaining properties retain the common gates.
             limits["H_app_kJ_mol"] = 0.0103
+        limits.update(_SEAM_PROPERTY_LIMITS.get((species_name, interval), {}))
         for key, residual in maxima.items():
             assert residual <= limits[key], (
                 species_name,
@@ -8298,10 +8710,10 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
     assert checked_rows == 296
     assert checked_nodes == 3974
     assert checked_nodes * 3 == 11922
-    assert overall_max["Cp_J_molK"] == pytest.approx(0.7432227428, abs=1e-9)
-    assert overall_max["S_J_molK"] == pytest.approx(0.0345525573, abs=1e-9)
-    assert overall_max["H_app_kJ_mol"] == pytest.approx(0.0832967405, abs=1e-9)
-    assert overall_max["G_kJ_mol"] == pytest.approx(0.0052861248, abs=1e-9)
+    assert overall_max["Cp_J_molK"] == pytest.approx(1.1124531982, abs=1e-9)
+    assert overall_max["S_J_molK"] == pytest.approx(0.0466701482, abs=1e-9)
+    assert overall_max["H_app_kJ_mol"] == pytest.approx(0.1416652672, abs=1e-9)
+    assert overall_max["G_kJ_mol"] == pytest.approx(0.0056679912, abs=1e-9)
     assert len(per_row_max) == checked_rows
 
 
@@ -8317,13 +8729,17 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
         ("Cr2O3(l)", 1900.0): 11,
         ("V2O3(l)", 1700.0): 13,
         ("NbO2(l)", 1200.0): 4,
-        ("NbO2(l)", 1500.0): 15,
+        ("NbO2(l)", 1500.0): 1,
+        ("NbO2(l)", 1530.0): 14,
         ("Na2O(l)", 1000.0): 6,
         ("Na2O(l)", 1500.0): 16,
         ("Ta2O5(l)", 1200.0): 3,
-        ("Ta2O5(l)", 1500.0): 6,
+        ("Ta2O5(l)", 1500.0): 1,
+        ("Ta2O5(l)", 1520.0): 4,
+        ("Ta2O5(l)", 1980.0): 1,
         ("Ta2O5(l)", 2000.0): 5,
-        ("Ta2O5(l)", 2500.0): 6,
+        ("Ta2O5(l)", 2500.0): 1,
+        ("Ta2O5(l)", 2530.0): 5,
     }
     checked = {}
     measured_g_maxima = {}
@@ -8531,23 +8947,29 @@ def test_konings_batch_integrates_and_fits_with_residual_gates() -> None:
             root / f"data-src/konings/{element.lower()}.json"
         )
         for species, oxy_num in build_gas_tables.KONINGS_GAS_SPECIES[element]:
+            fitted_rows = []
             for interval, lo, hi, runtime_lo in (
                 (1, 1500, 3000, None), (2, 500, 1500, 1200)
             ):
-                fitted = build_gas_tables._fit_konings_gas_row(
+                fitted_rows.append(build_gas_tables._fit_konings_gas_row(
                     record, species, element, 1, oxy_num, interval=interval,
                     fit_t_min=(
                         build_gas_tables.KONINGS_LOW_FIT_START_K.get(species, lo)
                         if interval == 2 else lo
                     ),
                     fit_t_max=hi, runtime_t_min=runtime_lo,
-                )
+                ))
+            # The packaged residual is the seam-closed fit, including a short
+            # window when the two intervals cannot share the join inside the
+            # stated residual.
+            fitted_rows = build_gas_tables._pin_gas_same_ref_seams(fitted_rows)
+            for fitted in fitted_rows:
                 assert float(fitted["_max_residual_J_per_mol"]) <= 10
                 matching = next(
                     row for row in provenance["rows"]
                     if row["table"] == "gas"
                     and row["species_name"] == species
-                    and row["T_interval"] == interval
+                    and row["T_interval"] == int(fitted["T_interval"])
                 )
                 assert _fit_residual_metric(matching, "max_residual_J_per_mol") == pytest.approx(
                     float(fitted["_max_residual_J_per_mol"]), abs=1e-12
@@ -8562,9 +8984,11 @@ def test_konings_batch_integrates_and_fits_with_residual_gates() -> None:
                     )
                     assert float(value) == pytest.approx(expected_band, abs=1e-9)
         for species, item in record["condensates"].items():
-            condensates = build_gas_tables._konings_condensate_rows(
-                record, species, element, int(item["formula"][element]),
-                int(item["formula"]["O"]),
+            condensates = build_gas_tables._pin_condensate_same_ref_seams(
+                build_gas_tables._konings_condensate_rows(
+                    record, species, element, int(item["formula"][element]),
+                    int(item["formula"]["O"]),
+                )
             )
             assert max(
                 float(row["_max_residual_J_per_mol"]) for row in condensates
