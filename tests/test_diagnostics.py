@@ -400,6 +400,14 @@ def test_crystal_closure_cli_writes_pack_and_condensate_identities(tmp_path):
     assert "closure_miss_vapor_product" in rows[0]
     forsterite = next(row for row in rows if row["phase"] == "forsterite")
     assert forsterite["independent_fusion_method"] == "linear-enthalpy"
+    gehlenite = next(row for row in rows if row["phase"] == "gehlenite")
+    assert float(gehlenite["melting_point_K"]) == 1823.0
+    assert float(gehlenite["independent_deltaG_fusion_kJ_mol"]) == pytest.approx(
+        3.6951, abs=0.0001
+    )
+    assert float(gehlenite["closure_miss_kJ_mol"]) == pytest.approx(
+        float(gehlenite["residual_at_melting_point_kJ_mol"]) - 3.6951
+    )
     receipt = (tmp_path / "crystal-closure.md").read_text(encoding="utf-8")
     pack = load_datapack()
     assert pack.model_id in receipt
