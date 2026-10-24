@@ -29,12 +29,16 @@ def test_composition_scoped_k2o_authority() -> None:
     no_composition = liquid_reference_authority("K2O(l)", 1500)
     assert in_scope.authority is LiquidReferenceAuthority.CERTIFIED
     assert in_scope.scope_applied
-    assert out_scope.authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert out_scope.authority is LiquidReferenceAuthority.CERTIFIED
+    assert out_scope.in_composition_scope is False
+    assert "scored with notice" in out_scope.reason
     assert no_composition.authority is LiquidReferenceAuthority.CERTIFIED
     assert not no_composition.scope_applied
     assert no_composition.composition_scope == {"K2O_wt_pct": (25, 40)}
     assert liquid_reference_authority("K2O(l)", 1500, {"K2O_wt_pct": 40}).authority is LiquidReferenceAuthority.CERTIFIED
-    assert liquid_reference_authority("K2O(l)", 1500, {"K2O_wt_pct": 40.001}).authority is LiquidReferenceAuthority.EXTRAPOLATED
+    outside_upper = liquid_reference_authority("K2O(l)", 1500, {"K2O_wt_pct": 40.001})
+    assert outside_upper.authority is LiquidReferenceAuthority.CERTIFIED
+    assert outside_upper.in_composition_scope is False
     assert liquid_reference_authority("FeO(l)", 1649).authority is LiquidReferenceAuthority.EXTRAPOLATED
     assert liquid_reference_authority("FeO(l)", 1649.15).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("Al2O3(l)", 2400).authority is LiquidReferenceAuthority.EXTRAPOLATED
@@ -107,6 +111,7 @@ def test_public_records_round_trip_and_gas_result_notice() -> None:
         if status.species == "K2O(l)"
     )
     assert not no_composition_status.scope_applied
+    assert no_composition_status.in_composition_scope is None
     assert any("K2O(l)" in (flag or "") for flag in potassium_no_composition.domain_flags.values())
     potassium_in_scope = evaluate_gas(
         {"K2O": 1.0}, 1500, 1e-8, pack,
@@ -127,8 +132,16 @@ def test_public_records_round_trip_and_gas_result_notice() -> None:
         status for status in potassium_out_scope.liquid_reference_status.values()
         if status.species == "K2O(l)"
     )
-    assert out_scope_status.authority is LiquidReferenceAuthority.EXTRAPOLATED
-    assert any("±0.13 dex pO2" in (flag or "") for flag in potassium_out_scope.domain_flags.values())
+    assert out_scope_status.authority is LiquidReferenceAuthority.CERTIFIED
+    assert out_scope_status.in_composition_scope is False
+    assert all("K2O(l)" not in (flag or "") for flag in potassium_out_scope.domain_flags.values())
+    scope_notice = next(
+        notice for notice in potassium_out_scope.notices
+        if notice.code == "liquid-reference-outside-evidence-composition-scope"
+    )
+    assert "outside the 25–40 wt% evidence range" in scope_notice.message
+    assert "Plante (1979)" in scope_notice.message
+    assert "−0.38 dex at 12–20 wt%" in scope_notice.message
 
 
 def test_halide_side_parent_uses_liquid_authority_lookup() -> None:

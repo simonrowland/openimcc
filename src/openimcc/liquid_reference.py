@@ -59,6 +59,7 @@ class CertificationStatus:
     composition_scope: Mapping[str, tuple[float, float]] | None
     scope_applied: bool
     reason: str
+    in_composition_scope: bool | None = None
 
     def __post_init__(self) -> None:
         if self.composition_scope is not None:
@@ -107,16 +108,18 @@ def liquid_reference_authority(
     scope = record.evidence_ref[0].composition_scope if record.evidence_ref else None
     in_window = record.certified_T_K is not None and record.certified_T_K[0] <= T_K <= record.certified_T_K[1]
     scope_applied = False
+    in_composition_scope = None
     if authority is not LiquidReferenceAuthority.EXTRAPOLATED and not in_window:
         authority, reason = LiquidReferenceAuthority.EXTRAPOLATED, "outside certified temperature window"
     elif scope and composition is not None:
         scope_applied = True
         key, (low, high) = next(iter(scope.items()))
         value = composition.get(key)
-        if value is None or not low <= value <= high:
-            authority, reason = LiquidReferenceAuthority.EXTRAPOLATED, "outside evidence composition scope"
+        in_composition_scope = value is not None and low <= value <= high
+        if not in_composition_scope:
+            reason = "outside evidence composition scope; scored with notice"
     elif scope:
         reason = "temperature window applies; composition scope not evaluated"
     return CertificationStatus(record.species, authority, record.certified_T_K,
         record.band_value, record.band_unit, record.evidence_ref, scope,
-        scope_applied, reason)
+        scope_applied, reason, in_composition_scope)

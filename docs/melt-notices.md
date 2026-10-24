@@ -19,7 +19,11 @@ structured `evidence_ref`. `liquid_reference_records()` returns the immutable
 records and `liquid_reference_authority(species, T_K, composition=None)` resolves
 one status. K₂O's 1259–1765 K window applies to 25–40 wt% K₂O; without a
 composition the returned status identifies that unevaluated scope. Outside a
-record's temperature or supplied composition scope, status is `extrapolated`.
+record's temperature window, status is `extrapolated`. A supplied composition
+outside K₂O's 25–40 wt% evidence range keeps the certified temperature-window
+authority and adds a notice: Plante (1979) residuals were about −0.13 dex at
+25–40 wt% and about −0.38 dex at 12–20 wt%. The composition range describes
+where the mixture model was checked; it does not exclude out-of-range results.
 `evaluate_gas` accepts an optional `composition_wt_pct` mapping keyed by oxide
 to resolve composition-scoped records; calls without it leave the scope
 unresolved and retain the flag.

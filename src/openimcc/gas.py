@@ -284,6 +284,14 @@ class ImccGasResult(MappingABC[str, float]):
                     "Liquid reference is corroborated by independent calculation, not measured.",
                     status,
                 ))
+            elif status.in_composition_scope is False:
+                notices.append(LiquidReferenceNotice(
+                    "liquid-reference-outside-evidence-composition-scope",
+                    f"{status.species} composition is outside the 25–40 wt% evidence range; "
+                    "Plante (1979) residuals were about −0.13 dex at 25–40 wt% and "
+                    "about −0.38 dex at 12–20 wt% K2O.",
+                    status,
+                ))
         return tuple(notices)
 
 

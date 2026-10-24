@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- K₂O compositions outside the 25–40 wt% evidence range keep the certified
+  liquid-reference authority and receive a notice with the Plante (1979)
+  residual basis. The composition scope no longer adds a source-validity flag.
+
 - Added typed, public certification records for the eight liquid-oxide gas
   references. Certified windows no longer contribute source-validity flags;
   CaO(l) keeps its independent-calculation evidence in the record, while
