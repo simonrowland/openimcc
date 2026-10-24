@@ -123,8 +123,6 @@ _RECORDS = (
             "dex log10 pressure", (
                 _e("Paradis, Ishikawa, Saita & Yoda", 2004, "continuation of two independent measured supercooled-liquid heat-capacity series agrees with the reference within 2.6 kJ/mol; corroborated by independent calculation, not measured below 2120 K; DOI 10.1143/JJAP.43.1496"),
                 _e("Crochetet et al.", 2026, "continuation of two independent measured supercooled-liquid heat-capacity series agrees with the reference within 2.6 kJ/mol; corroborated by independent calculation, not measured below 2120 K; DOI 10.1016/j.oceram.2026.101029"),
-                _e("Alvares, Deffrennes, Pisch & Jakse", 2020, "independent molecular-dynamics calculation; DOI 10.1063/1.5141841"),
-                _e("Menescardi, Ceresoli & Belmonte", 2024, "independent molecular-dynamics calculation; DOI 10.1021/acs.jpcc.4c04752"),
             )),)),
     LiquidReferenceRecord("TiO2(l)", LiquidReferenceAuthority.EXTRAPOLATED, None, None, None,
         (_e("JANAF O-044", 1998, "estimated end-to-end: assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4 and estimated liquid Cp 8 cal per g-atom; no measured pure-liquid data"),)),
@@ -165,7 +163,9 @@ def liquid_reference_authority(
     scope_applied = False
     in_composition_scope = None
     if authority is not LiquidReferenceAuthority.EXTRAPOLATED and not in_window:
+        # A window's band applies only inside that window.
         authority, reason = LiquidReferenceAuthority.EXTRAPOLATED, "outside certified temperature window"
+        band_value = band_unit = None
     elif scope and composition is not None:
         scope_applied = True
         key, (low, high) = next(iter(scope.items()))

@@ -30,13 +30,15 @@ to resolve composition-scoped records; calls without it leave the scope
 unresolved and retain the flag.
 CaO(l) is certified from 1323–2473 K; its record retains the evidence that two
 independent calculations corroborate the fusion enthalpy, though no measured
-fusion datum exists. It emits no notice inside that window and carries its
-±0.07 dex pO₂ band on extrapolated flags outside it. Al₂O₃(l) is certified from
+fusion datum exists. It emits no notice inside that window and carries a
+±0.07 dex pO₂ band there. A window's band applies only inside that window, so
+extrapolated statuses outside every window carry no band unless the record is
+itself extrapolated, as MgO(l) is. Al₂O₃(l) is certified from
 2120–3000 K with a ±0.007 dex log₁₀-pressure band, based on JANAF data and two
 measured liquid heat-capacity series. From 1801–2120 K it has corroborated-
 calculation authority with a ±0.05 dex band. The measured-series continuations
-agree with the shipped reference within 2.6 kJ mol⁻¹, supported by independent
-calculations, but are not measurements below 2120 K. Na₂O(l)'s measured Cp
+agree with the shipped reference within 2.6 kJ mol⁻¹, but are not measurements
+below 2120 K. Na₂O(l)'s measured Cp
 window ends at 1800 K.
 TiO₂(l) is extrapolated at every temperature and has no certified window; the
 JANAF O-044 flag and the O-044-SC-CP continuation flag both remain. MgO(l) remains extrapolated and carries its

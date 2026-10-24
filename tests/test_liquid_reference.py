@@ -218,3 +218,11 @@ def test_certified_window_keeps_condensate_interval_flag() -> None:
     )
     assert result.liquid_reference_status["SiO"].authority is LiquidReferenceAuthority.CERTIFIED
     assert "outside declared G(T) interval" in result.domain_flags["SiO"]
+
+
+def test_window_band_does_not_apply_outside_every_window() -> None:
+    below = liquid_reference_authority("Al2O3(l)", 1700)
+    assert below.authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert below.band_value is None and below.band_unit is None
+    mgo = liquid_reference_authority("MgO(l)", 1700)
+    assert mgo.band_value == 0.3

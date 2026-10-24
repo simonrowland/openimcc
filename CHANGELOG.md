@@ -7,6 +7,10 @@
   The 1801–2120 K continuation is marked corroborated calculation with a
   ±0.05 dex band; pressures are unchanged. See `docs/melt-notices.md`.
 
+- A liquid-reference band now applies only inside its own temperature window;
+  extrapolated statuses outside every window carry no band unless the record
+  itself is extrapolated.
+
 - K₂O compositions outside the 25–40 wt% evidence range keep the certified
   liquid-reference authority and receive a notice with the Plante (1979)
   residual basis. The composition scope no longer adds a source-validity flag.
