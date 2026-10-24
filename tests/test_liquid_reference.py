@@ -28,8 +28,9 @@ def test_alumina_authority_windows_and_boundaries() -> None:
     expected = {
         1799: LiquidReferenceAuthority.EXTRAPOLATED,
         1801: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
-        2119: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
-        2120: LiquidReferenceAuthority.CERTIFIED,
+        2120: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
+        2326: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
+        2327: LiquidReferenceAuthority.CERTIFIED,
         2500: LiquidReferenceAuthority.CERTIFIED,
         3000: LiquidReferenceAuthority.CERTIFIED,
         3001: LiquidReferenceAuthority.EXTRAPOLATED,
@@ -37,13 +38,14 @@ def test_alumina_authority_windows_and_boundaries() -> None:
     for temperature, authority in expected.items():
         assert liquid_reference_authority("Al2O3(l)", temperature).authority is authority
     lower = liquid_reference_authority("Al2O3(l)", 1801)
-    assert lower.certified_T_K == (1801, 2120)
+    assert lower.certified_T_K == (1801, 2327)
     assert lower.band_value == pytest.approx(0.05)
     assert lower.band_unit == "dex log10 pressure"
-    assert "not measured below 2120 K" in " ".join(item.basis for item in lower.evidence_ref)
-    certified = liquid_reference_authority("Al2O3(l)", 2120)
-    assert certified.certified_T_K == (2120, 3000)
-    assert certified.band_value == pytest.approx(0.007)
+    assert "corroborated by independent calculation" in " ".join(item.basis for item in lower.evidence_ref)
+    assert "emissivity" in " ".join(item.basis for item in lower.evidence_ref)
+    certified = liquid_reference_authority("Al2O3(l)", 2327)
+    assert certified.certified_T_K == (2327, 3000)
+    assert certified.band_value == pytest.approx(0.036)
 
 
 def test_authority_windows_reject_overlaps() -> None:

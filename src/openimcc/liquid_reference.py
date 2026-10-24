@@ -115,14 +115,22 @@ _RECORDS = (
     # dH=a(T-Tm)+b(T-Tm)^2/2 and dS=a ln(T/Tm)+b[(T-Tm)-Tm ln(T/Tm)].
     # Cp is J mol^-1 K^-1, b is J mol^-1 K^-2, and dG is J mol^-1
     # (divide by 1000 for kJ mol^-1); both forms give dG=0 at Tm.
-    LiquidReferenceRecord("Al2O3(l)", LiquidReferenceAuthority.CERTIFIED, (2120, 3000), 0.007, "dex log10 pressure",
-        (_e("JANAF Al-100", 1998, "measured liquid enthalpy fit starts at 2500 K; source liquid marker at 2327 K"),
-         _e("Paradis, Ishikawa, Saita & Yoda", 2004, "electrostatic-levitation liquid and supercooled-liquid Cp, 2120-2450 K; measured fusion enthalpy 109.0 kJ/mol; DOI 10.1143/JJAP.43.1496"),
-         _e("Crochetet et al.", 2026, "aerodynamic-levitation drop calorimetry; liquid Cp 168.6 +/- 9.6 J/mol/K over 2327-2873 K; DOI 10.1016/j.oceram.2026.101029")),
-        (AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1801, 2120), 0.05,
+    # Bands: max |dG| over each window times the worst row sensitivity,
+    # 0.016616 dex per kJ/mol (Al2 pressure). Certified 2327-3000 K: the
+    # Crochetet Cp continuation reaches 2.126 kJ/mol at 3000 K, and
+    # 2.126 * 0.016616 = 0.0353 dex, rounded up to 0.036. Corroborated
+    # 1801-2327 K: Paradis is the widest, at 2.550 kJ/mol at 1801 K, and
+    # 2.550 * 0.016616 = 0.0424 dex, rounded up to 0.05. The Paradis 2.6 kJ/mol
+    # root is at 1796.2 K; 1801 K is a conservative inclusive edge. Hallstedt's
+    # independent liquid is +1.45 kJ/mol at 1800 K, inside both bounds.
+    LiquidReferenceRecord("Al2O3(l)", LiquidReferenceAuthority.CERTIFIED, (2327, 3000), 0.036, "dex log10 pressure",
+        (_e("JANAF Al-100/Al-101", 1998, "liquid from the 2327 K melting point; liquid enthalpy fit from 2500 K"),
+         _e("Crochetet et al.", 2026, "aerodynamic-levitation drop calorimetry; liquid Cp 168.6 +/- 9.6 J/mol/K over 2327-2873 K; departure from the reference at most 2.13 kJ/mol to 3000 K; DOI 10.1016/j.oceram.2026.101029")),
+        (AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1801, 2327), 0.05,
             "dex log10 pressure", (
-                _e("Paradis, Ishikawa, Saita & Yoda", 2004, "continuation of two independent measured supercooled-liquid heat-capacity series agrees with the reference within 2.6 kJ/mol; corroborated by independent calculation, not measured below 2120 K; DOI 10.1143/JJAP.43.1496"),
-                _e("Crochetet et al.", 2026, "continuation of two independent measured supercooled-liquid heat-capacity series agrees with the reference within 2.6 kJ/mol; corroborated by independent calculation, not measured below 2120 K; DOI 10.1016/j.oceram.2026.101029"),
+                _e("Hallstedt", 1992, "independent CALPHAD liquid Al2O3 Gibbs energy that does not reuse the reference liquid Cp; within 1.5 kJ/mol of the reference at 1800-2327 K; corroborated by independent calculation, not measured; DOI 10.1111/j.1151-2916.1992.tb04216.x"),
+                _e("Paradis, Ishikawa, Saita & Yoda", 2004, "electrostatic levitation; liquid Cp estimated over 2120-2450 K assuming a constant hemispherical emissivity of 0.8, with a calculated fusion enthalpy of 109.0 kJ/mol; continued below 2120 K it stays within 2.6 kJ/mol of the reference down to 1801 K; DOI 10.1143/JJAP.43.1496"),
+                _e("Crochetet et al.", 2026, "liquid Cp measured above the melting point, continued below it, stays within 1.6 kJ/mol of the reference down to 1801 K; DOI 10.1016/j.oceram.2026.101029"),
             )),)),
     LiquidReferenceRecord("TiO2(l)", LiquidReferenceAuthority.EXTRAPOLATED, None, None, None,
         (_e("JANAF O-044", 1998, "estimated end-to-end: assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4 and estimated liquid Cp 8 cal per g-atom; no measured pure-liquid data"),)),
@@ -137,6 +145,10 @@ def liquid_reference_records() -> tuple[LiquidReferenceRecord, ...]:
     return _RECORDS
 
 
+def _contains(bounds: tuple[float, float] | None, T_K: float) -> bool:
+    return bounds is not None and bounds[0] <= T_K <= bounds[1]
+
+
 def liquid_reference_authority(
     species: str, T_K: float, composition: Mapping[str, float] | None = None
 ) -> CertificationStatus:
@@ -147,11 +159,12 @@ def liquid_reference_authority(
     authority = record.authority
     band_value, band_unit, evidence_ref = record.band_value, record.band_unit, record.evidence_ref
     reason = "source authority applies"
-    matched = next((window for window in record.additional_windows
-                    if window.T_K[0] <= T_K <= window.T_K[1]
-                    and not (record.certified_T_K is not None
-                             and record.certified_T_K[0] <= T_K <= record.certified_T_K[1])), None)
-    active_window = matched
+    active_window = None
+    if not _contains(record.certified_T_K, T_K):
+        active_window = next(
+            (window for window in record.additional_windows if _contains(window.T_K, T_K)),
+            None,
+        )
     if active_window is not None:
         authority, band_value, band_unit, evidence_ref = (
             active_window.authority, active_window.band_value,
@@ -159,7 +172,7 @@ def liquid_reference_authority(
         )
     active_T_K = active_window.T_K if active_window else record.certified_T_K
     scope = evidence_ref[0].composition_scope if evidence_ref else None
-    in_window = active_T_K is not None and active_T_K[0] <= T_K <= active_T_K[1]
+    in_window = _contains(active_T_K, T_K)
     scope_applied = False
     in_composition_scope = None
     if authority is not LiquidReferenceAuthority.EXTRAPOLATED and not in_window:

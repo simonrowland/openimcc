@@ -2,10 +2,13 @@
 
 ## Unreleased
 
-- Extended Al₂O₃(l) certified authority to 2120–3000 K using measured
-  supercooled-liquid heat-capacity evidence, with a ±0.007 dex pressure band.
-  The 1801–2120 K continuation is marked corroborated calculation with a
-  ±0.05 dex band; pressures are unchanged. See `docs/melt-notices.md`.
+- Al₂O₃(l) is now certified from its 2327 K melting point (previously from
+  2500 K), with a ±0.036 dex pressure band from measured liquid heat capacity.
+  The supercooled liquid at 1801–2327 K has corroborated-calculation authority,
+  with a ±0.05 dex band, from an independent CALPHAD liquid and continued
+  measured heat-capacity series. Liquid-reference records can now carry more
+  than one authority window. Pressures are unchanged. See
+  `docs/melt-notices.md`.
 
 - A liquid-reference band now applies only inside its own temperature window;
   extrapolated statuses outside every window carry no band unless the record

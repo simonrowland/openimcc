@@ -298,7 +298,7 @@ def test_default_tables_are_packaged_and_load_without_environment(
 
 
 _MAJOR_PARENT_CONTINUATIONS = (
-    ("Al2O3", "Al", 2400.0, "Al2O3(l)"),
+    ("Al2O3", "Al", 1700.0, "Al2O3(l)"),
     ("MgO", "Mg", 2100.0, "MgO(l)"),
     ("CaO", "Ca", 2100.0, "CaO(l)"),
 )
