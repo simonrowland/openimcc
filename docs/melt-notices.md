@@ -20,12 +20,19 @@ records and `liquid_reference_authority(species, T_K, composition=None)` resolve
 one status. K₂O's 1259–1765 K window applies to 25–40 wt% K₂O; without a
 composition the returned status identifies that unevaluated scope. Outside a
 record's temperature or supplied composition scope, status is `extrapolated`.
-CaO(l) results inside 1323–2473 K carry a
-`liquid-reference-corroborated-calculation` notice with its ±0.07 dex pO₂
-band; this is independent calculation corroboration, not a measured fusion
-datum. MgO(l) remains extrapolated and carries its ±0.3 dex pO₂ band. These
-records describe reference authority only and do not change calculated gas
-pressures.
+`evaluate_gas` accepts an optional `composition_wt_pct` mapping keyed by oxide
+to resolve composition-scoped records; calls without it leave the scope
+unresolved and retain the flag.
+CaO(l) is certified from 1323–2473 K; its record retains the evidence that two
+independent calculations corroborate the fusion enthalpy, though no measured
+fusion datum exists. It emits no notice inside that window and carries its
+±0.07 dex pO₂ band on extrapolated flags outside it. Al₂O₃(l)'s measured fit
+window begins at 2500 K, and Na₂O(l)'s measured Cp window ends at 1800 K.
+TiO₂(l) is extrapolated below its 2130 K fusion marker, including its
+supercooled source branch. MgO(l) remains extrapolated and carries its
+±0.3 dex pO₂ band. These records describe reference authority only and do not
+change calculated gas pressures. Condensate G(T) interval flags remain in
+place even when the liquid reference itself is certified.
 
 The SiO₂(l) window uses Richet, Bottinga & Téqui (1984), measured liquid heat
 capacity and the measured fusion anchor. K₂O(l) uses Plante (1979) measured K

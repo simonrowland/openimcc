@@ -4,7 +4,7 @@
 
 - Added typed, public certification records for the eight liquid-oxide gas
   references. Certified windows no longer contribute source-validity flags;
-  CaO(l) exposes an independent-calculation notice and band, while
+  CaO(l) keeps its independent-calculation evidence in the record, while
   extrapolated references retain flags with known bands. The records describe
   authority metadata only, so default melt and gas thermodynamic values are
   unchanged.

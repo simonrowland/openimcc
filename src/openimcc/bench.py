@@ -680,6 +680,7 @@ def _prediction_for_point(
                 float(point["fO2_bar"]),
                 gas_datapack,
                 gas_species=(species,),
+                composition_wt_pct=point.get("composition_wt_pct"),
             )
             value = gas_result.get(species)
             gas_flag = gas_result.domain_flags.get(species)

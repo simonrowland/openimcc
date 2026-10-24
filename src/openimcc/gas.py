@@ -4273,8 +4273,9 @@ def _source_model_flag(
         fit_range, fit_row = _selected_redox_feo_fit()
         # Ref is provenance; the coefficients identify whether this fit applies.
         if all(float(row[column]) == value for column, value in fit_row):
-            low, high = fit_range
-            if T < low or T > high:
+            status = liquid_reference_authority(row_name, T)
+            if status.authority is LiquidReferenceAuthority.EXTRAPOLATED:
+                low, high = status.certified_T_K or fit_range
                 return (
                     f"{row_name} uses the D&G/Masson correction extrapolated "
                     f"outside its {low:g}-{high:g} K fit range "
@@ -4411,6 +4412,49 @@ def _source_model_flag(
             f"{limit:g} K from {source_table}"
         )
     return None
+
+
+def _liquid_reference_flags(
+    species: str,
+    T: float,
+    source_flags: list[str],
+    *,
+    channel: str,
+    composition_wt_pct: Mapping[str, float] | None,
+    statuses: dict[str, CertificationStatus],
+) -> list[str]:
+    """Apply the single certification lookup to liquid-source validity flags."""
+    composition = None
+    if composition_wt_pct is not None:
+        composition = {
+            f"{oxide}_wt_pct": value
+            for oxide, value in composition_wt_pct.items()
+        }
+    status = liquid_reference_authority(species, T, composition)
+    statuses[channel] = status
+    scope_unresolved = bool(status.composition_scope) and not status.scope_applied
+    if (
+        status.authority in {
+            LiquidReferenceAuthority.CERTIFIED,
+            LiquidReferenceAuthority.CORROBORATED_CALCULATION,
+        }
+        and not scope_unresolved
+    ):
+        return []
+    band_text = (
+        f"; band ±{status.band_value:g} {status.band_unit}"
+        if status.band_value is not None else ""
+    )
+    if source_flags:
+        return [flag + band_text for flag in source_flags]
+    reason = status.reason
+    prefix = f"{species} liquid reference is extrapolated"
+    if scope_unresolved:
+        reason = "composition scope was not evaluated"
+        prefix = f"{species} liquid-reference scope is unresolved"
+    return [
+        f"{prefix}: {reason}{band_text}"
+    ]
 
 
 def _source_validity_for_row(
@@ -5177,6 +5221,8 @@ def evaluate_gas(
     allow_extrapolation: bool = True,
     gas_species: Sequence[str] | str | None = None,
     include_ions: bool = False,
+    *,
+    composition_wt_pct: Mapping[str, float] | None = None,
 ) -> ImccGasResult:
     """Compute equilibrium partial pressures for the SF04 retained gas set.
 
@@ -5233,6 +5279,10 @@ def evaluate_gas(
         append available fitted cations and every JANAF-supported anion whose
         neutral channel is present. The default keeps the established
         neutral-only mapping. Ion names in ``gas_species`` require this option.
+    composition_wt_pct:
+        Optional melt composition keyed by oxide, in weight percent. This is
+        used to resolve composition-scoped liquid-reference authority such as
+        the K2O(l) measured-pressure window.
 
     Returns
     -------
@@ -5531,7 +5581,6 @@ def evaluate_gas(
                 flags.append(flag)
 
         oxide_row = None
-        oxide_flag_start = len(flags)
         if oxide:
             gas_parent_row = _GAS_PHASE_PARENT_ROWS.get(oxide)
             if gas_parent_row:
@@ -5565,6 +5614,7 @@ def evaluate_gas(
             a_oxide = act[oxide]
             if flag is not None:
                 flags.append(flag)
+            oxide_flag_start = len(flags)
             validity = (
                 _source_validity_for_row(
                     oxide_name, oxide_row, phase=("s" if str(oxide_row["state"]) == "s" else "l")
@@ -5605,33 +5655,14 @@ def evaluate_gas(
             if oxide_row is not None and oxide_name in {
                 record.species for record in liquid_reference_records()
             }:
-                status = liquid_reference_authority(oxide_name, T)
-                liquid_statuses[gas_name] = status
-                scope_resolved = (
-                    status.composition_scope is None or status.scope_applied
+                flags[oxide_flag_start:] = _liquid_reference_flags(
+                    oxide_name,
+                    T,
+                    flags[oxide_flag_start:],
+                    channel=gas_name,
+                    composition_wt_pct=composition_wt_pct,
+                    statuses=liquid_statuses,
                 )
-                if scope_resolved and status.authority in {
-                    LiquidReferenceAuthority.CERTIFIED,
-                    LiquidReferenceAuthority.CORROBORATED_CALCULATION,
-                }:
-                    del flags[oxide_flag_start:]
-                else:
-                    band_text = (
-                        f"; band ±{status.band_value:g} {status.band_unit}"
-                        if status.band_value is not None else ""
-                    )
-                    flags[oxide_flag_start:] = [
-                        flag + band_text for flag in flags[oxide_flag_start:]
-                    ]
-                    if not flags[oxide_flag_start:]:
-                        reason = status.reason
-                        prefix = f"{oxide_name} liquid reference is extrapolated"
-                        if not scope_resolved:
-                            reason = "composition scope was not evaluated"
-                            prefix = f"{oxide_name} liquid-reference scope is unresolved"
-                        flags.append(
-                            f"{prefix}: {reason}{band_text}"
-                        )
         else:
             G_oxide = 0.0
             a_oxide = 1.0
@@ -5682,8 +5713,17 @@ def evaluate_gas(
             if flag is not None:
                 flags.append(flag)
             flag = _source_model_flag(side_name, T, side_row, phase="l")
-            if flag is not None:
-                flags.append(flag)
+            source_flags = [flag] if flag is not None else []
+            if side_name in {record.species for record in liquid_reference_records()}:
+                source_flags = _liquid_reference_flags(
+                    side_name,
+                    T,
+                    source_flags,
+                    channel=gas_name,
+                    composition_wt_pct=composition_wt_pct,
+                    statuses=liquid_statuses,
+                )
+            flags.extend(source_flags)
             # The side table carries complete oxygen stoichiometry for new
             # halides whose reaction tuple has a zero O2 slot. Existing Na/K
             # rows keep using their tuple coefficient and unchanged arithmetic.
