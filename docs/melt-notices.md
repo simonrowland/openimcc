@@ -28,8 +28,8 @@ independent calculations corroborate the fusion enthalpy, though no measured
 fusion datum exists. It emits no notice inside that window and carries its
 ±0.07 dex pO₂ band on extrapolated flags outside it. Al₂O₃(l)'s measured fit
 window begins at 2500 K, and Na₂O(l)'s measured Cp window ends at 1800 K.
-TiO₂(l) is extrapolated below its 2130 K fusion marker, including its
-supercooled source branch. MgO(l) remains extrapolated and carries its
+TiO₂(l) is extrapolated at every temperature and has no certified window; the
+JANAF O-044 flag and the O-044-SC-CP continuation flag both remain. MgO(l) remains extrapolated and carries its
 ±0.3 dex pO₂ band. These records describe reference authority only and do not
 change calculated gas pressures. Condensate G(T) interval flags remain in
 place even when the liquid reference itself is certified.
@@ -38,8 +38,9 @@ The SiO₂(l) window uses Richet, Bottinga & Téqui (1984), measured liquid heat
 capacity and the measured fusion anchor. K₂O(l) uses Plante (1979) measured K
 pressures. FeO(l) uses Darken & Gurry (1946), as reported by Masson (1965), and
 Hashimoto (1983) residue run 17c3-2 outside the window. Al₂O₃(l) follows the
-JANAF liquid fit to measured liquid enthalpy. TiO₂(l) follows JANAF O-044's
-source-supported liquid interval; Na₂O(l) follows its source-supported
+JANAF liquid fit to measured liquid enthalpy. TiO₂(l) has no measured pure-liquid
+data: JANAF O-044 assumes its fusion entropy (7.5 cal/mol/K, by analogy with
+V₂O₄) and estimates its liquid heat capacity. Na₂O(l) follows its source-supported
 liquid-from-solid construction. CaO(l)'s two independent molecular-dynamics
 calculations (2020, 2024) reproduce fusion enthalpy within 2.6 kJ/mol; neither
 is measured fusion evidence. MgO(l)'s assumed fusion entropy and calculated
