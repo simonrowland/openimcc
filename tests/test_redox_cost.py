@@ -141,6 +141,7 @@ def _missing_cold_baseline_message(
     wall_max: float,
     wall_cpu_ratio: float,
     newton_iterations: int,
+    solver_residual_evaluations: int,
     load_start: float,
     load_end: float,
 ) -> str:
@@ -151,6 +152,7 @@ def _missing_cold_baseline_message(
         f"reference CPU={reference_cpu_median * 1000:.3f} ms; "
         f"max wall={wall_max * 1000:.3f} ms, wall/CPU={wall_cpu_ratio:.3f}; "
         f"Newton iterations={newton_iterations}; "
+        f"solver residual evaluations={solver_residual_evaluations}; "
         f"loadavg={load_start:.2f}/{load_end:.2f}. "
         "Add five independent run medians to _COLD_COST_BASELINES for this chip."
     )
@@ -269,7 +271,9 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     solve_cpu_samples: list[float] = []
     reference_cpu_samples: list[float] = []
     newton_iterations = 0
+    solver_residual_evaluations = 0
     import openimcc.redox as redox_module
+    import openimcc.kernel as kernel_module
 
     original_solve_active_warm = redox_module.solve_active_warm
 
@@ -280,10 +284,23 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         return solution
 
     monkeypatch.setattr(redox_module, "solve_active_warm", count_newton_iterations)
+
+    original_active_residual = kernel_module._active_residual
+
+    def count_solver_residual_evaluations(*args, **kwargs):
+        nonlocal solver_residual_evaluations
+        solver_residual_evaluations += 1
+        return original_active_residual(*args, **kwargs)
+
+    monkeypatch.setattr(
+        kernel_module, "_active_residual", count_solver_residual_evaluations
+    )
     load_start = os.getloadavg()[0]
+
     def measure_solve() -> tuple[float, int]:
-        nonlocal newton_iterations
+        nonlocal newton_iterations, solver_residual_evaluations
         iterations_before = newton_iterations
+        residual_evaluations_before = solver_residual_evaluations
         cpu_started = time.process_time()
         wall_started = time.perf_counter()
         result = evaluate_redox(
@@ -297,8 +314,14 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         wall_samples.append(time.perf_counter() - wall_started)
         elapsed = time.process_time() - cpu_started
         iterations = newton_iterations - iterations_before
+        call_residual_evaluations = (
+            solver_residual_evaluations - residual_evaluations_before
+        )
         assert iterations > 0, (
             f"{name}: evaluate_redox call performed no Newton iterations"
+        )
+        assert call_residual_evaluations > 0, (
+            f"{name}: evaluate_redox call performed no Newton residual evaluations"
         )
         assert result.solver_path == "newton"
         assert result.fallback_fired is False
@@ -358,6 +381,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
             wall_max,
             wall_cpu_ratio,
             newton_iterations,
+            solver_residual_evaluations,
             load_start,
             load_end,
         )
@@ -376,6 +400,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         f"max wall={wall_max * 1000:.3f} ms; "
         f"max wall/median CPU={wall_cpu_ratio:.3f}; "
         f"Newton iterations={newton_iterations}; "
+        f"solver residual evaluations={solver_residual_evaluations}; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
     )
     assert ratio_median <= ceiling, (
@@ -385,6 +410,7 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         f"max wall/median CPU={wall_cpu_ratio:.3f}; "
         f"reference CPU median={reference_cpu_median * 1000:.3f} ms; "
         f"Newton iterations={newton_iterations}; "
+        f"solver residual evaluations={solver_residual_evaluations}; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
     )
 
