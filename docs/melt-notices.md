@@ -17,8 +17,9 @@ Liquid gas-parent results expose `liquid_reference_status`, keyed by gas
 channel, with a typed authority, inclusive `certified_T_K` endpoints, band and
 structured `evidence_ref`. `liquid_reference_records()` returns the immutable
 records and `liquid_reference_authority(species, T_K, composition=None)` resolves
-one status. K₂O's 1259–1765 K window applies to 25–40 wt% K₂O; without a
-composition the returned status identifies that unevaluated scope. Outside a
+one status. Inside K₂O's inclusive 1259–1765 K window the reference stays
+certified; without a composition the returned status leaves the 25–40 wt% K₂O
+evidence range unevaluated. Outside a
 record's temperature window, status is `extrapolated`. A supplied composition
 outside K₂O's 25–40 wt% evidence range keeps the certified temperature-window
 authority and adds a notice: Plante (1979) residuals were about −0.13 dex at

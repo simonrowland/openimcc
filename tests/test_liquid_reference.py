@@ -139,9 +139,9 @@ def test_public_records_round_trip_and_gas_result_notice() -> None:
         notice for notice in potassium_out_scope.notices
         if notice.code == "liquid-reference-outside-evidence-composition-scope"
     )
-    assert "outside the 25–40 wt% evidence range" in scope_notice.message
+    assert "outside the evidence range K2O_wt_pct 25–40" in scope_notice.message
     assert "Plante (1979)" in scope_notice.message
-    assert "−0.38 dex at 12–20 wt%" in scope_notice.message
+    assert "-0.38 dex at 12-20 wt% K2O" in scope_notice.message
 
 
 def test_halide_side_parent_uses_liquid_authority_lookup() -> None:

@@ -254,7 +254,7 @@ class ImccGasResult(MappingABC[str, float]):
 
     @property
     def notices(self) -> tuple[PGasPressureNotice | LiquidReferenceNotice, ...]:
-        """Typed notices derived from existing per-channel domain flags."""
+        """Typed notices from per-channel domain flags and liquid-reference status."""
         p_species = tuple(
             name for name in ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10", "PS")
             if name in self._values
@@ -285,11 +285,13 @@ class ImccGasResult(MappingABC[str, float]):
                     status,
                 ))
             elif status.in_composition_scope is False:
+                evidence = status.evidence_ref[0]
+                key, (low, high) = next(iter(status.composition_scope.items()))
                 notices.append(LiquidReferenceNotice(
                     "liquid-reference-outside-evidence-composition-scope",
-                    f"{status.species} composition is outside the 25–40 wt% evidence range; "
-                    "Plante (1979) residuals were about −0.13 dex at 25–40 wt% and "
-                    "about −0.38 dex at 12–20 wt% K2O.",
+                    f"{status.species} composition is outside the evidence range "
+                    f"{key} {low:g}–{high:g}; {evidence.author} ({evidence.year}): "
+                    f"{evidence.basis}.",
                     status,
                 ))
         return tuple(notices)
