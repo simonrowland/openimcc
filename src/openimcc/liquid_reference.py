@@ -82,8 +82,8 @@ _RECORDS = (
         (_e("Darken & Gurry via Masson", 1965, "measured FeO liquid activity range; DOI 10.1021/ja01209a030 and 10.1098/rspa.1965.0176"), _e("Hashimoto", 1983, "run 17c3-2 at 1973 K: free-evaporation residue retains 27.92 wt% FeO versus about 14 wt% predicted; kinetics included"))),
     LiquidReferenceRecord("Al2O3(l)", LiquidReferenceAuthority.CERTIFIED, (2500, 3000), None, None,
         (_e("JANAF Al-100", 1998, "measured liquid enthalpy fit starts at 2500 K; source liquid marker at 2327 K"),)),
-    LiquidReferenceRecord("TiO2(l)", LiquidReferenceAuthority.CERTIFIED, (2130, 3000), None, None,
-        (_e("JANAF O-044", 1998, "source-supported liquid function through 3000 K; supercooled below the 2130 K fusion marker"),)),
+    LiquidReferenceRecord("TiO2(l)", LiquidReferenceAuthority.EXTRAPOLATED, None, None, None,
+        (_e("JANAF O-044", 1998, "estimated end-to-end: assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4 and estimated liquid Cp 8 cal per g-atom; no measured pure-liquid data"),)),
     LiquidReferenceRecord("Na2O(l)", LiquidReferenceAuthority.CERTIFIED, (1405.2, 1800), None, None,
         (_e("Richet, Bottinga & Tequi", 1984, "measured liquid Cp through 1800 K on the 1405.2 K fusion anchor; Cp extrapolation above 1800 K; DOI 10.1111/j.1151-2916.1984.tb19155.x"),)),
 )

@@ -1759,7 +1759,8 @@ def test_tio2_bearing_melt_returns_ti_pressures(
     activities = {name: melt.activity(name) for name in melt.parent_oxides}
     assert activities["TiO2"] > 0.0
 
-    # Strict mode: 2200 K lies inside every Ti input row, so nothing refuses.
+    # Strict mode: 2200 K lies inside every Ti input row, so nothing refuses;
+    # the TiO2(l) standard state remains extrapolated because O-044 is estimated.
     result = evaluate_gas(
         activities,
         2200.0,
@@ -1771,7 +1772,9 @@ def test_tio2_bearing_melt_returns_ti_pressures(
     assert set(result) == {"Ti", "TiO", "TiO2"}
     for species in ("Ti", "TiO", "TiO2"):
         assert math.isfinite(result[species]) and result[species] > 0.0
-        assert result.domain_flags[species] is None
+        assert "TiO2(l) liquid reference is extrapolated" in (
+            result.domain_flags[species] or ""
+        )
         assert result.provenance_class[species] == "janaf_fitted"
         assert gas_species_provenance(species)["condensate_authority"] == (
             "janaf_fitted"

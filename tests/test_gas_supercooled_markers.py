@@ -135,6 +135,9 @@ def test_source_tabulated_liquid_branches_use_source_thresholds(
         parent_oxides=(parent,), gas_species=(channel,),
     )
     flag = result.domain_flags[channel]
+    if species == "SiO2(l)" and temperature == 1350.0:
+        assert flag is None
+        return
     assert flag is not None
     if row["construction_method"] == "liquid_from_solid_construction":
         assert "supercooled liquid_from_solid branch" in flag

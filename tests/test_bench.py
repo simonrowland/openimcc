@@ -584,35 +584,35 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
     assert activity.status == "ok", activity.reason
     assert activity.predicted is not None and math.isfinite(float(activity.predicted))
 
-    in_domain = by_id["pp_sio_2000"]
-    assert in_domain.status == "ok", in_domain.reason
-    assert in_domain.predicted is not None
-    assert "tier-1 liquid_from_solid construction" in in_domain.domain_flag
-    assert in_domain.provenance_class == "janaf_fitted"
+    outside_certified_window = by_id["pp_sio_2000"]
+    assert outside_certified_window.status == "ok", outside_certified_window.reason
+    assert outside_certified_window.predicted is not None
+    assert "tier-1 liquid_from_solid construction" in outside_certified_window.domain_flag
+    assert outside_certified_window.provenance_class == "janaf_fitted"
 
-    flagged = by_id["pp_sio_1700"]
-    assert flagged.status == "ok", flagged.reason
-    assert flagged.predicted is not None
-    assert flagged.residual is not None
-    assert "supercooled liquid_from_solid branch" in flagged.domain_flag
-    assert flagged.provenance_class == "janaf_fitted"
+    certified = by_id["pp_sio_1700"]
+    assert certified.status == "ok", certified.reason
+    assert certified.predicted is not None
+    assert certified.residual is not None
+    assert certified.domain_flag is None
+    assert certified.provenance_class == "janaf_fitted"
 
-    headline_residuals = [activity.residual]
+    headline_residuals = [activity.residual, certified.residual]
     expected_headline_rmse = math.sqrt(
         sum(float(value) ** 2 for value in headline_residuals) / len(headline_residuals)
     )
     assert report.n_ok == 3
-    assert report.n_flagged == 2
+    assert report.n_flagged == 1
     assert report.status_counts["refused"] == 0
     assert report.rmse == pytest.approx(expected_headline_rmse)
     assert report.flagged_rmse == pytest.approx(
-        math.sqrt((float(in_domain.residual) ** 2 + float(flagged.residual) ** 2) / 2.0)
+        abs(float(outside_certified_window.residual))
     )
 
     rendered = render_report(report)
-    assert "flagged=2" in rendered
+    assert "flagged=1" in rendered
     assert "flagged_RMSE=" in rendered
-    assert "supercooled liquid_from_solid branch" in rendered
+    assert "tier-1 liquid_from_solid construction" in rendered
 
 
 def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:

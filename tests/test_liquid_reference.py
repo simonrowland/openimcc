@@ -42,7 +42,14 @@ def test_composition_scoped_k2o_authority() -> None:
     assert liquid_reference_authority("Na2O(l)", 1800).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("Na2O(l)", 1800.001).authority is LiquidReferenceAuthority.EXTRAPOLATED
     assert liquid_reference_authority("TiO2(l)", 2000).authority is LiquidReferenceAuthority.EXTRAPOLATED
-    assert liquid_reference_authority("TiO2(l)", 2130).authority is LiquidReferenceAuthority.CERTIFIED
+    tio2 = liquid_reference_authority("TiO2(l)", 2130)
+    assert tio2.authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert tio2.certified_T_K is None
+    assert tio2.band_value is None
+    evidence = " ".join(item.basis for item in tio2.evidence_ref)
+    assert "assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4" in evidence
+    assert "estimated liquid Cp 8 cal per g-atom" in evidence
+    assert "no measured pure-liquid data" in evidence
 
 
 def test_public_records_round_trip_and_gas_result_notice() -> None:
