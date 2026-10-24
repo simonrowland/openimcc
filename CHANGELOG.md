@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added typed, public certification records for the eight liquid-oxide gas
+  references. Certified windows no longer contribute source-validity flags;
+  CaO(l) exposes an independent-calculation notice and band, while
+  extrapolated references retain flags with known bands. The records describe
+  authority metadata only, so default melt and gas thermodynamic values are
+  unchanged.
+
 - Promoted five constant association-A refits to D066 v5: Mg2SiO4 −1.106834,
   CaSiO3 −0.276518, CaAl2Si2O8 −0.941619, Ca2MgSi2O7 −0.814553, and MgAl2O4
   −0.670272 log10 K; all B values and all other association rows are unchanged.

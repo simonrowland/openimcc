@@ -13,6 +13,31 @@ inside identity-scoped gates receive an unscored notice.
 | `silicate-vapour-product-low-near-liquidus` | Normalize the candidate crystal's oxide-mole sub-basis to one. Require the sum of absolute differences from its stoichiometric fractions to be ≤0.02 (with 1e-12 comparison tolerance), the sub-basis to contain at least 98% of total parent moles, and every other parent to be below 1% of total parent moles. Temperature is within inclusive ±50 K of the measured melting point: diopside 1668 K, akermanite 1727 K, gehlenite 1823 K, anorthite 1826 K, wollastonite 1817 K. | SI at the nominal melting points, using crystal data extended to those temperatures, is respectively −0.53, +0.11, −0.51, +0.044 and +0.0028. Negative values are low combined vapour-product residuals and positive values are high; the split remains unresolved. Diopside at 1668 K is an incongruent-melting onset and diagnostic, not a congruent coexistence. Crystal functions follow Berman (1988), Tables 2, 3a–3b and 5 (gehlenite disorder); melting anchors follow Robie & Hemingway (1995), and the diopside onset is also reported by Lange et al. (1991). The split between activities and liquid standards is unresolved. Other packs use `silicate-vapour-product-low-near-liquidus-unscored`. |
 | `temperature-domain-extension` | An active association row is evaluated below its declared temperature domain | The model uses ΔrCp = 0 continuation; this is calculation authority, not validation, and no uncertainty band is available. |
 
+Liquid gas-parent results expose `liquid_reference_status`, keyed by gas
+channel, with a typed authority, inclusive `certified_T_K` endpoints, band and
+structured `evidence_ref`. `liquid_reference_records()` returns the immutable
+records and `liquid_reference_authority(species, T_K, composition=None)` resolves
+one status. K₂O's 1259–1765 K window applies to 25–40 wt% K₂O; without a
+composition the returned status identifies that unevaluated scope. Outside a
+record's temperature or supplied composition scope, status is `extrapolated`.
+CaO(l) results inside 1323–2473 K carry a
+`liquid-reference-corroborated-calculation` notice with its ±0.07 dex pO₂
+band; this is independent calculation corroboration, not a measured fusion
+datum. MgO(l) remains extrapolated and carries its ±0.3 dex pO₂ band. These
+records describe reference authority only and do not change calculated gas
+pressures.
+
+The SiO₂(l) window uses Richet, Bottinga & Téqui (1984), measured liquid heat
+capacity and the measured fusion anchor. K₂O(l) uses Plante (1979) measured K
+pressures. FeO(l) uses Darken & Gurry (1946), as reported by Masson (1965), and
+Hashimoto (1983) residue run 17c3-2 outside the window. Al₂O₃(l) follows the
+JANAF liquid fit to measured liquid enthalpy. TiO₂(l) follows JANAF O-044's
+source-supported liquid interval; Na₂O(l) follows its source-supported
+liquid-from-solid construction. CaO(l)'s two independent molecular-dynamics
+calculations (2020, 2024) reproduce fusion enthalpy within 2.6 kJ/mol; neither
+is measured fusion evidence. MgO(l)'s assumed fusion entropy and calculated
+fusion values scatter by about 10–19 kJ/mol.
+
 The silicate composition distance is evaluated only after renormalizing the
 candidate crystal's oxide sub-basis. The temperature window is inclusive.
 Notices do not establish a liquidus or identify the first stable crystal.

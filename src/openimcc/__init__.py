@@ -122,6 +122,7 @@ _GAS_EXPORTS = frozenset({
     "ImccGasEquilibriumRangeError",
     "ImccGasOxygenBalanceError",
     "ImccGasResult",
+    "LiquidReferenceNotice",
     "PGasPressureNotice",
     "ImccGasSpeciesNotFoundError",
     "ImccGasTemperatureOutsideDomainError",
@@ -155,6 +156,7 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         ImccGasEquilibriumRangeError,
         ImccGasOxygenBalanceError,
         ImccGasResult,
+        LiquidReferenceNotice,
         PGasPressureNotice,
         ImccGasSpeciesNotFoundError,
         ImccGasTemperatureOutsideDomainError,
@@ -169,9 +171,24 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         load_gas_datapack,
         species_thermo,
     )
+    from openimcc.liquid_reference import (
+        CertificationStatus,
+        EvidenceReference,
+        LiquidReferenceAuthority,
+        LiquidReferenceRecord,
+        liquid_reference_authority,
+        liquid_reference_records,
+    )
 
 
 def __getattr__(name: str):
+    if name in {
+        "CertificationStatus", "EvidenceReference", "LiquidReferenceAuthority",
+        "LiquidReferenceRecord", "liquid_reference_authority",
+        "liquid_reference_records",
+    }:
+        from openimcc import liquid_reference
+        return getattr(liquid_reference, name)
     if name in _GAS_EXPORTS:
         try:
             from openimcc import gas
@@ -265,11 +282,18 @@ __all__ = [
     "ImccGasEquilibriumRangeError",
     "ImccGasOxygenBalanceError",
     "ImccGasResult",
+    "LiquidReferenceNotice",
     "PGasPressureNotice",
     "ImccGasSpeciesNotFoundError",
     "ImccGasTemperatureOutsideDomainError",
     "SpeciesThermo",
     "species_thermo",
+    "CertificationStatus",
+    "EvidenceReference",
+    "LiquidReferenceAuthority",
+    "LiquidReferenceRecord",
+    "liquid_reference_authority",
+    "liquid_reference_records",
     "default_gas_channels",
     # BAR is exported on purpose. evaluate_gas returns pressures in BAR while
     # the simulator's own vapour layer returns Pa -- exactly 5 dex apart. That

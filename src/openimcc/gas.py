@@ -34,6 +34,12 @@ import numpy as np
 from scipy.optimize import brentq
 
 from openimcc.kernel import ImccRefusal, _canonical_published_serialization
+from openimcc.liquid_reference import (
+    CertificationStatus,
+    LiquidReferenceAuthority,
+    liquid_reference_authority,
+    liquid_reference_records,
+)
 from openimcc.scalar_boundary import is_declared_real_scalar
 
 if TYPE_CHECKING:
@@ -198,6 +204,15 @@ class PGasPressureNotice:
 
 
 @dataclass(frozen=True)
+class LiquidReferenceNotice:
+    """Typed evidence notice for a calculated, unmeasured liquid reference."""
+
+    code: str
+    message: str
+    status: CertificationStatus
+
+
+@dataclass(frozen=True)
 class ImccGasResult(MappingABC[str, float]):
     """Immutable gas pressures and channel metadata, including default omissions."""
 
@@ -206,6 +221,7 @@ class ImccGasResult(MappingABC[str, float]):
     domain_flags: Mapping[str, str | None]
     provenance_class: Mapping[str, str]
     omitted_channels: Mapping[str, str] = field(default_factory=dict)
+    liquid_reference_status: Mapping[str, CertificationStatus] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "_values", MappingProxyType(dict(self._values)))
@@ -222,6 +238,10 @@ class ImccGasResult(MappingABC[str, float]):
             "omitted_channels",
             MappingProxyType(dict(self.omitted_channels)),
         )
+        object.__setattr__(
+            self, "liquid_reference_status",
+            MappingProxyType(dict(self.liquid_reference_status)),
+        )
 
     def __getitem__(self, species: str) -> float:
         return self._values[species]
@@ -233,7 +253,7 @@ class ImccGasResult(MappingABC[str, float]):
         return len(self._values)
 
     @property
-    def notices(self) -> tuple[PGasPressureNotice, ...]:
+    def notices(self) -> tuple[PGasPressureNotice | LiquidReferenceNotice, ...]:
         """Typed notices derived from existing per-channel domain flags."""
         p_species = tuple(
             name for name in ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10", "PS")
@@ -243,16 +263,28 @@ class ImccGasResult(MappingABC[str, float]):
         affected = tuple(
             name for name in p_species if code in (self.domain_flags.get(name) or "")
         )
-        if not affected:
-            return ()
-        total = math.fsum(self._values[name] for name in p_species)
-        return (PGasPressureNotice(
-            code,
-            "P would leave essentially completely; the fixed-composition dilute "
-            "equilibrium is not physical above 1 bar.",
-            affected,
-            total,
-        ),)
+        notices = []
+        if affected:
+            total = math.fsum(self._values[name] for name in p_species)
+            notices.append(PGasPressureNotice(
+                code,
+                "P would leave essentially completely; the fixed-composition dilute "
+                "equilibrium is not physical above 1 bar.",
+                affected,
+                total,
+            ))
+        seen_reference_species = set()
+        for status in self.liquid_reference_status.values():
+            if status.species in seen_reference_species:
+                continue
+            seen_reference_species.add(status.species)
+            if status.authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION:
+                notices.append(LiquidReferenceNotice(
+                    "liquid-reference-corroborated-calculation",
+                    "Liquid reference is corroborated by independent calculation, not measured.",
+                    status,
+                ))
+        return tuple(notices)
 
 
 @dataclass(frozen=True)
@@ -5462,6 +5494,7 @@ def evaluate_gas(
     result: dict[str, float] = {}
     domain_flags: dict[str, str | None] = {}
     provenance_class: dict[str, str] = {}
+    liquid_statuses: dict[str, CertificationStatus] = {}
     for gas_name, (oxide, n_gas, n_O2) in reactions:
         flags: list[str] = []
         if gas_name == "O2":
@@ -5498,6 +5531,7 @@ def evaluate_gas(
                 flags.append(flag)
 
         oxide_row = None
+        oxide_flag_start = len(flags)
         if oxide:
             gas_parent_row = _GAS_PHASE_PARENT_ROWS.get(oxide)
             if gas_parent_row:
@@ -5568,6 +5602,36 @@ def evaluate_gas(
                     )
                     if flag is not None:
                         flags.append(flag)
+            if oxide_row is not None and oxide_name in {
+                record.species for record in liquid_reference_records()
+            }:
+                status = liquid_reference_authority(oxide_name, T)
+                liquid_statuses[gas_name] = status
+                scope_resolved = (
+                    status.composition_scope is None or status.scope_applied
+                )
+                if scope_resolved and status.authority in {
+                    LiquidReferenceAuthority.CERTIFIED,
+                    LiquidReferenceAuthority.CORROBORATED_CALCULATION,
+                }:
+                    del flags[oxide_flag_start:]
+                else:
+                    band_text = (
+                        f"; band ±{status.band_value:g} {status.band_unit}"
+                        if status.band_value is not None else ""
+                    )
+                    flags[oxide_flag_start:] = [
+                        flag + band_text for flag in flags[oxide_flag_start:]
+                    ]
+                    if not flags[oxide_flag_start:]:
+                        reason = status.reason
+                        prefix = f"{oxide_name} liquid reference is extrapolated"
+                        if not scope_resolved:
+                            reason = "composition scope was not evaluated"
+                            prefix = f"{oxide_name} liquid-reference scope is unresolved"
+                        flags.append(
+                            f"{prefix}: {reason}{band_text}"
+                        )
         else:
             G_oxide = 0.0
             a_oxide = 1.0
@@ -5778,6 +5842,7 @@ def evaluate_gas(
         domain_flags=domain_flags,
         provenance_class=provenance_class,
         omitted_channels=omitted_channels,
+        liquid_reference_status=liquid_statuses,
     )
 
 
