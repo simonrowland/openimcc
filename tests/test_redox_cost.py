@@ -44,26 +44,61 @@ def _element_inventory(
     return elements
 
 
-# Cold-cost baselines keyed by CPU model. Each value is the median and a
-# measured process-CPU spread; see the class comment for the sampling formula.
+# Cold-cost baselines keyed by CPU model. Each fixture stores the five
+# independent-run medians of redox CPU per Newton iteration divided by a fixed
+# legacy-solver reference call's CPU. See the gate for the spread allowance.
 # The key is the public chip name (on Darwin, `sysctl -n machdep.cpu.brand_string`),
 # never a host name: the same chip shares a ceiling, and a different chip does not.
 # Recorded after the cold-start fix on the development laptop's chip.
 _DEV_CPU_CLASS = "Apple M5 Max"
-_COLD_COST_BASELINES: dict[str, dict[str, tuple[float, float]]] = {
+_COLD_REFERENCE_COMPOSITION = {
+    "SiO2": 0.50,
+    "MgO": 0.15,
+    "FeO": 0.15,
+    "CaO": 0.10,
+    "Al2O3": 0.08,
+    "TiO2": 0.01,
+    "Na2O": 0.008,
+    "K2O": 0.002,
+}
+_COLD_REFERENCE_TEMPERATURE = 1734.15
+_COLD_COST_BASELINES: dict[str, dict[str, tuple[float, ...]]] = {
+    # Values are five independent run medians. Each run is the median of five
+    # trial medians, each from seven interleaved solve/reference pairs. Ratios
+    # are redox CPU per Newton iteration divided by reference-solver CPU.
     _DEV_CPU_CLASS: {
-        "basalt": (0.009259, 0.027440),
-        "basalt_with_traces": (0.009416, 0.001370),
-        "closed_natural_melt": (0.022004, 0.003787),
+        "basalt": (0.00378906, 0.00373555, 0.00372911, 0.00368432, 0.00366756),
+        "basalt_with_traces": (
+            0.00481097,
+            0.00479506,
+            0.00472397,
+            0.00490507,
+            0.00490697,
+        ),
+        "closed_natural_melt": (
+            0.00553817,
+            0.00566824,
+            0.00566409,
+            0.00572298,
+            0.00576032,
+        ),
     },
-    # Historical N=5 remote-run median and range, recorded on 2026-10-22 at
-    # loadavg 1m 6.55–13.45. Each run was the median of five trial medians,
-    # each from seven cold calls. The five source run medians were not saved.
-    # The spread-derived allowance is capped at 1.9x, so a 2x regression fails.
     "Apple M3 Ultra": {
-        "basalt": (0.007062, 0.001293),
-        "basalt_with_traces": (0.010584, 0.001124),
-        "closed_natural_melt": (0.016575, 0.001037),
+        "basalt": (0.00384046, 0.00368501, 0.00375076, 0.00372141, 0.00375380),
+        "basalt_with_traces": (
+            0.00483423,
+            0.00483398,
+            0.00414773,
+            0.00448994,
+            0.00448712,
+        ),
+        "closed_natural_melt": (
+            0.00531161,
+            0.00539129,
+            0.00608211,
+            0.00542010,
+            0.00583425,
+        ),
     },
 }
 
@@ -85,19 +120,24 @@ def _cpu_class() -> str:
 
 
 def _cold_baseline(cpu_class: str, name: str) -> tuple[float, float] | None:
-    """Return the recorded (median, spread) for this chip and fixture.
+    """Return the median and range of five recorded ratios for this chip.
 
     An unknown chip or fixture returns None. Callers must not substitute
     another class's numbers: that would silently apply the wrong ceiling.
     """
-    return _COLD_COST_BASELINES.get(cpu_class, {}).get(name)
+    run_values = _COLD_COST_BASELINES.get(cpu_class, {}).get(name)
+    if run_values is None or len(run_values) != 5:
+        return None
+    return statistics.median(run_values), max(run_values) - min(run_values)
 
 
 def _missing_cold_baseline_message(
     cpu_class: str,
     name: str,
-    median: float,
-    spread: float,
+    ratio_median: float,
+    ratio_spread: float,
+    trial_medians: list[float],
+    reference_cpu_median: float,
     wall_max: float,
     wall_cpu_ratio: float,
     newton_iterations: int,
@@ -105,19 +145,14 @@ def _missing_cold_baseline_message(
     load_end: float,
 ) -> str:
     return (
-        f"{name}: no cold-cost baseline for CPU class {cpu_class!r}. "
-        f"cold CPU median={median * 1000:.3f} ms "
-        f"spread={spread * 1000:.3f} ms; "
-        f"max wall={wall_max * 1000:.3f} ms; "
-        f"max wall/median CPU={wall_cpu_ratio:.3f}; "
+        f"{name}: unrecorded paired baseline for {cpu_class!r}; "
+        f"normalized ratio median={ratio_median:.8f}, spread={ratio_spread:.8f}, "
+        f"five trial medians={trial_medians}; "
+        f"reference CPU={reference_cpu_median * 1000:.3f} ms; "
+        f"max wall={wall_max * 1000:.3f} ms, wall/CPU={wall_cpu_ratio:.3f}; "
         f"Newton iterations={newton_iterations}; "
-        f"loadavg start/end={load_start:.2f}/{load_end:.2f}. "
-        "To record one, add "
-        f"({median:.6f}, {spread:.6f}) under "
-        f"_COLD_COST_BASELINES[{cpu_class!r}][{name!r}] "
-        "(median, max-minus-min process CPU across five independent runs, "
-        "each the median of five trial medians, each from seven cold calls). "
-        "Do not copy another CPU class's numbers."
+        f"loadavg={load_start:.2f}/{load_end:.2f}. "
+        "Add five independent run medians to _COLD_COST_BASELINES for this chip."
     )
 
 
@@ -125,49 +160,31 @@ def _cold_cost_ceiling(
     baseline_median: float, baseline_spread: float, measured_spread: float
 ) -> float:
     return min(
-        1.3 * baseline_median + 2.0 * (baseline_spread + measured_spread),
+        baseline_median + 2.0 * (baseline_spread + measured_spread),
         1.9 * baseline_median,
     )
 
 
 def test_cold_cost_baseline_lookup_does_not_cross_cpu_classes() -> None:
-    assert _cold_baseline(_DEV_CPU_CLASS, "basalt") == (0.009259, 0.027440)
-    assert _cold_baseline(_DEV_CPU_CLASS, "basalt_with_traces") == (
-        0.009416,
-        0.001370,
+    assert all(
+        len(values) == 5
+        for entries in _COLD_COST_BASELINES.values()
+        for values in entries.values()
+    )
+    values = _COLD_COST_BASELINES[_DEV_CPU_CLASS]["basalt"]
+    assert _cold_baseline(_DEV_CPU_CLASS, "basalt") == (
+        statistics.median(values),
+        max(values) - min(values),
     )
     assert _cold_baseline("not-a-recorded-chip", "basalt") is None
     assert _cold_baseline(_DEV_CPU_CLASS, "missing-fixture") is None
 
 
-@pytest.mark.parametrize(
-    ("name", "baseline", "pre_fix_median"),
-    [
-        ("basalt", _COLD_COST_BASELINES[_DEV_CPU_CLASS]["basalt"], 0.035180),
-        (
-            "basalt_with_traces",
-            _COLD_COST_BASELINES[_DEV_CPU_CLASS]["basalt_with_traces"],
-            0.029706,
-        ),
-        (
-            "closed_natural_melt",
-            _COLD_COST_BASELINES[_DEV_CPU_CLASS]["closed_natural_melt"],
-            0.077567,
-        ),
-    ],
-)
-def test_cold_cost_budget_retains_the_old_zero_spread_ceiling(
-    name: str, baseline: tuple[float, float], pre_fix_median: float
-) -> None:
-    baseline_median, baseline_spread = baseline
-    expected = min(
-        1.3 * baseline_median + 2.0 * baseline_spread,
-        1.9 * baseline_median,
-    )
-    assert _cold_cost_ceiling(baseline_median, baseline_spread, 0.0) == expected
-    assert pre_fix_median > _cold_cost_ceiling(
-        baseline_median, baseline_spread, 0.0
-    ), name
+def test_cold_cost_budget_caps_at_a_1_9_ratio() -> None:
+    assert _cold_cost_ceiling(0.001, 0.0, 0.0) == 0.001
+    noisy_ceiling = _cold_cost_ceiling(0.001, 0.01, 0.01)
+    assert noisy_ceiling == 0.0019
+    assert 2 * 0.001 > noisy_ceiling
 
 _COLD_BASALT_INVENTORY = {
     "Si": 0.855,
@@ -236,27 +253,21 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     mode: Literal["closed", "imposed"],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Gate cold CPU time on the baseline recorded for this CPU model.
+    """Compare cold CPU per Newton iteration to a paired legacy solve.
 
-    Process CPU per solve call is the figure of merit. Five independent trial
-    medians, each from seven cold calls, are compared with the five-run
-    baseline. The ceiling adds twice the sum of baseline and measured ranges,
-    then caps that allowance at 1.9x the baseline median: the measured spread
-    sets the noise margin, while the cap still rejects a deliberate 2x cost.
-    Wall/CPU and load average are reported as tripwires and never gate a pass.
-
-    The same calls take different CPU time on a different chip, so baselines
-    are keyed by CPU model. Applying the development-laptop ceiling on the
-    CI hosts failed those hosts without a solver regression. A model with no
-    entry reports the measured median, spread, wall, and load, and how to
-    record an entry; it does not fail. A model that has an entry still fails
-    when its median exceeds that entry's ceiling. An unrecorded model is not
-    a pass for a model that has a baseline.
+    Each call is paired back-to-back with the same fixed legacy least-squares
+    workload in the same process. Five trial medians, each from seven pairs,
+    are compared with five independent baseline-run medians. The allowance is
+    twice the sum of baseline and measured ranges, capped at 1.9x; therefore
+    even the smallest guaranteed detected slowdown is 1.9x. Wall/CPU and load
+    are reported as tripwires, not pass criteria.
     """
     trials = 5
     repetitions_per_trial = 7
     trial_medians: list[float] = []
     wall_samples: list[float] = []
+    solve_cpu_samples: list[float] = []
+    reference_cpu_samples: list[float] = []
     newton_iterations = 0
     import openimcc.redox as redox_module
 
@@ -270,51 +281,80 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
 
     monkeypatch.setattr(redox_module, "solve_active_warm", count_newton_iterations)
     load_start = os.getloadavg()[0]
+    def measure_solve() -> tuple[float, int]:
+        nonlocal newton_iterations
+        iterations_before = newton_iterations
+        cpu_started = time.process_time()
+        wall_started = time.perf_counter()
+        result = evaluate_redox(
+            inventory,
+            temperature,
+            mode,
+            lambda_imposed=(
+                -7.17 * math.log(10) if mode == "imposed" else None
+            ),
+        )
+        wall_samples.append(time.perf_counter() - wall_started)
+        elapsed = time.process_time() - cpu_started
+        iterations = newton_iterations - iterations_before
+        assert iterations > 0, (
+            f"{name}: evaluate_redox call performed no Newton iterations"
+        )
+        assert result.solver_path == "newton"
+        assert result.fallback_fired is False
+        if name == "closed_natural_melt":
+            assert abs(result.oxygen_residual_mol) <= 1.0e-10
+        return elapsed, iterations
+
+    def measure_reference() -> float:
+        started = time.process_time()
+        evaluate(
+            _COLD_REFERENCE_COMPOSITION,
+            _COLD_REFERENCE_TEMPERATURE,
+            basis_type="mol",
+            allow_out_of_envelope=True,
+        )
+        return time.process_time() - started
+
     gc_was_enabled = gc.isenabled()
     gc.disable()
     try:
-        for _ in range(trials):
-            trial_cpu: list[float] = []
-            for _ in range(repetitions_per_trial):
-                iterations_before = newton_iterations
-                cpu_started = time.process_time()
-                wall_started = time.perf_counter()
-                result = evaluate_redox(
-                    inventory,
-                    temperature,
-                    mode,
-                    lambda_imposed=(
-                        -7.17 * math.log(10) if mode == "imposed" else None
-                    ),
-                )
-                assert newton_iterations > iterations_before, (
-                    f"{name}: evaluate_redox call performed no Newton iterations"
-                )
-                wall_samples.append(time.perf_counter() - wall_started)
-                cpu_elapsed = time.process_time() - cpu_started
-                trial_cpu.append(cpu_elapsed)
-                assert result.solver_path == "newton"
-                assert result.fallback_fired is False
-                if name == "closed_natural_melt":
-                    assert abs(result.oxygen_residual_mol) <= 1.0e-10
-            trial_medians.append(statistics.median(trial_cpu))
+        for trial_index in range(trials):
+            trial_ratios: list[float] = []
+            for pair_index in range(repetitions_per_trial):
+                # Alternate order to avoid consistently favoring one solver
+                # as the process heats or the scheduler changes core class.
+                if (trial_index * repetitions_per_trial + pair_index) % 2:
+                    reference_cpu = measure_reference()
+                    solve_cpu, iterations = measure_solve()
+                else:
+                    solve_cpu, iterations = measure_solve()
+                    reference_cpu = measure_reference()
+                solve_cpu_samples.append(solve_cpu)
+                reference_cpu_samples.append(reference_cpu)
+                trial_ratios.append(solve_cpu / (reference_cpu * iterations))
+            trial_medians.append(statistics.median(trial_ratios))
     finally:
         if gc_was_enabled:
             gc.enable()
 
-    median = statistics.median(trial_medians)
-    spread = max(trial_medians) - min(trial_medians)
+    ratio_median = statistics.median(trial_medians)
+    ratio_spread = max(trial_medians) - min(trial_medians)
     load_end = os.getloadavg()[0]
     wall_max = max(wall_samples)
-    wall_cpu_ratio = wall_max / median
+    solve_cpu_median = statistics.median(solve_cpu_samples)
+    wall_cpu_ratio = wall_max / solve_cpu_median
+    reference_cpu_median = statistics.median(reference_cpu_samples)
     cpu_class = _cpu_class()
     recorded = _cold_baseline(cpu_class, name)
     if recorded is None:
         message = _missing_cold_baseline_message(
             cpu_class,
             name,
-            median,
-            spread,
+            ratio_median,
+            ratio_spread,
+            trial_medians,
+            reference_cpu_median,
             wall_max,
             wall_cpu_ratio,
             newton_iterations,
@@ -324,22 +364,26 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
         print(message)
         pytest.skip(message)
     baseline_median, baseline_spread = recorded
-    ceiling = _cold_cost_ceiling(baseline_median, baseline_spread, spread)
+    ceiling = _cold_cost_ceiling(baseline_median, baseline_spread, ratio_spread)
+    baseline_values = _COLD_COST_BASELINES[cpu_class][name]
     print(
-        f"{name}: cold CPU median={median * 1000:.3f} ms "
-        f"spread={spread * 1000:.3f} ms; baseline="
-        f"{baseline_median * 1000:.3f} ms spread="
-        f"{baseline_spread * 1000:.3f} ms; ceiling={ceiling * 1000:.3f} ms; "
+        f"{name}: paired redox CPU/reference CPU/Newton iteration median="
+        f"{ratio_median:.8f} spread={ratio_spread:.8f}; "
+        f"baseline median={baseline_median:.8f} spread={baseline_spread:.8f} "
+        f"run ratios={baseline_values}; ceiling={ceiling:.8f}; "
+        f"reference CPU median={reference_cpu_median * 1000:.3f} ms; "
+        f"redox CPU median={solve_cpu_median * 1000:.3f} ms; "
         f"max wall={wall_max * 1000:.3f} ms; "
         f"max wall/median CPU={wall_cpu_ratio:.3f}; "
         f"Newton iterations={newton_iterations}; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
     )
-    assert median <= ceiling, (
-        f"{name}: cold CPU median {median * 1000:.3f} ms exceeds "
-        f"{ceiling * 1000:.3f} ms ceiling; spread={spread * 1000:.3f} ms; "
+    assert ratio_median <= ceiling, (
+        f"{name}: paired ratio median {ratio_median:.8f} exceeds "
+        f"{ceiling:.8f} ceiling; spread={ratio_spread:.8f}; "
         f"max wall={wall_max * 1000:.3f} ms; "
         f"max wall/median CPU={wall_cpu_ratio:.3f}; "
+        f"reference CPU median={reference_cpu_median * 1000:.3f} ms; "
         f"Newton iterations={newton_iterations}; "
         f"loadavg start/end={load_start:.2f}/{load_end:.2f}"
     )
@@ -519,16 +563,7 @@ def test_fallback_flag_collects_kernel_bit_during_invariant_extent(
     [
         (
             "metal_free_common_melt",
-            {
-                "SiO2": 0.50,
-                "MgO": 0.15,
-                "FeO": 0.15,
-                "CaO": 0.10,
-                "Al2O3": 0.08,
-                "TiO2": 0.01,
-                "Na2O": 0.008,
-                "K2O": 0.002,
-            },
+            _COLD_REFERENCE_COMPOSITION,
             3000.0,
             "mol",
             False,
