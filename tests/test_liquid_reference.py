@@ -4,6 +4,7 @@ import pytest
 
 from openimcc import (
     CertificationStatus,
+    AuthorityWindow,
     ImccGasResult,
     LiquidReferenceAuthority,
     LiquidReferenceRecord,
@@ -21,6 +22,41 @@ def test_authority_enum_and_inclusive_window_boundaries() -> None:
     assert liquid_reference_authority("SiO2(l)", 1996).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("SiO2(l)", 899.999).authority is LiquidReferenceAuthority.EXTRAPOLATED
     assert liquid_reference_authority("SiO2(l)", 1996.001).authority is LiquidReferenceAuthority.EXTRAPOLATED
+
+
+def test_alumina_authority_windows_and_boundaries() -> None:
+    expected = {
+        1799: LiquidReferenceAuthority.EXTRAPOLATED,
+        1801: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
+        2119: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
+        2120: LiquidReferenceAuthority.CERTIFIED,
+        2500: LiquidReferenceAuthority.CERTIFIED,
+        3000: LiquidReferenceAuthority.CERTIFIED,
+        3001: LiquidReferenceAuthority.EXTRAPOLATED,
+    }
+    for temperature, authority in expected.items():
+        assert liquid_reference_authority("Al2O3(l)", temperature).authority is authority
+    lower = liquid_reference_authority("Al2O3(l)", 1801)
+    assert lower.certified_T_K == (1801, 2120)
+    assert lower.band_value == pytest.approx(0.05)
+    assert lower.band_unit == "dex log10 pressure"
+    assert "not measured below 2120 K" in " ".join(item.basis for item in lower.evidence_ref)
+    certified = liquid_reference_authority("Al2O3(l)", 2120)
+    assert certified.certified_T_K == (2120, 3000)
+    assert certified.band_value == pytest.approx(0.007)
+
+
+def test_authority_windows_reject_overlaps() -> None:
+    evidence = ()
+    extra = AuthorityWindow(LiquidReferenceAuthority.CERTIFIED, (2, 4), None, None, evidence)
+    with pytest.raises(ValueError, match="windows overlap"):
+        LiquidReferenceRecord("X(l)", LiquidReferenceAuthority.CERTIFIED,
+            (1, 3), None, None, evidence, (extra,))
+    first = AuthorityWindow(LiquidReferenceAuthority.CERTIFIED, (1, 3), None, None, evidence)
+    second = AuthorityWindow(LiquidReferenceAuthority.CERTIFIED, (2, 4), None, None, evidence)
+    with pytest.raises(ValueError, match="windows overlap"):
+        LiquidReferenceRecord("X(l)", LiquidReferenceAuthority.EXTRAPOLATED,
+            None, None, None, evidence, (first, second))
 
 
 def test_composition_scoped_k2o_authority() -> None:
@@ -41,7 +77,7 @@ def test_composition_scoped_k2o_authority() -> None:
     assert outside_upper.in_composition_scope is False
     assert liquid_reference_authority("FeO(l)", 1649).authority is LiquidReferenceAuthority.EXTRAPOLATED
     assert liquid_reference_authority("FeO(l)", 1649.15).authority is LiquidReferenceAuthority.CERTIFIED
-    assert liquid_reference_authority("Al2O3(l)", 2400).authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert liquid_reference_authority("Al2O3(l)", 2400).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("Al2O3(l)", 2500).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("Na2O(l)", 1800).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("Na2O(l)", 1800.001).authority is LiquidReferenceAuthority.EXTRAPOLATED
@@ -77,8 +113,25 @@ def test_public_records_round_trip_and_gas_result_notice() -> None:
     ca_status = next(s for s in calcium.liquid_reference_status.values() if s.species == "CaO(l)")
     assert ca_status.authority is LiquidReferenceAuthority.CERTIFIED
     assert ca_status.band_value == pytest.approx(0.07)
-    assert not any(n.code == "liquid-reference-corroborated-calculation" for n in calcium.notices)
+    assert not any(
+        n.code == "liquid-reference-corroborated-calculation"
+        and n.status.species == "CaO(l)"
+        for n in calcium.notices
+    )
     assert all("CaO(l)" not in (flag or "") for flag in calcium.domain_flags.values())
+    alumina_calc = evaluate_gas({"Al2O3": 1.0}, 1900, 1e-8, pack)
+    alumina_status = next(
+        s for s in alumina_calc.liquid_reference_status.values()
+        if s.species == "Al2O3(l)"
+    )
+    assert alumina_status.authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION
+    assert alumina_status.band_value == pytest.approx(0.05)
+    assert not any("Al2O3(l)" in (flag or "") for flag in alumina_calc.domain_flags.values())
+    alumina_notice, = [n for n in alumina_calc.notices
+                       if n.code == "liquid-reference-corroborated-calculation"]
+    assert alumina_notice.status.band_value == pytest.approx(0.05)
+    alumina_measured = evaluate_gas({"Al2O3": 1.0}, 2200, 1e-8, pack)
+    assert all("Al2O3(l)" not in (flag or "") for flag in alumina_measured.domain_flags.values())
     corroborated_status = CertificationStatus(
         "Synthetic(l)",
         LiquidReferenceAuthority.CORROBORATED_CALCULATION,

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Extended Al₂O₃(l) certified authority to 2120–3000 K using measured
+  supercooled-liquid heat-capacity evidence, with a ±0.007 dex pressure band.
+  The 1801–2120 K continuation is marked corroborated calculation with a
+  ±0.05 dex band; pressures are unchanged. See `docs/melt-notices.md`.
+
 - K₂O compositions outside the 25–40 wt% evidence range keep the certified
   liquid-reference authority and receive a notice with the Plante (1979)
   residual basis. The composition scope no longer adds a source-validity flag.

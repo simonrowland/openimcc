@@ -172,6 +172,7 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         species_thermo,
     )
     from openimcc.liquid_reference import (
+        AuthorityWindow,
         CertificationStatus,
         EvidenceReference,
         LiquidReferenceAuthority,
@@ -183,7 +184,7 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
 
 def __getattr__(name: str):
     if name in {
-        "CertificationStatus", "EvidenceReference", "LiquidReferenceAuthority",
+        "AuthorityWindow", "CertificationStatus", "EvidenceReference", "LiquidReferenceAuthority",
         "LiquidReferenceRecord", "liquid_reference_authority",
         "liquid_reference_records",
     }:
@@ -289,6 +290,7 @@ __all__ = [
     "SpeciesThermo",
     "species_thermo",
     "CertificationStatus",
+    "AuthorityWindow",
     "EvidenceReference",
     "LiquidReferenceAuthority",
     "LiquidReferenceRecord",
