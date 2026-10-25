@@ -58,7 +58,7 @@ def test_silica_authority_windows_and_boundaries() -> None:
 def test_alumina_authority_windows_and_boundaries() -> None:
     expected = {
         1799: LiquidReferenceAuthority.EXTRAPOLATED,
-        1801: LiquidReferenceAuthority.EXTRAPOLATED,
+        1801: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
         2120: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
         2326: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
         2327: LiquidReferenceAuthority.CERTIFIED,
@@ -84,7 +84,7 @@ def test_alumina_low_temperature_extrapolation_envelope() -> None:
         1322: (LiquidReferenceAuthority.EXTRAPOLATED, (2327, 3000), None),
         1323: (LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17),
         1800: (LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17),
-        1801: (LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17),
+        1801: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1801, 2327), 0.05),
     }
     for temperature, (authority, window, band) in expected.items():
         status = liquid_reference_authority("Al2O3(l)", temperature)

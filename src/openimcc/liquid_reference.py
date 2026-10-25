@@ -150,15 +150,18 @@ _RECORDS = (
     LiquidReferenceRecord("Al2O3(l)", LiquidReferenceAuthority.CERTIFIED, (2327, 3000), 0.036, "dex log10 pressure",
         (_e("JANAF Al-100/Al-101", 1998, "liquid from the 2327 K melting point; liquid enthalpy fit from 2500 K"),
          _e("Crochetet et al.", 2026, "aerodynamic-levitation drop calorimetry; liquid Cp 168.6 +/- 9.6 J/mol/K over 2327-2873 K; departure from the reference at most 2.13 kJ/mol to 3000 K; DOI 10.1016/j.oceram.2026.101029")),
-        (AuthorityWindow(LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17,
-            "dex log10 pressure", (
-                _e("Hallstedt, Gurvich, Paradis et al., and Crochetet et al.", 2026, "low-temperature continuations spread by up to 9.84 kJ/mol at 1323 K; the Cp sources are extrapolated below their measured ranges, so this is a model envelope, not corroboration; DOI 10.1111/j.1151-2916.1992.tb04216.x, 10.1143/JJAP.43.1496, 10.1016/j.oceram.2026.101029; NASA/TP-2002-211556"),
-            )),
-         AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1801, 2327), 0.05,
+        (AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1801, 2327), 0.05,
             "dex log10 pressure", (
                 _e("Hallstedt", 1992, "independent CALPHAD liquid Al2O3 Gibbs energy that does not reuse the reference liquid Cp; within 1.5 kJ/mol of the reference at 1800-2327 K; corroborated by independent calculation, not measured; DOI 10.1111/j.1151-2916.1992.tb04216.x"),
                 _e("Paradis, Ishikawa, Saita & Yoda", 2004, "electrostatic levitation; liquid Cp estimated over 2120-2450 K assuming a constant hemispherical emissivity of 0.8, with a calculated fusion enthalpy of 109.0 kJ/mol; continued below 2120 K it stays within 2.6 kJ/mol of the reference down to 1801 K; DOI 10.1143/JJAP.43.1496"),
                 _e("Crochetet et al.", 2026, "liquid Cp measured above the melting point, continued below it, stays within 1.6 kJ/mol of the reference down to 1801 K; DOI 10.1016/j.oceram.2026.101029"),
+            )),
+         AuthorityWindow(LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17,
+            "dex log10 pressure", (
+                _e("Hallstedt", 1992, "CALPHAD liquid continued below its fitted range; the low-temperature continuations spread by up to 9.84 kJ/mol at 1323 K, so this band is a model envelope, not corroboration; DOI 10.1111/j.1151-2916.1992.tb04216.x"),
+                _e("Paradis, Ishikawa, Saita & Yoda", 2004, "measured-range Cp continued far below 2120 K; part of the model envelope; DOI 10.1143/JJAP.43.1496"),
+                _e("Crochetet et al.", 2026, "measured-range Cp continued far below 2327 K; part of the model envelope; DOI 10.1016/j.oceram.2026.101029"),
+                _e("Gurvich via NASA Glenn CEA", 2002, "liquid card from 2327 K continued downward; part of the model envelope; NASA/TP-2002-211556"),
             )),)),
     LiquidReferenceRecord("TiO2(l)", LiquidReferenceAuthority.EXTRAPOLATED, None, None, None,
         (_e("JANAF O-044", 1998, "estimated end-to-end: assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4 and estimated liquid Cp 8 cal per g-atom; no measured pure-liquid data"),)),
