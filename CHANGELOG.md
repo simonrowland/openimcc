@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- SiO₂(l)'s certified range narrowed to the measured 1500–1800 K window.
+  The 1200–1500 K and 1800–3000 K ranges now have corroborated-calculation
+  authority and emit a notice while process temperatures still score; 900–1200 K
+  has a ±0.18 dex extrapolation stress band. The 1984 value of 81.37 J mol⁻¹ K⁻¹
+  is identified as a partial-molar SiO₂ heat capacity in silicate liquids.
+
+- Al₂O₃(l) now reports an extrapolated 1323–1801 K window with a ±0.17 dex
+  model-envelope band. The low-temperature source curves are extrapolations, so
+  the band is not validation; the existing higher-temperature windows remain.
+
 - Gas results now report liquid-reference statuses and parent-reference flags
   only for oxide parents present in the melt. Gas pressures and other numeric
   results are unchanged.

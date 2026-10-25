@@ -18,16 +18,47 @@ from openimcc import (
 def test_authority_enum_and_inclusive_window_boundaries() -> None:
     with pytest.raises(ValueError, match="unknown liquid-reference authority"):
         LiquidReferenceRecord("X(l)", "unknown", None, None, None, ())  # type: ignore[arg-type]
-    assert liquid_reference_authority("SiO2(l)", 900).authority is LiquidReferenceAuthority.CERTIFIED
-    assert liquid_reference_authority("SiO2(l)", 1996).authority is LiquidReferenceAuthority.CERTIFIED
+    assert liquid_reference_authority("SiO2(l)", 900).authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert liquid_reference_authority("SiO2(l)", 1996).authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION
     assert liquid_reference_authority("SiO2(l)", 899.999).authority is LiquidReferenceAuthority.EXTRAPOLATED
-    assert liquid_reference_authority("SiO2(l)", 1996.001).authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert liquid_reference_authority("SiO2(l)", 3000).authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION
+    assert liquid_reference_authority("SiO2(l)", 3000.001).authority is LiquidReferenceAuthority.EXTRAPOLATED
+
+
+def test_silica_authority_windows_and_boundaries() -> None:
+    expected = {
+        899: (LiquidReferenceAuthority.EXTRAPOLATED, (1500, 1800), None),
+        900: (LiquidReferenceAuthority.EXTRAPOLATED, (900, 1200), 0.18),
+        1199: (LiquidReferenceAuthority.EXTRAPOLATED, (900, 1200), 0.18),
+        1200: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1200, 1500), 0.05),
+        1201: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1200, 1500), 0.05),
+        1499: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1200, 1500), 0.05),
+        1500: (LiquidReferenceAuthority.CERTIFIED, (1500, 1800), None),
+        1800: (LiquidReferenceAuthority.CERTIFIED, (1500, 1800), None),
+        1801: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1800, 3000), 0.06),
+        1996: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1800, 3000), 0.06),
+        2473: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1800, 3000), 0.06),
+        3000: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1800, 3000), 0.06),
+        3001: (LiquidReferenceAuthority.EXTRAPOLATED, (1500, 1800), None),
+    }
+    for temperature, (authority, window, band) in expected.items():
+        status = liquid_reference_authority("SiO2(l)", temperature)
+        assert status.authority is authority
+        assert status.certified_T_K == window
+        assert status.band_value == band
+        if band is not None:
+            assert status.band_unit == "dex log10 pressure"
+
+    certified = liquid_reference_authority("SiO2(l)", 1600)
+    evidence = " ".join(item.basis for item in certified.evidence_ref)
+    assert "partial-molar Cp" in evidence
+    assert "not pure-liquid SiO2 Cp" in evidence
 
 
 def test_alumina_authority_windows_and_boundaries() -> None:
     expected = {
         1799: LiquidReferenceAuthority.EXTRAPOLATED,
-        1801: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
+        1801: LiquidReferenceAuthority.EXTRAPOLATED,
         2120: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
         2326: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
         2327: LiquidReferenceAuthority.CERTIFIED,
@@ -37,7 +68,7 @@ def test_alumina_authority_windows_and_boundaries() -> None:
     }
     for temperature, authority in expected.items():
         assert liquid_reference_authority("Al2O3(l)", temperature).authority is authority
-    lower = liquid_reference_authority("Al2O3(l)", 1801)
+    lower = liquid_reference_authority("Al2O3(l)", 1900)
     assert lower.certified_T_K == (1801, 2327)
     assert lower.band_value == pytest.approx(0.05)
     assert lower.band_unit == "dex log10 pressure"
@@ -46,6 +77,27 @@ def test_alumina_authority_windows_and_boundaries() -> None:
     certified = liquid_reference_authority("Al2O3(l)", 2327)
     assert certified.certified_T_K == (2327, 3000)
     assert certified.band_value == pytest.approx(0.036)
+
+
+def test_alumina_low_temperature_extrapolation_envelope() -> None:
+    expected = {
+        1322: (LiquidReferenceAuthority.EXTRAPOLATED, (2327, 3000), None),
+        1323: (LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17),
+        1800: (LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17),
+        1801: (LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17),
+    }
+    for temperature, (authority, window, band) in expected.items():
+        status = liquid_reference_authority("Al2O3(l)", temperature)
+        assert status.authority is authority
+        assert status.certified_T_K == window
+        assert status.band_value == band
+        if band is not None:
+            assert status.band_unit == "dex log10 pressure"
+    evidence = " ".join(
+        item.basis for item in liquid_reference_authority("Al2O3(l)", 1500).evidence_ref
+    )
+    assert "model envelope" in evidence
+    assert "not corroboration" in evidence
 
 
 def test_authority_windows_reject_overlaps() -> None:
@@ -222,18 +274,27 @@ def test_halide_side_parent_uses_liquid_authority_lookup() -> None:
     assert result.domain_flags["NaCl"] is None
 
 
-def test_certified_window_keeps_condensate_interval_flag() -> None:
+def test_extrapolated_window_and_corroborated_window_notice() -> None:
     pack = load_gas_datapack()
-    result = evaluate_gas(
+    extrapolated = evaluate_gas(
         {"SiO2": 1.0}, 1000, 1e-8, pack,
         gas_species=("SiO",), allow_extrapolation=True,
     )
-    assert result.liquid_reference_status["SiO"].authority is LiquidReferenceAuthority.CERTIFIED
-    assert "outside declared G(T) interval" in result.domain_flags["SiO"]
+    assert extrapolated.liquid_reference_status["SiO"].authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert extrapolated.liquid_reference_status["SiO"].band_value == pytest.approx(0.18)
+    assert "outside declared G(T) interval" in extrapolated.domain_flags["SiO"]
+
+    corroborated = evaluate_gas({"SiO2": 1.0}, 1300, 1e-8, pack)
+    assert corroborated.liquid_reference_status["SiO2"].authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION
+    assert any(
+        notice.code == "liquid-reference-corroborated-calculation"
+        and notice.status.species == "SiO2(l)"
+        for notice in corroborated.notices
+    )
 
 
 def test_window_band_does_not_apply_outside_every_window() -> None:
-    below = liquid_reference_authority("Al2O3(l)", 1700)
+    below = liquid_reference_authority("Al2O3(l)", 1200)
     assert below.authority is LiquidReferenceAuthority.EXTRAPOLATED
     assert below.band_value is None and below.band_unit is None
     mgo = liquid_reference_authority("MgO(l)", 1700)

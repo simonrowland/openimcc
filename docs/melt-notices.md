@@ -29,27 +29,44 @@ where the mixture model was checked; it does not exclude out-of-range results.
 `evaluate_gas` accepts an optional `composition_wt_pct` mapping keyed by oxide
 to resolve composition-scoped records; calls without it leave the scope
 unresolved and retain the flag.
+SiO₂(l)'s certified range narrowed to the measured 1500–1800 K interval.
+From 1200–1500 K and 1800–3000 K it is corroborated by calculation, with
+respective ±0.05 and ±0.06 dex log₁₀-pressure bands and a notice; those process
+temperatures still score. From 900–1200 K it remains extrapolated with a
+±0.18 dex stress band, not a confidence interval. Below 900 K and above 3000 K
+it remains extrapolated without a band. The pure-silica measurement is the
+drop-calorimetry relative enthalpy of amorphous silica above its glass
+transition reported by Richet, Bottinga, Deniélou, Petitet & Téqui (1982; DOI
+10.1016/0016-7037(82)90383-0). Richet, Bottinga & Téqui (1984) measured a
+81.37 J mol⁻¹ K⁻¹ partial-molar SiO₂ heat capacity in sodium-silicate liquids;
+that value is not pure-liquid SiO₂ heat capacity.
+
 CaO(l) is certified from 1323–2473 K; its record retains the evidence that two
 independent calculations corroborate the fusion enthalpy, though no measured
 fusion datum exists. It emits no notice inside that window and carries a
-±0.07 dex pO₂ band there. A window's band applies only inside that window, so
+±0.07 dex pO₂ band there. Al₂O₃(l) has an extrapolated 1323–1801 K window
+with a ±0.17 dex log₁₀-pressure model-envelope band; its low-temperature source
+curves are extrapolated and do not validate that envelope. Above 1801 K and
+below 2327 K, where the liquid is supercooled, authority is corroborated
+calculation with a ±0.05 dex band: an independent CALPHAD liquid and continued measured
+heat-capacity series stay within 2.6 kJ mol⁻¹, but nothing is measured
+calorimetrically there. A window's band applies only inside that window, so
 extrapolated statuses outside every window carry no band unless the record is
 itself extrapolated, as MgO(l) is. Al₂O₃(l) is certified from
 its 2327 K melting point to 3000 K with a ±0.036 dex log₁₀-pressure band, the
 largest departure of the measured liquid heat capacity from the reference.
-From 1801–2327 K, where the liquid is supercooled, it has corroborated-
-calculation authority with a ±0.05 dex band: an independent CALPHAD liquid and
-the continued measured heat-capacity series all stay within 2.6 kJ mol⁻¹ of the
-reference, but nothing is measured calorimetrically there. Na₂O(l)'s measured Cp
-window ends at 1800 K.
+Na₂O(l)'s measured Cp window ends at 1800 K.
 TiO₂(l) is extrapolated at every temperature and has no certified window; the
 JANAF O-044 flag and the O-044-SC-CP continuation flag both remain. MgO(l) remains extrapolated and carries its
 ±0.3 dex pO₂ band. These records describe reference authority only and do not
 change calculated gas pressures. Condensate G(T) interval flags remain in
 place even when the liquid reference itself is certified.
 
-The SiO₂(l) window uses Richet, Bottinga & Téqui (1984), measured liquid heat
-capacity and the measured fusion anchor. K₂O(l) uses Plante (1979) measured K
+For SiO₂(l), Connolly's (2016; DOI 10.1002/2016JE005059) metastable-liquid
+function corroborates the 1200–1500 K interval below the glass transition.
+Above 1800 K, Connolly's branches and Gurvich (1991), as transcribed in NASA
+Glenn CEA (NASA/TP-2002-211556), corroborate the reference by calculation;
+no pure-liquid measurement covers that range. K₂O(l) uses Plante (1979) measured K
 pressures. FeO(l) uses Darken & Gurry (1946), as reported by Masson (1965), and
 Hashimoto (1983) residue run 17c3-2 outside the window. Al₂O₃(l) follows
 JANAF Al-100/Al-101 from the melting point, with drop-calorimetry liquid heat

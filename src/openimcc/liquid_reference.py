@@ -99,8 +99,30 @@ def _e(author: str, year: int, basis: str, scope=None) -> EvidenceReference:
 
 
 _RECORDS = (
-    LiquidReferenceRecord("SiO2(l)", LiquidReferenceAuthority.CERTIFIED, (900, 1996), None, None,
-        (_e("Richet, Bottinga & Tequi", 1984, "measured liquid Cp 81.37 J/mol/K by drop calorimetry, 900-1800 K; measured fusion anchor Tm 1996 K, Delta Hfus 9.58 kJ/mol; DOI 10.1111/j.1151-2916.1984.tb19155.x"),)),
+    # Window bands multiply the largest Gibbs departure (kJ/mol) by the
+    # worst Si3 pressure sensitivity (0.0688 dex/kJ): 0.627 * 0.0688 =
+    # 0.0431 dex, rounded to 0.05 for 1200-1500 K; 0.748 * 0.0688 =
+    # 0.0515 dex, rounded to 0.06 for 1800-3000 K. The lower extension uses
+    # the 2.6 kJ/mol stress cap: 2.6 * 0.0688 = 0.179 dex, rounded to 0.18;
+    # this is a stress bound, not a confidence interval. pO2 sensitivity is
+    # smaller than the Si3 worst case. The measured amorphous-silica enthalpy
+    # window begins conservatively above the 1480 K glass transition.
+    LiquidReferenceRecord("SiO2(l)", LiquidReferenceAuthority.CERTIFIED, (1500, 1800), None, None,
+        (_e("Richet, Bottinga, Denielou, Petitet & Tequi", 1982, "drop-calorimetry relative enthalpy of amorphous silica on the liquid side above its glass transition; agrees with the reference within 0.001 kJ/mol from 1500-1800 K; DOI 10.1016/0016-7037(82)90383-0"),
+         _e("Richet, Bottinga & Tequi", 1984, "measured SiO2 partial-molar Cp of 81.37 J/mol/K in sodium-silicate liquids by drop calorimetry from 900-1800 K; this is not pure-liquid SiO2 Cp; DOI 10.1111/j.1151-2916.1984.tb19155.x")),
+        (AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1200, 1500), 0.05,
+            "dex log10 pressure", (
+                _e("Connolly", 2016, "metastable-liquid thermodynamic function within 0.627 kJ/mol of the reference from 1200-1500 K; calculated corroboration below the glass transition, not measurement; DOI 10.1002/2016JE005059"),
+            )),
+         AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1800, 3000), 0.06,
+            "dex log10 pressure", (
+                _e("Connolly", 2016, "metastable-liquid thermodynamic function; calculated corroboration only, not measurement; DOI 10.1002/2016JE005059"),
+                _e("Gurvich (1991), as transcribed in NASA Glenn CEA", 2002, "liquid function agrees with the reference within 0.748 kJ/mol from 1800-3000 K; NASA/TP-2002-211556"),
+            )),
+         AuthorityWindow(LiquidReferenceAuthority.EXTRAPOLATED, (900, 1200), 0.18,
+            "dex log10 pressure", (
+                _e("JANAF O-038 and Connolly", 2016, "below the packaged row and outside Connolly's temperature range; ±0.18 dex is the 2.6 kJ/mol stress cap propagated at 0.0688 dex/kJ, not a confidence interval"),
+            )))),
     LiquidReferenceRecord("K2O(l)", LiquidReferenceAuthority.CERTIFIED, (1259, 1765), 0.13, "dex pO2",
         (_e("Plante", 1979, "measured potassium pressures; residual about -0.13 dex at 25-40 wt% K2O; about -0.38 dex at 12-20 wt% K2O", {"K2O_wt_pct": (25, 40)}),)),
     LiquidReferenceRecord("CaO(l)", LiquidReferenceAuthority.CERTIFIED, (1323, 2473), 0.07, "dex pO2",
@@ -123,10 +145,16 @@ _RECORDS = (
     # 2.550 * 0.016616 = 0.0424 dex, rounded up to 0.05. The Paradis 2.6 kJ/mol
     # root is at 1796.2 K; 1801 K is a conservative inclusive edge. Hallstedt's
     # independent liquid is +1.45 kJ/mol at 1800 K, inside both bounds.
+    # Low-window envelope: 9.84 kJ/mol * 0.0166 dex/kJ (Al2) = 0.164 dex,
+    # rounded up to 0.17; the corresponding worst pO2 band is 0.109 dex.
     LiquidReferenceRecord("Al2O3(l)", LiquidReferenceAuthority.CERTIFIED, (2327, 3000), 0.036, "dex log10 pressure",
         (_e("JANAF Al-100/Al-101", 1998, "liquid from the 2327 K melting point; liquid enthalpy fit from 2500 K"),
          _e("Crochetet et al.", 2026, "aerodynamic-levitation drop calorimetry; liquid Cp 168.6 +/- 9.6 J/mol/K over 2327-2873 K; departure from the reference at most 2.13 kJ/mol to 3000 K; DOI 10.1016/j.oceram.2026.101029")),
-        (AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1801, 2327), 0.05,
+        (AuthorityWindow(LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17,
+            "dex log10 pressure", (
+                _e("Hallstedt, Gurvich, Paradis et al., and Crochetet et al.", 2026, "low-temperature continuations spread by up to 9.84 kJ/mol at 1323 K; the Cp sources are extrapolated below their measured ranges, so this is a model envelope, not corroboration; DOI 10.1111/j.1151-2916.1992.tb04216.x, 10.1143/JJAP.43.1496, 10.1016/j.oceram.2026.101029; NASA/TP-2002-211556"),
+            )),
+         AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1801, 2327), 0.05,
             "dex log10 pressure", (
                 _e("Hallstedt", 1992, "independent CALPHAD liquid Al2O3 Gibbs energy that does not reuse the reference liquid Cp; within 1.5 kJ/mol of the reference at 1800-2327 K; corroborated by independent calculation, not measured; DOI 10.1111/j.1151-2916.1992.tb04216.x"),
                 _e("Paradis, Ishikawa, Saita & Yoda", 2004, "electrostatic levitation; liquid Cp estimated over 2120-2450 K assuming a constant hemispherical emissivity of 0.8, with a calculated fusion enthalpy of 109.0 kJ/mol; continued below 2120 K it stays within 2.6 kJ/mol of the reference down to 1801 K; DOI 10.1143/JJAP.43.1496"),
