@@ -111,6 +111,16 @@ def test_public_records_round_trip_and_gas_result_notice() -> None:
     pack = load_gas_datapack()
     certified = evaluate_gas({"SiO2": 1.0}, 1500, 1e-8, pack)
     assert all("SiO2(l)" not in (flag or "") for flag in certified.domain_flags.values())
+    binary_alkali_silica = evaluate_gas(
+        {"K2O": 0.333, "SiO2": 0.667}, 1500, 1e-8, pack
+    )
+    assert {status.species for status in binary_alkali_silica.liquid_reference_status.values()} == {
+        "K2O(l)", "SiO2(l)"
+    }
+    assert all(
+        not any(parent in (flag or "") for parent in ("MgO(l)", "CaO(l)", "Al2O3(l)"))
+        for flag in binary_alkali_silica.domain_flags.values()
+    )
     calcium = evaluate_gas({"CaO": 1.0}, 2000, 1e-8, pack)
     ca_status = next(s for s in calcium.liquid_reference_status.values() if s.species == "CaO(l)")
     assert ca_status.authority is LiquidReferenceAuthority.CERTIFIED

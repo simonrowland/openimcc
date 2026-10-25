@@ -5622,7 +5622,8 @@ def evaluate_gas(
                 pressure_rows.append(("oxide", oxide_row))
                 flag = _outside_interval_flag(oxide_name, T, oxide_row)
             a_oxide = act[oxide]
-            if flag is not None:
+            parent_present = a_oxide != 0.0
+            if parent_present and flag is not None:
                 flags.append(flag)
             oxide_flag_start = len(flags)
             validity = (
@@ -5631,7 +5632,12 @@ def evaluate_gas(
                 )
                 if oxide_row is not None else None
             )
-            if oxide_row is not None and validity and validity.get("supercooled_continuation"):
+            if (
+                parent_present
+                and oxide_row is not None
+                and validity
+                and validity.get("supercooled_continuation")
+            ):
                 source_table = str(validity.get("table_id") or "")
                 source_name = "NASA Glenn/CEA" if source_table.startswith("NG-") else "JANAF"
                 source_name = (
@@ -5649,7 +5655,7 @@ def evaluate_gas(
                         else ""
                     )
                 )
-            elif oxide_row is not None:
+            elif parent_present and oxide_row is not None:
                 parent_phase = "s" if str(oxide_row["state"]) == "s" else "l"
                 flag = _source_model_flag(
                     oxide_name, T, oxide_row, phase=parent_phase
@@ -5662,7 +5668,7 @@ def evaluate_gas(
                     )
                     if flag is not None:
                         flags.append(flag)
-            if oxide_row is not None and oxide_name in {
+            if parent_present and oxide_row is not None and oxide_name in {
                 record.species for record in liquid_reference_records()
             }:
                 flags[oxide_flag_start:] = _liquid_reference_flags(
@@ -5719,21 +5725,22 @@ def evaluate_gas(
                 n_O2 != 0.0 or gas_name in _HALIDE_REACTIONS
             ):
                 pressure_rows.append(("gas", O2_row))
-            flag = _outside_interval_flag(side_name, T, side_row)
-            if flag is not None:
-                flags.append(flag)
-            flag = _source_model_flag(side_name, T, side_row, phase="l")
-            source_flags = [flag] if flag is not None else []
-            if side_name in {record.species for record in liquid_reference_records()}:
-                source_flags = _liquid_reference_flags(
-                    side_name,
-                    T,
-                    source_flags,
-                    channel=gas_name,
-                    composition_wt_pct=composition_wt_pct,
-                    statuses=liquid_statuses,
-                )
-            flags.extend(source_flags)
+            if act[side_oxide] != 0.0:
+                flag = _outside_interval_flag(side_name, T, side_row)
+                if flag is not None:
+                    flags.append(flag)
+                flag = _source_model_flag(side_name, T, side_row, phase="l")
+                source_flags = [flag] if flag is not None else []
+                if side_name in {record.species for record in liquid_reference_records()}:
+                    source_flags = _liquid_reference_flags(
+                        side_name,
+                        T,
+                        source_flags,
+                        channel=gas_name,
+                        composition_wt_pct=composition_wt_pct,
+                        statuses=liquid_statuses,
+                    )
+                flags.extend(source_flags)
             # The side table carries complete oxygen stoichiometry for new
             # halides whose reaction tuple has a zero O2 slot. Existing Na/K
             # rows keep using their tuple coefficient and unchanged arithmetic.

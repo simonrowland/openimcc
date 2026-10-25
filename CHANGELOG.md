@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Gas results now report liquid-reference statuses and parent-reference flags
+  only for oxide parents present in the melt. Gas pressures and other numeric
+  results are unchanged.
+
 - Al₂O₃(l) is now certified from its 2327 K melting point (previously from
   2500 K), with a ±0.036 dex pressure band from measured liquid heat capacity.
   The supercooled liquid at 1801–2327 K has corroborated-calculation authority,

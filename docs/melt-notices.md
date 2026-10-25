@@ -14,7 +14,8 @@ inside identity-scoped gates receive an unscored notice.
 | `temperature-domain-extension` | An active association row is evaluated below its declared temperature domain | The model uses ΔrCp = 0 continuation; this is calculation authority, not validation, and no uncertainty band is available. |
 
 Liquid gas-parent results expose `liquid_reference_status`, keyed by gas
-channel, with a typed authority, inclusive `certified_T_K` endpoints, band and
+channel, only for parent oxides present in the melt; reference flags follow the
+same rule. Each status has a typed authority, inclusive `certified_T_K` endpoints, band and
 structured `evidence_ref`. `liquid_reference_records()` returns the immutable
 records and `liquid_reference_authority(species, T_K, composition=None)` resolves
 one status. Inside K₂O's inclusive 1259–1765 K window the reference stays
