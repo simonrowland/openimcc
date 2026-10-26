@@ -5863,6 +5863,53 @@ def test_oxygen_balance_ion_mode_is_opt_in_and_reports_high_temperature_shifts(
         assert math.isfinite(shift_dex), (temperature, shift_dex)
 
 
+def test_ion_oxygen_balance_refuses_multiple_sampled_roots(
+    gas_pack: ImccGasDatapack,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import openimcc.gas as gas_module
+
+    channels, _ = gas_module._default_reactions(("K2O",), gas_pack, 1500.0)
+    neutral_species = {name for name, _reaction in channels}
+    pressure_names = neutral_species | {"e-"}
+    pressure_names.update(
+        ion
+        for neutral, ion in gas_module._GAS_IONIZATION_PAIRS
+        if neutral in neutral_species
+    )
+    metadata = oxygen_balance_species_metadata({"K": "K2O", "O2": None})
+    k_weight = (
+        metadata["K"].oxygen_atoms - metadata["K"].parent_oxygen_demand
+    ) / math.sqrt(metadata["K"].molar_mass)
+    o2_weight = (
+        metadata["O2"].oxygen_atoms - metadata["O2"].parent_oxygen_demand
+    ) / math.sqrt(metadata["O2"].molar_mass)
+
+    def synthetic_pressures(
+        _activities: object,
+        _temperature: float,
+        f_o2: float,
+        *_args: object,
+        **_kwargs: object,
+    ) -> dict[str, float]:
+        logp = math.log10(f_o2)
+        oscillation = 0.01 * math.sin(2.0 * math.pi * (logp + 30.0) / 10.0)
+        pressures = dict.fromkeys(pressure_names, 0.0)
+        pressures["K"] = 1.0
+        pressures["O2"] = (-k_weight + oscillation) / o2_weight
+        return pressures
+
+    monkeypatch.setattr(gas_module, "evaluate_gas", synthetic_pressures)
+    with pytest.raises(
+        ImccGasOxygenBalanceError,
+        match=r"multiple sign-changing intervals.*\[-",
+    ):
+        evaluate_gas_oxygen_balance(
+            {"K2O": 1.0}, 1500.0, gas_pack,
+            parent_oxides=("K2O",), include_ions=True,
+        )
+
+
 def test_oxygen_balance_published_pack_keeps_same_channels(
     sf04_gas_pack: ImccGasDatapack,
     tmp_path: Path,

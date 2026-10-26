@@ -6334,8 +6334,10 @@ def evaluate_gas_oxygen_balance(
     atom. The ion's effective pO2 exponent is taken from that parent for the
     generic solver's monotonicity check; charge closure makes the actual ion
     pressure composition-dependent, so the generic monotonicity proof does
-    not strictly cover the ion contribution. Brent still requires and checks
-    a sign-changing bracket, but uniqueness is not guaranteed in this mode.
+    not strictly cover the ion contribution. Before solving, a fixed 64-interval
+    scan checks the allowed pO2 bracket and refuses when it finds multiple
+    simple sign-changing intervals. A finite scan cannot rule out a tangent
+    root between samples.
     Positive ions are counted as ambipolar ion/electron pairs effusing at the
     ion mass. Counting free electrons at their own mass would apply the
     ``1/sqrt(m_e)`` factor to a beam that cannot escape with net charge; this
@@ -6509,6 +6511,45 @@ def evaluate_gas_oxygen_balance(
             include_ions=include_ions,
         )
 
+    if include_ions:
+        # Charge closure makes ion pressures composition-dependent, so sample
+        # the actual residual before passing it to the generic Brent contract.
+        # Sixty-four equal log-pressure intervals are deterministic and detect
+        # multiple simple roots when each root changes sign between samples;
+        # no finite grid can exclude a tangent root between adjacent samples.
+        low, high = _OXYGEN_BALANCE_BRACKET
+        grid_size = 64
+        log_pressures = np.linspace(low, high, grid_size + 1)
+        residuals: list[float] = []
+        for log_pressure in log_pressures:
+            trial_pressures = pressure_model(float(log_pressure))
+            residuals.append(math.fsum(
+                (data.oxygen_atoms - data.parent_oxygen_demand)
+                * float(trial_pressures[name]) / math.sqrt(data.molar_mass)
+                for name, data in species_data.items()
+            ))
+        intervals: list[tuple[float, float]] = []
+        previous_nonzero: int | None = None
+        for index, residual in enumerate(residuals):
+            if residual == 0.0:
+                continue
+            if (
+                previous_nonzero is not None
+                and residuals[previous_nonzero] * residual < 0.0
+            ):
+                intervals.append((
+                    float(log_pressures[previous_nonzero]),
+                    float(log_pressures[index]),
+                ))
+            previous_nonzero = index
+        if len(intervals) > 1:
+            rendered = ", ".join(
+                f"[{left:g}, {right:g}]" for left, right in intervals
+            )
+            raise ImccGasOxygenBalanceError(
+                "ion oxygen-balance residual has multiple sign-changing intervals "
+                f"in log10(pO2/bar): {rendered}"
+            )
     p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
         pressure_model, species_data
     )

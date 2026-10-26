@@ -283,10 +283,12 @@ and the pair is assigned the ion's mass. A free-electron
 cannot remain quasi-neutral. Negative ions are excluded because the attachment
 model does not identify their compensating positive beam partners. The
 charge-closure response makes ion pressures composition-dependent, so the
-parent exponent is only an effective monotonicity proxy; the solver verifies a
-bracketed root but uniqueness is not guaranteed in ion mode. A summed pressure
-above 1 bar is returned. The 1-bar ceiling applies to the oxygen-balance
-\(p_{\rm O_2}\) bracket, not the total pressure.
+parent exponent is only an effective monotonicity proxy. Before solving, the
+ion path scans the allowed pO2 bracket at 64 fixed intervals and refuses when
+it detects multiple simple sign-changing roots. A finite scan cannot rule out
+a tangent root between samples. A summed pressure above 1 bar is returned.
+The 1-bar ceiling applies to the oxygen-balance \(p_{\rm O_2}\) bracket, not
+the total pressure.
 
 The oxygen-balance solver chooses \(p_{\mathrm O_2}\) so the net oxygen flux
 relative to the parent-oxide oxygen demand vanishes. In a Knudsen effusion
