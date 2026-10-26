@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added opt-in fixed-composition saturated-vapor equilibrium and a boiling-
+  temperature solver. The saturation closure uses pressure-weighted oxygen
+  stoichiometry and supports the existing equilibrium charge closure with
+  `include_ions=True`; the boiling helper holds caller activities fixed. See
+  `docs/gas-saturation.md`.
+
 - Added opt-in ion fluxes to the Knudsen oxygen balance with charge closure at
   every trial oxygen pressure, per-element ion-fraction diagnostics, and an
   ambipolar ion/electron-pair mass approximation. Enable `include_ions=True`

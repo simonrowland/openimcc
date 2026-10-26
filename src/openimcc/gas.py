@@ -133,6 +133,12 @@ class ImccGasOxygenBalanceError(ImccRefusal):
     code = "imcc_gas_oxygen_balance_failed"
 
 
+class ImccGasSaturationError(ImccRefusal):
+    """Raised when a fixed-composition saturation root is not unique or bracketed."""
+
+    code = "imcc_gas_saturation_failed"
+
+
 class ImccGasIngestionWarning(UserWarning):
     """A CSV load discarded one or more columns with empty headers."""
 
@@ -295,6 +301,24 @@ class ImccGasResult(MappingABC[str, float]):
                     status,
                 ))
         return tuple(notices)
+
+
+@dataclass(frozen=True)
+class ImccGasSaturationResult:
+    """Fixed-composition equilibrium vapor saturated over the supplied melt."""
+
+    pO2_bar: float
+    species_pressures_bar: Mapping[str, float]
+    channel_pressures_bar: Mapping[str, float]
+    P_sat_bar: float
+    mole_fractions: Mapping[str, float]
+    mode: str
+    diagnostics: Mapping[str, object]
+    domain_flags: Mapping[str, str | None]
+
+    def __post_init__(self) -> None:
+        for name in ("species_pressures_bar", "channel_pressures_bar", "mole_fractions", "diagnostics", "domain_flags"):
+            object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
 
 
 @dataclass(frozen=True)
@@ -6567,3 +6591,176 @@ def evaluate_gas_oxygen_balance(
             if ion.endswith("+") and ion in pressures and neutral in pressures
         }
     return p_o2, pressures, diagnostics
+
+
+def evaluate_gas_saturation(
+    parent_activities: Mapping[str, float] | Sequence[float] | np.ndarray,
+    temperature_K: float,
+    datapack: ImccGasDatapack,
+    *,
+    parent_oxides: Sequence[str] | None = None,
+    include_ions: bool = False,
+    allow_extrapolation: bool = False,
+    log10_pO2_bracket: tuple[float, float] = (-100.0, 100.0),
+) -> ImccGasSaturationResult:
+    """Solve saturated vapor over a fixed melt composition and temperature.
+
+    Activities are held fixed at this temperature. Oxygen closure is the
+    pressure weighted stoichiometric balance; this is an equilibrium vapor
+    model, not the Knudsen flux closure.
+    """
+    if parent_oxides is None:
+        if isinstance(parent_activities, Mapping):
+            parents = tuple(k for k in parent_activities if k in _REACTION_PARENT_OXIDES)
+        else:
+            parents = IMCC_PARENT_OXIDES
+    else:
+        parents = tuple(parent_oxides)
+    reactions, omitted = _default_reactions(parents, datapack, float(temperature_K))
+    # For E_aO_b(l) -> n_g E_cO_d(g) + n_O2 O2(g), each mole of
+    # channel pressure represents gas molecules while the corresponding
+    # parent oxygen is b/n_g per gas molecule. Thus its oxygen excess is
+    # (n_g*d-b)/n_g = -2*n_O2/n_g atoms per molecule. Unit check: multiplying
+    # by bar gives oxygen-atom pressure. For pure MO -> M + 1/2 O2, if the
+    # atomic-O dissociation channel is absent, the metal's -1 coefficient
+    # cancels O2's +2 coefficient at pM=2 pO2; with O(g), its +1 term also
+    # enters, giving pM=pO+2 pO2.
+    weights: dict[str, float] = {"O2": 2.0}
+    exponents: dict[str, float] = {"O2": 1.0}
+    for species, (parent, n_gas, n_O2) in reactions:
+        if species == "O2":
+            continue
+        if parent in _GAS_PHASE_PARENT_ROWS:
+            # Gas-parent channels (for example sulfur oxidation) borrow no
+            # oxygen from the melt, so their vapor oxygen is all net oxygen.
+            parent_o = float(_formula_atoms(species).get("O", 0))
+        elif species in _ALKALI_HALIDE_REACTION_OXIDES:
+            # The side table expresses oxygen demand per product molecule.
+            parent_o = -_ALKALI_HALIDE_REACTION_OXIDES[species][1]
+        elif species in _HALIDE_REACTIONS or species in _HYDROGEN_HALIDE_PARENTS:
+            parent_o = 0.0
+        elif parent:
+            parent_o = -2.0 * n_O2 / n_gas
+        else:
+            parent_o = float(_formula_atoms(species).get("O", 0))
+        weights[species] = parent_o
+        if species in _ALKALI_HALIDE_REACTION_OXIDES:
+            exponent = -_ALKALI_HALIDE_REACTION_OXIDES[species][2]
+        elif species in _HYDROGEN_HALIDE_PARENTS:
+            exponent = 0.0
+        elif parent in _GAS_PHASE_PARENT_ROWS:
+            exponent = n_O2
+        elif parent:
+            exponent = -n_O2 / n_gas
+        else:
+            exponent = _formula_atoms(species).get("O", 0) / 2.0
+        exponents[species] = exponent
+    if include_ions:
+        for neutral, ion in (*_GAS_IONIZATION_PAIRS, *_GAS_ELECTRON_ATTACHMENTS):
+            weights[ion] = weights.get(neutral, 0.0)
+            exponents[ion] = exponents.get(neutral, 0.0)
+
+    lo, hi = map(float, log10_pO2_bracket)
+    if not math.isfinite(lo) or not math.isfinite(hi) or lo >= hi:
+        raise ImccGasSaturationError("invalid saturation pO2 bracket")
+
+    def state(logp: float):
+        return evaluate_gas(
+            parent_activities, temperature_K, 10.0 ** logp, datapack,
+            parent_oxides=parents, allow_extrapolation=allow_extrapolation,
+            include_ions=include_ions,
+        )
+
+    def residual(logp: float) -> float:
+        pressures = state(logp)
+        return math.fsum(weights.get(name, 0.0) * pressure for name, pressure in pressures.items())
+
+    # The sign criterion proves monotonicity for independent mass action
+    # channels. Coupled charge closure may invalidate that proof, so scan it.
+    sign_terms = [weights[name] * exponents.get(name, 0.0) for name in weights]
+    monotone = (
+        not include_ions
+        and all(term >= -1e-15 for term in sign_terms)
+        and any(term > 1e-15 for term in sign_terms)
+    )
+    if monotone:
+        f_lo, f_hi = residual(lo), residual(hi)
+        brackets = [(lo, hi)] if f_lo * f_hi < 0 else ([(lo, lo)] if f_lo == 0 else [(hi, hi)] if f_hi == 0 else [])
+    else:
+        grid = np.linspace(lo, hi, 81)
+        vals = [residual(float(x)) for x in grid]
+        brackets = [(float(grid[i]), float(grid[i])) for i in range(len(grid)) if vals[i] == 0]
+        brackets.extend(
+            (float(grid[i]), float(grid[i + 1]))
+            for i in range(len(grid) - 1)
+            if vals[i] * vals[i + 1] < 0
+        )
+    if len(brackets) != 1:
+        raise ImccGasSaturationError(
+            f"oxygen-stoichiometry residual has {len(brackets)} roots in pO2 bracket; refusing ambiguous saturation"
+        )
+    bracket = brackets[0]
+    if bracket[0] == bracket[1]:
+        root = bracket[0]
+    else:
+        root = float(brentq(residual, *bracket, xtol=1e-12))
+    result = state(root)
+    channels = dict(result)
+    p_total = math.fsum(channels.values())
+    species_pressures = dict(channels)
+    # Current retained reaction rows use one channel per species; preserve the
+    # channel map explicitly so future repeated products can be accounted for.
+    return ImccGasSaturationResult(
+        10.0 ** root, species_pressures, channels, p_total,
+        {name: p / p_total for name, p in channels.items()} if p_total else {},
+        "fixed_composition_saturation",
+        {"log10_pO2_bracket": bracket, "oxygen_residual": residual(root),
+         "monotonicity_sign_criterion": monotone, "include_ions": include_ions,
+         "omitted_channels": omitted},
+        result.domain_flags,
+    )
+
+
+def gas_boiling_temperature(
+    parent_activities: Mapping[str, float] | Sequence[float] | np.ndarray,
+    datapack: ImccGasDatapack,
+    ambient_pressure_bar: float,
+    T_bracket: tuple[float, float],
+    *,
+    parent_oxides: Sequence[str] | None = None,
+    include_ions: bool = False,
+    allow_extrapolation: bool = False,
+) -> tuple[float, ImccGasSaturationResult]:
+    """Find boiling T with caller activities held fixed throughout the bracket."""
+    if not math.isfinite(ambient_pressure_bar) or ambient_pressure_bar <= 0:
+        raise ValueError("ambient_pressure_bar must be finite and positive")
+    low, high = map(float, T_bracket)
+    if not (0 < low < high):
+        raise ImccGasSaturationError("invalid boiling temperature bracket")
+    cache: dict[float, ImccGasSaturationResult] = {}
+    def residual(T: float) -> float:
+        state = evaluate_gas_saturation(
+            parent_activities, T, datapack, parent_oxides=parent_oxides,
+            include_ions=include_ions, allow_extrapolation=allow_extrapolation,
+        )
+        cache[T] = state
+        return state.P_sat_bar - ambient_pressure_bar
+    f_low, f_high = residual(low), residual(high)
+    if f_low * f_high > 0:
+        raise ImccGasSaturationError("boiling temperature is not bracketed by T_bracket")
+    temperature = low if f_low == 0 else high if f_high == 0 else float(brentq(residual, low, high, xtol=1e-8))
+    state = cache.get(temperature) or evaluate_gas_saturation(
+        parent_activities, temperature, datapack, parent_oxides=parent_oxides,
+        include_ions=include_ions, allow_extrapolation=allow_extrapolation,
+    )
+    diagnostics = dict(state.diagnostics)
+    diagnostics.update({
+        "ambient_pressure_bar": ambient_pressure_bar,
+        "temperature_bracket_K": (low, high),
+        "boiling_residual_bar": state.P_sat_bar - ambient_pressure_bar,
+    })
+    return temperature, ImccGasSaturationResult(
+        state.pO2_bar, state.species_pressures_bar, state.channel_pressures_bar,
+        state.P_sat_bar, state.mole_fractions, state.mode, diagnostics,
+        state.domain_flags,
+    )
