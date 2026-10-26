@@ -201,10 +201,36 @@ def test_v2_candidate_loads_preserves_prefixes_and_all_seams() -> None:
 def test_v2_candidate_flags_show_per_species_tier_and_band() -> None:
     candidate = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
     expected = {
-        "SiO(g)": ("corroborated by calculation", "0.18033 kJ/mol", "±0.00157 dex"),
-        "Mg(g)": ("corroborated by calculation", "0.00218 kJ/mol", "±2.8e-05 dex"),
-        "Na(g)": ("corroborated by calculation", "0.02452 kJ/mol", "±0.000213 dex"),
-        "Al2O3(l)": ("rough above", "4.45627 kJ/mol", "±0.058192 dex"),
+        "SiO(g)": (
+            "corroborated by calculation over 3000-6000 K",
+            "within at most 0.18033 kJ/mol",
+            "at most ±0.00157 dex",
+            "over that range",
+        ),
+        "Mg(g)": (
+            "corroborated by calculation over 3000-6000 K",
+            "within at most 0.00218 kJ/mol",
+            "at most ±2.8e-05 dex",
+            "over that range",
+        ),
+        "Fe(g)": (
+            "corroborated by calculation over 3000-6000 K",
+            "within at most 0.100721 kJ/mol",
+            "at most ±0.000877 dex",
+            "over that range",
+        ),
+        "Na(g)": (
+            "corroborated by calculation over 3000-6000 K",
+            "within at most 0.02452 kJ/mol",
+            "at most ±0.000213 dex",
+            "over that range",
+        ),
+        "Al2O3(l)": (
+            "rough above 4000 K",
+            "diverge by up to 4.45627 kJ/mol",
+            "maximum pressure band ±0.058192 dex",
+            "over the reported comparison range",
+        ),
     }
     for species, parts in expected.items():
         frame = candidate.gas_df if species.endswith("(g)") else candidate.oxide_df

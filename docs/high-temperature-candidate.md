@@ -20,12 +20,14 @@ the card shape begins. Thus H=G+TS is continuous at 3000 K, at the 4500/5000 K
 switches, and at the CaO/MgO bridge seams.
 
 The agreement tier and the maximum reported Gibbs spread and pressure band
-are attached to each candidate row and appear in result flags above 3000 K.
+over each species' comparison range are attached to each candidate row and
+appear in result flags above 3000 K. The flags identify these values as maxima
+over that range, rather than values specific to the evaluation temperature.
 The band is a conservative per-reaction pressure envelope from the source
 comparison, not a statistical confidence interval. Rows without a paired
 source comparison carry a zero band to indicate unavailable comparison data.
 
-| Gas species | Tier above 3000 K | Max |dG| (kJ/mol) | Pressure band (dex) |
+| Gas species | Tier above 3000 K | Max |dG| over range (kJ/mol) | Max pressure band over range (dex) |
 |---|---|---:|---:|
 | SiO(g) | corroborated calculation to 6000 K | 0.180330 | ±0.001570 |
 | O(g) | corroborated calculation to 6000 K | 0.003298 | ±0.000029 |
@@ -58,7 +60,7 @@ source comparison carry a zero band to indicate unavailable comparison data.
 | Si2(g) | rough; no paired comparison | unavailable | unavailable |
 | Si3(g) | rough; no paired comparison | unavailable | unavailable |
 
-| Liquid parent | Tier and coverage | Max |dG| (kJ/mol) | Pressure band (dex) |
+| Liquid parent | Tier and coverage | Max |dG| over range (kJ/mol) | Max pressure band over range (dex) |
 |---|---|---:|---:|---:|
 | SiO2(l) | corroborated through 4500 K; rough above | 0.737630 | ±0.025686 |
 | MgO(l) | JANAF shape to 5000 K; rough disagreement | 8.456530 | ±0.088344 |

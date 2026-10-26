@@ -4296,23 +4296,28 @@ def _source_model_flag(
             if ";basis=internal" in source_ref:
                 return (
                     "high-temperature extension, rough: internal diagnostic "
-                    f"spread is {dg:g} kJ/mol (±{band:g} dex); no independent "
-                    "source comparison is available"
+                    f"maximum spread is {dg:g} kJ/mol (maximum pressure band "
+                    f"±{band:g} dex) over the reported comparison range; no "
+                    "independent source comparison is available"
                 )
             if tier == "corroborated_calculation" and T <= limit:
                 return (
                     "high-temperature extension, corroborated by calculation "
-                    f"to {limit:g} K: JANAF and Gurvich Cp shapes agree within "
-                    f"{dg:g} kJ/mol (±{band:g} dex); anchored at 3000 K"
+                    f"over 3000-{limit:g} K: JANAF and Gurvich Cp shapes agree "
+                    f"within at most {dg:g} kJ/mol (at most ±{band:g} dex) "
+                    f"over that range; anchored at 3000 K"
                 )
             if tier == "corroborated_calculation":
                 return (
                     f"high-temperature extension, rough beyond {limit:g} K: "
-                    f"last corroborated spread was {dg:g} kJ/mol "
-                    f"(±{band:g} dex) at {limit:g} K"
+                    f"maximum corroborated spread over 3000-{limit:g} K was "
+                    f"{dg:g} kJ/mol (maximum pressure band ±{band:g} dex)"
                 )
-            return (f"high-temperature extension, rough above {limit:g} K: "
-                    f"sources diverge by {dg:g} kJ/mol (±{band:g} dex)")
+            return (
+                f"high-temperature extension, rough above {limit:g} K: sources "
+                f"diverge by up to {dg:g} kJ/mol (maximum pressure band "
+                f"±{band:g} dex) over the reported comparison range"
+            )
         source = source_ref.removesuffix("-HT-CANDIDATE").removeprefix("CEA-")
         if "-BRIDGE" in source:
             source = source.removesuffix("-BRIDGE")
