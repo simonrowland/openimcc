@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added opt-in gas and liquid-parent candidate tables with rough 3000–6000 K
+  extensions. They preserve the existing thermochemistry at 3000 K and flag
+  results that use a candidate interval. See `docs/high-temperature-candidate.md`.
+
 - SiO₂(l)'s certified range narrowed to the measured 1500–1800 K window.
   The 1200–1500 K and 1800–3000 K ranges now have corroborated-calculation
   authority and emit a notice while process temperatures still score; 900–1200 K

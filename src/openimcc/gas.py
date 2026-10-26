@@ -4278,6 +4278,25 @@ def _source_model_flag(
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
+    if T > 3000.0 and "HT-CANDIDATE" in source_ref:
+        source = source_ref.removesuffix("-HT-CANDIDATE").removeprefix("CEA-")
+        if "-BRIDGE" in source:
+            source = source.removesuffix("-BRIDGE")
+            return (
+                "rough high-temperature extension above 3000 K: Cp continued "
+                f"from the reference row to its CEA bridge point, then from NASA CEA {source}; "
+                "anchored at 3000 K; not validated"
+            )
+        if source == "FeO-constant-Cp":
+            return (
+                "rough high-temperature extension above 3000 K: FeO(l) Cp held "
+                "constant from the current reference row; anchored at 3000 K; "
+                "not validated"
+            )
+        return (
+            "rough high-temperature extension above 3000 K: Cp shape from NASA "
+            f"CEA {source} anchored at 3000 K; not validated"
+        )
     validity = _source_validity_for_row(row_name, row, phase=phase)
     if row_name == "FeO(l)" and phase == "l":
         fit_range, fit_row = _selected_redox_feo_fit()
@@ -5587,6 +5606,9 @@ def evaluate_gas(
             or gas_name in _HALIDE_REACTIONS
         ):
             flag = _outside_interval_flag("O2(g)", T, O2_row)
+            if flag is not None:
+                flags.append(flag)
+            flag = _source_model_flag("O2(g)", T, O2_row, phase="g")
             if flag is not None:
                 flags.append(flag)
 

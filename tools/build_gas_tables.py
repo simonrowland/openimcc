@@ -648,6 +648,37 @@ NASA_GAS_SOURCES = (
     ("K2O(g)", "NG-0760", "K2O", "K", 2, 1, "K-005"),
 )
 
+# Opt-in rough extension inputs. These rows are generated separately from the
+# packaged tables, and are never included in the default build. The CEA cards
+# supply Cp(T); each candidate interval is integrated from the existing row's
+# H and S at 3000 K so the standard state remains continuous at the seam.
+HIGH_TEMP_GAS_CARDS = (
+    ("SiO(g)", "SiO", "Si", 1, 1), ("O(g)", "O", "", 0, 1),
+    ("O2(g)", "O2", "", 0, 2), ("Mg(g)", "Mg", "Mg", 1, 0),
+    ("Fe(g)", "Fe", "Fe", 1, 0), ("Na(g)", "Na", "Na", 1, 0),
+    ("K(g)", "K", "K", 1, 0), ("Ca(g)", "Ca", "Ca", 1, 0),
+    ("Al(g)", "AL", "Al", 1, 0), ("AlO(g)", "AlO", "Al", 1, 1),
+    ("Ti(g)", "Ti", "Ti", 1, 0), ("TiO(g)", "TiO", "Ti", 1, 1),
+    ("SiO2(g)", "SiO2", "Si", 1, 2), ("MgO(g)", "MgO", "Mg", 1, 1),
+    ("FeO(g)", "FeO", "Fe", 1, 1), ("CaO(g)", "CaO", "Ca", 1, 1),
+    ("AlO2(g)", "ALO2", "Al", 1, 2), ("TiO2(g)", "TiO2", "Ti", 1, 2),
+    ("NaO(g)", "NaO", "Na", 1, 1), ("KO(g)", "KO", "K", 1, 1),
+    ("Na2O(g)", "Na2O", "Na", 2, 1), ("K2O(g)", "K2O", "K", 2, 1),
+    ("Al2O(g)", "AL2O", "Al", 2, 1), ("Al2O2(g)", "AL2O2", "Al", 2, 2),
+    ("Al2(g)", "AL2", "Al", 2, 0), ("Na2(g)", "Na2", "Na", 2, 0),
+    ("K2(g)", "K2", "K", 2, 0), ("Si(g)", "Si", "Si", 1, 0),
+    ("Si2(g)", "Si2", "Si", 2, 0), ("Si3(g)", "Si3", "Si", 3, 0),
+)
+HIGH_TEMP_LIQUID_CARDS = (
+    ("SiO2(l)", "SiO2(L)", "Si", 1, 2, 1996.0),
+    ("Al2O3(l)", "AL2O3(L)", "Al", 2, 3, 2327.0),
+    ("CaO(l)", "CaO(L)", "Ca", 1, 1, 3172.0),
+    ("MgO(l)", "MgO(L)", "Mg", 1, 1, 3100.0),
+    ("TiO2(l)", "TiO2(L)", "Ti", 1, 2, 2185.0),
+    ("Na2O(l)", "Na2O(L)", "Na", 2, 1, 1405.0),
+    ("K2O(l)", "K2O(L)", "K", 2, 1, 1013.0),
+)
+
 CONDENSATE_COLUMNS = (
     "species_name",
     "state",
@@ -7697,6 +7728,250 @@ def write_csv(rows: list[dict[str, str]], output: Path) -> None:
         )
 
 
+def _parse_cea_thermo_cards(path: Path) -> dict[str, dict[str, Any]]:
+    """Read the legacy fixed-width NASA CEA thermo.inp card layout.
+
+    Each card has a name/description, an elemental-reference line, then blocks
+    of a temperature-range line and two coefficient lines. The 7 NASA
+    coefficients and b1/b2 integration constants are enough to evaluate Cp,
+    H, and S. This parser is deliberately scoped to the cards used below.
+    """
+    number = re.compile(r"[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[EeDd][+-]?\d+)?")
+    lines = path.read_text(encoding="ascii").splitlines()
+
+    def values(line: str) -> list[float]:
+        return [float(token.replace("D", "E").replace("d", "e")) for token in number.findall(line)]
+
+    cards: dict[str, dict[str, Any]] = {}
+    wanted = {item[1].upper() for item in (*HIGH_TEMP_GAS_CARDS, *HIGH_TEMP_LIQUID_CARDS)}
+    for index, line in enumerate(lines):
+        name = line.strip().split(maxsplit=1)[0].upper() if line.strip() else ""
+        if name not in wanted:
+            continue
+        if index + 2 >= len(lines):
+            raise ValueError(f"truncated CEA card {name}")
+        description = lines[index].strip()
+        reference_line = lines[index + 1]
+        reference_values = values(reference_line)
+        if len(reference_values) < 2:
+            raise ValueError(f"invalid CEA reference line for {name}")
+        intervals = []
+        cursor = index + 2
+        while cursor + 2 < len(lines):
+            range_line = lines[cursor]
+            if not range_line[:1].isspace():
+                break
+            bounds = values(range_line)
+            first = values(lines[cursor + 1])
+            second = values(lines[cursor + 2])
+            if len(bounds) < 2 or len(first) != 5 or len(second) < 4:
+                break
+            intervals.append({
+                "T_min": bounds[0], "T_max": bounds[1],
+                "a": first + second[:2], "b1": second[-2], "b2": second[-1],
+            })
+            cursor += 3
+        if not intervals:
+            raise ValueError(f"no NASA intervals found for CEA card {name}")
+        if max(item["T_max"] for item in intervals) < 6000.0:
+            raise ValueError(f"CEA card {name} does not cover 6000 K")
+        cards[name] = {
+            "description": description,
+            "delta_f_H_298_15": reference_values[-1],
+            "intervals": intervals,
+        }
+    missing = wanted - cards.keys()
+    if missing:
+        raise ValueError(f"CEA thermo file is missing cards: {sorted(missing)}")
+    return cards
+
+
+def _cea_properties(card: dict[str, Any], temperature: float) -> dict[str, float]:
+    """Evaluate the source NASA-7 polynomial at ``temperature`` in K."""
+    interval = next(
+        (item for item in card["intervals"] if item["T_min"] <= temperature <= item["T_max"]),
+        card["intervals"][-1] if temperature > card["intervals"][-1]["T_max"] else card["intervals"][0],
+    )
+    a1, a2, a3, a4, a5, a6, a7 = interval["a"]
+    cp_R = a1 / temperature**2 + a2 / temperature + a3 + a4 * temperature + a5 * temperature**2 + a6 * temperature**3 + a7 * temperature**4
+    h_rt = -a1 / temperature**2 + a2 * math.log(temperature) / temperature + a3 + a4 * temperature / 2 + a5 * temperature**2 / 3 + a6 * temperature**3 / 4 + a7 * temperature**4 / 5 + interval["b1"] / temperature
+    s_R = -a1 / (2 * temperature**2) - a2 / temperature + a3 * math.log(temperature) + a4 * temperature + a5 * temperature**2 / 2 + a6 * temperature**3 / 3 + a7 * temperature**4 / 4 + interval["b2"]
+    return {"cp": R_J_MOL_K * cp_R, "H": R_J_MOL_K * temperature * h_rt, "S": R_J_MOL_K * s_R}
+
+
+def _gas_row_h_s(row: dict[str, Any], temperature: float) -> tuple[float, float]:
+    t = temperature / 1000.0
+    A, B, C, D, E, F, G = (float(row[key]) for key in "ABCDEFG")
+    h = A * t + B * t**2 / 2 + C * t**3 / 3 + D * t**4 / 4 - E / t + F
+    s = A * math.log(t) + B * t + C * t**2 / 2 + D * t**3 / 3 - E / (2 * t**2) + G
+    return h * 1000.0, s
+
+
+def _gas_candidate_row(base: dict[str, Any], card: dict[str, Any], card_name: str) -> tuple[dict[str, str], dict[float, tuple[float, float, float]]]:
+    temperatures = np.arange(3000.0, 6000.1, 100.0)
+    cp_rows = [_cea_properties(card, float(T))["cp"] for T in temperatures]
+    t = temperatures / 1000.0
+    design = np.column_stack((np.ones_like(t), t, t**2, t**3, t**-2))
+    A, B, C, D, E = np.linalg.lstsq(design, np.asarray(cp_rows), rcond=None)[0]
+    h0, s0 = _gas_row_h_s(base, 3000.0)
+    tau = 3.0
+    ih = A*tau + B*tau**2/2 + C*tau**3/3 + D*tau**4/4 - E/tau
+    ins = A*math.log(tau) + B*tau + C*tau**2/2 + D*tau**3/3 - E/(2*tau**2)
+    row = {key: str(base[key]) for key in RUNTIME_COLUMNS if key in base}
+    row.update({"T_interval": "3", "T_min": "3000", "T_max": "6000", "A": f"{A:.15g}", "B": f"{B:.15g}", "C": f"{C:.15g}", "D": f"{D:.15g}", "E": f"{E:.15g}", "F": f"{h0/1000-ih:.15g}", "G": f"{s0-ins:.15g}", "Ref": f"{card_name}-HT-CANDIDATE"})
+    offsets = {}
+    for T in (3000.0, 4000.0, 6000.0):
+        source = _cea_properties(card, T)
+        # Compare the actual emitted Shomate row, not the unrounded Cp fit, to
+        # the source card so the report reflects runtime values.
+        h, s = _gas_row_h_s(row, T)
+        offsets[T] = (abs(h-source["H"]), abs(s-source["S"]), abs((h-T*s)-(source["H"]-T*source["S"])))
+    return row, offsets
+
+
+def _liquid_cp(row: dict[str, Any], temperature: float) -> float:
+    tau = temperature / 1000.0
+    A, B, C, D, E = (float(row[f"dG_{key}"]) for key in "ABCDE")
+    return R_J_MOL_K * (2*B*tau + 6*C*tau**2 + 12*D*tau**3 + 20*E*tau**4)
+
+
+def _liquid_source_rows(
+    card: dict[str, Any], base_row: dict[str, Any],
+    start: float, end: float, *, use_base_cp: bool = False,
+) -> dict[float, dict[str, float]]:
+    """Integrate Cp from an anchored liquid seam into fitter source cells."""
+    g0, s0 = _condensate_row_g_s(base_row, start)
+    h0 = g0 + start*s0
+    ref_j = float(base_row["dH298_R"]) * R_J_MOL_K
+    nodes = sorted({start, end, *np.arange(start, end + 1.0, 100.0).tolist()})
+    grid = np.arange(start, end + 1.0, 1.0)
+    if grid[-1] != end:
+        grid = np.append(grid, end)
+    cp_values = np.asarray([
+        _liquid_cp(base_row, float(T)) if use_base_cp else _cea_properties(card, float(T))["cp"]
+        for T in grid
+    ])
+    h_grid = np.concatenate(([h0], h0 + np.cumsum((cp_values[:-1]+cp_values[1:]) * np.diff(grid) / 2.0)))
+    s_grid = np.concatenate(([s0], s0 + np.cumsum((cp_values[:-1]/grid[:-1]+cp_values[1:]/grid[1:]) * np.diff(grid) / 2.0)))
+    result = {}
+    for T in nodes:
+        index = int(round(T-start))
+        H, S = float(h_grid[index]), float(s_grid[index])
+        cp = _liquid_cp(base_row, T) if use_base_cp else _cea_properties(card, T)["cp"]
+        result[float(T)] = {"temperature": float(T), "heat_capacity": cp,
+                            "entropy": S, "enthalpy_increment": (H-ref_j)/1000.0}
+    return result
+
+
+def _make_liquid_candidate_row(
+    species: str, card_name: str, cation: str, cat_num: int, oxy_num: int,
+    base_row: dict[str, Any], card: dict[str, Any], start: float, end: float,
+) -> dict[str, str]:
+    source_rows = _liquid_source_rows(card, base_row, start, end)
+    g0, s0 = _condensate_row_g_s(base_row, start)
+    reference_kj = float(base_row["dH298_R"]) * R_J_MOL_K / 1000.0
+    row = _fit_condensate_values(
+        species, f"{card_name}-HT-CANDIDATE", cation, cat_num, oxy_num,
+        source_rows, reference_kj, fit_t_min=start, fit_t_max=end,
+        runtime_t_min=start, runtime_t_max=end,
+        fit_temperatures=sorted(source_rows), endpoint_g_s=[(start, g0, s0)],
+    )
+    row.update(_empty_source_validity_fields())
+    row.update({"state": "l", "Ref": f"{card_name}-HT-CANDIDATE"})
+    return row
+
+
+def build_high_temperature_candidates(
+    cea_path: Path, gas_input: Path, oxide_input: Path,
+    gas_output: Path, oxide_output: Path,
+) -> dict[str, dict[float, tuple[float, float, float]]]:
+    """Write opt-in 3000–6000 K tables without touching packaged defaults.
+
+    At each 3000 K seam (and the CaO/MgO bridge point), take G and S from the
+    prior row and integrate Cp(T) to obtain H. The source card contributes only
+    Cp shape above the anchor. This makes G continuous, makes S continuous,
+    and therefore makes H=G+TS continuous. CEA absolute H/S anchors remain
+    visible through the printed offset report instead of shifting the default.
+    """
+    cards = _parse_cea_thermo_cards(cea_path)
+    gas_rows = list(csv.DictReader(gas_input.open(encoding="utf-8", newline="")))
+    new_gas = []
+    offsets: dict[str, dict[float, tuple[float, float, float]]] = {}
+    for species, card_name, cation, cat_num, oxy_num in HIGH_TEMP_GAS_CARDS:
+        matches = [row for row in gas_rows if row["species_name"] == species and float(row["T_max"]) == 3000.0]
+        if not matches:
+            raise ValueError(f"no 3000 K packaged gas interval for {species}")
+        base = dict(matches[-1])
+        for key in "ABCDEFG":
+            base[key] = float(base[key])
+        card = cards[card_name.upper()]
+        row, offset = _gas_candidate_row(base, card, card_name)
+        row.update({"species_name": species, "state": "g", "cation": cation,
+                    "cat_num": str(cat_num), "oxy_num": str(oxy_num),
+                    "Ref": f"CEA-{card_name}-HT-CANDIDATE"})
+        new_gas.append(row)
+        offsets[species] = offset
+    gas_output.parent.mkdir(parents=True, exist_ok=True)
+    with gas_output.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=RUNTIME_COLUMNS, lineterminator="\n")
+        writer.writeheader(); writer.writerows(gas_rows + new_gas)
+
+    oxide_rows = list(csv.DictReader(oxide_input.open(encoding="utf-8", newline="")))
+    new_oxide = []
+    for species, card_name, cation, cat_num, oxy_num, _ in HIGH_TEMP_LIQUID_CARDS:
+        base_matches = [row for row in oxide_rows if row["species_name"] == species and float(row["T_max"]) == 3000.0]
+        if not base_matches:
+            raise ValueError(f"no 3000 K packaged liquid interval for {species}")
+        base = base_matches[-1]
+        bridge = 3172.0 if species == "CaO(l)" else 3100.0 if species == "MgO(l)" else 3000.0
+        if bridge > 3000.0:
+            seam = {**base, "T_min": "3000", "T_max": str(bridge),
+                    "Ref": f"CEA-{card_name}-BRIDGE-HT-CANDIDATE"}
+            new_oxide.append(seam)
+        row = _make_liquid_candidate_row(
+            species, card_name, cation, cat_num, oxy_num, base,
+            cards[card_name.upper()], bridge, 6000.0,
+        )
+        new_oxide.append(row)
+        liquid_offsets = {}
+        for temperature in (3000.0, 4000.0, 6000.0):
+            used_rows = [
+                row for row in new_oxide if row["species_name"] == species
+                and float(row["T_min"]) <= temperature <= float(row["T_max"])
+            ]
+            used = max(used_rows, key=lambda row: float(row["T_min"]))
+            g, s = _condensate_row_g_s(used, temperature)
+            h = g + temperature * s
+            raw = _cea_properties(cards[card_name.upper()], temperature)
+            liquid_offsets[temperature] = (
+                abs(h-raw["H"]), abs(s-raw["S"]),
+                abs(g-(raw["H"]-temperature*raw["S"])),
+            )
+        offsets[species] = liquid_offsets
+    feo_matches = [row for row in oxide_rows if row["species_name"] == "FeO(l)" and float(row["T_min"]) <= 3000 <= float(row["T_max"])]
+    if not feo_matches:
+        raise ValueError("no default FeO(l) interval covers 3000 K")
+    feo_base = feo_matches[-1]
+    # FeO has no CEA liquid card. Hold the current default row's Cp at 3000 K.
+    feo_sources = _liquid_source_rows({}, feo_base, 3000, 6000, use_base_cp=True)
+    feo = _fit_condensate_values(
+        "FeO(l)", "FeO-constant-Cp-HT-CANDIDATE", "Fe", 1, 1,
+        feo_sources, float(feo_base["dH298_R"])*R_J_MOL_K/1000,
+        fit_t_min=3000, fit_t_max=6000, runtime_t_min=3000, runtime_t_max=6000,
+        fit_temperatures=sorted(feo_sources), endpoint_g_s=[(3000, *_condensate_row_g_s(feo_base, 3000))],
+    )
+    feo.update(_empty_source_validity_fields())
+    feo.update({"state": "l", "Ref": "FeO-constant-Cp-HT-CANDIDATE"})
+    new_oxide.append(feo)
+    offsets["FeO(l)"] = {T: None for T in (3000.0, 4000.0, 6000.0)}
+    oxide_output.parent.mkdir(parents=True, exist_ok=True)
+    with oxide_output.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=CONDENSATE_COLUMNS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows({column: row.get(column, "") for column in CONDENSATE_COLUMNS} for row in oxide_rows + new_oxide)
+    return offsets
+
+
 SOURCE_VALIDITY_COLUMNS = (
     "validity_kind", "continuation_kind", "cp_extension", "construction_method",
     "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
@@ -8013,6 +8288,19 @@ def main() -> None:
         type=Path,
         default=repository / "data-src/lh84",
     )
+    parser.add_argument(
+        "--high-temperature-thermo",
+        type=Path,
+        help="build opt-in rough 3000–6000 K candidate tables from NASA CEA thermo.inp",
+    )
+    parser.add_argument(
+        "--high-temperature-gas-output", type=Path,
+        default=repository / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv",
+    )
+    parser.add_argument(
+        "--high-temperature-oxide-output", type=Path,
+        default=repository / "src/openimcc/data/gas/condensate-hight-candidate.csv",
+    )
     packaged_gas = repository / "src/openimcc/data/gas/gas-shomate.csv"
     parser.add_argument("--output", type=Path, default=packaged_gas)
     parser.add_argument(
@@ -8026,6 +8314,22 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    if args.high_temperature_thermo is not None:
+        report = build_high_temperature_candidates(
+            args.high_temperature_thermo,
+            repository / "src/openimcc/data/gas/gas-shomate.csv",
+            repository / "src/openimcc/data/gas/condensate.csv",
+            args.high_temperature_gas_output,
+            args.high_temperature_oxide_output,
+        )
+        for species, temperatures in report.items():
+            for temperature, values in temperatures.items():
+                if values is None:
+                    print(f"{species}\t{temperature:g}\tno source card; FeO Cp is held constant")
+                    continue
+                dh, ds, dg = values
+                print(f"{species}\t{temperature:g}\t|dH|={dh:.6f} J/mol\t|dS|={ds:.6f} J/mol/K\t|dG|={dg:.6f} J/mol")
+        return
     if args.condensate_output is None and args.output == packaged_gas:
         args.condensate_output = repository / "src/openimcc/data/gas/condensate.csv"
     rows = build_rows(args.source_dir, args.nasa_source_dir, args.lh84_source_dir)

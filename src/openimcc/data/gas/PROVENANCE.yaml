@@ -2446,3 +2446,39 @@ candidate_condensate_files:
       Shared liquid_from_solid construction and endpoint-constrained condensate
       fits; source Cp measured from 900 to 1800 K and extrapolated beyond 1800 K.
     load_with: load_gas_datapack(gas_path=..., oxide_path=...)
+  - file: condensate-hight-candidate.csv
+    status: opt_in_rough_high_temperature_extension
+    sha256: aca172c1d435e520e8a16f5a58ce5ae67c191c1fafc34bf98c080d447efb973d
+    source: >-
+      NASA Glenn CEA thermo.inp, NASA/TP-2002-211556; Gurvich liquid cards
+      SiO2(L), AL2O3(L), CaO(L), MgO(L), TiO2(L), Na2O(L), and K2O(L).
+      FeO(l) has no matching source card.
+    construction: >-
+      G and S are anchored to the current row at 3000 K, H follows from G+TS,
+      and source Cp is integrated from the anchor. CaO/MgO bridge to their card
+      starts with the current row Cp. FeO uses constant Cp=59.837249 J mol^-1 K^-1
+      from its current row at 3000 K. All intervals are rough and unvalidated.
+    source_file: NASA CEA thermo.inp
+    source_retrieved: 2026-09-06
+    source_md5: 709338513d1d6dfe0bc6eb2387995d96
+    source_authority: public_domain_US_government_data
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)
+
+candidate_gas_files:
+  - file: gas-shomate-hight-candidate.csv
+    status: opt_in_rough_high_temperature_extension
+    sha256: 4dc41e150e22beb90f6b6b8dec67b0f4d993b5984e2e3ce1ec792d52b4c0f036
+    source: >-
+      NASA Glenn CEA thermo.inp, NASA/TP-2002-211556; source cards SiO, O, O2,
+      Mg, Fe, Na, K, Ca, AL, AlO, Ti, TiO, SiO2, MgO, FeO, CaO, ALO2,
+      AL2O2, TiO2, NaO, KO, Na2O, K2O, AL2O, AL2, Na2, K2, Si, Si2, and Si3.
+      Source Cp(T) is fit to the runtime Shomate form.
+    construction: >-
+      Existing 3000 K row H and S anchor the candidate interval; the CEA Cp
+      shape is integrated from that seam. The NASA H/S constants are not used
+      as candidate anchors. See docs/high-temperature-candidate.md for offsets.
+    source_file: NASA CEA thermo.inp
+    source_retrieved: 2026-09-06
+    source_md5: 709338513d1d6dfe0bc6eb2387995d96
+    source_authority: public_domain_US_government_data
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)
