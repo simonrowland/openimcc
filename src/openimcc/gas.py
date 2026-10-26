@@ -4279,6 +4279,40 @@ def _source_model_flag(
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
     if T > 3000.0 and "HT-CANDIDATE" in source_ref:
+        band_fields = re.search(
+            r"\|tier=(?P<tier>[^;|]+);dg=(?P<dg>[0-9.eE+-]+);band=(?P<band>[0-9.eE+-]+);limit=(?P<limit>[0-9.eE+-]+)",
+            source_ref,
+        )
+        if band_fields:
+            tier = band_fields.group("tier")
+            dg = float(band_fields.group("dg"))
+            band = float(band_fields.group("band"))
+            limit = float(band_fields.group("limit"))
+            if ";basis=unavailable" in source_ref:
+                return (
+                    "high-temperature extension, rough: no paired-source "
+                    "comparison is available above 3000 K"
+                )
+            if ";basis=internal" in source_ref:
+                return (
+                    "high-temperature extension, rough: internal diagnostic "
+                    f"spread is {dg:g} kJ/mol (±{band:g} dex); no independent "
+                    "source comparison is available"
+                )
+            if tier == "corroborated_calculation" and T <= limit:
+                return (
+                    "high-temperature extension, corroborated by calculation "
+                    f"to {limit:g} K: JANAF and Gurvich Cp shapes agree within "
+                    f"{dg:g} kJ/mol (±{band:g} dex); anchored at 3000 K"
+                )
+            if tier == "corroborated_calculation":
+                return (
+                    f"high-temperature extension, rough beyond {limit:g} K: "
+                    f"last corroborated spread was {dg:g} kJ/mol "
+                    f"(±{band:g} dex) at {limit:g} K"
+                )
+            return (f"high-temperature extension, rough above {limit:g} K: "
+                    f"sources diverge by {dg:g} kJ/mol (±{band:g} dex)")
         source = source_ref.removesuffix("-HT-CANDIDATE").removeprefix("CEA-")
         if "-BRIDGE" in source:
             source = source.removesuffix("-BRIDGE")

@@ -1,4 +1,60 @@
 schema_version: openimcc.gas_provenance.v1
+high_temperature_candidate_v2:
+  opt_in: >-
+    Load gas-shomate-hight-candidate-v2.csv and condensate-hight-candidate-v2.csv
+    together with load_gas_datapack(gas_path=..., oxide_path=...). These tables
+    retain the default rows through 3000 K; defaults and v1 candidate files are
+    unchanged.
+  gas_file:
+    file: gas-shomate-hight-candidate-v2.csv
+    sha256: 8260c9e2577502a58607908f8000e1887517f8bb5c4c894f2f4aeb29e435f44d
+    source: NIST-JANAF Cp nodes to 6000 K where listed; NASA CEA/Gurvich otherwise.
+    construction: >-
+      Fit the selected Cp(T) shape to runtime Shomate coefficients and anchor
+      H and S to the shipped row at 3000 K. For JANAF-covered rows, the tier and
+      band use the maximum source-pair |dG| and dex spread through 6000 K.
+    tier_band:
+      corroborated_calculation:
+        SiO(g): [0.180330 kJ/mol, 0.001570 dex]
+        O(g): [0.003298 kJ/mol, 0.000029 dex]
+        O2(g): [0.264747 kJ/mol, 0.002305 dex]
+        Mg(g): [0.002180 kJ/mol, 0.000028 dex]
+        Fe(g): [0.100721 kJ/mol, 0.000877 dex]
+        Na(g): [0.024520 kJ/mol, 0.000213 dex]
+        K(g): [0.371024 kJ/mol, 0.003230 dex]
+        Ca(g): [0.063527 kJ/mol, 0.000553 dex]
+        Al(g): [0.003167 kJ/mol, 0.000033 dex]
+        AlO(g): [0.862847 kJ/mol, 0.007512 dex]
+        Ti(g): [0.034254 kJ/mol, 0.000298 dex]
+        TiO(g): [1.907389 kJ/mol, 0.016605 dex]
+        FeO(g): [0.001329 kJ/mol, 0.000017 dex]
+        MgO(g): [1.590835 kJ/mol, 0.013849 dex]
+        SiO2(g): [0.031513 kJ/mol, 0.000274 dex]
+        KO(g): [1.863145 kJ/mol, 0.016220 dex]
+      rough_extrapolated:
+        NaO(g): [2.792325 kJ/mol, 0.024309 dex]
+        Na2O(g): [0.003079 kJ/mol, 0.000027 dex; internal diagnostic only]
+        K2O(g): [0.001598 kJ/mol, 0.000014 dex; internal diagnostic only]
+        other_species_without_study_comparison: [unavailable, unavailable]
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)
+  condensate_file:
+    file: condensate-hight-candidate-v2.csv
+    sha256: ec7b65a66613d0485cdcc7fa810ace3d97ff50416bbd5e21357bc90de904c003
+    source: NIST-JANAF liquid tables and NASA CEA/Gurvich liquid cards.
+    construction: >-
+      Integrate Cp from the previous row's G/S anchor. At JANAF-to-CEA source
+      switches constrain both endpoint G/S values; H=G+TS is continuous. CaO/MgO
+      retain their v1 bridge to CEA card onset. FeO retains the v1 continuation.
+    tier_band:
+      SiO2(l): [corroborated through 4500 K, 0.737630 kJ/mol, 0.025686 dex]
+      MgO(l): [rough disagreement at 5000 K, 8.456530 kJ/mol, 0.088344 dex]
+      CaO(l): [rough above 4000 K, 5.250696 kJ/mol, 0.060947 dex]
+      TiO2(l): [CEA; near agreement through 4000 K, 0.062789 kJ/mol, 0.000820 dex]
+      Al2O3(l): [rough, 4.456271 kJ/mol, 0.058192 dex]
+      FeO(l): [corroborated through 5000 K, 1.218946 kJ/mol, 0.012734 dex]
+      Na2O(l): [rough; no paired source comparison above 3000 K, unavailable, unavailable]
+      K2O(l): [rough; no paired source comparison above 3000 K, unavailable, unavailable]
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)
 source_notes:
   janaf:
     database: NIST Standard Reference Database 13

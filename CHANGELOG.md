@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added a separately opt-in v2 high-temperature gas and liquid candidate.
+  JANAF Cp shapes replace the v1 CEA shape for 16 corroborated gas species;
+  SiO2(l) and MgO(l) switch from JANAF to CEA at 4500 K and 5000 K. Candidate
+  flags now include each row's tier and source-comparison band. Defaults and v1
+  files remain unchanged. See `docs/high-temperature-candidate.md`.
+
 - Added opt-in gas and liquid-parent candidate tables with rough 3000–6000 K
   extensions. They preserve the existing thermochemistry at 3000 K and flag
   results that use a candidate interval. See `docs/high-temperature-candidate.md`.

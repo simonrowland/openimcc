@@ -9,6 +9,7 @@ from openimcc import evaluate, load_datapack
 from openimcc.gas import (
     evaluate_gas,
     load_gas_datapack,
+    _source_model_flag,
 )
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -18,6 +19,8 @@ from tools.build_gas_tables import _condensate_row_g_s
 
 GAS_CANDIDATE = ROOT / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv"
 OXIDE_CANDIDATE = ROOT / "src/openimcc/data/gas/condensate-hight-candidate.csv"
+GAS_CANDIDATE_V2 = ROOT / "src/openimcc/data/gas/gas-shomate-hight-candidate-v2.csv"
+OXIDE_CANDIDATE_V2 = ROOT / "src/openimcc/data/gas/condensate-hight-candidate-v2.csv"
 COMPOSITION = {
     "SiO2": 51.85068,
     "MgO": 4.78527,
@@ -143,3 +146,72 @@ def test_high_temperature_gas_and_basalt_melt_runs_are_flagged() -> None:
         )
         assert all(math.isfinite(value) and value >= 0.0 for value in result.values())
         assert any("rough high-temperature extension" in (flag or "") for flag in result.domain_flags.values())
+
+
+def test_v2_candidate_loads_preserves_prefixes_and_all_seams() -> None:
+    default_gas = ROOT / "src/openimcc/data/gas/gas-shomate.csv"
+    default_oxide = ROOT / "src/openimcc/data/gas/condensate.csv"
+    v1_gas = ROOT / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv"
+    v1_oxide = ROOT / "src/openimcc/data/gas/condensate-hight-candidate.csv"
+    assert hashlib.sha256(v1_gas.read_bytes()).hexdigest() == "4dc41e150e22beb90f6b6b8dec67b0f4d993b5984e2e3ce1ec792d52b4c0f036"
+    assert hashlib.sha256(v1_oxide.read_bytes()).hexdigest() == "aca172c1d435e520e8a16f5a58ce5ae67c191c1fafc34bf98c080d447efb973d"
+    for default, v1, v2 in ((default_gas, v1_gas, GAS_CANDIDATE_V2),
+                            (default_oxide, v1_oxide, OXIDE_CANDIDATE_V2)):
+        lines = default.read_bytes().splitlines()
+        assert v1.read_bytes().splitlines()[:len(lines)] == lines
+        assert v2.read_bytes().splitlines()[:len(lines)] == lines
+
+    default = load_gas_datapack()
+    v2 = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
+    for species, *_ in build_gas_tables.HIGH_TEMP_GAS_CARDS:
+        base = default.gas_df.loc[species].sort_values("T_min").iloc[-1]
+        high = v2.gas_df.loc[species].sort_values("T_min").iloc[-1]
+        for left, right in zip(build_gas_tables._gas_row_h_s(base, 3000),
+                                build_gas_tables._gas_row_h_s(high, 3000)):
+            _assert_close(float(left), float(right))
+
+    for species in v2.oxide_df.index.unique():
+        rows = v2.oxide_df.loc[[species]].sort_values("T_min")
+        candidates = rows.loc[rows["Ref"].astype(str).str.contains("HT-CANDIDATE")]
+        if candidates.empty:
+            continue
+        first = candidates.iloc[0]
+        if float(first["T_min"]) == 3000:
+            base = default.oxide_df.loc[[species]].sort_values("T_min").iloc[-1]
+            base_g, base_s = _condensate_row_g_s(base, 3000)
+            first_g, first_s = _condensate_row_g_s(first, 3000)
+            for left, right in ((base_g, first_g), (base_s, first_s),
+                                (base_g + 3000*base_s, first_g + 3000*first_s)):
+                _assert_close(left, right)
+        for (_, left), (_, right) in zip(candidates.iloc[:-1].iterrows(), candidates.iloc[1:].iterrows()):
+            seam = float(left["T_max"])
+            if seam != float(right["T_min"]):
+                continue
+            gl, sl = _condensate_row_g_s(left, seam)
+            gr, sr = _condensate_row_g_s(right, seam)
+            for a, b in ((gl, gr), (sl, sr), (gl + seam*sl, gr + seam*sr)):
+                _assert_close(a, b)
+
+    low_default = evaluate_gas(ACTIVITIES, 2500.0, 1.0e-10, default)
+    low_v2 = evaluate_gas(ACTIVITIES, 2500.0, 1.0e-10, v2)
+    assert dict(low_default) == dict(low_v2)
+    assert dict(low_default.domain_flags) == dict(low_v2.domain_flags)
+
+
+def test_v2_candidate_flags_show_per_species_tier_and_band() -> None:
+    candidate = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
+    expected = {
+        "SiO(g)": ("corroborated by calculation", "0.18033 kJ/mol", "±0.00157 dex"),
+        "Mg(g)": ("corroborated by calculation", "0.00218 kJ/mol", "±2.8e-05 dex"),
+        "Na(g)": ("corroborated by calculation", "0.02452 kJ/mol", "±0.000213 dex"),
+        "Al2O3(l)": ("rough above", "4.45627 kJ/mol", "±0.058192 dex"),
+    }
+    for species, parts in expected.items():
+        frame = candidate.gas_df if species.endswith("(g)") else candidate.oxide_df
+        phase = "g" if species.endswith("(g)") else "l"
+        for temperature in (3500.0, 4500.0, 5500.0):
+            row = frame.loc[species].sort_values("T_min")
+            row = row.loc[row["T_min"] <= temperature].iloc[-1]
+            flag = _source_model_flag(species, temperature, row, phase=phase)
+            assert flag is not None
+            assert all(part in flag for part in parts), (species, temperature, flag)

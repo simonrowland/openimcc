@@ -679,6 +679,17 @@ HIGH_TEMP_LIQUID_CARDS = (
     ("K2O(l)", "K2O(L)", "K", 2, 1, 1013.0),
 )
 
+# V2 uses JANAF Cp shapes only where the local source comparison supports the
+# requested choice. These limits are source-table endpoints, not extrapolation.
+HIGH_TEMP_V2_GAS_JANAF = {
+    "SiO(g)": "O-012", "O(g)": "O-001", "O2(g)": "O-029",
+    "Mg(g)": "Mg-005", "Fe(g)": "Fe-008", "Na(g)": "Na-005",
+    "K(g)": "K-005", "Ca(g)": "Ca-006", "Al(g)": "Al-005",
+    "AlO(g)": "Al-074", "Ti(g)": "Ti-006", "TiO(g)": "O-022",
+    "FeO(g)": "Fe-021", "MgO(g)": "Mg-011", "SiO2(g)": "O-040",
+    "KO(g)": "K-008",
+}
+
 CONDENSATE_COLUMNS = (
     "species_name",
     "state",
@@ -7829,6 +7840,69 @@ def _gas_candidate_row(base: dict[str, Any], card: dict[str, Any], card_name: st
     return row, offsets
 
 
+def _candidate_ref(
+    ref: str, tier: str, dg: float, band: float, limit: float,
+    *, basis: str | None = None,
+) -> str:
+    suffix = f";basis={basis}" if basis else ""
+    return f"{ref}|tier={tier};dg={dg:.6g};band={band:.6g};limit={limit:g}{suffix}"
+
+
+def _candidate_janaf_rows(source_dir: Path, table_id: str) -> dict[float, dict[str, float]]:
+    """Read Cp/H/S nodes from either vendored text or normalized JANAF YAML."""
+    text_path = source_dir / f"{table_id}.txt"
+    if text_path.is_file():
+        return _janaf_text_source_rows(source_dir, table_id)
+    record = _load_record(source_dir / f"{table_id}.yaml")
+    return {
+        float(_value(row, "temperature")): {
+            "temperature": float(_value(row, "temperature")),
+            "heat_capacity": float(_value(row, "heat_capacity")),
+            "entropy": float(_value(row, "entropy")),
+            "enthalpy_increment": float(_value(row, "enthalpy_increment")),
+        }
+        for row in record["table"]["values"]
+        if _value(row, "temperature") is not None
+        and all(_value(row, field) is not None for field in ("heat_capacity", "entropy", "enthalpy_increment"))
+    }
+
+
+_V2_GAS_BANDS = {
+    # max |dG| kJ/mol and conservative half-width in dex, through 6000 K.
+    "SiO(g)": (0.180330, 0.001570), "O(g)": (0.003298, 0.000029),
+    "O2(g)": (0.264747, 0.002305), "Mg(g)": (0.002180, 0.000028),
+    "Fe(g)": (0.100721, 0.000877), "Na(g)": (0.024520, 0.000213),
+    "K(g)": (0.371024, 0.003230), "Ca(g)": (0.063527, 0.000553),
+    "Al(g)": (0.003167, 0.000033), "AlO(g)": (0.862847, 0.007512),
+    "Ti(g)": (0.034254, 0.000298), "TiO(g)": (1.907389, 0.016605),
+    "FeO(g)": (0.001329, 0.000017), "MgO(g)": (1.590835, 0.013849),
+    "SiO2(g)": (0.031513, 0.000274), "KO(g)": (1.863145, 0.016220),
+    "NaO(g)": (2.792325, 0.024309), "Na2O(g)": (0.003079, 0.000027),
+    "K2O(g)": (0.001598, 0.000014),
+}
+
+
+def _fit_high_temperature_gas_shape(
+    base: dict[str, Any], temperatures: np.ndarray, cp_values: np.ndarray,
+    ref: str,
+) -> dict[str, str]:
+    tau_values = temperatures / 1000.0
+    design = np.column_stack((np.ones_like(tau_values), tau_values,
+                              tau_values**2, tau_values**3, tau_values**-2))
+    A, B, C, D, E = np.linalg.lstsq(design, cp_values, rcond=None)[0]
+    h0, s0 = _gas_row_h_s(base, 3000.0)
+    tau = 3.0
+    ih = A*tau + B*tau**2/2 + C*tau**3/3 + D*tau**4/4 - E/tau
+    ins = A*math.log(tau) + B*tau + C*tau**2/2 + D*tau**3/3 - E/(2*tau**2)
+    row = {key: str(base[key]) for key in RUNTIME_COLUMNS if key in base}
+    row.update({"T_interval": "3", "T_min": "3000", "T_max": "6000",
+                "A": f"{A:.15g}", "B": f"{B:.15g}", "C": f"{C:.15g}",
+                "D": f"{D:.15g}", "E": f"{E:.15g}",
+                "F": f"{h0/1000-ih:.15g}", "G": f"{s0-ins:.15g}",
+                "Ref": ref})
+    return row
+
+
 def _liquid_cp(row: dict[str, Any], temperature: float) -> float:
     tau = temperature / 1000.0
     A, B, C, D, E = (float(row[f"dG_{key}"]) for key in "ABCDE")
@@ -7970,6 +8044,169 @@ def build_high_temperature_candidates(
         writer.writeheader()
         writer.writerows({column: row.get(column, "") for column in CONDENSATE_COLUMNS} for row in oxide_rows + new_oxide)
     return offsets
+
+
+def _janaf_anchored_liquid_rows(
+    source_dir: Path, table_id: str, base_row: dict[str, Any], start: float, end: float
+) -> dict[float, dict[str, float]]:
+    """Integrate the JANAF Cp shape from the preceding runtime G/S seam.
+
+    JANAF source H/S absolute anchors are deliberately ignored above 3000 K.
+    Trapezoidal integration of tabulated Cp gives ΔH=∫Cp dT and ΔS=∫Cp/T dT;
+    adding these to the previous row's G/S makes H=G+TS continuous too.
+    A 1 K grid resolves the published 100 K Cp cells and fixes both explicit
+    source-switch endpoints for the constrained condensate fit.
+    """
+    nodes = _candidate_janaf_rows(source_dir, table_id)
+    temps = np.asarray(sorted(T for T in nodes if start <= T <= end), dtype=float)
+    if len(temps) < 2 or temps[0] != start or temps[-1] != end:
+        raise ValueError(f"{table_id}: JANAF Cp does not cover {start:g}-{end:g} K")
+    grid = np.arange(start, end + 1.0, 1.0)
+    if grid[-1] != end:
+        grid = np.append(grid, end)
+    cp_grid = np.interp(grid, temps, [nodes[float(T)]["heat_capacity"] for T in temps])
+    g0, s0 = _condensate_row_g_s(base_row, start)
+    h = np.concatenate(([g0 + start*s0], g0 + start*s0 + np.cumsum(
+        (cp_grid[:-1] + cp_grid[1:]) * np.diff(grid) / 2.0)))
+    s = np.concatenate(([s0], s0 + np.cumsum(
+        (cp_grid[:-1]/grid[:-1] + cp_grid[1:]/grid[1:]) * np.diff(grid) / 2.0)))
+    reference = float(base_row["dH298_R"]) * R_J_MOL_K
+    return {
+        T: {"temperature": T, "heat_capacity": float(np.interp(T, grid, cp_grid)),
+            "entropy": float(S), "enthalpy_increment": (float(H)-reference)/1000.0}
+        for T, H, S in zip(temps, np.interp(temps, grid, h), np.interp(temps, grid, s))
+    }
+
+
+def build_high_temperature_candidates_v2(
+    cea_path: Path, janaf_dir: Path, gas_input: Path, oxide_input: Path,
+    gas_output: Path, oxide_output: Path,
+) -> None:
+    """Build separately versioned high-temperature candidates using JANAF shapes."""
+    cards = _parse_cea_thermo_cards(cea_path)
+    gas_rows = list(csv.DictReader(gas_input.open(encoding="utf-8", newline="")))
+    new_gas = []
+    gas_card_names = {item[0]: item[1] for item in HIGH_TEMP_GAS_CARDS}
+    for species, table_id, cation, cat_num, oxy_num in HIGH_TEMP_GAS_CARDS:
+        base_matches = [r for r in gas_rows if r["species_name"] == species and float(r["T_max"]) == 3000.0]
+        if not base_matches:
+            raise ValueError(f"no 3000 K packaged gas interval for {species}")
+        base = dict(base_matches[-1])
+        for key in "ABCDEFG":
+            base[key] = float(base[key])
+        dg, band = _V2_GAS_BANDS.get(species, (0.0, 0.0))
+        tier = "corroborated_calculation" if species in HIGH_TEMP_V2_GAS_JANAF else "rough_extrapolated"
+        if species in HIGH_TEMP_V2_GAS_JANAF:
+            table_id = HIGH_TEMP_V2_GAS_JANAF[species]
+            points = _candidate_janaf_rows(janaf_dir, table_id)
+            temperatures = np.asarray(sorted(T for T in points if 3000.0 <= T <= 6000.0))
+            if temperatures[0] != 3000.0 or temperatures[-1] != 6000.0:
+                raise ValueError(f"{table_id}: JANAF gas Cp does not cover 3000-6000 K")
+            cp = np.asarray([points[float(T)]["heat_capacity"] for T in temperatures])
+            ref = _candidate_ref(f"JANAF-{table_id}-HT-CANDIDATE", tier, dg, band, 6000.0)
+            row = _fit_high_temperature_gas_shape(base, temperatures, cp, ref)
+        else:
+            row, _ = _gas_candidate_row(base, cards[gas_card_names[species].upper()], gas_card_names[species])
+            basis = ("internal" if species in {"Na2O(g)", "K2O(g)"}
+                     else "paired_sources" if species == "NaO(g)" else "unavailable")
+            ref = _candidate_ref(f"CEA-{gas_card_names[species]}-HT-CANDIDATE", tier, dg, band, 6000.0, basis=basis)
+            row["Ref"] = ref
+        row.update({"species_name": species, "state": "g", "cation": cation,
+                    "cat_num": str(cat_num), "oxy_num": str(oxy_num)})
+        new_gas.append(row)
+
+    gas_output.parent.mkdir(parents=True, exist_ok=True)
+    with gas_output.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=RUNTIME_COLUMNS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(gas_rows + new_gas)
+
+    oxide_rows = list(csv.DictReader(oxide_input.open(encoding="utf-8", newline="")))
+    new_oxide = []
+    liquid_band = {
+        "SiO2(l)": ("corroborated_calculation", 0.737630, 0.025686, 4500.0),
+        "MgO(l)": ("rough_extrapolated", 8.456530, 0.088344, 5000.0),
+        "CaO(l)": ("rough_extrapolated", 5.250696, 0.060947, 4000.0),
+        "TiO2(l)": ("rough_extrapolated", 0.062789, 0.000820, 4000.0),
+        "Al2O3(l)": ("rough_extrapolated", 4.456271, 0.058192, 4000.0),
+        "Na2O(l)": ("rough_extrapolated", 0.0, 0.0, 3000.0),
+        "K2O(l)": ("rough_extrapolated", 0.0, 0.0, 3000.0),
+    }
+    card_by_species = {item[0]: item for item in HIGH_TEMP_LIQUID_CARDS}
+
+    def base_at_3000(species: str) -> dict[str, Any]:
+        found = [r for r in oxide_rows if r["species_name"] == species and float(r["T_min"]) <= 3000 <= float(r["T_max"])]
+        if not found:
+            raise ValueError(f"no packaged liquid interval covers 3000 K for {species}")
+        return dict(found[-1])
+
+    for species in ("SiO2(l)", "Al2O3(l)", "CaO(l)", "MgO(l)", "TiO2(l)", "Na2O(l)", "K2O(l)"):
+        _name, card_name, cation, cat_num, oxy_num, _ = card_by_species[species]
+        base = base_at_3000(species)
+        tier, dg, band, limit = liquid_band[species]
+        # For CaO/MgO the bridge row keeps the current 3000 K Cp polynomial
+        # through the CEA card onset. The following CEA fit is anchored to
+        # that bridge endpoint, so its G/S and derived H agree at the seam.
+        bridge = 3172.0 if species == "CaO(l)" else 3100.0 if species == "MgO(l)" else 3000.0
+        if species in {"SiO2(l)", "MgO(l)"}:
+            switch = 4500.0 if species == "SiO2(l)" else 5000.0
+            table_id = "O-038" if species == "SiO2(l)" else "Mg-009"
+            janaf_rows = _janaf_anchored_liquid_rows(janaf_dir, table_id, base, 3000.0, switch)
+            anchor0 = _condensate_row_g_s(base, 3000.0)
+            anchor1 = (janaf_rows[switch]["enthalpy_increment"] * 1000.0
+                       + float(base["dH298_R"]) * R_J_MOL_K
+                       - switch*janaf_rows[switch]["entropy"], janaf_rows[switch]["entropy"])
+            janaf = _fit_condensate_values(
+                species, f"JANAF-{table_id}-HT-CANDIDATE", cation, cat_num, oxy_num,
+                janaf_rows, float(base["dH298_R"])*R_J_MOL_K/1000.0,
+                fit_t_min=3000.0, fit_t_max=switch, runtime_t_min=3000.0, runtime_t_max=switch,
+                fit_temperatures=sorted(janaf_rows), endpoint_g_s=[(3000.0, *anchor0), (switch, *anchor1)],
+            )
+            janaf.update(_empty_source_validity_fields())
+            janaf["Ref"] = _candidate_ref(f"JANAF-{table_id}-HT-CANDIDATE", tier, dg, band, limit)
+            new_oxide.append(janaf)
+            tail_ref = _candidate_ref(
+                f"CEA-{card_name}-HT-CANDIDATE", "rough_extrapolated",
+                0.0, 0.0, switch, basis="unavailable",
+            )
+            tail = _make_liquid_candidate_row(
+                species, card_name, cation, cat_num, oxy_num, janaf,
+                cards[card_name.upper()], switch, 6000.0,
+            )
+            tail["Ref"] = tail_ref
+            new_oxide.append(tail)
+            continue
+        if bridge > 3000:
+            seam_ref = _candidate_ref(f"CEA-{card_name}-BRIDGE-HT-CANDIDATE", "rough_extrapolated", 0.101105 if species == "CaO(l)" else 0.025913, 0.001665 if species == "CaO(l)" else 0.000437, bridge)
+            new_oxide.append({**base, "T_min": "3000", "T_max": str(bridge), "Ref": seam_ref})
+        row = _make_liquid_candidate_row(
+            species, card_name, cation, cat_num, oxy_num, base,
+            cards[card_name.upper()], bridge, 6000.0,
+        )
+        row["Ref"] = _candidate_ref(
+            f"CEA-{card_name}-HT-CANDIDATE", tier, dg, band, limit,
+            basis="unavailable" if species in {"Na2O(l)", "K2O(l)"} else None,
+        )
+        new_oxide.append(row)
+
+    feo_base = base_at_3000("FeO(l)")
+    feo_sources = _liquid_source_rows({}, feo_base, 3000.0, 6000.0, use_base_cp=True)
+    feo = _fit_condensate_values(
+        "FeO(l)", "FeO-constant-Cp-HT-CANDIDATE", "Fe", 1, 1,
+        feo_sources, float(feo_base["dH298_R"])*R_J_MOL_K/1000.0,
+        fit_t_min=3000.0, fit_t_max=6000.0, runtime_t_min=3000.0, runtime_t_max=6000.0,
+        fit_temperatures=sorted(feo_sources), endpoint_g_s=[(3000.0, *_condensate_row_g_s(feo_base, 3000.0))],
+    )
+    feo.update(_empty_source_validity_fields())
+    feo["state"] = "l"
+    feo["Ref"] = _candidate_ref("FeO-constant-Cp-HT-CANDIDATE", "corroborated_calculation", 1.218946, 0.012734, 5000.0)
+    new_oxide.append(feo)
+
+    oxide_output.parent.mkdir(parents=True, exist_ok=True)
+    with oxide_output.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=CONDENSATE_COLUMNS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows({column: row.get(column, "") for column in CONDENSATE_COLUMNS} for row in oxide_rows + new_oxide)
 
 
 SOURCE_VALIDITY_COLUMNS = (
@@ -8294,6 +8531,18 @@ def main() -> None:
         help="build opt-in rough 3000–6000 K candidate tables from NASA CEA thermo.inp",
     )
     parser.add_argument(
+        "--high-temperature-v2-thermo", type=Path,
+        help="build the opt-in v2 candidate tables using JANAF and CEA Cp shapes",
+    )
+    parser.add_argument(
+        "--high-temperature-v2-gas-output", type=Path,
+        default=repository / "src/openimcc/data/gas/gas-shomate-hight-candidate-v2.csv",
+    )
+    parser.add_argument(
+        "--high-temperature-v2-oxide-output", type=Path,
+        default=repository / "src/openimcc/data/gas/condensate-hight-candidate-v2.csv",
+    )
+    parser.add_argument(
         "--high-temperature-gas-output", type=Path,
         default=repository / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv",
     )
@@ -8314,6 +8563,14 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    if args.high_temperature_v2_thermo is not None:
+        build_high_temperature_candidates_v2(
+            args.high_temperature_v2_thermo, args.source_dir,
+            repository / "src/openimcc/data/gas/gas-shomate.csv",
+            repository / "src/openimcc/data/gas/condensate.csv",
+            args.high_temperature_v2_gas_output, args.high_temperature_v2_oxide_output,
+        )
+        return
     if args.high_temperature_thermo is not None:
         report = build_high_temperature_candidates(
             args.high_temperature_thermo,

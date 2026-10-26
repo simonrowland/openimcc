@@ -1,6 +1,89 @@
 # High temperature candidate tables
 
-These opt-in tables add rough gas and liquid-parent thermochemistry through 6000 K. The packaged defaults are unchanged. Load the candidates explicitly:
+## Version 2
+
+V2 is a separate opt-in pair. It keeps the shipped rows through 3000 K, then
+uses JANAF Cp shapes for the 16 gas species with agreement to the CEA/Gurvich
+calculation within 2.6 kJ/mol through 6000 K. NaO, Na2O, K2O and other gas
+species without a qualifying JANAF comparison retain the v1 CEA shape. Liquid
+SiO2(l) uses JANAF through 4500 K and CEA above; MgO(l) uses JANAF through
+5000 K and CEA above. CaO(l) retains its bridge and CEA shape. TiO2(l),
+Al2O3(l), Na2O(l), and K2O(l) retain CEA; FeO(l) retains the v1 constant-Cp
+continuation, independently checked against JANAF through 5000 K.
+
+Every segment starts from the previous segment's G and S. The builder
+integrates Cp as ΔH=∫Cp dT and ΔS=∫Cp/T dT, then sets G=H−TS. At a liquid
+source switch, the fitted preceding segment is constrained to its start and
+end G/S values; the next segment is anchored to that fitted endpoint. CaO/MgO
+bridge rows likewise carry the previous row's Cp to the CEA card onset before
+the card shape begins. Thus H=G+TS is continuous at 3000 K, at the 4500/5000 K
+switches, and at the CaO/MgO bridge seams.
+
+The agreement tier and the maximum reported Gibbs spread and pressure band
+are attached to each candidate row and appear in result flags above 3000 K.
+The band is a conservative per-reaction pressure envelope from the source
+comparison, not a statistical confidence interval. Rows without a paired
+source comparison carry a zero band to indicate unavailable comparison data.
+
+| Gas species | Tier above 3000 K | Max |dG| (kJ/mol) | Pressure band (dex) |
+|---|---|---:|---:|
+| SiO(g) | corroborated calculation to 6000 K | 0.180330 | ±0.001570 |
+| O(g) | corroborated calculation to 6000 K | 0.003298 | ±0.000029 |
+| O2(g) | corroborated calculation to 6000 K | 0.264747 | ±0.002305 |
+| Mg(g) | corroborated calculation to 6000 K | 0.002180 | ±0.000028 |
+| Fe(g) | corroborated calculation to 6000 K | 0.100721 | ±0.000877 |
+| Na(g) | corroborated calculation to 6000 K | 0.024520 | ±0.000213 |
+| K(g) | corroborated calculation to 6000 K | 0.371024 | ±0.003230 |
+| Ca(g) | corroborated calculation to 6000 K | 0.063527 | ±0.000553 |
+| Al(g) | corroborated calculation to 6000 K | 0.003167 | ±0.000033 |
+| AlO(g) | corroborated calculation to 6000 K | 0.862847 | ±0.007512 |
+| Ti(g) | corroborated calculation to 6000 K | 0.034254 | ±0.000298 |
+| TiO(g) | corroborated calculation to 6000 K | 1.907389 | ±0.016605 |
+| FeO(g) | corroborated calculation to 6000 K | 0.001329 | ±0.000017 |
+| MgO(g) | corroborated calculation to 6000 K | 1.590835 | ±0.013849 |
+| SiO2(g) | corroborated calculation to 6000 K | 0.031513 | ±0.000274 |
+| KO(g) | corroborated calculation to 6000 K | 1.863145 | ±0.016220 |
+| NaO(g) | rough; comparison exceeds 2.6 kJ/mol | 2.792325 | ±0.024309 |
+| Na2O(g) | rough; internal diagnostic only | 0.003079 | ±0.000027 |
+| K2O(g) | rough; internal diagnostic only | 0.001598 | ±0.000014 |
+| CaO(g) | rough; no paired comparison | unavailable | unavailable |
+| AlO2(g) | rough; no paired comparison | unavailable | unavailable |
+| TiO2(g) | rough; no paired comparison | unavailable | unavailable |
+| Al2O(g) | rough; no paired comparison | unavailable | unavailable |
+| Al2O2(g) | rough; no paired comparison | unavailable | unavailable |
+| Al2(g) | rough; no paired comparison | unavailable | unavailable |
+| Na2(g) | rough; no paired comparison | unavailable | unavailable |
+| K2(g) | rough; no paired comparison | unavailable | unavailable |
+| Si(g) | rough; no paired comparison | unavailable | unavailable |
+| Si2(g) | rough; no paired comparison | unavailable | unavailable |
+| Si3(g) | rough; no paired comparison | unavailable | unavailable |
+
+| Liquid parent | Tier and coverage | Max |dG| (kJ/mol) | Pressure band (dex) |
+|---|---|---:|---:|---:|
+| SiO2(l) | corroborated through 4500 K; rough above | 0.737630 | ±0.025686 |
+| MgO(l) | JANAF shape to 5000 K; rough disagreement | 8.456530 | ±0.088344 |
+| CaO(l) | v1 bridge and CEA; rough above 4000 K | 5.250696 | ±0.060947 |
+| TiO2(l) | CEA; near agreement through 4000 K | 0.062789 | ±0.000820 |
+| Al2O3(l) | CEA; rough above 3000 K | 4.456271 | ±0.058192 |
+| FeO(l) | v1 continuation; corroborated through 5000 K | 1.218946 | ±0.012734 |
+| Na2O(l) | CEA; no paired comparison above 3000 K | unavailable | unavailable |
+| K2O(l) | CEA; no paired comparison above 3000 K | unavailable | unavailable |
+
+Load v2 explicitly:
+
+```python
+from openimcc.gas import load_gas_datapack
+
+candidate = load_gas_datapack(
+    gas_path="src/openimcc/data/gas/gas-shomate-hight-candidate-v2.csv",
+    oxide_path="src/openimcc/data/gas/condensate-hight-candidate-v2.csv",
+)
+```
+
+The v1 candidate files below remain unchanged and retain their original rough
+flags. The existing v1 loading example and source-offset record follow.
+
+V1 adds rough gas and liquid-parent thermochemistry through 6000 K. The packaged defaults are unchanged. Load the candidates explicitly:
 
 ```python
 from openimcc.gas import load_gas_datapack, evaluate_gas
