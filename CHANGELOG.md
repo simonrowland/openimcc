@@ -12,6 +12,13 @@
   model-envelope band. The low-temperature source curves are extrapolations, so
   the band is not validation; the existing higher-temperature windows remain.
 
+- Na₂O(l) no longer has a certified interval because pure-liquid heat capacity
+  has not been measured. Its calculated continuations corroborate 1405.2–2473 K
+  with a ±0.21 dex stress band, so process rows still score with a notice; the
+  supercooled 1300–1405.2 K interval is extrapolated. Al₂O₃(l)'s certified
+  interval now ends at 2873 K, the end of measured liquid heat capacity, and
+  2873–3000 K is corroborated by calculated continuations with a ±0.036 dex band.
+
 - Gas results now report liquid-reference statuses and parent-reference flags
   only for oxide parents present in the melt. Gas pressures and other numeric
   results are unchanged.

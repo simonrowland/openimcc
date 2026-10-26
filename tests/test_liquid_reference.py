@@ -63,7 +63,9 @@ def test_alumina_authority_windows_and_boundaries() -> None:
         2326: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
         2327: LiquidReferenceAuthority.CERTIFIED,
         2500: LiquidReferenceAuthority.CERTIFIED,
-        3000: LiquidReferenceAuthority.CERTIFIED,
+        2873: LiquidReferenceAuthority.CERTIFIED,
+        2874: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
+        3000: LiquidReferenceAuthority.CORROBORATED_CALCULATION,
         3001: LiquidReferenceAuthority.EXTRAPOLATED,
     }
     for temperature, authority in expected.items():
@@ -75,13 +77,31 @@ def test_alumina_authority_windows_and_boundaries() -> None:
     assert "corroborated by independent calculation" in " ".join(item.basis for item in lower.evidence_ref)
     assert "emissivity" in " ".join(item.basis for item in lower.evidence_ref)
     certified = liquid_reference_authority("Al2O3(l)", 2327)
-    assert certified.certified_T_K == (2327, 3000)
+    assert certified.certified_T_K == (2327, 2873)
     assert certified.band_value == pytest.approx(0.036)
+
+
+def test_alumina_high_temperature_calculated_continuation() -> None:
+    expected = {
+        2872: (LiquidReferenceAuthority.CERTIFIED, (2327, 2873), 0.036),
+        2873: (LiquidReferenceAuthority.CERTIFIED, (2327, 2873), 0.036),
+        2874: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (2873, 3000), 0.036),
+        3000: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (2873, 3000), 0.036),
+    }
+    for temperature, (authority, window, band) in expected.items():
+        status = liquid_reference_authority("Al2O3(l)", temperature)
+        assert (status.authority, status.certified_T_K, status.band_value) == (authority, window, band)
+        assert status.band_unit == "dex log10 pressure"
+    evidence = " ".join(
+        item.basis for item in liquid_reference_authority("Al2O3(l)", 2874).evidence_ref
+    )
+    assert "calculated continuation" in evidence
+    assert "2.13 kJ/mol" in evidence
 
 
 def test_alumina_low_temperature_extrapolation_envelope() -> None:
     expected = {
-        1322: (LiquidReferenceAuthority.EXTRAPOLATED, (2327, 3000), None),
+        1322: (LiquidReferenceAuthority.EXTRAPOLATED, (2327, 2873), None),
         1323: (LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17),
         1800: (LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17),
         1801: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1801, 2327), 0.05),
@@ -133,8 +153,8 @@ def test_composition_scoped_k2o_authority() -> None:
     assert liquid_reference_authority("FeO(l)", 1649.15).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("Al2O3(l)", 2400).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("Al2O3(l)", 2500).authority is LiquidReferenceAuthority.CERTIFIED
-    assert liquid_reference_authority("Na2O(l)", 1800).authority is LiquidReferenceAuthority.CERTIFIED
-    assert liquid_reference_authority("Na2O(l)", 1800.001).authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert liquid_reference_authority("Na2O(l)", 1800).authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION
+    assert liquid_reference_authority("Na2O(l)", 1800.001).authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION
     assert liquid_reference_authority("TiO2(l)", 2000).authority is LiquidReferenceAuthority.EXTRAPOLATED
     tio2 = liquid_reference_authority("TiO2(l)", 2130)
     assert tio2.authority is LiquidReferenceAuthority.EXTRAPOLATED
@@ -144,6 +164,30 @@ def test_composition_scoped_k2o_authority() -> None:
     assert "assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4" in evidence
     assert "estimated liquid Cp 8 cal per g-atom" in evidence
     assert "no measured pure-liquid data" in evidence
+
+
+def test_sodium_oxide_authority_windows_and_boundaries() -> None:
+    expected = {
+        1299: (LiquidReferenceAuthority.EXTRAPOLATED, (1405.2, 2473), None),
+        1300: (LiquidReferenceAuthority.EXTRAPOLATED, (1300, 1405.2), 0.21),
+        1405.2: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1405.2, 2473), 0.21),
+        1800: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1405.2, 2473), 0.21),
+        2473: (LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1405.2, 2473), 0.21),
+        2474: (LiquidReferenceAuthority.EXTRAPOLATED, (1405.2, 2473), None),
+    }
+    for temperature, (authority, window, band) in expected.items():
+        status = liquid_reference_authority("Na2O(l)", temperature)
+        assert status.authority is authority
+        assert status.certified_T_K == window
+        assert status.band_value == band
+        if band is not None:
+            assert status.band_unit == "dex log10 pressure"
+    evidence = " ".join(
+        item.basis for item in liquid_reference_authority("Na2O(l)", 1800).evidence_ref
+    )
+    assert "partial-molar Cp" in evidence
+    assert "not pure-liquid Cp" in evidence
+    assert "47.7 +/- 2.5 kJ/mol" in evidence
 
 
 def test_public_records_round_trip_and_gas_result_notice() -> None:
@@ -270,7 +314,8 @@ def test_halide_side_parent_uses_liquid_authority_lookup() -> None:
     )
     status = result.liquid_reference_status["NaCl"]
     assert status.species == "Na2O(l)"
-    assert status.authority is LiquidReferenceAuthority.CERTIFIED
+    assert status.authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION
+    assert status.band_value == pytest.approx(0.21)
     assert result.domain_flags["NaCl"] is None
 
 

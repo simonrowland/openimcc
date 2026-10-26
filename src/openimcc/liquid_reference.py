@@ -147,14 +147,22 @@ _RECORDS = (
     # independent liquid is +1.45 kJ/mol at 1800 K, inside both bounds.
     # Low-window envelope: 9.84 kJ/mol * 0.0166 dex/kJ (Al2) = 0.164 dex,
     # rounded up to 0.17; the corresponding worst pO2 band is 0.109 dex.
-    LiquidReferenceRecord("Al2O3(l)", LiquidReferenceAuthority.CERTIFIED, (2327, 3000), 0.036, "dex log10 pressure",
+    # Above Crochetet's measured Cp endpoint, its continuation differs by at
+    # most 2.13 kJ/mol through 3000 K; 2.13 * 0.016616 = 0.0354 dex,
+    # rounded up to 0.036 for calculated corroboration.
+    LiquidReferenceRecord("Al2O3(l)", LiquidReferenceAuthority.CERTIFIED, (2327, 2873), 0.036, "dex log10 pressure",
         (_e("JANAF Al-100/Al-101", 1998, "liquid from the 2327 K melting point; liquid enthalpy fit from 2500 K"),
-         _e("Crochetet et al.", 2026, "aerodynamic-levitation drop calorimetry; liquid Cp 168.6 +/- 9.6 J/mol/K over 2327-2873 K; departure from the reference at most 2.13 kJ/mol to 3000 K; DOI 10.1016/j.oceram.2026.101029")),
+         _e("Crochetet et al.", 2026, "aerodynamic-levitation drop calorimetry measured liquid Cp 168.6 +/- 9.6 J/mol/K over 2327-2873 K; DOI 10.1016/j.oceram.2026.101029")),
         (AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1801, 2327), 0.05,
             "dex log10 pressure", (
                 _e("Hallstedt", 1992, "independent CALPHAD liquid Al2O3 Gibbs energy that does not reuse the reference liquid Cp; within 1.5 kJ/mol of the reference at 1800-2327 K; corroborated by independent calculation, not measured; DOI 10.1111/j.1151-2916.1992.tb04216.x"),
                 _e("Paradis, Ishikawa, Saita & Yoda", 2004, "electrostatic levitation; liquid Cp estimated over 2120-2450 K assuming a constant hemispherical emissivity of 0.8, with a calculated fusion enthalpy of 109.0 kJ/mol; continued below 2120 K it stays within 2.6 kJ/mol of the reference down to 1801 K; DOI 10.1143/JJAP.43.1496"),
                 _e("Crochetet et al.", 2026, "liquid Cp measured above the melting point, continued below it, stays within 1.6 kJ/mol of the reference down to 1801 K; DOI 10.1016/j.oceram.2026.101029"),
+            )),
+         AuthorityWindow(LiquidReferenceAuthority.CORROBORATED_CALCULATION, (2873, 3000), 0.036,
+            "dex log10 pressure", (
+                _e("JANAF Al-100/Al-101", 1998, "assessed liquid fit continued above the measured heat-capacity range"),
+                _e("Crochetet et al.", 2026, "measured liquid Cp continued above 2873 K; calculated continuation differs from the reference by at most 2.13 kJ/mol through 3000 K; DOI 10.1016/j.oceram.2026.101029"),
             )),
          AuthorityWindow(LiquidReferenceAuthority.EXTRAPOLATED, (1323, 1801), 0.17,
             "dex log10 pressure", (
@@ -165,8 +173,19 @@ _RECORDS = (
             )),)),
     LiquidReferenceRecord("TiO2(l)", LiquidReferenceAuthority.EXTRAPOLATED, None, None, None,
         (_e("JANAF O-044", 1998, "estimated end-to-end: assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4 and estimated liquid Cp 8 cal per g-atom; no measured pure-liquid data"),)),
-    LiquidReferenceRecord("Na2O(l)", LiquidReferenceAuthority.CERTIFIED, (1405.2, 1800), None, None,
-        (_e("Richet, Bottinga & Tequi", 1984, "measured liquid Cp through 1800 K on the 1405.2 K fusion anchor; Cp extrapolation above 1800 K; DOI 10.1111/j.1151-2916.1984.tb19155.x"),)),
+    # With no active Na2O sensitivity rows, use the stoichiometric stress
+    # bound at 1300 K: q=1000/(R*T*ln(10))=0.04018 dex/kJ, so pO2 is at
+    # most 2q*2.6=0.2089 dex; round outward to 0.21 (not a confidence band).
+    LiquidReferenceRecord("Na2O(l)", LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1405.2, 2473), 0.21, "dex log10 pressure",
+        (_e("Richet, Bottinga & Tequi", 1984, "Na2O partial-molar Cp of 100.6 J/mol/K derived from sodium-silicate liquids, not pure-liquid Cp; continued from the fusion anchor, it agrees with the reference within 1.32 kJ/mol through 1800 K and 2473 K; calculated corroboration; DOI 10.1111/j.1151-2916.1984.tb19155.x"),
+         _e("Gurvich via NASA Glenn CEA", 2002, "assessed liquid Cp continuation agrees with the reference within 1.52 kJ/mol through 2473 K; calculated corroboration, not a measurement; NASA/TP-2002-211556"),
+         _e("Chase", 1998, "JANAF Na-013 assessed liquid function and 1405.2 K fusion anchor; the table is not a measured pure-liquid Cp interval; DOI 10.18434/T42S31"),
+         _e("Smith et al.", 2017, "reports measured pure-Na2O fusion enthalpy 47.7 +/- 2.5 kJ/mol and melting point 1405.2 +/- 4 K; DOI 10.1016/j.jct.2017.04.003")),
+        (AuthorityWindow(LiquidReferenceAuthority.EXTRAPOLATED, (1300, 1405.2), 0.21,
+            "dex log10 pressure", (
+                _e("JANAF Na-013", 1998, "supercooled liquid continuation below the measured 1405.2 K melting point; 0.21 dex is the stoichiometric 2.6 kJ/mol stress bound, not a confidence interval; DOI 10.18434/T42S31"),
+                _e("Smith et al.", 2017, "reports the pure-sample 1405.2 K melting point and 47.7 +/- 2.5 kJ/mol fusion enthalpy; no pure-liquid Cp interval is measured; DOI 10.1016/j.jct.2017.04.003"),
+            )),)),
 )
 _BY_SPECIES = MappingProxyType({record.species: record for record in _RECORDS})
 

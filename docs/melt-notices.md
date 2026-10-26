@@ -52,10 +52,18 @@ calculation with a ±0.05 dex band: an independent CALPHAD liquid and continued 
 heat-capacity series stay within 2.6 kJ mol⁻¹, but nothing is measured
 calorimetrically there. A window's band applies only inside that window, so
 extrapolated statuses outside every window carry no band unless the record is
-itself extrapolated, as MgO(l) is. Al₂O₃(l) is certified from
-its 2327 K melting point to 3000 K with a ±0.036 dex log₁₀-pressure band, the
-largest departure of the measured liquid heat capacity from the reference.
-Na₂O(l)'s measured Cp window ends at 1800 K.
+itself extrapolated, as MgO(l) is. Al₂O₃(l) is certified from its 2327 K
+melting point through 2873 K, the end of Crochetet et al.'s measured liquid
+heat-capacity range, with a ±0.036 dex log₁₀-pressure band. From 2873–3000 K,
+the JANAF liquid fit and Crochetet heat-capacity continuation agree within
+2.13 kJ mol⁻¹; this is calculated corroboration with the same band, not
+measured coverage. Na₂O(l) has no certified interval because pure-liquid heat
+capacity has not been measured. Its measured 1405.2 K melting point and
+47.7 ± 2.5 kJ mol⁻¹ fusion enthalpy anchor the reference; calculated
+continuations corroborate 1405.2–2473 K, so process rows in that interval
+still score with a notice and ±0.21 dex stress band. The supercooled
+1300–1405.2 K range remains extrapolated with the same stress band. These are
+calculated continuations, not pure-liquid Cp measurements.
 TiO₂(l) is extrapolated at every temperature and has no certified window; the
 JANAF O-044 flag and the O-044-SC-CP continuation flag both remain. MgO(l) remains extrapolated and carries its
 ±0.3 dex pO₂ band. These records describe reference authority only and do not
@@ -71,15 +79,22 @@ pressures. FeO(l) uses Darken & Gurry (1946), as reported by Masson (1965), and
 Hashimoto (1983) residue run 17c3-2 outside the window. Al₂O₃(l) follows
 JANAF Al-100/Al-101 from the melting point, with drop-calorimetry liquid heat
 capacity from Crochetet et al. (2026; DOI 10.1016/j.oceram.2026.101029) over
-2327–2873 K. Below the melting point, Hallstedt's (1992; DOI
+2327–2873 K; from 2873–3000 K the JANAF fit and continued Crochetet Cp agree
+within 2.13 kJ mol⁻¹ by calculation. Below the melting point, Hallstedt's (1992; DOI
 10.1111/j.1151-2916.1992.tb04216.x) CALPHAD liquid is an independent
 calculation within 1.5 kJ mol⁻¹ of the reference. The liquid heat capacity of
 Paradis, Ishikawa, Saita & Yoda (2004; DOI 10.1143/JJAP.43.1496) is an estimate
 over 2120–2450 K that assumes a constant emissivity. Continued downward, it and
 the Crochetet series stay within 2.6 kJ mol⁻¹ down to 1801 K. TiO₂(l) has no measured pure-liquid
 data: JANAF O-044 assumes its fusion entropy (7.5 cal/mol/K, by analogy with
-V₂O₄) and estimates its liquid heat capacity. Na₂O(l) follows its source-supported
-liquid-from-solid construction. CaO(l)'s two independent molecular-dynamics
+V₂O₄) and estimates its liquid heat capacity. Na₂O(l) has a measured fusion
+anchor but no measured pure-liquid Cp interval; its JANAF function is
+corroborated by the sodium-silicate partial-molar Cp of Richet, Bottinga & Téqui
+(1984; DOI 10.1111/j.1151-2916.1984.tb19155.x) and the Gurvich (1982) liquid
+function transcribed in NASA Glenn CEA (NASA/TP-2002-211556). Smith et al.
+(2017; DOI 10.1016/j.jct.2017.04.003) reports the 47.7 ± 2.5 kJ mol⁻¹
+fusion enthalpy. These liquid Cp continuations are calculations, not
+pure-liquid measurements. CaO(l)'s two independent molecular-dynamics
 calculations (2020, 2024) reproduce fusion enthalpy within 2.6 kJ/mol; neither
 is measured fusion evidence. MgO(l)'s assumed fusion entropy and calculated
 fusion values scatter by about 10–19 kJ/mol.
