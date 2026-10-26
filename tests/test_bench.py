@@ -565,6 +565,12 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
                 temperature_K=1700.0,
                 measured=1.0e-3,
             ),
+            _partial_pressure_point(
+                "pp_mg_2000",
+                species="Mg",
+                parent_oxide="MgO",
+                temperature_K=2000.0,
+            ),
         ],
         compositions={
             "cmas_in_domain": {
@@ -584,11 +590,18 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
     assert activity.status == "ok", activity.reason
     assert activity.predicted is not None and math.isfinite(float(activity.predicted))
 
-    outside_certified_window = by_id["pp_sio_2000"]
+    # SiO2(l) at 2000 K lies in a corroborated-calculation window, so the
+    # row scores with a notice instead of being flagged out of the headline.
+    corroborated = by_id["pp_sio_2000"]
+    assert corroborated.status == "ok", corroborated.reason
+    assert corroborated.residual is not None
+    assert corroborated.domain_flag is None
+
+    # MgO(l) is extrapolated at every temperature, so this row stays flagged.
+    outside_certified_window = by_id["pp_mg_2000"]
     assert outside_certified_window.status == "ok", outside_certified_window.reason
     assert outside_certified_window.predicted is not None
-    assert "tier-1 liquid_from_solid construction" in outside_certified_window.domain_flag
-    assert outside_certified_window.provenance_class == "janaf_fitted"
+    assert "MgO(l)" in outside_certified_window.domain_flag
 
     certified = by_id["pp_sio_1700"]
     assert certified.status == "ok", certified.reason
@@ -597,11 +610,11 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
     assert certified.domain_flag is None
     assert certified.provenance_class == "janaf_fitted"
 
-    headline_residuals = [activity.residual, certified.residual]
+    headline_residuals = [activity.residual, corroborated.residual, certified.residual]
     expected_headline_rmse = math.sqrt(
         sum(float(value) ** 2 for value in headline_residuals) / len(headline_residuals)
     )
-    assert report.n_ok == 3
+    assert report.n_ok == 4
     assert report.n_flagged == 1
     assert report.status_counts["refused"] == 0
     assert report.rmse == pytest.approx(expected_headline_rmse)
@@ -612,7 +625,7 @@ def test_out_of_domain_gas_is_predicted_flagged_and_excluded_from_headline_rmse(
     rendered = render_report(report)
     assert "flagged=1" in rendered
     assert "flagged_RMSE=" in rendered
-    assert "tier-1 liquid_from_solid construction" in rendered
+    assert "MgO(l)" in rendered
 
 
 def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
