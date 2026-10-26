@@ -3,11 +3,11 @@
 ## Version 2
 
 V2 is a separate opt-in pair. It keeps the shipped rows through 3000 K, then
-uses JANAF Cp shapes for the 16 gas species with agreement to the CEA/Gurvich
-calculation within 2.6 kJ/mol through 6000 K. NaO, Na2O, K2O and other gas
-species without a qualifying JANAF comparison retain the v1 CEA shape. Liquid
-SiO2(l) uses JANAF through 4500 K and CEA above; MgO(l) uses JANAF through
-5000 K and CEA above. CaO(l) retains its bridge and CEA shape. TiO2(l),
+uses JANAF Cp shapes for eligible neutral gas species; 16 agree with the
+CEA/Gurvich calculation within 2.6 kJ/mol through 6000 K. NaO, Na2O, K2O and
+other gas species without a qualifying JANAF comparison retain the v1 CEA
+shape. Liquid SiO2(l) uses JANAF through 4500 K and CEA above; MgO(l) uses
+JANAF through 5000 K and CEA above. CaO(l) retains its bridge and CEA shape. TiO2(l),
 Al2O3(l), Na2O(l), and K2O(l) retain CEA; FeO(l) retains the v1 constant-Cp
 continuation, independently checked against JANAF through 5000 K.
 
@@ -59,6 +59,30 @@ source comparison carry a zero band to indicate unavailable comparison data.
 | Si(g) | rough; no paired comparison | unavailable | unavailable |
 | Si2(g) | rough; no paired comparison | unavailable | unavailable |
 | Si3(g) | rough; no paired comparison | unavailable | unavailable |
+
+### Ions and electron
+
+V2 also extends the shipped Ca+, Na+, K+, and e- rows from 3000 to 6000 K.
+The shipped gas table has no Mg+, Fe+, Al+, Si+, or SiO+ rows. Each interval
+uses the row's existing 3000 K G/S anchor and the JANAF Cp shape. Na+, K+, and
+e- have matching CEA cards for comparison; Ca+ has no matching CEA card and
+is marked rough. The `e-` row keeps the package's D-020 `e1-(ref)` standard:
+the candidate imports only its Cp shape and anchors it to the existing
+electron G/S at 3000 K.
+
+| Ion row | Tier above 3000 K | Max |dG| over range (kJ/mol) | Max pressure band over range (dex) |
+|---|---|---:|---:|
+| Ca+(g) | rough; no paired comparison | unavailable | unavailable |
+| Na+(g) | corroborated calculation to 6000 K | 0.000181 | ±0.00000158 |
+| K+(g) | corroborated calculation to 6000 K | 0.000181 | ±0.00000158 |
+| e-(g) | corroborated calculation to 6000 K | 0.000181 | ±0.00000158 |
+
+Ionisation fractions are illustrative ideal-gas results at 1 bar. In a pure
+alkali vapour, the screening calculation gives about 6% Na and 15% K ionised
+at 5000 K, rising to about 20% Na and 38% K at 6000 K. Ions become significant
+above roughly 4500 K. Mixture pressures can exceed 1 bar; the existing
+high-pressure notice applies, and these fractions are not a validated
+mixture prediction.
 
 | Liquid parent | Tier and coverage | Max |dG| over range (kJ/mol) | Max pressure band over range (dex) |
 |---|---|---:|---:|---:|
@@ -146,4 +170,4 @@ The offset table reports absolute differences between the anchored H, S, G value
 | `K2O(l)` | 1531.976750 / 4.892844 / 13146.554598 | 3532.445273 / 5.361502 / 17913.561420 | 25295.471147 / 8.918574 / 28215.974116 |
 | `FeO(l)` | — | — | — |
 
-The CEA source is NASA Glenn CEA `thermo.inp` (NASA/TP-2002-211556; file retrieved 2026-09-06, MD5 `709338513d1d6dfe0bc6eb2387995d96`). The liquid cards are Gurvich cards. The source uses 1 atm condensed-phase standards; no pressure correction is applied. See `src/openimcc/data/gas/PROVENANCE.yaml` for the candidate file records and SHA-256 digests.
+The CEA source is NASA Glenn CEA `thermo.inp` (NASA/TP-2002-211556; file retrieved 2026-09-06, MD5 `709338513d1d6dfe0bc6eb2387995d96`). The liquid cards are Gurvich cards. The source uses 1 atm condensed-phase standards; no pressure correction is applied. The v2 gas candidate SHA-256 is `0ea5615ab500a8503450580e1f2b528915b47e7b8ec3d7f0d67d8453485c9c08`. See `src/openimcc/data/gas/PROVENANCE.yaml` for the candidate file records and SHA-256 digests.

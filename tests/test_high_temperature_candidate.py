@@ -155,6 +155,7 @@ def test_v2_candidate_loads_preserves_prefixes_and_all_seams() -> None:
     v1_oxide = ROOT / "src/openimcc/data/gas/condensate-hight-candidate.csv"
     assert hashlib.sha256(v1_gas.read_bytes()).hexdigest() == "4dc41e150e22beb90f6b6b8dec67b0f4d993b5984e2e3ce1ec792d52b4c0f036"
     assert hashlib.sha256(v1_oxide.read_bytes()).hexdigest() == "aca172c1d435e520e8a16f5a58ce5ae67c191c1fafc34bf98c080d447efb973d"
+    assert hashlib.sha256(GAS_CANDIDATE_V2.read_bytes()).hexdigest() == "0ea5615ab500a8503450580e1f2b528915b47e7b8ec3d7f0d67d8453485c9c08"
     for default, v1, v2 in ((default_gas, v1_gas, GAS_CANDIDATE_V2),
                             (default_oxide, v1_oxide, OXIDE_CANDIDATE_V2)):
         lines = default.read_bytes().splitlines()
@@ -241,3 +242,36 @@ def test_v2_candidate_flags_show_per_species_tier_and_band() -> None:
             flag = _source_model_flag(species, temperature, row, phase=phase)
             assert flag is not None
             assert all(part in flag for part in parts), (species, temperature, flag)
+
+
+def test_v2_candidate_ions_cover_6000_k_and_close_charge_for_k_bearing_melt() -> None:
+    candidate = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
+    for temperature in (4000.0, 5000.0, 6000.0):
+        melt = evaluate(
+            COMPOSITION, T_K=temperature, basis_type="wt",
+            allow_extrapolation=True,
+        )
+        activities = dict(zip(melt.parent_oxides, melt.parent_activity))
+        result = evaluate_gas(
+            activities, temperature, 1.0e-10, candidate,
+            include_ions=True, allow_extrapolation=True,
+        )
+        assert math.isfinite(result["K+"]) and result["K+"] > 0.0
+        assert math.isfinite(result["e-"]) and result["e-"] > 0.0
+        for species in ("K+", "e-"):
+            flag = result.domain_flags[species] or ""
+            assert "high-temperature extension" in flag
+            assert "out-of-domain extrapolation" not in flag
+            assert "outside its declared" not in flag
+
+        positive = sum(result[species] for species in ("Na+", "K+", "Ca+"))
+        negative = sum(
+            result.get(species, 0.0)
+            for species in (
+                "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-",
+                "AlO-", "AlO2-", "KO-", "NaO-", "Cr-", "V-", "Nb-",
+            )
+        )
+        residual = result["e-"] + negative - positive
+        scale = max(result["e-"] + negative, positive)
+        assert abs(residual) <= 1.0e-12 * scale
