@@ -2523,19 +2523,21 @@ candidate_condensate_files:
 candidate_gas_files:
   - file: gas-shomate-hight-candidate-v2.csv
     status: opt_in_high_temperature_candidate
-    sha256: 0ea5615ab500a8503450580e1f2b528915b47e7b8ec3d7f0d67d8453485c9c08
+    sha256: 55769977fd5ea4c549796be7b23baeb916d76c7904ace9cb05e0cd159918d972
     source: >-
-      NIST-JANAF Cp tables for the existing Ca+, Na+, K+, and e- gas rows;
-      NASA Glenn CEA thermo.inp ion cards Na+, K+, and e- independently check
-      the Cp shapes. No CEA Ca+ card is available. Source Cp(T) is fit to the
+      NIST-JANAF Cp tables for Ca+, Na+, K+, e-, Al+, Mg+, Si+, Ti+, and Cr+;
+      NASA Glenn CEA thermo.inp ion cards independently check the paired
+      JANAF shapes. Fe+ uses its CEA/Gurvich card because no JANAF Cp table is
+      available. No CEA Ca+ card is available. Source Cp(T) is fit to the
       runtime Shomate form.
     construction: >-
-      Existing 3000 K row H and S anchor every candidate interval; JANAF Cp
-      shapes are integrated from that seam. The CEA ion cards supply only the
-      independent comparison, not anchors. The e- row retains the package's
-      JANAF D-020 e1-(ref) convention and its existing 3000 K G/S anchor.
-      Na+, K+, and e- are corroborated within 0.000182 kJ/mol; Ca+ is rough
-      because no paired CEA comparison is available. See
+      Existing 3000 K row H and S anchor the candidate intervals for shipped
+      ions. Newly added ions use JANAF or CEA/Gurvich source fits from 298.15 K
+      through 3000 K, then anchor high-temperature intervals at the fitted
+      3000 K seam. The e- row retains the package's JANAF D-020 e1-(ref)
+      convention and its existing 3000 K G/S anchor. Ca+ and Fe+ are rough
+      because no paired JANAF/CEA comparison is available; the other listed
+      ions are corroborated within 2.6 kJ/mol. See
       docs/high-temperature-candidate.md.
     source_file: NIST-JANAF and NASA Glenn CEA thermo.inp
     source_retrieved: 2026-09-06

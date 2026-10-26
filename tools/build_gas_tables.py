@@ -694,10 +694,16 @@ HIGH_TEMP_V2_GAS_JANAF = {
 # independent Cp-shape check where available; JANAF remains the selected
 # shape for every ion with a complete 6000 K JANAF table.
 HIGH_TEMP_V2_ION_CARDS = (
-    ("Ca+(g)", "Ca+", "Ca-007", "Ca", 1, 0),
-    ("Na+(g)", "Na+", "Na-006", "Na", 1, 0),
+    ("Ca+(g)", None, "Ca-007", "Ca", 1, 0),
+    ("Na+(g)", "NA+", "Na-006", "Na", 1, 0),
     ("K+(g)", "K+", "K-006", "K", 1, 0),
-    ("e-(g)", "e-", "D-020", "", 0, 0),
+    ("e-(g)", "E-", "D-020", "", 0, 0),
+    ("Al+(g)", "AL+", "Al-006", "Al", 1, 0),
+    ("Fe+(g)", "FE+", None, "Fe", 1, 0),
+    ("Mg+(g)", "MG+", "Mg-006", "Mg", 1, 0),
+    ("Si+(g)", "SI+", "Si-006", "Si", 1, 0),
+    ("Ti+(g)", "TI+", "Ti-007", "Ti", 1, 0),
+    ("Cr+(g)", "CR+", "Cr-006", "Cr", 1, 0),
 )
 
 CONDENSATE_COLUMNS = (
@@ -7765,7 +7771,10 @@ def _parse_cea_thermo_cards(path: Path) -> dict[str, dict[str, Any]]:
 
     cards: dict[str, dict[str, Any]] = {}
     wanted = {item[1].upper() for item in (*HIGH_TEMP_GAS_CARDS, *HIGH_TEMP_LIQUID_CARDS)}
-    wanted.update({"NA+", "K+", "E-"})
+    wanted.update(
+        card_name for _species, card_name, _table, _cation, _cat_num, _oxy_num
+        in HIGH_TEMP_V2_ION_CARDS if card_name is not None
+    )
     for index, line in enumerate(lines):
         name = line.strip().split(maxsplit=1)[0].upper() if line.strip() else ""
         if name not in wanted:
@@ -7914,6 +7923,46 @@ def _fit_high_temperature_gas_shape(
     return row
 
 
+def _fit_cea_ion_gas_row(
+    species: str, card_name: str, card: dict[str, Any],
+    cation: str, cat_num: int, oxy_num: int,
+) -> dict[str, str]:
+    """Fit the CEA ion card in the same apparent-G Shomate form as other gas rows."""
+    temperatures = np.arange(300.0, 3000.0 + 1.0, 100.0)
+    h298 = _cea_properties(card, 298.15)["H"]
+    # Premise: the CEA card gives absolute H/S and ΔfH°(298.15 K). Algebra:
+    # fit ΔfH° + [H(T)-H(298.15)] - T*S(T), matching the JANAF apparent-G
+    # convention. Unit check: H increments are converted J→kJ before fitting;
+    # sanity: at the 298 K anchor this retains the card's formation reference.
+    source_rows = []
+    for temperature in temperatures:
+        properties = _cea_properties(card, float(temperature))
+        source_rows.append({
+            "temperature": float(temperature),
+            "heat_capacity": properties["cp"],
+            "entropy": properties["S"],
+            "enthalpy_increment": (properties["H"] - h298) / 1000.0,
+        })
+    reference = float(card["delta_f_H_298_15"]) / 1000.0
+    fit = _fit_shomate_values(source_rows, reference)
+
+    def number(value: float) -> str:
+        return format(float(value), ".15g")
+
+    row = {
+        "species_name": species, "state": "g", "T_interval": "1",
+        "cation": cation, "cat_num": str(cat_num), "oxy_num": str(oxy_num),
+        "T_min": "298.15", "T_max": "3000",
+        **{key: number(fit[key]) for key in "ABCDEFG"}, "H": "0",
+        "Ref": f"CEA-{card_name}",
+        "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
+        "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
+        **_shomate_source_fields(fit),
+    }
+    row.update(_empty_source_validity_fields())
+    return row
+
+
 def _candidate_gas_shape_comparison(
     janaf_nodes: dict[float, dict[str, float]],
     cea_card: dict[str, Any],
@@ -7944,6 +7993,29 @@ def _candidate_gas_shape_comparison(
     max_dg = float(np.max(dg_j))
     pressure_band = float(np.max(dg_j / (R_J_MOL_K * temperatures * math.log(10.0))))
     return max_dg / 1000.0, pressure_band
+
+
+def _fit_v2_ion_source_row(
+    source_dir: Path, species: str, table_id: str,
+    cation: str, cat_num: int, oxy_num: int,
+) -> dict[str, str]:
+    """Fit the selected JANAF ion source from 300 K and expose it from 298.15 K."""
+    source_path = source_dir / f"{table_id}.txt"
+    if source_path.is_file():
+        row = _fit_janaf_text_row(
+            source_dir, species, table_id, cation, cat_num, oxy_num,
+            fit_t_min=300.0, fit_t_max=3000.0,
+            runtime_t_min=298.15, runtime_t_max=3000.0,
+        )
+    else:
+        row = _fit_row(
+            source_dir, species, table_id, cation, cat_num, oxy_num,
+            fit_t_min=300.0, fit_t_max=3000.0,
+            minimum_rows=20,
+        )
+        row["T_min"] = "298.15"
+    row.update(_empty_source_validity_fields())
+    return row
 
 
 def _liquid_cp(row: dict[str, Any], temperature: float) -> float:
@@ -8158,29 +8230,47 @@ def build_high_temperature_candidates_v2(
                     "cat_num": str(cat_num), "oxy_num": str(oxy_num)})
         new_gas.append(row)
 
-    cea_ion_cards = {"Na+(g)": "NA+", "K+(g)": "K+", "e-(g)": "E-"}
-    for species, _name, table_id, cation, cat_num, oxy_num in HIGH_TEMP_V2_ION_CARDS:
+    for species, cea_name, table_id, cation, cat_num, oxy_num in HIGH_TEMP_V2_ION_CARDS:
         base_matches = [r for r in gas_rows if r["species_name"] == species and float(r["T_max"]) == 3000.0]
+        if base_matches:
+            base = dict(base_matches[-1])
+        elif table_id is not None:
+            base = _fit_v2_ion_source_row(
+                janaf_dir, species, table_id, cation, cat_num, oxy_num,
+            )
+        elif cea_name is not None:
+            base = _fit_cea_ion_gas_row(
+                species, cea_name, cards[cea_name], cation, cat_num, oxy_num,
+            )
+        else:
+            raise ValueError(f"no source for candidate ion {species}")
         if not base_matches:
-            raise ValueError(f"no 3000 K packaged gas interval for {species}")
-        base = dict(base_matches[-1])
+            base = {column: base.get(column, "") for column in RUNTIME_COLUMNS}
+            new_gas.append(dict(base))
         for key in "ABCDEFG":
             base[key] = float(base[key])
-        points = _candidate_janaf_rows(janaf_dir, table_id)
-        temperatures = np.asarray(sorted(T for T in points if 3000.0 <= T <= 6000.0))
-        if temperatures[0] != 3000.0 or temperatures[-1] != 6000.0:
-            raise ValueError(f"{table_id}: JANAF ion Cp does not cover 3000-6000 K")
-        cp = np.asarray([points[float(T)]["heat_capacity"] for T in temperatures])
-        cea_name = cea_ion_cards.get(species)
-        if cea_name is not None:
+        if table_id is not None:
+            points = _candidate_janaf_rows(janaf_dir, table_id)
+            temperatures = np.asarray(sorted(T for T in points if 3000.0 <= T <= 6000.0))
+            if temperatures[0] != 3000.0 or temperatures[-1] != 6000.0:
+                raise ValueError(f"{table_id}: JANAF ion Cp does not cover 3000-6000 K")
+            cp = np.asarray([points[float(T)]["heat_capacity"] for T in temperatures])
+        else:
+            temperatures = np.arange(3000.0, 6000.0 + 1.0, 100.0)
+            cp = np.asarray([
+                _cea_properties(cards[cea_name], float(T))["cp"]
+                for T in temperatures
+            ])
+        if table_id is not None and cea_name is not None:
             dg, band = _candidate_gas_shape_comparison(points, cards[cea_name])
             paired = dg <= 2.6
         else:
             dg, band, paired = 0.0, 0.0, False
         tier = "corroborated_calculation" if paired else "rough_extrapolated"
+        source_id = f"JANAF-{table_id}" if table_id is not None else f"CEA-{cea_name}"
         ref = _candidate_ref(
-            f"JANAF-{table_id}-HT-CANDIDATE", tier, dg, band, 6000.0,
-            basis="paired_sources" if cea_name is not None else "unavailable",
+            f"{source_id}-HT-CANDIDATE", tier, dg, band, 6000.0,
+            basis="paired_sources" if table_id is not None and cea_name is not None else "unavailable",
         )
         row = _fit_high_temperature_gas_shape(base, temperatures, cp, ref)
         row.update({"species_name": species, "state": "g", "cation": cation,

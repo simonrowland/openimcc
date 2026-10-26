@@ -1460,6 +1460,7 @@ _GAS_PROVENANCE_AUTHORITY.update(
 )
 _ION_GAS_SPECIES = (
     "Na+", "K+", "Ca+", "e-",
+    "Al+", "Fe+", "Mg+", "Si+", "Ti+", "Cr+",
     "Na-", "K-", "O-", "Al-", "Fe-", "Si-", "Ti-", "O2-", "AlO-", "AlO2-", "KO-", "NaO-",
     "Cr-", "V-", "Nb-", "Li-", "LiO-", "Rb-", "Pb-",
     "Li+", "Rb+", "Pb+", "Hf+", "Hf-", "Th+",
@@ -1841,6 +1842,12 @@ _GAS_IONIZATION_PAIRS = (
     ("Na", "Na+"),
     ("K", "K+"),
     ("Ca", "Ca+"),
+    ("Al", "Al+"),
+    ("Fe", "Fe+"),
+    ("Mg", "Mg+"),
+    ("Si", "Si+"),
+    ("Ti", "Ti+"),
+    ("Cr", "Cr+"),
     ("Li", "Li+"),
     ("Rb", "Rb+"),
     ("Pb", "Pb+"),
@@ -4920,6 +4927,8 @@ def _add_ion_channels(
 
     for neutral, ion in _GAS_IONIZATION_PAIRS:
         if neutral not in values:
+            continue
+        if f"{ion}(g)" not in datapack.gas_df.index:
             continue
         G_neutral, neutral_row, neutral_flag = gibbs(neutral)
         G_ion, ion_row, ion_flag = gibbs(ion)

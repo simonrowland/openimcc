@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from openimcc import evaluate, load_datapack
+import openimcc.gas as gas_module
 from openimcc.gas import (
     evaluate_gas,
     load_gas_datapack,
@@ -155,7 +156,7 @@ def test_v2_candidate_loads_preserves_prefixes_and_all_seams() -> None:
     v1_oxide = ROOT / "src/openimcc/data/gas/condensate-hight-candidate.csv"
     assert hashlib.sha256(v1_gas.read_bytes()).hexdigest() == "4dc41e150e22beb90f6b6b8dec67b0f4d993b5984e2e3ce1ec792d52b4c0f036"
     assert hashlib.sha256(v1_oxide.read_bytes()).hexdigest() == "aca172c1d435e520e8a16f5a58ce5ae67c191c1fafc34bf98c080d447efb973d"
-    assert hashlib.sha256(GAS_CANDIDATE_V2.read_bytes()).hexdigest() == "0ea5615ab500a8503450580e1f2b528915b47e7b8ec3d7f0d67d8453485c9c08"
+    assert hashlib.sha256(GAS_CANDIDATE_V2.read_bytes()).hexdigest() == "55769977fd5ea4c549796be7b23baeb916d76c7904ace9cb05e0cd159918d972"
     for default, v1, v2 in ((default_gas, v1_gas, GAS_CANDIDATE_V2),
                             (default_oxide, v1_oxide, OXIDE_CANDIDATE_V2)):
         lines = default.read_bytes().splitlines()
@@ -264,7 +265,7 @@ def test_v2_candidate_ions_cover_6000_k_and_close_charge_for_k_bearing_melt() ->
             assert "out-of-domain extrapolation" not in flag
             assert "outside its declared" not in flag
 
-        positive = sum(result[species] for species in ("Na+", "K+", "Ca+"))
+        positive = sum(species_value for species, species_value in result.items() if species.endswith("+"))
         negative = sum(
             result.get(species, 0.0)
             for species in (
@@ -275,3 +276,63 @@ def test_v2_candidate_ions_cover_6000_k_and_close_charge_for_k_bearing_melt() ->
         residual = result["e-"] + negative - positive
         scale = max(result["e-"] + negative, positive)
         assert abs(residual) <= 1.0e-12 * scale
+
+
+def test_v2_major_ion_rows_cover_298_to_6000_k_and_join_at_3000() -> None:
+    candidate = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
+    default = load_gas_datapack()
+    new_ions = {"Al+(g)", "Fe+(g)", "Mg+(g)", "Si+(g)", "Ti+(g)", "Cr+(g)"}
+    for species, _card, _table, _cation, _cat_num, _oxy_num in build_gas_tables.HIGH_TEMP_V2_ION_CARDS:
+        rows = candidate.gas_df.loc[[species]].sort_values("T_min")
+        high = rows.loc[rows["T_min"] == 3000.0].iloc[-1]
+        assert float(rows["T_min"].min()) == (298.15 if species in new_ions else float(default.gas_df.loc[species]["T_min"].min()))
+        assert float(high["T_max"]) == 6000.0
+        low = rows.loc[rows["T_max"] == 3000.0].iloc[-1]
+        for left, right in zip(
+            build_gas_tables._gas_row_h_s(low, 3000.0),
+            build_gas_tables._gas_row_h_s(high, 3000.0),
+        ):
+            _assert_close(float(left), float(right))
+        low_h, low_s = build_gas_tables._gas_row_h_s(low, 3000.0)
+        high_h, high_s = build_gas_tables._gas_row_h_s(high, 3000.0)
+        _assert_close(float(low_h - 3000.0 * low_s), float(high_h - 3000.0 * high_s))
+
+
+def test_default_ion_outputs_match_the_pre_expansion_pair_set(monkeypatch) -> None:
+    default = load_gas_datapack()
+    expanded_pairs = gas_module._GAS_IONIZATION_PAIRS
+    added_pairs = tuple(
+        pair for pair in expanded_pairs
+        if pair[1] in {"Al+", "Fe+", "Mg+", "Si+", "Ti+", "Cr+"}
+    )
+    old_pairs = tuple(pair for pair in expanded_pairs if pair not in added_pairs)
+    for include_ions in (False, True):
+        monkeypatch.setattr(gas_module, "_GAS_IONIZATION_PAIRS", old_pairs)
+        before = evaluate_gas(
+            ACTIVITIES, 3000.0, 1.0e-10, default, include_ions=include_ions,
+        )
+        monkeypatch.setattr(gas_module, "_GAS_IONIZATION_PAIRS", expanded_pairs)
+        after = evaluate_gas(
+            ACTIVITIES, 3000.0, 1.0e-10, default, include_ions=include_ions,
+        )
+        assert dict(after) == dict(before)
+        assert dict(after.domain_flags) == dict(before.domain_flags)
+        assert dict(after.provenance_class) == dict(before.provenance_class)
+    assert not {ion for _neutral, ion in added_pairs} & set(after)
+
+
+def test_v2_major_ions_are_present_in_the_6000_k_basalt_closure() -> None:
+    candidate = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
+    melt = evaluate(
+        COMPOSITION, T_K=6000.0, basis_type="wt", allow_extrapolation=True,
+    )
+    activities = dict(zip(melt.parent_oxides, melt.parent_activity))
+    result = evaluate_gas(
+        activities, 6000.0, 1.0e-10, candidate,
+        include_ions=True, allow_extrapolation=True,
+    )
+    for element in ("Al", "Fe", "Mg"):
+        assert result[element + "+"] > 0.0
+        assert result[element] > 0.0
+        fraction = result[element + "+"] / (result[element + "+"] + result[element])
+        assert fraction > 0.0

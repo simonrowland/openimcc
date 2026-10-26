@@ -62,11 +62,13 @@ source comparison carry a zero band to indicate unavailable comparison data.
 
 ### Ions and electron
 
-V2 also extends the shipped Ca+, Na+, K+, and e- rows from 3000 to 6000 K.
-The shipped gas table has no Mg+, Fe+, Al+, Si+, or SiO+ rows. Each interval
-uses the row's existing 3000 K G/S anchor and the JANAF Cp shape. Na+, K+, and
-e- have matching CEA cards for comparison; Ca+ has no matching CEA card and
-is marked rough. The `e-` row keeps the package's D-020 `e1-(ref)` standard:
+V2 extends the shipped Ca+, Na+, K+, and e- rows from 3000 to 6000 K and adds
+Al+, Fe+, Mg+, Si+, Ti+, and Cr+ from 298.15 through 6000 K. New lower
+intervals use JANAF fits where available and the CEA/Gurvich card for Fe+;
+high-temperature Cp shapes use JANAF where available and CEA for Fe+. Paired
+JANAF/CEA shapes are corroborated only when their maximum Gibbs difference is
+at most 2.6 kJ/mol over 3000–6000 K. Ca+ and Fe+ have no paired comparison and
+are marked rough. The `e-` row keeps the package's D-020 `e1-(ref)` standard:
 the candidate imports only its Cp shape and anchors it to the existing
 electron G/S at 3000 K.
 
@@ -76,6 +78,12 @@ electron G/S at 3000 K.
 | Na+(g) | corroborated calculation to 6000 K | 0.000181 | ±0.00000158 |
 | K+(g) | corroborated calculation to 6000 K | 0.000181 | ±0.00000158 |
 | e-(g) | corroborated calculation to 6000 K | 0.000181 | ±0.00000158 |
+| Al+(g) | corroborated calculation to 6000 K | 0.000324 | ±0.00000282 |
+| Fe+(g) | rough; CEA/Gurvich only | unavailable | unavailable |
+| Mg+(g) | corroborated calculation to 6000 K | 0.000052 | ±0.000000562 |
+| Si+(g) | corroborated calculation to 6000 K | 0.000170 | ±0.00000148 |
+| Ti+(g) | corroborated calculation to 6000 K | 1.378940 | ±0.012005 |
+| Cr+(g) | corroborated calculation to 6000 K | 0.163567 | ±0.001424 |
 
 Ionisation fractions are illustrative ideal-gas results at 1 bar. In a pure
 alkali vapour, the screening calculation gives about 6% Na and 15% K ionised
@@ -170,4 +178,4 @@ The offset table reports absolute differences between the anchored H, S, G value
 | `K2O(l)` | 1531.976750 / 4.892844 / 13146.554598 | 3532.445273 / 5.361502 / 17913.561420 | 25295.471147 / 8.918574 / 28215.974116 |
 | `FeO(l)` | — | — | — |
 
-The CEA source is NASA Glenn CEA `thermo.inp` (NASA/TP-2002-211556; file retrieved 2026-09-06, MD5 `709338513d1d6dfe0bc6eb2387995d96`). The liquid cards are Gurvich cards. The source uses 1 atm condensed-phase standards; no pressure correction is applied. The v2 gas candidate SHA-256 is `0ea5615ab500a8503450580e1f2b528915b47e7b8ec3d7f0d67d8453485c9c08`. See `src/openimcc/data/gas/PROVENANCE.yaml` for the candidate file records and SHA-256 digests.
+The CEA source is NASA Glenn CEA `thermo.inp` (NASA/TP-2002-211556; file retrieved 2026-09-06, MD5 `709338513d1d6dfe0bc6eb2387995d96`). The liquid cards are Gurvich cards. The source uses 1 atm condensed-phase standards; no pressure correction is applied. The v2 gas candidate SHA-256 is `55769977fd5ea4c549796be7b23baeb916d76c7904ace9cb05e0cd159918d972`. See `src/openimcc/data/gas/PROVENANCE.yaml` for the candidate file records and SHA-256 digests.
