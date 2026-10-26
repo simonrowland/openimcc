@@ -18,7 +18,7 @@ CaO(l) and MgO(l) use the current row’s Cp continuation from 3000 K to their C
 
 At 3500 K and 4500 K the basalt melt solve requires extrapolation permission for the association rows. Many melts are fully volatilised before 6000 K; expect the existing `P > 1 bar` notice and treat pressures beyond that regime cautiously.
 
-The offset table reports absolute differences between the anchored H, S, G values and the raw NASA CEA card H, S, G at the stated temperatures. Each cell is `|ΔH| J/mol / |ΔS| J/(mol K) / |ΔG| J/mol`. CaO/MgO raw values at 3000 K use the liquid-card polynomial extended below its stated liquid range. FeO has no source card, so offsets are not applicable.
+The offset table reports absolute differences between the anchored H, S, G values and the raw NASA CEA card H, S, G at the stated temperatures. Each cell is `|ΔH| J/mol / |ΔS| J/(mol K) / |ΔG| J/mol`. CaO/MgO raw values at 3000 K use the liquid-card polynomial extended below its stated liquid range. FeO has no source card, so offsets are not applicable. The large offsets for some species (for example MgO(g), NaO(g) and AlO2(g)) are not a reference-zero conversion: the CEA cards follow Gurvich assessments and the shipped rows follow NIST-JANAF, and their assessed formation enthalpies differ (MgO(g) at 298.15 K is 32.3 kJ/mol in the CEA card versus 58.2 kJ/mol in the shipped JANAF record). The candidate keeps the shipped values at 3000 K and imports only the CEA heat-capacity shape above it.
 
 | Species | 3000 K | 4000 K | 6000 K |
 |---|---:|---:|---:|
