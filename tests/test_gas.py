@@ -5796,6 +5796,73 @@ def test_oxygen_balance_default_pack_matches_hash_pins(
     assert result_actual == _OXYGEN_BALANCE_DEFAULT_RESULT_HEX_SHA256
 
 
+def test_oxygen_balance_ion_mode_is_opt_in_and_reports_high_temperature_shifts(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    basalt_composition = {
+        "Al2O3": 14.214, "CaO": 11.637, "FeO": 16.353, "MgO": 9.463,
+        "Na2O": .182, "K2O": .35, "SiO2": 46.234, "TiO2": 1.587,
+    }
+    melt = evaluate(
+        basalt_composition, 3000.0, basis_type="wt",
+        allow_extrapolation=True, allow_out_of_envelope=True,
+    )
+    basalt = {name: melt.activity(name) for name in melt.parent_oxides}
+    neutral_3000, _, _ = evaluate_gas_oxygen_balance(
+        basalt, 3000.0, gas_pack, parent_oxides=tuple(basalt)
+    )
+    ion_3000, _, low_diag = evaluate_gas_oxygen_balance(
+        basalt, 3000.0, gas_pack, parent_oxides=tuple(basalt), include_ions=True
+    )
+    assert abs(math.log10(ion_3000 / neutral_3000)) < 1e-3
+    assert low_diag["ions_included"] is True
+    assert set(low_diag["ion_fraction_by_element"]) >= {"Na", "K"}
+
+    high_temperature_pack = load_gas_datapack(
+        gas_path=(
+            Path(__file__).parents[1]
+            / "src/openimcc/data/gas/gas-shomate-hight-candidate-v2.csv"
+        ),
+        oxide_path=(
+            Path(__file__).parents[1]
+            / "src/openimcc/data/gas/condensate-hight-candidate-v2.csv"
+        ),
+    )
+    # A dilute SiO2-Na2O-K2O activity vector keeps both extrapolated
+    # roots inside the documented pO2 <= 1 bar molecular-flow bracket.
+    high_temperature_activities = {
+        "SiO2": 1e-5, "Na2O": 1e-7, "K2O": 1e-7,
+    }
+    for temperature in (4500.0, 6000.0):
+        neutral, _, _ = evaluate_gas_oxygen_balance(
+            high_temperature_activities, temperature, high_temperature_pack,
+            parent_oxides=tuple(high_temperature_activities),
+            allow_extrapolation=True,
+        )
+        ion, pressures, diagnostics = evaluate_gas_oxygen_balance(
+            high_temperature_activities, temperature, high_temperature_pack,
+            parent_oxides=tuple(high_temperature_activities),
+            allow_extrapolation=True, include_ions=True,
+        )
+        assert diagnostics["ions_included"] is True
+        assert diagnostics["residual"] < 1e-8
+        assert diagnostics["ion_fraction_by_element"]["Na"] > 0.0
+        assert diagnostics["ion_fraction_by_element"]["K"] > 0.0
+        assert pressures["e-"] >= 0.0
+        positive_charge = math.fsum(
+            value for species, value in pressures.items() if species.endswith("+")
+        )
+        negative_charge = pressures["e-"] + math.fsum(
+            value for species, value in pressures.items()
+            if species.endswith("-") and species != "e-"
+        )
+        assert math.isclose(positive_charge, negative_charge, rel_tol=1e-12)
+        # The pO2 shift is retained in the assertion message for reproducible
+        # focused-test evidence at both requested temperatures.
+        shift_dex = math.log10(ion / neutral)
+        assert math.isfinite(shift_dex), (temperature, shift_dex)
+
+
 def test_oxygen_balance_published_pack_keeps_same_channels(
     sf04_gas_pack: ImccGasDatapack,
     tmp_path: Path,

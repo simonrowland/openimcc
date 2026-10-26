@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added opt-in ion fluxes to the Knudsen oxygen balance with charge closure at
+  every trial oxygen pressure, per-element ion-fraction diagnostics, and an
+  ambipolar ion/electron-pair mass approximation. Enable `include_ions=True`
+  for high-temperature rail calculations above about 4000 K.
+
 - Added a separately opt-in v2 high-temperature gas and liquid candidate.
   JANAF Cp shapes replace the v1 CEA shape for 16 corroborated gas species;
   SiO2(l) and MgO(l) switch from JANAF to CEA at 4500 K and 5000 K. Candidate

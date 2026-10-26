@@ -6307,6 +6307,7 @@ def evaluate_gas_oxygen_balance(
     parent_oxides: Sequence[str] | None = None,
     allow_extrapolation: bool = True,
     imposed_parents: Sequence[str] | None = None,
+    include_ions: bool = False,
 ) -> tuple[float, ImccGasResult, dict[str, object]]:
     """Solve pO2 that balances oxygen in the Knudsen effusion flux.
 
@@ -6328,8 +6329,24 @@ def evaluate_gas_oxygen_balance(
     in g/mol; the common scale cancels. The upper bracket is the 1 bar
     molecular-flow ceiling.
 
+    With ``include_ions=True``, charge closure is recalculated at each trial
+    pressure. Metal ions retain their neutral parent's oxygen demand per metal
+    atom. The ion's effective pO2 exponent is taken from that parent for the
+    generic solver's monotonicity check; charge closure makes the actual ion
+    pressure composition-dependent, so the generic monotonicity proof does
+    not strictly cover the ion contribution. Brent still requires and checks
+    a sign-changing bracket, but uniqueness is not guaranteed in this mode.
+    Positive ions are counted as ambipolar ion/electron pairs effusing at the
+    ion mass. Counting free electrons at their own mass would apply the
+    ``1/sqrt(m_e)`` factor to a beam that cannot escape with net charge; this
+    paired approximation enforces quasi-neutral effusion. Negative ions are
+    excluded from the balance: the model's attachment channels do not define
+    their compensating positive beam partner, so assigning an independent
+    mass-weighted anion flux would violate the same ambipolar constraint.
+
     Returns ``(pO2_bar, partial_pressures, diagnostics)``. Partial pressures
-    match the neutral-only :func:`evaluate_gas` result; diagnostics contain relative residual, the
+    match :func:`evaluate_gas` with the selected ion setting; diagnostics
+    contain relative residual, the
     log10(bar) bracket, iteration count, the five strongest O and parent
     oxygen carriers, the summed finite partial pressures, and whether that
     total is at or below the 1e-3 bar molecular-flow line. The returned root
@@ -6431,6 +6448,42 @@ def evaluate_gas_oxygen_balance(
                 f"gas reaction metadata for {species!r} violates oxygen balance"
             )
 
+    ion_parents: dict[str, str] = {}
+    if include_ions:
+        # Ions inherit each neutral channel's parent oxygen demand per atom.
+        # Their exponent uses the parent's declared exponent as an effective
+        # monotonicity proxy; the true charge-closure response is composition
+        # dependent (see limitation in this function's docstring).
+        for neutral, ion in _GAS_IONIZATION_PAIRS:
+            if neutral not in species_data:
+                continue
+            neutral_data = species_data[neutral]
+            neutral_atoms = _formula_atoms(neutral)
+            neutral_element_count = sum(
+                count for element, count in neutral_atoms.items() if element != "O"
+            )
+            if neutral_element_count <= 0:
+                continue
+            ion_data = OxygenBalanceSpeciesMetadata(
+                # Electron mass is negligible at the precision of the gas
+                # atomic masses and the ambipolar pair is assigned ion mass.
+                neutral_data.molar_mass,
+                0.0,
+                neutral_data.parent_oxygen_demand / neutral_element_count,
+                neutral_data.pO2_exponent,
+            )
+            # This weight/exponent product must have the same nonnegative
+            # sign as the neutral contribution for the generic solver.
+            weight = (
+                ion_data.oxygen_atoms - ion_data.parent_oxygen_demand
+            ) / math.sqrt(ion_data.molar_mass)
+            if weight * ion_data.pO2_exponent < 0.0:
+                raise ImccGasOxygenBalanceError(
+                    f"ion oxygen-balance flux is non-monotone for {ion!r}"
+                )
+            species_data[ion] = ion_data
+            ion_parents[ion] = neutral
+
     def pressure_model(logp: float) -> ImccGasResult:
         pressure_activities = activities
         if isinstance(activities, Mapping) and parent_oxides_explicit:
@@ -6453,6 +6506,23 @@ def evaluate_gas_oxygen_balance(
                 tuple(available_parents) if parent_oxides_explicit else None
             ),
             allow_extrapolation=allow_extrapolation,
+            include_ions=include_ions,
         )
 
-    return oxygen_balance_from_pressure_model(pressure_model, species_data)
+    p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
+        pressure_model, species_data
+    )
+    if include_ions:
+        diagnostics["ions_included"] = True
+        diagnostics["ion_fraction_by_element"] = {
+            ion.removesuffix("+"): (
+                float(pressures[ion]) / (
+                    float(pressures[ion]) + float(pressures[neutral])
+                )
+                if float(pressures[ion]) + float(pressures[neutral]) > 0.0
+                else 0.0
+            )
+            for ion, neutral in ion_parents.items()
+            if ion.endswith("+") and ion in pressures and neutral in pressures
+        }
+    return p_o2, pressures, diagnostics

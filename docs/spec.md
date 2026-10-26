@@ -272,11 +272,21 @@ dimensionless pressure units \(p/p^\circ\), its electron pressure is
 p(e^-)=\sqrt{\frac{\sum_M K_Mp(M)}{1+\sum_AK_Ap(A)}}.
 \]
 
-The oxygen-balance evaluator uses the neutral-only gas calculation, so ions
-are not included in its flux function. A summed neutral pressure above 1 bar
-is returned; when ions are enabled it adds a credibility notice to ion
-domain flags. The 1-bar ceiling applies to the oxygen-balance \(p_{\rm O_2}\)
-bracket, not to the sum of neutral pressures.
+The oxygen-balance evaluator is neutral-only by default. At temperatures above
+about 4000 K near 1 bar, callers can pass `include_ions=True` so charge closure
+is recomputed at each trial \(p_{\rm O_2}\) and metal-ion fluxes enter the
+balance. Ion oxygen demand follows the neutral parent's demand per metal atom.
+The rail should enable this option at high temperature. The flux uses an
+ambipolar approximation: each positive ion leaves with an equal electron flux
+and the pair is assigned the ion's mass. A free-electron
+\(1/\sqrt{m_e}\) flux would describe a rapidly escaping charged beam, which
+cannot remain quasi-neutral. Negative ions are excluded because the attachment
+model does not identify their compensating positive beam partners. The
+charge-closure response makes ion pressures composition-dependent, so the
+parent exponent is only an effective monotonicity proxy; the solver verifies a
+bracketed root but uniqueness is not guaranteed in ion mode. A summed pressure
+above 1 bar is returned. The 1-bar ceiling applies to the oxygen-balance
+\(p_{\rm O_2}\) bracket, not the total pressure.
 
 The oxygen-balance solver chooses \(p_{\mathrm O_2}\) so the net oxygen flux
 relative to the parent-oxide oxygen demand vanishes. In a Knudsen effusion
