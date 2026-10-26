@@ -177,7 +177,7 @@ _RECORDS = (
     # bound at 1300 K: q=1000/(R*T*ln(10))=0.04018 dex/kJ, so pO2 is at
     # most 2q*2.6=0.2089 dex; round outward to 0.21 (not a confidence band).
     LiquidReferenceRecord("Na2O(l)", LiquidReferenceAuthority.CORROBORATED_CALCULATION, (1405.2, 2473), 0.21, "dex log10 pressure",
-        (_e("Richet, Bottinga & Tequi", 1984, "Na2O partial-molar Cp of 100.6 J/mol/K derived from sodium-silicate liquids, not pure-liquid Cp; continued from the fusion anchor, it agrees with the reference within 1.32 kJ/mol through 1800 K and 2473 K; calculated corroboration; DOI 10.1111/j.1151-2916.1984.tb19155.x"),
+        (_e("Richet, Bottinga & Tequi", 1984, "Na2O partial-molar Cp of 100.6 J/mol/K derived from sodium-silicate liquids, not pure-liquid Cp; measured only through 1800 K; continued from the fusion anchor over 1405.2-1800 K, it agrees with the reference within 0.21 kJ/mol; the 1800-2473 K corroboration rests on the Gurvich function, not on this measurement; calculated corroboration; DOI 10.1111/j.1151-2916.1984.tb19155.x"),
          _e("Gurvich via NASA Glenn CEA", 2002, "assessed liquid Cp continuation agrees with the reference within 1.52 kJ/mol through 2473 K; calculated corroboration, not a measurement; NASA/TP-2002-211556"),
          _e("Chase", 1998, "JANAF Na-013 assessed liquid function and 1405.2 K fusion anchor; the table is not a measured pure-liquid Cp interval; DOI 10.18434/T42S31"),
          _e("Smith et al.", 2017, "reports measured pure-Na2O fusion enthalpy 47.7 +/- 2.5 kJ/mol and melting point 1405.2 +/- 4 K; DOI 10.1016/j.jct.2017.04.003")),
