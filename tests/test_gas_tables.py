@@ -3363,6 +3363,15 @@ def test_condensate_builder_reproduces_shipped_gibbs_values(tmp_path: Path) -> N
 
 def test_runtime_provenance_mirror_matches_yaml() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    candidate_v2_path = GAS_DATA / "gas-shomate-hight-candidate-v2.csv"
+    candidate_v2_sha256 = hashlib.sha256(candidate_v2_path.read_bytes()).hexdigest()
+    assert provenance["high_temperature_candidate_v2"]["gas_file"]["sha256"] == (
+        candidate_v2_sha256
+    )
+    assert next(
+        row["sha256"] for row in provenance["candidate_gas_files"]
+        if row["file"] == candidate_v2_path.name
+    ) == candidate_v2_sha256
     expected_gas = {}
     expected_oxide = {}
     expected_table_ids = {}
@@ -3398,9 +3407,15 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
 
     # This is the deliberate source-of-truth boundary: the runtime remains
     # free of a YAML dependency, while this test compares every default gas
-    # and oxide provenance row against the checked-in YAML. SiO2(cr) remains
-    # available for explicit solid-phase thermochemistry queries.
-    public_runtime_gas = dict(_GAS_PROVENANCE_AUTHORITY)
+    # and oxide provenance row against the checked-in YAML. Candidate-only ion
+    # rows have runtime authority entries but are absent from the default pack.
+    # SiO2(cr) remains available for explicit solid-phase thermochemistry queries.
+    default_gas_rows = set(load_gas_datapack().gas_df.index)
+    public_runtime_gas = {
+        species: authority
+        for species, authority in _GAS_PROVENANCE_AUTHORITY.items()
+        if f"{species}(g)" in default_gas_rows
+    }
     public_runtime_oxide = {
         species: authority
         for species, authority in _OXIDE_PROVENANCE_AUTHORITY.items()
@@ -6531,6 +6546,40 @@ for _element, _source in _CONSTRUCTED_SAHA_SOURCES.items():
     )
 
 
+# Candidate-v2 ions absent from the default package. Al, Mg, and Si use NIST
+# Handbook ground terms and low-lying fine structure (weights are 2J+1;
+# energies are cm^-1). Fe, Ti, and Cr are deliberately excluded below because
+# their dense 3d spectra need a vetted, thermally complete level compilation.
+_CANDIDATE_V2_SAHA_LEVELS = {
+    "Al": (
+        5.985768,
+        ((2, 0.0), (4, 112.061)),
+        ((1, 0.0),),
+    ),  # NIST Handbook Al I/II Tables 5/6: aluminumtable5.htm, aluminumtable6_a.htm.
+    "Mg": (
+        7.646235,
+        (
+            (1, 0.0), (1, 21850.405), (3, 21870.464), (5, 21911.178),
+            (3, 35051.264),
+        ),
+        ((2, 0.0), (2, 35669.31), (4, 35760.88)),
+    ),  # NIST Handbook Mg I/II Tables 5/6: magnesiumtable5.htm, magnesiumtable6_a.htm.
+    "Si": (
+        8.15168,
+        (
+            (1, 0.0), (3, 77.112), (5, 223.157), (5, 6298.847),
+            (1, 15394.362),
+        ),
+        ((2, 0.0), (4, 287.24)),
+    ),  # NIST Handbook Si I/II Tables 5/6: silicontable5.htm, silicontable6_a.htm.
+}
+_CANDIDATE_V2_SAHA_UNAUDITED = {
+    "Fe": "dense low-lying 3d levels need a vetted complete population set",
+    "Ti": "dense low-lying 3d levels need a vetted complete population set",
+    "Cr": "dense low-lying 3d levels need a vetted complete population set",
+}
+
+
 def test_burcat_th_plus_card_composition_resolves_its_charge_label() -> None:
     record = json.loads(
         (ROOT / "data-src/published-thermo/burcat-th-plus.json").read_text(
@@ -6588,7 +6637,9 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     ionisation_eV, neutral_levels, ion_levels = _SAHA_LEVELS[element]
     pack = load_gas_datapack()
     atomic_pairs = {
-        neutral for neutral, ion in _GAS_IONIZATION_PAIRS if ion != "Cs2O+"
+        neutral
+        for neutral, ion in _GAS_IONIZATION_PAIRS
+        if ion != "Cs2O+" and f"{ion}(g)" in pack.gas_df.index
     }
     # Mn+ has no fine-structure level set in this spectroscopy-backed Saha
     # audit. Ag+ is checked against its NASA card and neutral-ionization
@@ -6759,6 +6810,71 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
             assert fitted_k / saha_k == pytest.approx(expected, rel=5e-5)
         else:
             assert fitted_k / saha_k == pytest.approx(1.0, rel=0.02), element
+
+
+@pytest.mark.parametrize(
+    "element", ("Al", "Fe", "Mg", "Si", "Ti", "Cr"),
+)
+def test_candidate_v2_m_plus_matches_saha_with_level_populations(
+    element: str,
+) -> None:
+    if element in _CANDIDATE_V2_SAHA_UNAUDITED:
+        pytest.skip(_CANDIDATE_V2_SAHA_UNAUDITED[element])
+
+    gas_path = GAS_DATA / "gas-shomate-hight-candidate-v2.csv"
+    pack = load_gas_datapack(
+        gas_path=gas_path,
+        oxide_path=GAS_DATA / "condensate-hight-candidate-v2.csv",
+    )
+    ionisation_eV, neutral_levels, ion_levels = _CANDIDATE_V2_SAHA_LEVELS[element]
+    assert f"{element}+(g)" in pack.gas_df.index
+
+    # Premise and algebra are the same Saha relation as the default-pack
+    # audit above: Kp = (kBT/p0)(2 Z+/Z0)(2πme kBT/h²)^(3/2)exp(-IE/kBT).
+    # Each partition sum uses NIST level weights 2J+1; energies are converted
+    # from cm^-1 with hc. The translational m^3 and m^-3 factors cancel, so Kp
+    # is dimensionless at p0=1 bar. At zero excitation this reduces to the
+    # ground-level Saha equation, a limiting-case check on the level sums.
+    k_b = 1.380649e-23
+    h = 6.62607015e-34
+    m_e = 9.1093837139e-31
+    e_v = 1.602176634e-19
+    h_c = 1.986445857e-23
+
+    def partition(levels: tuple[tuple[int, float], ...], temperature: float) -> float:
+        return sum(
+            weight * math.exp(-h_c * energy / (k_b * temperature))
+            for weight, energy in levels
+        )
+
+    for temperature in range(1200, 6001, 100):
+        ion_row = _nearest_interval_row(
+            pack.gas_df, f"{element}+(g)", temperature,
+            allow_extrapolation=False,
+        )
+        neutral_row = _nearest_interval_row(
+            pack.gas_df, f"{element}(g)", temperature,
+            allow_extrapolation=False,
+        )
+        electron_row = _nearest_interval_row(
+            pack.gas_df, "e-(g)", temperature, allow_extrapolation=False,
+        )
+        delta_g = (
+            _janaf_gibbs(temperature, ion_row)
+            + _janaf_gibbs(temperature, electron_row)
+            - _janaf_gibbs(temperature, neutral_row)
+        )
+        fitted_k = math.exp(-delta_g / (R_J_MOL_K * temperature))
+        saha_k = (
+            k_b * temperature / 1.0e5
+            * 2.0 * partition(ion_levels, temperature)
+            / partition(neutral_levels, temperature)
+            * (2.0 * math.pi * m_e * k_b * temperature / h**2) ** 1.5
+            * math.exp(-ionisation_eV * e_v / (k_b * temperature))
+        )
+        assert fitted_k / saha_k == pytest.approx(1.0, rel=0.02), (
+            element, temperature,
+        )
 
 
 _ATTACHMENT_LEVELS = {

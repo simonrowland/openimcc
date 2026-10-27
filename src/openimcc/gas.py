@@ -1933,6 +1933,21 @@ _GAS_ELECTRON_ATTACHMENTS = (
     ("Au", "Au-"),
     ("Pt", "Pt-"),
 )
+
+
+def _active_ion_pairs(
+    datapack: ImccGasDatapack,
+    pairs: tuple[tuple[str, str], ...],
+) -> tuple[tuple[str, str], ...]:
+    """Return ion channels backed by rows in this gas table."""
+    gas_rows = datapack.gas_df.index
+    return tuple(
+        (neutral, ion)
+        for neutral, ion in pairs
+        if f"{ion}(g)" in gas_rows
+    )
+
+
 _ION_PROVENANCE_CLASS = "janaf_fitted_ionisation"
 
 IMCC_GAS_INCOMPLETE_PARENT_SPECIES: dict[str, str] = {}
@@ -4925,10 +4940,8 @@ def _add_ion_channels(
     positive_sum = 0.0
     negative_sum = 0.0
 
-    for neutral, ion in _GAS_IONIZATION_PAIRS:
+    for neutral, ion in _active_ion_pairs(datapack, _GAS_IONIZATION_PAIRS):
         if neutral not in values:
-            continue
-        if f"{ion}(g)" not in datapack.gas_df.index:
             continue
         G_neutral, neutral_row, neutral_flag = gibbs(neutral)
         G_ion, ion_row, ion_flag = gibbs(ion)
@@ -4965,7 +4978,7 @@ def _add_ion_channels(
             )
         )
 
-    for neutral, ion in _GAS_ELECTRON_ATTACHMENTS:
+    for neutral, ion in _active_ion_pairs(datapack, _GAS_ELECTRON_ATTACHMENTS):
         if neutral not in values:
             continue
         G_neutral, neutral_row, neutral_flag = gibbs(neutral)
@@ -5473,13 +5486,7 @@ def evaluate_gas(
         requested_channels = (
             (gas_species,) if isinstance(gas_species, str) else tuple(gas_species)
         )
-        ion_names = {
-            ion
-            for _neutral, ion in (
-                *_GAS_IONIZATION_PAIRS,
-                *_GAS_ELECTRON_ATTACHMENTS,
-            )
-        } | {"e-"}
+        ion_names = set(_ION_GAS_SPECIES) | {"e-"}
         requested_ions = set(requested_channels) & ion_names
         if requested_ions and not include_ions:
             raise ImccGasSpeciesNotFoundError(
@@ -5921,8 +5928,8 @@ def evaluate_gas(
         neutral_ions = {
             ion
             for neutral, ion in (
-                *_GAS_IONIZATION_PAIRS,
-                *_GAS_ELECTRON_ATTACHMENTS,
+                *_active_ion_pairs(datapack, _GAS_IONIZATION_PAIRS),
+                *_active_ion_pairs(datapack, _GAS_ELECTRON_ATTACHMENTS),
             )
             if neutral in neutral_names
         }
@@ -5937,8 +5944,8 @@ def evaluate_gas(
             requested_ions |= neutral_ions & {
                 ion
                 for neutral, ion in (
-                    *_GAS_IONIZATION_PAIRS,
-                    *_GAS_ELECTRON_ATTACHMENTS,
+                    *_active_ion_pairs(datapack, _GAS_IONIZATION_PAIRS),
+                    *_active_ion_pairs(datapack, _GAS_ELECTRON_ATTACHMENTS),
                 )
                 if neutral in requested_neutrals
             }
@@ -6489,11 +6496,8 @@ def evaluate_gas_oxygen_balance(
         # Their exponent uses the parent's declared exponent as an effective
         # monotonicity proxy; the true charge-closure response is composition
         # dependent (see limitation in this function's docstring).
-        for neutral, ion in _GAS_IONIZATION_PAIRS:
-            if (
-                neutral not in species_data
-                or f"{ion}(g)" not in datapack.gas_df.index
-            ):
+        for neutral, ion in _active_ion_pairs(datapack, _GAS_IONIZATION_PAIRS):
+            if neutral not in species_data:
                 continue
             neutral_data = species_data[neutral]
             neutral_atoms = _formula_atoms(neutral)
@@ -6668,7 +6672,10 @@ def evaluate_gas_saturation(
             exponent = _formula_atoms(species).get("O", 0) / 2.0
         exponents[species] = exponent
     if include_ions:
-        for neutral, ion in (*_GAS_IONIZATION_PAIRS, *_GAS_ELECTRON_ATTACHMENTS):
+        for neutral, ion in (
+            *_active_ion_pairs(datapack, _GAS_IONIZATION_PAIRS),
+            *_active_ion_pairs(datapack, _GAS_ELECTRON_ATTACHMENTS),
+        ):
             weights[ion] = weights.get(neutral, 0.0)
             exponents[ion] = exponents.get(neutral, 0.0)
 
