@@ -3,10 +3,11 @@
 ## Version 2
 
 V2 is a separate opt-in pair. It keeps the shipped rows through 3000 K, then
-uses JANAF Cp shapes for eligible neutral gas species; 16 agree with the
-CEA/Gurvich calculation within 2.6 kJ/mol through 6000 K. NaO, Na2O, K2O and
-other gas species without a qualifying JANAF comparison retain the v1 CEA
-shape. Liquid SiO2(l) uses JANAF through 4500 K and CEA above; MgO(l) uses
+uses JANAF Cp shapes for eligible neutral gas species; 22 agree with the
+CEA/Gurvich calculation within 2.6 kJ/mol through 6000 K. Paired JANAF/CEA
+comparisons above 2.6 kJ/mol remain rough and report their measured spread.
+Al2(g), Na2O(g), and K2O(g) retain the CEA shape without an independent
+JANAF gas comparison. Liquid SiO2(l) uses JANAF through 4500 K and CEA above; MgO(l) uses
 JANAF through 5000 K and CEA above. CaO(l) retains its bridge and CEA shape. TiO2(l),
 Al2O3(l), Na2O(l), and K2O(l) retain CEA; FeO(l) retains the v1 constant-Cp
 continuation, independently checked against JANAF through 5000 K.
@@ -45,30 +46,32 @@ source comparison carry a zero band to indicate unavailable comparison data.
 | MgO(g) | corroborated calculation to 6000 K | 1.590835 | ±0.013849 |
 | SiO2(g) | corroborated calculation to 6000 K | 0.031513 | ±0.000274 |
 | KO(g) | corroborated calculation to 6000 K | 1.863145 | ±0.016220 |
-| NaO(g) | rough; comparison exceeds 2.6 kJ/mol | 2.792325 | ±0.024309 |
-| Na2O(g) | rough; internal diagnostic only | 0.003079 | ±0.000027 |
-| K2O(g) | rough; internal diagnostic only | 0.001598 | ±0.000014 |
-| CaO(g) | rough; no paired comparison | unavailable | unavailable |
-| AlO2(g) | rough; no paired comparison | unavailable | unavailable |
-| TiO2(g) | rough; no paired comparison | unavailable | unavailable |
-| Al2O(g) | rough; no paired comparison | unavailable | unavailable |
-| Al2O2(g) | rough; no paired comparison | unavailable | unavailable |
-| Al2(g) | rough; no paired comparison | unavailable | unavailable |
-| Na2(g) | rough; no paired comparison | unavailable | unavailable |
-| K2(g) | rough; no paired comparison | unavailable | unavailable |
-| Si(g) | rough; no paired comparison | unavailable | unavailable |
-| Si2(g) | rough; no paired comparison | unavailable | unavailable |
-| Si3(g) | rough; no paired comparison | unavailable | unavailable |
+| NaO(g) | rough; JANAF/CEA spread exceeds 2.6 kJ/mol | 2.788053 | ±0.024272 |
+| Na2O(g) | rough; no independent JANAF gas comparison | unavailable | unavailable |
+| K2O(g) | rough; no independent JANAF gas comparison | unavailable | unavailable |
+| CaO(g) | corroborated calculation to 6000 K | 0.536751 | ±0.004673 |
+| AlO2(g) | corroborated calculation to 6000 K | 0.650917 | ±0.005667 |
+| TiO2(g) | corroborated calculation to 6000 K | 0.000788 | ±0.000009 |
+| Al2O(g) | corroborated calculation to 6000 K | 0.233931 | ±0.002037 |
+| Al2O2(g) | rough; JANAF/CEA spread exceeds 2.6 kJ/mol | 4.657280 | ±0.040544 |
+| Al2(g) | rough; no second independent Cp source | unavailable | unavailable |
+| Na2(g) | rough; JANAF/CEA spread exceeds 2.6 kJ/mol | 3.288824 | ±0.028631 |
+| K2(g) | rough; JANAF/CEA spread exceeds 2.6 kJ/mol | 34.291089 | ±0.298525 |
+| Si(g) | corroborated calculation to 6000 K | 0.001836 | ±0.000016 |
+| Si2(g) | rough; JANAF/CEA spread exceeds 2.6 kJ/mol | 4.546349 | ±0.039579 |
+| Si3(g) | corroborated calculation to 6000 K | 2.268058 | ±0.019745 |
 
 ### Ions and electron
 
 V2 extends the shipped Ca+, Na+, K+, and e- rows from 3000 to 6000 K and adds
 Al+, Fe+, Mg+, Si+, Ti+, and Cr+ from 298.15 through 6000 K. New lower
-intervals use JANAF fits where available and the CEA/Gurvich card for Fe+;
-high-temperature Cp shapes use JANAF where available and CEA for Fe+. Paired
-JANAF/CEA shapes are corroborated only when their maximum Gibbs difference is
-at most 2.6 kJ/mol over 3000–6000 K. Ca+ and Fe+ have no paired comparison and
-are marked rough. The `e-` row keeps the package's D-020 `e1-(ref)` standard:
+intervals use JANAF fits (Fe+ uses JANAF Fe-009 for both intervals);
+high-temperature Cp shapes use JANAF where available and are checked against
+the independent CEA/Gurvich card for the same ion. Paired JANAF/CEA shapes
+are corroborated only when their maximum Gibbs difference is at most 2.6
+kJ/mol over 3000–6000 K. Ca+ has no paired comparison and remains rough; Fe+
+is corroborated at 0.000396 kJ/mol (±0.00000365 dex). The `e-` row keeps the
+package's D-020 `e1-(ref)` standard:
 the candidate imports only its Cp shape and anchors it to the existing
 electron G/S at 3000 K.
 
@@ -79,7 +82,7 @@ electron G/S at 3000 K.
 | K+(g) | corroborated calculation to 6000 K | 0.000181 | ±0.00000158 |
 | e-(g) | corroborated calculation to 6000 K | 0.000181 | ±0.00000158 |
 | Al+(g) | corroborated calculation to 6000 K | 0.000324 | ±0.00000282 |
-| Fe+(g) | rough; CEA/Gurvich only | unavailable | unavailable |
+| Fe+(g) | corroborated calculation to 6000 K | 0.000396 | ±0.00000365 |
 | Mg+(g) | corroborated calculation to 6000 K | 0.000052 | ±0.000000562 |
 | Si+(g) | corroborated calculation to 6000 K | 0.000170 | ±0.00000148 |
 | Ti+(g) | corroborated calculation to 6000 K | 1.378940 | ±0.012005 |
@@ -183,4 +186,4 @@ The offset table reports absolute differences between the anchored H, S, G value
 | `K2O(l)` | 1531.976750 / 4.892844 / 13146.554598 | 3532.445273 / 5.361502 / 17913.561420 | 25295.471147 / 8.918574 / 28215.974116 |
 | `FeO(l)` | — | — | — |
 
-The CEA source is NASA Glenn CEA `thermo.inp` (NASA/TP-2002-211556; file retrieved 2026-09-06, MD5 `709338513d1d6dfe0bc6eb2387995d96`). The liquid cards are Gurvich cards. The source uses 1 atm condensed-phase standards; no pressure correction is applied. The v2 gas candidate SHA-256 is `55769977fd5ea4c549796be7b23baeb916d76c7904ace9cb05e0cd159918d972`. See `src/openimcc/data/gas/PROVENANCE.yaml` for the candidate file records and SHA-256 digests.
+The CEA source is NASA Glenn CEA `thermo.inp` (NASA/TP-2002-211556; file retrieved 2026-09-06, MD5 `709338513d1d6dfe0bc6eb2387995d96`). The liquid cards are Gurvich cards. The source uses 1 atm condensed-phase standards; no pressure correction is applied. The v2 gas candidate SHA-256 is `72fdc5614289e666234d12e928f71e0ef3ba2cc988b85d1af9068415f73b4032`. See `src/openimcc/data/gas/PROVENANCE.yaml` for the candidate file records and SHA-256 digests.

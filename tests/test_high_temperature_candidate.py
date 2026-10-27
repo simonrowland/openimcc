@@ -156,7 +156,7 @@ def test_v2_candidate_loads_preserves_prefixes_and_all_seams() -> None:
     v1_oxide = ROOT / "src/openimcc/data/gas/condensate-hight-candidate.csv"
     assert hashlib.sha256(v1_gas.read_bytes()).hexdigest() == "4dc41e150e22beb90f6b6b8dec67b0f4d993b5984e2e3ce1ec792d52b4c0f036"
     assert hashlib.sha256(v1_oxide.read_bytes()).hexdigest() == "aca172c1d435e520e8a16f5a58ce5ae67c191c1fafc34bf98c080d447efb973d"
-    assert hashlib.sha256(GAS_CANDIDATE_V2.read_bytes()).hexdigest() == "55769977fd5ea4c549796be7b23baeb916d76c7904ace9cb05e0cd159918d972"
+    assert hashlib.sha256(GAS_CANDIDATE_V2.read_bytes()).hexdigest() == "72fdc5614289e666234d12e928f71e0ef3ba2cc988b85d1af9068415f73b4032"
     for default, v1, v2 in ((default_gas, v1_gas, GAS_CANDIDATE_V2),
                             (default_oxide, v1_oxide, OXIDE_CANDIDATE_V2)):
         lines = default.read_bytes().splitlines()
@@ -243,6 +243,41 @@ def test_v2_candidate_flags_show_per_species_tier_and_band() -> None:
             flag = _source_model_flag(species, temperature, row, phase=phase)
             assert flag is not None
             assert all(part in flag for part in parts), (species, temperature, flag)
+
+
+def test_v2_rough_pair_rows_have_measured_tiers_and_independent_source_reasons() -> None:
+    candidate = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
+    expected = {
+        "Si(g)": ("JANAF-Si-005", "corroborated_calculation", 0.001835548),
+        "Si2(g)": ("JANAF-Si-008", "rough_extrapolated", 4.546349),
+        "Si3(g)": ("JANAF-Si-009", "corroborated_calculation", 2.268058),
+        "CaO(g)": ("JANAF-Ca-030", "corroborated_calculation", 0.536751),
+        "AlO2(g)": ("JANAF-Al-077", "corroborated_calculation", 0.650917),
+        "Al2O(g)": ("JANAF-Al-092", "corroborated_calculation", 0.233931),
+        "Al2O2(g)": ("JANAF-Al-094", "rough_extrapolated", 4.657280),
+        "Al2(g)": ("CEA-AL2", "rough_extrapolated", None),
+        "TiO2(g)": ("JANAF-O-046", "corroborated_calculation", 0.000788185),
+        "Na2(g)": ("JANAF-Na-011", "rough_extrapolated", 3.288824),
+        "K2(g)": ("JANAF-K-011", "rough_extrapolated", 34.291089),
+        "NaO(g)": ("JANAF-Na-008", "rough_extrapolated", 2.788053),
+        "Na2O(g)": ("CEA-Na2O", "rough_extrapolated", None),
+        "K2O(g)": ("CEA-K2O", "rough_extrapolated", None),
+        "Ca+(g)": ("JANAF-Ca-007", "rough_extrapolated", None),
+        "Fe+(g)": ("JANAF-Fe-009", "corroborated_calculation", 0.000396085),
+    }
+    for species, (source, tier, expected_dg) in expected.items():
+        row = candidate.gas_df.loc[species].sort_values("T_min").iloc[-1]
+        ref = str(row["Ref"])
+        assert source in ref and f"tier={tier}" in ref, (species, ref)
+        flag = _source_model_flag(species, 3500.0, row, phase="g")
+        assert flag is not None
+        if expected_dg is None:
+            assert "no paired-source comparison is available" in flag, (species, flag)
+            assert ";dg=0;band=0;" in ref, (species, ref)
+        else:
+            actual_dg = float(ref.split(";dg=", 1)[1].split(";", 1)[0])
+            assert math.isclose(actual_dg, expected_dg, rel_tol=2e-6), (species, ref)
+            assert f"{actual_dg:g} kJ/mol" in flag, (species, flag)
 
 
 def test_v2_candidate_ions_cover_6000_k_and_close_charge_for_k_bearing_melt() -> None:

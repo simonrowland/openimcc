@@ -688,7 +688,16 @@ HIGH_TEMP_V2_GAS_JANAF = {
     "AlO(g)": "Al-074", "Ti(g)": "Ti-006", "TiO(g)": "O-022",
     "FeO(g)": "Fe-021", "MgO(g)": "Mg-011", "SiO2(g)": "O-040",
     "KO(g)": "K-008",
+    "Si(g)": "Si-005", "Si2(g)": "Si-008", "Si3(g)": "Si-009",
+    "CaO(g)": "Ca-030", "AlO2(g)": "Al-077", "Al2O(g)": "Al-092",
+    "Al2O2(g)": "Al-094", "TiO2(g)": "O-046", "Na2(g)": "Na-011",
+    "K2(g)": "K-011", "NaO(g)": "Na-008",
 }
+
+HIGH_TEMP_V2_GAS_RECHECK = frozenset({
+    "Si(g)", "Si2(g)", "Si3(g)", "CaO(g)", "AlO2(g)", "Al2O(g)",
+    "Al2O2(g)", "TiO2(g)", "Na2(g)", "K2(g)", "NaO(g)",
+})
 
 # The shipped ion rows eligible for this candidate.  CEA cards are an
 # independent Cp-shape check where available; JANAF remains the selected
@@ -699,7 +708,7 @@ HIGH_TEMP_V2_ION_CARDS = (
     ("K+(g)", "K+", "K-006", "K", 1, 0),
     ("e-(g)", "E-", "D-020", "", 0, 0),
     ("Al+(g)", "AL+", "Al-006", "Al", 1, 0),
-    ("Fe+(g)", "FE+", None, "Fe", 1, 0),
+    ("Fe+(g)", "FE+", "Fe-009", "Fe", 1, 0),
     ("Mg+(g)", "MG+", "Mg-006", "Mg", 1, 0),
     ("Si+(g)", "SI+", "Si-006", "Si", 1, 0),
     ("Ti+(g)", "TI+", "Ti-007", "Ti", 1, 0),
@@ -7897,8 +7906,6 @@ _V2_GAS_BANDS = {
     "Ti(g)": (0.034254, 0.000298), "TiO(g)": (1.907389, 0.016605),
     "FeO(g)": (0.001329, 0.000017), "MgO(g)": (1.590835, 0.013849),
     "SiO2(g)": (0.031513, 0.000274), "KO(g)": (1.863145, 0.016220),
-    "NaO(g)": (2.792325, 0.024309), "Na2O(g)": (0.003079, 0.000027),
-    "K2O(g)": (0.001598, 0.000014),
 }
 
 
@@ -8217,14 +8224,23 @@ def build_high_temperature_candidates_v2(
             temperatures = np.asarray(sorted(T for T in points if 3000.0 <= T <= 6000.0))
             if temperatures[0] != 3000.0 or temperatures[-1] != 6000.0:
                 raise ValueError(f"{table_id}: JANAF gas Cp does not cover 3000-6000 K")
+            if species in HIGH_TEMP_V2_GAS_RECHECK:
+                dg, band = _candidate_gas_shape_comparison(
+                    points, cards[gas_card_names[species].upper()]
+                )
+                tier = (
+                    "corroborated_calculation" if dg <= 2.6
+                    else "rough_extrapolated"
+                )
             cp = np.asarray([points[float(T)]["heat_capacity"] for T in temperatures])
             ref = _candidate_ref(f"JANAF-{table_id}-HT-CANDIDATE", tier, dg, band, 6000.0)
             row = _fit_high_temperature_gas_shape(base, temperatures, cp, ref)
         else:
             row, _ = _gas_candidate_row(base, cards[gas_card_names[species].upper()], gas_card_names[species])
-            basis = ("internal" if species in {"Na2O(g)", "K2O(g)"}
-                     else "paired_sources" if species == "NaO(g)" else "unavailable")
-            ref = _candidate_ref(f"CEA-{gas_card_names[species]}-HT-CANDIDATE", tier, dg, band, 6000.0, basis=basis)
+            ref = _candidate_ref(
+                f"CEA-{gas_card_names[species]}-HT-CANDIDATE", tier,
+                dg, band, 6000.0, basis="unavailable",
+            )
             row["Ref"] = ref
         row.update({"species_name": species, "state": "g", "cation": cation,
                     "cat_num": str(cat_num), "oxy_num": str(oxy_num)})

@@ -7,7 +7,7 @@ high_temperature_candidate_v2:
     unchanged.
   gas_file:
     file: gas-shomate-hight-candidate-v2.csv
-    sha256: 55769977fd5ea4c549796be7b23baeb916d76c7904ace9cb05e0cd159918d972
+    sha256: 72fdc5614289e666234d12e928f71e0ef3ba2cc988b85d1af9068415f73b4032
     source: NIST-JANAF Cp nodes to 6000 K where listed; NASA CEA/Gurvich otherwise.
     construction: >-
       Fit the selected Cp(T) shape to runtime Shomate coefficients and anchor
@@ -31,10 +31,22 @@ high_temperature_candidate_v2:
         MgO(g): [1.590835 kJ/mol, 0.013849 dex]
         SiO2(g): [0.031513 kJ/mol, 0.000274 dex]
         KO(g): [1.863145 kJ/mol, 0.016220 dex]
+        Si(g): [0.001836 kJ/mol, 0.000016 dex]
+        Si3(g): [2.268058 kJ/mol, 0.019745 dex]
+        CaO(g): [0.536751 kJ/mol, 0.004673 dex]
+        AlO2(g): [0.650917 kJ/mol, 0.005667 dex]
+        Al2O(g): [0.233931 kJ/mol, 0.002037 dex]
+        TiO2(g): [0.000788 kJ/mol, 0.000009 dex]
       rough_extrapolated:
-        NaO(g): [2.792325 kJ/mol, 0.024309 dex]
-        Na2O(g): [0.003079 kJ/mol, 0.000027 dex; internal diagnostic only]
-        K2O(g): [0.001598 kJ/mol, 0.000014 dex; internal diagnostic only]
+        NaO(g): [2.788053 kJ/mol, 0.024272 dex; JANAF/CEA spread exceeds threshold]
+        Si2(g): [4.546349 kJ/mol, 0.039579 dex; JANAF/CEA spread exceeds threshold]
+        Al2O2(g): [4.657280 kJ/mol, 0.040544 dex; JANAF/CEA spread exceeds threshold]
+        Na2(g): [3.288824 kJ/mol, 0.028631 dex; JANAF/CEA spread exceeds threshold]
+        K2(g): [34.291089 kJ/mol, 0.298525 dex; JANAF/CEA spread exceeds threshold]
+        Al2(g): [unavailable, unavailable; no independent Cp source]
+        Na2O(g): [unavailable, unavailable; no independent JANAF gas source]
+        K2O(g): [unavailable, unavailable; no independent JANAF gas source]
+        Ca+(g): [unavailable, unavailable; no independent CEA source]
         other_species_without_study_comparison: [unavailable, unavailable]
     load_with: load_gas_datapack(gas_path=..., oxide_path=...)
   condensate_file:
@@ -2523,21 +2535,21 @@ candidate_condensate_files:
 candidate_gas_files:
   - file: gas-shomate-hight-candidate-v2.csv
     status: opt_in_high_temperature_candidate
-    sha256: 55769977fd5ea4c549796be7b23baeb916d76c7904ace9cb05e0cd159918d972
+    sha256: 72fdc5614289e666234d12e928f71e0ef3ba2cc988b85d1af9068415f73b4032
     source: >-
-      NIST-JANAF Cp tables for Ca+, Na+, K+, e-, Al+, Mg+, Si+, Ti+, and Cr+;
-      NASA Glenn CEA thermo.inp ion cards independently check the paired
-      JANAF shapes. Fe+ uses its CEA/Gurvich card because no JANAF Cp table is
-      available. No CEA Ca+ card is available. Source Cp(T) is fit to the
-      runtime Shomate form.
+      NIST-JANAF Cp tables provide the selected neutral gas shapes where
+      available and ion shapes for Ca+, Na+, K+, e-, Al+, Fe+, Mg+, Si+, Ti+,
+      and Cr+. NASA Glenn CEA thermo.inp cards independently check paired
+      shapes. No CEA Ca+ card is available. Source Cp(T) is fit to the runtime
+      Shomate form.
     construction: >-
       Existing 3000 K row H and S anchor the candidate intervals for shipped
       ions. Newly added ions use JANAF or CEA/Gurvich source fits from 298.15 K
       through 3000 K, then anchor high-temperature intervals at the fitted
       3000 K seam. The e- row retains the package's JANAF D-020 e1-(ref)
-      convention and its existing 3000 K G/S anchor. Ca+ and Fe+ are rough
-      because no paired JANAF/CEA comparison is available; the other listed
-      ions are corroborated within 2.6 kJ/mol. See
+      convention and its existing 3000 K G/S anchor. Ca+ is rough because no
+      paired JANAF/CEA comparison is available; the other listed ions are
+      corroborated within 2.6 kJ/mol. See
       docs/high-temperature-candidate.md.
     source_file: NIST-JANAF and NASA Glenn CEA thermo.inp
     source_retrieved: 2026-09-06
