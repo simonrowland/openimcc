@@ -25,3 +25,17 @@ the Knudsen effusion oxygen-flux closure, with its molecular-flow pressure
 limit. Saturation results can exceed 1 bar; they report the ideal-gas
 calculation and its domain flags without treating pressure as a vaporization
 path or a finite-inventory state.
+
+Pressures in the hundreds or thousands of bar under this ideal-gas,
+dilute-ionisation model are not credible physical predictions. They are
+closure snapshots at the supplied fixed activities; the domain flags identify
+the model's extrapolation and pressure limits. Ion fractions are only as
+complete as the ion rows present in the selected table. Ions without rows are
+omitted from charge closure, so their fractions are not physically predicted
+zeros.
+
+When `root_uniqueness` is `"sampled"`, the solver scans a deterministic finite
+grid and refuses if it finds more than one sign-changing interval. That scan
+cannot exclude a narrow pair of roots or a tangent root between sample points.
+The neutral path reports `"proved"` only when its pressure-exponent sign
+criterion establishes monotonicity.

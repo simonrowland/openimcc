@@ -5932,6 +5932,7 @@ def test_fixed_composition_saturation_pure_cao_stoichiometry_and_neutral_match(
                           parent_oxides=("CaO",), allow_extrapolation=True)
     assert dict(direct) == dict(sat.species_pressures_bar)
     assert math.isclose(sum(sat.mole_fractions.values()), 1.0)
+    assert sat.diagnostics["root_uniqueness"] == "proved"
 
 
 def test_saturation_ion_charge_closure_and_boiling_no_bracket_refusal(
@@ -5965,6 +5966,71 @@ def test_saturation_refuses_multiple_oxygen_roots(monkeypatch: pytest.MonkeyPatc
         evaluate_gas_saturation({}, 2000.0, object(), log10_pO2_bracket=(-4.0, 4.0))
 
 
+@pytest.mark.parametrize("shape", ("narrow_pair", "tangent"))
+def test_saturation_sampled_root_diagnostic_does_not_claim_uniqueness(
+    monkeypatch: pytest.MonkeyPatch, shape: str,
+) -> None:
+    class Result(dict):
+        domain_flags: dict[str, str | None] = {}
+
+    monkeypatch.setattr(
+        gas_module, "_default_reactions",
+        lambda *_args: ([
+            ("SO2", ("S2", 0.5, -1.0)),
+            ("Ca", ("CaO", 1.0, 0.5)),
+            ("O2", ("", 1.0, 0.0)),
+        ], {}),
+    )
+
+    def pressure_model(_activities, _temperature, p_o2, _datapack, **_kwargs):
+        x = math.log10(p_o2)
+        if shape == "narrow_pair":
+            residual = (x - 0.31) * ((x - 0.137) ** 2 - 0.0005**2)
+        else:
+            residual = (x - 0.31) * (x - 0.137) ** 2
+        return Result({"O2": p_o2, "SO2": 1.0, "Ca": 2.0 * p_o2 + 2.0 - residual})
+
+    monkeypatch.setattr(gas_module, "evaluate_gas", pressure_model)
+    result = evaluate_gas_saturation(
+        {}, 2000.0, object(), log10_pO2_bracket=(-1.0, 1.0),
+    )
+    assert result.diagnostics["root_uniqueness"] == "sampled"
+    assert result.diagnostics["log10_pO2_bracket"] == pytest.approx((0.3, 0.325))
+
+
+@pytest.mark.parametrize("bracket", ((math.nan, 2.0), (1.0, math.inf), (-math.inf, 2.0)))
+def test_boiling_temperature_rejects_nonfinite_bracket_endpoints(
+    gas_pack: ImccGasDatapack, bracket: tuple[float, float],
+) -> None:
+    with pytest.raises(ImccGasSaturationError, match="invalid boiling temperature bracket"):
+        gas_boiling_temperature(
+            {"CaO": 1.0}, gas_pack, 1.0, bracket,
+            parent_oxides=("CaO",), allow_extrapolation=True,
+        )
+
+
+def test_boiling_temperature_forwards_include_ions(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+
+    seen: list[bool] = []
+
+    def saturation(_activities, temperature, _pack, **kwargs):
+        seen.append(kwargs["include_ions"])
+        return SimpleNamespace(
+            P_sat_bar=temperature, diagnostics={}, pO2_bar=1.0,
+            species_pressures_bar={}, channel_pressures_bar={},
+            mole_fractions={}, mode="synthetic", domain_flags={},
+        )
+
+    monkeypatch.setattr(gas_module, "evaluate_gas_saturation", saturation)
+    temperature, state = gas_boiling_temperature(
+        {}, object(), 1.5, (1.0, 2.0), include_ions=True,
+    )
+    assert temperature == pytest.approx(1.5)
+    assert state.P_sat_bar == pytest.approx(1.5)
+    assert seen and all(seen)
+
+
 def test_basalt_saturation_and_fixed_activity_boiling_pressures() -> None:
     candidate = load_gas_datapack(
         gas_path=Path(__file__).parents[1] / "src/openimcc/data/gas/gas-shomate-hight-candidate-v2.csv",
@@ -5977,12 +6043,15 @@ def test_basalt_saturation_and_fixed_activity_boiling_pressures() -> None:
     melt = evaluate(composition, 3000.0, basis_type="wt", allow_extrapolation=True,
                     allow_out_of_envelope=True)
     activities = {name: melt.activity(name) for name in melt.parent_oxides}
-    for temperature in (4000.0, 5000.0, 6000.0):
+    for temperature, expected_pressure in zip(
+        (4000.0, 5000.0, 6000.0), (27.0, 471.0, 3018.0), strict=True,
+    ):
         state = evaluate_gas_saturation(
             activities, temperature, candidate, parent_oxides=tuple(activities),
             include_ions=True, allow_extrapolation=True,
         )
         assert state.P_sat_bar == pytest.approx(sum(state.species_pressures_bar.values()))
+        assert state.P_sat_bar == pytest.approx(expected_pressure, rel=0.005)
         assert 0.0 <= state.mole_fractions["e-"] <= 1.0
         positive = math.fsum(p for name, p in state.species_pressures_bar.items()
                              if name.endswith("+"))
@@ -5991,6 +6060,12 @@ def test_basalt_saturation_and_fixed_activity_boiling_pressures() -> None:
             if name.endswith("-") and name != "e-"
         )
         assert positive == pytest.approx(negative, rel=1e-10, abs=1e-30)
+    boiling_one_bar = gas_boiling_temperature(
+        activities, candidate, 1.0, (1000.0, 6000.0),
+        parent_oxides=tuple(activities), include_ions=True,
+        allow_extrapolation=True,
+    )[0]
+    assert boiling_one_bar == pytest.approx(3263.0, rel=0.001)
     for ambient in (1e-6, 1e-3, 1.0):
         temperature, state = gas_boiling_temperature(
             activities, candidate, ambient, (1000.0, 6000.0),

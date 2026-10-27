@@ -6490,7 +6490,10 @@ def evaluate_gas_oxygen_balance(
         # monotonicity proxy; the true charge-closure response is composition
         # dependent (see limitation in this function's docstring).
         for neutral, ion in _GAS_IONIZATION_PAIRS:
-            if neutral not in species_data:
+            if (
+                neutral not in species_data
+                or f"{ion}(g)" not in datapack.gas_df.index
+            ):
                 continue
             neutral_data = species_data[neutral]
             neutral_atoms = _formula_atoms(neutral)
@@ -6724,7 +6727,9 @@ def evaluate_gas_saturation(
         {name: p / p_total for name, p in channels.items()} if p_total else {},
         "fixed_composition_saturation",
         {"log10_pO2_bracket": bracket, "oxygen_residual": residual(root),
-         "monotonicity_sign_criterion": monotone, "include_ions": include_ions,
+         "monotonicity_sign_criterion": monotone,
+         "root_uniqueness": "proved" if monotone else "sampled",
+         "include_ions": include_ions,
          "omitted_channels": omitted},
         result.domain_flags,
     )
@@ -6744,7 +6749,7 @@ def gas_boiling_temperature(
     if not math.isfinite(ambient_pressure_bar) or ambient_pressure_bar <= 0:
         raise ValueError("ambient_pressure_bar must be finite and positive")
     low, high = map(float, T_bracket)
-    if not (0 < low < high):
+    if not math.isfinite(low) or not math.isfinite(high) or not (0 < low < high):
         raise ImccGasSaturationError("invalid boiling temperature bracket")
     cache: dict[float, ImccGasSaturationResult] = {}
     def residual(T: float) -> float:

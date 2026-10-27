@@ -92,6 +92,11 @@ above roughly 4500 K. Mixture pressures can exceed 1 bar; the existing
 high-pressure notice applies, and these fractions are not a validated
 mixture prediction.
 
+Saturation and boiling calculations using this candidate are opt-in closure
+snapshots. Read [the saturation model notes](gas-saturation.md) for limits on
+high-pressure results and the dependence of ion fractions on the ion rows
+present in the selected table.
+
 | Liquid parent | Tier and coverage | Max |dG| over range (kJ/mol) | Max pressure band over range (dex) |
 |---|---|---:|---:|---:|
 | SiO2(l) | corroborated through 4500 K; rough above | 0.737630 | ±0.025686 |
