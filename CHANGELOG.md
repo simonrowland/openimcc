@@ -8,6 +8,13 @@
   unresolved Mathieu (2009) and Pak et al. (1989) evidence; it does not change
   calculated values. See `docs/melt-notices.md`.
 
+- Added opt-in analytical-parent excess-Gibbs terms for uniquely identified
+  candidate packs. Results derive parent activities and all excess potentials
+  from one extensive function, disclose active empirical interactions, and
+  expose their Gibbs and enthalpy contributions. Published packs are unchanged;
+  redox evaluation refuses candidates with active terms. See
+  `docs/datapack-format.md`.
+
 - Added opt-in fixed-composition saturated-vapor equilibrium and a boiling-
   temperature solver. The saturation closure uses pressure-weighted oxygen
   stoichiometry and supports the existing equilibrium charge closure with

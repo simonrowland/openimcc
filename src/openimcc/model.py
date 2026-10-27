@@ -12,6 +12,7 @@ the simulator's backend glue.
 from __future__ import annotations
 
 import json
+import math
 import re
 from dataclasses import dataclass, replace
 from fractions import Fraction
@@ -79,6 +80,7 @@ _EXPECTED_PARENT_OXIDES = (
 _PUBLISHED_CORE_ROWS = 38
 
 _D066_MODEL_ID = "IMCC-SF04-D066"
+_EXCESS_GIBBS_MODEL_ID = "IMCC-SF04-D066-EXCESS-CANDIDATE"
 _D066_CORE_ROWS = (
     "Mg2SiO4", "MgSiO3", "MgAl2O4", "MgTiO3", "MgTi2O5", "Mg2TiO4",
     "Al6Si2O13", "CaAl2O4", "CaAl4O7", "Ca12Al14O33", "CaSiO3",
@@ -123,6 +125,7 @@ _SP_EXTENSION_PARENTS = ("S", "P2O5")
 _SP_EXTENSION_TIER = "EXT-SP"
 _SP_EXTENSION_FLAG = "enable_sp_extension"
 _SP_EXTENSION_PROVENANCE_CLASS = "extension-compound-thermo"
+_R_J_MOL_K = 8.31446261815324
 _ENVELOPE_RELATIVE_SLACK = 1.0e-5
 _ACID_SINK_FAMILY_SHARE = 0.20
 _PARENT_CATION_SYMBOL = MappingProxyType(
@@ -571,6 +574,28 @@ class ImccSPComponentRequiresExtensionError(ImccComponentOutsideDomainError):
 
 
 @dataclass(frozen=True)
+class ExcessGibbsTerm:
+    """One disclosed analytical-parent interaction from a candidate pack."""
+
+    basis: str
+    components: tuple[str, str]
+    W_H_J_mol: float
+    W_S_J_mol_K: float
+    provenance: str | Mapping[str, Any]
+    calibration_role: str
+    valid_composition: Mapping[str, tuple[float, float]]
+    T_range_K: tuple[float, float]
+    fit_status: str
+
+    def W_J_mol(self, temperature_K: float) -> float:
+        return self.W_H_J_mol - temperature_K * self.W_S_J_mol_K
+
+    @property
+    def active(self) -> bool:
+        return self.W_H_J_mol != 0.0 or self.W_S_J_mol_K != 0.0
+
+
+@dataclass(frozen=True)
 class ImccLoadedDatapack:
     """Adapter-level loaded datapack: kernel datapack plus provenance metadata."""
 
@@ -581,6 +606,7 @@ class ImccLoadedDatapack:
     extension_parents: Sequence[str] = ()
     extension_species: Sequence[str] = ()
     inactive_rows: tuple[tuple[str, str], ...] = ()
+    excess_gibbs_terms: tuple[ExcessGibbsTerm, ...] = ()
 
     @property
     def model_id(self) -> str:
@@ -617,6 +643,180 @@ class EngineBindingIdentity:
     melt_binding_digest: str
     condensate_table_digest: str
     gas_table_digest: str
+
+
+def _parse_excess_gibbs_terms(
+    section: Any,
+    parent_oxides: Sequence[str],
+) -> tuple[ExcessGibbsTerm, ...]:
+    if not isinstance(section, dict):
+        raise ImccMalformedDatapackError("excess_gibbs must be an object")
+    raw_terms = section.get("terms")
+    if not isinstance(raw_terms, list):
+        raise ImccMalformedDatapackError("excess_gibbs.terms must be an array")
+
+    terms: list[ExcessGibbsTerm] = []
+    for index, raw in enumerate(raw_terms):
+        label = f"excess_gibbs term {index}"
+        if not isinstance(raw, dict):
+            raise ImccMalformedDatapackError(f"{label} must be an object")
+        basis = raw.get("basis")
+        if basis == "species_pair":
+            raise ImccMalformedDatapackError(
+                f"{label} basis 'species_pair' is reserved for a later format extension"
+            )
+        if basis != "analytical_parent":
+            raise ImccMalformedDatapackError(
+                f"{label} basis must be 'analytical_parent'"
+            )
+        components = raw.get("components")
+        if (
+            not isinstance(components, list)
+            or len(components) != 2
+            or not all(isinstance(name, str) for name in components)
+            or components[0] == components[1]
+            or any(name not in parent_oxides for name in components)
+        ):
+            raise ImccMalformedDatapackError(
+                f"{label} components must name two distinct parent oxides"
+            )
+
+        coefficients: list[float] = []
+        for field_name in ("W_H_J_mol", "W_S_J_mol_K"):
+            value = raw.get(field_name)
+            if not is_declared_real_scalar(value):
+                raise ImccMalformedDatapackError(
+                    f"{label} {field_name} must be a finite number"
+                )
+            number = float(value)
+            if not math.isfinite(number):
+                raise ImccMalformedDatapackError(
+                    f"{label} {field_name} must be a finite number"
+                )
+            coefficients.append(number)
+
+        provenance = raw.get("provenance")
+        if isinstance(provenance, str) and provenance.strip():
+            parsed_provenance: str | Mapping[str, Any] = provenance
+        elif isinstance(provenance, dict) and provenance:
+            parsed_provenance = MappingProxyType(dict(provenance))
+        else:
+            raise ImccMalformedDatapackError(
+                f"{label} provenance must be a non-empty string or object"
+            )
+
+        calibration_role = raw.get("calibration_role")
+        fit_status = raw.get("fit_status")
+        if not isinstance(calibration_role, str) or not calibration_role.strip():
+            raise ImccMalformedDatapackError(
+                f"{label} calibration_role must be a non-empty string"
+            )
+        if not isinstance(fit_status, str) or not fit_status.strip():
+            raise ImccMalformedDatapackError(
+                f"{label} fit_status must be a non-empty string"
+            )
+
+        raw_composition = raw.get("valid_composition")
+        if not isinstance(raw_composition, dict) or not raw_composition:
+            raise ImccMalformedDatapackError(
+                f"{label} valid_composition must map parent oxides to ranges"
+            )
+        composition_ranges: dict[str, tuple[float, float]] = {}
+        for name, bounds in raw_composition.items():
+            if name not in parent_oxides or not isinstance(bounds, list) or len(bounds) != 2:
+                raise ImccMalformedDatapackError(
+                    f"{label} valid_composition ranges must name parent oxides"
+                )
+            if not all(is_declared_real_scalar(bound) for bound in bounds):
+                raise ImccMalformedDatapackError(
+                    f"{label} valid_composition bounds must be finite numbers"
+                )
+            low, high = (float(bound) for bound in bounds)
+            if not (math.isfinite(low) and math.isfinite(high)) or not (
+                0.0 <= low <= high <= 1.0
+            ):
+                raise ImccMalformedDatapackError(
+                    f"{label} valid_composition bounds must lie in [0, 1]"
+                )
+            composition_ranges[name] = (low, high)
+
+        raw_temperature_range = raw.get("T_range_K")
+        if (
+            not isinstance(raw_temperature_range, list)
+            or len(raw_temperature_range) != 2
+            or not all(is_declared_real_scalar(bound) for bound in raw_temperature_range)
+        ):
+            raise ImccMalformedDatapackError(
+                f"{label} T_range_K must be a finite [low, high] pair"
+            )
+        t_low, t_high = (float(bound) for bound in raw_temperature_range)
+        if not (math.isfinite(t_low) and math.isfinite(t_high)) or not (
+            0.0 < t_low <= t_high
+        ):
+            raise ImccMalformedDatapackError(
+                f"{label} T_range_K must be a positive finite [low, high] pair"
+            )
+
+        terms.append(
+            ExcessGibbsTerm(
+                basis=basis,
+                components=(components[0], components[1]),
+                W_H_J_mol=coefficients[0],
+                W_S_J_mol_K=coefficients[1],
+                provenance=parsed_provenance,
+                calibration_role=calibration_role,
+                valid_composition=MappingProxyType(composition_ranges),
+                T_range_K=(t_low, t_high),
+                fit_status=fit_status,
+            )
+        )
+    return tuple(terms)
+
+
+def _analytical_parent_excess_state(
+    parent_oxides: Sequence[str],
+    parent_mol: Sequence[float],
+    temperature_K: float,
+    terms: Sequence[ExcessGibbsTerm],
+) -> tuple[float, float, np.ndarray]:
+    """Return extensive Gex, Hex, and every analytical-parent μex."""
+    amounts = np.asarray(parent_mol, dtype=float)
+    total = float(np.sum(amounts))
+    fractions = amounts / total
+    parent_index = {name: index for index, name in enumerate(parent_oxides)}
+    g_terms: list[float] = []
+    h_terms: list[float] = []
+    mu_excess = np.zeros(len(parent_oxides), dtype=float)
+    for term in terms:
+        first, second = (parent_index[name] for name in term.components)
+        x_first = float(fractions[first])
+        x_second = float(fractions[second])
+        product = x_first * x_second
+        interaction_w = term.W_J_mol(temperature_K)
+        g_terms.append(interaction_w * product)
+        h_terms.append(term.W_H_J_mol * product)
+        # Differentiate N0*W*X_first*X_second with respect to every
+        # analytical inventory. The -W*X_first*X_second normalization term
+        # belongs to every parent, including spectators.
+        mu_excess -= interaction_w * product
+        mu_excess[first] += interaction_w * x_second
+        mu_excess[second] += interaction_w * x_first
+
+    return (
+        total * math.fsum(g_terms),
+        total * math.fsum(h_terms),
+        mu_excess,
+    )
+
+
+def list_excess_gibbs_interactions(
+    pack: ImccLoadedDatapack | None = None,
+) -> tuple[ExcessGibbsTerm, ...]:
+    """List the interaction terms disclosed by a loaded candidate pack."""
+    loaded = load_datapack() if pack is None else pack
+    if not isinstance(loaded, ImccLoadedDatapack):
+        raise TypeError("pack must be an ImccLoadedDatapack")
+    return loaded.excess_gibbs_terms
 
 
 def engine_binding_identity(
@@ -881,22 +1081,36 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     base_parents = tuple(base_parents)
 
     model_id = data.get("model_id", "IMCC-SF04")
+    has_excess_gibbs = "excess_gibbs" in data
+    if has_excess_gibbs and model_id != _EXCESS_GIBBS_MODEL_ID:
+        raise ImccMalformedDatapackError(
+            "excess_gibbs requires the new candidate identity "
+            f"{_EXCESS_GIBBS_MODEL_ID!r}"
+        )
+    if model_id == _EXCESS_GIBBS_MODEL_ID and not has_excess_gibbs:
+        raise ImccMalformedDatapackError(
+            "the excess-Gibbs candidate identity requires an excess_gibbs section"
+        )
     sp_extension = data.get("sp_extension")
     extension_parents: tuple[str, ...] = ()
     extension_rows: list[dict[str, Any]] = []
     if sp_extension is None:
-        if model_id not in {"IMCC-SF04", _D066_MODEL_ID}:
+        if model_id not in {"IMCC-SF04", _D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
             raise ImccMalformedDatapackError(
                 f"model_id {model_id!r} requires a recognized extension section"
             )
     else:
-        if model_id not in {_SP_EXTENSION_MODEL_ID, _D066_MODEL_ID}:
+        if model_id not in {
+            _SP_EXTENSION_MODEL_ID,
+            _D066_MODEL_ID,
+            _EXCESS_GIBBS_MODEL_ID,
+        }:
             raise ImccMalformedDatapackError(
                 "sp_extension requires model_id='IMCC-SF04-EXT' or "
                 "model_id='IMCC-SF04-D066'"
             )
 
-    if model_id == _D066_MODEL_ID:
+    if model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
         rows, _d066_manifest_sha256 = _validate_d066_core(data)
         published_manifest_sha256 = None
     else:
@@ -987,6 +1201,11 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         )
 
     parents = base_parents + extension_parents
+    excess_gibbs_terms = (
+        _parse_excess_gibbs_terms(data["excess_gibbs"], parents)
+        if has_excess_gibbs
+        else ()
+    )
     all_rows = rows + extension_rows
 
     reactions: list[str] = []
@@ -1127,7 +1346,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     )
     extension_species = tuple(str(row["complex"]) for row in extension_rows)
     extension_names = set(extension_parents) | set(extension_species)
-    if model_id == _D066_MODEL_ID:
+    if model_id in {_D066_MODEL_ID, _EXCESS_GIBBS_MODEL_ID}:
         coverage = {
             name: (
                 _SP_EXTENSION_TIER if name in extension_names else
@@ -1207,6 +1426,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         extension_parents=extension_parents,
         extension_species=extension_species,
         inactive_rows=inactive_rows,
+        excess_gibbs_terms=excess_gibbs_terms,
     )
 
 
@@ -1319,6 +1539,7 @@ def evaluate(
         parent_oxides = pack.parent_oxides
         extension_parents = tuple(pack.extension_parents)
         inactive_rows = pack.inactive_rows
+        excess_gibbs_terms = pack.excess_gibbs_terms
     else:
         kernel_pack = pack
         parent_oxides = pack.parent_oxides
@@ -1326,6 +1547,7 @@ def evaluate(
             name for name in _SP_EXTENSION_PARENTS if name in parent_oxides
         )
         inactive_rows = ()
+        excess_gibbs_terms = ()
 
     binding_digest = kernel_pack.binding_digest
     if binding_digest is None:
@@ -1802,6 +2024,43 @@ def evaluate(
                 cold_error.diagnostics["recovery_attempts"] = recovery_attempts
             raise cold_error from None
 
+    active_excess_terms = tuple(term for term in excess_gibbs_terms if term.active)
+    if excess_gibbs_terms:
+        excess_gibbs_J, excess_enthalpy_J, parent_mu_excess = (
+            _analytical_parent_excess_state(
+                parent_oxides,
+                vector,
+                T_K,
+                excess_gibbs_terms,
+            )
+        )
+        # The correction is a function of conserved analytical inventories.
+        # For each complex j, μex_j = Σ_i ν_ij μex_i, so its reaction
+        # correction μex_j - Σ_i ν_ij μex_i is exactly zero. The ideal
+        # species solve and its mass-amount certificate therefore remain
+        # unchanged; only parent activities and the extensive liquid G move.
+        if np.any(parent_mu_excess[vector > 0.0] != 0.0):
+            with np.errstate(over="ignore", under="ignore", invalid="ignore"):
+                parent_activity = result.parent_x_star * np.exp(
+                    parent_mu_excess / (_R_J_MOL_K * T_K)
+                )
+            parent_gamma = np.divide(
+                parent_activity,
+                result.parent_x,
+                out=np.zeros_like(parent_activity),
+                where=result.parent_x > 0.0,
+            )
+        else:
+            parent_activity = result.parent_activity
+            parent_gamma = result.parent_gamma
+        result = replace(
+            result,
+            parent_activity=parent_activity,
+            parent_gamma=parent_gamma,
+            excess_gibbs_J=excess_gibbs_J,
+            excess_enthalpy_J=excess_enthalpy_J,
+        )
+
     # Build the caller-facing label block. The paper-window flag is computed
     # by the kernel from row metadata; the edge flag is computed from the
     # solved free-parent fraction, so neither condition is a hardcoded Na bound.
@@ -1906,6 +2165,15 @@ def evaluate(
         )
 
     notices = []
+    if active_excess_terms:
+        interactions = ", ".join(
+            f"{'–'.join(term.components)} ({term.basis}; {term.fit_status})"
+            for term in active_excess_terms
+        )
+        notices.append(
+            "excess-gibbs-candidate: empirical interaction terms are active: "
+            f"{interactions}"
+        )
     if any(
         vector[parent_oxides.index(name)] > 0.0
         for name in ("Na2O", "K2O")

@@ -49,11 +49,13 @@ fraction in the equation and the solver input can differ slightly when
 `sum(parent_mol)` is not exactly `basis`.
 
 The solver works in y_i = ln(x_i*), with x_j computed from the logarithmic
-mass-action form above. The returned parent activity is x_i*, and the
-returned activity coefficient is gamma_i = x_i* / x_i. A complex is inactive
-on a particular solve when any parent with positive nu_ij has zero analytical
-input; inactive complexes are assigned zero and do not impose a temperature
-domain check.
+mass-action form above. For ideal packs, the returned parent activity is x_i*,
+and the returned activity coefficient is gamma_i = x_i* / x_i. An opt-in
+excess-Gibbs candidate keeps x_i* and the species fractions unchanged, while
+returning parent activity `a_i = x_i* exp(mu_i^ex / RT)` and
+`gamma_i = a_i / x_i`. A complex is inactive on a particular solve when any
+parent with positive nu_ij has zero analytical input; inactive complexes are
+assigned zero and do not impose a temperature domain check.
 
 The adapter also exposes `result.labels.acid_sink_ratio` as a typed
 `float | None`: it is the continuous ratio `x*(SiO2) / x(SiO2)` for the
@@ -76,6 +78,7 @@ when absent, although they are present in the shipped packs as noted.
 |---|---|---|---|
 | created | string | No | Pack creation date, represented as an ISO-like date such as 2026-08-11. The loader does not parse it. |
 | errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2, ext-v4, and D066 packs use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
+| excess_gibbs | object | Conditional | Opt-in analytical-parent excess-Gibbs terms. Accepted only with the new `IMCC-SF04-D066-EXCESS-CANDIDATE` identity; its full content participates in the canonical binding digest. Never add this section to a published pack. |
 | extension_parent_datapack_version | string | No | Version of the parent/earlier extension pack used by the extension record. Present in the retired ext-v3 record; the loader treats it as metadata. |
 | extension_wave | string | No | Label for the extension work wave, for example EXT3-JANAF-native-endmember-screen. Its exact release semantics are not established by the code. |
 | feo_liquid_candidate | object | No | Records the D&G/Masson FeO(l) standard Gibbs-energy shift (`source`, `delta_g_j_mol` as a T-linear expression in J/mol, `transformation`, `uncertainty`) and how it was carried into every association row that consumes FeO. Present in both the historical opt-in candidate and promoted D066 v2 pack. The coefficients in `rows` already include the shift; the loader does not read this field. See docs/feo-liquid-candidate.md. |
@@ -83,7 +86,7 @@ when absent, although they are present in the shipped packs as noted.
 | imcc_sf04_datapack_version | non-empty string | Yes | Datapack version. load_datapack() stores it as the loaded version and uses it in the published-core projection or the per-pack binding digest. |
 | merge_semantics | object | No | Describes how an extension overlays or carries forward published rows: mode, row counts, replacement counts, and rationale. It is not interpreted by load_datapack(). |
 | model | string | No | Human-readable model description. Retired extension records use IMCC-SF04-EXT; v1.0.2, ext-v4, and D066 packs use a longer equation/species-count description. Runtime identity comes from model_id, not this field. |
-| model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults it to IMCC-SF04. IMCC-SF04-D066 uses the D066 row-set validation; either published or D066 identity may carry a valid sp_extension object. |
+| model_id | string | Conditional | Canonical runtime identity. If absent, the loader defaults it to IMCC-SF04. IMCC-SF04-D066 uses the D066 row-set validation; the new excess-Gibbs candidate identity is required when `excess_gibbs` is present. |
 | pack_arithmetic | string | No | Prose describing how the pack's rows and coefficient revisions were assembled. It does not alter arithmetic. |
 | parents | array of strings | Yes | Ordered parent-oxide basis. The current loader requires exactly ["SiO2", "MgO", "FeO", "CaO", "Al2O3", "TiO2", "Na2O", "K2O"], in that order. sp_extension adds S and P2O5 only on its own extension path. |
 | parent_standard_candidates | object | No | Provenance for opt-in candidate parent-standard revisions, including source values, retained anchors, and construction details. The loader does not read this field; candidate coefficients and condensate tables carry the numerical changes. |
@@ -100,6 +103,59 @@ and `doi` fields. Each row's `source_refs` array contains keys into this
 top-level `sources` object. The loader preserves and hashes these references
 as pack metadata but does not interpret them when constructing the numerical
 kernel.
+
+### excess_gibbs structure
+
+This section is optional and is accepted only when `model_id` is
+`IMCC-SF04-D066-EXCESS-CANDIDATE`. It is rejected on published and existing
+D066 identities. The canonical full-manifest binding digest includes the
+section and all of its term metadata, so changing a coefficient or its
+provenance changes candidate identity. No published pack contains this
+section.
+
+`excess_gibbs` is an object with a `terms` array. Each term has these fields:
+
+| Key | JSON type | Meaning |
+|---|---|---|
+| basis | string | `analytical_parent` for this stage. `species_pair` is reserved for a future format extension and is not accepted. |
+| components | two strings | Distinct parent-oxide names whose analytical mole fractions multiply in the term. |
+| W_H_J_mol | number | Enthalpy coefficient in J/mol. |
+| W_S_J_mol_K | number | Entropy coefficient in J/(mol K). Runtime evaluates `W(T) = W_H_J_mol - T_K * W_S_J_mol_K`, in J/mol. |
+| provenance | non-empty string or object | Source and provenance record for the interaction. |
+| calibration_role | non-empty string | Kind of observations or constraints used to calibrate the term. |
+| valid_composition | object | Mapping from parent-oxide names to inclusive `[minimum, maximum]` analytical mole-fraction ranges in `[0, 1]`. |
+| T_range_K | two numbers | Positive inclusive `[minimum, maximum]` temperature range in kelvin. |
+| fit_status | non-empty string | For example, `empirical-fit`; the result notice repeats this status. |
+
+For amounts `n_i`, let `N0 = sum_i(n_i)` and `X_i = n_i / N0`. Stage 1
+defines the extensive energy as
+
+~~~text
+Gex = N0 * sum_terms(W(T) * X_first * X_second)
+mu_i_ex = sum_terms(W(T) * (delta_i,first * X_second
+                              + delta_i,second * X_first
+                              - X_first * X_second))
+a_i = x_i* * exp(mu_i_ex / (R*T))
+~~~
+
+All parent potentials, including the normalization contribution for
+spectator parents, come from this same `Gex`. Since each interaction depends
+only on conserved analytical inventories, its reaction contribution cancels
+exactly and does not change species amounts. `result.excess_gibbs_J` is the
+extensive `Gex` for the supplied analytical amount. Its enthalpy contribution
+is `Hex = N0 * sum_terms(W_H * X_first * X_second)`, exposed as
+`result.excess_enthalpy_J`. `parent_x_star` and `species_x` remain the ideal
+association fractions. `parent_activity` and `parent_gamma` carry the
+corrected activities. Gas routines continue to take caller-supplied
+activities, so pass the corrected result activities. Redox evaluation refuses
+a pack with nonzero excess coefficients because its internal solver still uses
+ideal activities.
+
+Use `list_excess_gibbs_interactions(pack)` to inspect a loaded candidate's
+terms. Every active interaction is also named in the `evaluate()` result
+notices. The declared validity ranges and provenance are hashed metadata; a
+future fit workflow can add range-specific validation without changing the
+interaction basis.
 
 ### sp_extension structure
 

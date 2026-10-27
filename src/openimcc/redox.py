@@ -130,6 +130,12 @@ class RedoxInputError(ImccRefusal):
     code = "redox_invalid_input"
 
 
+class RedoxExcessGibbsUnsupportedError(RedoxInputError):
+    """The redox solver cannot yet use analytical-parent excess activities."""
+
+    code = "redox_excess_gibbs_unsupported"
+
+
 class RedoxNoLiveCoupleError(ImccRefusal):
     """No finite oxygen-fugacity equality exists for the supplied feed."""
 
@@ -2008,6 +2014,11 @@ def evaluate_redox(
             raise _unreadable_pack(
                 Path(melt_pack_path), exc, description="melt datapack"
             ) from exc
+    if any(term.active for term in loaded.excess_gibbs_terms):
+        raise RedoxExcessGibbsUnsupportedError(
+            "redox evaluation does not support melt packs with active "
+            "analytical-parent excess Gibbs terms"
+        )
     base_datapack = loaded.kernel_datapack
     if redox_pack_path is None:
         redox_pack = _load_default_redox_pack()

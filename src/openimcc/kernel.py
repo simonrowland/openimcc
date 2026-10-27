@@ -610,6 +610,10 @@ class ImccResult:
     convergence: ImccConvergence
     labels: ImccLabels
     extrapolated: bool = False
+    # Extensive excess contributions use joules for the caller's supplied
+    # analytical amounts. The ideal kernel leaves both at exactly zero.
+    excess_gibbs_J: float = 0.0
+    excess_enthalpy_J: float = 0.0
 
     def _parent_index(self, name: str) -> int:
         try:

@@ -25,6 +25,7 @@ from openimcc.model import (
     ImccCompositionIncompleteError,
     ImccCompositionOutsideValidatedEnvelopeError,
     ImccDatapack,
+    ExcessGibbsTerm,
     ImccFerricInputUnsupportedError,
     ImccInvalidWarmStartError,
     ImccLoadedDatapack,
@@ -38,11 +39,13 @@ from openimcc.model import (
     evaluate,
     engine_binding_identity,
     label_research_datapack,
+    list_excess_gibbs_interactions,
     load_datapack,
 )
 from openimcc.kernel import ImccDataframeUnavailableError, ImccSpeciesNotFoundError
 from openimcc.redox import (
     RedoxEndpointError,
+    RedoxExcessGibbsUnsupportedError,
     RedoxInputError,
     RedoxNoLiveCoupleError,
     RedoxNumericalError,
@@ -218,11 +221,13 @@ __all__ = [
     "__version__",
     # --- solve ------------------------------------------------------------
     "load_datapack",
+    "list_excess_gibbs_interactions",
     "evaluate",
     "engine_binding_identity",
     "EngineBindingIdentity",
     "label_research_datapack",
     "ImccDatapack",
+    "ExcessGibbsTerm",
     "ImccLoadedDatapack",
     "ImccResult",
     "ImccAdapterLabels",
@@ -257,6 +262,7 @@ __all__ = [
     "evaluate_redox",
     "RedoxResult",
     "RedoxInputError",
+    "RedoxExcessGibbsUnsupportedError",
     "RedoxNoLiveCoupleError",
     "RedoxEndpointError",
     "RedoxNumericalError",

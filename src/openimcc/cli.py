@@ -123,7 +123,7 @@ def _result_payload(result: Any) -> dict[str, Any]:
     else:
         label_payload = _jsonable(labels)
 
-    return {
+    payload = {
         "temperature_K": float(result.temperature_K),
         "basis": float(result.basis),
         "D": float(result.D),
@@ -139,6 +139,13 @@ def _result_payload(result: Any) -> dict[str, Any]:
         "labels": label_payload,
         "convergence": _jsonable(getattr(result, "convergence", None)),
     }
+    if any(
+        str(notice).startswith("excess-gibbs-candidate:")
+        for notice in getattr(labels, "notices", ())
+    ):
+        payload["excess_gibbs_J"] = float(result.excess_gibbs_J)
+        payload["excess_enthalpy_J"] = float(result.excess_enthalpy_J)
+    return payload
 
 
 def _jsonable(value: Any) -> Any:
