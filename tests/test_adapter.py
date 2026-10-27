@@ -256,15 +256,20 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
         "pressures (case 4: −1.20 to −1.26 dex); see "
         "https://github.com/simonrowland/openimcc"
     )
-    assert result.labels.notices[1].startswith("temperature-domain-extension:")
+    notices = result.labels.notices
+    assert any(n.startswith("temperature-domain-extension:") for n in notices)
     if alkali_oxide == "Na2O":
         # Na2Si2O5 is active below its domain in these binary melts.
-        assert result.labels.notices[2].startswith(
-            "low-temperature-uncertain-unscored:"
+        assert any(
+            n.startswith("low-temperature-uncertain-unscored:") for n in notices
         )
-        assert len(result.labels.notices) == 3
+        # Binary melts at molar Na2O/SiO2 >= 1 (x >= 0.5) also carry the
+        # held-out Na2O activity-bias notice.
+        na_bias = [n for n in notices if n.startswith("na2o-activity-bias:")]
+        assert bool(na_bias) is (x_me2o >= 0.5)
+        assert len(notices) == 3 + len(na_bias)
     else:
-        assert len(result.labels.notices) == 2
+        assert len(notices) == 2
 
 
 @pytest.mark.parametrize(

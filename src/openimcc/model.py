@@ -224,6 +224,57 @@ _ALKALI_BIAS_BENCHMARKS = MappingProxyType(
 )
 _ALKALI_BIAS_BENCH_URL = "https://github.com/simonrowland/openimcc"
 
+# At 1673 K the 38 held-out Mathieu rows with x(CaO+MgO) in [0.30, 0.40)
+# have median +0.77 dex (range +0.37 to +1.20); below 0.30, the three rows
+# are mixed (−0.26 to +1.37). This makes 0.30 the lowest observed basicity
+# boundary with a consistently positive residual. Basicity is the CaO+MgO
+# mole fraction on the complete parent-oxide basis. Independently, Na2O/SiO2
+# >= 1 catches the severe low-silica Mathieu and Na-rich Pak binary errors.
+_NA2O_ACTIVITY_BIAS_RATIO_MIN = 1.0
+_NA2O_ACTIVITY_BIAS_BASICITY_MIN = 0.30
+_NA2O_ACTIVITY_BIAS_NOTICE = (
+    "na2o-activity-bias: Na2O activity and Na(g) pressure are over-predicted. "
+    "At 1673 K only (temperature dependence untested), held-out Mathieu "
+    "(2009) CMAS rows show: x(CaO+MgO) 0.30–<0.40, median +0.77 dex "
+    "(range +0.37 to +1.20; n=12); x(CaO+MgO) >= 0.40 with Na2O/SiO2 < 1, "
+    "median +1.53 dex (range +0.81 to +2.67; n=17); Na2O/SiO2 >= 1, "
+    "median +4.29 dex (range +4.03 to +4.46; n=6). Pak et al. (1989) "
+    "Na-rich binary points at Na2O/SiO2 ratios 1.5 and 1 are +2.76 and "
+    "+1.74 dex; its Ca-bearing points at x(CaO) 0.32 and 0.42 are +0.49 and "
+    "+0.67 dex; higher-silica Ca-free points are slightly negative. Evidence: "
+    "R. Mathieu, PhD thesis, INPL Nancy (2009), "
+    "https://docnum.univ-lorraine.fr/public/INPL/2009_MATHIEU_R.pdf (method: "
+    "Mathieu et al. 2008, DOI 10.1016/j.jnoncrysol.2008.07.004); Pak et al. "
+    "1989, DOI 10.2355/isijinternational.29.318. The cause remains unresolved."
+)
+
+
+def _na2o_activity_bias_notice(
+    parent_oxides: Sequence[str], moles: np.ndarray
+) -> str | None:
+    """Flag Na-bearing melts in either held-out composition region."""
+    try:
+        na_index = parent_oxides.index("Na2O")
+        silica_index = parent_oxides.index("SiO2")
+    except ValueError:
+        return None
+    na = float(moles[na_index])
+    silica = float(moles[silica_index])
+    if na <= 0.0:
+        return None
+    if silica > 0.0 and na / silica >= _NA2O_ACTIVITY_BIAS_RATIO_MIN:
+        return _NA2O_ACTIVITY_BIAS_NOTICE
+    basicity = 0.0
+    total = float(moles.sum())
+    if total <= 0.0:
+        return None
+    for name in ("CaO", "MgO"):
+        if name in parent_oxides:
+            basicity += float(moles[parent_oxides.index(name)])
+    if basicity / total >= _NA2O_ACTIVITY_BIAS_BASICITY_MIN:
+        return _NA2O_ACTIVITY_BIAS_NOTICE
+    return None
+
 
 def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
     measured_bias = _ALKALI_BIAS_BENCHMARKS.get((model_id, binding_digest))
@@ -1861,6 +1912,10 @@ def evaluate(
         if name in parent_oxides
     ):
         notices.append(_alkali_bias_notice(model_id, binding_digest))
+
+    na2o_activity_bias_notice = _na2o_activity_bias_notice(parent_oxides, vector)
+    if na2o_activity_bias_notice is not None:
+        notices.append(na2o_activity_bias_notice)
 
     cao_sio2_notice = _cao_sio2_activity_bias_notice(
         parent_oxides, vector, T_K, model_id, binding_digest

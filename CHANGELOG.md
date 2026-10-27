@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added a composition-scoped notice for likely Na₂O activity and Na(g)
+  pressure overprediction when molar Na₂O/SiO₂ is at least one or the
+  parent-mole fraction x(CaO+MgO) is at least 0.30. The notice reports the
+  unresolved Mathieu (2009) and Pak et al. (1989) evidence; it does not change
+  calculated values. See `docs/melt-notices.md`.
+
 - Added opt-in fixed-composition saturated-vapor equilibrium and a boiling-
   temperature solver. The saturation closure uses pressure-weighted oxygen
   stoichiometry and supports the existing equilibrium charge closure with

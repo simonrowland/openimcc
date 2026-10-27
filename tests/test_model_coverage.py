@@ -826,3 +826,37 @@ def test_silicate_product_evidence_identity_is_pinned() -> None:
     assert (pack.model_id, pack.binding_digest) == (
         model._MELT_EVIDENCE_MODEL_ID, model._MELT_EVIDENCE_BINDING_DIGEST
     ), "default pack moved; re-score melt notice evidence before retaining measured claims"
+
+
+def test_na2o_activity_bias_notice_gate_and_numeric_identity() -> None:
+    marker = "na2o-activity-bias:"
+    mathieu_iii1_like = evaluate(
+        {"SiO2": 49.1, "Al2O3": 0.05, "CaO": 41.29, "MgO": 5.06, "Na2O": 4.5},
+        1673.15, basis_type="wt", allow_extrapolation=True,
+    )
+    mathieu_like = evaluate(
+        {"SiO2": 8.81, "Na2O": 24.0, "CaO": 35.0, "MgO": 24.0, "Al2O3": 8.19},
+        1673.15, basis_type="wt", allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    pak_binary = evaluate(
+        {"Na2O": 60.0, "SiO2": 40.0}, 1673.15,
+        allow_extrapolation=True, allow_out_of_envelope=True,
+    )
+    assert any(n.startswith(marker) for n in mathieu_iii1_like.labels.notices)
+    assert any(n.startswith(marker) for n in mathieu_like.labels.notices)
+    assert any(n.startswith(marker) for n in pak_binary.labels.notices)
+    assert mathieu_like.parent_activity[mathieu_like.parent_oxides.index("Na2O")] == 0.1068994643265644
+    assert mathieu_like.parent_activity[mathieu_like.parent_oxides.index("SiO2")] == pytest.approx(
+        8.65523987822024e-08, rel=1e-12, abs=0.0
+    )
+
+    sodium_free = evaluate({"SiO2": 0.4, "CaO": 0.6}, 1673.15, allow_extrapolation=True)
+    high_silica = evaluate({"Na2O": 20.0, "SiO2": 80.0}, 1673.15, allow_extrapolation=True)
+    albite_like = evaluate(
+        {"Na2O": 0.5, "Al2O3": 0.5, "SiO2": 3.0},
+        1673.15, allow_extrapolation=True,
+    )
+    assert not any(n.startswith(marker) for n in sodium_free.labels.notices)
+    assert not any(n.startswith(marker) for n in high_silica.labels.notices)
+    assert not any(n.startswith(marker) for n in albite_like.labels.notices)
