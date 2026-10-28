@@ -762,6 +762,7 @@ def _solve_species_pair_active(
     max_iter: int,
     *,
     y_init: np.ndarray | None = None,
+    relative_log_x_recovery: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, float, int, float, float, float, str, int]:
     """Solve a species-pair candidate, compare starts, and certify stability."""
     if max_iter <= 0:
@@ -831,34 +832,40 @@ def _solve_species_pair_active(
     max_nfev = max(10, max_iter * (n_species + 1))
     roots: list[tuple[np.ndarray, np.ndarray, float, int, float, float, float]] = []
     residual_records: list[dict[str, float | int]] = []
+    best_z: np.ndarray | None = None
+    best_residual = float("inf")
     for seed_index, seed in enumerate(unique_seeds):
         if not np.all(np.isfinite(seed)) or np.any(seed < lower) or np.any(seed > upper):
             continue
 
-        def fun(value: np.ndarray) -> np.ndarray:
-            return _species_pair_residual_jacobian(
-                value, x_target, nu, lnK, S, interaction, temperature_K
-            )[0]
+        def run(
+            start: np.ndarray, relative: bool = False, solve_tol: float = tol
+        ) -> Any:
+            def residual_jac(value: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+                residual, _species, D, jacobian = _species_pair_residual_jacobian(
+                    value, x_target, nu, lnK, S, interaction, temperature_K
+                )
+                if relative:
+                    # Scale inventory equations by feed abundance so trace
+                    # parents receive the same refinement priority as majors.
+                    residual = residual.copy()
+                    jacobian = jacobian.copy()
+                    residual[:n_parent] /= x_target
+                    jacobian[:n_parent] /= x_target[:, None]
+                return residual, jacobian
 
-        def jac(value: np.ndarray) -> np.ndarray:
-            return _species_pair_residual_jacobian(
-                value, x_target, nu, lnK, S, interaction, temperature_K
-            )[3]
-
-        try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", RuntimeWarning)
-                solved = least_squares(
-                    fun,
-                    seed,
-                    jac=jac,
-                    bounds=(lower, upper),
-                    method="trf",
-                    ftol=tol,
-                    xtol=tol,
-                    gtol=tol,
+                return least_squares(
+                    lambda value: residual_jac(value)[0], start,
+                    jac=lambda value: residual_jac(value)[1],
+                    bounds=(lower, upper), method="trf",
+                    ftol=solve_tol, xtol=solve_tol, gtol=solve_tol,
                     max_nfev=max_nfev,
                 )
+
+        try:
+            solved = run(seed)
         except (ValueError, FloatingPointError):
             continue
 
@@ -874,6 +881,9 @@ def _solve_species_pair_active(
             "iterations": int(solved.nfev),
             "residual_inf": residual_inf,
         })
+        if residual_inf < best_residual:
+            best_residual = residual_inf
+            best_z = solved.x.copy()
         if (
             math.isfinite(D) and D > 0.0
             and residual_inf <= tol and relative_inf <= tol
@@ -884,6 +894,42 @@ def _solve_species_pair_active(
                 residual_inf, residual_l2, float(np.linalg.norm(solved.x - ideal_z)),
             ))
 
+    if relative_log_x_recovery and not roots:
+        # Retry from the best absolute iterate with parent-scaled balances.
+        # Least-squares then resolves trace inventories that are negligible in
+        # the unscaled objective, while the acceptance checks below retain the
+        # original absolute and relative requirements.
+        start = best_z if best_z is not None else ideal_z
+        try:
+            _f0, _x0, start_D, _J0 = _species_pair_residual_jacobian(
+                start, x_target, nu, lnK, S, interaction, temperature_K
+            )
+            relative_tol = tol * min(start_D, 1.0) if start_D > 0.0 else tol
+            solved = run(start, relative=True, solve_tol=relative_tol)
+            residual, species_x, D, _jacobian = _species_pair_residual_jacobian(
+                solved.x, x_target, nu, lnK, S, interaction, temperature_K
+            )
+            residual_inf = float(np.linalg.norm(residual, ord=np.inf))
+            residual_l2 = float(np.linalg.norm(residual, ord=2))
+            relative_inf = float(np.linalg.norm(
+                residual[:n_parent] / (D * x_target), ord=np.inf
+            )) if math.isfinite(D) and D > 0.0 else float("inf")
+            if (
+                math.isfinite(D) and D > 0.0
+                and residual_inf <= tol and relative_inf <= tol
+                and np.all(np.isfinite(species_x))
+            ):
+                roots.append((
+                    solved.x.copy(), species_x, D, int(solved.nfev),
+                    residual_inf, residual_l2,
+                    float(np.linalg.norm(solved.x - ideal_z)),
+                ))
+            if residual_inf < best_residual:
+                best_residual = residual_inf
+                best_z = solved.x.copy()
+        except (ValueError, FloatingPointError):
+            pass
+
     if not roots:
         best = min(residual_records, key=lambda item: float(item["residual_inf"])) if residual_records else {}
         raise ImccNonconvergenceError(
@@ -892,6 +938,7 @@ def _solve_species_pair_active(
                 "iterations": sum(int(item["iterations"]) for item in residual_records),
                 "residual_inf": float(best.get("residual_inf", float("inf"))),
                 "starts": residual_records,
+                "final_y": best_z[:n_parent].tolist() if best_z is not None else ideal_y.tolist(),
             },
         )
 
@@ -1409,6 +1456,8 @@ def _certify_active_root(
     ],
     *,
     parent_names: Sequence[str] | None = None,
+    species_pair_interaction: np.ndarray | None = None,
+    temperature_K: float | None = None,
 ) -> tuple[
     tuple[np.ndarray, np.ndarray, float, int, float, float, float, str, int], bool
 ]:
@@ -1508,6 +1557,39 @@ def _certify_active_root(
 
     if not math.isfinite(D) or D <= 0.0:
         refuse(relative_error, activity, bound_rhs, bound_ok)
+
+    if species_pair_interaction is not None:
+        if temperature_K is None:
+            raise ValueError("temperature_K is required for species-pair certification")
+        refined = _solve_species_pair_active(
+            x_target,
+            nu,
+            lnK,
+            S,
+            species_pair_interaction,
+            temperature_K,
+            tol,
+            max_iter,
+            y_init=y,
+            relative_log_x_recovery=True,
+        )
+        refined_error, refined_activity, refined_bound_rhs, refined_bound_ok = (
+            measure(refined[0], refined[1], refined[2])
+        )
+        if not certified(refined_error, refined_bound_ok, refined[2]):
+            refuse(refined_error, refined_activity, refined_bound_rhs, refined_bound_ok)
+        return (
+            (
+                *refined[:3],
+                solution[3] + refined[3],
+                refined[4],
+                refined[5],
+                refined[6],
+                refined[7],
+                solution[8] + refined[8],
+            ),
+            True,
+        )
 
     # _solve_active(relative_tolerance=True) scales f_i by X_i. Since the exact
     # inventory error divides once more by D, scale that solver tolerance by
@@ -2079,9 +2161,26 @@ def _solve_imcc_sf04_with_seed(
             float(tol),
             int(max_iter),
             y_init=y_init,
+            relative_log_x_recovery=(
+                relative_recovery or relative_log_x_recovery
+            ),
         )
         continuation_y = solution[0]
-        refined = False
+        solution, refined = _certify_active_root(
+            x_active,
+            nu_active,
+            lnK_active,
+            S_active,
+            tol,
+            max_iter,
+            solution,
+            parent_names=tuple(
+                datapack.parent_oxides[index]
+                for index in np.flatnonzero(active_parent)
+            ),
+            species_pair_interaction=active_interaction,
+            temperature_K=T,
+        )
     else:
         # Solve the established reduced log-space system. Keeping this block
         # unchanged preserves ideal and analytical_parent candidate outputs.

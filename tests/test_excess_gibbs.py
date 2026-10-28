@@ -342,6 +342,53 @@ def test_public_kernel_refuses_excess_candidate_and_loaded_adapter_applies_it(
     assert pair_result.convergence.solver_path == "species-pair-multistart"
 
 
+@pytest.mark.parametrize(
+    "components", [("FeO", "Fe2SiO4"), ("FeO", "SiO2")]
+)
+def test_species_pair_trace_parent_cold_start_and_zero_limit(
+    tmp_path: Path, components: tuple[str, str]
+) -> None:
+    composition = {
+        "SiO2": 0.011138886562497141,
+        "MgO": 2288.8042997487846,
+        "FeO": 87.38220230346212,
+        "CaO": 2014.8644234379233,
+        "Al2O3": 1360.0091131723866,
+        "TiO2": 192.82496476933426,
+        "Na2O": 5.3731722769972105e-09,
+        "K2O": 8.844980280923895,
+    }
+    temperature = 2445.65
+    ideal = evaluate(composition, temperature)
+
+    candidate, _ = _candidate(
+        tmp_path,
+        [_species_term(W_H_J_mol=100.0, components=components)],
+        "trace-pair.json",
+    )
+    paired = evaluate(
+        composition, temperature, candidate, allow_out_of_envelope=True
+    )
+    assert paired.convergence.residual_inf <= 1.0e-12
+    assert paired.convergence.solver_path == "species-pair-multistart"
+    assert paired.parent_activity[paired.parent_oxides.index("Na2O")] > 0.0
+    assert np.allclose(
+        paired.parent_activity, ideal.parent_activity, rtol=1.0e-2, atol=1.0e-12
+    )
+
+    tiny, _ = _candidate(
+        tmp_path,
+        [_species_term(W_H_J_mol=1.0e-3, components=components)],
+        "trace-pair-tiny.json",
+    )
+    near_ideal = evaluate(
+        composition, temperature, tiny, allow_out_of_envelope=True
+    )
+    assert np.allclose(
+        near_ideal.parent_activity, ideal.parent_activity, rtol=1.0e-7, atol=1.0e-12
+    )
+
+
 def test_excess_parent_potentials_are_gibbs_derivatives_and_obey_euler_and_gd(
     tmp_path: Path,
 ) -> None:
