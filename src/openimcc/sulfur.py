@@ -492,6 +492,16 @@ def evaluate_sulfur(
             "openimcc could not evaluate FeO activity: " + melt_error,
             model="openimcc-melt-pack", axis="FeO_activity",
         ))
+    elif melt_result is not None:
+        for melt_notice in melt_result.labels.notices:
+            code, separator, _detail = melt_notice.partition(":")
+            if separator and code in {
+                "excess-gibbs-candidate",
+                "excess-gibbs-calibration-range",
+            }:
+                notices.append(_notice(
+                    code, melt_notice, model="openimcc-melt-pack",
+                ))
     supported_moles = set(melt_result.parent_oxides) if melt_result is not None else set()
     omitted = sorted(name for name, n in formula_moles.items() if n > 0.0 and name not in supported_moles)
     if omitted:

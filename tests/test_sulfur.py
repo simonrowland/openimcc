@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import math
+from pathlib import Path
 
 import pytest
 
@@ -564,3 +566,43 @@ def test_default_openimcc_solve_without_sulfur_call_pins_v5():
     # refits change its activity and bulk root independently of sulfur.
     assert result.activity("FeO") == pytest.approx(0.05700402442549344)
     assert result.D == pytest.approx(2.1787222992077693)
+
+
+def test_excess_melt_disclosures_survive_sulfur_evaluation(tmp_path):
+    source = Path(__file__).parents[1] / "src/openimcc/data/packs/imcc-sf04-d066-v5.json"
+    pack_data = json.loads(source.read_text(encoding="utf-8"))
+    pack_data["model_id"] = "IMCC-SF04-D066-EXCESS-CANDIDATE"
+    pack_data["excess_gibbs"] = {
+        "terms": [{
+            "basis": "analytical_parent",
+            "components": ["Na2O", "CaO"],
+            "W_H_J_mol": -60_000.0,
+            "W_S_J_mol_K": 0.0,
+            "provenance": {"source": "sulfur disclosure regression"},
+            "calibration_role": "sulfur melt-activity regression",
+            "valid_composition": {"Na2O": [0.0, 1.0], "CaO": [0.0, 1.0]},
+            "T_range_K": [1900.0, 2000.0],
+            "fit_status": "empirical-fit",
+        }],
+    }
+    candidate_path = tmp_path / "sulfur-excess-candidate.json"
+    candidate_path.write_text(json.dumps(pack_data), encoding="utf-8")
+    candidate = load_datapack(candidate_path)
+
+    result = evaluate_sulfur(
+        _MORB, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0,
+        melt_pack=candidate,
+    )
+
+    assert result.scss_oneill_2021_ppm == pytest.approx(5712.502825957212)
+    candidate_notice = next(
+        notice for notice in result.notices
+        if notice.code == "excess-gibbs-candidate"
+    )
+    assert "Na2O–CaO (analytical_parent; empirical-fit)" in candidate_notice.message
+    range_notice = next(
+        notice for notice in result.notices
+        if notice.code == "excess-gibbs-calibration-range"
+    )
+    assert "Na2O–CaO (analytical_parent)" in range_notice.message
+    assert "T=1673 K below lower bound 1900 K" in range_notice.message
