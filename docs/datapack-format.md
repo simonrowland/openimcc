@@ -50,12 +50,14 @@ fraction in the equation and the solver input can differ slightly when
 
 The solver works in y_i = ln(x_i*), with x_j computed from the logarithmic
 mass-action form above. For ideal packs, the returned parent activity is x_i*,
-and the returned activity coefficient is gamma_i = x_i* / x_i. An opt-in
-excess-Gibbs candidate keeps x_i* and the species fractions unchanged, while
-returning parent activity `a_i = x_i* exp(mu_i^ex / RT)` and
-`gamma_i = a_i / x_i`. A complex is inactive on a particular solve when any
-parent with positive nu_ij has zero analytical input; inactive complexes are
-assigned zero and do not impose a temperature domain check.
+and the returned activity coefficient is gamma_i = x_i* / x_i. An
+`analytical_parent` excess-Gibbs candidate leaves speciation unchanged. A
+`species_pair` candidate changes the coupled mass-action solution. Both report
+parent activity `a_i = x_i* exp(mu_i^ex / RT)` and `gamma_i = a_i / x_i`,
+keeping activity distinct from the free-parent species fraction. A complex is
+inactive on a particular solve when any parent with positive nu_ij has zero
+analytical input; inactive complexes are assigned zero and do not impose a
+temperature domain check.
 
 The adapter also exposes `result.labels.acid_sink_ratio` as a typed
 `float | None`: it is the continuous ratio `x*(SiO2) / x(SiO2)` for the
@@ -78,7 +80,7 @@ when absent, although they are present in the shipped packs as noted.
 |---|---|---|---|
 | created | string | No | Pack creation date, represented as an ISO-like date such as 2026-08-11. The loader does not parse it. |
 | errata | array of strings or objects | No | Pack-specific corrections, omissions, or caveats. Retired ext-v1 through ext-v3 used strings; shipped v1.0.2, ext-v4, and D066 packs use objects with `change`, `date`, and `version`. The loader does not inspect the entries. |
-| excess_gibbs | object | Conditional | Opt-in analytical-parent excess-Gibbs terms. Accepted only with the new `IMCC-SF04-D066-EXCESS-CANDIDATE` identity; its full content participates in the canonical binding digest. Never add this section to a published pack. |
+| excess_gibbs | object | Conditional | Opt-in analytical-parent or total-species pair excess-Gibbs terms. Accepted only with the new `IMCC-SF04-D066-EXCESS-CANDIDATE` identity; its full content participates in the canonical binding digest. Never add this section to a published pack. |
 | extension_parent_datapack_version | string | No | Version of the parent/earlier extension pack used by the extension record. Present in the retired ext-v3 record; the loader treats it as metadata. |
 | extension_wave | string | No | Label for the extension work wave, for example EXT3-JANAF-native-endmember-screen. Its exact release semantics are not established by the code. |
 | feo_liquid_candidate | object | No | Records the D&G/Masson FeO(l) standard Gibbs-energy shift (`source`, `delta_g_j_mol` as a T-linear expression in J/mol, `transformation`, `uncertainty`) and how it was carried into every association row that consumes FeO. Present in both the historical opt-in candidate and promoted D066 v2 pack. The coefficients in `rows` already include the shift; the loader does not read this field. See docs/feo-liquid-candidate.md. |
@@ -117,18 +119,18 @@ section.
 
 | Key | JSON type | Meaning |
 |---|---|---|
-| basis | string | `analytical_parent` for this stage. `species_pair` is reserved for a future format extension and is not accepted. |
-| components | two strings | Distinct parent-oxide names whose analytical mole fractions multiply in the term. |
+| basis | string | `analytical_parent` or `species_pair`. |
+| components | two strings | Distinct parent-oxide names for `analytical_parent`, or distinct active total-species names for `species_pair`. |
 | W_H_J_mol | number | Enthalpy coefficient in J/mol. |
 | W_S_J_mol_K | number | Entropy coefficient in J/(mol K). Runtime evaluates `W(T) = W_H_J_mol - T_K * W_S_J_mol_K`, in J/mol. |
 | provenance | non-empty string or object | Source and provenance record for the interaction. |
 | calibration_role | non-empty string | Kind of observations or constraints used to calibrate the term. |
-| valid_composition | object | Mapping from parent-oxide names to inclusive `[minimum, maximum]` analytical mole-fraction ranges in `[0, 1]`. |
+| valid_composition | object | Mapping from parent-oxide names (`analytical_parent`) or species names (`species_pair`) to inclusive mole-fraction ranges in `[0, 1]`. |
 | T_range_K | two numbers | Positive inclusive `[minimum, maximum]` temperature range in kelvin. |
 | fit_status | non-empty string | For example, `empirical-fit`; the result notice repeats this status. |
 
-For amounts `n_i`, let `N0 = sum_i(n_i)` and `X_i = n_i / N0`. Stage 1
-defines the extensive energy as
+For `analytical_parent` terms, let `N0 = sum_i(n_i)` and `X_i = n_i / N0`.
+The extensive energy is
 
 ~~~text
 Gex = N0 * sum_terms(W(T) * X_first * X_second)
@@ -138,24 +140,45 @@ mu_i_ex = sum_terms(W(T) * (delta_i,first * X_second
 a_i = x_i* * exp(mu_i_ex / (R*T))
 ~~~
 
-All parent potentials, including the normalization contribution for
-spectator parents, come from this same `Gex`. Since each interaction depends
-only on conserved analytical inventories, its reaction contribution cancels
-exactly and does not change species amounts. `result.excess_gibbs_J` is the
-extensive `Gex` for the supplied analytical amount. Its enthalpy contribution
-is `Hex = N0 * sum_terms(W_H * X_first * X_second)`, exposed as
-`result.excess_enthalpy_J`. `parent_x_star` and `species_x` remain the ideal
-association fractions. `parent_activity` and `parent_gamma` carry the
-corrected activities. Gas routines continue to take caller-supplied
-activities, so pass the corrected result activities. Redox evaluation refuses
-a pack with nonzero excess coefficients because its internal solver still uses
-ideal activities.
+For `species_pair` terms, let `N_species` be the total amount of all free
+parents and associates and `x_s = n_s / N_species`. The same coefficient
+fields define
+
+~~~text
+Gex = N_species * sum_(s<t)(W_st(T) * x_s * x_t)
+mu_ex,s = sum_(t!=s)(W_st(T) * x_t) - gex
+gex = sum_(s<t)(W_st(T) * x_s * x_t)
+ln(x_j) - sum_i(nu_ij * ln(x_i)) - ln(K_j)
+    + (mu_ex,j - sum_i(nu_ij * mu_ex,i)) / (R*T) = 0
+a_i = x_i * exp(mu_ex,i / (R*T))
+~~~
+
+The `-gex` normalization applies to every species, including spectators and
+associates. The `analytical_parent` and `species_pair` contributions add when
+both are present. `result.excess_gibbs_J` and `result.excess_enthalpy_J` are
+the total extensive contributions in joules. For either basis,
+`Hex = N * sum(W_H * x_first * x_second)` at fixed composition. The
+`species_pair` coefficients and potentials are evaluated in J/mol; division
+by `R*T` therefore uses `R` in J/(mol K). `parent_x_star` and `species_x`
+remain species fractions, while `parent_activity` and `parent_gamma` report
+the corrected parent activities and coefficients. Gas routines continue to
+take caller-supplied activities, so pass the corrected result activities.
+
+The species-pair candidate solves the coupled mass-action and parent-balance
+system. It checks the Gibbs Hessian projected onto the nullspace of the parent
+conservation matrix and compares deterministic starts; it refuses a locally
+unstable root or starts that reach distinct roots. These checks establish
+local stability and start agreement only. No global-uniqueness or
+common-tangent/phase-split calculation is provided. Redox evaluation refuses
+a pack with nonzero excess coefficients because its internal solver still
+uses ideal activities.
 
 Use `list_excess_gibbs_interactions(pack)` to inspect a loaded candidate's
 terms. Every active interaction is also named in the `evaluate()` result
 notices. At runtime, evaluation checks each term's declared composition
-bounds against normalized analytical mole fractions (converting weight input
-to moles first) and checks its temperature bounds. If a bound is exceeded, a
+bounds against normalized analytical mole fractions or total-species
+fractions, according to its basis (converting weight input to moles first),
+and checks its temperature bounds. If a bound is exceeded, a
 non-gating calibration-range notice names the interaction and each exceeded
 bound; evaluation remains allowed. The declared validity ranges and provenance
 are hashed metadata.

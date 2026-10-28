@@ -28,6 +28,7 @@ from scipy.optimize import least_squares
 
 
 LOG10 = math.log(10.0)
+_R_J_MOL_K = 8.31446261815324
 _CONTINUATION_LOGK_STEP = 2.0 * LOG10
 _CONTINUATION_INITIAL_COMPLEX_X = 1.0e-4
 _UNTRUSTED_IDENTITY_TOKEN = "internal-analytical"
@@ -102,6 +103,18 @@ class _ImccExcessGibbsKernelRequiresAdapterError(ImccRefusal):
     """Raised when the ideal kernel entry point receives a corrected candidate."""
 
     code = "imcc_excess_gibbs_requires_loaded_adapter"
+
+
+class ImccSpeciesPairUnstableError(ImccRefusal):
+    """Raised when a species-pair candidate root is locally unstable."""
+
+    code = "imcc_species_pair_unstable"
+
+
+class ImccSpeciesPairMultipleRootsError(ImccRefusal):
+    """Raised when deterministic starts find distinct species-pair roots."""
+
+    code = "imcc_species_pair_multiple_roots"
 
 
 def _warm_start_vector(y_init: Any) -> np.ndarray:
@@ -672,6 +685,286 @@ def _active_residual(
 ) -> tuple[np.ndarray, np.ndarray, float, np.ndarray]:
     """NumPy compatibility wrapper for the shared array residual."""
     return active_residual_jacobian(y, x_target, nu, lnK, S, np)
+
+
+def _species_pair_residual_jacobian(
+    z: np.ndarray,
+    x_target: np.ndarray,
+    nu: np.ndarray,
+    lnK: np.ndarray,
+    S: np.ndarray,
+    interaction: np.ndarray,
+    temperature_K: float,
+) -> tuple[np.ndarray, np.ndarray, float, np.ndarray]:
+    """Return balances and coupled mass action for a species-pair candidate.
+
+    Premise: ``Gex/N = gex = 1/2 x.T W x`` on the normalized total-species
+    composition ``x``. Differentiation of ``N*gex`` gives
+    ``mu_ex = W*x - gex`` for every species, including spectators. The
+    reaction residual is ``ln(xj)-nu.T@ln(xparent)-ln(K)+dmu/(R*T)``.
+    Parent balances retain the kernel's existing ``D`` normalization. Every
+    energy coefficient and potential is in J/mol, so ``dmu/(R*T)`` is
+    dimensionless. With ``W=0`` this branch reduces algebraically to ideal
+    mass action, but callers omit the branch for a zero matrix to preserve the
+    established solver bit-for-bit.
+
+    The Jacobian uses ``d(mu_ex)/dx = W - 1 (W*x).T`` at an iterate; at a
+    normalized root its restriction to ``sum(dx)=0`` is the symmetric
+    constrained Gibbs Hessian.
+    """
+    n_parent = x_target.size
+    n_complex = lnK.size
+    parent_log = z[:n_parent]
+    complex_log = z[n_parent:]
+    parent_x = np.exp(parent_log)
+    complex_x = np.exp(complex_log)
+    species_x = np.concatenate((parent_x, complex_x))
+
+    wx = interaction @ species_x
+    gex = 0.5 * float(species_x @ wx)
+    mu_ex = wx - gex
+    reaction_operator = np.hstack((-nu.T, np.eye(n_complex)))
+    reaction_mu = reaction_operator @ mu_ex
+    D = 1.0 + float(np.sum((S - 1.0) * complex_x))
+
+    balance = parent_x + nu @ complex_x - x_target * D
+    mass_action = (
+        complex_log - nu.T @ parent_log - lnK
+        + reaction_mu / (_R_J_MOL_K * temperature_K)
+    )
+    residual = np.concatenate((balance, mass_action))
+
+    balance_parent_jac = np.diag(parent_x)
+    balance_complex_jac = (
+        nu - x_target[:, None] * (S - 1.0)[None, :]
+    ) * complex_x[None, :]
+    mu_jacobian = interaction - np.ones((species_x.size, 1)) * wx[None, :]
+    mu_log_jacobian = mu_jacobian * species_x[None, :]
+    reaction_jacobian = np.hstack((-nu.T, np.eye(n_complex)))
+    reaction_jacobian = reaction_jacobian + (
+        reaction_operator @ mu_log_jacobian
+    ) / (_R_J_MOL_K * temperature_K)
+    jacobian = np.vstack((
+        np.hstack((balance_parent_jac, balance_complex_jac)),
+        reaction_jacobian,
+    ))
+    return residual, np.concatenate((parent_x, complex_x)), D, jacobian
+
+
+def _solve_species_pair_active(
+    x_target: np.ndarray,
+    nu: np.ndarray,
+    lnK: np.ndarray,
+    S: np.ndarray,
+    interaction: np.ndarray,
+    temperature_K: float,
+    tol: float,
+    max_iter: int,
+    *,
+    y_init: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray, float, int, float, float, float, str, int]:
+    """Solve a species-pair candidate, compare starts, and certify stability."""
+    if max_iter <= 0:
+        raise ImccNonconvergenceError(
+            "species-pair solve did not run (max_iter <= 0)",
+            {"iterations": 0, "residual_inf": float("inf"), "residual_l2": float("inf")},
+        )
+
+    n_parent = x_target.size
+    n_complex = lnK.size
+    n_species = n_parent + n_complex
+    if interaction.shape != (n_species, n_species):
+        raise ValueError("species-pair interaction matrix has the wrong shape")
+
+    if y_init is not None:
+        warm_y = _warm_start_vector(y_init)
+        if warm_y.shape != x_target.shape or not np.all(np.isfinite(warm_y)):
+            raise ImccInvalidWarmStartError(
+                "y_init must be a finite vector matching active parents"
+            )
+        if np.any(warm_y < -200.0) or np.any(warm_y > 100.0):
+            raise ImccInvalidWarmStartError(
+                "y_init values must lie inside the solver bounds [-200, 100]"
+            )
+    else:
+        warm_y = None
+
+    if n_complex:
+        try:
+            ideal = _solve_active(
+                x_target, nu, lnK, S, tol, max_iter, y_init=warm_y
+            )
+            ideal_y, ideal_g = ideal[0], ideal[1]
+            ideal_z = np.concatenate((ideal_y, np.log(ideal_g)))
+        except (ImccNonconvergenceError, ValueError):
+            ideal_y = np.log(np.maximum(x_target, 1.0e-12))
+            ideal_z = np.concatenate((ideal_y, lnK + nu.T @ ideal_y))
+    else:
+        ideal_y = np.log(x_target)
+        ideal_z = ideal_y.copy()
+
+    seeds = [ideal_z]
+    if warm_y is not None:
+        warm_z = (
+            np.concatenate((warm_y, lnK + nu.T @ warm_y))
+            if n_complex else warm_y.copy()
+        )
+        seeds.append(warm_z)
+
+    # Move each species participating in a nonzero pair in both directions.
+    # These deterministic starts test basin agreement without introducing a
+    # random seed or claiming that finite starts prove global uniqueness.
+    interacting = np.flatnonzero(np.any(interaction != 0.0, axis=0))
+    for species_index in interacting:
+        for displacement in (-2.0, 2.0):
+            seed = ideal_z.copy()
+            seed[species_index] += displacement
+            seeds.append(seed)
+
+    unique_seeds: list[np.ndarray] = []
+    for seed in seeds:
+        if not any(np.array_equal(seed, existing) for existing in unique_seeds):
+            unique_seeds.append(seed)
+
+    lower = np.full(n_species, -200.0)
+    upper = np.full(n_species, 100.0)
+    max_nfev = max(10, max_iter * (n_species + 1))
+    roots: list[tuple[np.ndarray, np.ndarray, float, int, float, float, float]] = []
+    residual_records: list[dict[str, float | int]] = []
+    for seed_index, seed in enumerate(unique_seeds):
+        if not np.all(np.isfinite(seed)) or np.any(seed < lower) or np.any(seed > upper):
+            continue
+
+        def fun(value: np.ndarray) -> np.ndarray:
+            return _species_pair_residual_jacobian(
+                value, x_target, nu, lnK, S, interaction, temperature_K
+            )[0]
+
+        def jac(value: np.ndarray) -> np.ndarray:
+            return _species_pair_residual_jacobian(
+                value, x_target, nu, lnK, S, interaction, temperature_K
+            )[3]
+
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                solved = least_squares(
+                    fun,
+                    seed,
+                    jac=jac,
+                    bounds=(lower, upper),
+                    method="trf",
+                    ftol=tol,
+                    xtol=tol,
+                    gtol=tol,
+                    max_nfev=max_nfev,
+                )
+        except (ValueError, FloatingPointError):
+            continue
+
+        residual, species_x, D, _jacobian = _species_pair_residual_jacobian(
+            solved.x, x_target, nu, lnK, S, interaction, temperature_K
+        )
+        residual_inf = float(np.linalg.norm(residual, ord=np.inf))
+        residual_l2 = float(np.linalg.norm(residual, ord=2))
+        relative_balance = residual[:n_parent] / (D * x_target)
+        relative_inf = float(np.linalg.norm(relative_balance, ord=np.inf))
+        residual_records.append({
+            "seed": seed_index,
+            "iterations": int(solved.nfev),
+            "residual_inf": residual_inf,
+        })
+        if (
+            math.isfinite(D) and D > 0.0
+            and residual_inf <= tol and relative_inf <= tol
+            and np.all(np.isfinite(species_x))
+        ):
+            roots.append((
+                solved.x.copy(), species_x, D, int(solved.nfev),
+                residual_inf, residual_l2, float(np.linalg.norm(solved.x - ideal_z)),
+            ))
+
+    if not roots:
+        best = min(residual_records, key=lambda item: float(item["residual_inf"])) if residual_records else {}
+        raise ImccNonconvergenceError(
+            "species-pair mass-action and parent-balance solve did not converge",
+            {
+                "iterations": sum(int(item["iterations"]) for item in residual_records),
+                "residual_inf": float(best.get("residual_inf", float("inf"))),
+                "starts": residual_records,
+            },
+        )
+
+    reference_x = roots[0][1]
+    distinct = [
+        root for root in roots[1:]
+        if float(np.max(np.abs(root[1] - reference_x))) > max(100.0 * tol, 1.0e-8)
+    ]
+    if distinct:
+        raise ImccSpeciesPairMultipleRootsError(
+            "deterministic species-pair starts converged to distinct roots; "
+            "the single-liquid result is refused",
+        )
+
+    # Local stability is tested on feasible composition changes only. The
+    # active conservation matrix is C=[I, nu], so Z=[-nu; I] is an exact
+    # basis for null(C), the speciation changes at fixed analytical feed.
+    root = roots[0]
+    root_z, species_x, D, iterations, residual_inf, residual_l2, displacement = root
+    if n_complex:
+        nullspace = np.vstack((-nu, np.eye(n_complex)))
+        wx = interaction @ species_x
+        gex = 0.5 * float(species_x @ wx)
+        ones = np.ones(n_species)
+        ideal_projected = _R_J_MOL_K * temperature_K * (
+            nullspace.T @ (nullspace / species_x[:, None])
+            - np.outer(np.sum(nullspace, axis=0), np.sum(nullspace, axis=0))
+        )
+        excess_hessian = (
+            interaction
+            - np.outer(ones, wx)
+            - np.outer(wx, ones)
+            + 2.0 * gex * np.ones((n_species, n_species))
+        )
+        projected = ideal_projected + nullspace.T @ excess_hessian @ nullspace
+        # Equilibrate the reaction coordinates before the eigenvalue check.
+        # Trace species can make the ideal Hessian span many orders of
+        # magnitude; diagonal congruence preserves inertia while preventing
+        # roundoff in a well-conditioned positive direction from appearing
+        # as a negative eigenvalue next to a very large one.
+        diagonal = np.diag(projected)
+        if np.any(diagonal <= 0.0) or not np.all(np.isfinite(diagonal)):
+            min_eigenvalue = float(np.min(diagonal))
+        else:
+            scale = 1.0 / np.sqrt(diagonal)
+            equilibrated = projected * scale[:, None] * scale[None, :]
+            min_eigenvalue = float(np.linalg.eigvalsh(equilibrated)[0])
+        stability_tolerance = (
+            100.0 * np.finfo(float).eps * max(1, n_species)
+        )
+        if (
+            not math.isfinite(min_eigenvalue)
+            or min_eigenvalue < -stability_tolerance
+        ):
+            raise ImccSpeciesPairUnstableError(
+                "species-pair root fails the projected local Gibbs stability "
+                "check (minimum equilibrated eigenvalue "
+                f"{min_eigenvalue:.12g})",
+            )
+
+    y_active = root_z[:n_parent]
+    complex_x = species_x[n_parent:]
+    return (
+        y_active,
+        complex_x,
+        D,
+        iterations,
+        residual_inf,
+        residual_l2,
+        displacement,
+        "species-pair-multistart",
+        0,
+    )
 
 
 def _association_continuation_log_lambdas(
@@ -1514,6 +1807,7 @@ def _solve_imcc_sf04_with_seed(
     y_init: np.ndarray | None = None,
     relative_recovery: bool = False,
     relative_log_x_recovery: bool = False,
+    species_pair_W: np.ndarray | None = None,
 ) -> tuple[ImccResult, np.ndarray]:
     """
     Solve the IMCC-SF04 ideal-associated-solution equilibrium.
@@ -1763,86 +2057,110 @@ def _solve_imcc_sf04_with_seed(
         # Should not happen because total > 0.
         raise ImccCompositionIncompleteError("no positive parent oxides")
 
-    # Solve the reduced log-space system. A targeted continuation caller may
-    # retry an absolute-tolerance stall with parent-scaled residuals; the final
-    # certificate below still decides whether any result may leave this
-    # function.
-    solve_y_init = y_init
-    solve_tol = tol
-    relative_tolerance = False
-    if relative_log_x_recovery:
-        # log(x) is the exact no-complexing solution and keeps this bounded
-        # final retry to one start. Cap the scaled tolerance at 1e-14, the
-        # precision needed to resolve the trace-parent inventories, without
-        # relaxing a stricter caller tolerance.
-        solve_y_init = np.log(x_active)
-        solve_tol = min(float(tol), 1.0e-14)
-        relative_tolerance = True
-    try:
-        solution = _solve_active(
+    if species_pair_W is not None:
+        species_indices = np.concatenate((
+            np.flatnonzero(active_parent),
+            datapack.n_parents + np.flatnonzero(active_complex),
+        ))
+        active_interaction = species_pair_W[np.ix_(species_indices, species_indices)]
+        if active_interaction.shape != (species_indices.size, species_indices.size):
+            raise ValueError("species-pair interaction matrix has the wrong shape")
+    else:
+        active_interaction = None
+
+    if active_interaction is not None and np.any(active_interaction != 0.0):
+        solution = _solve_species_pair_active(
             x_active,
             nu_active,
             lnK_active,
             S_active,
-            solve_tol,
-            max_iter,
-            y_init=solve_y_init,
-            relative_tolerance=relative_tolerance,
+            active_interaction,
+            T,
+            float(tol),
+            int(max_iter),
+            y_init=y_init,
         )
-    except ImccNonconvergenceError as absolute_error:
-        if relative_log_x_recovery or not relative_recovery:
-            raise
-        failed_y = np.asarray(
-            absolute_error.diagnostics.get("final_y", ()), dtype=float
-        )
-        if (
-            failed_y.ndim != 1
-            or failed_y.size != x_active.size
-            or not np.all(np.isfinite(failed_y))
-        ):
-            raise
-        _failed_f, _failed_g, failed_D, _failed_J = _active_residual(
-            failed_y, x_active, nu_active, lnK_active, S_active
-        )
-        if not math.isfinite(failed_D) or failed_D <= 0.0:
-            raise
-        # The relative solver measures f_i/X_i, while the certificate measures
-        # f_i/(D*X_i). Scaling by min(D, 1) targets tol_rel without loosening
-        # the public tolerance when the current iterate has D > 1.
-        relative_solve_tol = float(tol) * min(failed_D, 1.0)
+        continuation_y = solution[0]
+        refined = False
+    else:
+        # Solve the established reduced log-space system. Keeping this block
+        # unchanged preserves ideal and analytical_parent candidate outputs.
+        solve_y_init = y_init
+        solve_tol = tol
+        relative_tolerance = False
+        if relative_log_x_recovery:
+            # log(x) is the exact no-complexing solution and keeps this bounded
+            # final retry to one start. Cap the scaled tolerance at 1e-14, the
+            # precision needed to resolve the trace-parent inventories, without
+            # relaxing a stricter caller tolerance.
+            solve_y_init = np.log(x_active)
+            solve_tol = min(float(tol), 1.0e-14)
+            relative_tolerance = True
         try:
             solution = _solve_active(
                 x_active,
                 nu_active,
                 lnK_active,
                 S_active,
-                relative_solve_tol,
+                solve_tol,
                 max_iter,
-                y_init=failed_y,
-                relative_tolerance=True,
+                y_init=solve_y_init,
+                relative_tolerance=relative_tolerance,
             )
-        except ImccNonconvergenceError:
-            raise absolute_error from None
-    if relative_log_x_recovery:
-        solution = (*solution[:7], "relative-log-x", solution[8])
-    # Keep the original accepted iterate available as a continuation start.
-    # The result below is still certified before it leaves this function.
-    continuation_y = solution[0]
-    solution, refined = _certify_active_root(
-        x_active,
-        nu_active,
-        lnK_active,
-        S_active,
-        tol,
-        max_iter,
-        solution,
-        parent_names=tuple(
-            datapack.parent_oxides[index]
-            for index in np.flatnonzero(active_parent)
-        ),
-    )
-    if relative_log_x_recovery:
-        solution = (*solution[:7], "relative-log-x", solution[8])
+        except ImccNonconvergenceError as absolute_error:
+            if relative_log_x_recovery or not relative_recovery:
+                raise
+            failed_y = np.asarray(
+                absolute_error.diagnostics.get("final_y", ()), dtype=float
+            )
+            if (
+                failed_y.ndim != 1
+                or failed_y.size != x_active.size
+                or not np.all(np.isfinite(failed_y))
+            ):
+                raise
+            _failed_f, _failed_g, failed_D, _failed_J = _active_residual(
+                failed_y, x_active, nu_active, lnK_active, S_active
+            )
+            if not math.isfinite(failed_D) or failed_D <= 0.0:
+                raise
+            # The relative solver measures f_i/X_i, while the certificate measures
+            # f_i/(D*X_i). Scaling by min(D, 1) targets tol_rel without loosening
+            # the public tolerance when the current iterate has D > 1.
+            relative_solve_tol = float(tol) * min(failed_D, 1.0)
+            try:
+                solution = _solve_active(
+                    x_active,
+                    nu_active,
+                    lnK_active,
+                    S_active,
+                    relative_solve_tol,
+                    max_iter,
+                    y_init=failed_y,
+                    relative_tolerance=True,
+                )
+            except ImccNonconvergenceError:
+                raise absolute_error from None
+        if relative_log_x_recovery:
+            solution = (*solution[:7], "relative-log-x", solution[8])
+        # Keep the original accepted iterate available as a continuation start.
+        # The result below is still certified before it leaves this function.
+        continuation_y = solution[0]
+        solution, refined = _certify_active_root(
+            x_active,
+            nu_active,
+            lnK_active,
+            S_active,
+            tol,
+            max_iter,
+            solution,
+            parent_names=tuple(
+                datapack.parent_oxides[index]
+                for index in np.flatnonzero(active_parent)
+            ),
+        )
+        if relative_log_x_recovery:
+            solution = (*solution[:7], "relative-log-x", solution[8])
     (
         y_active,
         g_active,
@@ -1854,7 +2172,9 @@ def _solve_imcc_sf04_with_seed(
         solver_path,
         continuation_stages,
     ) = solution
-    if relative_recovery or relative_log_x_recovery or refined:
+    if (
+        active_interaction is None or not np.any(active_interaction != 0.0)
+    ) and (relative_recovery or relative_log_x_recovery or refined):
         # The absolute path already records these norms. A relative solve or
         # refinement records |f/X|, so recompute |f| only for those uncommon
         # roots and keep the default passing path at the certificate's O(P*C)

@@ -42,7 +42,12 @@ from openimcc.model import (
     list_excess_gibbs_interactions,
     load_datapack,
 )
-from openimcc.kernel import ImccDataframeUnavailableError, ImccSpeciesNotFoundError
+from openimcc.kernel import (
+    ImccDataframeUnavailableError,
+    ImccSpeciesNotFoundError,
+    ImccSpeciesPairMultipleRootsError,
+    ImccSpeciesPairUnstableError,
+)
 from openimcc.redox import (
     RedoxEndpointError,
     RedoxExcessGibbsUnsupportedError,
@@ -242,6 +247,8 @@ __all__ = [
     "ImccCompositionIncompleteError",
     "ImccComponentOutsideDomainError",
     "ImccSpeciesNotFoundError",
+    "ImccSpeciesPairUnstableError",
+    "ImccSpeciesPairMultipleRootsError",
     "ImccDataframeUnavailableError",
     "ImccSPComponentRequiresExtensionError",
     "ImccFerricInputUnsupportedError",

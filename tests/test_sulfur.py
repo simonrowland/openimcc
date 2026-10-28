@@ -606,3 +606,42 @@ def test_excess_melt_disclosures_survive_sulfur_evaluation(tmp_path):
     )
     assert "Na2O–CaO (analytical_parent)" in range_notice.message
     assert "T=1673 K below lower bound 1900 K" in range_notice.message
+
+
+def test_species_pair_disclosure_survives_sulfur_evaluation(tmp_path):
+    source = Path(__file__).parents[1] / "src/openimcc/data/packs/imcc-sf04-d066-v5.json"
+    pack_data = json.loads(source.read_text(encoding="utf-8"))
+    pack_data["model_id"] = "IMCC-SF04-D066-EXCESS-CANDIDATE"
+    pack_data["excess_gibbs"] = {
+        "terms": [{
+            "basis": "species_pair",
+            "components": ["FeO", "Fe2SiO4"],
+            "W_H_J_mol": 1_000.0,
+            "W_S_J_mol_K": 0.0,
+            "provenance": {"source": "synthetic sulfur disclosure regression"},
+            "calibration_role": "sulfur notice propagation",
+            "valid_composition": {"FeO": [0.0, 1.0], "Fe2SiO4": [0.0, 1.0]},
+            "T_range_K": [1900.0, 2000.0],
+            "fit_status": "empirical-fit",
+        }],
+    }
+    candidate_path = tmp_path / "sulfur-species-pair-candidate.json"
+    candidate_path.write_text(json.dumps(pack_data), encoding="utf-8")
+    candidate = load_datapack(candidate_path)
+
+    result = evaluate_sulfur(
+        _MORB, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0,
+        melt_pack=candidate,
+    )
+
+    candidate_notice = next(
+        notice for notice in result.notices
+        if notice.code == "excess-gibbs-candidate"
+    )
+    assert "FeO–Fe2SiO4 (species_pair; empirical-fit)" in candidate_notice.message
+    range_notice = next(
+        notice for notice in result.notices
+        if notice.code == "excess-gibbs-calibration-range"
+    )
+    assert "FeO–Fe2SiO4 (species_pair)" in range_notice.message
+    assert "T=1673 K below lower bound 1900 K" in range_notice.message

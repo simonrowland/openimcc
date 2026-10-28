@@ -165,19 +165,28 @@ def _write_fixture(path: Path, points: list[dict], compositions: dict | None = N
     return path
 
 
-def _write_excess_candidate(path: Path) -> Path:
+def _write_excess_candidate(
+    path: Path,
+    *,
+    basis: str = "analytical_parent",
+    components: tuple[str, str] | None = None,
+) -> Path:
     source = Path("src/openimcc/data/packs/imcc-sf04-d066-v5.json")
     data = json.loads(source.read_text(encoding="utf-8"))
     data["model_id"] = "IMCC-SF04-D066-EXCESS-CANDIDATE"
+    components = components or (
+        ("Na2O", "CaO") if basis == "analytical_parent"
+        else ("Na2O", "Na2SiO3")
+    )
     data["excess_gibbs"] = {
         "terms": [{
-            "basis": "analytical_parent",
-            "components": ["Na2O", "CaO"],
-            "W_H_J_mol": -60000.0,
+            "basis": basis,
+            "components": list(components),
+            "W_H_J_mol": -60000.0 if basis == "analytical_parent" else 1000.0,
             "W_S_J_mol_K": 0.0,
             "provenance": "synthetic bench disclosure test",
             "calibration_role": "notice projection test",
-            "valid_composition": {"Na2O": [0.0, 1.0], "CaO": [0.0, 1.0]},
+            "valid_composition": {name: [0.0, 1.0] for name in components},
             "T_range_K": [2000.0, 2100.0],
             "fit_status": "empirical-fit",
         }]
@@ -186,7 +195,16 @@ def _write_excess_candidate(path: Path) -> Path:
     return path
 
 
-def test_bench_carries_candidate_and_calibration_notices(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "basis,components",
+    [
+        ("analytical_parent", ("Na2O", "CaO")),
+        ("species_pair", ("Na2O", "Na2SiO3")),
+    ],
+)
+def test_bench_carries_candidate_and_calibration_notices(
+    tmp_path: Path, basis: str, components: tuple[str, str]
+) -> None:
     composition = {
         "Na2O": 61.9789,
         "CaO": 56.0774,
@@ -211,13 +229,16 @@ def test_bench_carries_candidate_and_calibration_notices(tmp_path: Path) -> None
         [point],
         {"candidate_mix": {"material_class": "cmas_slag", "composition_wt_pct": composition}},
     )
-    candidate = _write_excess_candidate(tmp_path / "candidate.json")
+    candidate = _write_excess_candidate(
+        tmp_path / "candidate.json", basis=basis, components=components
+    )
 
     report = run_bench(fixture, candidate)
 
     row = report.points[0]
     assert row.status == "ok"
-    assert any("Na2O–CaO" in notice and "empirical-fit" in notice for notice in row.notices)
+    interaction = "–".join(components)
+    assert any(interaction in notice and "empirical-fit" in notice for notice in row.notices)
     assert any(
         notice.startswith("excess-gibbs-calibration-range:") and "T=1800 K" in notice
         for notice in row.notices

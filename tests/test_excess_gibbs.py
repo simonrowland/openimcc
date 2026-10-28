@@ -11,6 +11,8 @@ import pytest
 from openimcc import (
     ImccMalformedDatapackError,
     ImccRefusal,
+    ImccSpeciesPairMultipleRootsError,
+    ImccSpeciesPairUnstableError,
     ImccUnprovenDatapackError,
     RedoxExcessGibbsUnsupportedError,
     evaluate,
@@ -18,7 +20,10 @@ from openimcc import (
     list_excess_gibbs_interactions,
     load_datapack,
 )
-from openimcc.model import _analytical_parent_excess_state
+from openimcc.model import (
+    _analytical_parent_excess_state,
+    _species_pair_excess_state,
+)
 from openimcc.kernel import solve_imcc_sf04
 
 
@@ -45,6 +50,25 @@ def _term(
             components[0]: [0.0, 1.0],
             components[1]: [0.0, 1.0],
         },
+        "T_range_K": [300.0, 5000.0],
+        "fit_status": "empirical-fit",
+    }
+
+
+def _species_term(
+    *,
+    W_H_J_mol: float = 4_000.0,
+    W_S_J_mol_K: float = 0.0,
+    components: tuple[str, str] = ("FeO", "Fe2SiO4"),
+) -> dict:
+    return {
+        "basis": "species_pair",
+        "components": list(components),
+        "W_H_J_mol": W_H_J_mol,
+        "W_S_J_mol_K": W_S_J_mol_K,
+        "provenance": {"source": "synthetic species-pair test coefficient"},
+        "calibration_role": "species-pair regression test",
+        "valid_composition": {name: [0.0, 1.0] for name in components},
         "T_range_K": [300.0, 5000.0],
         "fit_status": "empirical-fit",
     }
@@ -79,6 +103,24 @@ def _same_legacy_numbers(left, right) -> None:
     assert left.excess_enthalpy_J == right.excess_enthalpy_J == 0.0
 
 
+def _same_speciation_numbers(left, right) -> None:
+    for field in (
+        "parent_mol",
+        "parent_x",
+        "parent_x_star",
+        "parent_activity",
+        "parent_gamma",
+        "complex_x",
+        "species_x",
+    ):
+        assert np.asarray(getattr(left, field)).tobytes() == np.asarray(
+            getattr(right, field)
+        ).tobytes()
+    assert left.D == right.D
+    assert left.basis == right.basis
+    assert left.convergence == right.convergence
+
+
 @pytest.mark.parametrize("terms", [[], [_term(W_H_J_mol=0.0, W_S_J_mol_K=0.0)]])
 def test_empty_or_zero_excess_terms_preserve_legacy_numeric_outputs(
     tmp_path: Path, terms: list[dict]
@@ -105,6 +147,153 @@ def test_empty_or_zero_excess_terms_preserve_legacy_numeric_outputs(
     )
 
 
+@pytest.mark.parametrize("with_analytical_parent_term", [False, True])
+def test_zero_species_pair_preserves_existing_solver_bits(
+    tmp_path: Path, with_analytical_parent_term: bool
+) -> None:
+    composition = {"FeO": 1.0, "SiO2": 1.0, "Na2O": 0.25}
+    pair_zero = _species_term(W_H_J_mol=0.0)
+    if with_analytical_parent_term:
+        analytical = _term(W_H_J_mol=-12_000.0)
+        reference, _ = _candidate(tmp_path, [analytical], "parent-only.json")
+        candidate, _ = _candidate(
+            tmp_path, [analytical, pair_zero], "parent-and-zero-pair.json"
+        )
+        expected = evaluate(
+            composition, 1800.0, reference, allow_out_of_envelope=True
+        )
+        actual = evaluate(
+            composition, 1800.0, candidate, allow_out_of_envelope=True
+        )
+        _same_speciation_numbers(expected, actual)
+        assert expected.excess_gibbs_J == actual.excess_gibbs_J
+        assert expected.excess_enthalpy_J == actual.excess_enthalpy_J
+    else:
+        candidate, _ = _candidate(tmp_path, [pair_zero])
+        expected = evaluate(composition, 1800.0, allow_out_of_envelope=True)
+        actual = evaluate(
+            composition, 1800.0, candidate, allow_out_of_envelope=True
+        )
+        _same_legacy_numbers(expected, actual)
+
+
+def test_species_pair_potentials_obey_finite_difference_euler_and_gibbs_duhem(
+    tmp_path: Path,
+) -> None:
+    candidate, _ = _candidate(
+        tmp_path,
+        [_species_term(W_H_J_mol=42_000.0, W_S_J_mol_K=5.0)],
+    )
+    species_names = candidate.parent_oxides + tuple(candidate.kernel_datapack.reactions)
+    amounts = np.linspace(0.5, 3.0, len(species_names))
+    temperature = 2200.0
+    terms = list_excess_gibbs_interactions(candidate)
+    gibbs, _enthalpy, mu = _species_pair_excess_state(
+        species_names, amounts / amounts.sum(), float(amounts.sum()),
+        temperature, terms,
+    )
+
+    step = 1.0e-5
+    for index in range(len(species_names)):
+        plus = amounts.copy()
+        minus = amounts.copy()
+        plus[index] += step
+        minus[index] -= step
+        g_plus = _species_pair_excess_state(
+            species_names, plus / plus.sum(), float(plus.sum()), temperature, terms
+        )[0]
+        g_minus = _species_pair_excess_state(
+            species_names, minus / minus.sum(), float(minus.sum()), temperature, terms
+        )[0]
+        assert mu[index] == pytest.approx(
+            (g_plus - g_minus) / (2.0 * step), rel=2.0e-8, abs=1.0e-5
+        )
+    assert float(amounts @ mu) == pytest.approx(gibbs, rel=2.0e-14)
+
+    fractions = amounts / amounts.sum()
+    direction = np.linspace(-0.01, 0.01, len(species_names))
+    direction -= direction.mean()
+    epsilon = 1.0e-5
+    plus_mu = _species_pair_excess_state(
+        species_names, fractions + epsilon * direction, 1.0, temperature, terms
+    )[2]
+    minus_mu = _species_pair_excess_state(
+        species_names, fractions - epsilon * direction, 1.0, temperature, terms
+    )[2]
+    assert float(fractions @ ((plus_mu - minus_mu) / (2.0 * epsilon))) == pytest.approx(
+        0.0, abs=2.0e-8
+    )
+
+
+def test_species_pair_binary_limit_matches_analytic_regular_solution(
+    tmp_path: Path,
+) -> None:
+    candidate, _ = _candidate(tmp_path, [_species_term(W_H_J_mol=48_000.0)])
+    species_names = candidate.parent_oxides + tuple(candidate.kernel_datapack.reactions)
+    first, second = (species_names.index(name) for name in ("FeO", "Fe2SiO4"))
+    fractions = np.zeros(len(species_names))
+    fractions[first], fractions[second] = 0.25, 0.75
+    gibbs, enthalpy, mu = _species_pair_excess_state(
+        species_names, fractions, 3.5, 1800.0,
+        list_excess_gibbs_interactions(candidate),
+    )
+    pair_g = 48_000.0 * 0.25 * 0.75
+    assert gibbs == pytest.approx(3.5 * pair_g)
+    assert enthalpy == pytest.approx(3.5 * pair_g)
+    assert mu[first] == pytest.approx(48_000.0 * 0.75**2)
+    assert mu[second] == pytest.approx(48_000.0 * 0.25**2)
+    spectator = species_names.index("SiO2")
+    assert mu[spectator] == pytest.approx(-pair_g)
+
+
+def test_species_pair_mass_action_activity_and_enthalpy_use_joules(
+    tmp_path: Path,
+) -> None:
+    candidate, _ = _candidate(tmp_path, [_species_term(W_H_J_mol=4_000.0)])
+    composition = {"FeO": 1.0, "SiO2": 1.0}
+    temperature = 1800.0
+    result = evaluate(
+        composition, temperature, candidate, allow_out_of_envelope=True
+    )
+    species_moles = sum(composition.values()) / result.D
+    gibbs, enthalpy, mu = _species_pair_excess_state(
+        result.species_names,
+        result.species_x,
+        species_moles,
+        temperature,
+        candidate.excess_gibbs_terms,
+    )
+    assert result.excess_gibbs_J == pytest.approx(gibbs)
+    assert result.excess_enthalpy_J == pytest.approx(enthalpy)
+    feo = result.parent_oxides.index("FeO")
+    assert result.parent_activity[feo] == pytest.approx(
+        result.parent_x_star[feo] * np.exp(mu[feo] / (8.31446261815324 * temperature))
+    )
+    from openimcc.diagnostics import mixing_enthalpy
+
+    enthalpy_diagnostic = mixing_enthalpy(candidate, composition, temperature)
+    assert enthalpy_diagnostic["excess_interaction_enthalpy_kJ"] == pytest.approx(
+        result.excess_enthalpy_J / 1000.0
+    )
+    assert enthalpy_diagnostic["total_enthalpy_kJ"] == pytest.approx(
+        enthalpy_diagnostic["association_enthalpy_kJ"]
+        + enthalpy_diagnostic["excess_interaction_enthalpy_kJ"]
+    )
+
+    pack = candidate.kernel_datapack
+    active_parent = result.parent_mol > 0.0
+    active_complex = ~np.any((pack.nu > 0.0) & (~active_parent[:, None]), axis=0)
+    for j in np.flatnonzero(active_complex):
+        needed = pack.nu[:, j] > 0.0
+        ln_k = np.log(10.0) * (pack.A[j] + pack.B[j] / temperature)
+        residual = (
+            np.log(result.complex_x[j])
+            - float(pack.nu[needed, j] @ np.log(result.parent_x_star[needed]))
+            - ln_k
+            + (mu[len(result.parent_oxides) + j] - float(pack.nu[:, j] @ mu[:len(result.parent_oxides)]))
+            / (8.31446261815324 * temperature)
+        )
+        assert residual == pytest.approx(0.0, abs=2.0e-10)
 def test_public_kernel_refuses_excess_candidate_and_loaded_adapter_applies_it(
     tmp_path: Path,
 ) -> None:
@@ -124,6 +313,33 @@ def test_public_kernel_refuses_excess_candidate_and_loaded_adapter_applies_it(
         "Na2O–CaO" in notice and "empirical-fit" in notice
         for notice in corrected.labels.notices
     )
+
+    species_pair_candidate, _ = _candidate(
+        tmp_path, [_species_term()], "species-pair-kernel-refusal.json"
+    )
+    pair_parent_mol = [
+        1.0 if name in {"FeO", "SiO2"} else 0.0
+        for name in species_pair_candidate.parent_oxides
+    ]
+    with pytest.raises(ImccRefusal) as pair_error:
+        solve_imcc_sf04(
+            pair_parent_mol, 1800.0, species_pair_candidate.kernel_datapack
+        )
+    assert pair_error.value.code == "imcc_excess_gibbs_requires_loaded_adapter"
+    with pytest.raises(ImccUnprovenDatapackError, match="loaded wrapper"):
+        evaluate(
+            {"FeO": 1.0, "SiO2": 1.0},
+            1800.0,
+            species_pair_candidate.kernel_datapack,
+            allow_out_of_envelope=True,
+        )
+    pair_result = evaluate(
+        {"FeO": 1.0, "SiO2": 1.0},
+        1800.0,
+        species_pair_candidate,
+        allow_out_of_envelope=True,
+    )
+    assert pair_result.convergence.solver_path == "species-pair-multistart"
 
 
 def test_excess_parent_potentials_are_gibbs_derivatives_and_obey_euler_and_gd(
@@ -371,13 +587,18 @@ def test_redox_refuses_active_excess_candidate(tmp_path: Path) -> None:
             melt_pack_path=candidate_path,
         )
     assert exc.value.code == "redox_excess_gibbs_unsupported"
-
-
-def test_species_pair_basis_is_a_reserved_extension_point(tmp_path: Path) -> None:
-    species_pair = _term()
-    species_pair["basis"] = "species_pair"
-    with pytest.raises(ImccMalformedDatapackError, match="reserved"):
-        _candidate(tmp_path, [species_pair])
+    _pair_pack, pair_path = _candidate(
+        tmp_path, [_species_term()], "redox-species-pair-candidate.json"
+    )
+    with pytest.raises(RedoxExcessGibbsUnsupportedError) as pair_exc:
+        evaluate_redox(
+            {"Fe": 1.0, "O": 1.0},
+            2200.0,
+            "imposed",
+            0.0,
+            melt_pack_path=pair_path,
+        )
+    assert pair_exc.value.code == "redox_excess_gibbs_unsupported"
 
 
 @pytest.mark.parametrize("terms", [[], [_term()]])
@@ -406,3 +627,68 @@ def test_candidate_does_not_inherit_measured_bias_notices(
         f"not been evaluated for this {EXCESS_MODEL_ID} pack; see "
         "https://github.com/simonrowland/openimcc"
     ) in result.labels.notices
+
+
+def test_species_pair_identity_hash_and_disclosure(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    low_term = _species_term(W_H_J_mol=4_000.0)
+    low_term["valid_composition"] = {"FeO": [0.0, 0.0], "Fe2SiO4": [0.0, 0.0]}
+    low, low_path = _candidate(tmp_path, [low_term], "pair-low.json")
+    high, _ = _candidate(tmp_path, [_species_term(W_H_J_mol=4_100.0)], "pair-high.json")
+    assert low.binding_digest != high.binding_digest
+    result = evaluate(
+        {"FeO": 1.0, "SiO2": 1.0}, 1800.0, low, allow_out_of_envelope=True
+    )
+    notice = next(
+        item for item in result.labels.notices
+        if item.startswith("excess-gibbs-candidate:")
+    )
+    assert "FeO–Fe2SiO4 (species_pair; empirical-fit)" in notice
+    assert list_excess_gibbs_interactions(low)[0].basis == "species_pair"
+    range_notice = next(
+        item for item in result.labels.notices
+        if item.startswith("excess-gibbs-calibration-range:")
+    )
+    assert "X(FeO)=" in range_notice and "above upper bound 0" in range_notice
+
+    from openimcc.cli import _result_payload, main
+
+    payload = _result_payload(result, has_active_excess_terms=True)
+    assert payload["excess_gibbs_J"] == result.excess_gibbs_J
+    assert any(
+        "FeO–Fe2SiO4 (species_pair; empirical-fit)" in item
+        for item in payload["labels"]["notices"]
+    )
+    assert main([
+        "solve", "--pack", str(low_path), "--temperature", "1800",
+        "--oxide", "FeO=1", "--oxide", "SiO2=1",
+        "--allow-out-of-envelope", "--json",
+    ]) == 0
+    cli_payload = json.loads(capsys.readouterr().out)
+    assert cli_payload["status"] == "ok"
+    assert any(
+        "FeO–Fe2SiO4 (species_pair; empirical-fit)" in item
+        for item in cli_payload["labels"]["notices"]
+    )
+
+
+def test_species_pair_refuses_unstable_and_seed_dependent_roots(tmp_path: Path) -> None:
+    composition = {"FeO": 1.0, "SiO2": 1.0}
+    unstable, _ = _candidate(
+        tmp_path,
+        [_species_term(W_H_J_mol=1_600_000.0)],
+        "unstable.json",
+    )
+    with pytest.raises(ImccSpeciesPairUnstableError) as error:
+        evaluate(composition, 1800.0, unstable, allow_out_of_envelope=True)
+    assert error.value.code == "imcc_species_pair_unstable"
+
+    multiple, _ = _candidate(
+        tmp_path,
+        [_species_term(W_H_J_mol=200_000.0)],
+        "multiple.json",
+    )
+    with pytest.raises(ImccSpeciesPairMultipleRootsError) as error:
+        evaluate(composition, 1800.0, multiple, allow_out_of_envelope=True)
+    assert error.value.code == "imcc_species_pair_multiple_roots"

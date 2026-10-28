@@ -21,22 +21,29 @@ from openimcc.diagnostics import (
 def _write_excess_candidate(
     tmp_path,
     *,
+    basis="analytical_parent",
+    components=None,
+    W_H_J_mol=-60000.0,
     valid_composition=None,
     T_range_K=(300.0, 5000.0),
 ):
     source = Path(__file__).parents[1] / "src/openimcc/data/packs/imcc-sf04-d066-v5.json"
     data = json.loads(source.read_text(encoding="utf-8"))
     data["model_id"] = "IMCC-SF04-D066-EXCESS-CANDIDATE"
+    components = components or (
+        ("Na2O", "CaO") if basis == "analytical_parent"
+        else ("CaO", "CaSiO3")
+    )
     data["excess_gibbs"] = {
         "terms": [{
-            "basis": "analytical_parent",
-            "components": ["Na2O", "CaO"],
-            "W_H_J_mol": -60000.0,
+            "basis": basis,
+            "components": list(components),
+            "W_H_J_mol": W_H_J_mol,
             "W_S_J_mol_K": 0.0,
             "provenance": "synthetic diagnostic test coefficient",
             "calibration_role": "diagnostic regression",
             "valid_composition": valid_composition or {
-                "Na2O": [0.0, 1.0], "CaO": [0.0, 1.0],
+                name: [0.0, 1.0] for name in components
             },
             "T_range_K": list(T_range_K),
             "fit_status": "empirical-fit",
@@ -482,6 +489,88 @@ def test_crystal_outputs_carry_candidate_and_calibration_notices(tmp_path):
     assert "evaluation_notices" in csv_rows[0]
     exported = json.loads(next(row for row in csv_rows if row["phase"] == "forsterite")["evaluation_notices"])
     assert any(notice.startswith("excess-gibbs-calibration-range:") for notice in exported)
+
+
+def test_species_pair_notices_reach_crystal_dissolution_and_cli_outputs(
+    tmp_path, monkeypatch
+):
+    from openimcc.diagnostics import (
+        crystal_closure, liquidus_bracket, run_mixing_enthalpy, saturation_indices,
+    )
+    from openimcc.model import load_datapack
+
+    candidate_path = _write_excess_candidate(
+        tmp_path,
+        basis="species_pair",
+        components=("CaO", "CaSiO3"),
+        W_H_J_mol=1_000.0,
+        T_range_K=(2000.0, 2100.0),
+    )
+    candidate = load_datapack(candidate_path)
+    composition = {"CaO": 1.0, "MgO": 1.0, "SiO2": 2.0}
+    pair_notice = "CaO–CaSiO3 (species_pair; empirical-fit)"
+
+    saturation = saturation_indices(composition, 1800.0, candidate)
+    forsterite = next(row for row in saturation if row.phase == "forsterite")
+    assert any(pair_notice in notice for notice in forsterite.evaluation_notices)
+    bracket = liquidus_bracket(composition, 1323.0, 1800.0, candidate)
+    assert any(pair_notice in notice for notice in bracket.evaluation_notices)
+    closure_rows, _details = crystal_closure(candidate)
+    assert any(
+        any(pair_notice in notice for notice in row["evaluation_notices"])
+        for row in closure_rows
+    )
+
+    crystal_output = tmp_path / "species-pair-crystal"
+    assert main([
+        "diagnose", "crystal-closure", "--pack", str(candidate_path),
+        "--out", str(crystal_output),
+    ]) == 0
+    with (crystal_output / "crystal-closure.csv").open(
+        encoding="utf-8", newline=""
+    ) as stream:
+        crystal_rows = list(csv.DictReader(stream))
+    crystal_notices = json.loads(
+        next(row for row in crystal_rows if row["phase"] == "forsterite")[
+            "evaluation_notices"
+        ]
+    )
+    assert any(pair_notice in notice for notice in crystal_notices)
+
+    dataset = {
+        "id": "species-pair-dissolution",
+        "type": "oxide-dissolution-partial-enthalpy",
+        "composition_mol_fraction": composition,
+        "temperature_K": 1800.0,
+        "fusion_nodes_kJ_mol": {
+            oxide: [[1700.0, 0.0], [1900.0, 0.0]] for oxide in composition
+        },
+        "observations": [{
+            "id": "CaO",
+            "measured_solution_kJ_mol_oxide": 0.0,
+            "uncertainty_kJ_mol_oxide": 1.0,
+        }],
+    }
+    monkeypatch.setattr(
+        diagnostics, "load_mixing_enthalpy_dataset", lambda: {"datasets": [dataset]}
+    )
+    _pack, rows = run_mixing_enthalpy(candidate_path)
+    assert any(pair_notice in notice for notice in rows[0]["notices"])
+    assert any(
+        notice.startswith("excess-gibbs-calibration-range:")
+        for notice in rows[0]["notices"]
+    )
+    dissolution_output = tmp_path / "species-pair-dissolution"
+    assert main([
+        "diagnose", "mixing-enthalpy", "--pack", str(candidate_path),
+        "--out", str(dissolution_output),
+    ]) == 0
+    with (dissolution_output / "mixing-enthalpy.csv").open(
+        encoding="utf-8", newline=""
+    ) as stream:
+        dissolution_rows = list(csv.DictReader(stream))
+    dissolution_notices = json.loads(dissolution_rows[0]["notices"])
+    assert any(pair_notice in notice for notice in dissolution_notices)
 
 
 def test_mixing_enthalpy_reaction_enthalpy_basis_and_scaling():

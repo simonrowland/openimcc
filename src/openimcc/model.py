@@ -668,6 +668,7 @@ class EngineBindingIdentity:
 def _parse_excess_gibbs_terms(
     section: Any,
     parent_oxides: Sequence[str],
+    species_names: Sequence[str],
 ) -> tuple[ExcessGibbsTerm, ...]:
     if not isinstance(section, dict):
         raise ImccMalformedDatapackError("excess_gibbs must be an object")
@@ -681,24 +682,24 @@ def _parse_excess_gibbs_terms(
         if not isinstance(raw, dict):
             raise ImccMalformedDatapackError(f"{label} must be an object")
         basis = raw.get("basis")
-        if basis == "species_pair":
+        if basis not in {"analytical_parent", "species_pair"}:
             raise ImccMalformedDatapackError(
-                f"{label} basis 'species_pair' is reserved for a later format extension"
+                f"{label} basis must be 'analytical_parent' or 'species_pair'"
             )
-        if basis != "analytical_parent":
-            raise ImccMalformedDatapackError(
-                f"{label} basis must be 'analytical_parent'"
-            )
+        allowed_components = (
+            parent_oxides if basis == "analytical_parent" else species_names
+        )
         components = raw.get("components")
         if (
             not isinstance(components, list)
             or len(components) != 2
             or not all(isinstance(name, str) for name in components)
             or components[0] == components[1]
-            or any(name not in parent_oxides for name in components)
+            or any(name not in allowed_components for name in components)
         ):
             raise ImccMalformedDatapackError(
-                f"{label} components must name two distinct parent oxides"
+                f"{label} components must name two distinct "
+                f"{'parent oxides' if basis == 'analytical_parent' else 'species'}"
             )
 
         coefficients: list[float] = []
@@ -739,13 +740,13 @@ def _parse_excess_gibbs_terms(
         raw_composition = raw.get("valid_composition")
         if not isinstance(raw_composition, dict) or not raw_composition:
             raise ImccMalformedDatapackError(
-                f"{label} valid_composition must map parent oxides to ranges"
+                f"{label} valid_composition must map components to ranges"
             )
         composition_ranges: dict[str, tuple[float, float]] = {}
         for name, bounds in raw_composition.items():
-            if name not in parent_oxides or not isinstance(bounds, list) or len(bounds) != 2:
+            if name not in allowed_components or not isinstance(bounds, list) or len(bounds) != 2:
                 raise ImccMalformedDatapackError(
-                    f"{label} valid_composition ranges must name parent oxides"
+                    f"{label} valid_composition ranges must name valid components"
                 )
             if not all(is_declared_real_scalar(bound) for bound in bounds):
                 raise ImccMalformedDatapackError(
@@ -825,6 +826,63 @@ def _analytical_parent_excess_state(
     return (
         total * math.fsum(g_terms),
         total * math.fsum(h_terms),
+        mu_excess,
+    )
+
+
+def _species_pair_interaction_matrix(
+    species_names: Sequence[str],
+    temperature_K: float,
+    terms: Sequence[ExcessGibbsTerm],
+) -> np.ndarray | None:
+    """Build the symmetric total-species W matrix in J/mol for the solver."""
+    species_index = {name: index for index, name in enumerate(species_names)}
+    interaction = np.zeros((len(species_names), len(species_names)), dtype=float)
+    for term in terms:
+        if term.basis != "species_pair" or not term.active:
+            continue
+        first, second = (species_index[name] for name in term.components)
+        value = term.W_J_mol(temperature_K)
+        interaction[first, second] += value
+        interaction[second, first] += value
+    return interaction if np.any(interaction != 0.0) else None
+
+
+def _species_pair_excess_state(
+    species_names: Sequence[str],
+    species_x: Sequence[float],
+    total_species_moles: float,
+    temperature_K: float,
+    terms: Sequence[ExcessGibbsTerm],
+) -> tuple[float, float, np.ndarray]:
+    """Return extensive Gex, Hex, and all total-species excess potentials.
+
+    For each sparse pair, ``Gex/N = W*x_s*x_t`` and differentiating this
+    homogeneous expression gives ``mu_ex,u = sum_v(W_uv*x_v) - gex``.
+    The common ``-gex`` applies to every species, including spectators and
+    associates. ``W_H - T*W_S`` and every potential are in J/mol, so the
+    extensive results are joules. The enthalpy derivative holds composition
+    fixed and is ``Hex/N = W_H*x_s*x_t``.
+    """
+    fractions = np.asarray(species_x, dtype=float)
+    species_index = {name: index for index, name in enumerate(species_names)}
+    g_terms: list[float] = []
+    h_terms: list[float] = []
+    mu_excess = np.zeros(len(species_names), dtype=float)
+    for term in terms:
+        if term.basis != "species_pair":
+            continue
+        first, second = (species_index[name] for name in term.components)
+        product = float(fractions[first] * fractions[second])
+        interaction_w = term.W_J_mol(temperature_K)
+        g_terms.append(interaction_w * product)
+        h_terms.append(term.W_H_J_mol * product)
+        mu_excess -= interaction_w * product
+        mu_excess[first] += interaction_w * float(fractions[second])
+        mu_excess[second] += interaction_w * float(fractions[first])
+    return (
+        float(total_species_moles) * math.fsum(g_terms),
+        float(total_species_moles) * math.fsum(h_terms),
         mu_excess,
     )
 
@@ -1221,11 +1279,6 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         )
 
     parents = base_parents + extension_parents
-    excess_gibbs_terms = (
-        _parse_excess_gibbs_terms(data["excess_gibbs"], parents)
-        if has_excess_gibbs
-        else ()
-    )
     all_rows = rows + extension_rows
 
     reactions: list[str] = []
@@ -1437,6 +1490,13 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             published_manifest_sha256=published_manifest_sha256,
             binding_digest=binding_digest,
         )
+
+    species_names = parents + tuple(kernel_datapack.reactions)
+    excess_gibbs_terms = (
+        _parse_excess_gibbs_terms(data["excess_gibbs"], parents, species_names)
+        if has_excess_gibbs
+        else ()
+    )
 
     return ImccLoadedDatapack(
         kernel_datapack=kernel_datapack,
@@ -1731,6 +1791,18 @@ def evaluate(
             f"X_Me2O={x_me2o:.12g} exceeds validated bound 0.5"
         )
 
+    species_pair_W = None
+    try:
+        species_temperature = float(T_K)
+    except (OverflowError, TypeError, ValueError):
+        species_temperature = float("nan")
+    if math.isfinite(species_temperature):
+        species_pair_W = _species_pair_interaction_matrix(
+            tuple(parent_oxides) + tuple(kernel_pack.reactions),
+            species_temperature,
+            excess_gibbs_terms,
+        )
+
     try:
         result, _continuation_y = _solve_imcc_sf04_with_seed(
             vector,
@@ -1742,6 +1814,7 @@ def evaluate(
             tol=tol,
             max_iter=max_iter,
             y_init=y_init,
+            species_pair_W=species_pair_W,
         )
     except ImccNonconvergenceError as cold_error:
         positive = np.flatnonzero(vector > 0.0)
@@ -1798,6 +1871,7 @@ def evaluate(
                         tol=tol,
                         max_iter=max_iter,
                         y_init=y_stage,
+                        species_pair_W=species_pair_W,
                     )
                 except ImccNonconvergenceError as stage_error:
                     record_recovery_failure("trace", stage_number, stage_error)
@@ -1855,6 +1929,7 @@ def evaluate(
                         tol=tol,
                         max_iter=max_iter,
                         y_init=last_success_y,
+                        species_pair_W=species_pair_W,
                     )
                 except ImccNonconvergenceError as bridge_error:
                     record_recovery_failure("trace_bridge", "anchor", bridge_error)
@@ -1875,6 +1950,7 @@ def evaluate(
                                 tol=tol,
                                 max_iter=max_iter,
                                 y_init=bridge_y,
+                                species_pair_W=species_pair_W,
                             )
                         except ImccNonconvergenceError as retry_error:
                             record_recovery_failure(
@@ -1920,6 +1996,7 @@ def evaluate(
                             tol=tol,
                             max_iter=max_iter,
                             y_init=y_stage,
+                            species_pair_W=species_pair_W,
                         )
                     except ImccNonconvergenceError as silica_error:
                         record_recovery_failure(
@@ -2003,6 +2080,7 @@ def evaluate(
                             max_iter=max_iter,
                             y_init=warm_y,
                             relative_recovery=True,
+                            species_pair_W=species_pair_W,
                         )
                     except ImccRefusal as temperature_error:
                         if isinstance(temperature_error, ImccNonconvergenceError):
@@ -2039,6 +2117,7 @@ def evaluate(
                     tol=tol,
                     max_iter=max_iter,
                     relative_log_x_recovery=True,
+                    species_pair_W=species_pair_W,
                 )
             except ImccRefusal as relative_error:
                 if isinstance(relative_error, ImccNonconvergenceError):
@@ -2055,19 +2134,42 @@ def evaluate(
 
     active_excess_terms = tuple(term for term in excess_gibbs_terms if term.active)
     if excess_gibbs_terms:
+        analytical_parent_terms = tuple(
+            term for term in excess_gibbs_terms
+            if term.basis == "analytical_parent"
+        )
+        species_pair_terms = tuple(
+            term for term in excess_gibbs_terms if term.basis == "species_pair"
+        )
         excess_gibbs_J, excess_enthalpy_J, parent_mu_excess = (
             _analytical_parent_excess_state(
                 parent_oxides,
                 vector,
                 T_K,
-                excess_gibbs_terms,
+                analytical_parent_terms,
             )
         )
-        # The correction is a function of conserved analytical inventories.
-        # For each complex j, μex_j = Σ_i ν_ij μex_i, so its reaction
-        # correction μex_j - Σ_i ν_ij μex_i is exactly zero. The ideal
-        # species solve and its mass-amount certificate therefore remain
-        # unchanged; only parent activities and the extensive liquid G move.
+        if species_pair_terms:
+            species_total_moles = float(vector.sum()) / float(result.D)
+            pair_gibbs, pair_enthalpy, species_mu_excess = (
+                _species_pair_excess_state(
+                    result.species_names,
+                    result.species_x,
+                    species_total_moles,
+                    T_K,
+                    species_pair_terms,
+                )
+            )
+            excess_gibbs_J += pair_gibbs
+            excess_enthalpy_J += pair_enthalpy
+            parent_mu_excess = parent_mu_excess + species_mu_excess[
+                :len(parent_oxides)
+            ]
+
+        # The analytical_parent correction depends only on conserved parent
+        # inventories, so its reaction potential cancels. The species_pair
+        # correction was already included in mass action and contributes its
+        # parent partial potentials here, with activity kept distinct from x*.
         if np.any(parent_mu_excess[vector > 0.0] != 0.0):
             with np.errstate(over="ignore", under="ignore", invalid="ignore"):
                 parent_activity = result.parent_x_star * np.exp(
@@ -2207,9 +2309,14 @@ def evaluate(
         for term in active_excess_terms:
             exceeded_bounds = []
             for component, (lower, upper) in term.valid_composition.items():
-                fraction = float(
-                    vector[parent_oxides.index(component)] / analytical_total
-                )
+                if term.basis == "analytical_parent":
+                    fraction = float(
+                        vector[parent_oxides.index(component)] / analytical_total
+                    )
+                else:
+                    fraction = float(
+                        result.species_x[result.species_names.index(component)]
+                    )
                 if fraction < lower:
                     exceeded_bounds.append(
                         f"X({component})={fraction:.12g} below lower bound {lower:.12g}"

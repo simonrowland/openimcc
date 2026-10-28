@@ -2017,7 +2017,7 @@ def evaluate_redox(
     if any(term.active for term in loaded.excess_gibbs_terms):
         raise RedoxExcessGibbsUnsupportedError(
             "redox evaluation does not support melt packs with active "
-            "analytical-parent excess Gibbs terms"
+            "excess-Gibbs terms"
         )
     base_datapack = loaded.kernel_datapack
     if redox_pack_path is None:
