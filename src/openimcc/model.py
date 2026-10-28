@@ -1533,6 +1533,15 @@ def evaluate(
     if pack is None:
         pack = load_datapack()
 
+    if (
+        isinstance(pack, ImccDatapack)
+        and pack.model_id == _EXCESS_GIBBS_MODEL_ID
+    ):
+        raise ImccUnprovenDatapackError(
+            "a bare excess-Gibbs candidate kernel omits interaction metadata; "
+            "pass the loaded wrapper returned by load_datapack()"
+        )
+
     # Resolve the kernel datapack and metadata.
     if isinstance(pack, ImccLoadedDatapack):
         kernel_pack = pack.kernel_datapack
@@ -2174,6 +2183,37 @@ def evaluate(
             "excess-gibbs-candidate: empirical interaction terms are active: "
             f"{interactions}"
         )
+        analytical_total = float(vector.sum())
+        for term in active_excess_terms:
+            exceeded_bounds = []
+            for component, (lower, upper) in term.valid_composition.items():
+                fraction = float(
+                    vector[parent_oxides.index(component)] / analytical_total
+                )
+                if fraction < lower:
+                    exceeded_bounds.append(
+                        f"X({component})={fraction:.12g} below lower bound {lower:.12g}"
+                    )
+                elif fraction > upper:
+                    exceeded_bounds.append(
+                        f"X({component})={fraction:.12g} above upper bound {upper:.12g}"
+                    )
+            lower_temperature, upper_temperature = term.T_range_K
+            if T_K < lower_temperature:
+                exceeded_bounds.append(
+                    f"T={T_K:.12g} K below lower bound {lower_temperature:.12g} K"
+                )
+            elif T_K > upper_temperature:
+                exceeded_bounds.append(
+                    f"T={T_K:.12g} K above upper bound {upper_temperature:.12g} K"
+                )
+            if exceeded_bounds:
+                notices.append(
+                    "excess-gibbs-calibration-range: "
+                    f"{'–'.join(term.components)} ({term.basis}) evaluated outside "
+                    "its declared calibration range: "
+                    + "; ".join(exceeded_bounds)
+                )
     if any(
         vector[parent_oxides.index(name)] > 0.0
         for name in ("Na2O", "K2O")

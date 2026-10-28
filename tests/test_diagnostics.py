@@ -458,6 +458,95 @@ def test_mixing_enthalpy_pure_endpoint_and_additive_standard_cancellation():
     assert scaled["excess_enthalpy_kJ"] == pytest.approx(5.0 * baseline["excess_enthalpy_kJ"], rel=2e-10)
 
 
+def test_excess_interaction_enthalpy_in_mixing_endpoints_and_dissolution(
+    tmp_path, monkeypatch
+):
+    from pathlib import Path
+    from openimcc.model import load_datapack
+
+    source = Path(__file__).parents[1] / "src/openimcc/data/packs/imcc-sf04-d066-v5.json"
+    data = json.loads(source.read_text(encoding="utf-8"))
+    data["model_id"] = "IMCC-SF04-D066-EXCESS-CANDIDATE"
+    data["excess_gibbs"] = {
+        "terms": [{
+            "basis": "analytical_parent",
+            "components": ["Na2O", "CaO"],
+            "W_H_J_mol": -60000.0,
+            "W_S_J_mol_K": 0.0,
+            "provenance": "synthetic diagnostic test coefficient",
+            "calibration_role": "diagnostic regression",
+            "valid_composition": {"Na2O": [0.0, 1.0], "CaO": [0.0, 1.0]},
+            "T_range_K": [300.0, 5000.0],
+            "fit_status": "empirical-fit",
+        }]
+    }
+    candidate_path = tmp_path / "excess-candidate.json"
+    candidate_path.write_text(json.dumps(data), encoding="utf-8")
+    candidate = load_datapack(candidate_path)
+    ideal = load_datapack()
+
+    composition = {"Na2O": 1.0, "CaO": 1.0, "SiO2": 2.0}
+    endmembers = {
+        "Na2SiO3": {"Na2O": 1.0, "SiO2": 1.0},
+        "CaSiO3": {"CaO": 1.0, "SiO2": 1.0},
+    }
+    fractions = {"Na2SiO3": 0.5, "CaSiO3": 0.5}
+    ideal_mix = mixing_enthalpy(
+        ideal, composition, 1800.0,
+        endmembers=endmembers, endmember_fractions=fractions,
+    )
+    candidate_mix = mixing_enthalpy(
+        candidate, composition, 1800.0,
+        endmembers=endmembers, endmember_fractions=fractions,
+    )
+    assert candidate_mix["excess_enthalpy_kJ"] - ideal_mix["excess_enthalpy_kJ"] == pytest.approx(-15.0)
+    assert candidate_mix["total_enthalpy_kJ"] - candidate_mix["association_enthalpy_kJ"] == pytest.approx(-15.0)
+    for endpoint in candidate_mix["endmember_endpoints"].values():
+        assert endpoint["excess_interaction_enthalpy_kJ_per_formula"] == 0.0
+        assert endpoint["total_enthalpy_kJ_per_formula"] == pytest.approx(
+            endpoint["association_enthalpy_kJ_per_formula"]
+        )
+
+    scaled = mixing_enthalpy(
+        candidate,
+        {oxide: 2.0 * amount for oxide, amount in composition.items()},
+        1800.0,
+        endmembers=endmembers,
+        endmember_fractions=fractions,
+    )
+    assert scaled["excess_enthalpy_kJ"] == pytest.approx(
+        2.0 * candidate_mix["excess_enthalpy_kJ"]
+    )
+    assert scaled["excess_interaction_enthalpy_kJ"] == pytest.approx(
+        2.0 * candidate_mix["excess_interaction_enthalpy_kJ"]
+    )
+
+    dataset = {
+        "id": "synthetic-dissolution",
+        "type": "oxide-dissolution-partial-enthalpy",
+        "composition_mol_fraction": composition,
+        "temperature_K": 1800.0,
+        "fusion_nodes_kJ_mol": {
+            oxide: [[1700.0, 0.0], [1900.0, 0.0]] for oxide in composition
+        },
+        "observations": [{
+            "id": "CaO",
+            "measured_solution_kJ_mol_oxide": 0.0,
+            "uncertainty_kJ_mol_oxide": 1.0,
+        }],
+    }
+    monkeypatch.setattr(
+        diagnostics, "load_mixing_enthalpy_dataset", lambda: {"datasets": [dataset]}
+    )
+    _pack, dissolution_rows = run_mixing_enthalpy(candidate_path)
+    dissolution = dissolution_rows[0]
+    assert dissolution["model_mixing_partial_kJ_mol"] == pytest.approx(
+        dissolution["association_mixing_partial_kJ_mol"]
+        + dissolution["excess_interaction_mixing_partial_kJ_mol"]
+    )
+    assert dissolution["excess_interaction_mixing_partial_kJ_mol"] != 0.0
+
+
 def test_mixing_enthalpy_dissolution_conversion_and_pinned_residuals():
     dataset = load_mixing_enthalpy_dataset()["datasets"][1]
     assert _fusion_enthalpy(dataset, "CaO", 1723.15) == pytest.approx(77.754)

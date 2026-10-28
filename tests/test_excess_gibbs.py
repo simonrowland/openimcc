@@ -10,6 +10,7 @@ import pytest
 
 from openimcc import (
     ImccMalformedDatapackError,
+    ImccUnprovenDatapackError,
     RedoxExcessGibbsUnsupportedError,
     evaluate,
     evaluate_redox,
@@ -81,7 +82,13 @@ def test_empty_or_zero_excess_terms_preserve_legacy_numeric_outputs(
     tmp_path: Path, terms: list[dict]
 ) -> None:
     candidate, _path = _candidate(tmp_path, terms)
-    composition = {"SiO2": 6.0, "MgO": 2.0, "Al2O3": 0.5}
+    composition = {
+        "Na2O": 1.0,
+        "CaO": 1.0,
+        "SiO2": 6.0,
+        "MgO": 2.0,
+        "Al2O3": 0.5,
+    }
     legacy = evaluate(composition, 1800.0, allow_out_of_envelope=True)
     result = evaluate(
         composition,
@@ -213,6 +220,13 @@ def test_binary_interaction_limits_and_candidate_evaluation_keep_speciation(
         candidate,
         allow_out_of_envelope=True,
     )
+    with pytest.raises(ImccUnprovenDatapackError, match="loaded wrapper"):
+        evaluate(
+            composition,
+            temperature,
+            candidate.kernel_datapack,
+            allow_out_of_envelope=True,
+        )
     assert corrected.parent_x_star.tobytes() == ideal.parent_x_star.tobytes()
     assert corrected.species_x.tobytes() == ideal.species_x.tobytes()
     assert corrected.parent_activity[parents.index("Na2O")] != ideal.parent_activity[
@@ -227,6 +241,42 @@ def test_binary_interaction_limits_and_candidate_evaluation_keep_speciation(
     )
     assert corrected.excess_gibbs_J == pytest.approx(expected_g)
     assert corrected.excess_enthalpy_J == pytest.approx(expected_h)
+
+
+def test_calibration_range_notice_uses_wt_converted_mole_fractions(
+    tmp_path: Path,
+) -> None:
+    term = _term()
+    term["valid_composition"] = {
+        "Na2O": [0.0, 0.1],
+        "CaO": [0.2, 0.5],
+    }
+    term["T_range_K"] = [1900.0, 2000.0]
+    candidate, _path = _candidate(tmp_path, [term])
+    weight_composition = {
+        "Na2O": 61.9789,
+        "CaO": 56.0774,
+        "SiO2": 4.0 * 60.0843,
+        "MgO": 40.3044,
+    }
+    result = evaluate(
+        weight_composition,
+        1800.0,
+        candidate,
+        basis_type="wt",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    notice = next(
+        item
+        for item in result.labels.notices
+        if item.startswith("excess-gibbs-calibration-range:")
+    )
+    assert "Na2O–CaO (analytical_parent)" in notice
+    assert "X(Na2O)=" in notice and "above upper bound 0.1" in notice
+    assert "X(CaO)=" in notice and "below lower bound 0.2" in notice
+    assert "T=1800 K below lower bound 1900 K" in notice
+    assert result.excess_enthalpy_J != 0.0
 
 
 def test_candidate_hash_disclosure_accessor_gas_and_cli(tmp_path: Path) -> None:
@@ -265,7 +315,10 @@ def test_candidate_hash_disclosure_accessor_gas_and_cli(tmp_path: Path) -> None:
         gas_species=("Na",),
     )
     assert gas_result["Na"] > 0.0
-    payload = _result_payload(result)
+    payload = _result_payload(
+        result,
+        has_active_excess_terms=any(term.active for term in low.excess_gibbs_terms),
+    )
     assert payload["excess_gibbs_J"] == result.excess_gibbs_J
     assert payload["excess_enthalpy_J"] == result.excess_enthalpy_J
 

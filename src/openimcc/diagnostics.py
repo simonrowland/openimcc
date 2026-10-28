@@ -235,13 +235,15 @@ def load_mixing_enthalpy_dataset() -> dict[str, Any]:
 def _association_enthalpy(
     pack: ImccLoadedDatapack, composition: Mapping[str, float], temperature_K: float
 ) -> dict[str, Any]:
-    """Return extensive association enthalpy and reaction contributions in kJ.
+    """Return total and association enthalpies with reaction contributions in kJ.
 
     With log10 K=A+B/T and ΔrCp=0, the van't Hoff relation gives
     ΔrH=−R ln(10) B J/mol complex. Solver ``complex_x`` is a species mole
     fraction; dividing by D gives moles of complex per analytical parent mole.
-    Multiplication by total analytical parent moles therefore gives an extensive
-    enthalpy. The amount basis scales linearly and is homogeneous under scaling.
+    Multiplication by total analytical parent moles therefore gives an
+    extensive association enthalpy. Active candidate results add Hex/1000 to
+    that total; the two contributions remain separately named. Both scale
+    linearly with analytical amounts.
     """
     result = evaluate(
         composition, temperature_K, pack, basis_type="mol",
@@ -252,9 +254,19 @@ def _association_enthalpy(
     extents = np.asarray(result.complex_x, dtype=float) / float(result.D)
     scale = sum(float(value) for value in composition.values())
     contributions = extents * enthalpies_kJ * scale
+    association_enthalpy_kJ = float(np.sum(contributions))
+    excess_interaction_enthalpy_kJ = float(result.excess_enthalpy_J) / 1000.0
+    total_enthalpy_kJ = (
+        association_enthalpy_kJ + excess_interaction_enthalpy_kJ
+        if any(term.active for term in pack.excess_gibbs_terms)
+        else association_enthalpy_kJ
+    )
     return {
-        "total_kJ": float(np.sum(contributions)),
-        "per_parent_mol_kJ": float(np.sum(contributions)) / scale,
+        "total_kJ": total_enthalpy_kJ,
+        "per_parent_mol_kJ": total_enthalpy_kJ / scale,
+        "association_enthalpy_kJ": association_enthalpy_kJ,
+        "association_per_parent_mol_kJ": association_enthalpy_kJ / scale,
+        "excess_interaction_enthalpy_kJ": excess_interaction_enthalpy_kJ,
         "breakdown": [
             {"association": name, "extent_mol_per_mol_parent": float(extent),
              "delta_rH_kJ_per_mol_complex": float(dh),
@@ -286,17 +298,18 @@ def mixing_enthalpy(
     endmember_fractions: Mapping[str, float] | None = None,
     oxide_standard_enthalpies_kJ_mol: Mapping[str, float] | None = None,
 ) -> dict[str, Any]:
-    """Evaluate association enthalpy; optionally subtract liquid endmember endpoints.
+    """Evaluate enthalpy; optionally subtract liquid endmember endpoints.
 
     The model's association enthalpy is Σ n_j ΔrH_j. For a mixture of pure
-    silicate endmembers, excess enthalpy is H(mix)−Σ X_e H(e) at the same T.
-    Liquid-minus-crystal oxide standard terms are linear in parent amounts, so
-    they cancel exactly in this endpoint subtraction; they remain explicit for
-    the dissolution conversion below. Units are kJ per supplied analytical
-    amount. Pure endmembers have zero excess, and scaling every component leaves
-    intensive values unchanged while scaling extensive enthalpy homogeneously.
-    This tests association enthalpies only; it does not identify association
-    entropy or liquid-standard Gibbs-energy errors.
+    Σ n_j ΔrH_j. When active, candidate results also include the analytical-
+    parent interaction enthalpy. For a mixture of pure silicate endmembers,
+    excess enthalpy is H(mix)−Σ X_e H(e) at the same T. Liquid-minus-crystal
+    oxide standard terms are linear in parent amounts, so they cancel exactly
+    in this endpoint subtraction; they remain explicit for the dissolution
+    conversion below. Units are kJ per supplied analytical amount. Scaling
+    every component leaves intensive values unchanged while scaling extensive
+    enthalpy homogeneously. This does not identify association entropy or
+    liquid-standard Gibbs-energy errors.
     """
     normalized = {str(name): float(value) for name, value in composition.items()}
     if (not normalized or any(not math.isfinite(v) or v < 0 for v in normalized.values())
@@ -307,8 +320,8 @@ def mixing_enthalpy(
     mixture_standard = sum(normalized.get(name, 0.0) * value for name, value in standard.items())
     output: dict[str, Any] = {
         "composition_mol": normalized, "temperature_K": float(temperature_K),
-        "association_enthalpy_kJ": mixture["total_kJ"],
-        "association_enthalpy_kJ_per_mol_parent": mixture["per_parent_mol_kJ"],
+        "association_enthalpy_kJ": mixture["association_enthalpy_kJ"],
+        "association_enthalpy_kJ_per_mol_parent": mixture["association_per_parent_mol_kJ"],
         "association_breakdown": mixture["breakdown"],
         "extrapolated": bool(mixture["evaluation"].extrapolated),
         "composition_envelope": mixture["evaluation"].labels.envelope_status,
@@ -316,6 +329,11 @@ def mixing_enthalpy(
         "notices": list(mixture["evaluation"].labels.notices),
         "liquid_standard_enthalpy_kJ": mixture_standard,
     }
+    if any(term.active for term in pack.excess_gibbs_terms):
+        output["excess_interaction_enthalpy_kJ"] = mixture[
+            "excess_interaction_enthalpy_kJ"
+        ]
+        output["total_enthalpy_kJ"] = mixture["total_kJ"]
     if endmembers is not None:
         mixture_names = set(normalized)
         if any(set(formula) - mixture_names for formula in endmembers.values()):
@@ -339,10 +357,19 @@ def mixing_enthalpy(
             endpoint_standard = sum(formula.get(oxide, 0.0) * value for oxide, value in standard.items())
             endpoints[name] = {
                 "fraction": fraction,
-                "association_enthalpy_kJ_per_formula": endpoint["per_parent_mol_kJ"] * formula_total,
+                "association_enthalpy_kJ_per_formula": endpoint[
+                    "association_per_parent_mol_kJ"
+                ] * formula_total,
                 "standard_enthalpy_kJ_per_formula": endpoint_standard,
                 "association_breakdown": endpoint["breakdown"],
             }
+            if any(term.active for term in pack.excess_gibbs_terms):
+                endpoints[name]["excess_interaction_enthalpy_kJ_per_formula"] = (
+                    endpoint["excess_interaction_enthalpy_kJ"]
+                )
+                endpoints[name]["total_enthalpy_kJ_per_formula"] = endpoint[
+                    "total_kJ"
+                ]
         actual_total = sum(normalized.values())
         expected_total = sum(expected_composition.values())
         total_formula_moles = actual_total / expected_total
@@ -354,7 +381,8 @@ def mixing_enthalpy(
                ):
             raise ValueError("mixture composition does not match the supplied endmember fractions")
         baseline = sum(
-            item["fraction"] * (item["association_enthalpy_kJ_per_formula"]
+            item["fraction"] * (item.get("total_enthalpy_kJ_per_formula",
+                                          item["association_enthalpy_kJ_per_formula"])
                                 + item["standard_enthalpy_kJ_per_formula"])
             for item in endpoints.values()
         )
@@ -375,6 +403,7 @@ def run_mixing_enthalpy(
             "data/packs/imcc-sf04-d066-v5.json"
         )
     pack = load_datapack(str(pack_path))
+    has_active_excess = any(term.active for term in pack.excess_gibbs_terms)
     datasets = load_mixing_enthalpy_dataset()["datasets"]
     rows: list[dict[str, Any]] = []
     for dataset in datasets:
@@ -415,11 +444,23 @@ def run_mixing_enthalpy(
                 h = 1.0e-3
                 plus = dict(composition); minus = dict(composition)
                 plus[oxide] += h; minus[oxide] -= h
-                hp = _association_enthalpy(pack, plus, temp)["per_parent_mol_kJ"] * sum(plus.values())
-                hm = _association_enthalpy(pack, minus, temp)["per_parent_mol_kJ"] * sum(minus.values())
+                plus_state = _association_enthalpy(pack, plus, temp)
+                minus_state = _association_enthalpy(pack, minus, temp)
+                if has_active_excess:
+                    hp = plus_state["total_kJ"]
+                    hm = minus_state["total_kJ"]
+                else:
+                    # Keep the legacy arithmetic order byte-identical when
+                    # the candidate pack has no active interaction.
+                    hp = plus_state["per_parent_mol_kJ"] * sum(plus.values())
+                    hm = minus_state["per_parent_mol_kJ"] * sum(minus.values())
                 partial = (hp - hm) / (2.0 * h)
                 base = _association_enthalpy(pack, composition, temp)
-                rows.append({
+                association_partial = (
+                    plus_state["association_enthalpy_kJ"]
+                    - minus_state["association_enthalpy_kJ"]
+                ) / (2.0 * h)
+                row = {
                     "dataset_id": dataset["id"], "observation_id": oxide,
                     "measurement_type": dataset["type"], "temperature_K": temp,
                     "measured_solution_kJ_mol": obs["measured_solution_kJ_mol_oxide"],
@@ -429,11 +470,24 @@ def run_mixing_enthalpy(
                     "model_mixing_partial_kJ_mol": partial,
                     "residual_kJ_mol": partial - measured,
                     "standardized_residual": (partial - measured) / obs["uncertainty_kJ_mol_oxide"],
-                    "composition": dict(composition), "association_enthalpy_kJ_per_mol_parent": base["per_parent_mol_kJ"],
+                    "composition": dict(composition), "association_enthalpy_kJ_per_mol_parent": base["association_per_parent_mol_kJ"],
                     "association_breakdown": base["breakdown"], "extrapolated": bool(base["evaluation"].extrapolated),
                     "composition_envelope": base["evaluation"].labels.envelope_status,
                     "flags": list(base["evaluation"].labels.flags) + list(obs.get("flags", [])),
-                })
+                }
+                if has_active_excess:
+                    row.update({
+                        "association_mixing_partial_kJ_mol": association_partial,
+                        "excess_interaction_mixing_partial_kJ_mol": (
+                            partial - association_partial
+                        ),
+                        "excess_interaction_enthalpy_kJ_per_mol_parent": (
+                            base["excess_interaction_enthalpy_kJ"]
+                            / sum(composition.values())
+                        ),
+                        "total_enthalpy_kJ_per_mol_parent": base["per_parent_mol_kJ"],
+                    })
+                rows.append(row)
     return pack, rows
 
 

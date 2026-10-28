@@ -106,7 +106,9 @@ def _pack_metadata(pack: ImccLoadedDatapack) -> dict[str, Any]:
     }
 
 
-def _result_payload(result: Any) -> dict[str, Any]:
+def _result_payload(
+    result: Any, *, has_active_excess_terms: bool = False
+) -> dict[str, Any]:
     """Project an ImccResult into a JSON-safe dict."""
     parents = [str(x) for x in result.parent_oxides]
 
@@ -139,10 +141,7 @@ def _result_payload(result: Any) -> dict[str, Any]:
         "labels": label_payload,
         "convergence": _jsonable(getattr(result, "convergence", None)),
     }
-    if any(
-        str(notice).startswith("excess-gibbs-candidate:")
-        for notice in getattr(labels, "notices", ())
-    ):
+    if has_active_excess_terms:
         payload["excess_gibbs_J"] = float(result.excess_gibbs_J)
         payload["excess_enthalpy_J"] = float(result.excess_enthalpy_J)
     return payload
@@ -386,6 +385,14 @@ def _cmd_diagnose_mixing_enthalpy(args: argparse.Namespace) -> int:
               "association_enthalpy_kJ_per_mol_parent", "composition", "flags",
               "extrapolated", "composition_envelope", "association_breakdown",
               "endmember_endpoints"]
+    if any(term.active for term in pack.excess_gibbs_terms):
+        fields.extend([
+            "total_enthalpy_kJ", "excess_interaction_enthalpy_kJ",
+            "association_mixing_partial_kJ_mol",
+            "excess_interaction_mixing_partial_kJ_mol",
+            "excess_interaction_enthalpy_kJ_per_mol_parent",
+            "total_enthalpy_kJ_per_mol_parent",
+        ])
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
@@ -423,7 +430,10 @@ def _cmd_solve(args: argparse.Namespace) -> int:
         tol=args.tol,
         max_iter=args.max_iter,
     )
-    payload = _result_payload(result)
+    payload = _result_payload(
+        result,
+        has_active_excess_terms=any(term.active for term in pack.excess_gibbs_terms),
+    )
     payload["status"] = "ok"
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
