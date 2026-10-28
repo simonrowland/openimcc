@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import csv
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -15,6 +16,35 @@ from openimcc.diagnostics import (
     load_mixing_enthalpy_dataset, mixing_enthalpy, run_cp_implied,
     run_mixing_enthalpy, score_against_calorimetry,
 )
+
+
+def _write_excess_candidate(
+    tmp_path,
+    *,
+    valid_composition=None,
+    T_range_K=(300.0, 5000.0),
+):
+    source = Path(__file__).parents[1] / "src/openimcc/data/packs/imcc-sf04-d066-v5.json"
+    data = json.loads(source.read_text(encoding="utf-8"))
+    data["model_id"] = "IMCC-SF04-D066-EXCESS-CANDIDATE"
+    data["excess_gibbs"] = {
+        "terms": [{
+            "basis": "analytical_parent",
+            "components": ["Na2O", "CaO"],
+            "W_H_J_mol": -60000.0,
+            "W_S_J_mol_K": 0.0,
+            "provenance": "synthetic diagnostic test coefficient",
+            "calibration_role": "diagnostic regression",
+            "valid_composition": valid_composition or {
+                "Na2O": [0.0, 1.0], "CaO": [0.0, 1.0],
+            },
+            "T_range_K": list(T_range_K),
+            "fit_status": "empirical-fit",
+        }]
+    }
+    path = tmp_path / "excess-candidate.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
 
 
 def _score_fixture(curve):
@@ -414,6 +444,46 @@ def test_crystal_closure_cli_writes_pack_and_condensate_identities(tmp_path):
     assert "Condensate table digest:" in receipt
 
 
+def test_crystal_outputs_carry_candidate_and_calibration_notices(tmp_path):
+    from openimcc.diagnostics import crystal_closure, liquidus_bracket, saturation_indices
+    from openimcc.model import load_datapack
+
+    candidate_path = _write_excess_candidate(
+        tmp_path,
+        valid_composition={"Na2O": [0.0, 0.01], "CaO": [0.0, 0.01]},
+        T_range_K=(2000.0, 2100.0),
+    )
+    candidate = load_datapack(candidate_path)
+    composition = {"Na2O": 20.0, "CaO": 20.0, "MgO": 20.0, "SiO2": 40.0}
+
+    saturation = saturation_indices(composition, 1800.0, candidate)
+    forsterite = next(row for row in saturation if row.phase == "forsterite")
+    assert any("Na2O–CaO" in notice and "empirical-fit" in notice
+               for notice in forsterite.evaluation_notices)
+    assert any(notice.startswith("excess-gibbs-calibration-range:")
+               for notice in forsterite.evaluation_notices)
+
+    bracket = liquidus_bracket(composition, 1323.0, 1800.0, candidate)
+    assert any("Na2O–CaO" in notice for notice in bracket.evaluation_notices)
+    assert any(notice.startswith("excess-gibbs-calibration-range:")
+               for notice in bracket.evaluation_notices)
+
+    closure_rows, details = crystal_closure(candidate)
+    assert any(row["evaluation_notices"] for row in closure_rows)
+    assert any(control["evaluation_notices"] for control in details["pure_oxide_controls"])
+
+    output = tmp_path / "crystal-candidate"
+    assert main([
+        "diagnose", "crystal-closure", "--pack", str(candidate_path),
+        "--out", str(output),
+    ]) == 0
+    with (output / "crystal-closure.csv").open(encoding="utf-8", newline="") as stream:
+        csv_rows = list(csv.DictReader(stream))
+    assert "evaluation_notices" in csv_rows[0]
+    exported = json.loads(next(row for row in csv_rows if row["phase"] == "forsterite")["evaluation_notices"])
+    assert any(notice.startswith("excess-gibbs-calibration-range:") for notice in exported)
+
+
 def test_mixing_enthalpy_reaction_enthalpy_basis_and_scaling():
     from openimcc.model import load_datapack
 
@@ -461,27 +531,13 @@ def test_mixing_enthalpy_pure_endpoint_and_additive_standard_cancellation():
 def test_excess_interaction_enthalpy_in_mixing_endpoints_and_dissolution(
     tmp_path, monkeypatch
 ):
-    from pathlib import Path
     from openimcc.model import load_datapack
 
-    source = Path(__file__).parents[1] / "src/openimcc/data/packs/imcc-sf04-d066-v5.json"
-    data = json.loads(source.read_text(encoding="utf-8"))
-    data["model_id"] = "IMCC-SF04-D066-EXCESS-CANDIDATE"
-    data["excess_gibbs"] = {
-        "terms": [{
-            "basis": "analytical_parent",
-            "components": ["Na2O", "CaO"],
-            "W_H_J_mol": -60000.0,
-            "W_S_J_mol_K": 0.0,
-            "provenance": "synthetic diagnostic test coefficient",
-            "calibration_role": "diagnostic regression",
-            "valid_composition": {"Na2O": [0.0, 1.0], "CaO": [0.0, 1.0]},
-            "T_range_K": [300.0, 5000.0],
-            "fit_status": "empirical-fit",
-        }]
-    }
-    candidate_path = tmp_path / "excess-candidate.json"
-    candidate_path.write_text(json.dumps(data), encoding="utf-8")
+    candidate_path = _write_excess_candidate(
+        tmp_path,
+        valid_composition={"Na2O": [0.0, 0.1], "CaO": [0.0, 0.1]},
+        T_range_K=(300.0, 1000.0),
+    )
     candidate = load_datapack(candidate_path)
     ideal = load_datapack()
 
@@ -545,6 +601,26 @@ def test_excess_interaction_enthalpy_in_mixing_endpoints_and_dissolution(
         + dissolution["excess_interaction_mixing_partial_kJ_mol"]
     )
     assert dissolution["excess_interaction_mixing_partial_kJ_mol"] != 0.0
+    assert any("Na2O–CaO" in notice and "empirical-fit" in notice
+               for notice in dissolution["notices"])
+    assert any(notice.startswith("excess-gibbs-calibration-range:")
+               for notice in dissolution["notices"])
+
+    output = tmp_path / "mixing-candidate"
+    assert main([
+        "diagnose", "mixing-enthalpy", "--pack", str(candidate_path),
+        "--out", str(output),
+    ]) == 0
+    with (output / "mixing-enthalpy.csv").open(encoding="utf-8", newline="") as stream:
+        csv_rows = list(csv.DictReader(stream))
+    assert "notices" in csv_rows[0]
+    exported_notices = json.loads(csv_rows[0]["notices"])
+    assert any("Na2O–CaO" in notice for notice in exported_notices)
+    assert any(notice.startswith("excess-gibbs-calibration-range:")
+               for notice in exported_notices)
+    receipt = (output / "mixing-enthalpy.md").read_text(encoding="utf-8")
+    assert "Total enthalpies" in receipt
+    assert "excess-interaction contributions" in receipt
 
 
 def test_mixing_enthalpy_dissolution_conversion_and_pinned_residuals():

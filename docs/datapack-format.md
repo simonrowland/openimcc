@@ -153,9 +153,12 @@ ideal activities.
 
 Use `list_excess_gibbs_interactions(pack)` to inspect a loaded candidate's
 terms. Every active interaction is also named in the `evaluate()` result
-notices. The declared validity ranges and provenance are hashed metadata; a
-future fit workflow can add range-specific validation without changing the
-interaction basis.
+notices. At runtime, evaluation checks each term's declared composition
+bounds against normalized analytical mole fractions (converting weight input
+to moles first) and checks its temperature bounds. If a bound is exceeded, a
+non-gating calibration-range notice names the interaction and each exceeded
+bound; evaluation remains allowed. The declared validity ranges and provenance
+are hashed metadata.
 
 ### sp_extension structure
 

@@ -57,7 +57,7 @@ def test_packaged_core_and_extension_packs_run_through_bench(
     engine = load_pack(Path(pack_name))
 
     assert engine.enable_sp_extension is bool(engine.pack.extension_parents)
-    status, activities, _, reason, _ = _evaluate_imcc(
+    status, activities, _, reason, _, _notices = _evaluate_imcc(
         engine,
         {"SiO2": 100.0},
         2000.0,
@@ -163,6 +163,69 @@ def _write_fixture(path: Path, points: list[dict], compositions: dict | None = N
     }
     path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
     return path
+
+
+def _write_excess_candidate(path: Path) -> Path:
+    source = Path("src/openimcc/data/packs/imcc-sf04-d066-v5.json")
+    data = json.loads(source.read_text(encoding="utf-8"))
+    data["model_id"] = "IMCC-SF04-D066-EXCESS-CANDIDATE"
+    data["excess_gibbs"] = {
+        "terms": [{
+            "basis": "analytical_parent",
+            "components": ["Na2O", "CaO"],
+            "W_H_J_mol": -60000.0,
+            "W_S_J_mol_K": 0.0,
+            "provenance": "synthetic bench disclosure test",
+            "calibration_role": "notice projection test",
+            "valid_composition": {"Na2O": [0.0, 1.0], "CaO": [0.0, 1.0]},
+            "T_range_K": [2000.0, 2100.0],
+            "fit_status": "empirical-fit",
+        }]
+    }
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
+
+
+def test_bench_carries_candidate_and_calibration_notices(tmp_path: Path) -> None:
+    composition = {
+        "Na2O": 61.9789,
+        "CaO": 56.0774,
+        "SiO2": 240.3372,
+        "MgO": 40.3044,
+    }
+    point = {
+        "id": "candidate_na_activity",
+        "population": "candidate",
+        "composition_id": "candidate_mix",
+        "material_class": "cmas_slag",
+        "temperature_K": 1800.0,
+        "parent_oxide": "Na2O",
+        "species": "Na",
+        "observable": "activity",
+        "measured": 0.2,
+        "units": "dimensionless",
+        "score": True,
+    }
+    fixture = _write_fixture(
+        tmp_path / "bench.yaml",
+        [point],
+        {"candidate_mix": {"material_class": "cmas_slag", "composition_wt_pct": composition}},
+    )
+    candidate = _write_excess_candidate(tmp_path / "candidate.json")
+
+    report = run_bench(fixture, candidate)
+
+    row = report.points[0]
+    assert row.status == "ok"
+    assert any("Na2O–CaO" in notice and "empirical-fit" in notice for notice in row.notices)
+    assert any(
+        notice.startswith("excess-gibbs-calibration-range:") and "T=1800 K" in notice
+        for notice in row.notices
+    )
+    assert report.notices == row.notices
+    rendered = render_report(report)
+    assert "empirical-fit" in rendered
+    assert "excess-gibbs-calibration-range:" in rendered
 
 
 def _three_point_fixture(path: Path) -> Path:

@@ -33,6 +33,7 @@ _CONTINUATION_INITIAL_COMPLEX_X = 1.0e-4
 _UNTRUSTED_IDENTITY_TOKEN = "internal-analytical"
 _PUBLISHED_MODEL_ID = "IMCC-SF04"
 _PUBLISHED_EXTENSION_MODEL_ID = "IMCC-SF04-EXT"
+_EXCESS_GIBBS_MODEL_ID = "IMCC-SF04-D066-EXCESS-CANDIDATE"
 _PUBLISHED_COVERAGE = "A-published-imcc"
 _PUBLISHED_PARENT_OXIDES = (
     "SiO2",
@@ -95,6 +96,12 @@ class ImccInvalidWarmStartError(ImccRefusal):
     """Raised when a caller-provided solver seed is malformed or out of bounds."""
 
     code = "imcc_invalid_warm_start"
+
+
+class _ImccExcessGibbsKernelRequiresAdapterError(ImccRefusal):
+    """Raised when the ideal kernel entry point receives a corrected candidate."""
+
+    code = "imcc_excess_gibbs_requires_loaded_adapter"
 
 
 def _warm_start_vector(y_init: Any) -> np.ndarray:
@@ -1945,6 +1952,12 @@ def solve_imcc_sf04(
     y_init: np.ndarray | None = None,
 ) -> ImccResult:
     """Return the certified result of the IMCC-SF04 parent-balance solve."""
+    if datapack.model_id == _EXCESS_GIBBS_MODEL_ID:
+        raise _ImccExcessGibbsKernelRequiresAdapterError(
+            "the public kernel solver is ideal-only for an excess-Gibbs candidate; "
+            "pass the loaded wrapper returned by openimcc.model.load_datapack() "
+            "to openimcc.model.evaluate()"
+        )
     result, _continuation_y = _solve_imcc_sf04_with_seed(
         parent_mol,
         T_K,

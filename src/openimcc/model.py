@@ -39,6 +39,7 @@ from openimcc.kernel import (
     ImccTOutsideDatapackDomainError,
     _PUBLISHED_DATAPACK_SHA256,
     _PUBLISHED_MODEL_ID,
+    _EXCESS_GIBBS_MODEL_ID,
     _label_loaded_datapack,
     _published_datapack_manifest_hash,
     _solve_imcc_sf04_with_seed,
@@ -80,7 +81,6 @@ _EXPECTED_PARENT_OXIDES = (
 _PUBLISHED_CORE_ROWS = 38
 
 _D066_MODEL_ID = "IMCC-SF04-D066"
-_EXCESS_GIBBS_MODEL_ID = "IMCC-SF04-D066-EXCESS-CANDIDATE"
 _D066_CORE_ROWS = (
     "Mg2SiO4", "MgSiO3", "MgAl2O4", "MgTiO3", "MgTi2O5", "Mg2TiO4",
     "Al6Si2O13", "CaAl2O4", "CaAl4O7", "Ca12Al14O33", "CaSiO3",

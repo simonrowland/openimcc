@@ -343,14 +343,18 @@ def _cmd_diagnose_crystal_closure(args: argparse.Namespace) -> int:
               "independent_fusion_flag", "closure_miss_kJ_mol",
               "closure_miss_vapor_product", "root_K", "in_range_node",
               "source_temperature_range_K", "source"]
+    if any(term.active for term in pack.excess_gibbs_terms):
+        fields.append("evaluation_notices")
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
         for row in rows:
-            writer.writerow({key: row[key] for key in fields if key not in {"in_range_node", "source_temperature_range_K", "source"}} | {
+            writer.writerow({key: row[key] for key in fields if key not in {"in_range_node", "source_temperature_range_K", "source", "evaluation_notices"}} | {
                 "in_range_node": json.dumps(row["in_range_node"], sort_keys=True),
                 "source_temperature_range_K": json.dumps(row["source_temperature_range_K"]),
-                "source": json.dumps(row["source"], sort_keys=True)})
+                "source": json.dumps(row["source"], sort_keys=True),
+                **({"evaluation_notices": json.dumps(row["evaluation_notices"])}
+                   if "evaluation_notices" in fields else {})})
     receipt = out_dir / "crystal-closure.md"
     out_pack = pack.model_id
     binding = pack.binding_digest or "unavailable"
@@ -392,6 +396,7 @@ def _cmd_diagnose_mixing_enthalpy(args: argparse.Namespace) -> int:
             "excess_interaction_mixing_partial_kJ_mol",
             "excess_interaction_enthalpy_kJ_per_mol_parent",
             "total_enthalpy_kJ_per_mol_parent",
+            "notices",
         ])
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
@@ -402,13 +407,24 @@ def _cmd_diagnose_mixing_enthalpy(args: argparse.Namespace) -> int:
                              for key in fields})
     digest = pack.binding_digest or "unavailable"
     receipt = out_dir / "mixing-enthalpy.md"
+    if any(term.active for term in pack.excess_gibbs_terms):
+        enthalpy_summary = (
+            "Total enthalpies, association and excess-interaction contributions, "
+            "and source residuals are reported only; they do not fit or select data. "
+            "See the CSV for per-association contributions, uncertainties, and "
+            "model-domain flags."
+        )
+    else:
+        enthalpy_summary = (
+            "Association enthalpies and source residuals are reported only; they do "
+            "not fit or select data. See the CSV for per-association contributions, "
+            "uncertainties, and model-domain flags."
+        )
     receipt.write_text(
         "# Liquid mixing enthalpy diagnostic\n\n"
         f"Pack: `{pack.model_id}` (version {pack.version})\n\n"
         f"Binding digest: `{digest}`\n\n"
-        f"Rows: {len(rows)}. Association enthalpies and source residuals are reported only; "
-        "they do not fit or select data. See the CSV for per-association contributions, "
-        "uncertainties, and model-domain flags.\n",
+        f"Rows: {len(rows)}. {enthalpy_summary}\n",
         encoding="utf-8",
     )
     print(f"wrote {csv_path} and {receipt}")

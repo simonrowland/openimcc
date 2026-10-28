@@ -10,6 +10,7 @@ import pytest
 
 from openimcc import (
     ImccMalformedDatapackError,
+    ImccRefusal,
     ImccUnprovenDatapackError,
     RedoxExcessGibbsUnsupportedError,
     evaluate,
@@ -18,6 +19,7 @@ from openimcc import (
     load_datapack,
 )
 from openimcc.model import _analytical_parent_excess_state
+from openimcc.kernel import solve_imcc_sf04
 
 
 ROOT = Path(__file__).parents[1]
@@ -100,6 +102,27 @@ def test_empty_or_zero_excess_terms_preserve_legacy_numeric_outputs(
     assert not any(
         notice.startswith("excess-gibbs-candidate:")
         for notice in result.labels.notices
+    )
+
+
+def test_public_kernel_refuses_excess_candidate_and_loaded_adapter_applies_it(
+    tmp_path: Path,
+) -> None:
+    candidate, _path = _candidate(tmp_path, [_term()])
+    composition = {"Na2O": 1.0, "CaO": 1.0, "SiO2": 4.0, "MgO": 1.0}
+    parent_mol = [composition.get(name, 0.0) for name in candidate.parent_oxides]
+
+    with pytest.raises(ImccRefusal, match="ideal-only.*loaded wrapper") as error:
+        solve_imcc_sf04(parent_mol, 1800.0, candidate.kernel_datapack)
+    assert error.value.code == "imcc_excess_gibbs_requires_loaded_adapter"
+
+    corrected = evaluate(composition, 1800.0, candidate, allow_out_of_envelope=True)
+    ideal = evaluate(composition, 1800.0, allow_out_of_envelope=True)
+    assert corrected.excess_gibbs_J != 0.0
+    assert corrected.activity("Na2O") != ideal.activity("Na2O")
+    assert any(
+        "Na2O–CaO" in notice and "empirical-fit" in notice
+        for notice in corrected.labels.notices
     )
 
 

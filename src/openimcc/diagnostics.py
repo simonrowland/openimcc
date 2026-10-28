@@ -474,6 +474,7 @@ def run_mixing_enthalpy(
                     "association_breakdown": base["breakdown"], "extrapolated": bool(base["evaluation"].extrapolated),
                     "composition_envelope": base["evaluation"].labels.envelope_status,
                     "flags": list(base["evaluation"].labels.flags) + list(obs.get("flags", [])),
+                    "notices": list(base["evaluation"].labels.notices),
                 }
                 if has_active_excess:
                     row.update({
@@ -522,6 +523,7 @@ class SaturationIndex:
     status: CrystalStatus
     solid_solution_bound: bool
     notices: tuple[CrystalNotice, ...] = ()
+    evaluation_notices: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -533,6 +535,7 @@ class LiquidusBracket:
     controlling_phase: str | None
     missing_feed_relevant_phases: tuple[str, ...]
     notices: tuple[CrystalNotice, ...] = ()
+    evaluation_notices: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -612,7 +615,8 @@ def _crystal_si(phase, temp, composition, pack, gas_pack, reference_pack,
     if any(activity <= 0.0 for activity in activities):
         return {"temperature_K": temp, "SI": -math.inf, "residual_kJ_mol": -math.inf,
                 "delta_log10_vapor_product": -math.inf, "deltaG_fusion_J_mol": dg,
-                "log10_activity_product": -math.inf}
+                "log10_activity_product": -math.inf,
+                "evaluation_notices": tuple(melt.labels.notices)}
     logq = sum(float(nu) * math.log10(melt.activity(oxide))
                for oxide, nu in phase["oxide_stoichiometry"].items())
     si = logq + dg / (R * math.log(10.0) * temp)
@@ -622,7 +626,8 @@ def _crystal_si(phase, temp, composition, pack, gas_pack, reference_pack,
         raise ArithmeticError(f"SI/residual unit mismatch for {phase['id']} at {temp:g} K")
     return {"temperature_K": temp, "SI": si, "residual_kJ_mol": residual_kj,
             "delta_log10_vapor_product": residual_si, "deltaG_fusion_J_mol": dg,
-            "log10_activity_product": logq}
+            "log10_activity_product": logq,
+            "evaluation_notices": tuple(melt.labels.notices)}
 
 
 def saturation_indices(composition, T_K, pack=None, *, condensate=None):
@@ -660,6 +665,7 @@ def saturation_indices(composition, T_K, pack=None, *, condensate=None):
                 "spinel", "akermanite", "gehlenite",
             }),
             notices,
+            () if state is None else tuple(state["evaluation_notices"]),
         ))
     return rows
 
@@ -690,6 +696,16 @@ def liquidus_bracket(composition, T_low, T_high, pack=None, *, condensate=None):
         return LiquidusBracket(CrystalStatus.NO_SUPPORTED_CROSSING, float(T_low),
                                float(T_high), None, None, feed_relevant_missing, notices)
     roots = []
+    evaluation_notices: list[str] = []
+
+    def evaluate_si(phase, temperature):
+        state = _crystal_si(
+            phase, temperature, composition, pack, gas_pack, reference_pack,
+            enable_sp_extension,
+        )
+        evaluation_notices.extend(state["evaluation_notices"])
+        return state["SI"]
+
     supported_parents = set(pack.parent_oxides) | (
         set(pack.extension_parents) if enable_sp_extension else set()
     )
@@ -702,8 +718,7 @@ def liquidus_bracket(composition, T_low, T_high, pack=None, *, condensate=None):
         a, b = max(float(T_low), lo), min(float(T_high), hi)
         if a >= b:
             continue
-        fn = lambda t: _crystal_si(phase, t, composition, pack, gas_pack, reference_pack,
-                                   enable_sp_extension)["SI"]
+        fn = lambda t: evaluate_si(phase, t)
         nodes = sorted({a, b, *(float(t) for t in phase["source_node_temperatures_K"] if a < float(t) < b)})
         vals = [fn(t) for t in nodes]
         for left, right, yl, yr in zip(nodes, nodes[1:], vals, vals[1:]):
@@ -713,9 +728,11 @@ def liquidus_bracket(composition, T_low, T_high, pack=None, *, condensate=None):
     if cooling_crossings:
         root, phase, _ = max(cooling_crossings)
         return LiquidusBracket(CrystalStatus.AVAILABLE, float(T_low), float(T_high), root,
-                               phase, feed_relevant_missing, notices)
+                               phase, feed_relevant_missing, notices,
+                               tuple(dict.fromkeys(evaluation_notices)))
     return LiquidusBracket(CrystalStatus.NO_SUPPORTED_CROSSING, float(T_low), float(T_high),
-                           None, None, feed_relevant_missing, notices)
+                           None, None, feed_relevant_missing, notices,
+                           tuple(dict.fromkeys(evaluation_notices)))
 
 
 def liquid_only_notice(temperature_K, bracket):
@@ -836,6 +853,7 @@ def crystal_closure(
                 phase_state(phase, max(grid[0], root - 1.0))["SI"] > 0
                 if root is not None else None
             ),
+            "evaluation_notices": list(at_tm["evaluation_notices"]),
             "source_temperature_range_K": phase["valid_temperature_K"]})
     eutectic_composition = {oxide: 0.0 for oxide in _OXIDE_MOLAR_MASS}
     phase_by_id = {phase["id"]: phase for phase in dataset["phases"]}
@@ -856,6 +874,7 @@ def crystal_closure(
         fusion_g = float(control["fusion_gibbs_at_melting_kJ_mol"]) * 1000.0
         si = math.log10(melt.activity(oxide)) + fusion_g / (R * math.log(10.0) * temp)
         controls.append({"phase": oxide, "temperature_K": temp, "SI": si,
-                         "activity": melt.activity(oxide), "source": control["source"]})
+                         "activity": melt.activity(oxide), "source": control["source"],
+                         "evaluation_notices": list(melt.labels.notices)})
     return results, {"condensate_table_digest": digest, "pure_oxide_controls": controls,
                      "An42Di58_1547K": eutectic}

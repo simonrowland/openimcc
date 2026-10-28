@@ -202,6 +202,7 @@ class PointResult:
     extrapolation_flag: str | None = None
     binary_subslice: str | None = None
     provenance_class: str | None = None
+    notices: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -240,6 +241,7 @@ class BenchReport:
     binary_slices: tuple[Aggregate, ...]
     out_of_domain_counts: Mapping[str, int]
     points: tuple[PointResult, ...]
+    notices: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -500,7 +502,7 @@ def _evaluate_imcc(
     engine: _PackedEngine,
     composition_wt_pct: Mapping[str, float],
     temperature_K: float,
-) -> tuple[str, dict[str, float], dict[str, float], str, str | None]:
+) -> tuple[str, dict[str, float], dict[str, float], str, str | None, tuple[str, ...]]:
     """Return status, values, reason, and a visible physics-domain flag."""
 
     def maps(result: Any) -> tuple[dict[str, float], dict[str, float]]:
@@ -577,23 +579,23 @@ def _evaluate_imcc(
                 allow_extrapolation=True, allow_out_of_envelope=True
             )
         except ImccNonconvergenceError as retry_exc:
-            return "not_converged", {}, {}, _reason_line(retry_exc), domain_flag
+            return "not_converged", {}, {}, _reason_line(retry_exc), domain_flag, ()
         except ImccRefusal as retry_exc:
-            return "out_of_domain", {}, {}, _reason_line(retry_exc), domain_flag
+            return "out_of_domain", {}, {}, _reason_line(retry_exc), domain_flag, ()
         activities, gammas = maps(result)
-        return "ok", activities, gammas, "", domain_flag
+        return "ok", activities, gammas, "", domain_flag, tuple(result.labels.notices)
     except (
         ImccComponentOutsideDomainError,
         ImccCompositionIncompleteError,
         ImccFerricInputUnsupportedError,
     ) as exc:
-        return "out_of_domain", {}, {}, _reason_line(exc), None
+        return "out_of_domain", {}, {}, _reason_line(exc), None, ()
     except ImccNonconvergenceError as exc:
-        return "not_converged", {}, {}, _reason_line(exc), None
+        return "not_converged", {}, {}, _reason_line(exc), None, ()
     except ImccRefusal as exc:
-        return "refused", {}, {}, _reason_line(exc), None
+        return "refused", {}, {}, _reason_line(exc), None, ()
     activities, gammas = maps(result)
-    return "ok", activities, gammas, "", None
+    return "ok", activities, gammas, "", None, tuple(result.labels.notices)
 
 
 def _prediction_for_point(
@@ -867,7 +869,7 @@ def run_bench(
             gas_reason = f"partial_pressure refused: {_reason_line(exc)}"
     cache: dict[
         tuple[tuple[tuple[str, float], ...], float],
-        tuple[str, dict[str, float], dict[str, float], str, str | None],
+        tuple[str, dict[str, float], dict[str, float], str, str | None, tuple[str, ...]],
     ] = {}
     rows: list[PointResult] = []
     for point in selected:
@@ -883,6 +885,7 @@ def run_bench(
             gammas,
             engine_reason,
             engine_domain_flag,
+            engine_notices,
         ) = cache[cache_key]
         if (
             not bool(point.get("score", True))
@@ -940,6 +943,7 @@ def run_bench(
                 ),
                 binary_subslice=_binary_subslice(point),
                 provenance_class=provenance_class,
+                notices=engine_notices,
             )
         )
     overall = _aggregate("", rows)
@@ -999,6 +1003,7 @@ def run_bench(
             if out_of_domain_counts.get(key, 0)
         },
         points=tuple(rows),
+        notices=tuple(dict.fromkeys(notice for row in rows for notice in row.notices)),
     )
 
 
@@ -1071,6 +1076,10 @@ def render_report(report: BenchReport) -> str:
         ),
         "",
     ]
+    if report.pack_model_id == "IMCC-SF04-D066-EXCESS-CANDIDATE":
+        lines.extend(f"  notice: {notice}" for notice in report.notices)
+        if report.notices:
+            lines.append("")
     lines.extend(
         _render_aggregate_table(
             "Per dataset × observable × standard state", report.per_slice
