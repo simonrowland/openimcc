@@ -342,6 +342,9 @@ class WeightedOxygenBalanceResult:
     signed_fluxes_mol_m2_s: Mapping[str, float]
     residual_mol_m2_s: float
     absolute_weighted_transfer_scale_mol_m2_s: float
+    equilibrium_weighted_transfer_scale_mol_m2_s: float
+    bulk_weighted_transfer_scale_mol_m2_s: float
+    gross_weighted_transfer_scale_mol_m2_s: float
     forward_weighted_scale_mol_m2_s: float
     backward_weighted_scale_mol_m2_s: float
     applied_residual_mol_m2_s: float
@@ -6187,8 +6190,19 @@ def gas_channel_metadata(
     Neutral weights reuse :func:`oxygen_balance_species_metadata` and the
     retained reaction tables, including the side-oxide and gas-parent rules
     used by the legacy oxygen balance. Charged channels use full neutral
-    formula attribution; their neutral pO2 exponent is not asserted.
+    formula attribution; their neutral pO2 exponent is not asserted. Parent
+    selection, activity vector shape and values, and temperature validation
+    follow :func:`evaluate_gas`.
     """
+    if not is_declared_real_scalar(temperature_K, allow_numeric_str=True):
+        raise ValueError(f"temperature must be a real number, got {temperature_K!r}")
+    try:
+        temperature = float(temperature_K)
+    except OverflowError as exc:
+        raise ValueError("temperature must be finite and positive") from exc
+    if not math.isfinite(temperature) or temperature <= 0.0:
+        raise ValueError(f"temperature must be finite and positive, got {temperature_K}")
+
     explicit_parents = parent_oxides is not None
     parents = list(IMCC_PARENT_OXIDES if parent_oxides is None else parent_oxides)
     if isinstance(activities, Mapping):
@@ -6216,11 +6230,68 @@ def gas_channel_metadata(
                 name for name in activities
                 if name in _REACTION_PARENT_OXIDES and name not in parents
             )
-    channels, omitted = _default_reactions(parents, datapack, float(temperature_K))
+    def activity_as_float(name: str, value: Any) -> float:
+        if not is_declared_real_scalar(value, allow_numeric_str=True):
+            raise ValueError(f"activity for {name!r} must be a real number")
+        try:
+            return float(value)
+        except OverflowError as exc:
+            raise ValueError(
+                f"activity for {name!r} is too large to represent as a float"
+            ) from exc
+
+    if isinstance(activities, Mapping):
+        activity_values = {
+            name: activity_as_float(name, activities.get(name, 0.0))
+            for name in parents
+        }
+        if not explicit_parents:
+            activity_values.update(
+                (name, activity_as_float(name, activities[name]))
+                for name in activities
+                if name in _REACTION_PARENT_OXIDES and name not in activity_values
+            )
+    else:
+        raw = np.asarray(activities, dtype=object)
+        if raw.shape[0] != len(parents):
+            raise ValueError(
+                f"activities vector length {raw.shape[0]} does not match "
+                f"{len(parents)} parent oxides"
+            )
+        activity_values = {
+            name: activity_as_float(name, value)
+            for name, value in zip(parents, raw, strict=True)
+        }
+
+    channels, omitted = _default_reactions(parents, datapack, temperature)
     selected_by_name = dict(channels)
     selected_by_name.update(
         (name, _SF04_REACTIONS[name]) for name in omitted
     )
+    for species, (parent, _n_gas, _n_o2) in selected_by_name.items():
+        if parent:
+            value = activity_values.get(parent)
+            if value is None:
+                raise ImccGasSpeciesNotFoundError(
+                    f"gas channel {species!r} needs parent activity {parent!r}, "
+                    "which is not in parent_oxides"
+                )
+            if not math.isfinite(value) or value < 0.0:
+                raise ValueError(
+                    f"activity of {parent!r} must be finite and >= 0, got {value}"
+                )
+        side_parent = _side_parent(species)
+        if side_parent:
+            value = activity_values.get(side_parent)
+            if value is None:
+                raise ImccGasSpeciesNotFoundError(
+                    f"gas channel {species!r} needs parent activity "
+                    f"{side_parent!r}, which is not in parent_oxides"
+                )
+            if not math.isfinite(value) or value < 0.0:
+                raise ValueError(
+                    f"activity of {side_parent!r} must be finite and >= 0, got {value}"
+                )
     neutral_parents = {name: reaction[0] for name, reaction in selected_by_name.items()}
     base = oxygen_balance_species_metadata(neutral_parents)
     result: dict[str, GasChannelMetadata] = {}
@@ -6317,6 +6388,31 @@ def weighted_oxygen_balance_from_pressure_model(
 
     evaluations = 0
 
+    def checked_weighted_sum(values: Sequence[float], label: str) -> float:
+        terms = tuple(values)
+        if any(not math.isfinite(value) for value in terms):
+            cause = OverflowError(f"{label} contains a non-finite term")
+            raise ImccGasOxygenBalanceError(str(cause)) from cause
+        try:
+            total = math.fsum(terms)
+        except (OverflowError, ValueError) as exc:
+            raise ImccGasOxygenBalanceError(f"{label} aggregation overflow: {exc}") from exc
+        if not math.isfinite(total):
+            cause = OverflowError(f"{label} sum is non-finite")
+            raise ImccGasOxygenBalanceError(str(cause)) from cause
+        return total
+
+    def weighted_pressure_magnitude(name: str, pressure: float) -> float:
+        magnitude = abs(weights[name]) * conductance[name] * pressure * 1e5
+        if not math.isfinite(magnitude):
+            cause = OverflowError(f"weighted pressure-transfer term overflow for {name!r}")
+            raise ImccGasOxygenBalanceError(str(cause)) from cause
+        if weights[name] != 0.0 and conductance[name] != 0.0 and pressure != 0.0 and magnitude == 0.0:
+            raise ImccGasOxygenBalanceError(
+                f"weighted pressure-transfer term underflow for {name!r}"
+            )
+        return magnitude
+
     def evaluate(logp: float) -> tuple[float, dict[str, float], dict[str, float]]:
         nonlocal evaluations
         evaluations += 1
@@ -6352,9 +6448,10 @@ def weighted_oxygen_balance_from_pressure_model(
             for name, term in zip(names, terms, strict=True)
         ):
             raise ImccGasOxygenBalanceError("weighted oxygen-flux term underflow")
-        residual = math.fsum(terms)
-        if not math.isfinite(residual):
-            raise ImccGasOxygenBalanceError("weighted oxygen-flux residual is non-finite")
+        if any(not math.isfinite(term) for term in terms):
+            cause = OverflowError("weighted oxygen-flux term is non-finite")
+            raise ImccGasOxygenBalanceError(str(cause)) from cause
+        residual = checked_weighted_sum(terms, "weighted oxygen-flux residual")
         return residual, pressures, fluxes
 
     nodes = np.linspace(low, high, 81)
@@ -6388,11 +6485,32 @@ def weighted_oxygen_balance_from_pressure_model(
             raise ImccGasOxygenBalanceError(f"weighted oxygen-flux solve failed: {exc}") from exc
     residual, pressures, fluxes = evaluate(root)
     weighted_terms = [weights[name] * fluxes[name] for name in names]
-    forward_scale = math.fsum(max(term, 0.0) for term in weighted_terms)
-    backward_scale = math.fsum(max(-term, 0.0) for term in weighted_terms)
-    scale = forward_scale + backward_scale
-    if not math.isfinite(scale):
-        raise ImccGasOxygenBalanceError("absolute weighted-transfer scale is non-finite")
+    if any(not math.isfinite(term) for term in weighted_terms):
+        cause = OverflowError("returned weighted oxygen-flux term is non-finite")
+        raise ImccGasOxygenBalanceError(str(cause)) from cause
+    forward_scale = checked_weighted_sum(
+        (max(term, 0.0) for term in weighted_terms),
+        "forward weighted-flux scale",
+    )
+    backward_scale = checked_weighted_sum(
+        (max(-term, 0.0) for term in weighted_terms),
+        "backward weighted-flux scale",
+    )
+    scale = checked_weighted_sum(
+        (abs(term) for term in weighted_terms),
+        "absolute weighted-transfer scale",
+    )
+    equilibrium_scale = checked_weighted_sum(
+        (weighted_pressure_magnitude(name, pressures[name]) for name in names),
+        "equilibrium weighted pressure-transfer scale",
+    )
+    bulk_scale = checked_weighted_sum(
+        (weighted_pressure_magnitude(name, bulk[name]) for name in names),
+        "bulk weighted pressure-transfer scale",
+    )
+    gross_scale = checked_weighted_sum(
+        (equilibrium_scale, bulk_scale), "gross weighted pressure-transfer scale",
+    )
     if scale == 0.0 and residual != 0.0:
         raise ImccGasOxygenBalanceError("zero weighted transfer has a nonzero residual")
     if scale > 0.0 and abs(residual) / scale > 1e-12:
@@ -6400,11 +6518,15 @@ def weighted_oxygen_balance_from_pressure_model(
             "returned weighted oxygen-flux root failed signed closure "
             f"(residual={residual}, scale={scale})"
         )
-    applied = math.fsum(
+    applied_terms = [
         weights[name] * max(fluxes[name], 0.0) for name in names
+    ]
+    if any(not math.isfinite(term) for term in applied_terms):
+        cause = OverflowError("applied weighted-flux term is non-finite")
+        raise ImccGasOxygenBalanceError(str(cause)) from cause
+    applied = checked_weighted_sum(
+        applied_terms, "applied weighted oxygen-flux residual"
     )
-    if not math.isfinite(applied):
-        raise ImccGasOxygenBalanceError("applied weighted oxygen-flux residual is non-finite")
     applied_closes = scale > 0.0 and abs(applied) / scale <= 1e-12
     closure_state = (
         "zero_transfer" if scale == 0.0
@@ -6417,7 +6539,8 @@ def weighted_oxygen_balance_from_pressure_model(
     if not math.isfinite(p_o2) or p_o2 <= 0.0:
         raise ImccGasOxygenBalanceError("root pO2 is outside the finite pressure range")
     return WeightedOxygenBalanceResult(
-        p_o2, pressures, fluxes, residual, scale, forward_scale,
+        p_o2, pressures, fluxes, residual, scale, equilibrium_scale,
+        bulk_scale, gross_scale, forward_scale,
         backward_scale, applied, applied_closes, closure_state,
         root_bracket, 1, "sampled; finite scan does not prove global uniqueness",
         monotonicity, evaluations,

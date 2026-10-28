@@ -17,9 +17,10 @@
 
 - Added engine-neutral weighted net-flux oxygen closure and selected gas-channel
   stoichiometry/charge/availability metadata. The new root validates signed
-  closure, reports weighted-transfer scales and clipped-applied residuals, and
-  refuses numerical underflow; simulator control, transport and inventory
-  policy remain caller-owned. See `docs/gas-saturation.md`.
+  closure, reports net and gross equilibrium/bulk transfer scales and
+  clipped-applied residuals, and gives typed refusals for numerical underflow
+  or overflow; simulator control, transport and inventory policy remain
+  caller-owned. See `docs/gas-saturation.md`.
 
 - Added opt-in fixed-composition saturated-vapor equilibrium and a boiling-
   temperature solver. The saturation closure uses pressure-weighted oxygen

@@ -62,20 +62,26 @@ area basis; report the callback's supported range, phase changes, validity and
 omitted species. The root callback must hold temperature, melt state,
 conductances and bulk pressures fixed over each solve.
 
-The result reports the signed residual, the absolute weighted-transfer scale
-`Σᵢ |wᵢ Jᵢ|`, and its forward and backward parts
-`Σᵢ max(wᵢ Jᵢ, 0)` and `Σᵢ max(-wᵢ Jᵢ, 0)`. A returned root is accepted only
-when its recomputed signed residual is at most `1e-12` times the absolute
-scale. Zero transfer is a distinct state, and a numerically underflowed flux
-or weighted term is refused. The result also reports the residual after
-negative fluxes are clipped to zero. `applied_flux_closes` uses the relative
-applied residual against the same scale, without an absolute tolerance floor;
-uniform positive scaling of all conductances therefore cannot change that
-decision. Zero transfer is never certified as applied closure. A signed root
-whose applied residual fails this check is not oxygen-closed after clipping;
-the simulator must not certify it as a closed applied source. Root count and
-monotonicity are sampled evidence for arbitrary callbacks, not a global
-uniqueness proof.
+The result reports the signed residual and the absolute net-transfer scale
+`Σᵢ |wᵢ Jᵢ|`, split by the sign of weighted net flux into forward and backward
+net scales. It separately reports the equilibrium and bulk pressure-transfer
+magnitudes
+`1e5·Σᵢ |wᵢ| kᵢ pᵢ,eq` and `1e5·Σᵢ |wᵢ| kᵢ pᵢ,bulk`; their sum is the gross
+transfer scale `S_gross`. These gross magnitudes expose cancellation between
+equilibrium and bulk pressure terms, including at exact zero net transfer.
+A returned root is accepted only when its recomputed signed residual is at
+most `1e-12` times the absolute net-transfer scale. Zero transfer is a
+distinct state, and a numerically underflowed flux or weighted term is
+refused. The result also reports the residual after negative fluxes are
+clipped to zero. `applied_flux_closes` uses the relative applied residual
+against the absolute net-transfer scale, without an absolute tolerance
+floor; uniform positive scaling of all conductances therefore cannot change
+that decision. Gross scales are evidence only and do not loosen this applied
+source gate. Zero transfer is never certified as applied closure. A signed
+root whose applied residual fails this check is not oxygen-closed after
+clipping; the simulator must not certify it as a closed applied source. Root
+count and monotonicity are sampled evidence for arbitrary callbacks, not a
+global uniqueness proof.
 `gas_channel_metadata` exposes openimcc's selected reaction metadata and
 missing-table status using the same reaction tables and
 `oxygen_balance_species_metadata`. The standalone saturation and molecular
