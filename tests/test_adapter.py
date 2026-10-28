@@ -264,9 +264,10 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
             n.startswith("low-temperature-uncertain-unscored:") for n in notices
         )
         # Binary melts at molar Na2O/SiO2 >= 1 (x >= 0.5) also carry the
-        # held-out Na2O activity-bias notice.
-        na_bias = [n for n in notices if n.startswith("na2o-activity-bias:")]
+        # unscored Na2O activity-bias notice on this legacy pack.
+        na_bias = [n for n in notices if n.startswith("na2o-activity-bias-unscored:")]
         assert bool(na_bias) is (x_me2o >= 0.5)
+        assert not any(n.startswith("na2o-activity-bias:") for n in notices)
         assert len(notices) == 3 + len(na_bias)
     else:
         assert len(notices) == 2

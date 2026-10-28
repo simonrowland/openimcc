@@ -860,3 +860,39 @@ def test_na2o_activity_bias_notice_gate_and_numeric_identity() -> None:
     assert not any(n.startswith(marker) for n in sodium_free.labels.notices)
     assert not any(n.startswith(marker) for n in high_silica.labels.notices)
     assert not any(n.startswith(marker) for n in albite_like.labels.notices)
+
+
+def test_na2o_activity_bias_evidence_identity_is_pinned() -> None:
+    pack = load_datapack()
+    assert (pack.model_id, pack.binding_digest) == (
+        model._NA2O_ACTIVITY_BIAS_MEASURED_MODEL_ID,
+        model._NA2O_ACTIVITY_BIAS_MEASURED_BINDING_DIGEST,
+    ), "default pack moved; re-score Na2O bias evidence before retaining measured claims"
+
+
+@pytest.mark.parametrize(
+    "composition,expected",
+    [
+        ({"Na2O": 0.5, "SiO2": 0.5}, True),
+        ({"Na2O": 0.1, "CaO": 0.3, "SiO2": 0.6}, True),
+        ({"Na2O": 0.1, "MgO": 0.3, "SiO2": 0.6}, True),
+        ({"Na2O": 0.499, "SiO2": 0.501}, False),
+        ({"Na2O": 0.1, "CaO": 0.299, "SiO2": 0.601}, False),
+        ({"CaO": 0.5, "SiO2": 0.5}, False),
+    ],
+)
+def test_na2o_activity_bias_other_digest_uses_same_gate(
+    composition: dict[str, float], expected: bool,
+) -> None:
+    pack = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
+    assert pack.model_id == model._NA2O_ACTIVITY_BIAS_MEASURED_MODEL_ID
+    assert pack.binding_digest != model._NA2O_ACTIVITY_BIAS_MEASURED_BINDING_DIGEST
+    result = evaluate(
+        composition, 1673.15, pack,
+        allow_extrapolation=True, allow_out_of_envelope=True,
+    )
+    notices = tuple(n for n in result.labels.notices if n.startswith("na2o-activity-bias"))
+    assert notices == ((
+        "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias evidence "
+        "was measured on the default D066 v5 pack; this pack has not been scored.",
+    ) if expected else ())

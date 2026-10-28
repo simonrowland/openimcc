@@ -378,3 +378,31 @@ def test_species_pair_basis_is_a_reserved_extension_point(tmp_path: Path) -> Non
     species_pair["basis"] = "species_pair"
     with pytest.raises(ImccMalformedDatapackError, match="reserved"):
         _candidate(tmp_path, [species_pair])
+
+
+@pytest.mark.parametrize("terms", [[], [_term()]])
+@pytest.mark.parametrize(
+    "composition",
+    [
+        {"Na2O": 0.5, "SiO2": 0.5},
+        {"Na2O": 0.1, "CaO": 0.3, "SiO2": 0.6},
+    ],
+)
+def test_candidate_does_not_inherit_measured_bias_notices(
+    tmp_path: Path, terms: list[dict], composition: dict[str, float],
+) -> None:
+    candidate, _path = _candidate(tmp_path, terms)
+    result = evaluate(
+        composition, 1673.15, candidate,
+        allow_extrapolation=True, allow_out_of_envelope=True,
+    )
+    notices = tuple(n for n in result.labels.notices if n.startswith("na2o-activity-bias"))
+    assert notices == (
+        "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias evidence "
+        "was measured on the default D066 v5 pack; this pack has not been scored.",
+    )
+    assert (
+        "K predictions against Hastie 1981 KEMS pressures (case 4) have "
+        f"not been evaluated for this {EXCESS_MODEL_ID} pack; see "
+        "https://github.com/simonrowland/openimcc"
+    ) in result.labels.notices

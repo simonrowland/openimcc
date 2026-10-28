@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Scoped the Na₂O activity-bias evidence to the measured default D066 v5
+  identity. Other packs, including excess-Gibbs candidates, receive a neutral
+  `na2o-activity-bias-unscored` notice under the same composition gate.
+  Default-pack notice text and calculated values are unchanged.
+
 - Added a composition-scoped notice for likely Na₂O activity and Na(g)
   pressure overprediction when molar Na₂O/SiO₂ is at least one or the
   parent-mole fraction x(CaO+MgO) is at least 0.30. The notice reports the

@@ -233,6 +233,15 @@ _ALKALI_BIAS_BENCH_URL = "https://github.com/simonrowland/openimcc"
 # boundary with a consistently positive residual. Basicity is the CaO+MgO
 # mole fraction on the complete parent-oxide basis. Independently, Na2O/SiO2
 # >= 1 catches the severe low-silica Mathieu and Na-rich Pak binary errors.
+# Scored on D066 v5 only; candidate identities do not inherit these residuals.
+_NA2O_ACTIVITY_BIAS_MEASURED_MODEL_ID = "IMCC-SF04-D066"
+_NA2O_ACTIVITY_BIAS_MEASURED_BINDING_DIGEST = (
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
+)
+_NA2O_ACTIVITY_BIAS_UNSCORED_NOTICE = (
+    "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias evidence "
+    "was measured on the default D066 v5 pack; this pack has not been scored."
+)
 _NA2O_ACTIVITY_BIAS_RATIO_MIN = 1.0
 _NA2O_ACTIVITY_BIAS_BASICITY_MIN = 0.30
 _NA2O_ACTIVITY_BIAS_NOTICE = (
@@ -253,9 +262,20 @@ _NA2O_ACTIVITY_BIAS_NOTICE = (
 
 
 def _na2o_activity_bias_notice(
-    parent_oxides: Sequence[str], moles: np.ndarray
+    parent_oxides: Sequence[str],
+    moles: np.ndarray,
+    model_id: str,
+    binding_digest: str,
 ) -> str | None:
     """Flag Na-bearing melts in either held-out composition region."""
+    notice = (
+        _NA2O_ACTIVITY_BIAS_NOTICE
+        if (model_id, binding_digest) == (
+            _NA2O_ACTIVITY_BIAS_MEASURED_MODEL_ID,
+            _NA2O_ACTIVITY_BIAS_MEASURED_BINDING_DIGEST,
+        )
+        else _NA2O_ACTIVITY_BIAS_UNSCORED_NOTICE
+    )
     try:
         na_index = parent_oxides.index("Na2O")
         silica_index = parent_oxides.index("SiO2")
@@ -266,7 +286,7 @@ def _na2o_activity_bias_notice(
     if na <= 0.0:
         return None
     if silica > 0.0 and na / silica >= _NA2O_ACTIVITY_BIAS_RATIO_MIN:
-        return _NA2O_ACTIVITY_BIAS_NOTICE
+        return notice
     basicity = 0.0
     total = float(moles.sum())
     if total <= 0.0:
@@ -275,7 +295,7 @@ def _na2o_activity_bias_notice(
         if name in parent_oxides:
             basicity += float(moles[parent_oxides.index(name)])
     if basicity / total >= _NA2O_ACTIVITY_BIAS_BASICITY_MIN:
-        return _NA2O_ACTIVITY_BIAS_NOTICE
+        return notice
     return None
 
 
@@ -2221,7 +2241,9 @@ def evaluate(
     ):
         notices.append(_alkali_bias_notice(model_id, binding_digest))
 
-    na2o_activity_bias_notice = _na2o_activity_bias_notice(parent_oxides, vector)
+    na2o_activity_bias_notice = _na2o_activity_bias_notice(
+        parent_oxides, vector, model_id, binding_digest
+    )
     if na2o_activity_bias_notice is not None:
         notices.append(na2o_activity_bias_notice)
 
