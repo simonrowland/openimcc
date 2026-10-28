@@ -7339,7 +7339,7 @@ def test_weighted_oxygen_root_echoes_bulk_plane_label() -> None:
     assert labeled.bulk_plane == "overhead-headspace"
     assert labeled.pO2_bar == unlabeled.pO2_bar
     for bad in ("", "   ", 3):
-        with pytest.raises(ImccGasOxygenBalanceError, match="bulk_plane"):
+        with pytest.raises(gas_module.ImccGasOxygenBalanceError, match="bulk_plane"):
             gas_module.weighted_oxygen_balance_from_pressure_model(
                 pressure_model, weights, bulk_plane=bad, **common
             )
