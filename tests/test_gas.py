@@ -5911,6 +5911,125 @@ def test_oxygen_balance_ion_mode_is_opt_in_and_reports_high_temperature_shifts(
         assert math.isfinite(shift_dex), (temperature, shift_dex)
 
 
+def test_weighted_oxygen_root_exact_limits_and_frozen_fluxes(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = {"SiO2": 1e-5}
+    parents = tuple(activities)
+    metadata = gas_module.gas_channel_metadata(
+        activities, 2000.0, gas_pack, parent_oxides=parents,
+    )
+    channels = {name: entry for name, entry in metadata.items() if entry.available}
+    weights = {
+        name: data.oxygen_atoms - data.parent_oxygen_demand
+        for name, data in channels.items()
+    }
+    species = oxygen_balance_species_metadata({
+        name: gas_module._SF04_REACTIONS[name][0] for name in channels
+    })
+    pressure_model = lambda logp: dict(evaluate_gas(
+        activities, 2000.0, 10.0**logp, gas_pack, parent_oxides=parents,
+    ))
+
+    saturation = evaluate_gas_saturation(
+        activities, 2000.0, gas_pack, parent_oxides=parents,
+    )
+    advective = gas_module.weighted_oxygen_balance_from_pressure_model(
+        pressure_model, weights,
+        conductance_mol_m2_s_Pa={name: 1.0 for name in weights},
+        bulk_pressures_bar={name: 0.0 for name in weights},
+        log10_pO2_bracket=(-30.0, 0.0),
+    )
+    assert math.isclose(advective.pO2_bar, saturation.pO2_bar, rel_tol=0, abs_tol=1e-10)
+    for name in weights:
+        assert math.isclose(
+            advective.pressures_bar[name], saturation.species_pressures_bar[name],
+            rel_tol=1e-10, abs_tol=1e-300,
+        )
+
+    legacy_pO2, _legacy_pressures, _ = evaluate_gas_oxygen_balance(
+        activities, 2000.0, gas_pack, parent_oxides=parents,
+    )
+    molecular = gas_module.weighted_oxygen_balance_from_pressure_model(
+        pressure_model,
+        {name: (data.oxygen_atoms-data.parent_oxygen_demand)/math.sqrt(data.molar_mass)
+         for name, data in species.items()},
+        conductance_mol_m2_s_Pa={name: 1.0 for name in species},
+        bulk_pressures_bar={name: 0.0 for name in species},
+        log10_pO2_bracket=(-30.0, 0.0),
+    )
+    assert math.isclose(molecular.pO2_bar, legacy_pO2, rel_tol=0, abs_tol=1e-10)
+
+    scaled = gas_module.weighted_oxygen_balance_from_pressure_model(
+        pressure_model, weights,
+        conductance_mol_m2_s_Pa={name: 1e7 for name in weights},
+        bulk_pressures_bar={name: 0.0 for name in weights},
+        log10_pO2_bracket=(-30.0, 0.0),
+    )
+    assert math.isclose(scaled.pO2_bar, advective.pO2_bar, rel_tol=0, abs_tol=1e-12)
+    assert advective.root_count == 1
+    assert "sampled" in advective.root_count_evidence
+
+
+def test_weighted_oxygen_root_reversible_zero_and_clipping_counterexample() -> None:
+    target = 1.0
+    pressure_model = lambda logp: {
+        "M": 2.0 / 10.0**logp,
+        "O2": 10.0**logp,
+        "O": 10.0**logp,
+    }
+    weights = {"M": -1.0, "O2": 2.0, "O": 1.0}
+    conductance = {"M": 1.0, "O2": 2.0, "O": 1.0}
+    equilibrium = pressure_model(0.0)
+    zero = gas_module.weighted_oxygen_balance_from_pressure_model(
+        pressure_model, weights, conductance_mol_m2_s_Pa=conductance,
+        bulk_pressures_bar=equilibrium, log10_pO2_bracket=(-3.0, 3.0),
+    )
+    assert zero.pO2_bar == target
+    assert all(flux == 0.0 for flux in zero.signed_fluxes_mol_m2_s.values())
+
+    clipped = gas_module.weighted_oxygen_balance_from_pressure_model(
+        pressure_model, weights, conductance_mol_m2_s_Pa=conductance,
+        bulk_pressures_bar={"M": 0.0, "O2": 0.0, "O": 3.0},
+        log10_pO2_bracket=(-3.0, 3.0),
+    )
+    assert clipped.pO2_bar == target
+    assert abs(clipped.residual_mol_m2_s) < 1e-8
+    assert clipped.applied_residual_mol_m2_s == pytest.approx(2e5)
+    assert clipped.applied_flux_closes is False
+
+
+def test_weighted_oxygen_root_samples_monotonicity_and_root_count() -> None:
+    root = gas_module.weighted_oxygen_balance_from_pressure_model(
+        lambda logp: {"O2": 10.0**logp}, {"O2": 1.0},
+        conductance_mol_m2_s_Pa={"O2": 1.0},
+        bulk_pressures_bar={"O2": 1.0}, log10_pO2_bracket=(-2.0, 2.0),
+    )
+    assert root.pO2_bar == 1.0
+    assert root.monotonicity == "increasing"
+    with pytest.raises(ImccGasOxygenBalanceError, match="2 sampled roots"):
+        gas_module.weighted_oxygen_balance_from_pressure_model(
+            lambda logp: {"X": (10.0**logp-1.0)**2 + 0.01}, {"X": 1.0},
+            conductance_mol_m2_s_Pa={"X": 1.0},
+            bulk_pressures_bar={"X": 0.2}, log10_pO2_bracket=(-1.0, 1.0),
+        )
+
+
+def test_gas_channel_metadata_includes_stoichiometry_charge_and_availability(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    metadata = gas_module.gas_channel_metadata(
+        {"SiO2": 1.0}, 1800.0, gas_pack,
+        parent_oxides=("SiO2",), include_ions=True,
+    )
+    assert metadata["SiO2"].available
+    assert metadata["SiO2"].oxygen_atoms == 2
+    assert metadata["SiO2"].neutral_pO2_exponent == 0
+    assert metadata["Si+"].charge == 1
+    assert metadata["Si+"].neutral_pO2_exponent is None
+    assert not metadata["Si+"].available
+
+
 @pytest.mark.parametrize("include_ions", (False, True))
 @pytest.mark.parametrize(
     "entry_point", ("evaluate_gas", "oxygen_balance", "saturation"),

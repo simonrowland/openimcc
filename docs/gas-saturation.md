@@ -39,3 +39,37 @@ grid and refuses if it finds more than one sign-changing interval. That scan
 cannot exclude a narrow pair of roots or a tangent root between sample points.
 The neutral path reports `"proved"` only when its pressure-exponent sign
 criterion establishes monotonicity.
+
+## Engine-neutral weighted net-flux root
+
+`weighted_oxygen_balance_from_pressure_model` is the shared mathematical
+primitive for a simulator that compares melt engines. Each engine supplies
+equilibrium channel pressures in bar as a function of `log10(pO2/bar)` and
+its own fixed surface snapshot. The simulator supplies one explicit oxygen
+weight per channel, frozen nonnegative conductances in
+`mol m^-2 s^-1 Pa^-1`, frozen bulk partial pressures in bar, and a bounded
+log-pO2 interval. The function solves
+
+`Σᵢ wᵢ kᵢ (pᵢ,eq − pᵢ,bulk) = 0`,
+
+converting bar to Pa once when it returns signed molar fluxes. It contains no
+transport preset or engine-specific policy. A pressures-only engine must
+additionally supply canonical species identity, oxygen atoms, parent-oxide
+oxygen demand (or the chosen explicit weight), reservoir inclusion policy,
+charged-species availability and any shared charge-aware transport policy.
+Name the equilibrium and bulk pressure planes, surface temperature, and flux
+area basis; report the callback's supported range, phase changes, validity and
+omitted species. The root callback must hold temperature, melt state,
+conductances and bulk pressures fixed over each solve.
+
+The result reports the signed residual and the residual after negative fluxes
+are clipped to zero. A signed root whose applied residual fails the returned
+`applied_flux_closes` check is not oxygen-closed after clipping; the simulator
+must not certify it as a closed applied source. Root count and monotonicity are
+sampled evidence for arbitrary callbacks, not a global uniqueness proof.
+`gas_channel_metadata` exposes openimcc's selected reaction metadata and
+missing-table status using the same reaction tables and
+`oxygen_balance_species_metadata`. The standalone saturation and molecular
+effusion closures remain convenience policies; a cross-engine simulator uses
+the weighted root with the same conductance and control policy for every
+engine.

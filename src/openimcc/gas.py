@@ -322,6 +322,39 @@ class ImccGasSaturationResult:
 
 
 @dataclass(frozen=True)
+class GasChannelMetadata:
+    """Stoichiometric and charge metadata for one selected gas channel."""
+
+    species: str
+    oxygen_atoms: float
+    parent_oxygen_demand: float
+    charge: int
+    available: bool
+    neutral_pO2_exponent: float | None
+
+
+@dataclass(frozen=True)
+class WeightedOxygenBalanceResult:
+    """Root and signed/applied flux evidence for a frozen transport snapshot."""
+
+    pO2_bar: float
+    pressures_bar: Mapping[str, float]
+    signed_fluxes_mol_m2_s: Mapping[str, float]
+    residual_mol_m2_s: float
+    applied_residual_mol_m2_s: float
+    applied_flux_closes: bool
+    root_bracket_log10_pO2: tuple[float, float]
+    root_count: int
+    root_count_evidence: str
+    monotonicity: str
+    model_evaluations: int
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "pressures_bar", MappingProxyType(dict(self.pressures_bar)))
+        object.__setattr__(self, "signed_fluxes_mol_m2_s", MappingProxyType(dict(self.signed_fluxes_mol_m2_s)))
+
+
+@dataclass(frozen=True)
 class SpeciesThermo:
     """Thermodynamic properties returned by :func:`species_thermo`.
 
@@ -6135,6 +6168,204 @@ def oxygen_balance_species_metadata(
             mass, oxygen_atoms, parent_oxygen, exponent
         )
     return metadata
+
+
+def gas_channel_metadata(
+    activities: Mapping[str, float] | Sequence[float] | np.ndarray,
+    temperature_K: float,
+    datapack: ImccGasDatapack,
+    *,
+    parent_oxides: Sequence[str] | None = None,
+    include_ions: bool = False,
+) -> Mapping[str, GasChannelMetadata]:
+    """Expose selected reaction-channel stoichiometry and table availability.
+
+    Neutral weights reuse :func:`oxygen_balance_species_metadata` and the
+    retained reaction tables, including the side-oxide and gas-parent rules
+    used by the legacy oxygen balance. Charged channels use full neutral
+    formula attribution; their neutral pO2 exponent is not asserted.
+    """
+    if parent_oxides is None:
+        parents = list(
+            key for key in activities if key in _REACTION_PARENT_OXIDES
+        ) if isinstance(activities, Mapping) else list(IMCC_PARENT_OXIDES)
+    else:
+        parents = list(parent_oxides)
+    if isinstance(activities, Mapping):
+        parents.extend(
+            key for key in activities
+            if key in _nonoxide_parent_keys() and key not in parents
+        )
+    channels, omitted = _default_reactions(parents, datapack, float(temperature_K))
+    selected_by_name = dict(channels)
+    selected_by_name.update(
+        (name, _SF04_REACTIONS[name]) for name in omitted
+    )
+    neutral_parents = {name: reaction[0] for name, reaction in selected_by_name.items()}
+    base = oxygen_balance_species_metadata(neutral_parents)
+    result: dict[str, GasChannelMetadata] = {}
+    for name, (parent, n_gas, n_o2) in selected_by_name.items():
+        data = base[name]
+        exponent: float | None = data.pO2_exponent
+        side = _ALKALI_HALIDE_REACTION_OXIDES.get(name)
+        if side:
+            data = data._replace(
+                parent_oxygen_demand=side[1], pO2_exponent=-side[2]
+            )
+            exponent = -side[2]
+        elif parent in _GAS_PHASE_PARENT_ROWS:
+            data = data._replace(parent_oxygen_demand=0.0, pO2_exponent=n_o2)
+            exponent = n_o2
+        elif name in _HALIDE_REACTIONS or name in _HYDROGEN_HALIDE_PARENTS:
+            data = data._replace(parent_oxygen_demand=0.0)
+        result[name] = GasChannelMetadata(
+            name, data.oxygen_atoms, data.parent_oxygen_demand, 0,
+            name not in omitted, exponent,
+        )
+
+    if include_ions:
+        ion_pairs = (*_GAS_IONIZATION_PAIRS, *_GAS_ELECTRON_ATTACHMENTS)
+        ion_rows = set(datapack.gas_df.index)
+        for neutral, ion in ion_pairs:
+            if neutral not in result:
+                continue
+            neutral_data = result[neutral]
+            formula = neutral
+            atoms = _formula_atoms(formula)
+            result[ion] = GasChannelMetadata(
+                ion,
+                float(atoms.get("O", 0)),
+                neutral_data.parent_oxygen_demand,
+                1 if ion.endswith("+") else -1,
+                f"{ion}(g)" in ion_rows and neutral_data.available,
+                None,
+            )
+        result["e-"] = GasChannelMetadata(
+            "e-", 0.0, 0.0, -1,
+            "e-(g)" in ion_rows, None,
+        )
+    return MappingProxyType(result)
+
+
+def weighted_oxygen_balance_from_pressure_model(
+    pressure_model: Callable[[float], Mapping[str, float]],
+    oxygen_weights: Mapping[str, float],
+    *,
+    conductance_mol_m2_s_Pa: Mapping[str, float],
+    bulk_pressures_bar: Mapping[str, float],
+    log10_pO2_bracket: tuple[float, float],
+) -> WeightedOxygenBalanceResult:
+    """Solve a frozen, engine-neutral signed net-flux oxygen balance.
+
+    ``pressure_model`` maps log10(pO2/bar) to equilibrium pressures in bar.
+    Conductances are mol m^-2 s^-1 Pa^-1; bar-to-Pa conversion occurs here
+    exactly once. The scan only provides sampled root-count evidence for
+    arbitrary callbacks, not a global uniqueness proof.
+    """
+    names = tuple(oxygen_weights)
+    if not names or set(names) != set(conductance_mol_m2_s_Pa) or set(names) != set(bulk_pressures_bar):
+        raise ImccGasOxygenBalanceError(
+            "weights, conductances, and bulk pressures must have the same nonempty species keys"
+        )
+    weights: dict[str, float] = {}
+    conductance: dict[str, float] = {}
+    bulk: dict[str, float] = {}
+    for name in names:
+        try:
+            weights[name] = float(oxygen_weights[name])
+            conductance[name] = float(conductance_mol_m2_s_Pa[name])
+            bulk[name] = float(bulk_pressures_bar[name])
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ImccGasOxygenBalanceError(f"invalid frozen input for {name!r}") from exc
+        if not math.isfinite(weights[name]):
+            raise ImccGasOxygenBalanceError(f"non-finite oxygen weight for {name!r}")
+        if not math.isfinite(conductance[name]) or conductance[name] < 0.0:
+            raise ImccGasOxygenBalanceError(f"conductance for {name!r} must be finite and nonnegative")
+        if not math.isfinite(bulk[name]) or bulk[name] < 0.0:
+            raise ImccGasOxygenBalanceError(f"bulk pressure for {name!r} must be finite and nonnegative")
+    try:
+        low, high = map(float, log10_pO2_bracket)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ImccGasOxygenBalanceError("invalid weighted oxygen-balance bracket") from exc
+    if not (math.isfinite(low) and math.isfinite(high) and low < high):
+        raise ImccGasOxygenBalanceError(f"invalid weighted oxygen-balance bracket {log10_pO2_bracket}")
+
+    evaluations = 0
+
+    def evaluate(logp: float) -> tuple[float, dict[str, float], dict[str, float]]:
+        nonlocal evaluations
+        evaluations += 1
+        try:
+            raw = pressure_model(logp)
+        except Exception as exc:
+            raise ImccGasOxygenBalanceError(
+                f"pressure model refused log10(pO2/bar)={logp}: {exc}"
+            ) from exc
+        if not isinstance(raw, MappingABC) or set(raw) != set(names):
+            raise ImccGasOxygenBalanceError(
+                f"pressure model must return exactly the declared species at log10(pO2/bar)={logp}"
+            )
+        pressures: dict[str, float] = {}
+        fluxes: dict[str, float] = {}
+        for name in names:
+            try:
+                pressure = float(raw[name])
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ImccGasOxygenBalanceError(f"invalid pressure for {name!r}") from exc
+            if not math.isfinite(pressure) or pressure < 0.0:
+                raise ImccGasOxygenBalanceError(f"pressure for {name!r} must be finite and nonnegative")
+            pressures[name] = pressure
+            fluxes[name] = conductance[name] * (pressure - bulk[name]) * 1e5
+            if not math.isfinite(fluxes[name]):
+                raise ImccGasOxygenBalanceError(f"non-finite flux for {name!r}")
+        residual = math.fsum(weights[name] * fluxes[name] for name in names)
+        if not math.isfinite(residual):
+            raise ImccGasOxygenBalanceError("weighted oxygen-flux residual is non-finite")
+        return residual, pressures, fluxes
+
+    nodes = np.linspace(low, high, 81)
+    samples = [evaluate(float(node))[0] for node in nodes]
+    if all(value == 0.0 for value in samples):
+        raise ImccGasOxygenBalanceError("weighted oxygen-flux residual is identically zero; pO2 is underdetermined")
+    increasing = all(right >= left for left, right in zip(samples, samples[1:]))
+    decreasing = all(right <= left for left, right in zip(samples, samples[1:]))
+    monotonicity = "increasing" if increasing and not decreasing else "decreasing" if decreasing and not increasing else "constant" if increasing else "nonmonotone"
+    roots: list[tuple[float, float]] = []
+    for index, value in enumerate(samples):
+        if value == 0.0:
+            roots.append((float(nodes[index]), float(nodes[index])))
+    for index, (left, right) in enumerate(zip(samples, samples[1:])):
+        if left * right < 0.0:
+            roots.append((float(nodes[index]), float(nodes[index + 1])))
+    if len(roots) != 1:
+        raise ImccGasOxygenBalanceError(
+            f"weighted oxygen-flux residual has {len(roots)} sampled roots in {log10_pO2_bracket}"
+        )
+    root_bracket = roots[0]
+    if root_bracket[0] == root_bracket[1]:
+        root = root_bracket[0]
+    else:
+        try:
+            root = float(brentq(lambda value: evaluate(value)[0], *root_bracket, xtol=1e-12))
+        except (ValueError, RuntimeError) as exc:
+            raise ImccGasOxygenBalanceError(f"weighted oxygen-flux solve failed: {exc}") from exc
+    residual, pressures, fluxes = evaluate(root)
+    applied = math.fsum(
+        weights[name] * max(fluxes[name], 0.0) for name in names
+    )
+    scale = math.fsum(abs(weights[name] * fluxes[name]) for name in names)
+    applied_closes = abs(applied) <= max(1e-12 * scale, 1e-300)
+    try:
+        p_o2 = 10.0**root
+    except OverflowError as exc:
+        raise ImccGasOxygenBalanceError("root pO2 is outside the finite pressure range") from exc
+    if not math.isfinite(p_o2) or p_o2 <= 0.0:
+        raise ImccGasOxygenBalanceError("root pO2 is outside the finite pressure range")
+    return WeightedOxygenBalanceResult(
+        p_o2, pressures, fluxes, residual, applied, applied_closes,
+        root_bracket, 1, "sampled; finite scan does not prove global uniqueness",
+        monotonicity, evaluations,
+    )
 
 
 def oxygen_balance_from_pressure_model(
