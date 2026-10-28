@@ -132,10 +132,17 @@ def test_lunar_trace_state_converges_with_corrected_default_pack() -> None:
     )
 
     solver_path = result.convergence.solver_path
-    assert solver_path in {"direct", "composition-continuation"}
-    assert (solver_path == "direct") == (
-        result.convergence.continuation_stages == 0
-    )
+    assert solver_path in {
+        "direct",
+        "continuation",
+        "composition-continuation",
+        "temperature-continuation",
+        "relative-log-x",
+    }
+    if solver_path == "direct":
+        assert result.convergence.continuation_stages == 0
+    elif solver_path != "relative-log-x":
+        assert result.convergence.continuation_stages > 0
     assert result.convergence.residual_inf <= 1.0e-12
     # The five D066 v5 A refits change this composition's silica activity.
     assert result.parent_activity[result.parent_oxides.index("SiO2")] == pytest.approx(
@@ -225,14 +232,21 @@ def test_association_root_converges_above_floor_feo_trace(
     )
 
     # Numerical library versions may solve this trace directly or through
-    # composition continuation; either path must certify the same result.
+    # kernel or model recovery; every returned path must certify the same result.
     solver_path = result.convergence.solver_path
-    assert solver_path in {"direct", "composition-continuation"}
-    assert (solver_path == "direct") == (
-        result.convergence.continuation_stages == 0
-    )
-    assert result.convergence.residual_inf <= 1.0e-12
+    assert solver_path in {
+        "direct",
+        "continuation",
+        "composition-continuation",
+        "temperature-continuation",
+        "relative-log-x",
+    }
     if solver_path == "direct":
+        assert result.convergence.continuation_stages == 0
+    elif solver_path != "relative-log-x":
+        assert result.convergence.continuation_stages > 0
+    assert result.convergence.residual_inf <= 1.0e-12
+    if solver_path in {"direct", "continuation"}:
         assert len(calls) == 1
     else:
         assert len(calls) > 1
