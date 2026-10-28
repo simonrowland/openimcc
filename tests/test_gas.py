@@ -6220,6 +6220,18 @@ def test_weighted_oxygen_root_curved_and_sampled_only_narrow_pair() -> None:
     assert "finite scan does not prove global uniqueness" in sampled.root_count_evidence
 
 
+def test_weighted_oxygen_root_sampled_tangent_is_not_global_proof() -> None:
+    tangent = 0.123456
+    pressure_model = lambda x: {"X": 10.0+(x-tangent)**2*(x-0.7)}
+    result = gas_module.weighted_oxygen_balance_from_pressure_model(
+        pressure_model, {"X": 1.0}, conductance_mol_m2_s_Pa={"X": 1.0},
+        bulk_pressures_bar={"X": 10.0}, log10_pO2_bracket=(-1.0, 1.0),
+    )
+    assert result.pO2_bar == pytest.approx(10.0**0.7, rel=1e-10)
+    assert result.root_count == 1
+    assert "finite scan does not prove global uniqueness" in result.root_count_evidence
+
+
 def test_weighted_oxygen_root_translates_weighted_sum_overflow() -> None:
     solve = gas_module.weighted_oxygen_balance_from_pressure_model
     scan_cases = (
@@ -6380,7 +6392,7 @@ def test_gas_channel_metadata_uses_evaluator_activity_validation(
 @pytest.mark.parametrize(
     "activities,parents",
     [
-        ({"SiO2": 1e-5, "Na2O": 1e-5, "CaO": 1e-5}, None),
+        ({"SiO2": 1e-5, "Na2O": 1e-5, "CaO": 1e-5, "Cl2": 0.1}, None),
         ({"H2": 0.1, "S2": 0.1, "N2": 0.1}, None),
         ({"Na2O": 1e-5, "Cl2": 0.1}, None),
         ({"Cs2O": 1e-5}, ("Cs2O",)),
@@ -6404,6 +6416,17 @@ def test_gas_channel_metadata_matches_mixed_and_nonoxide_parents(
     if "Na2O" in activities and "Cl2" in activities:
         assert metadata["NaCl"].parent_oxygen_demand == pytest.approx(0.5)
         assert metadata["NaCl"].neutral_pO2_exponent == pytest.approx(-0.25)
+        assert metadata["(NaCl)2"].parent_oxygen_demand == pytest.approx(1.0)
+        assert metadata["(NaCl)2"].neutral_pO2_exponent == pytest.approx(-0.5)
+        assert metadata["SiO"].parent_oxygen_demand == pytest.approx(2.0)
+        assert metadata["CaO"].parent_oxygen_demand == pytest.approx(1.0)
+    if "H2" in activities:
+        for species, atoms, exponent in (
+            ("H2O", 1.0, 0.5), ("SO2", 2.0, 1.0), ("NO", 1.0, 0.5),
+        ):
+            assert metadata[species].oxygen_atoms == pytest.approx(atoms)
+            assert metadata[species].parent_oxygen_demand == pytest.approx(0.0)
+            assert metadata[species].neutral_pO2_exponent == pytest.approx(exponent)
     if "Cs2O" in activities:
         assert metadata["Cs2O+"].oxygen_atoms == pytest.approx(1.0)
         assert metadata["Cs2O+"].parent_oxygen_demand == pytest.approx(1.0)
@@ -6441,6 +6464,27 @@ def test_weighted_oxygen_root_can_exclude_an_imposed_gas_reservoir(
     assert set(weighted.pressures_bar) == set(legacy_pressures)
     for name, pressure in legacy_pressures.items():
         assert weighted.pressures_bar[name] == pytest.approx(pressure, rel=1e-10, abs=1e-300)
+
+
+def test_gas_channel_metadata_ignores_invalid_activity_for_omitted_parent_rows(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    oxide_df = gas_pack.oxide_df.loc[
+        ~gas_pack.oxide_df.index.to_series().str.startswith("Cs2O").to_numpy()
+    ].copy()
+    missing_optional_row_pack = replace(gas_pack, oxide_df=oxide_df)
+    activities = {"Cs2O": -1.0}
+    metadata = gas_module.gas_channel_metadata(
+        activities, 2000.0, missing_optional_row_pack,
+        parent_oxides=("Cs2O",),
+    )
+    pressure_result = evaluate_gas(
+        activities, 2000.0, 1e-5, missing_optional_row_pack,
+        parent_oxides=("Cs2O",),
+    )
+    assert set(pressure_result) == {"O", "O2"}
+    assert {name for name, item in metadata.items() if item.available} == set(pressure_result)
+    assert any(name.startswith("Cs") and not item.available for name, item in metadata.items())
 
 
 @pytest.mark.parametrize("include_ions", (False, True))

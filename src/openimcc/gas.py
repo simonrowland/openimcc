@@ -6268,7 +6268,7 @@ def gas_channel_metadata(
     selected_by_name.update(
         (name, _SF04_REACTIONS[name]) for name in omitted
     )
-    for species, (parent, _n_gas, _n_o2) in selected_by_name.items():
+    for species, (parent, _n_gas, _n_o2) in channels:
         if parent:
             value = activity_values.get(parent)
             if value is None:
