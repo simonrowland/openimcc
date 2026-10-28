@@ -355,6 +355,9 @@ class WeightedOxygenBalanceResult:
     root_count_evidence: str
     monotonicity: str
     model_evaluations: int
+    # Caller-named plane at which bulk_pressures_bar apply (for example a
+    # well-mixed headspace or a boundary-layer edge). Echoed, never interpreted.
+    bulk_plane: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "pressures_bar", MappingProxyType(dict(self.pressures_bar)))
@@ -6345,6 +6348,7 @@ def weighted_oxygen_balance_from_pressure_model(
     conductance_mol_m2_s_Pa: Mapping[str, float],
     bulk_pressures_bar: Mapping[str, float],
     log10_pO2_bracket: tuple[float, float],
+    bulk_plane: str | None = None,
 ) -> WeightedOxygenBalanceResult:
     """Solve a frozen, engine-neutral signed net-flux oxygen balance.
 
@@ -6356,8 +6360,12 @@ def weighted_oxygen_balance_from_pressure_model(
     times the absolute weighted-transfer scale. The result exposes that scale
     and its forward/backward components. Applied-flux closure uses the same
     relative scale with no absolute floor; zero transfer is reported
-    explicitly and never certified as applied closure.
+    explicitly and never certified as applied closure. ``bulk_plane`` names
+    the plane the caller's bulk pressures describe; it is echoed in the result
+    and not interpreted.
     """
+    if bulk_plane is not None and (not isinstance(bulk_plane, str) or not bulk_plane.strip()):
+        raise ImccGasOxygenBalanceError("bulk_plane must be a nonempty string or None")
     names = tuple(oxygen_weights)
     if not names or set(names) != set(conductance_mol_m2_s_Pa) or set(names) != set(bulk_pressures_bar):
         raise ImccGasOxygenBalanceError(
@@ -6543,7 +6551,7 @@ def weighted_oxygen_balance_from_pressure_model(
         bulk_scale, gross_scale, forward_scale,
         backward_scale, applied, applied_closes, closure_state,
         root_bracket, 1, "sampled; finite scan does not prove global uniqueness",
-        monotonicity, evaluations,
+        monotonicity, evaluations, bulk_plane,
     )
 
 

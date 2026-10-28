@@ -7315,3 +7315,31 @@ def test_refining_temperature_seam_rows_evaluate_with_supercooling_notices() -> 
         below_selected_k2o_fusion.domain_flags["K"]
     )
     assert species_thermo("K2O", "l", 1033.0, pack).source_table_id == "K-012"
+
+
+def test_weighted_oxygen_root_echoes_bulk_plane_label() -> None:
+    import openimcc.gas as gas_module
+
+    def pressure_model(logp: float) -> dict[str, float]:
+        return {"M": 2.0 / 10.0**logp, "O2": 10.0**logp}
+
+    common = dict(
+        conductance_mol_m2_s_Pa={"M": 1.0, "O2": 1.0},
+        bulk_pressures_bar={"M": 0.0, "O2": 0.0},
+        log10_pO2_bracket=(-3.0, 3.0),
+    )
+    weights = {"M": -1.0, "O2": 2.0}
+    unlabeled = gas_module.weighted_oxygen_balance_from_pressure_model(
+        pressure_model, weights, **common
+    )
+    labeled = gas_module.weighted_oxygen_balance_from_pressure_model(
+        pressure_model, weights, bulk_plane="overhead-headspace", **common
+    )
+    assert unlabeled.bulk_plane is None
+    assert labeled.bulk_plane == "overhead-headspace"
+    assert labeled.pO2_bar == unlabeled.pO2_bar
+    for bad in ("", "   ", 3):
+        with pytest.raises(ImccGasOxygenBalanceError, match="bulk_plane"):
+            gas_module.weighted_oxygen_balance_from_pressure_model(
+                pressure_model, weights, bulk_plane=bad, **common
+            )

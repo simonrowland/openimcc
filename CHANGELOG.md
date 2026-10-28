@@ -15,6 +15,9 @@
   redox evaluation refuses candidates with active terms. See
   `docs/datapack-format.md`.
 
+- The weighted net-flux oxygen root accepts an optional caller-named
+  `bulk_plane` label for its bulk pressures and echoes it in the result.
+
 - Added engine-neutral weighted net-flux oxygen closure and selected gas-channel
   stoichiometry/charge/availability metadata. The new root validates signed
   closure, reports net and gross equilibrium/bulk transfer scales and

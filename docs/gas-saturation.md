@@ -48,7 +48,9 @@ equilibrium channel pressures in bar as a function of `log10(pO2/bar)` and
 its own fixed surface snapshot. The simulator supplies one explicit oxygen
 weight per channel, frozen nonnegative conductances in
 `mol m^-2 s^-1 Pa^-1`, frozen bulk partial pressures in bar, and a bounded
-log-pO2 interval. The function solves
+log-pO2 interval, and may name the plane its bulk pressures describe with
+`bulk_plane` (for example a well-mixed headspace); the label is echoed in the
+result and never interpreted. The function solves
 
 `Σᵢ wᵢ kᵢ (pᵢ,eq − pᵢ,bulk) = 0`,
 
