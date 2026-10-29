@@ -769,11 +769,9 @@ def test_imposed_endpoint_uses_a_tight_caller_tolerance() -> None:
         inventory,
         2200.0,
         "imposed",
-        lambda_imposed=-17.931129807709393,
+        lambda_imposed=0.0,
     )
     requested_lambda = saturation.lambda_sat - 5.0e-11
-    # This gap is inside the old fixed 1e-10 acceptance band, but outside the
-    # 100*tol allowance for this tighter call.
     result = evaluate_redox(
         inventory,
         2200.0,
@@ -783,7 +781,19 @@ def test_imposed_endpoint_uses_a_tight_caller_tolerance() -> None:
     )
 
     assert result.lambda_ln_f_o2 == requested_lambda
-    assert result.metal_moles > 0.0
+    assert result.lambda_sat == requested_lambda
+    assert result.metal_moles == pytest.approx(3.4560798667e-11, rel=1e-6)
+
+    # At the public default, the endpoint band still leaves this request at
+    # the all-dissolved result; keep the implicit and explicit defaults exact.
+    default_result = evaluate_redox(
+        inventory, 2200.0, "imposed", lambda_imposed=requested_lambda
+    )
+    explicit_default_result = evaluate_redox(
+        inventory, 2200.0, "imposed", lambda_imposed=requested_lambda, tol=1e-12
+    )
+    assert default_result == explicit_default_result
+    assert default_result.metal_moles == 0.0
 
 
 def test_closed_mode_missing_oxygen_guard_survives_python_optimization() -> None:
