@@ -747,18 +747,19 @@ Output:
 ```text
 activities: {'SiO2': '0.32943', 'MgO': '0.00422664', 'FeO': '0.0714214', 'CaO': '0.000109952', 'Al2O3': '0.0186766', 'TiO2': '0.00195415', 'Na2O': '2.34818e-10', 'K2O': '4.61106e-15'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
-melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see https://github.com/simonrowland/openimcc', "multicomponent-activity-pattern: on the default D066 v5 pack, Kume et al. (2000) multicomponent CMAS/CAS/CMS activity residuals (log10(predicted/measured), after solid-to-liquid standard conversion) at 1823–1873 K vary with NBO/T: SiO2 residuals become more negative and CaO and MgO residuals more positive as NBO/T rises. RMSEs are 0.44 dex (SiO2), 0.59 dex (CaO), and 0.49 dex (MgO). Al-bearing association, temperature, and source method are confounded; no cause is established. Effectively binary CaO–SiO2 Kume rows have slopes near zero. Stolyarova (1991) reports a CaO slope of about +0.3 dex/NBO/T at 1933 K, but its silica table conflicts with the paper's closure.")
+melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see https://github.com/simonrowland/openimcc', "multicomponent-activity-pattern: on default D066 v5, Kume et al. (2000) synthetic CAS/CMS/CMAS slags, after solid-to-liquid standard conversion, were measured at 1823–1873 K. SiO2 residuals (log10(predicted/measured)) decrease with NBO/T in CAS (Table 2: slope −0.238 dex/NBO/T, n=47) and CMS (Table 3: slope −0.362 dex/NBO/T, n=27), not in the four-oxide CMAS family that triggers this notice (Table 4 has no SiO2 rows). Across CAS+CMS+CMAS, RMSEs are 0.47 dex (SiO2, n=72), 0.59 (CaO, n=87), and 0.50 (MgO, n=43); four-oxide CMAS RMSEs are 0.81 dex (CaO, n=15) and 0.57 (MgO, n=15). CaO and MgO residuals become more positive with NBO/T. Al-bearing association, temperature, and source method are confounded; no cause is established. Effectively binary CaO–SiO2 Kume slopes are near zero. A regression of binary CaO–SiO2 KEMS activities from Stolyarova et al. (1991, 1933 K) gives a CaO slope of about +0.2 to +0.3 dex/NBO/T; their silica table conflicts with the paper's own closure, and this binary result does not establish the multicomponent pattern.")
 gas: bar {'Na': '0.000197593', 'K': '5.2382e-06'}
 Mg domain flag: MgO(l) uses a labelled constant-Cp supercooled-liquid continuation from JANAF Mg-009
 ```
 
 The `paper-demonstrated-window` flag records that some complex rows are outside
-their paper-demonstrated temperature range. The notice reports the Hastie 1981
-KEMS case-4 bias measured for the loaded melt pack; a pack without a measured
-row says it has not been evaluated. It is part of the result, not a reason to
-hide those activities. The gas `Mg` flag reports use of the labelled
-supercooled-liquid continuation below the default JANAF MgO(l) fit start at
-2200 K.
+their paper-demonstrated temperature range. The Hastie notice reports the
+measured KEMS case-4 bias; packs without that comparison use unscored wording.
+The multicomponent notice describes Kume's synthetic CAS/CMS/CMAS evidence;
+its SiO₂ direction comes from CAS/CMS, while the four-oxide CMAS rows have no
+SiO₂ measurements. These notices report evidence and do not change calculated
+activities. The gas `Mg` flag reports use of the labelled supercooled-liquid
+continuation below the default JANAF MgO(l) fit start at 2200 K.
 
 With the basalt's activities evaluated at each temperature (extrapolated and
 flagged outside the melt pack's domain) and `fO2 = 1e-10`, the sodium gas

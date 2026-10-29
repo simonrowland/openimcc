@@ -746,7 +746,16 @@ def test_multicomponent_pattern_cmas_values_unchanged() -> None:
         for notice in result.labels.notices
         if notice.startswith(_MULTICOMPONENT_ACTIVITY_PATTERN_MARKERS)
     )
-    assert notices == (model._MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE,)
+    assert len(notices) == 1
+    notice = notices[0]
+    assert notice.startswith("multicomponent-activity-pattern:")
+    assert "Kume et al. (2000) synthetic CAS/CMS/CMAS slags" in notice
+    assert "CAS (Table 2: slope −0.238 dex/NBO/T, n=47)" in notice
+    assert "CMS (Table 3: slope −0.362 dex/NBO/T, n=27)" in notice
+    assert "Table 4 has no SiO2 rows" in notice
+    assert "four-oxide CMAS RMSEs are 0.81 dex (CaO, n=15)" in notice
+    assert "0.57 (MgO, n=15)" in notice
+    assert "this binary result does not establish the multicomponent pattern" in notice
 
     # Hex literals pin the calculated outputs from before this notice existed.
     assert tuple(float(value).hex() for value in result.parent_activity) == (
@@ -788,13 +797,11 @@ def test_multicomponent_pattern_gate_boundaries() -> None:
     moles = np.array((0.70, 0.10, 0.10, 0.10))
     notice = model._multicomponent_activity_pattern_notice
 
-    assert (
-        notice(parents, moles, 1700.0, *identity)
-        == model._MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE
+    assert notice(parents, moles, 1700.0, *identity).startswith(
+        "multicomponent-activity-pattern:"
     )
-    assert (
-        notice(parents, moles, 3000.0, *identity)
-        == model._MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE
+    assert notice(parents, moles, 3000.0, *identity).startswith(
+        "multicomponent-activity-pattern:"
     )
     assert notice(parents, moles, 1699.99, *identity) is None
     assert notice(parents, moles, 3000.01, *identity) is None
@@ -829,7 +836,9 @@ def test_multicomponent_pattern_identity_scope() -> None:
         for notice in result.labels.notices
         if notice.startswith(_MULTICOMPONENT_ACTIVITY_PATTERN_MARKERS)
     )
-    assert notices == (model._MULTICOMPONENT_ACTIVITY_PATTERN_UNSCORED_NOTICE,)
+    assert len(notices) == 1
+    assert notices[0].startswith("multicomponent-activity-pattern-unscored:")
+    assert "this pack has not been scored" in notices[0]
 
 
 def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None:
