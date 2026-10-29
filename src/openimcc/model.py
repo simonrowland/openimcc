@@ -1676,7 +1676,13 @@ def evaluate(
         If ``True``, evaluate outside the validated Tier-A composition
         envelope and mark the result ``outside_validated``.
     tol:
-        Infinity-norm residual convergence tolerance passed to the kernel.
+        Positive, dimensionless maximum relative parent-inventory error
+        accepted at the kernel's final certificate. For each positive parent,
+        the checked error is ``(a_i + sum_j(nu_ij*g_j)) / (D*X_i) - 1`` and
+        its absolute value must be at most ``tol``. The established cold-start
+        least-squares path still uses an absolute balance-residual stopping
+        norm; parent-scaled recovery paths use ``||f/X||_inf``. Those internal
+        stopping norms are distinct from the final certificate.
     max_iter:
         Newton iteration ceiling passed to the kernel.
     y_init:

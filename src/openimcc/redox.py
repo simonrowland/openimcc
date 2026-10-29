@@ -1964,6 +1964,13 @@ def evaluate_redox(
     saturation at the imposed lambda.
     ``lambda_imposed`` is ``ln(fO2 / 1 bar)``. Pressure is not an independent
     input once oxygen fugacity has been supplied through lambda.
+    ``tol`` is a positive, dimensionless relative tolerance for each active
+    parent balance in the liquid solve. The warm solver checks
+    ``||f / X||_inf`` and certifies each parent with ``f_i / (D*X_i)``. Closed
+    mode also scales its oxygen-extent tolerance by ``tol`` and the distance
+    to the nearest feasible oxygen endpoint. Imposed-mode lambda endpoint and
+    saturation checks scale with ``tol`` and retain an ULP allowance at the
+    compared endpoints.
     ``redox_pack_path`` selects a validated alternative redox component; when
     omitted, the packaged default is used. Relative paths resolve from the
     process working directory. ``melt_pack_path`` selects a validated melt
@@ -2089,6 +2096,17 @@ def evaluate_redox(
         lambda_tolerance = max(
             10.0 * tolerance, 8.0 * math.ulp(lambda_sat)
         )
+
+        def lambda_gap_tolerance(multiplier: float, *endpoints: float) -> float:
+            # At the default tol, the previous 1e-10 and 1e-9 cutoffs were
+            # 100*tol and 1000*tol. Scaling those ratios keeps default branch
+            # decisions while making stricter caller tolerances effective;
+            # eight ULPs of the compared endpoints preserve representable-edge
+            # behavior when rounding is larger than the requested tolerance.
+            ulp_scale = max(math.ulp(endpoint) for endpoint in endpoints)
+            return max(multiplier * tolerance, 8.0 * ulp_scale)
+
+        near_lambda_tolerance = lambda_gap_tolerance(100.0, lambda_sat)
         below_invariant_bound = (
             invariant_segment and lambda_value < lambda_sat - lambda_tolerance
         )
@@ -2106,7 +2124,7 @@ def evaluate_redox(
         buffered = lambda_value < lambda_sat - (
             lambda_tolerance
             if invariant_segment
-            else max(1.0e-10, tolerance)
+            else near_lambda_tolerance
         )
         if at_invariant_bound and oxygen_inventory is None:
             raise RedoxEndpointError(
@@ -2209,8 +2227,10 @@ def evaluate_redox(
                 tol=tolerance,
                 max_iter=iterations,
             )
-            if abs(buffered_lambda - lambda_value) > max(1.0e-9, 10.0 * tolerance):
-                if lambda_value >= lambda_sat - max(1.0e-10, tolerance):
+            if abs(buffered_lambda - lambda_value) > lambda_gap_tolerance(
+                1000.0, buffered_lambda, lambda_value
+            ):
+                if lambda_value >= lambda_sat - near_lambda_tolerance:
                     return _assemble_result(
                         mode="imposed",
                         temperature_K=temperature,
@@ -2262,7 +2282,9 @@ def evaluate_redox(
                 tol=tolerance,
                 max_iter=iterations,
             )
-            if high_lambda > lambda_value + max(1.0e-9, 10.0 * tolerance):
+            if high_lambda > lambda_value + lambda_gap_tolerance(
+                1000.0, high_lambda, lambda_value
+            ):
                 raise RedoxEndpointError(
                     "imposed oxygen fugacity is below the buffered saturation range",
                     endpoint="lambda_below_dissolved_fe_saturation_range",
@@ -2289,7 +2311,9 @@ def evaluate_redox(
                 )
                 buffered_state = candidate_state
                 residual = candidate_lambda - lambda_value
-                if abs(residual) <= max(1.0e-10, tolerance):
+                if abs(residual) <= lambda_gap_tolerance(
+                    100.0, candidate_lambda, lambda_value
+                ):
                     break
                 if residual > 0.0:
                     metal_low = metal
@@ -2311,7 +2335,7 @@ def evaluate_redox(
                 tolerance=tolerance,
                 fallback_counter=fallback_counter,
             )
-        if lambda_value < lambda_sat - max(1.0e-10, tolerance):
+        if lambda_value < lambda_sat - near_lambda_tolerance:
             raise RedoxEndpointError(
                 "imposed oxygen fugacity is below the pure-Fe saturation bound, "
                 "and no oxygen inventory fixes the metal extent",
@@ -2334,7 +2358,10 @@ def evaluate_redox(
             fallback_counter=fallback_counter,
         )
 
-    assert oxygen_inventory is not None
+    if oxygen_inventory is None:
+        raise RedoxNumericalError(
+            "closed redox evaluation requires an oxygen inventory"
+        )
     target_surplus, target_deficit, shared_positive_rows = _oxygen_inventory_targets(
         parent_moles,
         oxygen_parent_counts,

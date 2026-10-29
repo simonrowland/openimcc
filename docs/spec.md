@@ -93,6 +93,19 @@ The bound follows directly from nonnegative complex fractions and
 stoichiometries. A result that fails the refined balance certificate is
 reported as nonconvergence, not returned as a partial solution.
 
+For `evaluate(..., tol=...)`, `tol` is the positive, dimensionless maximum
+relative parent-inventory error allowed by that final certificate:
+
+\[
+\max_i\left|\frac{a_i+\sum_j\nu_{ij}g_j}{D X_i}-1\right|\leq\texttt{tol}.
+\]
+
+The default cold-start solver's internal stopping norm remains
+`absolute_balance_inf = ||f||_inf`; parent-scaled recovery paths use
+`parent_scaled_balance_inf = ||f/X||_inf`. Both paths are judged by the same
+relative-inventory certificate above. Keeping those internal stopping norms
+distinct preserves the established default solve behavior.
+
 The activity coefficient is
 
 \[
@@ -217,6 +230,20 @@ normal `load_datapack()` identity gate; `None` keeps the packaged melt pack.
 Missing, malformed, unpublished, or identity-mismatched melt packs raise
 `ImccMalformedDatapackError`. `RedoxResult.melt_pack_binding_digest`
 identifies the melt pack used by the solve.
+
+For `evaluate_redox(..., tol=...)`, `tol` is a positive, dimensionless
+per-parent tolerance. The warm liquid solver checks
+`parent_scaled_balance_inf = ||f/X||_inf <= tol`, and its final melt
+certificate checks each relative inventory error `f_i/(D X_i)`. In closed
+mode, the oxygen-extent solve uses `tol` times the distance from the supplied
+inventory to the nearer feasible oxygen endpoint; the oxygen ledger allowance
+also has a 16-ULP floor. Imposed-mode lambda comparisons use caller-scaled
+thresholds: 10 times `tol` for invariant-bound classification, 100 times
+`tol` for near-endpoint metal-extent decisions, and 1000 times `tol` when
+matching a buffered saturation lambda. Each lambda comparison also allows
+eight ULPs at its compared endpoints. These separate scales preserve the
+default endpoint decisions while making stricter caller tolerances tighten
+the imposed-path acceptance checks.
 
 The base melt API itself does not infer ferric iron or convert Fe2O3 to FeO.
 The caller must choose and declare whether to use the separate redox

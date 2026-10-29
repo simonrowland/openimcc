@@ -1138,6 +1138,12 @@ def _solve_active(
 
     Solver robustness
     -----------------
+    ``tol`` is applied to one of two explicitly distinct norms:
+    ``absolute_balance_inf = ||f||_inf`` when ``relative_tolerance`` is false,
+    and ``parent_scaled_balance_inf = ||f / x_target||_inf`` when it is true.
+    The root certificate is separate and checks per-parent relative inventory
+    error ``f_i / (D * x_target_i)``.
+
     The ideal-fraction start ``x_i* = x_i`` (i.e. ``y = ln x``) is the correct
     solution in the no-complexing limit (K -> 0).  Direct-start stalls on this
     path are diagnosed from the retained fields: final ``y``, residual norms,
@@ -1692,7 +1698,12 @@ def solve_active_warm(
 ) -> tuple[
     np.ndarray, np.ndarray, float, int, float, float, float, str, int, bool
 ]:
-    """Use damped Newton with association continuation before SciPy fallback."""
+    """Solve using ``parent_scaled_balance_inf = ||f / x_target||_inf``.
+
+    The public tolerance is checked against this norm in the Newton and SciPy
+    paths. The returned root then passes the separate per-parent relative
+    inventory certificate ``f_i / (D * x_target_i)``.
+    """
     # Active parents are positive by construction; retaining their real scale
     # avoids a 1e-12 floor for ppm and lower feed fractions.
     ideal_y = np.log(x_target)

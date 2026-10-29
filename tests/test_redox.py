@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import math
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 
 import numpy as np
 import pytest
@@ -758,6 +761,69 @@ def test_imposed_mode_resolves_the_metal_amount_below_saturation() -> None:
             lambda_imposed=result.lambda_sat - 1.0,
         )
     assert exc_info.value.endpoint == "lambda_below_dissolved_fe_saturation_range"
+
+
+def test_imposed_endpoint_uses_a_tight_caller_tolerance() -> None:
+    inventory = {"Fe": 1.0, "Si": 0.8, "Mg": 0.3, "Al": 0.2, "Ca": 0.1}
+    saturation = evaluate_redox(
+        inventory,
+        2200.0,
+        "imposed",
+        lambda_imposed=-17.931129807709393,
+    )
+    requested_lambda = saturation.lambda_sat - 5.0e-11
+    # This gap is inside the old fixed 1e-10 acceptance band, but outside the
+    # 100*tol allowance for this tighter call.
+    result = evaluate_redox(
+        inventory,
+        2200.0,
+        "imposed",
+        lambda_imposed=requested_lambda,
+        tol=1.0e-14,
+    )
+
+    assert result.lambda_ln_f_o2 == requested_lambda
+    assert result.metal_moles > 0.0
+
+
+def test_closed_mode_missing_oxygen_guard_survives_python_optimization() -> None:
+    script = """
+import numpy as np
+import openimcc.redox as redox
+
+pack = redox._load_default_redox_pack()
+parents = np.zeros(len(redox._redox_parent_names(pack)), dtype=np.float64)
+parents[redox._redox_parent_names(pack).index("FeO")] = 1.0
+redox._inventory_parent_moles = lambda *args, **kwargs: (parents, None)
+try:
+    redox.evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+except redox.RedoxNumericalError as error:
+    if "oxygen inventory" not in str(error):
+        raise
+else:
+    raise RuntimeError("closed evaluation accepted a missing oxygen inventory")
+"""
+    env = os.environ.copy()
+    source_path = str(ROOT / "src")
+    current_pythonpath = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = (
+        source_path
+        if not current_pythonpath
+        else os.pathsep.join((source_path, current_pythonpath))
+    )
+    completed = subprocess.run(
+        [sys.executable, "-O", "-c", script],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert completed.returncode == 0, (
+        f"optimized interpreter failed\nstdout:\n{completed.stdout}\n"
+        f"stderr:\n{completed.stderr}"
+    )
 
 
 def test_imposed_exact_invariant_saturation_requires_oxygen_inventory() -> None:
