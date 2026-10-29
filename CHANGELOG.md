@@ -7,6 +7,10 @@
 
 - Documentation corrections.
 
+- Sulfur results now forward excess-Gibbs and composition-bias melt notices
+  with explicit family codes; unscored bias notices use distinct
+  `*-unscored` codes while their public melt notice text remains unchanged.
+
 - Added a digest-scoped `multicomponent-activity-pattern` notice for CMAS
   compositions on the default D066 v5 pack. It distinguishes CAS/CMS silica
   slopes and combined-slice RMSEs from four-oxide CMAS scores without changing

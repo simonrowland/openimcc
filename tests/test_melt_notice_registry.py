@@ -287,19 +287,17 @@ def test_sulfur_results_carry_melt_composition_bias_notices() -> None:
         log10_fS2=-10.0,
         melt_pack=load_datapack(),
     )
-    by_code = {notice.code: notice for notice in result.notices}
-    assert {
-        "alkali-bias",
-        "na2o-activity-bias",
-        "multicomponent-activity-pattern",
-    } <= by_code.keys()
-    assert by_code["alkali-bias"].message.startswith("K predictions from ")
-    assert by_code["na2o-activity-bias"].message.startswith(
-        "na2o-activity-bias:"
+    forwarded = tuple(
+        (notice.code, notice.message)
+        for notice in result.notices
+        if notice.model == "openimcc-melt-pack"
     )
-    assert by_code["multicomponent-activity-pattern"].message.startswith(
-        "multicomponent-activity-pattern:"
+    assert forwarded == (
+        ("alkali-bias", DEFAULT_ALKALI_NOTICE),
+        ("na2o-activity-bias", DEFAULT_NA2O_NOTICE),
+        ("multicomponent-activity-pattern", DEFAULT_MULTICOMPONENT_NOTICE),
     )
+    assert len({code for code, _message in forwarded}) == len(forwarded)
 
     cao_sio2 = evaluate_sulfur(
         {"CaO": 50.0, "SiO2": 49.99, "FeO": 0.01},
@@ -308,8 +306,120 @@ def test_sulfur_results_carry_melt_composition_bias_notices() -> None:
         log10_fS2=-10.0,
         melt_pack=load_datapack(),
     )
-    cao_notice = next(
-        notice for notice in cao_sio2.notices
-        if notice.code == "cao-sio2-activity-bias"
+    cao_forwarded = tuple(
+        (notice.code, notice.message)
+        for notice in cao_sio2.notices
+        if notice.model == "openimcc-melt-pack"
     )
-    assert cao_notice.message == DEFAULT_CAO_SIO2_MODERATE_NOTICE
+    assert cao_forwarded == (
+        ("cao-sio2-activity-bias", DEFAULT_CAO_SIO2_MODERATE_NOTICE),
+    )
+
+    v2 = load_datapack(PACKS / "imcc-sf04-d066-v2.json")
+    unscored = evaluate_sulfur(
+        multicomponent,
+        1773.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=v2,
+    )
+    unscored_forwarded = tuple(
+        (notice.code, notice.message)
+        for notice in unscored.notices
+        if notice.model == "openimcc-melt-pack"
+    )
+    assert unscored_forwarded == (
+        ("alkali-bias", V2_ALKALI_NOTICE),
+        ("na2o-activity-bias-unscored", V2_NA2O_UNSCORED_NOTICE),
+        ("multicomponent-activity-pattern-unscored", V2_MULTICOMPONENT_UNSCORED_NOTICE),
+    )
+
+    unscored_cao = evaluate_sulfur(
+        {"CaO": 50.0, "SiO2": 49.99, "FeO": 0.01},
+        1873.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=v2,
+    )
+    unscored_cao_forwarded = tuple(
+        (notice.code, notice.message)
+        for notice in unscored_cao.notices
+        if notice.model == "openimcc-melt-pack"
+    )
+    assert unscored_cao_forwarded == (
+        ("cao-sio2-activity-bias-unscored", V2_CAO_SIO2_UNSCORED_NOTICE),
+    )
+
+    feo_candidate = load_datapack(PACKS / "imcc-sf04-d066-feo-hess-candidate.json")
+    candidate = evaluate_sulfur(
+        multicomponent,
+        1773.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=feo_candidate,
+    )
+    candidate_forwarded = tuple(
+        (notice.code, notice.message)
+        for notice in candidate.notices
+        if notice.model == "openimcc-melt-pack"
+    )
+    assert candidate_forwarded == (
+        ("alkali-bias-unscored", FE_HESS_ALKALI_UNSCORED_NOTICE),
+        ("na2o-activity-bias-unscored", V2_NA2O_UNSCORED_NOTICE),
+        (
+            "multicomponent-activity-pattern-unscored",
+            V2_MULTICOMPONENT_UNSCORED_NOTICE,
+        ),
+    )
+
+
+def test_sulfur_keeps_closure_and_temperature_notices_on_melt_result() -> None:
+    pack = load_datapack()
+    cases = (
+        ({"CaO": 1.0, "MgO": 1.0, "SiO2": 2.0}, 1668.0),
+        ({"Na2O": 1.0, "SiO2": 1.0}, 1600.0),
+    )
+    melt_only_families = (
+        "silicate-vapour-product-low-near-liquidus",
+        "temperature-domain-extension",
+        "low-temperature-uncertain",
+    )
+    for composition, temperature_K in cases:
+        melt = evaluate(
+            composition,
+            temperature_K,
+            pack=pack,
+            allow_extrapolation=True,
+            allow_out_of_envelope=True,
+        )
+        sulfur = evaluate_sulfur(
+            composition,
+            temperature_K,
+            log10_fO2=-8.0,
+            log10_fS2=-10.0,
+            melt_pack=pack,
+        )
+        assert any(
+            notice.startswith(melt_only_families)
+            for notice in melt.labels.notices
+        )
+        assert not any(
+            notice.code in melt_only_families for notice in sulfur.notices
+        )
+
+    fe_candidate = load_datapack(
+        PACKS / "imcc-sf04-d066-feo-hess-candidate.json"
+    )
+    fe_melt = evaluate(MORB, 1800.0, pack=fe_candidate)
+    fe_sulfur = evaluate_sulfur(
+        MORB,
+        1800.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=fe_candidate,
+    )
+    assert any(
+        notice.startswith("feo-hess-candidate:")
+        for notice in fe_melt.labels.notices
+    )
+    assert not any(notice.code == "feo-hess-candidate" for notice in fe_sulfur.notices)

@@ -257,6 +257,27 @@ def _melt_notice_score(family: str, identity: tuple[str, str]) -> str:
     )
 
 
+class _CodedMeltNotice(str):
+    """String-compatible melt notice carrying its source family and score."""
+
+    family: str
+    score: str
+
+    def __new__(cls, message: str, family: str, score: str):
+        notice = super().__new__(cls, message)
+        notice.family = family
+        notice.score = score
+        return notice
+
+    def __reduce__(self):
+        return type(self), (str(self), self.family, self.score)
+
+
+def _coded_melt_notice(family: str, score: str, message: str) -> str:
+    """Attach family and score metadata while preserving public notice text."""
+    return _CodedMeltNotice(message, family, score)
+
+
 _ALKALI_BIAS_BENCH_URL = "https://github.com/simonrowland/openimcc"
 
 # At 1673 K the 38 held-out Mathieu rows with x(CaO+MgO) in [0.30, 0.40)
@@ -296,10 +317,10 @@ def _na2o_activity_bias_notice(
     binding_digest: str,
 ) -> str | None:
     """Flag Na-bearing melts in either held-out composition region."""
+    score = _melt_notice_score("na2o-activity-bias", (model_id, binding_digest))
     notice = (
         _NA2O_ACTIVITY_BIAS_NOTICE
-        if _melt_notice_score("na2o-activity-bias", (model_id, binding_digest))
-        == "scored"
+        if score == "scored"
         else _NA2O_ACTIVITY_BIAS_UNSCORED_NOTICE
     )
     try:
@@ -312,7 +333,7 @@ def _na2o_activity_bias_notice(
     if na <= 0.0:
         return None
     if silica > 0.0 and na / silica >= _NA2O_ACTIVITY_BIAS_RATIO_MIN:
-        return notice
+        return _coded_melt_notice("na2o-activity-bias", score, notice)
     basicity = 0.0
     total = float(moles.sum())
     if total <= 0.0:
@@ -321,23 +342,26 @@ def _na2o_activity_bias_notice(
         if name in parent_oxides:
             basicity += float(moles[parent_oxides.index(name)])
     if basicity / total >= _NA2O_ACTIVITY_BIAS_BASICITY_MIN:
-        return notice
+        return _coded_melt_notice("na2o-activity-bias", score, notice)
     return None
 
 
 def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
     identity = (model_id, binding_digest)
-    if _melt_notice_score("alkali-bias", identity) == "unscored":
-        return (
+    score = _melt_notice_score("alkali-bias", identity)
+    if score == "unscored":
+        message = (
             "K predictions against Hastie 1981 KEMS pressures (case 4) have "
             f"not been evaluated for this {model_id} pack; see "
             f"{_ALKALI_BIAS_BENCH_URL}"
         )
-    measured_bias = _SCORED_PACK_IDENTITIES[identity]["alkali-bias"]
-    return (
-        f"K predictions from {model_id} remain low against Hastie 1981 KEMS "
-        f"pressures (case 4: {measured_bias}); see {_ALKALI_BIAS_BENCH_URL}"
-    )
+    else:
+        measured_bias = _SCORED_PACK_IDENTITIES[identity]["alkali-bias"]
+        message = (
+            f"K predictions from {model_id} remain low against Hastie 1981 KEMS "
+            f"pressures (case 4: {measured_bias}); see {_ALKALI_BIAS_BENCH_URL}"
+        )
+    return _coded_melt_notice("alkali-bias", score, message)
 
 
 # CaO–SiO2 activity-bias notice. Derivation from Kume 2000, Omori and
@@ -520,13 +544,20 @@ def _cao_sio2_activity_bias_notice(
     x_cao = cao / binary
     if x_cao < _CAO_SIO2_XCAO_MODERATE_MIN or x_cao > _CAO_SIO2_XCAO_MAX:
         return None
-    if _melt_notice_score(
+    score = _melt_notice_score(
         "cao-sio2-activity-bias", (model_id, binding_digest)
-    ) == "unscored":
-        return _cao_sio2_unscored_notice(model_id)
+    )
+    if score == "unscored":
+        return _coded_melt_notice(
+            "cao-sio2-activity-bias", score, _cao_sio2_unscored_notice(model_id)
+        )
     if x_cao < _CAO_SIO2_XCAO_STRONG_MIN:
-        return _CAO_SIO2_MODERATE_NOTICE
-    return _CAO_SIO2_STRONG_NOTICE
+        return _coded_melt_notice(
+            "cao-sio2-activity-bias", score, _CAO_SIO2_MODERATE_NOTICE
+        )
+    return _coded_melt_notice(
+        "cao-sio2-activity-bias", score, _CAO_SIO2_STRONG_NOTICE
+    )
 
 
 # Multicomponent activity-pattern notice. Corrected Kume 2000 residuals vary
@@ -592,11 +623,15 @@ def _multicomponent_activity_pattern_notice(
         for index in indices
     ):
         return None
-    if _melt_notice_score(
+    score = _melt_notice_score(
         "multicomponent-activity-pattern", (model_id, binding_digest)
-    ) == "unscored":
-        return _MULTICOMPONENT_ACTIVITY_PATTERN_UNSCORED_NOTICE
-    return _MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE
+    )
+    message = (
+        _MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE
+        if score == "scored"
+        else _MULTICOMPONENT_ACTIVITY_PATTERN_UNSCORED_NOTICE
+    )
+    return _coded_melt_notice("multicomponent-activity-pattern", score, message)
 
 
 class ImccMalformedDatapackError(ImccRefusal):
@@ -2404,8 +2439,12 @@ def evaluate(
             for term in active_excess_terms
         )
         notices.append(
-            "excess-gibbs-candidate: empirical interaction terms are active: "
-            f"{interactions}"
+            _coded_melt_notice(
+                "excess-gibbs-candidate",
+                "scored",
+                "excess-gibbs-candidate: empirical interaction terms are active: "
+                f"{interactions}",
+            )
         )
         analytical_total = float(vector.sum())
         for term in active_excess_terms:
@@ -2438,10 +2477,14 @@ def evaluate(
                 )
             if exceeded_bounds:
                 notices.append(
-                    "excess-gibbs-calibration-range: "
-                    f"{'–'.join(term.components)} ({term.basis}) evaluated outside "
-                    "its declared calibration range: "
-                    + "; ".join(exceeded_bounds)
+                    _coded_melt_notice(
+                        "excess-gibbs-calibration-range",
+                        "scored",
+                        "excess-gibbs-calibration-range: "
+                        f"{'–'.join(term.components)} ({term.basis}) evaluated outside "
+                        "its declared calibration range: "
+                        + "; ".join(exceeded_bounds),
+                    )
                 )
     if any(
         vector[parent_oxides.index(name)] > 0.0

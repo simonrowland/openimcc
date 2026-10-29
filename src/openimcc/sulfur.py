@@ -11,38 +11,37 @@ from dataclasses import dataclass
 import math
 from typing import Mapping
 
-from openimcc.model import ImccLoadedDatapack, evaluate, load_datapack
+from openimcc.model import (
+    ImccLoadedDatapack,
+    evaluate,
+    load_datapack,
+)
 
 _R = 8.31446261815324
 _LN10 = math.log(10.0)
 _MW_S = 32.065
 
-# Sulfur outputs retain excess-Gibbs candidate/calibration disclosures and melt
-# composition-bias evidence; crystal-vapour closure and temperature-domain
-# notices remain attached to the melt result. Alkali bias has no public code
-# prefix, so map its stable public wording to a sulfur notice code here.
-_MELT_NOTICE_FORWARD_PREFIXES = (
-    ("excess-gibbs-candidate:", "excess-gibbs-candidate"),
-    ("excess-gibbs-calibration-range:", "excess-gibbs-calibration-range"),
-    ("na2o-activity-bias-unscored:", "na2o-activity-bias"),
-    ("na2o-activity-bias:", "na2o-activity-bias"),
-    ("cao-sio2-activity-bias-unscored:", "cao-sio2-activity-bias"),
-    ("cao-sio2-activity-bias:", "cao-sio2-activity-bias"),
-    (
-        "multicomponent-activity-pattern-unscored:",
-        "multicomponent-activity-pattern",
+# Forward notices by their source family and score metadata, never by prose.
+_MELT_NOTICE_FORWARD_CODES = {
+    ("excess-gibbs-candidate", "scored"): "excess-gibbs-candidate",
+    ("excess-gibbs-calibration-range", "scored"): "excess-gibbs-calibration-range",
+    ("alkali-bias", "scored"): "alkali-bias",
+    ("alkali-bias", "unscored"): "alkali-bias-unscored",
+    ("na2o-activity-bias", "scored"): "na2o-activity-bias",
+    ("na2o-activity-bias", "unscored"): "na2o-activity-bias-unscored",
+    ("cao-sio2-activity-bias", "scored"): "cao-sio2-activity-bias",
+    ("cao-sio2-activity-bias", "unscored"): "cao-sio2-activity-bias-unscored",
+    ("multicomponent-activity-pattern", "scored"): "multicomponent-activity-pattern",
+    ("multicomponent-activity-pattern", "unscored"): (
+        "multicomponent-activity-pattern-unscored"
     ),
-    ("multicomponent-activity-pattern:", "multicomponent-activity-pattern"),
-    ("K predictions from ", "alkali-bias"),
-    ("K predictions against ", "alkali-bias"),
-)
+}
 
 
 def _melt_notice_forward_code(notice: str) -> str | None:
-    for prefix, code in _MELT_NOTICE_FORWARD_PREFIXES:
-        if notice.startswith(prefix):
-            return code
-    return None
+    return _MELT_NOTICE_FORWARD_CODES.get(
+        (getattr(notice, "family", None), getattr(notice, "score", None))
+    )
 
 # formula-unit molecular mass, cations per formula, oxygen atoms per formula,
 # and the cation symbol used in single-cation mole fractions.

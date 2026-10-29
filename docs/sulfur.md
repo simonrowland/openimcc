@@ -9,8 +9,11 @@ composition, and dissolved-sulfur limits without refusing an estimate.
 When melt activities are available, sulfur results also carry the selected
 pack's excess-Gibbs candidate and calibration-range notices, plus
 composition-bias notices for Hastie KEMS alkali, Na2O, binary CaO–SiO2, and
-multicomponent CMAS evidence. Crystal-vapour closure and temperature-domain
-notices remain on the melt result.
+multicomponent CMAS evidence. Scored bias notices use their family code;
+unscored notices use a distinct `<family>-unscored` code, including alkali
+notices whose melt text has no code prefix. Crystal-vapour closure,
+Fe-Hess-candidate, temperature-domain, and low-temperature notices remain on
+the melt result.
 
 ```python
 from openimcc import evaluate_sulfur

@@ -669,17 +669,10 @@ def test_cao_sio2_activity_bias_notice_boundaries() -> None:
     assert _cao_sio2_bias_notices(under_other) == (_CAO_SIO2_MODERATE,)
 
 
-# Evidence identity for the measured CaO–SiO2 residuals. A default-pack
-# change must fail here until the evidence is re-scored and this pin, plus
-# the measured identity in model.py, is updated on purpose.
-_CAO_SIO2_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
-_CAO_SIO2_EVIDENCE_BINDING_DIGEST = (
-    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
-)
 _CAO_SIO2_UNSCORED = (
     "cao-sio2-activity-bias-unscored: the CaO–SiO2 silica-activity bias was "
-    f"measured on {_CAO_SIO2_EVIDENCE_MODEL_ID} "
-    f"(binding digest {_CAO_SIO2_EVIDENCE_BINDING_DIGEST}) and has not "
+    f"measured on {model._DEFAULT_D066_V5_IDENTITY[0]} "
+    f"(binding digest {model._DEFAULT_D066_V5_IDENTITY[1]}) and has not "
     "been re-scored for this IMCC-SF04-D066 pack"
 )
 
@@ -688,28 +681,21 @@ def test_cao_sio2_evidence_identity_matches_the_default_pack() -> None:
     """A new default pack must not silently demote the measured notice."""
     pack = load_datapack()
     loaded = (pack.model_id, pack.binding_digest)
-    evidence = (_CAO_SIO2_EVIDENCE_MODEL_ID, _CAO_SIO2_EVIDENCE_BINDING_DIGEST)
+    evidence = model._DEFAULT_D066_V5_IDENTITY
     assert loaded == evidence, (
         "the default melt pack identity no longer matches the CaO-SiO2 "
         f"evidence identity {evidence[0]} {evidence[1]}; loaded "
         f"{loaded[0]} {loaded[1]}. Re-score the CaO-SiO2 evidence and "
         "update the measured identity."
     )
-    assert (
-        model._CAO_SIO2_MEASURED_MODEL_ID,
-        model._CAO_SIO2_MEASURED_BINDING_DIGEST,
-    ) == evidence, (
-        "the measured CaO-SiO2 notice identity no longer matches the "
-        "evidence digest. Re-score the CaO-SiO2 evidence and update the "
-        "measured identity."
-    )
+    assert model._melt_notice_score("cao-sio2-activity-bias", loaded) == "scored"
 
 
 def test_cao_sio2_other_pack_gets_the_unscored_notice() -> None:
     """A different candidate digest does not inherit the measured residuals."""
     candidate = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
-    assert candidate.model_id == _CAO_SIO2_EVIDENCE_MODEL_ID
-    assert candidate.binding_digest != _CAO_SIO2_EVIDENCE_BINDING_DIGEST
+    assert candidate.model_id == model._DEFAULT_D066_V5_IDENTITY[0]
+    assert candidate.binding_digest != model._DEFAULT_D066_V5_IDENTITY[1]
 
     scored = evaluate({"CaO": 0.50, "SiO2": 0.50}, 1933.0, candidate)
     assert _cao_sio2_bias_notices(scored) == ()
@@ -728,10 +714,6 @@ def test_cao_sio2_other_pack_gets_the_unscored_notice() -> None:
     )
 
 
-_MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
-_MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_BINDING_DIGEST = (
-    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
-)
 _MULTICOMPONENT_ACTIVITY_PATTERN_MARKERS = (
     "multicomponent-activity-pattern:",
     "multicomponent-activity-pattern-unscored:",
@@ -790,10 +772,7 @@ def test_multicomponent_pattern_skips_binary() -> None:
 
 def test_multicomponent_pattern_gate_boundaries() -> None:
     parents = ("SiO2", "CaO", "MgO", "Al2O3")
-    identity = (
-        _MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_MODEL_ID,
-        _MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_BINDING_DIGEST,
-    )
+    identity = model._DEFAULT_D066_V5_IDENTITY
     moles = np.array((0.70, 0.10, 0.10, 0.10))
     notice = model._multicomponent_activity_pattern_notice
 
@@ -810,15 +789,12 @@ def test_multicomponent_pattern_gate_boundaries() -> None:
 
 def test_multicomponent_pattern_identity_scope() -> None:
     default = load_datapack()
-    evidence = (
-        _MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_MODEL_ID,
-        _MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_BINDING_DIGEST,
-    )
+    evidence = model._DEFAULT_D066_V5_IDENTITY
     assert (default.model_id, default.binding_digest) == evidence
     assert (
-        model._MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_MODEL_ID,
-        model._MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_BINDING_DIGEST,
-    ) == evidence
+        model._melt_notice_score("multicomponent-activity-pattern", evidence)
+        == "scored"
+    )
 
     candidate = load_datapack(
         "src/openimcc/data/packs/imcc-sf04-d066-v2.json"
@@ -937,8 +913,15 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
 def test_silicate_product_evidence_identity_is_pinned() -> None:
     pack = load_datapack()
     assert (pack.model_id, pack.binding_digest) == (
-        model._MELT_EVIDENCE_MODEL_ID, model._MELT_EVIDENCE_BINDING_DIGEST
+        model._DEFAULT_D066_V5_IDENTITY
     ), "default pack moved; re-score melt notice evidence before retaining measured claims"
+    assert (
+        model._melt_notice_score(
+            "silicate-vapour-product-low-near-liquidus",
+            model._DEFAULT_D066_V5_IDENTITY,
+        )
+        == "scored"
+    )
 
 
 def test_na2o_activity_bias_notice_gate_and_numeric_identity() -> None:
@@ -978,9 +961,12 @@ def test_na2o_activity_bias_notice_gate_and_numeric_identity() -> None:
 def test_na2o_activity_bias_evidence_identity_is_pinned() -> None:
     pack = load_datapack()
     assert (pack.model_id, pack.binding_digest) == (
-        model._NA2O_ACTIVITY_BIAS_MEASURED_MODEL_ID,
-        model._NA2O_ACTIVITY_BIAS_MEASURED_BINDING_DIGEST,
+        model._DEFAULT_D066_V5_IDENTITY
     ), "default pack moved; re-score Na2O bias evidence before retaining measured claims"
+    assert (
+        model._melt_notice_score("na2o-activity-bias", model._DEFAULT_D066_V5_IDENTITY)
+        == "scored"
+    )
 
 
 @pytest.mark.parametrize(
@@ -998,8 +984,8 @@ def test_na2o_activity_bias_other_digest_uses_same_gate(
     composition: dict[str, float], expected: bool,
 ) -> None:
     pack = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
-    assert pack.model_id == model._NA2O_ACTIVITY_BIAS_MEASURED_MODEL_ID
-    assert pack.binding_digest != model._NA2O_ACTIVITY_BIAS_MEASURED_BINDING_DIGEST
+    assert pack.model_id == model._DEFAULT_D066_V5_IDENTITY[0]
+    assert pack.binding_digest != model._DEFAULT_D066_V5_IDENTITY[1]
     result = evaluate(
         composition, 1673.15, pack,
         allow_extrapolation=True, allow_out_of_envelope=True,
