@@ -17,6 +17,33 @@ _R = 8.31446261815324
 _LN10 = math.log(10.0)
 _MW_S = 32.065
 
+# Sulfur outputs retain excess-Gibbs candidate/calibration disclosures and melt
+# composition-bias evidence; crystal-vapour closure and temperature-domain
+# notices remain attached to the melt result. Alkali bias has no public code
+# prefix, so map its stable public wording to a sulfur notice code here.
+_MELT_NOTICE_FORWARD_PREFIXES = (
+    ("excess-gibbs-candidate:", "excess-gibbs-candidate"),
+    ("excess-gibbs-calibration-range:", "excess-gibbs-calibration-range"),
+    ("na2o-activity-bias-unscored:", "na2o-activity-bias"),
+    ("na2o-activity-bias:", "na2o-activity-bias"),
+    ("cao-sio2-activity-bias-unscored:", "cao-sio2-activity-bias"),
+    ("cao-sio2-activity-bias:", "cao-sio2-activity-bias"),
+    (
+        "multicomponent-activity-pattern-unscored:",
+        "multicomponent-activity-pattern",
+    ),
+    ("multicomponent-activity-pattern:", "multicomponent-activity-pattern"),
+    ("K predictions from ", "alkali-bias"),
+    ("K predictions against ", "alkali-bias"),
+)
+
+
+def _melt_notice_forward_code(notice: str) -> str | None:
+    for prefix, code in _MELT_NOTICE_FORWARD_PREFIXES:
+        if notice.startswith(prefix):
+            return code
+    return None
+
 # formula-unit molecular mass, cations per formula, oxygen atoms per formula,
 # and the cation symbol used in single-cation mole fractions.
 _OXIDES: dict[str, tuple[float, int, int, str]] = {
@@ -494,11 +521,8 @@ def evaluate_sulfur(
         ))
     elif melt_result is not None:
         for melt_notice in melt_result.labels.notices:
-            code, separator, _detail = melt_notice.partition(":")
-            if separator and code in {
-                "excess-gibbs-candidate",
-                "excess-gibbs-calibration-range",
-            }:
+            code = _melt_notice_forward_code(melt_notice)
+            if code is not None:
                 notices.append(_notice(
                     code, melt_notice, model="openimcc-melt-pack",
                 ))

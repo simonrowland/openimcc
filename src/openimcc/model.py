@@ -181,50 +181,82 @@ _SPECIES_COVERAGE_EDGE_RATIO = 1.9100549074388355e-3
 # The benchmark range uses the tracked Hastie case-4 K points and the bench
 # runner's default gas pack. Key by the complete melt-pack identity so a new
 # or external pack cannot inherit another pack's measured bias.
-_ALKALI_BIAS_BENCHMARKS = MappingProxyType(
+_DEFAULT_D066_V5_IDENTITY = (
+    "IMCC-SF04-D066",
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf",
+)
+_FEO_HESS_CANDIDATE_IDENTITY = (
+    "IMCC-SF04-D066",
+    "055573b12e60221473bfcf0b0d3b0681b23de1dea062bf67c229059c82cb53aa",
+)
+
+# Evidence scores are keyed once by complete pack identity. Values are the
+# family-specific benchmark text for alkali bias, or None when that family has
+# a scored notice but no pack-specific text value.
+_SCORED_PACK_IDENTITIES = MappingProxyType(
     {
         (
             "IMCC-SF04",
             "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c",
-        ): "−1.20 to −1.26 dex",
+        ): MappingProxyType({"alkali-bias": "−1.20 to −1.26 dex"}),
         (
             "IMCC-SF04-EXT",
             "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770",
-        ): "−1.20 to −1.26 dex",
+        ): MappingProxyType({"alkali-bias": "−1.20 to −1.26 dex"}),
         (
             "IMCC-SF04-D066",
             "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75",
-        ): "−1.17 to −1.22 dex",
+        ): MappingProxyType({"alkali-bias": "−1.17 to −1.22 dex"}),
         (
             "IMCC-SF04-D066",
             "45e12de67ee8effa56fe3935e12e66e0dda2ea73ce877dc598ccda3faaea453f",
-        ): "−1.17 to −1.22 dex",
+        ): MappingProxyType({"alkali-bias": "−1.17 to −1.22 dex"}),
         (
             "IMCC-SF04-D066",
             "25125d24b9a7f3907773811c245b8137f40e46794caba5ce12f9ea26b7a49ce8",
-        ): "−1.17 to −1.22 dex",
+        ): MappingProxyType({"alkali-bias": "−1.17 to −1.22 dex"}),
         (
             "IMCC-SF04-D066",
             "efd2330f57d366b660e100d821806054b59134cb95b6404e1f9c27b5e468893e",
-        ): "−1.18 to −1.24 dex",
+        ): MappingProxyType({"alkali-bias": "−1.18 to −1.24 dex"}),
         (
             "IMCC-SF04-D066",
             "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2",
-        ): "−1.18 to −1.24 dex",
+        ): MappingProxyType({"alkali-bias": "−1.18 to −1.24 dex"}),
         (
             "IMCC-SF04-D066",
             "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0",
-        ): "−1.18 to −1.24 dex",
-        (
-            "IMCC-SF04-D066",
-            "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf",
-        ): "−1.17 to −1.22 dex",
+        ): MappingProxyType({"alkali-bias": "−1.18 to −1.24 dex"}),
+        _DEFAULT_D066_V5_IDENTITY: MappingProxyType(
+            {
+                "alkali-bias": "−1.17 to −1.22 dex",
+                "na2o-activity-bias": None,
+                "cao-sio2-activity-bias": None,
+                "multicomponent-activity-pattern": None,
+                "silicate-vapour-product-low-near-liquidus": None,
+                "low-temperature-uncertain": None,
+            }
+        ),
         (
             "IMCC-SF04-D066",
             "ac88aa2272c50d1cbf300634737c5d0071bddee0cd0f0483a6530c4a4992c393",
-        ): "−1.18 to −1.24 dex",
+        ): MappingProxyType({"alkali-bias": "−1.18 to −1.24 dex"}),
+        _FEO_HESS_CANDIDATE_IDENTITY: MappingProxyType(
+            {"feo-hess-candidate": None}
+        ),
     }
 )
+
+
+def _melt_notice_score(family: str, identity: tuple[str, str]) -> str:
+    """Return whether this complete pack identity has scored a notice family."""
+    return (
+        "scored"
+        if family in _SCORED_PACK_IDENTITIES.get(identity, {})
+        else "unscored"
+    )
+
+
 _ALKALI_BIAS_BENCH_URL = "https://github.com/simonrowland/openimcc"
 
 # At 1673 K the 38 held-out Mathieu rows with x(CaO+MgO) in [0.30, 0.40)
@@ -234,10 +266,6 @@ _ALKALI_BIAS_BENCH_URL = "https://github.com/simonrowland/openimcc"
 # mole fraction on the complete parent-oxide basis. Independently, Na2O/SiO2
 # >= 1 catches the severe low-silica Mathieu and Na-rich Pak binary errors.
 # Scored on D066 v5 only; candidate identities do not inherit these residuals.
-_NA2O_ACTIVITY_BIAS_MEASURED_MODEL_ID = "IMCC-SF04-D066"
-_NA2O_ACTIVITY_BIAS_MEASURED_BINDING_DIGEST = (
-    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
-)
 _NA2O_ACTIVITY_BIAS_UNSCORED_NOTICE = (
     "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias evidence "
     "was measured on the default D066 v5 pack; this pack has not been scored."
@@ -270,10 +298,8 @@ def _na2o_activity_bias_notice(
     """Flag Na-bearing melts in either held-out composition region."""
     notice = (
         _NA2O_ACTIVITY_BIAS_NOTICE
-        if (model_id, binding_digest) == (
-            _NA2O_ACTIVITY_BIAS_MEASURED_MODEL_ID,
-            _NA2O_ACTIVITY_BIAS_MEASURED_BINDING_DIGEST,
-        )
+        if _melt_notice_score("na2o-activity-bias", (model_id, binding_digest))
+        == "scored"
         else _NA2O_ACTIVITY_BIAS_UNSCORED_NOTICE
     )
     try:
@@ -300,13 +326,14 @@ def _na2o_activity_bias_notice(
 
 
 def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
-    measured_bias = _ALKALI_BIAS_BENCHMARKS.get((model_id, binding_digest))
-    if measured_bias is None:
+    identity = (model_id, binding_digest)
+    if _melt_notice_score("alkali-bias", identity) == "unscored":
         return (
             "K predictions against Hastie 1981 KEMS pressures (case 4) have "
             f"not been evaluated for this {model_id} pack; see "
             f"{_ALKALI_BIAS_BENCH_URL}"
         )
+    measured_bias = _SCORED_PACK_IDENTITIES[identity]["alkali-bias"]
     return (
         f"K predictions from {model_id} remain low against Hastie 1981 KEMS "
         f"pressures (case 4: {measured_bias}); see {_ALKALI_BIAS_BENCH_URL}"
@@ -316,7 +343,7 @@ def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
 # CaO–SiO2 activity-bias notice. Derivation from Kume 2000, Omori and
 # Sanbongi 1961, and Stolyarova 1991. The residuals support a notice, not
 # a coefficient change. The measured text is only for the typed default
-# identity below (model_id + binding_digest). Any other loaded identity
+# identity in the scored-pack table. Any other loaded identity
 # inside the same composition and temperature gate gets the unscored
 # code, so a later pack cannot inherit this evidence.
 #
@@ -360,10 +387,6 @@ _CAO_SIO2_T_MIN_K = 1873.0
 _CAO_SIO2_T_MAX_K = 1933.0
 # Scored on the current default D066 melt pack only. A different
 # model_id or binding_digest does not inherit these residuals.
-_CAO_SIO2_MEASURED_MODEL_ID = "IMCC-SF04-D066"
-_CAO_SIO2_MEASURED_BINDING_DIGEST = (
-    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
-)
 _CAO_SIO2_NOTICE_CODE = "cao-sio2-activity-bias"
 _CAO_SIO2_UNSCORED_CODE = "cao-sio2-activity-bias-unscored"
 _CAO_SIO2_MODERATE_NOTICE = (
@@ -382,14 +405,6 @@ _CAO_SIO2_STRONG_NOTICE = (
     "x(CaO)=0.614"
 )
 
-_MELT_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
-_MELT_EVIDENCE_BINDING_DIGEST = (
-    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
-)
-_FEO_HESS_CANDIDATE_IDENTITY = (
-    "IMCC-SF04-D066",
-    "055573b12e60221473bfcf0b0d3b0681b23de1dea062bf67c229059c82cb53aa",
-)
 _SILICATE_PRODUCT_ROWS = (
     ("diopside", {"CaO": 1, "MgO": 1, "SiO2": 2}, 1668.0, "−0.53"),
     ("akermanite", {"CaO": 2, "MgO": 1, "SiO2": 2}, 1727.0, "+0.11"),
@@ -435,10 +450,10 @@ def _silicate_vapour_product_notice(
             if name not in formula
         ):
             continue
-        if (
-            model_id != _MELT_EVIDENCE_MODEL_ID
-            or binding_digest != _MELT_EVIDENCE_BINDING_DIGEST
-        ):
+        if _melt_notice_score(
+            "silicate-vapour-product-low-near-liquidus",
+            (model_id, binding_digest),
+        ) == "unscored":
             return (
                 "silicate-vapour-product-low-near-liquidus-unscored: crystal–melt "
                 "closure evidence is unscored for this pack"
@@ -462,10 +477,11 @@ def _silicate_vapour_product_notice(
 
 
 def _cao_sio2_unscored_notice(model_id: str) -> str:
+    measured_model_id, measured_binding_digest = _DEFAULT_D066_V5_IDENTITY
     return (
         f"{_CAO_SIO2_UNSCORED_CODE}: the CaO–SiO2 silica-activity bias was "
-        f"measured on {_CAO_SIO2_MEASURED_MODEL_ID} "
-        f"(binding digest {_CAO_SIO2_MEASURED_BINDING_DIGEST}) and has not "
+        f"measured on {measured_model_id} "
+        f"(binding digest {measured_binding_digest}) and has not "
         f"been re-scored for this {model_id} pack"
     )
 
@@ -504,10 +520,9 @@ def _cao_sio2_activity_bias_notice(
     x_cao = cao / binary
     if x_cao < _CAO_SIO2_XCAO_MODERATE_MIN or x_cao > _CAO_SIO2_XCAO_MAX:
         return None
-    if (
-        model_id != _CAO_SIO2_MEASURED_MODEL_ID
-        or binding_digest != _CAO_SIO2_MEASURED_BINDING_DIGEST
-    ):
+    if _melt_notice_score(
+        "cao-sio2-activity-bias", (model_id, binding_digest)
+    ) == "unscored":
         return _cao_sio2_unscored_notice(model_id)
     if x_cao < _CAO_SIO2_XCAO_STRONG_MIN:
         return _CAO_SIO2_MODERATE_NOTICE
@@ -521,10 +536,6 @@ def _cao_sio2_activity_bias_notice(
 _MULTICOMPONENT_ACTIVITY_PATTERN_MIN_MOLE_FRACTION = 0.01
 _MULTICOMPONENT_ACTIVITY_PATTERN_T_MIN_K = 1700.0
 _MULTICOMPONENT_ACTIVITY_PATTERN_T_MAX_K = 3000.0
-_MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_MODEL_ID = "IMCC-SF04-D066"
-_MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_BINDING_DIGEST = (
-    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
-)
 _MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE = (
     "multicomponent-activity-pattern: on default D066 v5, Kume et al. (2000) "
     "synthetic CAS/CMS/CMAS slags, after solid-to-liquid standard conversion, "
@@ -581,11 +592,9 @@ def _multicomponent_activity_pattern_notice(
         for index in indices
     ):
         return None
-    if (
-        model_id != _MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_MODEL_ID
-        or binding_digest
-        != _MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_BINDING_DIGEST
-    ):
+    if _melt_notice_score(
+        "multicomponent-activity-pattern", (model_id, binding_digest)
+    ) == "unscored":
         return _MULTICOMPONENT_ACTIVITY_PATTERN_UNSCORED_NOTICE
     return _MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE
 
@@ -2382,7 +2391,9 @@ def evaluate(
         )
 
     notices = []
-    if (model_id, binding_digest) == _FEO_HESS_CANDIDATE_IDENTITY:
+    if _melt_notice_score(
+        "feo-hess-candidate", (model_id, binding_digest)
+    ) == "scored":
         notices.append(
             "feo-hess-candidate: opt-in Fe2SiO4 and FeTiO3 A-only Hess refits; "
             "open validation items are listed in docs/feo-liquid-candidate.md"
@@ -2506,10 +2517,9 @@ def evaluate(
             if any(
                 reaction_names[index] == "Na2Si2O5" for index in below_domain_rows
             ):
-                if (model_id, binding_digest) == (
-                    _MELT_EVIDENCE_MODEL_ID,
-                    _MELT_EVIDENCE_BINDING_DIGEST,
-                ):
+                if _melt_notice_score(
+                    "low-temperature-uncertain", (model_id, binding_digest)
+                ) == "scored":
                     notices.append(
                         "low-temperature-uncertain: the Na2Si2O5 association is "
                         "evaluated below its declared domain; Piacente and Matoušek "

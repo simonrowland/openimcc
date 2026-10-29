@@ -6,6 +6,12 @@ the default melt solve or the gas tables. The central solubility models are
 measured capacity fits; typed notices report their temperature, pressure,
 composition, and dissolved-sulfur limits without refusing an estimate.
 
+When melt activities are available, sulfur results also carry the selected
+pack's excess-Gibbs candidate and calibration-range notices, plus
+composition-bias notices for Hastie KEMS alkali, Na2O, binary CaO–SiO2, and
+multicomponent CMAS evidence. Crystal-vapour closure and temperature-domain
+notices remain on the melt result.
+
 ```python
 from openimcc import evaluate_sulfur
 
