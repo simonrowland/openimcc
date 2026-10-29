@@ -12,6 +12,9 @@
   The candidate emits a pack-specific notice. See
   `docs/feo-liquid-candidate.md`.
 
+- Rebuilt the Cr, Ti, and combined redox opt-ins on the redox v4 SiO2(l)
+  standard; earlier candidate packs remain available for historical reproduction.
+
 - Scoped the Na₂O activity-bias evidence to the measured default D066 v5
   identity. Other packs, including excess-Gibbs candidates, receive a neutral
   `na2o-activity-bias-unscored` notice under the same composition gate.

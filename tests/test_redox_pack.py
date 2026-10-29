@@ -33,6 +33,9 @@ PROVENANCE_SUCCESSOR_PATHS = (
     ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json",
+    ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json",
+    ROOT / "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json",
+    ROOT / "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json",
 )
 INDEPENDENT_CHECK_NOT_FOUND_REASON = (
     "No independent FeO(l) standard-state check was identified. Darken & Gurry "
@@ -45,6 +48,93 @@ INDEPENDENT_CHECK_NOT_FOUND_REASON = (
 def _band_value(record: dict) -> float:
     band = record["accuracy_band"] or record["fit_residual"]
     return float(band["value"])
+
+
+def _candidate_feature_delta(base: dict, candidate: dict) -> dict:
+    def without_version_and_provenance_strings(value, in_provenance: bool = False):
+        if isinstance(value, dict):
+            return {
+                key: without_version_and_provenance_strings(
+                    "<version>" if key == "version" and isinstance(member, str) else member,
+                    in_provenance or key == "provenance",
+                )
+                for key, member in value.items()
+            }
+        if isinstance(value, list):
+            return [
+                without_version_and_provenance_strings(member, in_provenance)
+                for member in value
+            ]
+        if in_provenance and isinstance(value, str):
+            return "<provenance>"
+        return value
+
+    def delta(base_records: dict, candidate_records: dict) -> dict:
+        base_keys = set(base_records)
+        candidate_keys = set(candidate_records)
+        shared = base_keys & candidate_keys
+        return {
+            "added": {
+                key: without_version_and_provenance_strings(candidate_records[key])
+                for key in sorted(candidate_keys - base_keys)
+            },
+            "removed": sorted(base_keys - candidate_keys),
+            "changed": {
+                key: (
+                    without_version_and_provenance_strings(base_records[key]),
+                    without_version_and_provenance_strings(candidate_records[key]),
+                )
+                for key in sorted(shared)
+                if without_version_and_provenance_strings(base_records[key])
+                != without_version_and_provenance_strings(candidate_records[key])
+            },
+        }
+
+    base_rows = {row["reaction"]: row for row in base["rows"]}
+    candidate_rows = {row["reaction"]: row for row in candidate["rows"]}
+    return {
+        "rows": delta(base_rows, candidate_rows),
+        "thermo_species": delta(base["thermo_species"], candidate["thermo_species"]),
+    }
+
+
+@pytest.mark.parametrize(
+    ("v3_candidate_name", "v4_candidate_name", "version"),
+    [
+        (
+            "openimcc-redox-cr-candidate-v3.json",
+            "openimcc-redox-cr-candidate-v4.json",
+            "1.7.0-cr-candidate",
+        ),
+        (
+            "openimcc-redox-ti-candidate-v3.json",
+            "openimcc-redox-ti-candidate-v4.json",
+            "1.8.0-ti-candidate",
+        ),
+        (
+            "openimcc-redox-cr-ti-candidate-v3.json",
+            "openimcc-redox-cr-ti-candidate-v4.json",
+            "1.9.0-cr-ti-candidate",
+        ),
+    ],
+)
+def test_v4_candidate_feature_delta_matches_v3(
+    v3_candidate_name: str,
+    v4_candidate_name: str,
+    version: str,
+) -> None:
+    v3_base = json.loads((PACK_PATH.parent / "openimcc-redox-v3.json").read_text(encoding="utf-8"))
+    v3_candidate = json.loads((PACK_PATH.parent / v3_candidate_name).read_text(encoding="utf-8"))
+    v4_base = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    v4_candidate_path = PACK_PATH.parent / v4_candidate_name
+    v4_candidate = json.loads(v4_candidate_path.read_text(encoding="utf-8"))
+
+    assert _candidate_feature_delta(v4_base, v4_candidate) == _candidate_feature_delta(
+        v3_base, v3_candidate
+    )
+    assert v4_candidate["candidate_only"] is True
+    assert v4_candidate["version"] == version
+    assert load_redox_pack(v4_candidate_path).version == version
 
 
 def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:

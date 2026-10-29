@@ -77,9 +77,9 @@ is returned as `melt_pack_binding_digest`.
 
 ## Chromium candidate pack
 
-`src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json` is opt-in and is
+`src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json` is opt-in and is
 not the default. Select it with
-`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json")`.
+`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json")`.
 It adds `1/2 Cr2O3 = CrO + 1/4 O2` using O’Neill & Berry (2021)'s 1-bar
 composition and temperature relation. The Cr K is conditioned on normalized
 single-cation oxide fractions. Since the Fe and Cr rows are solved together,
@@ -97,14 +97,18 @@ the 1773 K variable-temperature limit, and compositions outside the demonstrated
 CMAS and basaltic range; pressure is not modelled. It does not define a
 composition-independent CrO Gibbs function.
 
+The unversioned, v2, and v3 Cr/Ti candidate files remain loadable for historical
+reproduction; they are not current opt-ins. The v3 files use the pre-v4 SiO2(l)
+standard, and the unversioned and v2 files also retain the pre-D&G FeO(l) row.
+
 ## Titanium candidate packs
 
 Two additional packs are opt-in. Select the Ti-only row with
-`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json")`,
+`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json")`,
 or select the combined Cr+Ti candidate with
-`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json")`.
+`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json")`.
 Neither is the packaged default. The Ti-only pack starts from the default
-redox pack; the combined pack carries both empirical rows.
+redox v4 pack; the combined pack carries both empirical rows.
 
 The Ti row uses `TiO2 = TiO1.5 + 1/4 O2`, so `nu_O2=+1/4`. Berry et al.
 (2024), equation 7, supplies `log10 K' = -1.84 + 3.44 Lambda + 6262.5/T`.
@@ -129,8 +133,8 @@ Lambda values, versus the published values:
 | AD+Qz | 0.5633 | 0.564323 |
 
 The small differences reflect recomputation from the rounded oxide analyses;
-the pack uses the paper's definition and coefficient set, so Ti predictions
-change by 0.000 dex at these anchors and at CST4. The pack-computed Berry
+the v4 candidate uses the same paper definition and coefficient set, so Ti
+predictions change by 0.000 dex at these anchors and at CST4. The pack-computed Berry
 anchor envelope is 0.5643-0.6353; its flag interval `[0.5633,0.6353]` also
 retains the published rounded endpoints. For CST4 (60.30 wt% SiO2, 31.80 wt%
 CaO, 7.33 wt% TiO2), the pack gives Lambda 0.628191 (0.62819 rounded), both

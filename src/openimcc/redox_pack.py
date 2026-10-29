@@ -19,10 +19,14 @@ from typing import Any, Mapping
 
 _PACK_NAME = "openimcc-redox-v4.json"
 _SCHEMA = "openimcc-redox-pack.v2"
-_CANDIDATE_VERSIONS = {
+_HISTORICAL_CANDIDATE_VERSIONS = {
     "1.4.0-cr-candidate", "1.5.0-ti-candidate", "1.6.0-cr-ti-candidate",
     "1.5.0-cr-candidate", "1.6.0-ti-candidate", "1.7.0-cr-ti-candidate",
     "1.6.0-cr-candidate", "1.7.0-ti-candidate", "1.8.0-cr-ti-candidate",
+}
+# Historical versions remain recognized for immutable pack and reproducibility pins.
+_CANDIDATE_VERSIONS = _HISTORICAL_CANDIDATE_VERSIONS | {
+    "1.7.0-cr-candidate", "1.8.0-ti-candidate", "1.9.0-cr-ti-candidate",
 }
 
 
