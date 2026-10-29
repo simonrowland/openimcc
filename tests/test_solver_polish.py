@@ -150,6 +150,9 @@ def test_v1_depleted_feo_1710k_is_certified() -> None:
     elif solver_path != "relative-log-x":
         assert result.convergence.continuation_stages > 0
     assert result.convergence.residual_inf <= 1.0e-12
+    assert result.parent_activity[result.parent_oxides.index("FeO")] == pytest.approx(
+        1.5838876114056108e-12, rel=2.0e-5, abs=0.0
+    )
     assert activity_shift <= 1.0e-10
 
 
@@ -451,17 +454,12 @@ def test_polish_linear_solve_failure_uses_continuation(
     assert solve_calls > 1
     solver_path = result.convergence.solver_path
     assert solver_path in {
-        "direct",
         "continuation",
         "composition-continuation",
         "temperature-continuation",
-        "relative-log-x",
     }
-    if solver_path == "direct":
-        assert result.convergence.continuation_stages == 0
-    elif solver_path != "relative-log-x":
-        assert result.convergence.continuation_stages > 0
+    assert result.convergence.continuation_stages > 0
     assert result.convergence.residual_inf <= 1.0e-12
     assert result.parent_activity[result.parent_oxides.index("FeO")] == pytest.approx(
-        1.5838876114056108e-12, rel=2.0e-5
+        1.5838876114056108e-12, rel=2.0e-5, abs=0.0
     )

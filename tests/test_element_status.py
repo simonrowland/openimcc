@@ -1092,7 +1092,6 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     assert ratio_order != ionisation_order
 
 
-@pytest.mark.slow
 def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
     for element, table_id in (
         ("Si", "Si-006"), ("Mg", "Mg-006"), ("Fe", "Fe-009"),

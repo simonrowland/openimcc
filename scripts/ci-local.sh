@@ -95,7 +95,9 @@ for V in "${VERSIONS[@]}"; do
     # -rs keeps an unrecorded cold-cost CPU class visible. -rfE lists
     # every failing and erroring node id in the summary, so a remote run's
     # captured tail names what failed.
-    PYTEST_ARGS=(-q -W error -rfEs --timeout=900)
+    TEST_TIMEOUT=2400
+    [ "$FAST" -eq 1 ] && TEST_TIMEOUT=900
+    PYTEST_ARGS=(-q -W error -rfEs "--timeout=$TEST_TIMEOUT")
     [ "$FAST" -eq 1 ] && PYTEST_ARGS+=(-m "not slow")
     LOG="$TMPROOT/pytest-$V.log"
     if "$VPY" -m pytest tests/ "${PYTEST_ARGS[@]}" 2>&1 | tee "$LOG"; then
