@@ -630,7 +630,15 @@ source_notes:
       published JANAF gas tables at the matching source-node limit. The
       Bi2O3(l) band is the maximum held-Cp error measured against nine JANAF
       parent-liquid tables truncated at 1300 K. These source-data back-tests
-      define continuation bands and are not benchmark tuning.
+      define continuation bands and are not benchmark tuning. Liquid-reference
+      accuracy bands are separate from these continuations: MgO(l) is
+      extrapolated with ±0.76 dex pO2 from JANAF Mg-009's printed ±16.7 kJ/mol
+      fusion-enthalpy uncertainty over 1323–2473 K only; TiO2(l) is
+      extrapolated with ±0.11 dex log10 pressure on 2185–2473 K as an
+      outward-rounded NASA/Gurvich versus JANAF O-044 and Barin-derived
+      envelope, not a measurement or confidence interval (the NASA offset is
+      one-sided). FeO(l) retains no numerical source-accuracy band because
+      Darken & Gurry via Masson report no pointwise measurement uncertainty.
   constructed_saha_ions:
     standard_state: >-
       The constructed M+ rows use ideal gases at p° = 1 bar. For M(g) ->

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added extrapolated MgO(l) and TiO₂(l) source-accuracy windows with bands
+  limited to their reviewed temperature ranges; gas pressures are unchanged.
+
 - Documentation corrections.
 
 - Added a digest-scoped `multicomponent-activity-pattern` notice for CMAS

@@ -52,9 +52,9 @@ curves are extrapolated and do not validate that envelope. Above 1801 K and
 below 2327 K, where the liquid is supercooled, authority is corroborated
 calculation with a ±0.05 dex band: an independent CALPHAD liquid and continued measured
 heat-capacity series stay within 2.6 kJ mol⁻¹, but nothing is measured
-calorimetrically there. A window's band applies only inside that window, so
-extrapolated statuses outside every window carry no band unless the record is
-itself extrapolated, as MgO(l) is. Al₂O₃(l) is certified from its 2327 K
+calorimetrically there. A window's band applies only inside that window;
+extrapolated statuses outside every window carry no band.
+Al₂O₃(l) is certified from its 2327 K
 melting point through 2873 K, the end of Crochetet et al.'s measured liquid
 heat-capacity range, with a ±0.036 dex log₁₀-pressure band. From 2873–3000 K,
 the JANAF liquid fit and Crochetet heat-capacity continuation agree within
@@ -66,11 +66,29 @@ continuations corroborate 1405.2–2473 K, so process rows in that interval
 still score with a notice and ±0.21 dex stress band. The supercooled
 1300–1405.2 K range remains extrapolated with the same stress band. These are
 calculated continuations, not pure-liquid Cp measurements.
-TiO₂(l) is extrapolated at every temperature and has no certified window; the
-JANAF O-044 flag and the O-044-SC-CP continuation flag both remain. MgO(l) remains extrapolated and carries its
-±0.3 dex pO₂ band. These records describe reference authority only and do not
-change calculated gas pressures. Condensate G(T) interval flags remain in
-place even when the liquid reference itself is certified.
+MgO(l) is extrapolated at every temperature. Its ±0.76 dex pO₂ band applies
+only on 1323–2473 K and is JANAF Mg-009's printed fusion-enthalpy uncertainty,
+±16.7 kJ/mol. With Tm = 3105 K, δG = δΔH(1−T/Tm) = 9.58 kJ/mol at 1323 K,
+and Δlog₁₀ pO₂ = 2δG/(RT ln 10) for MgO(l) = Mg(g) + ½O₂. The same
+uncertainty is 0.41 dex at 1800 K and 0.14 dex at 2473 K; the stored value is
+the cold edge of the window. It is not a confidence interval. Assumed liquid
+Cp and the unresolved melting-point dispute are outside it. DFT,
+molecular-dynamics, binary-liquidus and CALPHAD fusion values are listed
+conflicts and do not set the band. The extrapolation flag therefore shows the
+band only within this window.
+
+TiO₂(l) is extrapolated at every temperature; the JANAF O-044 and O-044-SC-CP
+continuation flags both remain. Its extrapolated 2185–2473 K window carries
+±0.11 dex log₁₀ pressure, the outward-rounded cross-assessment envelope from
+NASA/Gurvich versus JANAF O-044 and a Barin-derived line. The NASA/Gurvich
+residual is +4.28 to +4.44 kJ mol⁻¹ (+0.094 to +0.102 dex pO₂); the
+Barin-derived line differs by +2.13 to −0.98 kJ mol⁻¹. For TiO₂,
+Δlog₁₀ pO₂ = ΔG/(RT ln 10). This is not a measurement or a confidence
+interval. JANAF O-044 estimates liquid Cp and fusion entropy, and the NASA
+offset is one-sided. There is no band outside this window. These records
+describe reference authority only and do not change calculated gas pressures.
+Condensate G(T) interval flags remain in place even when the liquid reference
+itself is certified.
 
 For SiO₂(l), Connolly's (2016; DOI 10.1002/2016JE005059) metastable-liquid
 function corroborates the 1200–1500 K interval below the glass transition.

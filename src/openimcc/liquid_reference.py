@@ -127,8 +127,18 @@ _RECORDS = (
         (_e("Plante", 1979, "measured potassium pressures; residual about -0.13 dex at 25-40 wt% K2O; about -0.38 dex at 12-20 wt% K2O", {"K2O_wt_pct": (25, 40)}),)),
     LiquidReferenceRecord("CaO(l)", LiquidReferenceAuthority.CERTIFIED, (1323, 2473), 0.07, "dex pO2",
         (_e("Alvares, Deffrennes, Pisch & Jakse", 2020, "molecular-dynamics calculation of melting and fusion enthalpy; corroborated by independent calculation, not measured; within 2.6 kJ/mol; no measured fusion datum exists; DOI 10.1063/1.5141841"), _e("Menescardi, Ceresoli & Belmonte", 2024, "molecular-dynamics calculation of melting and fusion enthalpy; corroborated by independent calculation, not measured; within 2.6 kJ/mol; no measured fusion datum exists; DOI 10.1021/acs.jpcc.4c04752"))),
-    LiquidReferenceRecord("MgO(l)", LiquidReferenceAuthority.EXTRAPOLATED, None, 0.3, "dex pO2",
-        (_e("JANAF and calculated values", 2024, "assumed fusion entropy; calculated fusion values scatter by about 10-19 kJ/mol"),)),
+    # JANAF Mg-009 prints ±16.7 kJ/mol for fusion enthalpy and Tm=3105 K.
+    # At 1323 K, δG=δΔH(1−T/Tm)=±9.58 kJ/mol (±9584 J/mol); for
+    # MgO(l)=Mg(g)+½O2, Δlog10 pO2=2δG/(RT ln 10)=±0.757 dex, using
+    # R=8.314462618 J mol⁻¹ K⁻¹. Store the outward-rounded cold-edge value
+    # across the reviewed window; it is not a confidence interval, and no
+    # band applies beyond that window.
+    LiquidReferenceRecord("MgO(l)", LiquidReferenceAuthority.EXTRAPOLATED, None, None, None,
+        (_e("JANAF Mg-009", 1998, "assumes fusion entropy; no primary pure-liquid fusion calorimetry or liquid-Cp series was found. DFT, molecular-dynamics, binary-liquidus and CALPHAD fusion values are listed conflicts and do not set a band"),),
+        (AuthorityWindow(LiquidReferenceAuthority.EXTRAPOLATED, (1323, 2473), 0.76,
+            "dex pO2", (
+                _e("JANAF Mg-009", 1998, "printed ±16.7 kJ/mol fusion-enthalpy uncertainty; δG=δΔH(1−T/Tm) with Tm=3105 K gives a ±0.76 dex pO2 cold-edge band on 1323–2473 K, not a confidence interval"),
+            )),)),
     LiquidReferenceRecord("FeO(l)", LiquidReferenceAuthority.CERTIFIED, (1649.15, 1766.15), None, None,
         (_e("Darken & Gurry via Masson", 1965, "measured FeO liquid activity range; DOI 10.1021/ja01209a030 and 10.1098/rspa.1965.0176"), _e("Hashimoto", 1983, "run 17c3-2 at 1973 K: free-evaporation residue retains 27.92 wt% FeO versus about 14 wt% predicted; kinetics included"))),
     # Premise: anchor each measured Cp continuation to shipped G at Tm=2327 K,
@@ -172,7 +182,12 @@ _RECORDS = (
                 _e("Gurvich via NASA Glenn CEA", 2002, "liquid card from 2327 K continued downward; part of the model envelope; NASA/TP-2002-211556"),
             )),)),
     LiquidReferenceRecord("TiO2(l)", LiquidReferenceAuthority.EXTRAPOLATED, None, None, None,
-        (_e("JANAF O-044", 1998, "estimated end-to-end: assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4 and estimated liquid Cp 8 cal per g-atom; no measured pure-liquid data"),)),
+        (_e("JANAF O-044", 1998, "estimated end-to-end: assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4 and estimated liquid Cp 8 cal per g-atom; no measured pure-liquid data"),),
+        (AuthorityWindow(LiquidReferenceAuthority.EXTRAPOLATED, (2185, 2473), 0.11,
+            "dex log10 pressure", (
+                _e("Gurvich via NASA Glenn CEA", 2002, "versus JANAF O-044, the one-sided positive residual is +4.28 to +4.44 kJ/mol (+0.094 to +0.102 dex log10 pressure) on 2185–2473 K; part of a cross-assessment envelope, not a measurement or confidence interval; NASA/TP-2002-211556"),
+                _e("Li & Ishigaki (Barin-derived)", 2002, "liquid Gibbs line differs from JANAF O-044 by +2.13 kJ/mol at 2185 K to −0.98 kJ/mol at 2473 K; included in the cross-assessment envelope, not a measurement; DOI 10.1016/S0022-0248(02)01438-0"),
+            )),)),
     # With no active Na2O sensitivity rows, use the stoichiometric stress
     # bound at 1300 K: q=1000/(R*T*ln(10))=0.04018 dex/kJ, so pO2 is at
     # most 2q*2.6=0.2089 dex; round outward to 0.21 (not a confidence band).

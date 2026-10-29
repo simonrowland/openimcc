@@ -265,7 +265,7 @@ def test_public_records_round_trip_and_gas_result_notice() -> None:
         for status in extrapolated.liquid_reference_status.values()
     )
     assert any("MgO(l)" in (flag or "") for flag in extrapolated.domain_flags.values())
-    assert any("±0.3 dex pO2" in (flag or "") for flag in extrapolated.domain_flags.values())
+    assert any("±0.76 dex pO2" in (flag or "") for flag in extrapolated.domain_flags.values())
     potassium_no_composition = evaluate_gas({"K2O": 1.0}, 1500, 1e-8, pack)
     no_composition_status = next(
         status for status in potassium_no_composition.liquid_reference_status.values()
@@ -342,5 +342,50 @@ def test_window_band_does_not_apply_outside_every_window() -> None:
     below = liquid_reference_authority("Al2O3(l)", 1200)
     assert below.authority is LiquidReferenceAuthority.EXTRAPOLATED
     assert below.band_value is None and below.band_unit is None
-    mgo = liquid_reference_authority("MgO(l)", 1700)
-    assert mgo.band_value == 0.3
+    mgo = liquid_reference_authority("MgO(l)", 1000)
+    assert mgo.authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert mgo.band_value is None and mgo.band_unit is None
+
+
+def test_mgo_extrapolated_source_band_window() -> None:
+    for temperature in (1323, 1800, 2473):
+        status = liquid_reference_authority("MgO(l)", temperature)
+        assert status.authority is LiquidReferenceAuthority.EXTRAPOLATED
+        assert status.certified_T_K == (1323, 2473)
+        assert status.band_value == pytest.approx(0.76)
+        assert status.band_unit == "dex pO2"
+
+    for temperature in (1000, 1322.999, 2473.001, 3000):
+        status = liquid_reference_authority("MgO(l)", temperature)
+        assert status.authority is LiquidReferenceAuthority.EXTRAPOLATED
+        assert status.band_value is None and status.band_unit is None
+
+
+def test_tio2_extrapolated_cross_assessment_window() -> None:
+    for temperature in (2185, 2300, 2473):
+        status = liquid_reference_authority("TiO2(l)", temperature)
+        assert status.authority is LiquidReferenceAuthority.EXTRAPOLATED
+        assert status.certified_T_K == (2185, 2473)
+        assert status.band_value == pytest.approx(0.11)
+        assert status.band_unit == "dex log10 pressure"
+        evidence = " ".join(item.basis for item in status.evidence_ref)
+        assert "cross-assessment envelope" in evidence
+        assert "one-sided" in evidence
+        assert "not a measurement or confidence interval" in evidence
+
+    for temperature in (2000, 2184.999, 2473.001):
+        status = liquid_reference_authority("TiO2(l)", temperature)
+        assert status.authority is LiquidReferenceAuthority.EXTRAPOLATED
+        assert status.band_value is None and status.band_unit is None
+
+
+def test_feo_authority_window_and_band_are_unchanged() -> None:
+    inside = liquid_reference_authority("FeO(l)", 1700)
+    assert inside.authority is LiquidReferenceAuthority.CERTIFIED
+    assert inside.certified_T_K == (1649.15, 1766.15)
+    assert inside.band_value is None and inside.band_unit is None
+
+    for temperature in (1649.149, 1766.151):
+        outside = liquid_reference_authority("FeO(l)", temperature)
+        assert outside.authority is LiquidReferenceAuthority.EXTRAPOLATED
+        assert outside.band_value is None and outside.band_unit is None
