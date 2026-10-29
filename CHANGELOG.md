@@ -4,6 +4,11 @@
 
 - Documentation corrections.
 
+- Added a digest-scoped `multicomponent-activity-pattern` notice for CMAS
+  compositions on the default D066 v5 pack. It reports the corrected Kume
+  activity residual trend and its measured range, confounding, and binary
+  limitation without changing calculated values. See `docs/melt-notices.md`.
+
 - Added the opt-in D066 v5 Fe₂SiO₄/FeTiO₃ Hess candidate; the v5 default and
   published packs stay unchanged. The fayalite fit reaches the no-association
   limit, and the 1800/2000 K targets exceed the ideal-mixing ceiling. The

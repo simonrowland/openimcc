@@ -514,6 +514,76 @@ def _cao_sio2_activity_bias_notice(
     return _CAO_SIO2_STRONG_NOTICE
 
 
+# Multicomponent activity-pattern notice. Corrected Kume 2000 residuals vary
+# with NBO/T in CMAS compositions; this distinct evidence does not extend the
+# effectively binary CaO–SiO2 notice above. The measured wording is pinned to
+# the default pack identity, and other identities receive no inherited score.
+_MULTICOMPONENT_ACTIVITY_PATTERN_MIN_MOLE_FRACTION = 0.01
+_MULTICOMPONENT_ACTIVITY_PATTERN_T_MIN_K = 1700.0
+_MULTICOMPONENT_ACTIVITY_PATTERN_T_MAX_K = 3000.0
+_MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_MODEL_ID = "IMCC-SF04-D066"
+_MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_BINDING_DIGEST = (
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
+)
+_MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE = (
+    "multicomponent-activity-pattern: on the default D066 v5 pack, Kume et al. "
+    "(2000) multicomponent CMAS/CAS/CMS activity residuals "
+    "(log10(predicted/measured), after solid-to-liquid standard conversion) "
+    "at 1823–1873 K vary with NBO/T: SiO2 residuals become more negative and "
+    "CaO and MgO residuals more positive as NBO/T rises. RMSEs are 0.44 dex "
+    "(SiO2), 0.59 dex (CaO), and 0.49 dex (MgO). Al-bearing association, "
+    "temperature, and source method are confounded; no cause is established. "
+    "Effectively binary CaO–SiO2 Kume rows have slopes near zero. Stolyarova "
+    "(1991) reports a CaO slope of about +0.3 dex/NBO/T at 1933 K, but its "
+    "silica table conflicts with the paper's closure."
+)
+_MULTICOMPONENT_ACTIVITY_PATTERN_UNSCORED_NOTICE = (
+    "multicomponent-activity-pattern-unscored: Kume 2000 multicomponent "
+    "activity-pattern evidence was measured on the default D066 v5 pack; "
+    "this pack has not been scored."
+)
+
+
+def _multicomponent_activity_pattern_notice(
+    parent_oxides: Sequence[str],
+    moles: np.ndarray,
+    temperature_K: float,
+    model_id: str,
+    binding_digest: str,
+) -> str | None:
+    """Return the identity-scoped CMAS activity-pattern notice, if applicable."""
+    temperature_K = float(temperature_K)
+    if not (
+        _MULTICOMPONENT_ACTIVITY_PATTERN_T_MIN_K
+        <= temperature_K
+        <= _MULTICOMPONENT_ACTIVITY_PATTERN_T_MAX_K
+    ):
+        return None
+    try:
+        indices = tuple(
+            parent_oxides.index(name)
+            for name in ("SiO2", "CaO", "MgO", "Al2O3")
+        )
+    except ValueError:
+        return None
+    total = float(moles.sum())
+    if total <= 0.0:
+        return None
+    if any(
+        float(moles[index]) / total
+        <= _MULTICOMPONENT_ACTIVITY_PATTERN_MIN_MOLE_FRACTION
+        for index in indices
+    ):
+        return None
+    if (
+        model_id != _MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_MODEL_ID
+        or binding_digest
+        != _MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_BINDING_DIGEST
+    ):
+        return _MULTICOMPONENT_ACTIVITY_PATTERN_UNSCORED_NOTICE
+    return _MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE
+
+
 class ImccMalformedDatapackError(ImccRefusal):
     """Raised when a datapack JSON file is malformed or schema-invalid."""
 
@@ -2368,6 +2438,14 @@ def evaluate(
     )
     if cao_sio2_notice is not None:
         notices.append(cao_sio2_notice)
+
+    multicomponent_activity_pattern_notice = (
+        _multicomponent_activity_pattern_notice(
+            parent_oxides, vector, T_K, model_id, binding_digest
+        )
+    )
+    if multicomponent_activity_pattern_notice is not None:
+        notices.append(multicomponent_activity_pattern_notice)
 
     silicate_product_notice = _silicate_vapour_product_notice(
         parent_oxides, vector, T_K, model_id, binding_digest

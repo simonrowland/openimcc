@@ -728,6 +728,110 @@ def test_cao_sio2_other_pack_gets_the_unscored_notice() -> None:
     )
 
 
+_MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
+_MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_BINDING_DIGEST = (
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
+)
+_MULTICOMPONENT_ACTIVITY_PATTERN_MARKERS = (
+    "multicomponent-activity-pattern:",
+    "multicomponent-activity-pattern-unscored:",
+)
+
+
+def test_multicomponent_pattern_cmas_values_unchanged() -> None:
+    composition = {"SiO2": 50.0, "CaO": 25.0, "MgO": 15.0, "Al2O3": 10.0}
+    result = evaluate(composition, 1823.0, basis_type="wt")
+    notices = tuple(
+        notice
+        for notice in result.labels.notices
+        if notice.startswith(_MULTICOMPONENT_ACTIVITY_PATTERN_MARKERS)
+    )
+    assert notices == (model._MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE,)
+
+    # Hex literals pin the calculated outputs from before this notice existed.
+    assert tuple(float(value).hex() for value in result.parent_activity) == (
+        "0x1.5c1424293252fp-3",
+        "0x1.41b5bca62510bp-6",
+        "0x0.0p+0",
+        "0x1.cababe1126f00p-12",
+        "0x1.338d81f5763bfp-6",
+        "0x0.0p+0",
+        "0x0.0p+0",
+        "0x0.0p+0",
+    )
+    assert tuple(float(value).hex() for value in result.parent_gamma) == (
+        "0x1.6d9fbeb88b0e3p-2",
+        "0x1.79cccb1c0873fp-4",
+        "0x0.0p+0",
+        "0x1.c1b7f159d60d1p-10",
+        "0x1.56a278fe2f4eap-2",
+        "0x0.0p+0",
+        "0x0.0p+0",
+        "0x0.0p+0",
+    )
+
+
+def test_multicomponent_pattern_skips_binary() -> None:
+    result = evaluate({"CaO": 0.50, "SiO2": 0.50}, 1823.0)
+    assert not any(
+        notice.startswith(_MULTICOMPONENT_ACTIVITY_PATTERN_MARKERS)
+        for notice in result.labels.notices
+    )
+
+
+def test_multicomponent_pattern_gate_boundaries() -> None:
+    parents = ("SiO2", "CaO", "MgO", "Al2O3")
+    identity = (
+        _MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_MODEL_ID,
+        _MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_BINDING_DIGEST,
+    )
+    moles = np.array((0.70, 0.10, 0.10, 0.10))
+    notice = model._multicomponent_activity_pattern_notice
+
+    assert (
+        notice(parents, moles, 1700.0, *identity)
+        == model._MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE
+    )
+    assert (
+        notice(parents, moles, 3000.0, *identity)
+        == model._MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE
+    )
+    assert notice(parents, moles, 1699.99, *identity) is None
+    assert notice(parents, moles, 3000.01, *identity) is None
+    assert notice(parents, np.array((0.97, 0.01, 0.01, 0.01)), 1823.0, *identity) is None
+
+
+def test_multicomponent_pattern_identity_scope() -> None:
+    default = load_datapack()
+    evidence = (
+        _MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_MODEL_ID,
+        _MULTICOMPONENT_ACTIVITY_PATTERN_EVIDENCE_BINDING_DIGEST,
+    )
+    assert (default.model_id, default.binding_digest) == evidence
+    assert (
+        model._MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_MODEL_ID,
+        model._MULTICOMPONENT_ACTIVITY_PATTERN_MEASURED_BINDING_DIGEST,
+    ) == evidence
+
+    candidate = load_datapack(
+        "src/openimcc/data/packs/imcc-sf04-d066-v2.json"
+    )
+    assert candidate.model_id == evidence[0]
+    assert candidate.binding_digest != evidence[1]
+    result = evaluate(
+        {"SiO2": 50.0, "CaO": 25.0, "MgO": 15.0, "Al2O3": 10.0},
+        1823.0,
+        candidate,
+        basis_type="wt",
+    )
+    notices = tuple(
+        notice
+        for notice in result.labels.notices
+        if notice.startswith(_MULTICOMPONENT_ACTIVITY_PATTERN_MARKERS)
+    )
+    assert notices == (model._MULTICOMPONENT_ACTIVITY_PATTERN_UNSCORED_NOTICE,)
+
+
 def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None:
     diopside = {"CaO": 1.0, "MgO": 1.0, "SiO2": 2.0}
     result = evaluate(diopside, 1668.0, allow_extrapolation=True)
