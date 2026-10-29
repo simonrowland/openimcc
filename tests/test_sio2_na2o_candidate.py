@@ -39,11 +39,11 @@ def test_candidate_pack_identity_and_default_remain_separate() -> None:
     assert default.kernel_datapack.binding_digest != candidate.kernel_datapack.binding_digest
 
 
-def test_previous_defaults_and_condensate_remain_loadable() -> None:
-    previous_melt = load_datapack(PACKS / "imcc-sf04-d066-v3.json")
-    previous_redox = load_redox_pack(PACKS / "openimcc-redox-v3.json")
-    assert previous_melt.version == "1.0.5-d066-v3"
-    assert previous_redox.version == "1.6.0"
+def test_historical_versions_and_condensate_remain_loadable() -> None:
+    historical_melt = load_datapack(PACKS / "imcc-sf04-d066-v3.json")
+    historical_redox = load_redox_pack(PACKS / "openimcc-redox-v3.json")
+    assert historical_melt.version == "1.0.5-d066-v3"
+    assert historical_redox.version == "1.6.0"
 
     legacy = load_gas_datapack(
         oxide_path=GAS / "condensate-sio2-na2o-janaf-legacy.csv"

@@ -405,8 +405,11 @@ gas comparisons and the source-pinned element-status regression.
 The ext-v1, ext-v2, and ext-v3 records are retired and no longer shipped:
 ext-v1 and ext-v3 fail the frozen canonical hash, while ext-v2 fails the fixed
 parent-basis check because it includes CoO. Git history retains them as
-research records; the shipped packs are v1.0.2, ext-v4, D066 v1 and v2, the
-D066 KCa sensitivity pack, and the D066 S/P extension.
+research records. The current default melt pack is
+`imcc-sf04-d066-v5.json`; D066 v1–v4 remain loadable historical packs. The
+redox default is `openimcc-redox-v4.json`, with redox v1–v3 available as
+loadable history. The complete shipped pack list is recorded in
+`src/openimcc/data/packs/MANIFEST.json`.
 
 The nested screen and gas-inventory fields are descriptive only; the loader
 does not read any of these fields or activate the candidates.

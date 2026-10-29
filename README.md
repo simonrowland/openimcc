@@ -599,7 +599,11 @@ the bound-level sets are not asserted complete. These channels are opt-in and
 their per-element C3 share screens are in `docs/ROADMAP.md`.
 `gas_species` requests use the full default neutral set for the charge closure,
 then retain the requested neutral and charge channels. Requesting an ion name
-requires `include_ions=True`. `evaluate_gas_oxygen_balance` remains neutral-only.
+requires `include_ions=True`. `evaluate_gas_oxygen_balance` uses neutral gas
+channels by default. With `include_ions=True`, it recalculates charge closure at
+each trial pressure and counts positive ions as ambipolar ion/electron pairs;
+negative ions are excluded from the effusion balance. See
+[`docs/gas-saturation.md`](docs/gas-saturation.md).
 
 JANAF gives neutral gases, ions and electrons the same ideal-gas standard
 state, `p° = 0.1 MPa = 1 bar`. Its electron table uses a monatomic ideal-gas
@@ -1356,9 +1360,10 @@ MgAl2O4 (at 1700 K, on the glass segments of the JANAF liquid tables),
 1.1 kJ/mol for Mg2SiO4, 0.7 kJ/mol for MgTi2O5, and 0.3–0.4 kJ/mol for
 MgTiO3, Mg2TiO4 and MgSiO3 (0.27 kJ/mol). On the liquid branch at
 2600–3000 K, its MgAl2O4 row differs by +5.0 to +6.0 kJ/mol (0.10–0.11 dex).
-The current default D066 v2 pack combines Shornikov's primary MgAl2O4
-fusion measurement and the D&G/Masson FeO(l) re-anchor; the frozen published
-pack and D066 v1 remain available with their historical rows. See
+The current default melt pack, `imcc-sf04-d066-v5.json`, combines Shornikov's
+primary MgAl2O4 fusion measurement and the D&G/Masson FeO(l) re-anchor with
+five Hess-cycle association-A refits. D066 v1–v4 remain loadable historical
+packs; `openimcc-redox-v4.json` is the redox default. See
 [`docs/liquid-from-solid.md`](docs/liquid-from-solid.md) for the source choice
 and derivation.
 
@@ -1372,8 +1377,9 @@ source liquid nodes below 1800 K; its 1200–1800 K parent row is therefore an
 explicit constant-Cp continuation, which every affected gas result flags.
 
 The frozen published reproduction pack remains unchanged: every row is its
-source's published value. D066 v2 is the single new default with the MgAl2O4
-and FeO(l) source corrections and their provenance recorded in the pack.
+source's published value. The current default melt and redox packs are D066 v5
+and redox v4, respectively; their source corrections and provenance are
+recorded in the packs.
 
 ### Independently pinned behaviour
 

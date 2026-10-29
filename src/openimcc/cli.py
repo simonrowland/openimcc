@@ -545,7 +545,7 @@ def build_parser() -> argparse.ArgumentParser:
         "describe", parents=[common], help="print datapack metadata"
     )
     describe.add_argument(
-        "--pack", default=None, help="path to a datapack JSON (default: packaged SF04)"
+        "--pack", default=None, help="path to a datapack JSON (default: packaged D066 v5)"
     )
     describe.set_defaults(func=_cmd_describe)
 
@@ -553,7 +553,7 @@ def build_parser() -> argparse.ArgumentParser:
         "validate-pack", parents=[common], help="load and validate a datapack, then exit"
     )
     validate.add_argument(
-        "--pack", default=None, help="path to a datapack JSON (default: packaged SF04)"
+        "--pack", default=None, help="path to a datapack JSON (default: packaged D066 v5)"
     )
     validate.set_defaults(func=_cmd_validate_pack)
 
@@ -564,7 +564,7 @@ def build_parser() -> argparse.ArgumentParser:
     cp_implied = diagnose_sub.add_parser("cp-implied", help="report implied heat capacity")
     cp_implied.add_argument(
         "--pack", default=None,
-        help="path to a datapack JSON (default: packaged D066 primary pack)",
+        help="path to a datapack JSON (default: packaged D066 v5)",
     )
     cp_implied.add_argument(
         "--out", default="diagnostics", help="output directory (default: diagnostics)"
@@ -575,7 +575,7 @@ def build_parser() -> argparse.ArgumentParser:
         "crystal-closure", help="report crystal melting-point closure"
     )
     crystal_closure.add_argument("--pack", default=None,
-        help="path to a melt datapack JSON (default: packaged SF04)")
+        help="path to a melt datapack JSON (default: packaged D066 v5)")
     crystal_closure.add_argument("--condensate", default=None,
         help="path to a condensate table CSV (default: packaged table)")
     crystal_closure.add_argument("--out", default="diagnostics",
@@ -593,7 +593,7 @@ def build_parser() -> argparse.ArgumentParser:
         "solve", parents=[common], help="solve melt activities at one T"
     )
     solve.add_argument(
-        "--pack", default=None, help="path to a datapack JSON (default: packaged SF04)"
+        "--pack", default=None, help="path to a datapack JSON (default: packaged D066 v5)"
     )
     solve.add_argument(
         "--temperature", type=float, required=True, metavar="K", help="temperature in K"

@@ -192,8 +192,8 @@ from its unchanged published melt pack and does not read the gas-side
 condensate row.
 NbO2(l), TiO2(l), Cr2O3(l), V2O3(l), SiO2(l), Al2O3(l), MgO(l), and CaO(l)
 have generated low-temperature continuation intervals. The major-oxide
-continuations extend default parent coverage; Si and Al retain gas C4 gaps
-because their Si2/Si3 and Al2 rows start at 1500 K.
+continuations extend default parent coverage. The Si2/Si3 and Al2 rows also
+cover the 1200–1500 K interval, closing the Si and Al gas C4 gaps there.
 
 ### Low-temperature gas interval (done)
 
@@ -256,8 +256,9 @@ formation enthalpy is not marked estimated in that source table.
 ### 1. The gas layer is self-contained (done)
 
 The packaged gas tables now load by default through `importlib.resources`.
-Forty-one Shomate rows are fitted deterministically from vendored NIST-JANAF
-records, with the exact source hash and fit residual recorded per row. The
+The table contains 678 Shomate rows. JANAF-derived rows are fitted
+deterministically from vendored NIST-JANAF records, with the exact source hash
+and fit residual recorded per row. The
 gas-row maximum fit residual is **1.9231 J/mol** (**3.7465e-5 log10 K**), well below the
 0.01 log10 K gate. The eight transcribed condensate rows reproduce the current
 published coefficient values exactly; TiO2(l), Cr2O3(l), V2O3(l) and NbO2(l)
@@ -463,17 +464,18 @@ the liquid standard state. This switch leaves the existing LH84 row untouched.
 
 ### 7. Provenance vocabulary is shared across the shipped core
 
-`v1.0.2` and `ext-v4` distinguish `authority_by_publication` (28),
-`janaf_direct_liquid` (9) and `partial_non_janaf_direct_liquid` (1). The
-Both packs use those same three classes for their 38 core rows. `ext-v4` adds
-five `extension-compound-thermo` rows in its separate S/P extension vocabulary;
-those are not a different level of detail for the published core. The ext-v1,
-ext-v2 and ext-v3 records are retired and no longer shipped; see
-`docs/datapack-format.md` for the retirement record. A reader should consult
-each row's provenance class to distinguish FC87-table-derived from JANAF-derived
-rows.
+The frozen 38-row SF04 core in `imcc-sf04-v1.0.2.json` and
+`imcc-sf04-ext-v4.json` uses `authority_by_publication` (28),
+`janaf_direct_liquid` (9), and `partial_non_janaf_direct_liquid` (1).
+`imcc-sf04-ext-v4.json` adds five `extension-compound-thermo` rows in its
+separate S/P extension vocabulary; those are not a different level of detail
+for the published core. The ext-v1, ext-v2, and ext-v3 records are retired and
+no longer shipped; see `docs/datapack-format.md` for the retirement record. A
+reader should consult each row's provenance class to distinguish FC87-table-
+derived from JANAF-derived rows.
 
-An audit of the two shipped packs found **zero reverse-engineered rows**.
+An audit of the frozen SF04 published core found **zero reverse-engineered
+rows**.
 
 ### 8. Model specification (done)
 

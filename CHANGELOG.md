@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Documentation corrections.
+
 - Added the opt-in D066 v5 Fe₂SiO₄/FeTiO₃ Hess candidate; the v5 default and
   published packs stay unchanged. The fayalite fit reaches the no-association
   limit, and the 1800/2000 K targets exceed the ideal-mixing ceiling. The
