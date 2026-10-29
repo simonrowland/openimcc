@@ -215,6 +215,7 @@ def _assert_c2_candidate_coverage(
             assert screen["fO2"] in FUGACITIES
 
 
+@pytest.mark.slow
 def test_janaf_neutral_oxide_sources_are_included_or_measured_screens() -> None:
     """Use data-src plus checked-in candidates; no JANAF manifest exists."""
     source_candidates = _neutral_oxide_sources()
@@ -959,6 +960,7 @@ def test_halogen_selected_authority_labels_match_provenance() -> None:
         )
 
 
+@pytest.mark.slow
 def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     measured = _ion_bound_maxima()
     negative_screen = yaml.safe_load(
@@ -1090,6 +1092,7 @@ def test_joint_thermal_ionisation_estimates_match_the_status_source() -> None:
     assert ratio_order != ionisation_order
 
 
+@pytest.mark.slow
 def test_cation_janaf_records_match_the_pinned_manifest_hashes() -> None:
     for element, table_id in (
         ("Si", "Si-006"), ("Mg", "Mg-006"), ("Fe", "Fe-009"),

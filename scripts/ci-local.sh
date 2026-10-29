@@ -24,13 +24,21 @@
 # gate proves numpy and scipy are sufficient, not that a particular build is
 # frozen.
 #
-# Usage:  scripts/ci-local.sh [--quick]
+# Usage:  scripts/ci-local.sh [--quick] [--fast]
 #           --quick   current interpreter only; skip the version matrix
+#           --fast    exclude tests marked slow
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
 QUICK=0
-[ "${1:-}" = "--quick" ] && QUICK=1
+FAST=0
+for ARG in "$@"; do
+    case "$ARG" in
+        --quick) QUICK=1 ;;
+        --fast) FAST=1 ;;
+        *) printf 'Usage: scripts/ci-local.sh [--quick] [--fast]\n' >&2; exit 2 ;;
+    esac
+done
 
 RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; DIM=$'\033[2m'; OFF=$'\033[0m'
 FAILED=(); SKIPPED=()
@@ -84,26 +92,30 @@ for V in "${VERSIONS[@]}"; do
     # Gate on pytest's exit status, not on the summary text alone: a run that
     # ends "1 passed, 1 error" still matches '^[0-9]+ passed'. Exit 0 is the
     # only pass; the summary must also carry no failed/error count.
-    # -rs keeps an unrecorded cold-cost CPU class visible: that test skips
-    # with the measured numbers and how to record a baseline. -rfE lists
+    # -rs keeps an unrecorded cold-cost CPU class visible. -rfE lists
     # every failing and erroring node id in the summary, so a remote run's
     # captured tail names what failed.
-    OUT="$("$VPY" -m pytest tests/ -q -W error -rfEs 2>&1)"
-    RC=$?
-    LAST="$(printf '%s' "$OUT" | tail -1)"
+    PYTEST_ARGS=(-q -W error -rfEs --timeout=900)
+    [ "$FAST" -eq 1 ] && PYTEST_ARGS+=(-m "not slow")
+    LOG="$TMPROOT/pytest-$V.log"
+    if "$VPY" -m pytest tests/ "${PYTEST_ARGS[@]}" 2>&1 | tee "$LOG"; then
+        RC=0
+    else
+        RC=$?
+    fi
+    LAST="$(tail -1 "$LOG")"
     RAN=$((RAN + 1))
     if [ "$RC" -eq 0 ] && printf '%s' "$LAST" | grep -qE '^[0-9]+ passed' \
         && ! printf '%s' "$LAST" | grep -qE '[0-9]+ (failed|errors?)'; then
-        # A green run still prints skip reasons, including an unrecorded
-        # cold-cost CPU class (measured numbers and how to record them).
-        printf '%s\n' "$OUT" | grep 'SKIPPED' | sed 's/^/        /' || true
-        pass "tests on $V  $DIM$(printf '%s' "$OUT" | tail -1)$OFF"
+        # A green run still prints skip reasons, including unrecorded CPU classes.
+        grep 'SKIPPED' "$LOG" | sed 's/^/        /' || true
+        pass "tests on $V  $DIM$LAST$OFF"
     else
         fail "tests on $V"
         # Name every failing and erroring node (the -rfE summary lines), then
         # the final count line; a plain tail would show only the skip list.
-        printf '%s\n' "$OUT" | grep -E '^(FAILED|ERROR) ' | sed 's/^/        /' || true
-        printf '%s' "$OUT" | tail -1 | sed 's/^/        /'
+        grep -E '^(FAILED|ERROR) ' "$LOG" | sed 's/^/        /' || true
+        printf '%s\n' "$LAST" | sed 's/^/        /'
     fi
 done
 

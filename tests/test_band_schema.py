@@ -8,6 +8,7 @@ import tarfile
 from collections.abc import Mapping
 from pathlib import Path
 
+import pytest
 import yaml
 
 from openimcc.redox_pack import canonical_redox_digest
@@ -152,6 +153,7 @@ def test_accuracy_band_never_repeats_its_own_fit_residual() -> None:
         walk(raw, path.name)
 
 
+@pytest.mark.slow
 def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) -> None:
     paths = [
         "src/openimcc/data/packs/openimcc-redox-v1.json",

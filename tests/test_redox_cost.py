@@ -131,33 +131,6 @@ def _cold_baseline(cpu_class: str, name: str) -> tuple[float, float] | None:
     return statistics.median(run_values), max(run_values) - min(run_values)
 
 
-def _missing_cold_baseline_message(
-    cpu_class: str,
-    name: str,
-    ratio_median: float,
-    ratio_spread: float,
-    trial_medians: list[float],
-    reference_cpu_median: float,
-    wall_max: float,
-    wall_cpu_ratio: float,
-    newton_iterations: int,
-    solver_residual_evaluations: int,
-    load_start: float,
-    load_end: float,
-) -> str:
-    return (
-        f"{name}: unrecorded paired baseline for {cpu_class!r}; "
-        f"normalized ratio median={ratio_median:.8f}, spread={ratio_spread:.8f}, "
-        f"five trial medians={trial_medians}; "
-        f"reference CPU={reference_cpu_median * 1000:.3f} ms; "
-        f"max wall={wall_max * 1000:.3f} ms, wall/CPU={wall_cpu_ratio:.3f}; "
-        f"Newton iterations={newton_iterations}; "
-        f"solver residual evaluations={solver_residual_evaluations}; "
-        f"loadavg={load_start:.2f}/{load_end:.2f}. "
-        "Add five independent run medians to _COLD_COST_BASELINES for this chip."
-    )
-
-
 def _cold_cost_ceiling(
     baseline_median: float, baseline_spread: float, measured_spread: float
 ) -> float:
@@ -225,6 +198,7 @@ _CLOSED_NATURAL_MELT_INVENTORY = {
 }
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     ("name", "inventory", "temperature", "mode"),
     [
@@ -264,6 +238,13 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     even the smallest guaranteed detected slowdown is 1.9x. Wall/CPU and load
     are reported as tripwires, not pass criteria.
     """
+    cpu_class = _cpu_class()
+    recorded = _cold_baseline(cpu_class, name)
+    if recorded is None:
+        pytest.skip(
+            f"{name}: no cold-cost baseline recorded for CPU class {cpu_class!r}"
+        )
+
     trials = 5
     repetitions_per_trial = 7
     trial_medians: list[float] = []
@@ -368,25 +349,6 @@ def test_cold_redox_solver_cost_against_recorded_baseline(
     solve_cpu_median = statistics.median(solve_cpu_samples)
     wall_cpu_ratio = wall_max / solve_cpu_median
     reference_cpu_median = statistics.median(reference_cpu_samples)
-    cpu_class = _cpu_class()
-    recorded = _cold_baseline(cpu_class, name)
-    if recorded is None:
-        message = _missing_cold_baseline_message(
-            cpu_class,
-            name,
-            ratio_median,
-            ratio_spread,
-            trial_medians,
-            reference_cpu_median,
-            wall_max,
-            wall_cpu_ratio,
-            newton_iterations,
-            solver_residual_evaluations,
-            load_start,
-            load_end,
-        )
-        print(message)
-        pytest.skip(message)
     baseline_median, baseline_spread = recorded
     ceiling = _cold_cost_ceiling(baseline_median, baseline_spread, ratio_spread)
     baseline_values = _COLD_COST_BASELINES[cpu_class][name]
@@ -611,6 +573,7 @@ def test_fallback_flag_collects_kernel_bit_during_invariant_extent(
         ),
     ],
 )
+@pytest.mark.slow
 def test_closed_solver_cost_against_local_legacy_baseline(
     name: str,
     composition: dict[str, float],

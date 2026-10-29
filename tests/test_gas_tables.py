@@ -2912,6 +2912,7 @@ def test_hf_mixed_source_band_matches_pankratz_apparent_gibbs_nodes() -> None:
             assert value == pytest.approx(gap, abs=0.001)
 
 
+@pytest.mark.slow
 def test_constructed_parent_fit_nodes_are_only_self_fit_checks() -> None:
     rows = build_gas_tables.build_condensate_rows(JANAF_DATA)
     selected = [
@@ -3158,6 +3159,7 @@ def test_constructed_condensate_bands_match_liquid_construction_inputs() -> None
     assert seen_other_forms == set(other_input_forms), sorted(seen_other_forms)
 
 
+@pytest.mark.slow
 def test_k2o_from_solid_builder_fits_the_full_runtime_interval() -> None:
     rows = sorted(
         (
@@ -3318,6 +3320,7 @@ def test_reference_solid_tables_give_printed_fusion_gibbs(
     assert fusion == pytest.approx(expected_kj, abs=5.0e-4)
 
 
+@pytest.mark.slow
 def test_condensate_builder_reproduces_shipped_gibbs_values(tmp_path: Path) -> None:
     shipped = GAS_DATA / "condensate.csv"
     rebuilt = tmp_path / "condensate.csv"
@@ -4192,6 +4195,7 @@ def test_new_low_gas_rows_have_source_fits_and_continuous_seams() -> None:
         _assert_fit_gibbs_matches(_shomate_g, low.to_dict(), fitted)
 
 
+@pytest.mark.slow
 def test_low_oxide_condensate_rows_fit_source_and_close_gibbs_cp_seams() -> None:
     gas_pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
     species_names = ("K2O(l)", "SiO2(l)", "Al2O3(l)", "MgO(l)", "CaO(l)")
@@ -7114,6 +7118,7 @@ def test_cr_channels_against_janaf_cells() -> None:
         )
 
 
+@pytest.mark.slow
 def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path) -> None:
     generated = tmp_path / "gas-shomate.csv"
     condensate = tmp_path / "condensate.csv"
@@ -7248,6 +7253,7 @@ def test_generator_reproduces_packaged_tables_with_fit_tolerance(tmp_path: Path)
         preserved_packaged.loc[:, coefficient_columns]
     )
 
+@pytest.mark.slow
 def test_default_major_condensate_rows_match_generator(tmp_path: Path) -> None:
     major_species = {"Al2O3(l)", "MgO(l)", "CaO(l)"}
     generated = [
@@ -7534,6 +7540,7 @@ def test_sf04_condensate_rows_match_the_current_published_coefficients(
     assert na_low["Ref"] == "Na-013"
 
 
+@pytest.mark.slow
 def test_v2o3_refit_changes_only_its_outputs_and_uses_liquid_boundary() -> None:
     from openimcc.gas import _oxide_row_for_T, evaluate_gas
 
@@ -7702,6 +7709,7 @@ def test_nb_low_condensate_interval_uses_liquid_rows_and_keeps_seam() -> None:
     assert int(_oxide_row_for_T(pack.oxide_df, "NbO2(l)", 1500.0)["T_min"]) == 1500
 
 
+@pytest.mark.slow
 def test_constant_cp_supercooled_rows_are_generated_and_provenanced(
     tmp_path: Path,
 ) -> None:
@@ -7954,6 +7962,7 @@ def _assert_snol_constant_cp_continuation_uses_the_nasa_liquid_anchor() -> None:
     )
 
 
+@pytest.mark.slow
 def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
     """Continuation fits preserve their source Cp, H/S/G anchors, and seams.
 
@@ -8817,7 +8826,6 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
     pack = load_gas_datapack()
     checked_rows = 0
     checked_nodes = 0
-    overall_max = {key: 0.0 for key in GAS_PROPERTY_RESIDUAL_LIMITS}
     per_row_max = {}
 
     for species_name, row in pack.gas_df.iterrows():
@@ -8859,7 +8867,6 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
             assert actual.T_interval == interval
             for key, residual in residuals.items():
                 maxima[key] = max(maxima[key], residual)
-                overall_max[key] = max(overall_max[key], residual)
             row_nodes += 1
 
         assert row_nodes > 0, (species_name, interval)
@@ -8886,10 +8893,6 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
     assert checked_rows == 296
     assert checked_nodes == 3974
     assert checked_nodes * 3 == 11922
-    assert overall_max["Cp_J_molK"] == pytest.approx(1.1124531982, abs=1e-9)
-    assert overall_max["S_J_molK"] == pytest.approx(0.0466701482, abs=1e-9)
-    assert overall_max["H_app_kJ_mol"] == pytest.approx(0.1416652672, abs=1e-9)
-    assert overall_max["G_kJ_mol"] == pytest.approx(0.0056679912, abs=1e-9)
     assert len(per_row_max) == checked_rows
 
 

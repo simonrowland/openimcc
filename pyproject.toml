@@ -28,8 +28,8 @@ classifiers = [
 # scipy.optimize.least_squares, adapter.py imports numpy, cli.py imports nothing
 # outside the stdlib and this package.
 dependencies = [
-    "numpy>=1.24",
-    "scipy>=1.10",
+    "numpy>=1.26.0",
+    "scipy>=1.11.2",
 ]
 
 [project.optional-dependencies]
@@ -63,3 +63,4 @@ include = ["src/", "data-src/", "tests/", "benchmarks/", "docs/", "tools/", "CIT
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = ["error"]
+markers = ["slow: expensive gas-table, schema-migration, source-audit, or solver-cost tests"]

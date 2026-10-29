@@ -35,4 +35,6 @@ Run the local gates before proposing a change:
 scripts/ci-local.sh
 # or, for the current interpreter only:
 scripts/ci-local.sh --quick
+# for the current interpreter's fast push tier:
+scripts/ci-local.sh --quick --fast
 ```
