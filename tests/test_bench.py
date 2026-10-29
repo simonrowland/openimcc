@@ -6,6 +6,8 @@ import contextlib
 import io
 import json
 import math
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -546,22 +548,40 @@ def test_partial_pressure_loads_gas_datapack_once_per_run(
 
 
 def test_partial_pressure_refuses_when_pandas_is_unavailable(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
     fixture = _partial_pressure_fixture(
         tmp_path / "bench.yaml",
         [_partial_pressure_point()],
     )
-    monkeypatch.delitem(sys.modules, "openimcc.gas", raising=False)
-    monkeypatch.setitem(sys.modules, "pandas", None)
-
-    row = run_bench(fixture, DATAPACK_PATH).points[0]
-
-    assert row.status == "refused"
-    assert row.predicted is None
-    assert "pandas" in row.reason
-    assert "openimcc[gas]" in row.reason
-    assert row.provenance_class == "estimated_systematic"
+    repo_root = Path(__file__).resolve().parents[1]
+    probe = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "\n".join(
+                [
+                    "import sys",
+                    'sys.modules["pandas"] = None',
+                    "from openimcc.bench import run_bench",
+                    "row = run_bench(sys.argv[1], sys.argv[2]).points[0]",
+                    'assert row.status == "refused"',
+                    "assert row.predicted is None",
+                    'assert "pandas" in row.reason',
+                    'assert "openimcc[gas]" in row.reason',
+                    'assert row.provenance_class == "estimated_systematic"',
+                ]
+            ),
+            str(fixture),
+            str(DATAPACK_PATH),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=repo_root,
+        env={**os.environ, "PYTHONPATH": str(repo_root / "src")},
+    )
+    assert probe.returncode == 0, probe.stderr
 
 
 def test_filters_and_limit(tmp_path: Path) -> None:

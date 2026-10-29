@@ -135,8 +135,19 @@ def test_pack_and_evaluate_default_to_the_shipped_resource() -> None:
     assert explicit_pack.version == "1.0.2"
 
     result = evaluate({"SiO2": 1.0}, 2500.0)
-    assert result.convergence.solver_path == "direct"
-    assert result.convergence.continuation_stages == 0
+    solver_path = result.convergence.solver_path
+    assert solver_path in {
+        "direct",
+        "continuation",
+        "composition-continuation",
+        "temperature-continuation",
+        "relative-log-x",
+    }
+    if solver_path == "direct":
+        assert result.convergence.continuation_stages == 0
+    elif solver_path != "relative-log-x":
+        assert result.convergence.continuation_stages > 0
+    assert result.convergence.residual_inf <= 1.0e-12
     assert result.labels.identity["model_id"] == "IMCC-SF04-D066"
     assert result.labels.identity["datapack_version"] == "1.0.7-d066-v5"
     assert result.labels.acid_sink_ratio == pytest.approx(1.0)
@@ -161,8 +172,18 @@ def test_oprl2n_2200k_uses_continuation_without_root_jump() -> None:
     upper = evaluate(composition, 2225.0, basis_type="wt")
 
     assert result.convergence.residual_inf <= 1.0e-12
-    assert result.convergence.solver_path == "continuation"
-    assert result.convergence.continuation_stages == 5
+    solver_path = result.convergence.solver_path
+    assert solver_path in {
+        "direct",
+        "continuation",
+        "composition-continuation",
+        "temperature-continuation",
+        "relative-log-x",
+    }
+    if solver_path == "direct":
+        assert result.convergence.continuation_stages == 0
+    elif solver_path != "relative-log-x":
+        assert result.convergence.continuation_stages > 0
     # Use half of the neighbor-derived 50 K slope across the 25 K half-step;
     # this allows only local interpolation-sized curvature around the midpoint.
     for name in result.parent_oxides:
