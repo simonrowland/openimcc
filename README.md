@@ -1093,7 +1093,7 @@ from openimcc import evaluate_redox
 
 inventory = {"Fe": 1.0, "Cr": 0.01, "O": 1.0}
 candidate = files("openimcc.data").joinpath(
-    "packs", "openimcc-redox-cr-candidate-v2.json"
+    "packs", "openimcc-redox-cr-candidate-v4.json"
 )
 with as_file(candidate) as candidate_path:
     result = evaluate_redox(
@@ -1105,7 +1105,7 @@ with as_file(candidate) as candidate_path:
 ```
 
 Leaving `redox_pack_path` unset continues to use the packaged default
-`openimcc-redox-v2.json`.
+`openimcc-redox-v4.json`.
 
 ## The empirical bench
 

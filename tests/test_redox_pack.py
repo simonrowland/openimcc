@@ -98,6 +98,17 @@ def _candidate_feature_delta(base: dict, candidate: dict) -> dict:
     }
 
 
+def _raw_json(value: object) -> str:
+    """Serialize with JSON number types intact; Python equates 0 and 0.0."""
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def _candidate_records(pack: dict, section: str) -> dict:
+    if section == "rows":
+        return {row["reaction"]: row for row in pack[section]}
+    return pack[section]
+
+
 @pytest.mark.parametrize(
     ("v3_candidate_name", "v4_candidate_name", "version"),
     [
@@ -128,6 +139,24 @@ def test_v4_candidate_feature_delta_matches_v3(
     v4_base = json.loads(PACK_PATH.read_text(encoding="utf-8"))
     v4_candidate_path = PACK_PATH.parent / v4_candidate_name
     v4_candidate = json.loads(v4_candidate_path.read_text(encoding="utf-8"))
+
+    for section in ("rows", "thermo_species"):
+        v3_base_records = _candidate_records(v3_base, section)
+        v3_candidate_records = _candidate_records(v3_candidate, section)
+        v4_base_records = _candidate_records(v4_base, section)
+        v4_candidate_records = _candidate_records(v4_candidate, section)
+
+        assert set(v4_base_records) <= set(v4_candidate_records)
+        for name, base_record in v4_base_records.items():
+            assert _raw_json(v4_candidate_records[name]) == _raw_json(base_record)
+
+        v3_added = set(v3_candidate_records) - set(v3_base_records)
+        v4_added = set(v4_candidate_records) - set(v4_base_records)
+        assert v4_added == v3_added
+        for name in v3_added:
+            assert _raw_json(v4_candidate_records[name]) == _raw_json(
+                v3_candidate_records[name]
+            )
 
     assert _candidate_feature_delta(v4_base, v4_candidate) == _candidate_feature_delta(
         v3_base, v3_candidate

@@ -99,7 +99,8 @@ composition-independent CrO Gibbs function.
 
 The unversioned, v2, and v3 Cr/Ti candidate files remain loadable for historical
 reproduction; they are not current opt-ins. The v3 files use the pre-v4 SiO2(l)
-standard, and the unversioned and v2 files also retain the pre-D&G FeO(l) row.
+standard. Only the unversioned files retain the pre-D&G FeO(l) row; v2 and later
+use the D&G/Masson FeO(l) function.
 
 ## Titanium candidate packs
 

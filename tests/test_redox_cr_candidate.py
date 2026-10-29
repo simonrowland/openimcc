@@ -183,10 +183,10 @@ def test_candidate_loader_and_default_outputs_remain_identical_across_sweep():
         assert default_result == evaluate_redox(
             inventory, T, "closed", redox_pack_path=CURRENT_DEFAULT
         )
-        prior_default_result = evaluate_redox(
+        candidate_result = evaluate_redox(
             inventory, T, "closed", redox_pack_path=DEFAULT
         )
-        assert prior_default_result.oxygen_capacity_mol_per_ln_f_o2 == evaluate_redox(
+        assert candidate_result.oxygen_capacity_mol_per_ln_f_o2 == evaluate_redox(
             inventory, T, "closed", redox_pack_path=CANDIDATE
         ).oxygen_capacity_mol_per_ln_f_o2
 

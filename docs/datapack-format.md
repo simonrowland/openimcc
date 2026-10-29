@@ -774,9 +774,11 @@ identity independent of JSON whitespace, while the manifest catches any byte
 change.
 
 The opt-in Cr, Ti, and combined Cr+Ti redox candidate packs keep anchor datasets
-separate from held-out checks in `dataset_provenance`. The current candidate
-versions are Cr v3 (`1.6.0-cr-candidate`), Ti v3 (`1.7.0-ti-candidate`), and
-Cr+Ti v3 (`1.8.0-cr-ti-candidate`); the earlier v1/v2 files remain frozen.
+separate from held-out checks in `dataset_provenance`. The current candidates are
+Cr v4 (`openimcc-redox-cr-candidate-v4.json`, `1.7.0-cr-candidate`), Ti v4
+(`openimcc-redox-ti-candidate-v4.json`, `1.8.0-ti-candidate`), and Cr+Ti v4
+(`openimcc-redox-cr-ti-candidate-v4.json`, `1.9.0-cr-ti-candidate`). The v1-v3
+candidate files remain loadable as frozen historical versions.
 The FeO-liquid candidate current redox record is
 `openimcc-redox-feo-liquid-candidate-v2.json` (`1.6.0-feo-liquid-candidate`);
 its unversioned v1 file remains frozen. Candidate-only composition-conditioned

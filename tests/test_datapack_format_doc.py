@@ -232,6 +232,28 @@ def test_every_shipped_datapack_key_is_documented() -> None:
     assert not any(missing.values()), f"undocumented datapack keys: {missing}"
 
 
+def test_current_redox_candidate_docs_match_loader_allowlist() -> None:
+    from openimcc.redox_pack import _CANDIDATE_VERSIONS
+
+    candidates = (
+        ("openimcc-redox-cr-candidate-v4.json", "1.7.0-cr-candidate"),
+        ("openimcc-redox-ti-candidate-v4.json", "1.8.0-ti-candidate"),
+        ("openimcc-redox-cr-ti-candidate-v4.json", "1.9.0-cr-ti-candidate"),
+    )
+    format_doc = " ".join(DOC.read_text(encoding="utf-8").split())
+    redox_basis = " ".join(
+        (ROOT / "docs" / "redox-basis.md").read_text(encoding="utf-8").split()
+    )
+
+    for filename, version in candidates:
+        assert filename in format_doc
+        assert f"`{version}`" in format_doc
+        assert filename in redox_basis
+        assert version in _CANDIDATE_VERSIONS
+
+    assert "The v1-v3 candidate files remain loadable as frozen historical versions." in format_doc
+
+
 def test_redox_species_schema_table_has_no_duplicate_rows() -> None:
     document = DOC.read_text(encoding="utf-8")
     start = document.index("The redox species records use these schema fields:")
