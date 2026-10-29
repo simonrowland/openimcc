@@ -62,8 +62,10 @@
       "role": "Crystal formation Gibbs functions used in the Hess cycles."
     },
     "RobieHemingway1995": {
-      "citation": "Robie, R. A. and Hemingway, B. S. (1995), Thermodynamic Properties of Minerals and Related Substances at 298.15 K and 1 Bar Pressure and at Higher Temperatures, U.S. Geological Survey Bulletin 2131.",
-      "role": "Reviewed crystal formation Gibbs functions and melting anchors used in the Hess cycles."
+      "citation": "Robie, R. A., and Hemingway, B. S. (1995), Thermodynamic Properties of Minerals and Related Substances at 298.15 K and 1 Bar (10^5 Pascals) Pressure and at Higher Temperatures, U.S. Geological Survey Bulletin 2131, 461 p.",
+      "role": "Reviewed crystal formation Gibbs functions and melting anchors used in the Hess cycles.",
+      "doi": "10.3133/b2131",
+      "url": "https://doi.org/10.3133/b2131"
     },
     "RichetLeclercBenoist1993": {
       "citation": "Richet, P., Leclerc, F. and Benoist, L. (1993), Geophysical Research Letters 20(16), 1675-1678. DOI: 10.1029/93GL01836.",
@@ -88,6 +90,23 @@
     "AssociationHessRefit": {
       "citation": "Independent Hess-cycle fit to mineral-composition liquid formation Gibbs energies at 1600, 1800 and 2000 K.",
       "role": "Fit five constant A offsets with each row B held fixed; activity and vapour data were not fit targets. JANAF CaO(l) and MgO(l) fusion terms are assumed with ±16.7 kJ/mol per oxide uncertainty."
+    },
+    "NaylorCook1946": {
+      "citation": "Naylor, B. F., and Cook, O. A. (1946), “High-Temperature Heat Contents of the Metatitanates of Calcium, Iron and Magnesium,” Journal of the American Chemical Society 68(6), 1003–1005.",
+      "doi": "10.1021/ja01210a030",
+      "url": "https://doi.org/10.1021/ja01210a030",
+      "role": "Ilmenite heat-content and fusion thermochemistry used in the Hess cycle."
+    },
+    "RobieHemingwayFisher1978": {
+      "citation": "Robie, R. A., Hemingway, B. S., and Fisher, J. R. (1978), Thermodynamic Properties of Minerals and Related Substances at 298.15 K and 1 Bar (10^5 Pascals) Pressure and at Higher Temperatures, U.S. Geological Survey Bulletin 1452, 456 p.",
+      "doi": "10.3133/b1452",
+      "url": "https://doi.org/10.3133/b1452",
+      "role": "Ilmenite liquid heat-capacity data used in the Hess cycle."
+    },
+    "StebbinsCarmichael1984": {
+      "citation": "Stebbins, J. F., and Carmichael, I. S. E. (1984), “The Heat of Fusion of Fayalite,” American Mineralogist 69(3–4), 292–297. The publisher record lists no DOI.",
+      "url": "https://msaweb.org/AmMin/AM69/AM69_292.pdf",
+      "role": "Fayalite fusion thermochemistry used to rebuild the crystal-plus-fusion targets."
     }
   },
   "transcription": {
@@ -1293,7 +1312,7 @@
       ],
       "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
       "provenance_class": "authority_by_publication",
-      "derivation": "Mixing-inclusive Hess refit to pure-ilmenite liquid Gibbs targets at 1600, 1800, and 2000 K, constructed from Robie & Hemingway (1995) crystal G nodes, Naylor & Cook (1946) fusion/heat-content data, the Robie, Hemingway & Fisher (1978) liquid Cp, and the current parent-liquid standards. The five-row-method model includes ideal associate mixing entropy and every associate extent-weighted reaction Gibbs term. B is held at 5019.995948414166 K; bounded least squares gives ΔA = −1.0830119847925224. The post-fit model-minus-target leftovers are −3.523, +0.496, and +3.831 kJ mol-1 at 1600, 1800, and 2000 K. The target model liquid Gibbs energies are −34.791257, −36.055027, and −37.974733 kJ mol-1 at 1600, 1800, and 2000 K; the constant ilmenite liquid Cp is 199.16 J mol-1 K-1.",
+      "derivation": "Mixing-inclusive Hess refit to pure-ilmenite liquid Gibbs targets at 1600, 1800, and 2000 K, constructed from Robie & Hemingway (1995) crystal G nodes, Naylor & Cook (1946) fusion/heat-content data, the Robie, Hemingway & Fisher (1978) liquid Cp, and the current parent-liquid standards. The five-row-method model includes ideal associate mixing entropy and every associate extent-weighted reaction Gibbs term. B is held at 5019.995948414166 K; bounded least squares gives ΔA = -2.165573644482091 - (-1.0825616596895684) = -1.0830119847925226. The post-fit model-minus-target leftovers are −3.523, +0.496, and +3.831 kJ mol-1 at 1600, 1800, and 2000 K. The target model liquid Gibbs energies are −34.791257, −36.055027, and −37.974733 kJ mol-1 at 1600, 1800, and 2000 K; the constant ilmenite liquid Cp is 199.16 J mol-1 K-1.",
       "T_domain_paper_demonstrated_K": [
         2500,
         3500
@@ -1326,8 +1345,7 @@
         "RobieHemingway1995",
         "NaylorCook1946",
         "RobieHemingwayFisher1978",
-        "SilicateLiquidHeatCapacity",
-        "FeAssociationHessRefitEprime"
+        "SilicateLiquidHeatCapacity"
       ]
     },
     {
@@ -1353,7 +1371,7 @@
       ],
       "T_domain_basis": "sf04-exercised-ADOPTED (v1.0.2: FC87 fits were exercised by SF04 over 1700-3000 K; the FC87-paper-demonstrated span is preserved in T_domain_paper_demonstrated_K)",
       "provenance_class": "authority_by_publication",
-      "derivation": "The rebuilt crystal-plus-fusion liquid targets are -27.026, -25.524, and -24.553 kJ mol-1 at 1600, 1800, and 2000 K. The printed crystal Cp values are 204.0 and 210.1 J mol-1 K-1 at 1300 and 1400 K; the earlier calculation inherited 191 J mol-1 K-1. The fitted A is at the lower Delta-A bound of -8, giving A=-9.744444812 with B fixed at 5946.762412921802 K. This is the no-association limit, K tending to zero: at fayalite composition the liquid is ideal FeO-SiO2 mixing, and the Hess nodes identify neither a finite association constant nor its temperature slope. The ideal mixing ceilings are -25.403, -28.578, and -31.754 kJ mol-1 formula at those temperatures. The 1800 and 2000 K targets exceed the ceiling by 3.05 and 7.20 kJ mol-1, so no association constant can reach them; they imply about 5-11 kJ mol-1 of positive excess Gibbs energy, which is not included. Under v5, the associate is 37-40 kJ mol-1 formula too stable against the crystal-plus-fusion targets. At 1300/1400 K, the fayalite crystal saturation indices are +0.84/+0.46 versus about -1.3 under v5; these temperatures are below the 1700 K association floor. A full-composition, Fe-saturated comparison against all 24 Distin–Whiteway reported activities gives median absolute log activity residuals of 0.179 dex under v5 and 0.019 dex here, with mean signed residuals of -0.153 and -0.009.",
+      "derivation": "The rebuilt crystal-plus-fusion liquid targets are -27.026, -25.524, and -24.553 kJ mol-1 at 1600, 1800, and 2000 K. The printed crystal Cp values are 204.0 and 210.1 J mol-1 K-1 at 1300 and 1400 K; the earlier calculation inherited 191 J mol-1 K-1. The fitted A is at the lower Delta-A bound of -8, giving A=-9.744444812 with B fixed at the v5 coefficient 5946.762412921802 K. This is the no-association limit, K tending to zero: at fayalite composition the liquid is ideal FeO-SiO2 mixing, and the Hess nodes identify neither a finite association constant nor its temperature slope. The ideal mixing ceilings are -25.403, -28.578, and -31.754 kJ mol-1 formula at those temperatures. Target minus ceiling is -1.623, +3.054, and +7.201 kJ mol-1 formula; the latter two imply excess Gibbs energies of +3.054 and +7.201 kJ mol-1 formula, which are not included. No association constant can reach the 1800 and 2000 K targets. Under v5, the associate is 37-40 kJ mol-1 formula too stable against the crystal-plus-fusion targets. The old SiO2 re-reference residual does not describe this new A. At 1300/1400 K, the fayalite crystal saturation indices are +0.84/+0.46 versus about -1.3 under v5; these temperatures are below the 1700 K association floor. A full-composition, Fe-saturated comparison against all 24 Distin-Whiteway reported activities gives median absolute log activity residuals of 0.149 dex under v5 and 0.018 dex here, with mean signed residuals of -0.153 and -0.009.",
       "T_domain_paper_demonstrated_K": [
         2500,
         3500
@@ -1385,8 +1403,7 @@
         "FC87",
         "RobieHemingway1995",
         "StebbinsCarmichael1984",
-        "SilicateLiquidHeatCapacity",
-        "FeAssociationHessRefitEprime"
+        "SilicateLiquidHeatCapacity"
       ]
     },
     {

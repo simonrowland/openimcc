@@ -5,15 +5,18 @@ import json
 import math
 from pathlib import Path
 
+import numpy as np
+import pytest
+
 from openimcc import evaluate, evaluate_redox, load_datapack
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKS = ROOT / "src/openimcc/data/packs"
-EPRIME = PACKS / "imcc-sf04-d066-feo-hess-candidate.json"
+FE_HESS = PACKS / "imcc-sf04-d066-feo-hess-candidate.json"
 V5 = PACKS / "imcc-sf04-d066-v5.json"
 DISTIN = ROOT / "docs/feo-liquid-distin-activities.csv"
-_EPRIME_NOTICE = (
+_FE_HESS_NOTICE = (
     "feo-hess-candidate: opt-in Fe2SiO4 and FeTiO3 A-only Hess refits; "
     "open validation items are listed in docs/feo-liquid-candidate.md"
 )
@@ -34,7 +37,6 @@ def _without_coefficients_and_provenance(row: dict) -> dict:
         "source",
         "derivation",
         "source_refs",
-        "standard_state_refit",
     ):
         rest.pop(key, None)
     return rest
@@ -55,11 +57,11 @@ def _distin_inventory(row: dict[str, str]) -> dict[str, float]:
     }
 
 
-def test_eprime_loads_and_changes_only_the_two_a_only_refits() -> None:
+def test_fe_hess_loads_and_changes_only_the_two_a_only_refits() -> None:
     default = load_datapack()
-    candidate = load_datapack(EPRIME)
+    candidate = load_datapack(FE_HESS)
     base_rows = _rows(V5)
-    candidate_rows = _rows(EPRIME)
+    candidate_rows = _rows(FE_HESS)
 
     assert default.version == "1.0.7-d066-v5"
     assert default.kernel_datapack.binding_digest == (
@@ -79,20 +81,26 @@ def test_eprime_loads_and_changes_only_the_two_a_only_refits() -> None:
         if name in expected:
             assert actual["A"] == expected[name]
             assert actual["B"] == row["B"]
+            if name == "Fe2SiO4":
+                assert "standard_state_refit" not in actual
+                base_row = dict(row)
+                base_row.pop("standard_state_refit")
+            else:
+                base_row = row
             assert _without_coefficients_and_provenance(actual) == (
-                _without_coefficients_and_provenance(row)
+                _without_coefficients_and_provenance(base_row)
             )
         else:
             assert actual == row
 
 
-def test_eprime_notice_is_identity_scoped() -> None:
+def test_fe_hess_notice_is_identity_scoped() -> None:
     composition = {"FeO": 2.0, "SiO2": 1.0}
     default = evaluate(composition, 1800.0, pack=load_datapack(), basis_type="mol")
     candidate = evaluate(
         composition,
         1800.0,
-        pack=load_datapack(EPRIME),
+        pack=load_datapack(FE_HESS),
         basis_type="mol",
         allow_out_of_envelope=True,
     )
@@ -104,7 +112,7 @@ def test_eprime_notice_is_identity_scoped() -> None:
         notice
         for notice in candidate.labels.notices
         if notice.startswith("feo-hess-candidate:")
-    ] == [_EPRIME_NOTICE]
+    ] == [_FE_HESS_NOTICE]
 
 
 def test_full_composition_metal_saturated_distin_row_moves_closer() -> None:
@@ -120,7 +128,7 @@ def test_full_composition_metal_saturated_distin_row_moves_closer() -> None:
     measured = float(row["a_FeO_reported"])
 
     errors = []
-    for melt_pack_path in (None, EPRIME):
+    for melt_pack_path in (None, FE_HESS):
         result = evaluate_redox(
             inventory,
             temperature_K,
@@ -131,3 +139,33 @@ def test_full_composition_metal_saturated_distin_row_moves_closer() -> None:
         errors.append(abs(math.log10(result.parent_activity["FeO"] / measured)))
 
     assert errors[1] < errors[0]
+
+
+
+def test_fe_hess_distin_all_rows_median_and_mean() -> None:
+    with DISTIN.open(newline="", encoding="utf-8") as stream:
+        rows = list(csv.DictReader(stream))
+    assert len(rows) == 24
+
+    residuals_by_pack = []
+    for melt_pack_path in (None, FE_HESS):
+        residuals = []
+        for row in rows:
+            result = evaluate_redox(
+                _distin_inventory(row),
+                float(row["temperature_C"]) + 273.15,
+                "closed",
+                melt_pack_path=melt_pack_path,
+            )
+            assert result.metal_buffered
+            residuals.append(
+                math.log10(
+                    result.parent_activity["FeO"] / float(row["a_FeO_reported"])
+                )
+            )
+        residuals_by_pack.append(residuals)
+
+    expected = ((0.148833, -0.153287), (0.018347, -0.009295))
+    for residuals, (median_abs, mean_signed) in zip(residuals_by_pack, expected):
+        assert np.median(np.abs(residuals)) == pytest.approx(median_abs, abs=1e-5)
+        assert np.mean(residuals) == pytest.approx(mean_signed, abs=1e-5)
