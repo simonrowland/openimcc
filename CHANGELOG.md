@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added the opt-in D066 v5 Fe₂SiO₄/FeTiO₃ Hess candidate; the v5 default and
+  published packs stay unchanged. The fayalite fit reaches the no-association
+  limit, and the 1800/2000 K targets exceed the ideal-mixing ceiling. The
+  full-composition, Fe-saturated Distin comparison improves; ferric held-out
+  scores are mixed, with the Berry Matzen assignment, Aithala, and Sossi worse.
+  The candidate emits a pack-specific notice. See
+  `docs/feo-liquid-candidate.md`.
+
 - Scoped the Na₂O activity-bias evidence to the measured default D066 v5
   identity. Other packs, including excess-Gibbs candidates, receive a neutral
   `na2o-activity-bias-unscored` notice under the same composition gate.

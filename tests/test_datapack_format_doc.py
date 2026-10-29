@@ -280,6 +280,7 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
     }
     assert names == {
         "imcc-sf04-d066-ext-v1.json",
+        "imcc-sf04-d066-feo-hess-candidate.json",
         "imcc-sf04-d066-feo-liquid-candidate.json",
         "imcc-sf04-d066-sio2-na2o-candidate.json",
         "imcc-sf04-d066-v1-kcaalsi2o7.json",
@@ -417,6 +418,7 @@ def test_every_shipped_pack_loads() -> None:
     names = sorted(Path(entry["file"]).name for entry in manifest["packs"])
     assert names == [
         "imcc-sf04-d066-ext-v1.json",
+        "imcc-sf04-d066-feo-hess-candidate.json",
         "imcc-sf04-d066-feo-liquid-candidate.json",
         "imcc-sf04-d066-sio2-na2o-candidate.json",
         "imcc-sf04-d066-v1-kcaalsi2o7.json",

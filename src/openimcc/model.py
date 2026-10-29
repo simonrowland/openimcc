@@ -386,6 +386,10 @@ _MELT_EVIDENCE_MODEL_ID = "IMCC-SF04-D066"
 _MELT_EVIDENCE_BINDING_DIGEST = (
     "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
 )
+_FEO_HESS_CANDIDATE_IDENTITY = (
+    "IMCC-SF04-D066",
+    "6b437823f3838253f1d75c93c40487aafb43b011e8f30d094455d7646e5262ab",
+)
 _SILICATE_PRODUCT_ROWS = (
     ("diopside", {"CaO": 1, "MgO": 1, "SiO2": 2}, 1668.0, "−0.53"),
     ("akermanite", {"CaO": 2, "MgO": 1, "SiO2": 2}, 1727.0, "+0.11"),
@@ -2296,6 +2300,11 @@ def evaluate(
         )
 
     notices = []
+    if (model_id, binding_digest) == _FEO_HESS_CANDIDATE_IDENTITY:
+        notices.append(
+            "feo-hess-candidate: opt-in Fe2SiO4 and FeTiO3 A-only Hess refits; "
+            "open validation items are listed in docs/feo-liquid-candidate.md"
+        )
     if active_excess_terms:
         interactions = ", ".join(
             f"{'–'.join(term.components)} ({term.basis}; {term.fit_status})"

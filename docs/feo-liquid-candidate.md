@@ -2,6 +2,26 @@
 
 **Decision: promote the D&G/Masson FeO(l) standard to the default.** Criterion 2 (primary measurements) selects Darken & Gurry's iron-saturated equilibria, reduced via Masson, over JANAF Fe-019's 1965 construction. Fe-019 assigns wüstite fusion to oxygen release at 1 bar. The existing correction, ΔG° = 27778.965828 − 10.961554232 T J/mol, is adopted without refitting; residuals are reported and never gate the source choice. The source has no formal pointwise uncertainty for the equilibrium gas ratio or oxide analysis, and the Distin composition extrapolation is method-dependent. The held-out scorecard is mixed: Aithala gets worse. The published unversioned v1 melt and redox candidate packs remain loadable. Their FeO re-anchor rows match the promoted standard; the melt candidate retains the earlier MgAl2O4 row. The candidate condensate matches FeO Gibbs values only and remains an older full-table snapshot.
 
+## Opt-in Fe-complex Hess candidate
+
+`src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json` is an opt-in refit loaded with `load_datapack(path=...)`. D066 v5 remains the default. The pack changes only the Fe₂SiO₄ and FeTiO₃ association A values to −9.744444812 and −2.165573644; their B values and every other association row are unchanged. FeAl₂O₄ remains unchanged. The fit used Hess targets, not activity, redox, or vapour data.
+
+### Hess results and limits
+
+With the default v5 Fe₂SiO₄ associate, the liquid is 37–40 kJ per mole of fayalite formula too stable against the crystal-plus-fusion targets. Rebuilding those targets with the fayalite crystal heat-capacity polynomial printed by Robie & Hemingway (USGS Bulletin 2131, p. 60) uses 204.0 and 210.1 J mol⁻¹ K⁻¹ at 1300 and 1400 K; the earlier calculation had inherited 191 J mol⁻¹ K⁻¹. The rebuilt targets are −27.026, −25.524, and −24.553 kJ mol⁻¹ at 1600, 1800, and 2000 K.
+
+The Fe₂SiO₄ A value reaches the fit's lower bound. This is the no-association limit, K → 0: at fayalite composition the liquid is ideal FeO–SiO₂ mixing. This is not a determined thermochemical correction; the Hess nodes identify neither a finite association constant nor its temperature slope. At 1800 and 2000 K the targets sit 3.05 and 7.20 kJ mol⁻¹ above the ideal-mixing ceiling, so no association constant can reach them. They imply about 5–11 kJ mol⁻¹ of positive excess Gibbs energy, which is not included.
+
+Held-out fayalite crystal saturation indices at 1300 and 1400 K move from about −1.3 under v5 to +0.84 and +0.46 with this candidate, extrapolating to zero near 1520 K. Under v5, the fayalite-composition liquid is predicted stable about 200 K below fayalite's 1490 K melting point. Both checks are below the 1700 K association floor. The separate FeTiO₃ ilmenite fit leaves +0.5 and +3.8 kJ mol⁻¹ at 1800 and 2000 K.
+
+### Held-out activity and remaining checks
+
+The full-composition Distin–Whiteway held-out comparison retains Fe₂O₃ and adds 1 mol of excess Fe metal to each final slag inventory. The closed redox solve reaches Fe-metal saturation, and its FeO activity is compared with the reported, non-stoichiometric-standard activity using log₁₀(model/observed); the measured activity does not set fO₂. Across all 24 rows, the median absolute residual falls from 0.179 dex under v5 to 0.019 dex with this candidate, and the mean signed residual changes from −0.153 to −0.009 dex. The O'Neill CMAS FeO activity bias is smaller but remains; those measurements are below the 1700 K association floor. The candidate's ferric-fraction held-out scores are listed below and alongside the earlier FeO re-anchor comparison.
+
+The candidate still has no Greig two-liquid gap. Taniguchi's CAS-FeO activities improve but still fail. Basaltic-melt calculations at 1700–2000 K raise log₁₀ p(Fe(g)) by about 0.2–0.4 dex while leaving pO₂ unchanged. There is no separate Fe–Mg–Si silica-activity check.
+
+A separate simulator battery on a closely related candidate, with these same Fe₂SiO₄ and FeTiO₃ refits and a changed FeAl₂O₄ row, found a worse measured ferric tier: RMS error rose from 0.114 to 0.188. Aithala XANES residuals moved another +0.12 to +0.15 dex and Sossi by +0.05; Volovetskii granite redox improved. On that related candidate, Costa Fe(g) median residual moved from −0.41 to −0.36 dex while RMS worsened from 1.16 to 1.20; Shornikov's 2000 K Fe residual worsened from 1.88 to 2.09 dex. Hashimoto evaporation-residue RMS worsened from 8.0 to 8.9 wt%. These are simulator-battery results for the related candidate, not direct results for the candidate documented here; the redox and residue directions are expected to carry over. The table below reports this candidate's direct ferric-fraction scores.
+
 ## Source transcriptions and uncertainty
 
 [Darken & Gurry Table I transcription](feo-liquid-dg-table-i.csv) records all 76 liquid-oxide measurements, the printed starting material and equilibration time, the imposed gas condition, the reported ratio r = (Fe²⁺ + Fe³⁺)/Fe²⁺, and the derived O/Fe value. Gas conditions are recorded as the source states them; for mixed CO₂/H₂ runs these are initial mixture ratios, not measured equilibrium gas ratios. Cells that the text extraction misread (times printed as fractions, and several oxygen-group temperatures and times) were re-read from the journal page image of p. 800 and are flagged in the CSV; none of them feeds the Gibbs-energy anchor.
@@ -94,9 +114,9 @@ The published opt-in candidate files remain loadable in the existing pack format
 
 Select the redox and melt JSON paths together in `evaluate_redox(..., redox_pack_path=..., melt_pack_path=...)`; pass the candidate condensate file to the gas loader for gas calculations. The promoted D066 v2 and redox v2 are the one default generation. The released historical model is D066 v1 paired with the condensate table shipped at f55617a. The retained gas-only `condensate-feo-janaf-legacy.csv` file uses the other rows from the 249fde5 condensate table and substitutes only the JANAF Fe-019 FeO(l) row; it restores gas only, not melt associations or redox. It remains useful for explicit Fe-019 gas comparisons and the source-pinned element-status regression. Pairing that file with the promoted defaults mixes standard states and does not recreate a historical model. The opt-in candidate condensate matches the promoted FeO Gibbs row only; Ag2O(l), As2O3(l), MnO(l), and Sb2O3(l) still differ from the current condensate table.
 
-## Held-out comparison
+## Held-out comparison for the FeO re-anchor
 
-[Residuals for each scored row](feo-liquid-heldout-residuals.csv) use prediction minus observation for ferric Fe / total dissolved Fe. MAE and RMSE are absolute fraction units, unweighted because the source uncertainty models are incomplete or not comparable. Candidate construction used D&G and the standard-state conversion above, not these validation data. The default Kress–Carmichael calibration has seen related calibration data, so that set is a useful held-out check for this candidate but is not independent of the default.
+[Residuals for each scored row](feo-liquid-heldout-residuals.csv) use prediction minus observation for ferric Fe / total dissolved Fe. MAE and RMSE are absolute fraction units, unweighted because the source uncertainty models are incomplete or not comparable. Candidate construction used D&G and the standard-state conversion above, not these validation data. The default Kress–Carmichael calibration has seen related calibration data, so that set is a useful held-out check for the re-anchor but is not independent of the default. The table below preserves that earlier FeO parent-standard comparison.
 
 The held-out sources are [Kress & Carmichael (1991)](https://doi.org/10.1007/BF00307328), [Matzen et al. (2022)](https://doi.org/10.2138/am-2021-7682), [Aithala et al. (2026)](https://doi.org/10.7185/geochemlet.2617), and [Sossi et al. (2020)](https://doi.org/10.1126/sciadv.abd1387).
 
@@ -112,7 +132,22 @@ Kress entries use the source’s Table 1 iron analyses, converting Fe₂O₃/(Fe
 
 For Sossi et al. (2020), the locally available paper reports log₁₀(Fe³⁺/Fe²⁺) = (0.252 ± 0.015)ΔIW − 1.530 ± 0.053 at 2173 K, but the supplementary per-run table is not present in the corpus. The four residual rows evaluate that published regression at ΔIW −1.5, 0, +3, and +6.4; they are derived curve values, not four measured runs, and have no pointwise σ. The paper’s separate mantle-derived anchor Fe³⁺/ΣFe = 0.037 ± 0.005 at ΔIW +0.5 gives default residual −0.00510 and candidate residual −0.00011. The fO₂ conversion uses log₁₀ fO₂(IW) = −6.47 at 2173 K as reported in the [comparison literature](https://doi.org/10.3847/psj/ac67a9). Sossi’s two most reducing levitation glasses also lost 7% and 9% of their initial iron, a further limit on comparing those points to this closed-composition melt model.
 
-The held-out scores use the redox and melt candidates together; the gas file is checked as part of the bundle but does not enter ferric-fraction scoring. All predictions were computed through the normal pack loaders and evaluate_redox. Tests cover omitted/None equivalence, candidate selection and digest reporting, missing and mismatched packs, plus the pinned default redox outputs.
+### Current D066 v5 default versus the Hess candidate
+
+The next table uses the current default redox and D066 v5 melt packs as its baseline, then substitutes the opt-in Hess-refit melt pack. All predictions use the public loaders and `evaluate_redox`; the ferric-fraction data were not used to fit the candidate.
+
+| Held-out set | n | v5 default MAE | v5 default RMSE | Hess candidate MAE | Hess candidate RMSE | Result |
+|---|---:|---:|---:|---:|---:|---|
+| Kress–Carmichael | 32 | 0.05159 | 0.06238 | 0.04283 | 0.04804 | Improved; 32 additional runs below 1700 K remain outside the melt-pack domain. |
+| Matzen, conventional Mössbauer assignment | 11 | 0.08000 | 0.08784 | 0.03045 | 0.04389 | Improved; each reported result has ±0.03 uncertainty. |
+| Matzen, Berry et al. (2018) assignment | 11 | 0.01269 | 0.01570 | 0.08210 | 0.09264 | Worse; each reported result has ±0.03 uncertainty. |
+| Aithala | 8 | 0.07071 | 0.07632 | 0.13755 | 0.14092 | Worse; converted source standard deviations are about 0.015–0.031. |
+| Sossi Eq. 4 regression grid | 4 | 0.00690 | 0.01004 | 0.01548 | 0.01988 | Worse against the reported fitted line, not raw run residuals. |
+| Sossi mantle-derived anchor | 1 | 0.00290 | 0.00290 | 0.00781 | 0.00781 | Worse; target is 0.037 ± 0.005. |
+
+Row predictions and residuals are in the added `pred_v5_default`, `residual_v5_default`, `pred_eprime`, and `residual_eprime` columns of the linked CSV; its earlier `pred_default` and `pred_candidate` columns retain the FeO re-anchor comparison above. The candidate improves the Kress set and conventional Matzen assignment, and worsens the Berry assignment, Aithala, and both Sossi checks. The four Sossi Eq. 4 values are derived regression points rather than individual measurements; the separate mantle anchor is one inferred value.
+
+The earlier re-anchor comparison uses redox and melt candidate packs together. The Hess-candidate table uses the default redox pack and changes only the melt pack; the gas file does not enter ferric-fraction scoring. Tests cover omitted/None equivalence, re-anchor candidate selection and digest reporting, missing and mismatched packs, pinned default redox outputs, and the new Hess pack's row, notice, and Distin checks.
 
 ## Why JANAF Fe-019 is offset
 
