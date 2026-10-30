@@ -20,7 +20,7 @@ import os
 import re
 import warnings
 from collections.abc import Mapping as MappingABC
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from functools import lru_cache
@@ -44,6 +44,7 @@ from openimcc.scalar_boundary import is_declared_real_scalar
 
 if TYPE_CHECKING:
     import pandas as pd
+    from openimcc.profiles import Profile
 
 
 # --------------------------------------------------------------------------- #
@@ -228,8 +229,11 @@ class ImccGasResult(MappingABC[str, float]):
     provenance_class: Mapping[str, str]
     omitted_channels: Mapping[str, str] = field(default_factory=dict)
     liquid_reference_status: Mapping[str, CertificationStatus] = field(default_factory=dict)
+    _profile_identity: InitVar[tuple[str | None, str, str] | None] = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self, _profile_identity: tuple[str | None, str, str] | None
+    ) -> None:
         object.__setattr__(self, "_values", MappingProxyType(dict(self._values)))
         object.__setattr__(
             self, "domain_flags", MappingProxyType(dict(self.domain_flags))
@@ -248,6 +252,23 @@ class ImccGasResult(MappingABC[str, float]):
             self, "liquid_reference_status",
             MappingProxyType(dict(self.liquid_reference_status)),
         )
+        if _profile_identity is not None:
+            object.__setattr__(self, "_loaded_profile_identity", _profile_identity)
+
+    @property
+    def profile(self) -> str | None:
+        identity = getattr(self, "_loaded_profile_identity", None)
+        return identity[0] if identity is not None else None
+
+    @property
+    def gas_table_digest(self) -> str | None:
+        identity = getattr(self, "_loaded_profile_identity", None)
+        return identity[1] if identity is not None else None
+
+    @property
+    def condensate_table_digest(self) -> str | None:
+        identity = getattr(self, "_loaded_profile_identity", None)
+        return identity[2] if identity is not None else None
 
     def __getitem__(self, species: str) -> float:
         return self._values[species]
@@ -315,10 +336,30 @@ class ImccGasSaturationResult:
     mode: str
     diagnostics: Mapping[str, object]
     domain_flags: Mapping[str, str | None]
+    _profile_identity: InitVar[tuple[str | None, str, str] | None] = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self, _profile_identity: tuple[str | None, str, str] | None
+    ) -> None:
         for name in ("species_pressures_bar", "channel_pressures_bar", "mole_fractions", "diagnostics", "domain_flags"):
             object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
+        if _profile_identity is not None:
+            object.__setattr__(self, "_loaded_profile_identity", _profile_identity)
+
+    @property
+    def profile(self) -> str | None:
+        identity = getattr(self, "_loaded_profile_identity", None)
+        return identity[0] if identity is not None else None
+
+    @property
+    def gas_table_digest(self) -> str | None:
+        identity = getattr(self, "_loaded_profile_identity", None)
+        return identity[1] if identity is not None else None
+
+    @property
+    def condensate_table_digest(self) -> str | None:
+        identity = getattr(self, "_loaded_profile_identity", None)
+        return identity[2] if identity is not None else None
 
 
 @dataclass(frozen=True)
@@ -4256,6 +4297,33 @@ def load_gas_datapack(
     )
 
 
+def _select_gas_datapack(
+    datapack: ImccGasDatapack | None, profile: str | Profile | None
+) -> tuple[ImccGasDatapack, str | None]:
+    if profile is None:
+        if datapack is None:
+            raise TypeError("datapack is required unless profile is specified")
+        return datapack, None
+    from openimcc.profiles import ProfileConflictError, _resolve_profile
+
+    if datapack is not None:
+        raise ProfileConflictError(
+            "profile cannot be combined with an explicit gas datapack"
+        )
+    selected = _resolve_profile(profile)
+    return selected.gas_datapack, selected.name
+
+
+def _gas_result_identity(
+    datapack: ImccGasDatapack, profile_name: str | None
+) -> tuple[str | None, str, str] | None:
+    gas_digest = getattr(datapack, "gas_table_digest", None)
+    condensate_digest = getattr(datapack, "condensate_table_digest", None)
+    if not isinstance(gas_digest, str) or not isinstance(condensate_digest, str):
+        return None
+    return profile_name, gas_digest, condensate_digest
+
+
 # --------------------------------------------------------------------------- #
 # G(T) evaluation
 # --------------------------------------------------------------------------- #
@@ -5373,13 +5441,14 @@ def evaluate_gas(
     activities: Mapping[str, float] | Sequence[float] | np.ndarray,
     T_K: float,
     fO2: float,
-    datapack: ImccGasDatapack,
+    datapack: ImccGasDatapack | None = None,
     parent_oxides: Sequence[str] | None = None,
     allow_extrapolation: bool = True,
     gas_species: Sequence[str] | str | None = None,
     include_ions: bool = False,
     *,
     composition_wt_pct: Mapping[str, float] | None = None,
+    profile: str | Profile | None = None,
 ) -> ImccGasResult:
     """Compute equilibrium partial pressures for the SF04 retained gas set.
 
@@ -5514,6 +5583,7 @@ def evaluate_gas(
     consume O2, so p̃_gas scales as fO2^n_O2 and decreases as fO2 is lowered
     when n_O2 > 0. fO2 = 0 is refused (non-positive), so that limit is not returned.
     """
+    datapack, profile_name = _select_gas_datapack(datapack, profile)
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
@@ -6044,6 +6114,7 @@ def evaluate_gas(
         provenance_class=provenance_class,
         omitted_channels=omitted_channels,
         liquid_reference_status=liquid_statuses,
+        _profile_identity=_gas_result_identity(datapack, profile_name),
     )
 
 
@@ -6761,11 +6832,13 @@ def oxygen_balance_from_pressure_model(
 def evaluate_gas_oxygen_balance(
     activities: Mapping[str, float] | Sequence[float] | np.ndarray,
     T_K: float,
-    datapack: ImccGasDatapack,
+    datapack: ImccGasDatapack | None = None,
     parent_oxides: Sequence[str] | None = None,
     allow_extrapolation: bool = True,
     imposed_parents: Sequence[str] | None = None,
     include_ions: bool = False,
+    *,
+    profile: str | Profile | None = None,
 ) -> tuple[float, ImccGasResult, dict[str, object]]:
     """Solve pO2 that balances oxygen in the Knudsen effusion flux.
 
@@ -6826,6 +6899,7 @@ def evaluate_gas_oxygen_balance(
     enter the balance as they enter the returned pressures. Parent oxides
     omitted from an explicit ``parent_oxides`` sequence remain excluded.
     """
+    datapack, profile_name = _select_gas_datapack(datapack, profile)
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
@@ -7011,6 +7085,9 @@ def evaluate_gas_oxygen_balance(
     p_o2, pressures, diagnostics = oxygen_balance_from_pressure_model(
         pressure_model, species_data
     )
+    identity = _gas_result_identity(datapack, profile_name)
+    if identity is not None:
+        pressures = replace(pressures, _profile_identity=identity)
     if include_ions:
         diagnostics["ions_included"] = True
         diagnostics["ion_fraction_by_element"] = {
@@ -7030,12 +7107,13 @@ def evaluate_gas_oxygen_balance(
 def evaluate_gas_saturation(
     parent_activities: Mapping[str, float] | Sequence[float] | np.ndarray,
     temperature_K: float,
-    datapack: ImccGasDatapack,
+    datapack: ImccGasDatapack | None = None,
     *,
     parent_oxides: Sequence[str] | None = None,
     include_ions: bool = False,
     allow_extrapolation: bool = False,
     log10_pO2_bracket: tuple[float, float] = (-100.0, 100.0),
+    profile: str | Profile | None = None,
 ) -> ImccGasSaturationResult:
     """Solve saturated vapor over a fixed melt composition and temperature.
 
@@ -7043,6 +7121,7 @@ def evaluate_gas_saturation(
     pressure weighted stoichiometric balance; this is an equilibrium vapor
     model, not the Knudsen flux closure.
     """
+    datapack, profile_name = _select_gas_datapack(datapack, profile)
     if parent_oxides is None:
         if isinstance(parent_activities, Mapping):
             parents = tuple(k for k in parent_activities if k in _REACTION_PARENT_OXIDES)
@@ -7157,20 +7236,25 @@ def evaluate_gas_saturation(
          "include_ions": include_ions,
          "omitted_channels": omitted},
         result.domain_flags,
+        _profile_identity=_gas_result_identity(datapack, profile_name),
     )
 
 
 def gas_boiling_temperature(
     parent_activities: Mapping[str, float] | Sequence[float] | np.ndarray,
-    datapack: ImccGasDatapack,
-    ambient_pressure_bar: float,
-    T_bracket: tuple[float, float],
+    datapack: ImccGasDatapack | None = None,
+    ambient_pressure_bar: float | None = None,
+    T_bracket: tuple[float, float] | None = None,
     *,
     parent_oxides: Sequence[str] | None = None,
     include_ions: bool = False,
     allow_extrapolation: bool = False,
+    profile: str | Profile | None = None,
 ) -> tuple[float, ImccGasSaturationResult]:
     """Find boiling T with caller activities held fixed throughout the bracket."""
+    datapack, profile_name = _select_gas_datapack(datapack, profile)
+    if ambient_pressure_bar is None or T_bracket is None:
+        raise TypeError("ambient_pressure_bar and T_bracket are required")
     if not math.isfinite(ambient_pressure_bar) or ambient_pressure_bar <= 0:
         raise ValueError("ambient_pressure_bar must be finite and positive")
     low, high = map(float, T_bracket)
@@ -7202,4 +7286,5 @@ def gas_boiling_temperature(
         state.pO2_bar, state.species_pressures_bar, state.channel_pressures_bar,
         state.P_sat_bar, state.mole_fractions, state.mode, diagnostics,
         state.domain_flags,
+        _profile_identity=_gas_result_identity(datapack, profile_name),
     )

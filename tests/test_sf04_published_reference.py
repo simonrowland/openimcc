@@ -19,12 +19,11 @@ from openimcc import (
     IMCC_GAS_CHANNEL_SPECIES,
     evaluate,
     evaluate_gas,
-    load_datapack,
+    load_profile,
 )
 
 
 REFERENCE_DIR = Path(__file__).resolve().parents[1] / "benchmarks" / "references" / "schaefer-fegley-2004"
-PACK_PATH = Path(__file__).resolve().parents[1] / "src" / "openimcc" / "data" / "packs" / "imcc-sf04-v1.0.2.json"
 EXPECTED_DATA_FILES = {
     "README.md",
     "PROVENANCE.yaml",
@@ -170,14 +169,14 @@ def _compositions() -> dict[str, dict[str, float]]:
 
 def _activities(
     compositions: dict[str, dict[str, float]],
-    imcc_pack: Any,
+    profile: Any,
     rock: str,
     T_K: int,
 ) -> dict[str, float]:
     result = evaluate(
         compositions[rock],
         T_K,
-        imcc_pack,
+        profile=profile,
         basis_type="wt",
         allow_extrapolation=True,
         allow_out_of_envelope=True,
@@ -289,10 +288,9 @@ def test_sf04_shifted_seeds_reject_non_curve_ink(tmp_path: Path) -> None:
     print("SF04 shifted-seed checks: " + "; ".join(results))
 
 
-def test_sf04_engine_residual_report_and_gate(sf04_gas_pack) -> None:
+def test_sf04_engine_residual_report_and_gate() -> None:
     compositions = _compositions()
-    imcc_pack = load_datapack(PACK_PATH)
-    gas_pack = sf04_gas_pack
+    profile = load_profile("published")
     figure = _rows("fig10_digitized.csv")
     anchors = _rows("table9_anchors.csv")
     residuals: list[tuple[str, str, str, float]] = []
@@ -320,7 +318,7 @@ def test_sf04_engine_residual_report_and_gate(sf04_gas_pack) -> None:
                 if "log10_p_bar" in o2_row
                 else float(o2_row["partial_pressure_bar"])
             )
-            activities = _activities(compositions, imcc_pack, rock, T_K)
+            activities = _activities(compositions, profile, rock, T_K)
             for row in rows:
                 species = row["species"]
                 method_class = row["pressure_method_class"]
@@ -331,7 +329,7 @@ def test_sf04_engine_residual_report_and_gate(sf04_gas_pack) -> None:
                     activities,
                     T_K,
                     fO2,
-                    gas_pack,
+                    profile=profile,
                     allow_extrapolation=True,
                     gas_species=(species,),
                 )[species]

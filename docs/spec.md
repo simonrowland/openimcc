@@ -28,6 +28,22 @@ extension adds the S and P2O5 parent basis and its compound rows only when an
 extension pack is loaded and its explicit opt-in is enabled; it does not
 change the base model.
 
+### 1.1 Named data profiles
+
+`load_profile("openimcc")` selects D066 v5, the packaged openimcc gas and
+condensate tables, and redox v4. `load_profile("published")` selects the
+frozen SF04 melt records and the shared JANAF gas table with the LAM1984/1987
+condensate rows used by the published comparison. The latter reproduces the
+paper's records, including the known frozen-metadata errata. Profiles have no
+mutable global selection state; callers may also pass the loaded `Profile`
+object to an evaluator.
+
+SF04 did not publish a redox model. Redox v1 is an openimcc-derived pack, built
+under the openimcc redox source-selection rail, so redox evaluation with the
+`published` profile raises `ProfileRedoxUnavailableError`. Select
+`openimcc` or pass explicit packs without a profile. A named profile cannot be
+combined with explicit pack arguments.
+
 ## 2. Association equilibrium and parent balances
 
 Let \(b\) be the declared analytical basis in moles and let

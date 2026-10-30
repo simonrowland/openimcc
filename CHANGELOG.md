@@ -11,6 +11,10 @@
 - Corrected gas and condensate provenance joins and measured-Cp construction
   records; no thermochemical coefficients changed.
 
+- Added matched `openimcc` and `published` data profiles for melt, gas, and
+  condensate evaluation. The published profile refuses redox because SF04
+  includes no redox model.
+
 - Added extrapolated MgO(l) and TiO₂(l) source-accuracy windows with bands
   limited to their reviewed temperature ranges; gas pressures are unchanged.
 

@@ -777,6 +777,23 @@ buffer offset such as ΔIW.
 `evaluate_gas` predicts and flags out-of-domain temperatures by default; pass
 `allow_extrapolation=False` to refuse them.
 
+### Published SF04 versus openimcc derivations
+
+`load_profile("openimcc")` selects the D066 v5 melt pack, the default
+openimcc gas and condensate tables, and redox v4. This is the source-railed,
+re-derived set. `load_profile("published")` selects the frozen
+`imcc-sf04-v1.0.2.json` melt records, the shared JANAF gas table, and the
+LAM1984/1987 condensate table in `sf04-published`. It reproduces the paper's
+records, including the known frozen-metadata errata. SF04 publishes no redox
+model, so `evaluate_redox(..., profile="published")` refuses; use the
+`openimcc` profile or choose explicit redox and melt packs instead. A profile
+cannot be combined with explicit pack arguments.
+
+For example, `evaluate(composition, 1800, profile="published")` selects the
+published melt records, and `evaluate_gas(activities, 1800, 1e-10, profile="published")`
+selects its matching gas tables. The CLI accepts
+`openimcc solve --profile published ...`.
+
 For mapping inputs, an explicitly supplied `parent_oxides` list is authoritative:
 if the activity mapping also contains a recognized parent outside that list,
 `evaluate_gas` raises `ValueError` and names the parent to add. When

@@ -433,11 +433,25 @@ def _cmd_diagnose_mixing_enthalpy(args: argparse.Namespace) -> int:
 
 def _cmd_solve(args: argparse.Namespace) -> int:
     composition = _load_composition(args.composition, args.oxide)
-    pack = load_datapack(args.pack)
+    profile = None
+    if args.profile is not None:
+        if args.pack is not None:
+            from openimcc.profiles import ProfileConflictError
+
+            raise ProfileConflictError(
+                "--profile cannot be combined with --pack"
+            )
+        from openimcc.profiles import load_profile
+
+        profile = load_profile(args.profile)
+        pack = profile.melt_pack
+    else:
+        pack = load_datapack(args.pack)
     result = evaluate(
         composition,
         args.temperature,
-        pack,
+        None if profile is not None else pack,
+        profile=profile,
         basis=args.basis,
         basis_type=args.basis_type,
         enable_sp_extension=args.enable_sp_extension,
@@ -594,6 +608,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     solve.add_argument(
         "--pack", default=None, help="path to a datapack JSON (default: packaged D066 v5)"
+    )
+    solve.add_argument(
+        "--profile",
+        choices=("openimcc", "published"),
+        default=None,
+        help=(
+            "select a matched melt/gas/redox profile (default: openimcc); "
+            "cannot be combined with --pack"
+        ),
     )
     solve.add_argument(
         "--temperature", type=float, required=True, metavar="K", help="temperature in K"

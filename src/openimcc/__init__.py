@@ -151,6 +151,13 @@ _GAS_EXPORTS = frozenset({
 })
 
 if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
+    from openimcc.profiles import (
+        Profile,
+        ProfileConflictError,
+        ProfileError,
+        ProfileRedoxUnavailableError,
+        load_profile,
+    )
     from openimcc.gas import (
         BAR,
         IMCC_GAS_CHANNEL_SPECIES,
@@ -200,6 +207,15 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
 
 def __getattr__(name: str):
     if name in {
+        "Profile",
+        "ProfileError",
+        "ProfileConflictError",
+        "ProfileRedoxUnavailableError",
+        "load_profile",
+    }:
+        from openimcc import profiles
+        return getattr(profiles, name)
+    if name in {
         "AuthorityWindow", "CertificationStatus", "EvidenceReference", "LiquidReferenceAuthority",
         "LiquidReferenceRecord", "liquid_reference_authority",
         "liquid_reference_records",
@@ -226,6 +242,8 @@ __all__ = [
     "__version__",
     # --- solve ------------------------------------------------------------
     "load_datapack",
+    "load_profile",
+    "Profile",
     "list_excess_gibbs_interactions",
     "evaluate",
     "engine_binding_identity",
@@ -253,6 +271,9 @@ __all__ = [
     "ImccSPComponentRequiresExtensionError",
     "ImccFerricInputUnsupportedError",
     "ImccMalformedDatapackError",
+    "ProfileError",
+    "ProfileConflictError",
+    "ProfileRedoxUnavailableError",
     "ImccUnprovenDatapackError",
     "ImccNonconvergenceError",
     "ImccInvalidWarmStartError",

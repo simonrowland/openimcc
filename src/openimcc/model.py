@@ -26,6 +26,7 @@ import numpy as np
 
 if TYPE_CHECKING:
     from openimcc.gas import ImccGasDatapack
+    from openimcc.profiles import Profile
 
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
@@ -1674,6 +1675,7 @@ def evaluate(
     T_K: float,
     pack: ImccLoadedDatapack | ImccDatapack | None = None,
     *,
+    profile: str | Profile | None = None,
     basis: float | None = None,
     basis_type: str = "mol",
     extra_mol: Mapping[str, float] | None = None,
@@ -1734,13 +1736,31 @@ def evaluate(
         order of positive-mole parents in the input and datapack. This is the
         kernel's `y` vector; pass the previous result's active entries after
         taking their natural logs to continue a time-stepped solve.
+    profile:
+        Optional named profile (``"openimcc"`` or ``"published"``), or a
+        loaded :class:`openimcc.profiles.Profile`. It cannot be combined with
+        ``pack``.
 
     Returns
     -------
     ImccResult
         Kernel result with the adapter's label block installed.
     """
-    if pack is None:
+    profile_name = None
+    if profile is not None:
+        from openimcc.profiles import (
+            ProfileConflictError,
+            _resolve_profile,
+        )
+
+        if pack is not None:
+            raise ProfileConflictError(
+                "profile cannot be combined with an explicit melt pack"
+            )
+        selected_profile = _resolve_profile(profile)
+        pack = selected_profile.melt_pack
+        profile_name = selected_profile.name
+    elif pack is None:
         pack = load_datapack()
 
     if (
@@ -2592,4 +2612,9 @@ def evaluate(
         inactive_rows=inactive_rows,
     )
 
+    if profile_name is not None:
+        adapter_labels = replace(
+            adapter_labels,
+            identity={**adapter_labels.identity, "profile": profile_name},
+        )
     return replace(result, labels=adapter_labels)

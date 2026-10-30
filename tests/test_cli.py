@@ -101,6 +101,25 @@ def test_solve_and_describe_use_the_packaged_default(capsys):
     assert "1.0.7-d066-v5" in capsys.readouterr().out
 
 
+def test_solve_profile_flag_selects_published_records(capsys):
+    argv = [
+        "solve", "--profile", "published", "--temperature", T_IN_DOMAIN,
+        "--basis-type", "wt", *BASALT, "--json",
+    ]
+    assert cli.main(argv) == cli.EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["labels"]["identity"]["datapack_version"] == "1.0.2"
+    assert payload["labels"]["identity"]["profile"] == "published"
+
+
+def test_profile_flag_and_explicit_pack_refuse_as_mutually_exclusive(capsys):
+    assert cli.main(
+        _solve_argv(T_IN_DOMAIN, "--profile", "openimcc", "--json")
+    ) == cli.EXIT_REFUSED
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["code"] == "profile_pack_conflict"
+
+
 def test_out_of_domain_is_a_typed_refusal_not_a_crash(capsys):
     """Exit 2 with a machine-readable code. A refusal is a RESULT."""
     assert cli.main(_solve_argv(T_OUT_OF_DOMAIN, "--json")) == cli.EXIT_REFUSED
