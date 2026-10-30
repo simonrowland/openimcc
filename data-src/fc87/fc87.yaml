@@ -1,0 +1,384 @@
+schema_version: melt_association_source_transcription.v1
+source:
+  citation: >-
+    Fegley, B.; Cameron, A. G. W. (1987), A vaporization model for
+    iron/silicate fractionation in the Mercury protoplanet, Earth and Planetary
+    Science Letters 82, 207–222.
+  doi: 10.1016/0012-821X(87)90196-8
+  pdf_sha256: 4b4f1f3792bec5d32179580df3b27c051ce19b58985be88544f71536909d7bee
+  verified_by: >-
+    Compared pdftotext -layout extraction of PDF page 5 with a 300 dpi render
+    of that page (printed page 211); coefficient conflicts and OCR ambiguities
+    are recorded below and resolved from the rendered page.
+table:
+  number: 3
+  printed_page: 211
+  title: >-
+    Thermodynamic data relating the activities of pseudospecies
+    (log10 K = A + B/T).
+  columns: [pseudoreaction, A, B]
+  log_base: 10
+  temperature_unit: K
+  coefficient_units:
+    A: dimensionless
+    B: K
+  temperature_range_K: [2500, 3500]
+  temperature_range_note: >-
+    Table 3 gives no separate coefficient-fit interval. The paper states that
+    its vaporization calculations cover 2500–3500 K.
+  reaction_convention: >-
+    Formation of each liquid pseudospecies from the printed liquid oxide
+    reactants; the table's K is the product activity divided by the reactant
+    activities raised to their printed stoichiometric coefficients.
+rows:
+  - row: R1
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: 2MgO(liq) + SiO₂(liq) = Mg₂SiO₄(liq)
+    product: Mg₂SiO₄
+    parent_stoichiometry: {MgO: 2, SiO2: 1}
+    A: {value: -0.94, as_published: "−0.94"}
+    B: {value: 7434, as_published: "7434"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R2
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: MgO(liq) + SiO₂(liq) = MgSiO₃(liq)
+    product: MgSiO₃
+    parent_stoichiometry: {MgO: 1, SiO2: 1}
+    A: {value: 0.42, as_published: "0.42"}
+    B: {value: 2329, as_published: "2329"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R3
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: MgO(liq) + Al₂O₃(liq) = MgAl₂O₄(liq)
+    product: MgAl₂O₄
+    parent_stoichiometry: {MgO: 1, Al2O3: 1}
+    A: {value: 1.18, as_published: "1.18"}
+    B: {value: 464, as_published: "464"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R4
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: MgO(liq) + TiO₂(liq) = MgTiO₃(liq)
+    product: MgTiO₃
+    parent_stoichiometry: {MgO: 1, TiO2: 1}
+    A: {value: -0.13, as_published: "−0.13"}
+    B: {value: 3246, as_published: "3246"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R5
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: MgO(liq) + 2TiO₂(liq) = MgTi₂O₅(liq)
+    product: MgTi₂O₅
+    parent_stoichiometry: {MgO: 1, TiO2: 2}
+    A: {value: 0.51, as_published: "0.51"}
+    B: {value: 2845, as_published: "2845"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R6
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: 2MgO(liq) + TiO₂(liq) = Mg₂TiO₄(liq)
+    product: Mg₂TiO₄
+    parent_stoichiometry: {MgO: 2, TiO2: 1}
+    A: {value: 0.67, as_published: "0.67"}
+    B: {value: 3812, as_published: "3812"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R7
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: 3Al₂O₃(liq) + 2SiO₂(liq) = Al₆Si₂O₁₃(liq)
+    product: Al₆Si₂O₁₃
+    parent_stoichiometry: {Al2O3: 3, SiO2: 2}
+    A: {value: -2.94, as_published: "−2.94"}
+    B: {value: 9375, as_published: "9375"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R8
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: CaO(liq) + Al₂O₃(liq) = CaAl₂O₄(liq)
+    product: CaAl₂O₄
+    parent_stoichiometry: {CaO: 1, Al2O3: 1}
+    A: {value: -1.89, as_published: "−1.89"}
+    B: {value: 10060, as_published: "10060"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R9
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: CaO(liq) + 2Al₂O₃(liq) = CaAl₄O₇(liq)
+    product: CaAl₄O₇
+    parent_stoichiometry: {CaO: 1, Al2O3: 2}
+    A: {value: -0.59, as_published: "−0.59"}
+    B: {value: 9713, as_published: "9713"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R10
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: 12CaO(liq) + 7Al₂O₃(liq) = Ca₁₂Al₁₄O₃₃(liq)
+    product: Ca₁₂Al₁₄O₃₃
+    parent_stoichiometry: {CaO: 12, Al2O3: 7}
+    A: {value: -6.30, as_published: "−6.30"}
+    B: {value: 72239, as_published: "72239"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R11
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: CaO(liq) + SiO₂(liq) = CaSiO₃(liq)
+    product: CaSiO₃
+    parent_stoichiometry: {CaO: 1, SiO2: 1}
+    A: {value: 0.54, as_published: "0.54"}
+    B: {value: 5568, as_published: "5568"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R12
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: CaO(liq) + Al₂O₃(liq) + 2SiO₂(liq) = CaAl₂Si₂O₈(liq)
+    product: CaAl₂Si₂O₈
+    parent_stoichiometry: {CaO: 1, Al2O3: 1, SiO2: 2}
+    A: {value: 2.63, as_published: "2.63"}
+    B: {value: 5326, as_published: "5326"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R13
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: CaO(liq) + MgO(liq) + 2SiO₂(liq) = CaMgSi₂O₆(liq)
+    product: CaMgSi₂O₆
+    parent_stoichiometry: {CaO: 1, MgO: 1, SiO2: 2}
+    A: {value: 1.46, as_published: "1.46"}
+    B: {value: 8485, as_published: "8485"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R14
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: 2CaO(liq) + MgO(liq) + 2SiO₂(liq) = Ca₂MgSi₂O₇(liq)
+    product: Ca₂MgSi₂O₇
+    parent_stoichiometry: {CaO: 2, MgO: 1, SiO2: 2}
+    A: {value: 0.63, as_published: "0.63"}
+    B: {value: 15327, as_published: "15327"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R15
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: 2CaO(liq) + Al₂O₃(liq) + SiO₂(liq) = Ca₂Al₂SiO₇(liq)
+    product: Ca₂Al₂SiO₇
+    parent_stoichiometry: {CaO: 2, Al2O3: 1, SiO2: 1}
+    A: {value: 2.01, as_published: "2.01"}
+    B: {value: 10710, as_published: "10710"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R16
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: CaO(liq) + TiO₂(liq) = CaTiO₃(liq)
+    product: CaTiO₃
+    parent_stoichiometry: {CaO: 1, TiO2: 1}
+    A: {value: -0.08, as_published: "−0.08"}
+    B: {value: 7055, as_published: "7055"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R17
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: 2CaO(liq) + SiO₂(liq) = Ca₂SiO₄(liq)
+    product: Ca₂SiO₄
+    parent_stoichiometry: {CaO: 2, SiO2: 1}
+    A: {value: 0.63, as_published: "0.63"}
+    B: {value: 8416, as_published: "8416"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R18
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: CaO(liq) + TiO₂(liq) + SiO₂(liq) = CaTiSiO₅(liq)
+    product: CaTiSiO₅
+    parent_stoichiometry: {CaO: 1, TiO2: 1, SiO2: 1}
+    A: {value: -0.18, as_published: "−0.18"}
+    B: {value: 10071, as_published: "10071"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R19
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: FeO(liq) + TiO₂(liq) = FeTiO₃(liq)
+    product: FeTiO₃
+    parent_stoichiometry: {FeO: 1, TiO2: 1}
+    A: {value: -0.51, as_published: "−0.51"}
+    B: {value: 3569, as_published: "3569"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R20
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: 2FeO(liq) + SiO₂(liq) = Fe₂SiO₄(liq)
+    product: Fe₂SiO₄
+    parent_stoichiometry: {FeO: 2, SiO2: 1}
+    A: {value: -0.63, as_published: "−0.63"}
+    B: {value: 3103, as_published: "3103"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R21
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: FeO(liq) + Al₂O₃(liq) = FeAl₂O₄(liq)
+    product: FeAl₂O₄
+    parent_stoichiometry: {FeO: 1, Al2O3: 1}
+    A: {value: -1.76, as_published: "−1.76"}
+    B: {value: 5692, as_published: "5692"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R22
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: CaO(liq) + 6Al₂O₃(liq) = CaAl₁₂O₁₉(liq)
+    product: CaAl₁₂O₁₉
+    parent_stoichiometry: {CaO: 1, Al2O3: 6}
+    A: {value: -3.79, as_published: "−3.79"}
+    B: {value: 22612, as_published: "22612"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R23
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: 2MgO(liq) + 2Al₂O₃(liq) + 5SiO₂(liq) = Mg₂Al₄Si₅O₁₈(liq)
+    product: Mg₂Al₄Si₅O₁₈
+    parent_stoichiometry: {MgO: 2, Al2O3: 2, SiO2: 5}
+    A: {value: 7.48, as_published: "7.48"}
+    B: {value: 0, as_published: "0"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R24
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: Na₂O(liq) + SiO₂(liq) = Na₂SiO₃(liq)
+    product: Na₂SiO₃
+    parent_stoichiometry: {Na2O: 1, SiO2: 1}
+    A: {value: -1.33, as_published: "−1.33"}
+    B: {value: 13870, as_published: "13870"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R25
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: Na₂O(liq) + 2SiO₂(liq) = Na₂Si₂O₅(liq)
+    product: Na₂Si₂O₅
+    parent_stoichiometry: {Na2O: 1, SiO2: 2}
+    A: {value: -1.39, as_published: "−1.39"}
+    B: {value: 15350, as_published: "15350"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R26
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: ½Na₂O(liq) + ½Al₂O₃(liq) + SiO₂(liq) = NaAlSiO₄(liq)
+    product: NaAlSiO₄
+    parent_stoichiometry: {Na2O: 0.5, Al2O3: 0.5, SiO2: 1}
+    A: {value: 0.65, as_published: "0.65"}
+    B: {value: 6997, as_published: "6997"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R27
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: ½Na₂O(liq) + ½Al₂O₃(liq) + 3SiO₂(liq) = NaAlSi₃O₈(liq)
+    product: NaAlSi₃O₈
+    parent_stoichiometry: {Na2O: 0.5, Al2O3: 0.5, SiO2: 3}
+    A: {value: 1.29, as_published: "1.29"}
+    B: {value: 8788, as_published: "8788"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R28
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: ½Na₂O(liq) + ½Al₂O₃(liq) = NaAlO₂(liq)
+    product: NaAlO₂
+    parent_stoichiometry: {Na2O: 0.5, Al2O3: 0.5}
+    A: {value: 0.55, as_published: "0.55"}
+    B: {value: 3058, as_published: "3058"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R29
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: Na₂O(liq) + TiO₂(liq) = Na₂TiO₃(liq)
+    product: Na₂TiO₃
+    parent_stoichiometry: {Na2O: 1, TiO2: 1}
+    A: {value: -1.38, as_published: "−1.38"}
+    B: {value: 15445, as_published: "15445"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R30
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: ½Na₂O(liq) + ½Al₂O₃(liq) + 2SiO₂(liq) = NaAlSi₂O₆(liq)
+    product: NaAlSi₂O₆
+    parent_stoichiometry: {Na2O: 0.5, Al2O3: 0.5, SiO2: 2}
+    A: {value: -1.02, as_published: "−1.02"}
+    B: {value: 9607, as_published: "9607"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R31
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: K₂O(liq) + SiO₂(liq) = K₂SiO₃(liq)
+    product: K₂SiO₃
+    parent_stoichiometry: {K2O: 1, SiO2: 1}
+    A: {value: 0.15, as_published: "0.15"}
+    B: {value: 14600, as_published: "14600"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R32
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: K₂O(liq) + 2SiO₂(liq) = K₂Si₂O₅(liq)
+    product: K₂Si₂O₅
+    parent_stoichiometry: {K2O: 1, SiO2: 2}
+    A: {value: -0.73, as_published: "−0.73"}
+    B: {value: 18466, as_published: "18466"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R33
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: ½K₂O(liq) + ½Al₂O₃(liq) + SiO₂(liq) = KAlSiO₄(liq)
+    product: KAlSiO₄
+    parent_stoichiometry: {K2O: 0.5, Al2O3: 0.5, SiO2: 1}
+    A: {value: 0.97, as_published: "0.97"}
+    B: {value: 8675, as_published: "8675"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R34
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: ½K₂O(liq) + ½Al₂O₃(liq) + 3SiO₂(liq) = KAlSi₃O₈(liq)
+    product: KAlSi₃O₈
+    parent_stoichiometry: {K2O: 0.5, Al2O3: 0.5, SiO2: 3}
+    A: {value: 1.11, as_published: "1.11"}
+    B: {value: 11229, as_published: "11229"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R35
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: ½K₂O(liq) + ½Al₂O₃(liq) = KAlO₂(liq)
+    product: KAlO₂
+    parent_stoichiometry: {K2O: 0.5, Al2O3: 0.5}
+    A: {value: 0.72, as_published: "0.72"}
+    B: {value: 4679, as_published: "4679"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+  - row: R36
+    table: 3
+    printed_page: 211
+    pseudoreaction_as_printed: ½K₂O(liq) + ½Al₂O₃(liq) + 2SiO₂(liq) = KAlSi₂O₆(liq)
+    product: KAlSi₂O₆
+    parent_stoichiometry: {K2O: 0.5, Al2O3: 0.5, SiO2: 2}
+    A: {value: 1.53, as_published: "1.53"}
+    B: {value: 10125, as_published: "10125"}
+    T_range: "Not stated per fit; paper calculations 2500–3500 K."
+verification:
+  text_layer_disagreements_resolved_from_page_image:
+    - row: R1
+      field: A
+      text_layer: "0.94"
+      rendered_page: "−0.94"
+    - row: R11
+      field: A
+      text_layer: "0,54"
+      rendered_page: "0.54"
+    - row: R16
+      field: A
+      text_layer: "0.08"
+      rendered_page: "−0.08"
+    - row: R16
+      field: B
+      text_layer: "7(155"
+      rendered_page: "7055"
+    - row: R21
+      field: A
+      text_layer: "- -1.76"
+      rendered_page: "−1.76"
+      note: OCR inserted a duplicate minus; the image is unambiguous.
+    - row: R25
+      field: A
+      text_layer: "1.39"
+      rendered_page: "−1.39"

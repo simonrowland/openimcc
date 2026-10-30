@@ -1,0 +1,105 @@
+schema_version: melt_association_source_transcription.v1
+source:
+  citation: >-
+    Schaefer, L.; Fegley, B. (2004), A thermodynamic model of high temperature
+    lava vaporization on Io, Icarus 169, 216–241.
+  doi: 10.1016/j.icarus.2003.08.023
+  pdf_sha256: c50765341a3be2cdd0e305cda582f996f4f3a7046469e327043a70493f46c46c
+  verified_by: >-
+    Compared pdftotext -layout extraction of PDF page 3 with a 300 dpi render
+    of that page (printed page 218); all six rows' coefficients agree.
+table:
+  number: 2
+  printed_page: 218
+  title: Revised thermodynamic data
+  equation: log10 K = A + B/T
+  columns: [reaction, A, B, Ref.]
+  log_base: 10
+  temperature_unit: K
+  coefficient_units:
+    A: dimensionless
+    B: K
+  temperature_range_K: [1700, 3000]
+  temperature_range_note: >-
+    Table 2 gives no separate coefficient-fit interval. The paper states that
+    its MAGMA computations cover 1700–3000 K.
+rows:
+  - row: 1
+    table: 2
+    printed_page: 218
+    kind: melt_association
+    reaction_as_printed: K₂O(liq) + SiO₂(liq) = K₂SiO₃(liq)
+    product: K₂SiO₃
+    parent_stoichiometry: {K2O: 1, SiO2: 1}
+    reaction_convention: formation from liquid oxide components
+    A: {value: 0.27, as_published: "0.27"}
+    B: {value: 12735, as_published: "12735"}
+    reference_as_printed: Hastie and Bonnell (1985)
+    T_range: "Not stated per fit; paper computations 1700–3000 K."
+  - row: 2
+    table: 2
+    printed_page: 218
+    kind: melt_association
+    reaction_as_printed: K₂O(liq) + 2SiO₂(liq) = K₂Si₂O₅(liq)
+    product: K₂Si₂O₅
+    parent_stoichiometry: {K2O: 1, SiO2: 2}
+    reaction_convention: formation from liquid oxide components
+    A: {value: 0.35, as_published: "0.35"}
+    B: {value: 14685, as_published: "14685"}
+    reference_as_printed: Hastie and Bonnell (1985)
+    T_range: "Not stated per fit; paper computations 1700–3000 K."
+  - row: 3
+    table: 2
+    printed_page: 218
+    kind: melt_association
+    reaction_as_printed: K₂O(liq) + 4SiO₂(liq) = K₂Si₄O₉(liq)
+    product: K₂Si₄O₉
+    parent_stoichiometry: {K2O: 1, SiO2: 4}
+    reaction_convention: formation from liquid oxide components
+    A: {value: -0.96, as_published: "−0.96"}
+    B: {value: 17572, as_published: "17572"}
+    reference_as_printed: Hastie and Bonnell (1985)
+    T_range: "Not stated per fit; paper computations 1700–3000 K."
+  - row: 4
+    table: 2
+    printed_page: 218
+    kind: melt_association
+    reaction_as_printed: >-
+      0.5K₂O (liq) + CaO (liq) + 0.5Al₂O₃ + 2SiO₂ (liq) =
+      KCaAlSi₂O₇ (liq)
+    product: KCaAlSi₂O₇
+    parent_stoichiometry: {K2O: 0.5, CaO: 1, Al2O3: 0.5, SiO2: 2}
+    reaction_convention: formation from oxide components
+    phase_note: >-
+      The printed reaction omits a phase marker after Al₂O₃; the omission is
+      retained here as printed.
+    A: {value: 4.30, as_published: "4.30"}
+    B: {value: 17037, as_published: "17037"}
+    reference_as_printed: Hastie and Bonnell (1985)
+    T_range: "Not stated per fit; paper computations 1700–3000 K."
+  - row: 5
+    table: 2
+    printed_page: 218
+    kind: gas_ionization
+    reaction_as_printed: Na(g) = Na⁺(g) + e⁻(g)
+    product: Na⁺(g) + e⁻(g)
+    reactant: Na(g)
+    reaction_convention: gas-phase ionization
+    A: {value: -15.33, as_published: "−15.33"}
+    B: {value: 36735, as_published: "36735"}
+    reference_as_printed: Chase (1998)
+    T_range: "Not stated per fit; paper computations 1700–3000 K."
+  - row: 6
+    table: 2
+    printed_page: 218
+    kind: gas_ionization
+    reaction_as_printed: K(g) = K⁺(g) + e⁻(g)
+    product: K⁺(g) + e⁻(g)
+    reactant: K(g)
+    reaction_convention: gas-phase ionization
+    A: {value: 2.76, as_published: "2.76"}
+    B: {value: 23760, as_published: "23760"}
+    reference_as_printed: Chase (1998)
+    T_range: "Not stated per fit; paper computations 1700–3000 K."
+verification:
+  text_layer_numeric_disagreements: []

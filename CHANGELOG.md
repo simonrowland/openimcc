@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added checked full transcriptions of the FC87 and SF04 melt coefficient
+  tables, with published-profile and D066 lineage checks.
+
 - Corrected gas and condensate provenance joins and measured-Cp construction
   records; no thermochemical coefficients changed.
 
