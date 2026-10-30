@@ -1611,7 +1611,9 @@ def test_kp_derivation_spot_check_sio(sf04_gas_pack: ImccGasDatapack) -> None:
 
 
 def test_authority_query_reports_k2o_liquid_construction() -> None:
-    assert gas_species_provenance("Na")["authority"] == "janaf_fitted"
+    na_provenance = gas_species_provenance("Na")
+    assert na_provenance["authority"] == "liquid_from_solid_estimate"
+    assert na_provenance["condensate_authority"] == "liquid_from_solid_estimate"
     for species in ("K", "K2", "KO"):
         provenance = gas_species_provenance(species)
         assert provenance["authority"] == "estimated_systematic"

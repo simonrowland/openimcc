@@ -138,12 +138,12 @@ GAS_TABLE_IDS = {
 NASA_TABLE_IDS = {"Na2O": "NG-0905", "K2O": "NG-0760"}
 
 PARENT_TABLE_IDS = {
-    "Na2O": "Na-013",
+    "Na2O": "Na-012",
     "K2O": "K-012",  # JANAF has crystal K2O; the liquid row uses its construction.
     "MgO": "Mg-009",
     "CaO": "Ca-028",
     "Al2O3": "Al-100",
-    "SiO2": "O-038",
+    "SiO2": "O-035",
     "FeO": "Fe-019",
     "TiO2": "O-044",
     "Cr2O3": "Cr-015",
@@ -159,11 +159,12 @@ FITTED_CONDENSATE_TABLE_IDS = {
     "V2O3(l)": "O-063",
     "NbO2(l)": "Nb-013",
     "Ta2O5(l)": "O-078",
-    "Na2O(l)": "Na-013",
 }
 
 JANAF_CONDENSATE_TABLE_IDS = {
     "FeO(l)": "Fe-019",
+    # Kept here for the legacy coefficient comparison; Na-013 supplies only
+    # the phase marker in current provenance.
     "Na2O(l)": "Na-013",
     **FITTED_CONDENSATE_TABLE_IDS,
 }
@@ -991,16 +992,6 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             assert row["T_range_K"] == [runtime_t_min, 3000]
         assert source["source"]["doi"] == "10.18434/T42S31"
 
-    na_high = oxide_rows["Na2O(l)"]
-    assert na_high["source_fit_range_K"] == [1500, 3000]
-    assert na_high["supersedes"]["T_range_K"] == [1405, 3000]
-    assert na_high["supersedes"]["dH298_R"] == -50.17
-    assert na_high["supersedes"]["dG_coefficients"] == [7.67, 6.193, 0, 0, 0]
-    assert na_high["supersedes"]["reason"].startswith("Replaces the LH84 Table 2 Na2O(l)")
-    assert na_high["supersedes"]["measured_LH84_minus_JANAF_G_kJ_mol"][
-        "values"
-    ] == {1600: 13.44, 2000: 25.57, 2400: 29.64, 3000: 17.66}
-
     nb_low = next(
         row
         for row in rows
@@ -1016,22 +1007,6 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     assert nb_low["source_fit_range_K"] == [1100, 1500]
     assert nb_low["authority"] == "janaf_fitted"
     assert "liquid Cp" in nb_low["note"]
-
-    na_low = next(
-        row
-        for row in rows
-        if row["table"] == "condensate"
-        and row["species_name"] == "Na2O(l)"
-        and row["T_range_K"] == [1000, 1500]
-    )
-    na_source = _record("Na-013")
-    assert na_low["source_path"] == "data-src/janaf/Na-013.yaml"
-    assert na_low["source_sha256"] == hashlib.sha256(
-        (ROOT / na_low["source_path"]).read_bytes()
-    ).hexdigest()
-    assert na_low["source_fit_range_K"] == [1000, 1500]
-    assert na_low["authority"] == "janaf_fitted"
-    assert "Cp = 104.600" in na_low["note"]
 
     for species in (
         "Ti",
@@ -1089,6 +1064,112 @@ def test_janaf_gas_provenance_hashes_source_files_and_preserves_upstream_hashes(
             assert row["upstream_source_sha256"] == upstream_hash
         else:
             assert "upstream_source_sha256" not in row
+
+
+def test_shipped_thermochemical_rows_have_unique_exact_provenance_joins() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    records = provenance["rows"]
+    shipped_tables = {
+        "gas-shomate.csv": "gas",
+        "condensate.csv": "condensate",
+    }
+    joined = 0
+    for filename, table_name in shipped_tables.items():
+        path = GAS_DATA / filename
+        with path.open(encoding="utf-8", newline="") as handle:
+            for line_number, csv_row in enumerate(csv.DictReader(handle), start=2):
+                interval = (float(csv_row["T_min"]), float(csv_row["T_max"]))
+                matches = [
+                    record
+                    for record in records
+                    if record["table"] == table_name
+                    and record["species_name"] == csv_row["species_name"]
+                    and (
+                        record.get("runtime_ref")
+                        or record.get("table_id")
+                        or record.get("source_table_id")
+                    ) == csv_row["Ref"]
+                    and tuple(map(float, record["T_range_K"])) == interval
+                ]
+                assert len(matches) == 1, (
+                    filename,
+                    line_number,
+                    csv_row["species_name"],
+                    csv_row["Ref"],
+                    interval,
+                    matches,
+                )
+                joined += 1
+    assert joined == 940
+
+
+def test_measured_liquid_provenance_and_feo_transcription_hashes() -> None:
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    rows = [row for row in provenance["rows"] if row["table"] == "condensate"]
+
+    na_rows = [row for row in rows if row["species_name"] == "Na2O(l)"]
+    assert len(na_rows) == 8
+    for row in na_rows:
+        assert row["authority"] == "liquid_from_solid_estimate"
+        assert row["method"] == "liquid_from_solid_construction"
+        assert row["table_id"] == "Na2O-RBT84-CANDIDATE"
+        assert row["source_table_id"] == "Na-012"
+        assert row["runtime_ref"] == "Na-013"
+        assert row["source_path"] == "data-src/janaf/Na-012.yaml"
+        assert row["source_sha256"] == hashlib.sha256(
+            (ROOT / row["source_path"]).read_bytes()
+        ).hexdigest()
+        assert row["Cp_l_J_molK"] == 100.6
+        assert row["fusion_temperature_K"] == 1405.2
+        assert row["fusion_enthalpy_kJ_mol"] == 47.698
+        assert row["measured_range_K"] == [900, 1800]
+        assert row["source"]["doi"] == (
+            "10.1111/j.1151-2916.1984.tb19155.x"
+        )
+        assert [source["table_id"] for source in row["additional_sources"]] == [
+            "Na-013"
+        ]
+        assert "marker only" in row["note"]
+        assert "104.600" not in str(row)
+
+    measured_silica = [
+        row for row in rows
+        if row["species_name"] == "SiO2(l)"
+        and row.get("method") == "liquid_from_solid_construction"
+    ]
+    assert [row["T_range_K"] for row in measured_silica] == [
+        [1800, 1996], [1996, 3000],
+    ]
+    for row in measured_silica:
+        assert row["authority"] == "liquid_from_solid_estimate"
+        assert row["table_id"] == "SiO2-RBT84-CANDIDATE"
+        assert row["source_table_id"] == "O-035"
+        assert row["runtime_ref"] == "O-038"
+        assert row["source_path"] == "data-src/janaf/O-035.yaml"
+        assert row["source_sha256"] == hashlib.sha256(
+            (ROOT / row["source_path"]).read_bytes()
+        ).hexdigest()
+        assert row["Cp_l_J_molK"] == 81.37
+        assert row["fusion_temperature_K"] == 1996.0
+        assert row["fusion_enthalpy_kJ_mol"] == 9.581
+        assert row["measured_range_K"] == [900, 1800]
+        assert row["source"]["doi"] == (
+            "10.1111/j.1151-2916.1984.tb19155.x"
+        )
+
+    feo = next(row for row in rows if row["species_name"] == "FeO(l)")
+    source_files = {
+        source["path"]: source["source_sha256"]
+        for source in feo["source_files"]
+    }
+    assert set(source_files) == {
+        "docs/feo-liquid-dg-anchor-data.csv",
+        "docs/feo-liquid-dg-table-i.csv",
+    }
+    for source_path, recorded_hash in source_files.items():
+        assert recorded_hash == hashlib.sha256(
+            (ROOT / source_path).read_bytes()
+        ).hexdigest()
 
 
 def test_pankratz_yttrium_and_mno_source_pins_match_source_files() -> None:
@@ -4883,7 +4964,7 @@ def test_no_fitted_row_consumes_a_parse_ambiguous_source_row() -> None:
             for row in rows
             if row["temperature"] in _ambiguous_temperatures(table_id)
         )
-    assert consumed_ambiguous_rows == {("Na-013", 1500.0)}
+    assert consumed_ambiguous_rows == set()
 
 
 def test_na_condensate_recovers_1500_thermal_cells_for_both_intervals() -> None:
@@ -8971,7 +9052,9 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
                 source_g = source_h_app * 1000.0 - temperature * source["entropy"]
                 g_residual = abs(actual.G_J_mol - source_g) / 1000.0
                 assert actual.source_row_id == str(row["Ref"])
-                assert actual.source_table_id == table_id
+                assert actual.source_table_id == (
+                    "Na-012" if species_name == "Na2O(l)" else table_id
+                )
                 assert actual.derivatives_fit_implied
                 maximum_g_residual = max(maximum_g_residual, g_residual)
                 count += 1

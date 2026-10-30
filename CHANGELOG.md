@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Corrected gas and condensate provenance joins and measured-Cp construction
+  records; no thermochemical coefficients changed.
+
 - Added extrapolated MgO(l) and TiO₂(l) source-accuracy windows with bands
   limited to their reviewed temperature ranges; gas pressures are unchanged.
 
