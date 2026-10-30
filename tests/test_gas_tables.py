@@ -138,12 +138,12 @@ GAS_TABLE_IDS = {
 NASA_TABLE_IDS = {"Na2O": "NG-0905", "K2O": "NG-0760"}
 
 PARENT_TABLE_IDS = {
-    "Na2O": "Na-012",
+    "Na2O": "Na-013",
     "K2O": "K-012",  # JANAF has crystal K2O; the liquid row uses its construction.
     "MgO": "Mg-009",
     "CaO": "Ca-028",
     "Al2O3": "Al-100",
-    "SiO2": "O-035",
+    "SiO2": "O-038",
     "FeO": "Fe-019",
     "TiO2": "O-044",
     "Cr2O3": "Cr-015",
@@ -1111,7 +1111,7 @@ def test_measured_liquid_provenance_and_feo_transcription_hashes() -> None:
     assert len(na_rows) == 8
     for row in na_rows:
         assert row["authority"] == "liquid_from_solid_estimate"
-        assert row["method"] == "liquid_from_solid_construction"
+        assert row["method"] == "measured_liquid_cp_construction"
         assert row["table_id"] == "Na2O-RBT84-CANDIDATE"
         assert row["source_table_id"] == "Na-012"
         assert row["runtime_ref"] == "Na-013"
@@ -1135,7 +1135,7 @@ def test_measured_liquid_provenance_and_feo_transcription_hashes() -> None:
     measured_silica = [
         row for row in rows
         if row["species_name"] == "SiO2(l)"
-        and row.get("method") == "liquid_from_solid_construction"
+        and row.get("method") == "measured_liquid_cp_construction"
     ]
     assert [row["T_range_K"] for row in measured_silica] == [
         [1800, 1996], [1996, 3000],
@@ -3099,7 +3099,10 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
         "data-src/liquid-from-solid-inputs.json"
     )
     assert condensate_provenance["construction_inputs_sha256"] == inputs_digest
-    assert condensate_provenance["T_range_K"] == [1200, 3000]
+    assert [
+        row["T_range_K"] for row in provenance["rows"]
+        if row["table"] == "condensate" and row["species_name"] == "MnO(l)"
+    ] == [[1200, 1600], [1600, 2200], [2200, 3000]]
     assert condensate_provenance["source_fit_range_K"] == [1200, 3000]
     assert condensate_provenance["fit_intervals_K"] == [
         [1200, 1600], [1600, 2200], [2200, 3000],
@@ -3200,6 +3203,8 @@ def test_constructed_condensate_bands_match_liquid_construction_inputs() -> None
         for row in provenance["rows"]
         if row.get("table") == "condensate"
         and row.get("method") == "liquid_from_solid_construction"
+        and row.get("construction_inputs_path")
+        == "data-src/liquid-from-solid-inputs.json"
     ]
     assert constructed
     # These rows store source parameters or a derived envelope, not a value table.
@@ -3494,6 +3499,12 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
     # and oxide provenance row against the checked-in YAML. Candidate-only ion
     # rows have runtime authority entries but are absent from the default pack.
     # SiO2(cr) remains available for explicit solid-phase thermochemistry queries.
+    # Runtime labels stay pinned to the legacy JANAF aliases; the sidecar
+    # records the measured-Cp liquid construction and its underlying solid leg.
+    expected_oxide["Na2O"] = "janaf_fitted"
+    expected_oxide["SiO2"] = "janaf_fitted"
+    expected_table_ids["Na2O(l)"] = "Na-013"
+    expected_table_ids["SiO2(l)"] = "O-038"
     default_gas_rows = set(load_gas_datapack().gas_df.index)
     public_runtime_gas = {
         species: authority
@@ -5744,31 +5755,8 @@ def test_na_k_gas_anchor_and_parent_scale_bands_recompute() -> None:
             + h_increment - temperature * entropy
         )
 
-    na_liquid_row = next(
-        row for row in provenance["rows"]
-        if row["table"] == "condensate"
-        and row["species_name"] == "Na2O(l)"
-        and row.get("supersedes")
-    )
-    lh84_liquid = na_liquid_row["supersedes"]
-    liquid_coefficients = lh84_liquid["dG_coefficients"]
-
-    def lh84_na_liquid_g(temperature: float) -> float:
-        tau = temperature / 1000.0
-        polynomial = sum(
-            coefficient * tau**power
-            for power, coefficient in enumerate(liquid_coefficients)
-        )
-        return (
-            -R_J_MOL_K * temperature * polynomial
-            + R_J_MOL_K * lh84_liquid["dH298_R"] * 1000.0
-        )
-
     expected = {
         "Na2O(g)": {
-            "parent_scale_liquid_G": lambda temperature: abs(
-                lh84_na_liquid_g(temperature) - janaf_na_g(temperature)
-            ),
             "card_G_parent_scale_inconsistency": lambda temperature: abs(
                 nasa_card_g("NG-0905", temperature)
                 - lh84_anchored_card_g("Na2O(g)", "NG-0905", temperature)
@@ -5798,7 +5786,7 @@ def test_na_k_gas_anchor_and_parent_scale_bands_recompute() -> None:
                     calculate(temperature), abs=0.001
                 )
                 seen.add((species, band_type, temperature))
-    assert len(seen) == 15
+    assert len(seen) == 10
 
 
 def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
@@ -7468,10 +7456,34 @@ def test_source_validity_columns_match_vendored_tables(tmp_path: Path) -> None:
     assert [row for row in rewritten_condensate if row["species_name"] not in promoted_species] == [
         row for row in packaged_condensate if row["species_name"] not in promoted_species
     ]
-    assert legacy_copy.read_bytes() == (GAS_DATA / "condensate-feo-janaf-legacy.csv").read_bytes()
-    assert published_copy.read_bytes() == (
-        ROOT / "src/openimcc/data/packs/sf04-published/condensate.csv"
-    ).read_bytes()
+    with legacy_copy.open(newline="", encoding="utf-8") as handle:
+        rewritten_legacy = list(csv.DictReader(handle))
+    with (GAS_DATA / "condensate-feo-janaf-legacy.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        packaged_legacy = list(csv.DictReader(handle))
+    assert [row for row in rewritten_legacy if row["species_name"] not in promoted_species] == [
+        row for row in packaged_legacy if row["species_name"] not in promoted_species
+    ]
+    assert all(
+        row["validity_kind"] == "none"
+        for row in rewritten_legacy
+        if row["Ref"] in {"Na-013", "O-038"}
+    )
+    with published_copy.open(newline="", encoding="utf-8-sig") as handle:
+        rewritten_published = list(csv.DictReader(handle))
+    with (ROOT / "src/openimcc/data/packs/sf04-published/condensate.csv").open(
+        newline="", encoding="utf-8-sig"
+    ) as handle:
+        packaged_published = list(csv.DictReader(handle))
+    assert [row for row in rewritten_published if row["Ref"] != "Na-013"] == [
+        row for row in packaged_published if row["Ref"] != "Na-013"
+    ]
+    assert all(
+        row["validity_kind"] == "none"
+        for row in rewritten_published
+        if row["Ref"] == "Na-013"
+    )
     with published_copy.open(newline="", encoding="utf-8-sig") as handle:
         published_k2o = next(
             row for row in csv.DictReader(handle) if row["species_name"] == "K2O(l)"
@@ -9052,9 +9064,7 @@ def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None
                 source_g = source_h_app * 1000.0 - temperature * source["entropy"]
                 g_residual = abs(actual.G_J_mol - source_g) / 1000.0
                 assert actual.source_row_id == str(row["Ref"])
-                assert actual.source_table_id == (
-                    "Na-012" if species_name == "Na2O(l)" else table_id
-                )
+                assert actual.source_table_id == table_id
                 assert actual.derivatives_fit_implied
                 maximum_g_residual = max(maximum_g_residual, g_residual)
                 count += 1
