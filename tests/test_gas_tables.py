@@ -1552,14 +1552,14 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
             ).hexdigest()
 
 
-def test_trace_gas_fits_match_every_declared_source_node() -> None:
+def test_trace_gas_fits_match_every_declared_source_node(packaged_gas_pack) -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = {
         (row["species_name"], row.get("T_interval", 1)): row
         for row in provenance["rows"]
         if row["table"] == "gas"
     }
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
 
     for species_name, table_id, *_ in build_gas_tables.TRACE_JANAF_GAS_SOURCES:
         source_rows = build_gas_tables._janaf_text_source_rows(JANAF_DATA, table_id)
@@ -1979,7 +1979,9 @@ def test_published_source_data_flags_follow_source_limits() -> None:
         )
 
 
-def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
+def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps(
+    packaged_gas_pack,
+) -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = provenance["rows"]
     for element, gas_id, source_file, marker, expected_parent in (
@@ -2022,12 +2024,14 @@ def test_burcat_metal_rows_keep_elemental_anchors_and_phase_steps() -> None:
                 assert crystal["fit_step_at_K"] == pytest.approx(marker)
             assert crystal["source_data"] is True
     os_pressure = evaluate_gas(
-        {"Os": 1.0}, 1500.0, 1e-10, load_gas_datapack(), gas_species=("Os",)
+        {"Os": 1.0}, 1500.0, 1e-10, packaged_gas_pack, gas_species=("Os",)
     )["Os"]
     assert math.isfinite(os_pressure) and os_pressure > 0.0
 
 
-def test_pankratz_b677_re_rows_and_constructed_re2o7_are_flagged() -> None:
+def test_pankratz_b677_re_rows_and_constructed_re2o7_are_flagged(
+    packaged_gas_pack,
+) -> None:
     source_path = PUBLISHED_DATA / "pankratz-bulletin-677-re.json"
     source_bytes = source_path.read_bytes()
     digest = hashlib.sha256(source_bytes).hexdigest()
@@ -2112,7 +2116,7 @@ def test_pankratz_b677_re_rows_and_constructed_re2o7_are_flagged() -> None:
     )
     assert max(float(row["_max_residual_J_per_mol"]) for row in constructed) < 1e-3
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     re_rows = pack.gas_df.loc["Re(g)"]
     assert set(re_rows["Ref"]) == {"P677-Re-g", "P677-Re-g-CONT-2000"}
     re_parent_rows = pack.oxide_df.loc["Re(cr)"]
@@ -2176,7 +2180,10 @@ def test_pankratz_b677_re_rows_and_constructed_re2o7_are_flagged() -> None:
     ),
 )
 def test_burcat_metal_absolute_k_matches_runtime_and_is_continuous(
-    element: str, marker: float, temperatures: tuple[float, ...]
+    element: str,
+    marker: float,
+    temperatures: tuple[float, ...],
+    packaged_gas_pack,
 ) -> None:
     """Compare runtime p(a=1) with raw Burcat G on the elemental scale.
 
@@ -2188,7 +2195,7 @@ def test_burcat_metal_absolute_k_matches_runtime_and_is_continuous(
     """
     source_path = PUBLISHED_DATA / f"burcat-{element.lower()}.json"
     source = json.loads(source_path.read_text(encoding="utf-8"))["records"]
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
 
     def gibbs(record: dict[str, object], temperature: float, *, gas: bool) -> float:
         if gas:
@@ -2239,20 +2246,21 @@ def test_burcat_metal_boiling_pressure_is_near_one_bar(
     element: str,
     temperature: float,
     relative_tolerance: float,
+    packaged_gas_pack,
 ) -> None:
     """Boiling-point check: unit metal activity gives p near the 1-bar scale."""
     pressure = evaluate_gas(
-        {element: 1.0}, temperature, 1.0, load_gas_datapack(), gas_species=(element,)
+        {element: 1.0}, temperature, 1.0, packaged_gas_pack, gas_species=(element,)
     )[element]
     assert pressure == pytest.approx(1.0, rel=relative_tolerance)
 
 
-def test_pto2_absolute_k_uses_elemental_pt_and_o2_references() -> None:
+def test_pto2_absolute_k_uses_elemental_pt_and_o2_references(packaged_gas_pack) -> None:
     """PtO2's exponent is +1 and its K uses Pt(cr/l) plus O2(g) references."""
     source = json.loads(
         (PUBLISHED_DATA / "burcat-pt.json").read_text(encoding="utf-8")
     )["records"]
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
 
     def gibbs(record: dict[str, object], temperature: float) -> float:
         coefficients = (
@@ -2290,7 +2298,9 @@ def test_pto2_absolute_k_uses_elemental_pt_and_o2_references() -> None:
     assert crystal_k == pytest.approx(liquid_k, rel=5.0e-5)
 
 
-def test_pto2_continuation_band_recomputes_from_its_2000_k_limit() -> None:
+def test_pto2_continuation_band_recomputes_from_its_2000_k_limit(
+    packaged_gas_pack,
+) -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     row = next(
         item for item in provenance["rows"]
@@ -2300,7 +2310,7 @@ def test_pto2_continuation_band_recomputes_from_its_2000_k_limit() -> None:
     assert row["source_data"] is True
     assert row["extrapolation_source_limit_K"] == 2000.0
     continuation = evaluate_gas(
-        {"Pt": 1.0}, 2500.0, 1.0e-10, load_gas_datapack(),
+        {"Pt": 1.0}, 2500.0, 1.0e-10, packaged_gas_pack,
         gas_species=("PtO2",), allow_extrapolation=True,
     )
     assert "flagged g-phase continuation above the 2000 K source limit" in (
@@ -2363,11 +2373,13 @@ def test_pto2_mixed_oxygen_reference_band_recomputes_from_source_cards() -> None
             assert actual == pytest.approx(abs(burcat_g - janaf_g), abs=0.001)
 
 
-def test_pankratz_ru_absolute_k_and_printed_reaction_cells_close() -> None:
+def test_pankratz_ru_absolute_k_and_printed_reaction_cells_close(
+    packaged_gas_pack,
+) -> None:
     source = json.loads(
         (PUBLISHED_DATA / "pankratz-ru.json").read_text(encoding="utf-8")
     )["tables"]
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
 
     def gibbs(record: dict[str, object], temperature: float) -> float:
         node = next(row for row in record["nodes"] if row[0] == temperature)
@@ -2412,9 +2424,11 @@ def test_pankratz_ru_absolute_k_and_printed_reaction_cells_close() -> None:
         assert calculated_log_k == pytest.approx(printed_log_k, abs=0.001)
 
 
-def test_pankratz_ru_vapor_pressure_matches_measured_source_range() -> None:
+def test_pankratz_ru_vapor_pressure_matches_measured_source_range(
+    packaged_gas_pack,
+) -> None:
     """Compare inside the measured range instead of extrapolating to boiling."""
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     for temperature in (2000.0, 2377.0):
         pressure_bar = evaluate_gas(
             {"Ru": 1.0}, temperature, 1.0, pack, gas_species=("Ru",)
@@ -2423,11 +2437,13 @@ def test_pankratz_ru_vapor_pressure_matches_measured_source_range() -> None:
         assert pressure_bar == pytest.approx(measured_atm * 1.01325, rel=0.6)
 
 
-def test_pankratz_rh_absolute_k_and_printed_reaction_cells_close() -> None:
+def test_pankratz_rh_absolute_k_and_printed_reaction_cells_close(
+    packaged_gas_pack,
+) -> None:
     source = json.loads(
         (PUBLISHED_DATA / "pankratz-rh.json").read_text(encoding="utf-8")
     )["tables"]
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
 
     def gibbs(record: dict[str, object], temperature: float) -> float:
         node = next(row for row in record["nodes"] if row[0] == temperature)
@@ -2504,23 +2520,29 @@ def test_pankratz_rh_absolute_k_and_printed_reaction_cells_close() -> None:
         assert calculated == pytest.approx(printed_log_k, abs=0.001)
 
 
-def test_pankratz_rh_vapor_pressure_matches_measured_source_range() -> None:
+def test_pankratz_rh_vapor_pressure_matches_measured_source_range(
+    packaged_gas_pack,
+) -> None:
     pressure_bar = evaluate_gas(
-        {"Rh": 1.0}, 2000.0, 1.0, load_gas_datapack(), gas_species=("Rh",)
+        {"Rh": 1.0}, 2000.0, 1.0, packaged_gas_pack, gas_species=("Rh",)
     )["Rh"]
     measured_atm = 10.0 ** (6.894 - 27276.0 / 2000.0)
     assert pressure_bar == pytest.approx(measured_atm * 1.01325, rel=0.15)
 
 
-def test_burcat_ir_vapor_pressure_matches_measured_source_range() -> None:
+def test_burcat_ir_vapor_pressure_matches_measured_source_range(
+    packaged_gas_pack,
+) -> None:
     pressure_bar = evaluate_gas(
-        {"Ir": 1.0}, 2200.0, 1.0, load_gas_datapack(), gas_species=("Ir",)
+        {"Ir": 1.0}, 2200.0, 1.0, packaged_gas_pack, gas_species=("Ir",)
     )["Ir"]
     measured_atm = 10.0 ** (7.139 - 33337.0 / 2200.0)
     assert pressure_bar == pytest.approx(measured_atm * 1.01325, rel=0.15)
 
 
-def test_pankratz_rh_liquid_continuation_band_recomputes_from_source_limit() -> None:
+def test_pankratz_rh_liquid_continuation_band_recomputes_from_source_limit(
+    packaged_gas_pack,
+) -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = provenance["rows"]
     source = json.loads(
@@ -2545,11 +2567,11 @@ def test_pankratz_rh_liquid_continuation_band_recomputes_from_source_limit() -> 
         assert actual == pytest.approx(expected, abs=0.001)
 
     gas_continuation = evaluate_gas(
-        {"Rh": 1.0}, 2500.0, 1.0, load_gas_datapack(), gas_species=("Rh",),
+        {"Rh": 1.0}, 2500.0, 1.0, packaged_gas_pack, gas_species=("Rh",),
         allow_extrapolation=True,
     )
     parent_continuation = evaluate_gas(
-        {"Rh": 1.0}, 2700.0, 1.0, load_gas_datapack(), gas_species=("Rh",),
+        {"Rh": 1.0}, 2700.0, 1.0, packaged_gas_pack, gas_species=("Rh",),
         allow_extrapolation=True,
     )
     assert "flagged g-phase continuation" in gas_continuation.domain_flags["Rh"]
@@ -2660,10 +2682,12 @@ def test_thallium_pankratz_anchors_closure_and_printed_limits() -> None:
     )
 
 
-def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
+def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes(
+    packaged_gas_pack,
+) -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = [row for row in provenance["rows"] if row["table"] == "condensate"]
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
 
     def fitted_row(species_name: str, t_min: float) -> pd.Series:
         matches = pack.oxide_df.loc[
@@ -2875,7 +2899,7 @@ def test_trace_condensate_fits_match_janaf_and_nasa_source_nodes() -> None:
             for value in source_values
             if float(value["temperature"]["value"]) == 298.15
         )
-        condensate_rows = load_gas_datapack().oxide_df
+        condensate_rows = packaged_gas_pack.oxide_df
         assert all(
             float(row["dH298_R"]) * R_J_MOL_K
             == pytest.approx(source_anchor, abs=1.0e-12)
@@ -3176,7 +3200,9 @@ def test_constructed_parent_fit_nodes_are_only_self_fit_checks() -> None:
     assert all(float(row["_max_residual_J_per_mol"]) < 10.0 for row in direct_fits)
 
 
-def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
+def test_mno_liquid_fit_matches_the_redox_construction_and_band(
+    packaged_gas_pack,
+) -> None:
     inputs_path = ROOT / "data-src" / "liquid-from-solid-inputs.json"
     inputs = json.loads(inputs_path.read_text(encoding="utf-8"))
     redox_path = ROOT / "src" / "openimcc" / "data" / "packs" / (
@@ -3334,7 +3360,7 @@ def test_mno_liquid_fit_matches_the_redox_construction_and_band() -> None:
             assert item["table_id"] == "Mn-006"
             assert item["tier"] == 1
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     from openimcc.gas import _oxide_row_for_T
     from openimcc.redox_pack import load_redox_pack, species_gibbs_j_mol
 
@@ -3610,7 +3636,7 @@ def test_condensate_builder_reproduces_shipped_gibbs_values(tmp_path: Path) -> N
             assert g(actual) == pytest.approx(g(expected), abs=1.0e-6), (key, temperature)
 
 
-def test_runtime_provenance_mirror_matches_yaml() -> None:
+def test_runtime_provenance_mirror_matches_yaml(packaged_gas_pack) -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     candidate_v2_path = GAS_DATA / "gas-shomate-hight-candidate-v2.csv"
     candidate_v2_sha256 = hashlib.sha256(candidate_v2_path.read_bytes()).hexdigest()
@@ -3665,7 +3691,7 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
     expected_oxide["SiO2"] = "janaf_fitted"
     expected_table_ids["Na2O(l)"] = "Na-013"
     expected_table_ids["SiO2(l)"] = "O-038"
-    default_gas_rows = set(load_gas_datapack().gas_df.index)
+    default_gas_rows = set(packaged_gas_pack.gas_df.index)
     public_runtime_gas = {
         species: authority
         for species, authority in _GAS_PROVENANCE_AUTHORITY.items()
@@ -3689,6 +3715,7 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
 
 def test_standard_state_candidate_converts_only_documented_rows_and_continues_hg(
     tmp_path: Path,
+    packaged_gas_pack,
 ) -> None:
     gas_candidate_path = GAS_DATA / "gas-shomate-standard-state-candidate.csv"
     oxide_candidate_path = GAS_DATA / "condensate-standard-state-candidate.csv"
@@ -3811,7 +3838,7 @@ def test_standard_state_candidate_converts_only_documented_rows_and_continues_hg
             f"{expected_table_id} supercooled liquid through {endpoint} K"
         )
 
-    default_pack = load_gas_datapack()
+    default_pack = packaged_gas_pack
     candidate_pack = load_gas_datapack(str(gas_candidate_path), str(oxide_candidate_path))
     hg_row = candidate_pack.oxide_df.loc[["Hg(l)"]].iloc[0]
     hg_limit = float(hg_row["source_limit_K"])
@@ -3871,8 +3898,10 @@ def test_standard_state_candidate_converts_only_documented_rows_and_continues_hg
         assert "629.839 K source limit" in flag
 
 
-def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
-    pack = load_gas_datapack()
+def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     maxima: dict[str, tuple[float, float]] = {}
     for species, table_id in GAS_TABLE_IDS.items():
         source_rows = _complete_rows(table_id)
@@ -3915,8 +3944,10 @@ def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
     assert max(value[0] for value in maxima.values()) < 2.1
 
 
-def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None:
-    pack = load_gas_datapack()
+def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     low_provenance = {
         row["species_name"]: row
@@ -4039,8 +4070,8 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients() -> None
         assert max(log_residuals) < 0.01
 
 
-def test_low_and_high_gas_fits_are_continuous_at_1500_k() -> None:
-    pack = load_gas_datapack()
+def test_low_and_high_gas_fits_are_continuous_at_1500_k(packaged_gas_pack) -> None:
+    pack = packaged_gas_pack
     jumps = {}
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
         low = _gas_row_for_interval(pack, species, 2)
@@ -4055,7 +4086,9 @@ def test_low_and_high_gas_fits_are_continuous_at_1500_k() -> None:
     assert max(s_jump for _, s_jump in jumps.values()) < 0.01
 
 
-def test_k_gas_apparent_gibbs_uses_its_298_k_anchor_across_1032_k() -> None:
+def test_k_gas_apparent_gibbs_uses_its_298_k_anchor_across_1032_k(
+    packaged_gas_pack,
+) -> None:
     table_id = "K-005"
     source_rows = _complete_rows(table_id)
     reference = next(row for row in source_rows if row["temperature"] == 298.15)
@@ -4071,7 +4104,7 @@ def test_k_gas_apparent_gibbs_uses_its_298_k_anchor_across_1032_k() -> None:
         expected_1200, abs=1.0e-9
     )
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     low = _gas_row_for_interval(pack, "K", 2)
     for source_row in (at_1000, at_1200):
         temperature = source_row["temperature"]
@@ -4582,8 +4615,10 @@ def test_planted_entropy_jump_fails_same_ref_continuity() -> None:
     assert planted_failure[4] == pytest.approx(0.1, abs=1.0e-6)
 
 
-def test_new_low_gas_rows_have_source_fits_and_continuous_seams() -> None:
-    gas_pack = load_gas_datapack()
+def test_new_low_gas_rows_have_source_fits_and_continuous_seams(
+    packaged_gas_pack,
+) -> None:
+    gas_pack = packaged_gas_pack
     seam_species = (
         "HCl", "HF", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
         "NaF", "(NaF)2", "KF", "(KF)2", "Hg",
@@ -4757,8 +4792,10 @@ def _hand_nasa7_properties(record: dict, temperature: float) -> tuple[float, flo
     return cp_R, h_rt, s_R
 
 
-def test_nasa_rows_match_anchored_card_evaluation_and_2000_k_hand_check() -> None:
-    pack = load_gas_datapack()
+def test_nasa_rows_match_anchored_card_evaluation_and_2000_k_hand_check(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     lh84 = yaml.safe_load((LH84_DATA / "lh84.yaml").read_text(encoding="utf-8"))
     lh84_rows = {row["species_name"]: row for row in lh84["rows"]}
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
@@ -4825,8 +4862,8 @@ def test_nasa_rows_match_anchored_card_evaluation_and_2000_k_hand_check() -> Non
         )
 
 
-def test_nasa_low_rows_use_piecewise_cards_and_lh84_anchors() -> None:
-    pack = load_gas_datapack()
+def test_nasa_low_rows_use_piecewise_cards_and_lh84_anchors(packaged_gas_pack) -> None:
+    pack = packaged_gas_pack
     lh84 = yaml.safe_load((LH84_DATA / "lh84.yaml").read_text(encoding="utf-8"))
     lh84_rows = {row["species_name"]: row for row in lh84["rows"]}
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
@@ -4872,10 +4909,12 @@ def test_nasa_low_rows_use_piecewise_cards_and_lh84_anchors() -> None:
         assert abs(checks["breakpoint_checks"][0]["delta_S_J_per_mol_K"]) < 1.0e-6
 
 
-def test_na2o_liquid_to_gas_reaction_uses_new_gas_row_and_existing_condensate() -> None:
+def test_na2o_liquid_to_gas_reaction_uses_new_gas_row_and_existing_condensate(
+    packaged_gas_pack,
+) -> None:
     from openimcc.gas import _oxide_row_for_T
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     gas_row = _gas_row_for_interval(pack, "Na2O", 1)
     temperature = 2000.0
     oxide_row = _oxide_row_for_T(pack.oxide_df, "Na2O(l)", temperature)
@@ -4904,7 +4943,9 @@ def test_na2o_liquid_to_gas_reaction_uses_new_gas_row_and_existing_condensate() 
     assert gas_g - hand_liquid_g == pytest.approx(hand_reaction_g, abs=1e-3)
 
 
-def test_na_supercooled_parent_liquid_covers_low_gas_and_melt_activity() -> None:
+def test_na_supercooled_parent_liquid_covers_low_gas_and_melt_activity(
+    packaged_gas_pack,
+) -> None:
     from openimcc import evaluate as evaluate_imcc
 
     composition = {
@@ -4924,15 +4965,17 @@ def test_na_supercooled_parent_liquid_covers_low_gas_and_melt_activity() -> None
         {"Na2O": melt.activity("Na2O")},
         1200.0,
         1.0e-10,
-        load_gas_datapack(),
+        packaged_gas_pack,
         gas_species=("Na2O",),
     )
     assert gas["Na2O"] > 0.0
     assert "1405.2 K" in gas.domain_flags["Na2O"]
 
 
-def test_p2o5_liquid_rows_reproduce_jung_hudon_on_janaf_1bar_gas_references() -> None:
-    pack = load_gas_datapack()
+def test_p2o5_liquid_rows_reproduce_jung_hudon_on_janaf_1bar_gas_references(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     source = json.loads(
         (PUBLISHED_DATA / "jung-hudon-p2o5.json").read_text(encoding="utf-8")
     )
@@ -4974,7 +5017,9 @@ def test_p2o5_liquid_rows_reproduce_jung_hudon_on_janaf_1bar_gas_references() ->
         assert p2o5.source_table_id == "Jung-Hudon-2012"
 
 
-def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> None:
+def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row(
+    packaged_gas_pack,
+) -> None:
     """Fitted liquid rows reproduce their JANAF source, not just their fit.
 
     Premise: the runtime condensate form ``1000*R*dH298_R - R*T*P(T/1000)``
@@ -4986,7 +5031,7 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
     """
     from openimcc.gas import _lamor_gibbs
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     legacy_pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     recorded = {
@@ -5091,11 +5136,11 @@ def test_fitted_condensate_rows_reproduce_every_complete_janaf_g_app_row() -> No
         )
 
 
-def test_ba_sr_zr_janaf_liquids_fit_each_printed_node() -> None:
+def test_ba_sr_zr_janaf_liquids_fit_each_printed_node(packaged_gas_pack) -> None:
     """Direct liquid fits stay below the 10 J/mol gate on every source node."""
     from openimcc.gas import _lamor_gibbs
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     source_by_parent = {
         "BaO(l)": "Ba-035",
         "SrO(l)": "O-014",
@@ -5145,11 +5190,11 @@ def test_ba_sr_zr_janaf_liquids_fit_each_printed_node() -> None:
             )
 
 
-def test_nickel_cobalt_tsiv_liquid_fits_each_printed_node() -> None:
+def test_nickel_cobalt_tsiv_liquid_fits_each_printed_node(packaged_gas_pack) -> None:
     """TSIV liquid rows reproduce their tabulated nodes within 10 J/mol."""
     from openimcc.gas import _lamor_gibbs
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     cases = (
         ("NiO(l)", "Ni", "TSIV-2026", -239.700, 2228.0),
         ("CoO(l)", "Co", "TSIV-1334", -238.000, 2090.0),
@@ -6133,7 +6178,9 @@ def test_na_k_gas_anchor_and_parent_scale_bands_recompute() -> None:
     assert len(seen) == 10
 
 
-def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
+def test_mixed_compilation_pairs_have_disclosure_or_named_exception(
+    packaged_gas_pack,
+) -> None:
     """Every channel pair is sourced from provenance and has an explicit outcome."""
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     gas_rows = [row for row in provenance["rows"] if row["table"] == "gas"]
@@ -6267,7 +6314,7 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception() -> None:
     assert all(known_unbanded_mixed_ionization_pairs.values())
 
 
-    selected_gas = load_gas_datapack().gas_df
+    selected_gas = packaged_gas_pack.gas_df
     assert set(np.atleast_1d(selected_gas.loc["Th(g)", "Ref"])) == {
         "P672-Th-g", "P672-Th-g-CP-EXT-2500"
     }
@@ -6424,8 +6471,8 @@ def _janaf_log10_kf_nodes(table_id: str) -> set[float]:
     }
 
 
-def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
-    pack = load_gas_datapack()
+def test_fitted_ion_equilibria_match_janaf_log_kf_nodes(packaged_gas_pack) -> None:
+    pack = packaged_gas_pack
     ion_table_ids = {
         species.removesuffix("(g)"): table_id
         for species, table_id, *_ in (
@@ -6540,8 +6587,10 @@ def test_fitted_ion_equilibria_match_janaf_log_kf_nodes() -> None:
             ), (neutral, charged, temperature)
 
 
-def test_nasa_trace_ions_match_their_cards_and_neutral_ionisation_reactions() -> None:
-    pack = load_gas_datapack()
+def test_nasa_trace_ions_match_their_cards_and_neutral_ionisation_reactions(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     neutral_tables = {
         source[0].removesuffix("(g)"): source[1]
         for source in (
@@ -6644,8 +6693,8 @@ def test_cu2o_liquid_source_comparison_uses_gibbs_energy() -> None:
     assert tail["tail_source_path"] == "data-src/nasa-glenn/NG-1844.json"
 
 
-def test_nasa_anchored_rows_match_direct_card_evaluation() -> None:
-    _assert_nasa_anchored_rows_match_direct_card_evaluation()
+def test_nasa_anchored_rows_match_direct_card_evaluation(packaged_gas_pack) -> None:
+    _assert_nasa_anchored_rows_match_direct_card_evaluation(packaged_gas_pack)
 
 
 def test_nasa_header_columns_and_molecular_weights_match_formulas() -> None:
@@ -7033,7 +7082,10 @@ def test_burcat_pt_minus_retains_its_printed_anchor_and_card_residual() -> None:
 
 
 @pytest.mark.parametrize("element", tuple(_SAHA_LEVELS))
-def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
+def test_every_m_plus_matches_saha_with_level_populations(
+    element: str,
+    packaged_gas_pack,
+) -> None:
     """Check every packaged atomic cation against the Saha equation.
 
     For M = M+ + e-,
@@ -7052,7 +7104,7 @@ def test_every_m_plus_matches_saha_with_level_populations(element: str) -> None:
     by orders of magnitude.
     """
     ionisation_eV, neutral_levels, ion_levels = _SAHA_LEVELS[element]
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     atomic_pairs = {
         neutral
         for neutral, ion in _GAS_IONIZATION_PAIRS
@@ -7359,11 +7411,11 @@ _ATOMIC_ANION_ELEMENTS = (
 _UNCHECKED_MOLECULAR_ANIONS = ("AlO", "AlO2", "BO", "BO2", "KO", "LiO", "NaO", "O2")
 
 
-def test_gas_table_atomic_anion_inventory() -> None:
+def test_gas_table_atomic_anion_inventory(packaged_gas_pack) -> None:
     """Keep every checked atomic row and unchecked molecular row enumerated."""
     packaged = {
         name
-        for name in load_gas_datapack().gas_df.index.unique()
+        for name in packaged_gas_pack.gas_df.index.unique()
         if name.endswith("-(g)") and name != "e-(g)"
     }
     atomic = {f"{element}-(g)" for element in _ATOMIC_ANION_ELEMENTS}
@@ -7381,7 +7433,10 @@ def test_gas_table_atomic_anion_inventory() -> None:
     "element",
     ("Al", "B", "Co", "Cr", "Cs", "Cu", "Fe", "Ga", "Hf", "K", "Li", "Mo", "Na", "Nb", "Ni", "O", "Pb", "Rb", "Si", "Ti", "V", "W", "Zr"),
 )
-def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
+def test_atomic_anion_fits_match_electron_attachment(
+    element: str,
+    packaged_gas_pack,
+) -> None:
     """Compare fitted attachment Kp with the NIST ground-state affinity.
 
     Al, B, Cr, Cs, Cu, Fe, K, Li, Na, Nb, O, Pb, Rb, Si, Ti, and V
@@ -7400,7 +7455,7 @@ def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
     adding the NIST low-lying levels changes only the population factors.
     """
     affinity_eV, neutral_levels, anion_levels = _ATTACHMENT_LEVELS[element]
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     attachment = f"{element}-(g)"
     k_b = 1.380649e-23
     h = 6.62607015e-34
@@ -7482,7 +7537,7 @@ def test_atomic_anion_fits_match_electron_attachment(element: str) -> None:
         ), element
 
 
-def test_cr_channels_against_janaf_cells() -> None:
+def test_cr_channels_against_janaf_cells(packaged_gas_pack) -> None:
     """Cr channels against an independent 2200 K calculation from JANAF cells.
 
     The reference uses each table's own dfH(298), H-H(298) and S columns, the
@@ -7498,7 +7553,7 @@ def test_cr_channels_against_janaf_cells() -> None:
     parent_activity = 1.0e-3
     fO2 = 1.0e-10
     gas_species = ("Cr", "CrO", "CrO2", "CrO3")
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     pressures = evaluate_gas(
         {"Cr2O3": parent_activity},
         T,
@@ -7978,13 +8033,12 @@ def test_sf04_condensate_rows_match_the_current_published_coefficients(
 
 
 @pytest.mark.slow
-def test_v2o3_refit_changes_only_its_outputs_and_uses_liquid_boundary() -> None:
+def test_v2o3_refit_changes_only_its_outputs_and_uses_liquid_boundary(
+    packaged_gas_pack,
+) -> None:
     from openimcc.gas import _oxide_row_for_T, evaluate_gas
 
-    pack = load_gas_datapack(
-        gas_path=GAS_DATA / "gas-shomate.csv",
-        oxide_path=GAS_DATA / "condensate.csv",
-    )
+    pack = packaged_gas_pack
     v_rows = pack.oxide_df.loc["V2O3(l)"]
     high = v_rows.loc[v_rows["T_min"].astype(int) == 1700].iloc[0].copy()
     continuation = v_rows.loc[v_rows["T_min"].astype(int) == 1200].iloc[0].copy()
@@ -8091,10 +8145,12 @@ def test_corrected_al2o3_liquid_matches_janaf_al100(sf04_gas_pack) -> None:
         ) / 1000.0 < 0.5
 
 
-def test_nb_low_condensate_interval_uses_liquid_rows_and_keeps_seam() -> None:
+def test_nb_low_condensate_interval_uses_liquid_rows_and_keeps_seam(
+    packaged_gas_pack,
+) -> None:
     from openimcc.gas import _lamor_gibbs, _oxide_row_for_T
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     rows = pack.oxide_df.loc[["NbO2(l)"]]
     low = rows.loc[rows["T_min"].astype(float) == 1200.0].iloc[0]
     high = rows.loc[rows["T_min"].astype(float) == 1500.0].iloc[0]
@@ -8400,7 +8456,9 @@ def _assert_snol_constant_cp_continuation_uses_the_nasa_liquid_anchor() -> None:
 
 
 @pytest.mark.slow
-def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
+def test_every_constant_cp_continuation_preserves_cp_and_the_seam(
+    packaged_gas_pack,
+) -> None:
     """Continuation fits preserve their source Cp, H/S/G anchors, and seams.
 
     The Shomate Gibbs polynomial implies Cp/R = 2*B*tau + 6*C*tau^2 +
@@ -8410,7 +8468,7 @@ def test_every_constant_cp_continuation_preserves_cp_and_the_seam() -> None:
     """
     from openimcc.gas import _lamor_gibbs
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     generated_rows = [
         row
         for row in build_gas_tables.build_condensate_rows(JANAF_DATA)
@@ -8536,11 +8594,11 @@ def test_cu020_malformed_1600_row_is_excluded_from_the_fit() -> None:
     ]
 
 
-def _assert_nasa_anchored_rows_match_direct_card_evaluation() -> None:
+def _assert_nasa_anchored_rows_match_direct_card_evaluation(packaged_gas_pack) -> None:
     """NASA-anchored rows match direct card G; all other NASA sources are listed."""
     from openimcc.gas import _lamor_gibbs
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     def row_key(record):
         return (
@@ -8764,7 +8822,7 @@ def _reaction_source_series(
     return n_gas, n_o2, common_temperatures, independent_reactions, source_parent_app
 
 
-def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
+def test_g2_reaction_convention_at_complete_janaf_nodes(packaged_gas_pack) -> None:
     """Check the gas convention only where every source table has a row.
 
     Premise: JANAF's formation-Gibbs column and the fitted apparent-Gibbs
@@ -8775,7 +8833,7 @@ def test_g2_reaction_convention_at_complete_janaf_nodes() -> None:
     complete, non-ambiguous source node. Unit check: all values are J/mol.
     Sanity: a reference-state bias of 100 J/mol cannot hide behind a grid chord.
     """
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     checked = 0
     maxima: dict[str, float] = {}
     for species in _SF04_REACTIONS:
@@ -8852,7 +8910,7 @@ _G2_SOURCE_HOLES = (
 )
 
 
-def test_g2_reaction_convention_on_workbook_grid() -> None:
+def test_g2_reaction_convention_on_workbook_grid(packaged_gas_pack) -> None:
     """Use the workbook grid as coverage evidence, including interpolation.
 
     This is deliberately a looser ``< 320 J/mol`` gate, set from the measured
@@ -8870,7 +8928,7 @@ def test_g2_reaction_convention_on_workbook_grid() -> None:
     for _oxide, table_id, temperature in _G2_SOURCE_HOLES:
         assert temperature in _ambiguous_temperatures(table_id)
 
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     checked = 0
     missing: set[tuple[str, float]] = set()
     maxima: dict[str, float] = {}
@@ -9069,8 +9127,8 @@ def test_legacy_k_row_differs_from_janaf_source_by_about_663_j_per_mol() -> None
     not (VAPOROCK_GAS.is_file() and VAPOROCK_OXIDE.is_file()),
     reason="controller-supplied VapoRock checkout is unavailable for G3",
 )
-def test_g3_new_tables_are_finite_against_current_vaporock() -> None:
-    new_pack = load_gas_datapack()
+def test_g3_new_tables_are_finite_against_current_vaporock(packaged_gas_pack) -> None:
+    new_pack = packaged_gas_pack
     old_pack = load_gas_datapack(gas_path=VAPOROCK_GAS, oxide_path=VAPOROCK_OXIDE)
     compositions = [
         {oxide: 1.0 for oxide in ("SiO2", "MgO", "FeO", "CaO", "Al2O3", "Na2O", "K2O")},
@@ -9177,6 +9235,7 @@ def load_and_evaluate(pack, activities, temperature, fugacity, species):
 
 def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation(
     sf04_gas_pack,
+    packaged_gas_pack,
 ) -> None:
     pack = sf04_gas_pack
     assert isinstance(species_thermo("O2", "g", 1500.0, pack), SpeciesThermo)
@@ -9199,10 +9258,10 @@ def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation(
     liquid = species_thermo("SiO2", "l", 2000.0, pack)
     crystal = species_thermo("SiO2", "cr", 1500.0, pack)
     default_crystal = species_thermo(
-        "SiO2", "cr", 1500.0, load_gas_datapack()
+        "SiO2", "cr", 1500.0, packaged_gas_pack
     )
     feo_liquid = species_thermo("FeO", "l", 2200.0, pack)
-    default_feo = species_thermo("FeO", "l", 2200.0, load_gas_datapack())
+    default_feo = species_thermo("FeO", "l", 2200.0, packaged_gas_pack)
     legacy_feo = species_thermo(
         "FeO", "l", 2200.0,
         load_gas_datapack(oxide_path=GAS_DATA / "condensate-feo-janaf-legacy.csv"),
@@ -9246,21 +9305,25 @@ def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation(
         species_thermo("SiO2", "l", 1199.0, pack)
 
 
-def test_default_gas_channels_is_the_public_wrapper_for_private_selector() -> None:
-    pack = load_gas_datapack()
+def test_default_gas_channels_is_the_public_wrapper_for_private_selector(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     parents = ("Na2O", "TiO2")
     assert default_gas_channels(parents, pack) == _default_reactions(parents, pack)
     assert default_gas_channels(parents) == _default_reactions(parents, pack)
     assert default_gas_channels((), pack) == _default_reactions((), pack)
 
 
-def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> None:
+def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell(
+    packaged_gas_pack,
+) -> None:
     """Gate every packaged JANAF gas row at each complete in-range JANAF node.
 
     H_app is dfH298 + H−H298, exactly the enthalpy represented by the stored
     Shomate row. Residual limits are rounded just above measured worst fits.
     """
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     checked_rows = 0
     checked_nodes = 0
     per_row_max = {}
@@ -9333,8 +9396,10 @@ def test_public_species_thermo_matches_every_in_interval_janaf_gas_cell() -> Non
     assert len(per_row_max) == checked_rows
 
 
-def test_public_species_thermo_matches_every_janaf_condensate_interval() -> None:
-    pack = load_gas_datapack()
+def test_public_species_thermo_matches_every_janaf_condensate_interval(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     legacy_pack = load_gas_datapack(oxide_path=LEGACY_JANAF_CONDENSATE)
     feo_legacy_pack = load_gas_datapack(
         oxide_path=GAS_DATA / "condensate-feo-janaf-legacy.csv"

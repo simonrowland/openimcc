@@ -5,7 +5,7 @@ import math
 import pytest
 
 from openimcc import Cr3TraceActivity, cr3_trace_activity
-from openimcc.gas import IMCC_PARENT_OXIDES, evaluate_gas, load_gas_datapack
+from openimcc.gas import IMCC_PARENT_OXIDES, evaluate_gas
 
 
 _COMP_MOL_B1 = {"CaO": 1.0 / 56.0774, "SiO2": 1.0 / 60.0843}
@@ -167,7 +167,7 @@ def test_temperature_and_fugacity_outside_measured_hull_are_refused():
         cr3_trace_activity(_COMP_MOL_B1, _T_K, 10.0**-12.0 * 1.01325, 0.001)
 
 
-def test_existing_eight_parent_gas_outputs_and_cr2o3_pass_through():
+def test_existing_eight_parent_gas_outputs_and_cr2o3_pass_through(packaged_gas_pack):
     assert IMCC_PARENT_OXIDES == (
         "SiO2",
         "MgO",
@@ -178,7 +178,7 @@ def test_existing_eight_parent_gas_outputs_and_cr2o3_pass_through():
         "Na2O",
         "K2O",
     )
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     activities = {
         "SiO2": 0.4,
         "CaO": 0.2,

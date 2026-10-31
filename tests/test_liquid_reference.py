@@ -14,7 +14,6 @@ from openimcc import (
     evaluate_gas,
     liquid_reference_authority,
     liquid_reference_records,
-    load_gas_datapack,
 )
 
 
@@ -193,7 +192,7 @@ def test_sodium_oxide_authority_windows_and_boundaries() -> None:
     assert "47.7 +/- 2.5 kJ/mol" in evidence
 
 
-def test_public_records_round_trip_and_gas_result_notice() -> None:
+def test_public_records_round_trip_and_gas_result_notice(packaged_gas_pack) -> None:
     records = liquid_reference_records()
     assert {record.species for record in records} == {
         "SiO2(l)", "K2O(l)", "CaO(l)", "MgO(l)", "FeO(l)",
@@ -207,7 +206,7 @@ def test_public_records_round_trip_and_gas_result_notice() -> None:
         resolved = liquid_reference_authority(record.species, temperature)
         assert resolved.certified_T_K == record.certified_T_K
         assert resolved.evidence_ref == record.evidence_ref
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     certified = evaluate_gas({"SiO2": 1.0}, 1500, 1e-8, pack)
     assert all("SiO2(l)" not in (flag or "") for flag in certified.domain_flags.values())
     binary_alkali_silica = evaluate_gas(
@@ -308,8 +307,8 @@ def test_public_records_round_trip_and_gas_result_notice() -> None:
     assert "-0.38 dex at 12-20 wt% K2O" in scope_notice.message
 
 
-def test_halide_side_parent_uses_liquid_authority_lookup() -> None:
-    pack = load_gas_datapack()
+def test_halide_side_parent_uses_liquid_authority_lookup(packaged_gas_pack) -> None:
+    pack = packaged_gas_pack
     result = evaluate_gas(
         {"Na2O": 1.0, "Cl2": 1.0}, 1600, 1e-8, pack,
         parent_oxides=("Na2O", "Cl2"), gas_species=("NaCl",),
@@ -322,8 +321,8 @@ def test_halide_side_parent_uses_liquid_authority_lookup() -> None:
     assert result.domain_flags["NaCl"] is None
 
 
-def test_extrapolated_window_and_corroborated_window_notice() -> None:
-    pack = load_gas_datapack()
+def test_extrapolated_window_and_corroborated_window_notice(packaged_gas_pack) -> None:
+    pack = packaged_gas_pack
     extrapolated = evaluate_gas(
         {"SiO2": 1.0}, 1000, 1e-8, pack,
         gas_species=("SiO",), allow_extrapolation=True,

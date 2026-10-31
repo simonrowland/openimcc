@@ -24,6 +24,14 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 @pytest.fixture(scope="session")
+def packaged_gas_pack():
+    """Load the packaged gas and condensate tables once for read-only tests."""
+    from openimcc.gas import load_gas_datapack
+
+    return load_gas_datapack()
+
+
+@pytest.fixture(scope="session")
 def sf04_gas_pack():
     """Load the preserved LAM parent rows with the shared JANAF gas table."""
     from openimcc.gas import load_gas_datapack

@@ -64,8 +64,10 @@ def _marker_cases():
     return tuple(cases)
 
 
-def test_source_liquid_marker_derivation_finds_exact_expected_names() -> None:
-    pack = load_gas_datapack()
+def test_source_liquid_marker_derivation_finds_exact_expected_names(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     assert set(_derived_source_supercooled_liquid_markers(pack)) == (
         EXPECTED_SOURCE_SUPERCOOLED_LIQUIDS
     )
@@ -75,8 +77,10 @@ def test_source_liquid_marker_derivation_finds_exact_expected_names() -> None:
     assert "FeO(l)" in _derived_source_supercooled_liquid_markers(legacy)
 
 
-def test_feo_redox_fit_range_flags_default_without_ref_matching() -> None:
-    pack = load_gas_datapack()
+def test_feo_redox_fit_range_flags_default_without_ref_matching(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     feo_row = pack.oxide_df.loc["FeO(l)"]
     result = evaluate_gas(
         {"FeO": 1.0e-3}, 1200.0, 1.0e-8, pack,
@@ -122,9 +126,13 @@ def test_feo_redox_fit_range_flags_default_without_ref_matching() -> None:
     ids=lambda value: value if isinstance(value, str) else None,
 )
 def test_source_tabulated_liquid_branches_use_source_thresholds(
-    species: str, marker: dict, row, temperature: float
+    species: str,
+    marker: dict,
+    row,
+    temperature: float,
+    packaged_gas_pack,
 ) -> None:
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     parent = species.removesuffix("(l)")
     channel = next(
         name for name, reaction in _SF04_REACTIONS.items()
@@ -170,11 +178,13 @@ def test_source_tabulated_liquid_branches_use_source_thresholds(
     (("PbO(l)", 1100.0), ("B2O3(l)", 700.0), ("MoO3(l)", 1000.0)),
 )
 def test_supercooled_branch_flag_is_silent_below_the_packaged_row_floor(
-    species: str, temperature: float
+    species: str,
+    temperature: float,
+    packaged_gas_pack,
 ) -> None:
     # These rows begin at 1200 K, above or near their fusion markers, so no
     # source-tabulated supercooled cells exist below that floor.
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     parent = species.removesuffix("(l)")
     channel = next(
         name for name, reaction in _SF04_REACTIONS.items()
@@ -244,9 +254,13 @@ def _row_at(pack, row_name: str, phase: str, temperature: float):
     ),
 )
 def test_source_model_flags_keep_text_after_source_swap(
-    row_name: str, phase: str, temperature: float, expected: str
+    row_name: str,
+    phase: str,
+    temperature: float,
+    expected: str,
+    packaged_gas_pack,
 ) -> None:
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     row = _row_at(pack, row_name, phase, temperature).copy()
     assert _source_model_flag(row_name, temperature, row, phase=phase) == expected
 
@@ -254,8 +268,10 @@ def test_source_model_flags_keep_text_after_source_swap(
     assert _source_model_flag(row_name, temperature, row, phase=phase) == expected
 
 
-def test_lfs_supercooled_flag_uses_typed_fusion_temperature_after_source_swap() -> None:
-    pack = load_gas_datapack()
+def test_lfs_supercooled_flag_uses_typed_fusion_temperature_after_source_swap(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     row = _row_at(pack, "MnO(l)", "l", 1800.0).copy()
     expected = (
         "MnO(l) uses a supercooled liquid_from_solid branch below the "
@@ -266,8 +282,8 @@ def test_lfs_supercooled_flag_uses_typed_fusion_temperature_after_source_swap() 
     assert _supercooled_liquid_from_solid_flag("MnO(l)", 1800.0, row) == expected
 
 
-def test_supercooled_constant_cp_flag_survives_ref_swap() -> None:
-    pack = load_gas_datapack()
+def test_supercooled_constant_cp_flag_survives_ref_swap(packaged_gas_pack) -> None:
+    pack = packaged_gas_pack
     oxide = pack.oxide_df.copy(deep=True)
     oxide.loc[oxide.index == "TiO2(l)", "Ref"] = "SOURCE-SWAP-PROBE"
     swapped = ImccGasDatapack(
@@ -281,8 +297,8 @@ def test_supercooled_constant_cp_flag_survives_ref_swap() -> None:
     assert set(result.domain_flags.values()) == {expected}
 
 
-def test_row_without_typed_validity_columns_fails_loud() -> None:
-    pack = load_gas_datapack()
+def test_row_without_typed_validity_columns_fails_loud(packaged_gas_pack) -> None:
+    pack = packaged_gas_pack
     row = _row_at(pack, "Hg(l)", "l", 1400.0).drop(
         labels=["validity_kind", "continuation_kind", "cp_extension", "construction_method",
                 "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
@@ -295,8 +311,10 @@ def test_row_without_typed_validity_columns_fails_loud() -> None:
         _source_model_flag("Hg(l)", 1400.0, row, phase="l")
 
 
-def test_source_validity_survives_refit_and_source_swap_on_every_coverage_row() -> None:
-    pack = load_gas_datapack()
+def test_source_validity_survives_refit_and_source_swap_on_every_coverage_row(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     coverage_rows = 0
     for phase, table in (("g", pack.gas_df), ("l", pack.oxide_df)):
         for row_name, rows in table.groupby(level=0, sort=False):
@@ -326,8 +344,10 @@ def test_source_validity_survives_refit_and_source_swap_on_every_coverage_row() 
     assert coverage_rows == 263
 
 
-def test_mno_multi_interval_lfs_refit_keeps_typed_supercooled_flag() -> None:
-    pack = load_gas_datapack()
+def test_mno_multi_interval_lfs_refit_keeps_typed_supercooled_flag(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     rows = pack.oxide_df.loc["MnO(l)"]
     assert len(rows) == 3
     expected = (

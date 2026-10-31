@@ -548,6 +548,7 @@ def _partial_pressure_fixture(path: Path, points: list[dict]) -> Path:
 
 def test_partial_pressure_uses_parent_basis_and_converts_bar_to_pa(
     tmp_path: Path,
+    packaged_gas_pack,
 ) -> None:
     fixture = _partial_pressure_fixture(
         tmp_path / "bench.yaml",
@@ -565,13 +566,13 @@ def test_partial_pressure_uses_parent_basis_and_converts_bar_to_pa(
     pack = load_datapack(DATAPACK_PATH)
     imcc = evaluate(dict(_K_CMAS_WT), 1800.0, pack, basis_type="wt")
     activities = dict(zip(imcc.parent_oxides, imcc.parent_activity))
-    from openimcc.gas import evaluate_gas, load_gas_datapack
+    from openimcc.gas import evaluate_gas
 
     gas_bar = evaluate_gas(
         activities,
         1800.0,
         1.0e-10,
-        load_gas_datapack(),
+        packaged_gas_pack,
         gas_species=("K",),
     )["K"]
     # The literal is deliberate: this test turns red if the named conversion

@@ -63,8 +63,10 @@ def test_default_tables_remain_byte_identical_and_candidate_prefixes_match() -> 
         )
 
 
-def test_candidate_tables_load_and_preserve_gas_and_liquid_seams() -> None:
-    default = load_gas_datapack()
+def test_candidate_tables_load_and_preserve_gas_and_liquid_seams(
+    packaged_gas_pack,
+) -> None:
+    default = packaged_gas_pack
     candidate = load_gas_datapack(str(GAS_CANDIDATE), str(OXIDE_CANDIDATE))
 
     for species, *_ in build_gas_tables.HIGH_TEMP_GAS_CARDS:
@@ -106,8 +108,8 @@ def test_candidate_tables_load_and_preserve_gas_and_liquid_seams() -> None:
     _assert_close(gb + 3000.0 * sb, gh + 3000.0 * sh)
 
 
-def test_candidate_results_match_defaults_below_3000_k() -> None:
-    default = load_gas_datapack()
+def test_candidate_results_match_defaults_below_3000_k(packaged_gas_pack) -> None:
+    default = packaged_gas_pack
     candidate = load_gas_datapack(str(GAS_CANDIDATE), str(OXIDE_CANDIDATE))
     base = evaluate_gas(ACTIVITIES, 2500.0, 1.0e-10, default)
     high = evaluate_gas(ACTIVITIES, 2500.0, 1.0e-10, candidate)
@@ -149,7 +151,7 @@ def test_high_temperature_gas_and_basalt_melt_runs_are_flagged() -> None:
         assert any("rough high-temperature extension" in (flag or "") for flag in result.domain_flags.values())
 
 
-def test_v2_candidate_loads_preserves_prefixes_and_all_seams() -> None:
+def test_v2_candidate_loads_preserves_prefixes_and_all_seams(packaged_gas_pack) -> None:
     default_gas = ROOT / "src/openimcc/data/gas/gas-shomate.csv"
     default_oxide = ROOT / "src/openimcc/data/gas/condensate.csv"
     v1_gas = ROOT / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv"
@@ -163,7 +165,7 @@ def test_v2_candidate_loads_preserves_prefixes_and_all_seams() -> None:
         assert v1.read_bytes().splitlines()[:len(lines)] == lines
         assert v2.read_bytes().splitlines()[:len(lines)] == lines
 
-    default = load_gas_datapack()
+    default = packaged_gas_pack
     v2 = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
     for species, *_ in build_gas_tables.HIGH_TEMP_GAS_CARDS:
         base = default.gas_df.loc[species].sort_values("T_min").iloc[-1]
@@ -313,9 +315,11 @@ def test_v2_candidate_ions_cover_6000_k_and_close_charge_for_k_bearing_melt() ->
         assert abs(residual) <= 1.0e-12 * scale
 
 
-def test_v2_major_ion_rows_cover_298_to_6000_k_and_join_at_3000() -> None:
+def test_v2_major_ion_rows_cover_298_to_6000_k_and_join_at_3000(
+    packaged_gas_pack,
+) -> None:
     candidate = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
-    default = load_gas_datapack()
+    default = packaged_gas_pack
     new_ions = {"Al+(g)", "Fe+(g)", "Mg+(g)", "Si+(g)", "Ti+(g)", "Cr+(g)"}
     for species, _card, _table, _cation, _cat_num, _oxy_num in build_gas_tables.HIGH_TEMP_V2_ION_CARDS:
         rows = candidate.gas_df.loc[[species]].sort_values("T_min")
@@ -333,8 +337,11 @@ def test_v2_major_ion_rows_cover_298_to_6000_k_and_join_at_3000() -> None:
         _assert_close(float(low_h - 3000.0 * low_s), float(high_h - 3000.0 * high_s))
 
 
-def test_default_ion_outputs_match_the_pre_expansion_pair_set(monkeypatch) -> None:
-    default = load_gas_datapack()
+def test_default_ion_outputs_match_the_pre_expansion_pair_set(
+    monkeypatch,
+    packaged_gas_pack,
+) -> None:
+    default = packaged_gas_pack
     expanded_pairs = gas_module._GAS_IONIZATION_PAIRS
     added_pairs = tuple(
         pair for pair in expanded_pairs

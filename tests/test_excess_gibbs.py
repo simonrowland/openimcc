@@ -351,6 +351,7 @@ def test_public_kernel_refuses_excess_candidate_and_loaded_adapter_applies_it(
 @pytest.mark.parametrize(
     "components", [("FeO", "Fe2SiO4"), ("FeO", "SiO2")]
 )
+@pytest.mark.slow
 def test_species_pair_trace_parent_cold_start_and_zero_limit(
     tmp_path: Path, components: tuple[str, str]
 ) -> None:

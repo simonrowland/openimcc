@@ -149,8 +149,8 @@ def _neutral_oxide_sources(
 
 def _evaluated_public_c2_species(
     source_candidates: dict[str, tuple[str, str]],
+    pack,
 ) -> set[str]:
-    pack = load_gas_datapack()
     evaluated = set()
     for element, species in source_candidates.values():
         if element == "Ce" and species == "CeO2":
@@ -216,7 +216,9 @@ def _assert_c2_candidate_coverage(
 
 
 @pytest.mark.slow
-def test_janaf_neutral_oxide_sources_are_included_or_measured_screens() -> None:
+def test_janaf_neutral_oxide_sources_are_included_or_measured_screens(
+    packaged_gas_pack,
+) -> None:
     """Use data-src plus checked-in candidates; no JANAF manifest exists."""
     source_candidates = _neutral_oxide_sources()
     assert all(
@@ -226,17 +228,19 @@ def test_janaf_neutral_oxide_sources_are_included_or_measured_screens() -> None:
     _assert_c2_candidate_coverage(
         source_candidates,
         ELEMENT_STATUS,
-        _evaluated_public_c2_species(source_candidates),
+        _evaluated_public_c2_species(source_candidates, packaged_gas_pack),
     )
 
 
-def test_janaf_b2_and_cs2_neutral_dimers_are_below_the_gas_share_cutoff() -> None:
+def test_janaf_b2_and_cs2_neutral_dimers_are_below_the_gas_share_cutoff(
+    packaged_gas_pack,
+) -> None:
     """Keep JANAF elemental dimers screened without adding runtime rows."""
     cases = (
         ("B", "B2O3", "B-083", "B-096", 1.5, "d4b699aefa6a314b1318638581f9aab10a32c8ec85173afc17df2b7a2874ed09", 3.835911646719254e-6, (2600.0, 1.0e-12)),
         ("Cs", "Cs2O", "Cs-018", "NG-1842", 0.5, "8ece1162a62bc74f2c47f145590897c1fe9baf1cc76362ced4f34762d5620d3b", 4.866283621514257e-23, (1200.0, 1.0e-12)),
     )
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     for element, parent, gas_table, parent_table, n_o2, source_sha, expected, location in cases:
         record = _record(gas_table)
         entry = record["table"]["index_entry"]
@@ -303,7 +307,7 @@ def test_text_neutral_oxide_source_is_scanned(tmp_path: Path) -> None:
     assert _neutral_oxide_sources(tmp_path) == {"SiO3": ("Si", "SiO3")}
 
 
-def test_unscreened_fixture_candidate_is_rejected() -> None:
+def test_unscreened_fixture_candidate_is_rejected(packaged_gas_pack) -> None:
     fixture_dir = ROOT / "tests" / "fixtures" / "janaf-c2"
     source_candidates = _neutral_oxide_sources(fixture_dir)
     statuses = {
@@ -316,7 +320,7 @@ def test_unscreened_fixture_candidate_is_rejected() -> None:
             {"MnO": 1.0},
             2200.0,
             1.0e-10,
-            load_gas_datapack(),
+            packaged_gas_pack,
             parent_oxides=("MnO",),
             gas_species=("MnO2",),
         )
@@ -324,7 +328,7 @@ def test_unscreened_fixture_candidate_is_rejected() -> None:
         _assert_c2_candidate_coverage(
             source_candidates,
             statuses,
-            _evaluated_public_c2_species(source_candidates),
+            _evaluated_public_c2_species(source_candidates, packaged_gas_pack),
         )
 
 
@@ -332,8 +336,7 @@ def _caller_parent_activities() -> dict[str, float]:
     return {"Cr2O3": 1.0e-3, "V2O3": 1.0e-3, "NbO2": 1.0e-3}
 
 
-def _screen_maxima() -> dict[str, dict[str, dict[str, float | str]]]:
-    pack = load_gas_datapack()
+def _screen_maxima(pack) -> dict[str, dict[str, dict[str, float | str]]]:
     activities = _caller_parent_activities()
     maxima = {element: {} for element in SCREEN_SPECIES}
     for temperature in TEMPERATURES_K:
@@ -361,8 +364,8 @@ def _screen_maxima() -> dict[str, dict[str, dict[str, float | str]]]:
     return maxima
 
 
-def test_cr_v_nb_screen_ratios_match_the_status_source() -> None:
-    measured = _screen_maxima()
+def test_cr_v_nb_screen_ratios_match_the_status_source(packaged_gas_pack) -> None:
+    measured = _screen_maxima(packaged_gas_pack)
     for element, species_rows in measured.items():
         recorded = ELEMENT_STATUS[element]["c2_screen_maxima"]
         assert set(recorded) == set(species_rows)
@@ -1498,7 +1501,8 @@ def _c4_rows_cover_domain(
     return coverage_end >= domain_end
 
 
-def test_status_criteria_and_melt_basis_are_consistent() -> None:
+@pytest.mark.slow
+def test_status_criteria_and_melt_basis_are_consistent(packaged_gas_pack) -> None:
     expected_elements = {
         "O", "Si", "Mg", "Fe", "Ca", "Al", "Ti", "Na", "K",
         "Cr", "V", "Nb", "Li", "Rb", "Pb", "Ga", "Ge", "B", "In",
@@ -1604,7 +1608,7 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
     }
     melt = evaluate_imcc(README_BASALT, 1800.0, basis_type="wt")
     parent_oxides = set(melt.parent_oxides)
-    gas_pack = load_gas_datapack()
+    gas_pack = packaged_gas_pack
     measured_ions = _ion_bound_maxima()
     source_candidates = _neutral_oxide_sources()
     recorded_candidates = {
@@ -1662,10 +1666,10 @@ def test_status_criteria_and_melt_basis_are_consistent() -> None:
             assert status["status"] == _status_is_complete(status), element
 
 
-def test_re_and_os_metal_parents_cover_c4() -> None:
+def test_re_and_os_metal_parents_cover_c4(packaged_gas_pack) -> None:
     assert ELEMENT_STATUS["Re"]["criteria"]["C4"] is True
     assert ELEMENT_STATUS["Os"]["criteria"]["C4"] is True
-    pack = load_gas_datapack()
+    pack = packaged_gas_pack
     assert _c4_rows_cover_domain(
         "Re", {}, pack, {"Re": "Re"}
     )

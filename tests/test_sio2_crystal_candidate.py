@@ -11,8 +11,10 @@ GAS = ROOT / "src/openimcc/data/gas"
 CRYSTAL_CANDIDATE = GAS / "condensate-sio2-janaf-cr-candidate.csv"
 
 
-def test_janaf_cristobalite_candidate_closes_against_the_existing_liquid() -> None:
-    default = load_gas_datapack()
+def test_janaf_cristobalite_candidate_closes_against_the_existing_liquid(
+    packaged_gas_pack,
+) -> None:
+    default = packaged_gas_pack
     candidate = load_gas_datapack(
         gas_path=GAS / "gas-shomate.csv", oxide_path=CRYSTAL_CANDIDATE
     )

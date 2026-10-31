@@ -224,14 +224,16 @@ def test_d066_v2_packs_preserve_v1_k_row_translations() -> None:
     ],
 )
 def test_translation_tool_reproduces_each_shipped_d066_pack(
-    source_path: Path, arm: str, output_path: Path,
+    source_path: Path,
+    arm: str,
+    output_path: Path,
+    packaged_gas_pack,
+    sf04_gas_pack,
 ) -> None:
     from tools.translate_k_constants import translate_k_rows
 
-    new_reference = load_gas_datapack()
-    lam_reference = load_gas_datapack(
-        oxide_path=PACK_DIR / "sf04-published/condensate.csv"
-    )
+    new_reference = packaged_gas_pack
+    lam_reference = sf04_gas_pack
     generated = translate_k_rows(
         json.loads(source_path.read_text(encoding="utf-8")),
         new_reference,
@@ -278,15 +280,17 @@ def test_translation_tool_reproduces_each_shipped_d066_pack(
         assert_pack_matches(generated, expected)
 
 
-def test_fc87_reference_reproduces_the_species_grid() -> None:
+def test_fc87_reference_reproduces_the_species_grid(packaged_gas_pack) -> None:
     from tools.translate_k_constants import fc87_k2o_gibbs_j_mol
 
-    gas = load_gas_datapack()
+    gas = packaged_gas_pack
     actual = [fc87_k2o_gibbs_j_mol(T, gas) / 1000.0 for T in FC87_GRID_K]
     assert actual == pytest.approx(FC87_GRID_G_KJ_MOL, abs=0.01)
 
 
-def test_translation_preserves_absolute_complex_g_on_the_domain_grid() -> None:
+def test_translation_preserves_absolute_complex_g_on_the_domain_grid(
+    packaged_gas_pack,
+) -> None:
     from tools.translate_k_constants import (
         _fit_reference_shift,
         fc87_k2o_gibbs_j_mol,
@@ -294,7 +298,7 @@ def test_translation_preserves_absolute_complex_g_on_the_domain_grid() -> None:
 
     old = _rows(PUBLISHED_PATH)
     new = _rows(D066_V3_PATH)
-    gas = load_gas_datapack()
+    gas = packaged_gas_pack
     fit_row = old[TRANSLATED_COMPLEXES[0]]
     fc87_fit = _fit_reference_shift(fit_row, gas, gas, "FC87")
     max_residual = 0.0
@@ -476,12 +480,14 @@ def test_loader_rejects_invalid_inactive_row_metadata(
         load_datapack(path)
 
 
-def test_free_fraction_pressure_bookkeeping_and_pure_k2o_endpoint() -> None:
+def test_free_fraction_pressure_bookkeeping_and_pure_k2o_endpoint(
+    packaged_gas_pack,
+) -> None:
     from tools.translate_k_constants import fc87_k2o_gibbs_j_mol
 
     old_pack = load_datapack(LEGACY_PATH)
     new_pack = load_datapack(DEFAULT_PATH)
-    gas = load_gas_datapack()
+    gas = packaged_gas_pack
     temperature = 1900.0
     oxygen_fugacity = 1.0e-6
     gk = species_thermo("K", "g", temperature, gas).G_J_mol
@@ -604,12 +610,10 @@ def test_default_v5_changes_non_k_composition_from_frozen_d066_v1() -> None:
     )
 
 
-def test_published_melt_and_lam_gas_pair_reproduces_its_k_pressure_pin() -> None:
-    gas_data = ROOT / "src/openimcc/data"
-    published_gas = load_gas_datapack(
-        gas_path=gas_data / "gas/gas-shomate.csv",
-        oxide_path=PACK_DIR / "sf04-published/condensate.csv",
-    )
+def test_published_melt_and_lam_gas_pair_reproduces_its_k_pressure_pin(
+    sf04_gas_pack,
+) -> None:
+    published_gas = sf04_gas_pack
     melt = load_datapack(PUBLISHED_PATH)
     melt_result = evaluate(
         COMPOSITIONS[0],

@@ -47,8 +47,11 @@ def test_each_domain_axis_appears_in_stable_notice(composition, temperature, axi
 
 
 @pytest.mark.parametrize("oxygen", [1e-4, 1e-18])
-def test_p_gas_mass_action_holds_at_lance_and_reduction_oxygen(oxygen: float) -> None:
-    pack = load_gas_datapack()
+def test_p_gas_mass_action_holds_at_lance_and_reduction_oxygen(
+    oxygen: float,
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     T, activity = 2000.0, 1e-18
     gas = evaluate_gas({"P2O5": activity}, T, oxygen, pack,
                        gas_species=("P2", "P4", "PO", "PO2", "P4O6", "P4O10"))
@@ -65,8 +68,10 @@ def test_p_gas_mass_action_holds_at_lance_and_reduction_oxygen(oxygen: float) ->
         assert math.log10(gas[species]) == pytest.approx(expected, abs=1e-9)
 
 
-def test_carbon_reduction_p_gas_over_one_bar_has_typed_notice() -> None:
-    pack = load_gas_datapack()
+def test_carbon_reduction_p_gas_over_one_bar_has_typed_notice(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     gas = evaluate_gas(
         {"P2O5": 1e-18}, 2000.0, 1e-15, pack,
         gas_species=("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10"),
@@ -81,11 +86,11 @@ def test_carbon_reduction_p_gas_over_one_bar_has_typed_notice() -> None:
     assert all(gas.domain_flags[name] for name in gas)
 
 
-def test_p2o5_parent_participates_in_existing_oxygen_balance() -> None:
+def test_p2o5_parent_participates_in_existing_oxygen_balance(packaged_gas_pack) -> None:
     from openimcc.gas import evaluate_gas_oxygen_balance
 
     pressure, gases, _ = evaluate_gas_oxygen_balance(
-        {"P2O5": 1e-15}, 2000.0, load_gas_datapack(),
+        {"P2O5": 1e-15}, 2000.0, packaged_gas_pack,
         parent_oxides=("P2O5",),
     )
     assert 0 < pressure < 1

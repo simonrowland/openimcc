@@ -356,12 +356,12 @@ def test_cleaned_feed_liquidus_regression_and_dropped_parent_notices():
     assert ci_dropped.pack_used.startswith("IMCC-SF04-D066@")
 
 
-def test_fe_ti_fusion_nodes_use_the_janaf_elemental_reference_chain():
+def test_fe_ti_fusion_nodes_use_the_janaf_elemental_reference_chain(packaged_gas_pack):
     from openimcc.diagnostics import load_crystal_dataset
-    from openimcc.gas import load_gas_datapack, species_thermo
+    from openimcc.gas import species_thermo
 
     dataset = load_crystal_dataset()
-    gas_pack = load_gas_datapack()
+    gas_pack = packaged_gas_pack
     elements = dataset["element_reference_g_app_nodes_kJ_mol"]
     printed_crystal_nodes = {
         "fayalite": {"1300": -1056.8, "1400": -1025.2},

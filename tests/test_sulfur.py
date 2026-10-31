@@ -13,7 +13,6 @@ from openimcc import evaluate, evaluate_sulfur, load_datapack
 from openimcc.kernel import ImccRefusal
 from openimcc.gas import (
     evaluate_gas_oxygen_balance,
-    load_gas_datapack,
     species_thermo,
 )
 
@@ -333,7 +332,9 @@ def test_intrinsic_oxygen_root_and_missing_or_conflicting_sulfur_inputs():
     assert "sulfur-input-conflict" in {notice.code for notice in unit_conflict.notices}
 
 
-def test_intrinsic_saturated_inventory_solves_oxygen_and_saturation_together():
+def test_intrinsic_saturated_inventory_solves_oxygen_and_saturation_together(
+    packaged_gas_pack,
+):
     T = 1673.0
     base = evaluate_sulfur(_MORB, T, log10_fO2=-8.0, total_s_ppm=100.0)
     assert base.scss_smythe_2017_ppm is not None
@@ -375,7 +376,7 @@ def test_intrinsic_saturated_inventory_solves_oxygen_and_saturation_together():
     p_o2, _gas_result, _diagnostics = evaluate_gas_oxygen_balance(
         activities,
         T,
-        load_gas_datapack(),
+        packaged_gas_pack,
         allow_extrapolation=True,
     )
     assert math.log10(p_o2) == pytest.approx(result.log10_fO2, abs=1.0e-7)
@@ -401,7 +402,7 @@ def test_fixed_oxygen_inventory_does_not_run_an_oxygen_root(monkeypatch):
     }
 
 
-def test_comparison_models_reproduce_printed_parameters():
+def test_comparison_models_reproduce_printed_parameters(packaged_gas_pack):
     T, log_fo2, log_fs2 = 1673.0, -8.0, -10.0
     _oxygen, cations, _ = _fractions(_MORB)
     result = evaluate_sulfur(
@@ -426,7 +427,7 @@ def test_comparison_models_reproduce_printed_parameters():
 
     # O'Neill & Mavrogenes (2022), sulfate-capacity fit in GCA 334,
     # pp. 368-382: printed ln capacity relation, ppm S6+.
-    gas = load_gas_datapack()
+    gas = packaged_gas_pack
     g_s2 = species_thermo("S2", "g", T, gas).G_J_mol
     g_o2 = species_thermo("O2", "g", T, gas).G_J_mol
     g_so3 = species_thermo("SO3", "g", T, gas).G_J_mol

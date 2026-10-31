@@ -181,8 +181,8 @@ _VNB_AGAINST_JANAF_PRINTED_FORMATION_GIBBS = {
 
 
 @pytest.fixture(scope="module")
-def gas_pack() -> ImccGasDatapack:
-    return load_gas_datapack()
+def gas_pack(packaged_gas_pack) -> ImccGasDatapack:
+    return packaged_gas_pack
 
 
 def test_default_reactions_name_signature_and_return_shape_are_stable(gas_pack) -> None:
@@ -2098,6 +2098,7 @@ def test_sulfur_pressures_match_hand_calculated_janaf_cells(
     assert gap_298 == pytest.approx(-9556.67, abs=0.1)
 
 
+@pytest.mark.slow
 def test_halogen_pressures_match_hand_calculated_source_cells(
     gas_pack: ImccGasDatapack,
 ) -> None:
@@ -2195,6 +2196,7 @@ def test_halogen_pressures_match_hand_calculated_source_cells(
                 assert result[gas] == pytest.approx(expected, rel=2e-3)
 
 
+@pytest.mark.slow
 def test_new_halide_pressures_match_hand_calculated_source_cells(
     gas_pack: ImccGasDatapack,
 ) -> None:
@@ -2313,6 +2315,7 @@ def test_new_halide_pressures_match_hand_calculated_source_cells(
                 assert actual[name] == pytest.approx(expected, rel=2e-3)
 
 
+@pytest.mark.slow
 def test_new_halide_mixed_source_parent_bands_recompute_from_cards(
     gas_pack: ImccGasDatapack,
 ) -> None:
@@ -6779,6 +6782,7 @@ def test_boiling_temperature_forwards_include_ions(monkeypatch: pytest.MonkeyPat
     assert seen and all(seen)
 
 
+@pytest.mark.slow
 def test_basalt_saturation_and_fixed_activity_boiling_pressures() -> None:
     candidate = load_gas_datapack(
         gas_path=Path(__file__).parents[1] / "src/openimcc/data/gas/gas-shomate-hight-candidate-v2.csv",
@@ -6982,8 +6986,10 @@ def test_unrecognised_condensate_reference_does_not_inherit_the_packaged_table(
         species_thermo("SiO2", "l", 2000.0, silica_pack)
 
 
-def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries() -> None:
-    pack = load_gas_datapack()
+def test_constant_cp_parent_extensions_are_flagged_at_interval_boundaries(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     extension_rows = pack.oxide_df.loc[
         pack.oxide_df["Ref"].astype(str).str.endswith("-SC-CP")
     ]
@@ -7133,10 +7139,11 @@ def test_sf04_pack_reproduces_base_default_and_default_keeps_other_channels(
     sf04_gas_pack: ImccGasDatapack,
     collection_type,
     tmp_path: Path,
+    packaged_gas_pack,
 ) -> None:
     """Compare every 1 K result with the base tables in this environment."""
     base_pack = _load_task_base_gas_pack(tmp_path)
-    default_pack = load_gas_datapack()
+    default_pack = packaged_gas_pack
     parents = collection_type(
         sorted(
             parent
@@ -7399,8 +7406,10 @@ def test_default_oxygen_balance_counts_auto_included_oxide_parents(
     assert abs(math.log10(default[0] / without_zno[0])) > 0.1
 
 
-def test_refining_temperature_seam_rows_evaluate_with_supercooling_notices() -> None:
-    pack = load_gas_datapack()
+def test_refining_temperature_seam_rows_evaluate_with_supercooling_notices(
+    packaged_gas_pack,
+) -> None:
+    pack = packaged_gas_pack
     gas_rows = (
         "H2O", "HCl", "HF", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
         "NaF", "(NaF)2", "KF", "(KF)2", "Hg",

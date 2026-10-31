@@ -21,7 +21,6 @@ from openimcc.gas import (
     evaluate_gas_oxygen_balance,
     evaluate_gas_saturation,
     gas_boiling_temperature,
-    load_gas_datapack,
 )
 
 
@@ -62,7 +61,9 @@ def test_named_profiles_load(name: str, melt_version: str, has_redox: bool) -> N
         profile.name = "published"
 
 
-def test_openimcc_profile_matches_readme_quickstart_values_bit_for_bit() -> None:
+def test_openimcc_profile_matches_readme_quickstart_values_bit_for_bit(
+    packaged_gas_pack,
+) -> None:
     profile = load_profile("openimcc")
     default_melt = evaluate(_BASALT, 1800.0, basis_type="wt")
     profile_melt = evaluate(
@@ -93,7 +94,7 @@ def test_openimcc_profile_matches_readme_quickstart_values_bit_for_bit() -> None
         name: profile_melt.activity(name) for name in profile_melt.parent_oxides
     }
     default_gas = evaluate_gas(
-        activities, 1800.0, 1e-10, load_gas_datapack()
+        activities, 1800.0, 1e-10, packaged_gas_pack
     )
     profile_gas = evaluate_gas(
         activities, 1800.0, 1e-10, profile=profile
@@ -110,12 +111,12 @@ def test_openimcc_profile_matches_readme_quickstart_values_bit_for_bit() -> None
     assert profile_gas.profile == "openimcc"
 
 
-def test_explicit_packs_and_profiles_are_mutually_exclusive() -> None:
+def test_explicit_packs_and_profiles_are_mutually_exclusive(packaged_gas_pack) -> None:
     with pytest.raises(ProfileConflictError):
         evaluate(_BASALT, 1800.0, load_datapack(), profile="published")
     with pytest.raises(ProfileConflictError):
         evaluate_gas(
-            {"SiO2": 0.5}, 1800.0, 1e-10, load_gas_datapack(),
+            {"SiO2": 0.5}, 1800.0, 1e-10, packaged_gas_pack,
             profile="published",
         )
     with pytest.raises(ProfileConflictError):

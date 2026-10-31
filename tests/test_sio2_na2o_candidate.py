@@ -39,7 +39,7 @@ def test_candidate_pack_identity_and_default_remain_separate() -> None:
     assert default.kernel_datapack.binding_digest != candidate.kernel_datapack.binding_digest
 
 
-def test_historical_versions_and_condensate_remain_loadable() -> None:
+def test_historical_versions_and_condensate_remain_loadable(packaged_gas_pack) -> None:
     historical_melt = load_datapack(PACKS / "imcc-sf04-d066-v3.json")
     historical_redox = load_redox_pack(PACKS / "openimcc-redox-v3.json")
     assert historical_melt.version == "1.0.5-d066-v3"
@@ -48,7 +48,7 @@ def test_historical_versions_and_condensate_remain_loadable() -> None:
     legacy = load_gas_datapack(
         oxide_path=GAS / "condensate-sio2-na2o-janaf-legacy.csv"
     )
-    current = load_gas_datapack()
+    current = packaged_gas_pack
     assert legacy.condensate_table_digest != current.condensate_table_digest
     for species, table_id in (
         ("SiO2(l)", "SiO2-RBT84-CANDIDATE"),
