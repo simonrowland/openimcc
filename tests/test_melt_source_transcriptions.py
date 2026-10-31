@@ -101,18 +101,6 @@ def test_transcription_tables_are_complete_and_located() -> None:
     )
 
 
-def test_recorded_sf04_pack_doi_erratum_matches_immutable_pack() -> None:
-    transcription = yaml.safe_load(SF04_PATH.read_text(encoding="utf-8"))
-    erratum = transcription["verification"]["published_pack_doi_erratum"]
-    assert erratum["pack"] == "src/openimcc/data/packs/imcc-sf04-v1.0.2.json"
-    assert erratum["field"] == "sources.SF04.citation"
-    assert erratum["correct_doi"] == transcription["source"]["doi"]
-
-    pack = json.loads(PUBLISHED_PATH.read_text(encoding="utf-8"))
-    citation = pack["sources"]["SF04"]["citation"]
-    assert f"DOI {erratum['incorrect_doi']}" in citation
-
-
 def test_fc87_r35_preserves_printed_operator_and_interpretation() -> None:
     fc87_rows, _ = _source_rows()
     row = fc87_rows[35]

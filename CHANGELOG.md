@@ -7,8 +7,7 @@
 - Added checked full transcriptions of the FC87 and SF04 melt coefficient
   tables, with published-profile and D066 lineage checks.
 
-- Preserved the FC87 R35 printed operator and recorded the SF04 DOI erratum in
-  the published-pack transcription metadata.
+- Preserved the FC87 R35 printed operator in the transcription.
 
 - Corrected gas and condensate provenance joins and measured-Cp construction
   records; no thermochemical coefficients changed.
