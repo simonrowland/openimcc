@@ -24,7 +24,7 @@ import pandas as pd
 import pytest
 import yaml
 
-from openimcc import evaluate
+from openimcc import EvidenceReference, evaluate
 from openimcc import gas as gas_module
 from tools import build_gas_tables
 from openimcc.gas import (
@@ -5825,11 +5825,22 @@ def _oxygen_balance_hashes(
         if dataclasses.is_dataclass(value):
             # The receipt records the source revision and environment, so the
             # pinned digests omit it; test_receipt.py pins it separately.
-            return {
-                field.name: hex_values(getattr(value, field.name))
-                for field in dataclasses.fields(value)
-                if field.name != "receipt"
-            }
+            # Evidence DOI and locator fields are structured views of the
+            # existing basis strings, so reconstruct the old representation
+            # here to keep these output pins focused on behavior.
+            fields = {}
+            for field in dataclasses.fields(value):
+                if field.name in {"receipt", "doi", "locator"}:
+                    continue
+                field_value = getattr(value, field.name)
+                if (
+                    isinstance(value, EvidenceReference)
+                    and field.name == "basis"
+                    and value.doi
+                ):
+                    field_value += "; DOI " + " and ".join(value.doi)
+                fields[field.name] = hex_values(field_value)
+            return fields
         if isinstance(value, Mapping):
             return {str(k): hex_values(v) for k, v in value.items()}
         if isinstance(value, (tuple, list)):
@@ -6616,6 +6627,35 @@ def test_fixed_composition_saturation_pure_cao_stoichiometry_and_neutral_match(
     assert dict(direct) == dict(sat.species_pressures_bar)
     assert math.isclose(sum(sat.mole_fractions.values()), 1.0)
     assert sat.diagnostics["root_uniqueness"] == "proved"
+
+
+def test_saturation_preserves_liquid_reference_status_and_notices(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    activities = {"Al2O3": 1.0}
+    parents = ("Al2O3",)
+    saturation = evaluate_gas_saturation(
+        activities, 1900.0, gas_pack, parent_oxides=parents,
+    )
+    direct = evaluate_gas(
+        activities, 1900.0, saturation.pO2_bar, gas_pack, parent_oxides=parents,
+    )
+
+    assert saturation.liquid_reference_status == direct.liquid_reference_status
+    saturation_notices = tuple(
+        notice for notice in saturation.notices
+        if isinstance(notice, gas_module.LiquidReferenceNotice)
+    )
+    direct_notices = tuple(
+        notice for notice in direct.notices
+        if isinstance(notice, gas_module.LiquidReferenceNotice)
+    )
+    assert saturation_notices == direct_notices
+    assert saturation_notices
+    assert all(
+        notice.status in saturation.liquid_reference_status.values()
+        for notice in saturation_notices
+    )
 
 
 def test_saturation_ion_charge_closure_and_boiling_no_bracket_refusal(

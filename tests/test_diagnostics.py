@@ -135,6 +135,24 @@ def test_step_size_converges_and_default_pack_regression():
     assert pack.model_id == "IMCC-SF04-D066"
 
 
+def test_calorimetry_citation_gaps_are_not_dois():
+    path = (
+        Path(__file__).parents[1]
+        / "src/openimcc/data/diagnostics/liquid-cp-calorimetry.json"
+    )
+    datasets = json.loads(path.read_text(encoding="utf-8"))["datasets"]
+    sources = {
+        dataset["source"]["authors"]: dataset["source"]
+        for dataset in datasets
+    }
+    assert sources["Stebbins, Carmichael & Moret"]["doi"] is None
+    assert sources["Stebbins, Carmichael & Moret"]["citation_gap"] == (
+        "exact DOI and composition-matched liquid Cp values not verified"
+    )
+    assert sources["Lange & Navrotsky"]["doi"] is None
+    assert sources["Lange & Navrotsky"]["citation_gap"] == "exact DOI not verified"
+
+
 def test_pure_end_member_has_zero_curvature():
     rows, dataset = _score_fixture(0.0)
     scores = score_against_calorimetry(rows, dataset)

@@ -234,6 +234,53 @@ class LiquidReferenceNotice:
     status: CertificationStatus
 
 
+def _gas_result_notices(
+    values: Mapping[str, float],
+    domain_flags: Mapping[str, str | None],
+    liquid_reference_status: Mapping[str, CertificationStatus],
+) -> tuple[PGasPressureNotice | LiquidReferenceNotice, ...]:
+    p_species = tuple(
+        name for name in ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10", "PS")
+        if name in values
+    )
+    code = "p_gas_exceeds_one_bar_complete_volatilisation"
+    affected = tuple(
+        name for name in p_species if code in (domain_flags.get(name) or "")
+    )
+    notices = []
+    if affected:
+        total = math.fsum(values[name] for name in p_species)
+        notices.append(PGasPressureNotice(
+            code,
+            "P would leave essentially completely; the fixed-composition dilute "
+            "equilibrium is not physical above 1 bar.",
+            affected,
+            total,
+        ))
+    seen_reference_species = set()
+    for status in liquid_reference_status.values():
+        if status.species in seen_reference_species:
+            continue
+        seen_reference_species.add(status.species)
+        if status.authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION:
+            notices.append(LiquidReferenceNotice(
+                "liquid-reference-corroborated-calculation",
+                "Liquid reference is corroborated by independent calculation, not measured.",
+                status,
+            ))
+        elif status.in_composition_scope is False:
+            evidence = status.evidence_ref[0]
+            key, (low, high) = next(iter(status.composition_scope.items()))
+            notices.append(LiquidReferenceNotice(
+                "liquid-reference-outside-evidence-composition-scope",
+                f"{status.species} composition is outside the evidence range "
+                f"{key} {low:g}–{high:g}; {evidence.author} ({evidence.year}): "
+                f"{evidence.basis}.",
+                status,
+            ))
+    return tuple(notices)
+
+
 @dataclass(frozen=True)
 class ImccGasResult(MappingABC[str, float]):
     """Immutable gas pressures and channel metadata, including default omissions."""
@@ -300,46 +347,9 @@ class ImccGasResult(MappingABC[str, float]):
     @property
     def notices(self) -> tuple[PGasPressureNotice | LiquidReferenceNotice, ...]:
         """Typed notices from per-channel domain flags and liquid-reference status."""
-        p_species = tuple(
-            name for name in ("P", "P2", "P4", "PO", "PO2", "P4O6", "P4O10", "PS")
-            if name in self._values
+        return _gas_result_notices(
+            self._values, self.domain_flags, self.liquid_reference_status
         )
-        code = "p_gas_exceeds_one_bar_complete_volatilisation"
-        affected = tuple(
-            name for name in p_species if code in (self.domain_flags.get(name) or "")
-        )
-        notices = []
-        if affected:
-            total = math.fsum(self._values[name] for name in p_species)
-            notices.append(PGasPressureNotice(
-                code,
-                "P would leave essentially completely; the fixed-composition dilute "
-                "equilibrium is not physical above 1 bar.",
-                affected,
-                total,
-            ))
-        seen_reference_species = set()
-        for status in self.liquid_reference_status.values():
-            if status.species in seen_reference_species:
-                continue
-            seen_reference_species.add(status.species)
-            if status.authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION:
-                notices.append(LiquidReferenceNotice(
-                    "liquid-reference-corroborated-calculation",
-                    "Liquid reference is corroborated by independent calculation, not measured.",
-                    status,
-                ))
-            elif status.in_composition_scope is False:
-                evidence = status.evidence_ref[0]
-                key, (low, high) = next(iter(status.composition_scope.items()))
-                notices.append(LiquidReferenceNotice(
-                    "liquid-reference-outside-evidence-composition-scope",
-                    f"{status.species} composition is outside the evidence range "
-                    f"{key} {low:g}–{high:g}; {evidence.author} ({evidence.year}): "
-                    f"{evidence.basis}.",
-                    status,
-                ))
-        return tuple(notices)
 
 
 @dataclass(frozen=True)
@@ -358,12 +368,17 @@ class ImccGasSaturationResult:
     receipt: CalculationReceipt | None = field(
         default=None, compare=False, hash=False
     )
+    liquid_reference_status: Mapping[str, CertificationStatus] = field(default_factory=dict)
 
     def __post_init__(
         self, _profile_identity: tuple[str | None, str, str] | None
     ) -> None:
         for name in ("species_pressures_bar", "channel_pressures_bar", "mole_fractions", "diagnostics", "domain_flags"):
             object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
+        object.__setattr__(
+            self, "liquid_reference_status",
+            MappingProxyType(dict(self.liquid_reference_status)),
+        )
         if _profile_identity is not None:
             object.__setattr__(self, "_loaded_profile_identity", _profile_identity)
 
@@ -381,6 +396,13 @@ class ImccGasSaturationResult:
     def condensate_table_digest(self) -> str | None:
         identity = getattr(self, "_loaded_profile_identity", None)
         return identity[2] if identity is not None else None
+
+    @property
+    def notices(self) -> tuple[PGasPressureNotice | LiquidReferenceNotice, ...]:
+        """Typed notices for the saturated vapor's pressures and liquid references."""
+        return _gas_result_notices(
+            self.species_pressures_bar, self.domain_flags, self.liquid_reference_status
+        )
 
 
 @dataclass(frozen=True)
@@ -7391,6 +7413,7 @@ def evaluate_gas_saturation(
                 },
             )
         ),
+        liquid_reference_status=getattr(result, "liquid_reference_status", {}),
     )
 
 
@@ -7470,4 +7493,5 @@ def gas_boiling_temperature(
                 "pO2_brentq_xtol": 1e-12,
             },
         ),
+        liquid_reference_status=getattr(state, "liquid_reference_status", {}),
     )

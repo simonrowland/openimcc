@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import re
+from collections import Counter
+
 import pytest
 
 from openimcc import (
@@ -403,3 +406,48 @@ def test_authority_requires_the_source_row_its_evidence_assessed() -> None:
     assert liquid_reference_authority(
         "Al2O3(l)", 2500, selected_source_id="LAM1987"
     ) is None
+
+
+def test_evidence_dois_are_structured_without_changing_identifiers() -> None:
+    old_doi_strings = (
+        "DOI 10.1016/0016-7037(82)90383-0",
+        "DOI 10.1111/j.1151-2916.1984.tb19155.x",
+        "DOI 10.1063/1.5141841",
+        "DOI 10.1021/acs.jpcc.4c04752",
+        "DOI 10.1021/ja01209a030 and 10.1098/rspa.1965.0176",
+        "DOI 10.1016/j.oceram.2026.101029",
+        "DOI 10.1111/j.1151-2916.1984.tb19155.x",
+        "DOI 10.18434/T42S31",
+        "DOI 10.1016/j.jct.2017.04.003",
+        "DOI 10.1002/2016JE005059",
+        "DOI 10.1002/2016JE005059",
+        "DOI 10.1111/j.1151-2916.1992.tb04216.x",
+        "DOI 10.1143/JJAP.43.1496",
+        "DOI 10.1016/j.oceram.2026.101029",
+        "DOI 10.1016/j.oceram.2026.101029",
+        "DOI 10.1111/j.1151-2916.1992.tb04216.x",
+        "DOI 10.1143/JJAP.43.1496",
+        "DOI 10.1016/j.oceram.2026.101029",
+        "DOI 10.1016/S0022-0248(02)01438-0",
+        "DOI 10.18434/T42S31",
+        "DOI 10.1016/j.jct.2017.04.003",
+    )
+    expected_dois = [
+        doi
+        for old_string in old_doi_strings
+        for doi in re.findall(r"10[.]\d{4,9}/[^\s;]+", old_string)
+    ]
+    references = []
+    for record in liquid_reference_records():
+        references.extend(record.evidence_ref)
+        for window in record.additional_windows:
+            references.extend(window.evidence_ref)
+    structured_dois = [
+        doi for evidence in references for doi in (evidence.doi or ())
+    ]
+
+    assert Counter(structured_dois) == Counter(expected_dois)
+    assert all("DOI " not in evidence.basis for evidence in references)
+    assert {evidence.locator for evidence in references if evidence.locator} == {
+        "run 17c3-2", "NASA/TP-2002-211556",
+    }
