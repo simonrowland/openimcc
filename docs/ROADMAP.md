@@ -544,7 +544,7 @@ fitted OsO4(g) and OsO3(g) rows. [Grimley et al. (1960)](https://doi.org/10.1063
 [Thermochemical Properties of the Osmium Oxides (1991)](https://doi.org/10.1021/j100175a095).
 
 The re-check covered JANAF, NASA Glenn/CEA, Burcat, Pankratz Bulletins 672
-and 674, Barin, Kubaschewski, Gurvich sources, Lamoreaux & Hildenbrand,
+and 674, Barin, Kubaschewski, non-TKV Gurvich sources, Lamoreaux & Hildenbrand,
 and primary vapor-pressure/mass-spectrometry papers. The local JANAF and NASA
 records contain no Re/Os oxide gas rows; Burcat contains an Os elemental gas
 and stable-phase set derived from Gurvich, but no Re/Os oxide gas set. The
