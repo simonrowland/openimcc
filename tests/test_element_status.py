@@ -1225,6 +1225,11 @@ def _c4_rows_cover_domain(
         matches = [
             entry for entry in by_key.get(key, ())
             if entry.get("runtime_ref") in (None, runtime_ref)
+            # Candidate and legacy liquid rows can share species, range, and Ref.
+            and (
+                species not in {"SiO2(l)", "Na2O(l)"}
+                or entry.get("table_id") == str(row["table_id"])
+            )
         ]
         return matches[0] if len(matches) == 1 else None
     gas_rows = pack.gas_df[

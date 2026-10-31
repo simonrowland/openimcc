@@ -1169,18 +1169,30 @@ def test_shipped_thermochemical_rows_have_unique_exact_provenance_joins() -> Non
     shipped_tables = {
         "gas-shomate.csv": "gas",
         "condensate.csv": "condensate",
+        "condensate-sio2-na2o-janaf-legacy.csv": "condensate",
     }
     joined = 0
     for filename, table_name in shipped_tables.items():
         path = GAS_DATA / filename
         with path.open(encoding="utf-8", newline="") as handle:
             for line_number, csv_row in enumerate(csv.DictReader(handle), start=2):
+                # The legacy file is retained only for the two replaced liquids;
+                # its other rows intentionally mirror the current default table.
+                if filename.endswith("-janaf-legacy.csv") and csv_row["species_name"] not in {
+                    "SiO2(l)", "Na2O(l)"
+                }:
+                    continue
                 interval = (float(csv_row["T_min"]), float(csv_row["T_max"]))
                 matches = [
                     record
                     for record in records
                     if record["table"] == table_name
                     and record["species_name"] == csv_row["species_name"]
+                    and (
+                        table_name != "condensate"
+                        or csv_row["species_name"] not in {"SiO2(l)", "Na2O(l)"}
+                        or record.get("table_id") == csv_row.get("table_id")
+                    )
                     and (
                         record.get("runtime_ref")
                         or record.get("table_id")
@@ -1196,15 +1208,38 @@ def test_shipped_thermochemical_rows_have_unique_exact_provenance_joins() -> Non
                     interval,
                     matches,
                 )
+                if matches[0].get("method") == "measured_liquid_cp_construction":
+                    # For G = 1000*R*dH298_R - R*T*sum(c_p*tau**p),
+                    # dG/dT = -R*sum((p+1)*c_p*tau**p), so Cp = -T*d2G/dT2
+                    # = R*sum(p*(p+1)*c_p*tau**p), with tau = T/1000.
+                    temperature = sum(interval) / 2.0
+                    tau = temperature / 1000.0
+                    coefficients = [float(csv_row[f"dG_{letter}"]) for letter in "ABCDE"]
+                    runtime_cp = R_J_MOL_K * sum(
+                        power * (power + 1) * coefficient * tau**power
+                        for power, coefficient in enumerate(coefficients)
+                    )
+                    assert abs(matches[0]["Cp_l_J_molK"] - runtime_cp) <= 0.05, (
+                        filename,
+                        line_number,
+                        csv_row["species_name"],
+                        interval,
+                        matches[0]["Cp_l_J_molK"],
+                        runtime_cp,
+                    )
                 joined += 1
-    assert joined == 940
+    assert joined == 946
 
 
 def test_measured_liquid_provenance_and_feo_transcription_hashes() -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = [row for row in provenance["rows"] if row["table"] == "condensate"]
 
-    na_rows = [row for row in rows if row["species_name"] == "Na2O(l)"]
+    na_rows = [
+        row for row in rows
+        if row["species_name"] == "Na2O(l)"
+        and row.get("method") == "measured_liquid_cp_construction"
+    ]
     assert len(na_rows) == 8
     for row in na_rows:
         assert row["authority"] == "liquid_from_solid_estimate"
@@ -1223,6 +1258,11 @@ def test_measured_liquid_provenance_and_feo_transcription_hashes() -> None:
         assert row["source"]["doi"] == (
             "10.1111/j.1151-2916.1984.tb19155.x"
         )
+        assert (
+            "Na2O partial-molar Cp measured in sodium-silicate liquids "
+            "(900–1800 K), transferred to the pure-liquid standard"
+            in row["note"]
+        )
         assert [source["table_id"] for source in row["additional_sources"]] == [
             "Na-013"
         ]
@@ -1235,13 +1275,24 @@ def test_measured_liquid_provenance_and_feo_transcription_hashes() -> None:
         and row.get("method") == "measured_liquid_cp_construction"
     ]
     assert [row["T_range_K"] for row in measured_silica] == [
-        [1800, 1996], [1996, 3000],
+        [1200, 1500],
+        [1500, 1800],
+        [1800, 1996],
+        [1996, 3000],
     ]
+    expected_silica_runtime_refs = {
+        (1200, 1500): "O-038-SC-CP",
+        (1500, 1800): "O-038-SC-CP",
+        (1800, 1996): "O-038",
+        (1996, 3000): "O-038",
+    }
     for row in measured_silica:
         assert row["authority"] == "liquid_from_solid_estimate"
         assert row["table_id"] == "SiO2-RBT84-CANDIDATE"
         assert row["source_table_id"] == "O-035"
-        assert row["runtime_ref"] == "O-038"
+        assert row["runtime_ref"] == expected_silica_runtime_refs[
+            tuple(row["T_range_K"])
+        ]
         assert row["source_path"] == "data-src/janaf/O-035.yaml"
         assert row["source_sha256"] == hashlib.sha256(
             (ROOT / row["source_path"]).read_bytes()
@@ -1253,6 +1304,18 @@ def test_measured_liquid_provenance_and_feo_transcription_hashes() -> None:
         assert row["source"]["doi"] == (
             "10.1111/j.1151-2916.1984.tb19155.x"
         )
+        assert (
+            "SiO2 partial-molar Cp measured in sodium-silicate liquids "
+            "(900–1800 K), transferred to the pure-liquid standard"
+            in row["note"]
+        )
+
+    supercooled_silica = next(
+        row for row in measured_silica if row["T_range_K"] == [1200, 1500]
+    )
+    assert supercooled_silica["runtime_ref"] == "O-038-SC-CP"
+    assert "below the 1480 K glass transition" in supercooled_silica["note"]
+    assert "runtime emits a supercooled notice" in supercooled_silica["note"]
 
     feo = next(row for row in rows if row["species_name"] == "FeO(l)")
     source_files = {
