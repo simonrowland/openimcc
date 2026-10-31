@@ -1,0 +1,124 @@
+schema_version: lh87_transcription.v1
+source:
+  citation: >-
+    Lamoreaux, R. H.; Hildenbrand, D. L.; Brewer, L. (1987), High-Temperature
+    Vaporization Behavior of Oxides. II, J. Phys. Chem. Ref. Data 16, 419-443.
+  doi: 10.1063/1.555799
+  url: https://doi.org/10.1063/1.555799
+  pdf_sha256: 02ca48d2c8837d9dc8d720b76636c1b8f6795797ba2b1fae047c1c19702e6800
+  verified_by: >-
+    Text layer checked against rendered page images for Table 2 (printed pp.
+    422-423) and Table 3 (printed p. 424).
+  verification_discrepancies:
+    - table: 3
+      printed_page: 424
+      species_name: Al2O3(s)
+      text_layer: >-
+        The row yields -201.54; its following extracted line is 4.993 ± 0.04
+        and 0.675.
+      rendered_page_image: >-
+        The row shows -201.54 ± 0.15, 6.127 ± 0.01, and 1.2047; 4.993 ± 0.04
+        and 0.675 belong to the following Ga(s) row.
+      resolution: >-
+        Only the agreed central anchor -201.54 kK is transcribed; the differing
+        uncertainty and row association are left unresolved.
+  user_agent: neutral-source-vendor/1.0
+  tooling: neutral-source-vendor
+table3_anchors:
+  - species_name: MgO(s)
+    printed_species_label: MgO(s)
+    table: 3
+    printed_page: 424
+    dfH_over_R_kK:
+      value: -72.34
+      uncertainty: 0.04
+      as_published: "-72.34 ± 0.04"
+  - species_name: CaO(s)
+    printed_species_label: CaO(s)
+    table: 3
+    printed_page: 424
+    dfH_over_R_kK:
+      value: -76.384
+      uncertainty: 0.1
+      as_published: "-76.384 ± 0.1"
+  - species_name: Al2O3(s)
+    printed_species_label: Al2O3(s)
+    table: 3
+    printed_page: 424
+    dfH_over_R_kK:
+      value: -201.54
+      as_published: "-201.54"
+  - species_name: SiO2(qu)
+    printed_species_label: SiO2(qu)
+    table: 3
+    printed_page: 424
+    dfH_over_R_kK:
+      value: -109.53
+      uncertainty: 0.1
+      as_published: "-109.53 ± 0.1"
+rows:
+  - species_name: MgO(l)
+    printed_species_label: MgO(l)
+    table: 2
+    printed_page: 422
+    T_range_K:
+      value: [3100, 3500]
+      as_published: "3100-3500"
+    coefficients:
+      A: {value: -0.804, as_published: "-0.804"}
+      "10^3 B": {value: 5.1067, as_published: "5.1067"}
+      "10^6 C": {value: -0.3615, as_published: "-0.3615"}
+    table3_anchor_species_name: MgO(s)
+  - species_name: CaO(l)
+    printed_species_label: CaO(l)
+    table: 2
+    printed_page: 422
+    T_range_K:
+      value: [2900, 3800]
+      as_published: "2900-3800"
+    coefficients:
+      A: {value: 0.924, as_published: "0.924"}
+      "10^3 B": {value: 5.922, as_published: "5.922"}
+      "10^6 C": {value: -0.7316, as_published: "-0.7316"}
+      "10^9 D": {value: 0.0436, as_published: "0.0436"}
+    table3_anchor_species_name: CaO(s)
+  - species_name: Al2O3(l)
+    printed_species_label: Al2O3(l)
+    table: 2
+    printed_page: 422
+    T_range_K:
+      value: [2327, 3000]
+      as_published: "2327-3000"
+    coefficients:
+      A: {value: 232.345, as_published: "232.345"}
+      "10^3 B": {value: -336.622, as_published: "-336.622"}
+      "10^6 C": {value: 193.672, as_published: "193.672"}
+      "10^9 D": {value: -48.1032, as_published: "-48.1032"}
+      "10^12 E": {value: 4.4461, as_published: "4.4461"}
+    table3_anchor_species_name: Al2O3(s)
+  - species_name: SiO2(l)
+    printed_species_label: SiO2(l)
+    table: 2
+    printed_page: 423
+    T_range_K:
+      value: [1996, 3000]
+      as_published: "1996-3000"
+    coefficients:
+      A: {value: 2.120, as_published: "2.120"}
+      "10^3 B": {value: 7.6492, as_published: "7.6492"}
+      "10^6 C": {value: -1.2588, as_published: "-1.2588"}
+      "10^9 D": {value: 0.0998, as_published: "0.0998"}
+    table3_anchor_species_name: SiO2(qu)
+  - species_name: SiO2(cr)
+    printed_species_label: "SiO2(cr.)"
+    table: 2
+    printed_page: 423
+    T_range_K:
+      value: [1000, 1996]
+      as_published: "1000-1996"
+    coefficients:
+      A: {value: 1.937, as_published: "1.937"}
+      "10^3 B": {value: 8.590, as_published: "8.590"}
+      "10^6 C": {value: -1.935, as_published: "-1.935"}
+      "10^9 D": {value: 0.225, as_published: "0.225"}
+    table3_anchor_species_name: SiO2(qu)

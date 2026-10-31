@@ -13,6 +13,7 @@ import struct
 import subprocess
 import sys
 from dataclasses import FrozenInstanceError, replace
+from decimal import Decimal, ROUND_HALF_UP
 from functools import lru_cache
 from pathlib import Path
 
@@ -51,6 +52,7 @@ JANAF_DATA = ROOT / "data-src" / "janaf"
 NASA_DATA = ROOT / "data-src" / "nasa-glenn"
 PUBLISHED_DATA = ROOT / "data-src" / "published-thermo"
 LH84_DATA = ROOT / "data-src" / "lh84"
+LH87_DATA = ROOT / "data-src" / "lh87"
 PROVENANCE_PATH = GAS_DATA / "PROVENANCE.yaml"
 _BASE_INTERVAL_1_SHA256 = "aa46b44c69f6f226f4a18841ae0faf3951c2bf4f0073ed81eab61cd27104884f"
 _ION_GAS_PROVENANCE_SPECIES = tuple(
@@ -609,6 +611,7 @@ def test_public_sources_contain_no_private_paths_or_tooling_names() -> None:
         (ROOT / "data-src" / "janaf", "openimcc-janaf-vendor/1.0", "*.yaml"),
         (NASA_DATA, "neutral-source-vendor/1.0", "PROVENANCE.yaml"),
         (LH84_DATA, "neutral-source-vendor/1.0", "*.yaml"),
+        (LH87_DATA, "neutral-source-vendor/1.0", "*.yaml"),
     ):
         for path in sorted(source_root.glob(pattern)):
             text = path.read_text(encoding="utf-8")
@@ -1041,6 +1044,94 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
     assert _accuracy_band_value(k_row)["combined_band"]["sample_temperatures_K"] == [
         1013, 1313, 1813,
     ]
+
+
+def test_lh87_transcription_matches_packaged_rows_and_has_a_valid_hash() -> None:
+    transcription = yaml.safe_load(
+        (LH87_DATA / "lh87.yaml").read_text(encoding="utf-8")
+    )
+    source = transcription["source"]
+    assert re.fullmatch(r"[0-9a-f]{64}", source["pdf_sha256"])
+    assert source["doi"] == "10.1063/1.555799"
+    verification = source["verified_by"].lower()
+    assert "text layer" in verification
+    assert "rendered page images" in verification
+
+    expected_species = {"MgO(l)", "CaO(l)", "Al2O3(l)", "SiO2(l)", "SiO2(cr)"}
+    rows = {row["species_name"]: row for row in transcription["rows"]}
+    assert set(rows) == expected_species
+    anchors = {
+        anchor["species_name"]: anchor
+        for anchor in transcription["table3_anchors"]
+    }
+    published_path = (
+        ROOT / "src" / "openimcc" / "data" / "packs" / "sf04-published"
+        / "condensate.csv"
+    )
+    with published_path.open(encoding="utf-8", newline="") as handle:
+        published_rows = {
+            row["species_name"]: row for row in csv.DictReader(handle)
+        }
+    with (GAS_DATA / "condensate.csv").open(
+        encoding="utf-8", newline=""
+    ) as handle:
+        gas_rows = {
+            row["species_name"]: row for row in csv.DictReader(handle)
+            if row["species_name"] == "SiO2(cr)"
+        }
+
+    coefficient_columns = {
+        "A": "dG_A",
+        "10^3 B": "dG_B",
+        "10^6 C": "dG_C",
+        "10^9 D": "dG_D",
+        "10^12 E": "dG_E",
+    }
+    for species_name, source_row in rows.items():
+        packaged_rows = [published_rows[species_name]]
+        if species_name == "SiO2(cr)":
+            packaged_rows.append(gas_rows[species_name])
+        temperature_range = source_row["T_range_K"]
+        assert tuple(temperature_range["value"]) == tuple(
+            int(value) for value in temperature_range["as_published"].split("-")
+        )
+        anchor = anchors[source_row["table3_anchor_species_name"]]
+        anchor_value = anchor["dfH_over_R_kK"]
+        anchor_text = anchor_value["as_published"].split(" ± ", maxsplit=1)[0]
+        assert Decimal(str(anchor_value["value"])) == Decimal(anchor_text)
+
+        for packaged in packaged_rows:
+            assert (int(packaged["T_min"]), int(packaged["T_max"])) == tuple(
+                temperature_range["value"]
+            )
+            assert packaged["Ref"] == "LAM1987"
+            anchor_decimal = Decimal(anchor_text)
+            anchor_quantum = Decimal(1).scaleb(anchor_decimal.as_tuple().exponent)
+            assert Decimal(packaged["dH298_R"]).quantize(
+                anchor_quantum, rounding=ROUND_HALF_UP
+            ) == anchor_decimal
+            for published_label, column in coefficient_columns.items():
+                coefficient = source_row["coefficients"].get(published_label)
+                published_text = (
+                    coefficient["as_published"] if coefficient else "0"
+                )
+                published_decimal = Decimal(published_text)
+                if coefficient:
+                    assert Decimal(str(coefficient["value"])) == published_decimal
+                quantum = Decimal(1).scaleb(published_decimal.as_tuple().exponent)
+                assert Decimal(packaged[column]).quantize(
+                    quantum, rounding=ROUND_HALF_UP
+                ) == published_decimal, (species_name, published_label)
+
+    gas_provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    assert gas_provenance["source_notes"]["lamoreaux_1987"][
+        "numeric_transcription"
+    ] == "data-src/lh87/lh87.yaml"
+    silica_row = next(
+        row for row in gas_provenance["rows"]
+        if row.get("species_name") == "SiO2(cr)"
+    )
+    assert silica_row["source"]["transcription"] == "data-src/lh87/lh87.yaml"
 
 
 def test_janaf_gas_provenance_hashes_source_files_and_preserves_upstream_hashes() -> None:

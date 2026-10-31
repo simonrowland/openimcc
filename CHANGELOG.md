@@ -9,6 +9,9 @@
 
 - Preserved the FC87 R35 printed operator in the transcription.
 
+- Added a checked LH87 Table 2 transcription and the Table 3 anchors used by
+  its packaged condensate rows; packaged coefficients are unchanged.
+
 - Corrected gas and condensate provenance joins and measured-Cp construction
   records; no thermochemical coefficients changed.
 
