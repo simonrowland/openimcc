@@ -103,7 +103,7 @@ The candidate fits BU-2587 H/S/Cp over 1200–3000 K. Its Cp is nonnegative acro
 
 | Source row(s) | Local source evidence | Candidate action | Pressure effect or bound |
 | --- | --- | --- | --- |
-| Bulletin 672 gas rows, including Te, Te₂, TeO₂, SeO₂ | `pankratz-bulletin-672.json`; `data-src/published-thermo/PROVENANCE.yaml` records Bulletin 672 Methods, Conventions, and Symbols: ideal gases at unit fugacity, pressure in atm. | Shift 54 rows by the 1 atm to 1 bar entropy term. | +0.005717 dex for each one-gas-product vaporization reaction (`Δνg=+1`). |
+| Bulletin 672 gas rows, including Te, Te₂, TeO₂, SeO₂ | `pankratz-bulletin-672.json`; `data-src/published-thermo/PROVENANCE.yaml` records Bulletin 672 Methods, Conventions, and Symbols: ideal gases at unit fugacity, pressure in atm. | Shift 50 rows by the 1 atm to 1 bar entropy term. | +0.005717 dex for each one-gas-product vaporization reaction (`Δνg=+1`). |
 | TSIV-1436 MnO(g), TSIV-1335 CoO(g) | Their table pages do not repeat p°. Belov et al. (2018), [IVTANTHERMO-Online, §2.1](https://doi.org/10.1088/1742-6596/946/1/012120), define standard pressure as 101325 Pa and gases as hypothetical ideal gases at that pressure, following Gurvich et al. [17]. | Shift both intervals for each row. | +0.005717 dex (`Δνg=+1`). |
 | IVTAN-264 ZnO(g) | `ivtan-table-264.json` and its provenance give no standard pressure. | Unchanged. | ±0.005717 dex row-level ambiguity. |
 | PM83-YO; P696-T115 BiO(g); P696-T191 CdO(g) | Their source JSON/provenance records do not state the gas standard pressure. | Unchanged. | ±0.005717 dex row-level ambiguity for each. |
