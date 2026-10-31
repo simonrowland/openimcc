@@ -4556,6 +4556,11 @@ def _source_model_flag(
     method = str(validity["method"])
     fit_range = validity.get("source_fit_range_K") or validity["T_range_K"]
     if method == "constructed_from_vapor_pressure_and_condensed_function":
+        # Premise: Smith et al. (1952), pp. 4964-4966, measured Re2O7 vapor
+        # pressures; the fitted maximum absolute residual is 0.131480 dex.
+        # From ΔG = -RT ln p, |δG| = R T ln(10) |δlog10 p|. R is J mol^-1 K^-1
+        # and T is K, so /1000 converts J mol^-1 to kJ mol^-1; at 550 K this
+        # is about 1.4 kJ mol^-1.
         uncertainty_kj = (
             R_J_MOL_K * math.log(10.0) * T * 0.131479893726766 / 1000.0
         )
@@ -4569,6 +4574,11 @@ def _source_model_flag(
             f"±{uncertainty_kj:.1f} kJ/mol at {T:g} K"
         )
     if method == "constructed_from_equilibrium_and_condensed_function":
+        # Premise: Battles et al. (1968), Eq. (10), gives log10(p_atm)=A-B/T
+        # with coefficient uncertainties 0.145 dex and 143 K. Propagating
+        # |δlog10 p| <= 0.145 + 143/T through ΔG = -RT ln p gives
+        # |δG| = R ln(10) (0.145 T + 143 K). With R in J mol^-1 K^-1 and T
+        # in K the result is J mol^-1; at 1000 K it is about 5.5 kJ mol^-1.
         uncertainty_kj = R_J_MOL_K * math.log(10.0) * (0.145 * T + 143.0) / 1000.0
         return (
             "constructed Re2O7(g) from Battles vapor-pressure equilibrium measured "
@@ -4577,6 +4587,8 @@ def _source_model_flag(
             f"band ±{uncertainty_kj:.1f} kJ/mol at {T:g} K"
         )
     if method == "constructed_from_equilibrium_and_condensed_function_with_held_cp_continuation":
+        # Use the same Battles et al. (1968), Eq. (10), coefficient bound as
+        # above; the held-Cp continuation carries that Gibbs-energy bound.
         uncertainty_kj = R_J_MOL_K * math.log(10.0) * (0.145 * T + 143.0) / 1000.0
         return (
             "constructed Re2O7(g) from Battles vapor-pressure equilibrium measured "

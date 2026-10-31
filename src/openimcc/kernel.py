@@ -31,6 +31,8 @@ from openimcc.receipt import CalculationReceipt
 
 LOG10 = math.log(10.0)
 _R_J_MOL_K = 8.31446261815324
+# Preserve the accepted basis roundoff without renormalizing parent fractions.
+_BASIS_NORMALIZATION_RELATIVE_SLACK = 1.0e-6
 _CONTINUATION_LOGK_STEP = 2.0 * LOG10
 _CONTINUATION_INITIAL_COMPLEX_X = 1.0e-4
 _UNTRUSTED_IDENTITY_TOKEN = "internal-analytical"
@@ -2028,7 +2030,7 @@ def _solve_imcc_sf04_with_seed(
             raise ImccCompositionIncompleteError(
                 f"declared basis must be a positive finite number, got {basis}"
             )
-        if abs(total - basis) > 1.0e-6 * basis:
+        if abs(total - basis) > _BASIS_NORMALIZATION_RELATIVE_SLACK * basis:
             raise ImccCompositionIncompleteError(
                 f"parent mol sum {total:.12g} does not match declared basis "
                 f"{basis:.12g} within 1e-6 relative"
@@ -2092,11 +2094,11 @@ def _solve_imcc_sf04_with_seed(
 
     # --- Analytical parent fractions on the declared basis -------------------
     # x_i = parent_mol_i / basis. This equals n_i / sum_k n_k only when
-    # basis is exactly the parent-mol sum. The acceptance slack at
-    # |sum(parent_mol) - basis| <= 1e-6 * basis is not renormalized, so
-    # accepted x need not sum to 1. Unit check: moles / moles, dimensionless.
-    # Sanity: parent_mol=[0.50000025, 0.50000025], basis=1.0 is inside the
-    # slack (5e-7 < 1e-6) and yields sum(x)=1.0000005.
+    # basis is exactly the parent-mol sum. The accepted relative slack is not
+    # renormalized, so accepted x need not sum to 1. Unit check: moles / moles,
+    # dimensionless.
+    # Sanity: [0.50000025, 0.50000025] at basis 1.0 is accepted and yields
+    # sum(x)=1.0000005 without renormalizing.
     x = parent_mol / basis
 
     # --- Active parent/complex subset ----------------------------------------

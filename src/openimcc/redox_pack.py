@@ -17,6 +17,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping
 
+from openimcc.band_schema import validate_band_schema
 from openimcc.kernel import ImccRefusal
 
 _PACK_NAME = "openimcc-redox-v4.json"
@@ -40,12 +41,6 @@ class RedoxInputError(ImccRefusal, ValueError):
 
 class RedoxCompositionTermError(RedoxInputError):
     """A candidate composition-conditioned row has an invalid tagged term."""
-
-_BAND_BASIS = {
-    "source_uncertainty", "measured_construction", "independent_measurement",
-    "fit_only", "none",
-}
-
 
 class RedoxSchemaError(RedoxInputError):
     """A redox pack row uses an incomplete or legacy band schema."""
@@ -112,13 +107,7 @@ def _finite_number(value: Any, label: str) -> float:
 
 
 def _validate_band_schema(record: Mapping[str, Any], label: str) -> None:
-    legacy = {"band_kj_mol", "band_method", "uncertainty_band"} & record.keys()
-    if legacy:
-        raise RedoxSchemaError(f"{label} contains legacy band fields: {sorted(legacy)}")
-    required = {"fit_residual", "accuracy_band", "band_basis", "independent_check"}
-    missing = required - record.keys()
-    if missing:
-        raise RedoxSchemaError(f"{label} is missing band schema fields: {sorted(missing)}")
+    validate_band_schema(record, label, RedoxSchemaError)
     for field in ("fit_residual", "accuracy_band"):
         value = record[field]
         if value is not None:
@@ -135,23 +124,6 @@ def _validate_band_schema(record: Mapping[str, Any], label: str) -> None:
                 raise RedoxSchemaError(f"{label}/{field}/value must be non-negative")
             if not isinstance(value.get("unit"), str) or not value["unit"]:
                 raise RedoxSchemaError(f"{label}/{field}/unit must be a non-empty string")
-    basis = record["band_basis"]
-    if not isinstance(basis, dict) or basis.get("kind") not in _BAND_BASIS:
-        raise RedoxSchemaError(f"{label}/band_basis/kind is not an allowed value")
-    if "provenance" not in basis or not isinstance(basis.get("explanation"), str) or not basis["explanation"]:
-        raise RedoxSchemaError(f"{label}/band_basis needs an explanation")
-    check = record["independent_check"]
-    check_fields = {
-        "status", "equilibrium", "primary_source", "conditions", "measured_value",
-        "predicted_value", "miss", "miss_to_band_ratio", "reason",
-    }
-    if not isinstance(check, dict) or check_fields - check.keys():
-        raise RedoxSchemaError(f"{label}/independent_check has an incomplete structure")
-    if check.get("status") not in {"tested", "lead", "not_found", "not_applicable"}:
-        raise RedoxSchemaError(f"{label}/independent_check/status is invalid")
-    if check.get("status") == "not_found" and not isinstance(check.get("reason"), str):
-        raise RedoxSchemaError(f"{label}/independent_check/reason must explain not_found")
-
 
 def _atom_totals(
     terms: Mapping[str, Any], species: Mapping[str, Mapping[str, Any]], label: str

@@ -544,10 +544,17 @@ def evaluate_sulfur(
         # reserved for the independent O'Neill thermodynamic cross-check.
         scss = _scss_smythe(cations, T, pressure, x_fes, ideal_a_feo)
         if melt_pack is not None and a_feo is not None and a_feo > 0.0:
-            # O'Neill (2021), thermodynamic SCSS relation. The capacity is the
-            # central B&W23 model; the tabulated 1-bar FeO-FeS term follows
-            # Smythe et al. (2017), Eq. 12. The caller's openimcc pack supplies
-            # aFeO, and the ideal matte supplies aFeS = XFeS.
+            # Premise: O'Neill (2021), Eq. (10.43), gives ln[S]SCSS =
+            # ΔG°FeO-FeS/(RT) + ln(CS2) - ln(aFeO) + ln(aFeS); the sulfur
+            # capacity comes from Boulliung & Wood (2023), Eq. 7. The 1-bar
+            # thermodynamic term and pressure coefficient follow Smythe et al.
+            # (2017), Eq. 12; ideal matte activity gives aFeS = XFeS.
+            # Algebra: +4 converts log10(wt% S) capacity to log10(ppm S);
+            # add the log activities and ΔG°/RT terms, then exponentiate.
+            # Units: T is K; 269.40 has units K/GPa and pressure*1e-4 is GPa.
+            # Log terms use the ppm-normalized concentration convention, so the
+            # exponent is dimensionless and the result is ppm S.
+            # Sanity: the negative pressure term lowers SCSS as pressure rises.
             c2_ppm = 10.0 ** (log_cs2 + 4.0)
             ln_delta_g_over_rt = 14695.0 / T - 9.656 + 1.02 * math.log(T)
             oneill2021_scss = math.exp(

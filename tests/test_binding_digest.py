@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -13,6 +14,7 @@ import numpy as np
 import pytest
 
 from openimcc import ImccDatapack, label_research_datapack, load_datapack
+from openimcc.redox_pack import canonical_redox_digest
 import openimcc.kernel as kernel
 import openimcc.model as model
 
@@ -57,6 +59,22 @@ def test_published_packs_have_distinct_binding_and_same_core_hash() -> None:
         )
         core_hashes.append(content_hash)
     assert core_hashes == [kernel._PUBLISHED_DATAPACK_SHA256] * 2
+
+
+def test_canonical_encoders_keep_integer_float_difference() -> None:
+    value = {"value": 1.0}
+    kernel_encoding = kernel._canonical_published_serialization(value)
+    redox_encoding = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+
+    # Published digests pin both formats, so the kernel's numeric normalization
+    # must stay distinct from redox's JSON encoding.
+    assert kernel_encoding == b'{"value":1}'
+    assert redox_encoding == b'{"value":1.0}'
+    redox_digest = canonical_redox_digest(value)
+    assert redox_digest == hashlib.sha256(redox_encoding).hexdigest()
+    assert redox_digest != hashlib.sha256(kernel_encoding).hexdigest()
 
 
 def _research_sensitivity_variants(

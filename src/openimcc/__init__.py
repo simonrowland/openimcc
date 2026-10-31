@@ -17,7 +17,7 @@ package, never the other way round.
 from __future__ import annotations
 
 import json
-from importlib import metadata
+from importlib import import_module, metadata
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -169,6 +169,7 @@ _GAS_EXPORTS = frozenset({
     "gas_boiling_temperature",
     "oxygen_balance_species_metadata",
     "oxygen_balance_from_pressure_model",
+    "weighted_oxygen_balance_from_pressure_model",
     "gas_species_provenance",
     "load_gas_datapack",
     "species_thermo",
@@ -227,9 +228,12 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         liquid_reference_authority,
         liquid_reference_records,
     )
+    import openimcc.subsolidus as subsolidus
 
 
 def __getattr__(name: str):
+    if name == "subsolidus":
+        return import_module(".subsolidus", __name__)
     if name in {
         "Profile",
         "ProfileError",
@@ -310,6 +314,7 @@ __all__ = [
     "saturation_indices",
     "liquidus_bracket",
     "liquid_only_notice",
+    "subsolidus",
     # --- opt-in Fe redox --------------------------------------------------
     "evaluate_redox",
     "RedoxResult",
@@ -339,6 +344,7 @@ __all__ = [
     "gas_boiling_temperature",
     "oxygen_balance_species_metadata",
     "oxygen_balance_from_pressure_model",
+    "weighted_oxygen_balance_from_pressure_model",
     "gas_species_provenance",
     "ImccGasDatapack",
     "ImccGasDuplicateIntervalError",
@@ -372,4 +378,9 @@ __all__ = [
     # difference is invisible in a log-residual table, so the unit belongs at
     # the public surface where a caller trips over it.
     "BAR",
+    "IMCC_GAS_CHANNEL_SPECIES",
+    "IMCC_GAS_UNAVAILABLE_SPECIES",
+    "IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES",
+    "IMCC_PARENT_OXIDES",
+    "R_J_MOL_K",
 ]

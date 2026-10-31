@@ -13,6 +13,8 @@ import pytest
 import yaml
 
 from openimcc.redox_pack import canonical_redox_digest
+from openimcc.model import ImccMalformedDatapackError, _validate_band_schema_rows
+from openimcc.redox_pack import RedoxSchemaError, _validate_band_schema
 from tools.migrate_band_schema import migrate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +31,113 @@ _HG_DUPLICATE_INTERVALS = {
     ("gas", "Hg(g)", "BU-2587", 1, (1500.0, 3000.0)),
     ("gas", "Hg(g)", "BU-2587", 2, (1200.0, 1500.0)),
 }
+
+
+def test_shared_band_schema_accept_reject_contract() -> None:
+    def base_row() -> dict:
+        return {
+            "fit_residual": None,
+            "accuracy_band": None,
+            "band_basis": {
+                "kind": "none",
+                "explanation": "no separate band applies",
+                "provenance": "test fixture",
+            },
+            "independent_check": {
+                "status": "not_found",
+                "equilibrium": None,
+                "primary_source": None,
+                "conditions": None,
+                "measured_value": None,
+                "predicted_value": None,
+                "miss": None,
+                "miss_to_band_ratio": None,
+                "reason": "no check was located",
+            },
+        }
+
+    cases = [
+        ("valid", lambda row: None, None, None),
+        (
+            "missing required field",
+            lambda row: row.pop("accuracy_band"),
+            "sample 0 is missing band schema fields: ['accuracy_band']",
+            "sample 0 is missing band schema fields: ['accuracy_band']",
+        ),
+        (
+            "legacy field",
+            lambda row: row.update(uncertainty_band={}),
+            "sample 0 contains legacy band fields: ['uncertainty_band']",
+            "sample 0 contains legacy band fields: ['uncertainty_band']",
+        ),
+        (
+            "invalid basis",
+            lambda row: row.update(band_basis={
+                "kind": "unsupported", "explanation": "bad", "provenance": "test"
+            }),
+            "sample 0/band_basis/kind is not an allowed value",
+            "sample 0/band_basis/kind is not an allowed value",
+        ),
+        (
+            "invalid basis explanation",
+            lambda row: row["band_basis"].update(explanation=1),
+            "sample 0/band_basis needs explanation and provenance",
+            "sample 0/band_basis needs explanation and provenance",
+        ),
+        (
+            "missing basis provenance",
+            lambda row: row["band_basis"].pop("provenance"),
+            "sample 0/band_basis needs explanation and provenance",
+            "sample 0/band_basis needs explanation and provenance",
+        ),
+        (
+            "incomplete independent check",
+            lambda row: row["independent_check"].pop("reason"),
+            "sample 0/independent_check has an incomplete structure",
+            "sample 0/independent_check has an incomplete structure",
+        ),
+        (
+            "invalid independent-check status",
+            lambda row: row["independent_check"].update(status="unknown"),
+            "sample 0/independent_check/status is invalid",
+            "sample 0/independent_check/status is invalid",
+        ),
+        (
+            "melt-only legacy field",
+            lambda row: row.update(max_residual_log10_K=1.0),
+            "sample 0 contains legacy band fields: ['max_residual_log10_K']",
+            "sample 0 contains legacy band fields: ['max_residual_log10_K']",
+        ),
+        (
+            "not-found reason type",
+            lambda row: row["independent_check"].update(reason=1),
+            "sample 0/independent_check/reason must explain not_found",
+            "sample 0/independent_check/reason must explain not_found",
+        ),
+    ]
+
+    for name, change, model_error, redox_error in cases:
+        row = base_row()
+        change(row)
+        validators = (
+            (
+                lambda: _validate_band_schema_rows({"rows": [row]}, row_label="sample"),
+                model_error,
+                ImccMalformedDatapackError,
+            ),
+            (
+                lambda: _validate_band_schema(row, "sample 0"),
+                redox_error,
+                RedoxSchemaError,
+            ),
+        )
+        for validate, expected_error, error_type in validators:
+            if expected_error is None:
+                validate()
+            else:
+                with pytest.raises(error_type) as raised:
+                    validate()
+                assert str(raised.value) == expected_error, name
 
 
 def _migration_row_identity(row: dict) -> tuple:
@@ -621,7 +730,7 @@ def test_melt_loader_rejects_legacy_band_field_with_typed_error(tmp_path: Path) 
     try:
         load_datapack(candidate)
     except ImccMalformedDatapackError as exc:
-        assert "legacy fields" in str(exc)
+        assert "legacy band fields" in str(exc)
     else:
         raise AssertionError("legacy band field was accepted")
 
