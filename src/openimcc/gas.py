@@ -4662,8 +4662,6 @@ def _liquid_reference_flags(
         if validity is not None and validity.get("table_id")
         else str(selected_row.get("Ref", ""))
     )
-    if species == "FeO(l)" and selected_source_id == "JANAF":
-        selected_source_id = "Fe-019"
     status = liquid_reference_authority(
         species,
         T,

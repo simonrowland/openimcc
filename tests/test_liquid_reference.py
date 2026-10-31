@@ -17,7 +17,7 @@ from openimcc import (
 
 def test_authority_enum_and_inclusive_window_boundaries() -> None:
     with pytest.raises(ValueError, match="unknown liquid-reference authority"):
-        LiquidReferenceRecord("X(l)", "unknown", None, None, None, ())  # type: ignore[arg-type]
+        LiquidReferenceRecord("X(l)", "unknown", None, None, None, (), source_ids=())  # type: ignore[arg-type]
     assert liquid_reference_authority("SiO2(l)", 900).authority is LiquidReferenceAuthority.EXTRAPOLATED
     assert liquid_reference_authority("SiO2(l)", 1996).authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION
     assert liquid_reference_authority("SiO2(l)", 899.999).authority is LiquidReferenceAuthority.EXTRAPOLATED
@@ -125,12 +125,12 @@ def test_authority_windows_reject_overlaps() -> None:
     extra = AuthorityWindow(LiquidReferenceAuthority.CERTIFIED, (2, 4), None, None, evidence)
     with pytest.raises(ValueError, match="windows overlap"):
         LiquidReferenceRecord("X(l)", LiquidReferenceAuthority.CERTIFIED,
-            (1, 3), None, None, evidence, (extra,))
+            (1, 3), None, None, evidence, source_ids=(), additional_windows=(extra,))
     first = AuthorityWindow(LiquidReferenceAuthority.CERTIFIED, (1, 3), None, None, evidence)
     second = AuthorityWindow(LiquidReferenceAuthority.CERTIFIED, (2, 4), None, None, evidence)
     with pytest.raises(ValueError, match="windows overlap"):
         LiquidReferenceRecord("X(l)", LiquidReferenceAuthority.EXTRAPOLATED,
-            None, None, None, evidence, (first, second))
+            None, None, None, evidence, source_ids=(), additional_windows=(first, second))
 
 
 def test_composition_scoped_k2o_authority() -> None:
