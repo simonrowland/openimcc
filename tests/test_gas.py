@@ -339,6 +339,44 @@ def test_default_major_parent_continuations_are_flagged(
     assert result.provenance_class[species] == "janaf_fitted"
 
 
+@pytest.mark.parametrize(
+    ("oxide", "species", "fusion_temperature"),
+    (("NiO", "Ni", 2228.0), ("CoO", "Co", 2090.0)),
+)
+def test_tsiv_supercooled_notice_uses_typed_segment_not_table_id(
+    gas_pack: ImccGasDatapack,
+    oxide: str,
+    species: str,
+    fusion_temperature: float,
+) -> None:
+    arguments = {
+        "parent_oxides": (oxide,),
+        "gas_species": (species,),
+    }
+    shipped = evaluate_gas(
+        {oxide: 1.0}, 1500.0, 1.0e-10, gas_pack, **arguments
+    )
+    shipped_notice = shipped.domain_flags[species] or ""
+    assert (
+        f"{oxide}(l) uses the TSIV liquid function as a supercooled branch "
+        f"below {fusion_temperature:g} K"
+    ) in shipped_notice
+
+    renamed_oxide = gas_pack.oxide_df.copy()
+    segment_rows = (
+        (renamed_oxide.index == f"{oxide}(l)")
+        & (renamed_oxide["supercooled_segment_max_K"].astype(float) > 0.0)
+    )
+    assert int(segment_rows.sum()) == 1
+    assert renamed_oxide.loc[segment_rows, "table_id"].iloc[0].startswith("TSIV-")
+    renamed_oxide.loc[segment_rows, "table_id"] = "renamed-table"
+    renamed_pack = replace(gas_pack, oxide_df=renamed_oxide)
+    renamed = evaluate_gas(
+        {oxide: 1.0}, 1500.0, 1.0e-10, renamed_pack, **arguments
+    )
+    assert renamed.domain_flags[species] == shipped.domain_flags[species]
+
+
 def test_default_silica_parent_uses_promoted_liquid_construction(
     gas_pack: ImccGasDatapack,
 ) -> None:
@@ -1184,8 +1222,8 @@ def test_provenance_class_follows_the_coefficients_that_set_the_pressure(
     """A changed Gibbs coefficient must not keep the packaged class.
 
     Dropping an unused row leaves the selected cells packaged, so that
-    channel keeps its class. A LAM1984 or LAM1987 parent ref keeps the
-    class taken from the loaded row.
+    channel keeps its class. Shipped LAM parent rows keep their transcribed
+    class, while a coefficient edit under the same ref removes that class.
     """
     call = {
         "parent_oxides": ("SiO2",),
@@ -1245,6 +1283,23 @@ def test_provenance_class_follows_the_coefficients_that_set_the_pressure(
     assert published.provenance_class["SiO"] == "lam1987_transcribed"
     assert published.provenance_class["K"] == "lam1984_transcribed"
     assert published.provenance_class["Na"] == "external_datapack"
+
+    edited_lam_oxide = sf04_gas_pack.oxide_df.copy()
+    k2o = edited_lam_oxide.index == "K2O(l)"
+    assert bool(k2o.any())
+    assert set(edited_lam_oxide.loc[k2o, "Ref"]) == {"LAM1984"}
+    edited_lam_oxide.loc[k2o, "dG_A"] = edited_lam_oxide.loc[k2o, "dG_A"] + 5.0
+    edited_lam_parent = evaluate_gas(
+        {"K2O": 1.0},
+        2000.0,
+        1.0,
+        replace(sf04_gas_pack, oxide_df=edited_lam_oxide),
+        parent_oxides=("K2O",),
+        gas_species=("K",),
+        allow_extrapolation=True,
+    )
+    assert edited_lam_parent["K"] != published["K"]
+    assert edited_lam_parent.provenance_class["K"] == "external_datapack"
 
     ions = gas_pack.gas_df.copy()
     sodium_ion = ions.index == "Na+(g)"
@@ -2866,6 +2921,7 @@ def test_public_mn_channels_use_the_mno_parent_and_janaf_ion(
         assert flags is not None
         assert "tier-4 liquid_from_solid construction from MnO-IVTAN-1435" in flags
         assert "supercooled liquid_from_solid branch" in flags
+        assert "TSIV liquid function" not in flags
 
     missing_mno_gas = replace(
         gas_pack, gas_df=gas_pack.gas_df.drop(index="MnO(g)")

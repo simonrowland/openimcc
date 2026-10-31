@@ -1847,15 +1847,17 @@ def _result_provenance_authority(
     """Use the active parent row when a loaded pack changes its authority."""
     provenance = gas_species_provenance(species)
     if oxide_row is not None:
-        row_authority = {
-            "LAM1984": "lam1984_transcribed",
-            "LAM1987": "lam1987_transcribed",
-        }.get(str(oxide_row["Ref"]))
+        row_authority = _LAM_PARENT_REF_AUTHORITIES.get(str(oxide_row["Ref"]))
         if row_authority is not None:
-            return min(
-                (str(provenance["gas_authority"]), row_authority),
-                key=_PROVENANCE_AUTHORITY_RANK.__getitem__,
-            )
+            _, _, _, _, lam_parent_rows = _packaged_pressure_signatures()
+            if (
+                _pressure_row_signature(oxide_row, _OXIDE_PRESSURE_COLUMNS)
+                in lam_parent_rows
+            ):
+                return min(
+                    (str(provenance["gas_authority"]), row_authority),
+                    key=_PROVENANCE_AUTHORITY_RANK.__getitem__,
+                )
     return str(provenance["authority"])
 
 IMCC_SF04_WORKBOOK_GRID_K = (
@@ -4591,8 +4593,8 @@ def _source_model_flag(
     supercooled_segment = validity.get("supercooled_segment_K")
     if (
         phase == "l"
+        and method == "fitted"
         and supercooled_segment is not None
-        and str(validity.get("table_id", "")).startswith("TSIV-")
     ):
         return (
             f"{row_name} uses the TSIV liquid function as a supercooled branch "
@@ -5339,9 +5341,12 @@ _GAS_PRESSURE_COLUMNS = ("A", "B", "C", "D", "E", "F", "G")
 _OXIDE_PRESSURE_COLUMNS = (
     "dH298_R", "dG_A", "dG_B", "dG_C", "dG_D", "dG_E",
 )
-# These refs are the loaded parent row's authority. Their coefficients are
-# the preserved transcription, not the packaged liquid row.
-_LAM_PARENT_REFS = frozenset({"LAM1984", "LAM1987"})
+# A LAM ref selects a transcribed class only when the row matches the shipped
+# transcription's pressure coefficients.
+_LAM_PARENT_REF_AUTHORITIES = {
+    "LAM1984": "lam1984_transcribed",
+    "LAM1987": "lam1987_transcribed",
+}
 _EXTERNAL_DATAPACK_CLASS = "external_datapack"
 
 
@@ -5395,12 +5400,15 @@ def _packaged_pressure_signatures() -> tuple[
     str,
     frozenset[tuple[object, ...]],
     frozenset[tuple[object, ...]],
+    frozenset[tuple[object, ...]],
 ]:
     """Digests and Gibbs-cell signatures of the packaged tables.
 
     Read through the importlib resources, not ``load_gas_datapack``. An
-    environment override must not become the reference the digests name.
+    environment override must not become the reference the digests name. The
+    final signature set contains the shipped LAM parent source rows.
     """
+    pd = _pandas()
     gas_df, gas_path = _read_packaged_table(_PACKAGED_GAS_NAME)
     oxide_df, oxide_path = _read_packaged_table(_PACKAGED_CONDENSATE_NAME)
     pack = ImccGasDatapack(
@@ -5409,11 +5417,20 @@ def _packaged_pressure_signatures() -> tuple[
         gas_path=gas_path,
         oxide_path=oxide_path,
     )
+    lam_parent_resource = resources.files("openimcc").joinpath(
+        "data/packs/sf04-published/condensate.csv"
+    )
+    with lam_parent_resource.open("rb") as handle:
+        lam_parent_df = pd.read_csv(handle).set_index("species_name")
+    lam_parent_rows = lam_parent_df.loc[
+        lam_parent_df["Ref"].isin(_LAM_PARENT_REF_AUTHORITIES)
+    ]
     return (
         pack.gas_table_digest,
         pack.condensate_table_digest,
         _frame_pressure_signatures(pack.gas_df, _GAS_PRESSURE_COLUMNS),
         _frame_pressure_signatures(pack.oxide_df, _OXIDE_PRESSURE_COLUMNS),
+        _frame_pressure_signatures(lam_parent_rows, _OXIDE_PRESSURE_COLUMNS),
     )
 
 
@@ -5428,11 +5445,12 @@ def _channel_provenance(
     The static species map is the packaged authority. It stays for the
     packaged tables themselves, and for a pack whose used Gibbs cells are
     those packaged cells. Dropping an unused interval therefore does not
-    relabel the channels that remain. A LAM parent ref keeps the class the
-    loaded row already selects; a gas row beside it still has to match.
+    relabel the channels that remain. A LAM parent keeps its transcribed
+    class only when its coefficients match the shipped source row; a gas row
+    beside it still has to match.
     """
     declared = _result_provenance_authority(species, oxide_row)
-    gas_digest, oxide_digest, gas_rows, oxide_rows = (
+    gas_digest, oxide_digest, gas_rows, oxide_rows, lam_parent_rows = (
         _packaged_pressure_signatures()
     )
     if (
@@ -5448,11 +5466,8 @@ def _channel_provenance(
             ):
                 return _EXTERNAL_DATAPACK_CLASS
             continue
-        if (
-            _pressure_row_signature(row, _OXIDE_PRESSURE_COLUMNS)
-            not in oxide_rows
-            and str(row["Ref"]) not in _LAM_PARENT_REFS
-        ):
+        row_signature = _pressure_row_signature(row, _OXIDE_PRESSURE_COLUMNS)
+        if row_signature not in oxide_rows and row_signature not in lam_parent_rows:
             return _EXTERNAL_DATAPACK_CLASS
     return declared
 
@@ -5461,7 +5476,7 @@ def _gas_rows_match_packaged(
     datapack: ImccGasDatapack, rows: tuple[pd.Series, ...]
 ) -> bool:
     """True when ion Gibbs rows are the packaged gas rows."""
-    gas_digest, oxide_digest, gas_rows, _oxide_rows = (
+    gas_digest, oxide_digest, gas_rows, _oxide_rows, _lam_parent_rows = (
         _packaged_pressure_signatures()
     )
     if (
@@ -5556,8 +5571,8 @@ def evaluate_gas(
         ``provenance_class`` carries the least-authoritative class returned by
         ``gas_species_provenance`` when the rows that enter the pressure are
         the packaged rows. A Gibbs cell that is not that packaged cell is
-        ``external_datapack``, except a LAM1984 or LAM1987 parent ref, which
-        keeps the authority taken from that loaded row.
+        ``external_datapack``, except a LAM1984 or LAM1987 parent row whose
+        Gibbs coefficients match the shipped transcription.
 
     Derivation
     ----------
