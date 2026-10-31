@@ -16,12 +16,14 @@ records:
     source_url: https://www.chem.msu.ru/rus/tsiv/Mn/ivtan0005.html
     source_locator: Table 1436
     standard_pressure_atm: 1.0
-    standard_pressure_source_url: https://www.chem.msu.ru/cgi-bin/tkv.pl?show=params.html
+    standard_pressure_source_url: https://doi.org/10.1088/1742-6596/946/1/012120
+    standard_pressure_source_locator: Section 2.1, standard-pressure definition
     standard_pressure_basis: >-
-      The TSIV publisher's general thermal-constants conventions state that
-      standard pressure is one atmosphere and define the gas standard as
-      hypothetical gas with fugacity 1 atm. The MnO(g) table page does not
-      repeat p°.
+      Belov et al. (2018), IVTANTHERMO-Online, Section 2.1, DOI
+      10.1088/1742-6596/946/1/012120, define standard pressure as 101325 Pa
+      and the gas standard as a hypothetical ideal gas at that pressure,
+      following reference [17] (Gurvich et al., Thermodynamic Properties of
+      Individual Substances). The MnO(g) page does not repeat p°.
     tier: 3
     selection_reason: The JANAF index has no MnO(g) row; the published table supplies MnO(g) heat-capacity, entropy, and enthalpy nodes through 3000 K and prints accuracy class 4-E with DrH = 374.000 kJ/mol, DH(298.15 K) = 155.620 kJ/mol, and DH(0) = 156.096 kJ/mol. The cited page does not quantify a numeric uncertainty band.
   - record_id: IVTAN-264
@@ -72,12 +74,14 @@ records:
     source_url: https://www.chem.msu.ru/rus/tsiv/Co/ivtan0005.html
     source_locator: Volume IV, Table 1335
     standard_pressure_atm: 1.0
-    standard_pressure_source_url: https://www.chem.msu.ru/cgi-bin/tkv.pl?show=params.html
+    standard_pressure_source_url: https://doi.org/10.1088/1742-6596/946/1/012120
+    standard_pressure_source_locator: Section 2.1, standard-pressure definition
     standard_pressure_basis: >-
-      The TSIV publisher's general thermal-constants conventions state that
-      standard pressure is one atmosphere and define the gas standard as
-      hypothetical gas with fugacity 1 atm. The CoO(g) table page does not
-      repeat p°.
+      Belov et al. (2018), IVTANTHERMO-Online, Section 2.1, DOI
+      10.1088/1742-6596/946/1/012120, define standard pressure as 101325 Pa
+      and the gas standard as a hypothetical ideal gas at that pressure,
+      following reference [17] (Gurvich et al., Thermodynamic Properties of
+      Individual Substances). The CoO(g) page does not repeat p°.
     tier: 3
     selection_reason: The source prints CoO(g) H/S/Cp functions through 3000 K and an elemental-reference 298.15 K formation anchor; no JANAF or NASA CoO(g) table is available.
   - record_id: TSIV-2023

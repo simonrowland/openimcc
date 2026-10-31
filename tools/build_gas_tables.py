@@ -2918,8 +2918,10 @@ def _published_gas_standard_pressure_atm(table_id: str) -> float | None:
     """Return only pressure standards established by the source record rail."""
     # Bulletin 672's Methods, Conventions, and Symbols section defines gases
     # as hypothetical ideal gases at unit fugacity and gives P in atmospheres.
-    # The TSIV publisher's general thermal-constants convention defines gas
-    # standards at fugacity 1 atm; selected table pages do not repeat p°.
+    # Belov et al. (2018), IVTANTHERMO-Online, §2.1, DOI
+    # 10.1088/1742-6596/946/1/012120, define P°=101325 Pa and gases as
+    # hypothetical ideal gases at that pressure, following Gurvich et al.
+    # [17]. This applies to IVTANTHERMO tables 1436/1335; their pages omit p°.
     # IVTAN, Bulletin 696/677, Pedley-Marshall, Kelley, and NUREG rows stay
     # unconverted where their own records do not state p°.
     if table_id.startswith("P672-") or table_id in {"TSIV-1436", "TSIV-1335"}:

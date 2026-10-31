@@ -59,8 +59,7 @@ the tier-2 Cp value is unavailable rather than inferred.
 K₂O's selected fusion temperature is 1013 K from the Gurvich lineage in the
 NASA Glenn CEA K₂O(l) interval (McBride, Zehe, and Gordon, NASA TP-2002-211556;
 Gurvich et al., *Thermodynamic Properties of Individual Substances*, vol. IV,
-pt. 1, p. 377 and pt. 2, p. 406); it is also listed in the TKV database
-(Gurvich lineage, with no further bibliography). The alkali M₂O trend—Li₂O
+pt. 1, p. 377 and pt. 2, p. 406). The alkali M₂O trend—Li₂O
 1711 K (Ortman and Larsen), Na₂O 1405.2 K (NIST-JANAF/DTA), Rb₂O 778 K and
 Cs₂O 763–768 K (Gurvich)—supports this value over Lamoreaux and Hildenbrand's
 1190 ± 50 K estimate (1984, Table
