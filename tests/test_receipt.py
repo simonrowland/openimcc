@@ -7,8 +7,7 @@ import pytest
 
 import openimcc
 import openimcc.gas as gas_module
-import openimcc.model as model_module
-import openimcc.redox as redox_module
+import openimcc.receipt as receipt_module
 from openimcc import evaluate, evaluate_redox
 from openimcc.gas import (
     evaluate_gas,
@@ -30,6 +29,10 @@ _BASALT = {
 }
 
 
+def _assert_parent_numbers(actual, expected):
+    np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=0.0)
+
+
 def _assert_json_receipt(result):
     receipt = result.receipt
     assert receipt is not None
@@ -42,13 +45,22 @@ def _assert_json_receipt(result):
 
 
 def test_receipts_cover_each_result_entrypoint_and_existing_digests():
+    # Numerical expectations were generated from parent commit 47f6f01.
     melt = evaluate(_BASALT, 1800.0, basis_type="wt")
+    _assert_parent_numbers(
+        [melt.D, melt.activity("SiO2")],
+        [2.102073306152123, 0.32943033154573187],
+    )
     melt_receipt = _assert_json_receipt(melt)
     assert melt_receipt.data_digests == {
         "melt": melt.labels.identity["binding_digest"]
     }
 
     redox = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+    _assert_parent_numbers(
+        [redox.lambda_ln_f_o2, redox.oxygen_mol],
+        [-1.5205238540751636, 1.250000000000054],
+    )
     redox_receipt = _assert_json_receipt(redox)
     assert redox_receipt.data_digests == {
         "melt": redox.melt_pack_binding_digest,
@@ -58,6 +70,10 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     profile = openimcc.load_profile("openimcc")
     activities = {name: melt.activity(name) for name in melt.parent_oxides}
     gas = evaluate_gas(activities, 1800.0, 1e-10, profile="openimcc")
+    _assert_parent_numbers(
+        [gas["O2"], gas["Na"]],
+        [1e-10, 0.00019759260187725066],
+    )
     gas_receipt = _assert_json_receipt(gas)
     assert gas_receipt.data_digests == {
         "gas": gas.gas_table_digest,
@@ -66,8 +82,12 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     assert gas_receipt.request["fO2"] == 1e-10
     assert gas_receipt.request["profile"] == "openimcc"
 
-    _, balanced, _ = evaluate_gas_oxygen_balance(
+    balance_pO2, balanced, _ = evaluate_gas_oxygen_balance(
         activities, 1800.0, profile="openimcc"
+    )
+    _assert_parent_numbers(
+        [balance_pO2, balanced["Na"]],
+        [4.044113669939114e-06, 1.3933648210712147e-05],
     )
     balance_receipt = _assert_json_receipt(balanced)
     assert balance_receipt.data_digests == {
@@ -79,27 +99,27 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
         activities, 1800.0, parent_oxides=tuple(activities),
         allow_extrapolation=True, profile="openimcc",
     )
+    _assert_parent_numbers(
+        [saturation.P_sat_bar, saturation.pO2_bar],
+        [1.865008271569144e-05, 3.5987590837640433e-06],
+    )
     saturation_receipt = _assert_json_receipt(saturation)
     assert saturation_receipt.data_digests == {
         "gas": saturation.gas_table_digest,
         "condensate": saturation.condensate_table_digest,
     }
 
-    lower = evaluate_gas_saturation(
-        activities, 1800.0, parent_oxides=tuple(activities),
-        allow_extrapolation=True, profile="openimcc",
-    )
-    upper = evaluate_gas_saturation(
-        activities, 2000.0, parent_oxides=tuple(activities),
-        allow_extrapolation=True, profile="openimcc",
-    )
-    _, boiling = gas_boiling_temperature(
+    boiling_temperature, boiling = gas_boiling_temperature(
         activities,
-        ambient_pressure_bar=(lower.P_sat_bar + upper.P_sat_bar) / 2.0,
+        ambient_pressure_bar=4.865657946350167e-05,
         T_bracket=(1800.0, 2000.0),
         parent_oxides=tuple(activities),
         allow_extrapolation=True,
         profile="openimcc",
+    )
+    _assert_parent_numbers(
+        [boiling_temperature, boiling.P_sat_bar],
+        [1930.1681888788141, 4.865657946350161e-05],
     )
     boiling_receipt = _assert_json_receipt(boiling)
     assert boiling_receipt.data_digests == {
@@ -139,33 +159,104 @@ def test_version_is_unknown_when_distribution_does_not_own_imported_package(
         def locate_file(self, _path):
             return tmp_path / "openimcc" / "__init__.py"
 
+        def read_text(self, _path):
+            return None
+
     monkeypatch.setattr(openimcc.metadata, "distribution", lambda _name: Distribution())
 
     assert openimcc._resolve_version() == "0+unknown"
 
 
-def test_default_profile_numbers_match_without_receipt_builder(
-    monkeypatch: pytest.MonkeyPatch,
+def test_version_accepts_wheel_and_editable_ownership(monkeypatch, tmp_path):
+    from pathlib import Path
+
+    imported_package = Path(openimcc.__file__).resolve()
+
+    class Distribution:
+        version = "1.2.3"
+
+        def __init__(self, installed_path, direct_url=None):
+            self.installed_path = installed_path
+            self.direct_url = direct_url
+
+        def locate_file(self, _path):
+            return self.installed_path
+
+        def read_text(self, _path):
+            return self.direct_url
+
+    monkeypatch.setattr(
+        openimcc.metadata,
+        "distribution",
+        lambda _name: Distribution(imported_package),
+    )
+    assert openimcc._resolve_version() == "1.2.3"
+
+    project_dir = imported_package.parents[2]
+    editable_url = json.dumps({
+        "url": project_dir.as_uri(),
+        "dir_info": {"editable": True},
+    })
+    monkeypatch.setattr(
+        openimcc.metadata,
+        "distribution",
+        lambda _name: Distribution(
+            tmp_path / "site-packages/openimcc/__init__.py", editable_url
+        ),
+    )
+    assert openimcc._resolve_version() == "1.2.3"
+
+
+def test_source_identity_ignores_an_enclosing_unrelated_checkout(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
 ):
-    with_profile = openimcc.load_profile("openimcc")
-    melt_with = evaluate(_BASALT, 1800.0, basis_type="wt")
-    redox_with = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
-    activities = {name: melt_with.activity(name) for name in melt_with.parent_oxides}
-    gas_with = evaluate_gas(activities, 1800.0, 1e-10, profile=with_profile)
+    checkout = tmp_path / "project"
+    package = checkout / ".venv/lib/python/site-packages/openimcc"
+    package.mkdir(parents=True)
+    (checkout / ".git").mkdir()
+    source_package = checkout / "src/openimcc"
+    source_package.mkdir(parents=True)
+    (source_package / "__init__.py").write_text("# another package\n")
+    imported_init = package / "__init__.py"
+    imported_init.write_text("# installed package\n")
+    (package / "receipt.py").write_text("# installed receipt\n")
 
     with monkeypatch.context() as patch:
-        patch.setattr(model_module, "build_calculation_receipt", lambda **_kwargs: None)
-        melt_without = evaluate(_BASALT, 1800.0, basis_type="wt")
-    assert np.array_equal(melt_with.parent_activity, melt_without.parent_activity)
-    assert melt_with.D.hex() == melt_without.D.hex()
+        patch.setattr(receipt_module, "__file__", str(package / "receipt.py"))
+        receipt_module._source_identity.cache_clear()
+        assert receipt_module._source_identity() == (None, None)
+    receipt_module._source_identity.cache_clear()
 
-    with monkeypatch.context() as patch:
-        patch.setattr(redox_module, "build_calculation_receipt", lambda **_kwargs: None)
-        redox_without = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
-    assert redox_with.parent_moles == redox_without.parent_moles
-    assert redox_with.oxygen_mol.hex() == redox_without.oxygen_mol.hex()
 
-    with monkeypatch.context() as patch:
-        patch.setattr(gas_module, "build_calculation_receipt", lambda **_kwargs: None)
-        gas_without = evaluate_gas(activities, 1800.0, 1e-10, profile=with_profile)
-    assert dict(gas_with) == dict(gas_without)
+def test_gas_solver_trials_build_only_the_final_receipt(monkeypatch):
+    melt = evaluate(_BASALT, 1800.0, basis_type="wt")
+    activities = {name: melt.activity(name) for name in melt.parent_oxides}
+    build_receipt = gas_module.build_calculation_receipt
+    calls = 0
+
+    def counting_builder(**kwargs):
+        nonlocal calls
+        calls += 1
+        return build_receipt(**kwargs)
+
+    monkeypatch.setattr(gas_module, "build_calculation_receipt", counting_builder)
+    evaluate_gas_saturation(
+        activities, 1800.0, parent_oxides=tuple(activities),
+        allow_extrapolation=True, profile="openimcc",
+    )
+    assert calls == 1
+
+    calls = 0
+    evaluate_gas_oxygen_balance(activities, 1800.0, profile="openimcc")
+    assert calls == 1
+
+    calls = 0
+    gas_boiling_temperature(
+        activities,
+        ambient_pressure_bar=4.865657946350167e-05,
+        T_bracket=(1800.0, 2000.0),
+        parent_oxides=tuple(activities),
+        allow_extrapolation=True,
+        profile="openimcc",
+    )
+    assert calls == 1

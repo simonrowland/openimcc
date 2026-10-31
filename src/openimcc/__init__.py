@@ -16,9 +16,12 @@ package, never the other way round.
 
 from __future__ import annotations
 
+import json
 from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 from openimcc.model import (
     EngineBindingIdentity,
@@ -92,14 +95,29 @@ def _resolve_version() -> str:
     """
     try:
         distribution = metadata.distribution("openimcc")
+        imported_package = Path(__file__).resolve()
         installed_package = Path(
             distribution.locate_file("openimcc/__init__.py")
         ).resolve()
-        if installed_package != Path(__file__).resolve():
-            return "0+unknown"
-        return distribution.version
+        if installed_package == imported_package:
+            return distribution.version
+
+        direct_url = distribution.read_text("direct_url.json")
+        if direct_url is not None:
+            metadata_entry = json.loads(direct_url)
+            if metadata_entry.get("dir_info", {}).get("editable") is True:
+                url = urlparse(metadata_entry["url"])
+                if url.scheme == "file":
+                    project_dir = Path(url2pathname(url.path)).resolve()
+                    try:
+                        imported_package.relative_to(project_dir)
+                    except ValueError:
+                        pass
+                    else:
+                        return distribution.version
     except Exception:
-        return "0+unknown"
+        pass
+    return "0+unknown"
 
 
 __version__ = _resolve_version()

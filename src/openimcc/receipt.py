@@ -85,65 +85,76 @@ def _dependency_version(name: str) -> str:
 def _source_identity() -> tuple[str | None, bool | None]:
     """Read the checkout revision and dirty state once, without requiring git."""
     package_dir = Path(__file__).resolve().parent
-    for root in (package_dir, *package_dir.parents):
-        dot_git = root / ".git"
-        if not dot_git.exists():
-            continue
-        try:
-            if dot_git.is_dir():
-                git_dir = dot_git
-            elif dot_git.is_file():
-                marker = dot_git.read_text(encoding="utf-8").strip()
-                if not marker.startswith("gitdir:"):
-                    return None, None
-                git_dir = Path(marker.removeprefix("gitdir:").strip())
-                if not git_dir.is_absolute():
-                    git_dir = (root / git_dir).resolve()
-            else:
-                return None, None
+    imported_package = (package_dir / "__init__.py").resolve()
+    root = next(
+        (
+            ancestor
+            for ancestor in (package_dir, *package_dir.parents)
+            if (ancestor / "src/openimcc/__init__.py").resolve()
+            == imported_package
+        ),
+        None,
+    )
+    if root is None:
+        return None, None
 
-            common_dir = git_dir
-            common_marker = git_dir / "commondir"
-            if common_marker.is_file():
-                common_dir = Path(common_marker.read_text(encoding="utf-8").strip())
-                if not common_dir.is_absolute():
-                    common_dir = (git_dir / common_dir).resolve()
-
-            head = (git_dir / "HEAD").read_text(encoding="ascii").strip()
-            if head.startswith("ref:"):
-                ref = head.removeprefix("ref:").strip()
-                revision = next(
-                    (
-                        value
-                        for directory in (git_dir, common_dir)
-                        if (value := _read_ref(directory, ref)) is not None
-                    ),
-                    None,
-                )
-            else:
-                revision = head
-            if revision is None or re.fullmatch(
-                r"[0-9a-fA-F]{40,64}", revision
-            ) is None:
+    dot_git = root / ".git"
+    if not dot_git.exists():
+        return None, None
+    try:
+        if dot_git.is_dir():
+            git_dir = dot_git
+        elif dot_git.is_file():
+            marker = dot_git.read_text(encoding="utf-8").strip()
+            if not marker.startswith("gitdir:"):
                 return None, None
-        except (OSError, UnicodeError, ValueError):
+            git_dir = Path(marker.removeprefix("gitdir:").strip())
+            if not git_dir.is_absolute():
+                git_dir = (root / git_dir).resolve()
+        else:
             return None, None
 
-        try:
-            status = subprocess.run(
-                ["git", "status", "--porcelain"],
-                cwd=root,
-                capture_output=True,
-                text=True,
-                errors="replace",
-                timeout=1.0,
-                check=False,
+        common_dir = git_dir
+        common_marker = git_dir / "commondir"
+        if common_marker.is_file():
+            common_dir = Path(common_marker.read_text(encoding="utf-8").strip())
+            if not common_dir.is_absolute():
+                common_dir = (git_dir / common_dir).resolve()
+
+        head = (git_dir / "HEAD").read_text(encoding="ascii").strip()
+        if head.startswith("ref:"):
+            ref = head.removeprefix("ref:").strip()
+            revision = next(
+                (
+                    value
+                    for directory in (git_dir, common_dir)
+                    if (value := _read_ref(directory, ref)) is not None
+                ),
+                None,
             )
-            dirty = bool(status.stdout.strip()) if status.returncode == 0 else None
-        except (OSError, subprocess.SubprocessError):
-            dirty = None
-        return revision.lower(), dirty
-    return None, None
+        else:
+            revision = head
+        if revision is None or re.fullmatch(
+            r"[0-9a-fA-F]{40,64}", revision
+        ) is None:
+            return None, None
+    except (OSError, UnicodeError, ValueError):
+        return None, None
+
+    try:
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=1.0,
+            check=False,
+        )
+        dirty = bool(status.stdout.strip()) if status.returncode == 0 else None
+    except (OSError, subprocess.SubprocessError):
+        dirty = None
+    return revision.lower(), dirty
 
 
 def _read_ref(git_dir: Path, ref: str) -> str | None:
