@@ -231,7 +231,9 @@ class ImccGasResult(MappingABC[str, float]):
     omitted_channels: Mapping[str, str] = field(default_factory=dict)
     liquid_reference_status: Mapping[str, CertificationStatus] = field(default_factory=dict)
     _profile_identity: InitVar[tuple[str | None, str, str] | None] = None
-    receipt: CalculationReceipt | None = None
+    receipt: CalculationReceipt | None = field(
+        default=None, compare=False, hash=False
+    )
 
     def __post_init__(
         self, _profile_identity: tuple[str | None, str, str] | None
@@ -339,7 +341,9 @@ class ImccGasSaturationResult:
     diagnostics: Mapping[str, object]
     domain_flags: Mapping[str, str | None]
     _profile_identity: InitVar[tuple[str | None, str, str] | None] = None
-    receipt: CalculationReceipt | None = None
+    receipt: CalculationReceipt | None = field(
+        default=None, compare=False, hash=False
+    )
 
     def __post_init__(
         self, _profile_identity: tuple[str | None, str, str] | None
@@ -5454,7 +5458,7 @@ def _gas_rows_match_packaged(
     )
 
 
-def _evaluate_gas(
+def evaluate_gas(
     activities: Mapping[str, float] | Sequence[float] | np.ndarray,
     T_K: float,
     fO2: float,
@@ -5600,6 +5604,7 @@ def _evaluate_gas(
     consume O2, so p̃_gas scales as fO2^n_O2 and decreases as fO2 is lowered
     when n_O2 > 0. fO2 = 0 is refused (non-positive), so that limit is not returned.
     """
+    requested_parent_oxides = parent_oxides
     datapack, profile_name = _select_gas_datapack(datapack, profile)
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
@@ -6135,40 +6140,14 @@ def _evaluate_gas(
         omitted_channels=omitted_channels,
         liquid_reference_status=liquid_statuses,
         _profile_identity=identity,
-    )
-
-
-def evaluate_gas(
-    activities: Mapping[str, float] | Sequence[float] | np.ndarray,
-    T_K: float,
-    fO2: float,
-    datapack: ImccGasDatapack | None = None,
-    parent_oxides: Sequence[str] | None = None,
-    allow_extrapolation: bool = True,
-    gas_species: Sequence[str] | str | None = None,
-    include_ions: bool = False,
-    *,
-    composition_wt_pct: Mapping[str, float] | None = None,
-    profile: str | Profile | None = None,
-) -> ImccGasResult:
-    """Compute gas pressures and attach a receipt for the completed solve."""
-    result = _evaluate_gas(
-        activities, T_K, fO2, datapack, parent_oxides, allow_extrapolation,
-        gas_species, include_ions, composition_wt_pct=composition_wt_pct,
-        profile=profile,
-    )
-    identity = getattr(result, "_loaded_profile_identity", None)
-    return replace(
-        result,
-        _profile_identity=identity,
         receipt=build_calculation_receipt(
             request={
                 "activities": activities,
                 "T_K": T_K,
                 "fO2": fO2,
-                "profile": identity[0] if identity is not None else None,
+                "profile": profile_name,
                 "options": {
-                    "parent_oxides": parent_oxides,
+                    "parent_oxides": requested_parent_oxides,
                     "allow_extrapolation": allow_extrapolation,
                     "gas_species": gas_species,
                     "include_ions": include_ions,
@@ -6182,9 +6161,6 @@ def evaluate_gas(
             solver={},
         ),
     )
-
-
-evaluate_gas.__doc__ = _evaluate_gas.__doc__
 
 
 _ATOMIC_MASS_G_MOL = {
@@ -7109,7 +7085,7 @@ def evaluate_gas_oxygen_balance(
                     and name not in included_parents
                 )
             }
-        return _evaluate_gas(
+        return evaluate_gas(
             pressure_activities, T, 10.0**logp, datapack,
             parent_oxides=(
                 tuple(available_parents) if parent_oxides_explicit else None
@@ -7208,7 +7184,7 @@ def evaluate_gas_oxygen_balance(
     ), diagnostics
 
 
-def _evaluate_gas_saturation(
+def evaluate_gas_saturation(
     parent_activities: Mapping[str, float] | Sequence[float] | np.ndarray,
     temperature_K: float,
     datapack: ImccGasDatapack | None = None,
@@ -7225,6 +7201,7 @@ def _evaluate_gas_saturation(
     pressure weighted stoichiometric balance; this is an equilibrium vapor
     model, not the Knudsen flux closure.
     """
+    requested_parent_oxides = parent_oxides
     datapack, profile_name = _select_gas_datapack(datapack, profile)
     if parent_oxides is None:
         if isinstance(parent_activities, Mapping):
@@ -7285,7 +7262,7 @@ def _evaluate_gas_saturation(
         raise ImccGasSaturationError("invalid saturation pO2 bracket")
 
     def state(logp: float):
-        return _evaluate_gas(
+        return evaluate_gas(
             parent_activities, temperature_K, 10.0 ** logp, datapack,
             parent_oxides=parents, allow_extrapolation=allow_extrapolation,
             include_ions=include_ions,
@@ -7342,38 +7319,13 @@ def _evaluate_gas_saturation(
          "omitted_channels": omitted},
         result.domain_flags,
         _profile_identity=identity,
-    )
-
-
-def evaluate_gas_saturation(
-    parent_activities: Mapping[str, float] | Sequence[float] | np.ndarray,
-    temperature_K: float,
-    datapack: ImccGasDatapack | None = None,
-    *,
-    parent_oxides: Sequence[str] | None = None,
-    include_ions: bool = False,
-    allow_extrapolation: bool = False,
-    log10_pO2_bracket: tuple[float, float] = (-100.0, 100.0),
-    profile: str | Profile | None = None,
-) -> ImccGasSaturationResult:
-    """Solve saturated vapor and attach a receipt to the final result."""
-    result = _evaluate_gas_saturation(
-        parent_activities, temperature_K, datapack,
-        parent_oxides=parent_oxides, include_ions=include_ions,
-        allow_extrapolation=allow_extrapolation,
-        log10_pO2_bracket=log10_pO2_bracket, profile=profile,
-    )
-    identity = getattr(result, "_loaded_profile_identity", None)
-    return replace(
-        result,
-        _profile_identity=identity,
         receipt=build_calculation_receipt(
             request={
                 "parent_activities": parent_activities,
                 "temperature_K": temperature_K,
-                "profile": identity[0] if identity is not None else None,
+                "profile": profile_name,
                 "options": {
-                    "parent_oxides": parent_oxides,
+                    "parent_oxides": requested_parent_oxides,
                     "include_ions": include_ions,
                     "allow_extrapolation": allow_extrapolation,
                     "log10_pO2_bracket": log10_pO2_bracket,
@@ -7384,19 +7336,12 @@ def evaluate_gas_saturation(
                 "condensate": identity[2] if identity is not None else None,
             },
             solver={
-                "log10_pO2_bracket": result.diagnostics["log10_pO2_bracket"],
+                "log10_pO2_bracket": bracket,
                 "brentq_xtol": 1e-12,
-                **(
-                    {"root_scan_points": 81}
-                    if result.diagnostics["root_uniqueness"] == "sampled"
-                    else {}
-                ),
+                **({"root_scan_points": 81} if not monotone else {}),
             },
         ),
     )
-
-
-evaluate_gas_saturation.__doc__ = _evaluate_gas_saturation.__doc__
 
 
 def gas_boiling_temperature(
@@ -7421,7 +7366,7 @@ def gas_boiling_temperature(
         raise ImccGasSaturationError("invalid boiling temperature bracket")
     cache: dict[float, ImccGasSaturationResult] = {}
     def residual(T: float) -> float:
-        state = _evaluate_gas_saturation(
+        state = evaluate_gas_saturation(
             parent_activities, T, datapack, parent_oxides=parent_oxides,
             include_ions=include_ions, allow_extrapolation=allow_extrapolation,
         )
@@ -7431,7 +7376,7 @@ def gas_boiling_temperature(
     if f_low * f_high > 0:
         raise ImccGasSaturationError("boiling temperature is not bracketed by T_bracket")
     temperature = low if f_low == 0 else high if f_high == 0 else float(brentq(residual, low, high, xtol=1e-8))
-    state = cache.get(temperature) or _evaluate_gas_saturation(
+    state = cache.get(temperature) or evaluate_gas_saturation(
         parent_activities, temperature, datapack, parent_oxides=parent_oxides,
         include_ions=include_ions, allow_extrapolation=allow_extrapolation,
     )

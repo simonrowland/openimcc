@@ -636,7 +636,9 @@ class ImccResult:
     # analytical amounts. The ideal kernel leaves both at exactly zero.
     excess_gibbs_J: float = 0.0
     excess_enthalpy_J: float = 0.0
-    receipt: CalculationReceipt | None = None
+    receipt: CalculationReceipt | None = field(
+        default=None, compare=False, hash=False
+    )
 
     def _parent_index(self, name: str) -> int:
         try:

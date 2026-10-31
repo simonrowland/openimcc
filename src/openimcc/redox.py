@@ -220,7 +220,9 @@ class RedoxResult:
     ti_oxygen_capacity_mol: float = 0.0
     composition_redox_iterations: int = 0
     profile: str | None = None
-    receipt: CalculationReceipt | None = None
+    receipt: CalculationReceipt | None = field(
+        default=None, compare=False, hash=False
+    )
 
     @property
     def speciation(self) -> Mapping[str, float]:

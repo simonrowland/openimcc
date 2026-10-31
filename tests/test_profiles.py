@@ -168,7 +168,7 @@ def test_gas_boiling_temperature_accepts_profile_without_datapack(monkeypatch) -
             domain_flags={},
         )
 
-    monkeypatch.setattr(gas_module, "_evaluate_gas_saturation", fake_saturation)
+    monkeypatch.setattr(gas_module, "evaluate_gas_saturation", fake_saturation)
     profile = load_profile("openimcc")
     temperature, result = gas_boiling_temperature(
         {}, ambient_pressure_bar=1.5, T_bracket=(1.0, 2.0), profile=profile

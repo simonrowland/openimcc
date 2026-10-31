@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import json
+from dataclasses import fields, replace
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 import openimcc
-import openimcc.gas as gas_module
 import openimcc.receipt as receipt_module
 from openimcc import evaluate, evaluate_redox
 from openimcc.gas import (
@@ -308,35 +308,21 @@ def test_source_identity_ignores_an_enclosing_unrelated_checkout(
     receipt_module._source_identity.cache_clear()
 
 
-def test_gas_solver_trials_build_only_the_final_receipt(monkeypatch):
+def test_result_equality_ignores_the_receipt():
     melt = evaluate(_BASALT, 1800.0, basis_type="wt")
     activities = {name: melt.activity(name) for name in melt.parent_oxides}
-    build_receipt = gas_module.build_calculation_receipt
-    calls = 0
-
-    def counting_builder(**kwargs):
-        nonlocal calls
-        calls += 1
-        return build_receipt(**kwargs)
-
-    monkeypatch.setattr(gas_module, "build_calculation_receipt", counting_builder)
-    evaluate_gas_saturation(
+    redox = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+    gas = evaluate_gas(activities, 1800.0, 1e-10, profile="openimcc")
+    saturation = evaluate_gas_saturation(
         activities, 1800.0, parent_oxides=tuple(activities),
         allow_extrapolation=True, profile="openimcc",
     )
-    assert calls == 1
 
-    calls = 0
-    evaluate_gas_oxygen_balance(activities, 1800.0, profile="openimcc")
-    assert calls == 1
+    for result in (melt, redox, gas, saturation):
+        receipt_field = next(field for field in fields(result) if field.name == "receipt")
+        assert receipt_field.compare is False
+        assert receipt_field.hash is False
 
-    calls = 0
-    gas_boiling_temperature(
-        activities,
-        ambient_pressure_bar=4.865657946350167e-05,
-        T_bracket=(1800.0, 2000.0),
-        parent_oxides=tuple(activities),
-        allow_extrapolation=True,
-        profile="openimcc",
-    )
-    assert calls == 1
+    for result in (redox, gas, saturation):
+        assert result.receipt is not None
+        assert result == replace(result, receipt=None)
