@@ -17,6 +17,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping
 
+from openimcc.kernel import ImccRefusal
+
 _PACK_NAME = "openimcc-redox-v4.json"
 _SCHEMA = "openimcc-redox-pack.v2"
 _HISTORICAL_CANDIDATE_VERSIONS = {
@@ -30,7 +32,13 @@ _CANDIDATE_VERSIONS = _HISTORICAL_CANDIDATE_VERSIONS | {
 }
 
 
-class RedoxCompositionTermError(ValueError):
+class RedoxInputError(ImccRefusal, ValueError):
+    """Invalid redox input or redox pack data."""
+
+    code = "redox_invalid_input"
+
+
+class RedoxCompositionTermError(RedoxInputError):
     """A candidate composition-conditioned row has an invalid tagged term."""
 
 _BAND_BASIS = {
@@ -39,7 +47,7 @@ _BAND_BASIS = {
 }
 
 
-class RedoxSchemaError(ValueError):
+class RedoxSchemaError(RedoxInputError):
     """A redox pack row uses an incomplete or legacy band schema."""
 
 
@@ -611,7 +619,10 @@ def load_redox_pack(path: str | Path | None = None) -> RedoxPack:
     if path is None:
         pack_dir = files("openimcc.data").joinpath("packs")
         pack_bytes = pack_dir.joinpath(_PACK_NAME).read_bytes()
-        manifest = json.loads(pack_dir.joinpath("MANIFEST.json").read_bytes())
+        try:
+            manifest = json.loads(pack_dir.joinpath("MANIFEST.json").read_bytes())
+        except json.JSONDecodeError as exc:
+            raise RedoxInputError(str(exc)) from exc
         manifest_entries = (
             manifest.get("packs")
             if isinstance(manifest, dict) and isinstance(manifest.get("packs"), list)
@@ -622,19 +633,33 @@ def load_redox_pack(path: str | Path | None = None) -> RedoxPack:
             if isinstance(entry, dict) and entry.get("file") == _PACK_NAME
         ]
         if len(entries) != 1 or not isinstance(entries[0].get("sha256"), str):
-            raise ValueError("default redox pack has no unique manifest SHA-256 pin")
+            raise RedoxInputError("default redox pack has no unique manifest SHA-256 pin")
         if hashlib.sha256(pack_bytes).hexdigest() != entries[0]["sha256"]:
-            raise ValueError("default redox pack SHA-256 does not match MANIFEST.json")
-        text = pack_bytes.decode("utf-8")
+            raise RedoxInputError("default redox pack SHA-256 does not match MANIFEST.json")
+        try:
+            text = pack_bytes.decode("utf-8")
+        except UnicodeError as exc:
+            raise RedoxInputError(str(exc)) from exc
     else:
-        text = Path(path).read_text(encoding="utf-8")
-    content = json.loads(text)
+        try:
+            text = Path(path).read_text(encoding="utf-8")
+        except UnicodeError as exc:
+            raise RedoxInputError(str(exc)) from exc
+    try:
+        content = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise RedoxInputError(str(exc)) from exc
     if not isinstance(content, dict):
-        raise ValueError("redox pack root must be a JSON object")
-    _validate_content(content)
+        raise RedoxInputError("redox pack root must be a JSON object")
+    try:
+        _validate_content(content)
+    except RedoxInputError:
+        raise
+    except (TypeError, ValueError) as exc:
+        raise RedoxInputError(str(exc)) from exc
     digest = canonical_redox_digest(content)
     if content.get("canonical_content_digest") != digest:
-        raise ValueError("redox pack canonical content digest mismatch")
+        raise RedoxInputError("redox pack canonical content digest mismatch")
     return RedoxPack(content=_freeze_json(content), canonical_digest=digest)
 
 

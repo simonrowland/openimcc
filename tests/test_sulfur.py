@@ -6,7 +6,10 @@ from pathlib import Path
 
 import pytest
 
+import openimcc.gas as gas_module
+import openimcc.sulfur as sulfur_module
 from openimcc import evaluate, evaluate_sulfur, load_datapack
+from openimcc.kernel import ImccRefusal
 from openimcc.gas import (
     evaluate_gas_oxygen_balance,
     load_gas_datapack,
@@ -606,6 +609,98 @@ def test_excess_melt_disclosures_survive_sulfur_evaluation(tmp_path):
     )
     assert "Na2O–CaO (analytical_parent)" in range_notice.message
     assert "T=1673 K below lower bound 1900 K" in range_notice.message
+
+
+def test_melt_activity_catches_refusals_and_propagates_unexpected_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pack = load_datapack()
+
+    def refuse(*args, **kwargs):
+        raise ImccRefusal("expected melt refusal")
+
+    monkeypatch.setattr(sulfur_module, "evaluate", refuse)
+    assert sulfur_module._melt_activities({"SiO2": 1.0}, 1673.0, pack) == (
+        None,
+        None,
+        "ImccRefusal: expected melt refusal",
+    )
+
+    def fail(*args, **kwargs):
+        raise TypeError("injected melt programming error")
+
+    monkeypatch.setattr(sulfur_module, "evaluate", fail)
+    with pytest.raises(TypeError, match="injected melt programming error"):
+        sulfur_module._melt_activities({"SiO2": 1.0}, 1673.0, pack)
+
+
+def test_oxygen_balance_catches_refusals_and_propagates_unexpected_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        sulfur_module, "_melt_activities", lambda *_args: (None, None, None)
+    )
+
+    def refuse(*args, **kwargs):
+        raise ImccRefusal("expected oxygen refusal")
+
+    monkeypatch.setattr(gas_module, "evaluate_gas_oxygen_balance", refuse)
+    result = evaluate_sulfur(
+        _MORB, 1673.0, log10_fS2=-10.0, gas_datapack=object()
+    )
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "oxygen-balance-unavailable"
+    )
+    assert "ImccRefusal: expected oxygen refusal" in notice.message
+    assert result.log10_fO2 is None
+
+    def fail(*args, **kwargs):
+        raise TypeError("injected oxygen programming error")
+
+    monkeypatch.setattr(gas_module, "evaluate_gas_oxygen_balance", fail)
+    with pytest.raises(TypeError, match="injected oxygen programming error"):
+        evaluate_sulfur(
+            _MORB, 1673.0, log10_fS2=-10.0, gas_datapack=object()
+        )
+
+
+def test_sulfate_comparison_catches_refusals_and_propagates_unexpected_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        sulfur_module, "_melt_activities", lambda *_args: (None, None, None)
+    )
+
+    def refuse(*args, **kwargs):
+        raise ImccRefusal("expected sulfate refusal")
+
+    monkeypatch.setattr(sulfur_module, "_log_fso3", refuse)
+    result = evaluate_sulfur(
+        _MORB,
+        1673.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        gas_datapack=object(),
+    )
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "om2022-comparison-unavailable"
+    )
+    assert "ImccRefusal: expected sulfate refusal" in notice.message
+
+    def fail(*args, **kwargs):
+        raise TypeError("injected sulfate programming error")
+
+    monkeypatch.setattr(sulfur_module, "_log_fso3", fail)
+    with pytest.raises(TypeError, match="injected sulfate programming error"):
+        evaluate_sulfur(
+            _MORB,
+            1673.0,
+            log10_fO2=-8.0,
+            log10_fS2=-10.0,
+            gas_datapack=object(),
+        )
 
 
 def test_species_pair_disclosure_survives_sulfur_evaluation(tmp_path):

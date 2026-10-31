@@ -12,6 +12,7 @@ import pytest
 import openimcc.redox_pack as redox_pack_module
 from openimcc.redox_pack import (
     _finite_number,
+    RedoxInputError,
     RedoxSchemaError,
     canonical_redox_digest,
     load_redox_pack,
@@ -103,6 +104,16 @@ def _raw_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def _assert_redox_input_value_error(action, message: str) -> None:
+    try:
+        action()
+    except ValueError as exc:
+        assert isinstance(exc, RedoxInputError)
+        assert message in str(exc)
+    else:
+        pytest.fail(f"expected RedoxInputError containing {message!r}")
+
+
 def _candidate_records(pack: dict, section: str) -> dict:
     if section == "rows":
         return {row["reaction"]: row for row in pack[section]}
@@ -186,6 +197,14 @@ def test_redox_pack_loads_with_n_parent_registry_and_digest() -> None:
         pack.content["version"] = "changed"
 
 
+def test_redox_input_error_is_both_refusal_and_value_error() -> None:
+    from openimcc.kernel import ImccRefusal
+
+    assert issubclass(RedoxInputError, ImccRefusal)
+    assert issubclass(RedoxInputError, ValueError)
+    assert issubclass(RedoxSchemaError, RedoxInputError)
+
+
 def test_feo_fit_source_is_not_reported_as_an_independent_check() -> None:
     for path in PROVENANCE_SUCCESSOR_PATHS:
         content = json.loads(path.read_text(encoding="utf-8"))
@@ -229,8 +248,10 @@ def test_default_redox_pack_is_pinned_to_manifest_bytes(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(redox_pack_module, "files", lambda _package: package_root)
 
-    with pytest.raises(ValueError, match="SHA-256 does not match MANIFEST.json"):
-        redox_pack_module.load_redox_pack()
+    _assert_redox_input_value_error(
+        redox_pack_module.load_redox_pack,
+        "SHA-256 does not match MANIFEST.json",
+    )
 
     external_path = tmp_path / "external-redox.json"
     external_path.write_bytes(altered_bytes)
@@ -247,23 +268,26 @@ def test_parent_registry_oxidation_states_and_oxide_charge_are_validated(
     content["canonical_content_digest"] = canonical_redox_digest(content)
     path = tmp_path / "invalid-parent-states.json"
     path.write_text(json.dumps(content), encoding="utf-8")
-    with pytest.raises(ValueError, match="known_oxidation_states"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "known_oxidation_states"
+    )
 
     content["parent_registry"][0]["known_oxidation_states"] = [4]
     content["parent_registry"][0]["parent_oxidation_state"] = 5
     content["canonical_content_digest"] = canonical_redox_digest(content)
     path.write_text(json.dumps(content), encoding="utf-8")
-    with pytest.raises(ValueError, match="parent_oxidation_state"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "parent_oxidation_state"
+    )
 
     content["parent_registry"][0]["parent_oxidation_state"] = 4
     sulfur = next(parent for parent in content["parent_registry"] if parent["element"] == "S")
     sulfur["parent_oxidation_state"] = 4
     content["canonical_content_digest"] = canonical_redox_digest(content)
     path.write_text(json.dumps(content), encoding="utf-8")
-    with pytest.raises(ValueError, match="does not balance its oxide formula"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "does not balance its oxide formula"
+    )
 
 
 def test_redox_pack_v1_schema_is_refused(tmp_path: Path) -> None:
@@ -273,8 +297,9 @@ def test_redox_pack_v1_schema_is_refused(tmp_path: Path) -> None:
     path = tmp_path / "legacy-schema.json"
     path.write_text(json.dumps(content), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="unsupported redox pack schema"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "unsupported redox pack schema"
+    )
 
 
 def test_multi_interval_species_are_contiguous_and_allow_legacy_rows(
@@ -317,8 +342,9 @@ def test_multi_interval_species_are_contiguous_and_allow_legacy_rows(
     content["canonical_content_digest"] = canonical_redox_digest(content)
     path = tmp_path / "non-contiguous-species-intervals.json"
     path.write_text(json.dumps(content), encoding="utf-8")
-    with pytest.raises(ValueError, match="does not continue the preceding interval"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "does not continue the preceding interval"
+    )
 
     content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
     content["thermo_species"]["MnO(l)"]["row"] = dict(
@@ -326,16 +352,18 @@ def test_multi_interval_species_are_contiguous_and_allow_legacy_rows(
     )
     content["canonical_content_digest"] = canonical_redox_digest(content)
     path.write_text(json.dumps(content), encoding="utf-8")
-    with pytest.raises(ValueError, match="cannot have both row and intervals"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "cannot have both row and intervals"
+    )
 
     content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
     content["thermo_species"]["MnO(l)"]["intervals"] = None
     content["canonical_content_digest"] = canonical_redox_digest(content)
     path = tmp_path / "null-species-intervals.json"
     path.write_text(json.dumps(content), encoding="utf-8")
-    with pytest.raises(ValueError, match="intervals must contain at least two rows"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "intervals must contain at least two rows"
+    )
 
 
 def test_fe_valence_metadata_is_validated_for_species_and_combinations(
@@ -346,15 +374,17 @@ def test_fe_valence_metadata_is_validated_for_species_and_combinations(
     content["canonical_content_digest"] = canonical_redox_digest(content)
     path = tmp_path / "invalid-fe-valence.json"
     path.write_text(json.dumps(content), encoding="utf-8")
-    with pytest.raises(ValueError, match="ferric_fe_units does not match constituents"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "ferric_fe_units does not match constituents"
+    )
 
     content["thermo_species"]["FeO1.5(l)"]["ferric_fe_units"] = 1.0
     content["thermo_species"]["FeO(l)"]["ferrous_fe_units"] = 0.0
     content["canonical_content_digest"] = canonical_redox_digest(content)
     path.write_text(json.dumps(content), encoding="utf-8")
-    with pytest.raises(ValueError, match="does not assign every Fe atom a valence"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "does not assign every Fe atom a valence"
+    )
 
 
 def test_reaction_rows_are_balanced_and_have_evidence_and_range_flags() -> None:
@@ -889,8 +919,7 @@ def test_loader_rejects_a_rehashed_unbalanced_row(tmp_path: Path) -> None:
     path = tmp_path / "unbalanced.json"
     path.write_text(json.dumps(content), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="unbalanced for O"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(lambda: load_redox_pack(path), "unbalanced for O")
 
 
 @pytest.mark.parametrize(
@@ -909,8 +938,7 @@ def test_loader_rejects_a_rehashed_derived_formula_contradiction(
     path = tmp_path / "derived-formula-contradiction.json"
     path.write_text(json.dumps(content), encoding="utf-8")
 
-    with pytest.raises(ValueError, match=message):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(lambda: load_redox_pack(path), message)
 
 
 def test_loader_rejects_a_digest_mismatch(tmp_path: Path) -> None:
@@ -919,5 +947,6 @@ def test_loader_rejects_a_digest_mismatch(tmp_path: Path) -> None:
     path = tmp_path / "digest-mismatch.json"
     path.write_text(json.dumps(content), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="digest mismatch"):
-        load_redox_pack(path)
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "digest mismatch"
+    )

@@ -227,8 +227,9 @@ def test_default_redox_pack_cache_is_immutable_and_reloads_changed_files(
     assert redox_module._load_default_redox_pack().version == version
 
     changed_path.write_text("{", encoding="utf-8")
-    with pytest.raises(ImccMalformedDatapackError):
+    with pytest.raises(RedoxInputError) as refusal:
         redox_module._load_default_redox_pack()
+    assert isinstance(refusal.value, ValueError)
 
 
 def test_shared_parent_lp_skips_rows_inactive_for_the_current_inventory(
@@ -1160,9 +1161,10 @@ def test_default_redox_manifest_is_checked_via_evaluate_redox(
 
     pack_path.write_bytes(b"{}\n")
     with pytest.raises(
-        ImccMalformedDatapackError, match="SHA-256 does not match MANIFEST.json"
-    ):
+        RedoxInputError, match="SHA-256 does not match MANIFEST.json"
+    ) as refusal:
         evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+    assert isinstance(refusal.value, ValueError)
 
     manifest_path.unlink()
     with pytest.raises(ImccMalformedDatapackError):
@@ -2114,10 +2116,13 @@ def test_redox_pack_path_refuses_missing_unreadable_and_bad_digest(
     content = json.loads(mismatched.read_text(encoding="utf-8"))
     content["version"] = "changed-without-rehash"
     mismatched.write_text(json.dumps(content), encoding="utf-8")
-    with pytest.raises(ValueError, match="canonical content digest mismatch"):
+    with pytest.raises(
+        ValueError, match="canonical content digest mismatch"
+    ) as refusal:
         evaluate_redox(
             _fe_only_inventory(), 2200.0, "closed", redox_pack_path=mismatched
         )
+    assert isinstance(refusal.value, RedoxInputError)
 
 
 def test_rounded_basalt_species_reproduce_the_ferrous_fe_correction() -> None:

@@ -26,7 +26,12 @@ from openimcc.model import (
     ImccTOutsideDatapackDomainError,
     load_datapack,
 )
-from openimcc.redox_pack import RedoxPack, load_redox_pack, ln_k_prime
+from openimcc.redox_pack import (
+    RedoxInputError,
+    RedoxPack,
+    load_redox_pack,
+    ln_k_prime,
+)
 from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.receipt import CalculationReceipt, build_calculation_receipt
 
@@ -120,18 +125,12 @@ def _load_default_redox_pack() -> RedoxPack:
                     _DEFAULT_REDOX_PACK_PATH, exc, description="default datapack"
                 ) from exc
             except ValueError as exc:
-                raise ImccMalformedDatapackError(
+                raise RedoxInputError(
                     "default redox datapack "
                     f"{_DEFAULT_REDOX_PACK_PATH.name} is invalid: {exc}"
                 ) from exc
             _DEFAULT_REDOX_PACK_CACHE = (identity, loaded)
         return _DEFAULT_REDOX_PACK_CACHE[1]
-
-
-class RedoxInputError(ImccRefusal):
-    """The supplied inventory or mode cannot define a redox state."""
-
-    code = "redox_invalid_input"
 
 
 class RedoxExcessGibbsUnsupportedError(RedoxInputError):
