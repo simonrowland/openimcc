@@ -361,7 +361,8 @@ def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
         measured_bias = _SCORED_PACK_IDENTITIES[identity]["alkali-bias"]
         message = (
             f"K predictions from {model_id} remain low against Hastie 1981 KEMS "
-            f"pressures (case 4: {measured_bias}); see {_ALKALI_BIAS_BENCH_URL}"
+            f"pressures (case 4: {measured_bias}); see {_ALKALI_BIAS_BENCH_URL}; "
+            "K2Si2O5 source choice: docs/k2si2o5-disposition.md"
         )
     return _coded_melt_notice("alkali-bias", score, message)
 

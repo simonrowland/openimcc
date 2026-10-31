@@ -23,7 +23,8 @@ MORB = {
 DEFAULT_ALKALI_NOTICE = (
     "K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS "
     "pressures (case 4: −1.17 to −1.22 dex); "
-    "see https://github.com/simonrowland/openimcc"
+    "see https://github.com/simonrowland/openimcc; "
+    "K2Si2O5 source choice: docs/k2si2o5-disposition.md"
 )
 DEFAULT_NA2O_NOTICE = (
     "na2o-activity-bias: Na2O activity and Na(g) pressure are over-predicted. "
@@ -95,7 +96,8 @@ DEFAULT_LOW_TEMPERATURE_NOTICE = (
 V2_ALKALI_NOTICE = (
     "K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS "
     "pressures (case 4: −1.18 to −1.24 dex); "
-    "see https://github.com/simonrowland/openimcc"
+    "see https://github.com/simonrowland/openimcc; "
+    "K2Si2O5 source choice: docs/k2si2o5-disposition.md"
 )
 V2_NA2O_UNSCORED_NOTICE = (
     "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias "

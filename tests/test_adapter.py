@@ -275,7 +275,8 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
     assert result.labels.notices[0] == (
         "K predictions from IMCC-SF04 remain low against Hastie 1981 KEMS "
         "pressures (case 4: −1.20 to −1.26 dex); see "
-        "https://github.com/simonrowland/openimcc"
+        "https://github.com/simonrowland/openimcc; K2Si2O5 source choice: "
+        "docs/k2si2o5-disposition.md"
     )
     notices = result.labels.notices
     assert any(n.startswith("temperature-domain-extension:") for n in notices)
@@ -301,49 +302,57 @@ def test_species_coverage_edge_flag_is_predict_and_flag(
             None,
             "K predictions from IMCC-SF04-D066 remain low against Hastie "
             "1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see "
-            "https://github.com/simonrowland/openimcc",
+            "https://github.com/simonrowland/openimcc; K2Si2O5 source choice: "
+            "docs/k2si2o5-disposition.md",
         ),
         (
             "imcc-sf04-v1.0.2.json",
             "K predictions from IMCC-SF04 remain low against Hastie 1981 "
             "KEMS pressures (case 4: −1.20 to −1.26 dex); see "
-            "https://github.com/simonrowland/openimcc",
+            "https://github.com/simonrowland/openimcc; K2Si2O5 source choice: "
+            "docs/k2si2o5-disposition.md",
         ),
         (
             "imcc-sf04-ext-v4.json",
             "K predictions from IMCC-SF04-EXT remain low against Hastie "
             "1981 KEMS pressures (case 4: −1.20 to −1.26 dex); see "
-            "https://github.com/simonrowland/openimcc",
+            "https://github.com/simonrowland/openimcc; K2Si2O5 source choice: "
+            "docs/k2si2o5-disposition.md",
         ),
         (
             "imcc-sf04-d066-v1.json",
             "K predictions from IMCC-SF04-D066 remain low against Hastie "
             "1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see "
-            "https://github.com/simonrowland/openimcc",
+            "https://github.com/simonrowland/openimcc; K2Si2O5 source choice: "
+            "docs/k2si2o5-disposition.md",
         ),
         (
             "imcc-sf04-d066-v2.json",
             "K predictions from IMCC-SF04-D066 remain low against Hastie "
             "1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see "
-            "https://github.com/simonrowland/openimcc",
+            "https://github.com/simonrowland/openimcc; K2Si2O5 source choice: "
+            "docs/k2si2o5-disposition.md",
         ),
         (
             "imcc-sf04-d066-v3.json",
             "K predictions from IMCC-SF04-D066 remain low against Hastie "
             "1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see "
-            "https://github.com/simonrowland/openimcc",
+            "https://github.com/simonrowland/openimcc; K2Si2O5 source choice: "
+            "docs/k2si2o5-disposition.md",
         ),
         (
             "imcc-sf04-d066-v1-kcaalsi2o7.json",
             "K predictions from IMCC-SF04-D066 remain low against Hastie "
             "1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see "
-            "https://github.com/simonrowland/openimcc",
+            "https://github.com/simonrowland/openimcc; K2Si2O5 source choice: "
+            "docs/k2si2o5-disposition.md",
         ),
         (
             "imcc-sf04-d066-ext-v1.json",
             "K predictions from IMCC-SF04-D066 remain low against Hastie "
             "1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see "
-            "https://github.com/simonrowland/openimcc",
+            "https://github.com/simonrowland/openimcc; K2Si2O5 source choice: "
+            "docs/k2si2o5-disposition.md",
         ),
     ],
 )
