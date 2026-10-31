@@ -40,6 +40,7 @@ from openimcc.liquid_reference import (
     liquid_reference_authority,
     liquid_reference_records,
 )
+from openimcc.receipt import CalculationReceipt, build_calculation_receipt
 from openimcc.scalar_boundary import is_declared_real_scalar
 
 if TYPE_CHECKING:
@@ -230,6 +231,7 @@ class ImccGasResult(MappingABC[str, float]):
     omitted_channels: Mapping[str, str] = field(default_factory=dict)
     liquid_reference_status: Mapping[str, CertificationStatus] = field(default_factory=dict)
     _profile_identity: InitVar[tuple[str | None, str, str] | None] = None
+    receipt: CalculationReceipt | None = None
 
     def __post_init__(
         self, _profile_identity: tuple[str | None, str, str] | None
@@ -337,6 +339,7 @@ class ImccGasSaturationResult:
     diagnostics: Mapping[str, object]
     domain_flags: Mapping[str, str | None]
     _profile_identity: InitVar[tuple[str | None, str, str] | None] = None
+    receipt: CalculationReceipt | None = None
 
     def __post_init__(
         self, _profile_identity: tuple[str | None, str, str] | None
@@ -5597,6 +5600,7 @@ def evaluate_gas(
     consume O2, so p̃_gas scales as fO2^n_O2 and decreases as fO2 is lowered
     when n_O2 > 0. fO2 = 0 is refused (non-positive), so that limit is not returned.
     """
+    requested_parent_oxides = parent_oxides
     datapack, profile_name = _select_gas_datapack(datapack, profile)
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
@@ -6123,6 +6127,7 @@ def evaluate_gas(
         for species in p_species:
             domain_flags[species] = "; ".join(filter(None, (domain_flags.get(species), flag)))
 
+    identity = _gas_result_identity(datapack, profile_name)
     return ImccGasResult(
         result,
         unit="bar",
@@ -6130,7 +6135,27 @@ def evaluate_gas(
         provenance_class=provenance_class,
         omitted_channels=omitted_channels,
         liquid_reference_status=liquid_statuses,
-        _profile_identity=_gas_result_identity(datapack, profile_name),
+        _profile_identity=identity,
+        receipt=build_calculation_receipt(
+            request={
+                "activities": activities,
+                "T_K": T_K,
+                "fO2": fO2,
+                "profile": profile_name,
+                "options": {
+                    "parent_oxides": requested_parent_oxides,
+                    "allow_extrapolation": allow_extrapolation,
+                    "gas_species": gas_species,
+                    "include_ions": include_ions,
+                    "composition_wt_pct": composition_wt_pct,
+                },
+            },
+            data_digests=(
+                {"gas": identity[1], "condensate": identity[2]}
+                if identity is not None else {}
+            ),
+            solver={},
+        ),
     )
 
 
@@ -6915,13 +6940,19 @@ def evaluate_gas_oxygen_balance(
     enter the balance as they enter the returned pressures. Parent oxides
     omitted from an explicit ``parent_oxides`` sequence remain excluded.
     """
+    requested_parent_oxides = parent_oxides
+    requested_imposed_parents = (
+        imposed_parents
+        if imposed_parents is None or isinstance(imposed_parents, str)
+        else tuple(imposed_parents)
+    )
     datapack, profile_name = _select_gas_datapack(datapack, profile)
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
     if isinstance(imposed_parents, str):
         raise TypeError("imposed_parents must be a sequence of parent-key strings")
-    imposed = frozenset(imposed_parents or ())
+    imposed = frozenset(requested_imposed_parents or ())
     nonoxide_parents = _nonoxide_parent_keys()
     unknown_imposed = imposed - nonoxide_parents
     if unknown_imposed:
@@ -7102,8 +7133,6 @@ def evaluate_gas_oxygen_balance(
         pressure_model, species_data
     )
     identity = _gas_result_identity(datapack, profile_name)
-    if identity is not None:
-        pressures = replace(pressures, _profile_identity=identity)
     if include_ions:
         diagnostics["ions_included"] = True
         diagnostics["ion_fraction_by_element"] = {
@@ -7117,7 +7146,39 @@ def evaluate_gas_oxygen_balance(
             for ion, neutral in ion_parents.items()
             if ion.endswith("+") and ion in pressures and neutral in pressures
         }
-    return p_o2, pressures, diagnostics
+    return p_o2, replace(
+        pressures,
+        _profile_identity=identity,
+        receipt=build_calculation_receipt(
+            request={
+                "activities": activities,
+                "T_K": T_K,
+                "profile": profile_name,
+                "options": {
+                    "parent_oxides": requested_parent_oxides,
+                    "allow_extrapolation": allow_extrapolation,
+                    "imposed_parents": requested_imposed_parents,
+                    "include_ions": include_ions,
+                },
+            },
+            data_digests=(
+                {"gas": identity[1], "condensate": identity[2]}
+                if identity is not None else {}
+            ),
+            solver={
+                "log10_pO2_bracket": _OXYGEN_BALANCE_BRACKET,
+                "root_xtol": 1e-12,
+                "root_scan_points": 81,
+                "residual_tolerance": diagnostics["root_solver"]["residual_tolerance"],
+                **(
+                    {"refinement_xtol": 1e-15}
+                    if diagnostics["root_solver"]["path"] == "refined"
+                    else {}
+                ),
+                **({"ion_scan_intervals": 64} if include_ions else {}),
+            },
+        ),
+    ), diagnostics
 
 
 def evaluate_gas_saturation(
@@ -7137,6 +7198,7 @@ def evaluate_gas_saturation(
     pressure weighted stoichiometric balance; this is an equilibrium vapor
     model, not the Knudsen flux closure.
     """
+    requested_parent_oxides = parent_oxides
     datapack, profile_name = _select_gas_datapack(datapack, profile)
     if parent_oxides is None:
         if isinstance(parent_activities, Mapping):
@@ -7237,6 +7299,7 @@ def evaluate_gas_saturation(
     else:
         root = float(brentq(residual, *bracket, xtol=1e-12))
     result = state(root)
+    identity = _gas_result_identity(datapack, profile_name)
     channels = dict(result)
     p_total = math.fsum(channels.values())
     species_pressures = dict(channels)
@@ -7252,7 +7315,29 @@ def evaluate_gas_saturation(
          "include_ions": include_ions,
          "omitted_channels": omitted},
         result.domain_flags,
-        _profile_identity=_gas_result_identity(datapack, profile_name),
+        _profile_identity=identity,
+        receipt=build_calculation_receipt(
+            request={
+                "parent_activities": parent_activities,
+                "temperature_K": temperature_K,
+                "profile": profile_name,
+                "options": {
+                    "parent_oxides": requested_parent_oxides,
+                    "include_ions": include_ions,
+                    "allow_extrapolation": allow_extrapolation,
+                    "log10_pO2_bracket": log10_pO2_bracket,
+                },
+            },
+            data_digests={
+                "gas": identity[1] if identity is not None else None,
+                "condensate": identity[2] if identity is not None else None,
+            },
+            solver={
+                "log10_pO2_bracket": bracket,
+                "brentq_xtol": 1e-12,
+                **({"root_scan_points": 81} if not monotone else {}),
+            },
+        ),
     )
 
 
@@ -7298,9 +7383,33 @@ def gas_boiling_temperature(
         "temperature_bracket_K": (low, high),
         "boiling_residual_bar": state.P_sat_bar - ambient_pressure_bar,
     })
+    identity = _gas_result_identity(datapack, profile_name)
     return temperature, ImccGasSaturationResult(
         state.pO2_bar, state.species_pressures_bar, state.channel_pressures_bar,
         state.P_sat_bar, state.mole_fractions, state.mode, diagnostics,
         state.domain_flags,
-        _profile_identity=_gas_result_identity(datapack, profile_name),
+        _profile_identity=identity,
+        receipt=build_calculation_receipt(
+            request={
+                "parent_activities": parent_activities,
+                "ambient_pressure_bar": ambient_pressure_bar,
+                "T_bracket": T_bracket,
+                "profile": profile_name,
+                "options": {
+                    "parent_oxides": parent_oxides,
+                    "include_ions": include_ions,
+                    "allow_extrapolation": allow_extrapolation,
+                },
+            },
+            data_digests={
+                "gas": identity[1] if identity is not None else None,
+                "condensate": identity[2] if identity is not None else None,
+            },
+            solver={
+                "temperature_bracket_K": (low, high),
+                "temperature_brentq_xtol": 1e-8,
+                "log10_pO2_bracket": (-100.0, 100.0),
+                "pO2_brentq_xtol": 1e-12,
+            },
+        ),
     )

@@ -100,6 +100,8 @@ def test_openimcc_profile_matches_readme_quickstart_values_bit_for_bit() -> None
     )
     assert dict(profile_gas) == dict(default_gas)
     for result_field in fields(default_gas):
+        if result_field.name == "receipt":
+            continue
         assert getattr(profile_gas, result_field.name) == getattr(
             default_gas, result_field.name
         )
@@ -218,7 +220,7 @@ def test_openimcc_profile_selects_the_default_redox_pack() -> None:
     assert profiled.profile == "openimcc"
     assert default.profile is None
     for result_field in fields(default):
-        if result_field.name != "profile":
+        if result_field.name not in {"profile", "receipt"}:
             assert getattr(profiled, result_field.name) == getattr(
                 default, result_field.name
             )

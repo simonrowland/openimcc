@@ -28,6 +28,7 @@ from openimcc.model import (
 )
 from openimcc.redox_pack import RedoxPack, load_redox_pack, ln_k_prime
 from openimcc.scalar_boundary import is_declared_real_scalar
+from openimcc.receipt import CalculationReceipt, build_calculation_receipt
 
 if TYPE_CHECKING:
     from openimcc.profiles import Profile
@@ -219,6 +220,7 @@ class RedoxResult:
     ti_oxygen_capacity_mol: float = 0.0
     composition_redox_iterations: int = 0
     profile: str | None = None
+    receipt: CalculationReceipt | None = None
 
     @property
     def speciation(self) -> Mapping[str, float]:
@@ -2747,7 +2749,7 @@ def evaluate_redox(
 ) -> RedoxResult:
     """Solve redox using explicit pack paths or one named data profile."""
     if profile is None:
-        return _evaluate_redox_with_packs(
+        result = _evaluate_redox_with_packs(
             inventory,
             T_K,
             mode,
@@ -2758,31 +2760,54 @@ def evaluate_redox(
             redox_pack_path=redox_pack_path,
             melt_pack_path=melt_pack_path,
         )
-
-    from openimcc.profiles import (
-        ProfileConflictError,
-        ProfileRedoxUnavailableError,
-        _resolve_profile,
-    )
-
-    if redox_pack_path is not None or melt_pack_path is not None:
-        raise ProfileConflictError(
-            "profile cannot be combined with explicit redox or melt pack paths"
+    else:
+        from openimcc.profiles import (
+            ProfileConflictError,
+            ProfileRedoxUnavailableError,
+            _resolve_profile,
         )
-    selected = _resolve_profile(profile)
-    if selected.redox_pack_path is None:
-        raise ProfileRedoxUnavailableError(
-            "the SF04 publication has no redox model; use "
-            "profile='openimcc' or pass explicit packs"
+
+        if redox_pack_path is not None or melt_pack_path is not None:
+            raise ProfileConflictError(
+                "profile cannot be combined with explicit redox or melt pack paths"
+            )
+        selected = _resolve_profile(profile)
+        if selected.redox_pack_path is None:
+            raise ProfileRedoxUnavailableError(
+                "the SF04 publication has no redox model; use "
+                "profile='openimcc' or pass explicit packs"
+            )
+        result = _evaluate_redox_with_packs(
+            inventory,
+            T_K,
+            mode,
+            lambda_imposed,
+            warm_start,
+            tol=tol,
+            max_iter=max_iter,
+            redox_pack_path=selected.redox_pack_path,
         )
-    result = _evaluate_redox_with_packs(
-        inventory,
-        T_K,
-        mode,
-        lambda_imposed,
-        warm_start,
-        tol=tol,
-        max_iter=max_iter,
-        redox_pack_path=selected.redox_pack_path,
+        result = replace(result, profile=selected.name)
+
+    receipt = build_calculation_receipt(
+        request={
+            "inventory": inventory,
+            "T_K": T_K,
+            "mode": mode,
+            "lambda_imposed": lambda_imposed,
+            "warm_start": warm_start,
+            "profile": getattr(profile, "name", profile),
+            "options": {
+                "tol": tol,
+                "max_iter": max_iter,
+                "redox_pack_path": redox_pack_path,
+                "melt_pack_path": melt_pack_path,
+            },
+        },
+        data_digests={
+            "melt": result.melt_pack_binding_digest,
+            "redox": result.redox_pack_digest,
+        },
+        solver={"tol": tol, "max_iter": max_iter},
     )
-    return replace(result, profile=selected.name)
+    return replace(result, receipt=receipt)

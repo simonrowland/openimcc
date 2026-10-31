@@ -41,6 +41,14 @@ mixing).
 
 The reported derived-property checks are documented in [Diagnostics](docs/diagnostics.md).
 
+## Reproducibility receipt
+
+Melt, redox, gas, gas saturation, gas boiling, and gas oxygen-balance results
+carry a frozen `CalculationReceipt` at `result.receipt`. Call
+`result.receipt.to_dict()` for JSON-safe caller inputs, applicable data
+digests, code and dependency versions, and solver settings. CLI `solve --json`
+includes the same receipt in its output.
+
 The opt-in sulfur extension estimates sulfide/sulfate speciation and sulfide-
 liquid saturation from melt composition, temperature, and sulfur fugacity or
 inventory. See [Sulfur capacity and matte saturation](docs/sulfur.md) for its

@@ -44,6 +44,13 @@ under the openimcc redox source-selection rail, so redox evaluation with the
 `openimcc` or pass explicit packs without a profile. A named profile cannot be
 combined with explicit pack arguments.
 
+### 1.2 Reproducibility receipt
+
+Melt, redox, gas, gas-saturation, gas-boiling, and gas oxygen-balance results
+carry a frozen `CalculationReceipt`. Its `to_dict()` method returns the caller
+request, applicable data digests, code and dependency versions, and solver
+settings as JSON-safe data. CLI `solve --json` includes the same receipt.
+
 ## 2. Association equilibrium and parent balances
 
 Let \(b\) be the declared analytical basis in moles and let

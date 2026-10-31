@@ -35,6 +35,7 @@ import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from openimcc import __version__
 from openimcc.model import (
     ImccLoadedDatapack,
     _amount_as_float,
@@ -144,6 +145,9 @@ def _result_payload(
     if has_active_excess_terms:
         payload["excess_gibbs_J"] = float(result.excess_gibbs_J)
         payload["excess_enthalpy_J"] = float(result.excess_enthalpy_J)
+    receipt = getattr(result, "receipt", None)
+    if receipt is not None:
+        payload["receipt"] = receipt.to_dict()
     return payload
 
 
@@ -470,26 +474,6 @@ def _cmd_solve(args: argparse.Namespace) -> int:
     else:
         print(_render_solve_text(payload, basis_type=args.basis_type))
     return EXIT_OK
-
-
-def _resolve_version() -> str:
-    """Code version for --version.
-
-    Reads installed distribution metadata when this runs as the standalone
-    package. In-tree -- executed out of a simulator checkout -- there is no
-    distribution to query, so say so rather than invent a number: a wrong
-    version string attached to a scientific result is worse than an honest
-    "unknown", because it looks reproducible and is not.
-    """
-    try:
-        from importlib.metadata import version
-
-        return version("openimcc")
-    except Exception:
-        return "in-tree (no installed distribution)"
-
-
-__version__ = _resolve_version()
 
 
 # The exit-code contract is the reason anyone would script this, so it belongs

@@ -82,6 +82,9 @@ def test_solve_in_domain_exits_ok_and_emits_activities(capsys):
     assert len(payload["parent_gamma"]) == n
     assert all(a >= 0.0 for a in payload["parent_activity"])
     assert payload["D"] > 1.0  # an associated solution, not ideal mixing
+    assert payload["receipt"]["data_digests"]["melt"] == (
+        payload["labels"]["identity"]["binding_digest"]
+    )
 
 
 def test_solve_and_describe_use_the_packaged_default(capsys):

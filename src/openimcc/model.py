@@ -48,6 +48,7 @@ from openimcc.kernel import (
     solve_imcc_sf04,
 )
 from openimcc.scalar_boundary import is_declared_real_scalar
+from openimcc.receipt import build_calculation_receipt
 
 
 
@@ -1746,6 +1747,7 @@ def evaluate(
     ImccResult
         Kernel result with the adapter's label block installed.
     """
+    requested_basis = basis
     profile_name = None
     if profile is not None:
         from openimcc.profiles import (
@@ -2617,4 +2619,24 @@ def evaluate(
             adapter_labels,
             identity={**adapter_labels.identity, "profile": profile_name},
         )
-    return replace(result, labels=adapter_labels)
+    receipt = build_calculation_receipt(
+        request={
+            "composition": composition,
+            "T_K": T_K,
+            "basis_type": basis_type,
+            "profile": getattr(profile, "name", profile),
+            "options": {
+                "basis": requested_basis,
+                "extra_mol": extra_mol,
+                "enable_sp_extension": enable_sp_extension,
+                "allow_extrapolation": allow_extrapolation,
+                "allow_out_of_envelope": allow_out_of_envelope,
+                "tol": tol,
+                "max_iter": max_iter,
+                "y_init": y_init,
+            },
+        },
+        data_digests={"melt": binding_digest},
+        solver={"tol": tol, "max_iter": max_iter},
+    )
+    return replace(result, labels=adapter_labels, receipt=receipt)

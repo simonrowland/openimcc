@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added calculation receipts with caller inputs, data digests, code and dependency versions, and solver settings to calculation results and CLI JSON.
+
 - Added checked full transcriptions of the FC87 and SF04 melt coefficient
   tables, with published-profile and D066 lineage checks.
 

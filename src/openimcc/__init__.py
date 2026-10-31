@@ -16,6 +16,8 @@ package, never the other way round.
 
 from __future__ import annotations
 
+from importlib import metadata
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from openimcc.model import (
@@ -89,9 +91,13 @@ def _resolve_version() -> str:
     unknown one, because it looks reproducible and is not.
     """
     try:
-        from importlib.metadata import version
-
-        return version("openimcc")
+        distribution = metadata.distribution("openimcc")
+        installed_package = Path(
+            distribution.locate_file("openimcc/__init__.py")
+        ).resolve()
+        if installed_package != Path(__file__).resolve():
+            return "0+unknown"
+        return distribution.version
     except Exception:
         return "0+unknown"
 

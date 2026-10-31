@@ -26,6 +26,8 @@ from typing import Any, Mapping, NoReturn, Sequence
 import numpy as np
 from scipy.optimize import least_squares
 
+from openimcc.receipt import CalculationReceipt
+
 
 LOG10 = math.log(10.0)
 _R_J_MOL_K = 8.31446261815324
@@ -634,6 +636,7 @@ class ImccResult:
     # analytical amounts. The ideal kernel leaves both at exactly zero.
     excess_gibbs_J: float = 0.0
     excess_enthalpy_J: float = 0.0
+    receipt: CalculationReceipt | None = None
 
     def _parent_index(self, name: str) -> int:
         try:
