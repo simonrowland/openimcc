@@ -1176,8 +1176,8 @@ def test_shipped_thermochemical_rows_have_unique_exact_provenance_joins() -> Non
         path = GAS_DATA / filename
         with path.open(encoding="utf-8", newline="") as handle:
             for line_number, csv_row in enumerate(csv.DictReader(handle), start=2):
-                # The legacy file is retained only for the two replaced liquids;
-                # its other rows intentionally mirror the current default table.
+                # This join covers only the legacy file's two replaced liquids;
+                # its other rows are not part of the shipped provenance join.
                 if filename.endswith("-janaf-legacy.csv") and csv_row["species_name"] not in {
                     "SiO2(l)", "Na2O(l)"
                 }:
