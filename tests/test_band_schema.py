@@ -25,6 +25,63 @@ CHECK = {
     "status", "equilibrium", "primary_source", "conditions", "measured_value",
     "predicted_value", "miss", "miss_to_band_ratio", "reason",
 }
+_HG_DUPLICATE_INTERVALS = {
+    ("gas", "Hg(g)", "BU-2587", 1, (1500.0, 3000.0)),
+    ("gas", "Hg(g)", "BU-2587", 2, (1200.0, 1500.0)),
+}
+
+
+def _migration_row_identity(row: dict) -> tuple:
+    temperature_range = row.get("T_range_K")
+    return (
+        row.get("table"), row.get("species_name"), row.get("table_id"),
+        row.get("T_interval"),
+        tuple(float(value) for value in temperature_range)
+        if temperature_range is not None else None,
+    )
+
+
+def _keyed_migration_rows(rows: list[dict], label: str) -> list[tuple[tuple, dict]]:
+    occurrences = Counter()
+    first_payload_by_identity = {}
+    keyed = []
+    for row in rows:
+        identity = _migration_row_identity(row)
+        comparable = dict(row)
+        if identity in _HG_DUPLICATE_INTERVALS:
+            comparable.pop("tier", None)
+        if identity in first_payload_by_identity:
+            assert first_payload_by_identity[identity] == comparable, (
+                f"differing duplicate {label} row payload: {identity}"
+            )
+        else:
+            first_payload_by_identity[identity] = comparable
+        occurrence = occurrences[identity]
+        occurrences[identity] += 1
+        keyed.append(((*identity, occurrence), row))
+    keys = [key for key, _ in keyed]
+    assert len(keys) == len(set(keys)), f"duplicate {label} row key"
+    return keyed
+
+
+def test_migration_duplicate_payload_corruption_is_rejected() -> None:
+    first = {
+        "table": "gas",
+        "species_name": "Hg(g)",
+        "table_id": "BU-2587",
+        "T_interval": 1,
+        "T_range_K": [1500.0, 3000.0],
+        "tier": 3,
+        "fit_residual": {"value": 1.0},
+    }
+    second = {key: value for key, value in first.items() if key != "tier"}
+    assert [key[-1] for key, _ in _keyed_migration_rows(
+        [first, second], "Hg"
+    )] == [0, 1]
+
+    corrupted = {**second, "fit_residual": {"value": 999}}
+    with pytest.raises(AssertionError, match="differing duplicate Hg row payload"):
+        _keyed_migration_rows([first, corrupted], "Hg")
 
 
 def _validate_row(row: Mapping, label: str) -> None:
@@ -181,27 +238,6 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
     with tarfile.open(fileobj=__import__("io").BytesIO(archive)) as source:
         source.extractall(tmp_path, filter="data")
 
-    def row_identity(row: dict) -> tuple:
-        temperature_range = row.get("T_range_K")
-        return (
-            row.get("table"), row.get("species_name"), row.get("table_id"),
-            row.get("T_interval"),
-            tuple(float(value) for value in temperature_range)
-            if temperature_range is not None else None,
-        )
-
-    def keyed_rows(rows: list[dict], label: str) -> list[tuple[tuple, dict]]:
-        occurrences = Counter()
-        keyed = []
-        for row in rows:
-            identity = row_identity(row)
-            occurrence = occurrences[identity]
-            occurrences[identity] += 1
-            keyed.append(((*identity, occurrence), row))
-        keys = [key for key, _ in keyed]
-        assert len(keys) == len(set(keys)), f"duplicate {label} row key"
-        return keyed
-
     def fixture_key(value: list) -> tuple:
         assert len(value) == 6
         temperature_range = value[4]
@@ -241,11 +277,13 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         row for row in current_document["rows"]
         if row.get("construction_inputs_path") == "data-src/liquid-from-solid-inputs.json"
     ]
-    construction_keys = {row_identity(row) for row in current_construction_rows}
+    construction_keys = {
+        _migration_row_identity(row) for row in current_construction_rows
+    }
     baseline_document = yaml.safe_load(baseline_gas_provenance.read_text())
     baseline_document["rows"] = [
         row for row in baseline_document["rows"]
-        if row_identity(row) not in construction_keys
+        if _migration_row_identity(row) not in construction_keys
     ]
     pgm_rows = [
         row for row in current_document["rows"]
@@ -261,7 +299,7 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         (*pgm_rows, *saha_rows, *current_construction_rows)
     )
     baseline_rows = baseline_document["rows"]
-    baseline_keyed_rows = keyed_rows(baseline_rows, "baseline")
+    baseline_keyed_rows = _keyed_migration_rows(baseline_rows, "baseline")
     baseline_rows_by_key = dict(baseline_keyed_rows)
     baseline_runtime_refs = {
         key: row["runtime_ref"]
@@ -331,10 +369,10 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                 "data-src/published-thermo/pankratz-bulletin-677-re.json",
             }
         ]
-        migrated_keyed_rows = keyed_rows(
+        migrated_keyed_rows = _keyed_migration_rows(
             migrated_provenance["rows"], "migrated"
         )
-        committed_keyed_rows = keyed_rows(
+        committed_keyed_rows = _keyed_migration_rows(
             committed_provenance["rows"], "committed"
         )
         migrated_rows = dict(migrated_keyed_rows)

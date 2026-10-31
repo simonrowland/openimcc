@@ -6522,7 +6522,7 @@ added_intervals:
       - 1500.0
     - 0
 removed_intervals:
-- reason: 551801c removed duplicate Burcat Hg intervals while correcting provenance.
+- reason: 551801c corrected provenance by removing duplicate Hg intervals and revising condensate coverage.
   row_keys:
   - - gas
     - Hg(g)
@@ -6538,6 +6538,27 @@ removed_intervals:
     - - 1200.0
       - 1500.0
     - 1
+  - - condensate
+    - HfO2(l)
+    - P672-HfO2-c
+    - null
+    - - 1200.0
+      - 3000.0
+    - 0
+  - - condensate
+    - MnO(l)
+    - MnO-liquid-construction
+    - null
+    - - 1200.0
+      - 3000.0
+    - 0
+  - - condensate
+    - ThO2(l)
+    - P672-ThO2-c
+    - null
+    - - 1200.0
+      - 3000.0
+    - 0
 - reason: 675031e replaced pre-seam condensate intervals with seam-aligned fits.
   row_keys:
   - - condensate
@@ -6632,13 +6653,6 @@ removed_intervals:
       - 2693.0
     - 0
   - - condensate
-    - HfO2(l)
-    - P672-HfO2-c
-    - null
-    - - 1200.0
-      - 3000.0
-    - 0
-  - - condensate
     - Ho2O3(l)
     - Konings-Table88-Tf2686
     - null
@@ -6665,13 +6679,6 @@ removed_intervals:
     - null
     - - 2000.0
       - 2762.0
-    - 0
-  - - condensate
-    - MnO(l)
-    - MnO-liquid-construction
-    - null
-    - - 1200.0
-      - 3000.0
     - 0
   - - condensate
     - NbO2(l)
@@ -6763,13 +6770,6 @@ removed_intervals:
     - null
     - - 1900.0
       - 2682.0
-    - 0
-  - - condensate
-    - ThO2(l)
-    - P672-ThO2-c
-    - null
-    - - 1200.0
-      - 3000.0
     - 0
   - - condensate
     - Tm2O3(l)
