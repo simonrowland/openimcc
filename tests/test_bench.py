@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import csv
 import io
 import json
 import math
@@ -18,6 +19,7 @@ import pytest
 from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
 from openimcc.bench import (
     _binary_subslice,
+    _convert_solid_activity_to_liquid,
     _evaluate_imcc,
     load_bench_set,
     load_pack,
@@ -28,6 +30,99 @@ from openimcc.bench import (
 )
 
 DATAPACK_PATH = Path("src/openimcc/data/packs/imcc-sf04-v1.0.2.json")
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _independent_csv_row(
+    relative_path: str,
+    species: str,
+    temperature_K: float,
+    *,
+    extrapolate_last_row: bool = False,
+) -> dict[str, str]:
+    with (_REPO_ROOT / relative_path).open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        rows = [
+            row
+            for row in csv.DictReader(handle)
+            if row["species_name"] == species
+        ]
+    in_range = [
+        row
+        for row in rows
+        if float(row["T_min"]) <= temperature_K <= float(row["T_max"])
+    ]
+    if in_range:
+        return max(in_range, key=lambda row: float(row["T_min"]))
+    if extrapolate_last_row and rows:
+        return max(rows, key=lambda row: float(row["T_max"]))
+    raise AssertionError(
+        f"no independent table row for {species} at {temperature_K:g} K"
+    )
+
+
+def _independent_janaf_apparent_gibbs_j_mol(
+    table_id: str, temperature_K: float
+) -> float:
+    table_path = _REPO_ROOT / "data-src" / "janaf" / f"{table_id}.yaml"
+    table = json.loads(table_path.read_text(encoding="utf-8"))["table"]
+    reference_row = next(
+        row
+        for row in table["values"]
+        if float(row["temperature"]["value"]) == 298.15
+    )
+    formation_enthalpy_298_kj_mol = float(
+        reference_row["formation_enthalpy"]["value"]
+    )
+    nodes = sorted(
+        (
+            float(row["temperature"]["value"]),
+            float(row["enthalpy_increment"]["value"]),
+            float(row["entropy"]["value"]),
+        )
+        for row in table["values"]
+        if row["enthalpy_increment"]["value"] is not None
+        and row["entropy"]["value"] is not None
+    )
+
+    def interpolate(column: int) -> float:
+        right = next(
+            index
+            for index, node in enumerate(nodes)
+            if node[0] >= temperature_K
+        )
+        if nodes[right][0] == temperature_K:
+            while right + 1 < len(nodes) and nodes[right + 1][0] == temperature_K:
+                right += 1
+            return nodes[right][column]
+        low_T, low_value = nodes[right - 1][0], nodes[right - 1][column]
+        high_T, high_value = nodes[right][0], nodes[right][column]
+        return low_value + (high_value - low_value) * (
+            (temperature_K - low_T) / (high_T - low_T)
+        )
+
+    enthalpy_increment_kj_mol = interpolate(1)
+    entropy_j_mol_k = interpolate(2)
+    return (
+        (formation_enthalpy_298_kj_mol + enthalpy_increment_kj_mol) * 1000.0
+        - temperature_K * entropy_j_mol_k
+    )
+
+
+def _independent_condensate_gibbs_j_mol(
+    row: dict[str, str], temperature_K: float
+) -> float:
+    gas_constant = 8.314462618
+    t = temperature_K / 1000.0
+    phi = sum(
+        float(row[f"dG_{coefficient}"]) * t**power
+        for power, coefficient in enumerate("ABCDE")
+    )
+    return -gas_constant * temperature_K * phi + (
+        gas_constant * 1000.0 * float(row["dH298_R"])
+    )
+
 
 # In-domain CMAS slag, 8-parent IMCC basis (missing parents are zero).
 _CMAS_WT = {
@@ -781,16 +876,12 @@ def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
     assert all("pure-solid" in row.key for row in report.solid_standard_slices)
 
     table_slices = {row.key: row for row in report.kume_table_slices}
-    assert any("Table 2" in key and "pure-solid" in key for key in table_slices)
-    assert any("Table 4" in key and "pure-solid" in key for key in table_slices)
-    assert any(
-        "Table 2" in key and "Al2O3" in key and "pure-liquid (converted" in key
-        for key in table_slices
-    )
-    assert any(
-        "Table 4" in key and "Al2O3" in key and "pure-liquid (converted" in key
-        for key in table_slices
-    )
+    for table in ("Table 1", "Table 2", "Table 3", "Table 4"):
+        assert any(table in key and "pure-solid" in key for key in table_slices)
+        assert any(
+            table in key and "pure-liquid (converted from pure-solid)" in key
+            for key in table_slices
+        )
 
     binary_points = [
         row
@@ -898,10 +989,91 @@ def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
     assert "mean(r)" in rendered
 
 
-def test_solid_to_liquid_conversion_is_zero_at_silica_melting_point() -> None:
+def test_solid_to_liquid_conversion_matches_independent_table_calculation() -> None:
+    # These values are calculated directly from the source tables, without
+    # calling the production conversion or Gibbs helpers. JANAF crystal
+    # rows use G°app = ΔfH°(298) + [H(T)-H(298)] - T*S(T), with the same
+    # 298 K element reference as the packaged condensate rows. The chemical-
+    # potential balance gives log10(a_liq) = log10(a_solid) -
+    # (G_liq - G_cr)/(R*T*ln(10)); checking the converted activity catches a
+    # reversed sign as well as a wrong reference row.
+    gas_constant = 8.314462618
+    temperature_K = 1873.0
+    activity_solid = 0.37
+    cases = (
+        ("MgO", "Mg-008"),
+        ("Al2O3", "Al-096"),
+    )
+    for oxide, crystal_table in cases:
+        liquid_row = _independent_csv_row(
+            "src/openimcc/data/gas/condensate.csv",
+            f"{oxide}(l)",
+            temperature_K,
+        )
+        liquid_gibbs = _independent_condensate_gibbs_j_mol(
+            liquid_row, temperature_K
+        )
+        crystal_gibbs = _independent_janaf_apparent_gibbs_j_mol(
+            crystal_table, temperature_K
+        )
+        expected = 10.0 ** (
+            math.log10(activity_solid)
+            - (liquid_gibbs - crystal_gibbs)
+            / (gas_constant * temperature_K * math.log(10.0))
+        )
+        assert _convert_solid_activity_to_liquid(
+            activity_solid, oxide, temperature_K
+        ) == pytest.approx(expected, rel=1.0e-10)
+
+
+def test_solid_reference_pairs_close_at_each_melting_point() -> None:
+    solid_pairs = (
+        ("CaO", 3200.0, "Ca-027"),
+        ("MgO", 3105.0, "Mg-008"),
+        ("Al2O3", 2327.0, "Al-096"),
+    )
+    for oxide, melting_point_K, crystal_table in solid_pairs:
+        # CaO and MgO end their packaged liquid intervals at 3000 K. The last
+        # fitted rows are continued here only to measure closure at the source
+        # melting markers; the conversion itself still refuses out-of-range T.
+        liquid_row = _independent_csv_row(
+            "src/openimcc/data/gas/condensate.csv",
+            f"{oxide}(l)",
+            melting_point_K,
+            extrapolate_last_row=True,
+        )
+        liquid_gibbs = _independent_condensate_gibbs_j_mol(
+            liquid_row, melting_point_K
+        )
+        crystal_gibbs = _independent_janaf_apparent_gibbs_j_mol(
+            crystal_table, melting_point_K
+        )
+        assert liquid_gibbs - crystal_gibbs == pytest.approx(0.0, abs=150.0)
+
+    silica_liquid = _independent_csv_row(
+        "src/openimcc/data/gas/condensate-sio2-janaf-cr-candidate.csv",
+        "SiO2(l)",
+        1996.0,
+    )
+    silica_crystal = _independent_csv_row(
+        "src/openimcc/data/gas/condensate-sio2-janaf-cr-candidate.csv",
+        "SiO2(cr)",
+        1996.0,
+    )
+    assert _independent_condensate_gibbs_j_mol(
+        silica_liquid, 1996.0
+    ) == pytest.approx(
+        _independent_condensate_gibbs_j_mol(silica_crystal, 1996.0),
+        abs=1.0e-6,
+    )
     assert _solid_to_liquid_log10_shift("SiO2", 1996.0) == pytest.approx(
         0.0, abs=1.0e-10
     )
+
+
+def test_solid_to_liquid_conversion_refuses_out_of_range_temperature() -> None:
+    with pytest.raises(ValueError, match="no packaged condensate reference row"):
+        _solid_to_liquid_log10_shift("CaO", 3001.0)
 
 
 def test_load_bench_set_preserves_yaml_12_chemistry_identifiers(tmp_path: Path) -> None:

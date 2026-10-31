@@ -179,10 +179,10 @@ _KUME_LIQUID_ACTIVITY_WARNING = (
     "unconverted solid standard state; not an accuracy figure for liquid activities"
 )
 _CONVERTED_LIQUID_STANDARD_STATE = "pure-liquid (converted from pure-solid)"
-_SOLID_STANDARD_JANAF_TABLE_PAIRS = {
-    "CaO": ("Ca-028", "Ca-027"),
-    "MgO": ("Mg-009", "Mg-008"),
-    "Al2O3": ("Al-100", "Al-096"),
+_SOLID_STANDARD_JANAF_CRYSTAL_TABLES = {
+    "CaO": "Ca-027",
+    "MgO": "Mg-008",
+    "Al2O3": "Al-096",
 }
 _SOLID_STANDARD_CONDENSATE_CSV = (
     "data/gas/condensate-sio2-janaf-cr-candidate.csv"
@@ -393,10 +393,10 @@ def _condensate_gibbs_j_mol(species: str, temperature_K: float) -> float:
     return float(_lamor_gibbs(temperature_K, row))
 
 
-@lru_cache(maxsize=6)
-def _janaf_formation_gibbs_nodes(
+@lru_cache(maxsize=3)
+def _janaf_apparent_gibbs_table(
     table_id: str,
-) -> tuple[tuple[float, float], ...]:
+) -> tuple[float, tuple[tuple[float, float, float], ...]]:
     source_path = (
         Path(__file__).resolve().parents[2]
         / "data-src"
@@ -404,29 +404,49 @@ def _janaf_formation_gibbs_nodes(
         / f"{table_id}.yaml"
     )
     table = json.loads(source_path.read_text(encoding="utf-8"))["table"]
-    nodes = tuple(sorted(
-        (
-            float(row["temperature"]["value"]),
-            float(row["formation_gibbs_energy"]["value"]),
+    rows = table["values"]
+    reference_row = next(
+        row for row in rows if float(row["temperature"]["value"]) == 298.15
+    )
+    formation_enthalpy_298_kj_mol = reference_row["formation_enthalpy"]["value"]
+    if formation_enthalpy_298_kj_mol is None:
+        raise ValueError(f"{table_id} has no 298.15 K formation enthalpy")
+    nodes = tuple(
+        sorted(
+            (
+                float(row["temperature"]["value"]),
+                float(row["enthalpy_increment"]["value"]),
+                float(row["entropy"]["value"]),
+            )
+            for row in rows
+            if row["enthalpy_increment"]["value"] is not None
+            and row["entropy"]["value"] is not None
         )
-        for row in table["values"]
-        if row["formation_gibbs_energy"]["value"] is not None
-    ))
-    return nodes
+    )
+    return float(formation_enthalpy_298_kj_mol), nodes
 
 
-def _janaf_formation_gibbs_j_mol(table_id: str, temperature_K: float) -> float:
-    """Interpolate a JANAF formation-Gibbs table in J/mol."""
-    nodes = _janaf_formation_gibbs_nodes(table_id)
+def _janaf_apparent_gibbs_j_mol(table_id: str, temperature_K: float) -> float:
+    """Evaluate JANAF apparent G° from its 298 K anchor, H increment, and S."""
+    formation_enthalpy_298_kj_mol, nodes = _janaf_apparent_gibbs_table(table_id)
     if not nodes or temperature_K < nodes[0][0] or temperature_K > nodes[-1][0]:
         raise ValueError(
             f"{table_id} has no Gibbs value at {temperature_K:g} K"
         )
-    # JANAF formation Gibbs cells are kJ/mol. Linear interpolation between the
-    # printed 100 K nodes preserves the source table without fitting a new row.
-    return float(
-        np.interp(temperature_K, [node[0] for node in nodes], [node[1] for node in nodes])
-    ) * 1000.0
+    # JANAF apparent G° uses the same 298.15 K elemental references as the
+    # packaged condensate rows: Hf(298) + [H(T)-H(298)] - T*S(T). The enthalpy
+    # cells are kJ/mol, entropy is J/(mol K), and the returned G is J/mol.
+    temperatures = [node[0] for node in nodes]
+    enthalpy_increment_kj_mol = float(
+        np.interp(temperature_K, temperatures, [node[1] for node in nodes])
+    )
+    entropy_j_mol_k = float(
+        np.interp(temperature_K, temperatures, [node[2] for node in nodes])
+    )
+    return (
+        (formation_enthalpy_298_kj_mol + enthalpy_increment_kj_mol) * 1000.0
+        - temperature_K * entropy_j_mol_k
+    )
 
 
 def _solid_to_liquid_log10_shift(
@@ -441,8 +461,9 @@ def _solid_to_liquid_log10_shift(
     dimensionless, so the shift is dimensionless dex. At the melting point
     G_liq = G_cr and the shift is zero; the closed SiO2 pair reaches that
     sanity check at 1996 K using JANAF O-035 high-cristobalite with default
-    SiO2(l). Other pairs are JANAF Ca-028/Ca-027, Mg-009/Mg-008, and
-    Al-100/Al-096 (liquid/crystal).
+    SiO2(l). The other liquid G values come from the packaged CaO(l), MgO(l),
+    and Al2O3(l) rows; their JANAF crystal rows are Ca-027, Mg-008, and Al-096.
+    Ca-028 and Mg-009 are not used as liquid functions below their glass joins.
     """
     from openimcc.gas import R_J_MOL_K
 
@@ -452,16 +473,15 @@ def _solid_to_liquid_log10_shift(
         # at 1996 K. This candidate replaces only that row with closed JANAF O-035.
         crystal_gibbs = _condensate_gibbs_j_mol("SiO2(cr)", temperature_K)
     else:
-        table_pair = _SOLID_STANDARD_JANAF_TABLE_PAIRS.get(parent_oxide)
-        if table_pair is None:
+        crystal_table = _SOLID_STANDARD_JANAF_CRYSTAL_TABLES.get(parent_oxide)
+        if crystal_table is None:
             raise ValueError(
-                f"no JANAF liquid/crystal reference pair for {parent_oxide!r}"
+                f"no JANAF crystal reference pair for {parent_oxide!r}"
             )
-        liquid_table, crystal_table = table_pair
-        liquid_gibbs = _janaf_formation_gibbs_j_mol(
-            liquid_table, temperature_K
+        liquid_gibbs = _condensate_gibbs_j_mol(
+            f"{parent_oxide}(l)", temperature_K
         )
-        crystal_gibbs = _janaf_formation_gibbs_j_mol(
+        crystal_gibbs = _janaf_apparent_gibbs_j_mol(
             crystal_table, temperature_K
         )
     return (liquid_gibbs - crystal_gibbs) / (
