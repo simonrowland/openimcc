@@ -1080,6 +1080,9 @@ def test_lh87_transcription_matches_packaged_rows_and_has_a_valid_hash() -> None
             if row["species_name"] == "SiO2(cr)"
         }
 
+    # See the tau polynomial in src/openimcc/gas.py:4325-4328. With τ=T/1000,
+    # the Table 2 scales reduce as (10³B)·τ = B·T and (10⁶C)·τ² = C·T²,
+    # with the same cancellation for D and E.
     coefficient_columns = {
         "A": "dG_A",
         "10^3 B": "dG_B",
@@ -1112,12 +1115,15 @@ def test_lh87_transcription_matches_packaged_rows_and_has_a_valid_hash() -> None
             ) == anchor_decimal
             for published_label, column in coefficient_columns.items():
                 coefficient = source_row["coefficients"].get(published_label)
-                published_text = (
-                    coefficient["as_published"] if coefficient else "0"
-                )
+                if coefficient is None:
+                    assert Decimal(packaged[column]) == Decimal(0), (
+                        species_name,
+                        published_label,
+                    )
+                    continue
+                published_text = coefficient["as_published"]
                 published_decimal = Decimal(published_text)
-                if coefficient:
-                    assert Decimal(str(coefficient["value"])) == published_decimal
+                assert Decimal(str(coefficient["value"])) == published_decimal
                 quantum = Decimal(1).scaleb(published_decimal.as_tuple().exponent)
                 assert Decimal(packaged[column]).quantize(
                     quantum, rounding=ROUND_HALF_UP
