@@ -186,6 +186,13 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
             row.get("T_interval"),
         )
 
+    # Re-pointed to cold-extension refs after the band-migration baseline.
+    post_migration_runtime_refs = {
+        ("gas", "As(g)", "P672-As-g", 2): "P672-As-g-CP-EXT-1200",
+        ("gas", "As2(g)", "P672-As2-g", 2): "P672-As2-g-CP-EXT-1200",
+        ("gas", "As4(g)", "P672-As4-g", 2): "P672-As4-g-CP-EXT-1200",
+        ("gas", "As4O6(g)", "P672-As4O6-g", 2): "P672-As4O6-g-CP-EXT-1000",
+    }
     ion_species = {
         "Au+(g)", "Au-(g)", "Hg+(g)", "Pd+(g)", "Pt+(g)", "Pt-(g)",
     }
@@ -220,6 +227,12 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         (*pgm_rows, *saha_rows, *current_construction_rows)
     )
     baseline_rows = baseline_document["rows"]
+    baseline_runtime_refs = {
+        row_key(row): row["runtime_ref"]
+        for row in baseline_rows
+        if row_key(row) in post_migration_runtime_refs
+    }
+    assert set(baseline_runtime_refs) == set(post_migration_runtime_refs)
     baseline_document["rows"] = []
     baseline_text = yaml.safe_dump(
         baseline_document, allow_unicode=True, sort_keys=False
@@ -303,6 +316,9 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         committed_rows = {row_key(row): row for row in committed_provenance["rows"]}
         assert set(committed_rows) - set(migrated_rows) == wave3_rows
         assert set(migrated_rows) <= set(committed_rows)
+        for key, expected_runtime_ref in post_migration_runtime_refs.items():
+            assert committed_rows[key]["runtime_ref"] == expected_runtime_ref
+            assert migrated_rows[key]["runtime_ref"] == baseline_runtime_refs[key]
         selected_feo = ("condensate", "FeO(l)", None, None)
         post_migration_tier_rows = {
             ("gas", "Hg(g)", "BU-2587", 1),
@@ -326,6 +342,8 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
             ):
                 if field not in migrated_row:
                     normalized.pop(field, None)
+            if key in post_migration_runtime_refs:
+                normalized.pop("runtime_ref", None)
             if key in post_migration_tier_rows:
                 normalized.pop("tier", None)
             if key == lh87_silica_row:
