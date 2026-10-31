@@ -227,6 +227,7 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         (*pgm_rows, *saha_rows, *current_construction_rows)
     )
     baseline_rows = baseline_document["rows"]
+    baseline_rows_by_key = {row_key(row): row for row in baseline_rows}
     baseline_runtime_refs = {
         row_key(row): row["runtime_ref"]
         for row in baseline_rows
@@ -330,12 +331,77 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         )
         assert migrated_rows[selected_feo]["authority"] == "janaf_transcribed"
 
+        # 675031e raised eight condensate fit starts and Tl2O to close seams.
+        # 675031e seam refits recomputed gas and condensate residual values.
+        # 675031e recalculated parent-scale bands after refitting liquid parents.
+        exemption_rows = yaml.safe_load(
+            (ROOT / "tests/fixtures/migration_field_exemptions.yaml").read_text()
+        )["rows"]
+        post_migration_field_exemptions = {
+            tuple(entry["row_key"]): entry["fields"] for entry in exemption_rows
+        }
+        assert len(post_migration_field_exemptions) == len(exemption_rows)
+
+        def migration_field_value(row: dict, field: str):
+            if field in {"T_range_K", "fit_intervals_K"}:
+                return row.get(field)
+            container, member = field.split(".", 1)
+            value = row.get(container)
+            return value.get(member) if isinstance(value, dict) else None
+
+        def baseline_migration_field_value(row: dict, field: str):
+            if field in {"T_range_K", "fit_intervals_K"}:
+                return row.get(field)
+            if field == "fit_residual.value":
+                fit = row.get("fit_residual")
+                if isinstance(fit, dict) and "value" in fit:
+                    return fit["value"]
+                residual_fields = (
+                    "max_residual_J_per_mol",
+                    "max_residual_J_per_mol_by_interval",
+                    "max_residual_log10_K",
+                )
+                return {name: row[name] for name in residual_fields if name in row} or None
+            if field == "accuracy_band.value":
+                band = row.get("accuracy_band")
+                if isinstance(band, dict) and "value" in band:
+                    return band["value"]
+                if "combined_band" in row:
+                    old_band = {
+                        "combined_band": row["combined_band"],
+                        "source_uncertainty": row.get("source_uncertainty"),
+                    }
+                else:
+                    old_band = row.get("uncertainty_band")
+                additional_bands = row.get("additional_uncertainty_bands")
+                if old_band is not None:
+                    return (
+                        {**old_band, "additional_uncertainty_bands": additional_bands}
+                        if additional_bands else old_band
+                    )
+                if additional_bands:
+                    return {"additional_uncertainty_bands": additional_bands}
+                return None
+            raise AssertionError(f"unsupported pinned migration field: {field}")
+
         def migration_comparable_row(
             row: dict, key: tuple, migrated_row: dict
         ) -> dict:
             normalized = dict(row)
-            normalized.pop("T_range_K", None)
-            normalized.pop("fit_intervals_K", None)
+            exempted_fields = post_migration_field_exemptions.get(key, {})
+            for field in ("T_range_K", "fit_intervals_K"):
+                if field in exempted_fields:
+                    normalized.pop(field, None)
+            if "fit_residual.value" in exempted_fields:
+                fit = normalized.get("fit_residual")
+                if isinstance(fit, dict):
+                    normalized["fit_residual"] = {**fit}
+                    normalized["fit_residual"].pop("value", None)
+            if "accuracy_band.value" in exempted_fields:
+                band = normalized.get("accuracy_band")
+                if isinstance(band, dict):
+                    normalized["accuracy_band"] = {**band}
+                    normalized["accuracy_band"].pop("value", None)
             for field in (
                 "table_id", "source_table_id", "runtime_ref", "source_path",
                 "source_sha256", "upstream_source_sha256",
@@ -352,15 +418,37 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                 source = dict(normalized["source"])
                 source.pop("transcription", None)
                 normalized["source"] = source
-            for field in ("fit_residual", "accuracy_band"):
-                value = normalized.get(field)
-                if isinstance(value, dict):
-                    normalized[field] = {
-                        key: item for key, item in value.items()
-                        if key != "value"
-                        and not (field == "fit_residual" and key == "temperature_range")
-                    }
             return normalized
+
+        compared_fields = (
+            "T_range_K", "fit_intervals_K", "fit_residual.temperature_range",
+            "fit_residual.value", "accuracy_band.value",
+        )
+        differing_field_pairs = {
+            (key, field)
+            for key in migrated_rows
+            if key != selected_feo
+            for field in compared_fields
+            if migration_field_value(migrated_rows[key], field)
+            != migration_field_value(committed_rows[key], field)
+        }
+        pinned_field_pairs = {
+            (key, field)
+            for key, fields in post_migration_field_exemptions.items()
+            for field in fields
+        }
+        assert differing_field_pairs == pinned_field_pairs
+        for key, fields in post_migration_field_exemptions.items():
+            assert key in baseline_rows_by_key
+            for field, expected_committed_value in fields.items():
+                migrated_value = migration_field_value(migrated_rows[key], field)
+                assert migration_field_value(
+                    committed_rows[key], field
+                ) == expected_committed_value
+                assert migrated_value == baseline_migration_field_value(
+                    baseline_rows_by_key[key], field
+                )
+                assert migrated_value != expected_committed_value
 
         mismatched_keys = {
             key for key, row in migrated_rows.items()
