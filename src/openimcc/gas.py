@@ -60,6 +60,16 @@ _SUPERCOOLED_EXTENSION_REF_SUFFIX = "-SC-CP"
 _SUPPRESS_TRIAL_RECEIPTS: ContextVar[bool] = ContextVar(
     "openimcc_suppress_trial_receipts", default=False
 )
+
+
+def _consume_trial_receipt_suppression() -> bool:
+    """Consume one trial marker; the solver's finally block restores its token."""
+    suppress = _SUPPRESS_TRIAL_RECEIPTS.get()
+    if suppress:
+        _SUPPRESS_TRIAL_RECEIPTS.set(False)
+    return suppress
+
+
 _SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
 _LIQUID_FROM_SOLID_REF_RE = re.compile(
     r"^LFS\[(?P<source>[^;\]]+);Tf=(?P<temperature>[0-9]+(?:\.[0-9]+)?)\]$"
@@ -5608,6 +5618,7 @@ def evaluate_gas(
     consume O2, so p̃_gas scales as fO2^n_O2 and decreases as fO2 is lowered
     when n_O2 > 0. fO2 = 0 is refused (non-positive), so that limit is not returned.
     """
+    suppress_receipt = _consume_trial_receipt_suppression()
     requested_parent_oxides = parent_oxides
     datapack, profile_name = _select_gas_datapack(datapack, profile)
     parent_oxides_explicit = parent_oxides is not None
@@ -6146,7 +6157,7 @@ def evaluate_gas(
         _profile_identity=identity,
         receipt=(
             None
-            if _SUPPRESS_TRIAL_RECEIPTS.get()
+            if suppress_receipt
             else build_calculation_receipt(
                 request={
                     "activities": activities,
@@ -7213,6 +7224,7 @@ def evaluate_gas_saturation(
     pressure weighted stoichiometric balance; this is an equilibrium vapor
     model, not the Knudsen flux closure.
     """
+    suppress_receipt = _consume_trial_receipt_suppression()
     requested_parent_oxides = parent_oxides
     datapack, profile_name = _select_gas_datapack(datapack, profile)
     if parent_oxides is None:
@@ -7337,7 +7349,7 @@ def evaluate_gas_saturation(
         _profile_identity=identity,
         receipt=(
             None
-            if _SUPPRESS_TRIAL_RECEIPTS.get()
+            if suppress_receipt
             else build_calculation_receipt(
                 request={
                     "parent_activities": parent_activities,

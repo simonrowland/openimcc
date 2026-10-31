@@ -367,3 +367,49 @@ def test_solver_trials_build_receipt_only_for_final_result(monkeypatch):
     )
     assert boiling.receipt is not None
     assert len(built) == 1
+
+
+def test_trial_suppression_does_not_reach_reentrant_public_calls(monkeypatch):
+    melt = evaluate(_BASALT, 1800.0, basis_type="wt")
+    activities = {name: melt.activity(name) for name in melt.parent_oxides}
+    profile = openimcc.load_profile("openimcc")
+    original_evaluate_gas = gas_module.evaluate_gas
+    independent_results = []
+    nested_call_started = False
+
+    def wrapped_evaluate_gas(*args, **kwargs):
+        nonlocal nested_call_started
+        result = original_evaluate_gas(*args, **kwargs)
+        if not nested_call_started:
+            nested_call_started = True
+            independent_results.append(evaluate_gas_saturation(
+                activities,
+                1800.0,
+                parent_oxides=tuple(activities),
+                allow_extrapolation=True,
+                profile=profile,
+            ))
+        return result
+
+    monkeypatch.setattr(gas_module, "evaluate_gas", wrapped_evaluate_gas)
+    _, balanced, _ = evaluate_gas_oxygen_balance(
+        activities, 1800.0, profile=profile
+    )
+
+    assert independent_results[0].receipt is not None
+    assert balanced.receipt is not None
+
+
+def test_trial_exception_restores_receipt_suppression(monkeypatch):
+    melt = evaluate(_BASALT, 1800.0, basis_type="wt")
+    activities = {name: melt.activity(name) for name in melt.parent_oxides}
+    profile = openimcc.load_profile("openimcc")
+
+    def raise_trial_error(*args, **kwargs):
+        raise RuntimeError("trial failed")
+
+    monkeypatch.setattr(gas_module, "evaluate_gas", raise_trial_error)
+    with pytest.raises(RuntimeError, match="trial failed"):
+        evaluate_gas_oxygen_balance(activities, 1800.0, profile=profile)
+
+    assert gas_module._SUPPRESS_TRIAL_RECEIPTS.get() is False
