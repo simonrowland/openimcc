@@ -218,6 +218,7 @@ class RedoxResult:
     titanic_ti_mol: float = 0.0
     ti_oxygen_capacity_mol: float = 0.0
     composition_redox_iterations: int = 0
+    profile: str | None = None
 
     @property
     def speciation(self) -> Mapping[str, float]:
@@ -2784,4 +2785,4 @@ def evaluate_redox(
         max_iter=max_iter,
         redox_pack_path=selected.redox_pack_path,
     )
-    return result
+    return replace(result, profile=selected.name)

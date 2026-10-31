@@ -4644,18 +4644,34 @@ def _liquid_reference_flags(
     T: float,
     source_flags: list[str],
     *,
+    selected_row: pd.Series,
     channel: str,
     composition_wt_pct: Mapping[str, float] | None,
     statuses: dict[str, CertificationStatus],
 ) -> list[str]:
-    """Apply the single certification lookup to liquid-source validity flags."""
+    """Apply authority only when it was assessed for the selected source row."""
     composition = None
     if composition_wt_pct is not None:
         composition = {
             f"{oxide}_wt_pct": value
             for oxide, value in composition_wt_pct.items()
         }
-    status = liquid_reference_authority(species, T, composition)
+    validity = _source_validity_for_row(species, selected_row, phase="l")
+    selected_source_id = (
+        str(validity["table_id"])
+        if validity is not None and validity.get("table_id")
+        else str(selected_row.get("Ref", ""))
+    )
+    if species == "FeO(l)" and selected_source_id == "JANAF":
+        selected_source_id = "Fe-019"
+    status = liquid_reference_authority(
+        species,
+        T,
+        composition,
+        selected_source_id=selected_source_id,
+    )
+    if status is None:
+        return source_flags
     statuses[channel] = status
     scope_unresolved = bool(status.composition_scope) and not status.scope_applied
     if (
@@ -5889,6 +5905,7 @@ def evaluate_gas(
                     oxide_name,
                     T,
                     flags[oxide_flag_start:],
+                    selected_row=oxide_row,
                     channel=gas_name,
                     composition_wt_pct=composition_wt_pct,
                     statuses=liquid_statuses,
@@ -5950,6 +5967,7 @@ def evaluate_gas(
                         side_name,
                         T,
                         source_flags,
+                        selected_row=side_row,
                         channel=gas_name,
                         composition_wt_pct=composition_wt_pct,
                         statuses=liquid_statuses,

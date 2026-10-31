@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from types import MappingProxyType
 from typing import Mapping
@@ -55,6 +55,7 @@ class LiquidReferenceRecord:
     band_unit: str | None
     evidence_ref: tuple[EvidenceReference, ...]
     additional_windows: tuple[AuthorityWindow, ...] = ()
+    source_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.authority, LiquidReferenceAuthority):
@@ -202,6 +203,20 @@ _RECORDS = (
                 _e("Smith et al.", 2017, "reports the pure-sample 1405.2 K melting point and 47.7 +/- 2.5 kJ/mol fusion enthalpy; no pure-liquid Cp interval is measured; DOI 10.1016/j.jct.2017.04.003"),
             )),)),
 )
+_SOURCE_IDS_BY_SPECIES = {
+    "SiO2(l)": ("SiO2-RBT84-CANDIDATE",),
+    "K2O(l)": ("K-012",),
+    "CaO(l)": ("Ca-028",),
+    "MgO(l)": ("Mg-009",),
+    "FeO(l)": ("DG46-MASSON65",),
+    "Al2O3(l)": ("Al-100",),
+    "TiO2(l)": ("O-044",),
+    "Na2O(l)": ("Na2O-RBT84-CANDIDATE",),
+}
+_RECORDS = tuple(
+    replace(record, source_ids=_SOURCE_IDS_BY_SPECIES.get(record.species, ()))
+    for record in _RECORDS
+)
 _BY_SPECIES = MappingProxyType({record.species: record for record in _RECORDS})
 
 
@@ -215,12 +230,26 @@ def _contains(bounds: tuple[float, float] | None, T_K: float) -> bool:
 
 
 def liquid_reference_authority(
-    species: str, T_K: float, composition: Mapping[str, float] | None = None
-) -> CertificationStatus:
-    """Resolve authority at T; certified-window endpoints are inclusive."""
+    species: str,
+    T_K: float,
+    composition: Mapping[str, float] | None = None,
+    *,
+    selected_source_id: str | None = None,
+) -> CertificationStatus | None:
+    """Resolve row-specific authority at T; window endpoints are inclusive.
+
+    When a selected source id is supplied, authority is returned only for rows
+    against which its evidence was assessed. A different source row has no
+    authority claim from this record.
+    """
     record = _BY_SPECIES.get(species)
     if record is None:
         raise KeyError(f"no liquid-reference authority record for {species!r}")
+    if (
+        selected_source_id is not None
+        and selected_source_id not in record.source_ids
+    ):
+        return None
     authority = record.authority
     band_value, band_unit, evidence_ref = record.band_value, record.band_unit, record.evidence_ref
     reason = "source authority applies"

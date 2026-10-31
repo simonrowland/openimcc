@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, fields
 import struct
 from types import SimpleNamespace
 
@@ -99,6 +99,10 @@ def test_openimcc_profile_matches_readme_quickstart_values_bit_for_bit() -> None
         activities, 1800.0, 1e-10, profile=profile
     )
     assert dict(profile_gas) == dict(default_gas)
+    for result_field in fields(default_gas):
+        assert getattr(profile_gas, result_field.name) == getattr(
+            default_gas, result_field.name
+        )
     assert profile_gas.gas_table_digest == default_gas.gas_table_digest
     assert profile_gas.condensate_table_digest == default_gas.condensate_table_digest
     assert profile_gas.profile == "openimcc"
@@ -180,6 +184,28 @@ def test_published_profile_refuses_redox_because_sf04_has_no_redox_model() -> No
         )
 
 
+def test_published_gas_profile_does_not_borrow_other_liquid_authority() -> None:
+    profile = load_profile("published")
+    feo = evaluate_gas(
+        {"FeO": 1.0}, 1700.0, 1e-8,
+        parent_oxides=("FeO",), gas_species=("Fe",), profile=profile,
+    )
+    assert "Fe" not in feo.liquid_reference_status
+    assert "D&G/Masson" not in (feo.domain_flags["Fe"] or "")
+
+    alumina_row = profile.gas_datapack.oxide_df.loc["Al2O3(l)"]
+    assert str(alumina_row["Ref"]) == "LAM1987"
+    alumina = evaluate_gas(
+        {"Al2O3": 1.0}, 2500.0, 1e-8,
+        parent_oxides=("Al2O3",), gas_species=("Al",), profile=profile,
+    )
+    assert all(
+        status.species != "Al2O3(l)"
+        for status in alumina.liquid_reference_status.values()
+    )
+    assert "band" not in (alumina.domain_flags["Al"] or "")
+
+
 def test_openimcc_profile_selects_the_default_redox_pack() -> None:
     default = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
     profiled = evaluate_redox(
@@ -189,3 +215,10 @@ def test_openimcc_profile_selects_the_default_redox_pack() -> None:
     assert profiled.lambda_ln_f_o2 == default.lambda_ln_f_o2
     assert profiled.redox_pack_digest == default.redox_pack_digest
     assert profiled.melt_pack_binding_digest == default.melt_pack_binding_digest
+    assert profiled.profile == "openimcc"
+    assert default.profile is None
+    for result_field in fields(default):
+        if result_field.name != "profile":
+            assert getattr(profiled, result_field.name) == getattr(
+                default, result_field.name
+            )

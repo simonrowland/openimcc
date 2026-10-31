@@ -389,3 +389,17 @@ def test_feo_authority_window_and_band_are_unchanged() -> None:
         outside = liquid_reference_authority("FeO(l)", temperature)
         assert outside.authority is LiquidReferenceAuthority.EXTRAPOLATED
         assert outside.band_value is None and outside.band_unit is None
+
+
+def test_authority_requires_the_source_row_its_evidence_assessed() -> None:
+    feo = liquid_reference_authority(
+        "FeO(l)", 1700, selected_source_id="DG46-MASSON65"
+    )
+    assert feo is not None
+    assert feo.authority is LiquidReferenceAuthority.CERTIFIED
+    assert liquid_reference_authority(
+        "FeO(l)", 1700, selected_source_id="Fe-019"
+    ) is None
+    assert liquid_reference_authority(
+        "Al2O3(l)", 2500, selected_source_id="LAM1987"
+    ) is None
