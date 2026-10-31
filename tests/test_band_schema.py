@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import tarfile
+from collections import Counter
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -180,18 +181,51 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
     with tarfile.open(fileobj=__import__("io").BytesIO(archive)) as source:
         source.extractall(tmp_path, filter="data")
 
-    def row_key(row: dict) -> tuple:
+    def row_identity(row: dict) -> tuple:
+        temperature_range = row.get("T_range_K")
         return (
             row.get("table"), row.get("species_name"), row.get("table_id"),
             row.get("T_interval"),
+            tuple(float(value) for value in temperature_range)
+            if temperature_range is not None else None,
+        )
+
+    def keyed_rows(rows: list[dict], label: str) -> list[tuple[tuple, dict]]:
+        occurrences = Counter()
+        keyed = []
+        for row in rows:
+            identity = row_identity(row)
+            occurrence = occurrences[identity]
+            occurrences[identity] += 1
+            keyed.append(((*identity, occurrence), row))
+        keys = [key for key, _ in keyed]
+        assert len(keys) == len(set(keys)), f"duplicate {label} row key"
+        return keyed
+
+    def fixture_key(value: list) -> tuple:
+        assert len(value) == 6
+        temperature_range = value[4]
+        return (
+            *value[:4],
+            tuple(float(item) for item in temperature_range)
+            if temperature_range is not None else None,
+            int(value[5]),
         )
 
     # Re-pointed to cold-extension refs after the band-migration baseline.
     post_migration_runtime_refs = {
-        ("gas", "As(g)", "P672-As-g", 2): "P672-As-g-CP-EXT-1200",
-        ("gas", "As2(g)", "P672-As2-g", 2): "P672-As2-g-CP-EXT-1200",
-        ("gas", "As4(g)", "P672-As4-g", 2): "P672-As4-g-CP-EXT-1200",
-        ("gas", "As4O6(g)", "P672-As4O6-g", 2): "P672-As4O6-g-CP-EXT-1000",
+        (
+            "gas", "As(g)", "P672-As-g", 2, (1200.0, 1500.0), 0,
+        ): "P672-As-g-CP-EXT-1200",
+        (
+            "gas", "As2(g)", "P672-As2-g", 2, (1200.0, 1500.0), 0,
+        ): "P672-As2-g-CP-EXT-1200",
+        (
+            "gas", "As4(g)", "P672-As4-g", 2, (1200.0, 1500.0), 0,
+        ): "P672-As4-g-CP-EXT-1200",
+        (
+            "gas", "As4O6(g)", "P672-As4O6-g", 2, (1200.0, 1500.0), 0,
+        ): "P672-As4O6-g-CP-EXT-1000",
     }
     ion_species = {
         "Au+(g)", "Au-(g)", "Hg+(g)", "Pd+(g)", "Pt+(g)", "Pt-(g)",
@@ -207,11 +241,11 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         row for row in current_document["rows"]
         if row.get("construction_inputs_path") == "data-src/liquid-from-solid-inputs.json"
     ]
-    construction_keys = {row_key(row) for row in current_construction_rows}
+    construction_keys = {row_identity(row) for row in current_construction_rows}
     baseline_document = yaml.safe_load(baseline_gas_provenance.read_text())
     baseline_document["rows"] = [
         row for row in baseline_document["rows"]
-        if row_key(row) not in construction_keys
+        if row_identity(row) not in construction_keys
     ]
     pgm_rows = [
         row for row in current_document["rows"]
@@ -227,11 +261,12 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         (*pgm_rows, *saha_rows, *current_construction_rows)
     )
     baseline_rows = baseline_document["rows"]
-    baseline_rows_by_key = {row_key(row): row for row in baseline_rows}
+    baseline_keyed_rows = keyed_rows(baseline_rows, "baseline")
+    baseline_rows_by_key = dict(baseline_keyed_rows)
     baseline_runtime_refs = {
-        row_key(row): row["runtime_ref"]
-        for row in baseline_rows
-        if row_key(row) in post_migration_runtime_refs
+        key: row["runtime_ref"]
+        for key, row in baseline_keyed_rows
+        if key in post_migration_runtime_refs
     }
     assert set(baseline_runtime_refs) == set(post_migration_runtime_refs)
     baseline_document["rows"] = []
@@ -296,36 +331,85 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                 "data-src/published-thermo/pankratz-bulletin-677-re.json",
             }
         ]
-        wave3_rows = {
-            ("gas", "SbO(g)", "Kelley-584-SbO", 1),
-            ("gas", "SbO(g)", "Kelley-584-SbO", 2),
-            ("gas", "TeO(g)", "NUREG-4308-TeO", 1),
-            ("gas", "TeO(g)", "NUREG-4308-TeO", 2),
-            ("gas", "HCl(g)", "Cl-026", 2),
-            ("gas", "HF(g)", "F-005", 2),
-            ("gas", "NaCl(g)", "Cl-056", 2),
-            ("gas", "(NaCl)2(g)", "Cl-098", 2),
-            ("gas", "KCl(g)", "Cl-039", 2),
-            ("gas", "(KCl)2(g)", "Cl-091", 2),
-            ("gas", "NaF(g)", "F-036", 2),
-            ("gas", "(NaF)2(g)", "F-082", 2),
-            ("gas", "KF(g)", "F-020", 2),
-            ("gas", "(KF)2(g)", "F-069", 2),
-            ("gas", "Hg(g)", "BU-2587", 3),
-        }
-        migrated_rows = {row_key(row): row for row in migrated_provenance["rows"]}
-        committed_rows = {row_key(row): row for row in committed_provenance["rows"]}
-        assert set(committed_rows) - set(migrated_rows) == wave3_rows
-        assert set(migrated_rows) <= set(committed_rows)
+        migrated_keyed_rows = keyed_rows(
+            migrated_provenance["rows"], "migrated"
+        )
+        committed_keyed_rows = keyed_rows(
+            committed_provenance["rows"], "committed"
+        )
+        migrated_rows = dict(migrated_keyed_rows)
+        raw_committed_rows = dict(committed_keyed_rows)
+        exemption_fixture = yaml.safe_load(
+            (ROOT / "tests/fixtures/migration_field_exemptions.yaml").read_text()
+        )
+
+        def fixture_entries(groups: list[dict]) -> dict[tuple, dict]:
+            result = {}
+            for group in groups:
+                assert group["reason"]
+                for entry in group["rows"]:
+                    key = fixture_key(entry["row_key"])
+                    assert key not in result
+                    result[key] = entry["fields"]
+            return result
+
+        def fixture_keys(groups: list[dict]) -> set[tuple]:
+            values = []
+            for group in groups:
+                assert group["reason"]
+                values.extend(fixture_key(key) for key in group["row_keys"])
+            assert len(values) == len(set(values))
+            return set(values)
+
+        post_migration_field_exemptions = fixture_entries(
+            exemption_fixture["field_exemptions"]
+        )
+        expected_added_intervals = fixture_keys(
+            exemption_fixture["added_intervals"]
+        )
+        expected_removed_intervals = fixture_keys(
+            exemption_fixture["removed_intervals"]
+        )
+
+        committed_range_aliases = {}
+        for key, fields in post_migration_field_exemptions.items():
+            if "T_range_K" not in fields:
+                continue
+            expected_range = tuple(float(value) for value in fields["T_range_K"])
+            committed_key = (*key[:4], expected_range, key[5])
+            assert key in baseline_rows_by_key
+            assert key in migrated_rows
+            assert committed_key in raw_committed_rows
+            assert tuple(float(value) for value in migrated_rows[key]["T_range_K"]) == key[4]
+            assert raw_committed_rows[committed_key]["T_range_K"] == fields["T_range_K"]
+            assert committed_key not in committed_range_aliases
+            committed_range_aliases[committed_key] = key
+
+        committed_rows = {}
+        for key, row in committed_keyed_rows:
+            comparison_key = committed_range_aliases.get(key, key)
+            assert comparison_key not in committed_rows, (
+                f"duplicate committed comparison key: {comparison_key}"
+            )
+            committed_rows[comparison_key] = row
+        assert set(committed_rows) - set(migrated_rows) == set(
+            expected_added_intervals
+        )
+        assert set(migrated_rows) - set(committed_rows) == expected_removed_intervals
+
         for key, expected_runtime_ref in post_migration_runtime_refs.items():
             assert committed_rows[key]["runtime_ref"] == expected_runtime_ref
             assert migrated_rows[key]["runtime_ref"] == baseline_runtime_refs[key]
-        selected_feo = ("condensate", "FeO(l)", None, None)
+        selected_feo = (
+            "condensate", "FeO(l)", None, None, (1000.0, 5000.0), 0,
+        )
         post_migration_tier_rows = {
-            ("gas", "Hg(g)", "BU-2587", 1),
-            ("gas", "Hg(g)", "BU-2587", 2),
+            ("gas", "Hg(g)", "BU-2587", 1, (1500.0, 3000.0), 0),
+            ("gas", "Hg(g)", "BU-2587", 2, (1200.0, 1500.0), 0),
         }
-        lh87_silica_row = ("condensate", "SiO2(cr)", None, None)
+        lh87_silica_row = (
+            "condensate", "SiO2(cr)", None, None, (1000.0, 1996.0), 0,
+        )
         assert committed_rows[selected_feo]["authority"] == (
             "primary_measurement_reanchored"
         )
@@ -334,14 +418,6 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         # 675031e raised eight condensate fit starts and Tl2O to close seams.
         # 675031e seam refits recomputed gas and condensate residual values.
         # 675031e recalculated parent-scale bands after refitting liquid parents.
-        exemption_rows = yaml.safe_load(
-            (ROOT / "tests/fixtures/migration_field_exemptions.yaml").read_text()
-        )["rows"]
-        post_migration_field_exemptions = {
-            tuple(entry["row_key"]): entry["fields"] for entry in exemption_rows
-        }
-        assert len(post_migration_field_exemptions) == len(exemption_rows)
-
         def migration_field_value(row: dict, field: str):
             if field in {"T_range_K", "fit_intervals_K"}:
                 return row.get(field)
@@ -397,6 +473,11 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                 if isinstance(fit, dict):
                     normalized["fit_residual"] = {**fit}
                     normalized["fit_residual"].pop("value", None)
+            if "fit_residual.temperature_range" in exempted_fields:
+                fit = normalized.get("fit_residual")
+                if isinstance(fit, dict):
+                    normalized["fit_residual"] = {**fit}
+                    normalized["fit_residual"].pop("temperature_range", None)
             if "accuracy_band.value" in exempted_fields:
                 band = normalized.get("accuracy_band")
                 if isinstance(band, dict):
@@ -426,7 +507,7 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         )
         differing_field_pairs = {
             (key, field)
-            for key in migrated_rows
+            for key in set(migrated_rows) & set(committed_rows)
             if key != selected_feo
             for field in compared_fields
             if migration_field_value(migrated_rows[key], field)
@@ -452,7 +533,8 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
 
         mismatched_keys = {
             key for key, row in migrated_rows.items()
-            if key != selected_feo
+            if key in committed_rows
+            and key != selected_feo
             and migration_comparable_row(committed_rows[key], key, row)
             != migration_comparable_row(row, key, row)
         }
