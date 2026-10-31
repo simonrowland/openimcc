@@ -104,12 +104,13 @@ def _raw_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def _assert_redox_input_value_error(action, message: str) -> None:
+def _assert_redox_input_value_error(action, message: str) -> ValueError:
     try:
         action()
     except ValueError as exc:
         assert isinstance(exc, RedoxInputError)
         assert message in str(exc)
+        return exc
     else:
         pytest.fail(f"expected RedoxInputError containing {message!r}")
 
@@ -258,6 +259,51 @@ def test_default_redox_pack_is_pinned_to_manifest_bytes(tmp_path, monkeypatch):
     assert redox_pack_module.load_redox_pack(external_path).canonical_digest == (
         content["canonical_content_digest"]
     )
+
+
+def test_invalid_manifest_encoding_is_a_chained_redox_input_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package_root = tmp_path / "package"
+    pack_dir = package_root / "packs"
+    pack_dir.mkdir(parents=True)
+    (pack_dir / PACK_PATH.name).write_bytes(PACK_PATH.read_bytes())
+    (pack_dir / "MANIFEST.json").write_bytes(b"\xff")
+    monkeypatch.setattr(redox_pack_module, "files", lambda _package: package_root)
+
+    error = _assert_redox_input_value_error(
+        redox_pack_module.load_redox_pack, "invalid start byte"
+    )
+    assert isinstance(error.__cause__, UnicodeDecodeError)
+    assert str(error) == str(error.__cause__)
+
+
+def test_oversized_json_integer_is_a_chained_redox_input_error(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "oversized-integer.json"
+    path.write_text('{"n":' + "9" * 5000 + "}", encoding="utf-8")
+
+    error = _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "5000 digits"
+    )
+    assert isinstance(error.__cause__, ValueError)
+    assert str(error) == str(error.__cause__)
+
+
+def test_surrogate_in_metadata_digest_is_a_chained_redox_input_error(
+    tmp_path: Path,
+) -> None:
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["version"] = "\ud800"
+    path = tmp_path / "surrogate-metadata.json"
+    path.write_text(json.dumps(content, ensure_ascii=True), encoding="utf-8")
+
+    error = _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "surrogates not allowed"
+    )
+    assert isinstance(error.__cause__, UnicodeEncodeError)
+    assert str(error) == str(error.__cause__)
 
 
 def test_parent_registry_oxidation_states_and_oxide_charge_are_validated(

@@ -227,8 +227,9 @@ def test_default_redox_pack_cache_is_immutable_and_reloads_changed_files(
     assert redox_module._load_default_redox_pack().version == version
 
     changed_path.write_text("{", encoding="utf-8")
-    with pytest.raises(RedoxInputError) as refusal:
+    with pytest.raises(ImccMalformedDatapackError) as refusal:
         redox_module._load_default_redox_pack()
+    assert isinstance(refusal.value, RedoxInputError)
     assert isinstance(refusal.value, ValueError)
 
 
@@ -1161,9 +1162,10 @@ def test_default_redox_manifest_is_checked_via_evaluate_redox(
 
     pack_path.write_bytes(b"{}\n")
     with pytest.raises(
-        RedoxInputError, match="SHA-256 does not match MANIFEST.json"
+        ImccMalformedDatapackError, match="SHA-256 does not match MANIFEST.json"
     ) as refusal:
         evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
+    assert isinstance(refusal.value, RedoxInputError)
     assert isinstance(refusal.value, ValueError)
 
     manifest_path.unlink()

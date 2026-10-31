@@ -299,7 +299,7 @@ def _melt_activities(
             allow_out_of_envelope=True,
         )
         return result, result.activity("FeO"), None
-    except (ImccRefusal, ValueError) as exc:
+    except (ImccRefusal, ValueError, ArithmeticError) as exc:
         return None, None, f"{type(exc).__name__}: {exc}"
 
 
@@ -715,7 +715,7 @@ def evaluate_sulfur(
                     activities, T, gas_pack, allow_extrapolation=True,
                 )
                 log_fo2 = math.log10(p_o2)
-        except (ImccRefusal, ValueError, RuntimeError) as exc:
+        except (ImccRefusal, ValueError, ArithmeticError, RuntimeError) as exc:
             notices.append(_notice(
                 "oxygen-balance-unavailable",
                 "openimcc could not determine the requested gas state: "
@@ -879,7 +879,7 @@ def evaluate_sulfur(
                 + 16500.0 * cations_om.get("Fe", 0.0)
             ) / T
             comparison_s6 = math.exp(ln_c6 + _LN10 * log_so3)
-        except (ImccRefusal, ValueError) as exc:
+        except (ImccRefusal, ValueError, ArithmeticError) as exc:
             notices.append(_notice(
                 "om2022-comparison-unavailable",
                 "could not calculate the O'Neill and Mavrogenes sulfate comparison: "

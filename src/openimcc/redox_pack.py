@@ -621,7 +621,7 @@ def load_redox_pack(path: str | Path | None = None) -> RedoxPack:
         pack_bytes = pack_dir.joinpath(_PACK_NAME).read_bytes()
         try:
             manifest = json.loads(pack_dir.joinpath("MANIFEST.json").read_bytes())
-        except json.JSONDecodeError as exc:
+        except ValueError as exc:
             raise RedoxInputError(str(exc)) from exc
         manifest_entries = (
             manifest.get("packs")
@@ -647,7 +647,7 @@ def load_redox_pack(path: str | Path | None = None) -> RedoxPack:
             raise RedoxInputError(str(exc)) from exc
     try:
         content = json.loads(text)
-    except json.JSONDecodeError as exc:
+    except ValueError as exc:
         raise RedoxInputError(str(exc)) from exc
     if not isinstance(content, dict):
         raise RedoxInputError("redox pack root must be a JSON object")
@@ -657,7 +657,10 @@ def load_redox_pack(path: str | Path | None = None) -> RedoxPack:
         raise
     except (TypeError, ValueError) as exc:
         raise RedoxInputError(str(exc)) from exc
-    digest = canonical_redox_digest(content)
+    try:
+        digest = canonical_redox_digest(content)
+    except ValueError as exc:
+        raise RedoxInputError(str(exc)) from exc
     if content.get("canonical_content_digest") != digest:
         raise RedoxInputError("redox pack canonical content digest mismatch")
     return RedoxPack(content=_freeze_json(content), canonical_digest=digest)

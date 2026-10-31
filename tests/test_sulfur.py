@@ -4,6 +4,7 @@ import json
 import math
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 import openimcc.gas as gas_module
@@ -701,6 +702,93 @@ def test_sulfate_comparison_catches_refusals_and_propagates_unexpected_errors(
             log10_fS2=-10.0,
             gas_datapack=object(),
         )
+
+
+def test_sulfate_comparison_reports_arithmetic_overflow() -> None:
+    result = evaluate_sulfur(
+        {"SiO2": 100},
+        1800.0,
+        log10_fO2=294.6397037037037,
+        log10_fS2=-280.0,
+    )
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "om2022-comparison-unavailable"
+    )
+    assert "OverflowError: math range error" in notice.message
+
+
+def test_melt_activity_reports_floating_point_overflow() -> None:
+    with np.errstate(over="raise"):
+        result, activity, error = sulfur_module._melt_activities(
+            {"SiO2": 0.5, "FeO": 0.5}, 10.0, load_datapack()
+        )
+
+    assert result is None
+    assert activity is None
+    assert error is not None
+    assert error.startswith("FloatingPointError: overflow encountered in exp")
+
+
+def test_oxygen_balance_reports_arithmetic_overflow() -> None:
+    result = evaluate_sulfur({"SiO2": 100}, 1.0e100, log10_fS2=-10.0)
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "oxygen-balance-unavailable"
+    )
+    assert "OverflowError" in notice.message
+
+
+def test_oxygen_balance_catches_value_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        sulfur_module, "_melt_activities", lambda *_args: (None, None, None)
+    )
+
+    def fail(*args, **kwargs):
+        raise ValueError("expected oxygen input failure")
+
+    monkeypatch.setattr(gas_module, "evaluate_gas_oxygen_balance", fail)
+    result = evaluate_sulfur(
+        _MORB, 1673.0, log10_fS2=-10.0, gas_datapack=object()
+    )
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "oxygen-balance-unavailable"
+    )
+    assert "ValueError: expected oxygen input failure" in notice.message
+
+
+def test_oxygen_balance_catches_brent_runtime_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import scipy.optimize
+
+    monkeypatch.setattr(
+        sulfur_module, "_melt_activities", lambda *_args: (None, None, None)
+    )
+    monkeypatch.setattr(
+        gas_module,
+        "evaluate_gas_oxygen_balance",
+        lambda *_args, **_kwargs: (1.0e-8, None, {}),
+    )
+    calls = []
+
+    def fail_brent(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise RuntimeError("injected Brent convergence failure")
+
+    monkeypatch.setattr(scipy.optimize, "brentq", fail_brent)
+    result = evaluate_sulfur(
+        _MORB, 1673.0, total_s_ppm=100.0, gas_datapack=object()
+    )
+    notice = next(
+        notice for notice in result.notices
+        if notice.code == "oxygen-balance-unavailable"
+    )
+    assert calls
+    assert "RuntimeError: injected Brent convergence failure" in notice.message
 
 
 def test_species_pair_disclosure_survives_sulfur_evaluation(tmp_path):

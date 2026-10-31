@@ -78,6 +78,10 @@ def _unreadable_pack(
     )
 
 
+class _RedoxDefaultPackInputError(ImccMalformedDatapackError, RedoxInputError):
+    """Keep default-pack schema failures in both public refusal hierarchies."""
+
+
 def _pack_file_identity(path: Path) -> tuple[str, int, int]:
     # The cache key is (resolved path, mtime_ns, size). A rewrite that leaves
     # all three unchanged is served from the cache: a same-size rewrite that
@@ -125,7 +129,7 @@ def _load_default_redox_pack() -> RedoxPack:
                     _DEFAULT_REDOX_PACK_PATH, exc, description="default datapack"
                 ) from exc
             except ValueError as exc:
-                raise RedoxInputError(
+                raise _RedoxDefaultPackInputError(
                     "default redox datapack "
                     f"{_DEFAULT_REDOX_PACK_PATH.name} is invalid: {exc}"
                 ) from exc
