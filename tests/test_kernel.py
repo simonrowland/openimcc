@@ -324,14 +324,13 @@ def test_corrected_default_pack_bulk_root_bytes_are_pinned() -> None:
         allow_out_of_envelope=True,
     )
     assert result.temperature_K == 1800.0
-    assert result.basis == pytest.approx(99.99999999999999, rel=1.0e-13, abs=0.0)
-    np.testing.assert_allclose(
+    # These outputs are intentionally bit-exact under the pinned CI NumPy/SciPy.
+    assert result.basis == 99.99999999999999
+    np.testing.assert_array_equal(
         result.parent_mol,
         (51.85068, 4.78527, 13.77307, 9.02862, 14.80572, 1.73824, 3.23108, 0.78732),
-        rtol=1.0e-13,
-        atol=0.0,
     )
-    np.testing.assert_allclose(
+    np.testing.assert_array_equal(
         result.parent_x,
         (
             0.5185068,
@@ -343,8 +342,6 @@ def test_corrected_default_pack_bulk_root_bytes_are_pinned() -> None:
             0.03231080000000001,
             0.007873200000000002,
         ),
-        rtol=1.0e-13,
-        atol=0.0,
     )
     # Pinned to the corrected D066 v5 pack; its five A refits change these
     # activities and associate extents, while the solver path remains direct.

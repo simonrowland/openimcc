@@ -402,15 +402,10 @@ def test_ordinary_v1_root_keeps_its_pre_polish_bits(
         assert solve_calls == 0
     expected = _ORDINARY_ROOT_EXPECTATIONS[path]
     assert result.temperature_K == temperature
-    assert result.basis == pytest.approx(
-        expected["basis"], rel=1.0e-13, abs=0.0
-    )
-    np.testing.assert_allclose(
-        result.parent_mol, expected["parent_mol"], rtol=1.0e-13, atol=0.0
-    )
-    np.testing.assert_allclose(
-        result.parent_x, expected["parent_x"], rtol=1.0e-13, atol=0.0
-    )
+    # These outputs are intentionally bit-exact under the pinned CI NumPy/SciPy.
+    assert result.basis == expected["basis"]
+    np.testing.assert_array_equal(result.parent_mol, expected["parent_mol"])
+    np.testing.assert_array_equal(result.parent_x, expected["parent_x"])
     assert result.parent_activity == pytest.approx(
         expected["parent_activity"],
         rel=1e-12,

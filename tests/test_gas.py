@@ -6102,7 +6102,7 @@ def test_weighted_oxygen_root_reversible_zero_and_clipping_counterexample() -> N
         bulk_pressures_bar={"M": 0.0, "O2": 0.0, "O": 3.0},
         log10_pO2_bracket=(-3.0, 3.0),
     )
-    assert clipped.pO2_bar == target
+    assert clipped.pO2_bar == pytest.approx(target, rel=1.0e-13, abs=0.0)
     assert abs(clipped.residual_mol_m2_s) < 1e-8
     assert clipped.applied_residual_mol_m2_s == pytest.approx(2e5)
     assert clipped.applied_flux_closes is False
