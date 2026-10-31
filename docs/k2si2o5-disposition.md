@@ -8,17 +8,19 @@ log₁₀ K = A + B/T
 ```
 
 Two published thermochemical routes give materially different values. The
-default `imcc-sf04-d066-v5` pack uses the SF04-derived row, re-referenced to
-that pack's liquid parent standards:
+default `imcc-sf04-d066-v5` pack uses the SF04-derived row. Its recorded
+standard-state refit covers the SiO₂ parent (`SiO₂: 2.0`); the row's K₂O
+reference remains unresolved:
 
 | Route | `A` | `B` (K) | Source |
 | --- | ---: | ---: | --- |
-| SF04 vapor-revised, as stored in v5 | 0.411357 | 14568.541 | Schaefer & Fegley (2004), Table 2, [DOI 10.1016/j.icarus.2003.08.023](https://doi.org/10.1016/j.icarus.2003.08.023); that table cites Hastie & Bonnell (1985), *High Temperature Science* 19, 275–306 (no DOI located). The printed SF04 fit is 0.35 + 14685/T; v5 re-references it to its current parent standards. |
+| SF04 vapor-revised, as stored in v5 | 0.411357 | 14568.541 | Schaefer & Fegley (2004), Table 2, [DOI 10.1016/j.icarus.2003.08.023](https://doi.org/10.1016/j.icarus.2003.08.023); that table cites Hastie & Bonnell (1985), *High Temperature Science* 19, 275–306 (no DOI located). The printed SF04 fit is 0.35 + 14685/T; v5 refits it to the SiO₂ standard only, with the K₂O reference unresolved. |
 | FC87 calorimetric route | −0.73 | 18466 | Fegley & Cameron (1987), Table 3 R32 and Appendix 1, [DOI 10.1016/0012-821X(87)90196-8](https://doi.org/10.1016/0012-821X(87)90196-8), derived from Beyer, Ferrante, Brown & Daut (1980), *Thermodynamic Properties of Potassium Metasilicate and Disilicate*, U.S. Bureau of Mines RI 8410 ([report scan](https://stacks.cdc.gov/view/cdc/237250/cdc_237250_DS1.pdf); no DOI located). |
 
 The SF04 fit is less favorable to association than FC87. In a binary melt at
-36 wt% K₂O and 64 wt% SiO₂, replacing only the K₂Si₂O₅ fit with the FC87
-values changes the model's predicted activities as follows. The pressure shift
+36 g K₂O + 64 g SiO₂ (X(K₂O) = 0.264; 36 wt% K₂O and 64 wt% SiO₂), replacing
+only the K₂Si₂O₅ fit with the FC87 values changes the model's predicted
+activities as follows. The pressure shift
 uses the congruent Knudsen-effusion relation for
 K₂O(l) ⇌ 2 K(g) + ½ O₂(g),
 `Δlog₁₀ P(K) ≈ 0.4 Δlog₁₀ a(K₂O)`; it is a model comparison, not a
@@ -41,18 +43,22 @@ about 3.5–4.8 kJ mol⁻¹. The formula basis is
 ## Why v5 keeps SF04
 
 The source-selection order is standard-state consistency, primary measurement,
-domain match, then estimates. Here the consistency checks disagree: the Hess
-cycle favors the Beyer/FC87 calorimetric route, while the K-vapor comparisons
-favor the weaker SF04 association. Both routes are measurement-based; the
-Hess target and FC87 value share the Beyer calorimetry, so that closure is not
-an independent K-activity measurement. For K-pressure predictions, the direct
-K-vapor measurements are the primary observable. Plante's in-domain points
-overlap 1700–1800 K, inside the v5 row's 1700–3000 K exercised range; the
-Beyer liquid heat-content measurements end at 1453.8 K, so their application
-to those vapor conditions is extrapolative. No lower-tier estimate is used
-to break the conflict. The default therefore retains the SF04-derived row
-while the evidence remains split; this preserves the in-domain vapor
-comparison and does not resolve the Hess mismatch.
+domain match, then estimates. Standard-state consistency cannot be established
+for this row: its refit names the SiO₂ standard only, and its K₂O reference is
+unresolved. The thermochemical evidence also points in different directions:
+the Hess cycle favors the Beyer/FC87 calorimetric route, while K-vapor
+comparisons favor the weaker SF04 association. Both routes are measurement-
+based; the Hess target and FC87 value share the Beyer calorimetry, so that
+closure is not an independent K-activity measurement. For K-pressure
+predictions, direct K-vapor measurements are the primary observable. Plante's
+in-domain points overlap 1700–1800 K, inside the v5 row's 1700–3000 K
+exercised range; the Beyer liquid heat-content measurements end at 1453.8 K,
+so their application to those vapor conditions is extrapolative. No lower-tier
+estimate is used to break the conflict. The in-domain vapor comparison
+supports retaining the SF04-derived row for K-pressure predictions, but does
+not establish standard-state consistency. The default keeps that row while the
+evidence remains split; this does not resolve the Hess mismatch or mean that
+the row satisfies the first source-selection criterion.
 
 Plante (1979), “Vapor pressure measurements of potassium over K₂O–SiO₂
 solutions by a Knudsen effusion, mass spectrometric method,” measured K(g)
