@@ -101,6 +101,30 @@ def test_transcription_tables_are_complete_and_located() -> None:
     )
 
 
+def test_recorded_sf04_pack_doi_erratum_matches_immutable_pack() -> None:
+    transcription = yaml.safe_load(SF04_PATH.read_text(encoding="utf-8"))
+    erratum = transcription["verification"]["published_pack_doi_erratum"]
+    assert erratum["pack"] == "src/openimcc/data/packs/imcc-sf04-v1.0.2.json"
+    assert erratum["field"] == "sources.SF04.citation"
+    assert erratum["correct_doi"] == transcription["source"]["doi"]
+
+    pack = json.loads(PUBLISHED_PATH.read_text(encoding="utf-8"))
+    citation = pack["sources"]["SF04"]["citation"]
+    assert f"DOI {erratum['incorrect_doi']}" in citation
+
+
+def test_fc87_r35_preserves_printed_operator_and_interpretation() -> None:
+    fc87_rows, _ = _source_rows()
+    row = fc87_rows[35]
+    assert row["pseudoreaction_as_printed"] == (
+        "½K₂O(liq) + ½Al₂O₃(liq) + KAlO₂(liq)"
+    )
+    assert row["pseudoreaction_interpreted"] == (
+        "½K₂O(liq) + ½Al₂O₃(liq) = KAlO₂(liq)"
+    )
+    assert "printing error" in row["interpretation_note"]
+
+
 def test_published_profile_reproduces_both_printed_tables_row_for_row() -> None:
     # Premise: both tables define log10 K for the displayed formation reaction,
     # and each pack row uses the same oxide stoichiometry in its mass-action
