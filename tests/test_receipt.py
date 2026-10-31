@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 import openimcc
+import openimcc.gas as gas_module
 import openimcc.receipt as receipt_module
 from openimcc import evaluate, evaluate_redox
 from openimcc.gas import (
@@ -326,3 +327,43 @@ def test_result_equality_ignores_the_receipt():
     for result in (redox, gas, saturation):
         assert result.receipt is not None
         assert result == replace(result, receipt=None)
+
+
+def test_solver_trials_build_receipt_only_for_final_result(monkeypatch):
+    melt = evaluate(_BASALT, 1800.0, basis_type="wt")
+    activities = {name: melt.activity(name) for name in melt.parent_oxides}
+    profile = openimcc.load_profile("openimcc")
+    original_builder = gas_module.build_calculation_receipt
+    built = []
+
+    def count_builder(**kwargs):
+        built.append(kwargs)
+        return original_builder(**kwargs)
+
+    monkeypatch.setattr(gas_module, "build_calculation_receipt", count_builder)
+
+    _, balanced, _ = evaluate_gas_oxygen_balance(
+        activities, 1800.0, profile=profile
+    )
+    assert balanced.receipt is not None
+    assert len(built) == 1
+
+    built.clear()
+    saturation = evaluate_gas_saturation(
+        activities, 1800.0, parent_oxides=tuple(activities),
+        allow_extrapolation=True, profile=profile,
+    )
+    assert saturation.receipt is not None
+    assert len(built) == 1
+
+    built.clear()
+    _, boiling = gas_boiling_temperature(
+        activities,
+        ambient_pressure_bar=4.865657946350167e-05,
+        T_bracket=(1800.0, 2000.0),
+        parent_oxides=tuple(activities),
+        allow_extrapolation=True,
+        profile=profile,
+    )
+    assert boiling.receipt is not None
+    assert len(built) == 1

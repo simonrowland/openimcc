@@ -13,6 +13,7 @@ the IMCC-SF04 spec r2.1.
 from __future__ import annotations
 
 import csv
+from contextvars import ContextVar
 import hashlib
 import json
 import math
@@ -56,6 +57,9 @@ R_J_MOL_K = 8.314462618
 """Molar gas constant, J / (mol K)."""
 
 _SUPERCOOLED_EXTENSION_REF_SUFFIX = "-SC-CP"
+_SUPPRESS_TRIAL_RECEIPTS: ContextVar[bool] = ContextVar(
+    "openimcc_suppress_trial_receipts", default=False
+)
 _SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
 _LIQUID_FROM_SOLID_REF_RE = re.compile(
     r"^LFS\[(?P<source>[^;\]]+);Tf=(?P<temperature>[0-9]+(?:\.[0-9]+)?)\]$"
@@ -6140,25 +6144,29 @@ def evaluate_gas(
         omitted_channels=omitted_channels,
         liquid_reference_status=liquid_statuses,
         _profile_identity=identity,
-        receipt=build_calculation_receipt(
-            request={
-                "activities": activities,
-                "T_K": T_K,
-                "fO2": fO2,
-                "profile": profile_name,
-                "options": {
-                    "parent_oxides": requested_parent_oxides,
-                    "allow_extrapolation": allow_extrapolation,
-                    "gas_species": gas_species,
-                    "include_ions": include_ions,
-                    "composition_wt_pct": composition_wt_pct,
+        receipt=(
+            None
+            if _SUPPRESS_TRIAL_RECEIPTS.get()
+            else build_calculation_receipt(
+                request={
+                    "activities": activities,
+                    "T_K": T_K,
+                    "fO2": fO2,
+                    "profile": profile_name,
+                    "options": {
+                        "parent_oxides": requested_parent_oxides,
+                        "allow_extrapolation": allow_extrapolation,
+                        "gas_species": gas_species,
+                        "include_ions": include_ions,
+                        "composition_wt_pct": composition_wt_pct,
+                    },
                 },
-            },
-            data_digests=(
-                {"gas": identity[1], "condensate": identity[2]}
-                if identity is not None else {}
-            ),
-            solver={},
+                data_digests=(
+                    {"gas": identity[1], "condensate": identity[2]}
+                    if identity is not None else {}
+                ),
+                solver={},
+            )
         ),
     )
 
@@ -7085,14 +7093,18 @@ def evaluate_gas_oxygen_balance(
                     and name not in included_parents
                 )
             }
-        return evaluate_gas(
-            pressure_activities, T, 10.0**logp, datapack,
-            parent_oxides=(
-                tuple(available_parents) if parent_oxides_explicit else None
-            ),
-            allow_extrapolation=allow_extrapolation,
-            include_ions=include_ions,
-        )
+        token = _SUPPRESS_TRIAL_RECEIPTS.set(True)
+        try:
+            return evaluate_gas(
+                pressure_activities, T, 10.0**logp, datapack,
+                parent_oxides=(
+                    tuple(available_parents) if parent_oxides_explicit else None
+                ),
+                allow_extrapolation=allow_extrapolation,
+                include_ions=include_ions,
+            )
+        finally:
+            _SUPPRESS_TRIAL_RECEIPTS.reset(token)
 
     if include_ions:
         # Charge closure makes ion pressures composition-dependent, so sample
@@ -7262,11 +7274,15 @@ def evaluate_gas_saturation(
         raise ImccGasSaturationError("invalid saturation pO2 bracket")
 
     def state(logp: float):
-        return evaluate_gas(
-            parent_activities, temperature_K, 10.0 ** logp, datapack,
-            parent_oxides=parents, allow_extrapolation=allow_extrapolation,
-            include_ions=include_ions,
-        )
+        token = _SUPPRESS_TRIAL_RECEIPTS.set(True)
+        try:
+            return evaluate_gas(
+                parent_activities, temperature_K, 10.0 ** logp, datapack,
+                parent_oxides=parents, allow_extrapolation=allow_extrapolation,
+                include_ions=include_ions,
+            )
+        finally:
+            _SUPPRESS_TRIAL_RECEIPTS.reset(token)
 
     def residual(logp: float) -> float:
         pressures = state(logp)
@@ -7319,27 +7335,31 @@ def evaluate_gas_saturation(
          "omitted_channels": omitted},
         result.domain_flags,
         _profile_identity=identity,
-        receipt=build_calculation_receipt(
-            request={
-                "parent_activities": parent_activities,
-                "temperature_K": temperature_K,
-                "profile": profile_name,
-                "options": {
-                    "parent_oxides": requested_parent_oxides,
-                    "include_ions": include_ions,
-                    "allow_extrapolation": allow_extrapolation,
-                    "log10_pO2_bracket": log10_pO2_bracket,
+        receipt=(
+            None
+            if _SUPPRESS_TRIAL_RECEIPTS.get()
+            else build_calculation_receipt(
+                request={
+                    "parent_activities": parent_activities,
+                    "temperature_K": temperature_K,
+                    "profile": profile_name,
+                    "options": {
+                        "parent_oxides": requested_parent_oxides,
+                        "include_ions": include_ions,
+                        "allow_extrapolation": allow_extrapolation,
+                        "log10_pO2_bracket": log10_pO2_bracket,
+                    },
                 },
-            },
-            data_digests={
-                "gas": identity[1] if identity is not None else None,
-                "condensate": identity[2] if identity is not None else None,
-            },
-            solver={
-                "log10_pO2_bracket": bracket,
-                "brentq_xtol": 1e-12,
-                **({"root_scan_points": 81} if not monotone else {}),
-            },
+                data_digests={
+                    "gas": identity[1] if identity is not None else None,
+                    "condensate": identity[2] if identity is not None else None,
+                },
+                solver={
+                    "log10_pO2_bracket": bracket,
+                    "brentq_xtol": 1e-12,
+                    **({"root_scan_points": 81} if not monotone else {}),
+                },
+            )
         ),
     )
 
@@ -7365,21 +7385,26 @@ def gas_boiling_temperature(
     if not math.isfinite(low) or not math.isfinite(high) or not (0 < low < high):
         raise ImccGasSaturationError("invalid boiling temperature bracket")
     cache: dict[float, ImccGasSaturationResult] = {}
+
+    def saturation_state(T: float) -> ImccGasSaturationResult:
+        token = _SUPPRESS_TRIAL_RECEIPTS.set(True)
+        try:
+            return evaluate_gas_saturation(
+                parent_activities, T, datapack, parent_oxides=parent_oxides,
+                include_ions=include_ions, allow_extrapolation=allow_extrapolation,
+            )
+        finally:
+            _SUPPRESS_TRIAL_RECEIPTS.reset(token)
+
     def residual(T: float) -> float:
-        state = evaluate_gas_saturation(
-            parent_activities, T, datapack, parent_oxides=parent_oxides,
-            include_ions=include_ions, allow_extrapolation=allow_extrapolation,
-        )
+        state = saturation_state(T)
         cache[T] = state
         return state.P_sat_bar - ambient_pressure_bar
     f_low, f_high = residual(low), residual(high)
     if f_low * f_high > 0:
         raise ImccGasSaturationError("boiling temperature is not bracketed by T_bracket")
     temperature = low if f_low == 0 else high if f_high == 0 else float(brentq(residual, low, high, xtol=1e-8))
-    state = cache.get(temperature) or evaluate_gas_saturation(
-        parent_activities, temperature, datapack, parent_oxides=parent_oxides,
-        include_ions=include_ions, allow_extrapolation=allow_extrapolation,
-    )
+    state = cache.get(temperature) or saturation_state(temperature)
     diagnostics = dict(state.diagnostics)
     diagnostics.update({
         "ambient_pressure_bar": ambient_pressure_bar,

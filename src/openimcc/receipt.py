@@ -47,7 +47,7 @@ def build_calculation_receipt(
     revision, dirty = _source_identity()
     pandas = sys.modules.get("pandas")
     dependencies = {
-        "python": platform.python_version(),
+        "python": _python_version(),
         "numpy": _dependency_version("numpy"),
         "scipy": _dependency_version("scipy"),
     }
@@ -70,6 +70,12 @@ def build_calculation_receipt(
     )
 
 
+@lru_cache(maxsize=1)
+def _python_version() -> str:
+    return platform.python_version()
+
+
+@lru_cache(maxsize=None)
 def _dependency_version(name: str) -> str:
     module = sys.modules.get(name)
     loaded_version = getattr(module, "__version__", None)
