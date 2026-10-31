@@ -29,6 +29,7 @@ Subcommand hook (no package CLI module; call this)::
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import math
 import re
@@ -36,7 +37,8 @@ import statistics
 import sys
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
+from functools import lru_cache
 from importlib import resources
 from pathlib import Path
 from typing import Any, TextIO
@@ -176,6 +178,15 @@ _BINARY_POPULATIONS = frozenset(
 _KUME_LIQUID_ACTIVITY_WARNING = (
     "unconverted solid standard state; not an accuracy figure for liquid activities"
 )
+_CONVERTED_LIQUID_STANDARD_STATE = "pure-liquid (converted from pure-solid)"
+_SOLID_STANDARD_JANAF_TABLE_PAIRS = {
+    "CaO": ("Ca-028", "Ca-027"),
+    "MgO": ("Mg-009", "Mg-008"),
+    "Al2O3": ("Al-100", "Al-096"),
+}
+_SOLID_STANDARD_CONDENSATE_CSV = (
+    "data/gas/condensate-sio2-janaf-cr-candidate.csv"
+)
 
 
 @dataclass(frozen=True)
@@ -203,6 +214,7 @@ class PointResult:
     binary_subslice: str | None = None
     provenance_class: str | None = None
     notices: tuple[str, ...] = ()
+    source_table: str | None = None
 
 
 @dataclass(frozen=True)
@@ -239,8 +251,12 @@ class BenchReport:
     status_counts: Mapping[str, int]
     per_slice: tuple[Aggregate, ...]
     binary_slices: tuple[Aggregate, ...]
+    solid_standard_slices: tuple[Aggregate, ...]
+    converted_slices: tuple[Aggregate, ...]
+    kume_table_slices: tuple[Aggregate, ...]
     out_of_domain_counts: Mapping[str, int]
     points: tuple[PointResult, ...]
+    converted_points: tuple[PointResult, ...]
     notices: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
@@ -315,6 +331,153 @@ def _binary_subslice(point: Mapping[str, Any]) -> str | None:
 
 def _slice_key(row: PointResult) -> str:
     return f"{row.population} × {row.observable} × {row.standard_state}"
+
+
+def _oxide_slice_key(row: PointResult) -> str:
+    return (
+        f"{row.population} × {row.parent_oxide} × {row.observable} × "
+        f"{row.standard_state}"
+    )
+
+
+def _kume_table_slice_key(row: PointResult) -> str:
+    return (
+        f"{row.population} × {row.source_table or 'Table unknown'} × "
+        f"{row.parent_oxide} × {row.observable} × {row.standard_state}"
+    )
+
+
+@lru_cache(maxsize=1)
+def _solid_standard_condensate_rows() -> dict[str, tuple[dict[str, float], ...]]:
+    """Read the closed SiO2 pair and default liquid rows from the shipped table."""
+    resource = resources.files("openimcc").joinpath(
+        _SOLID_STANDARD_CONDENSATE_CSV
+    )
+    with resource.open("r", encoding="utf-8", newline="") as handle:
+        rows: dict[str, list[dict[str, float]]] = defaultdict(list)
+        for raw in csv.DictReader(handle):
+            species = str(raw["species_name"])
+            parsed = {
+                name: float(raw[name])
+                for name in (
+                    "T_min",
+                    "T_max",
+                    "dH298_R",
+                    "dG_A",
+                    "dG_B",
+                    "dG_C",
+                    "dG_D",
+                    "dG_E",
+                )
+            }
+            rows[species].append(parsed)
+    return {species: tuple(values) for species, values in rows.items()}
+
+
+def _condensate_gibbs_j_mol(species: str, temperature_K: float) -> float:
+    """Evaluate a row with the same LAMOR G(T) implementation used by gas.py."""
+    from openimcc.gas import _lamor_gibbs
+
+    candidates = [
+        row
+        for row in _solid_standard_condensate_rows().get(species, ())
+        if row["T_min"] <= temperature_K <= row["T_max"]
+    ]
+    if not candidates:
+        raise ValueError(
+            f"no packaged condensate reference row for {species} at "
+            f"{temperature_K:g} K"
+        )
+    # Match the gas runtime's interval rule at shared boundaries.
+    row = max(candidates, key=lambda item: item["T_min"])
+    return float(_lamor_gibbs(temperature_K, row))
+
+
+@lru_cache(maxsize=6)
+def _janaf_formation_gibbs_nodes(
+    table_id: str,
+) -> tuple[tuple[float, float], ...]:
+    source_path = (
+        Path(__file__).resolve().parents[2]
+        / "data-src"
+        / "janaf"
+        / f"{table_id}.yaml"
+    )
+    table = json.loads(source_path.read_text(encoding="utf-8"))["table"]
+    nodes = tuple(sorted(
+        (
+            float(row["temperature"]["value"]),
+            float(row["formation_gibbs_energy"]["value"]),
+        )
+        for row in table["values"]
+        if row["formation_gibbs_energy"]["value"] is not None
+    ))
+    return nodes
+
+
+def _janaf_formation_gibbs_j_mol(table_id: str, temperature_K: float) -> float:
+    """Interpolate a JANAF formation-Gibbs table in J/mol."""
+    nodes = _janaf_formation_gibbs_nodes(table_id)
+    if not nodes or temperature_K < nodes[0][0] or temperature_K > nodes[-1][0]:
+        raise ValueError(
+            f"{table_id} has no Gibbs value at {temperature_K:g} K"
+        )
+    # JANAF formation Gibbs cells are kJ/mol. Linear interpolation between the
+    # printed 100 K nodes preserves the source table without fitting a new row.
+    return float(
+        np.interp(temperature_K, [node[0] for node in nodes], [node[1] for node in nodes])
+    ) * 1000.0
+
+
+def _solid_to_liquid_log10_shift(
+    parent_oxide: str, temperature_K: float
+) -> float:
+    """Return the additive log10 activity shift from solid to liquid reference.
+
+    Premise: at equilibrium the same oxide chemical potential is
+    G_cr(T) + RT ln(a_solid) = G_liq(T) + RT ln(a_liq). Rearranging gives
+    log10(a_liq) = log10(a_solid) - [G_liq(T)-G_cr(T)]/[RT ln(10)]. The
+    Gibbs energies and RT are J/mol, T is K, R is J/(mol K), and activity is
+    dimensionless, so the shift is dimensionless dex. At the melting point
+    G_liq = G_cr and the shift is zero; the closed SiO2 pair reaches that
+    sanity check at 1996 K using JANAF O-035 high-cristobalite with default
+    SiO2(l). Other pairs are JANAF Ca-028/Ca-027, Mg-009/Mg-008, and
+    Al-100/Al-096 (liquid/crystal).
+    """
+    from openimcc.gas import R_J_MOL_K
+
+    if parent_oxide == "SiO2":
+        liquid_gibbs = _condensate_gibbs_j_mol("SiO2(l)", temperature_K)
+        # The default LH87 crystal row is +2.9 kJ/mol from the default liquid
+        # at 1996 K. This candidate replaces only that row with closed JANAF O-035.
+        crystal_gibbs = _condensate_gibbs_j_mol("SiO2(cr)", temperature_K)
+    else:
+        table_pair = _SOLID_STANDARD_JANAF_TABLE_PAIRS.get(parent_oxide)
+        if table_pair is None:
+            raise ValueError(
+                f"no JANAF liquid/crystal reference pair for {parent_oxide!r}"
+            )
+        liquid_table, crystal_table = table_pair
+        liquid_gibbs = _janaf_formation_gibbs_j_mol(
+            liquid_table, temperature_K
+        )
+        crystal_gibbs = _janaf_formation_gibbs_j_mol(
+            crystal_table, temperature_K
+        )
+    return (liquid_gibbs - crystal_gibbs) / (
+        R_J_MOL_K * temperature_K * math.log(10.0)
+    )
+
+
+def _convert_solid_activity_to_liquid(
+    activity_solid: float, parent_oxide: str, temperature_K: float
+) -> float:
+    if activity_solid <= 0.0 or not math.isfinite(activity_solid):
+        raise ValueError("solid-standard activity must be finite and positive")
+    return 10.0 ** (
+        math.log10(activity_solid)
+        - _solid_to_liquid_log10_shift(parent_oxide, temperature_K)
+    )
 
 
 def _domain_partition(domain_flag: str | None) -> str | None:
@@ -872,6 +1035,7 @@ def run_bench(
         tuple[str, dict[str, float], dict[str, float], str, str | None, tuple[str, ...]],
     ] = {}
     rows: list[PointResult] = []
+    converted_rows: list[PointResult] = []
     for point in selected:
         composition_id = str(point["composition_id"])
         composition = composition_wt_pct_for_point(point, compositions)
@@ -917,35 +1081,61 @@ def run_bench(
         measured = float(point["measured"])
         score = bool(point.get("score", True))
         residual, ratio = _residual_and_ratio(predicted, measured, score=score)
-        rows.append(
-            PointResult(
-                point_id=str(point["id"]),
-                population=str(point["population"]),
-                species=str(point["species"]),
-                parent_oxide=str(point["parent_oxide"]),
-                observable=str(point["observable"]),
-                temperature_K=temperature_K,
-                measured=measured,
-                predicted=predicted,
-                residual=residual,
-                ratio=ratio,
-                status=status,
-                reason=prediction_reason or engine_reason,
-                convention=str(point.get("convention") or ""),
-                units=str(point.get("units") or ""),
-                standard_state=_standard_state_for_point(point),
-                score=score,
-                domain_flag=domain_flag,
-                extrapolation_flag=(
-                    str(point["extrapolation_flag"])
-                    if point.get("extrapolation_flag")
-                    else None
-                ),
-                binary_subslice=_binary_subslice(point),
-                provenance_class=provenance_class,
-                notices=engine_notices,
-            )
+        provenance = point.get("provenance")
+        source_table = (
+            str(provenance["table"])
+            if isinstance(provenance, Mapping) and provenance.get("table")
+            else None
         )
+        row = PointResult(
+            point_id=str(point["id"]),
+            population=str(point["population"]),
+            species=str(point["species"]),
+            parent_oxide=str(point["parent_oxide"]),
+            observable=str(point["observable"]),
+            temperature_K=temperature_K,
+            measured=measured,
+            predicted=predicted,
+            residual=residual,
+            ratio=ratio,
+            status=status,
+            reason=prediction_reason or engine_reason,
+            convention=str(point.get("convention") or ""),
+            units=str(point.get("units") or ""),
+            standard_state=_standard_state_for_point(point),
+            score=score,
+            domain_flag=domain_flag,
+            extrapolation_flag=(
+                str(point["extrapolation_flag"])
+                if point.get("extrapolation_flag")
+                else None
+            ),
+            binary_subslice=_binary_subslice(point),
+            provenance_class=provenance_class,
+            notices=engine_notices,
+            source_table=source_table,
+        )
+        rows.append(row)
+        if row.standard_state == "pure-solid" and row.observable == "activity":
+            measured_liquid = _convert_solid_activity_to_liquid(
+                row.measured, row.parent_oxide, row.temperature_K
+            )
+            converted_residual, converted_ratio = _residual_and_ratio(
+                row.predicted, measured_liquid, score=row.score
+            )
+            converted_rows.append(
+                replace(
+                    row,
+                    measured=measured_liquid,
+                    residual=converted_residual,
+                    ratio=converted_ratio,
+                    standard_state=_CONVERTED_LIQUID_STANDARD_STATE,
+                    convention=(
+                        f"{row.convention}; measured activity converted from "
+                        "pure-solid to pure-liquid with JANAF fusion Gibbs energy"
+                    ),
+                )
+            )
     overall = _aggregate("", rows)
     headline_rows = [
         row
@@ -962,6 +1152,9 @@ def run_bench(
     ]
     by_slice: dict[str, list[PointResult]] = defaultdict(list)
     by_binary_slice: dict[str, list[PointResult]] = defaultdict(list)
+    by_solid_oxide: dict[str, list[PointResult]] = defaultdict(list)
+    by_converted_oxide: dict[str, list[PointResult]] = defaultdict(list)
+    by_kume_table: dict[str, list[PointResult]] = defaultdict(list)
     for row in rows:
         key = _slice_key(row)
         if row.binary_subslice is None:
@@ -970,6 +1163,17 @@ def run_bench(
             by_binary_slice[
                 f"{key} × {row.parent_oxide} × {row.binary_subslice}"
             ].append(row)
+        if row.standard_state == "pure-solid" and row.observable == "activity":
+            by_solid_oxide[_oxide_slice_key(row)].append(row)
+    for row in converted_rows:
+        by_converted_oxide[_oxide_slice_key(row)].append(row)
+    for row in (*rows, *converted_rows):
+        if (
+            row.population == "kume2000_slag_si_alloy"
+            and row.observable == "activity"
+            and row.source_table is not None
+        ):
+            by_kume_table[_kume_table_slice_key(row)].append(row)
     out_of_domain_counts = Counter(
         cause
         for row in rows
@@ -997,12 +1201,23 @@ def run_bench(
             _aggregate(key, by_binary_slice[key])
             for key in sorted(by_binary_slice)
         ),
+        solid_standard_slices=tuple(
+            _aggregate(key, by_solid_oxide[key]) for key in sorted(by_solid_oxide)
+        ),
+        converted_slices=tuple(
+            _aggregate(key, by_converted_oxide[key])
+            for key in sorted(by_converted_oxide)
+        ),
+        kume_table_slices=tuple(
+            _aggregate(key, by_kume_table[key]) for key in sorted(by_kume_table)
+        ),
         out_of_domain_counts={
             key: int(out_of_domain_counts[key])
             for key in ("temperature_only", "envelope_only", "both")
             if out_of_domain_counts.get(key, 0)
         },
         points=tuple(rows),
+        converted_points=tuple(converted_rows),
         notices=tuple(dict.fromkeys(notice for row in rows for notice in row.notices)),
     )
 
@@ -1095,6 +1310,33 @@ def render_report(report: BenchReport) -> str:
         )
         lines.append("")
         lines.extend(_render_aggregate_table("Binary sub-slices", report.binary_slices))
+    if report.solid_standard_slices:
+        lines.extend(
+            _render_aggregate_table(
+                "Solid-standard activity slices by oxide (as published)",
+                report.solid_standard_slices,
+            )
+        )
+    if report.converted_slices:
+        lines.extend(
+            _render_aggregate_table(
+                "Converted activity slices by oxide (pure-liquid standard state)",
+                report.converted_slices,
+            )
+        )
+    if report.kume_table_slices:
+        lines.append("Kume 2000 activity slices by source table and oxide")
+        lines.append(
+            "  Table 4 CaO and Al2O3 activities are derived via Rein–Chipman "
+            "silica activities; Table 2 and Table 4 remain separate."
+        )
+        lines.append("")
+        lines.extend(
+            _render_aggregate_table(
+                "Kume table slices (raw pure-solid and converted pure-liquid)",
+                report.kume_table_slices,
+            )
+        )
     if any(
         row.population == "kume2000_slag_si_alloy"
         and row.standard_state == "pure-solid"

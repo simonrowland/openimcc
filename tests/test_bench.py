@@ -24,6 +24,7 @@ from openimcc.bench import (
     main,
     render_report,
     run_bench,
+    _solid_to_liquid_log10_shift,
 )
 
 DATAPACK_PATH = Path("src/openimcc/data/packs/imcc-sf04-v1.0.2.json")
@@ -753,6 +754,44 @@ def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
         for row in report.per_slice
     )
 
+    assert len(report.converted_points) == 292
+    assert all(
+        row.standard_state == "pure-liquid (converted from pure-solid)"
+        for row in report.converted_points
+    )
+    converted_counts = {
+        row.key.split(" × ")[1]: row.n for row in report.converted_slices
+    }
+    assert converted_counts == {
+        "Al2O3": 62,
+        "CaO": 99,
+        "MgO": 45,
+        "SiO2": 86,
+    }
+    assert all(
+        "pure-liquid (converted from pure-solid)" in row.key
+        for row in report.converted_slices
+    )
+    assert {row.key.split(" × ")[1] for row in report.solid_standard_slices} == {
+        "Al2O3",
+        "CaO",
+        "MgO",
+        "SiO2",
+    }
+    assert all("pure-solid" in row.key for row in report.solid_standard_slices)
+
+    table_slices = {row.key: row for row in report.kume_table_slices}
+    assert any("Table 2" in key and "pure-solid" in key for key in table_slices)
+    assert any("Table 4" in key and "pure-solid" in key for key in table_slices)
+    assert any(
+        "Table 2" in key and "Al2O3" in key and "pure-liquid (converted" in key
+        for key in table_slices
+    )
+    assert any(
+        "Table 4" in key and "Al2O3" in key and "pure-liquid (converted" in key
+        for key in table_slices
+    )
+
     binary_points = [
         row
         for row in report.points
@@ -849,12 +888,20 @@ def test_full_bench_slices_keep_standard_states_and_binary_separate() -> None:
     rendered = render_report(report)
     assert "Per dataset × observable × standard state" in rendered
     assert "Sodium binary predict-and-flag" in rendered
+    assert "Kume 2000 activity slices by source table and oxide" in rendered
+    assert "Table 4 CaO and Al2O3 activities are derived via Rein–Chipman" in rendered
     assert "unconverted solid standard state; not an accuracy figure for liquid activities" in rendered
     assert "temperature-only=74" in rendered
     assert "envelope-only=0" in rendered
     assert "both=20" in rendered
     assert "median(r)" in rendered
     assert "mean(r)" in rendered
+
+
+def test_solid_to_liquid_conversion_is_zero_at_silica_melting_point() -> None:
+    assert _solid_to_liquid_log10_shift("SiO2", 1996.0) == pytest.approx(
+        0.0, abs=1.0e-10
+    )
 
 
 def test_load_bench_set_preserves_yaml_12_chemistry_identifiers(tmp_path: Path) -> None:
