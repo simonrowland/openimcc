@@ -15,6 +15,13 @@ records:
     publication: Gusarov and Kulikov, IVTANTHERMO, Table 1436, MnO(g)
     source_url: https://www.chem.msu.ru/rus/tsiv/Mn/ivtan0005.html
     source_locator: Table 1436
+    standard_pressure_atm: 1.0
+    standard_pressure_source_url: https://www.chem.msu.ru/cgi-bin/tkv.pl?show=params.html
+    standard_pressure_basis: >-
+      The TSIV publisher's general thermal-constants conventions state that
+      standard pressure is one atmosphere and define the gas standard as
+      hypothetical gas with fugacity 1 atm. The MnO(g) table page does not
+      repeat p°.
     tier: 3
     selection_reason: The JANAF index has no MnO(g) row; the published table supplies MnO(g) heat-capacity, entropy, and enthalpy nodes through 3000 K and prints accuracy class 4-E with DrH = 374.000 kJ/mol, DH(298.15 K) = 155.620 kJ/mol, and DH(0) = 156.096 kJ/mol. The cited page does not quantify a numeric uncertainty band.
   - record_id: IVTAN-264
@@ -23,6 +30,7 @@ records:
     publication: IVTAN-TERMO, Table 264, ZnO(g)
     source_url: https://www.chem.msu.ru/rus/handbook/ivtan/264.html
     source_locator: Table 264
+    standard_pressure_status: unstated
     tier: 3
     selection_reason: Published temperature functions provide direct ZnO(g) coverage through 3000 K with a compatible gas reference state.
   - record_id: Burcat-Th-plus
@@ -63,6 +71,13 @@ records:
     publication: Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 1335, CoO(g)
     source_url: https://www.chem.msu.ru/rus/tsiv/Co/ivtan0005.html
     source_locator: Volume IV, Table 1335
+    standard_pressure_atm: 1.0
+    standard_pressure_source_url: https://www.chem.msu.ru/cgi-bin/tkv.pl?show=params.html
+    standard_pressure_basis: >-
+      The TSIV publisher's general thermal-constants conventions state that
+      standard pressure is one atmosphere and define the gas standard as
+      hypothetical gas with fugacity 1 atm. The CoO(g) table page does not
+      repeat p°.
     tier: 3
     selection_reason: The source prints CoO(g) H/S/Cp functions through 3000 K and an elemental-reference 298.15 K formation anchor; no JANAF or NASA CoO(g) table is available.
   - record_id: TSIV-2023
@@ -127,6 +142,11 @@ records:
     source_sha256: 0b2370fec93d4307663cbf7f700167edad56659cb72cbb786056ea56e861a095
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
+    standard_pressure_atm: 1.0
+    standard_pressure_basis: >-
+      Bulletin 672, Methods, Conventions, and Symbols, defines gases as
+      hypothetical ideal gases at unit fugacity and states pressure in
+      atmospheres. Thus the selected gas rows use the 1 atm standard.
     tables:
       P672-T80:
         source_locator: Table 80, Bi(g)
@@ -278,6 +298,7 @@ records:
     publication: Powers, Brockmann, and Shiver, NUREG/CR-4308, Table 30 (1986)
     source_url: https://www.osti.gov/servlets/purl/5150148
     source_locator: Table 30
+    standard_pressure_status: unstated
     tier: 3
     selection_reason: Table 30 supplies the TeO(g) and Te(g) Gibbs nodes through 3000 K where JANAF and NASA Glenn have no TeO(g) row. Its thermal curve implies a fitted 298.15 K formation enthalpy of 17.043 kJ/mol; the later primary Narasimhan et al. (2005) Table 6 measurement, 72.7 ± 7.4 kJ/mol, is used as the higher-tier anchor, shifting the Gibbs function by +55.657 kJ/mol while preserving the NUREG temperature dependence.
     anchor_source: Narasimhan, Sai Baba, and Viswanathan (2005), Thermochimica Acta 427, 137-147, Table 6, p. 143, https://doi.org/10.1016/j.tca.2004.09.003
@@ -297,6 +318,7 @@ records:
     source_sha256: 1b0de65dc2fdd078a4babe5fb0430205259b503f4f74064f727af9df8c99e291
     publication: Pankratz, L. B. (1994), Thermodynamic Properties of Carbides, Nitrides, and Other Selected Substances, U.S. Bureau of Mines Bulletin 696
     source_url: https://stacks.cdc.gov/view/cdc/206356/cdc_206356_DS1.pdf
+    standard_pressure_status: unstated
     tables:
       P696-T115:
         source_locator: Table 115, BiO(g)
@@ -361,6 +383,11 @@ records:
     publication: Pankratz, L. B. (1982), Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 672
     source_url: https://stacks.cdc.gov/view/cdc/219421/cdc_219421_DS1.pdf
     source_locator: Y(g) elemental formation table, printed p. 474
+    standard_pressure_atm: 1.0
+    standard_pressure_basis: >-
+      Bulletin 672's Methods, Conventions, and Symbols defines gases as
+      hypothetical ideal gases at unit fugacity and gives pressure in
+      atmospheres.
     tier: 3
     selection_reason: Selected published elemental-reference Y(g) function; the local JANAF and NASA Glenn compilations contain
       no Y(g) row.
@@ -391,6 +418,7 @@ records:
       Chemical Reference Data 12(4), 967-1031
     source_url: https://srd.nist.gov/jpcrdreprint/1.555698.pdf
     source_locator: Table 5, YO formation assessment, printed p. 983; Tables 9 and 11, printed pp. 995-996 and 1006-1007
+    standard_pressure_status: unstated
     tier: 3
     selection_reason: 'Selected evaluated YO(g) assessment: Table 5 reports the compatible-reaction value -46 +/- 10 kJ/mol and
       Tables 9 and 11 provide elemental-reference thermal functions. No JANAF, NASA, Burcat, or Pankratz YO function was found.'
@@ -536,6 +564,7 @@ records:
     publication: Kelley, K. K. (1960), Contributions to the Data on Theoretical Metallurgy XIII, U.S. Bureau of Mines Bulletin 584; Wagman et al. (1982), NBS Tables of Chemical Thermodynamic Properties, Table 21; Sohn et al. (2004), Metallurgical and Materials Transactions B 35, Table V
     source_url: https://digital.library.unt.edu/ark:/67531/metadc12739/m1/31/
     source_locator: Kelley Table 30, SbO(g), printed p. 15
+    standard_pressure_status: unstated
     tier: 3
     anchor_source: Wagman et al. (1982), NBS Table 21, ΔfH°298.15(SbO(g)) = 199.45 kJ/mol
     reaction_source: Sohn et al. (2004), Table V, Sb(l) + 1/2 O2(g) = SbO(g), ΔG° = 169285 - 56.78 T J/mol
@@ -549,5 +578,6 @@ records:
     publication: Pankratz, Thermodynamic Properties of Elements and Oxides, U.S. Bureau of Mines Bulletin 677 (1984)
     source_url: https://digital.library.unt.edu/ark:/67531/metadc12819/
     source_locator: Re(cr) and Re(g), printed pp. 76-77; ReO2(c), ReO3(c), and Re2O7(c,l), Tables 1249-1251, printed p. 283
+    standard_pressure_status: unstated
     tier: 3
     selection_reason: B677 supplies paired Re(g)/Re(cr) functions and compatible condensed rhenium oxide functions. Re2O7(g) is constructed from the Smith vapor pressures at 503-633 K and Battles equilibrium over 961-1087 K, then flagged for its runtime continuation. ReO3(g) remains declined because Battles provides only an abundance upper bound without temperature-dependent partial pressure or equilibrium data.

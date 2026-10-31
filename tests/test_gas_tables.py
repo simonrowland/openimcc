@@ -3687,6 +3687,190 @@ def test_runtime_provenance_mirror_matches_yaml() -> None:
     }
 
 
+def test_standard_state_candidate_converts_only_documented_rows_and_continues_hg(
+    tmp_path: Path,
+) -> None:
+    gas_candidate_path = GAS_DATA / "gas-shomate-standard-state-candidate.csv"
+    oxide_candidate_path = GAS_DATA / "condensate-standard-state-candidate.csv"
+    gas_base_path = GAS_DATA / "gas-shomate.csv"
+    oxide_base_path = GAS_DATA / "condensate.csv"
+    provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
+    candidate_provenance = provenance["standard_state_candidate"]
+    assert candidate_provenance["gas_file"]["sha256"] == hashlib.sha256(
+        gas_candidate_path.read_bytes()
+    ).hexdigest()
+    assert candidate_provenance["oxide_file"]["sha256"] == hashlib.sha256(
+        oxide_candidate_path.read_bytes()
+    ).hexdigest()
+    assert hashlib.sha256((GAS_DATA / "gas-shomate.csv").read_bytes()).hexdigest() == (
+        "e01c363ac6bb526b5e8ee6df300963652e0771585e9348e6456afef5cacb8058"
+    )
+    assert hashlib.sha256((GAS_DATA / "condensate.csv").read_bytes()).hexdigest() == (
+        "1b9149eb9d53ffd7d96872b25b27144bca902a71b963fcec9b6bf9cec37127a0"
+    )
+
+    rebuilt_gas = tmp_path / gas_candidate_path.name
+    rebuilt_oxide = tmp_path / oxide_candidate_path.name
+    counts = build_gas_tables.build_standard_state_candidate_tables(
+        gas_base_path, oxide_base_path, rebuilt_gas, rebuilt_oxide,
+    )
+    assert counts == {
+        "gas_rows": 54,
+        "oxide_rows": 1,
+        "oxide_metadata_rows": 2,
+    }
+    assert rebuilt_gas.read_bytes() == gas_candidate_path.read_bytes()
+    assert rebuilt_oxide.read_bytes() == oxide_candidate_path.read_bytes()
+
+    def row_key(row: dict[str, str]) -> tuple[str, str, str, str]:
+        return row["species_name"], row["T_interval"], row["T_min"], row["T_max"]
+
+    with gas_base_path.open(encoding="utf-8", newline="") as handle:
+        base_rows = {row_key(row): row for row in csv.DictReader(handle)}
+    with gas_candidate_path.open(encoding="utf-8", newline="") as handle:
+        candidate_rows = {row_key(row): row for row in csv.DictReader(handle)}
+    expected_changed: set[tuple[str, str, str, str]] = set()
+    delta_s = R_J_MOL_K * math.log(1.01325)
+    expected_delta_log10_p = build_gas_tables.ATM_TO_BAR_LOG10
+    for source in build_gas_tables.TRACE_PUBLISHED_GAS_SOURCES:
+        species_name, table_id = source[:2]
+        if build_gas_tables._published_gas_standard_pressure_atm(table_id) != 1.0:
+            continue
+        for key, base_row in base_rows.items():
+            if key[0] != species_name or not base_row["Ref"].startswith(table_id):
+                continue
+            expected_changed.add(key)
+            candidate_row = candidate_rows[key]
+            assert all(
+                candidate_row[column] == value
+                for column, value in base_row.items()
+                if column != "G"
+            )
+            assert float(candidate_row["G"]) - float(base_row["G"]) == pytest.approx(
+                delta_s, abs=1e-12
+            )
+            temperature = (
+                float(base_row["T_min"]) + float(base_row["T_max"])
+            ) / 2.0
+            base_h, base_s = build_gas_tables._gas_row_h_s(base_row, temperature)
+            candidate_h, candidate_s = build_gas_tables._gas_row_h_s(
+                candidate_row, temperature
+            )
+            assert candidate_h == pytest.approx(base_h, abs=1e-9)
+            assert candidate_s - base_s == pytest.approx(delta_s, abs=1e-10)
+            # Undo the 1 atm -> 1 bar correction before comparing with the
+            # printed 1 atm row values.
+            assert candidate_s - delta_s == pytest.approx(base_s, abs=1e-10)
+            base_g = base_h - temperature * base_s
+            candidate_g = candidate_h - temperature * candidate_s
+            delta_log10_p = (base_g - candidate_g) / (
+                R_J_MOL_K * temperature * math.log(10.0)
+            )
+            assert delta_log10_p == pytest.approx(expected_delta_log10_p, abs=1e-12)
+    changed_keys = {
+        key for key in base_rows if base_rows[key] != candidate_rows[key]
+    }
+    assert candidate_rows.keys() == base_rows.keys()
+    assert changed_keys == expected_changed
+    assert len(expected_changed) == 54
+
+    def oxide_row_key(row: dict[str, str]) -> tuple[str, str, str]:
+        return row["species_name"], row["T_min"], row["T_max"]
+
+    with oxide_base_path.open(encoding="utf-8", newline="") as handle:
+        base_oxide_rows = {
+            oxide_row_key(row): row for row in csv.DictReader(handle)
+        }
+    with oxide_candidate_path.open(encoding="utf-8", newline="") as handle:
+        candidate_oxide_rows = {
+            oxide_row_key(row): row for row in csv.DictReader(handle)
+        }
+    assert candidate_oxide_rows.keys() == base_oxide_rows.keys()
+    changed_oxide_keys = {
+        key for key in base_oxide_rows
+        if base_oxide_rows[key] != candidate_oxide_rows[key]
+    }
+    alias_keys = {
+        ("NiO(l)", "1200", "2228"),
+        ("CoO(l)", "1200", "2090"),
+    }
+    assert changed_oxide_keys == {("Hg(l)", "1200", "3000")} | alias_keys
+    for key in alias_keys:
+        base_row = base_oxide_rows[key]
+        candidate_row = candidate_oxide_rows[key]
+        assert all(
+            candidate_row[column] == value
+            for column, value in base_row.items()
+            if column not in {"Ref", "source_label"}
+        )
+        expected_table_id, endpoint = (
+            ("TSIV-2026", "2228") if key[0] == "NiO(l)" else ("TSIV-1334", "2090")
+        )
+        assert candidate_row["Ref"] == expected_table_id
+        assert candidate_row["source_label"] == (
+            f"{expected_table_id} supercooled liquid through {endpoint} K"
+        )
+
+    default_pack = load_gas_datapack()
+    candidate_pack = load_gas_datapack(str(gas_candidate_path), str(oxide_candidate_path))
+    hg_row = candidate_pack.oxide_df.loc[["Hg(l)"]].iloc[0]
+    hg_limit = float(hg_row["source_limit_K"])
+    assert hg_limit == pytest.approx(629.839)
+    assert hg_row["continuation_kind"] == "liquid_metal"
+    assert "BU-2587-IDEAL-GAS-CONT" in hg_row["source_label"]
+
+    coefficients = [float(hg_row[f"dG_{letter}"]) for letter in "ABCDE"]
+    cp_critical = np.roots([
+        80.0 * coefficients[4],
+        36.0 * coefficients[3],
+        12.0 * coefficients[2],
+        2.0 * coefficients[1],
+    ])
+    cp_check_temperatures = [1200.0, 3000.0]
+    cp_check_temperatures.extend(
+        1000.0 * float(root.real)
+        for root in cp_critical
+        if abs(float(root.imag)) < 1e-10 and 1.2 <= float(root.real) <= 3.0
+    )
+    for temperature in cp_check_temperatures:
+        tau = temperature / 1000.0
+        p1 = sum(
+            power * coefficients[power] * tau ** (power - 1)
+            for power in range(1, 5)
+        )
+        p2 = sum(
+            power * (power - 1) * coefficients[power] * tau ** (power - 2)
+            for power in range(2, 5)
+        )
+        cp = R_J_MOL_K * (2.0 * tau * p1 + tau**2 * p2)
+        assert cp >= 0.0
+
+    expected_hg_pressures = {
+        1200.0: (187.2952924726824, 0.999858909674184, -2.27258814091791),
+        1800.0: (1121.2483929186608, 0.999888654447584, -3.04975019303121),
+        2200.0: (2175.9420422498106, 1.00006502055445, -3.3376190862905),
+        2473.0: (3203.730398642704, 1.00008008350888, -3.50562118362665),
+    }
+    for temperature, (expected_default, expected_candidate, expected_delta) in (
+        expected_hg_pressures.items()
+    ):
+        default_pressure = evaluate_gas(
+            {"Hg": 1.0}, temperature, 1e-10, default_pack, gas_species=("Hg",)
+        )["Hg"]
+        candidate_result = evaluate_gas(
+            {"Hg": 1.0}, temperature, 1e-10, candidate_pack, gas_species=("Hg",)
+        )
+        candidate_pressure = candidate_result["Hg"]
+        assert default_pressure == pytest.approx(expected_default, rel=1e-11)
+        assert candidate_pressure == pytest.approx(expected_candidate, rel=1e-11)
+        assert math.log10(candidate_pressure / default_pressure) == pytest.approx(
+            expected_delta, abs=1e-11
+        )
+        flag = candidate_result.domain_flags["Hg"] or ""
+        assert "liquid-metal continuation" in flag
+        assert "629.839 K source limit" in flag
+
+
 def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row() -> None:
     pack = load_gas_datapack()
     maxima: dict[str, tuple[float, float]] = {}

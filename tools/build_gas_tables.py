@@ -82,8 +82,10 @@ KONINGS_GAS_SPECIES = {
 # fit still exceeds the on-node gate, so fit the requested low runtime interval
 # directly; the 1500–3000 interval remains the established high fit.
 KONINGS_LOW_FIT_START_K = {"Ho(g)": 1200.0}
-# ln(1.01325): converts a 1 atm standard-state entropy (S/R) to 1 bar.
-LH84_ATM_TO_BAR_S_R = math.log(1.01325)
+# A 1 atm standard-state entropy (S/R) converted to 1 bar.
+ATM_TO_BAR_RATIO = 1.01325
+ATM_TO_BAR_LOG10 = math.log10(ATM_TO_BAR_RATIO)
+ATM_TO_BAR_S_OVER_R = math.log(ATM_TO_BAR_RATIO)
 RUNTIME_COLUMNS = (
     "species_name",
     "state",
@@ -2132,7 +2134,7 @@ def _nasa_source_rows(
     # 2000 * 0.109443 = 218.9 J/mol and each M2O(g) pressure rises by the
     # factor 1.01325, exactly the atm/bar ratio, as a pure unit change must.
     # H is pressure independent for an ideal gas, so dfH needs no change.
-    s298_R = float(lh84["S_over_R"]["value"]) + LH84_ATM_TO_BAR_S_R
+    s298_R = float(lh84["S_over_R"]["value"]) + ATM_TO_BAR_S_OVER_R
     hinc_over_R = float(lh84["Hinc_over_R_kK"]["value"]) * 1000.0
     h0_over_R = dfh_over_R - hinc_over_R
     card_298 = _nasa7_properties(nasa_record, NASA_STANDARD_T_K)
@@ -2791,6 +2793,27 @@ def _published_gas_source_rows(
     return rows, reference, source_limit
 
 
+def _apply_gas_entropy_standard_pressure(
+    row: dict[str, Any], source_pressure_atm: float | None
+) -> dict[str, Any]:
+    """Move one gas row's ideal-gas entropy constant from 1 atm to 1 bar."""
+    if source_pressure_atm is None:
+        return row
+    if source_pressure_atm != 1.0:
+        raise ValueError("only the documented 1 atm to 1 bar conversion is supported")
+    # Premise: the source gives ideal-gas S° at 1 atm, while runtime uses 1 bar.
+    # S°(1 bar)=S°(1 atm)+R ln(1.01325), since S°(p2)-S°(p1)=-R ln(p2/p1).
+    # For a reaction, ΔG°_bar=ΔG°_atm-Δν_g RT ln(1.01325), so
+    # Δlog10 K=Δν_g log10(1.01325)=Δν_g*0.005717. Unit check: R ln(1.01325)
+    # is J mol^-1 K^-1 and division by RT ln(10) leaves a dimensionless log K.
+    # Sanity: Te(l)->Te(g), 2Te(l)->Te2(g), TeO2(l)->TeO2(g), and
+    # SeO2(l)->SeO2(g) each have Δν_g=+1, giving +0.005717 dex in log10 p.
+    # Shomate's G coefficient is the additive entropy constant, so this offset
+    # leaves H and Cp unchanged rather than perturbing their fitted coefficients.
+    row["G"] = float(row["G"]) + R_J_MOL_K * ATM_TO_BAR_S_OVER_R
+    return row
+
+
 def _constant_cp_rows_through(
     rows: dict[float, dict[str, float]], end_temperature: float
 ) -> dict[float, dict[str, float]]:
@@ -2888,6 +2911,163 @@ def _fit_published_gas_row(
         "_max_residual_J_per_mol": number(fit["max_residual_J_per_mol"]),
         "_max_residual_log10_K": number(fit["max_residual_log10_K"]),
         **_shomate_source_fields(fit),
+    }
+
+
+def _published_gas_standard_pressure_atm(table_id: str) -> float | None:
+    """Return only pressure standards established by the source record rail."""
+    # Bulletin 672's Methods, Conventions, and Symbols section defines gases
+    # as hypothetical ideal gases at unit fugacity and gives P in atmospheres.
+    # The TSIV publisher's general thermal-constants convention defines gas
+    # standards at fugacity 1 atm; selected table pages do not repeat p°.
+    # IVTAN, Bulletin 696/677, Pedley-Marshall, Kelley, and NUREG rows stay
+    # unconverted where their own records do not state p°.
+    if table_id.startswith("P672-") or table_id in {"TSIV-1436", "TSIV-1335"}:
+        return 1.0
+    return None
+
+
+def _fit_hg_ideal_gas_cp_parent() -> dict[str, str]:
+    """Continue Hg(l)'s reference G/S with the paired BU-2587 gas card."""
+    liquid = _burcat_source_record("burcat-hg.json", "Hg(l)")
+    gas = _burcat_source_record("burcat-hg.json", "Hg(g)")
+    source_limit = float(liquid["source_limit_K"])
+    gas_reference_h = float(gas["delta_f_H_298_15_kJ_mol"])
+    gas_low_coefficients = gas["low_coefficients"]
+    gas_high_coefficients = gas["high_coefficients"]
+    liquid_limit = _burcat7_properties(liquid["coefficients"], source_limit)
+    gas_limit = _burcat7_properties(gas_low_coefficients, source_limit)
+    gas_reference = _burcat7_properties(
+        gas_low_coefficients, NASA_STANDARD_T_K
+    )
+    liquid_g = liquid_limit["h_J_mol"] - source_limit * liquid_limit["s_J_molK"]
+    gas_g = gas_limit["h_J_mol"] - source_limit * gas_limit["s_J_molK"]
+    if abs(gas_g - liquid_g) > 1.0:
+        raise ValueError("BU-2586 and BU-2587 do not meet at the Hg source limit")
+    # Premise: BU-2586 ends at 629.839 K and names ideal-monatomic Hg(g) above
+    # 630 K; its paired BU-2587 gas card is that high-temperature branch.
+    # The paired cards have equal G at the limit, so use BU-2587 H/S/Cp above
+    # it. Algebra: Hinc(T)=Hgas(T)-Hgas(298.15), S(T)=Sgas(T). Unit check:
+    # Hinc is kJ/mol in the fit input, while H, Cp and S are J/mol, J/(mol K),
+    # and J/(mol K). Sanity: the Gibbs functions meet at the source limit and
+    # the gas-card Cp stays positive throughout 1200-3000 K.
+    temperatures = [float(T) for T in range(1200, 3001, 100)]
+    source_rows = {}
+    for temperature in temperatures:
+        coefficients = (
+            gas_low_coefficients if temperature < 1000.0 else gas_high_coefficients
+        )
+        properties = _burcat7_properties(coefficients, temperature)
+        source_rows[temperature] = {
+            "temperature": temperature,
+            "heat_capacity": properties["cp_R"] * R_J_MOL_K,
+            "entropy": properties["s_J_molK"],
+            "enthalpy_increment": (
+                properties["h_J_mol"] - gas_reference["h_J_mol"]
+            ) / 1000.0,
+        }
+    row = _fit_condensate_values(
+        "Hg(l)", "BU-2586", "Hg", 1, 0, source_rows, gas_reference_h,
+        fit_t_min=1200.0, fit_t_max=3000.0,
+        runtime_t_min=1200.0, runtime_t_max=3000.0,
+        ref=f"BU-2586-BU-2587-IDEAL-GAS-CONT-{source_limit:g}",
+        fit_temperatures=temperatures,
+    )
+    row.update(_empty_source_validity_fields())
+    row.update({
+        "state": "l",
+        "Ref": f"BU-2586-BU-2587-IDEAL-GAS-CONT-{source_limit:g}",
+        "validity_kind": "coverage",
+        "continuation_kind": "liquid_metal",
+        "construction_method": "fitted",
+        "table_id": "BU-2586",
+        "source_label": f"BU-2586-BU-2587-IDEAL-GAS-CONT-{source_limit:g}",
+        "source_fit_min_K": "1200",
+        "source_fit_max_K": "3000",
+        "source_limit_K": format(source_limit, ".15g"),
+    })
+    return row
+
+
+def build_standard_state_candidate_tables(
+    gas_input: Path,
+    oxide_input: Path,
+    gas_output: Path,
+    oxide_output: Path,
+) -> dict[str, int]:
+    """Build opt-in 1 bar gas rows and the flagged Hg ideal-gas continuation."""
+    with gas_input.open(encoding="utf-8", newline="") as handle:
+        gas_rows = list(csv.DictReader(handle))
+    source_by_id = {source[1]: source for source in TRACE_PUBLISHED_GAS_SOURCES}
+    changed_gas_rows = 0
+    for table_id, source_pressure_atm in (
+        (table_id, _published_gas_standard_pressure_atm(table_id))
+        for table_id in source_by_id
+    ):
+        if source_pressure_atm is None:
+            continue
+        source = source_by_id[table_id]
+        matches = [
+            (index, row) for index, row in enumerate(gas_rows)
+            if row.get("species_name") == source[0]
+            and row.get("Ref", "").startswith(table_id)
+        ]
+        if not matches:
+            raise ValueError(f"{table_id}: no row in {gas_input}")
+        for index, existing in matches:
+            corrected = _apply_gas_entropy_standard_pressure(
+                existing.copy(), source_pressure_atm
+            )
+            corrected["G"] = format(float(corrected["G"]), ".15g")
+            gas_rows[index] = corrected
+            changed_gas_rows += 1
+
+    with oxide_input.open(encoding="utf-8", newline="") as handle:
+        oxide_rows = list(csv.DictReader(handle))
+    supercooled_tables = {"TSIV-2026", "TSIV-1334"}
+    normalized_oxide_labels = 0
+    for row in oxide_rows:
+        parts = row["Ref"].rsplit("-", 2)
+        if (
+            len(parts) != 3
+            or parts[0] not in supercooled_tables
+            or parts[1] != "SC"
+            or not parts[2].isdigit()
+        ):
+            continue
+        table_id, endpoint = parts[0], parts[2]
+        row["Ref"] = table_id
+        row["source_label"] = f"{table_id} supercooled liquid through {endpoint} K"
+        normalized_oxide_labels += 1
+    if normalized_oxide_labels != len(supercooled_tables):
+        raise ValueError("expected both TSIV supercooled liquid rows in condensate input")
+    hg_matches = [
+        index for index, row in enumerate(oxide_rows)
+        if row["species_name"] == "Hg(l)"
+        and float(row["T_min"]) == 1200.0
+        and float(row["T_max"]) == 3000.0
+    ]
+    if len(hg_matches) != 1:
+        raise ValueError(f"expected one 1200-3000 K Hg(l) row in {oxide_input}")
+    oxide_rows[hg_matches[0]] = _fit_hg_ideal_gas_cp_parent()
+
+    gas_output.parent.mkdir(parents=True, exist_ok=True)
+    with gas_output.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=RUNTIME_COLUMNS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(gas_rows)
+    oxide_output.parent.mkdir(parents=True, exist_ok=True)
+    with oxide_output.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=CONDENSATE_COLUMNS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(
+            {column: row.get(column, "") for column in CONDENSATE_COLUMNS}
+            for row in oxide_rows
+        )
+    return {
+        "gas_rows": changed_gas_rows,
+        "oxide_rows": 1,
+        "oxide_metadata_rows": normalized_oxide_labels,
     }
 
 
@@ -8721,6 +8901,21 @@ def main() -> None:
         default=repository / "src/openimcc/data/gas/condensate-hight-candidate-v2.csv",
     )
     parser.add_argument(
+        "--standard-state-candidate",
+        action="store_true",
+        help="build opt-in 1 bar published-gas and Hg continuation candidate tables",
+    )
+    parser.add_argument(
+        "--standard-state-candidate-gas-output",
+        type=Path,
+        default=repository / "src/openimcc/data/gas/gas-shomate-standard-state-candidate.csv",
+    )
+    parser.add_argument(
+        "--standard-state-candidate-oxide-output",
+        type=Path,
+        default=repository / "src/openimcc/data/gas/condensate-standard-state-candidate.csv",
+    )
+    parser.add_argument(
         "--high-temperature-gas-output", type=Path,
         default=repository / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv",
     )
@@ -8741,6 +8936,19 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    if args.standard_state_candidate:
+        counts = build_standard_state_candidate_tables(
+            repository / "src/openimcc/data/gas/gas-shomate.csv",
+            repository / "src/openimcc/data/gas/condensate.csv",
+            args.standard_state_candidate_gas_output,
+            args.standard_state_candidate_oxide_output,
+        )
+        print(
+            f"standard-state candidate: {counts['gas_rows']} gas rows, "
+            f"{counts['oxide_rows']} thermochemical oxide row, "
+            f"{counts['oxide_metadata_rows']} oxide row labels normalized"
+        )
+        return
     if args.high_temperature_v2_thermo is not None:
         build_high_temperature_candidates_v2(
             args.high_temperature_v2_thermo, args.source_dir,

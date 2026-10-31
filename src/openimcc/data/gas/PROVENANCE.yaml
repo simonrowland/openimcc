@@ -1,4 +1,47 @@
 schema_version: openimcc.gas_provenance.v1
+standard_state_candidate:
+  opt_in: >-
+    Load gas-shomate-standard-state-candidate.csv and
+    condensate-standard-state-candidate.csv together with
+    load_gas_datapack(gas_path=..., oxide_path=...). Defaults and packs are
+    unchanged.
+  gas_file:
+    file: gas-shomate-standard-state-candidate.csv
+    sha256: d16227a5cc6740cfba3262b7e27e94baf962c0301910ad7062cff01c433716f5
+  oxide_file:
+    file: condensate-standard-state-candidate.csv
+    sha256: 92fb8701bffb2e2e10fbeaaf47d5083dab696cf151c55c1335aa1a019ac3e10b
+  construction: >-
+    Copies gas-shomate.csv and condensate.csv. In the gas table, adds
+    R ln(1.01325) to only the Shomate entropy constant for the 54 rows whose
+    source is documented as 1 atm, retaining H and Cp. The Hg(l) row
+    follows the paired BU-2587 ideal-gas H/S/Cp function above the BU-2586
+    source limit of 629.839 K, as its source note specifies above 630 K. The
+    NiO(l) and CoO(l) supercooled rows use their base TSIV table IDs in Ref,
+    retaining endpoints in source_label as in the existing opt-in condensate
+    candidate. Other thermochemical rows and default tables are unchanged.
+  pressure_audit:
+    confirmed_1_atm: >-
+      Bulletin 672's Methods, Conventions, and Symbols states gases are
+      hypothetical ideal gases at unit fugacity and gives pressure in
+      atmospheres. The TSIV publisher's general thermal-constants conventions
+      define gas standards at fugacity 1 atm; MnO(g) and CoO(g) table pages do
+      not repeat p°.
+    unstated_and_unchanged: >-
+      IVTAN-264 ZnO(g), PM83-YO, P696-T115 BiO(g), P696-T191 CdO(g),
+      P677-Re-g, Kelley-584-SbO, and NUREG-4308-TeO do not state a source
+      standard pressure in their local records. They are not shifted; each
+      retains a ±0.005717 dex pressure-standard ambiguity. NUREG's reaction
+      Te(g)+1/2 O2(g)=TeO(g) has Δνgas=-1/2, so if every standard in that
+      reaction were 1 atm the reaction-constant bound would be ±0.0028585 dex;
+      the broader row-level bound is retained because the source basis is
+      unidentified.
+  hg_pressure_bar:
+    1200_K: {default: 187.295292, candidate: 0.999859, delta_log10: -2.272588}
+    1800_K: {default: 1121.248393, candidate: 0.999889, delta_log10: -3.049750}
+    2200_K: {default: 2175.942042, candidate: 1.000065, delta_log10: -3.337619}
+    2473_K: {default: 3203.730399, candidate: 1.000080, delta_log10: -3.505621}
+  report: docs/standard-state-candidate.md
 high_temperature_candidate_v2:
   opt_in: >-
     Load gas-shomate-hight-candidate-v2.csv and condensate-hight-candidate-v2.csv
@@ -2585,6 +2628,18 @@ candidate_condensate_files:
     source_md5: 709338513d1d6dfe0bc6eb2387995d96
     source_authority: public_domain_US_government_data
     load_with: load_gas_datapack(gas_path=..., oxide_path=...)
+  - file: condensate-standard-state-candidate.csv
+    status: opt_in_standard_state_and_hg_continuation_candidate
+    sha256: 92fb8701bffb2e2e10fbeaaf47d5083dab696cf151c55c1335aa1a019ac3e10b
+    source: BU-2586 Hg(l) and paired BU-2587 Hg(g) reference-element cards.
+    construction: >-
+      Copies condensate.csv and replaces
+      only Hg(l) 1200-3000 K with a fit of the paired BU-2587 ideal-gas H/S/Cp
+      branch above the BU-2586 629.839 K source limit. The cards' G values meet
+      at that limit. It also uses the established base-ID/source_label form for
+      the NiO(l) and CoO(l) supercooled rows; their thermochemical coefficients
+      are unchanged. The Hg(l) row remains flagged.
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)
 
 candidate_gas_files:
   - file: gas-shomate-hight-candidate-v2.csv
@@ -2626,4 +2681,15 @@ candidate_gas_files:
     source_retrieved: 2026-09-06
     source_md5: 709338513d1d6dfe0bc6eb2387995d96
     source_authority: public_domain_US_government_data
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)
+  - file: gas-shomate-standard-state-candidate.csv
+    status: opt_in_standard_state_candidate
+    sha256: d16227a5cc6740cfba3262b7e27e94baf962c0301910ad7062cff01c433716f5
+    source: >-
+      Bulletin 672 and TSIV Tables 1436 and 1335, with the shipped gas table as
+      the unchanged base.
+    construction: >-
+      Copies gas-shomate.csv and shifts only the entropy
+      constant of documented 1 atm source rows by R ln(1.01325); keeps all
+      enthalpy and Cp coefficients and all other rows unchanged.
     load_with: load_gas_datapack(gas_path=..., oxide_path=...)
