@@ -109,11 +109,11 @@ def _resolve_version() -> str:
                 url = urlparse(metadata_entry["url"])
                 if url.scheme == "file":
                     project_dir = Path(url2pathname(url.path)).resolve()
-                    try:
-                        imported_package.relative_to(project_dir)
-                    except ValueError:
-                        pass
-                    else:
+                    package_dir = imported_package.parent
+                    if package_dir in (
+                        (project_dir / "src/openimcc").resolve(),
+                        (project_dir / "openimcc").resolve(),
+                    ):
                         return distribution.version
     except Exception:
         pass

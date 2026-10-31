@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -94,6 +95,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
         "gas": balanced.gas_table_digest,
         "condensate": balanced.condensate_table_digest,
     }
+    assert "root_scan_points" not in balance_receipt.solver
 
     saturation = evaluate_gas_saturation(
         activities, 1800.0, parent_oxides=tuple(activities),
@@ -168,8 +170,6 @@ def test_version_is_unknown_when_distribution_does_not_own_imported_package(
 
 
 def test_version_accepts_wheel_and_editable_ownership(monkeypatch, tmp_path):
-    from pathlib import Path
-
     imported_package = Path(openimcc.__file__).resolve()
 
     class Distribution:
@@ -205,6 +205,86 @@ def test_version_accepts_wheel_and_editable_ownership(monkeypatch, tmp_path):
         ),
     )
     assert openimcc._resolve_version() == "1.2.3"
+
+
+def test_version_does_not_claim_a_nested_editable_checkout(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    project = tmp_path / "project"
+    owned_package = project / "src/openimcc"
+    nested_package = project / "worktrees/other/src/openimcc"
+    owned_package.mkdir(parents=True)
+    (owned_package / "__init__.py").write_text("# outer package\n")
+    nested_package.mkdir(parents=True)
+    imported_package = nested_package / "__init__.py"
+    imported_package.write_text("# nested checkout\n")
+
+    class Distribution:
+        version = "99.0"
+
+        def locate_file(self, _path):
+            return tmp_path / "site-packages/openimcc/__init__.py"
+
+        def read_text(self, _path):
+            return json.dumps({
+                "url": project.as_uri(),
+                "dir_info": {"editable": True},
+            })
+
+    monkeypatch.setattr(openimcc.metadata, "distribution", lambda _name: Distribution())
+    with monkeypatch.context() as patch:
+        patch.setattr(openimcc, "__file__", str(imported_package))
+        assert openimcc._resolve_version() == "0+unknown"
+
+
+def test_version_legacy_develop_install_without_direct_url_is_unknown(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    project = tmp_path / "project"
+    imported_package = project / "src/openimcc/__init__.py"
+    imported_package.parent.mkdir(parents=True)
+    imported_package.write_text("# legacy develop install\n")
+
+    class Distribution:
+        version = "99.0"
+
+        def locate_file(self, _path):
+            return project / "lib/python/site-packages/openimcc/__init__.py"
+
+        def read_text(self, _path):
+            return None
+
+    monkeypatch.setattr(openimcc.metadata, "distribution", lambda _name: Distribution())
+    with monkeypatch.context() as patch:
+        patch.setattr(openimcc, "__file__", str(imported_package))
+        assert openimcc._resolve_version() == "0+unknown"
+
+
+@pytest.mark.parametrize(
+    "direct_url",
+    [
+        "{malformed json",
+        json.dumps({
+            "url": "https://example.invalid/project",
+            "dir_info": {"editable": True},
+        }),
+    ],
+)
+def test_version_ignores_malformed_or_non_file_direct_url(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, direct_url
+):
+    class Distribution:
+        version = "99.0"
+
+        def locate_file(self, _path):
+            return tmp_path / "site-packages/openimcc/__init__.py"
+
+        def read_text(self, _path):
+            return direct_url
+
+    monkeypatch.setattr(openimcc.metadata, "distribution", lambda _name: Distribution())
+
+    assert openimcc._resolve_version() == "0+unknown"
 
 
 def test_source_identity_ignores_an_enclosing_unrelated_checkout(
