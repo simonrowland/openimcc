@@ -203,7 +203,7 @@ def test_inventory_saturates_at_scss_and_reports_excess():
     high = evaluate_sulfur(_MORB, 1673.0, log10_fO2=-8.0, total_s_ppm=1.5 * scss)
     assert low.saturation_state == "undersaturated"
     assert low.dissolved_total_s_ppm == pytest.approx(0.5 * scss)
-    assert low.excess_s_ppm == 0.0
+    assert low.excess_s_ppm == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     assert high.saturation_state == "saturated"
     assert high.dissolved_s2_minus_ppm == pytest.approx(scss)
     assert high.dissolved_total_s_ppm == pytest.approx(
@@ -240,7 +240,7 @@ def test_lance_inventory_below_and_above_saturation_inventory():
     assert below.dissolved_s2_minus_ppm < below.scss_smythe_2017_ppm
     assert below.saturation_state == "undersaturated"
     assert below.dissolved_total_s_ppm == pytest.approx(60000.0)
-    assert below.excess_s_ppm == 0.0
+    assert below.excess_s_ppm == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     assert "sulfur-excess-reported-to-sulfide-liquid" not in below_codes
     assert "sulfate-saturation-and-so2-degassing-not-modelled" in below_codes
     assert "reduced-gas-fugacity-is-caller-input" not in below_codes

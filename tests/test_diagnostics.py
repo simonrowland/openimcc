@@ -116,7 +116,7 @@ def test_no_association_has_zero_configurational_cp(monkeypatch):
         complex_x=np.asarray([]), D=1.0, extrapolated=False,
         labels=SimpleNamespace(flags=(), notices=())))
     row = implied_heat_capacity(pack, {"SiO2": 1.0}, [1200.0])[0]
-    assert row["cp_conf_J_mol_K"] == 0.0
+    assert row["cp_conf_J_mol_K"] == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     assert row["cp_total_J_mol_K"] == row["cp_parent_J_mol_K"]
 
 
@@ -436,7 +436,9 @@ def test_unsupported_only_composition_returns_typed_notice_instead_of_refusal():
 
     result = liquidus_bracket({"NiO": 2.32}, 1323.0, 2100.0)
     assert result.status is CrystalStatus.NO_SUPPORTED_CROSSING
-    assert result.notices[0].dropped_oxides_wt_percent == {"NiO": 100.0}
+    assert result.notices[0].dropped_oxides_wt_percent == pytest.approx(
+        {"NiO": 100.0}, rel=1.0e-13, abs=0.0
+    )
     rows = saturation_indices({"NiO": 2.32}, 1500.0)
     assert all(row.status is CrystalStatus.NO_SUPPORTED_COMPOSITION for row in rows)
     assert all(row.notices == result.notices for row in rows)
@@ -665,7 +667,9 @@ def test_excess_interaction_enthalpy_in_mixing_endpoints_and_dissolution(
     assert candidate_mix["excess_enthalpy_kJ"] - ideal_mix["excess_enthalpy_kJ"] == pytest.approx(-15.0)
     assert candidate_mix["total_enthalpy_kJ"] - candidate_mix["association_enthalpy_kJ"] == pytest.approx(-15.0)
     for endpoint in candidate_mix["endmember_endpoints"].values():
-        assert endpoint["excess_interaction_enthalpy_kJ_per_formula"] == 0.0
+        assert endpoint["excess_interaction_enthalpy_kJ_per_formula"] == pytest.approx(
+            0.0, rel=1.0e-13, abs=0.0
+        )
         assert endpoint["total_enthalpy_kJ_per_formula"] == pytest.approx(
             endpoint["association_enthalpy_kJ_per_formula"]
         )

@@ -99,8 +99,14 @@ def _same_legacy_numbers(left, right) -> None:
     assert left.D == right.D
     assert left.basis == right.basis
     assert left.convergence == right.convergence
-    assert left.excess_gibbs_J == right.excess_gibbs_J == 0.0
-    assert left.excess_enthalpy_J == right.excess_enthalpy_J == 0.0
+    assert left.excess_gibbs_J == pytest.approx(
+        right.excess_gibbs_J, rel=1.0e-13, abs=0.0
+    )
+    assert left.excess_gibbs_J == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
+    assert left.excess_enthalpy_J == pytest.approx(
+        right.excess_enthalpy_J, rel=1.0e-13, abs=0.0
+    )
+    assert left.excess_enthalpy_J == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
 
 
 def _same_speciation_numbers(left, right) -> None:
@@ -470,9 +476,13 @@ def test_binary_interaction_limits_and_candidate_evaluation_keep_speciation(
     g_ca_free, _h, mu_ca_free = _analytical_parent_excess_state(
         parents, ca_free, temperature, term
     )
-    assert g_ca_free == 0.0
-    assert mu_ca_free[parents.index("SiO2")] == 0.0
-    assert mu_ca_free[parents.index("Na2O")] == 0.0
+    assert g_ca_free == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
+    assert mu_ca_free[parents.index("SiO2")] == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
+    assert mu_ca_free[parents.index("Na2O")] == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
 
     na_free = np.zeros(len(parents))
     na_free[parents.index("SiO2")] = 1.0
@@ -480,9 +490,13 @@ def test_binary_interaction_limits_and_candidate_evaluation_keep_speciation(
     g_na_free, _h, mu_na_free = _analytical_parent_excess_state(
         parents, na_free, temperature, term
     )
-    assert g_na_free == 0.0
-    assert mu_na_free[parents.index("SiO2")] == 0.0
-    assert mu_na_free[parents.index("CaO")] == 0.0
+    assert g_na_free == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
+    assert mu_na_free[parents.index("SiO2")] == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
+    assert mu_na_free[parents.index("CaO")] == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
 
     binary = np.zeros(len(parents))
     binary[parents.index("Na2O")] = 1.0

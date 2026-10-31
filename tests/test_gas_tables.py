@@ -1859,7 +1859,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
         assert limit in expected_by_limit
         values = band["values_J_per_mol"]
         limit_key = next(key for key in values if float(key) == limit)
-        assert values[limit_key] == 0.0
+        assert values[limit_key] == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
         assert {float(key) for key in values} == {limit, *expected_by_limit[limit]}
         for temperature, expected in expected_by_limit[limit].items():
             value_key = next(key for key in values if float(key) == temperature)
@@ -1892,7 +1892,7 @@ def test_trace_continuation_bands_are_truncated_at_each_source_limit() -> None:
             (row["species_name"], tuple(row["T_range_K"]))
         )
         values = band["values_J_per_mol"]
-        assert values[int(limit)] == 0.0
+        assert values[int(limit)] == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
         expected = {}
         for temperature in values:
             temperature = float(temperature)
@@ -2316,7 +2316,7 @@ def test_pto2_continuation_band_recomputes_from_its_2000_k_limit() -> None:
     at_limit = build_gas_tables._burcat7_properties(coefficients, limit)
     cp = R_J_MOL_K * at_limit["cp_R"]
     values = {float(T): float(value) for T, value in band["values_J_per_mol"].items()}
-    assert values[limit] == 0.0
+    assert values[limit] == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     assert set(values) == set(map(float, range(2000, 3001, 100)))
     for temperature, actual_band in values.items():
         properties = build_gas_tables._burcat7_properties(coefficients, temperature)

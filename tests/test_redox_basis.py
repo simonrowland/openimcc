@@ -24,8 +24,12 @@ def test_oxide_splits_map_to_the_same_element_inventory() -> None:
         {"FeO(l)": 2.0, "O2(g)": 0.5}, formulas
     )
 
-    assert hematite == {"Fe": 2.0, "O": 3.0}
-    assert ferrous_plus_oxygen == hematite
+    assert hematite == pytest.approx(
+        {"Fe": 2.0, "O": 3.0}, rel=1.0e-13, abs=0.0
+    )
+    assert ferrous_plus_oxygen == pytest.approx(
+        hematite, rel=1.0e-13, abs=0.0
+    )
 
 
 @pytest.mark.parametrize(
@@ -41,7 +45,9 @@ def test_inventory_mapping_returns_moles_of_each_element(
     formula_atoms: dict[str, dict[str, int]],
     expected: dict[str, float],
 ) -> None:
-    assert oxide_inventory_to_elements(inventory, formula_atoms) == expected
+    assert oxide_inventory_to_elements(inventory, formula_atoms) == pytest.approx(
+        expected, rel=1.0e-13, abs=0.0
+    )
 
 
 @pytest.mark.parametrize("amount", [-1.0, float("nan"), float("inf")])

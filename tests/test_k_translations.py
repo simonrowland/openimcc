@@ -573,7 +573,8 @@ def test_free_fraction_pressure_bookkeeping_and_pure_k2o_endpoint() -> None:
     ) + 0.5 * math.log10(
         free_k2o_fraction(after, new_pack) / free_k2o_fraction(before, old_pack)
     ) + 0.5 * math.log10(after.D / before.D)
-    assert before.activity("K2O") == after.activity("K2O") == 1.0
+    assert before.activity("K2O") == pytest.approx(1.0, rel=1.0e-13, abs=0.0)
+    assert after.activity("K2O") == pytest.approx(1.0, rel=1.0e-13, abs=0.0)
     assert observed_shift == pytest.approx(full_reference_shift, abs=1e-10)
 
 

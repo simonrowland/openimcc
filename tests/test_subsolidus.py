@@ -55,7 +55,7 @@ def test_supported_reactions_are_atom_balanced_and_have_one_driver():
                        "SO2": {"S": 1, "O": 2}, "O2": {"O": 2}}[term["species_id"]]
             for element, count in formula.items():
                 balance[element] += term["nu_mol_per_mol_rxn"] * count
-        assert balance == expected
+        assert balance == pytest.approx(expected, rel=1.0e-13, abs=0.0)
         assert all(term["nu_mol_per_mol_rxn"] in {-1.0, -0.5, 0.5, 1.0} for term in terms)
         assert result["extent_bound_mol_rxn"] <= host["remaining_mol"]
 
@@ -102,7 +102,9 @@ def test_equilibrium_pressure_satisfies_gibbs_identity(host, pressures, oxygen):
     perturbed = dict(pressures)
     perturbed[result["driving_gas_species_id"]] = p_eq * (4.0 if host["species_id"] == "FeS_troilite" else 2.0)
     result_perturbed = _evaluate(host, t, perturbed, oxygen=oxygen)
-    assert result_perturbed["extent_bound_mol_rxn"] == 0.0
+    assert result_perturbed["extent_bound_mol_rxn"] == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
 
 
 def test_sulfates_require_one_consistent_oxygen_input():

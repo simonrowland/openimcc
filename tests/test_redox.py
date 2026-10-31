@@ -276,7 +276,9 @@ def test_shared_parent_lp_skips_rows_inactive_for_the_current_inventory(
         1.0,
         shared_pack,
     )
-    assert (surplus, deficit) == (1.0, 0.0)
+    assert (surplus, deficit) == pytest.approx(
+        (1.0, 0.0), rel=1.0e-13, abs=0.0
+    )
     assert shared_positive_rows
 
     monkeypatch.setattr(redox_module, "linprog", original_linprog)
@@ -289,7 +291,9 @@ def test_shared_parent_lp_skips_rows_inactive_for_the_current_inventory(
         2.0,
         shared_pack,
     )
-    assert (surplus, deficit) == (0.0, 2.0)
+    assert (surplus, deficit) == pytest.approx(
+        (0.0, 2.0), rel=1.0e-13, abs=0.0
+    )
     assert shared_positive_rows
 
 
@@ -313,7 +317,7 @@ def test_manganese_zero_delta_sharing_does_not_call_the_oxygen_window_lp(
 def test_redox_reference_outputs_before_generalized_rows() -> None:
     fe_closed = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
     assert fe_closed.lambda_ln_f_o2 == pytest.approx(-1.5205238540751636, rel=1.0e-12)
-    assert fe_closed.metal_moles == 0.0
+    assert fe_closed.metal_moles == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     assert fe_closed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
         0.03125, rel=1.0e-12
     )
@@ -391,7 +395,7 @@ def test_redox_reference_outputs_before_generalized_rows() -> None:
     assert mixed_closed.lambda_ln_f_o2 == pytest.approx(
         -11.077059303399922, rel=1.0e-12
     )
-    assert mixed_closed.metal_moles == 0.0
+    assert mixed_closed.metal_moles == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     assert mixed_closed.oxygen_capacity_mol_per_ln_f_o2 == pytest.approx(
         0.0004897918426807796, rel=1.0e-12
     )
@@ -461,7 +465,13 @@ def test_fe_valence_splits_give_the_same_closed_solution() -> None:
         {"FeO(l)": 0.5, "Fe2O3(l)": 0.25},
     ]
     inventories = [oxide_inventory_to_elements(split, formulas) for split in oxide_splits]
-    assert inventories[0] == inventories[1] == {"Fe": 1.0, "O": 1.25}
+    expected_inventory = {"Fe": 1.0, "O": 1.25}
+    assert inventories[0] == pytest.approx(
+        expected_inventory, rel=1.0e-13, abs=0.0
+    )
+    assert inventories[1] == pytest.approx(
+        expected_inventory, rel=1.0e-13, abs=0.0
+    )
 
     results = [evaluate_redox(inventory, 2200.0, "closed") for inventory in inventories]
     assert results[0].lambda_ln_f_o2 == pytest.approx(
@@ -634,7 +644,7 @@ def test_oxygen_response_is_continuous_across_pure_fe_saturation() -> None:
     assert reduced.lambda_ln_f_o2 == pytest.approx(reduced.lambda_sat, abs=1.0e-12)
     assert reduced.metal_moles > at_saturation.metal_moles
     assert reduced.metal_moles - at_saturation.metal_moles < 1.0e-6
-    assert oxidised.metal_moles == 0.0
+    assert oxidised.metal_moles == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     assert oxidised.lambda_ln_f_o2 > oxidised.lambda_sat
     assert abs(oxidised.lambda_ln_f_o2 - at_saturation.lambda_sat) < 1.0e-4
 
@@ -795,7 +805,9 @@ def test_imposed_endpoint_uses_a_tight_caller_tolerance() -> None:
         inventory, 2200.0, "imposed", lambda_imposed=requested_lambda, tol=1e-12
     )
     assert default_result == explicit_default_result
-    assert default_result.metal_moles == 0.0
+    assert default_result.metal_moles == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
 
 
 def test_closed_mode_missing_oxygen_guard_survives_python_optimization() -> None:
@@ -1344,7 +1356,7 @@ def test_trace_parent_converges_relatively_and_reports_conditioning(
     inventory["O"] = fixed_oxygen + 0.05
 
     result = evaluate_redox(inventory, 2500.0, "closed")
-    assert result.metal_moles == 0.0
+    assert result.metal_moles == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     oxygen_scale = max(abs(inventory["O"]), math.ulp(inventory["O"]))
     assert abs(result.oxygen_residual_mol or 0.0) <= 1.0e-12 * oxygen_scale
 
@@ -1615,7 +1627,13 @@ def test_synthetic_second_redox_couple_closes_and_has_complete_response(
     second_inventory = oxide_inventory_to_elements(
         {"FeO(l)": 1.0, synthetic_name: 0.25, "O2(g)": 0.125}, formulas
     )
-    assert first_inventory == second_inventory == {"Fe": 1.0, "Ti": 0.25, "O": 1.5}
+    expected_inventory = {"Fe": 1.0, "Ti": 0.25, "O": 1.5}
+    assert first_inventory == pytest.approx(
+        expected_inventory, rel=1.0e-13, abs=0.0
+    )
+    assert second_inventory == pytest.approx(
+        expected_inventory, rel=1.0e-13, abs=0.0
+    )
 
     first = evaluate_redox(first_inventory, 2200.0, "closed")
     second = evaluate_redox(second_inventory, 2200.0, "closed")

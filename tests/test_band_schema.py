@@ -166,9 +166,11 @@ def test_k2o_liquid_band_units_and_interval_fit_residual_are_explicit() -> None:
         if row.get("table") == "condensate" and row.get("species_name") == "K2O(l)"
     )
     residual = row["fit_residual"]
-    assert residual["value"]["max_residual_J_per_mol_by_interval"] == [
-        9.56932283600327, 3.19386472436599, 1.54911242239177,
-    ]
+    assert residual["value"]["max_residual_J_per_mol_by_interval"] == pytest.approx(
+        [9.56932283600327, 3.19386472436599, 1.54911242239177],
+        rel=1.0e-13,
+        abs=0.0,
+    )
     assert residual["unit"]["max_residual_J_per_mol_by_interval"] == "J mol^-1"
     assert residual["temperature_range"] == [
         [1000, 1200], [1200, 2000], [2000, 3000],

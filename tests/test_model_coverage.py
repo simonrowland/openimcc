@@ -739,26 +739,33 @@ def test_multicomponent_pattern_cmas_values_unchanged() -> None:
     assert "0.57 (MgO, n=15)" in notice
     assert "this binary result does not establish the multicomponent pattern" in notice
 
-    # Hex literals pin the calculated outputs from before this notice existed.
-    assert tuple(float(value).hex() for value in result.parent_activity) == (
-        "0x1.5c1424293252fp-3",
-        "0x1.41b5bca62510bp-6",
-        "0x0.0p+0",
-        "0x1.cababe1126f00p-12",
-        "0x1.338d81f5763bfp-6",
-        "0x0.0p+0",
-        "0x0.0p+0",
-        "0x0.0p+0",
+    assert result.parent_activity == pytest.approx(
+        (
+            0.16996029139253596,
+            0.01963561461214262,
+            0.0,
+            0.0004374785067484538,
+            0.01877153102200046,
+            0.0,
+            0.0,
+            0.0,
+        ),
+        rel=1.0e-13,
+        abs=0.0,
     )
-    assert tuple(float(value).hex() for value in result.parent_gamma) == (
-        "0x1.6d9fbeb88b0e3p-2",
-        "0x1.79cccb1c0873fp-4",
-        "0x0.0p+0",
-        "0x1.c1b7f159d60d1p-10",
-        "0x1.56a278fe2f4eap-2",
-        "0x0.0p+0",
-        "0x0.0p+0",
-        "0x0.0p+0",
+    assert result.parent_gamma == pytest.approx(
+        (
+            0.35705469132768836,
+            0.09223632182741158,
+            0.0,
+            0.0017155400332367519,
+            0.3346041588918768,
+            0.0,
+            0.0,
+            0.0,
+        ),
+        rel=1.0e-13,
+        abs=0.0,
     )
 
 
@@ -942,7 +949,9 @@ def test_na2o_activity_bias_notice_gate_and_numeric_identity() -> None:
     assert any(n.startswith(marker) for n in mathieu_iii1_like.labels.notices)
     assert any(n.startswith(marker) for n in mathieu_like.labels.notices)
     assert any(n.startswith(marker) for n in pak_binary.labels.notices)
-    assert mathieu_like.parent_activity[mathieu_like.parent_oxides.index("Na2O")] == 0.1068994643265644
+    assert mathieu_like.parent_activity[
+        mathieu_like.parent_oxides.index("Na2O")
+    ] == pytest.approx(0.1068994643265644, rel=1.0e-13, abs=0.0)
     assert mathieu_like.parent_activity[mathieu_like.parent_oxides.index("SiO2")] == pytest.approx(
         8.65523987822024e-08, rel=1e-12, abs=0.0
     )

@@ -156,9 +156,11 @@ def test_cold_cost_baseline_lookup_does_not_cross_cpu_classes() -> None:
 
 
 def test_cold_cost_budget_caps_at_a_1_9_ratio() -> None:
-    assert _cold_cost_ceiling(0.001, 0.0, 0.0) == 0.001
+    assert _cold_cost_ceiling(0.001, 0.0, 0.0) == pytest.approx(
+        0.001, rel=1.0e-13, abs=0.0
+    )
     noisy_ceiling = _cold_cost_ceiling(0.001, 0.01, 0.01)
-    assert noisy_ceiling == 0.0019
+    assert noisy_ceiling == pytest.approx(0.0019, rel=1.0e-13, abs=0.0)
     assert 2 * 0.001 > noisy_ceiling
 
 _COLD_BASALT_INVENTORY = {

@@ -889,7 +889,9 @@ def test_below_fusion_band_is_anchored_to_the_measured_loo_term():
         "max"
     ][0]
 
-    assert construction.fusion_gibbs_kj_mol(temperature) == 0.0
+    assert construction.fusion_gibbs_kj_mol(temperature) == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
     assert construction.below_fusion_band_kj_mol(
         temperature, measured_loo_band
     ) == pytest.approx(measured_loo_band)

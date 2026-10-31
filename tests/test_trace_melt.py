@@ -35,8 +35,10 @@ def test_candidate_uses_dilute_half_formula_and_quadratic_parent_activity():
 
 def test_zero_inventory_is_exact_and_positive_loading_stays_in_measured_range():
     zero = cr3_trace_activity(_COMP_MOL_B1, _T_K, _FO2_BAR, 0.0)
-    assert zero.parent_activity == 0.0
-    assert zero.half_formula_activity == 0.0
+    assert zero.parent_activity == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
+    assert zero.half_formula_activity == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
     lower_edge = cr3_trace_activity(
         _composition_with_basicity(1.27), _T_K, _FO2_BAR, 0.0008, basis_type="wt"
     )

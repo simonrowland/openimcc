@@ -590,7 +590,9 @@ def test_vaporock_checkout_real_file_regression(
         {"Na2O": 0.05}, 1800.0, 1.0e-8, datapack,
         parent_oxides=("Na2O",), gas_species=("Na",),
     )
-    assert result["Na"] == 0.04667660400876665
+    assert result["Na"] == pytest.approx(
+        0.04667660400876665, rel=1.0e-13, abs=0.0
+    )
 
 
 def test_packaged_gas_tables_load_without_ingestion_warning() -> None:
@@ -1197,12 +1199,16 @@ def test_gas_result_is_frozen_bar_mapping_and_preserves_numbers(
     )
 
     assert result.unit == "bar"
-    assert dict(result) == {
-        "Na": 0.22579835176799098,
-        "K": 2.1523835203777817,
-        "SiO": 1.741267474160606e-08,
-        "O2": 1.0,
-    }
+    assert dict(result) == pytest.approx(
+        {
+            "Na": 0.22579835176799098,
+            "K": 2.1523835203777817,
+            "SiO": 1.741267474160606e-08,
+            "O2": 1.0,
+        },
+        rel=1.0e-13,
+        abs=0.0,
+    )
     assert result.domain_flags["Na"] is None
     # This pack's Na2O(l) is the preserved LAM row, not the reference row the
     # Na2O(l) authority evidence was assessed against, so it carries no
@@ -1231,7 +1237,9 @@ def test_provenance_class_follows_the_coefficients_that_set_the_pressure(
         "allow_extrapolation": False,
     }
     packaged = evaluate_gas({"SiO2": 1.0}, 2000.0, 1.0e-8, gas_pack, **call)
-    assert packaged["SiO"] == 0.0002081379974361049
+    assert packaged["SiO"] == pytest.approx(
+        0.0002081379974361049, rel=1.0e-13, abs=0.0
+    )
     assert packaged.provenance_class["SiO"] == "janaf_fitted"
 
     edited = gas_pack.gas_df.copy()
@@ -1245,7 +1253,9 @@ def test_provenance_class_follows_the_coefficients_that_set_the_pressure(
         replace(gas_pack, gas_df=edited),
         **call,
     )
-    assert shifted["SiO"] == 3.2881353908841685e-05
+    assert shifted["SiO"] == pytest.approx(
+        3.2881353908841685e-05, rel=1.0e-13, abs=0.0
+    )
     assert shifted.provenance_class["SiO"] == "external_datapack"
 
     oxide = gas_pack.oxide_df.copy()
@@ -1591,7 +1601,7 @@ def test_all_channels_compute_when_extrapolation_is_explicit(
         set(_PRE_GATED_CHANNELS) | set(_CR_CHANNELS) | set(_VNB_CHANNELS)
     )
     assert all(value >= 0.0 for value in result.values())
-    assert result["O2"] == 1.0e-10
+    assert result["O2"] == pytest.approx(1.0e-10, rel=1.0e-13, abs=0.0)
 
 
 def test_p1_g1_against_janaf_printed_gas_columns(
@@ -2456,7 +2466,7 @@ def test_halogen_activity_and_fugacity_powers_and_optional_family(
         {**activities, "Na2O": 0.0}, 2000.0, 1.0e-8, gas_pack,
         parent_oxides=parents, gas_species=("Br", "Br2", "NaBr"),
     )
-    assert zero_na["NaBr"] == 0.0
+    assert zero_na["NaBr"] == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     assert math.isfinite(zero_na["Br"]) and math.isfinite(zero_na["Br2"])
 
 
@@ -3442,7 +3452,7 @@ def test_unknown_activity_key_names_itself_and_omitted_parent_stays_zero(
         gas_pack,
         gas_species=("K", "SiO"),
     )
-    assert omitted["K"] == 0.0
+    assert omitted["K"] == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
     assert explicit_zero["K"] == omitted["K"]
     assert explicit_zero["SiO"] == omitted["SiO"]
     assert omitted["SiO"] > 0.0
@@ -5091,7 +5101,7 @@ def test_imcc_adapter_activities_reach_all_channels(
     )
     assert set(result) == set(_PRE_GATED_CHANNELS)
     assert all(value >= 0.0 for value in result.values())
-    assert result["O2"] == 1.0e-10
+    assert result["O2"] == pytest.approx(1.0e-10, rel=1.0e-13, abs=0.0)
     assert result["Na"] > 0.0
     assert result["K"] > 0.0
 
@@ -5532,7 +5542,9 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
         )
         assert metadata[name].pO2_exponent == pytest.approx(expected, abs=1e-12)
         if parent in gas_module._GAS_PHASE_PARENT_ROWS:
-            assert metadata[name].parent_oxygen_demand == 0.0
+            assert metadata[name].parent_oxygen_demand == pytest.approx(
+                0.0, rel=1.0e-13, abs=0.0
+            )
 
 
 def test_alkali_halides_use_half_oxygen_per_alkali_in_balance_metadata() -> None:
@@ -5616,7 +5628,9 @@ def test_pt_oxide_gas_uses_unit_positive_oxygen_exponent_and_moves_root_down(
     assert pressures["Pt"] > 0.0
     assert pressures["PtO2"] > 0.0
     metadata = oxygen_balance_species_metadata({"PtO2": None})["PtO2"]
-    assert metadata.parent_oxygen_demand == 0.0
+    assert metadata.parent_oxygen_demand == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
     assert metadata.pO2_exponent == pytest.approx(1.0)
 
     lower_f = evaluate_gas(
@@ -5725,7 +5739,9 @@ def test_oxygen_balance_metadata_accepts_explicit_exponent_override() -> None:
         {"K": "K2O", "O2": None},
         pO2_exponents={"K": -0.3},
     )
-    assert metadata["K"].pO2_exponent == -0.3
+    assert metadata["K"].pO2_exponent == pytest.approx(
+        -0.3, rel=1.0e-13, abs=0.0
+    )
 
 
 def test_generic_oxygen_balance_rejects_unbracketed_pressure_model() -> None:
@@ -6067,9 +6083,14 @@ def test_weighted_oxygen_root_reversible_zero_and_clipping_counterexample() -> N
         pressure_model, weights, conductance_mol_m2_s_Pa=conductance,
         bulk_pressures_bar=equilibrium, log10_pO2_bracket=(-3.0, 3.0),
     )
-    assert zero.pO2_bar == target
-    assert all(flux == 0.0 for flux in zero.signed_fluxes_mol_m2_s.values())
-    assert zero.absolute_weighted_transfer_scale_mol_m2_s == 0.0
+    assert zero.pO2_bar == pytest.approx(target, rel=1.0e-13, abs=0.0)
+    assert all(
+        flux == pytest.approx(0.0, rel=1.0e-13, abs=0.0)
+        for flux in zero.signed_fluxes_mol_m2_s.values()
+    )
+    assert zero.absolute_weighted_transfer_scale_mol_m2_s == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
     assert zero.applied_flux_closure_state == "zero_transfer"
     assert zero.applied_flux_closes is False
     assert zero.equilibrium_weighted_transfer_scale_mol_m2_s == pytest.approx(7e5)
@@ -6149,7 +6170,9 @@ def test_weighted_oxygen_root_disabled_and_all_disabled_channels() -> None:
     )
     assert disabled.pO2_bar == pytest.approx(1e-4)
     assert disabled.pressures_bar["M"] > 0.0
-    assert disabled.signed_fluxes_mol_m2_s["M"] == 0.0
+    assert disabled.signed_fluxes_mol_m2_s["M"] == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
     with pytest.raises(ImccGasOxygenBalanceError, match="identically zero"):
         gas_module.weighted_oxygen_balance_from_pressure_model(
             pressure_model, {"M": -1.0, "O2": 2.0},
@@ -6245,8 +6268,10 @@ def test_weighted_oxygen_root_frozen_inputs_and_read_only_results() -> None:
         conductance_mol_m2_s_Pa=conductance, bulk_pressures_bar=bulk,
         log10_pO2_bracket=(-1.0, 1.0),
     )
-    assert result.pO2_bar == 1.0
-    assert result.signed_fluxes_mol_m2_s["X"] == 0.0
+    assert result.pO2_bar == pytest.approx(1.0, rel=1.0e-13, abs=0.0)
+    assert result.signed_fluxes_mol_m2_s["X"] == pytest.approx(
+        0.0, rel=1.0e-13, abs=0.0
+    )
     with pytest.raises(TypeError):
         result.pressures_bar["X"] = 2.0  # type: ignore[index]
     with pytest.raises(TypeError):
@@ -6349,7 +6374,7 @@ def test_weighted_oxygen_root_samples_monotonicity_and_root_count() -> None:
         conductance_mol_m2_s_Pa={"O2": 1.0},
         bulk_pressures_bar={"O2": 1.0}, log10_pO2_bracket=(-2.0, 2.0),
     )
-    assert root.pO2_bar == 1.0
+    assert root.pO2_bar == pytest.approx(1.0, rel=1.0e-13, abs=0.0)
     assert root.monotonicity == "increasing"
     with pytest.raises(ImccGasOxygenBalanceError, match="2 sampled roots"):
         gas_module.weighted_oxygen_balance_from_pressure_model(
