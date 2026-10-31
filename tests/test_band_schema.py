@@ -252,6 +252,7 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                 "phosphorus_parent_channels",
                 "negative_ion_screen",
                 "constructed_saha_ions",
+                "lamoreaux_1987",
             ):
                 document["source_notes"].pop(note, None)
             document["rows"] = [
@@ -307,12 +308,15 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
             ("gas", "Hg(g)", "BU-2587", 1),
             ("gas", "Hg(g)", "BU-2587", 2),
         }
+        lh87_silica_row = ("condensate", "SiO2(cr)", None, None)
         assert committed_rows[selected_feo]["authority"] == (
             "primary_measurement_reanchored"
         )
         assert migrated_rows[selected_feo]["authority"] == "janaf_transcribed"
 
-        def migration_comparable_row(row: dict, key: tuple) -> dict:
+        def migration_comparable_row(
+            row: dict, key: tuple, migrated_row: dict
+        ) -> dict:
             normalized = dict(row)
             normalized.pop("T_range_K", None)
             normalized.pop("fit_intervals_K", None)
@@ -320,9 +324,16 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                 "table_id", "source_table_id", "runtime_ref", "source_path",
                 "source_sha256", "upstream_source_sha256",
             ):
-                normalized.pop(field, None)
+                if field not in migrated_row:
+                    normalized.pop(field, None)
             if key in post_migration_tier_rows:
                 normalized.pop("tier", None)
+            if key == lh87_silica_row:
+                # The migration baseline predates the vendored transcription;
+                # only SiO2(cr)'s transcription pointer differs across versions.
+                source = dict(normalized["source"])
+                source.pop("transcription", None)
+                normalized["source"] = source
             for field in ("fit_residual", "accuracy_band"):
                 value = normalized.get(field)
                 if isinstance(value, dict):
@@ -336,8 +347,8 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         mismatched_keys = {
             key for key, row in migrated_rows.items()
             if key != selected_feo
-            and migration_comparable_row(committed_rows[key], key)
-            != migration_comparable_row(row, key)
+            and migration_comparable_row(committed_rows[key], key, row)
+            != migration_comparable_row(row, key, row)
         }
         assert not mismatched_keys
         for key in set(migrated_provenance) - {"rows", "source_notes"}:
