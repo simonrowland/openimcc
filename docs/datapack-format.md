@@ -108,7 +108,9 @@ kernel.
 
 For pre-v3 packs, `src/openimcc/data/source-refs-sidecar.json` maps each
 pack filename and row number/species pair to the same `source_refs` vocabulary
-without changing the pack files.
+without changing the pack files. These refs identify source ancestry: the
+publication a row descends from. Conversion and refit details, and therefore
+the provenance of the final coefficients, remain in each pack's own metadata.
 
 ### excess_gibbs structure
 

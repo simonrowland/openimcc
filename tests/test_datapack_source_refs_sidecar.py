@@ -8,6 +8,15 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from test_melt_source_transcriptions import (
+    _assert_pack_reaction_matches_source,
+    _assert_transform_reason,
+    _matches_source_coefficients,
+    _recorded_transforms,
+    _source_row_for_pack_row,
+    _source_rows,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src" / "openimcc" / "data" / "packs"
@@ -44,6 +53,17 @@ def _row_signature(row: dict[str, Any]) -> tuple[Any, ...]:
         row.get("A"),
         row.get("B"),
     )
+
+
+def _later_rows_with_same_signature(
+    row: dict[str, Any], later_packs: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    return [
+        later_row
+        for later_pack in later_packs
+        for later_row in later_pack["rows"]
+        if _row_signature(later_row) == _row_signature(row)
+    ]
 
 
 def test_pack_manifest_is_unchanged() -> None:
@@ -96,6 +116,63 @@ def test_legacy_melt_rows_have_one_valid_sidecar_entry() -> None:
     assert unknown_entries == []
 
 
+def test_sidecar_source_assignments_have_transcription_or_metadata_support() -> None:
+    packs = _pack_data()
+    legacy = _legacy_packs(packs)
+    later_packs = [
+        pack
+        for pack in packs.values()
+        if pack.get("rows")
+        and pack["rows"]
+        and all("source_refs" in row for row in pack["rows"])
+    ]
+    sidecar = json.loads(SIDECAR_PATH.read_text(encoding="utf-8"))
+    fc87_rows, sf04_rows = _source_rows()
+
+    expected = {
+        (name, _identity(row))
+        for name, pack in legacy.items()
+        for row in pack["rows"]
+    }
+    transcription_matches = set()
+    conversion_metadata = set()
+    later_matches = set()
+
+    for name, pack in legacy.items():
+        entries = {
+            _identity(entry): entry for entry in sidecar["packs"][name]
+        }
+        for row in pack["rows"]:
+            key = (name, _identity(row))
+            entry = entries[_identity(row)]
+            source_row = _source_row_for_pack_row(row["row"], fc87_rows, sf04_rows)
+            source_id = "SF04" if isinstance(source_row["row"], int) else "FC87"
+
+            _assert_pack_reaction_matches_source(row, source_row)
+            if _matches_source_coefficients(row, source_row):
+                assert source_id in entry["source_refs"], (name, _identity(row))
+                transcription_matches.add(key)
+            else:
+                transforms = _recorded_transforms(row)
+                if transforms:
+                    assert source_id in entry["source_refs"], (name, _identity(row))
+                    assert source_id in row.get("source", ""), (name, _identity(row))
+                    for transform in transforms:
+                        _assert_transform_reason(row, transform)
+                        if transform == "k_translation":
+                            metadata = row["k_translation"]
+                            assert source_id == "FC87"
+                            assert "FC87 Table 1" in metadata["basis"]
+                            assert "JANAF K-012 K2O(l)" in metadata["new_reference"]
+                    conversion_metadata.add(key)
+
+            if _later_rows_with_same_signature(row, later_packs):
+                later_matches.add(key)
+
+    covered = transcription_matches | conversion_metadata | later_matches
+    assert covered == expected, sorted(expected - covered)
+
+
 def test_unchanged_rows_match_later_pack_source_refs() -> None:
     packs = _pack_data()
     legacy = _legacy_packs(packs)
@@ -114,12 +191,7 @@ def test_unchanged_rows_match_later_pack_source_refs() -> None:
             _identity(entry): entry for entry in sidecar["packs"][name]
         }
         for row in pack["rows"]:
-            matching_rows = [
-                later_row
-                for later_pack in later_packs
-                for later_row in later_pack["rows"]
-                if _row_signature(later_row) == _row_signature(row)
-            ]
+            matching_rows = _later_rows_with_same_signature(row, later_packs)
             for later_row in matching_rows:
                 assert entries[_identity(row)]["source_refs"] == later_row[
                     "source_refs"
