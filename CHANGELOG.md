@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added row-level source references for legacy melt packs in a sidecar,
+  preserving the published pack bytes.
+
 - Added calculation receipts with caller inputs, data digests, code and dependency versions, and solver settings to calculation results and CLI JSON.
 
 - Added checked full transcriptions of the FC87 and SF04 melt coefficient

@@ -1,0 +1,1938 @@
+{
+  "schema": "melt_source_refs_sidecar.v1",
+  "sources": {
+    "DarkenGurry1946": {
+      "citation": "Darken & Gurry (1946), Tables IIIA, IIIB, VI",
+      "table": "Tables IIIA, IIIB, VI",
+      "doi": "10.1021/ja01209a030",
+      "url": "https://doi.org/10.1021/ja01209a030"
+    },
+    "FC87": {
+      "citation": "Fegley B., Cameron A.G.W., 'A vaporization model for iron/silicate fractionation in the Mercury protoplanet', Earth Planet. Sci. Lett. 82, 207-222 (1987). DOI 10.1016/0012-821X(87)90196-8",
+      "table": "Table 3, printed page 211 (fits); Appendix 1, printed pages 218-220 (per-reaction derivations)",
+      "url": "https://solarsystem.wustl.edu/wp-content/uploads/reprints/1987/No27%20Fegley%26Cameron%201987%20EPSL.pdf",
+      "md5": "fc45dd8c1f6bf4a749200153a1240025",
+      "demonstrated_T_domain_K": [
+        2500,
+        3500
+      ],
+      "domain_evidence": "Abstract + body: vaporization computed at 2500-3500 K; nonideal magma runs at 2500, 3000, 3500 K",
+      "doi": "10.1016/0012-821X(87)90196-8"
+    },
+    "Masson1965": {
+      "citation": "Masson (1965), Eq. 17",
+      "table": "Equation 17",
+      "doi": "10.1098/rspa.1965.0176",
+      "url": "https://doi.org/10.1098/rspa.1965.0176"
+    },
+    "SF04": {
+      "citation": "Schaefer L., Fegley B., 'A thermodynamic model of high temperature lava vaporization on Io', Icarus 169, 216-241 (2004). DOI 10.1016/j.icarus.2003.08.023",
+      "table": "Table 2, printed page 218 ('Revised thermodynamic data (log10 K = A + B/T)'; all four melt rows cited there to Hastie and Bonnell (1985))",
+      "url": "https://solarsystem.wustl.edu/wp-content/uploads/reprints/2004/No.%20108%20Schaefer%20%26%20Fegley%202004.pdf",
+      "md5": "bc30c3970b94c5b6a47b0e00b01c4273",
+      "exercised_T_domain_K": [
+        1700,
+        3000
+      ],
+      "domain_evidence": "Section 2.4: 'We computed fractional vaporization with the MAGMA code over a wide range of temperatures (1700-3000 K)'; abstract: equilibrium vapor calculated 1700-2400 K for 109 lavas",
+      "doi": "10.1016/j.icarus.2003.08.023"
+    },
+    "Shornikov2017": {
+      "citation": "Shornikov S. I., “Thermodynamic properties of spinel MgAl2O4: A mass spectrometric study,” Russian Journal of Physical Chemistry A 91(2), 287–294 (2017). DOI 10.1134/S0036024417020303.",
+      "table": "Table 2, p. 290; Knudsen ΔfusH = 55.81 ± 4.62 kJ/mol compound and Tfus = 2420 ± 25 K.",
+      "url": "https://doi.org/10.1134/S0036024417020303",
+      "doi": "10.1134/S0036024417020303"
+    }
+  },
+  "packs": {
+    "imcc-sf04-d066-ext-v1.json": [
+      {
+        "row": 1,
+        "complex": "Mg2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 2,
+        "complex": "MgSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 3,
+        "complex": "MgAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 4,
+        "complex": "MgTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 5,
+        "complex": "MgTi2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 6,
+        "complex": "Mg2TiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 7,
+        "complex": "Al6Si2O13",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 8,
+        "complex": "CaAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 9,
+        "complex": "CaAl4O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 10,
+        "complex": "Ca12Al14O33",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 11,
+        "complex": "CaSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 12,
+        "complex": "CaAl2Si2O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 13,
+        "complex": "CaMgSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 14,
+        "complex": "Ca2MgSi2O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 15,
+        "complex": "Ca2Al2SiO7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 16,
+        "complex": "CaTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 17,
+        "complex": "Ca2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 18,
+        "complex": "CaTiSiO5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 19,
+        "complex": "FeTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 20,
+        "complex": "Fe2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 21,
+        "complex": "FeAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 22,
+        "complex": "CaAl12O19",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 23,
+        "complex": "Mg2Al4Si5O18",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 24,
+        "complex": "Na2SiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 25,
+        "complex": "Na2Si2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 26,
+        "complex": "NaAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 27,
+        "complex": "NaAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 28,
+        "complex": "NaAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 29,
+        "complex": "Na2TiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 30,
+        "complex": "NaAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 31,
+        "complex": "K2SiO3",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 32,
+        "complex": "K2Si2O5",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 33,
+        "complex": "KAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 34,
+        "complex": "KAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 35,
+        "complex": "KAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 36,
+        "complex": "KAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 37,
+        "complex": "K2Si4O9",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 38,
+        "complex": "KCaAlSi2O7",
+        "source_refs": [
+          "SF04"
+        ]
+      }
+    ],
+    "imcc-sf04-d066-feo-liquid-candidate.json": [
+      {
+        "row": 1,
+        "complex": "Mg2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 2,
+        "complex": "MgSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 3,
+        "complex": "MgAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 4,
+        "complex": "MgTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 5,
+        "complex": "MgTi2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 6,
+        "complex": "Mg2TiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 7,
+        "complex": "Al6Si2O13",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 8,
+        "complex": "CaAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 9,
+        "complex": "CaAl4O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 10,
+        "complex": "Ca12Al14O33",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 11,
+        "complex": "CaSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 12,
+        "complex": "CaAl2Si2O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 13,
+        "complex": "CaMgSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 14,
+        "complex": "Ca2MgSi2O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 15,
+        "complex": "Ca2Al2SiO7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 16,
+        "complex": "CaTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 17,
+        "complex": "Ca2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 18,
+        "complex": "CaTiSiO5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 19,
+        "complex": "FeTiO3",
+        "source_refs": [
+          "FC87",
+          "DarkenGurry1946",
+          "Masson1965"
+        ]
+      },
+      {
+        "row": 20,
+        "complex": "Fe2SiO4",
+        "source_refs": [
+          "FC87",
+          "DarkenGurry1946",
+          "Masson1965"
+        ]
+      },
+      {
+        "row": 21,
+        "complex": "FeAl2O4",
+        "source_refs": [
+          "FC87",
+          "DarkenGurry1946",
+          "Masson1965"
+        ]
+      },
+      {
+        "row": 22,
+        "complex": "CaAl12O19",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 23,
+        "complex": "Mg2Al4Si5O18",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 24,
+        "complex": "Na2SiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 25,
+        "complex": "Na2Si2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 26,
+        "complex": "NaAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 27,
+        "complex": "NaAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 28,
+        "complex": "NaAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 29,
+        "complex": "Na2TiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 30,
+        "complex": "NaAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 31,
+        "complex": "K2SiO3",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 32,
+        "complex": "K2Si2O5",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 33,
+        "complex": "KAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 34,
+        "complex": "KAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 35,
+        "complex": "KAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 36,
+        "complex": "KAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 37,
+        "complex": "K2Si4O9",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 38,
+        "complex": "KCaAlSi2O7",
+        "source_refs": [
+          "SF04"
+        ]
+      }
+    ],
+    "imcc-sf04-d066-v1-kcaalsi2o7.json": [
+      {
+        "row": 1,
+        "complex": "Mg2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 2,
+        "complex": "MgSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 3,
+        "complex": "MgAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 4,
+        "complex": "MgTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 5,
+        "complex": "MgTi2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 6,
+        "complex": "Mg2TiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 7,
+        "complex": "Al6Si2O13",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 8,
+        "complex": "CaAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 9,
+        "complex": "CaAl4O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 10,
+        "complex": "Ca12Al14O33",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 11,
+        "complex": "CaSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 12,
+        "complex": "CaAl2Si2O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 13,
+        "complex": "CaMgSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 14,
+        "complex": "Ca2MgSi2O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 15,
+        "complex": "Ca2Al2SiO7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 16,
+        "complex": "CaTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 17,
+        "complex": "Ca2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 18,
+        "complex": "CaTiSiO5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 19,
+        "complex": "FeTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 20,
+        "complex": "Fe2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 21,
+        "complex": "FeAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 22,
+        "complex": "CaAl12O19",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 23,
+        "complex": "Mg2Al4Si5O18",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 24,
+        "complex": "Na2SiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 25,
+        "complex": "Na2Si2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 26,
+        "complex": "NaAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 27,
+        "complex": "NaAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 28,
+        "complex": "NaAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 29,
+        "complex": "Na2TiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 30,
+        "complex": "NaAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 31,
+        "complex": "K2SiO3",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 32,
+        "complex": "K2Si2O5",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 33,
+        "complex": "KAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 34,
+        "complex": "KAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 35,
+        "complex": "KAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 36,
+        "complex": "KAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 37,
+        "complex": "K2Si4O9",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 38,
+        "complex": "KCaAlSi2O7",
+        "source_refs": [
+          "SF04"
+        ]
+      }
+    ],
+    "imcc-sf04-d066-v1.json": [
+      {
+        "row": 1,
+        "complex": "Mg2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 2,
+        "complex": "MgSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 3,
+        "complex": "MgAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 4,
+        "complex": "MgTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 5,
+        "complex": "MgTi2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 6,
+        "complex": "Mg2TiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 7,
+        "complex": "Al6Si2O13",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 8,
+        "complex": "CaAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 9,
+        "complex": "CaAl4O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 10,
+        "complex": "Ca12Al14O33",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 11,
+        "complex": "CaSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 12,
+        "complex": "CaAl2Si2O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 13,
+        "complex": "CaMgSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 14,
+        "complex": "Ca2MgSi2O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 15,
+        "complex": "Ca2Al2SiO7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 16,
+        "complex": "CaTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 17,
+        "complex": "Ca2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 18,
+        "complex": "CaTiSiO5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 19,
+        "complex": "FeTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 20,
+        "complex": "Fe2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 21,
+        "complex": "FeAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 22,
+        "complex": "CaAl12O19",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 23,
+        "complex": "Mg2Al4Si5O18",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 24,
+        "complex": "Na2SiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 25,
+        "complex": "Na2Si2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 26,
+        "complex": "NaAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 27,
+        "complex": "NaAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 28,
+        "complex": "NaAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 29,
+        "complex": "Na2TiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 30,
+        "complex": "NaAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 31,
+        "complex": "K2SiO3",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 32,
+        "complex": "K2Si2O5",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 33,
+        "complex": "KAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 34,
+        "complex": "KAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 35,
+        "complex": "KAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 36,
+        "complex": "KAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 37,
+        "complex": "K2Si4O9",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 38,
+        "complex": "KCaAlSi2O7",
+        "source_refs": [
+          "SF04"
+        ]
+      }
+    ],
+    "imcc-sf04-d066-v2.json": [
+      {
+        "row": 1,
+        "complex": "Mg2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 2,
+        "complex": "MgSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 3,
+        "complex": "MgAl2O4",
+        "source_refs": [
+          "FC87",
+          "Shornikov2017"
+        ]
+      },
+      {
+        "row": 4,
+        "complex": "MgTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 5,
+        "complex": "MgTi2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 6,
+        "complex": "Mg2TiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 7,
+        "complex": "Al6Si2O13",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 8,
+        "complex": "CaAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 9,
+        "complex": "CaAl4O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 10,
+        "complex": "Ca12Al14O33",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 11,
+        "complex": "CaSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 12,
+        "complex": "CaAl2Si2O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 13,
+        "complex": "CaMgSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 14,
+        "complex": "Ca2MgSi2O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 15,
+        "complex": "Ca2Al2SiO7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 16,
+        "complex": "CaTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 17,
+        "complex": "Ca2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 18,
+        "complex": "CaTiSiO5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 19,
+        "complex": "FeTiO3",
+        "source_refs": [
+          "FC87",
+          "DarkenGurry1946",
+          "Masson1965"
+        ]
+      },
+      {
+        "row": 20,
+        "complex": "Fe2SiO4",
+        "source_refs": [
+          "FC87",
+          "DarkenGurry1946",
+          "Masson1965"
+        ]
+      },
+      {
+        "row": 21,
+        "complex": "FeAl2O4",
+        "source_refs": [
+          "FC87",
+          "DarkenGurry1946",
+          "Masson1965"
+        ]
+      },
+      {
+        "row": 22,
+        "complex": "CaAl12O19",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 23,
+        "complex": "Mg2Al4Si5O18",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 24,
+        "complex": "Na2SiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 25,
+        "complex": "Na2Si2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 26,
+        "complex": "NaAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 27,
+        "complex": "NaAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 28,
+        "complex": "NaAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 29,
+        "complex": "Na2TiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 30,
+        "complex": "NaAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 31,
+        "complex": "K2SiO3",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 32,
+        "complex": "K2Si2O5",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 33,
+        "complex": "KAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 34,
+        "complex": "KAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 35,
+        "complex": "KAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 36,
+        "complex": "KAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 37,
+        "complex": "K2Si4O9",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 38,
+        "complex": "KCaAlSi2O7",
+        "source_refs": [
+          "SF04"
+        ]
+      }
+    ],
+    "imcc-sf04-ext-v4.json": [
+      {
+        "row": 1,
+        "complex": "Mg2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 2,
+        "complex": "MgSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 3,
+        "complex": "MgAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 4,
+        "complex": "MgTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 5,
+        "complex": "MgTi2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 6,
+        "complex": "Mg2TiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 7,
+        "complex": "Al6Si2O13",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 8,
+        "complex": "CaAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 9,
+        "complex": "CaAl4O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 10,
+        "complex": "Ca12Al14O33",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 11,
+        "complex": "CaSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 12,
+        "complex": "CaAl2Si2O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 13,
+        "complex": "CaMgSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 14,
+        "complex": "Ca2MgSi2O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 15,
+        "complex": "Ca2Al2SiO7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 16,
+        "complex": "CaTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 17,
+        "complex": "Ca2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 18,
+        "complex": "CaTiSiO5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 19,
+        "complex": "FeTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 20,
+        "complex": "Fe2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 21,
+        "complex": "FeAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 22,
+        "complex": "CaAl12O19",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 23,
+        "complex": "Mg2Al4Si5O18",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 24,
+        "complex": "Na2SiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 25,
+        "complex": "Na2Si2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 26,
+        "complex": "NaAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 27,
+        "complex": "NaAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 28,
+        "complex": "NaAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 29,
+        "complex": "Na2TiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 30,
+        "complex": "NaAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 31,
+        "complex": "K2SiO3",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 32,
+        "complex": "K2Si2O5",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 33,
+        "complex": "KAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 34,
+        "complex": "KAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 35,
+        "complex": "KAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 36,
+        "complex": "KAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 37,
+        "complex": "K2Si4O9",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 38,
+        "complex": "KCaAlSi2O7",
+        "source_refs": [
+          "SF04"
+        ]
+      }
+    ],
+    "imcc-sf04-v1.0.2.json": [
+      {
+        "row": 1,
+        "complex": "Mg2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 2,
+        "complex": "MgSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 3,
+        "complex": "MgAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 4,
+        "complex": "MgTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 5,
+        "complex": "MgTi2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 6,
+        "complex": "Mg2TiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 7,
+        "complex": "Al6Si2O13",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 8,
+        "complex": "CaAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 9,
+        "complex": "CaAl4O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 10,
+        "complex": "Ca12Al14O33",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 11,
+        "complex": "CaSiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 12,
+        "complex": "CaAl2Si2O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 13,
+        "complex": "CaMgSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 14,
+        "complex": "Ca2MgSi2O7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 15,
+        "complex": "Ca2Al2SiO7",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 16,
+        "complex": "CaTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 17,
+        "complex": "Ca2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 18,
+        "complex": "CaTiSiO5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 19,
+        "complex": "FeTiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 20,
+        "complex": "Fe2SiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 21,
+        "complex": "FeAl2O4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 22,
+        "complex": "CaAl12O19",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 23,
+        "complex": "Mg2Al4Si5O18",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 24,
+        "complex": "Na2SiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 25,
+        "complex": "Na2Si2O5",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 26,
+        "complex": "NaAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 27,
+        "complex": "NaAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 28,
+        "complex": "NaAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 29,
+        "complex": "Na2TiO3",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 30,
+        "complex": "NaAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 31,
+        "complex": "K2SiO3",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 32,
+        "complex": "K2Si2O5",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 33,
+        "complex": "KAlSiO4",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 34,
+        "complex": "KAlSi3O8",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 35,
+        "complex": "KAlO2",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 36,
+        "complex": "KAlSi2O6",
+        "source_refs": [
+          "FC87"
+        ]
+      },
+      {
+        "row": 37,
+        "complex": "K2Si4O9",
+        "source_refs": [
+          "SF04"
+        ]
+      },
+      {
+        "row": 38,
+        "complex": "KCaAlSi2O7",
+        "source_refs": [
+          "SF04"
+        ]
+      }
+    ]
+  }
+}

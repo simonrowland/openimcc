@@ -106,6 +106,10 @@ top-level `sources` object. The loader preserves and hashes these references
 as pack metadata but does not interpret them when constructing the numerical
 kernel.
 
+For pre-v3 packs, `src/openimcc/data/source-refs-sidecar.json` maps each
+pack filename and row number/species pair to the same `source_refs` vocabulary
+without changing the pack files.
+
 ### excess_gibbs structure
 
 This section is optional and is accepted only when `model_id` is
