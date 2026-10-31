@@ -4922,6 +4922,9 @@ def _condensate_source_table_id(
     itself. Any other Ref on a mapped species is refused, so a caller-supplied
     row cannot inherit the packaged table id.
     """
+    # The opt-in high-cristobalite table carries its JANAF phase reference here.
+    if species == "SiO2" and phase == "cr" and source_ref == "O-035":
+        return source_ref
     mapped = _OXIDE_SOURCE_TABLE_IDS.get(species)
     if source_ref == "JANAF" and species == "FeO":
         return "Fe-019"

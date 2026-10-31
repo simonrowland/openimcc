@@ -2546,6 +2546,28 @@ candidate_condensate_files:
       Shared liquid_from_solid construction and endpoint-constrained condensate
       fits; source Cp measured from 900 to 1800 K and extrapolated beyond 1800 K.
     load_with: load_gas_datapack(gas_path=..., oxide_path=...)
+  - file: condensate-sio2-janaf-cr-candidate.csv
+    status: opt_in_janaf_crystal_reference
+    sha256: 1e4e3a8ec33be1e9951dcc91fac7c2b878da08004af08a061aa33f3144718638
+    source: >-
+      Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th edition,
+      Table O-035, silicon oxide high cristobalite, DOI 10.18434/T42S31.
+      The vendored source is data-src/janaf/O-035.yaml; upstream source SHA-256
+      b3b964ea6baf5ad47b27a212ef9192762c51fb2acf26f1cec521658fb41fb742.
+    construction: >-
+      Copies condensate.csv and replaces only the SiO2(cr) thermochemical row
+      with an endpoint-constrained fit of the complete O-035 thermal/Gibbs rows
+      from 1000–1900 K. The runtime range is 1000–1996 K; G and S at 1996 K are
+      constrained to the O-035 high-cristobalite branch used by the existing
+      liquid_from_solid SiO2(l) construction (Richet, Bottinga & Tequi fusion
+      enthalpy 9.581 kJ/mol and measured liquid Cp 81.37 J mol^-1 K^-1). Maximum
+      fitted source-node G residual is 3.389 J/mol. The two TSIV supercooled
+      row labels use their base table IDs, with endpoints retained in source_label;
+      their coefficients and interval metadata are unchanged. The default table
+      is unchanged.
+    source_table_id: O-035
+    source_file_sha256: 1f9247ec2f796b39c1cae6012097f3d06c81e450b5d83f84f870b580ac751790
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)
   - file: condensate-hight-candidate.csv
     status: opt_in_rough_high_temperature_extension
     sha256: aca172c1d435e520e8a16f5a58ce5ae67c191c1fafc34bf98c080d447efb973d
