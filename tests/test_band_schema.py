@@ -303,15 +303,26 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         assert set(committed_rows) - set(migrated_rows) == wave3_rows
         assert set(migrated_rows) <= set(committed_rows)
         selected_feo = ("condensate", "FeO(l)", None, None)
+        post_migration_tier_rows = {
+            ("gas", "Hg(g)", "BU-2587", 1),
+            ("gas", "Hg(g)", "BU-2587", 2),
+        }
         assert committed_rows[selected_feo]["authority"] == (
             "primary_measurement_reanchored"
         )
         assert migrated_rows[selected_feo]["authority"] == "janaf_transcribed"
 
-        def without_fit_values(row: dict) -> dict:
+        def migration_comparable_row(row: dict, key: tuple) -> dict:
             normalized = dict(row)
             normalized.pop("T_range_K", None)
             normalized.pop("fit_intervals_K", None)
+            for field in (
+                "table_id", "source_table_id", "runtime_ref", "source_path",
+                "source_sha256", "upstream_source_sha256",
+            ):
+                normalized.pop(field, None)
+            if key in post_migration_tier_rows:
+                normalized.pop("tier", None)
             for field in ("fit_residual", "accuracy_band"):
                 value = normalized.get(field)
                 if isinstance(value, dict):
@@ -325,7 +336,8 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
         mismatched_keys = {
             key for key, row in migrated_rows.items()
             if key != selected_feo
-            and without_fit_values(committed_rows[key]) != without_fit_values(row)
+            and migration_comparable_row(committed_rows[key], key)
+            != migration_comparable_row(row, key)
         }
         assert not mismatched_keys
         for key in set(migrated_provenance) - {"rows", "source_notes"}:

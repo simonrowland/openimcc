@@ -1206,14 +1206,27 @@ def _c4_rows_cover_domain(
     domain_start = 1200
     domain_end = 3000
     provenance_rows = yaml.safe_load(GAS_PROVENANCE.read_text(encoding="utf-8"))["rows"]
-    by_key = {
-        (
+    by_key: dict[tuple[str, str, tuple[float, ...]], list[dict]] = {}
+    for entry in provenance_rows:
+        key = (
             entry["table"],
             entry["species_name"],
-            tuple(entry.get("T_range_K", ())),
-        ): entry
-        for entry in provenance_rows
-    }
+            tuple(float(value) for value in entry.get("T_range_K", ())),
+        )
+        by_key.setdefault(key, []).append(entry)
+
+    def source_for_runtime_row(table: str, species: str, row) -> dict | None:
+        key = (
+            table,
+            species,
+            (float(row["T_min"]), float(row["T_max"])),
+        )
+        runtime_ref = str(row["Ref"])
+        matches = [
+            entry for entry in by_key.get(key, ())
+            if entry.get("runtime_ref") in (None, runtime_ref)
+        ]
+        return matches[0] if len(matches) == 1 else None
     gas_rows = pack.gas_df[
         (pack.gas_df["cation"] == element)
         & ~pack.gas_df.index.str.endswith(("+(g)", "-(g)"))
@@ -1230,13 +1243,7 @@ def _c4_rows_cover_domain(
                 continue
             if row_start > coverage_end:
                 return False
-            source = by_key.get(
-                (
-                    "gas",
-                    species_name,
-                    (int(row["T_min"]), int(row["T_max"])),
-                )
-            )
+            source = source_for_runtime_row("gas", species_name, row)
             if source is None:
                 return False
             if source["authority"] == "janaf_fitted":
@@ -1277,12 +1284,8 @@ def _c4_rows_cover_domain(
             return any(
                 int(row["T_min"]) <= domain_start
                 and int(row["T_max"]) >= domain_end
-                and (source := by_key.get(
-                    (
-                        "condensate",
-                        "C(cr)",
-                        (int(row["T_min"]), int(row["T_max"])),
-                    )
+                and (source := source_for_runtime_row(
+                    "condensate", "C(cr)", row
                 )) is not None
                 and source["table_id"] == "C-002"
                 and _one_bar_janaf_source(source["table_id"])
@@ -1303,12 +1306,8 @@ def _c4_rows_cover_domain(
                     row_end = min(domain_end, int(parent_row["T_max"]))
                     if row_start > coverage_end:
                         return False
-                    source = by_key.get(
-                        (
-                            "condensate",
-                            lookup,
-                            (int(parent_row["T_min"]), int(parent_row["T_max"])),
-                        )
+                    source = source_for_runtime_row(
+                        "condensate", lookup, parent_row
                     )
                     if (
                         source is None
@@ -1332,27 +1331,25 @@ def _c4_rows_cover_domain(
             continue
         if row_start > coverage_end:
             return False
-        source = by_key.get(
-            (
-                "condensate",
-                f"{parent}(l)",
-                (int(liquid["T_min"]), int(liquid["T_max"])),
-            )
+        source = source_for_runtime_row(
+            "condensate", f"{parent}(l)", liquid
         )
         if source is None:
             source = next(
                 (
                     candidate
-                    for (table, species, source_range), candidate in by_key.items()
+                    for (table, species, source_range), candidates in by_key.items()
+                    for candidate in candidates
                     if table == "condensate"
                     and species == f"{parent}(l)"
-                    and source_range[0] <= int(liquid["T_min"])
-                    and source_range[1] >= int(liquid["T_max"])
+                    and candidate.get("runtime_ref") in (None, str(liquid["Ref"]))
+                    and source_range[0] <= float(liquid["T_min"])
+                    and source_range[1] >= float(liquid["T_max"])
                     and (
                         candidate.get("method") == "fitted"
                         or any(
-                            fit_range[0] <= int(liquid["T_min"])
-                            and fit_range[1] >= int(liquid["T_max"])
+                            fit_range[0] <= float(liquid["T_min"])
+                            and fit_range[1] >= float(liquid["T_max"])
                             for fit_range in candidate.get("fit_intervals_K", [])
                         )
                     )
@@ -1441,6 +1438,23 @@ def _c4_rows_cover_domain(
                 source.get("method_class") != "estimated_systematic"
                 or source.get("method_rule") != "liquid_from_solid"
                 or source.get("source_table_id") != "K-012"
+            ):
+                return False
+        elif (
+            source["authority"] == "liquid_from_solid_estimate"
+            and source["method"] == "measured_liquid_cp_construction"
+        ):
+            if (
+                source.get("runtime_ref") != str(liquid["Ref"])
+                or source.get("table_id") != str(liquid["table_id"])
+                or source.get("source_table_id") is None
+                or source.get("source_path") is None
+                or source.get("source_sha256") is None
+                or source.get("source_data") is not False
+                or float(source.get("Cp_l_J_molK", 0.0)) <= 0.0
+                or source.get("fusion_temperature_K")
+                != float(liquid["fusion_temperature_K"])
+                or not source.get("source", {}).get("citation")
             ):
                 return False
         elif source["authority"] in {"published_fitted", "liquid_from_solid_estimate"}:
