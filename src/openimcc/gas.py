@@ -133,15 +133,15 @@ def _consume_trial_receipt_suppression() -> bool:
 
 
 _SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
-_HIGH_TEMPERATURE_CANDIDATE_TABLE_RE = re.compile(
-    r"^(?:gas-shomate|condensate)-hight-candidate-v(?P<version>[0-9]+)\.csv$"
-)
 _HIGH_TEMPERATURE_CANDIDATE_NOTICE_RE = re.compile(
     r"^(?P<source>.+-HT-CANDIDATE)\|tier=(?P<tier>[^;|]+);"
     r"dg=(?P<dg>[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?);"
     r"band=(?P<band>[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?);"
     r"limit=(?P<limit>[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?)"
     r"(?:;basis=(?P<basis>[^;|]+))?$"
+)
+_HIGH_TEMPERATURE_LEGACY_NOTICE_RE = re.compile(
+    r"^(?P<source>[A-Za-z0-9()._-]+)-HT-CANDIDATE$"
 )
 _LIQUID_FROM_SOLID_REF_RE = re.compile(
     r"^LFS\[(?P<source>[^;\]]+);Tf=(?P<temperature>[0-9]+(?:\.[0-9]+)?)\]$"
@@ -194,51 +194,75 @@ class _HighTemperatureCandidateNotice:
     basis: str | None
 
 
+@dataclass(frozen=True)
+class _HighTemperatureLegacyNotice:
+    source: str
+    kind: Literal["extension", "bridge", "constant_cp"]
+
+
+_HighTemperatureNotice = _HighTemperatureCandidateNotice | _HighTemperatureLegacyNotice
+
+
 def _parse_high_temperature_candidate_notice(
     table_name: str, table_path: Path, species: str, source_ref: str
-) -> _HighTemperatureCandidateNotice:
+) -> _HighTemperatureNotice:
     match = _HIGH_TEMPERATURE_CANDIDATE_NOTICE_RE.fullmatch(source_ref)
-    if match is None:
-        raise ImccGasValidityMetadataError(
-            f"{table_name} high-temperature candidate table {table_path.name} "
-            f"has malformed notice metadata for {species!r}"
-        )
-    tier = match.group("tier")
-    basis = match.group("basis")
-    if tier not in {"corroborated_calculation", "rough_extrapolated"} or (
-        basis not in {None, "unavailable", "internal", "paired_sources"}
-    ):
-        raise ImccGasValidityMetadataError(
-            f"{table_name} high-temperature candidate table {table_path.name} "
-            f"has malformed notice metadata for {species!r}"
-        )
-    dg = float(match.group("dg"))
-    band = float(match.group("band"))
-    limit = float(match.group("limit"))
-    if (
-        not all(math.isfinite(value) for value in (dg, band, limit))
-        or dg < 0.0
-        or band < 0.0
-        or limit < 3000.0
-    ):
-        raise ImccGasValidityMetadataError(
-            f"{table_name} high-temperature candidate table {table_path.name} "
-            f"has malformed notice metadata for {species!r}"
-        )
-    return _HighTemperatureCandidateNotice(tier, dg, band, limit, basis)
+    if match is not None:
+        tier = match.group("tier")
+        basis = match.group("basis")
+        if tier in {"corroborated_calculation", "rough_extrapolated"} and basis in {
+            None, "unavailable", "internal", "paired_sources"
+        }:
+            dg = float(match.group("dg"))
+            band = float(match.group("band"))
+            limit = float(match.group("limit"))
+            if (
+                all(math.isfinite(value) for value in (dg, band, limit))
+                and dg >= 0.0
+                and band >= 0.0
+                and limit >= 3000.0
+            ):
+                return _HighTemperatureCandidateNotice(tier, dg, band, limit, basis)
+
+    legacy_match = _HIGH_TEMPERATURE_LEGACY_NOTICE_RE.fullmatch(source_ref)
+    if legacy_match is not None:
+        source = legacy_match.group("source")
+        kind = "extension"
+        if source.endswith("-BRIDGE"):
+            source = source.removesuffix("-BRIDGE")
+            kind = "bridge"
+        source = source.removeprefix("CEA-")
+        if source == "FeO-constant-Cp":
+            kind = "constant_cp"
+        if source:
+            return _HighTemperatureLegacyNotice(source, kind)
+
+    raise ImccGasValidityMetadataError(
+        f"{table_name} high-temperature candidate table {table_path.name} "
+        f"has malformed notice metadata for {species!r}"
+    )
 
 
 def _high_temperature_candidate_notice_records(
     table: "pd.DataFrame", table_name: str, table_path: Path, *, phase: str
-) -> dict[tuple[str, str, float], _HighTemperatureCandidateNotice]:
-    match = _HIGH_TEMPERATURE_CANDIDATE_TABLE_RE.fullmatch(table_path.name)
-    if match is None or int(match.group("version")) < 2:
-        return {}
-
+) -> dict[tuple[str, str, float], _HighTemperatureNotice]:
+    # Candidate intervals continue the shipped source window at 3000 K. Track
+    # later segments for those species, while leaving standalone published rows
+    # above 3000 K outside the candidate continuation set.
+    source_window_species = {
+        str(species)
+        for species, row in table.iterrows()
+        if float(row["T_min"]) < 3000.0 and float(row["T_max"]) == 3000.0
+    }
+    candidate_species = source_window_species | {
+        str(species)
+        for species, row in table.iterrows()
+        if float(row["T_min"]) == 3000.0
+    }
     records = {}
     for species, row in table.iterrows():
         t_min = float(row["T_min"])
-        if t_min < 3000.0:
+        if t_min < 3000.0 or str(species) not in candidate_species:
             continue
         key = phase, str(species), t_min
         records[key] = _parse_high_temperature_candidate_notice(
@@ -1278,7 +1302,7 @@ class ImccGasDatapack:
     _gas_digest: str = field(init=False, repr=False, compare=False)
     _condensate_digest: str = field(init=False, repr=False, compare=False)
     _high_temperature_candidate_notices: Mapping[
-        tuple[str, str, float], _HighTemperatureCandidateNotice
+        tuple[str, str, float], _HighTemperatureNotice
     ] = field(init=False, repr=False, compare=False)
 
     def __init__(
@@ -1613,8 +1637,25 @@ def _outside_interval_flag(
 
 
 def _high_temperature_candidate_notice_flag(
-    notice: _HighTemperatureCandidateNotice, T: float
+    notice: _HighTemperatureNotice, T: float
 ) -> str:
+    if isinstance(notice, _HighTemperatureLegacyNotice):
+        if notice.kind == "bridge":
+            return (
+                "rough high-temperature extension above 3000 K: Cp continued "
+                f"from the reference row to its CEA bridge point, then from NASA CEA {notice.source}; "
+                "anchored at 3000 K; not validated"
+            )
+        if notice.kind == "constant_cp":
+            return (
+                "rough high-temperature extension above 3000 K: FeO(l) Cp held "
+                "constant from the current reference row; anchored at 3000 K; "
+                "not validated"
+            )
+        return (
+            "rough high-temperature extension above 3000 K: Cp shape from NASA "
+            f"CEA {notice.source} anchored at 3000 K; not validated"
+        )
     tier = notice.tier
     dg = notice.dg_kj_mol
     band = notice.band_dex
@@ -1658,7 +1699,7 @@ def _source_model_flag(
     *,
     phase: str,
     candidate_notices: Mapping[
-        tuple[str, str, float], _HighTemperatureCandidateNotice
+        tuple[str, str, float], _HighTemperatureNotice
     ] | None = None,
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
@@ -1672,46 +1713,6 @@ def _source_model_flag(
         )
         if notice is not None:
             return _high_temperature_candidate_notice_flag(notice, T)
-    if T > 3000.0 and "HT-CANDIDATE" in source_ref:
-        band_fields = re.search(
-            r"\|tier=(?P<tier>[^;|]+);dg=(?P<dg>[0-9.eE+-]+);band=(?P<band>[0-9.eE+-]+);limit=(?P<limit>[0-9.eE+-]+)",
-            source_ref,
-        )
-        if band_fields:
-            return _high_temperature_candidate_notice_flag(
-                _HighTemperatureCandidateNotice(
-                    band_fields.group("tier"),
-                    float(band_fields.group("dg")),
-                    float(band_fields.group("band")),
-                    float(band_fields.group("limit")),
-                    (
-                        "unavailable"
-                        if ";basis=unavailable" in source_ref
-                        else "internal"
-                        if ";basis=internal" in source_ref
-                        else None
-                    ),
-                ),
-                T,
-            )
-        source = source_ref.removesuffix("-HT-CANDIDATE").removeprefix("CEA-")
-        if "-BRIDGE" in source:
-            source = source.removesuffix("-BRIDGE")
-            return (
-                "rough high-temperature extension above 3000 K: Cp continued "
-                f"from the reference row to its CEA bridge point, then from NASA CEA {source}; "
-                "anchored at 3000 K; not validated"
-            )
-        if source == "FeO-constant-Cp":
-            return (
-                "rough high-temperature extension above 3000 K: FeO(l) Cp held "
-                "constant from the current reference row; anchored at 3000 K; "
-                "not validated"
-            )
-        return (
-            "rough high-temperature extension above 3000 K: Cp shape from NASA "
-            f"CEA {source} anchored at 3000 K; not validated"
-        )
     validity = _source_validity_for_row(row_name, row, phase=phase)
     if row_name == "FeO(l)" and phase == "l":
         fit_range, fit_row = _selected_redox_feo_fit()

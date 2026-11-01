@@ -245,7 +245,13 @@ def test_v2_candidate_flags_show_per_species_tier_and_band() -> None:
         for temperature in (3500.0, 4500.0, 5500.0):
             row = frame.loc[species].sort_values("T_min")
             row = row.loc[row["T_min"] <= temperature].iloc[-1]
-            flag = _source_model_flag(species, temperature, row, phase=phase)
+            flag = _source_model_flag(
+                species,
+                temperature,
+                row,
+                phase=phase,
+                candidate_notices=candidate._high_temperature_candidate_notices,
+            )
             assert flag is not None
             assert all(part in flag for part in parts), (species, temperature, flag)
 
@@ -268,6 +274,46 @@ def test_v2_candidate_reworded_ref_fails_closed_at_load(tmp_path: Path) -> None:
     with pytest.raises(gas_module.ImccGasValidityMetadataError) as refusal:
         load_gas_datapack(gas_path, OXIDE_CANDIDATE_V2)
     assert gas_path.name in str(refusal.value)
+    assert "SiO(g)" in str(refusal.value)
+
+
+def test_candidate_notice_validation_does_not_depend_on_filename() -> None:
+    candidate = load_gas_datapack(GAS_CANDIDATE_V2, OXIDE_CANDIDATE_V2)
+    gas_frame = candidate.gas_df.copy(deep=True)
+    oxide_frame = candidate.oxide_df.copy(deep=True)
+    gas_high = (gas_frame.index == "SiO(g)") & (gas_frame["T_min"] >= 3000.0)
+    oxygen_high = (gas_frame.index == "O2(g)") & (gas_frame["T_min"] >= 3000.0)
+    silica_high = (oxide_frame.index == "SiO2(l)") & (
+        oxide_frame["T_min"] >= 3000.0
+    )
+    gas_frame.loc[gas_high | oxygen_high, "Ref"] = "JANAF-O-012"
+    oxide_frame.loc[silica_high, "Ref"] = "JANAF-O-012"
+
+    with pytest.raises(gas_module.ImccGasValidityMetadataError) as refusal:
+        altered = gas_module.ImccGasDatapack(
+            gas_frame,
+            oxide_frame,
+            Path("merged-gas.csv"),
+            Path("merged-oxide.csv"),
+        )
+        evaluate_gas({"SiO2": 0.55}, 4500.0, 1.0e-10, altered)
+    assert "merged-gas.csv" in str(refusal.value)
+    assert "SiO(g)" in str(refusal.value)
+
+
+def test_v1_candidate_ref_rewording_fails_closed_at_load() -> None:
+    candidate = load_gas_datapack(GAS_CANDIDATE, OXIDE_CANDIDATE)
+    gas_frame = candidate.gas_df.copy(deep=True)
+    high_sio = (gas_frame.index == "SiO(g)") & (gas_frame["T_min"] >= 3000.0)
+    gas_frame.loc[high_sio, "Ref"] = "JANAF-O-012"
+
+    with pytest.raises(gas_module.ImccGasValidityMetadataError) as refusal:
+        gas_module.ImccGasDatapack(
+            gas_frame,
+            candidate.oxide_df,
+            Path("merged-gas.csv"),
+            Path("merged-oxide.csv"),
+        )
     assert "SiO(g)" in str(refusal.value)
 
 
@@ -342,7 +388,13 @@ def test_v2_rough_pair_rows_have_measured_tiers_and_independent_source_reasons()
         row = candidate.gas_df.loc[species].sort_values("T_min").iloc[-1]
         ref = str(row["Ref"])
         assert source in ref and f"tier={tier}" in ref, (species, ref)
-        flag = _source_model_flag(species, 3500.0, row, phase="g")
+        flag = _source_model_flag(
+            species,
+            3500.0,
+            row,
+            phase="g",
+            candidate_notices=candidate._high_temperature_candidate_notices,
+        )
         assert flag is not None
         if expected_dg is None:
             assert "no paired-source comparison is available" in flag, (species, flag)
