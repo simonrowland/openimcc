@@ -97,7 +97,26 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     recorded = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    by_name = {p["file"]: p for p in recorded.get("packs", [])}
+    recorded_packs = recorded.get("packs", [])
+    filenames = [pack["file"] for pack in recorded_packs]
+    duplicates = sorted(
+        name for name, count in Counter(filenames).items() if count > 1
+    )
+    if duplicates:
+        print(
+            "error: duplicate filename(s) in manifest: " + ", ".join(duplicates),
+            file=sys.stderr,
+        )
+        return 1
+    if len(recorded_packs) != len(current["packs"]):
+        print(
+            f"error: manifest has {len(recorded_packs)} pack record(s); "
+            f"found {len(current['packs'])} pack(s) on disk",
+            file=sys.stderr,
+        )
+        return 1
+
+    by_name = {p["file"]: p for p in recorded_packs}
     drift: list[str] = []
 
     for pack in current["packs"]:

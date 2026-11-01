@@ -407,9 +407,11 @@ def test_usable_rows_requires_exact_fit_interval_and_declared_gaps() -> None:
         ],
         "parse_ambiguities": [],
     }
-    with pytest.raises(ValueError, match="tail") as tail_error:
+    with pytest.raises(
+        ValueError, match="does not cover the required fit interval"
+    ) as tail_error:
         build_gas_tables._usable_rows(incomplete_tail, "tail")
-    assert "tail" in str(tail_error.value)
+    assert "to 2900.0 K" in str(tail_error.value)
 
     unaccounted_gap = {
         "values": [
@@ -419,9 +421,9 @@ def test_usable_rows_requires_exact_fit_interval_and_declared_gaps() -> None:
         ],
         "parse_ambiguities": [],
     }
-    with pytest.raises(ValueError, match="gap") as gap_error:
+    with pytest.raises(ValueError, match="has an unaccounted gap") as gap_error:
         build_gas_tables._usable_rows(unaccounted_gap, "gap")
-    assert "gap" in str(gap_error.value)
+    assert "2100.0 K to 2300.0 K" in str(gap_error.value)
 
     disclosed_gap = {
         **unaccounted_gap,

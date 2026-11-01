@@ -116,6 +116,8 @@ def _assert_row_provenance(rows: list[dict[str, str]], *, pressure: bool) -> Non
 
 def test_sf04_reference_files_and_hashes_are_provenanced() -> None:
     manifest = yaml.safe_load((REFERENCE_DIR / "PROVENANCE.yaml").read_text(encoding="utf-8"))
+    paths = [entry["path"] for entry in manifest["files"]]
+    assert len(paths) == len(set(paths))
     entries = {entry["path"]: entry for entry in manifest["files"]}
     assert set(entries) == EXPECTED_DATA_FILES
     assert {path.name for path in REFERENCE_DIR.iterdir() if path.is_file()} == EXPECTED_DATA_FILES
