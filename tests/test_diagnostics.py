@@ -336,24 +336,68 @@ def test_cleaned_feed_liquidus_regression_and_dropped_parent_notices():
     results = {name: liquidus_bracket(values, 1323.0, 2100.0)
                for name, values in feeds.items()}
     assert results["lunar_low_ti"].status is CrystalStatus.AVAILABLE
-    assert results["lunar_low_ti"].liquidus_K == pytest.approx(1334.686172857904, abs=1e-6)
+    assert results["lunar_low_ti"].liquidus_K == pytest.approx(1358.941607819844, abs=1e-6)
     assert results["lunar_low_ti"].controlling_phase == "anorthite"
     assert (results["mars_basalt"].status, results["mars_basalt"].liquidus_K,
             results["mars_basalt"].controlling_phase) == (
-                CrystalStatus.NO_SUPPORTED_CROSSING, None, None)
+                CrystalStatus.AVAILABLE, 1428.8525596426869, "forsterite")
     # Recomputed after the Fe/Ti nodes were rebuilt on the JANAF elemental
-    # reference chain; the supported feed statuses remain unchanged.
+    # reference chain; the CI feed remains supported.
     assert results["ci"].status is CrystalStatus.AVAILABLE
     assert results["ci"].liquidus_K == pytest.approx(1948.2335138534745, abs=1e-6)
     assert results["ci"].controlling_phase == "forsterite"
     dropped = results["lunar_low_ti"].notices[0]
     assert dropped.code == "crystal_si_dropped_parents"
     assert dropped.dropped_oxides_wt_percent == pytest.approx(
-        {"Cr2O3": 0.36036036, "MnO": 0.21021021})
-    assert results["mars_basalt"].notices == ()
+        {"Cr2O3": 0.36036036, "MnO": 0.21021021, "P2O5": 0.10010010})
+    assert results["mars_basalt"].notices[0].dropped_oxides_wt_percent == {
+        "P2O5": 0.88,
+    }
     ci_dropped = results["ci"].notices[0]
     assert ci_dropped.dropped_oxides_wt_percent == pytest.approx({"NiO": 2.31953609})
     assert ci_dropped.pack_used.startswith("IMCC-SF04-D066@")
+
+
+def test_p2o5_crystal_results_require_an_explicit_extension_pack():
+    from openimcc import CrystalStatus, liquidus_bracket, saturation_indices
+    from openimcc.model import load_datapack
+
+    basalt = {
+        "SiO2": 51.85068, "MgO": 4.78527, "FeO": 13.77307,
+        "CaO": 9.02862, "Al2O3": 14.80572, "TiO2": 1.73824,
+        "Na2O": 3.23108, "K2O": 0.78732, "P2O5": 0.3,
+    }
+    extension = load_datapack(
+        "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json"
+    )
+
+    default_liquidus = liquidus_bracket(basalt, 1323.0, 2100.0)
+    assert default_liquidus.status is CrystalStatus.AVAILABLE
+    assert default_liquidus.controlling_phase == "anorthite"
+    assert default_liquidus.liquidus_K == pytest.approx(1324.2071784097147)
+    # The dropped-parent notice normalizes 0.3 wt% against the full 100.3 wt% feed.
+    assert default_liquidus.notices[0].dropped_oxides_wt_percent == pytest.approx(
+        {"P2O5": 100.0 * 0.3 / 100.3}
+    )
+
+    default_saturation = saturation_indices(basalt, 1800.0)
+    default_anorthite = next(
+        row for row in default_saturation if row.phase == "anorthite"
+    )
+    assert default_anorthite.SI == pytest.approx(-0.919217393887485)
+    assert default_anorthite.notices[0].dropped_oxides_wt_percent == pytest.approx(
+        {"P2O5": 100.0 * 0.3 / 100.3}
+    )
+
+    explicit_liquidus = liquidus_bracket(basalt, 1323.0, 2100.0, extension)
+    assert explicit_liquidus.status is CrystalStatus.NO_SUPPORTED_CROSSING
+    assert explicit_liquidus.notices == ()
+    explicit_saturation = saturation_indices(basalt, 1800.0, extension)
+    explicit_anorthite = next(
+        row for row in explicit_saturation if row.phase == "anorthite"
+    )
+    assert explicit_anorthite.SI == pytest.approx(-1.2404346626561722)
+    assert explicit_anorthite.notices == ()
 
 
 def test_fe_ti_fusion_nodes_use_the_janaf_elemental_reference_chain(packaged_gas_pack):

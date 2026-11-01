@@ -557,20 +557,13 @@ def _crystal_thermo_context(condensate: str | Path | None):
 
 
 def _prepare_crystal_composition(composition, pack):
-    auto_pack = pack is None
     if pack is None:
         pack = load_datapack()
     values = {str(name): float(value) for name, value in composition.items()}
     if any(not math.isfinite(value) or value < 0.0 for value in values.values()):
         raise ValueError("composition values must be finite and non-negative")
     use_sp_extension = False
-    if auto_pack and values.get("P2O5", 0.0) > 0.0:
-        extension_path = resources.files("openimcc").joinpath(
-            "data/packs/imcc-sf04-d066-ext-v1.json"
-        )
-        pack = load_datapack(str(extension_path))
-        use_sp_extension = True
-    elif "P2O5" in pack.extension_parents and values.get("P2O5", 0.0) > 0.0:
+    if "P2O5" in pack.extension_parents and values.get("P2O5", 0.0) > 0.0:
         use_sp_extension = True
 
     supported = set(pack.parent_oxides)
