@@ -1082,19 +1082,21 @@ def _change_dataframe_cell(frame: pd.DataFrame, column: str) -> pd.DataFrame:
 
 def test_digest_is_sensitive_to_every_column_returned_by_the_loader() -> None:
     pack = load_gas_datapack()
-    for frame_name, digest_name in (
-        ("gas_df", "gas_table_digest"),
-        ("oxide_df", "condensate_table_digest"),
+    for frame_name, digest_name, table_name in (
+        ("gas_df", "gas_table_digest", "gas"),
+        ("oxide_df", "condensate_table_digest", "condensate"),
     ):
         frame = getattr(pack, frame_name)
         columns_read = set(frame.columns) | {frame.index.name}
         assert frame.index.name == "species_name"
         original_digest = getattr(pack, digest_name)
+        assert _gas_table_digest(table_name, frame) == original_digest
         covered = set()
         for column in columns_read:
+            # Digest the changed table directly: a single-cell edit can make a
+            # row's validity facts incoherent, which pack construction refuses.
             changed_frame = _change_dataframe_cell(frame, column)
-            changed_pack = replace(pack, **{frame_name: changed_frame})
-            assert getattr(changed_pack, digest_name) != original_digest, column
+            assert _gas_table_digest(table_name, changed_frame) != original_digest, column
             covered.add(column)
         assert covered == columns_read
 
