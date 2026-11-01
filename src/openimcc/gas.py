@@ -431,6 +431,21 @@ def _gas_result_notices(
                 "Liquid reference is corroborated by independent calculation, not measured.",
                 status,
             ))
+        elif (
+            status.species == "K2O(l)"
+            and status.authority is LiquidReferenceAuthority.EXTRAPOLATED
+            and status.certified_T_K == (1765, 2473)
+            and status.band_value is not None
+        ):
+            notices.append(LiquidReferenceNotice(
+                "liquid-reference-source-construction-envelope",
+                "K2O liquid reference remains extrapolated; compilation bridge "
+                "from NASA Glenn/Gurvich and LH84. Reason: source/construction "
+                "spread is asymmetric, envelope_dex=-0.15/+0.33 log10 pK; "
+                "band_value=0.33 dex is the symmetric outward bound, not a "
+                "confidence interval or validated accuracy bound.",
+                status,
+            ))
         elif status.in_composition_scope is False:
             evidence = status.evidence_ref[0]
             key, (low, high) = next(iter(status.composition_scope.items()))

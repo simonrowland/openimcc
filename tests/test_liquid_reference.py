@@ -10,8 +10,11 @@ from openimcc import (
     AuthorityWindow,
     ImccGasResult,
     LiquidReferenceAuthority,
+    LiquidReferenceNotice,
     LiquidReferenceRecord,
+    evaluate,
     evaluate_gas,
+    load_datapack,
     liquid_reference_authority,
     liquid_reference_records,
 )
@@ -151,6 +154,7 @@ def test_composition_scoped_k2o_authority() -> None:
     outside_upper = liquid_reference_authority("K2O(l)", 1500, {"K2O_wt_pct": 40.001})
     assert outside_upper.authority is LiquidReferenceAuthority.CERTIFIED
     assert outside_upper.in_composition_scope is False
+    assert liquid_reference_authority("K2O(l)", 1765).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("FeO(l)", 1649).authority is LiquidReferenceAuthority.EXTRAPOLATED
     assert liquid_reference_authority("FeO(l)", 1649.15).authority is LiquidReferenceAuthority.CERTIFIED
     assert liquid_reference_authority("Al2O3(l)", 2400).authority is LiquidReferenceAuthority.CERTIFIED
@@ -166,6 +170,65 @@ def test_composition_scoped_k2o_authority() -> None:
     assert "assumed fusion entropy 7.5 cal/mol/K by analogy with V2O4" in evidence
     assert "estimated liquid Cp 8 cal per g-atom" in evidence
     assert "no measured pure-liquid data" in evidence
+
+
+def test_k2o_high_temperature_source_envelope_and_numeric_outputs(packaged_gas_pack) -> None:
+    gas_pressures = {
+        1500: (1.1833078684853735, 0.0012060311882495067, 2.6363248391966292e-05),
+        1800: (24.393929477864923, 0.021214825586168343, 0.00042925631461085715),
+        2200: (353.1100912216404, 0.24333402028900594, 0.0050043963016291985),
+    }
+    for temperature, expected in gas_pressures.items():
+        result = evaluate_gas(
+            {"K2O": 1.0}, temperature, 1e-8, packaged_gas_pack,
+            gas_species=("K", "K2O", "KO"),
+            composition_wt_pct={"K2O": 30.0},
+        )
+        assert tuple(result.values()) == pytest.approx(expected, rel=1e-12)
+        status = result.liquid_reference_status["K"]
+        if temperature == 1500:
+            assert status.authority is LiquidReferenceAuthority.CERTIFIED
+            assert status.certified_T_K == (1259, 1765)
+            assert status.band_value == pytest.approx(0.13)
+            assert status.in_composition_scope is True
+            assert not result.notices
+            continue
+
+        assert status.authority is LiquidReferenceAuthority.EXTRAPOLATED
+        assert status.certified_T_K == (1765, 2473)
+        assert status.band_value == pytest.approx(0.33)
+        assert status.band_unit == "dex log10 pK"
+        evidence = " ".join(item.basis for item in status.evidence_ref)
+        assert "NASA/TP-2002-211556" in evidence
+        assert "Vol. IV, Book 1 p. 377" in evidence
+        assert "Table 2 p. 154" in evidence
+        assert "compilation bridge" in evidence
+        assert "envelope_dex=-0.15/+0.33" in evidence
+        assert all("Burcat" not in item.author for item in status.evidence_ref)
+        notice, = [
+            item for item in result.notices
+            if item.code == "liquid-reference-source-construction-envelope"
+        ]
+        assert isinstance(notice, LiquidReferenceNotice)
+        assert notice.status is status
+        assert "Reason: source/construction spread is asymmetric" in notice.message
+        assert "envelope_dex=-0.15/+0.33 log10 pK" in notice.message
+        assert "symmetric outward bound" in notice.message
+        assert "not a confidence interval" in notice.message
+        assert any("band ±0.33 dex log10 pK" in (flag or "") for flag in result.domain_flags.values())
+
+    expected_k2o_activities = {
+        1800: 3.2742709993392502e-09,
+        2200: 7.92765095987809e-08,
+    }
+    melt_pack = load_datapack()
+    for temperature, expected in expected_k2o_activities.items():
+        melt = evaluate(
+            {"K2O": 30.0, "SiO2": 70.0}, temperature,
+            melt_pack, basis_type="wt",
+        )
+        index = melt.parent_oxides.index("K2O")
+        assert melt.parent_activity[index] == pytest.approx(expected, rel=1e-10)
 
 
 def test_sodium_oxide_authority_windows_and_boundaries() -> None:
@@ -423,6 +486,7 @@ def test_evidence_dois_are_structured_without_changing_identifiers() -> None:
         "DOI 10.1111/j.1151-2916.1992.tb04216.x",
         "DOI 10.1143/JJAP.43.1496",
         "DOI 10.1016/j.oceram.2026.101029",
+        "DOI 10.1063/1.555706",
         "DOI 10.1016/j.oceram.2026.101029",
         "DOI 10.1111/j.1151-2916.1992.tb04216.x",
         "DOI 10.1143/JJAP.43.1496",
@@ -449,4 +513,5 @@ def test_evidence_dois_are_structured_without_changing_identifiers() -> None:
     assert all("DOI " not in evidence.basis for evidence in references)
     assert {evidence.locator for evidence in references if evidence.locator} == {
         "run 17c3-2", "NASA/TP-2002-211556",
+        "Vol. IV, Book 1 p. 377; Book 2 p. 406",
     }

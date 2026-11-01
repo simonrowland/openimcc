@@ -8,6 +8,7 @@ inside identity-scoped gates receive an unscored notice.
 | Code | Trigger | Evidence and meaning |
 |---|---|---|
 | Hastie KEMS bias notice (no stable code) | Any nonzero Na₂O or K₂O parent | Hastie (1981), KEMS case 4; the measured K pressure residual applies to scored pack identities. Other packs say that the comparison has not been evaluated. |
+| `liquid-reference-source-construction-envelope` (`LiquidReferenceNotice`) | K₂O(g) pressure above 1765 K through 2473 K | `liquid_reference_status["K"].authority="extrapolated"`, `certified_T_K=(1765,2473)`, `band_value=0.33`, and `band_unit="dex log10 pK"`. Reason: the NASA Glenn/Gurvich and LH84 compilation bridge has an asymmetric source/construction spread, `envelope_dex=-0.15/+0.33`. The symmetric ±0.33 dex band is its outward bound, not a confidence interval or validated accuracy bound. |
 | `low-temperature-uncertain` | Active Na₂Si₂O₅ association below 1700 K on the scored pack | Piacente & Matoušek (1973), MgO-cell p(Na), is about 0.54 dex low at 1278–1530 K; Richet, Bottinga & Téqui (1984) sodium-silicate calorimetric curvature misses its envelope by 1.5–3× at 1323–1700 K. Other packs use `low-temperature-uncertain-unscored`. |
 | `cao-sio2-activity-bias` | Effectively binary CaO–SiO₂, sub-basis x(CaO) 0.42–0.70, 1873–1933 K | Kume (2000) Table 1 and Omori & Sanbongi (1961) support low silica activity. The default refit shifts predicted log10(a(SiO2)) by 0.045–0.410 dex on x(CaO) [0.42, 0.56); on [0.56, 0.70] the shift is non-monotonic, spanning 0.076–0.479 dex and peaking near x(CaO)=0.614. These are v5−v4 changes; prior residual magnitudes are not inherited as new-pack scores. Stolyarova (1991) Tables Ib/IIb give the stronger near-Ca₂SiO₄ comparison with the published closure caveat. Other packs use `cao-sio2-activity-bias-unscored`. |
 | `multicomponent-activity-pattern` | Each of SiO₂, CaO, MgO, and Al₂O₃ exceeds 1 mol% of complete parent moles; 1700–3000 K | On default D066 v5, Kume et al. (2000; DOI [10.2355/isijinternational.40.561](https://doi.org/10.2355/isijinternational.40.561)) synthetic CAS/CMS/CMAS slags measured at 1823–1873 K give SiO₂ residuals (log₁₀(predicted/measured), after solid-to-liquid standard conversion) that decrease with NBO/T in CAS (Table 2: slope −0.238 dex/NBO/T, n=47) and CMS (Table 3: −0.362, n=27); this direction is measured on CAS/CMS, not on four-oxide CMAS. The CAS+CMS+CMAS slice has RMSEs of 0.47 dex for SiO₂ (n=72), 0.59 for CaO (n=87), and 0.50 for MgO (n=43). Trigger-matching four-oxide CMAS (Table 4) has no SiO₂ rows; its CaO and MgO RMSEs are 0.81 and 0.57 dex (n=15 each). CaO and MgO residuals become more positive with NBO/T. Al-bearing association, temperature, and source method are confounded; NBO/T is descriptive and no cause is established. Effectively binary Kume CaO–SiO₂ slopes are near zero. A regression of binary CaO–SiO₂ KEMS activities from Stolyarova et al. (1991, 1933 K) gives a CaO slope of about +0.2 to +0.3 dex/NBO/T; their silica table conflicts with the paper's own closure, and this binary result does not establish the multicomponent pattern. Kume's evidence is limited to 1823–1873 K, not the full notice domain. Other identities use `multicomponent-activity-pattern-unscored` under the same gate. |
@@ -94,8 +95,33 @@ For SiO₂(l), Connolly's (2016; DOI 10.1002/2016JE005059) metastable-liquid
 function corroborates the 1200–1500 K interval below the glass transition.
 Above 1800 K, Connolly's branches and Gurvich (1991), as transcribed in NASA
 Glenn CEA (NASA/TP-2002-211556), corroborate the reference by calculation;
-no pure-liquid measurement covers that range. K₂O(l) uses Plante (1979) measured K
-pressures. FeO(l) uses Darken & Gurry (1946), as reported by Masson (1965), and
+no pure-liquid measurement covers that range. K₂O(l) remains certified from
+1259–1765 K on Plante (1979) measured K pressures. Above 1765 through 2473 K,
+`liquid_reference_status["K"].authority` is `extrapolated`, with
+`certified_T_K=(1765,2473)`, `band_value=0.33`, and
+`band_unit="dex log10 pK"`. The compilation bridge from NASA Glenn/Gurvich and
+LH84 carries the asymmetric `envelope_dex=-0.15/+0.33` log₁₀pK
+source/construction spread. The symmetric ±0.33 dex band is its outward bound,
+not a confidence interval or a validated accuracy bound, and it is reported by
+the `liquid-reference-source-construction-envelope` `LiquidReferenceNotice`.
+NASA Glenn's K₂O(L) card is in McBride, Zehe &
+Gordon, *NASA Glenn Coefficients for Calculating Thermodynamic Properties of
+Individual Species*, NASA/TP—2002-211556 (2002), Appendix D; it cites Gurvich,
+Veyts, Medvedev et al., *Thermodynamic Properties of Individual Substances*,
+3rd ed., Vol. IV, Book 1, p. 377 and Book 2, p. 406 (Moscow: Nauka, 1982).
+These count as one assessment route. The independent liquid comparison is
+Lamoreaux & Hildenbrand, “High-temperature vaporization behavior of oxides. I.
+Alkali metal binary oxides,” *Journal of Physical and Chemical Reference
+Data* 13(1), 151–173 (1984), Table 2, p. 154 ([DOI
+10.1063/1.555706](https://doi.org/10.1063/1.555706)). Burcat & Ruscic's *Third
+Millennium Ideal Gas and Condensed Phase Thermochemical Database for Combustion
+with Updates from Active Thermochemical Tables* (ANL-05/20; TAE 960, 2005)
+has a K₂O(g) entry but no K₂O(l) entry in the checked [ReSpecTh
+mirror](https://respecth.elte.hu/burcat.php); it is source-inventory context,
+not independent liquid evidence and is omitted from runtime evidence. This band and notice describe reference
+authority only and do not change calculated pressures or activities. Outside
+that high-temperature window, the previous authority rules apply. FeO(l) uses
+Darken & Gurry (1946), as reported by Masson (1965), and
 Hashimoto (1983) residue run 17c3-2 outside the window. Al₂O₃(l) follows
 JANAF Al-100/Al-101 from the melting point, with drop-calorimetry liquid heat
 capacity from Crochetet et al. (2026; DOI 10.1016/j.oceram.2026.101029) over

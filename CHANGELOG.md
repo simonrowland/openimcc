@@ -40,6 +40,18 @@
 - Added extrapolated MgO(l) and TiO₂(l) source-accuracy windows with bands
   limited to their reviewed temperature ranges; gas pressures are unchanged.
 
+- Added K₂O(l) authority above 1765 K through 2473 K:
+  `liquid_reference_status["K"].authority="extrapolated"`,
+  `certified_T_K=(1765,2473)`, `band_value=0.33`, and
+  `band_unit="dex log10 pK"`. Its evidence carries
+  `envelope_dex=-0.15/+0.33`; the symmetric band is the outward bound, not a
+  confidence interval. The `LiquidReferenceNotice` compilation bridge from
+  NASA Glenn/Gurvich and LH84 uses code
+  `liquid-reference-source-construction-envelope` and reason text “source/
+  construction spread is asymmetric, envelope_dex=-0.15/+0.33 log10 pK;
+  band_value=0.33 dex is the symmetric outward bound, not a confidence interval
+  or validated accuracy bound.” Pressures and activities are unchanged.
+
 - Documentation corrections.
 
 - Sulfur results now forward excess-Gibbs and composition-bias melt notices
