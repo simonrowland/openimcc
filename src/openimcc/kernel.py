@@ -2094,11 +2094,10 @@ def _solve_imcc_sf04_with_seed(
 
     # --- Analytical parent fractions on the declared basis -------------------
     # x_i = parent_mol_i / basis. This equals n_i / sum_k n_k only when
-    # basis is exactly the parent-mol sum. The accepted relative slack is not
-    # renormalized, so accepted x need not sum to 1. Unit check: moles / moles,
-    # dimensionless.
-    # Sanity: [0.50000025, 0.50000025] at basis 1.0 is accepted and yields
-    # sum(x)=1.0000005 without renormalizing.
+    # basis is exactly the parent-mol sum. The acceptance condition is
+    # abs(sum(parent_mol) - basis) <= 1e-6 * basis; accepted x is not
+    # renormalized. Unit check: moles / moles, dimensionless.
+    # Sanity: |1.0000005 - 1| = 5e-7 < 1e-6, hence accepted.
     x = parent_mol / basis
 
     # --- Active parent/complex subset ----------------------------------------

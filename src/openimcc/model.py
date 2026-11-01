@@ -28,7 +28,6 @@ if TYPE_CHECKING:
     from openimcc.gas import ImccGasDatapack
     from openimcc.profiles import Profile
 
-from openimcc.band_schema import LEGACY_BAND_FIELDS, validate_band_schema
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
     ImccCompositionIncompleteError,
@@ -647,6 +646,11 @@ class ImccMalformedDatapackError(ImccRefusal):
 def _validate_band_schema_rows(
     data: Mapping[str, Any], *, row_label: str = "published core row"
 ) -> None:
+    allowed_basis = {
+        "source_uncertainty", "measured_construction", "independent_measurement",
+        "fit_only", "none",
+    }
+    required = {"fit_residual", "accuracy_band", "band_basis", "independent_check"}
     rows = data.get("rows")
     if not isinstance(rows, list):
         raise ImccMalformedDatapackError("datapack rows must be a list")
@@ -654,19 +658,44 @@ def _validate_band_schema_rows(
     for label, row in labeled_rows:
         if not isinstance(row, dict):
             raise ImccMalformedDatapackError(f"{label} must be an object")
-        validate_band_schema(row, label, ImccMalformedDatapackError)
+        legacy = {
+            "band_kj_mol", "band_method", "uncertainty_band",
+            "max_residual_J_per_mol", "max_residual_J_per_mol_by_interval",
+            "max_residual_log10_K", "additional_uncertainty_bands",
+            "max_abs_heldout_log10K_residual",
+        } & row.keys()
+        if legacy:
+            raise ImccMalformedDatapackError(f"{label} contains legacy fields {sorted(legacy)}")
+        if required - row.keys():
+            raise ImccMalformedDatapackError(f"{label} is missing fields {sorted(required - row.keys())}")
         if row["accuracy_band"] is not None:
             raise ImccMalformedDatapackError(f"{label} complex rows must have accuracy_band null")
         basis = row["band_basis"]
+        if not isinstance(basis, dict) or basis.get("kind") not in allowed_basis or not basis.get("explanation"):
+            raise ImccMalformedDatapackError(f"{label} has an invalid band_basis")
         if basis["kind"] != "none":
             raise ImccMalformedDatapackError(f"{label} complex rows require band_basis none")
+        check = row["independent_check"]
+        check_fields = {
+            "status", "equilibrium", "primary_source", "conditions", "measured_value",
+            "predicted_value", "miss", "miss_to_band_ratio", "reason",
+        }
+        if not isinstance(check, dict) or check_fields - check.keys():
+            raise ImccMalformedDatapackError(f"{label} has an incomplete independent_check")
+        if check.get("status") not in {"not_found", "not_applicable", "lead", "tested"}:
+            raise ImccMalformedDatapackError(f"{label} has an invalid independent_check status")
 
     extension = data.get("sp_extension")
     extension_rows = extension.get("rows") if isinstance(extension, dict) else None
     if isinstance(extension_rows, list):
         for index, row in enumerate(extension_rows):
             if isinstance(row, dict):
-                legacy = LEGACY_BAND_FIELDS & row.keys()
+                legacy = {
+                    "band_kj_mol", "band_method", "uncertainty_band",
+                    "max_residual_J_per_mol", "max_residual_J_per_mol_by_interval",
+                    "max_residual_log10_K", "additional_uncertainty_bands",
+                    "max_abs_heldout_log10K_residual",
+                } & row.keys()
                 if legacy:
                     raise ImccMalformedDatapackError(
                         f"sp_extension row {index} contains legacy fields {sorted(legacy)}"

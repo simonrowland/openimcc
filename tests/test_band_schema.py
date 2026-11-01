@@ -33,111 +33,233 @@ _HG_DUPLICATE_INTERVALS = {
 }
 
 
-def test_shared_band_schema_accept_reject_contract() -> None:
-    def base_row() -> dict:
-        return {
-            "fit_residual": None,
-            "accuracy_band": None,
-            "band_basis": {
-                "kind": "none",
-                "explanation": "no separate band applies",
-                "provenance": "test fixture",
-            },
-            "independent_check": {
-                "status": "not_found",
-                "equilibrium": None,
-                "primary_source": None,
-                "conditions": None,
-                "measured_value": None,
-                "predicted_value": None,
-                "miss": None,
-                "miss_to_band_ratio": None,
-                "reason": "no check was located",
-            },
-        }
+def _baseline_band_record() -> dict:
+    return {
+        "fit_residual": None,
+        "accuracy_band": None,
+        "band_basis": {
+            "kind": "none",
+            "explanation": "no separate band applies",
+            "provenance": "test fixture",
+        },
+        "independent_check": {
+            "status": "not_found",
+            "equilibrium": None,
+            "primary_source": None,
+            "conditions": None,
+            "measured_value": None,
+            "predicted_value": None,
+            "miss": None,
+            "miss_to_band_ratio": None,
+            "reason": "no check was located",
+        },
+    }
 
+
+def test_melt_band_validator_f0_baseline_contract() -> None:
+    rejected_fields = (
+        "band_kj_mol", "band_method", "uncertainty_band",
+        "max_residual_J_per_mol", "max_residual_J_per_mol_by_interval",
+        "max_residual_log10_K", "additional_uncertainty_bands",
+        "max_abs_heldout_log10K_residual",
+    )
     cases = [
-        ("valid", lambda row: None, None, None),
+        ("valid", lambda row: None, None),
         (
-            "missing required field",
+            "missing key",
             lambda row: row.pop("accuracy_band"),
-            "sample 0 is missing band schema fields: ['accuracy_band']",
-            "sample 0 is missing band schema fields: ['accuracy_band']",
+            "sample 0 is missing fields ['accuracy_band']",
         ),
         (
-            "legacy field",
-            lambda row: row.update(uncertainty_band={}),
-            "sample 0 contains legacy band fields: ['uncertainty_band']",
-            "sample 0 contains legacy band fields: ['uncertainty_band']",
+            "NaN fit residual is unchecked",
+            lambda row: row.update(fit_residual={"value": float("nan"), "unit": "K"}),
+            None,
         ),
         (
-            "invalid basis",
-            lambda row: row.update(band_basis={
-                "kind": "unsupported", "explanation": "bad", "provenance": "test"
-            }),
-            "sample 0/band_basis/kind is not an allowed value",
-            "sample 0/band_basis/kind is not an allowed value",
+            "negative numeric fit residual is unchecked",
+            lambda row: row.update(fit_residual={"value": -1.0, "unit": "K"}),
+            None,
         ),
         (
-            "invalid basis explanation",
+            "invalid fit residual unit is unchecked",
+            lambda row: row.update(fit_residual={"value": 1.0, "unit": ""}),
+            None,
+        ),
+        (
+            "negative accuracy band is rejected as non-null",
+            lambda row: row.update(accuracy_band={"value": -1.0, "unit": "K"}),
+            "sample 0 complex rows must have accuracy_band null",
+        ),
+        (
+            "basis wrong type",
+            lambda row: row.update(band_basis=[]),
+            "sample 0 has an invalid band_basis",
+        ),
+        (
+            "numeric explanation remains accepted",
             lambda row: row["band_basis"].update(explanation=1),
-            "sample 0/band_basis needs explanation and provenance",
-            "sample 0/band_basis needs explanation and provenance",
+            None,
         ),
         (
-            "missing basis provenance",
+            "missing provenance remains accepted",
             lambda row: row["band_basis"].pop("provenance"),
-            "sample 0/band_basis needs explanation and provenance",
-            "sample 0/band_basis needs explanation and provenance",
+            None,
         ),
         (
-            "incomplete independent check",
-            lambda row: row["independent_check"].pop("reason"),
-            "sample 0/independent_check has an incomplete structure",
-            "sample 0/independent_check has an incomplete structure",
+            "independent check wrong type",
+            lambda row: row.update(independent_check=[]),
+            "sample 0 has an incomplete independent_check",
         ),
         (
-            "invalid independent-check status",
-            lambda row: row["independent_check"].update(status="unknown"),
-            "sample 0/independent_check/status is invalid",
-            "sample 0/independent_check/status is invalid",
-        ),
-        (
-            "melt-only legacy field",
-            lambda row: row.update(max_residual_log10_K=1.0),
-            "sample 0 contains legacy band fields: ['max_residual_log10_K']",
-            "sample 0 contains legacy band fields: ['max_residual_log10_K']",
-        ),
-        (
-            "not-found reason type",
+            "numeric not-found reason remains accepted",
             lambda row: row["independent_check"].update(reason=1),
-            "sample 0/independent_check/reason must explain not_found",
-            "sample 0/independent_check/reason must explain not_found",
+            None,
+        ),
+        (
+            "competing legacy and missing-key errors",
+            lambda row: (row.pop("accuracy_band"), row.update(band_kj_mol=1)),
+            "sample 0 contains legacy fields ['band_kj_mol']",
+        ),
+        (
+            "competing accuracy and basis errors",
+            lambda row: (row.update(accuracy_band=1), row.update(band_basis=[])),
+            "sample 0 complex rows must have accuracy_band null",
         ),
     ]
-
-    for name, change, model_error, redox_error in cases:
-        row = base_row()
-        change(row)
-        validators = (
-            (
-                lambda: _validate_band_schema_rows({"rows": [row]}, row_label="sample"),
-                model_error,
-                ImccMalformedDatapackError,
-            ),
-            (
-                lambda: _validate_band_schema(row, "sample 0"),
-                redox_error,
-                RedoxSchemaError,
-            ),
+    cases.extend(
+        (
+            f"legacy field {field}",
+            lambda row, field=field: row.update({field: 1}),
+            f"sample 0 contains legacy fields ['{field}']",
         )
-        for validate, expected_error, error_type in validators:
-            if expected_error is None:
-                validate()
-            else:
-                with pytest.raises(error_type) as raised:
-                    validate()
-                assert str(raised.value) == expected_error, name
+        for field in rejected_fields
+    )
+
+    for name, change, expected_error in cases:
+        row = _baseline_band_record()
+        change(row)
+        if expected_error is None:
+            _validate_band_schema_rows({"rows": [row]}, row_label="sample")
+        else:
+            with pytest.raises(ImccMalformedDatapackError) as raised:
+                _validate_band_schema_rows({"rows": [row]}, row_label="sample")
+            assert str(raised.value) == expected_error, name
+
+    with pytest.raises(ImccMalformedDatapackError) as raised:
+        _validate_band_schema_rows({"rows": None}, row_label="sample")
+    assert str(raised.value) == "datapack rows must be a list"
+    with pytest.raises(ImccMalformedDatapackError) as raised:
+        _validate_band_schema_rows({"rows": [None]}, row_label="sample")
+    assert str(raised.value) == "sample 0 must be an object"
+
+
+def test_redox_band_validator_f0_baseline_contract() -> None:
+    def residual(value: float, unit: str = "K") -> dict:
+        return {
+            "value": value,
+            "unit": unit,
+            "target_source": "test",
+            "comparison_method": "test",
+            "temperature_range": [100.0, 200.0],
+            "held_out_or_in_sample": "held-out",
+        }
+
+    def accuracy(value: float, unit: str = "K") -> dict:
+        return {
+            "value": value,
+            "unit": unit,
+            "temperature_points_or_range": [100.0, 200.0],
+            "coverage": "test",
+        }
+
+    rejected_fields = ("band_kj_mol", "band_method", "uncertainty_band")
+    permitted_legacy_fields = (
+        "max_residual_J_per_mol", "max_residual_J_per_mol_by_interval",
+        "max_residual_log10_K", "additional_uncertainty_bands",
+        "max_abs_heldout_log10K_residual",
+    )
+    cases = [
+        ("valid", lambda row: None, None),
+        (
+            "missing key",
+            lambda row: row.pop("accuracy_band"),
+            "sample is missing band schema fields: ['accuracy_band']",
+        ),
+        (
+            "wrong type",
+            lambda row: row.update(fit_residual=1),
+            "sample/fit_residual must be an object or null",
+        ),
+        (
+            "negative numeric band",
+            lambda row: row.update(accuracy_band=accuracy(-1.0)),
+            "sample/accuracy_band/value must be non-negative",
+        ),
+        (
+            "invalid unit string",
+            lambda row: row.update(fit_residual=residual(1.0, "")),
+            "sample/fit_residual/unit must be a non-empty string",
+        ),
+        (
+            "basis wrong type",
+            lambda row: row.update(band_basis=[]),
+            "sample/band_basis/kind is not an allowed value",
+        ),
+        (
+            "missing provenance",
+            lambda row: row["band_basis"].pop("provenance"),
+            "sample/band_basis needs an explanation",
+        ),
+        (
+            "numeric explanation",
+            lambda row: row["band_basis"].update(explanation=1),
+            "sample/band_basis needs an explanation",
+        ),
+        (
+            "wrong not-found reason type",
+            lambda row: row["independent_check"].update(reason=1),
+            "sample/independent_check/reason must explain not_found",
+        ),
+        (
+            "competing legacy and missing-key errors",
+            lambda row: (row.pop("accuracy_band"), row.update(band_kj_mol=1)),
+            "sample contains legacy band fields: ['band_kj_mol']",
+        ),
+        (
+            "competing residual and accuracy type errors",
+            lambda row: (row.update(fit_residual=1), row.update(accuracy_band=1)),
+            "sample/fit_residual must be an object or null",
+        ),
+    ]
+    cases.extend(
+        (
+            f"legacy field {field}",
+            lambda row, field=field: row.update({field: 1}),
+            f"sample contains legacy band fields: ['{field}']",
+        )
+        for field in rejected_fields
+    )
+    cases.extend(
+        (f"permitted legacy field {field}", lambda row, field=field: row.update({field: 1}), None)
+        for field in permitted_legacy_fields
+    )
+
+    for name, change, expected_error in cases:
+        row = _baseline_band_record()
+        row["fit_residual"] = residual(1.0)
+        change(row)
+        if expected_error is None:
+            _validate_band_schema(row, "sample")
+        else:
+            with pytest.raises(RedoxSchemaError) as raised:
+                _validate_band_schema(row, "sample")
+            assert str(raised.value) == expected_error, name
+
+    row = _baseline_band_record()
+    row["fit_residual"] = residual(float("nan"))
+    with pytest.raises(ValueError) as raised:
+        _validate_band_schema(row, "sample")
+    assert str(raised.value) == "sample/fit_residual/value must be a finite number"
 
 
 def _migration_row_identity(row: dict) -> tuple:
@@ -730,7 +852,7 @@ def test_melt_loader_rejects_legacy_band_field_with_typed_error(tmp_path: Path) 
     try:
         load_datapack(candidate)
     except ImccMalformedDatapackError as exc:
-        assert "legacy band fields" in str(exc)
+        assert "legacy fields" in str(exc)
     else:
         raise AssertionError("legacy band field was accepted")
 
