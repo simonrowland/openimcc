@@ -314,6 +314,27 @@ def test_manganese_zero_delta_sharing_does_not_call_the_oxygen_window_lp(
     assert result.mode == "closed"
 
 
+def test_evaluate_redox_accepts_frozen_thermochemistry_rows() -> None:
+    result = evaluate_redox(
+        {
+            "Si": 0.75,
+            "Mg": 0.25,
+            "Fe": 0.21,
+            "Ca": 0.18,
+            "Al": 0.27,
+            "Ti": 0.04,
+            "Na": 0.06,
+            "K": 0.02,
+            "O": 2.55,
+        },
+        1900.0,
+        "closed",
+    )
+
+    assert result.mode == "closed"
+    assert math.isfinite(result.lambda_ln_f_o2)
+
+
 def test_redox_reference_outputs_before_generalized_rows() -> None:
     fe_closed = evaluate_redox({"Fe": 1.0, "O": 1.25}, 2200.0, "closed")
     assert fe_closed.lambda_ln_f_o2 == pytest.approx(-1.5205238540751636, rel=1.0e-12)

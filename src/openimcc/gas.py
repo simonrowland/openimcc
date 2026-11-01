@@ -4386,7 +4386,7 @@ def _thermochemistry_value(value: float, row_name: str, temperature_K: float) ->
     return value
 
 
-def _janaf_gibbs(T: float, row: pd.Series) -> float:
+def _janaf_gibbs(T: float, row: Mapping[str, Any] | pd.Series) -> float:
     """Return G°(T) in J/mol for a JANAF gas species from Shomate coefficients.
 
     Derivation
@@ -4421,6 +4421,7 @@ def _janaf_gibbs(T: float, row: pd.Series) -> float:
     fit's T_min = 1500 K, so this function does not claim a 298.15 K JANAF match
     from these coefficients.
     """
+    row_name = str(row.get("species_name") or "thermochemistry row")
     try:
         t = T / 1000.0
         dH = (
@@ -4442,12 +4443,13 @@ def _janaf_gibbs(T: float, row: pd.Series) -> float:
         gibbs = dH * 1000.0 - T * S
     except (ArithmeticError, ValueError) as exc:
         raise ImccGasEquilibriumRangeError(
-            f"thermochemistry for {row.name} is outside the finite range at T={T} K"
+            f"thermochemistry for {row_name} is outside the finite range at T={T} K; "
+            f"{type(exc).__name__}: {exc}"
         ) from exc
-    return _thermochemistry_value(gibbs, str(row.name), T)
+    return _thermochemistry_value(gibbs, row_name, T)
 
 
-def _lamor_gibbs(T: float, row: pd.Series) -> float:
+def _lamor_gibbs(T: float, row: Mapping[str, Any] | pd.Series) -> float:
     """Return G°(T) in J/mol for a LAMOR condensate species.
 
     Derivation
@@ -4473,7 +4475,7 @@ def _lamor_gibbs(T: float, row: pd.Series) -> float:
     D = row["dG_D"]
     E = row["dG_E"]
     dH298 = row["dH298_R"]
-    row_name = str(getattr(row, "name", "condensate"))
+    row_name = str(row.get("species_name") or "condensate")
 
     try:
         G_coefs = np.array([A, B, C, D, E])
