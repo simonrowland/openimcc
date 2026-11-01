@@ -136,6 +136,7 @@ def _validate_roles(
     }
     defaults: dict[str, list[dict]] = {"melt": [], "redox": []}
     families: dict[str, list[dict]] = {}
+    superseded_edges: dict[str, str] = {}
 
     for entry in entries:
         if not isinstance(entry, dict):
@@ -162,6 +163,23 @@ def _validate_roles(
                     f"historical pack {filename!r} superseded_by "
                     f"{superseded_by!r}, which is not in the manifest"
                 )
+            elif filename == superseded_by:
+                issues.append(
+                    f"historical pack {filename!r} cannot supersede itself"
+                )
+            else:
+                family = entry.get("family")
+                successor = by_name[superseded_by]
+                if (
+                    isinstance(family, str)
+                    and successor.get("family") != family
+                ):
+                    issues.append(
+                        f"historical pack {filename!r} superseded_by "
+                        f"must stay within candidate family {family!r}"
+                    )
+                if isinstance(filename, str):
+                    superseded_edges[filename] = superseded_by
 
         family = entry.get("family")
         if role == "opt-in" and (not isinstance(family, str) or not family.strip()):
@@ -196,6 +214,29 @@ def _validate_roles(
                 f"candidate family {family!r} must have exactly one current opt-in; "
                 f"found {len(current)}"
             )
+
+    finished: set[str] = set()
+    for start in superseded_edges:
+        chain: list[str] = []
+        positions: dict[str, int] = {}
+        current = start
+        while current in superseded_edges and current not in finished:
+            if current in positions:
+                cycle = chain[positions[current]:] + [current]
+                issues.append(
+                    "historical superseded_by cycle: " + " -> ".join(cycle)
+                )
+                break
+            positions[current] = len(chain)
+            chain.append(current)
+            successor = superseded_edges[current]
+            if (
+                successor not in by_name
+                or by_name[successor].get("role") != "historical"
+            ):
+                break
+            current = successor
+        finished.update(chain)
     return issues
 
 

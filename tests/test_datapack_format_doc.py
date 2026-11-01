@@ -349,10 +349,27 @@ def test_pack_lifecycle_metadata_is_documented_for_every_shipped_pack() -> None:
         if entry["role"] == "opt-in"
     )
     document = DOC.read_text(encoding="utf-8")
-    assert "`role` is one of `default`, `opt-in`, `historical`," in document
+    assert all(
+        f"`{role}`" in document
+        for role in ("default", "opt-in", "historical", "reproduction")
+    )
     assert "`family`" in document
     assert "`superseded_by`" in document
     assert "do not select" in document
+    assert "Pack loaded when no pack or profile argument is given." in document
+    assert '`profile="published"` selects `imcc-sf04-v1.0.2.json`' in document
+
+    kca_pack = next(
+        entry
+        for entry in entries
+        if entry["file"] == "imcc-sf04-d066-v1-kcaalsi2o7.json"
+    )
+    assert kca_pack["role"] == "reproduction"
+    assert "superseded_by" not in kca_pack
+    assert (
+        "`imcc-sf04-d066-v1-kcaalsi2o7.json`; `imcc-sf04-v1.0.2.json`"
+        in document
+    )
 
     ext4 = json.loads(
         (PACK_DIR / "imcc-sf04-ext-v4.json").read_text(encoding="utf-8")

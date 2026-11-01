@@ -87,6 +87,47 @@ def test_lifecycle_roles_reject_invalid_metadata() -> None:
     assert any("exactly one current opt-in" in issue for issue in issues)
 
 
+def test_lifecycle_roles_reject_self_supersession() -> None:
+    manifest = _lifecycle_manifest()
+    manifest["packs"][2]["superseded_by"] = "redox-cr-v1.json"
+
+    issues = packmanifest._validate_roles(
+        manifest, {"melt": "melt-v2", "redox": "redox-v4"}
+    )
+
+    assert any("cannot supersede itself" in issue for issue in issues)
+
+
+def test_lifecycle_roles_reject_cross_family_supersession() -> None:
+    manifest = _lifecycle_manifest()
+    manifest["packs"][2]["superseded_by"] = "melt-default.json"
+
+    issues = packmanifest._validate_roles(
+        manifest, {"melt": "melt-v2", "redox": "redox-v4"}
+    )
+
+    assert any("must stay within candidate family" in issue for issue in issues)
+
+
+def test_lifecycle_roles_reject_supersession_cycle() -> None:
+    manifest = _lifecycle_manifest()
+    manifest["packs"][2]["superseded_by"] = "redox-cr-v0.json"
+    manifest["packs"].append(
+        {
+            "file": "redox-cr-v0.json",
+            "role": "historical",
+            "family": "redox-cr",
+            "superseded_by": "redox-cr-v1.json",
+        }
+    )
+
+    issues = packmanifest._validate_roles(
+        manifest, {"melt": "melt-v2", "redox": "redox-v4"}
+    )
+
+    assert any("superseded_by cycle" in issue for issue in issues)
+
+
 def test_lifecycle_defaults_must_match_runtime_versions() -> None:
     manifest = _lifecycle_manifest()
 

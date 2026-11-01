@@ -11,12 +11,23 @@ the current production loader accepts.
 ## Pack lifecycle metadata
 
 `src/openimcc/data/packs/MANIFEST.json` records each pack's lifecycle outside
-the immutable pack bytes. `role` is one of `default`, `opt-in`, `historical`,
-or `reproduction`. Candidate entries also use `family` to group generations;
-each family has one current `opt-in`, while historical entries point to a
-shipped successor with `superseded_by`. The manifest is the source for current
-candidate and default listings. These fields describe packs and do not select
-or change runtime loading.
+the immutable pack bytes:
+
+| Role | Meaning | Example |
+|---|---|---|
+| `default` | Pack loaded when no pack or profile argument is given. | `imcc-sf04-d066-v5.json`; `openimcc-redox-v4.json` |
+| `opt-in` | Current candidate generation available by explicit selection. | Current candidate packs are listed in the manifest by family. |
+| `historical` | Superseded generation whose `superseded_by` names its successor. | Earlier D066 and redox versions. |
+| `reproduction` | Pack retained to reproduce a published record or specific experiment. | `imcc-sf04-d066-v1-kcaalsi2o7.json`; `imcc-sf04-v1.0.2.json` |
+
+The KCa sensitivity pack is marked `reproduction`: D066 v5 disables its
+KCaAlSi2O7 row, so that experiment cannot be reproduced through v5 as a
+successor. `profile="published"` selects `imcc-sf04-v1.0.2.json`, which is
+also marked `reproduction`. Candidate entries use `family` to group
+generations; each family has one current `opt-in`, while historical entries
+point to a shipped successor with `superseded_by`. The manifest is the source
+for current candidate and default listings. These fields describe packs and
+do not select or change runtime loading.
 
 ## 1. What a pack contains
 
@@ -396,8 +407,9 @@ capacities and adds five Hess-cycle association A refits with B held fixed.
 D066 v4 remains available as the previous default, with v3, v2 and v1
 available as historical packs. The
 released historical model is D066 v1 paired with the condensate table shipped
-at f55617a. Its sibling KCa
-sensitivity pack is imcc-sf04-d066-v1-kcaalsi2o7.json. The D066 S/P extension pack,
+at f55617a. Its sibling KCa sensitivity pack is
+imcc-sf04-d066-v1-kcaalsi2o7.json; it is retained as a reproduction record
+because D066 v5 disables the KCaAlSi2O7 row. The D066 S/P extension pack,
 imcc-sf04-d066-ext-v1.json, carries the ext-v4 sp_extension unchanged and
 requires `enable_sp_extension=True`. All three use model_id IMCC-SF04-D066 and
 the loader validates their explicit 38-row core structure and row coverage.
