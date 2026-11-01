@@ -172,6 +172,56 @@ def test_composition_scoped_k2o_authority() -> None:
     assert "no measured pure-liquid data" in evidence
 
 
+def test_k2o_high_temperature_retains_mixture_scope_and_notice(packaged_gas_pack) -> None:
+    outside = liquid_reference_authority(
+        "K2O(l)", 2000, {"K2O_wt_pct": 15}
+    )
+    assert outside.authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert outside.certified_T_K == (1765, 2473)
+    assert outside.band_value == pytest.approx(0.33)
+    assert outside.band_unit == "dex log10 pK"
+    assert outside.composition_scope == {"K2O_wt_pct": (25, 40)}
+    assert outside.scope_applied
+    assert outside.in_composition_scope is False
+    assert "scored with notice" in outside.reason
+    plante = outside.evidence_ref[0]
+    assert plante.author == "Plante"
+    assert "-0.13 dex at 25-40 wt% K2O" in plante.basis
+    assert "-0.38 dex at 12-20 wt% K2O" in plante.basis
+
+    outside_result = evaluate_gas(
+        {"K2O": 1.0}, 2000, 1e-8, packaged_gas_pack,
+        gas_species=("K", "K2O", "KO"),
+        composition_wt_pct={"K2O": 15},
+    )
+    outside_codes = {notice.code for notice in outside_result.notices}
+    assert "liquid-reference-source-construction-envelope" in outside_codes
+    assert "liquid-reference-outside-evidence-composition-scope" in outside_codes
+    scope_notice = next(
+        notice for notice in outside_result.notices
+        if notice.code == "liquid-reference-outside-evidence-composition-scope"
+    )
+    assert "K2O_wt_pct 25–40" in scope_notice.message
+    assert "-0.38 dex at 12-20 wt% K2O" in scope_notice.message
+
+    inside = liquid_reference_authority(
+        "K2O(l)", 2000, {"K2O_wt_pct": 30}
+    )
+    assert inside.authority is LiquidReferenceAuthority.EXTRAPOLATED
+    assert inside.band_value == pytest.approx(0.33)
+    assert inside.composition_scope == {"K2O_wt_pct": (25, 40)}
+    assert inside.scope_applied
+    assert inside.in_composition_scope is True
+    inside_result = evaluate_gas(
+        {"K2O": 1.0}, 2000, 1e-8, packaged_gas_pack,
+        gas_species=("K", "K2O", "KO"),
+        composition_wt_pct={"K2O": 30},
+    )
+    inside_codes = {notice.code for notice in inside_result.notices}
+    assert "liquid-reference-source-construction-envelope" in inside_codes
+    assert "liquid-reference-outside-evidence-composition-scope" not in inside_codes
+
+
 def test_k2o_high_temperature_source_envelope_and_numeric_outputs(packaged_gas_pack) -> None:
     gas_pressures = {
         1500: (1.1833078684853735, 0.0012060311882495067, 2.6363248391966292e-05),

@@ -446,7 +446,7 @@ def _gas_result_notices(
                 "confidence interval or validated accuracy bound.",
                 status,
             ))
-        elif status.in_composition_scope is False:
+        if status.in_composition_scope is False:
             evidence = status.evidence_ref[0]
             key, (low, high) = next(iter(status.composition_scope.items()))
             notices.append(LiquidReferenceNotice(

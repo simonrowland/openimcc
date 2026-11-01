@@ -140,6 +140,7 @@ _RECORDS = (
         source_ids=("K-012",),
         additional_windows=(AuthorityWindow(LiquidReferenceAuthority.EXTRAPOLATED, (1765, 2473), 0.33,
             "dex log10 pK", (
+                _e("Plante", 1979, "measured potassium pressures; residual about -0.13 dex at 25-40 wt% K2O; about -0.38 dex at 12-20 wt% K2O", {"K2O_wt_pct": (25, 40)}),
                 _e("McBride, Zehe & Gordon", 2002, "NASA Glenn CEA K2O(L) direct liquid card in NASA Glenn coefficients for calculating thermodynamic properties of individual species, NASA/TP-2002-211556, Appendix D; the card cites Gurvich (1982), so this is one Gurvich assessment route", locator="NASA/TP-2002-211556"),
                 _e("Gurvich, Veyts, Medvedev et al.", 1982, "Thermodynamic properties of individual substances, 3rd ed., Vol. IV, Book 1 p. 377 and Book 2 p. 406, Moscow: Nauka; direct liquid assessment also transcribed in NASA Glenn CEA", locator="Vol. IV, Book 1 p. 377; Book 2 p. 406"),
                 _e("Lamoreaux & Hildenbrand", 1984, "High-temperature vaporization behavior of oxides. I. Alkali metal binary oxides, Journal of Physical and Chemical Reference Data 13(1), 151–173, Table 2 p. 154; independent direct K2O(l) comparison. compilation bridge from NASA Glenn/Gurvich and LH84; envelope_dex=-0.15/+0.33 log10 pK is a source/construction spread, not a confidence interval or validated accuracy bound", doi=("10.1063/1.555706",)),

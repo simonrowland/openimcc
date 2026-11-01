@@ -29,6 +29,8 @@ outside K₂O's 25–40 wt% evidence range keeps the certified temperature-windo
 authority and adds a notice: Plante (1979) residuals were about −0.13 dex at
 25–40 wt% and about −0.38 dex at 12–20 wt%. The composition range describes
 where the mixture model was checked; it does not exclude out-of-range results.
+The same Plante mixture-model scope and residuals remain attached above 1765 K;
+there they accompany the extrapolated compilation-bridge authority and band.
 `evaluate_gas` accepts an optional `composition_wt_pct` mapping keyed by oxide
 to resolve composition-scoped records; calls without it leave the scope
 unresolved and retain the flag.
@@ -104,6 +106,10 @@ LH84 carries the asymmetric `envelope_dex=-0.15/+0.33` log₁₀pK
 source/construction spread. The symmetric ±0.33 dex band is its outward bound,
 not a confidence interval or a validated accuracy bound, and it is reported by
 the `liquid-reference-source-construction-envelope` `LiquidReferenceNotice`.
+Plante's 25–40 wt% mixture-model scope and residuals (about −0.13 dex there and
+−0.38 dex at 12–20 wt%) remain available above 1765 K; out-of-scope
+compositions receive that notice alongside the bridge-band notice without
+restricting the reference.
 NASA Glenn's K₂O(L) card is in McBride, Zehe &
 Gordon, *NASA Glenn Coefficients for Calculating Thermodynamic Properties of
 Individual Species*, NASA/TP—2002-211556 (2002), Appendix D; it cites Gurvich,

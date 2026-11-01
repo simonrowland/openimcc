@@ -50,7 +50,10 @@
   `liquid-reference-source-construction-envelope` and reason text “source/
   construction spread is asymmetric, envelope_dex=-0.15/+0.33 log10 pK;
   band_value=0.33 dex is the symmetric outward bound, not a confidence interval
-  or validated accuracy bound.” Pressures and activities are unchanged.
+  or validated accuracy bound.” Plante's 25–40 wt% mixture-model scope and
+  residuals (about −0.13 dex there and −0.38 dex at 12–20 wt%) also remain
+  available above 1765 K; out-of-scope compositions receive both notices.
+  Pressures and activities are unchanged.
 
 - Documentation corrections.
 
