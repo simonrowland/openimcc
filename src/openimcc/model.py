@@ -38,9 +38,11 @@ from openimcc.kernel import (
     ImccRefusal,
     ImccResult,
     ImccTOutsideDatapackDomainError,
+    _KernelBindingManifest,
     _PUBLISHED_DATAPACK_SHA256,
     _PUBLISHED_MODEL_ID,
     _EXCESS_GIBBS_MODEL_ID,
+    _kernel_datapack_binding_payload,
     _label_loaded_datapack,
     _published_datapack_manifest_hash,
     _solve_imcc_sf04_with_seed,
@@ -1571,6 +1573,16 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             name: (_SP_EXTENSION_TIER if name in extension_names else "A-published-imcc")
             for name in (*parents, *reactions)
         }
+    binding_manifest = _KernelBindingManifest(
+        binding_manifest,
+        content_digest=_published_datapack_manifest_hash(
+            _kernel_datapack_binding_payload(
+                kernel_datapack,
+                model_id=model_id,
+                coverage=coverage,
+            )
+        ),
+    )
     kernel_datapack = _label_loaded_datapack(
         kernel_datapack,
         model_id=model_id,
@@ -1611,6 +1623,16 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             for name, label in labelled_identity.coverage.items()
             if name in active_species
         }
+        binding_manifest = _KernelBindingManifest(
+            binding_manifest,
+            content_digest=_published_datapack_manifest_hash(
+                _kernel_datapack_binding_payload(
+                    kernel_datapack,
+                    model_id=model_id,
+                    coverage=active_coverage,
+                )
+            ),
+        )
         kernel_datapack = _label_loaded_datapack(
             kernel_datapack,
             model_id=model_id,

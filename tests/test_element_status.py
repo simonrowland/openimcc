@@ -260,7 +260,11 @@ def _recompute_c2_screen_ratio(
             pack.gas_df, parent_gas, temperature, allow_extrapolation=True
         )
         parent_g_j = gas_module._janaf_gibbs(temperature, parent_row)
-    species_g = _source_value(table_id, "formation_gibbs_energy", temperature)
+    oxygen_row = gas_module._nearest_interval_row(
+        pack.gas_df, "O2(g)", temperature, allow_extrapolation=True
+    )
+    oxygen_g_j = gas_module._janaf_gibbs(temperature, oxygen_row)
+    species_g_j = _source_standard_gibbs_j_mol(table_id, temperature)
 
     parent_atoms = _gas_element_atom_count(parent, element)
     species_atoms = _gas_element_atom_count(species, element)
@@ -270,9 +274,12 @@ def _recompute_c2_screen_ratio(
         parent_per_species * _gas_element_atom_count(parent, "O")
         - _gas_element_atom_count(species, "O")
     ) / 2.0
-    # Formation Gibbs energies use O2(g) as the oxygen reference, so its
-    # formation term is zero. The balanced reaction gives pressure in bar.
-    delta_g_j = species_g * 1000.0 - parent_per_species * parent_g_j
+    # For n_parent E_xO_y(parent) -> E_aO_b(g) + n_O2 O2(g),
+    # ΔG° = G_species + n_O2*G_O2 - n_parent*G_parent and
+    # log Kp = -ΔG°/(R*T*ln(10)). Source Hf(298)+ΔH(T)-T*S(T) puts the
+    # excluded candidate on the same absolute standard-G scale as the runtime
+    # _lamor_gibbs/_janaf_gibbs parent and O2 rows.
+    delta_g_j = species_g_j + n_o2 * oxygen_g_j - parent_per_species * parent_g_j
     species_pressure = (
         math.exp(-delta_g_j / (R_J_MOL_K * temperature))
         * parent_activity**parent_per_species
@@ -299,6 +306,28 @@ def _recompute_c2_screen_ratio(
         excluded_element_pressure / total_element_pressure
         if total_element_pressure
         else 0.0
+    )
+
+
+def _source_standard_gibbs_j_mol(table_id: str, temperature: float) -> float:
+    nasa_path = NASA_DATA / f"{table_id}.json"
+    if nasa_path.is_file():
+        record = json.loads(nasa_path.read_text(encoding="utf-8"))
+        properties = build_gas_tables._nasa7_properties(record, temperature)
+        return R_J_MOL_K * temperature * (
+            properties["h_rt"] - properties["s_R"]
+        )
+
+    formation_enthalpy = _source_value(
+        table_id, "formation_enthalpy", 298.15
+    )
+    enthalpy_increment = _source_value(
+        table_id, "enthalpy_increment", temperature
+    )
+    entropy = _source_value(table_id, "entropy", temperature)
+    return (
+        (formation_enthalpy + enthalpy_increment) * 1000.0
+        - temperature * entropy
     )
 
 
@@ -456,6 +485,32 @@ def test_c2_screen_recomputation_uses_runtime_parent_thermochemistry(
 
     altered_gas = packaged_gas_pack.gas_df.copy(deep=True)
     altered_gas.loc["B2O3(g)", "F"] += 1.0
+    altered_pack = gas_module.ImccGasDatapack(
+        altered_gas,
+        packaged_gas_pack.oxide_df,
+        packaged_gas_pack.gas_path,
+        packaged_gas_pack.oxide_path,
+    )
+    altered = _recompute_c2_screen_ratio(
+        "B-083", "B", "B2", screen, status, altered_pack
+    )
+
+    assert not math.isclose(baseline, altered, rel_tol=1.0e-8, abs_tol=0.0)
+
+
+def test_c2_screen_recomputation_uses_runtime_oxygen_thermochemistry(
+    packaged_gas_pack,
+) -> None:
+    screen = {"temperature_K": 2600.0, "fO2": 1.0e-12}
+    status = {
+        "c3_ion_bound": {"parent_oxide": "B2O3", "parent_activity": 1.0e-3}
+    }
+    baseline = _recompute_c2_screen_ratio(
+        "B-083", "B", "B2", screen, status, packaged_gas_pack
+    )
+
+    altered_gas = packaged_gas_pack.gas_df.copy(deep=True)
+    altered_gas.loc["O2(g)", "F"] += 1.0
     altered_pack = gas_module.ImccGasDatapack(
         altered_gas,
         packaged_gas_pack.oxide_df,

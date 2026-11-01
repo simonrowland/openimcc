@@ -12,6 +12,7 @@ import pytest
 
 import openimcc as imcc_sf04
 import openimcc.kernel as kernel
+import openimcc.model as model_module
 # The simulator this engine was extracted from owns a "fidelity vocabulary"
 # deciding which label strings deny authority. That predicate is deny-by-default
 # -- it returns True for almost any string, including "inside" -- so porting it
@@ -1183,6 +1184,48 @@ def test_kernel_identity_issuer_rejects_stale_nonpublished_digest() -> None:
             coverage=source.coverage,
             binding_digest=source.binding_digest,
         )
+
+
+def test_kernel_identity_rejects_modified_nonpublished_pack_with_original_manifest(
+    monkeypatch,
+) -> None:
+    original_label = model_module._label_loaded_datapack
+    loader_arguments = []
+
+    def capture_manifest(datapack, **kwargs):
+        if kwargs.get("binding_manifest") is not None:
+            loader_arguments.append(kwargs.copy())
+        return original_label(datapack, **kwargs)
+
+    monkeypatch.setattr(model_module, "_label_loaded_datapack", capture_manifest)
+    loaded = load_datapack()
+    assert loader_arguments
+    original_manifest_arguments = loader_arguments[-1]
+    assert original_manifest_arguments["binding_manifest"].content_digest
+
+    source = loaded.kernel_datapack
+    unrecorded_manifest_arguments = original_manifest_arguments.copy()
+    unrecorded_manifest_arguments["binding_manifest"] = dict(
+        original_manifest_arguments["binding_manifest"]
+    )
+    with pytest.raises(ValueError, match="binding manifest does not match"):
+        _label_loaded_datapack(source, **unrecorded_manifest_arguments)
+
+    altered_A = np.array(source.A, copy=True)
+    altered_A[0] += 0.5
+    altered = ImccDatapack(
+        reactions=source.reactions,
+        nu=source.nu,
+        A=altered_A,
+        B=source.B,
+        domains=source.domains,
+        version=source.version,
+        parent_oxides=source.parent_oxides,
+        paper_domains=source.paper_domains,
+    )
+
+    with pytest.raises(ValueError, match="binding manifest does not match"):
+        _label_loaded_datapack(altered, **original_manifest_arguments)
 
 
 def test_evaluate_reuses_loaded_content_identity(monkeypatch) -> None:

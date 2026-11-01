@@ -78,6 +78,16 @@ _PUBLISHED_EXTENSION_BINDING_SHA256 = (
 )
 
 
+class _KernelBindingManifest(dict[str, Any]):
+    """Manifest fields plus the loader's digest of their parsed kernel content."""
+
+    content_digest: str
+
+    def __init__(self, values: Mapping[str, Any], *, content_digest: str) -> None:
+        super().__init__(values)
+        self.content_digest = content_digest
+
+
 # --------------------------------------------------------------------------- #
 # Typed refusals
 # --------------------------------------------------------------------------- #
@@ -501,6 +511,18 @@ def _datapack_with_identity(
         if binding_manifest is not None
         else None
     )
+    manifest_content_digest = (
+        getattr(binding_manifest, "content_digest", None)
+        if binding_manifest is not None
+        else None
+    )
+    if (
+        binding_manifest is not None
+        and manifest_content_digest != content_binding_digest
+    ):
+        raise ValueError(
+            "supplied datapack binding manifest does not match its content"
+        )
     published_species = {
         name
         for name, label in coverage_by_species.items()
@@ -639,9 +661,10 @@ def _label_loaded_datapack(
     When the caller claims published IMCC identity or coverage,
     ``_datapack_with_identity`` checks the supplied manifest hash and a full
     content digest. A supplied hash alone cannot prove that the arrays match
-    the published pack. When ``binding_manifest`` is provided, its canonical
-    digest must match ``binding_digest``; direct labelling otherwise accepts
-    only a digest derived from the kernel payload or a pinned published
+    the published pack. When ``binding_manifest`` is provided, its historical
+    canonical digest must match ``binding_digest`` and its loader-recorded
+    content digest must match the supplied arrays; direct labelling otherwise
+    accepts only a digest derived from the kernel payload or a pinned published
     manifest identity.
     """
     return _datapack_with_identity(
