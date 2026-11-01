@@ -2105,6 +2105,7 @@ def test_valence_fields_and_synthetic_nested_pack_selection(
     assert default.redox_pack_digest == default_pack.canonical_digest
     assert default.melt_pack_binding_digest == melt_pack.binding_digest
 
+    melt_pack_path = ROOT / "src/openimcc/data/packs/imcc-sf04-d066-v5.json"
     by_loaded_melt_pack = evaluate_redox(
         inventory, 2200.0, "closed", melt_pack=melt_pack
     )
@@ -2112,10 +2113,34 @@ def test_valence_fields_and_synthetic_nested_pack_selection(
         inventory,
         2200.0,
         "closed",
-        melt_pack_path=ROOT / "src/openimcc/data/packs/imcc-sf04-d066-v5.json",
+        melt_pack_path=melt_pack_path,
     )
     assert by_loaded_melt_pack == by_melt_pack_path
     assert by_loaded_melt_pack.melt_pack_binding_digest == melt_pack.binding_digest
+    loaded_receipt = by_loaded_melt_pack.receipt.to_dict()
+    path_receipt = by_melt_pack_path.receipt.to_dict()
+    assert loaded_receipt["data_digests"] == path_receipt["data_digests"]
+    assert loaded_receipt["solver"] == path_receipt["solver"]
+    loaded_request = loaded_receipt["request"]
+    path_request = path_receipt["request"]
+    assert loaded_request.keys() == path_request.keys()
+    assert {
+        key: value for key, value in loaded_request.items() if key != "options"
+    } == {
+        key: value for key, value in path_request.items() if key != "options"
+    }
+    loaded_options = loaded_request["options"]
+    path_options = path_request["options"]
+    assert loaded_options.keys() == path_options.keys()
+    assert {
+        key: value for key, value in loaded_options.items()
+        if key != "melt_pack_path"
+    } == {
+        key: value for key, value in path_options.items()
+        if key != "melt_pack_path"
+    }
+    assert loaded_options["melt_pack_path"] is None
+    assert path_options["melt_pack_path"] == str(melt_pack_path)
 
     synthetic_path = _write_synthetic_redox_pack(tmp_path)
     synthetic_pack = load_redox_pack(synthetic_path)

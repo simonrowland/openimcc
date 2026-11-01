@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `evaluate_redox()` accepts an already-loaded melt pack through `melt_pack`.
+
 - Return a per-host `numeric_out_of_range` result when an equilibrium pressure
   cannot be represented as a finite positive float.
 
