@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
+import openimcc.model as model
 from openimcc import evaluate, evaluate_sulfur, load_datapack
 from openimcc.model import _melt_notice_score
 
@@ -40,6 +43,13 @@ DEFAULT_NA2O_NOTICE = (
     "https://docnum.univ-lorraine.fr/public/INPL/2009_MATHIEU_R.pdf (method: "
     "Mathieu et al. 2008, DOI 10.1016/j.jnoncrysol.2008.07.004); Pak et al. "
     "1989, DOI 10.2355/isijinternational.29.318. The cause remains unresolved."
+)
+K_AL_OVERSEQUESTRATION_NOTICE = (
+    "k-al-over-sequestration: the one-particle mixing-entropy limit can "
+    "over-sequester K in K-Al associates; about 1 dex or more in p(K), "
+    "single source (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2, Beaver's "
+    "Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not a calibrated "
+    "correction."
 )
 DEFAULT_MULTICOMPONENT_NOTICE = (
     "multicomponent-activity-pattern: on default D066 v5, Kume et al. (2000) "
@@ -163,7 +173,11 @@ def default_pack():
             MORB,
             1800.0,
             "wt",
-            (DEFAULT_ALKALI_NOTICE, DEFAULT_MULTICOMPONENT_NOTICE),
+            (
+                DEFAULT_ALKALI_NOTICE,
+                K_AL_OVERSEQUESTRATION_NOTICE,
+                DEFAULT_MULTICOMPONENT_NOTICE,
+            ),
         ),
         (
             {"Na2O": 1.0, "SiO2": 1.0},
@@ -204,6 +218,145 @@ def test_default_pack_notice_texts_are_pinned(
     ) == expected
 
 
+def test_k_al_oversequestration_notice_triggers_on_beavers_bend_illite(
+    default_pack,
+) -> None:
+    result = evaluate(
+        {"SiO2": 60.4, "Al2O3": 26.1, "K2O": 7.4, "FeO": 4.0, "MgO": 2.1},
+        1917.0,
+        basis_type="wt",
+        pack=default_pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    notice = next(
+        item
+        for item in result.labels.notices
+        if item.startswith("k-al-over-sequestration:")
+    )
+    assert str(notice) == K_AL_OVERSEQUESTRATION_NOTICE
+    assert notice.family == "k-al-over-sequestration"
+    assert notice.score == "unscored"
+    k_index = result.parent_oxides.index("K2O")
+    pack = default_pack.kernel_datapack
+    k_al_complex_k = sum(
+        float(pack.nu[k_index, row_index]) * float(result.complex_x[row_index])
+        for row_index, name in enumerate(pack.reactions)
+        if name in {
+            "KAlO2", "KAlSiO4", "KAlSi2O6", "KAlSi3O8", "KCaAlSi2O7"
+        }
+    )
+    assert k_al_complex_k / (result.D * result.parent_x[k_index]) >= 0.5
+    assert _melt_notice_score(
+        "k-al-over-sequestration", _identity(default_pack)
+    ) == "unscored"
+
+
+@pytest.mark.parametrize(
+    "associate",
+    ["KAlO2", "KAlSiO4", "KAlSi2O6", "KAlSi3O8", "KCaAlSi2O7"],
+)
+@pytest.mark.parametrize(
+    ("complex_x", "expected"),
+    [(0.998, False), (1.0, True)],
+    ids=("below-half", "at-half"),
+)
+def test_k_al_oversequestration_threshold_is_inclusive(
+    associate, complex_x, expected
+) -> None:
+    solved = SimpleNamespace(
+        parent_oxides=("K2O",),
+        parent_x=np.array([1.0]),
+        D=1.0,
+        complex_x=np.array([complex_x]),
+    )
+    pack = SimpleNamespace(
+        reactions=(associate,),
+        nu=np.array([[0.5]]),
+    )
+    notice = model._k_al_oversequestration_notice(
+        solved, pack, "unscored-model", "unscored-digest"
+    )
+    assert (notice is not None) is expected
+    if notice is not None:
+        assert str(notice) == K_AL_OVERSEQUESTRATION_NOTICE
+        assert notice.score == "unscored"
+
+
+@pytest.mark.parametrize("k2o_wt", [12.0, 25.0, 40.0])
+def test_plante_al_free_k2o_silica_binaries_do_not_trigger(
+    default_pack, k2o_wt
+) -> None:
+    notices = _evaluate_notices(
+        {"K2O": k2o_wt, "SiO2": 100.0 - k2o_wt},
+        2000.0,
+        default_pack,
+        "wt",
+    )
+    assert not any(
+        item.startswith("k-al-over-sequestration:") for item in notices
+    )
+
+
+def test_al_free_k_silicate_does_not_trigger_k_al_oversequestration(
+    default_pack,
+) -> None:
+    notices = _evaluate_notices(
+        {"K2O": 1.0, "SiO2": 1.0}, 1917.0, default_pack
+    )
+    assert not any(
+        item.startswith("k-al-over-sequestration:") for item in notices
+    )
+
+
+def test_k_al_oversequestration_notice_changes_only_evaluate_notices(
+    default_pack, monkeypatch
+) -> None:
+    composition = {
+        "SiO2": 60.4, "Al2O3": 26.1, "K2O": 7.4, "FeO": 4.0, "MgO": 2.1
+    }
+    with_notice = evaluate(
+        composition,
+        1917.0,
+        basis_type="wt",
+        pack=default_pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    with monkeypatch.context() as patcher:
+        patcher.setattr(model, "_k_al_oversequestration_notice", lambda *_: None)
+        without_notice = evaluate(
+            composition,
+            1917.0,
+            basis_type="wt",
+            pack=default_pack,
+            allow_extrapolation=True,
+            allow_out_of_envelope=True,
+        )
+    for field in (
+        "parent_mol", "parent_x", "parent_x_star", "parent_activity",
+        "parent_gamma", "complex_x", "species_x",
+    ):
+        np.testing.assert_array_equal(
+            getattr(with_notice, field), getattr(without_notice, field)
+        )
+    for field in (
+        "temperature_K", "parent_oxides", "basis", "species_names", "D",
+        "convergence", "extrapolated", "excess_gibbs_J", "excess_enthalpy_J",
+    ):
+        assert getattr(with_notice, field) == getattr(without_notice, field)
+    assert with_notice.labels.identity == without_notice.labels.identity
+    assert with_notice.labels.coverage == without_notice.labels.coverage
+    assert with_notice.labels.envelope_status == without_notice.labels.envelope_status
+    assert with_notice.labels.flags == without_notice.labels.flags
+    assert tuple(
+        item for item in with_notice.labels.notices
+        if item != K_AL_OVERSEQUESTRATION_NOTICE
+    ) == without_notice.labels.notices
+    assert K_AL_OVERSEQUESTRATION_NOTICE in with_notice.labels.notices
+    assert with_notice.receipt.data_digests == without_notice.receipt.data_digests
+
+
 def test_loaded_default_identity_scores_every_default_notice_family(default_pack) -> None:
     identity = _identity(default_pack)
     families = (
@@ -222,6 +375,7 @@ def test_candidate_and_d066_v2_keep_family_scoring_scoped() -> None:
     feo_candidate = load_datapack(PACKS / "imcc-sf04-d066-feo-hess-candidate.json")
     default_only_families = (
         "na2o-activity-bias",
+        "k-al-over-sequestration",
         "cao-sio2-activity-bias",
         "multicomponent-activity-pattern",
         "silicate-vapour-product-low-near-liquidus",
@@ -244,6 +398,7 @@ def test_d066_v2_unscored_notice_texts_are_pinned() -> None:
     v2 = load_datapack(PACKS / "imcc-sf04-d066-v2.json")
     assert _evaluate_notices(MORB, 1800.0, v2, "wt") == (
         V2_ALKALI_NOTICE,
+        K_AL_OVERSEQUESTRATION_NOTICE,
         V2_MULTICOMPONENT_UNSCORED_NOTICE,
     )
     assert _evaluate_notices({"Na2O": 1.0, "SiO2": 1.0}, 1600.0, v2) == (
@@ -267,6 +422,7 @@ def test_fe_hess_candidate_notice_and_unscored_activity_pattern() -> None:
     assert _evaluate_notices(MORB, 1800.0, candidate, "wt") == (
         FEO_HESS_CANDIDATE_NOTICE,
         FE_HESS_ALKALI_UNSCORED_NOTICE,
+        K_AL_OVERSEQUESTRATION_NOTICE,
         V2_MULTICOMPONENT_UNSCORED_NOTICE,
     )
 
@@ -297,9 +453,30 @@ def test_sulfur_results_carry_melt_composition_bias_notices() -> None:
     assert forwarded == (
         ("alkali-bias", DEFAULT_ALKALI_NOTICE),
         ("na2o-activity-bias", DEFAULT_NA2O_NOTICE),
+        ("k-al-over-sequestration-unscored", K_AL_OVERSEQUESTRATION_NOTICE),
         ("multicomponent-activity-pattern", DEFAULT_MULTICOMPONENT_NOTICE),
     )
     assert len({code for code, _message in forwarded}) == len(forwarded)
+
+    k_al = evaluate_sulfur(
+        {"SiO2": 60.4, "Al2O3": 26.1, "K2O": 7.4, "FeO": 4.0, "MgO": 2.1},
+        1917.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=load_datapack(),
+    )
+    k_al_forwarded = tuple(
+        (notice.code, notice.message)
+        for notice in k_al.notices
+        if notice.model == "openimcc-melt-pack"
+        and notice.code.startswith("k-al-over-sequestration")
+    )
+    assert k_al_forwarded == (
+        (
+            "k-al-over-sequestration-unscored",
+            K_AL_OVERSEQUESTRATION_NOTICE,
+        ),
+    )
 
     cao_sio2 = evaluate_sulfur(
         {"CaO": 50.0, "SiO2": 49.99, "FeO": 0.01},
@@ -333,6 +510,7 @@ def test_sulfur_results_carry_melt_composition_bias_notices() -> None:
     assert unscored_forwarded == (
         ("alkali-bias", V2_ALKALI_NOTICE),
         ("na2o-activity-bias-unscored", V2_NA2O_UNSCORED_NOTICE),
+        ("k-al-over-sequestration-unscored", K_AL_OVERSEQUESTRATION_NOTICE),
         ("multicomponent-activity-pattern-unscored", V2_MULTICOMPONENT_UNSCORED_NOTICE),
     )
 
@@ -368,6 +546,7 @@ def test_sulfur_results_carry_melt_composition_bias_notices() -> None:
     assert candidate_forwarded == (
         ("alkali-bias-unscored", FE_HESS_ALKALI_UNSCORED_NOTICE),
         ("na2o-activity-bias-unscored", V2_NA2O_UNSCORED_NOTICE),
+        ("k-al-over-sequestration-unscored", K_AL_OVERSEQUESTRATION_NOTICE),
         (
             "multicomponent-activity-pattern-unscored",
             V2_MULTICOMPONENT_UNSCORED_NOTICE,

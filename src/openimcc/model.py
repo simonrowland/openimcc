@@ -313,6 +313,18 @@ _NA2O_ACTIVITY_BIAS_NOTICE = (
     "1989, DOI 10.2355/isijinternational.29.318. The cause remains unresolved."
 )
 
+_K_AL_OVERSEQUESTRATION_MIN_FRACTION = 0.5
+_K_AL_ASSOCIATES = frozenset(
+    {"KAlO2", "KAlSiO4", "KAlSi2O6", "KAlSi3O8", "KCaAlSi2O7"}
+)
+_K_AL_OVERSEQUESTRATION_NOTICE = (
+    "k-al-over-sequestration: the one-particle mixing-entropy limit can "
+    "over-sequester K in K-Al associates; about 1 dex or more in p(K), "
+    "single source (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2, Beaver's "
+    "Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not a calibrated "
+    "correction."
+)
+
 
 def _na2o_activity_bias_notice(
     parent_oxides: Sequence[str],
@@ -348,6 +360,44 @@ def _na2o_activity_bias_notice(
     if basicity / total >= _NA2O_ACTIVITY_BIAS_BASICITY_MIN:
         return _coded_melt_notice("na2o-activity-bias", score, notice)
     return None
+
+
+def _k_al_oversequestration_notice(
+    result: ImccResult,
+    kernel_pack: ImccDatapack,
+    model_id: str,
+    binding_digest: str,
+) -> str | None:
+    """Flag solved melts with at least half their K in K-Al associates."""
+    try:
+        k_index = result.parent_oxides.index("K2O")
+    except ValueError:
+        return None
+    analytical_k = float(result.parent_x[k_index])
+    if analytical_k <= 0.0 or result.D <= 0.0:
+        return None
+
+    # Each listed row binds 0.5 mol K2O. complex_x is per total-species mole,
+    # D = analytical-basis moles / total-species moles, and parent_x(K2O) is
+    # analytical K2O per basis mole. Thus sum(nu*g)/(D*parent_x) is the
+    # fraction of analytical K2O in these complexes. The inclusive 0.5 limit
+    # marks cases where K-Al association holds at least half of the K inventory;
+    # it is a partition threshold, not a fit to the single cited experiment.
+    bound_k = sum(
+        float(kernel_pack.nu[k_index, row_index])
+        * float(result.complex_x[row_index])
+        for row_index, name in enumerate(kernel_pack.reactions)
+        if name in _K_AL_ASSOCIATES
+    )
+    fraction = bound_k / (float(result.D) * analytical_k)
+    if fraction < _K_AL_OVERSEQUESTRATION_MIN_FRACTION:
+        return None
+    score = _melt_notice_score(
+        "k-al-over-sequestration", (model_id, binding_digest)
+    )
+    return _coded_melt_notice(
+        "k-al-over-sequestration", score, _K_AL_OVERSEQUESTRATION_NOTICE
+    )
 
 
 def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
@@ -2545,6 +2595,12 @@ def evaluate(
     )
     if na2o_activity_bias_notice is not None:
         notices.append(na2o_activity_bias_notice)
+
+    k_al_oversequestration_notice = _k_al_oversequestration_notice(
+        result, kernel_pack, model_id, binding_digest
+    )
+    if k_al_oversequestration_notice is not None:
+        notices.append(k_al_oversequestration_notice)
 
     cao_sio2_notice = _cao_sio2_activity_bias_notice(
         parent_oxides, vector, T_K, model_id, binding_digest

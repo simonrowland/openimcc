@@ -31,6 +31,9 @@ _MELT_NOTICE_FORWARD_CODES = {
     ("alkali-bias", "unscored"): "alkali-bias-unscored",
     ("na2o-activity-bias", "scored"): "na2o-activity-bias",
     ("na2o-activity-bias", "unscored"): "na2o-activity-bias-unscored",
+    ("k-al-over-sequestration", "unscored"): (
+        "k-al-over-sequestration-unscored"
+    ),
     ("cao-sio2-activity-bias", "scored"): "cao-sio2-activity-bias",
     ("cao-sio2-activity-bias", "unscored"): "cao-sio2-activity-bias-unscored",
     ("multicomponent-activity-pattern", "scored"): "multicomponent-activity-pattern",
