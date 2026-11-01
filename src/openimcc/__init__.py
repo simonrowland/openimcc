@@ -378,9 +378,4 @@ __all__ = [
     # difference is invisible in a log-residual table, so the unit belongs at
     # the public surface where a caller trips over it.
     "BAR",
-    "IMCC_GAS_CHANNEL_SPECIES",
-    "IMCC_GAS_UNAVAILABLE_SPECIES",
-    "IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES",
-    "IMCC_PARENT_OXIDES",
-    "R_J_MOL_K",
 ]
