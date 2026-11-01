@@ -131,10 +131,11 @@ def _notice(
 
 def _normalise_composition(
     composition_wt_percent: Mapping[str, float],
-) -> tuple[dict[str, float], dict[str, float], float]:
+) -> tuple[dict[str, float], dict[str, float], float, set[str]]:
     amounts: dict[str, float] = {}
     masses: dict[str, float] = {}
     mass_terms: dict[str, list[float]] = {}
+    positive_components: set[str] = set()
     for raw_name, raw_value in composition_wt_percent.items():
         if raw_name not in _OXIDES:
             raise ValueError(f"unsupported oxide component {raw_name!r}")
@@ -145,6 +146,8 @@ def _normalise_composition(
         if not math.isfinite(value) or value < 0.0:
             raise ValueError(f"wt% for {raw_name} must be finite and nonnegative")
         name = "FeO" if raw_name == "FeOeq" else raw_name
+        if value > 0.0:
+            positive_components.add(name)
         mass, _cations, _oxygen, _symbol = _OXIDES[raw_name]
         masses[name] = masses.get(name, 0.0) + value
         mass_terms.setdefault(name, []).append(value)
@@ -183,7 +186,7 @@ def _normalise_composition(
             for name, value in scaled_masses.items()
         }
         mean_molar_mass = scaled_total_mass / scaled_total_moles
-    return formula_moles, oxide_wt, mean_molar_mass
+    return formula_moles, oxide_wt, mean_molar_mass, positive_components
 
 
 def _fractions(
@@ -262,7 +265,7 @@ def _sulfur_split(
 
 
 def _above_log_ceiling(value: float, log_ceiling: float) -> bool:
-    if value <= 0.0 or log_ceiling > _LOG10_MAX_FLOAT:
+    if value <= 0.0 or log_ceiling >= _LOG10_MAX_FLOAT:
         return False
     return value > 10.0**log_ceiling
 
@@ -426,9 +429,12 @@ def evaluate_sulfur(
     ):
         raise ValueError("fe3_fraction must be between 0 and 1")
 
-    formula_moles, oxide_wt, mean_molar_mass = _normalise_composition(
-        composition_wt_percent
-    )
+    (
+        formula_moles,
+        oxide_wt,
+        mean_molar_mass,
+        positive_components,
+    ) = _normalise_composition(composition_wt_percent)
     one_oxygen, cations = _fractions(formula_moles)
     # These capacity fits use the requested full composition, independent of
     # which oxides the melt pack can represent.
@@ -567,7 +573,9 @@ def evaluate_sulfur(
                     code, melt_notice, model="openimcc-melt-pack",
                 ))
     supported_moles = set(melt_result.parent_oxides) if melt_result is not None else set()
-    omitted = sorted(name for name, n in formula_moles.items() if n > 0.0 and name not in supported_moles)
+    omitted = sorted(
+        name for name in positive_components if name not in supported_moles
+    )
     if omitted:
         notices.append(_notice(
             "oxide-omitted-from-melt-pack",
@@ -590,7 +598,18 @@ def evaluate_sulfur(
         # Smythe et al. (2017), Eq. 11/Table 2, uses its ideal single-cation
         # FeO activity assumption in the regression. The openimcc activity is
         # reserved for the independent O'Neill thermodynamic cross-check.
-        scss = _scss_smythe(cations, T, pressure, x_fes, ideal_a_feo)
+        try:
+            scss = _scss_smythe(cations, T, pressure, x_fes, ideal_a_feo)
+        except OverflowError:
+            scss = None
+        if scss is not None and (not math.isfinite(scss) or scss <= 0.0):
+            scss = None
+        if scss is None:
+            notices.append(_notice(
+                "scss-unavailable",
+                "Smythe SCSS is outside the representable floating-point range",
+                model="Smythe-2017-Eq-11", axis="scss_ppm",
+            ))
         # Smythe uses the full-composition cation fractions; only O'Neill
         # requires the melt-pack FeO activity.
         if (

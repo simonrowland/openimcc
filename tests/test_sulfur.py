@@ -357,6 +357,61 @@ def test_extreme_saturation_ceiling_is_compared_without_exponentiating():
     assert result.dissolved_total_s_ppm == 100.0
 
 
+def test_saturation_ceiling_at_float_limit_does_not_overflow():
+    result = evaluate_sulfur(
+        {"FeO": 50.0, "SiO2": 50.0},
+        1673.0,
+        log10_fO2=147.45272724553413,
+        total_s_ppm=100.0,
+    )
+
+    assert result.saturation_state == "undersaturated"
+    assert result.dissolved_total_s_ppm == 100.0
+
+
+def test_omitted_tiny_positive_component_disables_activity_dependent_output():
+    pack = load_datapack()
+    result = evaluate_sulfur(
+        {"FeO": 50.0, "NiO": math.ulp(0.0)},
+        1673.0,
+        log10_fO2=-8.0,
+        log10_fS2=-10.0,
+        melt_pack=pack,
+    )
+    codes = {notice.code for notice in result.notices}
+
+    assert "oxide-omitted-from-melt-pack" in codes
+    assert "melt-activity-unavailable" in codes
+    assert result.log10_sulfide_capacity_wt_percent is not None
+    assert result.capacity_predicted_total_s_ppm is not None
+    assert result.scss_smythe_2017_ppm is not None
+    assert result.scss_oneill_2021_ppm is None
+
+    intrinsic = evaluate_sulfur(
+        {"FeO": 50.0, "NiO": math.ulp(0.0)},
+        1673.0,
+        log10_fS2=-10.0,
+        melt_pack=pack,
+    )
+    assert intrinsic.log10_fO2 is None
+    assert "oxygen-balance-unavailable" in {
+        notice.code for notice in intrinsic.notices
+    }
+
+
+def test_underflowed_smythe_scss_is_reported_unavailable():
+    result = evaluate_sulfur(
+        {"FeO": 50.0, "SiO2": 50.0},
+        1673.0,
+        log10_fO2=-8.0,
+        total_s_ppm=100.0,
+        total_pressure_bar=1e10,
+    )
+
+    assert result.scss_smythe_2017_ppm is None
+    assert "scss-unavailable" in {notice.code for notice in result.notices}
+
+
 def test_smallest_positive_inventory_is_inverted_in_log_space():
     smallest_positive = math.ulp(0.0)
     result = evaluate_sulfur(
