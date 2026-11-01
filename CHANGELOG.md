@@ -53,7 +53,11 @@
   or validated accuracy bound.” Plante's 25–40 wt% mixture-model scope and
   residuals (about −0.13 dex there and −0.38 dex at 12–20 wt%) also remain
   available above 1765 K; out-of-scope compositions receive both notices.
-  Pressures and activities are unchanged.
+  Pressures and activities are unchanged. The new status, band and notice enter
+  the canonical result hash, so every K-bearing result above 1765 K gets a new
+  result hash with an unchanged numeric hash: 22 of the 50 pinned
+  oxygen-balance cases in `tests/test_gas.py` (all with K₂O > 0, at
+  1900–2400 K) were re-pinned.
 
 - Documentation corrections.
 
