@@ -191,7 +191,9 @@ def _assert_c2_candidate_coverage(
     source_candidates: dict[str, tuple[str, str]],
     statuses: dict[str, dict],
     evaluated_species: set[str],
-) -> None:
+    pack,
+) -> dict[tuple[str, str], float]:
+    screened_ratios = {}
     recorded_candidates = {
         (table_id, element, species)
         for element, status in statuses.items()
@@ -202,10 +204,10 @@ def _assert_c2_candidate_coverage(
         for table_id, (element, species) in source_candidates.items()
     } == recorded_candidates
     for element, status in statuses.items():
-        for _table_id, species in status["c2_candidates"]:
-            if species in evaluated_species:
-                continue
+        for table_id, species in status["c2_candidates"]:
             screen = status.get("c2_screened_out", {}).get(species)
+            if screen is None and species in evaluated_species:
+                continue
             assert screen is not None, (
                 f"{element} {species} is neither included nor screened"
             )
@@ -213,6 +215,93 @@ def _assert_c2_candidate_coverage(
             assert screen["max_ratio"] < 1.0e-4
             assert screen["temperature_K"] in TEMPERATURES_K
             assert screen["fO2"] in FUGACITIES
+            assert source_candidates[table_id] == (element, species)
+            measured_ratio = _recompute_c2_screen_ratio(
+                table_id, element, species, screen, status, pack
+            )
+            assert math.isclose(
+                screen["max_ratio"], measured_ratio, rel_tol=1.0e-12,
+                abs_tol=0.0,
+            ), (
+                f"{element} {species} declared C2 max_ratio "
+                f"{screen['max_ratio']!r} does not match recomputed "
+                f"ratio {measured_ratio!r}"
+            )
+            screened_ratios[(element, species)] = measured_ratio
+    return screened_ratios
+
+
+def _recompute_c2_screen_ratio(
+    table_id: str,
+    element: str,
+    species: str,
+    screen: dict,
+    status: dict,
+    pack,
+) -> float:
+    temperature = float(screen["temperature_K"])
+    fugacity = float(screen["fO2"])
+    ion_status = status.get("c3_ion_bound", {})
+    parent = ion_status.get("parent_oxide")
+    if parent is None and species in gas_module._SF04_REACTIONS:
+        parent = gas_module._SF04_REACTIONS[species][0]
+    assert parent is not None, f"{element} {species} C2 screen has no modeled parent"
+    parent_activity = float(ion_status.get("parent_activity", 1.0e-3))
+
+    parent_liquid = f"{parent}(l)"
+    if parent_liquid in pack.oxide_df.index:
+        parent_row = gas_module._nearest_interval_row(
+            pack.oxide_df, parent_liquid, temperature, allow_extrapolation=True
+        )
+    else:
+        parent_gas = f"{parent}(g)"
+        parent_row = gas_module._nearest_interval_row(
+            pack.gas_df, parent_gas, temperature, allow_extrapolation=True
+        )
+    parent_table = str(parent_row["Ref"])
+    parent_g = _source_value(
+        parent_table, "formation_gibbs_energy", temperature
+    )
+    species_g = _source_value(table_id, "formation_gibbs_energy", temperature)
+
+    parent_atoms = _gas_element_atom_count(parent, element)
+    species_atoms = _gas_element_atom_count(species, element)
+    assert parent_atoms > 0 and species_atoms > 0
+    parent_per_species = species_atoms / parent_atoms
+    n_o2 = (
+        parent_per_species * _gas_element_atom_count(parent, "O")
+        - _gas_element_atom_count(species, "O")
+    ) / 2.0
+    # Formation Gibbs energies use O2(g) as the oxygen reference, so its
+    # formation term is zero. The balanced reaction gives pressure in bar.
+    delta_g_j = (species_g - parent_per_species * parent_g) * 1000.0
+    species_pressure = (
+        math.exp(-delta_g_j / (R_J_MOL_K * temperature))
+        * parent_activity**parent_per_species
+        / fugacity**n_o2
+    )
+    pressures = evaluate_gas(
+        {parent: parent_activity},
+        temperature,
+        fugacity,
+        pack,
+        parent_oxides=(parent,),
+        allow_extrapolation=True,
+    )
+    assert sum(pressures.values()) <= 1.0, (
+        f"{element} {species} C2 screen is outside the modeled <=1 bar domain"
+    )
+    modeled_element_pressure = sum(
+        _gas_element_atom_count(modeled_species, element) * pressure
+        for modeled_species, pressure in pressures.items()
+    )
+    excluded_element_pressure = species_atoms * species_pressure
+    total_element_pressure = modeled_element_pressure + excluded_element_pressure
+    return (
+        excluded_element_pressure / total_element_pressure
+        if total_element_pressure
+        else 0.0
+    )
 
 
 @pytest.mark.slow
@@ -229,6 +318,7 @@ def test_janaf_neutral_oxide_sources_are_included_or_measured_screens(
         source_candidates,
         ELEMENT_STATUS,
         _evaluated_public_c2_species(source_candidates, packaged_gas_pack),
+        packaged_gas_pack,
     )
 
 
@@ -329,6 +419,29 @@ def test_unscreened_fixture_candidate_is_rejected(packaged_gas_pack) -> None:
             source_candidates,
             statuses,
             _evaluated_public_c2_species(source_candidates, packaged_gas_pack),
+            packaged_gas_pack,
+        )
+
+
+def test_fabricated_c2_screen_is_rejected(packaged_gas_pack) -> None:
+    source_candidates = {"B-083": ("B", "B2")}
+    statuses = {
+        "B": {
+            "c2_candidates": (("B-083", "B2"),),
+            "c2_screened_out": {
+                "B2": {
+                    "max_ratio": 0.0,
+                    "temperature_K": 2600.0,
+                    "fO2": 1.0e-12,
+                }
+            },
+            "c3_ion_bound": {"parent_oxide": "B2O3", "parent_activity": 1.0e-3},
+        }
+    }
+
+    with pytest.raises(AssertionError, match="declared C2 max_ratio"):
+        _assert_c2_candidate_coverage(
+            source_candidates, statuses, set(), packaged_gas_pack
         )
 
 
@@ -1620,6 +1733,12 @@ def test_status_criteria_and_melt_basis_are_consistent(packaged_gas_pack) -> Non
         (table_id, element, species)
         for table_id, (element, species) in source_candidates.items()
     } == recorded_candidates
+    evaluated_c2_species = _evaluated_public_c2_species(
+        source_candidates, gas_pack
+    )
+    screened_c2_ratios = _assert_c2_candidate_coverage(
+        source_candidates, ELEMENT_STATUS, evaluated_c2_species, gas_pack
+    )
     assert not any("+" in species for species in IMCC_GAS_CHANNEL_SPECIES)
 
     for element, status in ELEMENT_STATUS.items():
@@ -1634,8 +1753,7 @@ def test_status_criteria_and_melt_basis_are_consistent(packaged_gas_pack) -> Non
         c2 = all(
             species in IMCC_GAS_CHANNEL_SPECIES
             or (
-                species in status.get("c2_screened_out", {})
-                and status["c2_screened_out"][species]["max_ratio"] < 1.0e-4
+                screened_c2_ratios.get((element, species), math.inf) < 1.0e-4
             )
             for _table_id, species in status["c2_candidates"]
         )

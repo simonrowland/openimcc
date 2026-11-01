@@ -1076,6 +1076,34 @@ def test_kernel_identity_issuer_refuses_altered_published_pack() -> None:
         )
 
 
+def test_kernel_identity_issuer_rejects_stale_published_hash_for_altered_pack() -> None:
+    source = load_datapack(DATAPACK_PATH).kernel_datapack
+    altered_A = np.array(source.A, copy=True)
+    altered_A[0] += 0.5
+    altered = ImccDatapack(
+        reactions=source.reactions,
+        nu=source.nu,
+        A=altered_A,
+        B=source.B,
+        domains=source.domains,
+        version=source.version,
+        parent_oxides=source.parent_oxides,
+    )
+    coverage = {
+        name: "A-published-imcc"
+        for name in (*altered.parent_oxides, *altered.reactions)
+    }
+
+    with pytest.raises(ValueError, match="kernel content matching"):
+        _label_loaded_datapack(
+            altered,
+            model_id="IMCC-SF04",
+            coverage=coverage,
+            published_manifest_sha256=source.binding_digest,
+            binding_digest=source.binding_digest,
+        )
+
+
 def test_kernel_identity_issuer_refuses_extension_nu_in_published_core() -> None:
     source = load_datapack(DATAPACK_PATH).kernel_datapack
     extended_nu = np.vstack([source.nu, np.zeros(source.n_complexes)])

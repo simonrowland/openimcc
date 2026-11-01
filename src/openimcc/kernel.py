@@ -58,6 +58,11 @@ _PUBLISHED_CORE_ROWS = 38
 _PUBLISHED_DATAPACK_SHA256 = (
     "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c"
 )
+# Canonical digest of the published core's in-memory kernel payload. This
+# binds the arrays used by the solver to the separately pinned manifest above.
+_PUBLISHED_KERNEL_DATAPACK_SHA256 = (
+    "ce83af309c9361f90ac69d0fa182b5d837017dbbb5271b299bce879acc0e3946"
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -459,14 +464,16 @@ def _datapack_with_identity(
         isinstance(label, str) and label for label in coverage_by_species.values()
     ):
         raise ValueError("datapack coverage labels must be non-empty strings")
-    if binding_digest is None:
-        binding_digest = _published_datapack_manifest_hash(
-            _kernel_datapack_binding_payload(
-                datapack,
-                model_id=model_id,
-                coverage=coverage_by_species,
-            )
+    supplied_binding_digest = binding_digest
+    content_binding_digest = _published_datapack_manifest_hash(
+        _kernel_datapack_binding_payload(
+            datapack,
+            model_id=model_id,
+            coverage=coverage_by_species,
         )
+    )
+    if binding_digest is None:
+        binding_digest = content_binding_digest
     published_species = {
         name
         for name, label in coverage_by_species.items()
@@ -497,6 +504,50 @@ def _datapack_with_identity(
             raise ValueError(
                 "plain IMCC-SF04 identity cannot include extension rows or parents"
             )
+        core_version = (
+            datapack.version.partition("-ext-sp-")[0]
+            if model_id == _PUBLISHED_EXTENSION_MODEL_ID
+            else datapack.version
+        )
+        published_core = replace(
+            datapack,
+            reactions=datapack.reactions[:_PUBLISHED_CORE_ROWS],
+            nu=datapack.nu[
+                :len(_PUBLISHED_PARENT_OXIDES), :_PUBLISHED_CORE_ROWS
+            ],
+            A=datapack.A[:_PUBLISHED_CORE_ROWS],
+            B=datapack.B[:_PUBLISHED_CORE_ROWS],
+            domains=datapack.domains[:_PUBLISHED_CORE_ROWS],
+            paper_domains=datapack.paper_domains[:_PUBLISHED_CORE_ROWS],
+            version=core_version,
+            parent_oxides=datapack.parent_oxides[:len(_PUBLISHED_PARENT_OXIDES)],
+        )
+        core_names = (*published_core.parent_oxides, *published_core.reactions)
+        published_core_digest = _published_datapack_manifest_hash(
+            _kernel_datapack_binding_payload(
+                published_core,
+                model_id=_PUBLISHED_MODEL_ID,
+                coverage={name: coverage_by_species[name] for name in core_names},
+            )
+        )
+        if published_core_digest != _PUBLISHED_KERNEL_DATAPACK_SHA256:
+            raise ValueError(
+                "published IMCC identity requires kernel content matching the "
+                "frozen published core"
+            )
+        if model_id == _PUBLISHED_MODEL_ID:
+            if (
+                supplied_binding_digest is not None
+                and supplied_binding_digest != _PUBLISHED_DATAPACK_SHA256
+            ):
+                raise ValueError(
+                    "published IMCC identity requires the frozen complete "
+                    "canonical datapack binding digest"
+                )
+            # The manifest digest also covers source and provenance fields
+            # that are not present in ImccDatapack. Keep that identity after
+            # independently matching the kernel arrays to their own pin.
+            binding_digest = _PUBLISHED_DATAPACK_SHA256
 
     labelled = replace(
         datapack,
@@ -512,10 +563,7 @@ def _datapack_with_identity(
             evidence_class=_UNTRUSTED_IDENTITY_TOKEN,
             coverage=MappingProxyType(coverage_by_species),
             binding_digest=binding_digest,
-            proven=(
-                claims_published
-                and published_manifest_sha256 == _PUBLISHED_DATAPACK_SHA256
-            ),
+            proven=claims_published,
         ),
     )
     return labelled
@@ -564,13 +612,11 @@ def _label_loaded_datapack(
     """Attach caller-supplied identity to an in-memory datapack.
 
     When the caller claims published IMCC identity or coverage,
-    ``_datapack_with_identity`` checks that the supplied
-    ``published_manifest_sha256`` string equals ``_PUBLISHED_DATAPACK_SHA256``
-    and that species, coverage, and shape constraints match. A matching
-    ``published_manifest_sha256`` is sufficient to pass the published-core
-    integrity gate on the paths in this function. The separate
-    ``binding_digest`` comes from the complete JSON manifest on the adapter
-    load path; if omitted, the kernel content payload is hashed here.
+    ``_datapack_with_identity`` checks the supplied manifest hash and a
+    recomputation from the published kernel rows. A supplied hash alone cannot
+    prove that the arrays match the published core. If ``binding_digest`` is
+    omitted, non-published datapacks use a kernel-content digest; the plain
+    published pack retains its manifest digest only after its content matches.
     """
     return _datapack_with_identity(
         datapack,
