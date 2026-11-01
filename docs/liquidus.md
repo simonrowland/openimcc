@@ -13,9 +13,15 @@ Both result types expose `notices`, empty when all supplied parents are
 supported. If a parent is unsupported, the calculation proceeds with the
 supported parents and adds a `CrystalNotice` with code
 `crystal_si_dropped_parents`, input wt% for each dropped oxide, and the
-`model_id@binding_digest` used. With the default pack, P2O5 selects the
-packaged D066 extension; caller-supplied packs are respected. Phase rows that
-need unsupported parents have `SI=None` and status `NO_SUPPORTED_COMPOSITION`.
+`model_id@binding_digest` used.
+
+When `pack` is omitted, the default core pack is used. P2O5 is not supported by
+that pack, so it is dropped from the crystal calculation and its normalized
+input wt% is reported in the `crystal_si_dropped_parents` notice. To include
+P2O5 through the packaged D066 extension, pass it explicitly, for example
+`load_datapack("src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json")` as `pack`.
+Phase rows that need unsupported parents have `SI=None` and status
+`NO_SUPPORTED_COMPOSITION`.
 
 `liquidus_bracket(composition, T_low, T_high, pack=None, *, condensate=None)`
 returns the highest supported zero crossing with SI positive toward the
@@ -58,18 +64,19 @@ Magnetite is Fe3O4 while melt iron input is FeO-equivalent: interpreting its
 index requires an iron-redox balance and must not be treated as a direct FeO
 stoichiometric phase.
 
-After rebuilding the Fe/Ti fusion nodes on the JANAF elemental-reference
-chain, the cleaned-melt brackets were recomputed over 1323–2100 K. The lunar
-low-Ti feed is `AVAILABLE`, controlled by anorthite at 1334.686173 K; the Mars
-feed remains `NO_SUPPORTED_CROSSING`; CI is controlled by forsterite at
-1948.2335139 K. At 1500 K,
-corrected SI values on the lunar feed are −2.681 for ilmenite, −3.243 for
-ulvöspinel, and −2.676 for perovskite; on the Mars feed they are −2.630,
-−2.969, and −2.629, respectively.
+Using the default core pack, the cleaned-melt brackets over 1323–2100 K give the
+lunar low-Ti feed `AVAILABLE`, controlled by anorthite at 1358.941608 K; the
+Mars feed `AVAILABLE`, controlled by forsterite at 1428.852560 K; and CI
+controlled by forsterite at 1948.2335139 K. Unsupported parents, including P2O5
+in the lunar and Mars feeds, are reported in the dropped-parent notice.
 
-Pure anorthite brackets pseudowollastonite at 1406.329664 K. Pure forsterite
-has no supported crossing through 2100 K; its SI is +0.100 at the measured
-2163 K melting point, and the crystal window has no root.
+At 1500 K, SI values on the lunar feed are −3.124 for ilmenite, −4.007 for
+ulvöspinel, and −2.625 for perovskite; on the Mars feed they are −2.977, −3.591,
+and −2.555, respectively.
+
+Pure anorthite brackets pseudowollastonite at 1406.329664 K. Pure forsterite has
+no supported crossing through 2100 K; its SI is +0.100 at the measured 2163 K
+melting point, and the crystal window has no root.
 
 `liquid_only_notice(T_K, bracket)` returns a typed `LiquidOnlyNotice` below a
 supported bracketed liquidus, or when there is no supported crossing. It does

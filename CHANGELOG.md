@@ -4,6 +4,12 @@
 
 - `evaluate_redox()` accepts an already-loaded melt pack through `melt_pack`.
 
+- `saturation_indices()` and `liquidus_bracket()` use the default core pack
+  when `pack` is omitted; unsupported P2O5 is reported in the dropped-parent
+  notice. Passing the extension pack explicitly preserves the previous P2O5
+  results. The Mars feed in `tests/test_diagnostics.py` moves from no supported
+  crossing to a forsterite crossing at about 1428.85 K.
+
 - Return a per-host `numeric_out_of_range` result when an equilibrium pressure
   cannot be represented as a finite positive float.
 
