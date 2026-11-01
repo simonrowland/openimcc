@@ -402,6 +402,13 @@ def evaluate_subsolidus_reactions(
             equilibrium_pressure = STANDARD_PRESSURE_PA * math.exp(log_pressure_eq)
         except OverflowError:
             equilibrium_pressure = math.inf
+        if equilibrium_pressure == 0.0 or not math.isfinite(equilibrium_pressure):
+            try:
+                equilibrium_pressure = math.exp(
+                    log_pressure_eq + math.log(STANDARD_PRESSURE_PA)
+                )
+            except OverflowError:
+                equilibrium_pressure = math.inf
         if not math.isfinite(equilibrium_pressure) or equilibrium_pressure <= 0.0:
             results.append(_base_result(
                 reaction_id, "numeric_out_of_range", stoich, driver, sources,

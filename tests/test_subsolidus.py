@@ -199,6 +199,45 @@ def test_positive_subnormal_pressures_use_log_differences():
     )
 
 
+@pytest.mark.parametrize(
+    ("target_log_pressure_eq", "expected_status"),
+    [(-750.0, "supported"), (-800.0, "numeric_out_of_range")],
+)
+def test_troilite_pressure_scales_before_exponent_underflow(
+    target_log_pressure_eq, expected_status
+):
+    temperature = 1000.0
+    host_g = subsolidus._node_value(
+        subsolidus._data()["species"]["FeS_troilite"], temperature
+    )
+    base_log_pressure_eq = 2.0 * host_g / (R_J_MOL_K * temperature)
+    iron_activity = math.exp(
+        (base_log_pressure_eq - target_log_pressure_eq) / 2.0
+    )
+    actual_log_pressure_eq = base_log_pressure_eq - 2.0 * math.log(iron_activity)
+    assert actual_log_pressure_eq == pytest.approx(
+        target_log_pressure_eq, abs=1e-12
+    )
+
+    result = _evaluate(
+        _host("FeS_troilite", "FeS", "troilite", activity=1.0),
+        temperature,
+        {"S2": 1.0},
+        {"Fe": iron_activity},
+    )
+
+    assert result["status"] == expected_status
+    if expected_status == "supported":
+        pressure = result["equilibrium_gas_partial_pressures_Pa"]["S2"]
+        assert pressure == math.exp(
+            actual_log_pressure_eq + math.log(STANDARD_PRESSURE_PA)
+        )
+        assert pressure > 0.0
+    else:
+        assert result["equilibrium_gas_partial_pressures_Pa"] is None
+        assert result["notices"][0]["code"] == "numeric_out_of_range"
+
+
 def test_unrepresentable_equilibrium_pressure_only_marks_its_host_unavailable():
     hosts = [
         _host("FeS_troilite", "FeS", "troilite"),
