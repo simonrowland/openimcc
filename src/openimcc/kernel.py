@@ -177,7 +177,6 @@ class _ImccDatapackIdentity:
     evidence_class: str
     coverage: Mapping[str, str]
     binding_digest: str | None
-    content_digest: str | None
     proven: bool
 
 
@@ -187,7 +186,6 @@ def _untrusted_datapack_identity() -> _ImccDatapackIdentity:
         evidence_class=_UNTRUSTED_IDENTITY_TOKEN,
         coverage=MappingProxyType({}),
         binding_digest=None,
-        content_digest=None,
         proven=False,
     )
 
@@ -658,7 +656,6 @@ def _datapack_with_identity(
             evidence_class=_UNTRUSTED_IDENTITY_TOKEN,
             coverage=MappingProxyType(coverage_by_species),
             binding_digest=binding_digest,
-            content_digest=solver_content_digest,
             proven=claims_published,
         ),
     )

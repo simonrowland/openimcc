@@ -160,7 +160,13 @@ def test_full_published_kernel_content_digests_are_pinned() -> None:
         ("imcc-sf04-ext-v4.json", PUBLISHED_EXTENSION_KERNEL_CONTENT_SHA256),
     ):
         pack = load_datapack(PACK_DIR / filename).kernel_datapack
-        assert pack._identity.content_digest == expected
+        content_payload = kernel._kernel_datapack_binding_payload(
+            pack,
+            model_id=pack.model_id,
+            coverage=pack.coverage,
+        )
+        content_payload.pop("version")
+        assert kernel._published_datapack_manifest_hash(content_payload) == expected
         assert pack.identity_is_proven
 
 
