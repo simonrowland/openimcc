@@ -949,3 +949,12 @@ def test_below_fusion_band_matches_the_constant_delta_cp_identity(
     assert construction.below_fusion_band_kj_mol(
         temperature, loo_band
     ) == pytest.approx(expected_band_kj, abs=1e-12)
+
+
+def test_positive_subnormal_temperature_is_valid_in_liquid_construction():
+    row = INPUTS["rows"]["SiO2"]
+    crystal = _load_record(JANAF / f"{row['crystal_table_id']}.yaml")
+    construction = liquid_from_solid("SiO2", crystal, row["inputs"])
+    point = construction.at(5.0e-324)
+    assert point.temperature_k == 5.0e-324
+    assert math.isfinite(point.gibbs_kj_mol)

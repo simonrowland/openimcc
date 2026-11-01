@@ -80,6 +80,11 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
         raise ValueError("composition must contain positive total moles and P2O5")
     x = {name: value / total for name, value in amounts.items()}
     x_p = x["P2O5"]
+    log10_x_p = (
+        math.log10(x_p)
+        if x_p > 0.0
+        else math.log10(amounts["P2O5"]) - math.log10(total)
+    )
     wt = {name: value * _MW[name] for name, value in amounts.items()}
     total_mass = math.fsum(wt.values())
     wt = {name: value / total_mass * 100.0 for name, value in wt.items()}
@@ -88,12 +93,12 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
     source_g = -1534480.0 + 506.26*T
     pack_g = -1616372.0 + 539.0*T + 3.5*R_J_MOL_K*T*math.log(1.01325)
     shift = (source_g - pack_g) / (R_J_MOL_K*T*_LN10)
-    central = log_gamma + math.log10(x_p) + shift
+    central = log_gamma + log10_x_p + shift
     # Turkdogan Eq. 13/25 are separate published fits; their envelope is a
     # reported spread and never contributes to the central Suito value.
     bo = wt.get("CaO", 0.0) + 0.33*wt.get("MgO", 0.0)
-    turk13 = (-11.85 - 0.1343*bo) + math.log10(x_p)
-    turk25 = (-9.84 - 0.142*bo) + math.log10(x_p)
+    turk13 = (-11.85 - 0.1343*bo) + log10_x_p
+    turk25 = (-9.84 - 0.142*bo) + log10_x_p
     revised_source_g = -1655480.0 + 571.0*T
     revised_shift = (revised_source_g - pack_g) / (R_J_MOL_K*T*_LN10)
     turk13 += revised_shift
@@ -118,5 +123,5 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
     additional_notices = (
         (P2O5FeIIINotice(),) if composition_moles.get("Fe2O3", 0) > 0 else ()
     )
-    return P2O5ActivityResult(10.0**central, central, 10.0**(central-math.log10(x_p)),
+    return P2O5ActivityResult(10.0**central, central, 10.0**(central-log10_x_p),
                               x_p, band, width, notice, additional_notices)

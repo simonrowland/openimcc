@@ -110,6 +110,13 @@ def _node_value(record: Mapping, temperature_K: float) -> float:
     return float(nodes[-1][1])
 
 
+def _log_standard_pressure_ratio(pressure_Pa: float) -> float:
+    ratio = pressure_Pa / STANDARD_PRESSURE_PA
+    if ratio > 0.0 and math.isfinite(ratio):
+        return math.log(ratio)
+    return math.log(pressure_Pa) - math.log(STANDARD_PRESSURE_PA)
+
+
 def _notice(code: str, severity: str, detail: str, source_id: str | None = None) -> TypedNotice:
     return {"code": code, "severity": severity, "source_id": source_id, "detail": detail}
 
@@ -386,17 +393,19 @@ def evaluate_subsolidus_reactions(
             continue
 
         if host_id != "FeS_troilite":
-            log_pressure_eq -= 0.5 * math.log(gas_o2 / STANDARD_PRESSURE_PA)
+            log_pressure_eq -= 0.5 * _log_standard_pressure_ratio(gas_o2)
         equilibrium_pressure = STANDARD_PRESSURE_PA * math.exp(log_pressure_eq)
 
         activities = math.log(activity_product / activity_host)
         if host_id == "FeS_troilite":
-            log_q = activities + 0.5 * math.log(gas_pressures[driver] / STANDARD_PRESSURE_PA)
+            log_q = activities + 0.5 * _log_standard_pressure_ratio(
+                gas_pressures[driver]
+            )
         else:
             log_q = (
                 activities
-                + math.log(gas_pressures[driver] / STANDARD_PRESSURE_PA)
-                + 0.5 * math.log(gas_o2 / STANDARD_PRESSURE_PA)
+                + _log_standard_pressure_ratio(gas_pressures[driver])
+                + 0.5 * _log_standard_pressure_ratio(gas_o2)
             )
         delta_g = delta_g0 + R_J_MOL_K * temperature_K * log_q
         extent = remaining if delta_g < 0.0 else 0.0

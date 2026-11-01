@@ -180,3 +180,20 @@ def test_literature_scale_checks_for_each_reaction():
     assert delta_g0 == pytest.approx(13_631.0, abs=100.0)
     kp = math.exp(magnesium["log10_Kp"] * math.log(10.0))
     assert kp == pytest.approx(math.exp(-13_631.0 / (R_J_MOL_K * 1353.15)), rel=0.01)
+
+
+def test_positive_subnormal_pressures_use_log_differences():
+    troilite = _evaluate(
+        _host("FeS_troilite", "FeS", "troilite"), 1000.0,
+        {"S2": 5.0e-324}, {"Fe": 1.0},
+    )
+    assert troilite["status"] == "supported"
+
+    anhydrite = _evaluate(
+        _host("CaSO4", "CaSO4", "anhydrite"), 800.0,
+        {"SO2": 1.0e5, "O2": 5.0e-324}, {"CaO": 1.0},
+    )
+    assert anhydrite["status"] == "supported"
+    assert math.isfinite(
+        anhydrite["equilibrium_gas_partial_pressures_Pa"]["SO2"]
+    )

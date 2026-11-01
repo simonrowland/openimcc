@@ -121,3 +121,12 @@ def test_fe2o3_is_folded_into_feo_equivalent_with_feiii_notice() -> None:
     assert ferric.activity == pytest.approx(equivalent.activity)
     assert ferric.additional_notices == (P2O5FeIIINotice(),)
     assert ferric.additional_notices[0].code == "p2o5_feiii_phosphate_chemistry_not_modelled"
+
+
+def test_positive_p2o5_inventory_keeps_its_log_fraction_after_normalization_underflow() -> None:
+    result = evaluate_p2o5_activity(
+        {"SiO2": 1000.0, "P2O5": 5.0e-324}, 1873.0
+    )
+    assert result.x_p2o5 == 0.0
+    assert math.isfinite(result.log10_activity)
+    assert math.isfinite(result.gamma)

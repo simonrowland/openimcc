@@ -7483,3 +7483,55 @@ def test_weighted_oxygen_root_echoes_bulk_plane_label() -> None:
             gas_module.weighted_oxygen_balance_from_pressure_model(
                 pressure_model, weights, bulk_plane=bad, **common
             )
+
+
+def test_gas_thermochemistry_polynomial_overflow_is_typed(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(ImccGasEquilibriumRangeError):
+        evaluate_gas(
+            {"SiO2": 1.0}, 1.0e100, 1.0, gas_pack, gas_species=("SiO",)
+        )
+    row = _nearest_interval_row(
+        gas_pack.gas_df, "O2(g)", 1.0e100, allow_extrapolation=True
+    )
+    with pytest.raises(ImccGasEquilibriumRangeError):
+        _janaf_gibbs(1.0e100, row)
+
+
+def test_gas_mass_action_handles_extreme_oxygen_powers(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    aluminum = evaluate_gas(
+        {"Al2O3": 1.0}, 2000.0, 1.0e300, gas_pack, gas_species=("Al",)
+    )
+    assert math.isfinite(aluminum["Al"])
+
+    chromium = evaluate_gas(
+        {"Cr2O3": 1.0}, 2000.0, 5.0e-324, gas_pack,
+        parent_oxides=("Cr2O3",), gas_species=("CrO3",),
+    )
+    assert math.isfinite(chromium["CrO3"])
+
+
+def test_legacy_oxygen_root_translates_flux_aggregation_overflow() -> None:
+    species = {
+        name: OxygenBalanceSpeciesMetadata(1.0, 1.0, 0.0, 1.0)
+        for name in ("A", "B")
+    }
+    with pytest.raises(ImccGasOxygenBalanceError, match="aggregation overflow"):
+        oxygen_balance_from_pressure_model(
+            lambda _logp: {"A": 1.0e308, "B": 1.0e308},
+            species,
+            bracket=(-3.0, 0.0),
+        )
+
+
+def test_saturation_rejects_unrepresentable_pressure_bracket_endpoint(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    with pytest.raises(ImccGasSaturationError, match="pressure range"):
+        evaluate_gas_saturation(
+            {"CaO": 1.0}, 1800.0, gas_pack, parent_oxides=("CaO",),
+            log10_pO2_bracket=(-1.0, 400.0),
+        )

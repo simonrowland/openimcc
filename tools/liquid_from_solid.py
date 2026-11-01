@@ -15,6 +15,13 @@ def _number(cell: Any) -> float | None:
     return float(cell)
 
 
+def _log_positive_ratio(numerator: float, denominator: float) -> float:
+    ratio = numerator / denominator
+    if ratio > 0.0 and math.isfinite(ratio):
+        return math.log(ratio)
+    return math.log(numerator) - math.log(denominator)
+
+
 def _crystal_rows(crystal_table: Mapping[str, Any]) -> list[dict[str, float]]:
     table = crystal_table.get("table", crystal_table)
     rows = []
@@ -81,7 +88,7 @@ def _crystal_state(
     cp1 = upper["heat_capacity"]
     slope = (cp1 - cp0) / (t1 - t0)
     delta_t = temperature - t0
-    log_ratio = math.log(temperature / t0)
+    log_ratio = _log_positive_ratio(temperature, t0)
     enthalpy_increment = lower["enthalpy_increment"] + (
         cp0 * delta_t + 0.5 * slope * delta_t**2
     ) / 1000.0
@@ -152,7 +159,7 @@ class LiquidConstruction:
         entropy = (
             self.crystal_entropy_at_fusion_j_mol_k
             + delta_s
-            + cp * math.log(temperature / tfus)
+            + cp * _log_positive_ratio(temperature, tfus)
         )
         # Premise: the liquid and crystal share G_s(T_m), fusion adds
         # ΔS_fus=ΔH_fus/T_m, and liquid Cp is constant. Integrating Cp_l gives
@@ -191,7 +198,7 @@ class LiquidConstruction:
         spread = abs((tfus - temperature) * entropy_spread / 1000.0)
         spread += abs(
             cp_spread
-            * ((temperature - tfus) - temperature * math.log(temperature / tfus))
+            * ((temperature - tfus) - temperature * _log_positive_ratio(temperature, tfus))
             / 1000.0
         )
         fusion_bounds = fusion_temperature.get("bounds_k")
@@ -216,7 +223,7 @@ class LiquidConstruction:
                     + shifted * ds / 1000.0
                     + cp * (temperature - shifted) / 1000.0
                 )
-                s = s_cr + ds + cp * math.log(temperature / shifted)
+                s = s_cr + ds + cp * _log_positive_ratio(temperature, shifted)
                 shifted_g = self.dfh298_kj_mol + h - temperature * s / 1000.0
                 temperature_deviations.append(abs(shifted_g - central))
             if temperature_deviations:
@@ -239,8 +246,8 @@ class LiquidConstruction:
         delta_s = self.fusion_entropy_j_mol_k
         delta_cp = self.liquid_cp_j_mol_k - self.crystal_cp_at_fusion_j_mol_k
         delta_h = tfus * delta_s
-        shape = (tfus - temperature) - temperature * math.log(
-            tfus / temperature
+        shape = (tfus - temperature) - temperature * _log_positive_ratio(
+            tfus, temperature
         )
         return (
             delta_h * (1.0 - temperature / tfus) - delta_cp * shape
@@ -277,8 +284,8 @@ class LiquidConstruction:
         tfus_spread = abs(float(fusion_temperature.get("spread", 0.0)))
         delta_s = self.fusion_entropy_j_mol_k
         delta_cp = self.liquid_cp_j_mol_k - self.crystal_cp_at_fusion_j_mol_k
-        shape = (tfus - temperature) - temperature * math.log(
-            tfus / temperature
+        shape = (tfus - temperature) - temperature * _log_positive_ratio(
+            tfus, temperature
         )
 
         propagated = abs(entropy_spread * (tfus - temperature))
@@ -325,7 +332,7 @@ class LiquidConstruction:
                 self.crystal_entropy_at_fusion_j_mol_k
                 + self.fusion_entropy_j_mol_k
                 + self.liquid_cp_j_mol_k
-                * math.log(temperature / self.fusion_temperature_k)
+                * _log_positive_ratio(temperature, self.fusion_temperature_k)
             )
             rows[float(temperature)] = {
                 "enthalpy_increment": h_increment,

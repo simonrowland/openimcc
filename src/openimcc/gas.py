@@ -29,7 +29,7 @@ from importlib import resources
 from numbers import Number
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, TYPE_CHECKING, Callable, Literal, Mapping, NamedTuple, Sequence
+from typing import Any, TYPE_CHECKING, Callable, Iterable, Literal, Mapping, NamedTuple, Sequence
 
 import numpy as np
 from scipy.optimize import brentq
@@ -4374,6 +4374,18 @@ def _gas_result_identity(
 # --------------------------------------------------------------------------- #
 
 
+def _thermochemistry_value(value: float, row_name: str, temperature_K: float) -> float:
+    try:
+        finite = math.isfinite(float(value))
+    except (OverflowError, TypeError, ValueError):
+        finite = False
+    if not finite:
+        raise ImccGasEquilibriumRangeError(
+            f"thermochemistry for {row_name} is outside the finite range at T={temperature_K} K"
+        )
+    return value
+
+
 def _janaf_gibbs(T: float, row: pd.Series) -> float:
     """Return G°(T) in J/mol for a JANAF gas species from Shomate coefficients.
 
@@ -4409,24 +4421,30 @@ def _janaf_gibbs(T: float, row: pd.Series) -> float:
     fit's T_min = 1500 K, so this function does not claim a 298.15 K JANAF match
     from these coefficients.
     """
-    t = T / 1000.0
-    dH = (
-        row["A"] * t
-        + row["B"] / 2.0 * t**2
-        + row["C"] / 3.0 * t**3
-        + row["D"] / 4.0 * t**4
-        - row["E"] / t
-        + row["F"]
-    )
-    S = (
-        row["A"] * np.log(t)
-        + row["B"] * t
-        + row["C"] / 2.0 * t**2
-        + row["D"] / 3.0 * t**3
-        - row["E"] / 2.0 / t**2
-        + row["G"]
-    )
-    return dH * 1000.0 - T * S
+    try:
+        t = T / 1000.0
+        dH = (
+            row["A"] * t
+            + row["B"] / 2.0 * t**2
+            + row["C"] / 3.0 * t**3
+            + row["D"] / 4.0 * t**4
+            - row["E"] / t
+            + row["F"]
+        )
+        S = (
+            row["A"] * np.log(t)
+            + row["B"] * t
+            + row["C"] / 2.0 * t**2
+            + row["D"] / 3.0 * t**3
+            - row["E"] / 2.0 / t**2
+            + row["G"]
+        )
+        gibbs = dH * 1000.0 - T * S
+    except (ArithmeticError, ValueError) as exc:
+        raise ImccGasEquilibriumRangeError(
+            f"thermochemistry for {row.name} is outside the finite range at T={T} K"
+        ) from exc
+    return _thermochemistry_value(gibbs, str(row.name), T)
 
 
 def _lamor_gibbs(T: float, row: pd.Series) -> float:
@@ -4455,11 +4473,18 @@ def _lamor_gibbs(T: float, row: pd.Series) -> float:
     D = row["dG_D"]
     E = row["dG_E"]
     dH298 = row["dH298_R"]
+    row_name = str(getattr(row, "name", "condensate"))
 
-    G_coefs = np.array([A, B, C, D, E])
-    G_scale = np.array([1.0, 1e3, 1e6, 1e9, 1e12])
-    G_poly_coefs = (G_coefs / G_scale)[::-1]
-    return -R_J_MOL_K * T * np.polyval(G_poly_coefs, T) + R_J_MOL_K * dH298 * 1000.0
+    try:
+        G_coefs = np.array([A, B, C, D, E])
+        G_scale = np.array([1.0, 1e3, 1e6, 1e9, 1e12])
+        G_poly_coefs = (G_coefs / G_scale)[::-1]
+        gibbs = -R_J_MOL_K * T * np.polyval(G_poly_coefs, T) + R_J_MOL_K * dH298 * 1000.0
+    except (ArithmeticError, ValueError) as exc:
+        raise ImccGasEquilibriumRangeError(
+            f"thermochemistry for {row_name} is outside the finite range at T={T} K"
+        ) from exc
+    return _thermochemistry_value(gibbs, row_name, T)
 
 
 def _outside_interval_flag(
@@ -5070,6 +5095,42 @@ def _finite_equilibrium_exp(exponent: float) -> np.floating:
     return value
 
 
+def _log_mass_action_power(value: float, exponent: float) -> float:
+    if exponent == 0.0:
+        return 0.0
+    if value == 0.0:
+        return -math.inf if exponent > 0.0 else math.inf
+    return exponent * math.log(float(value))
+
+
+def _finite_mass_action_pressure(
+    direct_calculation: Callable[[], float],
+    log_pressure: float,
+    species: str,
+) -> float:
+    direct_error: Exception | None = None
+    with np.errstate(over="ignore", invalid="ignore", under="ignore"):
+        try:
+            pressure = float(direct_calculation())
+        except (OverflowError, ZeroDivisionError) as exc:
+            direct_error = exc
+        else:
+            if math.isfinite(pressure) and pressure > 0.0:
+                return pressure
+    try:
+        pressure = math.exp(log_pressure)
+    except (OverflowError, ValueError) as exc:
+        cause = direct_error if direct_error is not None else exc
+        raise ImccGasEquilibriumRangeError(
+            f"mass-action pressure for {species} is outside the finite float range"
+        ) from cause
+    if not math.isfinite(pressure):
+        raise ImccGasEquilibriumRangeError(
+            f"mass-action pressure for {species} is outside the finite float range"
+        ) from direct_error
+    return pressure
+
+
 def _add_ion_channels(
     values: dict[str, float],
     domain_flags: dict[str, str | None],
@@ -5287,10 +5348,16 @@ def species_thermo(
     if phase == "g":
         row = _nearest_interval_row(active_pack.gas_df, row_name, T_K)
         t = T_K / 1000.0
+        try:
+            t4 = t**4
+        except OverflowError as exc:
+            raise ImccGasEquilibriumRangeError(
+                f"thermochemistry for {row_name} is outside the finite range at T={T_K} K"
+            ) from exc
         A, B, C, D, E = (float(row[key]) for key in "ABCDE")
         enthalpy_primitive = (
             A * t + B * t**2 / 2.0 + C * t**3 / 3.0
-            + D * t**4 / 4.0 - E / t
+            + D * t4 / 4.0 - E / t
         )
         cp = A + B * t + C * t**2 + D * t**3 + E / t**2
         entropy = (
@@ -5306,18 +5373,30 @@ def species_thermo(
         A, B, C, D, E = (
             float(row[key]) for key in ("dG_A", "dG_B", "dG_C", "dG_D", "dG_E")
         )
+        try:
+            t4 = t**4
+        except OverflowError as exc:
+            raise ImccGasEquilibriumRangeError(
+                f"thermochemistry for {row_name} is outside the finite range at T={T_K} K"
+            ) from exc
         h_increment = R_J_MOL_K * t**2 * (
             B + 2.0 * C * t + 3.0 * D * t**2 + 4.0 * E * t**3
         )
         h_app = R_J_MOL_K * float(row["dH298_R"]) + h_increment
         entropy = R_J_MOL_K * (
-            A + 2.0 * B * t + 3.0 * C * t**2 + 4.0 * D * t**3 + 5.0 * E * t**4
+            A + 2.0 * B * t + 3.0 * C * t**2 + 4.0 * D * t**3 + 5.0 * E * t4
         )
         cp = R_J_MOL_K * (
-            2.0 * B * t + 6.0 * C * t**2 + 12.0 * D * t**3 + 20.0 * E * t**4
+            2.0 * B * t + 6.0 * C * t**2 + 12.0 * D * t**3 + 20.0 * E * t4
         )
         apparent_g = _lamor_gibbs(T_K, row)
         interval = None
+
+    for quantity, value in (
+        ("Cp", cp), ("entropy", entropy), ("enthalpy", h_app),
+        ("Gibbs energy", apparent_g),
+    ):
+        _thermochemistry_value(value, f"{row_name} {quantity}", T_K)
 
     source_ref = str(row["Ref"])
     if phase == "g" and source_ref:
@@ -6054,11 +6133,21 @@ def evaluate_gas(
             )
             dG = G_gas + side_n_O2 * side_G_O2 - n_oxide * G_side_oxide - n_gas * G_oxide
             Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
-            p_gas = (
-                Kp
-                * act[side_oxide] ** n_oxide
-                * a_oxide**n_gas
-                / p_O2**side_n_O2
+            log_pressure = (
+                _log_mass_action_power(float(Kp), 1.0)
+                + _log_mass_action_power(act[side_oxide], n_oxide)
+                + _log_mass_action_power(a_oxide, n_gas)
+                - _log_mass_action_power(p_O2, side_n_O2)
+            )
+            p_gas = _finite_mass_action_pressure(
+                lambda: (
+                    Kp
+                    * act[side_oxide] ** n_oxide
+                    * a_oxide**n_gas
+                    / p_O2**side_n_O2
+                ),
+                log_pressure,
+                gas_name,
             )
         elif mixed_side_parent:
             side_parent, n_side = mixed_side_parent
@@ -6080,12 +6169,22 @@ def evaluate_gas(
             # are per mole of P2O5; solve mass action for the two PS products.
             dG = n_gas * G_gas + n_O2 * G_O2 - G_oxide - n_side * G_side
             Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
-            p_gas = (
-                Kp
-                * a_oxide
-                * act[side_parent] ** n_side
-                / p_O2**n_O2
-            ) ** (1.0 / n_gas)
+            log_pressure = (
+                _log_mass_action_power(float(Kp), 1.0)
+                + _log_mass_action_power(a_oxide, 1.0)
+                + _log_mass_action_power(act[side_parent], n_side)
+                - _log_mass_action_power(p_O2, n_O2)
+            ) / n_gas
+            p_gas = _finite_mass_action_pressure(
+                lambda: (
+                    Kp
+                    * a_oxide
+                    * act[side_parent] ** n_side
+                    / p_O2**n_O2
+                ) ** (1.0 / n_gas),
+                log_pressure,
+                gas_name,
+            )
         elif not hydrogen_halide_parent and oxide in _GAS_PHASE_PARENT_ROWS:
             # Sulfur tuple: n_S2 S2(g) + n_O2 O2(g) = gas(g).
             # Kp = p_gas / (a_S2**n_S2 * fO2**n_O2), with ΔG° formed from
@@ -6094,7 +6193,16 @@ def evaluate_gas(
                 pressure_rows.append(("gas", O2_row))
             dG = G_gas - n_gas * G_oxide - n_O2 * G_O2
             Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
-            p_gas = Kp * (a_oxide**n_gas) * (p_O2**n_O2)
+            log_pressure = (
+                _log_mass_action_power(float(Kp), 1.0)
+                + _log_mass_action_power(a_oxide, n_gas)
+                + _log_mass_action_power(p_O2, n_O2)
+            )
+            p_gas = _finite_mass_action_pressure(
+                lambda: Kp * (a_oxide**n_gas) * (p_O2**n_O2),
+                log_pressure,
+                gas_name,
+            )
         elif not hydrogen_halide_parent:
             # Condensed-parent reaction (1): oxide(l) = n_gas*gas(g) +
             # n_O2*O2(g). Keep its established arithmetic path unchanged.
@@ -6102,7 +6210,16 @@ def evaluate_gas(
                 pressure_rows.append(("gas", O2_row))
             dG = n_gas * G_gas + n_O2 * G_O2 - G_oxide
             Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
-            p_gas = (Kp * a_oxide / (p_O2**n_O2)) ** (1.0 / n_gas)
+            log_pressure = (
+                _log_mass_action_power(float(Kp), 1.0)
+                + _log_mass_action_power(a_oxide, 1.0)
+                - _log_mass_action_power(p_O2, n_O2)
+            ) / n_gas
+            p_gas = _finite_mass_action_pressure(
+                lambda: (Kp * a_oxide / (p_O2**n_O2)) ** (1.0 / n_gas),
+                log_pressure,
+                gas_name,
+            )
         result[gas_name] = float(p_gas)
         domain_flags[gas_name] = "; ".join(flags) or None
         provenance_class[gas_name] = _channel_provenance(
@@ -6528,6 +6645,23 @@ def gas_channel_metadata(
     return MappingProxyType(result)
 
 
+def _checked_oxygen_fsum(values: Iterable[float], label: str) -> float:
+    terms = tuple(values)
+    if any(not math.isfinite(value) for value in terms):
+        cause = OverflowError(f"{label} contains a non-finite term")
+        raise ImccGasOxygenBalanceError(str(cause)) from cause
+    try:
+        total = math.fsum(terms)
+    except (OverflowError, ValueError) as exc:
+        raise ImccGasOxygenBalanceError(
+            f"{label} aggregation overflow: {exc}"
+        ) from exc
+    if not math.isfinite(total):
+        cause = OverflowError(f"{label} sum is non-finite")
+        raise ImccGasOxygenBalanceError(str(cause)) from cause
+    return total
+
+
 def weighted_oxygen_balance_from_pressure_model(
     pressure_model: Callable[[float], Mapping[str, float]],
     oxygen_weights: Mapping[str, float],
@@ -6583,20 +6717,6 @@ def weighted_oxygen_balance_from_pressure_model(
 
     evaluations = 0
 
-    def checked_weighted_sum(values: Sequence[float], label: str) -> float:
-        terms = tuple(values)
-        if any(not math.isfinite(value) for value in terms):
-            cause = OverflowError(f"{label} contains a non-finite term")
-            raise ImccGasOxygenBalanceError(str(cause)) from cause
-        try:
-            total = math.fsum(terms)
-        except (OverflowError, ValueError) as exc:
-            raise ImccGasOxygenBalanceError(f"{label} aggregation overflow: {exc}") from exc
-        if not math.isfinite(total):
-            cause = OverflowError(f"{label} sum is non-finite")
-            raise ImccGasOxygenBalanceError(str(cause)) from cause
-        return total
-
     def weighted_pressure_magnitude(name: str, pressure: float) -> float:
         magnitude = abs(weights[name]) * conductance[name] * pressure * 1e5
         if not math.isfinite(magnitude):
@@ -6646,7 +6766,7 @@ def weighted_oxygen_balance_from_pressure_model(
         if any(not math.isfinite(term) for term in terms):
             cause = OverflowError("weighted oxygen-flux term is non-finite")
             raise ImccGasOxygenBalanceError(str(cause)) from cause
-        residual = checked_weighted_sum(terms, "weighted oxygen-flux residual")
+        residual = _checked_oxygen_fsum(terms, "weighted oxygen-flux residual")
         return residual, pressures, fluxes
 
     nodes = np.linspace(low, high, 81)
@@ -6683,27 +6803,27 @@ def weighted_oxygen_balance_from_pressure_model(
     if any(not math.isfinite(term) for term in weighted_terms):
         cause = OverflowError("returned weighted oxygen-flux term is non-finite")
         raise ImccGasOxygenBalanceError(str(cause)) from cause
-    forward_scale = checked_weighted_sum(
+    forward_scale = _checked_oxygen_fsum(
         (max(term, 0.0) for term in weighted_terms),
         "forward weighted-flux scale",
     )
-    backward_scale = checked_weighted_sum(
+    backward_scale = _checked_oxygen_fsum(
         (max(-term, 0.0) for term in weighted_terms),
         "backward weighted-flux scale",
     )
-    scale = checked_weighted_sum(
+    scale = _checked_oxygen_fsum(
         (abs(term) for term in weighted_terms),
         "absolute weighted-transfer scale",
     )
-    equilibrium_scale = checked_weighted_sum(
+    equilibrium_scale = _checked_oxygen_fsum(
         (weighted_pressure_magnitude(name, pressures[name]) for name in names),
         "equilibrium weighted pressure-transfer scale",
     )
-    bulk_scale = checked_weighted_sum(
+    bulk_scale = _checked_oxygen_fsum(
         (weighted_pressure_magnitude(name, bulk[name]) for name in names),
         "bulk weighted pressure-transfer scale",
     )
-    gross_scale = checked_weighted_sum(
+    gross_scale = _checked_oxygen_fsum(
         (equilibrium_scale, bulk_scale), "gross weighted pressure-transfer scale",
     )
     if scale == 0.0 and residual != 0.0:
@@ -6719,7 +6839,7 @@ def weighted_oxygen_balance_from_pressure_model(
     if any(not math.isfinite(term) for term in applied_terms):
         cause = OverflowError("applied weighted-flux term is non-finite")
         raise ImccGasOxygenBalanceError(str(cause)) from cause
-    applied = checked_weighted_sum(
+    applied = _checked_oxygen_fsum(
         applied_terms, "applied weighted oxygen-flux residual"
     )
     applied_closes = scale > 0.0 and abs(applied) / scale <= 1e-12
@@ -6796,13 +6916,19 @@ def oxygen_balance_from_pressure_model(
                     f"species {name!r} at log10(pO2/bar)={logp}: {pressure!r}"
                 )
             validated[name] = pressure
-        oxygen_flux = math.fsum(
-            data.oxygen_atoms * validated[name] / math.sqrt(data.molar_mass)
-            for name, data in species.items()
+        oxygen_flux = _checked_oxygen_fsum(
+            (
+                data.oxygen_atoms * validated[name] / math.sqrt(data.molar_mass)
+                for name, data in species.items()
+            ),
+            "oxygen-balance oxygen flux",
         )
-        parent_flux = math.fsum(
-            data.parent_oxygen_demand * validated[name] / math.sqrt(data.molar_mass)
-            for name, data in species.items()
+        parent_flux = _checked_oxygen_fsum(
+            (
+                data.parent_oxygen_demand * validated[name] / math.sqrt(data.molar_mass)
+                for name, data in species.items()
+            ),
+            "oxygen-balance parent flux",
         )
         if not (math.isfinite(oxygen_flux) and math.isfinite(parent_flux)):
             raise ImccGasOxygenBalanceError(
@@ -7336,6 +7462,16 @@ def evaluate_gas_saturation(
     lo, hi = map(float, log10_pO2_bracket)
     if not math.isfinite(lo) or not math.isfinite(hi) or lo >= hi:
         raise ImccGasSaturationError("invalid saturation pO2 bracket")
+    try:
+        endpoint_pressures = (10.0**lo, 10.0**hi)
+    except OverflowError as exc:
+        raise ImccGasSaturationError(
+            "saturation pO2 bracket is outside the finite pressure range"
+        ) from exc
+    if not all(math.isfinite(value) and value > 0.0 for value in endpoint_pressures):
+        raise ImccGasSaturationError(
+            "saturation pO2 bracket is outside the finite pressure range"
+        )
 
     def state(logp: float):
         token = _SUPPRESS_TRIAL_RECEIPTS.set(True)
