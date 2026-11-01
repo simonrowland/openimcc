@@ -543,7 +543,8 @@ def build_parser() -> argparse.ArgumentParser:
         "describe", parents=[common], help="print datapack metadata"
     )
     describe.add_argument(
-        "--pack", default=None, help="path to a datapack JSON (default: packaged D066 v5)"
+        "--pack", default=None,
+        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
     )
     describe.set_defaults(func=_cmd_describe)
 
@@ -551,7 +552,8 @@ def build_parser() -> argparse.ArgumentParser:
         "validate-pack", parents=[common], help="load and validate a datapack, then exit"
     )
     validate.add_argument(
-        "--pack", default=None, help="path to a datapack JSON (default: packaged D066 v5)"
+        "--pack", default=None,
+        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
     )
     validate.set_defaults(func=_cmd_validate_pack)
 
@@ -562,7 +564,7 @@ def build_parser() -> argparse.ArgumentParser:
     cp_implied = diagnose_sub.add_parser("cp-implied", help="report implied heat capacity")
     cp_implied.add_argument(
         "--pack", default=None,
-        help="path to a datapack JSON (default: packaged D066 v5)",
+        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
     )
     cp_implied.add_argument(
         "--out", default="diagnostics", help="output directory (default: diagnostics)"
@@ -573,7 +575,7 @@ def build_parser() -> argparse.ArgumentParser:
         "crystal-closure", help="report crystal melting-point closure"
     )
     crystal_closure.add_argument("--pack", default=None,
-        help="path to a melt datapack JSON (default: packaged D066 v5)")
+        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)")
     crystal_closure.add_argument("--condensate", default=None,
         help="path to a condensate table CSV (default: packaged table)")
     crystal_closure.add_argument("--out", default="diagnostics",
@@ -583,7 +585,10 @@ def build_parser() -> argparse.ArgumentParser:
     mixing_enthalpy = diagnose_sub.add_parser(
         "mixing-enthalpy", help="report liquid mixing enthalpy comparisons"
     )
-    mixing_enthalpy.add_argument("--pack", default=None, help="datapack path (default: packaged diagnostic pack)")
+    mixing_enthalpy.add_argument(
+        "--pack", default=None,
+        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
+    )
     mixing_enthalpy.add_argument("--out", default="diagnostics", help="output directory (default: diagnostics)")
     mixing_enthalpy.set_defaults(func=_cmd_diagnose_mixing_enthalpy)
 
@@ -591,7 +596,8 @@ def build_parser() -> argparse.ArgumentParser:
         "solve", parents=[common], help="solve melt activities at one T"
     )
     solve.add_argument(
-        "--pack", default=None, help="path to a datapack JSON (default: packaged D066 v5)"
+        "--pack", default=None,
+        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
     )
     solve.add_argument(
         "--profile",

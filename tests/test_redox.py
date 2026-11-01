@@ -2105,6 +2105,18 @@ def test_valence_fields_and_synthetic_nested_pack_selection(
     assert default.redox_pack_digest == default_pack.canonical_digest
     assert default.melt_pack_binding_digest == melt_pack.binding_digest
 
+    by_loaded_melt_pack = evaluate_redox(
+        inventory, 2200.0, "closed", melt_pack=melt_pack
+    )
+    by_melt_pack_path = evaluate_redox(
+        inventory,
+        2200.0,
+        "closed",
+        melt_pack_path=ROOT / "src/openimcc/data/packs/imcc-sf04-d066-v5.json",
+    )
+    assert by_loaded_melt_pack == by_melt_pack_path
+    assert by_loaded_melt_pack.melt_pack_binding_digest == melt_pack.binding_digest
+
     synthetic_path = _write_synthetic_redox_pack(tmp_path)
     synthetic_pack = load_redox_pack(synthetic_path)
     synthetic = evaluate_redox(

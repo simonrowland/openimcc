@@ -22,6 +22,7 @@ from openimcc.kernel import (
 )
 from openimcc.model import (
     ImccComponentOutsideDomainError,
+    ImccLoadedDatapack,
     ImccMalformedDatapackError,
     ImccTOutsideDatapackDomainError,
     load_datapack,
@@ -1962,6 +1963,7 @@ def _evaluate_redox_with_packs(
     *,
     tol: float = 1.0e-12,
     max_iter: int = 100,
+    melt_pack: ImccLoadedDatapack | None = None,
     redox_pack_path: str | Path | None = None,
     melt_pack_path: str | Path | None = None,
 ) -> RedoxResult:
@@ -1984,9 +1986,10 @@ def _evaluate_redox_with_packs(
     compared endpoints.
     ``redox_pack_path`` selects a validated alternative redox component; when
     omitted, the packaged default is used. Relative paths resolve from the
-    process working directory. ``melt_pack_path`` selects a validated melt
-    association pack; when omitted, the packaged default is used. The selected
-    melt-pack binding digest is returned on ``RedoxResult``.
+    process working directory. ``melt_pack`` selects an already-loaded melt
+    datapack, while ``melt_pack_path`` selects one by path; when both are
+    omitted, the packaged default is used. The selected melt-pack binding
+    digest is returned on ``RedoxResult``.
     """
     if any(
         not is_declared_real_scalar(value, allow_numeric_str=True)
@@ -2023,7 +2026,11 @@ def _evaluate_redox_with_packs(
     elif lambda_imposed is not None:
         raise RedoxInputError("closed mode determines lambda and rejects lambda_imposed")
 
-    if melt_pack_path is None:
+    if melt_pack is not None and melt_pack_path is not None:
+        raise RedoxInputError("melt_pack and melt_pack_path are mutually exclusive")
+    if melt_pack is not None:
+        loaded = melt_pack
+    elif melt_pack_path is None:
         loaded = _load_default_datapack()
     else:
         try:
@@ -2748,6 +2755,7 @@ def evaluate_redox(
     *,
     tol: float = 1.0e-12,
     max_iter: int = 100,
+    melt_pack: ImccLoadedDatapack | None = None,
     redox_pack_path: str | Path | None = None,
     melt_pack_path: str | Path | None = None,
     profile: str | Profile | None = None,
@@ -2762,6 +2770,7 @@ def evaluate_redox(
             warm_start,
             tol=tol,
             max_iter=max_iter,
+            melt_pack=melt_pack,
             redox_pack_path=redox_pack_path,
             melt_pack_path=melt_pack_path,
         )
@@ -2772,6 +2781,10 @@ def evaluate_redox(
             _resolve_profile,
         )
 
+        if melt_pack is not None:
+            raise ProfileConflictError(
+                "profile cannot be combined with an explicit loaded melt pack"
+            )
         if redox_pack_path is not None or melt_pack_path is not None:
             raise ProfileConflictError(
                 "profile cannot be combined with explicit redox or melt pack paths"

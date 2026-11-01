@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -68,6 +69,24 @@ def test_describe_collapses_the_repetitive_per_row_domain_basis(capsys):
     assert "distinct over" in out
     # The raw join would repeat the long ADOPTED string ~34 times.
     assert out.count("sf04-exercised-ADOPTED") <= 2
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["describe", "--help"],
+        ["validate-pack", "--help"],
+        ["diagnose", "cp-implied", "--help"],
+        ["diagnose", "crystal-closure", "--help"],
+        ["diagnose", "mixing-enthalpy", "--help"],
+        ["solve", "--help"],
+    ],
+)
+def test_pack_help_uses_the_same_pack_name(argv, capsys):
+    assert cli.main(argv) == cli.EXIT_OK
+    help_text = re.sub(r"-\n\s+", "-", capsys.readouterr().out)
+    help_text = " ".join(help_text.split())
+    assert "default: packaged imcc-sf04-d066-v5.json" in help_text
 
 
 def test_solve_in_domain_exits_ok_and_emits_activities(capsys):
