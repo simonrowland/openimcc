@@ -53,6 +53,8 @@ LOW_FIT_MINIMUM_ROWS = SHOMATE_CP_PARAMETER_COUNT + LOW_FIT_NODE_MARGIN
 # Same value as openimcc.gas.R_J_MOL_K; kept local so the tool does not import
 # the package it builds data for.
 R_J_MOL_K = 8.314462618
+# Convert level energies from cm^-1 to molar joules, as used by the Saha rows.
+H_C_MOL_CM = 6.02214076e23 * 6.62607015e-34 * 299792458.0 * 100.0
 KONINGS_SOURCE_DIR = Path(__file__).resolve().parents[1] / "data-src/konings"
 KONINGS_BATCH_ELEMENTS = ("La", "Ce", "Pr", "Nd", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu")
 CONSTRUCTED_SAHA_ION_ELEMENTS = (
@@ -3912,12 +3914,10 @@ def _constructed_saha_ion_thermal_rows(
     r = R_J_MOL_K
     t0 = NASA_STANDARD_T_K
     electron_reference_shift = 2.5 * r * t0
-    h_c_mol_cm = 6.02214076e23 * 6.62607015e-34 * 299792458.0 * 100.0
-
     def electronic(
         levels: tuple[tuple[int, float], ...], temperature: float
     ) -> tuple[float, float, float]:
-        energies = [h_c_mol_cm * level for _weight, level in levels]
+        energies = [H_C_MOL_CM * level for _weight, level in levels]
         weighted = [
             degeneracy * math.exp(-energy / (r * temperature))
             for (degeneracy, _level), energy in zip(levels, energies)

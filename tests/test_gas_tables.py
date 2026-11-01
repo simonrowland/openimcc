@@ -7083,6 +7083,46 @@ def test_burcat_pt_minus_retains_its_printed_anchor_and_card_residual() -> None:
     assert thermal["enthalpy_increment"] == pytest.approx(0.0, abs=1.0e-9)
 
 
+def _saha_level_partition(
+    levels: tuple[tuple[int, float], ...], temperature: float
+) -> float:
+    return math.fsum(
+        weight * math.exp(
+            -build_gas_tables.H_C_MOL_CM * energy
+            / (build_gas_tables.R_J_MOL_K * temperature)
+        )
+        for weight, energy in levels
+    )
+
+
+def test_saha_level_partition_constant_convention_control() -> None:
+    """Keep the level-constant check independent of fits and source offsets."""
+    _, neutral_levels, ion_levels = _SAHA_LEVELS["La"]
+    temperature = 1500.0
+
+    def partition_with_constants(
+        levels: tuple[tuple[int, float], ...], h_c: float, k_b: float
+    ) -> float:
+        return math.fsum(
+            weight * math.exp(-h_c * energy / (k_b * temperature))
+            for weight, energy in levels
+        )
+
+    builder_ratio = (
+        _saha_level_partition(ion_levels, temperature)
+        / _saha_level_partition(neutral_levels, temperature)
+    )
+    old_checker_ratio = (
+        partition_with_constants(ion_levels, 1.986445857e-23, 1.380649e-23)
+        / partition_with_constants(neutral_levels, 1.986445857e-23, 1.380649e-23)
+    )
+
+    assert builder_ratio == pytest.approx(1.5790769659699162, rel=1e-15)
+    assert old_checker_ratio / builder_ratio - 1.0 == pytest.approx(
+        6.4613e-12, rel=1e-3
+    )
+
+
 @pytest.mark.parametrize("element", tuple(_SAHA_LEVELS))
 def test_every_m_plus_matches_saha_with_level_populations(
     element: str,
@@ -7094,9 +7134,9 @@ def test_every_m_plus_matches_saha_with_level_populations(
       Kp = (kB T / p0) * (2 Z+ / Z0) * (2 pi me kB T / h^2)^(3/2) * exp(-IE / kB T),
     with Z = sum_i g_i exp(-E_i / kB T) over the listed levels and the factor 2
     the electron spin weight. Units: kB T / p0 is m^3 and the translational
-    term is m^-3, so Kp is dimensionless at p0 = 1 bar; level energies convert
-    from cm^-1 with h c = 1.986445857e-23 J cm. Sanity: with single-level
-    partition functions this is the ground-level Saha equation, which the
+    term is m^-3, so Kp is dimensionless at p0 = 1 bar; level energies use the
+    builder's N_A*h*c*100 molar conversion with its R constant. Sanity: with
+    single-level partition functions this is the ground-level Saha equation, which the
     alkali rows reproduce to better than 1%. Heavy p-block atoms need their
     fine-structure populations: a ground-term degeneracy (9 for 3P) would be
     wrong by a factor of 3 for Pb, whose 3P1 level lies 7819 cm^-1 up.
@@ -7120,13 +7160,6 @@ def test_every_m_plus_matches_saha_with_level_populations(
     h = 6.62607015e-34
     m_e = 9.1093837139e-31
     e_v = 1.602176634e-19
-    h_c = 1.986445857e-23
-
-    def partition(levels: tuple[tuple[int, float], ...], temperature: float) -> float:
-        return sum(
-            weight * math.exp(-h_c * energy / (k_b * temperature))
-            for weight, energy in levels
-        )
 
     if element in build_gas_tables.CONSTRUCTED_SAHA_ION_ELEMENTS:
         temperatures = tuple(float(T) for T in range(1200, 3001, 100))
@@ -7152,8 +7185,8 @@ def test_every_m_plus_matches_saha_with_level_populations(
         fitted_k = math.exp(-delta_g / (R_J_MOL_K * temperature))
         saha_k = (
             k_b * temperature / 1.0e5
-            * 2.0 * partition(ion_levels, temperature)
-            / partition(neutral_levels, temperature)
+            * 2.0 * _saha_level_partition(ion_levels, temperature)
+            / _saha_level_partition(neutral_levels, temperature)
             * (2.0 * math.pi * m_e * k_b * temperature / h**2) ** 1.5
             * math.exp(-ionisation_eV * e_v / (k_b * temperature))
         )

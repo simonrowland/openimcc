@@ -46,12 +46,6 @@ GAS_PACK = load_gas_datapack(
     ),
 )
 
-PARENT_MOLAR_MASS = {
-    "SiO2": 60.083,
-    "Na2O": 61.97853856,
-    "K2O": 94.196,
-}
-
 # Source citation: Tsaplin, Zaitsev, Shelkova & Mogutnov (2000),
 # "Thermodynamic properties and phase equilibria in Na2O-SiO2 and K2O-SiO2
 # systems," Molten Slags, Fluxes and Salts 2000, paper 044, Table 1.  Values
@@ -117,12 +111,18 @@ def _research_pack(
     )
 
 
-def _activities(composition: dict[str, float], temperature: float, pack: ImccDatapack) -> dict[str, float]:
+def _activities(
+    composition: dict[str, float],
+    temperature: float,
+    pack: ImccDatapack,
+    *,
+    basis_type: str = "wt",
+) -> dict[str, float]:
     result = evaluate(
         composition,
         temperature,
         pack,
-        basis_type="wt",
+        basis_type=basis_type,
         allow_extrapolation=True,
         allow_out_of_envelope=True,
     )
@@ -197,10 +197,15 @@ def _tsaplin_residuals(rows: tuple[tuple[float, float, float], ...], oxide: str)
     result = []
     for mole_fraction, temperature, measured_log10_activity in rows:
         composition = {
-            "SiO2": (1.0 - mole_fraction) * PARENT_MOLAR_MASS["SiO2"],
-            oxide: mole_fraction * PARENT_MOLAR_MASS[oxide],
+            "SiO2": 1.0 - mole_fraction,
+            oxide: mole_fraction,
         }
-        activities = _activities(composition, temperature, PUBLISHED_PACK.kernel_datapack)
+        activities = _activities(
+            composition,
+            temperature,
+            PUBLISHED_PACK.kernel_datapack,
+            basis_type="mol",
+        )
         result.append(math.log10(activities[oxide]) - measured_log10_activity)
     return result
 
