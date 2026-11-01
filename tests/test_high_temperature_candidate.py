@@ -301,6 +301,41 @@ def test_candidate_notice_validation_does_not_depend_on_filename() -> None:
     assert "SiO(g)" in str(refusal.value)
 
 
+def test_standalone_v2_candidate_interval_keeps_its_notice() -> None:
+    candidate = load_gas_datapack(GAS_CANDIDATE_V2, OXIDE_CANDIDATE_V2)
+    oxide_frame = candidate.oxide_df.loc[
+        (candidate.oxide_df.index != "SiO2(l)")
+        | (candidate.oxide_df["T_min"] == 4500.0)
+    ].copy(deep=True)
+    standalone = oxide_frame.loc[oxide_frame.index == "SiO2(l)"]
+    assert len(standalone) == 1
+    assert float(standalone.iloc[0]["T_min"]) == 4500.0
+    assert "HT-CANDIDATE" in str(standalone.iloc[0]["Ref"])
+
+    filtered = gas_module.ImccGasDatapack(
+        candidate.gas_df,
+        oxide_frame,
+        Path("filtered-gas.csv"),
+        Path("filtered-oxide.csv"),
+    )
+    result = evaluate_gas({"SiO2": 0.55}, 4500.0, 1.0e-10, filtered)
+    assert result["SiO"] == pytest.approx(79_916_416.06114432, rel=1.0e-12)
+    assert "no paired-source comparison is available" in result.domain_flags["SiO2"]
+
+    malformed_frame = oxide_frame.copy(deep=True)
+    malformed_frame.loc[malformed_frame.index == "SiO2(l)", "Ref"] = (
+        "JANAF-O-012-HT-CANDIDATE|malformed"
+    )
+    with pytest.raises(gas_module.ImccGasValidityMetadataError) as refusal:
+        gas_module.ImccGasDatapack(
+            candidate.gas_df,
+            malformed_frame,
+            Path("filtered-gas.csv"),
+            Path("filtered-oxide.csv"),
+        )
+    assert "SiO2(l)" in str(refusal.value)
+
+
 def test_v1_candidate_ref_rewording_fails_closed_at_load() -> None:
     candidate = load_gas_datapack(GAS_CANDIDATE, OXIDE_CANDIDATE)
     gas_frame = candidate.gas_df.copy(deep=True)
