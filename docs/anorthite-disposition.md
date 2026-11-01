@@ -23,12 +23,13 @@ input uncertainty, not a row-specific uncertainty band. See the [v4 row](../src/
 
 The Hess reaction energy is
 `ΔrG° = G°[CaAl₂Si₂O₈(l)] − G°[CaO(l)] − G°[Al₂O₃(l)] − 2G°[SiO₂(l)]`,
-with `log₁₀K = −ΔrG°/(RT ln 10)`. At the four requested temperatures, v4
-therefore makes association 8.74 times stronger than v5. The Gibbs-energy
-difference grows with temperature because `B` is shared and the `A` offset is
-constant.
+with `log₁₀K = −ΔrG°/(RT ln 10)`. At the four requested temperatures, the
+FC87 row makes association 8.74 times stronger than the Hess-refit row. The
+Gibbs-energy difference grows with temperature because `B` is shared and the
+`A` offset is constant. This is a comparison of the two anorthite rows,
+independent of the other pack changes.
 
-| T (K) | log₁₀ K, v4 | log₁₀ K, v5 | v4 − v5 (dex) | ΔrG°(v4) − ΔrG°(v5) (kJ mol⁻¹) |
+| T (K) | log₁₀ K, FC87 row | log₁₀ K, Hess row | FC87 − Hess (dex) | ΔrG°(FC87) − ΔrG°(Hess) (kJ mol⁻¹) |
 | ---: | ---: | ---: | ---: | ---: |
 | 1700 | 5.7558 | 4.8142 | 0.9416 | −30.65 |
 | 1873 | 5.4727 | 4.5311 | 0.9416 | −33.76 |
@@ -37,88 +38,119 @@ constant.
 
 ## Effect in CAS melts
 
+I isolated the anorthite row by copying v5 to a scratch candidate pack and
+replacing only the `A` and `B` coefficients for `CaAl₂Si₂O₈` with the v4
+values. All primary comparisons below run from that FC87-row substitution in
+otherwise-v5 to the default v5 Hess row. The secondary full-pack column shows
+v4-pack to v5-pack changes and includes the effects of other changed
+associations, including CaSiO₃; it does not isolate anorthite.
+
 Baird's Glasgow thesis reports six CaO–Al₂O₃–SiO₂ melts with about 20 wt%
-Al₂O₃ at 1500 °C (1773.15 K). The table below shows three compositions across
-that silica range. Activities are model outputs on the liquid parent-oxide
-standard; each pair is v4 → v5 and each parenthetical number is
-`log₁₀(a_v5/a_v4)` in dex. Baird's reported silica activity uses the
-cristobalite reference. At this temperature the liquid-reference conversion
-is `log₁₀(a_liq) = log₁₀(a_cristobalite) − 0.028852`, or
-`a_liq = 0.9357 a_cristobalite`.
+Al₂O₃ at 1500 °C (1773.15 K). The activities below use three compositions
+across that silica range and are model outputs on the liquid parent-oxide
+standard. Baird's reported silica activity uses the cristobalite reference.
+At this temperature the liquid-reference conversion is
+`log₁₀(a_liq) = log₁₀(a_cristobalite) − 0.028852`, or
+`a_liq = 0.9357 a_cristobalite`. The numerical transcriptions from Table XII
+used below could not be verified against the scan; data-based residuals and
+pressure scalings are therefore provisional.
 
 Both comparison temperatures, 1773 K here and 1905 K below, are within the
 packs' adopted 1700–3000 K exercise domain but below FC87's 2500–3500 K
 paper-demonstrated span. These are model-continuation comparisons, not FC87
 measurements at those temperatures.
 
-| Baird composition (wt% CaO / SiO₂ / Al₂O₃) | a(SiO₂), v4 → v5 | a(CaO), v4 → v5 | a(Al₂O₃), v4 → v5 |
-| --- | ---: | ---: | ---: |
-| CAS1 (46.7 / 33.5 / 20.25) | 0.01886 → 0.04404 (+0.368) | 0.005738 → 0.004087 (−0.147) | 0.002913 → 0.002966 (+0.008) |
-| CAS3 (38.8 / 42.0 / 19.5) | 0.14054 → 0.24266 (+0.237) | 0.000848 → 0.000765 (−0.045) | 0.010564 → 0.010494 (−0.003) |
-| CAS6 (11.0 / 69.5 / 19.9) | 0.77507 → 0.77997 (+0.003) | 0.0000143 → 0.0000418 (+0.466) | 0.03465 → 0.04479 (+0.111) |
+| Baird composition (wt% CaO / SiO₂ / Al₂O₃) | a(SiO₂), FC87 row in v5 → v5 Hess row (Δdex) | a(CaO), same direction (Δdex) | a(Al₂O₃), same direction (Δdex) | Full-pack v5−v4 Δdex (Si / Ca / Al; secondary) |
+| --- | ---: | ---: | ---: | ---: |
+| CAS1 (46.7 / 33.5 / 20.25) | 0.03991 → 0.04404 (+0.043) | 0.004418 → 0.004087 (−0.034) | 0.002751 → 0.002966 (+0.033) | +0.368 / −0.147 / +0.008 |
+| CAS3 (38.8 / 42.0 / 19.5) | 0.17137 → 0.24266 (+0.151) | 0.001145 → 0.000765 (−0.175) | 0.005838 → 0.010494 (+0.255) | +0.237 / −0.045 / −0.003 |
+| CAS6 (11.0 / 69.5 / 19.9) | 0.78079 → 0.77997 (−0.0005) | 0.0000196 → 0.0000418 (+0.330) | 0.02829 → 0.04479 (+0.200) | +0.003 / +0.466 / +0.111 |
 
-Across all six Baird compositions, the v5−v4 changes span +0.003 to +0.368
-dex for a(SiO₂), −0.147 to +0.466 dex for a(CaO), and −0.059 to +0.222 dex
-for a(Al₂O₃). The CaO change is non-monotonic and the large silica-rich
-relative shift occurs where both predicted CaO activities are very small.
+Across all six Baird compositions, the isolated CaO response is
+non-monotonic. The isolated silica shift is small at CAS6 and largest at
+CAS3; full-pack shifts therefore cannot be assigned to the anorthite row
+alone.
+
+| Oxide activity | Isolated v5−swap range (dex) | Full-pack v5−v4 range (dex; secondary) |
+| --- | ---: | ---: |
+| a(SiO₂) | −0.0005 to +0.151 | +0.003 to +0.368 |
+| a(CaO) | −0.194 to +0.330 | −0.147 to +0.466 |
+| a(Al₂O₃) | +0.033 to +0.480 | −0.059 to +0.222 |
 
 For `SiO₂(l) ⇌ SiO(g) + ½ O₂(g)`, p(SiO) is proportional to a(SiO₂) at a
-fixed oxygen fugacity. The table below scales Baird's inferred pressure by
-`a_model/a_Baird,liq` at each composition; it is a matched-buffer model
-comparison, not a separately calculated gas equilibrium. Baird measured the
-total CO+SiO pressure, then inferred p(SiO) from the SiC+CO equilibrium.
+fixed oxygen fugacity. The following values scale the transcribed Baird
+inferred pressure by `a_model/a_Baird,liq` at each composition. This is a
+matched-buffer model comparison, not a separately calculated gas
+equilibrium. Baird measured total CO+SiO pressure and inferred p(SiO) from
+the SiC+CO equilibrium.
 
-| Composition | Baird inferred p(SiO) (atm) | Scaled v4 p(SiO) (atm) | Scaled v5 p(SiO) (atm) |
-| --- | ---: | ---: | ---: |
-| CAS1 | 0.005 | 0.00234 | 0.00547 |
-| CAS3 | 0.010 | 0.00782 | 0.01351 |
-| CAS6 | 0.022 | 0.02180 | 0.02194 |
+| Composition | Transcribed p(SiO) (atm) | FC87 row in v5 (atm) | v5 Hess row (atm) | Full-v4-pack value (atm; secondary) |
+| --- | ---: | ---: | ---: | ---: |
+| CAS1 | 0.005 | 0.00496 | 0.00547 | 0.00234 |
+| CAS3 | 0.010 | 0.00954 | 0.01351 | 0.00782 |
+| CAS6 | 0.022 | 0.02196 | 0.02194 | 0.02180 |
 
-On all six Baird silica-activity rows, after converting to the liquid reference
-and combining the CAS5 replicate activities by their geometric mean, the
-residual `log₁₀(a_model/a_measured)` has mean absolute residual (MAE) 0.124 dex
-(RMSE 0.164) for v4 and 0.080 dex (RMSE 0.116) for v5. V4 is closer at CAS2
-and CAS3; v5 is closer at CAS1, CAS4, CAS5, and CAS6. The aggregate difference
-is modest, but this second-laboratory activity check favors v5 rather than v4.
-The pressure table expresses the same silica-activity comparison at Baird's
-buffer and is not an independent second score. The primary record is [Baird, *The Measurement of
-Silica Activities in Liquid Slags*, Glasgow PhD thesis (1956), Table XII](https://theses.gla.ac.uk/73568/1/10656328.pdf); the university record catalogues it as a 1957 thesis ([record](https://theses.gla.ac.uk/73568/)).
+On the six transcribed Baird silica-activity rows, after converting to the
+liquid reference and combining the CAS5 replicate activities by their
+geometric mean, the residual `log₁₀(a_model/a_measured)` gives these scores:
+
+| Anorthite row scored | Isolated substitution in v5: MAE (RMSE), dex | Full pack: MAE (RMSE), dex (secondary) |
+| --- | ---: | ---: |
+| FC87 anorthite row | 0.057 (0.077) | 0.124 (0.164), v4 pack |
+| Hess-refit anorthite row | 0.080 (0.116) | 0.080 (0.116), v5 pack |
+
+The isolated FC87-row substitution is closer at CAS1, CAS2, CAS3, and CAS6;
+v5 is closer at CAS4 and CAS5. On this unverified transcription, the Baird
+activity comparison modestly favors the older anorthite row. The full-pack
+score points the other way because it combines several row changes. The
+pressure scaling expresses the same silica-activity comparison at Baird's
+buffer and is not an independent score. The primary record is [Baird, *The
+Measurement of Silica Activities in Liquid Slags*, Glasgow PhD thesis (1956),
+Table XII](https://theses.gla.ac.uk/73568/1/10656328.pdf); the university
+record catalogues it as a 1957 thesis ([record](https://theses.gla.ac.uk/73568/)).
 
 ## Activity and vapor evidence
 
-The reported CAS SiO evolution and activities in Shornikov, Stolyarova &
-Shultz (1996), “Mass spectrometric study of thermodynamic properties of
-melts of the CaO–Al₂O₃–SiO₂ system,” *Tekhnika i tekhnologiya silikatov* 3
-(1–2), 8–22 (English translation listed as “High-temperature mass
-spectrometric study of the thermodynamic properties of the
-CaO–Al₂O₃–SiO₂ system,” *High Temperature and Materials Science* 36(1),
-15–35), are reported to favor the stronger, FC87-based v4 association. The
-reported CaO table is an outlier relative to that silica/SiO trend and is not
-used here as independent support for a(CaO). I could not obtain a primary
-full-text copy of the 1996 numerical tables, so I assign no exact activity or
-pressure residual to this result and do not use it as a quantitative score.
-The 2003 article cites the translated 1996 paper in its references
+Shornikov, Stolyarova & Shultz (1996), “Mass spectrometric study of
+thermodynamic properties of melts of the CaO–Al₂O₃–SiO₂ system,” *Tekhnika i
+tekhnologiya silikatov* 3 (1–2), 8–22 (English translation listed as
+“High-temperature mass-spectrometric study of the thermodynamic properties
+of the CaO–Al₂O₃–SiO₂ system,” *High Temperature and Materials Science*
+36(1), 15–35), remains a lead for future data recovery. I could not obtain
+the primary numerical tables in a form that exposes their values and
+conditions for a traceable comparison. The evidence direction is therefore
+unverified; the data cannot establish which association value it favors or
+whether its CaO results agree with the other oxide results. The translated
+paper is cited by the 2003 article
 ([publisher record](https://link.springer.com/article/10.1023/A:1026382828677)).
 
 Stolyarova, Lopatin & Stolyar (2003) measured silica activities by
 high-temperature mass spectrometry at 1905 ± 10 K along the x(SiO₂)=0.5 and
 0.6 joins, with CaO:Al₂O₃ mole ratios from 0.25 to 4. Their abstract reports
-that activity remains constant along each join. On those same compositions,
-the model's calculated activity span is 0.374 dex (v4) versus 0.241 dex (v5)
-at x(SiO₂)=0.5, and 0.174 dex (v4) versus 0.121 dex (v5) at x(SiO₂)=0.6.
-This qualitative shape check therefore favors v5's flatter trend, but the
-accessible abstract does not provide absolute activities for a level-based
-residual, and this is the same research group as the 1996 study. The paper is
-“Determination of the SiO₂ Activity in Melts of the CaO–Al₂O₃–SiO₂ System by
-High-Temperature Mass Spectrometry,” *Glass Physics and Chemistry* 29,
-451–455 (2003), [doi:10.1023/A:1026382828677](https://doi.org/10.1023/A:1026382828677).
+that activity remains constant along each join. Using the isolated row swap,
+the model's calculated activity span falls from 0.308 to 0.241 dex at
+x(SiO₂)=0.5 and from 0.153 to 0.121 dex at x(SiO₂)=0.6 when the FC87 row is
+replaced by the Hess row. The full-v4-pack spans are shown only as secondary
+context. This qualitative shape check favors the flatter v5 Hess-row trend,
+but the accessible abstract does not provide absolute activities for a
+level-based residual.
 
-Baird supplies a second-laboratory CAS cross-check, but not a direct
+| x(SiO₂) | Isolated span: FC87 row in v5 → v5 Hess row (dex) | Full v4 pack span (dex; secondary) |
+| ---: | ---: | ---: |
+| 0.5 | 0.308 → 0.241 | 0.374 |
+| 0.6 | 0.153 → 0.121 | 0.174 |
+
+The paper is “Determination of the SiO₂ Activity in Melts of the
+CaO–Al₂O₃–SiO₂ System by High-Temperature Mass Spectrometry,” *Glass Physics
+and Chemistry* 29, 451–455 (2003),
+[doi:10.1023/A:1026382828677](https://doi.org/10.1023/A:1026382828677).
+
+Baird provides a second-laboratory CAS cross-check, but not a direct
 measurement of p(SiO): the measured quantity is total CO+SiO pressure, and
 the SiO portion is inferred using a SiC equilibrium. I found no independent
 second-laboratory CAS study that directly measures p(SiO) over matched
-compositions and temperatures. Thus the available cross-lab comparison is
-useful but does not arbitrate the 1996/v4 report by itself.
+compositions and temperatures. The 1996 numerical tables remain a future
+retrieval and reduction lead, with no direction assigned here.
 
 ## Calorimetric evidence above 1800 K
 
@@ -181,35 +213,35 @@ material new discriminator.
 ## Why the default remains v5
 
 The source rail is consistency, then primary measurement, then domain match,
-then estimates. V5 remains the default because its A-only refit makes the
-anorthite liquid formula Gibbs energy close on the documented crystal,
-fusion, liquid-Cp, and parent-liquid standard-state chain. V4 is a genuine
-published thermochemical route, not a casual estimate, but its older FC87
-value is 30.6–44.6 kJ mol⁻¹ more favorable over the requested range than the
-later Hess reconstruction. Activity evidence alone does not warrant replacing
-the Hess-consistent row with the competing coefficient. The pressure/activity
-evidence is also split: the unquantified 1996 report points to v4, while
-Baird's cross-laboratory table and the 2003 constant-silica pattern modestly
-favor v5. No row-specific confidence band is available, and the parent
-liquid-reference inputs retain their stated uncertainty.
+then estimates. The default keeps the v5 Hess-refit anorthite row because it
+closes the documented formula-molar liquid formation Gibbs energy on the
+crystal, fusion, liquid-Cp, and parent-liquid standard-state chain. Activity
+evidence does not enter that fit. The Baird Table XII transcription, which
+could not be verified against the scan, gives a lower MAE for the isolated
+FC87-row substitution (0.057 dex versus 0.080 dex for v5), while the 2003
+constant-activity trend favors v5's flatter result. These activity checks
+leave an empirical conflict, with one comparison provisional and the other
+qualitative. The FC87 row remains a genuine published thermochemical route;
+its association is 30.6–44.6 kJ mol⁻¹ more favorable over the requested
+range than the Hess-refit row. No row-specific confidence band is available,
+and the parent liquid-reference inputs retain their stated uncertainty.
 
 The choice should be revisited if a primary, same-standard liquid-An
 formation Gibbs measurement or higher-temperature enthalpy/Cp series moves
-the Hess target toward v4, or if a second independent laboratory publishes
-reproducible CAS activities and directly measured SiO pressures over matched
+the Hess target toward FC87, or if scan-checked primary CAS activity data and
+independent, directly measured SiO pressures become available over matched
 composition/temperature points with reference-state and uncertainty details.
-The 1996 primary tables should also be recovered and reduced on the same
-standards before assigning them a numerical score.
 
 ## Melt notice
 
-A future CAS activity-sensitivity notice is warranted because the association
-choice changes predicted silica activity and therefore p(SiO) by up to 0.37
-dex (a factor of 2.33) in Baird's measured composition range. The existing
-near-liquidus notice covers a nearly stoichiometric anorthite melt and does
-not describe this composition-dependent source split. A notice should state
-that v5 is retained on Hess consistency, that the 1996 report and later
-cross-checks do not agree on the preferred association, and that no universal
-correction is justified. Its comparison should remain unscored until the 1996
-tables and a direct second-lab CAS p(SiO) dataset are available. This note
-does not change pack coefficients or implement a notice.
+A short CAS activity-sensitivity notice is warranted because changing only
+the anorthite row moves predicted a(SiO₂) and p(SiO) by up to 0.151 dex
+(factor 1.42) across the six Baird compositions, with a(Al₂O₃) changing by
+up to 0.480 dex. The existing near-liquidus notice covers a nearly
+stoichiometric anorthite melt and does not describe this composition-dependent
+sensitivity. The CAS notice should state that v5 is retained on thermochemical
+consistency, that the Baird transcription is unverified against the scan,
+and that the 2003 shape check favors v5's flatter trend while the provisional
+Baird activity score favors the FC87 row. It should report model sensitivity
+without implying a universal correction. This note does not change pack
+coefficients or implement a notice.
