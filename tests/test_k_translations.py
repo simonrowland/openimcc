@@ -15,7 +15,6 @@ import openimcc.model as model
 from openimcc.gas import (
     R_J_MOL_K,
     evaluate_gas,
-    load_gas_datapack,
     species_thermo,
 )
 
