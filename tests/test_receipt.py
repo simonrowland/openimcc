@@ -309,6 +309,30 @@ def test_source_identity_ignores_an_enclosing_unrelated_checkout(
     receipt_module._source_identity.cache_clear()
 
 
+def test_receipts_share_source_identity_cached_at_first_use(monkeypatch):
+    receipt_module._source_identity.cache_clear()
+    status_calls = []
+
+    def changing_checkout_status(*args, **kwargs):
+        status_calls.append((args, kwargs))
+        stdout = "" if len(status_calls) == 1 else " M edited.py\n"
+        return receipt_module.subprocess.CompletedProcess(
+            args[0], 0, stdout=stdout
+        )
+
+    monkeypatch.setattr(receipt_module.subprocess, "run", changing_checkout_status)
+    try:
+        first = receipt_module.build_calculation_receipt(request={"step": 1})
+        second = receipt_module.build_calculation_receipt(request={"step": 2})
+    finally:
+        receipt_module._source_identity.cache_clear()
+
+    assert len(status_calls) == 1
+    assert first.code["source_revision"] == second.code["source_revision"]
+    assert first.code["source_dirty"] is False
+    assert second.code["source_dirty"] is False
+
+
 def test_result_equality_ignores_the_receipt():
     melt = evaluate(_BASALT, 1800.0, basis_type="wt")
     activities = {name: melt.activity(name) for name in melt.parent_oxides}

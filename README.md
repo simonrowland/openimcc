@@ -48,6 +48,9 @@ carry a frozen `CalculationReceipt` at `result.receipt`. Call
 `result.receipt.to_dict()` for JSON-safe caller inputs, applicable data
 digests, code and dependency versions, and solver settings. CLI `solve --json`
 includes the same receipt in its output.
+The `code.source_revision` and `code.source_dirty` values are observed once per
+process, when its first receipt is built, and are not refreshed. A process that
+edits or switches its checkout afterward should not rely on them.
 
 The opt-in sulfur extension estimates sulfide/sulfate speciation and sulfide-
 liquid saturation from melt composition, temperature, and sulfur fugacity or

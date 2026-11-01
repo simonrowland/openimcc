@@ -16,10 +16,17 @@ from typing import Any, Mapping
 
 @dataclass(frozen=True)
 class CalculationReceipt:
-    """Caller inputs, data identities, code, dependencies, and solver settings."""
+    """Caller inputs, data identities, code, dependencies, and solver settings.
+
+    ``code.source_revision`` and ``code.source_dirty`` are observed once per
+    process, when its first receipt is built, and are not refreshed. A process
+    that edits or switches its checkout afterward should not rely on them.
+    """
 
     request: Mapping[str, Any]
     data_digests: Mapping[str, str]
+    # code.source_revision and code.source_dirty are observed once per process
+    # at the first receipt and are not refreshed.
     code: Mapping[str, str | bool | None]
     dependencies: Mapping[str, str]
     solver: Mapping[str, Any]
