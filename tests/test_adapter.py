@@ -48,6 +48,9 @@ from openimcc.kernel import (
 DATAPACK_PATH = Path(
     "src/openimcc/data/packs/imcc-sf04-v1.0.2.json"
 )
+EXTENSION_DATAPACK_PATH = Path(
+    "src/openimcc/data/packs/imcc-sf04-ext-v4.json"
+)
 
 
 def _make_uniform_composition(pack: ImccLoadedDatapack) -> dict[str, float]:
@@ -1102,6 +1105,95 @@ def test_kernel_identity_issuer_rejects_stale_published_hash_for_altered_pack() 
             published_manifest_sha256=source.binding_digest,
             binding_digest=source.binding_digest,
         )
+
+
+def test_kernel_identity_issuer_rejects_stale_extension_digest_for_changed_coefficient() -> None:
+    loaded = load_datapack(EXTENSION_DATAPACK_PATH)
+    source = loaded.kernel_datapack
+    altered_A = np.array(source.A, copy=True)
+    altered_A[0] += 0.5
+    altered = ImccDatapack(
+        reactions=source.reactions,
+        nu=source.nu,
+        A=altered_A,
+        B=source.B,
+        domains=source.domains,
+        version=source.version,
+        parent_oxides=source.parent_oxides,
+        paper_domains=source.paper_domains,
+    )
+
+    with pytest.raises(ValueError, match="kernel content matching"):
+        _label_loaded_datapack(
+            altered,
+            model_id=loaded.model_id,
+            coverage=source.coverage,
+            published_manifest_sha256=kernel._PUBLISHED_DATAPACK_SHA256,
+            binding_digest=source.binding_digest,
+        )
+
+
+def test_kernel_identity_issuer_rejects_extension_parent_in_published_column() -> None:
+    loaded = load_datapack(EXTENSION_DATAPACK_PATH)
+    source = loaded.kernel_datapack
+    altered_nu = np.array(source.nu, copy=True)
+    extension_parent_row = len(kernel._PUBLISHED_PARENT_OXIDES)
+    altered_nu[extension_parent_row, 0] += 0.5
+    altered = ImccDatapack(
+        reactions=source.reactions,
+        nu=altered_nu,
+        A=source.A,
+        B=source.B,
+        domains=source.domains,
+        version=source.version,
+        parent_oxides=source.parent_oxides,
+        paper_domains=source.paper_domains,
+    )
+
+    with pytest.raises(ValueError, match="kernel content matching"):
+        _label_loaded_datapack(
+            altered,
+            model_id=loaded.model_id,
+            coverage=source.coverage,
+            published_manifest_sha256=kernel._PUBLISHED_DATAPACK_SHA256,
+            binding_digest=source.binding_digest,
+        )
+
+
+def test_kernel_identity_issuer_rejects_stale_nonpublished_digest() -> None:
+    loaded = load_datapack()
+    source = loaded.kernel_datapack
+    altered_A = np.array(source.A, copy=True)
+    altered_A[0] += 0.5
+    altered = ImccDatapack(
+        reactions=source.reactions,
+        nu=source.nu,
+        A=altered_A,
+        B=source.B,
+        domains=source.domains,
+        version=source.version,
+        parent_oxides=source.parent_oxides,
+        paper_domains=source.paper_domains,
+    )
+
+    with pytest.raises(ValueError, match="binding digest does not match"):
+        _label_loaded_datapack(
+            altered,
+            model_id=loaded.model_id,
+            coverage=source.coverage,
+            binding_digest=source.binding_digest,
+        )
+
+
+def test_evaluate_reuses_loaded_content_identity(monkeypatch) -> None:
+    loaded = load_datapack(DATAPACK_PATH)
+
+    def reject_rehash(*args, **kwargs):
+        pytest.fail("evaluate() recomputed a loaded pack's content identity")
+
+    monkeypatch.setattr(kernel, "_kernel_datapack_binding_payload", reject_rehash)
+    evaluate(_make_uniform_composition(loaded), 2500.0, loaded)
+    evaluate(_make_uniform_composition(loaded), 2500.0, loaded)
 
 
 def test_kernel_identity_issuer_refuses_extension_nu_in_published_core() -> None:

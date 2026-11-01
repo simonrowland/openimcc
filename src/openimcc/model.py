@@ -1577,6 +1577,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         coverage=coverage,
         published_manifest_sha256=published_manifest_sha256,
         binding_digest=binding_digest,
+        binding_manifest=binding_manifest,
     )
 
     active_indices = list(range(len(all_rows)))
@@ -1616,6 +1617,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
             coverage=active_coverage,
             published_manifest_sha256=published_manifest_sha256,
             binding_digest=binding_digest,
+            binding_manifest=binding_manifest,
         )
 
     species_names = parents + tuple(kernel_datapack.reactions)

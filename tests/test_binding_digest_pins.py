@@ -9,7 +9,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
+from openimcc import (
+    ImccMalformedDatapackError,
+    evaluate,
+    load_datapack,
+    load_profile,
+)
 import openimcc.kernel as kernel
 import openimcc.model as model
 
@@ -17,6 +22,12 @@ import openimcc.model as model
 PACK_DIR = Path("src/openimcc/data/packs")
 PUBLISHED_CORE_SHA256 = (
     "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c"
+)
+PUBLISHED_KERNEL_CONTENT_SHA256 = (
+    "f32d937f90033a5b14fad66abdc354e8138c33487f24cb6e23954cc3e9fe082c"
+)
+PUBLISHED_EXTENSION_KERNEL_CONTENT_SHA256 = (
+    "4d0e1ee624a4310028ad4905a27c23841a0b2d1388cb4bfb8e4bb0fb9f653c26"
 )
 LEGACY_PACK_SHA256 = {
     "imcc-sf04-v1.0.2.json": "87be28815642e8ec65f09edd791525fef8dfe10622e61772dee6047f4ad027b8",
@@ -135,6 +146,80 @@ def test_legacy_canonical_binding_digests_are_pinned() -> None:
     for filename, expected in LEGACY_BINDING_SHA256.items():
         pack = load_datapack(PACK_DIR / filename)
         assert pack.kernel_datapack.binding_digest == expected
+
+
+def test_full_published_kernel_content_digests_are_pinned() -> None:
+    assert kernel._PUBLISHED_KERNEL_DATAPACK_SHA256 == (
+        PUBLISHED_KERNEL_CONTENT_SHA256
+    )
+    assert kernel._PUBLISHED_EXTENSION_KERNEL_DATAPACK_SHA256 == (
+        PUBLISHED_EXTENSION_KERNEL_CONTENT_SHA256
+    )
+    for filename, expected in (
+        ("imcc-sf04-v1.0.2.json", PUBLISHED_KERNEL_CONTENT_SHA256),
+        ("imcc-sf04-ext-v4.json", PUBLISHED_EXTENSION_KERNEL_CONTENT_SHA256),
+    ):
+        pack = load_datapack(PACK_DIR / filename).kernel_datapack
+        assert pack._identity.content_digest == expected
+        assert pack.identity_is_proven
+
+
+def test_direct_published_binding_digest_entry_points_are_pinned() -> None:
+    expected = {
+        "imcc-sf04-v1.0.2.json": (
+            "ce83af309c9361f90ac69d0fa182b5d837017dbbb5271b299bce879acc0e3946",
+            LEGACY_BINDING_SHA256["imcc-sf04-v1.0.2.json"],
+        ),
+        "imcc-sf04-ext-v4.json": (
+            "5b991eadad437717931eb253d7cf9020a9540deb567a27d8f41a1c819a37e0e9",
+            LEGACY_BINDING_SHA256["imcc-sf04-ext-v4.json"],
+        ),
+    }
+    for filename, (without_digest, with_digest) in expected.items():
+        loaded = load_datapack(PACK_DIR / filename)
+        data = json.loads((PACK_DIR / filename).read_text(encoding="utf-8"))
+        _, published_manifest = model._validate_published_core(
+            data,
+            model_id=data.get("model_id", "IMCC-SF04"),
+            version=data["imcc_sf04_datapack_version"],
+        )
+        arguments = {
+            "model_id": loaded.model_id,
+            "coverage": loaded.kernel_datapack.coverage,
+            "published_manifest_sha256": published_manifest,
+        }
+        direct = kernel._label_loaded_datapack(
+            loaded.kernel_datapack, **arguments
+        )
+        supplied = kernel._label_loaded_datapack(
+            loaded.kernel_datapack,
+            binding_digest=loaded.kernel_datapack.binding_digest,
+            **arguments,
+        )
+        assert direct.binding_digest == without_digest
+        assert supplied.binding_digest == with_digest
+
+
+def test_profile_binding_digest_values_are_pinned() -> None:
+    assert (
+        load_profile("published").melt_pack.binding_digest
+        == LEGACY_BINDING_SHA256["imcc-sf04-v1.0.2.json"]
+    )
+    assert (
+        load_profile("openimcc").melt_pack.binding_digest
+        == D066_MANIFEST_SHA256["imcc-sf04-d066-v5.json"]
+    )
+
+
+def test_external_json_binding_digest_value_is_pinned(tmp_path: Path) -> None:
+    data = json.loads((PACK_DIR / "imcc-sf04-ext-v4.json").read_text(encoding="utf-8"))
+    data["imcc_sf04_datapack_version"] += "-external-pin"
+    path = tmp_path / "external-extension.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    assert load_datapack(path).binding_digest == (
+        "fae60e01e63e4e84adc3744492f3a6516ea0a479da2dea3e7bb9e1e00148dc22"
+    )
 
 
 def test_d066_manifest_and_binding_digests_are_pinned() -> None:

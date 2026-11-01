@@ -253,15 +253,13 @@ def _recompute_c2_screen_ratio(
         parent_row = gas_module._nearest_interval_row(
             pack.oxide_df, parent_liquid, temperature, allow_extrapolation=True
         )
+        parent_g_j = gas_module._lamor_gibbs(temperature, parent_row)
     else:
         parent_gas = f"{parent}(g)"
         parent_row = gas_module._nearest_interval_row(
             pack.gas_df, parent_gas, temperature, allow_extrapolation=True
         )
-    parent_table = str(parent_row["Ref"])
-    parent_g = _source_value(
-        parent_table, "formation_gibbs_energy", temperature
-    )
+        parent_g_j = gas_module._janaf_gibbs(temperature, parent_row)
     species_g = _source_value(table_id, "formation_gibbs_energy", temperature)
 
     parent_atoms = _gas_element_atom_count(parent, element)
@@ -274,7 +272,7 @@ def _recompute_c2_screen_ratio(
     ) / 2.0
     # Formation Gibbs energies use O2(g) as the oxygen reference, so its
     # formation term is zero. The balanced reaction gives pressure in bar.
-    delta_g_j = (species_g - parent_per_species * parent_g) * 1000.0
+    delta_g_j = species_g * 1000.0 - parent_per_species * parent_g_j
     species_pressure = (
         math.exp(-delta_g_j / (R_J_MOL_K * temperature))
         * parent_activity**parent_per_species
@@ -443,6 +441,32 @@ def test_fabricated_c2_screen_is_rejected(packaged_gas_pack) -> None:
         _assert_c2_candidate_coverage(
             source_candidates, statuses, set(), packaged_gas_pack
         )
+
+
+def test_c2_screen_recomputation_uses_runtime_parent_thermochemistry(
+    packaged_gas_pack,
+) -> None:
+    screen = {"temperature_K": 2600.0, "fO2": 1.0e-12}
+    status = {
+        "c3_ion_bound": {"parent_oxide": "B2O3", "parent_activity": 1.0e-3}
+    }
+    baseline = _recompute_c2_screen_ratio(
+        "B-083", "B", "B2", screen, status, packaged_gas_pack
+    )
+
+    altered_gas = packaged_gas_pack.gas_df.copy(deep=True)
+    altered_gas.loc["B2O3(g)", "F"] += 1.0
+    altered_pack = gas_module.ImccGasDatapack(
+        altered_gas,
+        packaged_gas_pack.oxide_df,
+        packaged_gas_pack.gas_path,
+        packaged_gas_pack.oxide_path,
+    )
+    altered = _recompute_c2_screen_ratio(
+        "B-083", "B", "B2", screen, status, altered_pack
+    )
+
+    assert not math.isclose(baseline, altered, rel_tol=1.0e-8, abs_tol=0.0)
 
 
 def _caller_parent_activities() -> dict[str, float]:
