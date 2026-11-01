@@ -30,6 +30,10 @@ The output pressure map contains only S2 for troilite or SO2 for a sulfate.
 The sulfate O2 coproduct remains in stoichiometry and is never an independent
 release channel.
 
+`numeric_out_of_range` marks one host whose equilibrium pressure is not
+representable as a finite positive float. That host's pressure and extent are
+`None`, and evaluation continues for later hosts in the batch.
+
 The R&H mineral formation-Gibbs nodes, JANAF crystal nodes, and the JANAF
 SO2 formation-Gibbs nodes are linearly interpolated between adjacent published
 temperatures. Existing SO2 and O2 gas rows supply the sulfate domain checks

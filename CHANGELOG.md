@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Return a per-host `numeric_out_of_range` result when an equilibrium pressure
+  cannot be represented as a finite positive float.
+
 - Added row-level source references for legacy melt packs in a sidecar,
   preserving the published pack bytes.
 

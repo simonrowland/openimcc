@@ -56,6 +56,7 @@ class SourceRef(TypedDict):
 class TypedNotice(TypedDict):
     code: Literal[
         "diffusion_limited_equilibrium_upper_bound",
+        "numeric_out_of_range",
         "thermochemistry_missing",
         "temperature_out_of_range",
         "unknown_host",
@@ -69,6 +70,7 @@ class TypedNotice(TypedDict):
 
 ReactionStatus = Literal[
     "supported",
+    "numeric_out_of_range",
     "thermochemistry_missing",
     "temperature_out_of_range",
     "unknown_host",
@@ -207,7 +209,9 @@ def evaluate_subsolidus_reactions(
     Pressures are Pa, activities are dimensionless, Gibbs energy is J/mol of
     reaction as written, and extent is mol of reaction. Gas standard pressure
     is 100000 Pa. Unknown hosts and unsupported ranges return typed results;
-    no thermodynamic value is extrapolated beyond its source interval.
+    no thermodynamic value is extrapolated beyond its source interval. A host
+    whose equilibrium pressure is outside the finite positive float range gets
+    a ``numeric_out_of_range`` result while later hosts are still evaluated.
     """
     if not math.isfinite(temperature_K) or temperature_K <= 0:
         raise ValueError("temperature_K must be finite and positive")
@@ -394,7 +398,21 @@ def evaluate_subsolidus_reactions(
 
         if host_id != "FeS_troilite":
             log_pressure_eq -= 0.5 * _log_standard_pressure_ratio(gas_o2)
-        equilibrium_pressure = STANDARD_PRESSURE_PA * math.exp(log_pressure_eq)
+        try:
+            equilibrium_pressure = STANDARD_PRESSURE_PA * math.exp(log_pressure_eq)
+        except OverflowError:
+            equilibrium_pressure = math.inf
+        if not math.isfinite(equilibrium_pressure) or equilibrium_pressure <= 0.0:
+            results.append(_base_result(
+                reaction_id, "numeric_out_of_range", stoich, driver, sources,
+                (_notice(
+                    "numeric_out_of_range", "unavailable",
+                    "Equilibrium gas pressure is outside the finite positive float range.",
+                    expected["source_id"],
+                ),),
+                joint_interval, delta_g0=delta_g0, log_k=log10_k,
+            ))
+            continue
 
         activities = math.log(activity_product / activity_host)
         if host_id == "FeS_troilite":

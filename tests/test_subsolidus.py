@@ -197,3 +197,23 @@ def test_positive_subnormal_pressures_use_log_differences():
     assert math.isfinite(
         anhydrite["equilibrium_gas_partial_pressures_Pa"]["SO2"]
     )
+
+
+def test_unrepresentable_equilibrium_pressure_only_marks_its_host_unavailable():
+    hosts = [
+        _host("FeS_troilite", "FeS", "troilite"),
+        _host("CaSO4", "CaSO4", "anhydrite"),
+    ]
+    results = evaluate_subsolidus_reactions(
+        hosts=hosts,
+        temperature_K=1000.0,
+        gas_partial_pressures_Pa={"S2": 1.0, "SO2": 1.0e5, "O2": 1.0e5},
+        condensed_phase_activities={"Fe": 1.0e-200, "CaO": 1.0},
+    )
+    unavailable, supported = results
+    assert unavailable["status"] == "numeric_out_of_range"
+    assert unavailable["equilibrium_gas_partial_pressures_Pa"] is None
+    assert unavailable["extent_bound_mol_rxn"] is None
+    assert unavailable["notices"][0]["code"] == "numeric_out_of_range"
+    assert unavailable["notices"][0]["severity"] == "unavailable"
+    assert supported["status"] == "supported"
