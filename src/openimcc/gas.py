@@ -5278,9 +5278,11 @@ def _add_ion_channels(
     values["e-"] = electron_pressure
     electron_flags = []
     for dependency in (*positive, *negative):
-        for flag in dependency[3]:
-            if flag and flag not in electron_flags:
-                electron_flags.append(flag)
+        for composite_flag in dependency[3]:
+            if composite_flag:
+                for flag in composite_flag.split("; "):
+                    if flag and flag not in electron_flags:
+                        electron_flags.append(flag)
     domain_flags["e-"] = "; ".join(electron_flags) or None
     provenance_class["e-"] = _ION_PROVENANCE_CLASS
     if not _gas_rows_match_packaged(datapack, (electron_row,)):

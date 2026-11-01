@@ -1435,6 +1435,28 @@ def test_electron_domain_flags_include_contributing_neutral_sources(
     assert flag.count("Na2O(l)") == 1
 
 
+def test_electron_domain_flags_deduplicate_overlapping_composites(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    result = evaluate_gas(
+        {"Na2O": 1.0e-12, "K2O": 1.0e-12},
+        3100.0,
+        1.0e-8,
+        gas_pack,
+        include_ions=True,
+        allow_extrapolation=True,
+    )
+
+    electron_flags = result.domain_flags["e-"]
+    assert electron_flags is not None
+    flags = electron_flags.split("; ")
+    assert len(flags) == len(set(flags))
+    for fragment in (
+        "'Na(g)'", "'K(g)'", "'O2(g)'", "Na2O(l) uses", "K2O(l) uses",
+    ):
+        assert any(fragment in flag for flag in flags)
+
+
 def test_gas_pack_rejects_validity_kind_that_suppresses_typed_facts(
     gas_pack: ImccGasDatapack,
 ) -> None:

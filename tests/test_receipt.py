@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import fields, replace
 from pathlib import Path
 
@@ -304,33 +306,51 @@ def test_source_identity_ignores_an_enclosing_unrelated_checkout(
 
     with monkeypatch.context() as patch:
         patch.setattr(receipt_module, "__file__", str(package / "receipt.py"))
-        receipt_module._source_identity.cache_clear()
+        patch.setattr(receipt_module, "_source_identity_initialized", False)
+        patch.setattr(receipt_module, "_source_identity_cache", (None, None))
         assert receipt_module._source_identity() == (None, None)
-    receipt_module._source_identity.cache_clear()
 
 
-def test_receipts_share_source_identity_cached_at_first_use(monkeypatch):
-    receipt_module._source_identity.cache_clear()
+def test_concurrent_receipts_share_first_source_identity(monkeypatch):
     status_calls = []
+    second_status_call = threading.Event()
+    start = threading.Barrier(2)
 
     def changing_checkout_status(*args, **kwargs):
         status_calls.append((args, kwargs))
-        stdout = "" if len(status_calls) == 1 else " M edited.py\n"
+        if len(status_calls) == 1:
+            second_status_call.wait(timeout=1.0)
+            stdout = ""
+        else:
+            second_status_call.set()
+            stdout = " M edited.py\n"
         return receipt_module.subprocess.CompletedProcess(
             args[0], 0, stdout=stdout
         )
 
-    monkeypatch.setattr(receipt_module.subprocess, "run", changing_checkout_status)
-    try:
-        first = receipt_module.build_calculation_receipt(request={"step": 1})
-        second = receipt_module.build_calculation_receipt(request={"step": 2})
-    finally:
-        receipt_module._source_identity.cache_clear()
+    with monkeypatch.context() as patch:
+        patch.setattr(receipt_module, "_source_identity_initialized", False)
+        patch.setattr(receipt_module, "_source_identity_cache", (None, None))
+        patch.setattr(receipt_module.subprocess, "run", changing_checkout_status)
 
+        def build(step):
+            start.wait()
+            return receipt_module.build_calculation_receipt(
+                request={"step": step}
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(build, 1)
+            second = pool.submit(build, 2)
+            receipts = (first.result(), second.result())
+
+    identities = [
+        (receipt.code["source_revision"], receipt.code["source_dirty"])
+        for receipt in receipts
+    ]
+    assert identities[0] == identities[1]
+    assert identities[0][1] is False
     assert len(status_calls) == 1
-    assert first.code["source_revision"] == second.code["source_revision"]
-    assert first.code["source_dirty"] is False
-    assert second.code["source_dirty"] is False
 
 
 def test_result_equality_ignores_the_receipt():

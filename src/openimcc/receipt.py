@@ -10,6 +10,7 @@ import platform
 import re
 import subprocess
 import sys
+import threading
 from types import MappingProxyType
 from typing import Any, Mapping
 
@@ -94,8 +95,24 @@ def _dependency_version(name: str) -> str:
         return "unknown"
 
 
-@lru_cache(maxsize=1)
+_source_identity_lock = threading.Lock()
+_source_identity_initialized = False
+_source_identity_cache: tuple[str | None, bool | None] = (None, None)
+
+
 def _source_identity() -> tuple[str | None, bool | None]:
+    """Read the checkout identity once per process, including across threads."""
+    global _source_identity_cache, _source_identity_initialized
+
+    if not _source_identity_initialized:
+        with _source_identity_lock:
+            if not _source_identity_initialized:
+                _source_identity_cache = _read_source_identity()
+                _source_identity_initialized = True
+    return _source_identity_cache
+
+
+def _read_source_identity() -> tuple[str | None, bool | None]:
     """Read the checkout revision and dirty state once, without requiring git."""
     package_dir = Path(__file__).resolve().parent
     imported_package = (package_dir / "__init__.py").resolve()
