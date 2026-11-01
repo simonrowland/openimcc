@@ -553,15 +553,65 @@ def _datapack_with_identity(
             raise ValueError(
                 "plain IMCC-SF04 identity cannot include extension rows or parents"
             )
-        expected_content_digest = (
-            _PUBLISHED_KERNEL_DATAPACK_SHA256
-            if model_id == _PUBLISHED_MODEL_ID
-            else _PUBLISHED_EXTENSION_KERNEL_DATAPACK_SHA256
-        )
-        if solver_content_digest != expected_content_digest:
+        if model_id == _PUBLISHED_MODEL_ID:
+            matches_published_content = (
+                solver_content_digest == _PUBLISHED_KERNEL_DATAPACK_SHA256
+            )
+        else:
+            published_parent_count = len(_PUBLISHED_PARENT_OXIDES)
+            published_row_count = _PUBLISHED_CORE_ROWS
+            if (
+                datapack.n_parents < published_parent_count
+                or datapack.n_complexes < published_row_count
+                or tuple(datapack.parent_oxides[:published_parent_count])
+                != _PUBLISHED_PARENT_OXIDES
+                or np.any(
+                    datapack.nu[
+                        published_parent_count:, :published_row_count
+                    ]
+                    != 0.0
+                )
+            ):
+                matches_published_content = False
+            else:
+                published_names = tuple(
+                    datapack.reactions[:published_row_count]
+                )
+                published_core_payload = {
+                    "model_id": _PUBLISHED_MODEL_ID,
+                    "parent_oxides": list(
+                        datapack.parent_oxides[:published_parent_count]
+                    ),
+                    "complex_names": list(published_names),
+                    "nu": datapack.nu[
+                        :published_parent_count, :published_row_count
+                    ].tolist(),
+                    "A": datapack.A[:published_row_count].tolist(),
+                    "B": datapack.B[:published_row_count].tolist(),
+                    "domains": [
+                        list(window)
+                        for window in datapack.domains[:published_row_count]
+                    ],
+                    "paper_domains": [
+                        None if window is None else list(window)
+                        for window in datapack.paper_domains[:published_row_count]
+                    ],
+                    "coverage": {
+                        name: _PUBLISHED_COVERAGE
+                        for name in (
+                            *datapack.parent_oxides[:published_parent_count],
+                            *published_names,
+                        )
+                    },
+                }
+                matches_published_content = (
+                    _published_datapack_manifest_hash(published_core_payload)
+                    == _PUBLISHED_KERNEL_DATAPACK_SHA256
+                )
+        if not matches_published_content:
             raise ValueError(
                 "published IMCC identity requires kernel content matching the "
-                "frozen complete datapack"
+                "frozen published core"
             )
 
     accepted_binding_digests = (

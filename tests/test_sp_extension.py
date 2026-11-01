@@ -7,10 +7,12 @@ import csv
 import math
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from openimcc import (
     ImccCompositionOutsideValidatedEnvelopeError,
+    ImccDatapack,
     ImccMalformedDatapackError,
     ImccSPComponentRequiresExtensionError,
     evaluate,
@@ -19,7 +21,8 @@ from openimcc import (
 # Inlined from the simulator's sulfide-liquid module, which does not travel
 # with this package. Standard chemical potential of FeS(l) at 1300 K.
 FES_MU0_1300K_J_PER_MOL = -257599.6112
-from openimcc.kernel import solve_imcc_sf04
+from openimcc import kernel as kernel_module
+from openimcc.kernel import _label_loaded_datapack, solve_imcc_sf04
 
 
 BASE_DATAPACK = Path(
@@ -120,6 +123,33 @@ def test_ext_pack_keeps_published_core_distinct(tmp_path: Path) -> None:
     assert pack.kernel_datapack.n_parents == 10
     assert pack.kernel_datapack.n_complexes == 39
     assert pack.extension_species == ("FeS",)
+
+
+def test_sp_extension_proves_only_published_core_content(tmp_path: Path) -> None:
+    pack = load_datapack(_write_ext_pack(tmp_path))
+    source = pack.kernel_datapack
+    assert source.identity_is_proven
+
+    altered_nu = np.array(source.nu, copy=True)
+    altered_nu[len(kernel_module._PUBLISHED_PARENT_OXIDES), 0] = 0.5
+    altered = ImccDatapack(
+        reactions=source.reactions,
+        nu=altered_nu,
+        A=source.A,
+        B=source.B,
+        domains=source.domains,
+        version=source.version,
+        parent_oxides=source.parent_oxides,
+        paper_domains=source.paper_domains,
+    )
+
+    with pytest.raises(ValueError, match="kernel content matching"):
+        _label_loaded_datapack(
+            altered,
+            model_id=pack.model_id,
+            coverage=source.coverage,
+            published_manifest_sha256=kernel_module._PUBLISHED_DATAPACK_SHA256,
+        )
 
 
 @pytest.mark.parametrize("field", ["A", "B"])
