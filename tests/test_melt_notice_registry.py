@@ -46,10 +46,11 @@ DEFAULT_NA2O_NOTICE = (
 )
 K_AL_OVERSEQUESTRATION_NOTICE = (
     "k-al-over-sequestration: the one-particle mixing-entropy limit can "
-    "over-sequester K in K-Al associates; about 1 dex or more in p(K), "
-    "single source (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2, Beaver's "
-    "Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not a calibrated "
-    "correction."
+    "over-sequester K in K-Al associates, biasing p(K) low; measured on one "
+    "aluminous illite melt as about 1 dex or more (Hastie et al. 1981, NBSIR "
+    "81-2279 sec. 8.2, Beaver's Bend illite; "
+    "https://doi.org/10.6028/NBS.IR.81-2279); not validated for basaltic or "
+    "other compositions and not a calibrated correction."
 )
 DEFAULT_MULTICOMPONENT_NOTICE = (
     "multicomponent-activity-pattern: on default D066 v5, Kume et al. (2000) "

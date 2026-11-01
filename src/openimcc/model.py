@@ -319,10 +319,11 @@ _K_AL_ASSOCIATES = frozenset(
 )
 _K_AL_OVERSEQUESTRATION_NOTICE = (
     "k-al-over-sequestration: the one-particle mixing-entropy limit can "
-    "over-sequester K in K-Al associates; about 1 dex or more in p(K), "
-    "single source (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2, Beaver's "
-    "Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not a calibrated "
-    "correction."
+    "over-sequester K in K-Al associates, biasing p(K) low; measured on one "
+    "aluminous illite melt as about 1 dex or more (Hastie et al. 1981, NBSIR "
+    "81-2279 sec. 8.2, Beaver's Bend illite; "
+    "https://doi.org/10.6028/NBS.IR.81-2279); not validated for basaltic or "
+    "other compositions and not a calibrated correction."
 )
 
 
@@ -380,9 +381,21 @@ def _k_al_oversequestration_notice(
     # Each listed row binds 0.5 mol K2O. complex_x is per total-species mole,
     # D = analytical-basis moles / total-species moles, and parent_x(K2O) is
     # analytical K2O per basis mole. Thus sum(nu*g)/(D*parent_x) is the
-    # fraction of analytical K2O in these complexes. The inclusive 0.5 limit
-    # marks cases where K-Al association holds at least half of the K inventory;
-    # it is a partition threshold, not a fit to the single cited experiment.
+    # fraction of analytical K2O in these complexes.
+    #
+    # Why 0.5: the structural error is in how the ideal associated solution
+    # counts mixing entropy. Each complex is one particle, so binding K into
+    # large K-Al-Si complexes removes K configurational entropy that a
+    # real aluminosilicate melt keeps. That error acts on whichever K is bound,
+    # so the predicted mu(K2O), and hence p(K), is controlled by the K-Al
+    # complexes only once they hold the majority of the K inventory. Below
+    # that, free K2O and K-Si complexes dominate a(K2O) and the K-Al rows only
+    # perturb it. "At least half" is therefore a sensitivity gate: the point
+    # from which this structural limit governs the K prediction. It is not a
+    # physical crossover, and it does not predict the size of the error; the
+    # cited magnitude belongs to the single experiment, whose fraction is
+    # about 0.99998, far above the gate. Al-free K2O-SiO2 melts give 0 and
+    # never trigger.
     bound_k = sum(
         float(kernel_pack.nu[k_index, row_index])
         * float(result.complex_x[row_index])

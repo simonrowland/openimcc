@@ -3,11 +3,10 @@
 ## Unreleased
 
 - Added the `k-al-over-sequestration` notice when at least half of analytical
-  K₂O is held in solved K–Al associates. Reason text: “the one-particle
-  mixing-entropy limit can over-sequester K in K-Al associates; about 1 dex or
-  more in p(K), single source (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2,
-  Beaver's Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not a
-  calibrated correction.” It is unscored and does not change calculated values.
+  K₂O is held in solved K–Al associates. Reason text: “the one-particle mixing-entropy limit can over-sequester K in K-Al associates, biasing p(K) low; measured on one aluminous illite melt as about 1 dex or more (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2, Beaver's Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not validated for basaltic or other compositions and not a calibrated correction.”
+  It is unscored and does not change calculated values. It fires for most
+  K-bearing basalts too, including the README example, where its magnitude is
+  unvalidated; it complements the broader Hastie KEMS bias notice.
 
 - Added lifecycle roles, candidate-family links, and successor references to
   the datapack manifest. The checker validates defaults against runtime loads
