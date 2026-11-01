@@ -298,6 +298,127 @@ def test_lance_inventory_below_and_above_saturation_inventory():
     assert "sulfur-excess-unpartitioned-sulfate-saturation-not-modelled" not in overrun_codes
 
 
+def test_omitted_melt_component_disables_only_activity_dependent_outputs():
+    composition = {"FeO": 50.0, "NiO": 50.0}
+    pack = load_datapack()
+    fixed = evaluate_sulfur(
+        composition, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0,
+        melt_pack=pack,
+    )
+    fixed_codes = {notice.code for notice in fixed.notices}
+
+    assert "oxide-omitted-from-melt-pack" in fixed_codes
+    assert "melt-activity-unavailable" in fixed_codes
+    assert fixed.log10_sulfide_capacity_wt_percent is not None
+    assert fixed.log10_sulfate_capacity_wt_percent is not None
+    assert fixed.capacity_predicted_total_s_ppm is not None
+    assert fixed.dissolved_total_s_ppm is not None
+    # Smythe's SCSS uses the full-composition cation fractions; O'Neill's
+    # independent SCSS cross-check requires the unavailable melt activity.
+    assert fixed.scss_smythe_2017_ppm is not None
+    assert fixed.scss_oneill_2021_ppm is None
+
+    intrinsic = evaluate_sulfur(
+        composition, 1673.0, log10_fS2=-10.0, melt_pack=pack,
+    )
+    intrinsic_codes = {notice.code for notice in intrinsic.notices}
+
+    assert intrinsic.log10_fO2 is None
+    assert "oxide-omitted-from-melt-pack" in intrinsic_codes
+    assert "oxygen-balance-unavailable" in intrinsic_codes
+    assert intrinsic.log10_sulfide_capacity_wt_percent is not None
+    assert intrinsic.dissolved_total_s_ppm is None
+
+
+def test_extreme_fugacities_report_unrepresentable_sulfur_as_unavailable():
+    result = evaluate_sulfur(
+        {"SiO2": 100.0}, 1673.0, log10_fO2=300.0, log10_fS2=300.0,
+    )
+
+    assert result.log10_sulfide_capacity_wt_percent is not None
+    assert result.capacity_predicted_total_s_ppm is None
+    assert result.dissolved_s2_minus_ppm is None
+    assert result.dissolved_s6_plus_ppm is None
+    assert result.dissolved_total_s_ppm is None
+    assert "sulfur-capacity-unavailable" in {
+        notice.code for notice in result.notices
+    }
+
+
+def test_extreme_saturation_ceiling_is_compared_without_exponentiating():
+    result = evaluate_sulfur(
+        {"SiO2": 50.0, "FeO": 50.0},
+        1673.0,
+        log10_fO2=300.0,
+        total_s_ppm=100.0,
+    )
+
+    assert result.saturation_state == "undersaturated"
+    assert result.dissolved_total_s_ppm == 100.0
+
+
+def test_smallest_positive_inventory_is_inverted_in_log_space():
+    smallest_positive = math.ulp(0.0)
+    result = evaluate_sulfur(
+        {"SiO2": 100.0},
+        1673.0,
+        log10_fO2=-8.0,
+        total_s_ppm=smallest_positive,
+    )
+
+    assert result.log10_fS2 is not None
+    assert math.isfinite(result.log10_fS2)
+    assert result.dissolved_total_s_ppm == smallest_positive
+
+
+def test_finite_oxide_masses_normalize_when_their_sum_overflows():
+    result = evaluate_sulfur(
+        {"SiO2": 1.0e308, "CaO": 1.0e308},
+        1673.0,
+        log10_fO2=-8.0,
+        total_s_ppm=100.0,
+    )
+
+    assert result.log10_sulfide_capacity_wt_percent is not None
+    assert result.log10_sulfate_capacity_wt_percent is not None
+    assert result.dissolved_total_s_ppm == pytest.approx(100.0)
+
+
+def test_in_range_sulfur_outputs_remain_bit_identical():
+    fixed = evaluate_sulfur(
+        _MORB, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0,
+        melt_pack=load_datapack(),
+    )
+    assert (
+        fixed.log10_sulfide_capacity_wt_percent,
+        fixed.log10_sulfate_capacity_wt_percent,
+        fixed.capacity_predicted_total_s_ppm,
+        fixed.dissolved_total_s_ppm,
+        fixed.scss_smythe_2017_ppm,
+        fixed.scss_oneill_2021_ppm,
+    ) == (
+        -4.499963385233009,
+        6.351389231066809,
+        0.03162566737601119,
+        0.03162566737601119,
+        2320.429447634112,
+        5803.831673102939,
+    )
+
+    inventory = evaluate_sulfur(
+        _MORB, 1673.0, log10_fO2=-8.0, total_s_ppm=100.0,
+    )
+    assert (
+        inventory.log10_fS2,
+        inventory.capacity_predicted_total_s_ppm,
+        inventory.dissolved_total_s_ppm,
+    ) == (
+        -3.0000793978324674,
+        100.0,
+        99.99999999999999,
+    )
+
+
 def test_intrinsic_oxygen_root_and_missing_or_conflicting_sulfur_inputs():
     no_inventory = evaluate_sulfur(_MORB, 1773.0)
     assert no_inventory.log10_fO2 is not None

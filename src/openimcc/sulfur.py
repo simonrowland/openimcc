@@ -21,6 +21,7 @@ from openimcc.model import (
 _R = 8.31446261815324
 _LN10 = math.log(10.0)
 _MW_S = 32.065
+_LOG10_MAX_FLOAT = math.log10(float.fromhex("0x1.fffffffffffffp+1023"))
 
 # Forward notices by their source family and score metadata, never by prose.
 _MELT_NOTICE_FORWARD_CODES = {
@@ -133,6 +134,7 @@ def _normalise_composition(
 ) -> tuple[dict[str, float], dict[str, float], float]:
     amounts: dict[str, float] = {}
     masses: dict[str, float] = {}
+    mass_terms: dict[str, list[float]] = {}
     for raw_name, raw_value in composition_wt_percent.items():
         if raw_name not in _OXIDES:
             raise ValueError(f"unsupported oxide component {raw_name!r}")
@@ -145,14 +147,42 @@ def _normalise_composition(
         name = "FeO" if raw_name == "FeOeq" else raw_name
         mass, _cations, _oxygen, _symbol = _OXIDES[raw_name]
         masses[name] = masses.get(name, 0.0) + value
+        mass_terms.setdefault(name, []).append(value)
         amounts[name] = amounts.get(name, 0.0) + value / mass
-    total_mass = math.fsum(masses.values())
     total_moles = math.fsum(amounts.values())
-    if total_mass <= 0.0 or total_moles <= 0.0:
+    try:
+        total_mass = math.fsum(masses.values())
+    except OverflowError:
+        total_mass = math.inf
+    if total_moles <= 0.0:
         raise ValueError("composition must contain positive total oxide wt%")
     formula_moles = {name: value / total_moles for name, value in amounts.items()}
-    oxide_wt = {name: value / total_mass * 100.0 for name, value in masses.items()}
-    mean_molar_mass = total_mass / total_moles
+    if math.isfinite(total_mass):
+        if total_mass <= 0.0:
+            raise ValueError("composition must contain positive total oxide wt%")
+        oxide_wt = {
+            name: value / total_mass * 100.0 for name, value in masses.items()
+        }
+        mean_molar_mass = total_mass / total_moles
+    else:
+        # Only the composition ratios matter here. Scale masses before summing
+        # so a finite set of large inputs can still be normalized.
+        scale = max(value for terms in mass_terms.values() for value in terms)
+        scaled_masses = {
+            name: math.fsum(value / scale for value in terms)
+            for name, terms in mass_terms.items()
+        }
+        scaled_total_mass = math.fsum(scaled_masses.values())
+        scaled_total_moles = math.fsum(
+            (value / scale) / _OXIDES[name][0]
+            for name, terms in mass_terms.items()
+            for value in terms
+        )
+        oxide_wt = {
+            name: value / scaled_total_mass * 100.0
+            for name, value in scaled_masses.items()
+        }
+        mean_molar_mass = scaled_total_mass / scaled_total_moles
     return formula_moles, oxide_wt, mean_molar_mass
 
 
@@ -219,6 +249,8 @@ def _sulfur_split(
     log_s6_wt = log_cs6 + 0.5 * log_fS2 + 1.5 * log_fO2
     total_log_ppm = _log10_sum((log_s2_wt + 4.0, log_s6_wt + 4.0))
     total_ppm = 10.0**total_log_ppm
+    if total_ppm == 0.0 and total_log_ppm != -math.inf:
+        raise OverflowError("sulfur concentration underflows floating-point range")
     log_ratio = log_cs6 - log_cs2 + 2.0 * log_fO2
     if log_ratio > 300.0:
         fraction_s6 = 1.0
@@ -227,6 +259,12 @@ def _sulfur_split(
     else:
         fraction_s6 = 1.0 / (1.0 + 10.0 ** (-log_ratio))
     return total_ppm * (1.0 - fraction_s6), total_ppm * fraction_s6, total_ppm
+
+
+def _above_log_ceiling(value: float, log_ceiling: float) -> bool:
+    if value <= 0.0 or log_ceiling > _LOG10_MAX_FLOAT:
+        return False
+    return value > 10.0**log_ceiling
 
 
 def _log_fso3(
@@ -392,6 +430,8 @@ def evaluate_sulfur(
         composition_wt_percent
     )
     one_oxygen, cations = _fractions(formula_moles)
+    # These capacity fits use the requested full composition, independent of
+    # which oxides the melt pack can represent.
     log_cs2, log_cs6 = _capacity_logs(one_oxygen, cations, T)
     notices: list[SulfurNotice] = []
     _out_of_range(
@@ -534,6 +574,14 @@ def evaluate_sulfur(
             "the supplied melt pack does not represent: " + ", ".join(omitted),
             model="openimcc-melt-pack", axis="oxide_composition",
         ))
+    omitted_from_successful_solve = bool(omitted) and melt_result is not None
+    if omitted_from_successful_solve and melt_error is None:
+        notices.append(_notice(
+            "melt-activity-unavailable",
+            "openimcc could not evaluate FeO activity for the full composition because the melt solve omitted: "
+            + ", ".join(omitted),
+            model="openimcc-melt-pack", axis="FeO_activity",
+        ))
 
     scss = None
     oneill2021_scss = None
@@ -543,7 +591,12 @@ def evaluate_sulfur(
         # FeO activity assumption in the regression. The openimcc activity is
         # reserved for the independent O'Neill thermodynamic cross-check.
         scss = _scss_smythe(cations, T, pressure, x_fes, ideal_a_feo)
-        if melt_pack is not None and a_feo is not None and a_feo > 0.0:
+        # Smythe uses the full-composition cation fractions; only O'Neill
+        # requires the melt-pack FeO activity.
+        if (
+            melt_pack is not None and a_feo is not None and a_feo > 0.0
+            and not omitted_from_successful_solve
+        ):
             # Premise: O'Neill (2021), Eq. (10.43), gives ln[S]SCSS =
             # ΔG°FeO-FeS/(RT) + ln(CS2) - ln(aFeO) + ln(aFeS); the sulfur
             # capacity comes from Boulliung & Wood (2023), Eq. 7. The 1-bar
@@ -609,6 +662,10 @@ def evaluate_sulfur(
     sulfur_fields_available = supplied_s == 1
     if log_fo2 is None:
         try:
+            if omitted_from_successful_solve:
+                raise ValueError(
+                    "intrinsic oxygen balance requires melt activities for the full composition"
+                )
             from openimcc.gas import (
                 evaluate_gas_oxygen_balance,
                 load_gas_datapack,
@@ -627,7 +684,7 @@ def evaluate_sulfur(
                 # each inner evaluation is the existing gas oxygen-balance path.
                 target_ppm = input_total_ppm or 0.0
                 target_wt = target_ppm / 1.0e4
-                if target_wt == 0.0:
+                if target_ppm == 0.0:
                     log_fs2 = -300.0
                     activities = _gas_activity_map(melt_result, None)
                     p_o2, _gas_result, _diagnostics = evaluate_gas_oxygen_balance(
@@ -637,6 +694,8 @@ def evaluate_sulfur(
                 else:
                     from scipy.optimize import brentq
 
+                    target_log_ppm = math.log10(target_ppm)
+
                     def at_log_fs2(candidate: float) -> tuple[float, float]:
                         activities = _gas_activity_map(melt_result, candidate)
                         p_o2, _gas_result, _diagnostics = evaluate_gas_oxygen_balance(
@@ -645,7 +704,13 @@ def evaluate_sulfur(
                         candidate_fo2 = math.log10(p_o2)
                         l2 = log_cs2 + 0.5 * (candidate - candidate_fo2)
                         l6 = log_cs6 + 0.5 * candidate + 1.5 * candidate_fo2
-                        candidate_ppm = 10.0 ** (_log10_sum((l2 + 4.0, l6 + 4.0)))
+                        candidate_log_ppm = _log10_sum((l2 + 4.0, l6 + 4.0))
+                        if target_wt == 0.0:
+                            return candidate_log_ppm - target_log_ppm, candidate_fo2
+                        try:
+                            candidate_ppm = 10.0**candidate_log_ppm
+                        except OverflowError:
+                            return 1.0, candidate_fo2
                         return candidate_ppm - target_ppm, candidate_fo2
 
                     nodes = (-50.0, -35.0, -25.0, -15.0, -10.0, -5.0, 0.0, 5.0)
@@ -671,10 +736,10 @@ def evaluate_sulfur(
                         # therefore S_max still depend on the resulting fO2.
                         log_ratio = log_cs6 - log_cs2 + 2.0 * log_fo2
                         log_scss = math.log10(scss)
-                        max_total_ppm = 10.0 ** _log10_sum((
+                        log_max_total_ppm = _log10_sum((
                             log_scss, log_scss + log_ratio,
                         ))
-                        if target_ppm > max_total_ppm:
+                        if _above_log_ceiling(target_ppm, log_max_total_ppm):
                             def oxygen_residual_at_saturation(
                                 candidate_fo2: float,
                             ) -> float:
@@ -745,18 +810,36 @@ def evaluate_sulfur(
             log_a2 = log_cs2 - 0.5 * log_fo2
             log_a6 = log_cs6 + 1.5 * log_fo2
             log_a = _log10_sum((log_a2, log_a6))
-            log_fs2 = 2.0 * (math.log10(target_ppm / 1.0e4) - log_a)
+            target_wt = target_ppm / 1.0e4
+            log_target_wt = (
+                math.log10(target_wt)
+                if target_wt > 0.0
+                else math.log10(target_ppm) - 4.0
+            )
+            log_fs2 = 2.0 * (log_target_wt - log_a)
 
     dissolved_s2 = dissolved_s6 = predicted_total = dissolved_total = None
     capacity_predicted_s2 = capacity_predicted_s6 = None
     dissolved_mol = excess_ppm = excess_s_mol = None
     saturation_state = None
+    sulfur_prediction_available = True
     if sulfur_fields_available and log_fo2 is not None and log_fs2 is not None:
-        capacity_predicted_s2, capacity_predicted_s6, predicted_total = _sulfur_split(
-            log_cs2, log_cs6, log_fo2, log_fs2,
-        )
-        dissolved_s2, dissolved_s6 = capacity_predicted_s2, capacity_predicted_s6
-        if input_total_ppm is not None:
+        try:
+            capacity_predicted_s2, capacity_predicted_s6, predicted_total = _sulfur_split(
+                log_cs2, log_cs6, log_fo2, log_fs2,
+            )
+        except OverflowError as exc:
+            sulfur_prediction_available = False
+            notices.append(_notice(
+                "sulfur-capacity-unavailable",
+                "openimcc could not represent the dissolved sulfur capacity: "
+                + f"{type(exc).__name__}: {exc}",
+                model="Boulliung-Wood-capacities",
+                axis="capacity_predicted_total_S_ppm",
+            ))
+        if sulfur_prediction_available:
+            dissolved_s2, dissolved_s6 = capacity_predicted_s2, capacity_predicted_s6
+        if input_total_ppm is not None and sulfur_prediction_available:
             if scss is not None:
                 # The capacity ratio r = S6+/S2- = (C6/C2) fO2^2 is
                 # independent of fS2. At any fugacity total dissolved S is
@@ -766,10 +849,11 @@ def evaluate_sulfur(
                 # returned fugacity regenerate both reported species.
                 log_ratio = log_cs6 - log_cs2 + 2.0 * log_fo2
                 log_scss = math.log10(scss)
-                max_total_ppm = 10.0 ** _log10_sum((
+                log_max_total_ppm = _log10_sum((
                     log_scss, log_scss + log_ratio,
                 ))
-                if input_total_ppm > max_total_ppm:
+                if _above_log_ceiling(input_total_ppm, log_max_total_ppm):
+                    max_total_ppm = 10.0**log_max_total_ppm
                     log_fs2 = log_fo2 + 2.0 * (log_scss - 4.0 - log_cs2)
                     capacity_predicted_s2, capacity_predicted_s6, predicted_total = _sulfur_split(
                         log_cs2, log_cs6, log_fo2, log_fs2,
@@ -782,7 +866,7 @@ def evaluate_sulfur(
                     saturation_state = "undersaturated"
             # Without an SCSS estimate, the capacity inversion is the only
             # available inventory model and no saturation/excess is inferred.
-        elif scss is not None:
+        elif scss is not None and sulfur_prediction_available:
             # A caller-supplied fS2 is a capacity prediction rather than a
             # closed inventory. SCSS caps only its predicted S2-; any S2-
             # capacity above that limit is a sulfide-liquid overrun.
@@ -793,17 +877,20 @@ def evaluate_sulfur(
             else:
                 excess_ppm = 0.0
                 saturation_state = "undersaturated"
-        dissolved_total = dissolved_s2 + dissolved_s6
-        dissolved_mol = dissolved_total * 1.0e-6 * mean_molar_mass / _MW_S
-        excess_s_mol = (excess_ppm or 0.0) * 1.0e-6 * mean_molar_mass / _MW_S
-        if excess_ppm and excess_ppm > 0.0:
+        if sulfur_prediction_available:
+            dissolved_total = dissolved_s2 + dissolved_s6
+            dissolved_mol = dissolved_total * 1.0e-6 * mean_molar_mass / _MW_S
+            excess_s_mol = (excess_ppm or 0.0) * 1.0e-6 * mean_molar_mass / _MW_S
+        if sulfur_prediction_available and excess_ppm and excess_ppm > 0.0:
             notices.append(_notice(
                 "sulfur-excess-reported-to-sulfide-liquid",
                 "sulfur above the S2- SCSS-limited dissolved inventory is assigned to the caller's sulfide-liquid composition",
                 model="Smythe-2017-SCSS", axis="excess_s_ppm", value=excess_ppm,
             ))
-        sulfate_dominant = dissolved_s6 > dissolved_s2
-        if scss is not None and sulfate_dominant:
+        if (
+            sulfur_prediction_available and scss is not None
+            and dissolved_s6 > dissolved_s2
+        ):
             notices.append(_notice(
                 "sulfate-saturation-and-so2-degassing-not-modelled",
                 "dissolved S6+ exceeds S2-; sulfate saturation (including anhydrite) and SO2 degassing are not modelled",
