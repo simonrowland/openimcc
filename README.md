@@ -1114,7 +1114,8 @@ component. Relative paths resolve against the process working directory;
 omitting the argument uses the packaged default.
 
 The opt-in Cr2+/Cr3+ candidate and its evidence domain are documented in
-[`docs/redox-basis.md`](docs/redox-basis.md). Select it explicitly with:
+[`docs/redox-basis.md`](docs/redox-basis.md). Its `opt-in` role and candidate
+family are recorded in `src/openimcc/data/packs/MANIFEST.json`. Select it with:
 
 ```python
 from importlib.resources import as_file, files

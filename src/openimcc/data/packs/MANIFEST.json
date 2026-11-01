@@ -3,6 +3,7 @@
     {
       "bytes": 90041,
       "datapack_version": "1.0.3-d066-ext-v1",
+      "family": "d066-sp-extension",
       "file": "imcc-sf04-d066-ext-v1.json",
       "model": "IMCC ideal associated solution: 46 melt species = 8 unbound parent oxides + 38 complexes; x_j = K_j(T) * prod_i (x_i*)^nu_ij; log10 K_j = A_j + B_j/T (T in K)",
       "n_rows": 38,
@@ -18,11 +19,13 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as internal consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition (scout section 2).",
         "partial_non_janaf_direct_liquid": 1
       },
+      "role": "opt-in",
       "sha256": "efa864e425e7c4f73576caec23e7f2dfaf40e443aaf682523536b30f9a70d331"
     },
     {
       "bytes": 100334,
       "datapack_version": "1.0.9-d066-feo-hess-candidate",
+      "family": "melt-feo-liquid",
       "file": "imcc-sf04-d066-feo-hess-candidate.json",
       "model": "Opt-in D066 v5 candidate with mixing-inclusive five-row-method Hess A refits for Fe2SiO4 and FeTiO3; FeAl2O4 and all B values remain unchanged.",
       "n_rows": 38,
@@ -38,11 +41,13 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition.",
         "partial_non_janaf_direct_liquid": 1
       },
+      "role": "opt-in",
       "sha256": "5f3364689db419b1172a0aded1085aacbc9063283d156f026721505633fbfabc"
     },
     {
       "bytes": 76626,
       "datapack_version": "1.0.3-d066-feo-liquid-candidate",
+      "family": "melt-feo-liquid",
       "file": "imcc-sf04-d066-feo-liquid-candidate.json",
       "model": "Opt-in IMCC-SF04 associated-solution candidate with the stoichiometric FeO(l) standard-state correction applied to every Fe-bearing association.",
       "n_rows": 38,
@@ -58,11 +63,14 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as internal consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition (scout section 2).",
         "partial_non_janaf_direct_liquid": 1
       },
-      "sha256": "afb22d04409165f33e85753c60ebe086aaf471ae056a948bdaac0f00a7d69f8a"
+      "role": "historical",
+      "sha256": "afb22d04409165f33e85753c60ebe086aaf471ae056a948bdaac0f00a7d69f8a",
+      "superseded_by": "imcc-sf04-d066-feo-hess-candidate.json"
     },
     {
       "bytes": 93816,
       "datapack_version": "1.0.6-d066-sio2-na2o-candidate",
+      "family": "melt-sio2-na2o",
       "file": "imcc-sf04-d066-sio2-na2o-candidate.json",
       "model": "IMCC ideal associated solution candidate with SiO2(l) and Na2O(l) standards re-referenced to measured silicate-liquid heat capacities.",
       "n_rows": 38,
@@ -78,6 +86,7 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition.",
         "partial_non_janaf_direct_liquid": 1
       },
+      "role": "opt-in",
       "sha256": "0546f694b54e9c415be05a9c178af10e43d2c8abfb8a066035843d16427c1fd7"
     },
     {
@@ -98,7 +107,9 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as internal consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition (scout section 2).",
         "partial_non_janaf_direct_liquid": 1
       },
-      "sha256": "a5dc8448b12de1983ef577d344df193d0203e353de5db5ed2264ce769bfbfb0f"
+      "role": "historical",
+      "sha256": "a5dc8448b12de1983ef577d344df193d0203e353de5db5ed2264ce769bfbfb0f",
+      "superseded_by": "imcc-sf04-d066-v5.json"
     },
     {
       "bytes": 75368,
@@ -118,7 +129,9 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as internal consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition (scout section 2).",
         "partial_non_janaf_direct_liquid": 1
       },
-      "sha256": "c083345d3f5aaae3e07ba392dd51ebbc8fdad43dfe333021b2b7c8e80df9105f"
+      "role": "historical",
+      "sha256": "c083345d3f5aaae3e07ba392dd51ebbc8fdad43dfe333021b2b7c8e80df9105f",
+      "superseded_by": "imcc-sf04-d066-v2.json"
     },
     {
       "bytes": 80044,
@@ -138,7 +151,9 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as internal consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition (scout section 2).",
         "partial_non_janaf_direct_liquid": 1
       },
-      "sha256": "f45b67522773622295eb018ed59267b2e11c8940d28f93c53339918c04a739d4"
+      "role": "historical",
+      "sha256": "f45b67522773622295eb018ed59267b2e11c8940d28f93c53339918c04a739d4",
+      "superseded_by": "imcc-sf04-d066-v3.json"
     },
     {
       "bytes": 83169,
@@ -158,7 +173,9 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as internal consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition (scout section 2).",
         "partial_non_janaf_direct_liquid": 1
       },
-      "sha256": "ac4911747211e89cae2a0738c2b0b7943d9705477e21fa38752075668616aa10"
+      "role": "historical",
+      "sha256": "ac4911747211e89cae2a0738c2b0b7943d9705477e21fa38752075668616aa10",
+      "superseded_by": "imcc-sf04-d066-v4.json"
     },
     {
       "bytes": 93681,
@@ -178,7 +195,9 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition.",
         "partial_non_janaf_direct_liquid": 1
       },
-      "sha256": "5ad550f626a49ebd683211b6f5fd6d0269eb3f2eec93d714bf7ccb2475e82d29"
+      "role": "historical",
+      "sha256": "5ad550f626a49ebd683211b6f5fd6d0269eb3f2eec93d714bf7ccb2475e82d29",
+      "superseded_by": "imcc-sf04-d066-v5.json"
     },
     {
       "bytes": 97169,
@@ -198,11 +217,13 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition.",
         "partial_non_janaf_direct_liquid": 1
       },
+      "role": "default",
       "sha256": "f8bd4c22d9f26999bdcebc9ac0b2ea3099b36cc423ef3986f32135e2dc627ba7"
     },
     {
       "bytes": 76455,
       "datapack_version": "1.0.2-ext-sp-2",
+      "family": "sf04-sp-extension",
       "file": "imcc-sf04-ext-v4.json",
       "model": "IMCC ideal associated solution: 46 melt species = 8 unbound parent oxides + 38 complexes; x_j = K_j(T) * prod_i (x_i*)^nu_ij; log10 K_j = A_j + B_j/T (T in K)",
       "n_rows": 38,
@@ -218,6 +239,7 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as internal consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition (scout section 2).",
         "partial_non_janaf_direct_liquid": 1
       },
+      "role": "opt-in",
       "sha256": "4c8e3c89cce921909b70005b6c28e0a5bd75f4487acf12f33e02be55bb730828"
     },
     {
@@ -238,11 +260,13 @@
         "note": "9 JANAF rows (pack rows 1-6, 24, 25, 31) double as internal consistency checks per spec section 4, with the JANAF-table range caveat recorded per row. The 1 partial is row 35 (KAlO2): direct liquid compilation from Glushko/Gurvich cited by FC87 Appendix 1, not JANAF; exact modern table row needs acquisition (scout section 2).",
         "partial_non_janaf_direct_liquid": 1
       },
+      "role": "reproduction",
       "sha256": "87be28815642e8ec65f09edd791525fef8dfe10622e61772dee6047f4ad027b8"
     },
     {
       "bytes": 101956,
       "datapack_version": "1.5.0-cr-candidate",
+      "family": "redox-cr",
       "file": "openimcc-redox-cr-candidate-v2.json",
       "model": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
@@ -253,11 +277,14 @@
         "measured-melt-composition-conditioned-effective-k": 1
       },
       "provenance_split": null,
-      "sha256": "2fee658b06d05646d417221195328c8cfed9ad25402269aaf073e4a094b1c2e3"
+      "role": "historical",
+      "sha256": "2fee658b06d05646d417221195328c8cfed9ad25402269aaf073e4a094b1c2e3",
+      "superseded_by": "openimcc-redox-cr-candidate-v3.json"
     },
     {
       "bytes": 102883,
       "datapack_version": "1.6.0-cr-candidate",
+      "family": "redox-cr",
       "file": "openimcc-redox-cr-candidate-v3.json",
       "model": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
@@ -268,11 +295,14 @@
         "measured-melt-composition-conditioned-effective-k": 1
       },
       "provenance_split": null,
-      "sha256": "65d8225c751e5119100e7f693fd5480c55af9aea586c4268d00260a51bf92af7"
+      "role": "historical",
+      "sha256": "65d8225c751e5119100e7f693fd5480c55af9aea586c4268d00260a51bf92af7",
+      "superseded_by": "openimcc-redox-cr-candidate-v4.json"
     },
     {
       "bytes": 105255,
       "datapack_version": "1.7.0-cr-candidate",
+      "family": "redox-cr",
       "file": "openimcc-redox-cr-candidate-v4.json",
       "model": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
@@ -283,11 +313,13 @@
         "measured-melt-composition-conditioned-effective-k": 1
       },
       "provenance_split": null,
+      "role": "opt-in",
       "sha256": "5b7df312058a1886082185e47ea87a2a8f0b1041e9fea52a6bca8178ef2092c6"
     },
     {
       "bytes": 101192,
       "datapack_version": "1.4.0-cr-candidate",
+      "family": "redox-cr",
       "file": "openimcc-redox-cr-candidate.json",
       "model": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K",
       "n_rows": 7,
@@ -298,11 +330,14 @@
         "measured-melt-composition-conditioned-effective-k": 1
       },
       "provenance_split": null,
-      "sha256": "a2327fd582dc9fb4e2b7e1a49cee7bfacbd72510e06ce0e706495ef8107d5809"
+      "role": "historical",
+      "sha256": "a2327fd582dc9fb4e2b7e1a49cee7bfacbd72510e06ce0e706495ef8107d5809",
+      "superseded_by": "openimcc-redox-cr-candidate-v2.json"
     },
     {
       "bytes": 114564,
       "datapack_version": "1.7.0-cr-ti-candidate",
+      "family": "redox-cr-ti",
       "file": "openimcc-redox-cr-ti-candidate-v2.json",
       "model": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 8,
@@ -313,11 +348,14 @@
         "measured-melt-composition-conditioned-effective-k": 2
       },
       "provenance_split": null,
-      "sha256": "3a46202168608e11985c3f89993601cb9b53e46503a62c7a155e77589c1e00b3"
+      "role": "historical",
+      "sha256": "3a46202168608e11985c3f89993601cb9b53e46503a62c7a155e77589c1e00b3",
+      "superseded_by": "openimcc-redox-cr-ti-candidate-v3.json"
     },
     {
       "bytes": 115497,
       "datapack_version": "1.8.0-cr-ti-candidate",
+      "family": "redox-cr-ti",
       "file": "openimcc-redox-cr-ti-candidate-v3.json",
       "model": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 8,
@@ -328,11 +366,14 @@
         "measured-melt-composition-conditioned-effective-k": 2
       },
       "provenance_split": null,
-      "sha256": "ddd9db8487bfd583ef48df0d98b2cf082c8621150ba5a53b58577ea03a66eeb3"
+      "role": "historical",
+      "sha256": "ddd9db8487bfd583ef48df0d98b2cf082c8621150ba5a53b58577ea03a66eeb3",
+      "superseded_by": "openimcc-redox-cr-ti-candidate-v4.json"
     },
     {
       "bytes": 117913,
       "datapack_version": "1.9.0-cr-ti-candidate",
+      "family": "redox-cr-ti",
       "file": "openimcc-redox-cr-ti-candidate-v4.json",
       "model": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack on standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity, with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 8,
@@ -343,11 +384,13 @@
         "measured-melt-composition-conditioned-effective-k": 2
       },
       "provenance_split": null,
+      "role": "opt-in",
       "sha256": "89d1c583b52a88cc135d3722f247f8405233d83700a0f3b61327abe9a3c5810f"
     },
     {
       "bytes": 113797,
       "datapack_version": "1.6.0-cr-ti-candidate",
+      "family": "redox-cr-ti",
       "file": "openimcc-redox-cr-ti-candidate.json",
       "model": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack.",
       "n_rows": 8,
@@ -358,11 +401,14 @@
         "measured-melt-composition-conditioned-effective-k": 2
       },
       "provenance_split": null,
-      "sha256": "850dfe9f7e61dae9b9786d9f56508236b352e293198fbdc63a8daf5f51d37034"
+      "role": "historical",
+      "sha256": "850dfe9f7e61dae9b9786d9f56508236b352e293198fbdc63a8daf5f51d37034",
+      "superseded_by": "openimcc-redox-cr-ti-candidate-v2.json"
     },
     {
       "bytes": 93849,
       "datapack_version": "1.6.0-feo-liquid-candidate",
+      "family": "redox-feo-liquid",
       "file": "openimcc-redox-feo-liquid-candidate-v2.json",
       "model": "Opt-in FeO(l) stoichiometric re-anchor candidate derived from Darken & Gurry (1946), with Fe-bearing association constants transformed consistently.",
       "n_rows": 6,
@@ -372,11 +418,13 @@
         "janaf_direct_liquid": 1
       },
       "provenance_split": null,
+      "role": "opt-in",
       "sha256": "dc5d4390ead15aefcfd4836ea625e26d68be09cfb74f96f90bb0866c733c50a1"
     },
     {
       "bytes": 93791,
       "datapack_version": "1.5.0-feo-liquid-candidate",
+      "family": "redox-feo-liquid",
       "file": "openimcc-redox-feo-liquid-candidate.json",
       "model": "Opt-in FeO(l) stoichiometric re-anchor candidate derived from Darken & Gurry (1946), with Fe-bearing association constants transformed consistently.",
       "n_rows": 6,
@@ -386,11 +434,14 @@
         "janaf_direct_liquid": 1
       },
       "provenance_split": null,
-      "sha256": "426a11de00154957cf2a74eaf4a6457bf58fab4a932b1b72b130a70b2500473a"
+      "role": "historical",
+      "sha256": "426a11de00154957cf2a74eaf4a6457bf58fab4a932b1b72b130a70b2500473a",
+      "superseded_by": "openimcc-redox-feo-liquid-candidate-v2.json"
     },
     {
       "bytes": 96322,
       "datapack_version": "1.7.0-sio2-na2o-candidate",
+      "family": "redox-sio2-na2o",
       "file": "openimcc-redox-sio2-na2o-candidate.json",
       "model": "Element-based redox thermochemistry candidate using the measured silicate-liquid SiO2(l) heat capacity.",
       "n_rows": 6,
@@ -400,11 +451,13 @@
         "janaf_direct_liquid": 1
       },
       "provenance_split": null,
+      "role": "opt-in",
       "sha256": "0471dfc38615689d2299e71227dbc1dd1433a9b21f261dafb368f24f394c1223"
     },
     {
       "bytes": 106257,
       "datapack_version": "1.6.0-ti-candidate",
+      "family": "redox-ti",
       "file": "openimcc-redox-ti-candidate-v2.json",
       "model": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
@@ -415,11 +468,14 @@
         "measured-melt-composition-conditioned-effective-k": 1
       },
       "provenance_split": null,
-      "sha256": "a757333e8826ebc82852b13dc9109abc4ecd412277318784608499ff3d764d16"
+      "role": "historical",
+      "sha256": "a757333e8826ebc82852b13dc9109abc4ecd412277318784608499ff3d764d16",
+      "superseded_by": "openimcc-redox-ti-candidate-v3.json"
     },
     {
       "bytes": 107184,
       "datapack_version": "1.7.0-ti-candidate",
+      "family": "redox-ti",
       "file": "openimcc-redox-ti-candidate-v3.json",
       "model": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
@@ -430,11 +486,14 @@
         "measured-melt-composition-conditioned-effective-k": 1
       },
       "provenance_split": null,
-      "sha256": "bee5a885464c46c6b6d33557383bedc3099ca1c3f48751723be263089522092d"
+      "role": "historical",
+      "sha256": "bee5a885464c46c6b6d33557383bedc3099ca1c3f48751723be263089522092d",
+      "superseded_by": "openimcc-redox-ti-candidate-v4.json"
     },
     {
       "bytes": 109589,
       "datapack_version": "1.8.0-ti-candidate",
+      "family": "redox-ti",
       "file": "openimcc-redox-ti-candidate-v4.json",
       "model": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack on standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity, with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
@@ -445,11 +504,13 @@
         "measured-melt-composition-conditioned-effective-k": 1
       },
       "provenance_split": null,
+      "role": "opt-in",
       "sha256": "ebbe5572a5a6f4193171b4724d052800df861e51caaf4d89a16b253dc7d4202d"
     },
     {
       "bytes": 105490,
       "datapack_version": "1.5.0-ti-candidate",
+      "family": "redox-ti",
       "file": "openimcc-redox-ti-candidate.json",
       "model": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack.",
       "n_rows": 7,
@@ -460,7 +521,9 @@
         "measured-melt-composition-conditioned-effective-k": 1
       },
       "provenance_split": null,
-      "sha256": "31d7bf5532a92983a3bbb593bf65e3cd9d398d64699a0c0e87fb05071d0f17dc"
+      "role": "historical",
+      "sha256": "31d7bf5532a92983a3bbb593bf65e3cd9d398d64699a0c0e87fb05071d0f17dc",
+      "superseded_by": "openimcc-redox-ti-candidate-v2.json"
     },
     {
       "bytes": 92702,
@@ -474,7 +537,9 @@
         "janaf_direct_liquid": 1
       },
       "provenance_split": null,
-      "sha256": "a7f44ddeb2f88bfa56fc50556c262e81598e4b82d7773e498aa3d5040ecc3501"
+      "role": "historical",
+      "sha256": "a7f44ddeb2f88bfa56fc50556c262e81598e4b82d7773e498aa3d5040ecc3501",
+      "superseded_by": "openimcc-redox-v2.json"
     },
     {
       "bytes": 93976,
@@ -488,7 +553,9 @@
         "janaf_direct_liquid": 1
       },
       "provenance_split": null,
-      "sha256": "910a0d0c1fff7e8816c2e423bd57ef67166c93c263adc7f2850429df415bfad9"
+      "role": "historical",
+      "sha256": "910a0d0c1fff7e8816c2e423bd57ef67166c93c263adc7f2850429df415bfad9",
+      "superseded_by": "openimcc-redox-v3.json"
     },
     {
       "bytes": 94876,
@@ -502,7 +569,9 @@
         "janaf_direct_liquid": 1
       },
       "provenance_split": null,
-      "sha256": "8f7b2a74533252a868bd1eea8ee6112c72b8c75b2172f8e655ceca6dbb619b20"
+      "role": "historical",
+      "sha256": "8f7b2a74533252a868bd1eea8ee6112c72b8c75b2172f8e655ceca6dbb619b20",
+      "superseded_by": "openimcc-redox-v4.json"
     },
     {
       "bytes": 96545,
@@ -516,6 +585,7 @@
         "janaf_direct_liquid": 1
       },
       "provenance_split": null,
+      "role": "default",
       "sha256": "fe39de4bed783ad3f15fc6581371ea35a21eb58c9f3ae9ed1e489aaf70b16dfe"
     }
   ],

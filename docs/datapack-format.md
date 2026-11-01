@@ -8,6 +8,16 @@ below. The loader is deliberately stricter than the descriptive
 metadata: a file can be a useful research record and still not be a pack that
 the current production loader accepts.
 
+## Pack lifecycle metadata
+
+`src/openimcc/data/packs/MANIFEST.json` records each pack's lifecycle outside
+the immutable pack bytes. `role` is one of `default`, `opt-in`, `historical`,
+or `reproduction`. Candidate entries also use `family` to group generations;
+each family has one current `opt-in`, while historical entries point to a
+shipped successor with `superseded_by`. The manifest is the source for current
+candidate and default listings. These fields describe packs and do not select
+or change runtime loading.
+
 ## 1. What a pack contains
 
 An IMCC datapack contains an ordered set of parent-oxide formula units, one
@@ -780,17 +790,13 @@ identity independent of JSON whitespace, while the manifest catches any byte
 change.
 
 The opt-in Cr, Ti, and combined Cr+Ti redox candidate packs keep anchor datasets
-separate from held-out checks in `dataset_provenance`. The current candidates are
-Cr v4 (`openimcc-redox-cr-candidate-v4.json`, `1.7.0-cr-candidate`), Ti v4
-(`openimcc-redox-ti-candidate-v4.json`, `1.8.0-ti-candidate`), and Cr+Ti v4
-(`openimcc-redox-cr-ti-candidate-v4.json`, `1.9.0-cr-ti-candidate`). The v1-v3
-candidate files remain loadable as frozen historical versions.
-The FeO-liquid candidate current redox record is
-`openimcc-redox-feo-liquid-candidate-v2.json` (`1.6.0-feo-liquid-candidate`);
-its unversioned v1 file remains frozen. Candidate-only composition-conditioned
-rows have no composition-independent Gibbs function;
-their effective K values are solved with the melt rows through a fixed point.
-The default redox pack does not accept candidate-only fields.
+separate from held-out checks in `dataset_provenance`. Their current files and
+the earlier frozen versions are identified by `role`, `family`, and
+`superseded_by` in `MANIFEST.json`; the same registry identifies the current
+FeO-liquid and other candidate families. Candidate-only composition-conditioned
+rows have no composition-independent Gibbs function; their effective K values
+are solved with the melt rows through a fixed point. The default redox pack
+does not accept candidate-only fields.
 
 Top-level redox fields:
 

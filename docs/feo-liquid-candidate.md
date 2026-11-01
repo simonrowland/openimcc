@@ -106,11 +106,10 @@ That produces ΔA = −0.572561660·ν_FeO and ΔB = 1450.995948·ν_FeO K for l
 
 The historical D066 v2 pack combined the measured Shornikov fusion enthalpy for MgAl₂O₄ row 3 with the FeO-parent transformation shown above. FeAl₂O₄ row 21 retains FC87 R21's own estimated melting entropy and liquid Cp; those estimates do not define a quantitative transfer from MgAl₂O₄'s measured fusion enthalpy. The published v1 FeO candidate melt pack remains frozen with its earlier MgAl₂O₄ row.
 
-These FeO-liquid candidate files are retained for historical reproduction only:
-
-- `src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate.json`
-- `src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json`
-- `src/openimcc/data/gas/condensate-feo-liquid-candidate.csv`
+The earlier melt and redox FeO-liquid packs are marked `historical` in
+`src/openimcc/data/packs/MANIFEST.json`; their `superseded_by` fields identify
+the current candidate records. The gas condensate file remains an associated
+historical snapshot and is outside the pack manifest.
 
 For historical reproduction, select the redox and melt JSON paths together in `evaluate_redox(..., redox_pack_path=..., melt_pack_path=...)`; pass the historical candidate condensate file to the gas loader when reproducing its gas results. The current defaults are `imcc-sf04-d066-v5.json` and `openimcc-redox-v4.json`. The released historical model is D066 v1 paired with the condensate table shipped at f55617a. The retained gas-only `condensate-feo-janaf-legacy.csv` file uses the other rows from the 249fde5 condensate table and substitutes only the JANAF Fe-019 FeO(l) row; it restores gas only, not melt associations or redox. It remains useful for explicit Fe-019 gas comparisons and the source-pinned element-status regression. Pairing that file with the current defaults mixes standard states and does not recreate a historical model. The historical candidate condensate matches the FeO Gibbs row in that snapshot only; Ag2O(l), As2O3(l), MnO(l), and Sb2O3(l) still differ from the current condensate table.
 

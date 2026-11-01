@@ -21,7 +21,7 @@ from test_melt_source_transcriptions import (
 ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src" / "openimcc" / "data" / "packs"
 SIDECAR_PATH = ROOT / "src" / "openimcc" / "data" / "source-refs-sidecar.json"
-MANIFEST_SHA256 = "505237efb0502c0696921e996e9056b224ba3cdc8003b17e95816f52771e1cfa"
+MANIFEST_SHA256 = "ee69ac63a9b033c3c60f2066a1eed4545b25f17e637aa0b4139576401718f61f"
 
 
 def _pack_data() -> dict[str, dict[str, Any]]:
@@ -66,7 +66,7 @@ def _later_rows_with_same_signature(
     ]
 
 
-def test_pack_manifest_is_unchanged() -> None:
+def test_pack_manifest_digest_is_pinned() -> None:
     manifest_bytes = (PACK_DIR / "MANIFEST.json").read_bytes()
     assert hashlib.sha256(manifest_bytes).hexdigest() == MANIFEST_SHA256
 

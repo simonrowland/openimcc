@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added lifecycle roles, candidate-family links, and successor references to
+  the datapack manifest. The checker validates defaults against runtime loads
+  while leaving pack bytes and runtime selection unchanged.
+
 - `evaluate_redox()` accepts an already-loaded melt pack through `melt_pack`.
 
 - `saturation_indices()` and `liquidus_bracket()` use the default core pack

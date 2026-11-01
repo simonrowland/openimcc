@@ -28,6 +28,34 @@ from pathlib import Path
 
 PACK_DIR = Path(__file__).resolve().parent.parent / "src" / "openimcc" / "data" / "packs"
 MANIFEST = PACK_DIR / "MANIFEST.json"
+ROLE_METADATA_FIELDS = ("family", "role", "superseded_by")
+PACK_ROLES = {"default", "opt-in", "historical", "reproduction"}
+
+
+def _existing_role_metadata() -> dict[str, dict]:
+    """Keep lifecycle metadata when --write refreshes pack digests."""
+    if not MANIFEST.exists():
+        return {}
+    try:
+        recorded = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(recorded, dict) or not isinstance(
+        recorded.get("packs"), list
+    ):
+        return {}
+    metadata = {}
+    for entry in recorded["packs"]:
+        if not isinstance(entry, dict) or not isinstance(entry.get("file"), str):
+            continue
+        fields = {
+            field: entry[field]
+            for field in ROLE_METADATA_FIELDS
+            if field in entry
+        }
+        if fields:
+            metadata[entry["file"]] = fields
+    return metadata
 
 
 def _digest(path: Path) -> str:
@@ -72,9 +100,116 @@ def _summarise(path: Path) -> dict:
 
 def build() -> dict:
     packs = sorted(p for p in PACK_DIR.glob("*.json") if p.name != MANIFEST.name)
+    role_metadata = _existing_role_metadata()
+    entries = []
+    for path in packs:
+        entry = _summarise(path)
+        entry.update(role_metadata.get(path.name, {}))
+        entries.append(entry)
     return {
         "schema": "openimcc-pack-manifest.v1",
-        "packs": [_summarise(p) for p in packs],
+        "packs": entries,
+    }
+
+
+def _component(filename: str) -> str | None:
+    if filename.startswith("openimcc-redox-"):
+        return "redox"
+    if filename.endswith(".json"):
+        return "melt"
+    return None
+
+
+def _validate_roles(
+    manifest: dict, runtime_default_versions: dict[str, str]
+) -> list[str]:
+    """Validate lifecycle metadata without changing runtime pack selection."""
+    entries = manifest.get("packs")
+    if not isinstance(entries, list):
+        return ["manifest packs must be a list"]
+
+    issues: list[str] = []
+    by_name = {
+        entry["file"]: entry
+        for entry in entries
+        if isinstance(entry, dict) and isinstance(entry.get("file"), str)
+    }
+    defaults: dict[str, list[dict]] = {"melt": [], "redox": []}
+    families: dict[str, list[dict]] = {}
+
+    for entry in entries:
+        if not isinstance(entry, dict):
+            issues.append("each pack entry must be an object")
+            continue
+        filename = entry.get("file")
+        role = entry.get("role")
+        if not isinstance(role, str) or role not in PACK_ROLES:
+            issues.append(f"{filename!r} has invalid or missing role {role!r}")
+            continue
+
+        component = _component(filename) if isinstance(filename, str) else None
+        if role == "default":
+            if component not in defaults:
+                issues.append(f"default pack {filename!r} has an unknown component")
+            else:
+                defaults[component].append(entry)
+        elif role == "historical":
+            superseded_by = entry.get("superseded_by")
+            if not isinstance(superseded_by, str) or not superseded_by:
+                issues.append(f"historical pack {filename!r} must name superseded_by")
+            elif superseded_by not in by_name:
+                issues.append(
+                    f"historical pack {filename!r} superseded_by "
+                    f"{superseded_by!r}, which is not in the manifest"
+                )
+
+        family = entry.get("family")
+        if role == "opt-in" and (not isinstance(family, str) or not family.strip()):
+            issues.append(f"opt-in pack {filename!r} must name a candidate family")
+        elif family is not None:
+            if role not in {"opt-in", "historical"}:
+                issues.append(f"{filename!r} has family metadata for role {role!r}")
+            if not isinstance(family, str) or not family.strip():
+                issues.append(f"{filename!r} has an invalid candidate family")
+            else:
+                families.setdefault(family, []).append(entry)
+
+    for component, component_defaults in defaults.items():
+        if len(component_defaults) != 1:
+            issues.append(
+                f"manifest must have exactly one {component} default; "
+                f"found {len(component_defaults)}"
+            )
+            continue
+        default = component_defaults[0]
+        expected_version = runtime_default_versions.get(component)
+        if default.get("datapack_version") != expected_version:
+            issues.append(
+                f"{component} default {default.get('file')!r} does not match "
+                f"the runtime default version {expected_version!r}"
+            )
+
+    for family, members in families.items():
+        current = [entry for entry in members if entry.get("role") == "opt-in"]
+        if len(current) != 1:
+            issues.append(
+                f"candidate family {family!r} must have exactly one current opt-in; "
+                f"found {len(current)}"
+            )
+    return issues
+
+
+def _runtime_default_versions() -> dict[str, str]:
+    """Read the defaults through the same loaders used by package callers."""
+    source = str(Path(__file__).resolve().parent.parent / "src")
+    if source not in sys.path:
+        sys.path.insert(0, source)
+    from openimcc.model import load_datapack
+    from openimcc.redox_pack import load_redox_pack
+
+    return {
+        "melt": load_datapack().version,
+        "redox": load_redox_pack().version,
     }
 
 
@@ -136,6 +271,12 @@ def main(argv: list[str] | None = None) -> int:
         print("datapack drift detected:\n  " + "\n  ".join(drift), file=sys.stderr)
         print("\nIf the edit was intended, re-run with --write and say why in the "
               "commit message; consumers pin this hash.", file=sys.stderr)
+        return 1
+
+    role_issues = _validate_roles(recorded, _runtime_default_versions())
+    if role_issues:
+        print("invalid pack lifecycle metadata:\n  " + "\n  ".join(role_issues),
+              file=sys.stderr)
         return 1
 
     if not current["packs"]:

@@ -232,26 +232,27 @@ def test_every_shipped_datapack_key_is_documented() -> None:
     assert not any(missing.values()), f"undocumented datapack keys: {missing}"
 
 
-def test_current_redox_candidate_docs_match_loader_allowlist() -> None:
+def test_redox_candidate_docs_follow_manifest_roles() -> None:
     from openimcc.redox_pack import _CANDIDATE_VERSIONS
 
-    candidates = (
-        ("openimcc-redox-cr-candidate-v4.json", "1.7.0-cr-candidate"),
-        ("openimcc-redox-ti-candidate-v4.json", "1.8.0-ti-candidate"),
-        ("openimcc-redox-cr-ti-candidate-v4.json", "1.9.0-cr-ti-candidate"),
-    )
+    manifest = json.loads((PACK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))
+    candidates = [
+        entry
+        for entry in manifest["packs"]
+        if entry.get("datapack_version") in _CANDIDATE_VERSIONS
+    ]
+    current = [entry for entry in candidates if entry["role"] == "opt-in"]
     format_doc = " ".join(DOC.read_text(encoding="utf-8").split())
     redox_basis = " ".join(
         (ROOT / "docs" / "redox-basis.md").read_text(encoding="utf-8").split()
     )
 
-    for filename, version in candidates:
-        assert filename in format_doc
-        assert f"`{version}`" in format_doc
-        assert filename in redox_basis
-        assert version in _CANDIDATE_VERSIONS
-
-    assert "The v1-v3 candidate files remain loadable as frozen historical versions." in format_doc
+    assert {entry["datapack_version"] for entry in candidates} == _CANDIDATE_VERSIONS
+    assert len(current) == 3
+    assert all(entry["family"] for entry in candidates)
+    assert all(entry["file"] in redox_basis for entry in current)
+    assert "`role`, `family`, and `superseded_by` in `MANIFEST.json`" in format_doc
+    assert "marked `historical` in `MANIFEST.json`" in redox_basis
 
 
 def test_redox_species_schema_table_has_no_duplicate_rows() -> None:
@@ -333,6 +334,25 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         "openimcc-redox-v3.json",
         "openimcc-redox-v4.json",
     }
+
+
+def test_pack_lifecycle_metadata_is_documented_for_every_shipped_pack() -> None:
+    manifest = json.loads((PACK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))
+    entries = manifest["packs"]
+    assert all(entry.get("role") for entry in entries)
+    assert {entry["role"] for entry in entries} == {
+        "default", "opt-in", "historical", "reproduction"
+    }
+    assert all(
+        "family" in entry
+        for entry in entries
+        if entry["role"] == "opt-in"
+    )
+    document = DOC.read_text(encoding="utf-8")
+    assert "`role` is one of `default`, `opt-in`, `historical`," in document
+    assert "`family`" in document
+    assert "`superseded_by`" in document
+    assert "do not select" in document
 
     ext4 = json.loads(
         (PACK_DIR / "imcc-sf04-ext-v4.json").read_text(encoding="utf-8")
