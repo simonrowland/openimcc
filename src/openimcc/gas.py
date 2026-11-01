@@ -108,7 +108,7 @@ class ImccGasInvalidIntervalError(ImccRefusal):
 
 
 class ImccGasValidityMetadataError(ImccRefusal):
-    """Raised when a runtime gas row lacks typed source-validity columns."""
+    """Raised when typed source-validity facts are incomplete or inconsistent."""
 
     code = "imcc_gas_validity_metadata_missing"
 
@@ -4224,6 +4224,10 @@ class ImccGasDatapack:
             _CONDENSATE_NUMERIC_COLUMNS,
             _CONDENSATE_TEXT_COLUMNS,
         )
+        for species, row in gas_df.iterrows():
+            _source_validity_for_row(str(species), row, phase="g")
+        for species, row in oxide_df.iterrows():
+            _source_validity_for_row(str(species), row, phase="l")
         gas_df = _lock_gas_table(gas_df)
         oxide_df = _lock_gas_table(oxide_df)
         object.__setattr__(self, "_gas_digest", _gas_table_digest("gas", gas_df))
@@ -4799,8 +4803,6 @@ def _source_validity_for_row(
         raise ImccGasValidityMetadataError(
             f"{row_name} {phase}-phase row has invalid typed source-validity values"
         )
-    if kind == "none":
-        return None
     try:
         values = {column: float(row[column]) for column in _SOURCE_VALIDITY_NUMERIC_COLUMNS}
     except (TypeError, ValueError) as exc:
@@ -4815,6 +4817,22 @@ def _source_validity_for_row(
     table_id = str(row["table_id"])
     source_label = str(row["source_label"])
     continuation_kind = str(row["continuation_kind"])
+    has_typed_facts = (
+        method != "none"
+        or table_id != "none"
+        or source_label != "none"
+        or continuation_kind != "none"
+        or any(value == "true" for value in boolean_values.values())
+        or any(value != 0.0 for value in values.values())
+    )
+    expected_kind = "coverage" if has_typed_facts else "none"
+    if kind != expected_kind:
+        raise ImccGasValidityMetadataError(
+            f"{row_name} {phase}-phase validity_kind {kind!r} contradicts "
+            f"its typed source-validity facts (expected {expected_kind!r})"
+        )
+    if kind == "none":
+        return None
     if (
         method in {"", "none"}
         or table_id in {"", "none"}
@@ -5258,7 +5276,12 @@ def _add_ion_channels(
         else 0.0
     )
     values["e-"] = electron_pressure
-    domain_flags["e-"] = electron_flag
+    electron_flags = []
+    for dependency in (*positive, *negative):
+        for flag in dependency[3]:
+            if flag and flag not in electron_flags:
+                electron_flags.append(flag)
+    domain_flags["e-"] = "; ".join(electron_flags) or None
     provenance_class["e-"] = _ION_PROVENANCE_CLASS
     if not _gas_rows_match_packaged(datapack, (electron_row,)):
         provenance_class["e-"] = _EXTERNAL_DATAPACK_CLASS

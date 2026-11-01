@@ -42,6 +42,7 @@ from openimcc.gas import (
     ImccGasIngestionWarning,
     ImccGasSourceOverrideWarning,
     ImccGasInvalidIntervalError,
+    ImccGasValidityMetadataError,
     ImccGasOxygenBalanceError,
     ImccGasResult,
     ImccGasSpeciesNotFoundError,
@@ -1414,6 +1415,34 @@ def test_opt_in_ions_preserve_neutral_outputs_and_close_charge(
     for species in ("e-", *(name for name in _ION_GAS_SPECIES if name != "e-")):
         if species in low and species in high:
             assert low[species] < high[species], species
+
+
+def test_electron_domain_flags_include_contributing_neutral_sources(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    result = evaluate_gas(
+        {"Na2O": 1.0e-12},
+        2600.0,
+        1.0e-8,
+        gas_pack,
+        include_ions=True,
+        gas_species=("e-",),
+    )
+
+    flag = result.domain_flags["e-"]
+    assert flag is not None
+    assert "Na2O(l)" in flag
+    assert flag.count("Na2O(l)") == 1
+
+
+def test_gas_pack_rejects_validity_kind_that_suppresses_typed_facts(
+    gas_pack: ImccGasDatapack,
+) -> None:
+    condensate = gas_pack.oxide_df.copy()
+    condensate.loc["TiO2(l)", "validity_kind"] = "none"
+
+    with pytest.raises(ImccGasValidityMetadataError, match="contradicts"):
+        replace(gas_pack, oxide_df=condensate)
 
 
 def test_ion_subsets_use_full_gas_charge_closure(

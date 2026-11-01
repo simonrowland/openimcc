@@ -1166,6 +1166,60 @@ def test_bench_rejects_unknown_point_configuration_key(tmp_path: Path) -> None:
         load_bench_set(_write_fixture(tmp_path / "bench2.yaml", [unread]))
 
 
+def test_bench_rejects_quoted_boolean_score(tmp_path: Path) -> None:
+    point = {
+        "id": "quoted_score",
+        "population": "inline_score",
+        "composition_id": "cmas_in_domain",
+        "material_class": "cmas_slag",
+        "temperature_K": 1800.0,
+        "parent_oxide": "SiO2",
+        "species": "SiO",
+        "observable": "activity",
+        "measured": 0.5,
+        "units": "dimensionless",
+        "score": "false",
+    }
+
+    with pytest.raises(ValueError, match="score must be a boolean"):
+        load_bench_set(_write_fixture(tmp_path / "bench.yaml", [point]))
+
+
+@pytest.mark.parametrize(
+    "score_fields",
+    [{"score": True}, {}],
+    ids=("true-score", "absent-score"),
+)
+def test_dropped_reason_always_excludes_bench_point(
+    tmp_path: Path,
+    score_fields: dict,
+) -> None:
+    point = {
+        "id": "excluded_point",
+        "population": "inline_excluded",
+        "composition_id": "cmas_in_domain",
+        "material_class": "cmas_slag",
+        "temperature_K": 1800.0,
+        "parent_oxide": "SiO2",
+        "species": "SiO",
+        "observable": "activity",
+        "measured": 0.5,
+        "units": "dimensionless",
+        "dropped_reason": "held from scoring",
+        **score_fields,
+    }
+
+    report = run_bench(
+        _write_fixture(tmp_path / "bench.yaml", [point]), DATAPACK_PATH
+    )
+    row = report.points[0]
+
+    assert row.score is False
+    assert row.status == "refused"
+    assert row.residual is None
+    assert row.reason == "held from scoring"
+
+
 def test_run_bench_cache_distinguishes_inline_compositions(tmp_path: Path) -> None:
     first = {**_CMAS_WT}
     second = {"SiO2": 75.0, "CaO": 5.0, "MgO": 10.0, "Al2O3": 10.0}

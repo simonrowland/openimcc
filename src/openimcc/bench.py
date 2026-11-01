@@ -603,8 +603,19 @@ def load_bench_set(path: Path) -> dict[str, Any]:
                 f"bench point {point_id!r} has unknown point keys: "
                 f"{', '.join(sorted(map(str, unknown)))}"
             )
+        _point_is_scored(point)
     assert_xtoken_points_carry_explicit_composition(data["points"])
     return data
+
+
+def _point_is_scored(point: Mapping[str, Any]) -> bool:
+    """Resolve scoring from the serialized Boolean and exclusion reason."""
+    score = point.get("score", True)
+    if not isinstance(score, bool):
+        raise ValueError(
+            f"bench point {point.get('id', '<unknown>')!r} score must be a boolean"
+        )
+    return score and not bool(point.get("dropped_reason"))
 
 
 def _is_research_overlay(raw: Mapping[str, Any]) -> bool:
@@ -1071,11 +1082,8 @@ def run_bench(
             engine_domain_flag,
             engine_notices,
         ) = cache[cache_key]
-        if (
-            not bool(point.get("score", True))
-            and point.get("dropped_reason")
-            and status == "ok"
-        ):
+        score = _point_is_scored(point)
+        if not score and point.get("dropped_reason") and status == "ok":
             status = "refused"
             engine_reason = str(point["dropped_reason"])
         enriched = {**point, "composition_wt_pct": composition}
@@ -1099,7 +1107,6 @@ def run_bench(
             initial_domain_flag=engine_domain_flag,
         )
         measured = float(point["measured"])
-        score = bool(point.get("score", True))
         residual, ratio = _residual_and_ratio(predicted, measured, score=score)
         provenance = point.get("provenance")
         source_table = (
