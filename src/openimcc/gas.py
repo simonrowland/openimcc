@@ -133,6 +133,16 @@ def _consume_trial_receipt_suppression() -> bool:
 
 
 _SOURCE_CP_EXTENSION_RE = re.compile(r"-CP-EXT-(?P<limit>[0-9]+(?:\.[0-9]+)?)$")
+_HIGH_TEMPERATURE_CANDIDATE_TABLE_RE = re.compile(
+    r"^(?:gas-shomate|condensate)-hight-candidate-v(?P<version>[0-9]+)\.csv$"
+)
+_HIGH_TEMPERATURE_CANDIDATE_NOTICE_RE = re.compile(
+    r"^(?P<source>.+-HT-CANDIDATE)\|tier=(?P<tier>[^;|]+);"
+    r"dg=(?P<dg>[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?);"
+    r"band=(?P<band>[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?);"
+    r"limit=(?P<limit>[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?)"
+    r"(?:;basis=(?P<basis>[^;|]+))?$"
+)
 _LIQUID_FROM_SOLID_REF_RE = re.compile(
     r"^LFS\[(?P<source>[^;\]]+);Tf=(?P<temperature>[0-9]+(?:\.[0-9]+)?)\]$"
 )
@@ -173,6 +183,68 @@ class ImccGasValidityMetadataError(ImccRefusal):
     """Raised when typed source-validity facts are incomplete or inconsistent."""
 
     code = "imcc_gas_validity_metadata_missing"
+
+
+@dataclass(frozen=True)
+class _HighTemperatureCandidateNotice:
+    tier: str
+    dg_kj_mol: float
+    band_dex: float
+    limit_K: float
+    basis: str | None
+
+
+def _parse_high_temperature_candidate_notice(
+    table_name: str, table_path: Path, species: str, source_ref: str
+) -> _HighTemperatureCandidateNotice:
+    match = _HIGH_TEMPERATURE_CANDIDATE_NOTICE_RE.fullmatch(source_ref)
+    if match is None:
+        raise ImccGasValidityMetadataError(
+            f"{table_name} high-temperature candidate table {table_path.name} "
+            f"has malformed notice metadata for {species!r}"
+        )
+    tier = match.group("tier")
+    basis = match.group("basis")
+    if tier not in {"corroborated_calculation", "rough_extrapolated"} or (
+        basis not in {None, "unavailable", "internal", "paired_sources"}
+    ):
+        raise ImccGasValidityMetadataError(
+            f"{table_name} high-temperature candidate table {table_path.name} "
+            f"has malformed notice metadata for {species!r}"
+        )
+    dg = float(match.group("dg"))
+    band = float(match.group("band"))
+    limit = float(match.group("limit"))
+    if (
+        not all(math.isfinite(value) for value in (dg, band, limit))
+        or dg < 0.0
+        or band < 0.0
+        or limit < 3000.0
+    ):
+        raise ImccGasValidityMetadataError(
+            f"{table_name} high-temperature candidate table {table_path.name} "
+            f"has malformed notice metadata for {species!r}"
+        )
+    return _HighTemperatureCandidateNotice(tier, dg, band, limit, basis)
+
+
+def _high_temperature_candidate_notice_records(
+    table: "pd.DataFrame", table_name: str, table_path: Path, *, phase: str
+) -> dict[tuple[str, str, float], _HighTemperatureCandidateNotice]:
+    match = _HIGH_TEMPERATURE_CANDIDATE_TABLE_RE.fullmatch(table_path.name)
+    if match is None or int(match.group("version")) < 2:
+        return {}
+
+    records = {}
+    for species, row in table.iterrows():
+        t_min = float(row["T_min"])
+        if t_min < 3000.0:
+            continue
+        key = phase, str(species), t_min
+        records[key] = _parse_high_temperature_candidate_notice(
+            table_name, table_path, str(species), str(row["Ref"])
+        )
+    return records
 
 
 class ImccGasTemperatureOutsideDomainError(ImccRefusal):
@@ -1205,6 +1277,9 @@ class ImccGasDatapack:
     oxide_path: Path
     _gas_digest: str = field(init=False, repr=False, compare=False)
     _condensate_digest: str = field(init=False, repr=False, compare=False)
+    _high_temperature_candidate_notices: Mapping[
+        tuple[str, str, float], _HighTemperatureCandidateNotice
+    ] = field(init=False, repr=False, compare=False)
 
     def __init__(
         self,
@@ -1246,8 +1321,21 @@ class ImccGasDatapack:
             _source_validity_for_row(str(species), row, phase="g")
         for species, row in oxide_df.iterrows():
             _source_validity_for_row(str(species), row, phase="l")
+        candidate_notices = {
+            **_high_temperature_candidate_notice_records(
+                gas_df, "JANAF gas", self.gas_path, phase="g"
+            ),
+            **_high_temperature_candidate_notice_records(
+                oxide_df, "condensate", self.oxide_path, phase="l"
+            ),
+        }
         gas_df = _lock_gas_table(gas_df)
         oxide_df = _lock_gas_table(oxide_df)
+        object.__setattr__(
+            self,
+            "_high_temperature_candidate_notices",
+            MappingProxyType(candidate_notices),
+        )
         object.__setattr__(self, "_gas_digest", _gas_table_digest("gas", gas_df))
         object.__setattr__(
             self, "_condensate_digest", _gas_table_digest("condensate", oxide_df)
@@ -1524,50 +1612,87 @@ def _outside_interval_flag(
     return None
 
 
+def _high_temperature_candidate_notice_flag(
+    notice: _HighTemperatureCandidateNotice, T: float
+) -> str:
+    tier = notice.tier
+    dg = notice.dg_kj_mol
+    band = notice.band_dex
+    limit = notice.limit_K
+    if notice.basis == "unavailable":
+        return (
+            "high-temperature extension, rough: no paired-source "
+            "comparison is available above 3000 K"
+        )
+    if notice.basis == "internal":
+        return (
+            "high-temperature extension, rough: internal diagnostic "
+            f"maximum spread is {dg:g} kJ/mol (maximum pressure band "
+            f"±{band:g} dex) over the reported comparison range; no "
+            "independent source comparison is available"
+        )
+    if tier == "corroborated_calculation" and T <= limit:
+        return (
+            "high-temperature extension, corroborated by calculation "
+            f"over 3000-{limit:g} K: JANAF and Gurvich Cp shapes agree "
+            f"within at most {dg:g} kJ/mol (at most ±{band:g} dex) "
+            f"over that range; anchored at 3000 K"
+        )
+    if tier == "corroborated_calculation":
+        return (
+            f"high-temperature extension, rough beyond {limit:g} K: "
+            f"maximum corroborated spread over 3000-{limit:g} K was "
+            f"{dg:g} kJ/mol (maximum pressure band ±{band:g} dex)"
+        )
+    return (
+        f"high-temperature extension, rough above {limit:g} K: sources "
+        f"diverge by up to {dg:g} kJ/mol (maximum pressure band "
+        f"±{band:g} dex) over the reported comparison range"
+    )
+
+
 def _source_model_flag(
-    row_name: str, T: float, row: pd.Series, *, phase: str
+    row_name: str,
+    T: float,
+    row: pd.Series,
+    *,
+    phase: str,
+    candidate_notices: Mapping[
+        tuple[str, str, float], _HighTemperatureCandidateNotice
+    ] | None = None,
 ) -> str | None:
     """Name a selected row's coverage construction or upper-tail continuation."""
     source_ref = str(row.get("Ref", ""))
+    if T > 3000.0:
+        notice_key = (phase, row_name, float(row["T_min"]))
+        notice = (
+            candidate_notices.get(notice_key)
+            if candidate_notices is not None
+            else None
+        )
+        if notice is not None:
+            return _high_temperature_candidate_notice_flag(notice, T)
     if T > 3000.0 and "HT-CANDIDATE" in source_ref:
         band_fields = re.search(
             r"\|tier=(?P<tier>[^;|]+);dg=(?P<dg>[0-9.eE+-]+);band=(?P<band>[0-9.eE+-]+);limit=(?P<limit>[0-9.eE+-]+)",
             source_ref,
         )
         if band_fields:
-            tier = band_fields.group("tier")
-            dg = float(band_fields.group("dg"))
-            band = float(band_fields.group("band"))
-            limit = float(band_fields.group("limit"))
-            if ";basis=unavailable" in source_ref:
-                return (
-                    "high-temperature extension, rough: no paired-source "
-                    "comparison is available above 3000 K"
-                )
-            if ";basis=internal" in source_ref:
-                return (
-                    "high-temperature extension, rough: internal diagnostic "
-                    f"maximum spread is {dg:g} kJ/mol (maximum pressure band "
-                    f"±{band:g} dex) over the reported comparison range; no "
-                    "independent source comparison is available"
-                )
-            if tier == "corroborated_calculation" and T <= limit:
-                return (
-                    "high-temperature extension, corroborated by calculation "
-                    f"over 3000-{limit:g} K: JANAF and Gurvich Cp shapes agree "
-                    f"within at most {dg:g} kJ/mol (at most ±{band:g} dex) "
-                    f"over that range; anchored at 3000 K"
-                )
-            if tier == "corroborated_calculation":
-                return (
-                    f"high-temperature extension, rough beyond {limit:g} K: "
-                    f"maximum corroborated spread over 3000-{limit:g} K was "
-                    f"{dg:g} kJ/mol (maximum pressure band ±{band:g} dex)"
-                )
-            return (
-                f"high-temperature extension, rough above {limit:g} K: sources "
-                f"diverge by up to {dg:g} kJ/mol (maximum pressure band "
-                f"±{band:g} dex) over the reported comparison range"
+            return _high_temperature_candidate_notice_flag(
+                _HighTemperatureCandidateNotice(
+                    band_fields.group("tier"),
+                    float(band_fields.group("dg")),
+                    float(band_fields.group("band")),
+                    float(band_fields.group("limit")),
+                    (
+                        "unavailable"
+                        if ";basis=unavailable" in source_ref
+                        else "internal"
+                        if ";basis=internal" in source_ref
+                        else None
+                    ),
+                ),
+                T,
             )
         source = source_ref.removesuffix("-HT-CANDIDATE").removeprefix("CEA-")
         if "-BRIDGE" in source:
@@ -2211,7 +2336,13 @@ def _add_ion_channels(
                     flag
                     for flag in (
                         _outside_interval_flag(row_name, T, row),
-                        _source_model_flag(row_name, T, row, phase="g"),
+                        _source_model_flag(
+                            row_name,
+                            T,
+                            row,
+                            phase="g",
+                            candidate_notices=datapack._high_temperature_candidate_notices,
+                        ),
                     )
                     if flag
                 ) or None,
@@ -2990,7 +3121,13 @@ def evaluate_gas(
         flag = _outside_interval_flag(gas_species, T, gas_row)
         if flag is not None:
             flags.append(flag)
-        flag = _source_model_flag(gas_species, T, gas_row, phase="g")
+        flag = _source_model_flag(
+            gas_species,
+            T,
+            gas_row,
+            phase="g",
+            candidate_notices=datapack._high_temperature_candidate_notices,
+        )
         if flag is not None:
             flags.append(flag)
         # Rows whose G enters this channel. O2 is appended only when its
@@ -3004,7 +3141,13 @@ def evaluate_gas(
             flag = _outside_interval_flag("O2(g)", T, O2_row)
             if flag is not None:
                 flags.append(flag)
-            flag = _source_model_flag("O2(g)", T, O2_row, phase="g")
+            flag = _source_model_flag(
+                "O2(g)",
+                T,
+                O2_row,
+                phase="g",
+                candidate_notices=datapack._high_temperature_candidate_notices,
+            )
             if flag is not None:
                 flags.append(flag)
 
@@ -3076,7 +3219,11 @@ def evaluate_gas(
             elif parent_present and oxide_row is not None:
                 parent_phase = "s" if str(oxide_row["state"]) == "s" else "l"
                 flag = _source_model_flag(
-                    oxide_name, T, oxide_row, phase=parent_phase
+                    oxide_name,
+                    T,
+                    oxide_row,
+                    phase=parent_phase,
+                    candidate_notices=datapack._high_temperature_candidate_notices,
                 )
                 if flag is not None:
                     flags.append(flag)
@@ -3148,7 +3295,13 @@ def evaluate_gas(
                 flag = _outside_interval_flag(side_name, T, side_row)
                 if flag is not None:
                     flags.append(flag)
-                flag = _source_model_flag(side_name, T, side_row, phase="l")
+                flag = _source_model_flag(
+                    side_name,
+                    T,
+                    side_row,
+                    phase="l",
+                    candidate_notices=datapack._high_temperature_candidate_notices,
+                )
                 source_flags = [flag] if flag is not None else []
                 if side_name in {record.species for record in liquid_reference_records()}:
                     source_flags = _liquid_reference_flags(

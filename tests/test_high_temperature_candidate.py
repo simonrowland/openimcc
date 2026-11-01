@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import csv
 import hashlib
+import json
 import math
 import sys
 from pathlib import Path
 
+import pytest
 from openimcc import evaluate, load_datapack
 import openimcc.gas as gas_module
 from openimcc.gas import (
@@ -245,6 +248,74 @@ def test_v2_candidate_flags_show_per_species_tier_and_band() -> None:
             flag = _source_model_flag(species, temperature, row, phase=phase)
             assert flag is not None
             assert all(part in flag for part in parts), (species, temperature, flag)
+
+
+def test_v2_candidate_reworded_ref_fails_closed_at_load(tmp_path: Path) -> None:
+    source = GAS_CANDIDATE_V2.read_text()
+    rows = list(csv.reader(source.splitlines()))
+    ref_column = rows[0].index("Ref")
+    for row in rows[1:]:
+        if row[0] == "SiO(g)" and row[6] == "3000":
+            row[ref_column] = "JANAF-O-012"
+            break
+    else:
+        raise AssertionError("SiO(g) candidate row is missing")
+
+    gas_path = tmp_path / GAS_CANDIDATE_V2.name
+    with gas_path.open("w", newline="") as handle:
+        csv.writer(handle, lineterminator="\n").writerows(rows)
+
+    with pytest.raises(gas_module.ImccGasValidityMetadataError) as refusal:
+        load_gas_datapack(gas_path, OXIDE_CANDIDATE_V2)
+    assert gas_path.name in str(refusal.value)
+    assert "SiO(g)" in str(refusal.value)
+
+
+def test_every_shipped_candidate_row_keeps_its_current_notice() -> None:
+    pairs = (
+        (GAS_CANDIDATE, OXIDE_CANDIDATE),
+        (GAS_CANDIDATE_V2, OXIDE_CANDIDATE_V2),
+    )
+    records = []
+    for gas_path, oxide_path in pairs:
+        candidate = load_gas_datapack(gas_path, oxide_path)
+        for phase, frame, table_path in (
+            ("g", candidate.gas_df, gas_path),
+            ("l", candidate.oxide_df, oxide_path),
+        ):
+            for species in frame.index.unique():
+                rows = frame.loc[[species]].sort_values("T_min")
+                for _, row in rows.loc[rows["T_min"] >= 3000.0].iterrows():
+                    temperature = (float(row["T_min"]) + float(row["T_max"])) / 2.0
+                    notice = _source_model_flag(
+                        str(species),
+                        temperature,
+                        row,
+                        phase=phase,
+                        candidate_notices=(
+                            candidate._high_temperature_candidate_notices
+                        ),
+                    )
+                    assert notice is not None, (table_path.name, species, row["T_min"])
+                    records.append(
+                        (
+                            table_path.name,
+                            phase,
+                            str(species),
+                            float(row["T_min"]),
+                            notice,
+                        )
+                    )
+
+    # This pins each interval's existing wording, not just the candidate-row count.
+    assert len(records) == 91
+    serialized = "\n".join(
+        json.dumps(record, separators=(",", ":"), ensure_ascii=False)
+        for record in records
+    ).encode()
+    assert hashlib.sha256(serialized).hexdigest() == (
+        "6467532d8fa27a4267d21cc479a6e921e0713d16cfbc12d9cb6f55b91f79344e"
+    )
 
 
 def test_v2_rough_pair_rows_have_measured_tiers_and_independent_source_reasons() -> None:
