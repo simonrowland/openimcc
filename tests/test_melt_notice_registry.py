@@ -411,7 +411,7 @@ def test_anorthite_row_sensitivity_skips_binary_al_free_and_ca_free(
 
 def test_anorthite_row_sensitivity_threshold_is_inclusive() -> None:
     threshold = model._ANORTHITE_ROW_SENSITIVITY_MIN_AL_FRACTION
-    assert threshold == pytest.approx(0.0020019270228915035, abs=0.0)
+    assert threshold == pytest.approx(0.002, abs=0.0)
     pack = SimpleNamespace(
         reactions=("CaAl2Si2O8",),
         nu=np.array([[1.0], [1.0], [2.0]]),

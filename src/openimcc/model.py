@@ -327,21 +327,17 @@ _K_AL_OVERSEQUESTRATION_NOTICE = (
     "other compositions and not a calibrated correction."
 )
 
-# The threshold compares default v5 with the isolated FC87 substitution
-# (v4 A, unchanged B; +0.941619 log10 K) on the 1,468-point, 0.01 mole-
-# fraction Stolyarova CAS simplex clipped to its reported ranges
-# (x(CaO)=0.24–0.781, x(Al2O3)=0.055–0.450, x(SiO2)=0.094–0.523). The
-# smallest bound-Al fraction with any parent log-activity shift >0.1 dex was
-# 0.0020019270228915035, at
-# x(CaO)/x(Al2O3)/x(SiO2)=0.44/0.41/0.15, where SiO2 shifted 0.101744 dex.
-# That alkali-free sweep is non-monotonic, so this is a worst-case onset, not
-# a physical crossover or an error bound. The cutoff was checked on a separate
-# 80-condition alkali-bearing Ca-Al-Si grid (two oxide backgrounds, four CaO
-# levels, five Al2O3 levels, 1800 and 2100 K): all 80 triggering conditions
-# had a maximum parent log-activity shift >0.1 dex (0/80 sampled false
-# positives). It therefore remains a low, broad gate that fires on most
-# Ca-Al-Si melts, like the K-Al notice.
-_ANORTHITE_ROW_SENSITIVITY_MIN_AL_FRACTION = 0.0020019270228915035
+# The 0.2% trigger is an intentionally permissive sampled onset, not a
+# per-melt leverage estimate: in a boundary-focused FC87-vs-v5 row-swap sweep,
+# no sampled melt with a maximum parent log-activity shift >=0.1 dex was
+# missed, but 10 of 162 firings (6.2%) shifted by less than 0.1 dex. Those
+# false alerts were at trace CaO (0.1-0.2 wt%) and Al2O3 (0.1-1 wt%) in this
+# grid. A firing means the row may matter, not that it does; 0.2% is not a
+# physical crossover or an error bound. A per-evaluate row-swap solve would
+# add a second speciation solve, a cost a disclosure does not justify. The
+# gate fires on most Ca-Al-Si melts, like the K-Al notice; sweep details are in
+# docs/anorthite-disposition.md.
+_ANORTHITE_ROW_SENSITIVITY_MIN_AL_FRACTION = 0.002
 _ANORTHITE_ROW_SENSITIVITY_NOTICE = (
     "anorthite-row-sensitivity: this is a model-sensitivity disclosure; "
     "the default row was chosen on thermochemical consistency. Model-output "

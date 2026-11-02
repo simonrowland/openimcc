@@ -11,7 +11,7 @@ free-silica coverage.
 
 | Code | Trigger | Evidence and meaning |
 |---|---|---|
-| `anorthite-row-sensitivity` (`anorthite-row-sensitivity-unscored`) | At least 0.0020019270228915035 of analytical Al₂O₃ is held in solved CaAl₂Si₂O₈ | Reason text: “anorthite-row-sensitivity: this is a model-sensitivity disclosure; the default row was chosen on thermochemical consistency. Model-output shifts, not observed residuals: the isolated published FC87 row swap raises p(Na) and p(K) about 0.13–0.21 dex in basalt and regolith compositions, and p(Na) about 0.5 dex in a Na-bearing highland anorthosite at 1800–2100 K. On the alkali-free Stolyarova, Shornikov & Shultz (1996) CAS grid at 1933 K, log10 activities shift by up to 0.425 dex for Al2O3, 0.244 dex for CaO, and 0.291 dex for SiO2. Published activity comparisons are mixed. See docs/anorthite-disposition.md. It is not a calibrated correction.” |
+| `anorthite-row-sensitivity` (`anorthite-row-sensitivity-unscored`) | At least 0.002 (0.2%) of analytical Al₂O₃ is held in solved CaAl₂Si₂O₈ | Reason text: “anorthite-row-sensitivity: this is a model-sensitivity disclosure; the default row was chosen on thermochemical consistency. Model-output shifts, not observed residuals: the isolated published FC87 row swap raises p(Na) and p(K) about 0.13–0.21 dex in basalt and regolith compositions, and p(Na) about 0.5 dex in a Na-bearing highland anorthosite at 1800–2100 K. On the alkali-free Stolyarova, Shornikov & Shultz (1996) CAS grid at 1933 K, log10 activities shift by up to 0.425 dex for Al2O3, 0.244 dex for CaO, and 0.291 dex for SiO2. Published activity comparisons are mixed. See docs/anorthite-disposition.md. It is not a calibrated correction.” |
 | Hastie KEMS bias notice (no stable code) | Any nonzero Na₂O or K₂O parent | Hastie (1981), KEMS case 4; the measured K pressure residual applies to scored pack identities. Other packs say that the comparison has not been evaluated. |
 | `liquid-reference-source-construction-envelope` (`LiquidReferenceNotice`) | K₂O(g) pressure above 1765 K through 2473 K | `liquid_reference_status["K"].authority="extrapolated"`, `certified_T_K=(1765,2473)`, `band_value=0.33`, and `band_unit="dex log10 pK"`. Reason: the NASA Glenn/Gurvich and LH84 compilation bridge has an asymmetric source/construction spread, `envelope_dex=-0.15/+0.33`. The symmetric ±0.33 dex band is its outward bound, not a confidence interval or validated accuracy bound. |
 | `low-temperature-uncertain` | Active Na₂Si₂O₅ association below 1700 K on the scored pack | Piacente & Matoušek (1973), MgO-cell p(Na), is about 0.54 dex low at 1278–1530 K; Richet, Bottinga & Téqui (1984) sodium-silicate calorimetric curvature misses its envelope by 1.5–3× at 1323–1700 K. Other packs use `low-temperature-uncertain-unscored`. |
@@ -23,14 +23,19 @@ free-silica coverage.
 | `temperature-domain-extension` | An active association row is evaluated below its declared temperature domain | The model uses ΔrCp = 0 continuation; this is calculation authority, not validation, and no uncertainty band is available. |
 
 The anorthite-row sensitivity gate fires on most Ca–Al–Si melts, like the
-K–Al over-sequestration notice fires on most K-bearing basalts. Its inclusive
-0.2001927% cutoff is the smallest bound-Al fraction with any parent
-log-activity shift above 0.1 dex in the non-monotonic, alkali-free 1933 K
-Stolyarova CAS grid; it is a worst-case onset, not a physical crossover or an
-error bound. On a separate 80-condition alkali-bearing sweep described in
-`docs/anorthite-disposition.md`, all 80 trigger hits had a maximum parent
-log-activity shift above 0.1 dex (0/80 sampled false positives). Other pack
-identities receive the unscored code.
+K–Al over-sequestration notice fires on most K-bearing basalts. The inclusive
+0.2% gate is a permissive sampled onset, chosen so that no sampled melt with a
+maximum parent log-activity shift ≥0.1 dex was missed. In the boundary-focused
+216-condition grid (CaO 0.1–2 wt%, Al₂O₃ 0.1–3 wt%, with and without trace
+alkali at 1700/2000/2400 K), 10 of 162 firings (6.2%) shifted by less than 0.1
+dex; all 152 shifts ≥0.1 dex fired. These false alerts occurred at 0.1–0.2
+wt% CaO and 0.1–1 wt% Al₂O₃. In the broader 80-condition alkali-bearing grid,
+all 80 firings shifted by at least 0.1 dex. Across both grids, TP=232, FP=10, FN=0, TN=54;
+rounding the trigger to 0.2% changed no firing. Firing means the row may
+matter, not that it does, and 0.2% is not a physical crossover or an error
+bound. A per-melt row-swap solve is not run: it would add a second speciation
+solve, a cost a disclosure does not justify. Other pack identities receive
+the unscored code.
 
 Liquid gas-parent results expose `liquid_reference_status`, keyed by gas
 channel, only for parent oxides present in the melt; reference flags follow the

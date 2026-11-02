@@ -300,7 +300,7 @@ coefficient.
 
 The row-sensitivity notice is implemented as `anorthite-row-sensitivity`.
 Its solved-speciation gate covers basalts, CMAS, and MgO-free CAS whenever at
-least 0.0020019270228915035 of analytical Al₂O₃ is held in CaAl₂Si₂O₈. It
+least 0.002 (0.2%) of analytical Al₂O₃ is held in CaAl₂Si₂O₈. It
 fires on most Ca–Al–Si melts, like the K–Al over-sequestration notice fires on
 most K-bearing basalts. The existing `multicomponent-activity-pattern` gate
 requires SiO₂, CaO, MgO, and Al₂O₃ each to exceed 1 mol% and therefore does not
@@ -325,8 +325,8 @@ anorthosite uses 45 SiO₂, 32 Al₂O₃, 18 CaO, 3 MgO, 1.5 FeO, and 0.5 Na₂O
 wt%. The README basalt composition is listed in the example above.
 
 At 1800 K in the README basalt, solved Al₂O₃ held in anorthite rises from
-5.023% to 22.771%; the Na–Al share of analytical Na₂O falls from 99.22880% to
-98.46141%, and the K–Al share of K₂O falls from 99.99797131% to 99.99629076%.
+5.0% to 22.8%; the Na–Al share of analytical Na₂O falls from 99.23% to
+98.46%, and the K–Al share of K₂O falls from 99.998% to 99.996%.
 The released alkali raises its parent activity. At fixed oxygen fugacity the
 gas equilibrium gives p(M) ∝ a(M₂O)^(1/2), matching the half-sized log-pressure
 shifts in the table.
@@ -338,20 +338,31 @@ p(K) in Ca-bearing melts, but this remains a sensitivity result, not evidence
 for choosing that row. Hastie's Beaver's Bend illite composition lists no
 CaO ([Hastie et al. 1981, NBSIR 81-2279, sec. 8.2](https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nbsir81-2279.pdf)), so that sample cannot test the Ca-bearing effect.
 
-The 0.0020019270228915035 fraction is the smallest bound-Al fraction with a
-parent log-activity shift above 0.1 dex on the non-monotonic 0.01 mole-fraction
-alkali-free CAS grid over the reported Stolyarova ranges (minimum point:
-x(CaO)/x(Al₂O₃)/x(SiO₂)=0.44/0.41/0.15; SiO₂ shift 0.101744 dex). It is a
-worst-case onset, not a physical crossover or an error bound. On a separate
-80-condition alkali-bearing grid, the fixed basaltic-like background (wt%)
-was 8 MgO, 10 FeO, 2 TiO₂, 2.5 Na₂O, and 0.8 K₂O; the highland-like
-background was 3 MgO, 1.5 FeO, 0.5 TiO₂, 0.5 Na₂O, and 0.01 K₂O. Each used
-CaO at 5/10/15/20 wt%, Al₂O₃ at 5/10/15/20/30 wt%, balance SiO₂, and
-1800/2100 K.
-All 80 conditions fired and all 80 had a maximum parent log-activity shift
-above 0.1 dex: the sampled false-positive rate was 0/80.
-That sweep supports retaining the low, broad gate; it does not turn it into a
-universal guarantee. The provisional Baird transcription and qualitative
-2003 shape comparison remain caveats. The exact notice text is recorded in
-`docs/melt-notices.md`. This is a flag-only disclosure; pack coefficients and
-calculated activities are unchanged.
+The 0.2% gate is a permissive sampled onset, chosen so that no sampled melt
+with a maximum parent log-activity shift ≥0.1 dex was missed. On the earlier
+1,468-point, non-monotonic alkali-free Stolyarova CAS grid, the lowest such
+bound-Al fraction was about 0.2%; the runtime uses the round 0.002 threshold.
+This does not make the threshold a physical crossover or an error bound.
+
+In the reproduced boundary-focused FC87-vs-v5 row-swap sweep, CaO was
+0.1/0.2/0.5/1/1.5/2 wt%, Al₂O₃ was 0.1/0.2/0.5/1/2/3 wt%, and compositions
+were sampled both as CAS and with 0.45 wt% Na₂O plus 0.144 wt% K₂O, balance
+SiO₂, at 1700/2000/2400 K (216 conditions). It yielded TP=152, FP=10, FN=0,
+TN=54: 10 of 162 firings (6.2%) had shifts below 0.1 dex, and all 152 sampled
+shifts at or above 0.1 dex fired. Those false alerts occurred at 0.1–0.2 wt%
+CaO and 0.1–1 wt% Al₂O₃, including the 0.1 CaO / 1 Al₂O₃ / 0.45 Na₂O /
+0.144 K₂O wt% example. A broader 80-condition sweep used CaO 5/10/15/20 wt%, Al₂O₃
+5/10/15/20/30 wt%, two alkali-bearing basaltic-like and highland-like
+backgrounds, and 1800/2100 K; all 80 firings shifted by at least 0.1 dex.
+Across both sweeps the counts were TP=232, FP=10, FN=0, TN=54. Rounding from
+the previous extra-precision threshold changed no firing in these sweeps.
+
+This remains a permissive sampled gate: firing means the row may matter, not
+that it does, and the gate is not a physical crossover or an error bound. The
+notice fires on most Ca–Al–Si melts, like the K–Al over-sequestration notice
+fires on most K-bearing basalts. No per-melt leverage solve is done because it
+would add a second speciation solve, a cost a disclosure does not justify. The
+provisional Baird transcription and qualitative 2003 shape comparison remain
+caveats. The exact notice text is recorded in `docs/melt-notices.md`. This is
+a flag-only disclosure; pack coefficients and calculated activities are
+unchanged.

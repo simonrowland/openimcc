@@ -2,13 +2,19 @@
 
 ## Unreleased
 
-- Renamed the `anorthite-row-sensitivity` notice (`anorthite-row-sensitivity-unscored`)
-  and retained its inclusive trigger at 0.0020019270228915035 of analytical
-  Al₂O₃ held in solved CaAl₂Si₂O₈. It fires on most Ca–Al–Si melts, like the
-  K–Al over-sequestration notice fires on most K-bearing basalts. In an
-  80-condition alkali-bearing grid, all 80 trigger hits had a maximum parent
-  log-activity shift above 0.1 dex (0/80 sampled false positives). Reason text:
-  “anorthite-row-sensitivity: this is a model-sensitivity disclosure; the default row was chosen on thermochemical consistency. Model-output shifts, not observed residuals: the isolated published FC87 row swap raises p(Na) and p(K) about 0.13–0.21 dex in basalt and regolith compositions, and p(Na) about 0.5 dex in a Na-bearing highland anorthosite at 1800–2100 K. On the alkali-free Stolyarova, Shornikov & Shultz (1996) CAS grid at 1933 K, log10 activities shift by up to 0.425 dex for Al2O3, 0.244 dex for CaO, and 0.291 dex for SiO2. Published activity comparisons are mixed. See docs/anorthite-disposition.md. It is not a calibrated correction.” The 0.20% cutoff is a worst-case onset from a non-monotonic alkali-free sweep, not a physical crossover or error bound. Other pack identities use the unscored code; calculated values are unchanged.
+- Added the `anorthite-row-sensitivity` notice (`anorthite-row-sensitivity-unscored`)
+  with an inclusive 0.002 (0.2%) threshold on analytical Al₂O₃ held in solved
+  CaAl₂Si₂O₈. It fires on most Ca–Al–Si melts, like the K–Al
+  over-sequestration notice fires on most K-bearing basalts. The threshold is
+  a permissive sampled onset: no sampled melt with a maximum parent
+  log-activity shift ≥0.1 dex was missed. In the 216-condition
+  boundary-focused grid, 10 of 162 firings (6.2%) shifted by less than 0.1
+  dex; the broader 80-condition alkali-bearing grid had no false alerts.
+  Across the 296 sampled conditions, TP=232, FP=10, FN=0, TN=54. Rounding the
+  threshold changed no firing. A firing means the row may matter, not that it
+  does; 0.2% is not a physical crossover or an error bound. No per-melt
+  leverage solve is run because its second speciation solve is not justified
+  for a disclosure. Reason text: “anorthite-row-sensitivity: this is a model-sensitivity disclosure; the default row was chosen on thermochemical consistency. Model-output shifts, not observed residuals: the isolated published FC87 row swap raises p(Na) and p(K) about 0.13–0.21 dex in basalt and regolith compositions, and p(Na) about 0.5 dex in a Na-bearing highland anorthosite at 1800–2100 K. On the alkali-free Stolyarova, Shornikov & Shultz (1996) CAS grid at 1933 K, log10 activities shift by up to 0.425 dex for Al2O3, 0.244 dex for CaO, and 0.291 dex for SiO2. Published activity comparisons are mixed. See docs/anorthite-disposition.md. It is not a calibrated correction.” Other pack identities use the unscored code; calculated values are unchanged.
 
 - Added the `k-al-over-sequestration` notice when at least half of analytical
   K₂O is held in solved K–Al associates. Reason text: “the one-particle mixing-entropy limit can over-sequester K in K-Al associates, biasing p(K) low; measured on one aluminous illite melt as about 1 dex or more (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2, Beaver's Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not validated for basaltic or other compositions and not a calibrated correction.”
