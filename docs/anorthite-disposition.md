@@ -111,18 +111,65 @@ record catalogues it as a 1957 thesis ([record](https://theses.gla.ac.uk/73568/)
 
 ## Activity and vapor evidence
 
-Shornikov, Stolyarova & Shultz (1996), “Mass spectrometric study of
-thermodynamic properties of melts of the CaO–Al₂O₃–SiO₂ system,” *Tekhnika i
-tekhnologiya silikatov* 3 (1–2), 8–22 (English translation listed as
-“High-temperature mass-spectrometric study of the thermodynamic properties
-of the CaO–Al₂O₃–SiO₂ system,” *High Temperature and Materials Science*
-36(1), 15–35), remains a lead for future data recovery. I could not obtain
-the primary numerical tables in a form that exposes their values and
-conditions for a traceable comparison. The evidence direction is therefore
-unverified; the data cannot establish which association value it favors or
-whether its CaO results agree with the other oxide results. The translated
-paper is cited by the 2003 article
-([publisher record](https://link.springer.com/article/10.1023/A:1026382828677)).
+Shornikov, Stolyarova & Shultz (1996), “High-temperature mass-spectrometric
+study of the thermodynamic properties of the CaO–Al₂O₃–SiO₂ system,” *High
+Temperature and Materials Science* 36(1), 15–35 (Russian article:
+“Mass spectrometric study of thermodynamic properties of melts of the
+CaO–Al₂O₃–SiO₂ system,” *Tekhnika i tekhnologiya silikatov* 3(1–2), 8–22),
+is available as audited numerical evidence. Table 3 supplies 137 activity cells
+on 30 CAS compositions, Table 2 supplies 30 measured SiO pressures paired
+with atomic-oxygen pressures, and Figure 2 adds 80 digitized activity points.
+Table 3 and Table 2 compositions are normalized from the printed
+`(x_A/x_C, x_S)` coordinates; Figure 2 coordinates are digitized from the
+authors' graph. The comparisons below use the isolated row swap and liquid-
+standard activities.
+
+### Part C — isolated anorthite-row comparison
+
+The default D066 v5 Hess row is compared with an otherwise identical v5 pack
+using only the v4 FC87 value for the `CaAl₂Si₂O₈` A coefficient. All activity
+MAE/RMSE values below are in dex on the pure-liquid parent-oxide standard;
+the SiO pressure scores are log-pressure residuals. Positive improvements
+are reductions in absolute error for the FC87 row.
+
+| Independent evidence | T and composition overlap | Hess MAE / RMSE | FC87 MAE / RMSE | Comparison |
+| --- | --- | ---: | ---: | --- |
+| Shornikov, Stolyarova & Shultz (1996), Table 3 and author Figure 2 activities (n=217) | 1933 K; CAS x(CaO)=0.240–0.781, x(Al₂O₃)=0.055–0.450, x(SiO₂)=0.094–0.523; exact composition in Table 3 | 0.5167 / 0.7051 | 0.4731 / 0.6415 | FC87 MAE / RMSE lower by 0.0436 / 0.0636 dex |
+| Shornikov, Stolyarova & Shultz (1996), Table 2 SiO pressures (n=30) | 1933 K; CAS x(CaO)=0.250–0.769, x(Al₂O₃)=0.055–0.450, x(SiO₂)=0.10–0.50; exact point present | 0.7255 / 0.8466 | 0.5845 / 0.7356 | FC87 lower by 0.1410 / 0.1110 dex; conditional on the source pO-inferred oxygen buffer and from the same laboratory as the activity data |
+| Allibert et al. (1981), Table II activities (n=16) | 2060 K; binary CaO–Al₂O₃, x(CaO)=0.352–0.800, x(SiO₂)=0 | 0.4974 / 0.6835 | 0.4974 / 0.6835 | Tie; no silica, so the anorthite association is inactive |
+| Cho & Suito (1994), Table 5 activities (n=20) | 1873 K; four derived CAS compositions from Cho & Suito's Table 2 mass-percent analyses (ACS2, ACS4, CAS5, CAS8), x(CaO)=0.305–0.727, x(Al₂O₃)=0.180–0.399, x(SiO₂)=0.093–0.309; no exact anorthite composition | 0.6791 / 0.7983 | 0.6227 / 0.7547 | FC87 lower by 0.0564 / 0.0437 dex |
+
+At the exact Table 3 anorthite composition,
+`(x(CaO), x(Al₂O₃), x(SiO₂)) = (0.25, 0.25, 0.50)` at 1933 K, its five
+activity cells favor Hess: MAE/RMSE 0.3873/0.5437 dex, versus 0.4637/0.5742
+for FC87. The matched Table 2 SiO point instead favors FC87, with absolute
+residuals 0.2342 versus 0.4059 dex. The aggregate activity MAE differences
+are 0.0436 dex for Stolyarova and 0.0564 dex for Cho–Suito, small beside the
+roughly 0.5-dex overall activity miss: Stolyarova MAEs are 0.47–0.52 dex,
+Allibert is 0.497 dex, and Cho–Suito is 0.62–0.68 dex. The SiO result is conditional: the source gives pO, used to infer the oxygen
+buffer. It is neither an independent test of oxygen fugacity nor an
+independent-laboratory confirmation.
+
+The claim that the Table 3 CaO residual is an outlier is supported under
+either row. Across its 30 paired compositions, the CaO absolute residual
+exceeds both other oxide residuals at 25/30 compositions for Hess and 25/30
+for FC87; it exceeds Al₂O₃ at 26/30 for Hess and 25/30 for FC87, and exceeds
+SiO₂ at 25/30 for both. The median paired excess over the mean absolute
+Al₂O₃/SiO₂ residual is 0.776 dex for Hess and 0.582 dex for FC87. These are
+paired comparisons within one source, not independent laboratory
+replications.
+
+For one laboratory's Table 3 measurements across 30 unique compositions at
+1933 K, a residual regression on NBO/T with `x(Al₂O₃)` controlled gives
+significant, oxide-specific slopes:
+CaO +0.78 (95% CI +0.60 to +0.96), SiO₂ −1.01 (−1.29 to −0.73), and Al₂O₃
+−0.38 (−0.62 to −0.15) dex per NBO/T. Opposite CaO and SiO₂ signs are
+qualitatively expected if the bias is in the solution model, since at fixed
+T and P the Gibbs–Duhem relation for these liquid components,
+`Σᵢ xᵢ d ln aᵢ = 0`, couples their composition trends (along with Al₂O₃)
+([IUPAC definition](https://goldbook.iupac.org/terms/view/15329/html)). This
+is a diagnostic, not a correction: the regression is on component residuals,
+not a Gibbs–Duhem integration test.
 
 Stolyarova, Lopatin & Stolyar (2003) measured silica activities by
 high-temperature mass spectrometry at 1905 ± 10 K along the x(SiO₂)=0.5 and
@@ -147,10 +194,11 @@ and Chemistry* 29, 451–455 (2003),
 
 Baird provides a second-laboratory CAS cross-check, but not a direct
 measurement of p(SiO): the measured quantity is total CO+SiO pressure, and
-the SiO portion is inferred using a SiC equilibrium. I found no independent
+the SiO portion is inferred using a SiC equilibrium. The Stolyarova 1996
+SiO pressures are from the same laboratory as its activity measurements and
+are conditional on an oxygen buffer inferred from pO. I found no independent
 second-laboratory CAS study that directly measures p(SiO) over matched
-compositions and temperatures. The 1996 numerical tables remain a future
-retrieval and reduction lead, with no direction assigned here.
+compositions and temperatures.
 
 ## Calorimetric evidence above 1800 K
 
@@ -216,32 +264,39 @@ The source rail is consistency, then primary measurement, then domain match,
 then estimates. The default keeps the v5 Hess-refit anorthite row because it
 closes the documented formula-molar liquid formation Gibbs energy on the
 crystal, fusion, liquid-Cp, and parent-liquid standard-state chain. Activity
-evidence does not enter that fit. The Baird Table XII transcription, which
-could not be verified against the scan, gives a lower MAE for the isolated
-FC87-row substitution (0.057 dex versus 0.080 dex for v5), while the 2003
-constant-activity trend favors v5's flatter result. These activity checks
-leave an empirical conflict, with one comparison provisional and the other
-qualitative. The FC87 row remains a genuine published thermochemical route;
-its association is 30.6–44.6 kJ mol⁻¹ more favorable over the requested
-range than the Hess-refit row. No row-specific confidence band is available,
-and the parent liquid-reference inputs retain their stated uncertainty.
+data are an independent sensitivity check, not a coefficient-selection
+rule: the aggregate Stolyarova and Cho–Suito activity MAEs favor FC87 by
+0.0436 and 0.0564 dex, while Allibert ties and the exact-composition Table 3
+activity cells favor Hess. The matched SiO point favors FC87. This row
+difference is small beside the roughly 0.5-dex activity miss. The Baird
+Table XII transcription could not be verified against the scan and remains
+provisional; its provisional activity score favors FC87 (0.057 dex MAE
+versus 0.080 for Hess), while the 2003 constant-activity result favors v5's
+flatter trend. These comparisons show composition-dependent sensitivity,
+not a universal correction. The FC87 row remains a genuine published
+thermochemical route; its association is 30.6–44.6 kJ mol⁻¹ more favorable
+over the requested range than the Hess-refit row. No row-specific confidence
+band is available, and the parent liquid-reference inputs retain their
+stated uncertainty.
 
-The choice should be revisited if a primary, same-standard liquid-An
-formation Gibbs measurement or higher-temperature enthalpy/Cp series moves
-the Hess target toward FC87, or if scan-checked primary CAS activity data and
-independent, directly measured SiO pressures become available over matched
-composition/temperature points with reference-state and uncertainty details.
+Revisit the default if a primary, same-standard liquid-anorthite formation
+Gibbs measurement or higher-temperature enthalpy/Cp series moves the Hess
+target toward FC87. Independently audited CAS activities and directly
+measured SiO pressures over matched compositions and temperatures, with
+reference-state and uncertainty details, would also justify reassessing the
+source-rail conclusion; activity-score preference alone does not select a
+coefficient.
 
 ## Melt notice
 
-A short CAS activity-sensitivity notice is warranted because changing only
-the anorthite row moves predicted a(SiO₂) and p(SiO) by up to 0.151 dex
-(factor 1.42) across the six Baird compositions, with a(Al₂O₃) changing by
-up to 0.480 dex. The existing near-liquidus notice covers a nearly
-stoichiometric anorthite melt and does not describe this composition-dependent
-sensitivity. The CAS notice should state that v5 is retained on thermochemical
-consistency, that the Baird transcription is unverified against the scan,
-and that the 2003 shape check favors v5's flatter trend while the provisional
-Baird activity score favors the FC87 row. It should report model sensitivity
-without implying a universal correction. This note does not change pack
-coefficients or implement a notice.
+A separate CAS activity-sensitivity notice remains a recommendation. The
+existing `multicomponent-activity-pattern` gate requires SiO₂, CaO, MgO, and
+Al₂O₃ each to exceed 1 mol% and therefore does not cover the MgO-free CAS
+compositions in these measurements. Its Kume 2000 summary does not include
+the single-laboratory 1933 K Stolyarova Table 3 slopes or the isolated
+anorthite-row comparison. A CAS-specific notice could add that evidence,
+including the conflict between aggregate and exact-composition scores, and
+report composition-dependent sensitivity without implying a correction. It
+should retain the unverified Baird-transcription caveat and the qualitative
+2003 shape comparison. This remains a recommendation only; no code or pack
+coefficients are changed here.
