@@ -111,12 +111,12 @@ record catalogues it as a 1957 thesis ([record](https://theses.gla.ac.uk/73568/)
 
 ## Activity and vapor evidence
 
-Shornikov, Stolyarova & Shultz (1996), “High-temperature mass-spectrometric
+Stolyarova, Shornikov & Shultz (1996), “High-temperature mass spectrometric
 study of the thermodynamic properties of the CaO–Al₂O₃–SiO₂ system,” *High
-Temperature and Materials Science* 36(1), 15–35 (Russian article:
-“Mass spectrometric study of thermodynamic properties of melts of the
-CaO–Al₂O₃–SiO₂ system,” *Tekhnika i tekhnologiya silikatov* 3(1–2), 8–22),
-is available as audited numerical evidence. Table 3 supplies 137 activity cells
+Temperature and Materials Science* 36, 15–35, is available as audited numerical
+evidence. A Russian article by Shornikov, Stolyarova & Shultz (1996), *Tekhnika
+i tekhnologiya silikatov* 3(1–2), 8–22, has a similar title; its relationship
+to the English paper has not been verified. Table 3 supplies 137 activity cells
 on 30 CAS compositions, Table 2 supplies 30 measured SiO pressures paired
 with atomic-oxygen pressures, and Figure 2 adds 80 digitized activity points.
 Table 3 and Table 2 compositions are normalized from the printed
@@ -124,7 +124,15 @@ Table 3 and Table 2 compositions are normalized from the printed
 authors' graph. The comparisons below use the isolated row swap and liquid-
 standard activities.
 
-### Part C — isolated anorthite-row comparison
+The paper gives its reference currents “over the individual oxides” without
+naming their phases. These scores therefore assume crystalline pure-oxide
+references at 1933 K, converted to pure-liquid standards with the model's own
+references; this is an inference from the pure-oxide samples, not a printed
+standard state. The conversion does not explain the CaO misfit below: it
+subtracts 0.840 dex from the measured log activity and reduces the mean
+residual from −1.653 to −0.812 dex, so omitting it would make the misfit worse.
+
+### Isolated anorthite-row comparison
 
 The default D066 v5 Hess row is compared with an otherwise identical v5 pack
 using only the v4 FC87 value for the `CaAl₂Si₂O₈` A coefficient. All activity
@@ -134,8 +142,8 @@ are reductions in absolute error for the FC87 row.
 
 | Independent evidence | T and composition overlap | Hess MAE / RMSE | FC87 MAE / RMSE | Comparison |
 | --- | --- | ---: | ---: | --- |
-| Shornikov, Stolyarova & Shultz (1996), Table 3 and author Figure 2 activities (n=217) | 1933 K; CAS x(CaO)=0.240–0.781, x(Al₂O₃)=0.055–0.450, x(SiO₂)=0.094–0.523; exact composition in Table 3 | 0.5167 / 0.7051 | 0.4731 / 0.6415 | FC87 MAE / RMSE lower by 0.0436 / 0.0636 dex |
-| Shornikov, Stolyarova & Shultz (1996), Table 2 SiO pressures (n=30) | 1933 K; CAS x(CaO)=0.250–0.769, x(Al₂O₃)=0.055–0.450, x(SiO₂)=0.10–0.50; exact point present | 0.7255 / 0.8466 | 0.5845 / 0.7356 | FC87 lower by 0.1410 / 0.1110 dex; conditional on the source pO-inferred oxygen buffer and from the same laboratory as the activity data |
+| Stolyarova, Shornikov & Shultz (1996), Table 3 and author Figure 2 activities (n=217) | 1933 K; CAS x(CaO)=0.240–0.781, x(Al₂O₃)=0.055–0.450, x(SiO₂)=0.094–0.523; exact composition in Table 3 | 0.5167 / 0.7051 | 0.4731 / 0.6415 | FC87 MAE / RMSE lower by 0.0436 / 0.0636 dex |
+| Stolyarova, Shornikov & Shultz (1996), Table 2 SiO pressures (n=30) | 1933 K; CAS x(CaO)=0.250–0.769, x(Al₂O₃)=0.055–0.450, x(SiO₂)=0.10–0.50; exact point present | 0.7255 / 0.8466 | 0.5845 / 0.7356 | FC87 lower by 0.1410 / 0.1110 dex; conditional on the source pO-inferred oxygen buffer and from the same laboratory as the activity data |
 | Allibert et al. (1981), Table II activities (n=16) | 2060 K; binary CaO–Al₂O₃, x(CaO)=0.352–0.800, x(SiO₂)=0 | 0.4974 / 0.6835 | 0.4974 / 0.6835 | Tie; no silica, so the anorthite association is inactive |
 | Cho & Suito (1994), Table 5 activities (n=20) | 1873 K; four derived CAS compositions from Cho & Suito's Table 2 mass-percent analyses (ACS2, ACS4, CAS5, CAS8), x(CaO)=0.305–0.727, x(Al₂O₃)=0.180–0.399, x(SiO₂)=0.093–0.309; no exact anorthite composition | 0.6791 / 0.7983 | 0.6227 / 0.7547 | FC87 lower by 0.0564 / 0.0437 dex |
 
@@ -163,12 +171,13 @@ For one laboratory's Table 3 measurements across 30 unique compositions at
 1933 K, a residual regression on NBO/T with `x(Al₂O₃)` controlled gives
 significant, oxide-specific slopes:
 CaO +0.78 (95% CI +0.60 to +0.96), SiO₂ −1.01 (−1.29 to −0.73), and Al₂O₃
-−0.38 (−0.62 to −0.15) dex per NBO/T. Opposite CaO and SiO₂ signs are
-qualitatively expected if the bias is in the solution model, since at fixed
-T and P the Gibbs–Duhem relation for these liquid components,
-`Σᵢ xᵢ d ln aᵢ = 0`, couples their composition trends (along with Al₂O₃)
-([IUPAC definition](https://goldbook.iupac.org/terms/view/15329/html)). This
-is a diagnostic, not a correction: the regression is on component residuals,
+−0.38 (−0.62 to −0.15) dex per NBO/T. At fixed T and P the Gibbs–Duhem
+relation, `Σᵢ xᵢ d ln aᵢ = 0`, couples the composition trends of all three
+components ([IUPAC definition](https://goldbook.iupac.org/terms/view/15329/html)),
+so these slopes are compatible with coupled composition-dependent errors in the
+solution model, but this regression does not establish that: the signs of two
+fitted slopes are not required by Gibbs–Duhem, and regression coefficients are
+not local activity differentials. This is a diagnostic, not a correction, and
 not a Gibbs–Duhem integration test.
 
 Stolyarova, Lopatin & Stolyar (2003) measured silica activities by
