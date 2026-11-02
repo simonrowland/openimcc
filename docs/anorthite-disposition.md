@@ -298,15 +298,60 @@ coefficient.
 
 ## Melt notice
 
-The CAS activity-sensitivity notice is implemented as
-`cas-anorthite-row-sensitivity`. The existing
-`multicomponent-activity-pattern` gate requires SiO₂, CaO, MgO, and Al₂O₃ each
-to exceed 1 mol% and therefore does not cover the MgO-free CAS compositions in
-these measurements. Its Kume 2000 summary does not include the single-
-laboratory 1933 K Stolyarova Table 3 slopes or the isolated anorthite-row
-comparison. The new notice reports that composition-dependent sensitivity
-without implying a correction; the provisional Baird transcription and the
-qualitative 2003 shape comparison remain caveats. Its solved-speciation
-threshold and exact reason text are recorded in `docs/melt-notices.md`. This
-is a flag-only disclosure; pack coefficients and calculated activities are
-unchanged.
+The row-sensitivity notice is implemented as `anorthite-row-sensitivity`.
+Its solved-speciation gate covers basalts, CMAS, and MgO-free CAS whenever at
+least 0.0020019270228915035 of analytical Al₂O₃ is held in CaAl₂Si₂O₈. It
+fires on most Ca–Al–Si melts, like the K–Al over-sequestration notice fires on
+most K-bearing basalts. The existing `multicomponent-activity-pattern` gate
+requires SiO₂, CaO, MgO, and Al₂O₃ each to exceed 1 mol% and therefore does not
+cover the MgO-free CAS compositions in these measurements. Its Kume 2000
+summary does not include the single-laboratory 1933 K Stolyarova Table 3
+slopes or the isolated anorthite-row comparison.
+
+Each entry below is log₁₀(FC87-swap/default) at log₁₀ fO₂ = −8; these are
+model-output shifts, not observed measurements:
+
+| Composition | Δlog₁₀ a(Na₂O), 1800 / 2100 K | Δlog₁₀ a(K₂O), 1800 / 2100 K | Δlog₁₀ p(Na), 1800 / 2100 K | Δlog₁₀ p(K), 1800 / 2100 K |
+| --- | ---: | ---: | ---: | ---: |
+| README basalt | +0.374 / +0.418 | +0.354 / +0.401 | +0.187 / +0.209 | +0.177 / +0.200 |
+| Lunar mare basalt | +0.316 / +0.336 | +0.294 / +0.318 | +0.158 / +0.168 | +0.147 / +0.159 |
+| Regolith simulant | +0.271 / +0.302 | +0.266 / +0.301 | +0.135 / +0.151 | +0.133 / +0.151 |
+| Highland anorthosite | +0.999 / +1.108 | — | +0.499 / +0.554 | — |
+
+The mare basalt uses 45 SiO₂, 3 TiO₂, 10 Al₂O₃, 19 FeO, 10 MgO, 11 CaO,
+0.4 Na₂O, and 0.1 K₂O wt%. The regolith simulant uses 47 SiO₂, 15 Al₂O₃,
+13 FeO, 9 MgO, 10 CaO, 2 TiO₂, 2.5 Na₂O, and 0.8 K₂O wt%; the highland
+anorthosite uses 45 SiO₂, 32 Al₂O₃, 18 CaO, 3 MgO, 1.5 FeO, and 0.5 Na₂O
+wt%. The README basalt composition is listed in the example above.
+
+At 1800 K in the README basalt, solved Al₂O₃ held in anorthite rises from
+5.023% to 22.771%; the Na–Al share of analytical Na₂O falls from 99.22880% to
+98.46141%, and the K–Al share of K₂O falls from 99.99797131% to 99.99629076%.
+The released alkali raises its parent activity. At fixed oxygen fugacity the
+gas equilibrium gives p(M) ∝ a(M₂O)^(1/2), matching the half-sized log-pressure
+shifts in the table.
+
+No alkali-bearing measurement in the evidence summarized here yet
+discriminates the two anorthite rows. The known low-K comparison is the
+separate `k-al-over-sequestration` notice: the FC87 row swap raises predicted
+p(K) in Ca-bearing melts, but this remains a sensitivity result, not evidence
+for choosing that row. Hastie's Beaver's Bend illite composition lists no
+CaO ([Hastie et al. 1981, NBSIR 81-2279, sec. 8.2](https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nbsir81-2279.pdf)), so that sample cannot test the Ca-bearing effect.
+
+The 0.0020019270228915035 fraction is the smallest bound-Al fraction with a
+parent log-activity shift above 0.1 dex on the non-monotonic 0.01 mole-fraction
+alkali-free CAS grid over the reported Stolyarova ranges (minimum point:
+x(CaO)/x(Al₂O₃)/x(SiO₂)=0.44/0.41/0.15; SiO₂ shift 0.101744 dex). It is a
+worst-case onset, not a physical crossover or an error bound. On a separate
+80-condition alkali-bearing grid, the fixed basaltic-like background (wt%)
+was 8 MgO, 10 FeO, 2 TiO₂, 2.5 Na₂O, and 0.8 K₂O; the highland-like
+background was 3 MgO, 1.5 FeO, 0.5 TiO₂, 0.5 Na₂O, and 0.01 K₂O. Each used
+CaO at 5/10/15/20 wt%, Al₂O₃ at 5/10/15/20/30 wt%, balance SiO₂, and
+1800/2100 K.
+All 80 conditions fired and all 80 had a maximum parent log-activity shift
+above 0.1 dex: the sampled false-positive rate was 0/80.
+That sweep supports retaining the low, broad gate; it does not turn it into a
+universal guarantee. The provisional Baird transcription and qualitative
+2003 shape comparison remain caveats. The exact notice text is recorded in
+`docs/melt-notices.md`. This is a flag-only disclosure; pack coefficients and
+calculated activities are unchanged.

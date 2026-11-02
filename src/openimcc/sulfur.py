@@ -40,11 +40,11 @@ _MELT_NOTICE_FORWARD_CODES = {
     ("multicomponent-activity-pattern", "unscored"): (
         "multicomponent-activity-pattern-unscored"
     ),
-    ("cas-anorthite-row-sensitivity", "scored"): (
-        "cas-anorthite-row-sensitivity"
+    ("anorthite-row-sensitivity", "scored"): (
+        "anorthite-row-sensitivity"
     ),
-    ("cas-anorthite-row-sensitivity", "unscored"): (
-        "cas-anorthite-row-sensitivity-unscored"
+    ("anorthite-row-sensitivity", "unscored"): (
+        "anorthite-row-sensitivity-unscored"
     ),
 }
 

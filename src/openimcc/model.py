@@ -237,7 +237,7 @@ _SCORED_PACK_IDENTITIES = MappingProxyType(
                 "na2o-activity-bias": None,
                 "cao-sio2-activity-bias": None,
                 "multicomponent-activity-pattern": None,
-                "cas-anorthite-row-sensitivity": None,
+                "anorthite-row-sensitivity": None,
                 "silicate-vapour-product-low-near-liquidus": None,
                 "low-temperature-uncertain": None,
             }
@@ -327,32 +327,35 @@ _K_AL_OVERSEQUESTRATION_NOTICE = (
     "other compositions and not a calibrated correction."
 )
 
-# The 1933 K activity-grid sweep in the anorthite disposition compares the
-# default v5 row with the isolated FC87 substitution (v4 A, unchanged B) on a
-# 0.01 mole-fraction CAS simplex grid clipped to the reported Stolyarova
-# composition ranges: x(CaO)=0.24–0.781, x(Al2O3)=0.055–0.450, and
-# x(SiO2)=0.094–0.523. At each point, compare all active parent log10
-# activities and calculate bound Al2O3 as nu_Al*g(CaAl2Si2O8)/(D*x_Al2O3).
-# The smallest fraction with any absolute activity shift >0.1 dex was
-# 0.0020019270228915035, at x(CaO)/x(Al2O3)/x(SiO2)=0.44/0.41/0.15, where
-# log10(a(SiO2)) shifted 0.101744 dex. Activity leverage is composition-
-# dependent, so some higher-bound-fraction sweep points stayed below 0.1 dex.
-# This is an onset indicator from that sampled grid, not a physical crossover
-# or an error bound.
-_CAS_ANORTHITE_ROW_SENSITIVITY_MIN_AL_FRACTION = 0.0020019270228915035
-_CAS_ANORTHITE_ROW_SENSITIVITY_NOTICE = (
-    "cas-anorthite-row-sensitivity: this is a model-sensitivity disclosure; "
-    "the default row was chosen on thermochemical consistency. The isolated "
-    "published FC87 row swap shifts predicted log10 activities on the "
-    "Stolyarova, Shornikov & Shultz (1996) grid at 1933 K by up to 0.425 dex "
-    "for Al2O3, 0.244 dex for CaO, and 0.291 dex for SiO2; these are "
-    "model-output shifts, not observed residuals. Published activity "
-    "comparisons are mixed: aggregate activity scores lean to FC87, while "
-    "exact-composition activities favour Hess. See "
+# The threshold compares default v5 with the isolated FC87 substitution
+# (v4 A, unchanged B; +0.941619 log10 K) on the 1,468-point, 0.01 mole-
+# fraction Stolyarova CAS simplex clipped to its reported ranges
+# (x(CaO)=0.24–0.781, x(Al2O3)=0.055–0.450, x(SiO2)=0.094–0.523). The
+# smallest bound-Al fraction with any parent log-activity shift >0.1 dex was
+# 0.0020019270228915035, at
+# x(CaO)/x(Al2O3)/x(SiO2)=0.44/0.41/0.15, where SiO2 shifted 0.101744 dex.
+# That alkali-free sweep is non-monotonic, so this is a worst-case onset, not
+# a physical crossover or an error bound. The cutoff was checked on a separate
+# 80-condition alkali-bearing Ca-Al-Si grid (two oxide backgrounds, four CaO
+# levels, five Al2O3 levels, 1800 and 2100 K): all 80 triggering conditions
+# had a maximum parent log-activity shift >0.1 dex (0/80 sampled false
+# positives). It therefore remains a low, broad gate that fires on most
+# Ca-Al-Si melts, like the K-Al notice.
+_ANORTHITE_ROW_SENSITIVITY_MIN_AL_FRACTION = 0.0020019270228915035
+_ANORTHITE_ROW_SENSITIVITY_NOTICE = (
+    "anorthite-row-sensitivity: this is a model-sensitivity disclosure; "
+    "the default row was chosen on thermochemical consistency. Model-output "
+    "shifts, not observed residuals: the isolated published FC87 row swap "
+    "raises p(Na) and p(K) about 0.13–0.21 dex in basalt and regolith "
+    "compositions, and p(Na) about 0.5 dex in a Na-bearing highland "
+    "anorthosite at 1800–2100 K. On the alkali-free Stolyarova, Shornikov & "
+    "Shultz (1996) CAS grid at 1933 K, log10 activities shift by up to "
+    "0.425 dex for Al2O3, 0.244 dex for CaO, and 0.291 dex for SiO2. "
+    "Published activity comparisons are mixed. See "
     "docs/anorthite-disposition.md. It is not a calibrated correction."
 )
-_CAS_ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE = (
-    "cas-anorthite-row-sensitivity-unscored: the CaAl2Si2O8 row-sensitivity "
+_ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE = (
+    "anorthite-row-sensitivity-unscored: the CaAl2Si2O8 row-sensitivity "
     "evidence was evaluated on the default D066 v5 pack; this pack has not "
     "been scored."
 )
@@ -444,7 +447,7 @@ def _k_al_oversequestration_notice(
     )
 
 
-def _cas_anorthite_row_sensitivity_notice(
+def _anorthite_row_sensitivity_notice(
     result: ImccResult,
     kernel_pack: ImccDatapack,
     model_id: str,
@@ -470,18 +473,18 @@ def _cas_anorthite_row_sensitivity_notice(
         * float(result.complex_x[row_index])
     )
     fraction = bound_al / (float(result.D) * analytical_al)
-    if fraction < _CAS_ANORTHITE_ROW_SENSITIVITY_MIN_AL_FRACTION:
+    if fraction < _ANORTHITE_ROW_SENSITIVITY_MIN_AL_FRACTION:
         return None
 
     score = _melt_notice_score(
-        "cas-anorthite-row-sensitivity", (model_id, binding_digest)
+        "anorthite-row-sensitivity", (model_id, binding_digest)
     )
     message = (
-        _CAS_ANORTHITE_ROW_SENSITIVITY_NOTICE
+        _ANORTHITE_ROW_SENSITIVITY_NOTICE
         if score == "scored"
-        else _CAS_ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE
+        else _ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE
     )
-    return _coded_melt_notice("cas-anorthite-row-sensitivity", score, message)
+    return _coded_melt_notice("anorthite-row-sensitivity", score, message)
 
 
 def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
@@ -2686,11 +2689,11 @@ def evaluate(
     if k_al_oversequestration_notice is not None:
         notices.append(k_al_oversequestration_notice)
 
-    cas_anorthite_row_sensitivity_notice = _cas_anorthite_row_sensitivity_notice(
+    anorthite_row_sensitivity_notice = _anorthite_row_sensitivity_notice(
         result, kernel_pack, model_id, binding_digest
     )
-    if cas_anorthite_row_sensitivity_notice is not None:
-        notices.append(cas_anorthite_row_sensitivity_notice)
+    if anorthite_row_sensitivity_notice is not None:
+        notices.append(anorthite_row_sensitivity_notice)
 
     cao_sio2_notice = _cao_sio2_activity_bias_notice(
         parent_oxides, vector, T_K, model_id, binding_digest
