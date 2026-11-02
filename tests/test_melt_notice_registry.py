@@ -52,6 +52,22 @@ K_AL_OVERSEQUESTRATION_NOTICE = (
     "https://doi.org/10.6028/NBS.IR.81-2279); not validated for basaltic or "
     "other compositions and not a calibrated correction."
 )
+CAS_ANORTHITE_ROW_SENSITIVITY_NOTICE = (
+    "cas-anorthite-row-sensitivity: this is a model-sensitivity disclosure; "
+    "the default row was chosen on thermochemical consistency. The isolated "
+    "published FC87 row swap shifts predicted log10 activities on the "
+    "Stolyarova, Shornikov & Shultz (1996) grid at 1933 K by up to 0.425 dex "
+    "for Al2O3, 0.244 dex for CaO, and 0.291 dex for SiO2; these are "
+    "model-output shifts, not observed residuals. Published activity "
+    "comparisons are mixed: aggregate activity scores lean to FC87, while "
+    "exact-composition activities favour Hess. See "
+    "docs/anorthite-disposition.md. It is not a calibrated correction."
+)
+CAS_ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE = (
+    "cas-anorthite-row-sensitivity-unscored: the CaAl2Si2O8 row-sensitivity "
+    "evidence was evaluated on the default D066 v5 pack; this pack has not "
+    "been scored."
+)
 DEFAULT_MULTICOMPONENT_NOTICE = (
     "multicomponent-activity-pattern: on default D066 v5, Kume et al. (2000) "
     "synthetic CAS/CMS/CMAS slags, after solid-to-liquid standard conversion, "
@@ -177,6 +193,7 @@ def default_pack():
             (
                 DEFAULT_ALKALI_NOTICE,
                 K_AL_OVERSEQUESTRATION_NOTICE,
+                CAS_ANORTHITE_ROW_SENSITIVITY_NOTICE,
                 DEFAULT_MULTICOMPONENT_NOTICE,
             ),
         ),
@@ -310,6 +327,108 @@ def test_al_free_k_silicate_does_not_trigger_k_al_oversequestration(
     )
 
 
+def test_cas_anorthite_row_sensitivity_fires_on_anorthite_and_cas(
+    default_pack,
+) -> None:
+    for composition in (
+        {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0},
+        {"CaO": 0.30, "Al2O3": 0.30, "SiO2": 0.40},
+    ):
+        result = evaluate(
+            composition,
+            1933.0,
+            pack=default_pack,
+            basis_type="mol",
+            allow_extrapolation=True,
+            allow_out_of_envelope=True,
+        )
+        notice = next(
+            item for item in result.labels.notices
+            if item.startswith("cas-anorthite-row-sensitivity:")
+        )
+        assert str(notice) == CAS_ANORTHITE_ROW_SENSITIVITY_NOTICE
+        assert notice.family == "cas-anorthite-row-sensitivity"
+        assert notice.score == "scored"
+
+
+def test_cas_anorthite_row_sensitivity_skips_binary_al_free_and_ca_free(
+    default_pack,
+) -> None:
+    compositions = (
+        {"CaO": 0.35, "SiO2": 0.65},
+        {"MgO": 0.25, "SiO2": 0.75},
+        {"MgO": 0.20, "Al2O3": 0.30, "SiO2": 0.50},
+    )
+    for composition in compositions:
+        notices = _evaluate_notices(composition, 1933.0, default_pack)
+        assert not any(
+            item.startswith("cas-anorthite-row-sensitivity")
+            for item in notices
+        )
+
+
+def test_cas_anorthite_row_sensitivity_threshold_is_inclusive() -> None:
+    threshold = model._CAS_ANORTHITE_ROW_SENSITIVITY_MIN_AL_FRACTION
+    assert threshold == pytest.approx(0.0020019270228915035, abs=0.0)
+    pack = SimpleNamespace(
+        reactions=("CaAl2Si2O8",),
+        nu=np.array([[1.0], [1.0], [2.0]]),
+    )
+
+    def notice_for(fraction: float):
+        solved = SimpleNamespace(
+            parent_oxides=("CaO", "Al2O3", "SiO2"),
+            parent_x=np.array([0.25, 0.25, 0.50]),
+            D=1.0,
+            complex_x=np.array([fraction * 0.25]),
+        )
+        return model._cas_anorthite_row_sensitivity_notice(
+            solved, pack, "unscored-model", "unscored-digest"
+        )
+
+    assert notice_for(threshold * (1.0 - 1e-8)) is None
+    notice = notice_for(threshold)
+    assert str(notice) == CAS_ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE
+    assert notice.family == "cas-anorthite-row-sensitivity"
+    assert notice.score == "unscored"
+
+
+def test_cas_anorthite_row_sensitivity_changes_only_notices(
+    default_pack, monkeypatch
+) -> None:
+    composition = {"CaO": 0.30, "Al2O3": 0.30, "SiO2": 0.40}
+    with_notice = evaluate(
+        composition,
+        1933.0,
+        pack=default_pack,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    with monkeypatch.context() as patcher:
+        patcher.setattr(
+            model, "_cas_anorthite_row_sensitivity_notice", lambda *_: None
+        )
+        without_notice = evaluate(
+            composition,
+            1933.0,
+            pack=default_pack,
+            basis_type="mol",
+            allow_extrapolation=True,
+            allow_out_of_envelope=True,
+        )
+    for field in (
+        "parent_mol", "parent_x", "parent_x_star", "parent_activity",
+        "parent_gamma", "complex_x", "species_x",
+    ):
+        np.testing.assert_array_equal(
+            getattr(with_notice, field), getattr(without_notice, field)
+        )
+    assert with_notice.labels.notices == (CAS_ANORTHITE_ROW_SENSITIVITY_NOTICE,)
+    assert without_notice.labels.notices == ()
+    assert with_notice.receipt.data_digests == without_notice.receipt.data_digests
+
+
 def test_k_al_oversequestration_notice_changes_only_evaluate_notices(
     default_pack, monkeypatch
 ) -> None:
@@ -365,6 +484,7 @@ def test_loaded_default_identity_scores_every_default_notice_family(default_pack
         "na2o-activity-bias",
         "cao-sio2-activity-bias",
         "multicomponent-activity-pattern",
+        "cas-anorthite-row-sensitivity",
         "silicate-vapour-product-low-near-liquidus",
         "low-temperature-uncertain",
     )
@@ -379,6 +499,7 @@ def test_candidate_and_d066_v2_keep_family_scoring_scoped() -> None:
         "k-al-over-sequestration",
         "cao-sio2-activity-bias",
         "multicomponent-activity-pattern",
+        "cas-anorthite-row-sensitivity",
         "silicate-vapour-product-low-near-liquidus",
         "low-temperature-uncertain",
     )
@@ -400,6 +521,7 @@ def test_d066_v2_unscored_notice_texts_are_pinned() -> None:
     assert _evaluate_notices(MORB, 1800.0, v2, "wt") == (
         V2_ALKALI_NOTICE,
         K_AL_OVERSEQUESTRATION_NOTICE,
+        CAS_ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE,
         V2_MULTICOMPONENT_UNSCORED_NOTICE,
     )
     assert _evaluate_notices({"Na2O": 1.0, "SiO2": 1.0}, 1600.0, v2) == (
@@ -424,6 +546,7 @@ def test_fe_hess_candidate_notice_and_unscored_activity_pattern() -> None:
         FEO_HESS_CANDIDATE_NOTICE,
         FE_HESS_ALKALI_UNSCORED_NOTICE,
         K_AL_OVERSEQUESTRATION_NOTICE,
+        CAS_ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE,
         V2_MULTICOMPONENT_UNSCORED_NOTICE,
     )
 
@@ -553,6 +676,35 @@ def test_sulfur_results_carry_melt_composition_bias_notices() -> None:
             V2_MULTICOMPONENT_UNSCORED_NOTICE,
         ),
     )
+
+
+def test_sulfur_forwards_cas_anorthite_row_sensitivity() -> None:
+    composition = {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0}
+    for pack, code, message in (
+        (
+            load_datapack(),
+            "cas-anorthite-row-sensitivity",
+            CAS_ANORTHITE_ROW_SENSITIVITY_NOTICE,
+        ),
+        (
+            load_datapack(PACKS / "imcc-sf04-d066-v2.json"),
+            "cas-anorthite-row-sensitivity-unscored",
+            CAS_ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE,
+        ),
+    ):
+        result = evaluate_sulfur(
+            composition,
+            1933.0,
+            log10_fO2=-8.0,
+            log10_fS2=-10.0,
+            melt_pack=pack,
+        )
+        forwarded = tuple(
+            (notice.code, notice.message)
+            for notice in result.notices
+            if notice.model == "openimcc-melt-pack"
+        )
+        assert forwarded == ((code, message),)
 
 
 def test_sulfur_keeps_closure_and_temperature_notices_on_melt_result() -> None:

@@ -298,14 +298,15 @@ coefficient.
 
 ## Melt notice
 
-A separate CAS activity-sensitivity notice remains a recommendation. The
-existing `multicomponent-activity-pattern` gate requires SiO₂, CaO, MgO, and
-Al₂O₃ each to exceed 1 mol% and therefore does not cover the MgO-free CAS
-compositions in these measurements. Its Kume 2000 summary does not include
-the single-laboratory 1933 K Stolyarova Table 3 slopes or the isolated
-anorthite-row comparison. A CAS-specific notice could add that evidence,
-including the conflict between aggregate and exact-composition scores, and
-report composition-dependent sensitivity without implying a correction. It
-should retain the unverified Baird-transcription caveat and the qualitative
-2003 shape comparison. This remains a recommendation only; no code or pack
-coefficients are changed here.
+The CAS activity-sensitivity notice is implemented as
+`cas-anorthite-row-sensitivity`. The existing
+`multicomponent-activity-pattern` gate requires SiO₂, CaO, MgO, and Al₂O₃ each
+to exceed 1 mol% and therefore does not cover the MgO-free CAS compositions in
+these measurements. Its Kume 2000 summary does not include the single-
+laboratory 1933 K Stolyarova Table 3 slopes or the isolated anorthite-row
+comparison. The new notice reports that composition-dependent sensitivity
+without implying a correction; the provisional Baird transcription and the
+qualitative 2003 shape comparison remain caveats. Its solved-speciation
+threshold and exact reason text are recorded in `docs/melt-notices.md`. This
+is a flag-only disclosure; pack coefficients and calculated activities are
+unchanged.

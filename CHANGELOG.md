@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Added the `cas-anorthite-row-sensitivity` notice when at least
+  0.0020019270228915035 of analytical Al₂O₃ is held in solved CaAl₂Si₂O₈.
+  Reason text: “cas-anorthite-row-sensitivity: this is a model-sensitivity
+  disclosure; the default row was chosen on thermochemical consistency. The
+  isolated published FC87 row swap shifts predicted log10 activities on the
+  Stolyarova, Shornikov & Shultz (1996) grid at 1933 K by up to 0.425 dex for
+  Al2O3, 0.244 dex for CaO, and 0.291 dex for SiO2; these are model-output
+  shifts, not observed residuals. Published activity comparisons are mixed:
+  aggregate activity scores lean to FC87, while exact-composition activities
+  favour Hess. See docs/anorthite-disposition.md. It is not a calibrated
+  correction.” The threshold is a solved-speciation sensitivity gate, not a
+  physical crossover or error bound. Other pack identities use the unscored
+  code; calculated values are unchanged.
+
 - Added the `k-al-over-sequestration` notice when at least half of analytical
   K₂O is held in solved K–Al associates. Reason text: “the one-particle mixing-entropy limit can over-sequester K in K-Al associates, biasing p(K) low; measured on one aluminous illite melt as about 1 dex or more (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2, Beaver's Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not validated for basaltic or other compositions and not a calibrated correction.”
   It is unscored and does not change calculated values. It fires for most
