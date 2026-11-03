@@ -43,6 +43,14 @@ The Fe₂SiO₄ A value reaches the fit's lower bound. This is the no-associatio
 
 Held-out fayalite crystal saturation indices at 1300 and 1400 K move from about −1.3 under v5 to +0.84 and +0.46 with this candidate, extrapolating to zero near 1520 K. Under v5, the fayalite-composition liquid is predicted stable about 200 K below fayalite's 1490 K melting point. Both checks are below the 1700 K association floor. The separate FeTiO₃ ilmenite fit leaves +0.5 and +3.8 kJ mol⁻¹ at 1800 and 2000 K.
 
+### Held-out comparisons
+
+For 14 olivine-saturated melts equilibrated with NiFe alloys at 1395–1562 K, Snyder & Carmichael's a(FeO) is referenced to crystalline Fe₀.₉₄₇O. Converting to the stoichiometric liquid standard uses supercooled wüstite fusion and Masson's N₀ = 0.888. The mean log₁₀ a(FeO) residual (model minus measurement) is −0.88 dex for the default and −0.46 dex for E′. Ferric treatment changes the mean by only a few hundredths of a dex. Most of the miss is from melt Fe association; the FeO(l) reference is extrapolated below its 1649 K anchor and has no accuracy band there ([Snyder & Carmichael (1992)](https://doi.org/10.1016/0016-7037(92)90135-6)).
+
+For the 12 FetO–SiO₂ rows at 1673 K, the median |r| falls from 0.129 dex with the default to 0.037 dex with E′. All rows are at 1673.15 K, 27 K below the 1700 K association floor, so this comparison is not fully in-domain. The FetO–SiO₂ ferric/ferrous mean residual nearly vanishes (−0.553 to −0.053 dex), but the pooled ferric/ferrous ratios across the paper's systems remain underpredicted (E′ mean −0.323 dex). The scored source is Ban-ya, Chiba & Hikosaka (1980), *Tetsu-to-Hagane* 66(10), 1484–1493 ([paper](https://www.jstage.jst.go.jp/article/tetsutohagane1955/66/10/66_10_1484/_article)).
+
+E′ also scores worse than the default against Aithala et al.'s (2026) measured XANES Fe³⁺/Fe²⁺ ratios and against the Sossi et al. (2020) Eq. 4 regression grid and inferred mantle anchor (a regression, not raw run residuals), so E′ remains opt-in ([Aithala et al.](https://doi.org/10.7185/geochemlet.2617); [Sossi et al.](https://doi.org/10.1126/sciadv.abd1387)).
+
 ### Held-out activity and remaining checks
 
 The full-composition Distin–Whiteway held-out comparison retains Fe₂O₃ and adds 1 mol of excess Fe metal to each final slag inventory. The closed redox solve reaches Fe-metal saturation, and its FeO activity is compared with the reported, non-stoichiometric-standard activity using log₁₀(model/observed); the measured activity does not set fO₂. Across all 24 rows, the median absolute residual falls from 0.149 dex under v5 to 0.018 dex with this candidate, and the mean signed residual changes from −0.153 to −0.009 dex. The O'Neill CMAS FeO activity bias is smaller but remains; those measurements are below the 1700 K association floor. The candidate's ferric-fraction held-out scores are listed below and alongside the earlier FeO re-anchor comparison.
