@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added `feo_liquid_standard()` and a live Fe-019 Gibbs offset API for
+  cross-engine FeO(l) activity comparisons. The declaration includes the
+  selected source, certified window, and condensate-table digest; offsets label
+  the anchored window and extrapolation region. Calculation results and pins
+  are unchanged.
+
 - Added the `anorthite-row-sensitivity` notice (`anorthite-row-sensitivity-unscored`)
   with an inclusive 0.002 (0.2%) threshold on analytical Al₂O₃ held in solved
   CaAl₂Si₂O₈. It fires on most Ca–Al–Si melts, like the K–Al

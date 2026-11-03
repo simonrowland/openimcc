@@ -10,10 +10,14 @@ from openimcc import (
     AuthorityWindow,
     ImccGasResult,
     LiquidReferenceAuthority,
+    FeOLiquidStandard,
+    FeOLiquidStandardOffset,
     LiquidReferenceNotice,
     LiquidReferenceRecord,
     evaluate,
     evaluate_gas,
+    feo_liquid_standard,
+    feo_liquid_standard_offset,
     load_datapack,
     liquid_reference_authority,
     liquid_reference_records,
@@ -504,6 +508,63 @@ def test_feo_authority_window_and_band_are_unchanged() -> None:
         outside = liquid_reference_authority("FeO(l)", temperature)
         assert outside.authority is LiquidReferenceAuthority.EXTRAPOLATED
         assert outside.band_value is None and outside.band_unit is None
+
+
+def test_feo_liquid_standard_declares_profile_row_and_condensate_digest() -> None:
+    expected = {
+        "openimcc": "DG46-MASSON65",
+        "published": "Fe-019",
+    }
+    for profile, standard_id in expected.items():
+        standard = feo_liquid_standard(profile)
+        assert isinstance(standard, FeOLiquidStandard)
+        assert standard.standard_id == standard_id
+        assert standard.certified_T_K == (1649.15, 1766.15)
+        assert standard.source_citations
+        result = evaluate_gas({"FeO": 1.0}, 1700.0, 1e-10, profile=profile)
+        assert standard.condensate_table_digest == result.condensate_table_digest
+
+    assert feo_liquid_standard().standard_id == "DG46-MASSON65"
+
+
+def test_feo_liquid_standard_offsets_match_anchor_table_targets() -> None:
+    # The candidate row is a fit to the three D&G targets. The documented
+    # candidate-minus-target residuals are +47, -97, and +50 J/mol; adding
+    # table rounding requires just over 97 J/mol, so use the outward 100 J/mol
+    # tolerance rather than treating the rounded target as an exact row value.
+    expected_J_per_mol = {
+        1649.15: 9654.6,
+        1709.15: 9140.8,
+        1766.15: 8369.6,
+    }
+    for temperature, target in expected_J_per_mol.items():
+        offset = feo_liquid_standard_offset(temperature)
+        assert isinstance(offset, FeOLiquidStandardOffset)
+        assert offset.value_J_per_mol == pytest.approx(target, abs=100.0)
+        assert offset.authority == "anchored"
+
+
+def test_feo_liquid_standard_offset_is_zero_for_janaf_profile() -> None:
+    for temperature in (1300.0, 1649.15, 1766.15, 2500.0):
+        offset = feo_liquid_standard_offset(temperature, profile="published")
+        assert offset.value_J_per_mol == pytest.approx(0.0, abs=1e-9)
+
+
+def test_feo_liquid_standard_offset_is_continuous_and_labels_authority() -> None:
+    temperatures = tuple(float(value) for value in range(1300, 2501, 50))
+    offsets = [feo_liquid_standard_offset(value) for value in temperatures]
+    values = [offset.value_J_per_mol for offset in offsets]
+
+    assert all(
+        offset.authority == (
+            "anchored" if 1649.15 <= temperature <= 1766.15 else "extrapolated"
+        )
+        for temperature, offset in zip(temperatures, offsets)
+    )
+    assert all(right < left for left, right in zip(values, values[1:]))
+    assert all(abs(right - left) < 1000.0 for left, right in zip(values, values[1:]))
+    assert feo_liquid_standard_offset(1649.15).authority == "anchored"
+    assert feo_liquid_standard_offset(1766.15).authority == "anchored"
 
 
 def test_authority_requires_the_source_row_its_evidence_assessed() -> None:

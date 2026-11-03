@@ -223,8 +223,12 @@ if TYPE_CHECKING:  # so type checkers and IDEs still see the gas names
         AuthorityWindow,
         CertificationStatus,
         EvidenceReference,
+        FeOLiquidStandard,
+        FeOLiquidStandardOffset,
         LiquidReferenceAuthority,
         LiquidReferenceRecord,
+        feo_liquid_standard,
+        feo_liquid_standard_offset,
         liquid_reference_authority,
         liquid_reference_records,
     )
@@ -245,8 +249,9 @@ def __getattr__(name: str):
         return getattr(profiles, name)
     if name in {
         "AuthorityWindow", "CertificationStatus", "EvidenceReference", "LiquidReferenceAuthority",
-        "LiquidReferenceRecord", "liquid_reference_authority",
-        "liquid_reference_records",
+        "FeOLiquidStandard", "FeOLiquidStandardOffset", "LiquidReferenceRecord",
+        "feo_liquid_standard", "feo_liquid_standard_offset",
+        "liquid_reference_authority", "liquid_reference_records",
     }:
         from openimcc import liquid_reference
         return getattr(liquid_reference, name)
@@ -368,8 +373,12 @@ __all__ = [
     "CertificationStatus",
     "AuthorityWindow",
     "EvidenceReference",
+    "FeOLiquidStandard",
+    "FeOLiquidStandardOffset",
     "LiquidReferenceAuthority",
     "LiquidReferenceRecord",
+    "feo_liquid_standard",
+    "feo_liquid_standard_offset",
     "liquid_reference_authority",
     "liquid_reference_records",
     "default_gas_channels",

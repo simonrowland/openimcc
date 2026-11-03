@@ -2,6 +2,35 @@
 
 **Decision: promote the D&G/Masson FeO(l) standard to the default.** Criterion 2 (primary measurements) selects Darken & Gurry's iron-saturated equilibria, reduced via Masson, over JANAF Fe-019's 1965 construction. Fe-019 assigns wüstite fusion to oxygen release at 1 bar. The existing correction, ΔG° = 27778.965828 − 10.961554232 T J/mol, is adopted without refitting; residuals are reported and never gate the source choice. The source has no formal pointwise uncertainty for the equilibrium gas ratio or oxide analysis, and the Distin composition extrapolation is method-dependent. The held-out scorecard is mixed: Aithala gets worse. The published unversioned v1 melt and redox candidate packs remain loadable. Their FeO re-anchor rows match the promoted standard; the melt candidate retains the earlier MgAl2O4 row. The candidate condensate matches FeO Gibbs values only and remains an older full-table snapshot.
 
+## Declaring the FeO(l) standard for cross-engine comparison
+
+The canonical reference is stoichiometric FeO(l) from JANAF Fe-019. Call
+`feo_liquid_standard(profile=None)` to get the profile's `standard_id`, source
+citations, the existing `certified_T_K` window, and its
+`condensate_table_digest`. A scorer should compare that digest with the
+`condensate_table_digest` on the result before using the offset. Call
+`feo_liquid_standard_offset(T_K, profile=None)` for the live profile-minus-Fe-019
+offset in J/mol; its `authority` is `"anchored"` on the inclusive 1649.15–1766.15 K
+window and `"extrapolated"` outside it. The offset remains defined wherever
+both shipped row functions are defined, but outside that window the D&G/Masson
+anchor is extrapolated, consistent with the FeO(l) authority record.
+
+For equal chemical potential,
+\(\mu = G_A^\circ + RT\ln a_A = G_B^\circ + RT\ln a_B\), where A is the
+profile standard and B is JANAF Fe-019. Rearranging gives
+\(\ln a_B = \ln a_A + (G_A^\circ-G_B^\circ)/(RT)\), so the scorer uses
+\(\log_{10}a(FeO)_{canonical}=\log_{10}a(FeO)_{openimcc}+
+\text{offset}/(RT\ln 10)\). At 1649.15 K the live shipped-row offset is
++9.7017 kJ/mol, giving a +0.3073 dex activity correction; this verifies the
+positive sign. The rounded D&G anchor target is +9.6546 kJ/mol there, and the
+47 J/mol difference is the documented candidate-fit residual.
+
+The offset subtracts the same runtime apparent \(G^\circ=H_{app}-TS\) for
+stoichiometric FeO(l) on both tables. It uses the selected row through
+`species_thermo`, rather than a pasted anchor table. Results carry `profile`
+and `condensate_table_digest`; the digest identifies the exact condensate
+table behind the standard and offset.
+
 ## Opt-in Fe-complex Hess candidate
 
 `src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json` is an opt-in refit loaded with `load_datapack(path=...)`. D066 v5 remains the default. The pack changes only the Fe₂SiO₄ and FeTiO₃ association A values to −9.744444812 and −2.165573644; their B values and every other association row are unchanged. The FeTiO₃ change is ΔA = −2.165573644482091 − (−1.0825616596895684) = −1.0830119847925226. FeAl₂O₄ remains unchanged. The fit used Hess targets, not activity, redox, or vapour data.

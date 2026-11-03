@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from functools import lru_cache
 from types import MappingProxyType
-from typing import Mapping
+from typing import TYPE_CHECKING, Literal, Mapping
+
+if TYPE_CHECKING:
+    from openimcc.profiles import Profile
 
 
 class LiquidReferenceAuthority(str, Enum):
@@ -95,6 +99,24 @@ class CertificationStatus:
     def __post_init__(self) -> None:
         if self.composition_scope is not None:
             object.__setattr__(self, "composition_scope", MappingProxyType(dict(self.composition_scope)))
+
+
+@dataclass(frozen=True)
+class FeOLiquidStandard:
+    """The FeO(l) standard selected by a profile and its source identity."""
+
+    standard_id: str
+    source_citations: tuple[EvidenceReference, ...]
+    certified_T_K: tuple[float, float]
+    condensate_table_digest: str
+
+
+@dataclass(frozen=True)
+class FeOLiquidStandardOffset:
+    """A profile-minus-Fe-019 FeO(l) Gibbs offset and its authority label."""
+
+    value_J_per_mol: float
+    authority: Literal["anchored", "extrapolated"]
 
 
 def _e(
@@ -296,3 +318,114 @@ def liquid_reference_authority(
     return CertificationStatus(record.species, authority, active_T_K,
         band_value, band_unit, evidence_ref, scope,
         scope_applied, reason, in_composition_scope)
+
+
+@lru_cache(maxsize=2)
+def _load_named_feo_profile(name: str):
+    from openimcc.profiles import load_profile
+
+    return load_profile(name)
+
+
+def _resolve_feo_profile(profile: str | Profile | None):
+    from openimcc.profiles import Profile, _resolve_profile
+
+    if profile is None:
+        return _load_named_feo_profile("openimcc")
+    if isinstance(profile, str):
+        return _load_named_feo_profile(profile)
+    if isinstance(profile, Profile):
+        return _resolve_profile(profile)
+    return _resolve_profile(profile)
+
+
+def _feo_profile_standard_data(profile: str | Profile | None):
+    from openimcc.gas import species_thermo
+
+    selected = _resolve_feo_profile(profile)
+    # 1700 K is inside the existing FeO(l) authority window and both shipped
+    # profiles' table coverage. The runtime provenance resolver supplies the
+    # actual source-table id for this profile's selected FeO(l) row.
+    thermo = species_thermo("FeO", "l", 1700.0, datapack=selected.gas_datapack)
+    standard_id = thermo.source_table_id or thermo.source_row_id
+    authority_record = _BY_SPECIES["FeO(l)"]
+    if standard_id == "DG46-MASSON65":
+        citations = authority_record.evidence_ref
+    elif standard_id == "Fe-019":
+        citations = (
+            _e(
+                "Chase",
+                1998,
+                "NIST-JANAF Thermochemical Tables, 4th edition, Fe-019",
+                doi=("10.18434/T42S31",),
+                locator="Fe-019",
+            ),
+        )
+    else:
+        raise ValueError(f"unsupported FeO(l) standard id: {standard_id!r}")
+    digest = selected.gas_datapack.condensate_table_digest
+    if not isinstance(digest, str):
+        raise ValueError("selected profile has no condensate-table digest")
+    if authority_record.certified_T_K is None:
+        raise ValueError("FeO(l) authority record has no certified window")
+    return selected, standard_id, citations, authority_record, digest
+
+
+def feo_liquid_standard(profile: str | Profile | None = None) -> FeOLiquidStandard:
+    """Declare the selected FeO(l) standard for a profile.
+
+    ``standard_id`` is the source-table id used by the runtime row. The source
+    citations identify that row; ``certified_T_K`` is copied from the existing
+    FeO(l) authority record. ``condensate_table_digest`` is the identity of the
+    exact condensate table used by the corresponding offset calculation and
+    by a result evaluated with the same profile.
+    """
+    _, standard_id, citations, authority_record, digest = _feo_profile_standard_data(profile)
+    return FeOLiquidStandard(
+        standard_id=standard_id,
+        source_citations=citations,
+        certified_T_K=authority_record.certified_T_K,
+        condensate_table_digest=digest,
+    )
+
+
+def feo_liquid_standard_offset(
+    T_K: float, profile: str | Profile | None = None
+) -> FeOLiquidStandardOffset:
+    """Return G°(FeO,l | profile) − G°(FeO,l | JANAF Fe-019) in J/mol.
+
+    Both terms are the runtime apparent standard Gibbs energy ``H_app − T*S``
+    from :func:`openimcc.gas.species_thermo`, evaluated from the selected
+    profile's shipped condensate row and the shipped Fe-019 row. The same
+    stoichiometric FeO(l) quantity and elemental reference are used on both
+    sides, so their difference is also the difference in formation Gibbs
+    energy; it is never a pasted anchor or an independently fitted function.
+
+    The ``authority`` label is ``"anchored"`` on the inclusive FeO(l)
+    certified window and ``"extrapolated"`` outside it. The Gibbs offset stays
+    defined wherever both runtime rows are defined.
+    """
+    import math
+
+    from openimcc.gas import species_thermo
+
+    selected, _, _, authority_record, _ = _feo_profile_standard_data(profile)
+    reference = _load_named_feo_profile("published")
+    profile_G = species_thermo(
+        "FeO", "l", T_K, datapack=selected.gas_datapack
+    ).G_J_mol
+    janaf_G = species_thermo(
+        "FeO", "l", T_K, datapack=reference.gas_datapack
+    ).G_J_mol
+    # Since the formula is identical on both sides, common elemental
+    # reference terms cancel. The subtraction order is profile minus Fe-019;
+    # it therefore matches the scorer's positive-sign chemical-potential
+    # conversion from a(profile) to a(Fe-019).
+    value = profile_G - janaf_G
+    low, high = authority_record.certified_T_K
+    authority: Literal["anchored", "extrapolated"] = (
+        "anchored" if low <= T_K <= high else "extrapolated"
+    )
+    if not math.isfinite(value):
+        raise ValueError(f"FeO(l) Gibbs offset is not finite at T={T_K!r} K")
+    return FeOLiquidStandardOffset(value_J_per_mol=float(value), authority=authority)
