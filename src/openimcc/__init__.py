@@ -49,6 +49,14 @@ from openimcc.redox import (
     RedoxResult,
     evaluate_redox,
 )
+from openimcc.standards import (
+    LiquidStandardMismatch,
+    PackLiquidStandards,
+    active_liquid_standards,
+    check_pack_standards,
+    pack_liquid_standards,
+    pack_row_liquid_standards,
+)
 
 
 def _resolve_version() -> str:
@@ -200,6 +208,13 @@ __all__ = [
     "RedoxNoLiveCoupleError",
     "RedoxEndpointError",
     "RedoxNumericalError",
+    # --- liquid reference standards --------------------------------------
+    "PackLiquidStandards",
+    "LiquidStandardMismatch",
+    "active_liquid_standards",
+    "pack_liquid_standards",
+    "pack_row_liquid_standards",
+    "check_pack_standards",
     # --- gas (lazy; needs the [gas] extra) --------------------------------
     "load_gas_datapack",
     "evaluate_gas",

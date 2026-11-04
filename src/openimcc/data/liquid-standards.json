@@ -1,0 +1,662 @@
+{
+  "schema_version": 1,
+  "identity": {
+    "melt_key": "ImccLoadedDatapack.binding_digest",
+    "redox_key": "SHA-256 of exact pack file bytes",
+    "redox_loaded_lookup": "canonical_content_digest recorded alongside the file SHA-256"
+  },
+  "row_key": "The exact complex formula string from the pack rows array; row numbers are retained in each citation.",
+  "diagnostic_policy": "diagnostic_delta_g_j_mol is read-only provenance metadata and is not applied to evaluation.",
+  "packs": {
+    "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c": {
+      "file": "imcc-sf04-v1.0.2.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04",
+      "version": "1.0.2",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "FC87-Glushko-K2O",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:80; src/openimcc/gas.py:1494",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:80; src/openimcc/gas.py:1491",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:434; src/openimcc/gas.py:1492",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:184; src/openimcc/gas.py:1493",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:236; src/openimcc/gas.py:1496",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:1192; src/openimcc/gas.py:1490",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:1855",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:931, 978, 1025 (FeTiO3, Fe2SiO4, FeAl2O4; each has a nonzero FeO parent); src/openimcc/gas.py:1495; src/openimcc/data/gas/condensate.csv:5. These Fe-complex constants have been evaluated only against the JANAF Fe-019 FeO(l) table at this commit. The pack does not print the FeO(l) function used by its original FC87/SF04 derivation. A later openimcc D066 pack version, not present at this commit, re-anchored the Fe-complex rows from this Fe-019 basis to an iron-saturated FeO(l) standard, which corroborates the Fe-019 reading."
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:1537; src/openimcc/data/packs/imcc-sf04-d066-v1.json:1694 (lineage reference_unknown marker)"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:1586; src/openimcc/data/packs/imcc-sf04-d066-v1.json:1775 (lineage reference_unknown marker)"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:1820; src/openimcc/data/packs/imcc-sf04-d066-v1.json:2168 (lineage reference_unknown marker)"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json:1864"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "source",
+        "FeO": "operational"
+      },
+      "row_override_basis": {}
+    },
+    "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770": {
+      "file": "imcc-sf04-ext-v4.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-EXT",
+      "version": "1.0.2-ext-sp-2",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "FC87-Glushko-K2O",
+        "S": "S-004",
+        "P2O5": "O-094/2-P4O10(cr)",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:80; src/openimcc/gas.py:1494",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:80; src/openimcc/gas.py:1491",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:434; src/openimcc/gas.py:1492",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:184; src/openimcc/gas.py:1493",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:236; src/openimcc/gas.py:1496",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:1192; src/openimcc/gas.py:1490",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:1855",
+        "S": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:1917 (liquid S-004 parent reference)",
+        "P2O5": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:1923 (half P4O10(cr), not P2O5(l))",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:931, 978, 1025 (FeTiO3, Fe2SiO4, FeAl2O4; each has a nonzero FeO parent); src/openimcc/data/packs/imcc-sf04-ext-v4.json:1956, 1958, 1967, 1977 (FeS, nu FeO=1; product table Fe-024; FeO parent Fe-019); src/openimcc/gas.py:1495; src/openimcc/data/gas/condensate.csv:5. These Fe-complex constants have been evaluated only against the JANAF Fe-019 FeO(l) table at this commit. The pack does not print the FeO(l) function used by its original FC87/SF04 derivation. A later openimcc D066 pack version, not present at this commit, re-anchored the Fe-complex rows from this Fe-019 basis to an iron-saturated FeO(l) standard, which corroborates the Fe-019 reading."
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:1537; src/openimcc/data/packs/imcc-sf04-d066-v1.json:1694 (lineage reference_unknown marker)"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:1586; src/openimcc/data/packs/imcc-sf04-d066-v1.json:1775 (lineage reference_unknown marker)"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:1820; src/openimcc/data/packs/imcc-sf04-d066-v1.json:2168 (lineage reference_unknown marker)"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json:1864"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "source",
+        "S": "source",
+        "P2O5": "source",
+        "FeO": "operational"
+      },
+      "row_override_basis": {}
+    },
+    "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75": {
+      "file": "imcc-sf04-d066-v1.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.3-d066-v1",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "K-012",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:80; src/openimcc/gas.py:1494",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:80; src/openimcc/gas.py:1491",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:469; src/openimcc/gas.py:1492",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:194; src/openimcc/gas.py:1493",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:251; src/openimcc/gas.py:1496",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:1307; src/openimcc/gas.py:1490",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:1855; src/openimcc/data/gas/condensate.csv:193",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:1021, 1073, 1125 (FeTiO3, Fe2SiO4, FeAl2O4; each has a nonzero FeO parent); src/openimcc/gas.py:1495; src/openimcc/data/gas/condensate.csv:5. These Fe-complex constants have been evaluated only against the JANAF Fe-019 FeO(l) table at this commit. The pack does not print the FeO(l) function used by its original FC87/SF04 derivation. A later openimcc D066 pack version, not present at this commit, re-anchored the Fe-complex rows from this Fe-019 basis to an iron-saturated FeO(l) standard, which corroborates the Fe-019 reading."
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:1694 (reference_unknown marker)"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:1775 (reference_unknown marker)"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:2168 (reference_unknown marker)"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json:2237"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "operational"
+      },
+      "row_override_basis": {}
+    },
+    "45e12de67ee8effa56fe3935e12e66e0dda2ea73ce877dc598ccda3faaea453f": {
+      "file": "imcc-sf04-d066-v1-kcaalsi2o7.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.3-d066-v1-kcaalsi2o7",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "K-012",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:80; src/openimcc/gas.py:1494",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:80; src/openimcc/gas.py:1491",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:469; src/openimcc/gas.py:1492",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:194; src/openimcc/gas.py:1493",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:251; src/openimcc/gas.py:1496",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:1307; src/openimcc/gas.py:1490",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:1855; src/openimcc/data/gas/condensate.csv:193",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:1021, 1073, 1125 (FeTiO3, Fe2SiO4, FeAl2O4; each has a nonzero FeO parent); src/openimcc/gas.py:1495; src/openimcc/data/gas/condensate.csv:5. These Fe-complex constants have been evaluated only against the JANAF Fe-019 FeO(l) table at this commit. The pack does not print the FeO(l) function used by its original FC87/SF04 derivation. A later openimcc D066 pack version, not present at this commit, re-anchored the Fe-complex rows from this Fe-019 basis to an iron-saturated FeO(l) standard, which corroborates the Fe-019 reading."
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:1694 (reference_unknown marker)"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:1775 (reference_unknown marker)"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:2168 (reference_unknown marker)"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json:2237"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "operational"
+      },
+      "row_override_basis": {}
+    },
+    "25125d24b9a7f3907773811c245b8137f40e46794caba5ce12f9ea26b7a49ce8": {
+      "file": "imcc-sf04-d066-ext-v1.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.3-d066-ext-v1",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "K-012",
+        "S": "S-004",
+        "P2O5": "O-094/2-P4O10(cr)",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:80; src/openimcc/gas.py:1494",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:80; src/openimcc/gas.py:1491",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:469; src/openimcc/gas.py:1492",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:194; src/openimcc/gas.py:1493",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:251; src/openimcc/gas.py:1496",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:1307; src/openimcc/gas.py:1490",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:1855; src/openimcc/data/gas/condensate.csv:193",
+        "S": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:2302 (liquid S-004 parent reference)",
+        "P2O5": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:2308 (half P4O10(cr), not P2O5(l))",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:1021, 1073, 1125 (FeTiO3, Fe2SiO4, FeAl2O4; each has a nonzero FeO parent); src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:2341, 2343, 2352, 2362 (FeS, nu FeO=1; product table Fe-024; FeO parent Fe-019); src/openimcc/gas.py:1495; src/openimcc/data/gas/condensate.csv:5. These Fe-complex constants have been evaluated only against the JANAF Fe-019 FeO(l) table at this commit. The pack does not print the FeO(l) function used by its original FC87/SF04 derivation. A later openimcc D066 pack version, not present at this commit, re-anchored the Fe-complex rows from this Fe-019 basis to an iron-saturated FeO(l) standard, which corroborates the Fe-019 reading."
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:1694 (reference_unknown marker)"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:1775 (reference_unknown marker)"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:2168 (reference_unknown marker)"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json:2237"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "S": "source",
+        "P2O5": "source",
+        "FeO": "operational"
+      },
+      "row_override_basis": {}
+    },
+    "a7f44ddeb2f88bfa56fc50556c262e81598e4b82d7773e498aa3d5040ecc3501": {
+      "file": "openimcc-redox-v1.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows",
+      "version": "1.4.0",
+      "canonical_content_digest": "28ac36dfef019b8f0fe3e11a86030c65dbfdae6733d10532d2bdb942cf3dc67b",
+      "standards": {
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe-030/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-v1.json:316; src/openimcc/gas.py:1495",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-v1.json:775 (Fe2O3(l) coefficient 0.5; JANAF Fe-030)",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-v1.json:1297; src/openimcc/data/gas/condensate.csv:42; src/openimcc/gas.py:1530",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-v1.json:1881; src/openimcc/gas.py:1494",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-v1.json:1209; src/openimcc/gas.py:1493"
+      },
+      "undeclared": {},
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "a2327fd582dc9fb4e2b7e1a49cee7bfacbd72510e06ce0e706495ef8107d5809": {
+      "file": "openimcc-redox-cr-candidate.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K",
+      "version": "1.4.0-cr-candidate",
+      "canonical_content_digest": "4e36612823bbde1f2c3c865f80571ad311299493dec68c04c89e9c967d59b708",
+      "declaration_status": "candidate-unresolved",
+      "standards": {
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe-030/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json:316; src/openimcc/gas.py:1495",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json:775 (Fe2O3(l) coefficient 0.5; JANAF Fe-030)",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json:1297; src/openimcc/data/gas/condensate.csv:42; src/openimcc/gas.py:1530",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json:1881; src/openimcc/gas.py:1494",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json:1209; src/openimcc/gas.py:1493",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json:1915"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json:1915",
+          "standard_id": "undeclared"
+        }
+      },
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above.",
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "31d7bf5532a92983a3bbb593bf65e3cd9d398d64699a0c0e87fb05071d0f17dc": {
+      "file": "openimcc-redox-ti-candidate.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack.",
+      "version": "1.5.0-ti-candidate",
+      "canonical_content_digest": "d1c84f40f76f754a1c7ea92ec292443fa04a329ee452e7beffd413b3940a64e8",
+      "declaration_status": "candidate-unresolved",
+      "standards": {
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe-030/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json:316; src/openimcc/gas.py:1495",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json:775 (Fe2O3(l) coefficient 0.5; JANAF Fe-030)",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json:1297; src/openimcc/data/gas/condensate.csv:42; src/openimcc/gas.py:1530",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json:1881; src/openimcc/gas.py:1494",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json:1209; src/openimcc/gas.py:1493",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json:1965"
+      },
+      "undeclared": {
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json:1965",
+          "standard_id": "undeclared"
+        }
+      },
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above.",
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "850dfe9f7e61dae9b9786d9f56508236b352e293198fbdc63a8daf5f51d37034": {
+      "file": "openimcc-redox-cr-ti-candidate.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack.",
+      "version": "1.6.0-cr-ti-candidate",
+      "canonical_content_digest": "4fabaa2c5c91fa7ef28e4ba85e8ccd976728e56d9e00aa15f7425b856e541078",
+      "declaration_status": "candidate-unresolved",
+      "standards": {
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe-030/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json:316; src/openimcc/gas.py:1495",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json:775 (Fe2O3(l) coefficient 0.5; JANAF Fe-030)",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json:1297; src/openimcc/data/gas/condensate.csv:42; src/openimcc/gas.py:1530",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json:1881; src/openimcc/gas.py:1494",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json:1209; src/openimcc/gas.py:1493",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json:1915",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json:2061"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json:1915",
+          "standard_id": "undeclared"
+        },
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json:2061",
+          "standard_id": "undeclared"
+        }
+      },
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above.",
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    }
+  },
+  "basis": {
+    "source": "The pack derivation record or its cited source names the reference basis.",
+    "operational": "At this code revision the constants have only been evaluated against this active table, and no other standard is recorded.",
+    "translation-record": "A later pack records a translation of the constants onto this standard."
+  }
+}

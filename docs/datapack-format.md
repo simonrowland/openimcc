@@ -855,3 +855,39 @@ each call.
 canonical mapping and returns an `EngineBindingIdentity` with that digest and
 its three components. It refuses an unlabelled melt pack or a gas pack without
 both table digests.
+
+## Liquid-reference standards
+
+`src/openimcc/data/liquid-standards.json` declares the oxide reference tables
+used by each shipped melt or redox pack. Its `schema_version` is independent of
+the pack manifest. Melt entries are keyed by the loader's `binding_digest`;
+redox entries use the exact pack-file SHA-256 because the redox loader exposes
+only a canonical content digest. Formula strings from a pack's `complex` field
+are the row keys for `row_overrides`.
+
+`openimcc.active_liquid_standards()` reports the active liquid table IDs.
+`pack_liquid_standards(pack)` reads an embedded `liquid_standards` field first,
+then the registry, and returns immutable pack-wide declarations, per-oxide
+`standard_basis` and `standard_citations` mappings, and row override metadata.
+`pack_row_liquid_standards(pack, row_key)` remains an oxide-to-ID mapping and
+also exposes immutable `standard_basis` and `standard_citations` mappings for
+the merged row declaration.
+`check_pack_standards(pack, redox_pack=...)` compares melt declarations and,
+when supplied, the redox pack's FeO(l) basis with the active tables. This commit
+has no profile selector; passing a non-`None` profile raises `ValueError`.
+
+The `reference-unknown` result kind identifies a disclosed provenance gap; it
+is distinct from a configuration mismatch. The `undeclared` kind identifies a
+pack or parent without an established declaration. Callers choose how to
+handle either kind. A standard's `standard_basis` is `source` when the pack's
+derivation or cited source names it, `operational` when the codebase has only
+evaluated it against the active table and records no other standard, and
+`translation-record` when a later pack records a translation onto it. Each
+non-`source` declaration emits its own `non-source-basis` record with its
+standard ID, basis, citation, and optional row key. This is an informational
+notice, not a mismatch or refusal. Passing `require_basis="source"` adds a
+`basis-insufficient` record for each non-`source` declaration; the default is
+permissive. These provenance kinds let callers attach notice flags while
+keeping policy in the caller. The registry's `diagnostic_delta_g_j_mol` entries are
+read-only provenance metadata; no diagnostic value is applied to evaluation,
+and the evaluate APIs do not emit a reference notice.

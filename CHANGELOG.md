@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added a content-bound liquid-reference standards registry and public lookup
+  API for melt and redox packs, including row-level unknown-reference markers.
+  These declarations are metadata only and do not change evaluation values.
+- Non-source basis checks are informational; callers can request source-only
+  declarations explicitly. Known pre-existing failures at this base reproduce
+  on the unmodified base commit: `tests/test_gas.py::test_oxygen_balance_includes_each_dict_only_nonoxide_parent`,
+  `tests/test_kernel.py::test_passing_bulk_root_keeps_its_pre_certification_bytes`,
+  `tests/test_sf04_coldstart.py::test_lunar_trace_state_uses_relative_log_x_last_resort`,
+  and `tests/test_sf04_coldstart.py::test_silica_walk_recovers_cai_trace_missed_by_staged_path`.
 - Added TeO(g) with caller-supplied TeO2(l) activity, fitted from NUREG/CR-4308
   Table 30 Gibbs nodes and anchored to the primary 2005 TeO formation-enthalpy
   measurement. Te+(g) remains declined because its Burcat/Gurvich candidate
