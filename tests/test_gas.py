@@ -1711,13 +1711,12 @@ def test_t625_against_janaf_printed_gas_columns(
 
 def test_kp_derivation_spot_check_sio(sf04_gas_pack: ImccGasDatapack) -> None:
     """Recompute SiO2(l) -> SiO(g) + 1/2 O2(g) at 2000 K by hand."""
-    R = 8.314462618
     T = 2000.0
     G_sio2_l = -1129878.93
     G_sio_g = -593626.03
     G_o2_g = -478320.38
     dG = G_sio_g + 0.5 * G_o2_g - G_sio2_l
-    Kp_hand = math.exp(-dG / (R * T))
+    Kp_hand = math.exp(-dG / (R_J_MOL_K * T))
 
     p_sio = evaluate_gas(
         {"SiO2": 1.0}, T, fO2=1.0, datapack=sf04_gas_pack, allow_extrapolation=True

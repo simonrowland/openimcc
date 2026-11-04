@@ -26,11 +26,11 @@ from typing import Any, Mapping, NoReturn, Sequence
 import numpy as np
 from scipy.optimize import least_squares
 
+from openimcc._constants import R_J_MOL_K as _R_J_MOL_K
 from openimcc.receipt import CalculationReceipt
 
 
 LOG10 = math.log(10.0)
-_R_J_MOL_K = 8.31446261815324
 # Preserve the accepted basis roundoff without renormalizing parent fractions.
 _BASIS_NORMALIZATION_RELATIVE_SLACK = 1.0e-6
 _CONTINUATION_LOGK_STEP = 2.0 * LOG10

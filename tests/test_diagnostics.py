@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from openimcc._constants import R_J_MOL_K
 from openimcc import diagnostics
 from openimcc.cli import main
 from openimcc.diagnostics import (
@@ -198,14 +199,14 @@ def test_crystal_closure_units_controls_and_default_regression():
         tm = row["melting_point_K"]
         assert row["SI_at_melting_point"] == pytest.approx(
             row["residual_at_melting_point_kJ_mol"] * 1000
-            / (8.31446261815324 * tm * math.log(10)), abs=1e-12,
+            / (R_J_MOL_K * tm * math.log(10)), abs=1e-12,
         )
         assert row["delta_log10_vapor_product_at_melting_point"] == pytest.approx(
             row["SI_at_melting_point"], abs=1e-12,
         )
         node = row["in_range_node"]
         assert node["SI"] == pytest.approx(
-            node["residual_kJ_mol"] * 1000 / (8.31446261815324 * node["temperature_K"] * math.log(10)),
+            node["residual_kJ_mol"] * 1000 / (R_J_MOL_K * node["temperature_K"] * math.log(10)),
             abs=1e-12,
         )
         assert node["delta_log10_vapor_product"] == pytest.approx(node["SI"], abs=1e-12)

@@ -34,6 +34,10 @@ from typing import Any, TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Nam
 import numpy as np
 from scipy.optimize import brentq
 
+from openimcc._constants import (
+    ATOMIC_MASS_G_MOL as _ATOMIC_MASS_G_MOL,
+    R_PUBLISHED_GAS_J_MOL_K as R_J_MOL_K,
+)
 from openimcc.kernel import ImccRefusal, _canonical_published_serialization
 from openimcc.liquid_reference import (
     CertificationStatus,
@@ -54,7 +58,6 @@ from openimcc.gas_data import (
     IMCC_PARENT_OXIDES,
     IMCC_SF04_WORKBOOK_GRID_K,
     _ALKALI_HALIDE_REACTION_OXIDES,
-    _ATOMIC_MASS_G_MOL,
     _CONDENSED_PARENT_PHASE_ROWS,
     _CONDENSED_PARENT_ROWS,
     _CONSTRUCTED_SAHA_C3_RESULTS,
@@ -115,8 +118,7 @@ if TYPE_CHECKING:
 # Physical constants and reference states
 # --------------------------------------------------------------------------- #
 
-R_J_MOL_K = 8.314462618
-"""Molar gas constant, J / (mol K)."""
+# R_J_MOL_K retains the shared published-gas value for pinned table outputs.
 
 _SUPERCOOLED_EXTENSION_REF_SUFFIX = "-SC-CP"
 _SUPPRESS_TRIAL_RECEIPTS: ContextVar[bool] = ContextVar(

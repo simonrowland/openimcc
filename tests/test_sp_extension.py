@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from openimcc._constants import R_J_MOL_K
 from openimcc import (
     ImccCompositionOutsideValidatedEnvelopeError,
     ImccDatapack,
@@ -402,7 +403,7 @@ def test_delivered_gas_set_and_so2_s2_hand_anchor() -> None:
     anchors = json.loads((_ext4() / "anchors.json").read_text())
     # S2 + 2 O2 -> 2 SO2 at 1300 K. JANAF ΔrG° = -533.612 kJ/mol,
     # so log10(Kp) = 533612/(R*1300*ln(10)).
-    hand_log10_kp = 533_612 / (8.31446261815324 * 1300 * math.log(10))
+    hand_log10_kp = 533_612 / (R_J_MOL_K * 1300 * math.log(10))
     assert anchors["SO2_S2"]["hand_log10_Kp"] == pytest.approx(
         hand_log10_kp, rel=1e-12
     )

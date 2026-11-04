@@ -12,7 +12,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal, Mapping, Sequence, TypedDict
 
-R_J_MOL_K = 8.31446261815324
+from openimcc._constants import R_J_MOL_K
+
 STANDARD_PRESSURE_PA = 100_000.0
 OXYGEN_INPUT_REL_TOL = 1e-9
 OXYGEN_INPUT_ABS_TOL_PA = 1e-6

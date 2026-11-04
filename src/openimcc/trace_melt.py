@@ -7,7 +7,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Literal
 
-from openimcc.model import _EXPECTED_PARENT_OXIDES, _OXIDE_MOLAR_MASS_G_MOL
+from openimcc._constants import MOLAR_MASS_G_MOL
+from openimcc.model import _EXPECTED_PARENT_OXIDES
 from openimcc.scalar_boundary import is_declared_real_scalar
 
 
@@ -79,7 +80,7 @@ def _basicity(
 
     if basis_type == "mol":
         weights = {
-            name: amounts[name] * _OXIDE_MOLAR_MASS_G_MOL[name]
+            name: amounts[name] * MOLAR_MASS_G_MOL[name]
             for name in ("CaO", "SiO2")
         }
     elif basis_type == "wt":

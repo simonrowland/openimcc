@@ -16,6 +16,7 @@ import yaml
 
 import pytest
 
+from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
 from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
 from openimcc.bench import (
     _binary_subslice,
@@ -113,7 +114,7 @@ def _independent_janaf_apparent_gibbs_j_mol(
 def _independent_condensate_gibbs_j_mol(
     row: dict[str, str], temperature_K: float
 ) -> float:
-    gas_constant = 8.314462618
+    gas_constant = R_PUBLISHED_GAS_J_MOL_K
     t = temperature_K / 1000.0
     phi = sum(
         float(row[f"dG_{coefficient}"]) * t**power
@@ -998,7 +999,7 @@ def test_solid_to_liquid_conversion_matches_independent_table_calculation() -> N
     # potential balance gives log10(a_liq) = log10(a_solid) -
     # (G_liq - G_cr)/(R*T*ln(10)); checking the converted activity catches a
     # reversed sign as well as a wrong reference row.
-    gas_constant = 8.314462618
+    gas_constant = R_PUBLISHED_GAS_J_MOL_K
     temperature_K = 1873.0
     activity_solid = 0.37
     cases = (

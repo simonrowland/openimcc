@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K as R_J_MOL_K
 from openimcc.gas import _lamor_gibbs
 from tools.build_gas_tables import (
     _janaf_text_source_rows,
@@ -25,9 +26,6 @@ INPUTS_PATH = ROOT / "data-src" / "liquid-from-solid-inputs.json"
 INPUTS = json.loads(INPUTS_PATH.read_text(encoding="utf-8"))
 CRYSTALS_PATH = ROOT / "data-src" / "crystal-thermochemistry.json"
 CRYSTALS = json.loads(CRYSTALS_PATH.read_text(encoding="utf-8"))["tables"]
-R_J_MOL_K = 8.314462618
-
-
 @lru_cache(maxsize=None)
 def _source_rows(table_id: str) -> dict[float, dict[str, float]]:
     record_path = JANAF / f"{table_id}.yaml"

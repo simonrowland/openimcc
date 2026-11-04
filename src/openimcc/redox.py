@@ -15,6 +15,7 @@ from typing import Any, Literal, TYPE_CHECKING
 import numpy as np
 from scipy.optimize import linprog
 
+from openimcc._constants import MOLAR_MASS_G_MOL
 from openimcc.kernel import (
     ImccRefusal,
     active_residual_jacobian,
@@ -1729,16 +1730,8 @@ def _make_flags(
         ti_parent = next((i for i, parent in enumerate(redox_pack.parents)
                           if parent["element"] == "Ti"), None)
         if ti_parent is not None:
-            atomic_mass = {
-                "O": 15.999, "Si": 28.085, "Al": 26.9815385,
-                "Mg": 24.305, "Ca": 40.078, "Ti": 47.867,
-                "Na": 22.989769, "Fe": 55.845, "K": 39.0983,
-                "Cr": 51.9961, "Mn": 54.938044, "P": 30.973761998,
-                "S": 32.06, "V": 50.9415, "Ni": 58.6934,
-                "Co": 58.933194, "Ce": 140.116, "Eu": 151.964,
-            }
             parent_mass = [math.fsum(
-                float(count) * atomic_mass[element]
+                float(count) * MOLAR_MASS_G_MOL[element]
                 for element, count in parent["parent_formula_atoms"].items()
             ) for parent in redox_pack.parents]
             total_mass = math.fsum(

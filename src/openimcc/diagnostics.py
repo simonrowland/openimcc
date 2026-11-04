@@ -17,9 +17,9 @@ from typing import Any
 
 import numpy as np
 
+from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K as R
 from openimcc.model import ImccLoadedDatapack, evaluate, load_datapack
 
-R = 8.31446261815324
 _PARENT_CP_BY_PACK = {
     "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2": {
         # Prior D066 default: JANAF parent liquid branches.
@@ -492,11 +492,6 @@ def run_mixing_enthalpy(
     return pack, rows
 
 
-_OXIDE_MOLAR_MASS = {
-    "SiO2": 60.0843, "MgO": 40.3044, "CaO": 56.0774, "Al2O3": 101.9613,
-}
-
-
 class CrystalStatus(str, Enum):
     AVAILABLE = "available"
     OUT_OF_RANGE = "out-of-range"
@@ -597,7 +592,7 @@ def _crystal_si(phase, temp, composition, pack, gas_pack, reference_pack,
             - species_thermo(oxide, "l", temp, reference_pack).G_J_mol
         ) / 1000.0 for oxide, nu in phase["oxide_stoichiometry"].items())
     weights = composition or {
-        oxide: float(nu) * _OXIDE_MOLAR_MASS[oxide]
+        oxide: float(nu) * MOLAR_MASS_G_MOL[oxide]
         for oxide, nu in phase["oxide_stoichiometry"].items()
     }
     melt = evaluate(weights, temp, pack, basis_type="wt", allow_extrapolation=True,
@@ -848,20 +843,27 @@ def crystal_closure(
             ),
             "evaluation_notices": list(at_tm["evaluation_notices"]),
             "source_temperature_range_K": phase["valid_temperature_K"]})
-    eutectic_composition = {oxide: 0.0 for oxide in _OXIDE_MOLAR_MASS}
+    eutectic_composition = {
+        oxide: 0.0 for oxide in ("SiO2", "MgO", "CaO", "Al2O3")
+    }
     phase_by_id = {phase["id"]: phase for phase in dataset["phases"]}
     for fraction, phase_id in ((0.42, "anorthite"), (0.58, "diopside")):
         sto = phase_by_id[phase_id]["oxide_stoichiometry"]
-        phase_mass = sum(float(nu) * _OXIDE_MOLAR_MASS[oxide] for oxide, nu in sto.items())
+        phase_mass = sum(
+            float(nu) * MOLAR_MASS_G_MOL[oxide] for oxide, nu in sto.items()
+        )
         for oxide, nu in sto.items():
-            eutectic_composition[oxide] += fraction * float(nu) * _OXIDE_MOLAR_MASS[oxide] / phase_mass * 100.0
+            eutectic_composition[oxide] += (
+                fraction * float(nu) * MOLAR_MASS_G_MOL[oxide]
+                / phase_mass * 100.0
+            )
     eutectic = {phase_id: phase_state(phase_by_id[phase_id], 1547.0, eutectic_composition)
                 for phase_id in ("anorthite", "diopside")}
     controls = []
     for control in dataset["pure_oxide_controls"]:
         temp = float(control["melting_point"]["temperature_K"])
         oxide = control["id"]
-        melt = evaluate({oxide: _OXIDE_MOLAR_MASS[oxide]}, temp, pack,
+        melt = evaluate({oxide: MOLAR_MASS_G_MOL[oxide]}, temp, pack,
                         basis_type="wt", allow_extrapolation=True,
                         allow_out_of_envelope=True)
         fusion_g = float(control["fusion_gibbs_at_melting_kJ_mol"]) * 1000.0

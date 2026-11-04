@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from openimcc._constants import R_J_MOL_K
 from openimcc import (
     ImccMalformedDatapackError,
     ImccRefusal,
@@ -273,7 +274,7 @@ def test_species_pair_mass_action_activity_and_enthalpy_use_joules(
     assert result.excess_enthalpy_J == pytest.approx(enthalpy)
     feo = result.parent_oxides.index("FeO")
     assert result.parent_activity[feo] == pytest.approx(
-        result.parent_x_star[feo] * np.exp(mu[feo] / (8.31446261815324 * temperature))
+        result.parent_x_star[feo] * np.exp(mu[feo] / (R_J_MOL_K * temperature))
     )
     from openimcc.diagnostics import mixing_enthalpy
 
@@ -297,7 +298,7 @@ def test_species_pair_mass_action_activity_and_enthalpy_use_joules(
             - float(pack.nu[needed, j] @ np.log(result.parent_x_star[needed]))
             - ln_k
             + (mu[len(result.parent_oxides) + j] - float(pack.nu[:, j] @ mu[:len(result.parent_oxides)]))
-            / (8.31446261815324 * temperature)
+            / (R_J_MOL_K * temperature)
         )
         assert residual == pytest.approx(0.0, abs=2.0e-10)
 def test_public_kernel_refuses_excess_candidate_and_loaded_adapter_applies_it(

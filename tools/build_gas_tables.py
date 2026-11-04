@@ -30,6 +30,10 @@ from scipy.optimize import linprog
 
 # Keep package imports available when this file is invoked as a script.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
+
 PUBLISHED_DATA = Path(__file__).resolve().parents[1] / "data-src/published-thermo"
 
 
@@ -50,9 +54,8 @@ NASA_STANDARD_T_K = 298.15
 SHOMATE_CP_PARAMETER_COUNT = 5
 LOW_FIT_NODE_MARGIN = 5
 LOW_FIT_MINIMUM_ROWS = SHOMATE_CP_PARAMETER_COUNT + LOW_FIT_NODE_MARGIN
-# Same value as openimcc.gas.R_J_MOL_K; kept local so the tool does not import
-# the package it builds data for.
-R_J_MOL_K = 8.314462618
+# Preserve the published gas and condensate table rows and their digest.
+R_J_MOL_K = R_PUBLISHED_GAS_J_MOL_K
 # Convert level energies from cm^-1 to molar joules, as used by the Saha rows.
 H_C_MOL_CM = 6.02214076e23 * 6.62607015e-34 * 299792458.0 * 100.0
 KONINGS_SOURCE_DIR = Path(__file__).resolve().parents[1] / "data-src/konings"

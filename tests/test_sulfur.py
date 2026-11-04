@@ -9,6 +9,7 @@ import pytest
 
 import openimcc.gas as gas_module
 import openimcc.sulfur as sulfur_module
+from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
 from openimcc import evaluate, evaluate_sulfur, load_datapack
 from openimcc.kernel import ImccRefusal
 from openimcc.gas import (
@@ -29,15 +30,15 @@ _MORB = {
     "K2O": 0.14,
 }
 _OXIDES = {
-    "SiO2": (60.0843, 1, 2, "Si"),
-    "TiO2": (79.866, 1, 2, "Ti"),
-    "Al2O3": (101.961, 2, 3, "Al"),
-    "FeO": (71.844, 1, 1, "Fe"),
-    "MnO": (70.9374, 1, 1, "Mn"),
-    "MgO": (40.3044, 1, 1, "Mg"),
-    "CaO": (56.0774, 1, 1, "Ca"),
-    "Na2O": (61.979, 2, 1, "Na"),
-    "K2O": (94.196, 2, 1, "K"),
+    "SiO2": (MOLAR_MASS_G_MOL["SiO2"], 1, 2, "Si"),
+    "TiO2": (MOLAR_MASS_G_MOL["TiO2"], 1, 2, "Ti"),
+    "Al2O3": (MOLAR_MASS_G_MOL["Al2O3"], 2, 3, "Al"),
+    "FeO": (MOLAR_MASS_G_MOL["FeO"], 1, 1, "Fe"),
+    "MnO": (MOLAR_MASS_G_MOL["MnO"], 1, 1, "Mn"),
+    "MgO": (MOLAR_MASS_G_MOL["MgO"], 1, 1, "Mg"),
+    "CaO": (MOLAR_MASS_G_MOL["CaO"], 1, 1, "Ca"),
+    "Na2O": (MOLAR_MASS_G_MOL["Na2O"], 2, 1, "Na"),
+    "K2O": (MOLAR_MASS_G_MOL["K2O"], 2, 1, "K"),
 }
 
 
@@ -185,7 +186,9 @@ def test_sulfur_split_identity_and_mol_inventory_conversion():
         _MORB, T, log10_fO2=log_fo2,
         total_s_mol_per_mol_melt=input_mol,
     )
-    expected_ppm = input_mol * 32.065 / mean_molar_mass * 1.0e6
+    expected_ppm = (
+        input_mol * MOLAR_MASS_G_MOL["S"] / mean_molar_mass * 1.0e6
+    )
     assert by_mol.log10_fS2 is not None
     assert by_mol.dissolved_total_s_ppm == pytest.approx(expected_ppm)
     assert by_mol.dissolved_total_s_mol_per_mol_melt == pytest.approx(input_mol)
@@ -439,11 +442,13 @@ def test_finite_oxide_masses_normalize_when_their_sum_overflows():
     assert result.dissolved_total_s_ppm == pytest.approx(100.0)
 
 
-def test_in_range_sulfur_outputs_remain_bit_identical():
+def test_in_range_sulfur_outputs_match_pins():
     fixed = evaluate_sulfur(
         _MORB, 1673.0, log10_fO2=-8.0, log10_fS2=-10.0,
         melt_pack=load_datapack(),
     )
+    # Shared CIAAW masses move the two sulfur pins by at most 0.010171953361
+    # ppm (1.78064741e-6 relative) in the excess-melt case.
     assert (
         fixed.log10_sulfide_capacity_wt_percent,
         fixed.log10_sulfate_capacity_wt_percent,
@@ -452,12 +457,12 @@ def test_in_range_sulfur_outputs_remain_bit_identical():
         fixed.scss_smythe_2017_ppm,
         fixed.scss_oneill_2021_ppm,
     ) == (
-        -4.499963385233009,
-        6.351389231066809,
-        0.03162566737601119,
-        0.03162566737601119,
-        2320.429447634112,
-        5803.831673102939,
+        -4.499963122582615,
+        6.351387475884598,
+        0.03162568650138272,
+        0.03162568650138273,
+        2320.431822704818,
+        5803.821529200369,
     )
 
     inventory = evaluate_sulfur(
@@ -468,9 +473,9 @@ def test_in_range_sulfur_outputs_remain_bit_identical():
         inventory.capacity_predicted_total_s_ppm,
         inventory.dissolved_total_s_ppm,
     ) == (
-        -3.0000793978324674,
+        -3.000079923104596,
         100.0,
-        99.99999999999999,
+        100.00000000000001,
     )
 
 
@@ -608,7 +613,7 @@ def test_comparison_models_reproduce_printed_parameters(packaged_gas_pack):
     g_o2 = species_thermo("O2", "g", T, gas).G_J_mol
     g_so3 = species_thermo("SO3", "g", T, gas).G_J_mol
     log_fso3 = 0.5 * (
-        -(2 * g_so3 - g_s2 - 3 * g_o2) / (8.31446261815324 * T * math.log(10))
+        -(2 * g_so3 - g_s2 - 3 * g_o2) / (R_J_MOL_K * T * math.log(10))
         + log_fs2 + 3 * log_fo2
     )
     ln_c6 = -8.02 + (
@@ -775,7 +780,7 @@ def test_excess_melt_disclosures_survive_sulfur_evaluation(tmp_path):
         melt_pack=candidate,
     )
 
-    assert result.scss_oneill_2021_ppm == pytest.approx(5712.502825957212)
+    assert result.scss_oneill_2021_ppm == pytest.approx(5712.4926540038505)
     candidate_notice = next(
         notice for notice in result.notices
         if notice.code == "excess-gibbs-candidate"

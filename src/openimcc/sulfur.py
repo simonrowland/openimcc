@@ -11,6 +11,7 @@ from dataclasses import dataclass
 import math
 from typing import Mapping
 
+from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K as _R
 from openimcc.kernel import ImccRefusal
 from openimcc.model import (
     ImccLoadedDatapack,
@@ -18,9 +19,7 @@ from openimcc.model import (
     load_datapack,
 )
 
-_R = 8.31446261815324
 _LN10 = math.log(10.0)
-_MW_S = 32.065
 _LOG10_MAX_FLOAT = math.log10(float.fromhex("0x1.fffffffffffffp+1023"))
 
 # Forward notices by their source family and score metadata, never by prose.
@@ -54,23 +53,22 @@ def _melt_notice_forward_code(notice: str) -> str | None:
         (getattr(notice, "family", None), getattr(notice, "score", None))
     )
 
-# formula-unit molecular mass, cations per formula, oxygen atoms per formula,
-# and the cation symbol used in single-cation mole fractions.
-_OXIDES: dict[str, tuple[float, int, int, str]] = {
-    "SiO2": (60.0843, 1, 2, "Si"),
-    "TiO2": (79.866, 1, 2, "Ti"),
-    "Al2O3": (101.961, 2, 3, "Al"),
-    "FeO": (71.844, 1, 1, "Fe"),
-    "FeOeq": (71.844, 1, 1, "Fe"),
-    "MnO": (70.9374, 1, 1, "Mn"),
-    "MgO": (40.3044, 1, 1, "Mg"),
-    "CaO": (56.0774, 1, 1, "Ca"),
-    "Na2O": (61.979, 2, 1, "Na"),
-    "K2O": (94.196, 2, 1, "K"),
-    "P2O5": (141.9445, 2, 5, "P"),
-    "Cr2O3": (151.9904, 2, 3, "Cr"),
-    "NiO": (74.6928, 1, 1, "Ni"),
-    "CoO": (74.9326, 1, 1, "Co"),
+# cations per formula, oxygen atoms per formula, and cation symbol.
+_OXIDES: dict[str, tuple[int, int, str]] = {
+    "SiO2": (1, 2, "Si"),
+    "TiO2": (1, 2, "Ti"),
+    "Al2O3": (2, 3, "Al"),
+    "FeO": (1, 1, "Fe"),
+    "FeOeq": (1, 1, "Fe"),
+    "MnO": (1, 1, "Mn"),
+    "MgO": (1, 1, "Mg"),
+    "CaO": (1, 1, "Ca"),
+    "Na2O": (2, 1, "Na"),
+    "K2O": (2, 1, "K"),
+    "P2O5": (2, 5, "P"),
+    "Cr2O3": (2, 3, "Cr"),
+    "NiO": (1, 1, "Ni"),
+    "CoO": (1, 1, "Co"),
 }
 
 
@@ -157,7 +155,8 @@ def _normalise_composition(
         name = "FeO" if raw_name == "FeOeq" else raw_name
         if value > 0.0:
             positive_components.add(name)
-        mass, _cations, _oxygen, _symbol = _OXIDES[raw_name]
+        mass_name = "FeO" if raw_name == "FeOeq" else raw_name
+        mass = MOLAR_MASS_G_MOL[mass_name]
         masses[name] = masses.get(name, 0.0) + value
         mass_terms.setdefault(name, []).append(value)
         amounts[name] = amounts.get(name, 0.0) + value / mass
@@ -186,7 +185,7 @@ def _normalise_composition(
         }
         scaled_total_mass = math.fsum(scaled_masses.values())
         scaled_total_moles = math.fsum(
-            (value / scale) / _OXIDES[name][0]
+            (value / scale) / MOLAR_MASS_G_MOL[name]
             for name, terms in mass_terms.items()
             for value in terms
         )
@@ -202,15 +201,15 @@ def _fractions(
     formula_moles: Mapping[str, float],
 ) -> tuple[dict[str, float], dict[str, float]]:
     oxygen_units = math.fsum(
-        n * _OXIDES[name][2] for name, n in formula_moles.items()
+        n * _OXIDES[name][1] for name, n in formula_moles.items()
     )
     cation_total = math.fsum(
-        n * _OXIDES[name][1] for name, n in formula_moles.items()
+        n * _OXIDES[name][0] for name, n in formula_moles.items()
     )
     one_oxygen: dict[str, float] = {}
     cations: dict[str, float] = {}
     for name, n in formula_moles.items():
-        _mw, count, oxygen, symbol = _OXIDES[name]
+        count, oxygen, symbol = _OXIDES[name]
         one_oxygen[name] = one_oxygen.get(name, 0.0) + n * oxygen / oxygen_units
         cations[symbol] = cations.get(symbol, 0.0) + n * count / cation_total
     return one_oxygen, cations
@@ -677,7 +676,9 @@ def evaluate_sulfur(
         input_mol = float(total_s_mol_per_mol_melt)
         if not math.isfinite(input_mol) or input_mol < 0.0:
             raise ValueError("total_s_mol_per_mol_melt must be finite and nonnegative")
-        input_total_ppm = input_mol * _MW_S / mean_molar_mass * 1.0e6
+        input_total_ppm = (
+            input_mol * MOLAR_MASS_G_MOL["S"] / mean_molar_mass * 1.0e6
+        )
     if input_total_ppm is not None and (
         not math.isfinite(input_total_ppm) or input_total_ppm < 0.0
     ):
@@ -907,8 +908,14 @@ def evaluate_sulfur(
                 saturation_state = "undersaturated"
         if sulfur_prediction_available:
             dissolved_total = dissolved_s2 + dissolved_s6
-            dissolved_mol = dissolved_total * 1.0e-6 * mean_molar_mass / _MW_S
-            excess_s_mol = (excess_ppm or 0.0) * 1.0e-6 * mean_molar_mass / _MW_S
+            dissolved_mol = (
+                dissolved_total * 1.0e-6 * mean_molar_mass
+                / MOLAR_MASS_G_MOL["S"]
+            )
+            excess_s_mol = (
+                (excess_ppm or 0.0) * 1.0e-6 * mean_molar_mass
+                / MOLAR_MASS_G_MOL["S"]
+            )
         if sulfur_prediction_available and excess_ppm and excess_ppm > 0.0:
             notices.append(_notice(
                 "sulfur-excess-reported-to-sulfide-liquid",

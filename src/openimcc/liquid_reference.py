@@ -173,7 +173,7 @@ _RECORDS = (
     # JANAF Mg-009 prints ±16.7 kJ/mol for fusion enthalpy and Tm=3105 K.
     # At 1323 K, δG=δΔH(1−T/Tm)=±9.58 kJ/mol (±9584 J/mol); for
     # MgO(l)=Mg(g)+½O2, Δlog10 pO2=2δG/(RT ln 10)=±0.757 dex, using
-    # R=8.314462618 J mol⁻¹ K⁻¹. Store the outward-rounded cold-edge value
+    # R=8.31446261815324 J mol⁻¹ K⁻¹. Store the outward-rounded cold-edge value
     # across the reviewed window; it is not a confidence interval, and no
     # band applies beyond that window.
     LiquidReferenceRecord("MgO(l)", LiquidReferenceAuthority.EXTRAPOLATED, None, None, None,

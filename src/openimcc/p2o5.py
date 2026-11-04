@@ -11,14 +11,15 @@ from dataclasses import dataclass
 import math
 from typing import Mapping
 
-R_J_MOL_K = 8.31446261815324
+from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K
+
 _LN10 = math.log(10.0)
-_MW = {
-    "SiO2": 60.0843, "CaO": 56.0774, "MgO": 40.3044,
-    "FeO": 71.844, "FeOeq": 71.844, "TiO2": 79.866,
-    "Al2O3": 101.961, "Na2O": 61.979, "K2O": 94.196,
-    "P2O5": 141.94452, "MnO": 70.9374, "Fe2O3": 159.6882,
-}
+_SUPPORTED_COMPONENTS = frozenset(
+    {
+        "SiO2", "CaO", "MgO", "FeO", "FeOeq", "TiO2", "Al2O3",
+        "Na2O", "K2O", "P2O5", "MnO", "Fe2O3",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -66,7 +67,7 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
         raise ValueError("temperature must be finite and positive")
     amounts: dict[str, float] = {}
     for key, amount in composition_moles.items():
-        if key not in _MW:
+        if key not in _SUPPORTED_COMPONENTS:
             raise ValueError(f"unsupported oxide component {key!r}")
         value = float(amount)
         if not math.isfinite(value) or value < 0:
@@ -85,7 +86,7 @@ def evaluate_p2o5_activity(composition_moles: Mapping[str, float], T_K: float) -
         if x_p > 0.0
         else math.log10(amounts["P2O5"]) - math.log10(total)
     )
-    wt = {name: value * _MW[name] for name, value in amounts.items()}
+    wt = {name: value * MOLAR_MASS_G_MOL[name] for name, value in amounts.items()}
     total_mass = math.fsum(wt.values())
     wt = {name: value / total_mass * 100.0 for name, value in wt.items()}
     term = 23*x.get("CaO", 0) + 17*x.get("MgO", 0) + 8*x.get("FeO", 0) - 26*x_p

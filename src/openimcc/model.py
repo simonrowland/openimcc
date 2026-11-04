@@ -24,6 +24,11 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import numpy as np
 
+from openimcc._constants import (
+    MOLAR_MASS_G_MOL as _OXIDE_MOLAR_MASS_G_MOL,
+    R_J_MOL_K as _R_J_MOL_K,
+)
+
 if TYPE_CHECKING:
     from openimcc.gas import ImccGasDatapack
     from openimcc.profiles import Profile
@@ -53,23 +58,6 @@ from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.receipt import build_calculation_receipt
 
 
-
-# Stable molar masses (g/mol) for the IMCC-SF04 parent components.
-# Values from the project physical-constants table (CIAAW/NIST derived).
-_OXIDE_MOLAR_MASS_G_MOL = MappingProxyType(
-    {
-        "SiO2": 60.0843,
-        "MgO": 40.3044,
-        "FeO": 71.844,
-        "CaO": 56.0774,
-        "Al2O3": 101.9613,
-        "TiO2": 79.866,
-        "Na2O": 61.9789,
-        "K2O": 94.196,
-        "S": 32.06,
-        "P2O5": 141.9445,
-    }
-)
 
 _EXPECTED_PARENT_OXIDES = (
     "SiO2",
@@ -129,7 +117,6 @@ _SP_EXTENSION_PARENTS = ("S", "P2O5")
 _SP_EXTENSION_TIER = "EXT-SP"
 _SP_EXTENSION_FLAG = "enable_sp_extension"
 _SP_EXTENSION_PROVENANCE_CLASS = "extension-compound-thermo"
-_R_J_MOL_K = 8.31446261815324
 _ENVELOPE_RELATIVE_SLACK = 1.0e-5
 _ACID_SINK_FAMILY_SHARE = 0.20
 _PARENT_CATION_SYMBOL = MappingProxyType(

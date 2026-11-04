@@ -2,6 +2,7 @@ import math
 
 import pytest
 
+from openimcc._constants import R_J_MOL_K
 from openimcc import (
     P2O5FeIIINotice,
     PGasPressureNotice,
@@ -21,8 +22,8 @@ def test_suito_regression_and_explicit_atm_to_bar_standard_conversion() -> None:
     x_p = 1 / 100
     log_gamma = -1.02 * (23*.40 + 17*.08 + 8*.12 - 26*.01) - 22990/1873 + 9.490
     source_g = -1534480 + 506.26*1873
-    pack_g = -1616372 + 539*1873 + 3.5*8.31446261815324*1873*math.log(1.01325)
-    expected = log_gamma + math.log10(x_p) + (source_g-pack_g)/(8.31446261815324*1873*math.log(10))
+    pack_g = -1616372 + 539*1873 + 3.5*R_J_MOL_K*1873*math.log(1.01325)
+    expected = log_gamma + math.log10(x_p) + (source_g-pack_g)/(R_J_MOL_K*1873*math.log(10))
     assert result.log10_activity == pytest.approx(expected)
     assert result.activity == pytest.approx(10**expected)
     assert result.activity == pytest.approx(result.gamma * result.x_p2o5)
@@ -63,7 +64,7 @@ def test_p_gas_mass_action_holds_at_lance_and_reduction_oxygen(
         # Table stoichiometries are per one P2O5 parent; n_gas is the
         # possibly fractional gas coefficient, not the parent coefficient.
         delta_g = n_gas*gas_g + n_o2*oxygen_g - p2o5_g
-        expected = (-delta_g/(8.31446261815324*T*math.log(10)) + math.log10(activity)
+        expected = (-delta_g/(R_J_MOL_K*T*math.log(10)) + math.log10(activity)
                     - n_o2*math.log10(oxygen))/n_gas
         assert math.log10(gas[species]) == pytest.approx(expected, abs=1e-9)
 
