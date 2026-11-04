@@ -1052,6 +1052,12 @@ returns immutable pack-wide IDs, basis and citations, and row overrides.
 exact `complex` field. `check_pack_standards(pack, profile=None, *, redox_pack=None,
 require_basis=None)` compares declared IDs with the active profile.
 
+`mismatch` and `redox-mismatch` mean a declared ID differs from a present
+active ID. `not-active` means a concrete declared ID has no active liquid row;
+it is informational and never a refusal. `reference-unknown` identifies an
+unresolvable active reference or a declaration whose source basis is unknown.
+An `undeclared` result remains a missing declaration.
+
 The standard basis is `source` when the pack's derivation or cited source names
 the table, `operational` when the available record only establishes the table
 used in evaluation, and `translation-record` when a later pack records a

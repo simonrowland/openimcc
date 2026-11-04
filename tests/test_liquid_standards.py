@@ -330,6 +330,70 @@ def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
     assert not any(record.kind == "mismatch" for record in mg_records)
 
 
+def test_declared_standard_without_an_active_liquid_row_is_not_active(
+    tmp_path: Path,
+) -> None:
+    gas_dir = ROOT / "src/openimcc/data/gas"
+    condensate_path = tmp_path / "condensate.csv"
+    shutil.copyfile(gas_dir / "condensate.csv", condensate_path)
+    with condensate_path.open(encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = reader.fieldnames
+        rows = [row for row in reader if row["species_name"] != "TiO2(l)"]
+
+    with condensate_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    custom_gas_pack = load_gas_datapack(
+        gas_path=gas_dir / "gas-shomate.csv", oxide_path=condensate_path
+    )
+    default_active = active_liquid_standards()
+    custom_active = active_liquid_standards(gas_pack=custom_gas_pack)
+    assert "TiO2" not in custom_active
+    assert {oxide: value for oxide, value in custom_active.items() if oxide != "TiO2"} == {
+        oxide: value for oxide, value in default_active.items() if oxide != "TiO2"
+    }
+
+    pack_path = PACK_DIR / "imcc-sf04-d066-v4.json"
+    default_records = check_pack_standards(pack_path)
+    custom_records = check_pack_standards(pack_path, gas_pack=custom_gas_pack)
+    ti_records = [record for record in custom_records if record.oxide == "TiO2"]
+    assert len(ti_records) == 1
+    assert ti_records[0].declared == "O-044"
+    assert ti_records[0].active is None
+    assert ti_records[0].kind == "not-active"
+    assert not any(record.kind == "mismatch" for record in ti_records)
+    assert [record for record in custom_records if record.oxide != "TiO2"] == [
+        record for record in default_records if record.oxide != "TiO2"
+    ]
+
+
+def test_redox_declaration_without_an_active_liquid_row_is_not_active(
+    monkeypatch,
+) -> None:
+    active = dict(active_liquid_standards())
+    active.pop("FeO")
+    monkeypatch.setattr(
+        standards_module,
+        "active_liquid_standards",
+        lambda profile=None, *, gas_pack=None: active,
+    )
+
+    redox_pack = load_redox_pack(PACK_DIR / "openimcc-redox-v4.json")
+    records = check_pack_standards(
+        SimpleNamespace(binding_digest="unknown-melt"), redox_pack=redox_pack
+    )
+    feo_records = [
+        record for record in records if record.oxide == "FeO" and record.row_key is None
+    ]
+    assert len(feo_records) == 1
+    assert feo_records[0].declared == pack_liquid_standards(redox_pack).standards["FeO"]
+    assert feo_records[0].active is None
+    assert feo_records[0].kind == "not-active"
+
+
 def test_two_recognized_condensate_tables_for_one_oxide_still_raise(
     tmp_path: Path,
 ) -> None:
@@ -370,9 +434,12 @@ def test_d066_v1_mixed_standards_are_caught_and_v4_matches_default() -> None:
     v1_default = check_pack_standards(v1_path)
     v4_default = check_pack_standards(v4_path)
     v1_mismatches = {record.oxide for record in v1_default if record.kind == "mismatch"}
-    assert {"FeO", "SiO2", "Na2O"} <= v1_mismatches
+    assert v1_mismatches == {"FeO", "SiO2", "Na2O"}
     assert not [record for record in v4_default if record.kind == "mismatch"]
-    for name in ("imcc-sf04-d066-v5.json", "imcc-sf04-d066-feo-hess-candidate.json"):
+    for name in (
+        "imcc-sf04-d066-v5.json",
+        "imcc-sf04-d066-feo-hess-candidate.json",
+    ):
         assert not [
             record
             for record in check_pack_standards(PACK_DIR / name)

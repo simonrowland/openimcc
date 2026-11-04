@@ -20,6 +20,7 @@ PackStandardSource = Literal["embedded", "registry", "undeclared"]
 StandardBasis = Literal["source", "operational", "translation-record"]
 StandardCheckKind = Literal[
     "mismatch",
+    "not-active",
     "reference-unknown",
     "undeclared",
     "redox-mismatch",
@@ -457,7 +458,9 @@ def _comparison(
         kind: StandardCheckKind = "reference-unknown"
     elif declared == "undeclared":
         kind = "undeclared"
-    elif active is None or declared != active:
+    elif active is None:
+        kind = "not-active"
+    elif declared != active:
         kind = "redox-mismatch" if redox else "mismatch"
     else:
         return None
