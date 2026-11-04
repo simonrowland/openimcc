@@ -17,7 +17,12 @@ if TYPE_CHECKING:
 
 
 PackStandardSource = Literal["embedded", "registry", "undeclared"]
-StandardBasis = Literal["source", "operational", "translation-record"]
+StandardBasis = Literal[
+    "source",
+    "operational",
+    "translation-record",
+    "best available",
+]
 StandardCheckKind = Literal[
     "mismatch",
     "not-active",
@@ -39,13 +44,18 @@ class PackLiquidStandards:
     standard_citations: Mapping[str, str]
     row_override_basis: Mapping[str, Mapping[str, StandardBasis]]
     row_override_citations: Mapping[str, Mapping[str, str]]
+    row_diagnostics: Mapping[str, Mapping[str, Any]]
     source: PackStandardSource
     pack_digest: str | None
 
 
 @dataclass(frozen=True)
 class LiquidStandardMismatch:
-    """One pack-wide or row-specific comparison with the active table set."""
+    """One pack-wide or row-specific comparison with the active table set.
+
+    Diagnostic band fields carry read-only registry metadata when present;
+    they are never applied to thermodynamic evaluation.
+    """
 
     oxide: str
     declared: str
@@ -55,10 +65,13 @@ class LiquidStandardMismatch:
     standard_id: str | None = None
     basis: StandardBasis | None = None
     citation: str | None = None
+    diagnostic_delta_g_j_mol: Mapping[str, Any] | None = None
+    diagnostic_label: str | None = None
+    equivalent_delta_log10_K: Mapping[str, Any] | None = None
 
 
 class PackRowLiquidStandards(dict[str, str]):
-    """Row-specific IDs, with immutable basis and citation metadata."""
+    """Row IDs with immutable basis, citation, and diagnostic metadata."""
 
     def __init__(
         self,
@@ -66,10 +79,18 @@ class PackRowLiquidStandards(dict[str, str]):
         *,
         standard_basis: Mapping[str, StandardBasis],
         standard_citations: Mapping[str, str],
+        row_diagnostics: Mapping[str, Any],
     ) -> None:
         super().__init__(standards)
         self.standard_basis = MappingProxyType(dict(standard_basis))
         self.standard_citations = MappingProxyType(dict(standard_citations))
+        self.diagnostic_delta_g_j_mol = row_diagnostics.get(
+            "diagnostic_delta_g_j_mol"
+        )
+        self.diagnostic_label = row_diagnostics.get("diagnostic_label")
+        self.equivalent_delta_log10_K = row_diagnostics.get(
+            "equivalent_delta_log10_K"
+        )
 
 
 _ACTIVE_REFERENCE_UNKNOWN_PREFIX = "reference-unknown(Ref="
@@ -123,6 +144,27 @@ def _immutable_overrides(value: Any) -> Mapping[str, Mapping[str, str]]:
     )
 
 
+def _immutable_diagnostic_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType(
+            {
+                str(key): _immutable_diagnostic_value(item)
+                for key, item in value.items()
+            }
+        )
+    if isinstance(value, (list, tuple)):
+        return tuple(_immutable_diagnostic_value(item) for item in value)
+    return value
+
+
+def _immutable_row_diagnostics(
+    value: Any,
+) -> Mapping[str, Mapping[str, Any]]:
+    if not isinstance(value, Mapping):
+        return MappingProxyType({})
+    return _immutable_diagnostic_value(value)
+
+
 def _from_declaration(
     declaration: Mapping[str, Any],
     *,
@@ -142,6 +184,9 @@ def _from_declaration(
         row_override_citations=_immutable_overrides(
             declaration.get("row_override_citations")
         ),
+        row_diagnostics=_immutable_row_diagnostics(
+            declaration.get("row_diagnostics")
+        ),
         source=source,
         pack_digest=digest,
     )
@@ -160,6 +205,7 @@ def _embedded_declaration(value: Any) -> Mapping[str, Any] | None:
         "standard_citations": value.get("standard_citations", {}),
         "row_override_basis": value.get("row_override_basis", {}),
         "row_override_citations": value.get("row_override_citations", {}),
+        "row_diagnostics": value.get("row_diagnostics", {}),
     }
 
 
@@ -258,7 +304,8 @@ def pack_row_liquid_standards(pack: Any, row_key: str) -> PackRowLiquidStandards
 
     The returned mapping remains oxide-to-standard-id; its immutable
     ``standard_basis`` and ``standard_citations`` attributes describe those
-    same merged declarations.
+    same merged declarations. Optional diagnostic band attributes are
+    read-only metadata and do not affect evaluation.
     """
     declared = pack_liquid_standards(pack)
     merged = dict(declared.standards)
@@ -276,7 +323,10 @@ def pack_row_liquid_standards(pack: Any, row_key: str) -> PackRowLiquidStandards
         if oxide in override_citations:
             citations[oxide] = override_citations[oxide]
     return PackRowLiquidStandards(
-        merged, standard_basis=basis, standard_citations=citations
+        merged,
+        standard_basis=basis,
+        standard_citations=citations,
+        row_diagnostics=declared.row_diagnostics.get(str(row_key), {}),
     )
 
 
@@ -453,6 +503,7 @@ def _comparison(
     *,
     row_key: str | None,
     redox: bool = False,
+    row_diagnostics: Mapping[str, Any] | None = None,
 ) -> LiquidStandardMismatch | None:
     if _is_active_reference_unknown(active) or declared == "reference-unknown":
         kind: StandardCheckKind = "reference-unknown"
@@ -470,6 +521,21 @@ def _comparison(
         active=active,
         kind=kind,
         row_key=row_key,
+        diagnostic_delta_g_j_mol=(
+            row_diagnostics.get("diagnostic_delta_g_j_mol")
+            if row_diagnostics is not None
+            else None
+        ),
+        diagnostic_label=(
+            row_diagnostics.get("diagnostic_label")
+            if row_diagnostics is not None
+            else None
+        ),
+        equivalent_delta_log10_K=(
+            row_diagnostics.get("equivalent_delta_log10_K")
+            if row_diagnostics is not None
+            else None
+        ),
     )
 
 
@@ -553,7 +619,11 @@ def check_pack_standards(
     for row_key, overrides in declared.row_overrides.items():
         for oxide, standard_id in overrides.items():
             record = _comparison(
-                oxide, standard_id, active.get(oxide), row_key=row_key
+                oxide,
+                standard_id,
+                active.get(oxide),
+                row_key=row_key,
+                row_diagnostics=declared.row_diagnostics.get(row_key),
             )
             if record is not None:
                 output.append(record)

@@ -1047,7 +1047,8 @@ metastable Fe2O3(l) construction from the Fe-030 hematite crystal and Lesher-Spe
 fusion source, rather than treating Fe-030 as a liquid table.
 `pack_liquid_standards(pack)`
 checks an embedded `liquid_standards` field first, then the registry, and
-returns immutable pack-wide IDs, basis and citations, and row overrides.
+returns immutable pack-wide IDs, basis and citations, row overrides, and row
+diagnostics.
 `pack_row_liquid_standards(pack, row_key)` merges the same metadata for one
 exact `complex` field. `check_pack_standards(pack, profile=None, *, redox_pack=None,
 require_basis=None)` compares declared IDs with the active profile.
@@ -1061,8 +1062,23 @@ An `undeclared` result remains a missing declaration.
 The standard basis is `source` when the pack's derivation or cited source names
 the table, `operational` when the available record only establishes the table
 used in evaluation, and `translation-record` when a later pack records a
-translation onto that table. Non-source basis results are informational;
-`require_basis="source"` additionally reports them as `basis-insufficient`.
-`reference-unknown` row overrides disclose a reference gap with a not-sized
-diagnostic band. An `undeclared` result means a pack or parent lacks a bound
-table ID. These records do not alter `evaluate*` results or pack data.
+translation onto that table. `best available` marks a candidate basis for a
+`reference-unknown` row; it does not resolve the declared standard ID. Non-source
+basis results are informational; `require_basis="source"` additionally
+reports them as `basis-insufficient`.
+
+Liquid-standard registry schema version 2 supports `row_diagnostics` entries
+with `diagnostic_delta_g_j_mol`, `diagnostic_label`, and
+`equivalent_delta_log10_K`. The Gibbs-energy diagnostic contains its units,
+temperature grid, signed candidate components with source citations, absolute
+envelope, `one_sided` status, and a derivation comment. `diagnostic_label`
+states the candidate status and any limitation. The equivalent log-constant
+diagnostic contains its units, the row's `nu_K2O`, and
+`nu_K2O × envelope / (R T ln 10)` at the same temperatures.
+The D066 K-silicate rows currently have a one-sided FC87/Glushko component
+because no JANAF-3 K2O(l) values were found in the repository or verified from
+a primary printed table. The label records that limitation. This band is
+diagnostic only: it is read-only provenance metadata, remains
+`reference-unknown`, and is never applied to `evaluate*` results or pack data.
+The existing content-hashed packs retain their earlier FC87 page locator; new
+generated translation metadata uses the corrected printed page 209.

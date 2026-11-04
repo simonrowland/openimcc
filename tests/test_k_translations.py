@@ -240,6 +240,13 @@ def test_translation_tool_reproduces_each_shipped_d066_pack(
         arm=arm,
     )
     expected = json.loads(output_path.read_text(encoding="utf-8"))
+    # Existing content-hashed packs retain their p.208 locator; new generation
+    # uses the corrected printed page and the pack JSON remains byte-immutable.
+    for row in expected["rows"]:
+        translation = row.get("k_translation")
+        if isinstance(translation, dict):
+            assert translation["basis"] == "FC87 Table 1 p.208 (Glushko/TSIV K2O(l))"
+            translation["basis"] = "FC87 Table 1 p.209 (Glushko/TSIV K2O(l))"
     for row in expected["rows"]:
         fit = row.get("fit_residual")
         diagnostics = fit.get("value") if isinstance(fit, dict) else None

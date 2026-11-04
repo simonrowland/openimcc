@@ -6,6 +6,7 @@ import copy
 import csv
 import hashlib
 import json
+import math
 import shutil
 from pathlib import Path
 from types import SimpleNamespace
@@ -17,11 +18,12 @@ from openimcc import (
     LiquidStandardMismatch,
     active_liquid_standards,
     check_pack_standards,
+    evaluate,
     load_datapack,
     pack_liquid_standards,
     pack_row_liquid_standards,
 )
-from openimcc.gas import load_gas_datapack
+from openimcc.gas import R_J_MOL_K, load_gas_datapack, species_thermo
 from openimcc.redox_pack import load_redox_pack
 from openimcc.profiles import ProfileError, load_profile
 
@@ -29,7 +31,13 @@ from openimcc.profiles import ProfileError, load_profile
 ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src/openimcc/data/packs"
 REGISTRY_PATH = ROOT / "src/openimcc/data/liquid-standards.json"
-UNKNOWN_BAND = "not sized (Glushko basis function not available at this commit)"
+K2O_REFERENCE_ROWS = ("K2SiO3", "K2Si2O5", "K2Si4O9", "KCaAlSi2O7")
+K2O_DIAGNOSTIC_TEMPERATURES_K = (1323, 1500, 1700, 2000, 2400)
+K2O_DIAGNOSTIC_LABEL = (
+    "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) "
+    "values unavailable from a verified primary table (Hastie & Bonnell 1985 "
+    "anchor pending)"
+)
 
 
 def _registry() -> dict[str, object]:
@@ -38,12 +46,14 @@ def _registry() -> dict[str, object]:
 
 def test_registry_schema_and_every_shipped_pack_has_a_declaration() -> None:
     registry = _registry()
-    assert registry["schema_version"] == 1
+    assert registry["schema_version"] == 2
     assert registry["identity"] == {
         "melt_key": "ImccLoadedDatapack.binding_digest",
         "redox_key": "SHA-256 of exact pack file bytes",
         "redox_loaded_lookup": "canonical_content_digest recorded alongside the file SHA-256",
     }
+    assert "best available" in registry["basis"]
+    assert "never applied" in registry["diagnostic_policy"]
     assert "complex" in registry["row_key"]
     entries = registry["packs"]
     shipped = sorted(path for path in PACK_DIR.glob("*.json") if path.name != "MANIFEST.json")
@@ -74,7 +84,8 @@ def test_registry_schema_and_every_shipped_pack_has_a_declaration() -> None:
         assert all(entry["standard_citations"][oxide] for oxide in declared_ids)
         assert set(entry["row_override_basis"]) <= set(entry["row_overrides"])
         assert all(
-            basis in {"source", "operational", "translation-record"}
+            basis
+            in {"source", "operational", "translation-record", "best available"}
             for rows in entry["row_override_basis"].values()
             for basis in rows.values()
         )
@@ -160,10 +171,40 @@ def test_registry_schema_and_every_shipped_pack_has_a_declaration() -> None:
             assert row_key in row_keys
             assert set(entry["row_override_citations"][row_key]) == set(overrides)
             if "reference-unknown" in overrides.values():
-                diagnostic = entry["row_diagnostics"][row_key]["diagnostic_delta_g_j_mol"]
-                assert diagnostic["band"] == UNKNOWN_BAND
-                for part in ("Premise:", "Algebra:", "Unit check:", "Sanity check:"):
-                    assert part in diagnostic["derivation_comment"]
+                diagnostic = entry["row_diagnostics"][row_key]
+                delta_g = diagnostic["diagnostic_delta_g_j_mol"]
+                if entry["file"].startswith(("imcc-sf04-d066-", "imcc-sf04-ext-")):
+                    assert row_key in K2O_REFERENCE_ROWS
+                    assert delta_g["units"] == "J/mol"
+                    assert delta_g["temperatures_K"] == list(
+                        K2O_DIAGNOSTIC_TEMPERATURES_K
+                    )
+                    assert delta_g["one_sided"] is True
+                    assert set(delta_g["components"]) == {"FC87/Glushko"}
+                    assert delta_g["envelope"] == pytest.approx(
+                        [
+                            abs(value)
+                            for value in delta_g["components"]["FC87/Glushko"]
+                        ]
+                    )
+                    assert diagnostic["diagnostic_label"] == K2O_DIAGNOSTIC_LABEL
+                    assert (
+                        diagnostic["equivalent_delta_log10_K"]["units"]
+                        == "log10 K"
+                    )
+                    for part in (
+                        "Premise:",
+                        "Algebra:",
+                        "Unit check:",
+                        "Sanity check:",
+                    ):
+                        assert part in delta_g["derivation_comment"]
+                else:
+                    assert delta_g["band"] == (
+                        "not sized (Glushko basis function not available at this commit)"
+                    )
+                    for part in ("Premise:", "Algebra:", "Unit check:", "Sanity check:"):
+                        assert part in delta_g["derivation_comment"]
 
         if path.name.startswith("imcc-"):
             loaded = load_datapack(path)
@@ -475,7 +516,10 @@ def test_loaded_objects_paths_and_row_overrides_resolve_to_registry() -> None:
     assert translated_row.standard_basis["K2O"] == "translation-record"
     unknown_row = pack_row_liquid_standards(default_loaded, "K2SiO3")
     assert unknown_row["K2O"] == "reference-unknown"
-    assert "K2O" not in unknown_row.standard_basis
+    assert unknown_row.standard_basis["K2O"] == "best available"
+    assert unknown_row.diagnostic_label == K2O_DIAGNOSTIC_LABEL
+    assert unknown_row.diagnostic_delta_g_j_mol is not None
+    assert unknown_row.equivalent_delta_log10_K is not None
     assert "reference-unknown marker" in unknown_row.standard_citations["K2O"]
     with pytest.raises(TypeError):
         path_info.standards["FeO"] = "other"
@@ -490,6 +534,110 @@ def test_loaded_objects_paths_and_row_overrides_resolve_to_registry() -> None:
     redox_loaded_info = pack_liquid_standards(redox_loaded)
     assert redox_path_info == redox_loaded_info
     assert redox_loaded_info.standards["FeO"] == "Fe-019"
+
+
+def test_k2o_one_sided_band_is_exposed_and_does_not_change_evaluate() -> None:
+    from tools.translate_k_constants import fc87_k2o_gibbs_j_mol
+
+    gas = load_gas_datapack()
+    registry = _registry()
+    applicable_entries = [
+        entry
+        for entry in registry["packs"].values()
+        if entry["pack_type"] == "melt"
+        and entry["file"].startswith(("imcc-sf04-d066-", "imcc-sf04-ext-"))
+        and any(
+            values.get("K2O") == "reference-unknown"
+            for values in entry["row_overrides"].values()
+        )
+    ]
+    assert applicable_entries
+    for entry in applicable_entries:
+        pack = load_datapack(PACK_DIR / entry["file"])
+        assert set(entry["row_overrides"]) >= set(K2O_REFERENCE_ROWS)
+        for row_key in K2O_REFERENCE_ROWS:
+            row = pack_row_liquid_standards(pack, row_key)
+            assert row["K2O"] == "reference-unknown"
+            assert row.standard_basis["K2O"] == "best available"
+            assert row.diagnostic_label == K2O_DIAGNOSTIC_LABEL
+
+            delta_g = row.diagnostic_delta_g_j_mol
+            assert delta_g is not None
+            component = delta_g["components"]["FC87/Glushko"]
+            for index, temperature in enumerate(K2O_DIAGNOSTIC_TEMPERATURES_K):
+                calculated = fc87_k2o_gibbs_j_mol(temperature, gas) - species_thermo(
+                    "K2O", "l", temperature, gas
+                ).G_J_mol
+                assert component[index] == pytest.approx(calculated, abs=1.0)
+
+            envelope = delta_g["envelope"]
+            expected_envelope = [
+                max(abs(values[index]) for values in delta_g["components"].values())
+                for index in range(len(K2O_DIAGNOSTIC_TEMPERATURES_K))
+            ]
+            assert envelope == pytest.approx(expected_envelope, abs=1e-6)
+            nu_k2o = 0.5 if row_key == "KCaAlSi2O7" else 1.0
+            equivalent = row.equivalent_delta_log10_K
+            assert equivalent is not None
+            assert equivalent["nu_K2O"] == nu_k2o
+            expected_delta_log = [
+                nu_k2o
+                * value
+                / (R_J_MOL_K * temperature * math.log(10.0))
+                for temperature, value in zip(
+                    K2O_DIAGNOSTIC_TEMPERATURES_K, envelope, strict=True
+                )
+            ]
+            assert equivalent["envelope"] == pytest.approx(
+                expected_delta_log, abs=1e-12
+            )
+
+    records = check_pack_standards(PACK_DIR / "imcc-sf04-d066-v4.json")
+    for row_key in K2O_REFERENCE_ROWS:
+        record = next(
+            record
+            for record in records
+            if record.oxide == "K2O" and record.row_key == row_key
+        )
+        row = pack_row_liquid_standards(
+            PACK_DIR / "imcc-sf04-d066-v4.json", row_key
+        )
+        assert record.kind == "reference-unknown"
+        assert record.diagnostic_delta_g_j_mol == row.diagnostic_delta_g_j_mol
+        assert record.diagnostic_label == K2O_DIAGNOSTIC_LABEL
+        assert record.equivalent_delta_log10_K == row.equivalent_delta_log10_K
+
+    composition = {
+        "SiO2": 0.45,
+        "MgO": 0.20,
+        "FeO": 0.10,
+        "CaO": 0.08,
+        "Al2O3": 0.08,
+        "TiO2": 0.02,
+        "Na2O": 0.05,
+        "K2O": 0.02,
+    }
+    # These pre-band outputs pin the unchanged evaluation path at a fixed composition.
+    result = evaluate(
+        composition,
+        2000.0,
+        load_datapack(PACK_DIR / "imcc-sf04-d066-v5.json"),
+        allow_out_of_envelope=True,
+    )
+    assert result.D == pytest.approx(2.0799216753260055, abs=1e-12)
+    assert result.parent_activity == pytest.approx(
+        [
+            0.0871364710737131,
+            0.060030609790782945,
+            0.1270835418355807,
+            0.0004061159375203468,
+            0.010035636097007061,
+            0.003269823103028347,
+            6.080403277506625e-07,
+            3.040702681203824e-10,
+        ],
+        abs=1e-12,
+    )
 
 
 @pytest.mark.parametrize(

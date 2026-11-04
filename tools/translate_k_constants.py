@@ -191,7 +191,7 @@ def translate_k_rows(
             row["A"] = old_a + fit["delta_A"]
             row["B"] = old_b + fit["delta_B_K"]
             row["k_translation"] = {
-                "basis": "FC87 Table 1 p.208 (Glushko/TSIV K2O(l))",
+                "basis": "FC87 Table 1 p.209 (Glushko/TSIV K2O(l))",
                 "new_reference": "packaged JANAF K-012 K2O(l) species_thermo row",
                 "operation": "least-squares fit in 1/T over T_domain_K on a 10001-point grid",
                 "preserved_quantity": "absolute complex G; no calorimetry re-solve",

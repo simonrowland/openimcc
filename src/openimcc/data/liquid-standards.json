@@ -1,16 +1,17 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "identity": {
     "melt_key": "ImccLoadedDatapack.binding_digest",
     "redox_key": "SHA-256 of exact pack file bytes",
     "redox_loaded_lookup": "canonical_content_digest recorded alongside the file SHA-256"
   },
   "row_key": "The exact complex formula string from the pack rows array; row numbers are retained in each citation.",
-  "diagnostic_policy": "diagnostic_delta_g_j_mol is read-only provenance metadata and is not applied to evaluation.",
+  "diagnostic_policy": "diagnostic_delta_g_j_mol and equivalent_delta_log10_K are read-only, informational metadata; they are diagnostic only and never applied to evaluate* results or pack coefficients.",
   "basis": {
     "source": "The pack derivation record or its cited source names the reference basis.",
     "operational": "At this code revision the constants have only been evaluated against this active table, and no other standard is recorded.",
-    "translation-record": "A later pack records a translation of the constants onto this standard."
+    "translation-record": "A later pack records a translation of the constants onto this standard.",
+    "best available": "The named source basis remains unconfirmed; available candidates are recorded in a diagnostic-only band that is not applied."
   },
   "packs": {
     "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75": {
@@ -70,26 +71,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -103,7 +288,20 @@
         "K2O": "translation-record",
         "FeO": "operational"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "0471dfc38615689d2299e71227dbc1dd1433a9b21f261dafb368f24f394c1223": {
@@ -197,26 +395,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -230,7 +612,20 @@
         "K2O": "translation-record",
         "FeO": "source"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0": {
@@ -290,26 +685,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -323,7 +902,20 @@
         "K2O": "translation-record",
         "FeO": "source"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf": {
@@ -383,26 +975,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -416,7 +1192,20 @@
         "K2O": "translation-record",
         "FeO": "source"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "25125d24b9a7f3907773811c245b8137f40e46794caba5ce12f9ea26b7a49ce8": {
@@ -480,26 +1269,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -515,7 +1488,20 @@
         "P2O5": "source",
         "FeO": "operational"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2": {
@@ -575,26 +1561,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -608,7 +1778,20 @@
         "K2O": "translation-record",
         "FeO": "source"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "2fee658b06d05646d417221195328c8cfed9ad25402269aaf073e4a094b1c2e3": {
@@ -841,26 +2024,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -874,7 +2241,20 @@
         "K2O": "translation-record",
         "FeO": "operational"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "51179602bfd1bbc8be071bead0f40f9d8ff407227e5a4a904ab8a158fe471efd": {
@@ -934,26 +2314,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -967,7 +2531,20 @@
         "K2O": "translation-record",
         "FeO": "source"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "5b7df312058a1886082185e47ea87a2a8f0b1041e9fea52a6bca8178ef2092c6": {
@@ -1217,26 +2794,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -1250,7 +3011,20 @@
         "K2O": "translation-record",
         "FeO": "source"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "8f7b2a74533252a868bd1eea8ee6112c72b8c75b2172f8e655ceca6dbb619b20": {
@@ -1500,26 +3274,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -1533,7 +3491,20 @@
         "K2O": "translation-record",
         "FeO": "source"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c": {
@@ -1819,26 +3790,210 @@
       "row_diagnostics": {
         "K2SiO3": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si2O5": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "K2Si4O9": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 1.0,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.142939005984,
+              0.085716294563,
+              0.062299359956,
+              0.076156321502,
+              0.141715873689
+            ]
           }
         },
         "KCaAlSi2O7": {
           "diagnostic_delta_g_j_mol": {
-            "band": "not sized (Glushko basis function not available at this commit)",
-            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+            "units": "J/mol",
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "components": {
+              "FC87/Glushko": [
+                3620.432673,
+                2461.526533,
+                2027.600455,
+                2915.988642,
+                6511.478547
+              ]
+            },
+            "component_sources": {
+              "FC87/Glushko": "Fegley & Cameron (1987), Table 1, p.209; Glushko/Gurvich (1982), Vol. IV, Book 2, Table 1153; DOI 10.1016/0012-821X(87)90196-8"
+            },
+            "envelope": [
+              3620.432673,
+              2461.526533,
+              2027.600455,
+              2915.988642,
+              6511.478547
+            ],
+            "one_sided": true,
+            "derivation_comment": "Premise: the SF04 K2O-silicate constants cite Hastie & Bonnell (1985), but that K2O(l) anchor remains unconfirmed. The repository contains no JANAF-3 K2O(l) entry, and no primary printed JANAF-3 K2O(l) values could be verified; this is one-sided, not a two-source bound. Algebra: ΔG_a(T)=2G°(K,g)+G°(O,g)+RT ln(10)(15.33−36735/T)−G°(K2O,l;K-012); E(T)=|ΔG_a(T)|. The equivalent row magnitude is ν_K2O E(T)/(RT ln 10). Unit check: G° and RT ln K are J/mol; dividing nu E(T) by R T ln(10) gives a dimensionless log10 K magnitude. Sanity check: ΔG_a is positive at all five temperatures and is about 3.62, 2.46, 2.03, 2.92, and 6.51 kJ/mol; KCaAlSi2O7 uses ν_K2O=0.5."
+          },
+          "diagnostic_label": "basis unconfirmed: ONE-SIDED FC87/Glushko candidate; JANAF-3 K2O(l) values unavailable from a verified primary table (Hastie & Bonnell 1985 anchor pending)",
+          "equivalent_delta_log10_K": {
+            "units": "log10 K",
+            "nu_K2O": 0.5,
+            "temperatures_K": [
+              1323,
+              1500,
+              1700,
+              2000,
+              2400
+            ],
+            "envelope": [
+              0.071469502992,
+              0.042858147281,
+              0.031149679978,
+              0.038078160751,
+              0.070857936844
+            ]
           }
         }
       },
@@ -1854,7 +4009,20 @@
         "P2O5": "source",
         "FeO": "operational"
       },
-      "row_override_basis": {},
+      "row_override_basis": {
+        "K2SiO3": {
+          "K2O": "best available"
+        },
+        "K2Si2O5": {
+          "K2O": "best available"
+        },
+        "K2Si4O9": {
+          "K2O": "best available"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "best available"
+        }
+      },
       "undeclared_reason": {}
     },
     "ebbe5572a5a6f4193171b4724d052800df861e51caaf4d89a16b253dc7d4202d": {
