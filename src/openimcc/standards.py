@@ -12,6 +12,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
+    from openimcc.gas import ImccGasDatapack
     from openimcc.profiles import Profile
 
 
@@ -68,6 +69,21 @@ class PackRowLiquidStandards(dict[str, str]):
         super().__init__(standards)
         self.standard_basis = MappingProxyType(dict(standard_basis))
         self.standard_citations = MappingProxyType(dict(standard_citations))
+
+
+_ACTIVE_REFERENCE_UNKNOWN_PREFIX = "reference-unknown(Ref="
+
+
+def _active_reference_unknown(ref: str) -> str:
+    return f"{_ACTIVE_REFERENCE_UNKNOWN_PREFIX}{ref})"
+
+
+def _is_active_reference_unknown(standard_id: str | None) -> bool:
+    return (
+        isinstance(standard_id, str)
+        and standard_id.startswith(_ACTIVE_REFERENCE_UNKNOWN_PREFIX)
+        and standard_id.endswith(")")
+    )
 
 
 def _read_registry() -> dict[str, Any]:
@@ -265,8 +281,18 @@ def pack_row_liquid_standards(pack: Any, row_key: str) -> PackRowLiquidStandards
 
 def active_liquid_standards(
     profile: str | Profile | None = None,
+    *,
+    gas_pack: ImccGasDatapack | None = None,
 ) -> dict[str, str]:
-    """Return the liquid table identifiers active for a shipped profile."""
+    """Return active liquid table IDs, marking unresolved references.
+
+    If a liquid source cannot be resolved, its value is the reserved
+    ``reference-unknown(Ref=<printed Ref>)`` marker. Pass ``gas_pack`` when
+    checking the custom datapack used by a gas evaluation; it supplies the
+    non-FeO liquid rows. FeO(l) always follows the profile's
+    ``feo_liquid_standard`` declaration, and FeO1.5(l) the profile's redox
+    construction, whatever FeO row the custom datapack carries.
+    """
     from openimcc import gas
     from openimcc.liquid_reference import feo_liquid_standard
     from openimcc.profiles import _resolve_profile
@@ -277,9 +303,10 @@ def active_liquid_standards(
         if profile is not None
         else _resolve_profile("openimcc")
     )
-    gas_pack = selected.gas_datapack
-    standards: dict[str, str] = {}
-    for row_name, row in gas_pack.oxide_df.iterrows():
+    active_gas_pack = selected.gas_datapack if gas_pack is None else gas_pack
+    recognized: dict[str, str] = {}
+    unknown: dict[str, str] = {}
+    for row_name, row in active_gas_pack.oxide_df.iterrows():
         name = str(row_name)
         if not name.endswith("(l)"):
             continue
@@ -287,24 +314,38 @@ def active_liquid_standards(
         if "O" not in oxide:
             continue
         standard_id = row.get("table_id")
-        if not isinstance(standard_id, str) or not standard_id or standard_id == "none":
+        if (
+            not isinstance(standard_id, str)
+            or not standard_id
+            or standard_id == "none"
+        ):
             source_ref = str(row["Ref"])
             try:
                 standard_id = gas._condensate_source_table_id(
-                    oxide, "l", source_ref, gas_pack.oxide_df
+                    oxide, "l", source_ref, active_gas_pack.oxide_df
                 )
             except gas.ImccGasUnrecognizedSourceError:
                 # The published profile names its LAM tables directly in Ref;
                 # those table IDs are not aliases in the default-table map.
-                if selected.name != "published":
-                    raise
-                standard_id = source_ref
-        if not isinstance(standard_id, str) or not standard_id:
-            raise ValueError(f"no source table id is available for {oxide}(l)")
-        existing = standards.get(oxide)
+                if selected.name == "published":
+                    standard_id = source_ref
+                else:
+                    unknown.setdefault(oxide, _active_reference_unknown(source_ref))
+                    continue
+        if not isinstance(standard_id, str) or standard_id in {"", "none"}:
+            unknown.setdefault(
+                oxide, _active_reference_unknown(str(row.get("Ref", "")))
+            )
+            continue
+        existing = recognized.get(oxide)
         if existing is not None and existing != standard_id:
             raise ValueError(f"multiple liquid source tables are active for {oxide}")
-        standards[oxide] = standard_id
+        recognized[oxide] = standard_id
+
+    # An unresolved row makes that oxide's source unknown even if another row
+    # for the same oxide has a recognized ID. Different recognized IDs still
+    # fail above because they are a genuine source-table inconsistency.
+    standards = {**recognized, **unknown}
 
     # FeO's selected source and authority are owned by liquid_reference.py.
     standards["FeO"] = feo_liquid_standard(selected).standard_id
@@ -412,7 +453,7 @@ def _comparison(
     row_key: str | None,
     redox: bool = False,
 ) -> LiquidStandardMismatch | None:
-    if declared == "reference-unknown":
+    if _is_active_reference_unknown(active) or declared == "reference-unknown":
         kind: StandardCheckKind = "reference-unknown"
     elif declared == "undeclared":
         kind = "undeclared"
@@ -471,6 +512,7 @@ def check_pack_standards(
     pack: Any,
     profile: str | Profile | None = None,
     *,
+    gas_pack: ImccGasDatapack | None = None,
     redox_pack: Any = None,
     require_basis: Literal["source"] | None = None,
 ) -> list[LiquidStandardMismatch]:
@@ -478,10 +520,12 @@ def check_pack_standards(
 
     Non-source basis records are informational. ``require_basis="source"``
     additionally reports each such declaration as basis-insufficient.
+    ``gas_pack``, when provided, supplies the active non-FeO liquid rows;
+    FeO(l) and FeO1.5(l) stay on the profile (see ``active_liquid_standards``).
     """
     if require_basis not in {None, "source"}:
         raise ValueError("require_basis must be None or 'source'")
-    active = active_liquid_standards(profile)
+    active = active_liquid_standards(profile, gas_pack=gas_pack)
     declared = pack_liquid_standards(pack)
     output: list[LiquidStandardMismatch] = []
 
@@ -526,12 +570,17 @@ def check_pack_standards(
             oxide not in declared.standards
             and not any(oxide in values for values in declared.row_overrides.values())
         ):
+            active_id = active.get(oxide)
             output.append(
                 LiquidStandardMismatch(
                     oxide=oxide,
                     declared="undeclared",
-                    active=active.get(oxide),
-                    kind="undeclared",
+                    active=active_id,
+                    kind=(
+                        "reference-unknown"
+                        if _is_active_reference_unknown(active_id)
+                        else "undeclared"
+                    ),
                     row_key=None,
                 )
             )

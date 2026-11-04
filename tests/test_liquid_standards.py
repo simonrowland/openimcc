@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import copy
+import csv
 import hashlib
 import json
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -19,6 +21,7 @@ from openimcc import (
     pack_liquid_standards,
     pack_row_liquid_standards,
 )
+from openimcc.gas import load_gas_datapack
 from openimcc.redox_pack import load_redox_pack
 from openimcc.profiles import ProfileError, load_profile
 
@@ -172,28 +175,193 @@ def test_registry_schema_and_every_shipped_pack_has_a_declaration() -> None:
 
 def test_active_standards_include_all_eight_melt_parents_and_other_active_oxides() -> None:
     active = active_liquid_standards()
-    assert {
-        "FeO": "DG46-MASSON65",
-        "SiO2": "SiO2-RBT84-CANDIDATE",
-        "Na2O": "Na2O-RBT84-CANDIDATE",
-        "K2O": "K-012",
-        "CaO": "Ca-028",
-        "MgO": "Mg-009",
+    assert active == {
+        "Ag2O": "P672-Ag2O-c",
         "Al2O3": "Al-100",
-        "TiO2": "O-044",
+        "As2O3": "P672-As2O3",
+        "B2O3": "B-096",
+        "BaO": "Ba-035",
+        "BeO": "NG-BeO-L-1352",
+        "Bi2O3": "P672-T82",
+        "CaO": "Ca-028",
+        "CdO": "P672-T102",
+        "Ce2O3": "Konings-Table88-Tf2512",
+        "CeO2": "Konings-Table88-Tf3083",
+        "CoO": "TSIV-1334",
+        "Cr2O3": "Cr-015",
+        "Cs2O": "NG-1842",
+        "Cu2O": "Cu-020",
+        "Dy2O3": "Konings-Table88-Tf2680",
+        "Er2O3": "Konings-Table88-Tf2690",
+        "Eu2O3": "Konings-Table88-Tf2622",
+        "FeO": "DG46-MASSON65",
         "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "Ga2O3": "NG-12403",
+        "Gd2O3": "Konings-Table88-Tf2693",
+        "GeO2": "NG-12434",
+        "HfO2": "P672-HfO2-c",
+        "Ho2O3": "Konings-Table88-Tf2686",
+        "In2O3": "NG-12662",
+        "K2O": "K-012",
+        "La2O3": "Konings-Table88-Tf2577",
+        "Li2O": "Li-015",
+        "Lu2O3": "Konings-Table88-Tf2762",
+        "MgO": "Mg-009",
         "MnO": "MnO-liquid-construction",
+        "MoO3": "Mo-015",
+        "Na2O": "Na2O-RBT84-CANDIDATE",
+        "NbO2": "Nb-" "013",
+        "Nd2O3": "Konings-Table88-Tf2577",
+        "NiO": "TSIV-2026",
         "P2O5": "Jung-Hudon-2012",
+        "PbO": "O-007",
+        "Pr2O3": "Konings-Table88-Tf2583",
+        "Rb2O": "NG-1841",
         "S": "S-004",
-    }.items() <= active.items()
-    assert "Cr2O3" in active
+        "Sb2O3": "P672-Sb2O3-c",
+        "Sc2O3": "NG-1857",
+        "SeO2": "P672-SeO2",
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "Sm2O3": "Konings-Table88-Tf2613",
+        "SnO": "NG-1848",
+        "SrO": "O-014",
+        "Ta2O5": "O-078",
+        "Tb2O3": "Konings-Table88-Tf2682",
+        "TeO2": "P672-TeO2-l",
+        "ThO2": "P672-ThO2-c",
+        "TiO2": "O-044",
+        "Tl2O": "P672-Tl2O-l",
+        "Tm2O3": "Konings-Table88-Tf2682",
+        "UO2": "NG-1977",
+        "V2O3": "O-063",
+        "WO3": "O-066",
+        "Y2O3": "P672-Y2O3-c",
+        "Yb2O3": "Konings-Table88-Tf2707",
+        "ZnO": "TSIV-1603",
+        "ZrO2": "O-053",
+    }
     published = active_liquid_standards("published")
-    assert published["FeO"] == "Fe-019"
-    assert published["SiO2"] == "LAM1987"
-    assert published["Na2O"] == "Na-013"
+    assert published == {
+        "Al2O3": "LAM1987",
+        "CaO": "LAM1987",
+        "Cr2O3": "Cr-015",
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "K2O": "LAM1984",
+        "Li2O": "Li-015",
+        "MgO": "LAM1987",
+        "Na2O": "Na-013",
+        "NbO2": "Nb-" "013",
+        "PbO": "O-007",
+        "Rb2O": "NG-1841",
+        "S": "S-004",
+        "SiO2": "LAM1987",
+        "TiO2": "O-044",
+        "V2O3": "O-063",
+    }
     assert active_liquid_standards(load_profile("published")) == published
     with pytest.raises(ProfileError):
         active_liquid_standards("other")
+
+
+def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
+    tmp_path: Path,
+) -> None:
+    gas_dir = ROOT / "src/openimcc/data/gas"
+    condensate_path = tmp_path / "condensate.csv"
+    shutil.copyfile(gas_dir / "condensate.csv", condensate_path)
+    with condensate_path.open(encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+
+    changed = False
+    for row in rows:
+        if row["species_name"] == "MgO(l)" and not changed:
+            row["Ref"] = "LAM1987"
+            row["validity_kind"] = "none"
+            row["continuation_kind"] = "none"
+            row["cp_extension"] = "false"
+            row["construction_method"] = "none"
+            row["table_id"] = "none"
+            row["source_label"] = "none"
+            row["source_liquid_marker"] = "false"
+            row["supercooled_continuation"] = "false"
+            for column in (
+                "source_fit_min_K",
+                "source_fit_max_K",
+                "source_limit_K",
+                "fusion_temperature_K",
+                "supercooled_segment_min_K",
+                "supercooled_segment_max_K",
+                "construction_tier",
+                "glass_join_temperature_K",
+            ):
+                row[column] = "0"
+            changed = True
+    assert changed
+    with condensate_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    custom_gas_pack = load_gas_datapack(
+        gas_path=gas_dir / "gas-shomate.csv", oxide_path=condensate_path
+    )
+    default = active_liquid_standards()
+    active = active_liquid_standards(gas_pack=custom_gas_pack)
+    marker = active["MgO"]
+    assert marker.startswith("reference-unknown(Ref=")
+    assert "LAM1987" in marker
+    assert {oxide: value for oxide, value in active.items() if oxide != "MgO"} == {
+        oxide: value for oxide, value in default.items() if oxide != "MgO"
+    }
+
+    records = check_pack_standards(
+        PACK_DIR / "imcc-sf04-d066-v4.json", gas_pack=custom_gas_pack
+    )
+    mg_records = [record for record in records if record.oxide == "MgO"]
+    unknown_records = [
+        record for record in mg_records if record.kind == "reference-unknown"
+    ]
+    assert len(unknown_records) == 1
+    assert unknown_records[0].active == marker
+    assert unknown_records[0].row_key is None
+    assert not any(record.kind == "mismatch" for record in mg_records)
+
+
+def test_two_recognized_condensate_tables_for_one_oxide_still_raise(
+    tmp_path: Path,
+) -> None:
+    gas_dir = ROOT / "src/openimcc/data/gas"
+    condensate_path = tmp_path / "condensate.csv"
+    shutil.copyfile(gas_dir / "condensate.csv", condensate_path)
+    with condensate_path.open(encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+
+    changed = False
+    for row in rows:
+        if row["species_name"] == "MgO(l)" and row["Ref"] != "Mg-009":
+            row["Ref"] = "Mg-008"
+            row["table_id"] = "Mg-008"
+            row["source_label"] = "Mg-008"
+            changed = True
+            break
+    assert changed
+    with condensate_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    custom_gas_pack = load_gas_datapack(
+        gas_path=gas_dir / "gas-shomate.csv", oxide_path=condensate_path
+    )
+    with pytest.raises(
+        ValueError, match="multiple liquid source tables are active for MgO"
+    ):
+        active_liquid_standards(gas_pack=custom_gas_pack)
 
 
 def test_d066_v1_mixed_standards_are_caught_and_v4_matches_default() -> None:
@@ -333,7 +501,9 @@ def test_active_feo_table_change_is_a_melt_mismatch(monkeypatch) -> None:
     active = dict(active_liquid_standards())
     active["FeO"] = "DG46-FeO(l)"
     monkeypatch.setattr(
-        standards_module, "active_liquid_standards", lambda profile=None: active
+        standards_module,
+        "active_liquid_standards",
+        lambda profile=None, *, gas_pack=None: active,
     )
 
     records = check_pack_standards(PACK_DIR / "imcc-sf04-d066-v1.json")
