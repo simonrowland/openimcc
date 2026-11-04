@@ -761,6 +761,21 @@ class ImccLabels:
 
 
 @dataclass(frozen=True)
+class PackRowParticipation:
+    """One pack row's participation in a successful melt association solve.
+
+    Rows absent because a required parent oxide is zero are omitted. ``row_key``
+    is the species formula when unique, or its zero-based pack row index when
+    formulas are repeated.
+    """
+
+    row_key: str | int
+    active: bool
+    gating_reason: str | None
+    equilibrium_mole_fraction: float
+
+
+@dataclass(frozen=True)
 class ImccResult:
     temperature_K: float
     parent_oxides: tuple[str, ...]
@@ -784,6 +799,7 @@ class ImccResult:
     receipt: CalculationReceipt | None = field(
         default=None, compare=False, hash=False
     )
+    pack_row_participation: tuple[PackRowParticipation, ...] = ()
 
     def _parent_index(self, name: str) -> int:
         try:

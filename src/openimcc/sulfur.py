@@ -12,7 +12,7 @@ import math
 from typing import Mapping
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K as _R
-from openimcc.kernel import ImccRefusal
+from openimcc.kernel import ImccRefusal, PackRowParticipation
 from openimcc.model import (
     ImccLoadedDatapack,
     evaluate,
@@ -119,6 +119,7 @@ class SulfurResult:
     excess_s_mol_per_mol_melt: float | None
     comparison_band: SulfurComparisonBand
     notices: tuple[SulfurNotice, ...]
+    pack_row_participation: tuple[PackRowParticipation, ...] = ()
 
 
 def _notice(
@@ -1053,4 +1054,9 @@ def evaluate_sulfur(
             comparison_s6 if sulfur_fields_available else None,
         ),
         tuple(notices),
+        pack_row_participation=(
+            tuple(getattr(melt_result, "pack_row_participation", ()))
+            if melt_result is not None
+            else ()
+        ),
     )

@@ -925,6 +925,18 @@ extrapolated.
 
 ## API
 
+### Melt pack-row participation
+
+When a melt solve succeeds, `evaluate()`, `evaluate_redox()`, and
+`evaluate_sulfur()` return a frozen `pack_row_participation` tuple. Each record
+reports `row_key`, `active`, `gating_reason`, and
+`equilibrium_mole_fraction`. The key is the pack species formula; if formulas
+repeat, it is the zero-based pack row index. Rows whose required parent oxide
+is absent are omitted. Active rows report their solved mole fraction without a
+threshold; gated rows report their reason and a zero fraction. Redox fractions
+come from its coupled solve; sulfur forwards the fractions from its internal
+melt solve.
+
 The `[gas]` extra exports per-row thermochemistry and the default channel
 selection:
 

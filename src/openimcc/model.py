@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import math
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from fractions import Fraction
 from importlib import resources
 from pathlib import Path
@@ -40,6 +40,7 @@ from openimcc.kernel import (
     ImccFerricInputUnsupportedError,
     ImccInvalidWarmStartError,
     ImccNonconvergenceError,
+    PackRowParticipation,
     ImccRefusal,
     ImccResult,
     ImccTOutsideDatapackDomainError,
@@ -876,6 +877,9 @@ class ImccLoadedDatapack:
     extension_species: Sequence[str] = ()
     inactive_rows: tuple[tuple[str, str], ...] = ()
     excess_gibbs_terms: tuple[ExcessGibbsTerm, ...] = ()
+    _inactive_row_details: tuple[
+        tuple[int, str, str, tuple[tuple[str, float], ...]], ...
+    ] = field(default=(), repr=False, compare=False)
 
     @property
     def model_id(self) -> str:
@@ -889,6 +893,70 @@ class ImccLoadedDatapack:
     def binding_digest(self) -> str | None:
         """Canonical identity of the complete manifest used to load this pack."""
         return self.kernel_datapack.binding_digest
+
+
+def _pack_row_participation(
+    kernel_datapack: ImccDatapack,
+    parent_amounts: Mapping[str, float],
+    complex_mole_fractions: Sequence[float],
+    inactive_row_details: Sequence[
+        tuple[int, str, str, tuple[tuple[str, float], ...]]
+    ] = (),
+) -> tuple[PackRowParticipation, ...]:
+    inactive_by_index = {
+        index: (name, reason, stoichiometry)
+        for index, name, reason, stoichiometry in inactive_row_details
+    }
+    active_row_index = 0
+    rows: list[tuple[int, str, bool, str | None, float]] = []
+    pack_row_names: list[str] = []
+    row_count = kernel_datapack.n_complexes + len(inactive_by_index)
+    for pack_row_index in range(row_count):
+        inactive = inactive_by_index.get(pack_row_index)
+        if inactive is not None:
+            name, reason, stoichiometry = inactive
+            pack_row_names.append(name)
+            present = all(
+                parent_amounts.get(parent, 0.0) > 0.0
+                for parent, coefficient in stoichiometry
+                if coefficient > 0.0
+            )
+            if present:
+                rows.append((pack_row_index, name, False, reason, 0.0))
+            continue
+
+        name = str(kernel_datapack.reactions[active_row_index])
+        pack_row_names.append(name)
+        column = kernel_datapack.nu[:, active_row_index]
+        present = all(
+            parent_amounts.get(str(parent), 0.0) > 0.0
+            for parent, coefficient in zip(
+                kernel_datapack.parent_oxides, column, strict=True
+            )
+            if coefficient > 0.0
+        )
+        if present:
+            rows.append((
+                pack_row_index,
+                name,
+                True,
+                None,
+                float(complex_mole_fractions[active_row_index]),
+            ))
+        active_row_index += 1
+
+    formula_counts: dict[str, int] = {}
+    for name in pack_row_names:
+        formula_counts[name] = formula_counts.get(name, 0) + 1
+    return tuple(
+        PackRowParticipation(
+            row_key=index if formula_counts[name] > 1 else name,
+            active=active,
+            gating_reason=reason,
+            equilibrium_mole_fraction=fraction,
+        )
+        for index, name, active, reason, fraction in rows
+    )
 
 
 @dataclass(frozen=True)
@@ -1642,6 +1710,20 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         for row in rows
         if row.get("active", True) is False
     )
+    inactive_row_details = tuple(
+        (
+            idx,
+            str(row["complex"]),
+            str(row["inactive_reason"]),
+            tuple(
+                (parents[parent_index], float(coefficient))
+                for parent_index, coefficient in enumerate(nu_cols[idx])
+                if coefficient > 0.0
+            ),
+        )
+        for idx, row in enumerate(all_rows)
+        if row.get("active", True) is False
+    )
 
     binding_manifest = dict(data)
     binding_manifest["model_id"] = model_id
@@ -1778,6 +1860,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         extension_species=extension_species,
         inactive_rows=inactive_rows,
         excess_gibbs_terms=excess_gibbs_terms,
+        _inactive_row_details=inactive_row_details,
     )
 
 
@@ -1925,6 +2008,7 @@ def evaluate(
         parent_oxides = pack.parent_oxides
         extension_parents = tuple(pack.extension_parents)
         inactive_rows = pack.inactive_rows
+        inactive_row_details = pack._inactive_row_details
         excess_gibbs_terms = pack.excess_gibbs_terms
     else:
         kernel_pack = pack
@@ -1933,6 +2017,7 @@ def evaluate(
             name for name in _SP_EXTENSION_PARENTS if name in parent_oxides
         )
         inactive_rows = ()
+        inactive_row_details = ()
         excess_gibbs_terms = ()
 
     binding_digest = kernel_pack.binding_digest
@@ -2796,4 +2881,14 @@ def evaluate(
         data_digests={"melt": binding_digest},
         solver={"tol": tol, "max_iter": max_iter},
     )
-    return replace(result, labels=adapter_labels, receipt=receipt)
+    return replace(
+        result,
+        labels=adapter_labels,
+        receipt=receipt,
+        pack_row_participation=_pack_row_participation(
+            kernel_pack,
+            dict(zip(parent_oxides, vector, strict=True)),
+            result.complex_x,
+            inactive_row_details,
+        ),
+    )

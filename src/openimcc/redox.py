@@ -26,6 +26,8 @@ from openimcc.model import (
     ImccLoadedDatapack,
     ImccMalformedDatapackError,
     ImccTOutsideDatapackDomainError,
+    PackRowParticipation,
+    _pack_row_participation,
     load_datapack,
 )
 from openimcc.redox_pack import (
@@ -228,6 +230,7 @@ class RedoxResult:
     receipt: CalculationReceipt | None = field(
         default=None, compare=False, hash=False
     )
+    pack_row_participation: tuple[PackRowParticipation, ...] = ()
 
     @property
     def speciation(self) -> Mapping[str, float]:
@@ -1779,6 +1782,7 @@ def _assemble_result(
     metal_moles: float,
     oxygen_inventory: float | None,
     base_datapack: Any,
+    loaded_datapack: ImccLoadedDatapack,
     redox_pack: RedoxPack,
     oxygen_parent_counts: np.ndarray,
     tolerance: float,
@@ -1903,6 +1907,15 @@ def _assemble_result(
         max(active_lows, default=temperature_K),
         min(active_highs, default=temperature_K),
     )
+    active_fraction_by_index = {
+        int(complex_index): float(state.g[position])
+        for position, complex_index in enumerate(state.active_complex)
+        if complex_index < len(base_datapack.reactions)
+    }
+    base_complex_mole_fractions = tuple(
+        active_fraction_by_index.get(index, 0.0)
+        for index in range(len(base_datapack.reactions))
+    )
     return RedoxResult(
         temperature_K=temperature_K,
         mode=mode,
@@ -1944,6 +1957,12 @@ def _assemble_result(
         solver_path=state.solver_path,
         fallback_fired=fallback_counter[0] > 0,
         warm_start=tuple(active_log_activity.values()),
+        pack_row_participation=_pack_row_participation(
+            base_datapack,
+            parent_values,
+            base_complex_mole_fractions,
+            loaded_datapack._inactive_row_details,
+        ),
     )
 
 
@@ -2251,6 +2270,7 @@ def _evaluate_redox_with_packs(
                         metal_moles=0.0,
                         oxygen_inventory=oxygen_inventory,
                         base_datapack=base_datapack,
+                        loaded_datapack=loaded,
                         redox_pack=redox_pack,
                         oxygen_parent_counts=oxygen_parent_counts,
                         tolerance=tolerance,
@@ -2271,6 +2291,7 @@ def _evaluate_redox_with_packs(
                 metal_moles=metal,
                 oxygen_inventory=oxygen_inventory,
                 base_datapack=base_datapack,
+                loaded_datapack=loaded,
                 redox_pack=redox_pack,
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
@@ -2341,6 +2362,7 @@ def _evaluate_redox_with_packs(
                 metal_moles=metal,
                 oxygen_inventory=oxygen_inventory,
                 base_datapack=base_datapack,
+                loaded_datapack=loaded,
                 redox_pack=redox_pack,
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
@@ -2363,6 +2385,7 @@ def _evaluate_redox_with_packs(
             metal_moles=0.0,
             oxygen_inventory=oxygen_inventory,
             base_datapack=base_datapack,
+            loaded_datapack=loaded,
             redox_pack=redox_pack,
             oxygen_parent_counts=oxygen_parent_counts,
             tolerance=tolerance,
@@ -2476,6 +2499,7 @@ def _evaluate_redox_with_packs(
                 metal_moles=0.0,
                 oxygen_inventory=oxygen_inventory,
                 base_datapack=base_datapack,
+                loaded_datapack=loaded,
                 redox_pack=redox_pack,
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
@@ -2593,6 +2617,7 @@ def _evaluate_redox_with_packs(
                         metal_moles=0.0,
                         oxygen_inventory=oxygen_inventory,
                         base_datapack=base_datapack,
+                        loaded_datapack=loaded,
                         redox_pack=redox_pack,
                         oxygen_parent_counts=oxygen_parent_counts,
                         tolerance=tolerance,
@@ -2716,6 +2741,7 @@ def _evaluate_redox_with_packs(
                 metal_moles=metal,
                 oxygen_inventory=oxygen_inventory,
                 base_datapack=base_datapack,
+                loaded_datapack=loaded,
                 redox_pack=redox_pack,
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,

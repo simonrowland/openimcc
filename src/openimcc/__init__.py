@@ -36,6 +36,7 @@ from openimcc.model import (
     ImccLoadedDatapack,
     ImccMalformedDatapackError,
     ImccNonconvergenceError,
+    PackRowParticipation,
     ImccRefusal,
     ImccResult,
     ImccSPComponentRequiresExtensionError,
@@ -343,6 +344,8 @@ __all__ = [
     "pack_liquid_standards",
     "pack_row_liquid_standards",
     "check_pack_standards",
+    # --- pack row participation -------------------------------------------
+    "PackRowParticipation",
     # --- opt-in trace-melt activity candidates ---------------------------
     "Cr3TraceActivity",
     "cr3_trace_activity",

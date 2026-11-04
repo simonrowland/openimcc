@@ -9,6 +9,11 @@
   behavior.
 - Non-source basis checks are informational, with an optional source-only
   requirement and disclosed unknown row references.
+- `evaluate()`, `evaluate_redox()`, and `evaluate_sulfur()` now expose frozen
+  `pack_row_participation` records for rows present by composition, including
+  their activation state, gating reason, and solved mole fraction. Rows absent
+  because a required parent oxide is zero are omitted. Existing calculated
+  values and pack digests are unchanged.
 
 - Added `feo_liquid_standard()` and a live Fe-019 Gibbs offset API for
   cross-engine FeO(l) activity comparisons. The declaration includes the
