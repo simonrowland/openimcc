@@ -1029,3 +1029,34 @@ each call.
 canonical mapping and returns an `EngineBindingIdentity` with that digest and
 its three components. It refuses an unlabelled melt pack or a gas pack without
 both table digests.
+
+## Liquid-reference standards
+
+`src/openimcc/data/liquid-standards.json` declares the liquid reference tables
+for every shipped melt and redox pack. The registry schema records its content
+identity rules: melt entries use the loader's `ImccLoadedDatapack.binding_digest`;
+redox entries use the exact pack-file SHA-256, with the loader's
+`canonical_content_digest` recorded for loaded-object lookup. Melt and redox
+pack manifests remain unchanged.
+
+`openimcc.active_liquid_standards(profile=None)` reports IDs selected by the
+`openimcc` or `published` profile. It reads liquid table IDs from the selected
+gas table metadata and gets FeO(l) from `feo_liquid_standard(profile)`, so the
+active FeO standard follows the existing profile API. FeO1.5 names its
+metastable Fe2O3(l) construction from the Fe-030 hematite crystal and Lesher-Spera
+fusion source, rather than treating Fe-030 as a liquid table.
+`pack_liquid_standards(pack)`
+checks an embedded `liquid_standards` field first, then the registry, and
+returns immutable pack-wide IDs, basis and citations, and row overrides.
+`pack_row_liquid_standards(pack, row_key)` merges the same metadata for one
+exact `complex` field. `check_pack_standards(pack, profile=None, *, redox_pack=None,
+require_basis=None)` compares declared IDs with the active profile.
+
+The standard basis is `source` when the pack's derivation or cited source names
+the table, `operational` when the available record only establishes the table
+used in evaluation, and `translation-record` when a later pack records a
+translation onto that table. Non-source basis results are informational;
+`require_basis="source"` additionally reports them as `basis-insufficient`.
+`reference-unknown` row overrides disclose a reference gap with a not-sized
+diagnostic band. An `undeclared` result means a pack or parent lacks a bound
+table ID. These records do not alter `evaluate*` results or pack data.

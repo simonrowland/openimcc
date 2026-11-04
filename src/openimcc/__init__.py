@@ -62,6 +62,14 @@ from openimcc.redox import (
     RedoxResult,
     evaluate_redox,
 )
+from openimcc.standards import (
+    LiquidStandardMismatch,
+    PackLiquidStandards,
+    active_liquid_standards,
+    check_pack_standards,
+    pack_liquid_standards,
+    pack_row_liquid_standards,
+)
 from openimcc.diagnostics import (
     CrystalNotice,
     CrystalStatus,
@@ -328,6 +336,13 @@ __all__ = [
     "RedoxNoLiveCoupleError",
     "RedoxEndpointError",
     "RedoxNumericalError",
+    # --- liquid reference standards --------------------------------------
+    "PackLiquidStandards",
+    "LiquidStandardMismatch",
+    "active_liquid_standards",
+    "pack_liquid_standards",
+    "pack_row_liquid_standards",
+    "check_pack_standards",
     # --- opt-in trace-melt activity candidates ---------------------------
     "Cr3TraceActivity",
     "cr3_trace_activity",

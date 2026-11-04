@@ -1,0 +1,1939 @@
+{
+  "schema_version": 1,
+  "identity": {
+    "melt_key": "ImccLoadedDatapack.binding_digest",
+    "redox_key": "SHA-256 of exact pack file bytes",
+    "redox_loaded_lookup": "canonical_content_digest recorded alongside the file SHA-256"
+  },
+  "row_key": "The exact complex formula string from the pack rows array; row numbers are retained in each citation.",
+  "diagnostic_policy": "diagnostic_delta_g_j_mol is read-only provenance metadata and is not applied to evaluation.",
+  "basis": {
+    "source": "The pack derivation record or its cited source names the reference basis.",
+    "operational": "At this code revision the constants have only been evaluated against this active table, and no other standard is recorded.",
+    "translation-record": "A later pack records a translation of the constants onto this standard."
+  },
+  "packs": {
+    "02c88c04fe09f8f494adda8a76e1f95fee536d11b2b6d66639aaea097fce5e75": {
+      "file": "imcc-sf04-d066-v1.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.3-d066-v1",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "K-012",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#parent SiO2 source rows; NIST-JANAF table O-038",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#parent Na2O source rows; NIST-JANAF table Na-013",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#rows[FeTiO3, Fe2SiO4, FeAl2O4]; src/openimcc/data/packs/sf04-published/condensate.csv:FeO(l) table_id Fe-019 (same row in src/openimcc/data/gas/condensate-feo-janaf-legacy.csv); the original FC87/SF04 derivation does not identify a separate FeO(l) function"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "operational"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "0471dfc38615689d2299e71227dbc1dd1433a9b21f261dafb368f24f394c1223": {
+      "file": "openimcc-redox-sio2-na2o-candidate.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry candidate using the measured silicate-liquid SiO2(l) heat capacity.",
+      "version": "1.7.0-sio2-na2o-candidate",
+      "canonical_content_digest": "78de6c0591af964d39d2f1282534e23eb78a7c2334e74d4ad6510f91f0e20fe1",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "Al2O3": "Al-100"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-sio2-na2o-candidate.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-sio2-na2o-candidate.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-sio2-na2o-candidate.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-sio2-na2o-candidate.json#thermo_species.SiO2(l).provenance; Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8; JANAF O-035 crystal reference and measured fusion anchor; https://doi.org/10.1111/j.1151-2916.1984.tb19155.x",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-sio2-na2o-candidate.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt"
+      },
+      "undeclared": {},
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "055573b12e60221473bfcf0b0d3b0681b23de1dea062bf67c229059c82cb53aa": {
+      "file": "imcc-sf04-d066-feo-hess-candidate.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.9-d066-feo-hess-candidate",
+      "standards": {
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na2O-RBT84-CANDIDATE",
+        "K2O": "K-012",
+        "FeO": "DG46-MASSON65"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#parent_standard_candidates.SiO2 and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF O-035 crystal and fusion anchor",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#parent_standard_candidates.Na2O and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF Na-012 crystal and Na-013 transition marker",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#feo_liquid_candidate; Darken & Gurry (1946), Tables IIIA/B/VI; Masson (1965), Eq. 17"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "source"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0": {
+      "file": "imcc-sf04-d066-v4.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.6-d066-v4",
+      "standards": {
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na2O-RBT84-CANDIDATE",
+        "K2O": "K-012",
+        "FeO": "DG46-MASSON65"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#parent_standard_candidates.SiO2 and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF O-035 crystal and fusion anchor",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#parent_standard_candidates.Na2O and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF Na-012 crystal and Na-013 transition marker",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#feo_liquid_candidate; Darken & Gurry (1946), Tables IIIA/B/VI; Masson (1965), Eq. 17"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v4.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "source"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf": {
+      "file": "imcc-sf04-d066-v5.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.7-d066-v5",
+      "standards": {
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na2O-RBT84-CANDIDATE",
+        "K2O": "K-012",
+        "FeO": "DG46-MASSON65"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#parent_standard_candidates.SiO2 and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF O-035 crystal and fusion anchor",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#parent_standard_candidates.Na2O and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF Na-012 crystal and Na-013 transition marker",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#feo_liquid_candidate; Darken & Gurry (1946), Tables IIIA/B/VI; Masson (1965), Eq. 17"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v5.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "source"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "25125d24b9a7f3907773811c245b8137f40e46794caba5ce12f9ea26b7a49ce8": {
+      "file": "imcc-sf04-d066-ext-v1.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.3-d066-ext-v1",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "K-012",
+        "S": "S-004",
+        "P2O5": "O-094/2-P4O10(cr)",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#parent SiO2 source rows; NIST-JANAF table O-038",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#parent Na2O source rows; NIST-JANAF table Na-013",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "S": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#sp_extension.parent_reference_states.S; JANAF S-004",
+        "P2O5": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#sp_extension.parent_reference_states.P2O5; one half of the NIST-JANAF O-094 P4O10(cr) function",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#rows[FeTiO3, Fe2SiO4, FeAl2O4, FeS]; src/openimcc/data/packs/sf04-published/condensate.csv:FeO(l) table_id Fe-019 (same row in src/openimcc/data/gas/condensate-feo-janaf-legacy.csv); the original FC87/SF04 derivation does not identify a separate FeO(l) function"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-ext-v1.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "S": "source",
+        "P2O5": "source",
+        "FeO": "operational"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2": {
+      "file": "imcc-sf04-d066-v3.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.5-d066-v3",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "K-012",
+        "FeO": "DG46-MASSON65"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#parent SiO2 source rows; NIST-JANAF table O-038",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#parent Na2O source rows; NIST-JANAF table Na-013",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#feo_liquid_candidate; Darken & Gurry (1946), Tables IIIA/B/VI; Masson (1965), Eq. 17"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v3.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "source"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "2fee658b06d05646d417221195328c8cfed9ad25402269aaf073e4a094b1c2e3": {
+      "file": "openimcc-redox-cr-candidate-v2.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
+      "version": "1.5.0-cr-candidate",
+      "canonical_content_digest": "a8a4a0777b7b15cdf5a207fcbe91a02951c89e9e7456e7461d278d86c686a0f5",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v2.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "31d7bf5532a92983a3bbb593bf65e3cd9d398d64699a0c0e87fb05071d0f17dc": {
+      "file": "openimcc-redox-ti-candidate.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack.",
+      "version": "1.5.0-ti-candidate",
+      "canonical_content_digest": "d1c84f40f76f754a1c7ea92ec292443fa04a329ee452e7beffd413b3940a64e8",
+      "standards": {
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json#thermo_species.FeO(l).provenance; NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database; https://janaf.nist.gov/tables/Fe-019.html",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014"
+      },
+      "undeclared": {
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-ti-candidate.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "3a46202168608e11985c3f89993601cb9b53e46503a62c7a155e77589c1e00b3": {
+      "file": "openimcc-redox-cr-ti-candidate-v2.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack with D&G/Masson FeO(l) standard-state reference",
+      "version": "1.7.0-cr-ti-candidate",
+      "canonical_content_digest": "d25988cf6d8be60363e3316cce701e7399c980f129bf616eda3bda120ff5e310",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+          "standard_id": "undeclared"
+        },
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v2.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "426a11de00154957cf2a74eaf4a6457bf58fab4a932b1b72b130a70b2500473a": {
+      "file": "openimcc-redox-feo-liquid-candidate.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Opt-in FeO(l) stoichiometric re-anchor candidate derived from Darken & Gurry (1946), with Fe-bearing association constants transformed consistently.",
+      "version": "1.5.0-feo-liquid-candidate",
+      "canonical_content_digest": "00bb1056567715f2a81c53339b0c5d3296cb0f250ac79b7db62ec2b8cac0cb7b",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt"
+      },
+      "undeclared": {},
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "45e12de67ee8effa56fe3935e12e66e0dda2ea73ce877dc598ccda3faaea453f": {
+      "file": "imcc-sf04-d066-v1-kcaalsi2o7.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.3-d066-v1-kcaalsi2o7",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "K-012",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#parent SiO2 source rows; NIST-JANAF table O-038",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#parent Na2O source rows; NIST-JANAF table Na-013",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#rows[FeTiO3, Fe2SiO4, FeAl2O4]; src/openimcc/data/packs/sf04-published/condensate.csv:FeO(l) table_id Fe-019 (same row in src/openimcc/data/gas/condensate-feo-janaf-legacy.csv); the original FC87/SF04 derivation does not identify a separate FeO(l) function"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v1-kcaalsi2o7.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "operational"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "51179602bfd1bbc8be071bead0f40f9d8ff407227e5a4a904ab8a158fe471efd": {
+      "file": "imcc-sf04-d066-sio2-na2o-candidate.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.6-d066-sio2-na2o-candidate",
+      "standards": {
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na2O-RBT84-CANDIDATE",
+        "K2O": "K-012",
+        "FeO": "DG46-MASSON65"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#parent_standard_candidates.SiO2 and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF O-035 crystal and fusion anchor",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#parent_standard_candidates.Na2O and rows.standard_state_refit; Richet, Bottinga & Tequi (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x; JANAF Na-012 crystal and Na-013 transition marker",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#feo_liquid_candidate; Darken & Gurry (1946), Tables IIIA/B/VI; Masson (1965), Eq. 17"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-sio2-na2o-candidate.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "source"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "5b7df312058a1886082185e47ea87a2a8f0b1041e9fea52a6bca8178ef2092c6": {
+      "file": "openimcc-redox-cr-candidate-v4.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
+      "version": "1.7.0-cr-candidate",
+      "canonical_content_digest": "7125e4f808b580eb5d5d6c4a32dc52206dfa1e74d1d8fd8c42f557a83d11c8a1",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.SiO2(l).provenance; Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8; JANAF O-035 crystal reference and measured fusion anchor; https://doi.org/10.1111/j.1151-2916.1984.tb19155.x",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "65d8225c751e5119100e7f693fd5480c55af9aea586c4268d00260a51bf92af7": {
+      "file": "openimcc-redox-cr-candidate-v3.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
+      "version": "1.6.0-cr-candidate",
+      "canonical_content_digest": "439a918e719d67c91748212570bdd6c0d79e57dfd28590031da7e3355e303fca",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v3.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "850dfe9f7e61dae9b9786d9f56508236b352e293198fbdc63a8daf5f51d37034": {
+      "file": "openimcc-redox-cr-ti-candidate.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack.",
+      "version": "1.6.0-cr-ti-candidate",
+      "canonical_content_digest": "4fabaa2c5c91fa7ef28e4ba85e8ccd976728e56d9e00aa15f7425b856e541078",
+      "standards": {
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json#thermo_species.FeO(l).provenance; NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database; https://janaf.nist.gov/tables/Fe-019.html",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+          "standard_id": "undeclared"
+        },
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "89d1c583b52a88cc135d3722f247f8405233d83700a0f3b61327abe9a3c5810f": {
+      "file": "openimcc-redox-cr-ti-candidate-v4.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack on standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity, with D&G/Masson FeO(l) standard-state reference",
+      "version": "1.9.0-cr-ti-candidate",
+      "canonical_content_digest": "4cef725966f1fab4edea50ca0f3aa32ad80042fed5a543200f6774751647d12a",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json#thermo_species.SiO2(l).provenance; Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8; JANAF O-035 crystal reference and measured fusion anchor; https://doi.org/10.1111/j.1151-2916.1984.tb19155.x",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+          "standard_id": "undeclared"
+        },
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "8c96383e5c1464dbec4e748ff7b528151028f5b2b4d731c5f9861d677c8cff39": {
+      "file": "imcc-sf04-d066-feo-liquid-candidate.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.3-d066-feo-liquid-candidate",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "K-012",
+        "FeO": "DG46-MASSON65"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#parent SiO2 source rows; NIST-JANAF table O-038",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#parent Na2O source rows; NIST-JANAF table Na-013",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#feo_liquid_candidate; Darken & Gurry (1946), Tables IIIA/B/VI; Masson (1965), Eq. 17"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-feo-liquid-candidate.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "source"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "8f7b2a74533252a868bd1eea8ee6112c72b8c75b2172f8e655ceca6dbb619b20": {
+      "file": "openimcc-redox-v3.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows",
+      "version": "1.6.0",
+      "canonical_content_digest": "652c77d4fa7ce9850ca0c56c44f2dffbe8c3a4ce530af94939323e767e3e0c29",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-v3.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-v3.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-v3.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-v3.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-v3.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt"
+      },
+      "undeclared": {},
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "910a0d0c1fff7e8816c2e423bd57ef67166c93c263adc7f2850429df415bfad9": {
+      "file": "openimcc-redox-v2.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows",
+      "version": "1.5.0",
+      "canonical_content_digest": "565e06c25a43064ba58d51865448e3dbfe6419074e818172c5dae7b41d1292d6",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-v2.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-v2.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-v2.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-v2.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-v2.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt"
+      },
+      "undeclared": {},
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "a2327fd582dc9fb4e2b7e1a49cee7bfacbd72510e06ce0e706495ef8107d5809": {
+      "file": "openimcc-redox-cr-candidate.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K",
+      "version": "1.4.0-cr-candidate",
+      "canonical_content_digest": "4e36612823bbde1f2c3c865f80571ad311299493dec68c04c89e9c967d59b708",
+      "standards": {
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json#thermo_species.FeO(l).provenance; NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database; https://janaf.nist.gov/tables/Fe-019.html",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-candidate.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "a757333e8826ebc82852b13dc9109abc4ecd412277318784608499ff3d764d16": {
+      "file": "openimcc-redox-ti-candidate-v2.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack with D&G/Masson FeO(l) standard-state reference",
+      "version": "1.6.0-ti-candidate",
+      "canonical_content_digest": "1a24a9dd0c2ea1ea3e5e7f6c7a05c6d952acb027fa2805912eef82018c1fd4e4",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v2.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v2.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v2.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v2.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v2.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v2.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014"
+      },
+      "undeclared": {
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v2.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "a7f44ddeb2f88bfa56fc50556c262e81598e4b82d7773e498aa3d5040ecc3501": {
+      "file": "openimcc-redox-v1.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows",
+      "version": "1.4.0",
+      "canonical_content_digest": "28ac36dfef019b8f0fe3e11a86030c65dbfdae6733d10532d2bdb942cf3dc67b",
+      "standards": {
+        "FeO": "Fe-019",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-v1.json#thermo_species.FeO(l).provenance; NIST-JANAF FeO liquid table, Fe-019; fitted row retained from the existing condensate database; https://janaf.nist.gov/tables/Fe-019.html",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-v1.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-v1.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-v1.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-v1.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt"
+      },
+      "undeclared": {},
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "ac88aa2272c50d1cbf300634737c5d0071bddee0cd0f0483a6530c4a4992c393": {
+      "file": "imcc-sf04-d066-v2.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-D066",
+      "version": "1.0.4-d066-v2",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "K-012",
+        "FeO": "DG46-MASSON65"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#parent SiO2 source rows; NIST-JANAF table O-038",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#parent Na2O source rows; NIST-JANAF table Na-013",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#errata and rows.standard_state_refit; JANAF K-012; D066 K-row translation record preserves the absolute complex Gibbs energy",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#feo_liquid_candidate; Darken & Gurry (1946), Tables IIIA/B/VI; Masson (1965), Eq. 17"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-d066-v2.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "translation-record",
+        "FeO": "source"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "ae979b68295f6e653fb1c37d6b381f06cb0be8d4c5b421e673420a6e4596357c": {
+      "file": "imcc-sf04-v1.0.2.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04",
+      "version": "1.0.2",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "FC87-Glushko-K2O",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#parent SiO2 source rows; NIST-JANAF table O-038",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#parent Na2O source rows; NIST-JANAF table Na-013",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#sources.FC87 and rows.K2O; Fegley & Cameron (1987), Table 3 and Appendix 1, DOI 10.1016/0012-821X(87)90196-8; Glushko/Gurvich direct liquid compilation",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#rows[FeTiO3, Fe2SiO4, FeAl2O4]; src/openimcc/data/packs/sf04-published/condensate.csv:FeO(l) table_id Fe-019 (same row in src/openimcc/data/gas/condensate-feo-janaf-legacy.csv); the original FC87/SF04 derivation does not identify a separate FeO(l) function"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-v1.0.2.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "source",
+        "FeO": "operational"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "bee5a885464c46c6b6d33557383bedc3099ca1c3f48751723be263089522092d": {
+      "file": "openimcc-redox-ti-candidate-v3.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack with D&G/Masson FeO(l) standard-state reference",
+      "version": "1.7.0-ti-candidate",
+      "canonical_content_digest": "497438fa71aeb6a928baeb2034497d53aef76d4f9f85e6b663b8d56f1ba3ca43",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014"
+      },
+      "undeclared": {
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "dc5d4390ead15aefcfd4836ea625e26d68be09cfb74f96f90bb0866c733c50a1": {
+      "file": "openimcc-redox-feo-liquid-candidate-v2.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Opt-in FeO(l) stoichiometric re-anchor candidate derived from Darken & Gurry (1946), with Fe-bearing association constants transformed consistently.",
+      "version": "1.6.0-feo-liquid-candidate",
+      "canonical_content_digest": "12bf8d90ba15fa60670ded0c7a7544101a0d10e711c13d43ba31e3f273bf8f78",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate-v2.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate-v2.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate-v2.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate-v2.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-feo-liquid-candidate-v2.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt"
+      },
+      "undeclared": {},
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "ddd9db8487bfd583ef48df0d98b2cf082c8621150ba5a53b58577ea03a66eeb3": {
+      "file": "openimcc-redox-cr-ti-candidate-v3.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack with D&G/Masson FeO(l) standard-state reference",
+      "version": "1.8.0-cr-ti-candidate",
+      "canonical_content_digest": "d0ac1a00e90aceb8067de3a75ee5fd5c4d53308c84956c74878f875bad89898b",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "O-038",
+        "Al2O3": "Al-100",
+        "Cr2O3": "undeclared",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json#thermo_species.SiO2(l).provenance; NIST-JANAF O-038 and its existing supercooled liquid construction; https://janaf.nist.gov/tables/O-038.html",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014"
+      },
+      "undeclared": {
+        "Cr2O3": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
+          "standard_id": "undeclared"
+        },
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "de51a9bcf52724fd4b06e9cb639779f31189d86ecf304073fd72fc3019f29770": {
+      "file": "imcc-sf04-ext-v4.json",
+      "pack_type": "melt",
+      "model_id": "IMCC-SF04-EXT",
+      "version": "1.0.2-ext-sp-2",
+      "standards": {
+        "SiO2": "O-038",
+        "MgO": "Mg-009",
+        "CaO": "Ca-028",
+        "Al2O3": "Al-100",
+        "TiO2": "O-044",
+        "Na2O": "Na-013",
+        "K2O": "FC87-Glushko-K2O",
+        "S": "S-004",
+        "P2O5": "O-094/2-P4O10(cr)",
+        "FeO": "Fe-019"
+      },
+      "standard_citations": {
+        "SiO2": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#parent SiO2 source rows; NIST-JANAF table O-038",
+        "MgO": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#parent MgO source rows; NIST-JANAF table Mg-009",
+        "CaO": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#parent CaO source rows; NIST-JANAF table Ca-028",
+        "Al2O3": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#parent Al2O3 source rows; NIST-JANAF table Al-100",
+        "TiO2": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#parent TiO2 source rows; NIST-JANAF table O-044",
+        "Na2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#parent Na2O source rows; NIST-JANAF table Na-013",
+        "K2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#sources.FC87 and rows.K2O; Fegley & Cameron (1987), Table 3 and Appendix 1, DOI 10.1016/0012-821X(87)90196-8; Glushko/Gurvich direct liquid compilation",
+        "S": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#sp_extension.parent_reference_states.S; JANAF S-004",
+        "P2O5": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#sp_extension.parent_reference_states.P2O5; one half of the NIST-JANAF O-094 P4O10(cr) function",
+        "FeO": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#rows[FeTiO3, Fe2SiO4, FeAl2O4, FeS]; src/openimcc/data/packs/sf04-published/condensate.csv:FeO(l) table_id Fe-019 (same row in src/openimcc/data/gas/condensate-feo-janaf-legacy.csv); the original FC87/SF04 derivation does not identify a separate FeO(l) function"
+      },
+      "undeclared": {},
+      "row_overrides": {
+        "K2SiO3": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si2O5": {
+          "K2O": "reference-unknown"
+        },
+        "K2Si4O9": {
+          "K2O": "reference-unknown"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "reference-unknown"
+        }
+      },
+      "row_override_citations": {
+        "K2SiO3": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#rows.K2SiO3; disclosed reference-unknown marker"
+        },
+        "K2Si2O5": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#rows.K2Si2O5; disclosed reference-unknown marker"
+        },
+        "K2Si4O9": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#rows.K2Si4O9; disclosed reference-unknown marker"
+        },
+        "KCaAlSi2O7": {
+          "K2O": "src/openimcc/data/packs/imcc-sf04-ext-v4.json#rows.KCaAlSi2O7; disclosed reference-unknown marker"
+        }
+      },
+      "row_diagnostics": {
+        "K2SiO3": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si2O5": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "K2Si4O9": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        },
+        "KCaAlSi2O7": {
+          "diagnostic_delta_g_j_mol": {
+            "band": "not sized (Glushko basis function not available at this commit)",
+            "derivation_comment": "Premise: the desired magnitude compares the Glushko K2O(l) Gibbs function with JANAF K-012 at the same temperature. Algebra: absolute value of G°(K2O(l), Glushko) minus G°(K2O(l), K-012). Unit check: both terms are J mol^-1, so the difference is J mol^-1. Sanity check: the Glushko function is absent from this commit's code and data, so no value is inferred."
+          }
+        }
+      },
+      "standard_basis": {
+        "SiO2": "source",
+        "MgO": "source",
+        "CaO": "source",
+        "Al2O3": "source",
+        "TiO2": "source",
+        "Na2O": "source",
+        "K2O": "source",
+        "S": "source",
+        "P2O5": "source",
+        "FeO": "operational"
+      },
+      "row_override_basis": {},
+      "undeclared_reason": {}
+    },
+    "ebbe5572a5a6f4193171b4724d052800df861e51caaf4d89a16b253dc7d4202d": {
+      "file": "openimcc-redox-ti-candidate-v4.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack on standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity, with D&G/Masson FeO(l) standard-state reference",
+      "version": "1.8.0-ti-candidate",
+      "canonical_content_digest": "6ba0716156fe1ec64914c27c9d357d95b65bf4ea411325e1882b02bc67edb48a",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "Al2O3": "Al-100",
+        "TiO2": "undeclared"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json#thermo_species.SiO2(l).provenance; Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8; JANAF O-035 crystal reference and measured fusion anchor; https://doi.org/10.1111/j.1151-2916.1984.tb19155.x",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "TiO2": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014"
+      },
+      "undeclared": {
+        "TiO2": {
+          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
+          "citation": "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json#thermo_species.TiO2(l).provenance; Berry et al. (2024); https://doi.org/10.1016/j.gca.2023.11.014",
+          "standard_id": "undeclared"
+        }
+      },
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {},
+      "declaration_status": "candidate-unresolved",
+      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+    },
+    "fe39de4bed783ad3f15fc6581371ea35a21eb58c9f3ae9ed1e489aaf70b16dfe": {
+      "file": "openimcc-redox-v4.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity.",
+      "version": "1.7.0",
+      "canonical_content_digest": "9dd2422e618d74ae0a5761f9b4343e38d5b88f5986a6ffd801cdabd8002334c4",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "Al2O3": "Al-100"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-v4.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-v4.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-v4.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-v4.json#thermo_species.SiO2(l).provenance; Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8; JANAF O-035 crystal reference and measured fusion anchor; https://doi.org/10.1111/j.1151-2916.1984.tb19155.x",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-v4.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt"
+      },
+      "undeclared": {},
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    }
+  }
+}

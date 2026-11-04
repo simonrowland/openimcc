@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added a content-bound liquid-reference standards registry and public lookup
+  and check APIs for all shipped melt and redox packs. Active table IDs follow
+  the selected profile's existing FeO and gas metadata. FeO1.5 identifies its
+  metastable Fe2O3(l) construction; declarations do not change `evaluate*`
+  behavior.
+- Non-source basis checks are informational, with an optional source-only
+  requirement and disclosed unknown row references.
+
 - Added `feo_liquid_standard()` and a live Fe-019 Gibbs offset API for
   cross-engine FeO(l) activity comparisons. The declaration includes the
   selected source, certified window, and condensate-table digest; offsets label
