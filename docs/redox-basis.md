@@ -200,6 +200,53 @@ points rather than refusing them. `titanous_ti_mol`, `titanic_ti_mol`, and
 O per mol Ti(III) reduction capacity. `oxygen_capacity_mol_per_ln_f_o2`
 includes the composition fixed point's total derivative.
 
+## Ferric–modifier associates: tested, not shipped
+
+The redox model treats FeO1.5 as an ideal species without ferric associates.
+Within one laboratory and method (Borisov et al. 2017,
+[doi:10.1007/s00410-017-1337-1](https://doi.org/10.1007/s00410-017-1337-1)),
+at fixed temperature and air fugacity, the default under-predicts the ferric
+ratio more as strong modifiers are added (K2O > Na2O ≈ CaO). Ferric–modifier
+associates were tested as a physical explanation, with no fitting to redox or
+activity data. The candidate added three redox complex rows that consume FeO1.5:
+FeO1.5 + ½Na2O → NaFeO2, 2FeO1.5 + CaO → CaFe2O4, and 2FeO1.5 + 2CaO →
+Ca2Fe2O5. Each association constant came from a Hess cycle on this pack's
+liquid standards, using independent thermochemistry:
+
+- NaFeO2: Barin, *Thermochemical Data of Pure Substances* (3rd ed.), with a
+  critical assessment's ΔfH°298 (−697.35 kJ/mol against Barin's −698.79) carried
+  as a band.
+- CaFe2O4 and Ca2Fe2O5: Robie & Hemingway, USGS Bulletin 2131; King (1954,
+  [doi:10.1021/ja01651a092](https://doi.org/10.1021/ja01651a092)); and
+  Bonnickson (1954,
+  [doi:10.1021/ja01635a006](https://doi.org/10.1021/ja01635a006)). Both melt
+  incongruently, so their liquids are conditional constructions.
+- KFeO2 was excluded, because no complete primary crystal–fusion–liquid chain
+  was located.
+
+The candidate was scored against the default with the D066 v4 melt pack. The
+associates add ferric wherever Na2O or CaO is present; the K-only series does
+not move, because KFeO2 was excluded. The default already over-predicts ferric in
+air for these compositions, so the air level worsened by about 0.04–0.12 dex
+(median residuals in Borisov 2015/2017, Kress & Carmichael 1991, and Aithala et
+al. 2026). The medians of Kress & Carmichael (1988) and Jayasuriya et al. (2004)
+moved slightly toward zero (by 0.024 and 0.010 dex), but the Kress & Carmichael
+(1988) air points worsened. NaFeO2 binds too strongly: in two of the three
+Borisov 2017 Na series the within-series trend flips sign (for example
+−0.0105 to +0.0088 dex per mol% Na2O), and in the third it shrinks toward zero. The Ca trend moves the right way (−0.0106
+to −0.0061 dex per mol% CaO at 1500 °C). The effective fO2 exponent at
+Kress & Carmichael (1988) isothermal conditions rose by 0.003–0.016, away from the
+measured value, through modifier depletion. The NaFeO2 enthalpy band changed
+no score by more than 0.0004 dex.
+
+The candidate pack was therefore not published, and the default is unchanged.
+The one open thread is Ca-only: if Ca-ferrite liquid thermochemistry is
+refined, a calcium-only associate is worth revisiting. The separate
+under-prediction near the QFM buffer comes from the model's fO2 exponent: ideal
+FeO1.5 gives 1/4, while alkali basalts measure about 0.21 and a low-iron
+alkali-free glass about 0.24. That needs an Fe2+–Fe3+ liquid interaction term,
+and it will be parameterised only from an independent Fe–O liquid assessment.
+
 ## Threading
 
 These solves use small dense linear algebra. Multi-threaded BLAS gives no
