@@ -247,6 +247,33 @@ FeO1.5 gives 1/4, while alkali basalts measure about 0.21 and a low-iron
 alkali-free glass about 0.24. That needs an Fe2+–Fe3+ liquid interaction term,
 and it will be parameterised only from an independent Fe–O liquid assessment.
 
+## Open question: alkali charge compensation of ferric iron
+
+Mysen & Virgo (1989, *American Mineralogist* 74, 58–76) measured Fe3+/Fe2+ by
+Mössbauer in 14 Na2O–Al2O3–SiO2–Fe glasses at 1823 K in air. Scored with each
+row's nominal starting composition, both the D066 v1 and the D066 v4 melt packs,
+each with the published redox pack, give a negative slope for Al2O3, while the measured slope is positive. In
+these rows Na2O and Al2O3 vary together (correlation 0.60 overall; 0.998 in the
+NASI–V subset, n = 6), so the separate Na and Al slopes cannot be isolated.
+Tetrahedral Fe3+ and Al3+ compete for the same alkali charge compensators, so
+the physical variable is the excess alkali, Na2O + K2O − Al2O3. Against that
+variable the measured slope is +0.0058 dex per mol%. Both packs give the right
+sign but a flatter slope: +0.0005 (v1) and +0.0025 (v4).
+
+The glasses lost an unknown amount of Na2O to the gas during the 30–90 minute
+runs, and the paper gives no post-run analyses. A gas-film diffusion estimate
+puts the median Na2O retained at 0.84–0.98 of nominal. It assumes a Sherwood
+number of 2–5 and the paper's stated ranges of 30–90 minutes and 50–80 mg per
+sample, because individual run values are not reported, so it is a sensitivity
+band rather than a measurement. At the low-loss end both packs are negative
+(about −0.0015 for v1 and −0.0001 for v4) while the measured slope stays about
++0.0059. At the high-loss end the slopes are about +0.0031 (v1) and +0.0059 (v4),
+which bracket the measured slope there (+0.0040). The loss inside the band is
+unknown, so these rows cannot yet decide whether either pack under-represents
+alkali compensation of ferric iron.
+Deciding it needs glasses with measured post-run compositions that vary excess
+alkali at fixed Al2O3.
+
 ## Threading
 
 These solves use small dense linear algebra. Multi-threaded BLAS gives no
