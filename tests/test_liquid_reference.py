@@ -625,4 +625,19 @@ def test_evidence_dois_are_structured_without_changing_identifiers() -> None:
     assert {evidence.locator for evidence in references if evidence.locator} == {
         "run 17c3-2", "NASA/TP-2002-211556",
         "Vol. IV, Book 1 p. 377; Book 2 p. 406",
+        "Table 2 p. 154",
     }
+
+
+def test_citation_text_with_doi_has_structured_doi() -> None:
+    references = []
+    for record in liquid_reference_records():
+        references.extend(record.evidence_ref)
+        for window in record.additional_windows:
+            references.extend(window.evidence_ref)
+    references.extend(feo_liquid_standard("published").source_citations)
+
+    for evidence in references:
+        citation = f"{evidence.author} ({evidence.year}): {evidence.basis}"
+        if "doi" in citation.lower():
+            assert evidence.doi, citation
