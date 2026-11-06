@@ -65,7 +65,7 @@ def load_profile(name: str) -> Profile:
             gas_datapack=gas,
             redox_pack_path=_PACKS_DIR / "openimcc-redox-v4.json",
             provenance=(
-                "D066 v5 melt, packaged openimcc gas and condensate tables, "
+                "D066 v4 melt, packaged openimcc gas and condensate tables, "
                 "and openimcc redox v4."
             ),
         )

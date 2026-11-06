@@ -26,6 +26,7 @@ from openimcc.model import (
     ImccLoadedDatapack,
     ImccMalformedDatapackError,
     ImccTOutsideDatapackDomainError,
+    DEFAULT_MELT_PACK_NAME,
     PackRowParticipation,
     _pack_row_participation,
     load_datapack,
@@ -44,7 +45,7 @@ if TYPE_CHECKING:
 
 
 _DEFAULT_DATAPACK_PATH = (
-    Path(__file__).parent / "data" / "packs" / "imcc-sf04-d066-v5.json"
+    Path(__file__).parent / "data" / "packs" / DEFAULT_MELT_PACK_NAME
 )
 _DEFAULT_REDOX_PACK_PATH = (
     Path(__file__).parent / "data" / "packs" / "openimcc-redox-v4.json"

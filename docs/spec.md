@@ -30,7 +30,7 @@ change the base model.
 
 ### 1.1 Named data profiles
 
-`load_profile("openimcc")` selects D066 v5, the packaged openimcc gas and
+`load_profile("openimcc")` selects D066 v4, the packaged openimcc gas and
 condensate tables, and redox v4. `load_profile("published")` selects the
 frozen SF04 melt records and the shared JANAF gas table with the LAM1984/1987
 condensate rows used by the published comparison. The latter reproduces the
@@ -391,9 +391,9 @@ identity gate before band-field validation. The shipped D066 default pack
 first passes its own row-set gate and then the band-field checks; it is not
 represented as the unchanged published identity. Extension rows are
 separately gated and carry their extension identity and certification status.
-The default is D066 v5. Its five constant A refits (forsterite, wollastonite,
-anorthite, akermanite and spinel) use independent Hess-cycle formation-energy
-targets with B fixed; D066 v4 remains loadable by its versioned file.
+The default is D066 v4. D066 v5 remains loadable by version or path and carries
+five constant A refits (forsterite, wollastonite, anorthite, akermanite and
+spinel) from independent Hess-cycle formation-energy targets with B fixed.
 
 The public melt result labels contain `identity`, `coverage`,
 `envelope_status`, `flags`, `notices`, `acid_sink_ratio`, and `inactive_rows`;

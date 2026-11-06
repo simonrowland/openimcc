@@ -200,7 +200,7 @@ def test_documented_python_and_shell_commands_run_from_outside_repo(
                     f"stderr:\n{completed.stderr}"
                 )
                 if 'print("melt notices:", melt.labels.notices)' in fence.body:
-                    assert "multicomponent-activity-pattern:" in completed.stdout
+                    assert "multicomponent-activity-pattern-unscored:" in completed.stdout
                     assert "K predictions from IMCC-SF04-D066 remain low" in completed.stdout
 
                 if index + 1 < len(fences) and fences[index + 1].language in OUTPUT_LANGUAGES:

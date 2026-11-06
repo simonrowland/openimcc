@@ -140,7 +140,10 @@ def test_empty_or_zero_excess_terms_preserve_legacy_numeric_outputs(
         "MgO": 2.0,
         "Al2O3": 0.5,
     }
-    legacy = evaluate(composition, 1800.0, allow_out_of_envelope=True)
+    source_pack = load_datapack(CANDIDATE_SOURCE)
+    legacy = evaluate(
+        composition, 1800.0, source_pack, allow_out_of_envelope=True
+    )
     result = evaluate(
         composition,
         1800.0,
@@ -177,7 +180,10 @@ def test_zero_species_pair_preserves_existing_solver_bits(
         assert expected.excess_enthalpy_J == actual.excess_enthalpy_J
     else:
         candidate, _ = _candidate(tmp_path, [pair_zero])
-        expected = evaluate(composition, 1800.0, allow_out_of_envelope=True)
+        source_pack = load_datapack(CANDIDATE_SOURCE)
+        expected = evaluate(
+            composition, 1800.0, source_pack, allow_out_of_envelope=True
+        )
         actual = evaluate(
             composition, 1800.0, candidate, allow_out_of_envelope=True
         )
@@ -313,7 +319,10 @@ def test_public_kernel_refuses_excess_candidate_and_loaded_adapter_applies_it(
     assert error.value.code == "imcc_excess_gibbs_requires_loaded_adapter"
 
     corrected = evaluate(composition, 1800.0, candidate, allow_out_of_envelope=True)
-    ideal = evaluate(composition, 1800.0, allow_out_of_envelope=True)
+    source_pack = load_datapack(CANDIDATE_SOURCE)
+    ideal = evaluate(
+        composition, 1800.0, source_pack, allow_out_of_envelope=True
+    )
     assert corrected.excess_gibbs_J != 0.0
     assert corrected.activity("Na2O") != ideal.activity("Na2O")
     assert any(
@@ -367,7 +376,8 @@ def test_species_pair_trace_parent_cold_start_and_zero_limit(
         "K2O": 8.844980280923895,
     }
     temperature = 2445.65
-    ideal = evaluate(composition, temperature)
+    source_pack = load_datapack(CANDIDATE_SOURCE)
+    ideal = evaluate(composition, temperature, source_pack)
 
     candidate, _ = _candidate(
         tmp_path,
@@ -515,7 +525,10 @@ def test_binary_interaction_limits_and_candidate_evaluation_keep_speciation(
     )
 
     composition = {"Na2O": 1.0, "CaO": 1.0, "SiO2": 4.0, "MgO": 1.0}
-    ideal = evaluate(composition, temperature, allow_out_of_envelope=True)
+    source_pack = load_datapack(CANDIDATE_SOURCE)
+    ideal = evaluate(
+        composition, temperature, source_pack, allow_out_of_envelope=True
+    )
     corrected = evaluate(
         composition,
         temperature,
@@ -683,7 +696,7 @@ def test_candidate_does_not_inherit_measured_bias_notices(
     notices = tuple(n for n in result.labels.notices if n.startswith("na2o-activity-bias"))
     assert notices == (
         "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias evidence "
-        "was measured on the default D066 v5 pack; this pack has not been scored.",
+        "was measured on D066 v5; this pack has not been scored.",
     )
     assert (
         "K predictions against Hastie 1981 KEMS pressures (case 4) have "

@@ -462,7 +462,7 @@ def test_in_range_sulfur_outputs_match_pins():
         0.03162568650138272,
         0.03162568650138273,
         2320.431822704818,
-        5803.821529200369,
+        5326.88582447564,
     )
 
     inventory = evaluate_sulfur(
@@ -743,15 +743,15 @@ def test_capacity_calibration_notice_survives_scss_cap():
     assert notice.distance_beyond_interval == pytest.approx(notice.value - 3500.0)
 
 
-def test_default_openimcc_solve_without_sulfur_call_pins_v5():
+def test_default_openimcc_solve_without_sulfur_call_pins_v4():
     result = evaluate(
         _MORB, 1800.0, basis_type="wt", allow_extrapolation=True,
         allow_out_of_envelope=True,
     )
-    # This is the D066 v5 default solve; the five reviewed association A
+    # This is the D066 v4 default solve; v5's five reviewed association A
     # refits change its activity and bulk root independently of sulfur.
-    assert result.activity("FeO") == pytest.approx(0.05700402442549344)
-    assert result.D == pytest.approx(2.1787222992077693)
+    assert result.activity("FeO") == pytest.approx(0.06190069598158437)
+    assert result.D == pytest.approx(2.169155071126871)
 
 
 def test_excess_melt_disclosures_survive_sulfur_evaluation(tmp_path):

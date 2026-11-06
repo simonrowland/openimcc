@@ -87,7 +87,7 @@ def test_pack_help_uses_the_same_pack_name(argv, capsys):
     assert cli.main(argv) == cli.EXIT_OK
     help_text = re.sub(r"-\n\s+", "-", capsys.readouterr().out)
     help_text = " ".join(help_text.split())
-    assert "default: packaged imcc-sf04-d066-v5.json" in help_text
+    assert "default: packaged imcc-sf04-d066-v4.json" in help_text
 
 
 def test_solve_in_domain_exits_ok_and_emits_activities(capsys):
@@ -117,11 +117,11 @@ def test_solve_and_describe_use_the_packaged_default(capsys):
     ]
     assert cli.main(argv) == cli.EXIT_OK
     payload = json.loads(capsys.readouterr().out)
-    assert payload["labels"]["identity"]["datapack_version"] == "1.0.7-d066-v5"
+    assert payload["labels"]["identity"]["datapack_version"] == "1.0.6-d066-v4"
     assert payload["labels"]["notices"]
 
     assert cli.main(["describe"]) == cli.EXIT_OK
-    assert "1.0.7-d066-v5" in capsys.readouterr().out
+    assert "1.0.6-d066-v4" in capsys.readouterr().out
 
 
 def test_solve_profile_flag_selects_published_records(capsys):

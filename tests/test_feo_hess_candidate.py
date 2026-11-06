@@ -63,9 +63,9 @@ def test_fe_hess_loads_and_changes_only_the_two_a_only_refits() -> None:
     base_rows = _rows(V5)
     candidate_rows = _rows(FE_HESS)
 
-    assert default.version == "1.0.7-d066-v5"
+    assert default.version == "1.0.6-d066-v4"
     assert default.kernel_datapack.binding_digest == (
-        "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf"
+        "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0"
     )
     assert candidate.version == "1.0.9-d066-feo-hess-candidate"
     assert candidate.kernel_datapack.binding_digest != (

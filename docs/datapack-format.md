@@ -15,7 +15,7 @@ the immutable pack bytes:
 
 | Role | Meaning | Example |
 |---|---|---|
-| `default` | Pack loaded when no pack or profile argument is given. | `imcc-sf04-d066-v5.json`; `openimcc-redox-v4.json` |
+| `default` | Pack loaded when no pack or profile argument is given. | `imcc-sf04-d066-v4.json`; `openimcc-redox-v4.json` |
 | `opt-in` | Current candidate generation available by explicit selection. | Current candidate packs are listed in the manifest by family. |
 | `historical` | Superseded generation whose `superseded_by` names its successor. | Earlier D066 and redox versions. |
 | `reproduction` | Pack retained to reproduce a published record or specific experiment. | `imcc-sf04-d066-v1-kcaalsi2o7.json`; `imcc-sf04-v1.0.2.json` |
@@ -402,9 +402,9 @@ uncertified (`certification: denied`) and records that redox and sulfur-
 solubility behavior remain out of scope.
 
 The default `load_datapack()` resource is the nonpublished D066 primary pack,
-imcc-sf04-d066-v5.json. It retains the measured SiO2(l) and Na2O(l) heat
-capacities and adds five Hess-cycle association A refits with B held fixed.
-D066 v4 remains available as the previous default, with v3, v2 and v1
+imcc-sf04-d066-v4.json. It includes the measured SiO2(l) and Na2O(l) heat
+capacities. D066 v5 remains loadable by version or path and adds five
+Hess-cycle association A refits with B held fixed. D066 v1–v3 are also
 available as historical packs. The
 released historical model is D066 v1 paired with the condensate table shipped
 at f55617a. Its sibling KCa sensitivity pack is
@@ -434,7 +434,7 @@ The ext-v1, ext-v2, and ext-v3 records are retired and no longer shipped:
 ext-v1 and ext-v3 fail the frozen canonical hash, while ext-v2 fails the fixed
 parent-basis check because it includes CoO. Git history retains them as
 research records. The current default melt pack is
-`imcc-sf04-d066-v5.json`; D066 v1–v4 remain loadable historical packs. The
+`imcc-sf04-d066-v4.json`; D066 v1–v5 remain loadable by version or path. The
 redox default is `openimcc-redox-v4.json`, with redox v1–v3 available as
 loadable history. The complete shipped pack list is recorded in
 `src/openimcc/data/packs/MANIFEST.json`.
@@ -654,7 +654,7 @@ checks happen when evaluate() delegates to the kernel:
 | The canonical eight-oxide alkali fraction X_Me2O = (n_Na2O+n_K2O)/sum(n_canonical_oxide) exceeds 0.5 beyond the boundary comparison slack | ImccCompositionOutsideValidatedEnvelopeError, code imcc_composition_outside_validated_envelope, unless allow_out_of_envelope=True; then the result is marked outside_validated. The boundary is inclusive within 1e-5 relative slack so rounded wt% input is not refused. |
 | The solved free x*(SiO2) is below 1.910055e-3 of nominal x(SiO2) | The number is kept and the result carries a `species-coverage-edge` flag naming the solved silica-sink family (the non-silica cations holding at least 20% of bound silica); this detects acid-sink exhaustion rather than refusing the solve. The continuous `acid_sink_ratio` remains visible. |
 | Na2O or K2O is nonzero | The result carries the Hastie 1981 KEMS case-4 bias measured for the loaded pack, or says that bias has not been evaluated for that pack; no coefficient correction is applied. |
-| Effectively binary CaO–SiO2 after wt→mol conversion: (n_CaO + n_SiO2) / sum(n) >= 0.98 and every other parent is below 0.01 of the parent-mole total, with sub-basis x(CaO) = n_CaO / (n_CaO + n_SiO2) in [0.42, 0.70] and T in [1873, 1933] K | The number is kept and no coefficient correction is applied. For the scored default D066 identity the result carries one `cao-sio2-activity-bias` notice: `moderate` for x(CaO) in [0.42, 0.56), citing Kume 2000 and Omori–Sanbongi 1961 low silica activity; the new pack raises predicted log10(a(SiO2)) by 0.045–0.410 dex over x(CaO)=0.42–0.56 at 1873–1933 K, and the prior default residual magnitudes are not inherited as current-pack scores. `strong` for x(CaO) in [0.56, 0.70], near Ca2SiO4 with no Ca3SiO5 associate: Stolyarova 1991 Table IIb is about 0.6–1.0 dex low, but that absolute scale conflicts with Table Ib. Its prior-default residuals are not carried as v5 scores; the new pack shifts predicted log10(a(SiO2)) non-monotonically by 0.076–0.479 dex, peaking near x(CaO)=0.614. Any other loaded identity inside this gate carries `cao-sio2-activity-bias-unscored` instead and does not inherit those residuals. The x(CaO) and T endpoints written as closed are inclusive; x(CaO)=0.56 is strong. The notice is absent below x(CaO)=0.42, above 0.70, below 1873 K, or above 1933 K, including the unvalidated 1973 K map. A parent at exactly 0.01 of the parent-mole total, or a CaO+SiO2 share below 0.98, is not effectively binary. |
+| Effectively binary CaO–SiO2 after wt→mol conversion: (n_CaO + n_SiO2) / sum(n) >= 0.98 and every other parent is below 0.01 of the parent-mole total, with sub-basis x(CaO) = n_CaO / (n_CaO + n_SiO2) in [0.42, 0.70] and T in [1873, 1933] K | The number is kept and no coefficient correction is applied. For the scored D066 v5 identity the result carries one `cao-sio2-activity-bias` notice: `moderate` for x(CaO) in [0.42, 0.56), citing Kume 2000 and Omori–Sanbongi 1961 low silica activity; the new pack raises predicted log10(a(SiO2)) by 0.045–0.410 dex over x(CaO)=0.42–0.56 at 1873–1933 K, and prior D066 v4 residual magnitudes are not inherited as v5 scores. `strong` for x(CaO) in [0.56, 0.70], near Ca2SiO4 with no Ca3SiO5 associate: Stolyarova 1991 Table IIb is about 0.6–1.0 dex low, but that absolute scale conflicts with Table Ib. Prior D066 v4 residuals are not carried as v5 scores; D066 v5 shifts predicted log10(a(SiO2)) non-monotonically by 0.076–0.479 dex, peaking near x(CaO)=0.614. Any other loaded identity inside this gate carries `cao-sio2-activity-bias-unscored` instead and does not inherit those residuals. The x(CaO) and T endpoints written as closed are inclusive; x(CaO)=0.56 is strong. The notice is absent below x(CaO)=0.42, above 0.70, below 1873 K, or above 1933 K, including the unvalidated 1973 K map. A parent at exactly 0.01 of the parent-mole total, or a CaO+SiO2 share below 0.98, is not effectively binary. |
 | T_K is not finite or is not positive | ImccTOutsideDatapackDomainError. |
 | An active row is outside its T_domain_K | ImccTOutsideDatapackDomainError, unless allow_extrapolation=True; then the result is marked extrapolated. |
 | extra_mol has a non-finite amount (nan or ±inf) | ImccCompositionIncompleteError naming the non-finite amount. Checked first, before the S/P extension gate, zero-skip, sign check, and ferric screen, so a non-finite `Fe2O3` or S/P amount is reported as non-finite rather than as another refusal. |

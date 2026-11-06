@@ -37,6 +37,7 @@ from typing import Any, Mapping, Sequence
 
 from openimcc import __version__
 from openimcc.model import (
+    DEFAULT_MELT_PACK_NAME,
     ImccLoadedDatapack,
     _amount_as_float,
     evaluate,
@@ -548,7 +549,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     describe.add_argument(
         "--pack", default=None,
-        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
+        help=f"path to a melt datapack JSON (default: packaged {DEFAULT_MELT_PACK_NAME})",
     )
     describe.set_defaults(func=_cmd_describe)
 
@@ -557,7 +558,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     validate.add_argument(
         "--pack", default=None,
-        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
+        help=f"path to a melt datapack JSON (default: packaged {DEFAULT_MELT_PACK_NAME})",
     )
     validate.set_defaults(func=_cmd_validate_pack)
 
@@ -568,7 +569,7 @@ def build_parser() -> argparse.ArgumentParser:
     cp_implied = diagnose_sub.add_parser("cp-implied", help="report implied heat capacity")
     cp_implied.add_argument(
         "--pack", default=None,
-        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
+        help=f"path to a melt datapack JSON (default: packaged {DEFAULT_MELT_PACK_NAME})",
     )
     cp_implied.add_argument(
         "--out", default="diagnostics", help="output directory (default: diagnostics)"
@@ -579,7 +580,7 @@ def build_parser() -> argparse.ArgumentParser:
         "crystal-closure", help="report crystal melting-point closure"
     )
     crystal_closure.add_argument("--pack", default=None,
-        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)")
+        help=f"path to a melt datapack JSON (default: packaged {DEFAULT_MELT_PACK_NAME})")
     crystal_closure.add_argument("--condensate", default=None,
         help="path to a condensate table CSV (default: packaged table)")
     crystal_closure.add_argument("--out", default="diagnostics",
@@ -591,7 +592,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     mixing_enthalpy.add_argument(
         "--pack", default=None,
-        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
+        help=f"path to a melt datapack JSON (default: packaged {DEFAULT_MELT_PACK_NAME})",
     )
     mixing_enthalpy.add_argument("--out", default="diagnostics", help="output directory (default: diagnostics)")
     mixing_enthalpy.set_defaults(func=_cmd_diagnose_mixing_enthalpy)
@@ -601,7 +602,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     solve.add_argument(
         "--pack", default=None,
-        help="path to a melt datapack JSON (default: packaged imcc-sf04-d066-v5.json)",
+        help=f"path to a melt datapack JSON (default: packaged {DEFAULT_MELT_PACK_NAME})",
     )
     solve.add_argument(
         "--profile",

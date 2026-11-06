@@ -63,6 +63,7 @@ from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.receipt import build_calculation_receipt
 
 
+DEFAULT_MELT_PACK_NAME = "imcc-sf04-d066-v4.json"
 
 _EXPECTED_PARENT_OXIDES = (
     "SiO2",
@@ -177,7 +178,7 @@ _SPECIES_COVERAGE_EDGE_RATIO = 1.9100549074388355e-3
 # The benchmark range uses the tracked Hastie case-4 K points and the bench
 # runner's default gas pack. Key by the complete melt-pack identity so a new
 # or external pack cannot inherit another pack's measured bias.
-_DEFAULT_D066_V5_IDENTITY = (
+_SCORED_D066_V5_IDENTITY = (
     "IMCC-SF04-D066",
     "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf",
 )
@@ -223,7 +224,7 @@ _SCORED_PACK_IDENTITIES = MappingProxyType(
             "IMCC-SF04-D066",
             "0879f5a8e94dfd844ed5cfcd900677b496a89e717a85f320b3e0b374ebcdc3b0",
         ): MappingProxyType({"alkali-bias": "−1.18 to −1.24 dex"}),
-        _DEFAULT_D066_V5_IDENTITY: MappingProxyType(
+        _SCORED_D066_V5_IDENTITY: MappingProxyType(
             {
                 "alkali-bias": "−1.17 to −1.22 dex",
                 "na2o-activity-bias": None,
@@ -286,7 +287,7 @@ _ALKALI_BIAS_BENCH_URL = "https://github.com/simonrowland/openimcc"
 # Scored on D066 v5 only; candidate identities do not inherit these residuals.
 _NA2O_ACTIVITY_BIAS_UNSCORED_NOTICE = (
     "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias evidence "
-    "was measured on the default D066 v5 pack; this pack has not been scored."
+    "was measured on D066 v5; this pack has not been scored."
 )
 _NA2O_ACTIVITY_BIAS_RATIO_MIN = 1.0
 _NA2O_ACTIVITY_BIAS_BASICITY_MIN = 0.30
@@ -344,7 +345,7 @@ _ANORTHITE_ROW_SENSITIVITY_NOTICE = (
 )
 _ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE = (
     "anorthite-row-sensitivity-unscored: the CaAl2Si2O8 row-sensitivity "
-    "evidence was evaluated on the default D066 v5 pack; this pack has not "
+    "evidence was evaluated on D066 v5; this pack has not "
     "been scored."
 )
 
@@ -496,17 +497,17 @@ def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
 
 # CaO–SiO2 activity-bias notice. Derivation from Kume 2000, Omori and
 # Sanbongi 1961, and Stolyarova 1991. The residuals support a notice, not
-# a coefficient change. The measured text is only for the typed default
+# a coefficient change. The measured text is only for the typed D066 v5
 # identity in the scored-pack table. Any other loaded identity
 # inside the same composition and temperature gate gets the unscored
 # code, so a later pack cannot inherit this evidence.
 #
 # Independent silica activities support a low bias from roughly x(CaO)=0.42.
-# On the prior D066 default, Kume 2000
+# On D066 v4, Kume 2000
 # Table 1 at 1873 K had mean residual −0.507 dex (range −0.641 to −0.334),
 # and Omori–Sanbongi 1961 silica activities, converted from β-cristobalite to
-# liquid, had mean residual −0.441 dex (range −0.722 to −0.192). On the new
-# default, predicted log10(a(SiO2)) rises 0.045–0.410 dex over
+# liquid, had mean residual −0.441 dex (range −0.722 to −0.192). The D066 v5
+# refit raises predicted log10(a(SiO2)) 0.045–0.410 dex over
 # x(CaO)=[0.42, 0.56) at 1873–1933 K. In the strong interval the shift is
 # non-monotonic, spanning 0.076–0.479 dex and peaking near x(CaO)=0.614.
 # The cited measurements still show a low
@@ -515,8 +516,8 @@ def _alkali_bias_notice(model_id: str, binding_digest: str) -> str:
 # approaches Ca2SiO4. There the direct Stolyarova 1991 Table IIb
 # comparison reaches about 0.6–1.0 dex low for x(CaO)≈0.56–0.67, but
 # Table IIb's absolute scale conflicts with the same paper's Table Ib
-# pSiO and atomic-oxygen pressures. At x(CaO)=0.62 the prior-default
-# pressure-implied residual is 0.25–0.29 dex low. The pack has no Ca3SiO5 associate; the
+# pSiO and atomic-oxygen pressures. At x(CaO)=0.62 the D066 v4 pressure-
+# implied residual is 0.25–0.29 dex low. The pack has no Ca3SiO5 associate; the
 # notice continues through x(CaO)=0.70. No target data were available at
 # 1973 K, so that map is outside the notice window.
 #
@@ -539,7 +540,7 @@ _CAO_SIO2_XCAO_STRONG_MIN = 0.56
 _CAO_SIO2_XCAO_MAX = 0.70
 _CAO_SIO2_T_MIN_K = 1873.0
 _CAO_SIO2_T_MAX_K = 1933.0
-# Scored on the current default D066 melt pack only. A different
+# Scored on the D066 v5 identity only. A different
 # model_id or binding_digest does not inherit these residuals.
 _CAO_SIO2_NOTICE_CODE = "cao-sio2-activity-bias"
 _CAO_SIO2_UNSCORED_CODE = "cao-sio2-activity-bias-unscored"
@@ -631,7 +632,7 @@ def _silicate_vapour_product_notice(
 
 
 def _cao_sio2_unscored_notice(model_id: str) -> str:
-    measured_model_id, measured_binding_digest = _DEFAULT_D066_V5_IDENTITY
+    measured_model_id, measured_binding_digest = _SCORED_D066_V5_IDENTITY
     return (
         f"{_CAO_SIO2_UNSCORED_CODE}: the CaO–SiO2 silica-activity bias was "
         f"measured on {measured_model_id} "
@@ -693,12 +694,12 @@ def _cao_sio2_activity_bias_notice(
 # Multicomponent activity-pattern notice. Corrected Kume 2000 residuals vary
 # with NBO/T in CMAS compositions; this distinct evidence does not extend the
 # effectively binary CaO–SiO2 notice above. The measured wording is pinned to
-# the default pack identity, and other identities receive no inherited score.
+# the scored D066 v5 identity, and other identities receive no inherited score.
 _MULTICOMPONENT_ACTIVITY_PATTERN_MIN_MOLE_FRACTION = 0.01
 _MULTICOMPONENT_ACTIVITY_PATTERN_T_MIN_K = 1700.0
 _MULTICOMPONENT_ACTIVITY_PATTERN_T_MAX_K = 3000.0
 _MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE = (
-    "multicomponent-activity-pattern: on default D066 v5, Kume et al. (2000) "
+    "multicomponent-activity-pattern: on D066 v5, Kume et al. (2000) "
     "synthetic CAS/CMS/CMAS slags, after solid-to-liquid standard conversion, "
     "were measured at 1823–1873 K. SiO2 residuals "
     "(log10(predicted/measured)) decrease with NBO/T in CAS (Table 2: slope "
@@ -717,7 +718,7 @@ _MULTICOMPONENT_ACTIVITY_PATTERN_NOTICE = (
 )
 _MULTICOMPONENT_ACTIVITY_PATTERN_UNSCORED_NOTICE = (
     "multicomponent-activity-pattern-unscored: Kume 2000 multicomponent "
-    "activity-pattern evidence was measured on the default D066 v5 pack; "
+    "activity-pattern evidence was measured on D066 v5; "
     "this pack has not been scored."
 )
 
@@ -1453,7 +1454,7 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
         resources.files("openimcc")
         / "data"
         / "packs"
-        / "imcc-sf04-d066-v5.json"
+        / DEFAULT_MELT_PACK_NAME
         if path is None
         else Path(path)
     )

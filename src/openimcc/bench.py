@@ -61,6 +61,7 @@ from openimcc import (
     label_research_datapack,
     load_datapack,
 )
+from openimcc.model import DEFAULT_MELT_PACK_NAME
 from openimcc.json_utils import reject_duplicate_json_keys
 
 _YAML_BASE_LOADER = yaml.SafeLoader
@@ -153,7 +154,7 @@ _PACKAGED_PACK_NAMES = frozenset(
         "imcc-sf04-d066-v1.json",
         "imcc-sf04-d066-v2.json",
         "imcc-sf04-d066-v3.json",
-        "imcc-sf04-d066-v4.json",
+        DEFAULT_MELT_PACK_NAME,
         "imcc-sf04-d066-v5.json",
         "imcc-sf04-d066-v1-kcaalsi2o7.json",
         "imcc-sf04-d066-ext-v1.json",

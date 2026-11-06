@@ -33,11 +33,11 @@ table behind the standard and offset.
 
 ## Opt-in Fe-complex Hess candidate
 
-`src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json` is an opt-in refit loaded with `load_datapack(path=...)`. D066 v5 remains the default. The pack changes only the Fe₂SiO₄ and FeTiO₃ association A values to −9.744444812 and −2.165573644; their B values and every other association row are unchanged. The FeTiO₃ change is ΔA = −2.165573644482091 − (−1.0825616596895684) = −1.0830119847925226. FeAl₂O₄ remains unchanged. The fit used Hess targets, not activity, redox, or vapour data.
+`src/openimcc/data/packs/imcc-sf04-d066-feo-hess-candidate.json` is an opt-in refit loaded with `load_datapack(path=...)`. D066 v4 is the default; D066 v5 remains loadable by version or path. The pack changes only the Fe₂SiO₄ and FeTiO₃ association A values to −9.744444812 and −2.165573644; their B values and every other association row are unchanged. The FeTiO₃ change is ΔA = −2.165573644482091 − (−1.0825616596895684) = −1.0830119847925226. FeAl₂O₄ remains unchanged. The fit used Hess targets, not activity, redox, or vapour data.
 
 ### Hess results and limits
 
-With the default v5 Fe₂SiO₄ associate, the liquid is 37–40 kJ per mole of fayalite formula too stable against the crystal-plus-fusion targets. Rebuilding those targets with the fayalite crystal heat-capacity polynomial printed by Robie & Hemingway (USGS Bulletin 2131, p. 60) uses 204.0 and 210.1 J mol⁻¹ K⁻¹ at 1300 and 1400 K; the earlier calculation had inherited 191 J mol⁻¹ K⁻¹. The rebuilt targets are −27.026, −25.524, and −24.553 kJ mol⁻¹ at 1600, 1800, and 2000 K.
+With the D066 v5 Fe₂SiO₄ associate, the liquid is 37–40 kJ per mole of fayalite formula too stable against the crystal-plus-fusion targets. Rebuilding those targets with the fayalite crystal heat-capacity polynomial printed by Robie & Hemingway (USGS Bulletin 2131, p. 60) uses 204.0 and 210.1 J mol⁻¹ K⁻¹ at 1300 and 1400 K; the earlier calculation had inherited 191 J mol⁻¹ K⁻¹. The rebuilt targets are −27.026, −25.524, and −24.553 kJ mol⁻¹ at 1600, 1800, and 2000 K.
 
 The Fe₂SiO₄ A value reaches the fit's lower bound. This is the no-association limit, K → 0: at fayalite composition the liquid is ideal FeO–SiO₂ mixing. This is not a determined thermochemical correction; the Hess nodes identify neither a finite association constant nor its temperature slope. Target minus ideal-mixing ceiling is −1.623, +3.054, and +7.201 kJ mol⁻¹ formula at 1600, 1800, and 2000 K. The latter two values are the implied excess Gibbs energies, +3.054 and +7.201 kJ mol⁻¹ formula, which are not included; no association constant can reach those targets. The fitted B remains the v5 coefficient, and the old SiO₂ re-reference residual does not describe this new A.
 
@@ -148,7 +148,7 @@ The earlier melt and redox FeO-liquid packs are marked `historical` in
 the current candidate records. The gas condensate file remains an associated
 historical snapshot and is outside the pack manifest.
 
-For historical reproduction, select the redox and melt JSON paths together in `evaluate_redox(..., redox_pack_path=..., melt_pack_path=...)`; pass the historical candidate condensate file to the gas loader when reproducing its gas results. The current defaults are `imcc-sf04-d066-v5.json` and `openimcc-redox-v4.json`. The released historical model is D066 v1 paired with the condensate table shipped at f55617a. The retained gas-only `condensate-feo-janaf-legacy.csv` file uses the other rows from the 249fde5 condensate table and substitutes only the JANAF Fe-019 FeO(l) row; it restores gas only, not melt associations or redox. It remains useful for explicit Fe-019 gas comparisons and the source-pinned element-status regression. Pairing that file with the current defaults mixes standard states and does not recreate a historical model. The historical candidate condensate matches the FeO Gibbs row in that snapshot only; Ag2O(l), As2O3(l), MnO(l), and Sb2O3(l) still differ from the current condensate table.
+For historical reproduction, select the redox and melt JSON paths together in `evaluate_redox(..., redox_pack_path=..., melt_pack_path=...)`; pass the historical candidate condensate file to the gas loader when reproducing its gas results. The current defaults are `imcc-sf04-d066-v4.json` and `openimcc-redox-v4.json`. The released historical model is D066 v1 paired with the condensate table shipped at f55617a. The retained gas-only `condensate-feo-janaf-legacy.csv` file uses the other rows from the 249fde5 condensate table and substitutes only the JANAF Fe-019 FeO(l) row; it restores gas only, not melt associations or redox. It remains useful for explicit Fe-019 gas comparisons and the source-pinned element-status regression. Pairing that file with the current defaults mixes standard states and does not recreate a historical model. The historical candidate condensate matches the FeO Gibbs row in that snapshot only; Ag2O(l), As2O3(l), MnO(l), and Sb2O3(l) still differ from the current condensate table.
 
 ## Held-out comparison for the FeO re-anchor
 
@@ -168,11 +168,11 @@ Kress entries use the source’s Table 1 iron analyses, converting Fe₂O₃/(Fe
 
 For Sossi et al. (2020), the locally available paper reports log₁₀(Fe³⁺/Fe²⁺) = (0.252 ± 0.015)ΔIW − 1.530 ± 0.053 at 2173 K, but the supplementary per-run table is not present in the corpus. The four residual rows evaluate that published regression at ΔIW −1.5, 0, +3, and +6.4; they are derived curve values, not four measured runs, and have no pointwise σ. The paper’s separate mantle-derived anchor Fe³⁺/ΣFe = 0.037 ± 0.005 at ΔIW +0.5 gives default residual −0.00510 and candidate residual −0.00011. The fO₂ conversion uses log₁₀ fO₂(IW) = −6.47 at 2173 K as reported in the [comparison literature](https://doi.org/10.3847/psj/ac67a9). Sossi’s two most reducing levitation glasses also lost 7% and 9% of their initial iron, a further limit on comparing those points to this closed-composition melt model.
 
-### Current D066 v5 default versus the Hess candidate
+### D066 v5 versus the Hess candidate
 
-The next table uses the current default redox and D066 v5 melt packs as its baseline, then substitutes the opt-in Hess-refit melt pack. All predictions use the public loaders and `evaluate_redox`; the ferric-fraction data were not used to fit the candidate.
+The next table uses the default redox pack and the explicitly selected D066 v5 melt pack as its baseline, then substitutes the opt-in Hess-refit melt pack. All predictions use the public loaders and `evaluate_redox`; the ferric-fraction data were not used to fit the candidate.
 
-| Held-out set | n | v5 default MAE | v5 default RMSE | Hess candidate MAE | Hess candidate RMSE | Result |
+| Held-out set | n | v5 MAE | v5 RMSE | Hess candidate MAE | Hess candidate RMSE | Result |
 |---|---:|---:|---:|---:|---:|---|
 | Kress–Carmichael | 32 | 0.05159 | 0.06238 | 0.04283 | 0.04804 | Improved; 32 additional runs below 1700 K remain outside the melt-pack domain. |
 | Matzen, conventional Mössbauer assignment | 11 | 0.08000 | 0.08784 | 0.03045 | 0.04389 | Improved; each reported result has ±0.03 uncertainty. |

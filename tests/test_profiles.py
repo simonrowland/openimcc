@@ -39,7 +39,7 @@ _BASALT = {
 @pytest.mark.parametrize(
     ("name", "melt_version", "has_redox"),
     [
-        ("openimcc", "1.0.7-d066-v5", True),
+        ("openimcc", "1.0.6-d066-v4", True),
         ("published", "1.0.2", False),
     ],
 )

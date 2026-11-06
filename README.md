@@ -757,10 +757,10 @@ temperature.
 Output:
 
 ```text
-activities: {'SiO2': '0.32943', 'MgO': '0.00422664', 'FeO': '0.0714214', 'CaO': '0.000109952', 'Al2O3': '0.0186766', 'TiO2': '0.00195415', 'Na2O': '2.34818e-10', 'K2O': '4.61106e-15'}
+activities: {'SiO2': '0.315634', 'MgO': '0.00434375', 'FeO': '0.0759', 'CaO': '7.42238e-05', 'Al2O3': '0.0128061', 'TiO2': '0.00252514', 'Na2O': '4.28163e-10', 'K2O': '8.22663e-15'}
 melt flags: ('paper-demonstrated-window: T=1800 K is outside the paper-demonstrated domain for rows: Mg2SiO4, MgSiO3, MgAl2O4, MgTiO3, MgTi2O5, Mg2TiO4, Al6Si2O13, CaAl2O4, CaAl4O7, Ca12Al14O33, CaSiO3, CaAl2Si2O8, CaMgSi2O6, Ca2MgSi2O7, Ca2Al2SiO7, CaTiO3, Ca2SiO4, CaTiSiO5, FeTiO3, Fe2SiO4, FeAl2O4, CaAl12O19, Mg2Al4Si5O18, Na2SiO3, Na2Si2O5, NaAlSiO4, NaAlSi3O8, NaAlO2, Na2TiO3, NaAlSi2O6, KAlSiO4, KAlSi3O8, KAlO2, KAlSi2O6',)
-melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.17 to −1.22 dex); see https://github.com/simonrowland/openimcc; K2Si2O5 source choice: docs/k2si2o5-disposition.md', "k-al-over-sequestration: the one-particle mixing-entropy limit can over-sequester K in K-Al associates, biasing p(K) low; measured on one aluminous illite melt as about 1 dex or more (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2, Beaver's Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not validated for basaltic or other compositions and not a calibrated correction.", 'anorthite-row-sensitivity: this is a model-sensitivity disclosure; the default row was chosen on thermochemical consistency. Model-output shifts, not observed residuals: the isolated published FC87 row swap raises p(Na) and p(K) about 0.13–0.21 dex in basalt and regolith compositions, and p(Na) about 0.5 dex in a Na-bearing highland anorthosite at 1800–2100 K. On the alkali-free Stolyarova, Shornikov & Shultz (1996) CAS grid at 1933 K, log10 activities shift by up to 0.425 dex for Al2O3, 0.244 dex for CaO, and 0.291 dex for SiO2. Published activity comparisons are mixed. See docs/anorthite-disposition.md. It is not a calibrated correction.', "multicomponent-activity-pattern: on default D066 v5, Kume et al. (2000) synthetic CAS/CMS/CMAS slags, after solid-to-liquid standard conversion, were measured at 1823–1873 K. SiO2 residuals (log10(predicted/measured)) decrease with NBO/T in CAS (Table 2: slope −0.238 dex/NBO/T, n=47) and CMS (Table 3: slope −0.362 dex/NBO/T, n=27), not in the four-oxide CMAS family that triggers this notice (Table 4 has no SiO2 rows). Across CAS+CMS+CMAS, RMSEs are 0.47 dex (SiO2, n=72), 0.59 (CaO, n=87), and 0.50 (MgO, n=43); four-oxide CMAS RMSEs are 0.81 dex (CaO, n=15) and 0.57 (MgO, n=15). CaO and MgO residuals become more positive with NBO/T. Al-bearing association, temperature, and source method are confounded; no cause is established. Effectively binary CaO–SiO2 Kume slopes are near zero. A regression of binary CaO–SiO2 KEMS activities from Stolyarova et al. (1991, 1933 K) gives a CaO slope of about +0.2 to +0.3 dex/NBO/T; their silica table conflicts with the paper's own closure, and this binary result does not establish the multicomponent pattern.")
-gas: bar {'Na': '0.000197593', 'K': '5.2382e-06'}
+melt notices: ('K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS pressures (case 4: −1.18 to −1.24 dex); see https://github.com/simonrowland/openimcc; K2Si2O5 source choice: docs/k2si2o5-disposition.md', "k-al-over-sequestration: the one-particle mixing-entropy limit can over-sequester K in K-Al associates, biasing p(K) low; measured on one aluminous illite melt as about 1 dex or more (Hastie et al. 1981, NBSIR 81-2279 sec. 8.2, Beaver's Bend illite; https://doi.org/10.6028/NBS.IR.81-2279); not validated for basaltic or other compositions and not a calibrated correction.", 'anorthite-row-sensitivity-unscored: the CaAl2Si2O8 row-sensitivity evidence was evaluated on D066 v5; this pack has not been scored.', 'multicomponent-activity-pattern-unscored: Kume 2000 multicomponent activity-pattern evidence was measured on D066 v5; this pack has not been scored.')
+gas: bar {'Na': '0.000266815', 'K': '6.99669e-06'}
 Mg domain flag: MgO(l) uses a labelled constant-Cp supercooled-liquid continuation from JANAF Mg-009; this is a hypothetical reference, not a prediction of a liquid condensate; band ±0.76 dex pO2
 ```
 
@@ -791,7 +791,7 @@ buffer offset such as ΔIW.
 
 ### Published SF04 versus openimcc derivations
 
-`load_profile("openimcc")` selects the D066 v5 melt pack, the default
+`load_profile("openimcc")` selects the D066 v4 melt pack, the default
 openimcc gas and condensate tables, and redox v4. This is the source-railed,
 re-derived set. `load_profile("published")` selects the frozen
 `imcc-sf04-v1.0.2.json` melt records, the shared JANAF gas table, and the
@@ -830,10 +830,10 @@ unavailable uncertainty band; it does not alter the calculated activities.
 
 It also reports a `cao-sio2-activity-bias` notice for an effectively binary
 CaO–SiO2 melt, and that notice does not change activities. The measured
-moderate and strong text applies only to the scored default D066 pack
-identity. Any other pack inside the same composition and temperature gate
-carries `cao-sio2-activity-bias-unscored`, which says the bias was measured
-on that default pack and has not been re-scored. After
+moderate and strong text applies only to the scored D066 v5 pack identity.
+The default D066 v4 pack and any other pack inside the same composition and
+temperature gate carry `cao-sio2-activity-bias-unscored`, which says the bias
+evidence was scored on D066 v5 and has not been re-scored for that pack. After
 weight-to-mole conversion, CaO+SiO2 must be at least 0.98 of the parent
 moles and every other parent must be below 0.01. On that sub-basis,
 x(CaO) = n(CaO)/(n(CaO)+n(SiO2)). The notice fires only for T in
@@ -1403,10 +1403,10 @@ MgAl2O4 (at 1700 K, on the glass segments of the JANAF liquid tables),
 1.1 kJ/mol for Mg2SiO4, 0.7 kJ/mol for MgTi2O5, and 0.3–0.4 kJ/mol for
 MgTiO3, Mg2TiO4 and MgSiO3 (0.27 kJ/mol). On the liquid branch at
 2600–3000 K, its MgAl2O4 row differs by +5.0 to +6.0 kJ/mol (0.10–0.11 dex).
-The current default melt pack, `imcc-sf04-d066-v5.json`, combines Shornikov's
-primary MgAl2O4 fusion measurement and the D&G/Masson FeO(l) re-anchor with
-five Hess-cycle association-A refits. D066 v1–v4 remain loadable historical
-packs; `openimcc-redox-v4.json` is the redox default. See
+The current default melt pack is `imcc-sf04-d066-v4.json`. D066 v5 remains
+loadable by version or path and adds five Hess-cycle association-A refits to
+the v4 pack. D066 v1–v3 also remain loadable; `openimcc-redox-v4.json` is the
+redox default. See
 [`docs/liquid-from-solid.md`](docs/liquid-from-solid.md) for the source choice
 and derivation.
 
@@ -1420,7 +1420,7 @@ source liquid nodes below 1800 K; its 1200–1800 K parent row is therefore an
 explicit constant-Cp continuation, which every affected gas result flags.
 
 The frozen published reproduction pack remains unchanged: every row is its
-source's published value. The current default melt and redox packs are D066 v5
+source's published value. The current default melt and redox packs are D066 v4
 and redox v4, respectively; their source corrections and provenance are
 recorded in the packs.
 

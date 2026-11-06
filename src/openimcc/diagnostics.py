@@ -18,7 +18,12 @@ from typing import Any
 import numpy as np
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K as R
-from openimcc.model import ImccLoadedDatapack, evaluate, load_datapack
+from openimcc.model import (
+    DEFAULT_MELT_PACK_NAME,
+    ImccLoadedDatapack,
+    evaluate,
+    load_datapack,
+)
 
 _PARENT_CP_BY_PACK = {
     "252f8705a3d04799ab9131836785992ffbedb6e01c98780c849498f4836804f2": {
@@ -213,7 +218,9 @@ def load_calorimetry_dataset() -> dict[str, Any]:
 def run_cp_implied(pack_path: str | Path | None = None) -> tuple[ImccLoadedDatapack, list[dict[str, Any]], dict[str, Any]]:
     """Evaluate the packaged sodium calorimetry points and produce scored rows."""
     if pack_path is None:
-        pack_path = resources.files("openimcc").joinpath("data/packs/imcc-sf04-d066-v5.json")
+        pack_path = resources.files("openimcc").joinpath(
+            f"data/packs/{DEFAULT_MELT_PACK_NAME}"
+        )
     pack = load_datapack(str(pack_path))
     dataset = load_calorimetry_dataset()
     temperatures = (900., 1323., 1500., 1700., 1800.)
@@ -400,7 +407,7 @@ def run_mixing_enthalpy(
     """Run reported liquid excess and oxide-dissolution enthalpy comparisons."""
     if pack_path is None:
         pack_path = resources.files("openimcc").joinpath(
-            "data/packs/imcc-sf04-d066-v5.json"
+            f"data/packs/{DEFAULT_MELT_PACK_NAME}"
         )
     pack = load_datapack(str(pack_path))
     has_active_excess = any(term.active for term in pack.excess_gibbs_terms)

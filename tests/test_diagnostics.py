@@ -181,7 +181,7 @@ def test_cli_csv_contains_flatness_and_evaluation_metadata(tmp_path):
     assert sodium_1323["extrapolated"] == "True"
     notices = json.loads(sodium_1323["notices"])
     assert any(notice.startswith("temperature-domain-extension:") for notice in notices)
-    assert any(notice.startswith("low-temperature-uncertain:") for notice in notices)
+    assert any(notice.startswith("low-temperature-uncertain-unscored:") for notice in notices)
     sodium_1700 = next(row for row in rows
                        if row["dataset_id"] == "Na2Si2O5" and row["temperature_K"] == "1700.0")
     assert sodium_1700["extrapolated"] == "False"
@@ -210,20 +210,20 @@ def test_crystal_closure_units_controls_and_default_regression():
             abs=1e-12,
         )
         assert node["delta_log10_vapor_product"] == pytest.approx(node["SI"], abs=1e-12)
-    assert by_phase["forsterite"]["root_K"] is None
+    assert by_phase["forsterite"]["root_K"] == pytest.approx(1801.243032043029)
     for phase in ("forsterite", "anorthite", "diopside", "pseudowollastonite",
                    "spinel", "akermanite", "gehlenite"):
         assert "independent_deltaG_fusion_kJ_mol" in by_phase[phase]["in_range_node"]
         assert "closure_miss_kJ_mol" in by_phase[phase]["in_range_node"]
         assert by_phase[phase]["in_range_node"]["independent_fusion_method"] == "linear-enthalpy"
-    assert by_phase["forsterite"]["SI_positive_below_root"] is None
-    assert by_phase["anorthite"]["in_range_node"]["residual_kJ_mol"] == pytest.approx(3.6066, abs=0.001)
+    assert by_phase["forsterite"]["SI_positive_below_root"] is True
+    assert by_phase["anorthite"]["in_range_node"]["residual_kJ_mol"] == pytest.approx(-11.61040160743805, abs=0.001)
     assert all(control["activity"] == pytest.approx(1.0) for control in details["pure_oxide_controls"])
     assert all(control["SI"] == pytest.approx(0.0, abs=1e-12)
                for control in details["pure_oxide_controls"])
     eutectic = details["An42Di58_1547K"]
-    assert eutectic["anorthite"]["SI"] == pytest.approx(0.212738, abs=0.001)
-    assert eutectic["diopside"]["SI"] == pytest.approx(-0.515303, abs=0.001)
+    assert eutectic["anorthite"]["SI"] == pytest.approx(-0.1771211806455506, abs=0.001)
+    assert eutectic["diopside"]["SI"] == pytest.approx(-0.715367037357284, abs=0.001)
     assert details["condensate_table_digest"]
     data = load_crystal_dataset()
     parameters = {phase["id"]: phase["berman_parameters"]
@@ -309,10 +309,10 @@ def test_anorthite_and_forsterite_liquidus_misses_are_reported():
     forsterite = liquidus_bracket(
         {"MgO": 57.30, "SiO2": 42.70}, 1323.0, 2100.0, pack
     )
-    assert anorthite.liquidus_K == pytest.approx(1406.329663970257, abs=1e-6)
-    assert anorthite.controlling_phase == "pseudowollastonite"
-    assert forsterite.status is CrystalStatus.NO_SUPPORTED_CROSSING
-    assert forsterite.liquidus_K is None
+    assert anorthite.liquidus_K == pytest.approx(1697.861828768401, abs=1e-6)
+    assert anorthite.controlling_phase == "anorthite"
+    assert forsterite.status is CrystalStatus.AVAILABLE
+    assert forsterite.liquidus_K == pytest.approx(1801.2429445947428, abs=1e-6)
 
 
 def test_cleaned_feed_liquidus_regression_and_dropped_parent_notices():
@@ -336,16 +336,14 @@ def test_cleaned_feed_liquidus_regression_and_dropped_parent_notices():
     }
     results = {name: liquidus_bracket(values, 1323.0, 2100.0)
                for name, values in feeds.items()}
-    assert results["lunar_low_ti"].status is CrystalStatus.AVAILABLE
-    assert results["lunar_low_ti"].liquidus_K == pytest.approx(1358.941607819844, abs=1e-6)
-    assert results["lunar_low_ti"].controlling_phase == "anorthite"
-    assert (results["mars_basalt"].status, results["mars_basalt"].liquidus_K,
-            results["mars_basalt"].controlling_phase) == (
-                CrystalStatus.AVAILABLE, 1428.8525596426869, "forsterite")
+    assert results["lunar_low_ti"].status is CrystalStatus.NO_SUPPORTED_CROSSING
+    assert results["lunar_low_ti"].liquidus_K is None
+    assert results["mars_basalt"].status is CrystalStatus.NO_SUPPORTED_CROSSING
+    assert results["mars_basalt"].liquidus_K is None
     # Recomputed after the Fe/Ti nodes were rebuilt on the JANAF elemental
     # reference chain; the CI feed remains supported.
     assert results["ci"].status is CrystalStatus.AVAILABLE
-    assert results["ci"].liquidus_K == pytest.approx(1948.2335138534745, abs=1e-6)
+    assert results["ci"].liquidus_K == pytest.approx(1542.9466545748278, abs=1e-6)
     assert results["ci"].controlling_phase == "forsterite"
     dropped = results["lunar_low_ti"].notices[0]
     assert dropped.code == "crystal_si_dropped_parents"
@@ -373,9 +371,9 @@ def test_p2o5_crystal_results_require_an_explicit_extension_pack():
     )
 
     default_liquidus = liquidus_bracket(basalt, 1323.0, 2100.0)
-    assert default_liquidus.status is CrystalStatus.AVAILABLE
-    assert default_liquidus.controlling_phase == "anorthite"
-    assert default_liquidus.liquidus_K == pytest.approx(1324.2071784097147)
+    assert default_liquidus.status is CrystalStatus.NO_SUPPORTED_CROSSING
+    assert default_liquidus.controlling_phase is None
+    assert default_liquidus.liquidus_K is None
     # The dropped-parent notice normalizes 0.3 wt% against the full 100.3 wt% feed.
     assert default_liquidus.notices[0].dropped_oxides_wt_percent == pytest.approx(
         {"P2O5": 100.0 * 0.3 / 100.3}
@@ -385,7 +383,7 @@ def test_p2o5_crystal_results_require_an_explicit_extension_pack():
     default_anorthite = next(
         row for row in default_saturation if row.phase == "anorthite"
     )
-    assert default_anorthite.SI == pytest.approx(-0.919217393887485)
+    assert default_anorthite.SI == pytest.approx(-1.2909159276984754)
     assert default_anorthite.notices[0].dropped_oxides_wt_percent == pytest.approx(
         {"P2O5": 100.0 * 0.3 / 100.3}
     )
@@ -709,7 +707,7 @@ def test_excess_interaction_enthalpy_in_mixing_endpoints_and_dissolution(
         candidate, composition, 1800.0,
         endmembers=endmembers, endmember_fractions=fractions,
     )
-    assert candidate_mix["excess_enthalpy_kJ"] - ideal_mix["excess_enthalpy_kJ"] == pytest.approx(-15.0)
+    assert candidate_mix["excess_enthalpy_kJ"] - ideal_mix["excess_enthalpy_kJ"] == pytest.approx(-15.58330295013684)
     assert candidate_mix["total_enthalpy_kJ"] - candidate_mix["association_enthalpy_kJ"] == pytest.approx(-15.0)
     for endpoint in candidate_mix["endmember_endpoints"].values():
         assert endpoint["excess_interaction_enthalpy_kJ_per_formula"] == pytest.approx(
@@ -785,19 +783,19 @@ def test_mixing_enthalpy_dissolution_conversion_and_pinned_residuals():
     pack, rows = run_mixing_enthalpy()
     cmas = next(row for row in rows if row["observation_id"] == "CaO")
     assert cmas["measured_mixing_partial_kJ_mol"] == pytest.approx(-4.3 - 77.754, abs=1e-9)
-    assert cmas["residual_kJ_mol"] == pytest.approx(10.709970, abs=0.002)
+    assert cmas["residual_kJ_mol"] == pytest.approx(11.37462573569141, abs=0.002)
     expected = {
-        "An43.5Di49Fo7.5": 0.983864,
-        "An42Di58": 3.268408,
-        "Di58Ak42-Ak133.1": -4.064451,
-        "Di58Ak42-Ak139.8": -1.564451,
-        "An46Ak54-Ak133.1": 1.562120,
-        "An46Ak54-Ak139.8": 5.162120,
-        "Di84Qt16": -4.409133,
-        "CaO": 10.709970,
-        "SiO2": -0.320730,
-        "Al2O3": -32.437843,
-        "MgO": -41.386681,
+        "An43.5Di49Fo7.5": -1.0276330191214926,
+        "An42Di58": 0.8704373418595877,
+        "Di58Ak42-Ak133.1": -2.664966747367822,
+        "Di58Ak42-Ak139.8": -0.16496674736782202,
+        "An46Ak54-Ak133.1": -1.0698849929156777,
+        "An46Ak54-Ak139.8": 2.530115007084323,
+        "Di84Qt16": -2.7955092781310498,
+        "CaO": 11.37462573569141,
+        "SiO2": -3.168378061873991,
+        "Al2O3": -40.138550961299906,
+        "MgO": -59.41107444573093,
     }
     actual = {row["observation_id"]: row["residual_kJ_mol"] for row in rows}
     assert actual == pytest.approx(expected, abs=0.002)

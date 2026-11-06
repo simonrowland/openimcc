@@ -8,7 +8,7 @@ log₁₀ K = A + B/T
 ```
 
 Two published thermochemical routes give materially different values. The
-default `imcc-sf04-d066-v5` pack uses the SF04-derived row. Its recorded
+D066 v5 pack uses the SF04-derived row. Its recorded
 standard-state refit covers the SiO₂ parent (`SiO₂: 2.0`); the row's K₂O
 reference remains unresolved:
 
@@ -75,7 +75,7 @@ and SiO₂(l) parent standards, would distinguish the two routes.
 Default-pack K pressures remain low against K-vapor measurements, and the
 size of the discrepancy varies with composition and source. The separate
 Hastie (1981) KEMS case-4 comparison carried by the melt notice is lower by
-1.17–1.22 dex for the default pack; it is not the same composition slice as
+1.17–1.22 dex for D066 v5; it is not the same composition slice as
 the in-domain Plante comparison. Treat K predictions as source-sensitive
 outputs, keep their temperature and composition with any reported value, and
 do not apply a universal correction from either comparison. The default pack

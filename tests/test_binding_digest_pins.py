@@ -64,7 +64,7 @@ D066_MANIFEST_SHA256 = {
     ),
 }
 D066_BINDING_SHA256 = D066_MANIFEST_SHA256
-D066_DEFAULT_K_PRESSURE_BAR = 0.0005914655746591656
+D066_DEFAULT_K_PRESSURE_BAR = 0.0005443175873747197
 COMPOSITIONS = (
     {
         "SiO2": 0.45,
@@ -213,7 +213,7 @@ def test_profile_binding_digest_values_are_pinned() -> None:
     )
     assert (
         load_profile("openimcc").melt_pack.binding_digest
-        == D066_MANIFEST_SHA256["imcc-sf04-d066-v5.json"]
+        == D066_MANIFEST_SHA256["imcc-sf04-d066-v4.json"]
     )
 
 

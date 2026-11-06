@@ -14,8 +14,8 @@ from openimcc import model
 
 
 CASES = (
-    # Expected silica activities are pinned to D066 v5. Its five reviewed A
-    # refits move these equilibrium values while retaining continuation here.
+    # Expected silica activities are pinned to the D066 v4 default; the
+    # continuation behavior remains the same across these depleted cases.
     (
         {
             "SiO2": 0.011138886562497141,
@@ -28,7 +28,7 @@ CASES = (
             "K2O": 8.844980280923895,
         },
         2445.65,
-        4.660183622030195e-09,
+        3.4974271192541507e-09,
     ),
     (
         {
@@ -42,7 +42,7 @@ CASES = (
             "K2O": 8.96629272065383,
         },
         2400.65,
-        9.436879517699633e-05,
+        6.786596702235709e-05,
     ),
     (
         {
@@ -56,7 +56,7 @@ CASES = (
             "K2O": 8.966292720650552,
         },
         2400.65,
-        9.436879517699549e-05,
+        6.786596702235624e-05,
     ),
 )
 
@@ -154,9 +154,9 @@ def test_lunar_trace_state_converges_with_corrected_default_pack() -> None:
     elif solver_path != "relative-log-x":
         assert result.convergence.continuation_stages > 0
     assert result.convergence.residual_inf <= 1.0e-12
-    # The five D066 v5 A refits change this composition's silica activity.
+    # The D066 v4 default changes this composition's silica activity.
     assert result.parent_activity[result.parent_oxides.index("SiO2")] == pytest.approx(
-        0.009453263630275925, rel=2.0e-5
+        0.005834462351477136, rel=2.0e-5
     )
 
 

@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src/openimcc/data/packs"
 LEGACY_PATH = PACK_DIR / "imcc-sf04-ext-v4.json"
 PUBLISHED_PATH = PACK_DIR / "imcc-sf04-v1.0.2.json"
-DEFAULT_PATH = PACK_DIR / "imcc-sf04-d066-v5.json"
+DEFAULT_PATH = PACK_DIR / "imcc-sf04-d066-v4.json"
 D066_V3_PATH = PACK_DIR / "imcc-sf04-d066-v3.json"
 FEO_CANDIDATE_PATH = PACK_DIR / "imcc-sf04-d066-feo-liquid-candidate.json"
 SENSITIVITY_PATH = PACK_DIR / "imcc-sf04-d066-v1-kcaalsi2o7.json"
@@ -122,7 +122,7 @@ def test_loader_defaults_unmarked_published_rows_to_active() -> None:
 def test_default_is_d066_and_legacy_packs_remain_selectable() -> None:
     default_pack = load_datapack()
     assert default_pack.model_id == "IMCC-SF04-D066"
-    assert default_pack.version == "1.0.7-d066-v5"
+    assert default_pack.version == "1.0.6-d066-v4"
     data = json.loads(DEFAULT_PATH.read_text(encoding="utf-8"))
     rows = {row["complex"]: row for row in data["rows"]}
     source_suffix = (
@@ -590,7 +590,7 @@ def test_free_fraction_pressure_bookkeeping_and_pure_k2o_endpoint(
     assert observed_shift == pytest.approx(full_reference_shift, abs=1e-10)
 
 
-def test_default_v5_changes_non_k_composition_from_frozen_d066_v1() -> None:
+def test_default_v4_changes_non_k_composition_from_frozen_d066_v1() -> None:
     composition = {**COMPOSITIONS[0], "K2O": 0.0}
     frozen = evaluate(
         composition,
@@ -609,10 +609,10 @@ def test_default_v5_changes_non_k_composition_from_frozen_d066_v1() -> None:
     corrected_species = dict(zip(corrected.species_names, corrected.species_x))
     assert frozen_activity["MgO"] == pytest.approx(0.030035248299845278, abs=1e-14)
     assert frozen_activity["Al2O3"] == pytest.approx(0.01691805447658924, abs=1e-14)
-    assert corrected_activity["MgO"] == pytest.approx(0.046049207789092494, abs=1e-14)
-    assert corrected_activity["Al2O3"] == pytest.approx(0.016923323947189147, abs=1e-14)
+    assert corrected_activity["MgO"] == pytest.approx(0.028310806020003704, abs=1e-14)
+    assert corrected_activity["Al2O3"] == pytest.approx(0.01163566609529646, abs=1e-14)
     assert corrected_species["MgAl2O4"] == pytest.approx(
-        0.0173039252062108, abs=1e-14
+        0.034233563132473006, abs=1e-14
     )
 
 

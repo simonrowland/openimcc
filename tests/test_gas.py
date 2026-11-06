@@ -2700,9 +2700,9 @@ def test_oxygen_balance_includes_each_dict_only_nonoxide_parent(
         ),
     )
     assert no_extra_calls[0] == no_extra_calls[1] == no_extra_calls[2]
-    # The default D066 v5 association refit changes the basalt activities
-    # supplied to this oxygen balance; the gas data and balance method are unchanged.
-    assert no_extra_calls[0][0] == pytest.approx(4.044113669939106e-06, rel=1e-12)
+    # The default D066 v4 row set supplies the basalt activities to this
+    # oxygen balance; the gas data and balance method are unchanged.
+    assert no_extra_calls[0][0] == pytest.approx(5.153813984425113e-06, rel=1e-12)
 
     # The explicit oxide subset keeps excluding every other oxide activity.
     root, pressures, _ = evaluate_gas_oxygen_balance(
@@ -2711,7 +2711,7 @@ def test_oxygen_balance_includes_each_dict_only_nonoxide_parent(
         gas_pack,
         parent_oxides=("SiO2", "MgO"),
     )
-    assert root == pytest.approx(5.4130789404751755e-08, rel=1e-12)
+    assert root == pytest.approx(5.2556661572007086e-08, rel=1e-12)
     assert len(pressures) == 9
     assert "Na" not in pressures
 
@@ -6871,7 +6871,7 @@ def test_basalt_saturation_and_fixed_activity_boiling_pressures() -> None:
                     allow_out_of_envelope=True)
     activities = {name: melt.activity(name) for name in melt.parent_oxides}
     for temperature, expected_pressure in zip(
-        (4000.0, 5000.0, 6000.0), (27.0, 471.0, 3018.0), strict=True,
+        (4000.0, 5000.0, 6000.0), (25.906994285011034, 453.03456560852595, 2900.361406840125), strict=True,
     ):
         state = evaluate_gas_saturation(
             activities, temperature, candidate, parent_oxides=tuple(activities),
@@ -6892,7 +6892,7 @@ def test_basalt_saturation_and_fixed_activity_boiling_pressures() -> None:
         parent_oxides=tuple(activities), include_ions=True,
         allow_extrapolation=True,
     )[0]
-    assert boiling_one_bar == pytest.approx(3263.0, rel=0.001)
+    assert boiling_one_bar == pytest.approx(3269.1724516742247, rel=0.001)
     for ambient in (1e-6, 1e-3, 1.0):
         temperature, state = gas_boiling_temperature(
             activities, candidate, ambient, (1000.0, 6000.0),

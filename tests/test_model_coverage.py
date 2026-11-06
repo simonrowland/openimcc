@@ -24,6 +24,17 @@ from openimcc import (
 
 
 BASE_DATAPACK = Path("src/openimcc/data/packs/imcc-sf04-v1.0.2.json")
+PACKS = Path("src/openimcc/data/packs")
+V5_DATAPACK = Path("src/openimcc/data/packs/imcc-sf04-d066-v5.json")
+
+
+@pytest.fixture(scope="module")
+def scored_v5_pack():
+    return load_datapack(V5_DATAPACK)
+
+
+def _identity(pack) -> tuple[str, str]:
+    return pack.model_id, pack.binding_digest
 
 
 def _base_data() -> dict[str, Any]:
@@ -546,7 +557,7 @@ def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
 
     melt = {"Na2O": 33.0, "SiO2": 67.0}
     below = evaluate(melt, 1500.0, allow_extrapolation=True)
-    marker = "low-temperature-uncertain: the Na2Si2O5 association"
+    marker = "low-temperature-uncertain-unscored:"
     assert sum(marker in notice for notice in below.labels.notices) == 1
     floor = evaluate(melt, 1699.0, allow_extrapolation=True)
     assert sum(marker in notice for notice in floor.labels.notices) == 1
@@ -555,8 +566,10 @@ def test_na2si2o5_low_temperature_notice_fires_only_below_its_domain() -> None:
         0.2795921623351865, rel=1e-12, abs=0.0
     )
     measured = next(n for n in below.labels.notices if marker in n)
-    assert "Piacente and Matoušek (1973)" in measured
-    assert "1.5–3x" in measured
+    assert measured == (
+        "low-temperature-uncertain-unscored: Na-silicate low-temperature "
+        "evidence is unscored for this pack"
+    )
     assert floor.parent_activity[6] == pytest.approx(
         1.3724549799095924e-7, rel=1e-12, abs=0.0
     )
@@ -602,9 +615,9 @@ _CAO_SIO2_STRONG = (
 )
 
 
-def test_cao_sio2_activity_bias_notice_severities_at_1933() -> None:
+def test_cao_sio2_activity_bias_notice_severities_at_1933(scored_v5_pack) -> None:
     """x(CaO)=0.50 is moderate and x(CaO)=0.62 is strong; values stay put."""
-    moderate = evaluate({"CaO": 0.50, "SiO2": 0.50}, 1933.0)
+    moderate = evaluate({"CaO": 0.50, "SiO2": 0.50}, 1933.0, scored_v5_pack)
     assert _cao_sio2_bias_notices(moderate) == (_CAO_SIO2_MODERATE,)
     assert moderate.parent_activity[
         moderate.parent_oxides.index("SiO2")
@@ -613,7 +626,7 @@ def test_cao_sio2_activity_bias_notice_severities_at_1933() -> None:
         moderate.parent_oxides.index("CaO")
     ] == pytest.approx(0.003186326308813352, rel=1e-12, abs=0.0)
 
-    strong = evaluate({"CaO": 0.62, "SiO2": 0.38}, 1933.0)
+    strong = evaluate({"CaO": 0.62, "SiO2": 0.38}, 1933.0, scored_v5_pack)
     assert _cao_sio2_bias_notices(strong) == (_CAO_SIO2_STRONG,)
     assert strong.parent_activity[
         strong.parent_oxides.index("SiO2")
@@ -632,6 +645,7 @@ def test_cao_sio2_activity_bias_notice_severities_at_1933() -> None:
         },
         1933.0,
         basis_type="wt",
+        pack=scored_v5_pack,
     )
     assert _cao_sio2_bias_notices(by_weight) == (_CAO_SIO2_MODERATE,)
 
@@ -664,30 +678,30 @@ def test_cao_sio2_activity_bias_notice_skips_lunar_basalts_and_low_xcao() -> Non
     assert _cao_sio2_bias_notices(low_x) == ()
 
 
-def test_cao_sio2_activity_bias_notice_boundaries() -> None:
+def test_cao_sio2_activity_bias_notice_boundaries(scored_v5_pack) -> None:
     """Closed x(CaO) and T ends fire; the shared 0.56 edge is strong."""
     assert _cao_sio2_bias_notices(
-        evaluate({"CaO": 0.42, "SiO2": 0.58}, 1933.0)
+        evaluate({"CaO": 0.42, "SiO2": 0.58}, 1933.0, scored_v5_pack)
     ) == (_CAO_SIO2_MODERATE,)
     assert _cao_sio2_bias_notices(
-        evaluate({"CaO": 0.419, "SiO2": 0.581}, 1933.0)
+        evaluate({"CaO": 0.419, "SiO2": 0.581}, 1933.0, scored_v5_pack)
     ) == ()
     assert _cao_sio2_bias_notices(
-        evaluate({"CaO": 0.559, "SiO2": 0.441}, 1933.0)
+        evaluate({"CaO": 0.559, "SiO2": 0.441}, 1933.0, scored_v5_pack)
     ) == (_CAO_SIO2_MODERATE,)
     assert _cao_sio2_bias_notices(
-        evaluate({"CaO": 0.56, "SiO2": 0.44}, 1933.0)
+        evaluate({"CaO": 0.56, "SiO2": 0.44}, 1933.0, scored_v5_pack)
     ) == (_CAO_SIO2_STRONG,)
     assert _cao_sio2_bias_notices(
-        evaluate({"CaO": 0.70, "SiO2": 0.30}, 1933.0)
+        evaluate({"CaO": 0.70, "SiO2": 0.30}, 1933.0, scored_v5_pack)
     ) == (_CAO_SIO2_STRONG,)
     assert _cao_sio2_bias_notices(
-        evaluate({"CaO": 0.701, "SiO2": 0.299}, 1933.0)
+        evaluate({"CaO": 0.701, "SiO2": 0.299}, 1933.0, scored_v5_pack)
     ) == ()
 
     binary = {"CaO": 0.50, "SiO2": 0.50}
-    assert _cao_sio2_bias_notices(evaluate(binary, 1873.0)) == (_CAO_SIO2_MODERATE,)
-    assert _cao_sio2_bias_notices(evaluate(binary, 1933.0)) == (_CAO_SIO2_MODERATE,)
+    assert _cao_sio2_bias_notices(evaluate(binary, 1873.0, scored_v5_pack)) == (_CAO_SIO2_MODERATE,)
+    assert _cao_sio2_bias_notices(evaluate(binary, 1933.0, scored_v5_pack)) == (_CAO_SIO2_MODERATE,)
     assert _cao_sio2_bias_notices(evaluate(binary, 1872.0)) == ()
     assert _cao_sio2_bias_notices(evaluate(binary, 1934.0)) == ()
     # 1973 K is an unvalidated model map, not a notice boundary.
@@ -697,48 +711,47 @@ def test_cao_sio2_activity_bias_notice_boundaries() -> None:
     at_share = evaluate(
         {"CaO": 490.0, "SiO2": 490.0, "MgO": 9.0, "FeO": 9.0, "Al2O3": 2.0},
         1933.0,
+        pack=scored_v5_pack,
     )
     assert _cao_sio2_bias_notices(at_share) == (_CAO_SIO2_MODERATE,)
     below_share = evaluate(
         {"CaO": 489.0, "SiO2": 490.0, "MgO": 9.0, "FeO": 9.0, "Al2O3": 3.0},
         1933.0,
+        pack=scored_v5_pack,
     )
     assert _cao_sio2_bias_notices(below_share) == ()
 
     # Another parent at exactly 0.01 is outside the binary gate.
-    at_other = evaluate({"CaO": 495.0, "SiO2": 495.0, "MgO": 10.0}, 1933.0)
+    at_other = evaluate({"CaO": 495.0, "SiO2": 495.0, "MgO": 10.0}, 1933.0, scored_v5_pack)
     assert _cao_sio2_bias_notices(at_other) == ()
-    under_other = evaluate({"CaO": 496.0, "SiO2": 495.0, "MgO": 9.0}, 1933.0)
+    under_other = evaluate({"CaO": 496.0, "SiO2": 495.0, "MgO": 9.0}, 1933.0, scored_v5_pack)
     assert _cao_sio2_bias_notices(under_other) == (_CAO_SIO2_MODERATE,)
 
 
 _CAO_SIO2_UNSCORED = (
     "cao-sio2-activity-bias-unscored: the CaO–SiO2 silica-activity bias was "
-    f"measured on {model._DEFAULT_D066_V5_IDENTITY[0]} "
-    f"(binding digest {model._DEFAULT_D066_V5_IDENTITY[1]}) and has not "
+    f"measured on {model._SCORED_D066_V5_IDENTITY[0]} "
+    f"(binding digest {model._SCORED_D066_V5_IDENTITY[1]}) and has not "
     "been re-scored for this IMCC-SF04-D066 pack"
 )
 
 
 def test_cao_sio2_evidence_identity_matches_the_default_pack() -> None:
-    """A new default pack must not silently demote the measured notice."""
-    pack = load_datapack()
-    loaded = (pack.model_id, pack.binding_digest)
-    evidence = model._DEFAULT_D066_V5_IDENTITY
-    assert loaded == evidence, (
-        "the default melt pack identity no longer matches the CaO-SiO2 "
-        f"evidence identity {evidence[0]} {evidence[1]}; loaded "
-        f"{loaded[0]} {loaded[1]}. Re-score the CaO-SiO2 evidence and "
-        "update the measured identity."
-    )
-    assert model._melt_notice_score("cao-sio2-activity-bias", loaded) == "scored"
+    """The v4 default is unscored while explicit v5 keeps its score."""
+    default = load_datapack()
+    loaded = (default.model_id, default.binding_digest)
+    evidence = model._SCORED_D066_V5_IDENTITY
+    assert loaded == _identity(load_datapack(PACKS / "imcc-sf04-d066-v4.json"))
+    assert loaded != evidence
+    assert model._melt_notice_score("cao-sio2-activity-bias", loaded) == "unscored"
+    assert model._melt_notice_score("cao-sio2-activity-bias", evidence) == "scored"
 
 
 def test_cao_sio2_other_pack_gets_the_unscored_notice() -> None:
     """A different candidate digest does not inherit the measured residuals."""
     candidate = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
-    assert candidate.model_id == model._DEFAULT_D066_V5_IDENTITY[0]
-    assert candidate.binding_digest != model._DEFAULT_D066_V5_IDENTITY[1]
+    assert candidate.model_id == model._SCORED_D066_V5_IDENTITY[0]
+    assert candidate.binding_digest != model._SCORED_D066_V5_IDENTITY[1]
 
     scored = evaluate({"CaO": 0.50, "SiO2": 0.50}, 1933.0, candidate)
     assert _cao_sio2_bias_notices(scored) == ()
@@ -763,9 +776,9 @@ _MULTICOMPONENT_ACTIVITY_PATTERN_MARKERS = (
 )
 
 
-def test_multicomponent_pattern_cmas_values_unchanged() -> None:
+def test_multicomponent_pattern_cmas_values_unchanged(scored_v5_pack) -> None:
     composition = {"SiO2": 50.0, "CaO": 25.0, "MgO": 15.0, "Al2O3": 10.0}
-    result = evaluate(composition, 1823.0, basis_type="wt")
+    result = evaluate(composition, 1823.0, scored_v5_pack, basis_type="wt")
     notices = tuple(
         notice
         for notice in result.labels.notices
@@ -822,7 +835,7 @@ def test_multicomponent_pattern_skips_binary() -> None:
 
 def test_multicomponent_pattern_gate_boundaries() -> None:
     parents = ("SiO2", "CaO", "MgO", "Al2O3")
-    identity = model._DEFAULT_D066_V5_IDENTITY
+    identity = model._SCORED_D066_V5_IDENTITY
     moles = np.array((0.70, 0.10, 0.10, 0.10))
     notice = model._multicomponent_activity_pattern_notice
 
@@ -839,12 +852,14 @@ def test_multicomponent_pattern_gate_boundaries() -> None:
 
 def test_multicomponent_pattern_identity_scope() -> None:
     default = load_datapack()
-    evidence = model._DEFAULT_D066_V5_IDENTITY
-    assert (default.model_id, default.binding_digest) == evidence
+    evidence = model._SCORED_D066_V5_IDENTITY
+    assert _identity(default) == _identity(load_datapack(PACKS / "imcc-sf04-d066-v4.json"))
+    assert _identity(default) != evidence
     assert (
         model._melt_notice_score("multicomponent-activity-pattern", evidence)
         == "scored"
     )
+    assert model._melt_notice_score("multicomponent-activity-pattern", _identity(default)) == "unscored"
 
     candidate = load_datapack(
         "src/openimcc/data/packs/imcc-sf04-d066-v2.json"
@@ -867,9 +882,9 @@ def test_multicomponent_pattern_identity_scope() -> None:
     assert "this pack has not been scored" in notices[0]
 
 
-def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None:
+def test_silicate_vapour_product_notice_gate_identity_and_solve_values(scored_v5_pack) -> None:
     diopside = {"CaO": 1.0, "MgO": 1.0, "SiO2": 2.0}
-    result = evaluate(diopside, 1668.0, allow_extrapolation=True)
+    result = evaluate(diopside, 1668.0, scored_v5_pack, allow_extrapolation=True)
     notices = [n for n in result.labels.notices if n.startswith("silicate-vapour-product-low-near-liquidus:")]
     assert len(notices) == 1
     assert "−0.53" in notices[0]
@@ -893,7 +908,7 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
     for phase, composition, melting_point, miss in phase_cases:
         notice = next(
             n for n in evaluate(
-                composition, melting_point, allow_extrapolation=True
+                composition, melting_point, scored_v5_pack, allow_extrapolation=True
             ).labels.notices
             if n.startswith("silicate-vapour-product-low-near-liquidus:")
         )
@@ -904,25 +919,25 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
 
     assert any(
         n.startswith("silicate-vapour-product-low-near-liquidus:")
-        for n in evaluate(diopside, 1618.0, allow_extrapolation=True).labels.notices
+        for n in evaluate(diopside, 1618.0, scored_v5_pack, allow_extrapolation=True).labels.notices
     )
     assert any(
         n.startswith("silicate-vapour-product-low-near-liquidus:")
-        for n in evaluate(diopside, 1718.0, allow_extrapolation=True).labels.notices
+        for n in evaluate(diopside, 1718.0, scored_v5_pack, allow_extrapolation=True).labels.notices
     )
     assert not any(
         n.startswith("silicate-vapour-product-low-near-liquidus")
-        for n in evaluate(diopside, 1718.1, allow_extrapolation=True).labels.notices
+        for n in evaluate(diopside, 1718.1, scored_v5_pack, allow_extrapolation=True).labels.notices
     )
     boundary_distance = {"CaO": 1.04, "MgO": 0.96, "SiO2": 2.0}
     outside_distance = {"CaO": 1.046875, "MgO": 0.953125, "SiO2": 2.0}
     assert any(
         n.startswith("silicate-vapour-product-low-near-liquidus:")
-        for n in evaluate(boundary_distance, 1668.0, allow_extrapolation=True).labels.notices
+        for n in evaluate(boundary_distance, 1668.0, scored_v5_pack, allow_extrapolation=True).labels.notices
     )
     assert not any(
         n.startswith("silicate-vapour-product-low-near-liquidus")
-        for n in evaluate(outside_distance, 1668.0, allow_extrapolation=True).labels.notices
+        for n in evaluate(outside_distance, 1668.0, scored_v5_pack, allow_extrapolation=True).labels.notices
     )
     at_share_boundary = {
         "CaO": 0.98, "MgO": 0.98, "SiO2": 1.96,
@@ -934,21 +949,21 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
     }
     assert any(
         n.startswith("silicate-vapour-product-low-near-liquidus:")
-        for n in evaluate(at_share_boundary, 1668.0, allow_extrapolation=True).labels.notices
+        for n in evaluate(at_share_boundary, 1668.0, scored_v5_pack, allow_extrapolation=True).labels.notices
     )
     assert not any(
         n.startswith("silicate-vapour-product-low-near-liquidus")
-        for n in evaluate(below_share_boundary, 1668.0, allow_extrapolation=True).labels.notices
+        for n in evaluate(below_share_boundary, 1668.0, scored_v5_pack, allow_extrapolation=True).labels.notices
     )
     at_other_parent_limit = {"CaO": 0.99, "MgO": 0.99, "SiO2": 1.98, "FeO": 0.04}
     below_other_parent_limit = {"CaO": 0.991, "MgO": 0.991, "SiO2": 1.982, "FeO": 0.036}
     assert not any(
         n.startswith("silicate-vapour-product-low-near-liquidus")
-        for n in evaluate(at_other_parent_limit, 1668.0, allow_extrapolation=True).labels.notices
+        for n in evaluate(at_other_parent_limit, 1668.0, scored_v5_pack, allow_extrapolation=True).labels.notices
     )
     assert any(
         n.startswith("silicate-vapour-product-low-near-liquidus:")
-        for n in evaluate(below_other_parent_limit, 1668.0, allow_extrapolation=True).labels.notices
+        for n in evaluate(below_other_parent_limit, 1668.0, scored_v5_pack, allow_extrapolation=True).labels.notices
     )
     other_pack = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
     unscored = evaluate(diopside, 1668.0, other_pack, allow_extrapolation=True)
@@ -961,32 +976,35 @@ def test_silicate_vapour_product_notice_gate_identity_and_solve_values() -> None
 
 
 def test_silicate_product_evidence_identity_is_pinned() -> None:
-    pack = load_datapack()
-    assert (pack.model_id, pack.binding_digest) == (
-        model._DEFAULT_D066_V5_IDENTITY
-    ), "default pack moved; re-score melt notice evidence before retaining measured claims"
+    default = load_datapack()
+    scored = load_datapack(V5_DATAPACK)
+    assert _identity(default) == _identity(load_datapack(PACKS / "imcc-sf04-d066-v4.json"))
+    assert _identity(scored) == model._SCORED_D066_V5_IDENTITY
+    assert model._melt_notice_score(
+        "silicate-vapour-product-low-near-liquidus", _identity(default)
+    ) == "unscored"
     assert (
         model._melt_notice_score(
             "silicate-vapour-product-low-near-liquidus",
-            model._DEFAULT_D066_V5_IDENTITY,
+            model._SCORED_D066_V5_IDENTITY,
         )
         == "scored"
     )
 
 
-def test_na2o_activity_bias_notice_gate_and_numeric_identity() -> None:
+def test_na2o_activity_bias_notice_gate_and_numeric_identity(scored_v5_pack) -> None:
     marker = "na2o-activity-bias:"
     mathieu_iii1_like = evaluate(
         {"SiO2": 49.1, "Al2O3": 0.05, "CaO": 41.29, "MgO": 5.06, "Na2O": 4.5},
-        1673.15, basis_type="wt", allow_extrapolation=True,
+        1673.15, pack=scored_v5_pack, basis_type="wt", allow_extrapolation=True,
     )
     mathieu_like = evaluate(
         {"SiO2": 8.81, "Na2O": 24.0, "CaO": 35.0, "MgO": 24.0, "Al2O3": 8.19},
-        1673.15, basis_type="wt", allow_extrapolation=True,
+        1673.15, pack=scored_v5_pack, basis_type="wt", allow_extrapolation=True,
         allow_out_of_envelope=True,
     )
     pak_binary = evaluate(
-        {"Na2O": 60.0, "SiO2": 40.0}, 1673.15,
+        {"Na2O": 60.0, "SiO2": 40.0}, 1673.15, pack=scored_v5_pack,
         allow_extrapolation=True, allow_out_of_envelope=True,
     )
     assert any(n.startswith(marker) for n in mathieu_iii1_like.labels.notices)
@@ -999,11 +1017,11 @@ def test_na2o_activity_bias_notice_gate_and_numeric_identity() -> None:
         8.65523987822024e-08, rel=1e-12, abs=0.0
     )
 
-    sodium_free = evaluate({"SiO2": 0.4, "CaO": 0.6}, 1673.15, allow_extrapolation=True)
-    high_silica = evaluate({"Na2O": 20.0, "SiO2": 80.0}, 1673.15, allow_extrapolation=True)
+    sodium_free = evaluate({"SiO2": 0.4, "CaO": 0.6}, 1673.15, scored_v5_pack, allow_extrapolation=True)
+    high_silica = evaluate({"Na2O": 20.0, "SiO2": 80.0}, 1673.15, scored_v5_pack, allow_extrapolation=True)
     albite_like = evaluate(
         {"Na2O": 0.5, "Al2O3": 0.5, "SiO2": 3.0},
-        1673.15, allow_extrapolation=True,
+        1673.15, scored_v5_pack, allow_extrapolation=True,
     )
     assert not any(n.startswith(marker) for n in sodium_free.labels.notices)
     assert not any(n.startswith(marker) for n in high_silica.labels.notices)
@@ -1011,12 +1029,11 @@ def test_na2o_activity_bias_notice_gate_and_numeric_identity() -> None:
 
 
 def test_na2o_activity_bias_evidence_identity_is_pinned() -> None:
-    pack = load_datapack()
-    assert (pack.model_id, pack.binding_digest) == (
-        model._DEFAULT_D066_V5_IDENTITY
-    ), "default pack moved; re-score Na2O bias evidence before retaining measured claims"
+    default = load_datapack()
+    assert _identity(default) == _identity(load_datapack(PACKS / "imcc-sf04-d066-v4.json"))
+    assert model._melt_notice_score("na2o-activity-bias", _identity(default)) == "unscored"
     assert (
-        model._melt_notice_score("na2o-activity-bias", model._DEFAULT_D066_V5_IDENTITY)
+        model._melt_notice_score("na2o-activity-bias", model._SCORED_D066_V5_IDENTITY)
         == "scored"
     )
 
@@ -1036,8 +1053,8 @@ def test_na2o_activity_bias_other_digest_uses_same_gate(
     composition: dict[str, float], expected: bool,
 ) -> None:
     pack = load_datapack("src/openimcc/data/packs/imcc-sf04-d066-v2.json")
-    assert pack.model_id == model._DEFAULT_D066_V5_IDENTITY[0]
-    assert pack.binding_digest != model._DEFAULT_D066_V5_IDENTITY[1]
+    assert pack.model_id == model._SCORED_D066_V5_IDENTITY[0]
+    assert pack.binding_digest != model._SCORED_D066_V5_IDENTITY[1]
     result = evaluate(
         composition, 1673.15, pack,
         allow_extrapolation=True, allow_out_of_envelope=True,
@@ -1045,5 +1062,5 @@ def test_na2o_activity_bias_other_digest_uses_same_gate(
     notices = tuple(n for n in result.labels.notices if n.startswith("na2o-activity-bias"))
     assert notices == ((
         "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias evidence "
-        "was measured on the default D066 v5 pack; this pack has not been scored.",
+        "was measured on D066 v5; this pack has not been scored.",
     ) if expected else ())

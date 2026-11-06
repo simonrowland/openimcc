@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Switched the default melt pack from D066 v5 to D066 v4 after standard-consistent
+  configurations favored v4 on five of six metrics at and above 1700 K and tied
+  or favored it below; v5 leads only on in-domain redox by 0.010 dex. Default
+  activities and downstream gas and redox outputs move with the pack. D066 v5
+  remains loadable by version or path.
+
 - Added a content-bound liquid-reference standards registry and public lookup
   and check APIs for all shipped melt and redox packs. Active table IDs follow
   the selected profile's existing FeO and gas metadata. FeO1.5 identifies its

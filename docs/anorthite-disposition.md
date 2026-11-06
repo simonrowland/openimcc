@@ -8,7 +8,7 @@ log₁₀ K = A + B/T
 ```
 
 The two recorded routes differ only in the constant term. The older v4 row is
-the FC87 Table 3 R12 value. The default v5 row refits `A` against mineral-
+the FC87 Table 3 R12 value. The D066 v5 row refits `A` against mineral-
 composition liquid formation Gibbs energies from an independent Hess cycle,
 holding the FC87 `B` fixed. The cycle combines crystal formation functions,
 measured anorthite fusion thermochemistry, and liquid heat capacity; no
@@ -19,7 +19,7 @@ input uncertainty, not a row-specific uncertainty band. See the [v4 row](../src/
 | Route | `A` | `B` (K) | Recorded derivation |
 | --- | ---: | ---: | --- |
 | FC87, stored in v4 | 2.691357 | 5209.541032 | FC87 Table 3 R12; Appendix 1 uses anorthite fusion/liquid Cp and solid data ([Fegley & Cameron, 1987](https://doi.org/10.1016/0012-821X(87)90196-8)). |
-| Hess refit, default v5 | 1.749738 | 5209.541032 | Fit to formula-composition liquid formation Gibbs energies at 1600, 1800, and 2000 K from the crystal, fusion, and liquid-Cp chain; crystal inputs follow Berman (1988) and Robie & Hemingway (1995), with anorthite fusion thermochemistry from Richet & Bottinga (1984). |
+| Hess refit, D066 v5 | 1.749738 | 5209.541032 | Fit to formula-composition liquid formation Gibbs energies at 1600, 1800, and 2000 K from the crystal, fusion, and liquid-Cp chain; crystal inputs follow Berman (1988) and Robie & Hemingway (1995), with anorthite fusion thermochemistry from Richet & Bottinga (1984). |
 
 The Hess reaction energy is
 `ΔrG° = G°[CaAl₂Si₂O₈(l)] − G°[CaO(l)] − G°[Al₂O₃(l)] − 2G°[SiO₂(l)]`,
@@ -41,7 +41,7 @@ independent of the other pack changes.
 I isolated the anorthite row by copying v5 to a scratch candidate pack and
 replacing only the `A` and `B` coefficients for `CaAl₂Si₂O₈` with the v4
 values. All primary comparisons below run from that FC87-row substitution in
-otherwise-v5 to the default v5 Hess row. The secondary full-pack column shows
+otherwise-v5 to the v5 Hess row. The secondary full-pack column shows
 v4-pack to v5-pack changes and includes the effects of other changed
 associations, including CaSiO₃; it does not isolate anorthite.
 
@@ -134,7 +134,7 @@ residual from −1.653 to −0.812 dex, so omitting it would make the misfit wor
 
 ### Isolated anorthite-row comparison
 
-The default D066 v5 Hess row is compared with an otherwise identical v5 pack
+The D066 v5 Hess row is compared with an otherwise identical v5 pack
 using only the v4 FC87 value for the `CaAl₂Si₂O₈` A coefficient. All activity
 MAE/RMSE values below are in dex on the pure-liquid parent-oxide standard;
 the SiO pressure scores are log-pressure residuals. Positive improvements
@@ -267,34 +267,18 @@ mixture enthalpies to 1950 K. A same-standard pure-An liquid formation Gibbs
 energy or direct enthalpy/Cp measurement near 2000 K and above would be a
 material new discriminator.
 
-## Why the default remains v5
+## Pack selection
 
-The source rail is consistency, then primary measurement, then domain match,
-then estimates. The default keeps the v5 Hess-refit anorthite row because it
-closes the documented formula-molar liquid formation Gibbs energy on the
-crystal, fusion, liquid-Cp, and parent-liquid standard-state chain. Activity
-data are an independent sensitivity check, not a coefficient-selection
-rule: the aggregate Stolyarova and Cho–Suito activity MAEs favor FC87 by
-0.0436 and 0.0564 dex, while Allibert ties and the exact-composition Table 3
-activity cells favor Hess. The matched SiO point favors FC87. This row
-difference is small beside the roughly 0.5-dex activity miss. The Baird
-Table XII transcription could not be verified against the scan and remains
-provisional; its provisional activity score favors FC87 (0.057 dex MAE
-versus 0.080 for Hess), while the 2003 constant-activity result favors v5's
-flatter trend. These comparisons show composition-dependent sensitivity,
-not a universal correction. The FC87 row remains a genuine published
-thermochemical route; its association is 30.6–44.6 kJ mol⁻¹ more favorable
+D066 v4 is the default because standard-consistent engine comparisons favor it
+across the assessed temperature domains: at and above 1700 K it leads on five
+of six metrics, and below 1700 K it ties or leads on every metric. D066 v5 is
+better only on in-domain redox, by 0.010 dex. The v5 Hess-refit anorthite row
+remains available by version or path; v4 is selected for the overall engine
+scores across those configurations. The FC87 row remains a genuine published
+thermochemical route, and its association is 30.6–44.6 kJ mol⁻¹ more favorable
 over the requested range than the Hess-refit row. No row-specific confidence
 band is available, and the parent liquid-reference inputs retain their
 stated uncertainty.
-
-Revisit the default if a primary, same-standard liquid-anorthite formation
-Gibbs measurement or higher-temperature enthalpy/Cp series moves the Hess
-target toward FC87. Independently audited CAS activities and directly
-measured SiO pressures over matched compositions and temperatures, with
-reference-state and uncertainty details, would also justify reassessing the
-source-rail conclusion; activity-score preference alone does not select a
-coefficient.
 
 ## Melt notice
 

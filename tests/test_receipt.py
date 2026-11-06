@@ -53,7 +53,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     melt = evaluate(_BASALT, 1800.0, basis_type="wt")
     _assert_parent_numbers(
         [melt.D, melt.activity("SiO2")],
-        [2.102073306152123, 0.32943033154573187],
+        [2.11411889366705, 0.3156343697696795],
     )
     melt_receipt = _assert_json_receipt(melt)
     assert melt_receipt.data_digests == {
@@ -76,7 +76,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     gas = evaluate_gas(activities, 1800.0, 1e-10, profile="openimcc")
     _assert_parent_numbers(
         [gas["O2"], gas["Na"]],
-        [1e-10, 0.00019759260187725066],
+        [1e-10, 0.00026681477808975705],
     )
     gas_receipt = _assert_json_receipt(gas)
     assert gas_receipt.data_digests == {
@@ -91,7 +91,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     )
     _assert_parent_numbers(
         [balance_pO2, balanced["Na"]],
-        [4.044113669939114e-06, 1.3933648210712147e-05],
+        [5.153813984425113e-06, 1.7708333617693686e-05],
     )
     balance_receipt = _assert_json_receipt(balanced)
     assert balance_receipt.data_digests == {
@@ -106,7 +106,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     )
     _assert_parent_numbers(
         [saturation.P_sat_bar, saturation.pO2_bar],
-        [1.865008271569144e-05, 3.5987590837640433e-06],
+        [2.364904552832983e-05, 4.578522594411507e-06],
     )
     saturation_receipt = _assert_json_receipt(saturation)
     assert saturation_receipt.data_digests == {
@@ -124,7 +124,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     )
     _assert_parent_numbers(
         [boiling_temperature, boiling.P_sat_bar],
-        [1930.1681888788141, 4.865657946350161e-05],
+        [1897.101053865526, 4.865657946350161e-05],
     )
     boiling_receipt = _assert_json_receipt(boiling)
     assert boiling_receipt.data_digests == {

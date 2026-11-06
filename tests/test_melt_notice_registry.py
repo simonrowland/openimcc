@@ -25,24 +25,13 @@ MORB = {
 }
 DEFAULT_ALKALI_NOTICE = (
     "K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS "
-    "pressures (case 4: −1.17 to −1.22 dex); "
+    "pressures (case 4: −1.18 to −1.24 dex); "
     "see https://github.com/simonrowland/openimcc; "
     "K2Si2O5 source choice: docs/k2si2o5-disposition.md"
 )
 DEFAULT_NA2O_NOTICE = (
-    "na2o-activity-bias: Na2O activity and Na(g) pressure are over-predicted. "
-    "At 1673 K only (temperature dependence untested), held-out Mathieu "
-    "(2009) CMAS rows show: x(CaO+MgO) 0.30–<0.40, median +0.77 dex "
-    "(range +0.37 to +1.20; n=12); x(CaO+MgO) >= 0.40 with Na2O/SiO2 < 1, "
-    "median +1.53 dex (range +0.81 to +2.67; n=17); Na2O/SiO2 >= 1, "
-    "median +4.29 dex (range +4.03 to +4.46; n=6). Pak et al. (1989) "
-    "Na-rich binary points at Na2O/SiO2 ratios 1.5 and 1 are +2.76 and "
-    "+1.74 dex; its Ca-bearing points at x(CaO) 0.32 and 0.42 are +0.49 and "
-    "+0.67 dex; higher-silica Ca-free points are slightly negative. Evidence: "
-    "R. Mathieu, PhD thesis, INPL Nancy (2009), "
-    "https://docnum.univ-lorraine.fr/public/INPL/2009_MATHIEU_R.pdf (method: "
-    "Mathieu et al. 2008, DOI 10.1016/j.jnoncrysol.2008.07.004); Pak et al. "
-    "1989, DOI 10.2355/isijinternational.29.318. The cause remains unresolved."
+    "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias "
+    "evidence was measured on D066 v5; this pack has not been scored."
 )
 K_AL_OVERSEQUESTRATION_NOTICE = (
     "k-al-over-sequestration: the one-particle mixing-entropy limit can "
@@ -66,48 +55,28 @@ ANORTHITE_ROW_SENSITIVITY_NOTICE = (
 )
 ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE = (
     "anorthite-row-sensitivity-unscored: the CaAl2Si2O8 row-sensitivity "
-    "evidence was evaluated on the default D066 v5 pack; this pack has not "
-    "been scored."
+    "evidence was evaluated on D066 v5; this pack has not been scored."
 )
 DEFAULT_MULTICOMPONENT_NOTICE = (
-    "multicomponent-activity-pattern: on default D066 v5, Kume et al. (2000) "
-    "synthetic CAS/CMS/CMAS slags, after solid-to-liquid standard conversion, "
-    "were measured at 1823–1873 K. SiO2 residuals "
-    "(log10(predicted/measured)) decrease with NBO/T in CAS (Table 2: slope "
-    "−0.238 dex/NBO/T, n=47) and CMS (Table 3: slope −0.362 dex/NBO/T, "
-    "n=27), not in the four-oxide CMAS family that triggers this notice "
-    "(Table 4 has no SiO2 rows). Across CAS+CMS+CMAS, RMSEs are 0.47 dex "
-    "(SiO2, n=72), 0.59 (CaO, n=87), and 0.50 (MgO, n=43); four-oxide CMAS "
-    "RMSEs are 0.81 dex (CaO, n=15) and 0.57 (MgO, n=15). CaO and MgO "
-    "residuals become more positive with NBO/T. Al-bearing association, "
-    "temperature, and source method are confounded; no cause is established. "
-    "Effectively binary CaO–SiO2 Kume slopes are near zero. A regression of "
-    "binary CaO–SiO2 KEMS activities from Stolyarova et al. (1991, 1933 K) "
-    "gives a CaO slope of about +0.2 to +0.3 dex/NBO/T; their silica table "
-    "conflicts with the paper's own closure, and this binary result does not "
-    "establish the multicomponent pattern."
+    "multicomponent-activity-pattern-unscored: Kume 2000 multicomponent "
+    "activity-pattern evidence was measured on D066 v5; "
+    "this pack has not been scored."
 )
 DEFAULT_CAO_SIO2_MODERATE_NOTICE = (
-    "cao-sio2-activity-bias: moderate — effectively binary CaO–SiO2 melt "
-    "with x(CaO) in [0.42, 0.56) on the CaO–SiO2 sub-basis at 1873–1933 K; "
-    "Kume 2000 and Omori–Sanbongi 1961 show low a(SiO2); this pack raises "
-    "predicted log10(a(SiO2)) by 0.045–0.410 dex over x(CaO)=[0.42, 0.56)"
+    "cao-sio2-activity-bias-unscored: the CaO–SiO2 silica-activity bias was "
+    "measured on IMCC-SF04-D066 (binding digest "
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf) "
+    "and has not been re-scored for this IMCC-SF04-D066 pack"
 )
 DEFAULT_CAO_SIO2_STRONG_NOTICE = (
-    "cao-sio2-activity-bias: strong — effectively binary CaO–SiO2 melt "
-    "with x(CaO) in [0.56, 0.70] on the CaO–SiO2 sub-basis at 1873–1933 K, "
-    "near Ca2SiO4; no Ca3SiO5 associate. Stolyarova 1991 Table IIb's "
-    "0.6–1.0 dex low scale conflicts with Table Ib. That comparison's prior "
-    "default residuals are not carried as v5 scores; this pack shifts predicted "
-    "log10(a(SiO2)) non-monotonically by 0.076–0.479 dex, peaking near "
-    "x(CaO)=0.614"
+    "cao-sio2-activity-bias-unscored: the CaO–SiO2 silica-activity bias was "
+    "measured on IMCC-SF04-D066 (binding digest "
+    "13a185563870ec1a9c20d51bd25fb58df08c9bbbbdf7b2212b0f43ead64738cf) "
+    "and has not been re-scored for this IMCC-SF04-D066 pack"
 )
 DEFAULT_SILICATE_PRODUCT_NOTICE = (
-    "silicate-vapour-product-low-near-liquidus: diopside SI at its nominal "
-    "1668 K incongruent-melting onset, diagnostic rather than congruent "
-    "coexistence is −0.53 using crystal data extended to that temperature; "
-    "the combined vapour product over the melt is low by 0.53 log10 units, "
-    "with the split between melt activities and liquid standards unresolved"
+    "silicate-vapour-product-low-near-liquidus-unscored: crystal–melt closure "
+    "evidence is unscored for this pack"
 )
 TEMPERATURE_DOMAIN_NOTICE = (
     "temperature-domain-extension: active SF04 association rows are evaluated "
@@ -115,11 +84,8 @@ TEMPERATURE_DOMAIN_NOTICE = (
     "rows have declared domains 1700–3000 K; uncertainty band unavailable"
 )
 DEFAULT_LOW_TEMPERATURE_NOTICE = (
-    "low-temperature-uncertain: the Na2Si2O5 association is evaluated below "
-    "its declared domain; Piacente and Matoušek (1973) MgO-cell p(Na) is about "
-    "0.54 dex low at 1278–1530 K, and Richet, Bottinga and Téqui (1984) "
-    "sodium-silicate calorimetric curvature misses its envelope by 1.5–3x at "
-    "1323–1700 K; treat Na-silicate activities below 1700 K as uncertain"
+    "low-temperature-uncertain-unscored: Na-silicate low-temperature "
+    "evidence is unscored for this pack"
 )
 V2_ALKALI_NOTICE = (
     "K predictions from IMCC-SF04-D066 remain low against Hastie 1981 KEMS "
@@ -129,7 +95,7 @@ V2_ALKALI_NOTICE = (
 )
 V2_NA2O_UNSCORED_NOTICE = (
     "na2o-activity-bias-unscored: Na2O activity and Na(g) pressure bias "
-    "evidence was measured on the default D066 v5 pack; this pack has not "
+    "evidence was measured on D066 v5; this pack has not "
     "been scored."
 )
 V2_CAO_SIO2_UNSCORED_NOTICE = (
@@ -140,7 +106,7 @@ V2_CAO_SIO2_UNSCORED_NOTICE = (
 )
 V2_MULTICOMPONENT_UNSCORED_NOTICE = (
     "multicomponent-activity-pattern-unscored: Kume 2000 multicomponent "
-    "activity-pattern evidence was measured on the default D066 v5 pack; "
+    "activity-pattern evidence was measured on D066 v5; "
     "this pack has not been scored."
 )
 V2_SILICATE_PRODUCT_UNSCORED_NOTICE = (
@@ -194,7 +160,7 @@ def default_pack():
             (
                 DEFAULT_ALKALI_NOTICE,
                 K_AL_OVERSEQUESTRATION_NOTICE,
-                ANORTHITE_ROW_SENSITIVITY_NOTICE,
+                ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE,
                 DEFAULT_MULTICOMPONENT_NOTICE,
             ),
         ),
@@ -345,11 +311,28 @@ def test_anorthite_row_sensitivity_fires_on_anorthite_and_cas(
         )
         notice = next(
             item for item in result.labels.notices
-            if item.startswith("anorthite-row-sensitivity:")
+            if item.startswith("anorthite-row-sensitivity")
         )
-        assert str(notice) == ANORTHITE_ROW_SENSITIVITY_NOTICE
+        assert str(notice) == ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE
         assert notice.family == "anorthite-row-sensitivity"
-        assert notice.score == "scored"
+        assert notice.score == "unscored"
+
+
+def test_explicit_v5_keeps_scored_anorthite_notice() -> None:
+    pack = load_datapack(PACKS / "imcc-sf04-d066-v5.json")
+    result = evaluate(
+        {"CaO": 1.0, "Al2O3": 1.0, "SiO2": 2.0},
+        1933.0,
+        pack=pack,
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    notice = next(
+        item for item in result.labels.notices
+        if item.startswith("anorthite-row-sensitivity:")
+    )
+    assert str(notice) == ANORTHITE_ROW_SENSITIVITY_NOTICE
+    assert notice.score == "scored"
 
 
 def test_anorthite_row_sensitivity_fires_on_readme_basalt(default_pack) -> None:
@@ -371,9 +354,9 @@ def test_anorthite_row_sensitivity_fires_on_readme_basalt(default_pack) -> None:
     notice = next(
         item
         for item in result.labels.notices
-        if item.startswith("anorthite-row-sensitivity:")
+        if item.startswith("anorthite-row-sensitivity")
     )
-    assert str(notice) == ANORTHITE_ROW_SENSITIVITY_NOTICE
+    assert str(notice) == ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE
 
 
 def test_anorthite_row_sensitivity_fires_on_cai_like_cmas(default_pack) -> None:
@@ -388,9 +371,9 @@ def test_anorthite_row_sensitivity_fires_on_cai_like_cmas(default_pack) -> None:
     notice = next(
         item
         for item in result.labels.notices
-        if item.startswith("anorthite-row-sensitivity:")
+        if item.startswith("anorthite-row-sensitivity")
     )
-    assert str(notice) == ANORTHITE_ROW_SENSITIVITY_NOTICE
+    assert str(notice) == ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE
 
 
 def test_anorthite_row_sensitivity_skips_binary_al_free_and_ca_free(
@@ -466,7 +449,7 @@ def test_anorthite_row_sensitivity_changes_only_notices(
         np.testing.assert_array_equal(
             getattr(with_notice, field), getattr(without_notice, field)
         )
-    assert with_notice.labels.notices == (ANORTHITE_ROW_SENSITIVITY_NOTICE,)
+    assert with_notice.labels.notices == (ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE,)
     assert without_notice.labels.notices == ()
     assert with_notice.receipt.data_digests == without_notice.receipt.data_digests
 
@@ -519,10 +502,9 @@ def test_k_al_oversequestration_notice_changes_only_evaluate_notices(
     assert with_notice.receipt.data_digests == without_notice.receipt.data_digests
 
 
-def test_loaded_default_identity_scores_every_default_notice_family(default_pack) -> None:
+def test_default_v4_and_explicit_v5_notice_scoring_are_separate(default_pack) -> None:
     identity = _identity(default_pack)
     families = (
-        "alkali-bias",
         "na2o-activity-bias",
         "cao-sio2-activity-bias",
         "multicomponent-activity-pattern",
@@ -530,7 +512,16 @@ def test_loaded_default_identity_scores_every_default_notice_family(default_pack
         "silicate-vapour-product-low-near-liquidus",
         "low-temperature-uncertain",
     )
-    assert all(_melt_notice_score(family, identity) == "scored" for family in families)
+    assert _melt_notice_score("alkali-bias", identity) == "scored"
+    assert all(_melt_notice_score(family, identity) == "unscored" for family in families)
+
+    v5 = load_datapack(PACKS / "imcc-sf04-d066-v5.json")
+    v5_identity = _identity(v5)
+    assert v5_identity == model._SCORED_D066_V5_IDENTITY
+    assert all(
+        _melt_notice_score(family, v5_identity) == "scored"
+        for family in ("alkali-bias", *families)
+    )
 
 
 def test_candidate_and_d066_v2_keep_family_scoring_scoped() -> None:
@@ -618,9 +609,9 @@ def test_sulfur_results_carry_melt_composition_bias_notices() -> None:
     )
     assert forwarded == (
         ("alkali-bias", DEFAULT_ALKALI_NOTICE),
-        ("na2o-activity-bias", DEFAULT_NA2O_NOTICE),
+        ("na2o-activity-bias-unscored", DEFAULT_NA2O_NOTICE),
         ("k-al-over-sequestration-unscored", K_AL_OVERSEQUESTRATION_NOTICE),
-        ("multicomponent-activity-pattern", DEFAULT_MULTICOMPONENT_NOTICE),
+        ("multicomponent-activity-pattern-unscored", DEFAULT_MULTICOMPONENT_NOTICE),
     )
     assert len({code for code, _message in forwarded}) == len(forwarded)
 
@@ -657,7 +648,7 @@ def test_sulfur_results_carry_melt_composition_bias_notices() -> None:
         if notice.model == "openimcc-melt-pack"
     )
     assert cao_forwarded == (
-        ("cao-sio2-activity-bias", DEFAULT_CAO_SIO2_MODERATE_NOTICE),
+        ("cao-sio2-activity-bias-unscored", DEFAULT_CAO_SIO2_MODERATE_NOTICE),
     )
 
     v2 = load_datapack(PACKS / "imcc-sf04-d066-v2.json")
@@ -725,8 +716,8 @@ def test_sulfur_forwards_anorthite_row_sensitivity() -> None:
     for pack, code, message in (
         (
             load_datapack(),
-            "anorthite-row-sensitivity",
-            ANORTHITE_ROW_SENSITIVITY_NOTICE,
+            "anorthite-row-sensitivity-unscored",
+            ANORTHITE_ROW_SENSITIVITY_UNSCORED_NOTICE,
         ),
         (
             load_datapack(PACKS / "imcc-sf04-d066-v2.json"),
