@@ -244,8 +244,40 @@ The one open thread is Ca-only: if Ca-ferrite liquid thermochemistry is
 refined, a calcium-only associate is worth revisiting. The separate
 under-prediction near the QFM buffer comes from the model's fO2 exponent: ideal
 FeO1.5 gives 1/4, while alkali basalts measure about 0.21 and a low-iron
-alkali-free glass about 0.24. That needs an Fe2+–Fe3+ liquid interaction term,
-and it will be parameterised only from an independent Fe–O liquid assessment.
+alkali-free glass about 0.24.
+
+## Fe2+–Fe3+ liquid interaction: tested, not built
+
+A negative FeO–FeO1.5 interaction in the liquid would lower the exponent in
+iron-rich melts and vanish as iron goes to zero, which is the observed pattern.
+The independent Fe–O assessment of Kowalski & Spencer (1995, *Calphad* 19,
+229–243, Table 1) gives that interaction on the same one-iron basis as openimcc:
+L = −13353.8 + 6707.07 (y_FeO − y_FeO1.5) J/mol, temperature-independent. Nothing
+was fitted to redox data. Applied to openimcc's own equilibrium species fractions
+for the 147 scored redox rows, as a first-order correction, it moves the
+exponent the right way but by little: the Kress & Carmichael (1988) isothermal
+group means move toward the measurements by at most 0.007 (model 0.258–0.269,
+measured 0.184–0.225), and the low-iron Jayasuriya series is unchanged
+(0.2525 to 0.2520). The interaction is also defined against that assessment's
+own FeO and FeO1.5 liquid standards, which differ from openimcc's by up to
+0.037 dex in the redox intercept, as large as the effect itself. The term was
+therefore not built. Any revisit must first convert the assessment onto
+openimcc's liquid standards; a level shift smaller than that offset is not
+evidence of an excess term. The Borisov et al. (2015) fugacity pairs and
+iron-loading groups were not scored here, because their compositions are not
+available in the transcribed set.
+
+## Open question: the remaining fO2-exponent gap
+
+The measured exponents still sit about 0.04 below the model. Before any new
+melt term is considered, the experimental side has to be ruled out. Long 1-atm
+gas-mixing runs lose iron to Pt or Re wire loops, most at low fO2, which lowers
+the bulk iron content and flattens the apparent exponent; alkali loss at high
+temperature biases it too. If the gap survives a split of the data by container
+(sealed capsule against loop), duration and fO2 range, an interaction between
+ferric iron and the host melt's tetrahedral sites is the next candidate. Such a
+term would be taken only from independent thermochemistry, never fitted to these
+redox measurements.
 
 ## Open question: alkali charge compensation of ferric iron
 
