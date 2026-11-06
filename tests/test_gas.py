@@ -3409,9 +3409,19 @@ def test_oxygen_balance_models_omit_missing_alkali_gas_rows(
 def test_vaporock_default_reports_missing_alkali_channels(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv(
-        "OPENIMCC_VAPOROCK_ROOT",
-        os.environ["OPENIMCC_TEST_LEGACY_VAPOROCK_ROOT"],
+    root = Path(os.environ["OPENIMCC_TEST_LEGACY_VAPOROCK_ROOT"])
+    monkeypatch.setenv("OPENIMCC_VAPOROCK_ROOT", str(root))
+    gas_csv = root / gas_module._GAS_TABLE_RELPATH
+    oxide_csv = root / gas_module._CONDENSATE_TABLE_RELPATH
+    gas_species = set(
+        pd.read_csv(gas_csv, usecols=["species_name"])["species_name"]
+        .dropna()
+        .astype(str)
+    )
+    oxide_species = set(
+        pd.read_csv(oxide_csv, usecols=["species_name"])["species_name"]
+        .dropna()
+        .astype(str)
     )
     # The checkout may also drop unnamed columns. That notice is covered
     # elsewhere; here it must not hide the source-override warning.
@@ -3425,21 +3435,26 @@ def test_vaporock_default_reports_missing_alkali_channels(
     missing_alkali = {}
     for name in ("Na2O", "K2O"):
         missing_rows = []
-        if f"{name}(g)" not in datapack.gas_df.index:
+        gas_name = f"{name}(g)"
+        oxide_name = f"{name}(l)"
+        if gas_name not in gas_species:
+            assert gas_name not in datapack.gas_df.index
             missing_rows.append(f"{name}(g)")
-        if f"{name}(l)" not in datapack.oxide_df.index:
+        if oxide_name not in oxide_species:
+            assert oxide_name not in datapack.oxide_df.index
             missing_rows.append(f"{name}(l)")
         if missing_rows:
             missing_alkali[name] = (
                 "missing from active table: " + ", ".join(missing_rows)
             )
-    if not missing_alkali:
-        pytest.skip("the selected VapoRock table provides both alkali channels")
 
     result = evaluate_gas(activities, 2200.0, 1.0e-8, datapack)
-    assert {
-        name: result.omitted_channels[name] for name in missing_alkali
-    } == missing_alkali
+    reported_alkali = {
+        name: omission
+        for name, omission in result.omitted_channels.items()
+        if name in {"Na2O", "K2O"}
+    }
+    assert reported_alkali == missing_alkali
 
 
 def test_overflowing_equilibrium_constant_is_a_typed_refusal(
