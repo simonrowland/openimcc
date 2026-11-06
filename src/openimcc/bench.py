@@ -571,7 +571,7 @@ def assert_xtoken_points_carry_explicit_composition(
         raise ValueError(
             "melt-activity bench point encodes composition only in its id; "
             "carry composition_wt_pct and published_mole_fraction on the "
-            f"point (t-691): {'; '.join(offenders)}"
+            f"point: {'; '.join(offenders)}"
         )
 
 

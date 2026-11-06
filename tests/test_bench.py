@@ -8,6 +8,7 @@ import io
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -1129,6 +1130,16 @@ points:
     composition = load_bench_set(path)["compositions"]["c"]["composition_wt_pct"]
 
     assert composition == {"SiO2": "012", "MgO": "0x10", "CaO": "1:30"}
+
+
+def test_encoded_composition_error_omits_internal_task_token(tmp_path: Path) -> None:
+    point = {"id": "sample_x0500"}
+
+    with pytest.raises(ValueError) as exc_info:
+        load_bench_set(_write_fixture(tmp_path / "bench.yaml", [point]))
+
+    token_pattern = r"\bt-" + r"\d{3,4}\b"
+    assert re.search(token_pattern, str(exc_info.value)) is None
 
 
 def test_binary_subslice_does_not_classify_nonfinite_mole_fractions() -> None:

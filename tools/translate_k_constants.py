@@ -1,4 +1,4 @@
-"""Build the d-066 SF04 K-complex pack against its selected K2O(l) reference."""
+"""Build the SF04 K-complex pack against its selected K2O(l) reference."""
 
 from __future__ import annotations
 

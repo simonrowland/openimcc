@@ -257,9 +257,9 @@ For a constructed liquid evaluated below its fusion temperature, constant
 The band is the measured leave-one-out maximum at `T_fus`, plus the absolute
 fusion-entropy, heat-capacity-difference, and fusion-temperature sensitivities
 times their selected input spreads. The Tier 3 fusion-entropy census uses the
-17 measured class-C pairs under d-071 criterion 2 and d-070 calibration on
-real data; targets without their own measurement remain eligible under d-071
-criterion 4. Its maximum absolute leave-one-out residual is 46.4013 J/(mol K)
+17 measured class-C pairs, calibrated on those measurements. Targets without
+their own measurement remain eligible for that fallback. Its
+maximum absolute leave-one-out residual is 46.4013 J/(mol K)
 (RMS 17.8452 J/(mol K)). For Tier 3
 crystal-Cp carry-over, the maximum absolute residual in `ΔCp` is 170.200
 J/(mol K) (RMS 45.2682 J/(mol K)). Those census maxima remain the fallback
