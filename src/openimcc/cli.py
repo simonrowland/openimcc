@@ -43,6 +43,7 @@ from openimcc.model import (
     load_datapack,
 )
 from openimcc.kernel import ImccRefusal
+from openimcc.json_utils import reject_duplicate_json_keys
 from openimcc.scalar_boundary import is_declared_real_scalar
 
 EXIT_OK = 0
@@ -76,7 +77,10 @@ def _load_composition(
     if composition_path and oxides:
         raise ValueError("pass --composition or --oxide, not both")
     if composition_path:
-        data = json.loads(Path(composition_path).read_text(encoding="utf-8"))
+        data = json.loads(
+            Path(composition_path).read_text(encoding="utf-8"),
+            object_pairs_hook=reject_duplicate_json_keys,
+        )
         if not isinstance(data, Mapping):
             raise ValueError(
                 f"{composition_path}: expected a JSON object of oxide -> value"

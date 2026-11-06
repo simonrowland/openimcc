@@ -196,6 +196,16 @@ def test_json_composition_refuses_boolean_amounts(tmp_path, value):
         cli._load_composition(str(composition), [])
 
 
+def test_json_composition_refuses_duplicate_oxide_keys(tmp_path):
+    composition = tmp_path / "composition.json"
+    composition.write_text(
+        '{"SiO2": 50, "SiO2": 5, "MgO": 1}', encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="duplicate JSON key 'SiO2'"):
+        cli._load_composition(str(composition), [])
+
+
 def test_json_composition_large_integer_is_a_typed_refusal(tmp_path, capsys):
     composition = tmp_path / "composition.json"
     composition.write_text(

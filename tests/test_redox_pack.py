@@ -971,6 +971,19 @@ def test_loader_rejects_a_rehashed_unbalanced_row(tmp_path: Path) -> None:
     _assert_redox_input_value_error(lambda: load_redox_pack(path), "unbalanced for O")
 
 
+def test_loader_rejects_duplicate_json_keys_in_external_pack(tmp_path: Path) -> None:
+    path = tmp_path / "duplicate-key.json"
+    original = PACK_PATH.read_text(encoding="utf-8")
+    path.write_text(
+        original.replace("{", '{"duplicate": 1, "duplicate": 2, ', 1),
+        encoding="utf-8",
+    )
+
+    _assert_redox_input_value_error(
+        lambda: load_redox_pack(path), "duplicate JSON key 'duplicate'"
+    )
+
+
 @pytest.mark.parametrize("hash_seed", ["0", "2"])
 def test_loader_reports_alphabetically_first_unbalanced_element(
     tmp_path: Path, hash_seed: str

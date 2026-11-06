@@ -18,6 +18,7 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 from openimcc.kernel import ImccRefusal
+from openimcc.json_utils import reject_duplicate_json_keys
 
 _PACK_NAME = "openimcc-redox-v4.json"
 _SCHEMA = "openimcc-redox-pack.v2"
@@ -646,7 +647,7 @@ def load_redox_pack(path: str | Path | None = None) -> RedoxPack:
         except UnicodeError as exc:
             raise RedoxInputError(str(exc)) from exc
     try:
-        content = json.loads(text)
+        content = json.loads(text, object_pairs_hook=reject_duplicate_json_keys)
     except ValueError as exc:
         raise RedoxInputError(str(exc)) from exc
     if not isinstance(content, dict):

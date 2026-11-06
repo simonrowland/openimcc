@@ -28,6 +28,10 @@ from openimcc._constants import (
     MOLAR_MASS_G_MOL as _OXIDE_MOLAR_MASS_G_MOL,
     R_J_MOL_K as _R_J_MOL_K,
 )
+from openimcc.json_utils import (
+    DuplicateJsonKeyError,
+    reject_duplicate_json_keys,
+)
 
 if TYPE_CHECKING:
     from openimcc.gas import ImccGasDatapack
@@ -1448,7 +1452,11 @@ def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:
     )
     try:
         with source.open("r", encoding="utf-8") as fh:
-            data = json.load(fh)
+            data = json.load(fh, object_pairs_hook=reject_duplicate_json_keys)
+    except DuplicateJsonKeyError as exc:
+        raise ImccMalformedDatapackError(
+            f"datapack JSON at {source}: {exc}"
+        ) from exc
     except json.JSONDecodeError as exc:
         raise ImccMalformedDatapackError(
             f"datapack JSON at {source} is not valid JSON"

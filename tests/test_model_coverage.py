@@ -211,6 +211,18 @@ def test_load_datapack_rejects_file_root_and_parent_shape_errors(
         assert message in str(exc.value)
 
 
+def test_load_datapack_rejects_duplicate_json_keys(tmp_path: Path) -> None:
+    path = tmp_path / "duplicate-key.json"
+    original = BASE_DATAPACK.read_text(encoding="utf-8")
+    path.write_text(
+        original.replace("{", '{"duplicate": 1, "duplicate": 2, ', 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ImccMalformedDatapackError, match="duplicate JSON key"):
+        load_datapack(path)
+
+
 @pytest.mark.parametrize(
     ("case", "mutate", "message"),
     [
