@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from openimcc.gas import (
@@ -216,7 +218,7 @@ def _row_at(pack, row_name: str, phase: str, temperature: float):
         (
             "Re2O7(g)", "g", 550.0,
             "constructed Re2O7(g) from Smith 1952 measured vapor pressure and "
-            "B677 condensed functions over 503-598 K; maximum log-pressure "
+            "B677 condensed functions over 503.15-598.15 K; maximum log-pressure "
             "fit scatter propagated as ±1.4 kJ/mol at 550 K",
         ),
         (
@@ -262,7 +264,14 @@ def test_source_model_flags_keep_text_after_source_swap(
 ) -> None:
     pack = packaged_gas_pack
     row = _row_at(pack, row_name, phase, temperature).copy()
-    assert _source_model_flag(row_name, temperature, row, phase=phase) == expected
+    notice = _source_model_flag(row_name, temperature, row, phase=phase)
+    assert notice == expected
+    if row_name == "Re2O7(g)" and temperature == 550.0:
+        match = re.search(r"over ([\d.]+)-([\d.]+) K", notice)
+        assert match is not None
+        lower, upper = map(float, match.groups())
+        assert lower >= float(row["source_fit_min_K"])
+        assert upper <= float(row["source_fit_max_K"])
 
     row["Ref"] = "SOURCE-SWAP-PROBE"
     assert _source_model_flag(row_name, temperature, row, phase=phase) == expected

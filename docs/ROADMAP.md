@@ -517,8 +517,8 @@ the gas heat-capacity/Gibbs functions needed for a fit. [Smith et al. (1952)](ht
 
 Re2O7(g) is exposed as a flagged construction. Smith, Line, and Bell's
 measured vapor pressures give constructed solid and liquid rows over the
-observed windows 503-598 K and 613-633 K. Battles, Gundersen, and Edwards'
-measured equilibrium gives a separate constructed row over 961-1087 K; its
+observed windows 503.15-598.15 K and 613.15-633.15 K. Battles, Gundersen, and
+Edwards' measured equilibrium gives a separate constructed row over 961-1087 K; its
 pressure relation combines with the B677 ReO2(s), Re(s), and Re2O7(l) functions
 to derive dG_sub(T) and reconstruct G_f(Re2O7,g). The derived gas Cp is held
 from 1087 K through 3000 K with the Battles regression uncertainty propagated

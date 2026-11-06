@@ -1762,7 +1762,7 @@ def _source_model_flag(
             R_J_MOL_K * math.log(10.0) * T * 0.131479893726766 / 1000.0
         )
         measured_range = (
-            f"{round(float(fit_range[0])):g}-{round(float(fit_range[1])):g} K"
+            f"{float(fit_range[0]):g}-{float(fit_range[1]):g} K"
         )
         return (
             "constructed Re2O7(g) from Smith 1952 measured vapor pressure and "
