@@ -61,6 +61,7 @@ from openimcc import (
     label_research_datapack,
     load_datapack,
 )
+from openimcc.json_utils import reject_duplicate_json_keys
 
 _YAML_BASE_LOADER = yaml.SafeLoader
 
@@ -668,7 +669,10 @@ def load_pack(pack_path: Path) -> _PackedEngine:
         resource = resources.files("openimcc").joinpath("data", "packs", pack_path.name)
         with resources.as_file(resource) as packaged_path:
             return load_pack(packaged_path)
-    raw = json.loads(pack_path.read_text(encoding="utf-8"))
+    raw = json.loads(
+        pack_path.read_text(encoding="utf-8"),
+        object_pairs_hook=reject_duplicate_json_keys,
+    )
     if not isinstance(raw, dict):
         raise ImccMalformedDatapackError("datapack JSON root must be an object")
     try:

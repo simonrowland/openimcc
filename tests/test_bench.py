@@ -19,6 +19,7 @@ import pytest
 
 from openimcc._constants import R_PUBLISHED_GAS_J_MOL_K
 from openimcc import ImccMalformedDatapackError, evaluate, load_datapack
+from openimcc.json_utils import DuplicateJsonKeyError
 from openimcc.bench import (
     _binary_subslice,
     _convert_solid_activity_to_liquid,
@@ -1305,3 +1306,19 @@ def test_load_pack_prefers_a_local_file_over_the_packaged_name(tmp_path: Path, m
     # The local file wins, so its malformed content is what gets loaded.
     with pytest.raises(ImccMalformedDatapackError):
         load_pack(Path("imcc-sf04-v1.0.2.json"))
+
+
+def test_load_pack_rejects_duplicate_keys_in_research_overlay(tmp_path: Path) -> None:
+    path = tmp_path / "overlay.json"
+    path.write_text(
+        '{"model_id":"IMCC-SF04-EXT",'
+        '"imcc_sf04_datapack_version":"IMCC-SF04-EXT-v1",'
+        '"parents":["SiO2","Na2O"],'
+        '"rows":[{"complex":"Na2SiO3",'
+        '"nu":{"SiO2":1,"Na2O":1},"A":0,"A":1,"B":0,'
+        '"T_domain_K":[1000,3000]}]}',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(DuplicateJsonKeyError, match="duplicate JSON key"):
+        load_pack(path)
