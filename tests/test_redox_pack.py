@@ -5,7 +5,10 @@ from __future__ import annotations
 import csv
 import json
 import math
+import os
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -966,6 +969,44 @@ def test_loader_rejects_a_rehashed_unbalanced_row(tmp_path: Path) -> None:
     path.write_text(json.dumps(content), encoding="utf-8")
 
     _assert_redox_input_value_error(lambda: load_redox_pack(path), "unbalanced for O")
+
+
+@pytest.mark.parametrize("hash_seed", ["0", "2"])
+def test_loader_reports_alphabetically_first_unbalanced_element(
+    tmp_path: Path, hash_seed: str
+) -> None:
+    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content["rows"][0]["products"]["FeO(l)"] = 2.0
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    path = tmp_path / "two-elements-unbalanced.json"
+    path.write_text(json.dumps(content), encoding="utf-8")
+
+    env = os.environ.copy()
+    env["PYTHONHASHSEED"] = hash_seed
+    env["PYTHONPATH"] = str(ROOT / "src")
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys\n"
+            "from openimcc.redox_pack import RedoxInputError, load_redox_pack\n"
+            "try:\n"
+            "    load_redox_pack(sys.argv[1])\n"
+            "except RedoxInputError as exc:\n"
+            "    print(exc)\n"
+            "    raise SystemExit(1)\n"
+            "raise SystemExit('unbalanced row was accepted')\n",
+            str(path),
+        ],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "rows[0] is unbalanced for Fe" in result.stdout
 
 
 @pytest.mark.parametrize(

@@ -393,7 +393,7 @@ def _validate_content(content: Mapping[str, Any]) -> None:
                 for element, count in species[term["species"]]["formula_atoms"].items():
                     totals[element] = totals.get(element, 0.0) + coefficient * float(count)
             declared = record["formula_atoms"]
-            for element in set(totals) | set(declared):
+            for element in sorted(set(totals) | set(declared)):
                 if not math.isclose(
                     totals.get(element, 0.0), float(declared.get(element, 0.0)),
                     rel_tol=0.0, abs_tol=1e-10,
@@ -503,7 +503,7 @@ def _validate_content(content: Mapping[str, Any]) -> None:
             raise ValueError(f"{label} needs reactants and products")
         reactants = _atom_totals(row["reactants"], species, f"{label}/reactants")
         products = _atom_totals(row["products"], species, f"{label}/products")
-        for element in set(reactants) | set(products):
+        for element in sorted(set(reactants) | set(products)):
             if not math.isclose(reactants.get(element, 0.0), products.get(element, 0.0),
                                 rel_tol=0.0, abs_tol=1e-10):
                 raise ValueError(f"{label} is unbalanced for {element}")
