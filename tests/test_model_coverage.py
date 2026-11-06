@@ -486,6 +486,37 @@ def test_evaluate_rejects_unproven_and_invalid_composition_inputs() -> None:
     assert extra_component.value.code == "imcc_sp_extension_required"
 
 
+@pytest.mark.parametrize(
+    ("composition", "basis_type"),
+    [
+        ({"SiO2": 1.0e-300, "Na2O": 5.0e-324}, "wt"),
+        ({"SiO2": 2.0, "Na2O": 5.0e-324}, "mol"),
+    ],
+)
+def test_evaluate_refuses_positive_composition_underflow(
+    composition: dict[str, float], basis_type: str
+) -> None:
+    with pytest.raises(ImccCompositionIncompleteError, match="Na2O"):
+        evaluate(
+            composition,
+            1800.0,
+            basis_type=basis_type,
+            allow_extrapolation=True,
+            allow_out_of_envelope=True,
+        )
+
+    control = evaluate(
+        {"SiO2": 2.0, "Na2O": 1.0e-15},
+        1800.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+        allow_out_of_envelope=True,
+    )
+    assert control.parent_x[control.parent_oxides.index("Na2O")] == pytest.approx(
+        5.0e-16, rel=1.0e-14
+    )
+
+
 def test_evaluate_extension_vector_guards_and_canonical_zero(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -335,7 +335,12 @@ def evaluate_subsolidus_reactions(
                 delta_g0 = -host_g
                 activity_host = _host_activity(host, condensed_phase_activities, host_id)
                 activity_product = _activity(condensed_phase_activities.get("Fe"), "Fe")
-                log_q_no_driver = math.log(activity_product / activity_host)
+                ratio = activity_product / activity_host
+                log_q_no_driver = (
+                    math.log(ratio)
+                    if ratio > 0.0 and math.isfinite(ratio)
+                    else math.log(activity_product) - math.log(activity_host)
+                )
                 log_pressure_eq = -2.0 * delta_g0 / (R_J_MOL_K * temperature_K) - 2.0 * log_q_no_driver
                 ln_kp = -delta_g0 / (R_J_MOL_K * temperature_K)
             else:
@@ -346,7 +351,13 @@ def evaluate_subsolidus_reactions(
                 activity_host = _host_activity(host, condensed_phase_activities, host_id)
                 activity_product = _activity(condensed_phase_activities.get(oxide_id), oxide_id)
                 ln_kp = -delta_g0 / (R_J_MOL_K * temperature_K)
-                log_pressure_eq = ln_kp + math.log(activity_host / activity_product)
+                ratio = activity_host / activity_product
+                log_activity_ratio = (
+                    math.log(ratio)
+                    if ratio > 0.0 and math.isfinite(ratio)
+                    else math.log(activity_host) - math.log(activity_product)
+                )
+                log_pressure_eq = ln_kp + log_activity_ratio
             activity_by_species = {
                 host_id: activity_host,
                 "Fe" if host_id == "FeS_troilite" else ("CaO" if host_id == "CaSO4" else "MgO"): activity_product,
@@ -422,7 +433,12 @@ def evaluate_subsolidus_reactions(
             ))
             continue
 
-        activities = math.log(activity_product / activity_host)
+        activity_ratio = activity_product / activity_host
+        activities = (
+            math.log(activity_ratio)
+            if activity_ratio > 0.0 and math.isfinite(activity_ratio)
+            else math.log(activity_product) - math.log(activity_host)
+        )
         if host_id == "FeS_troilite":
             log_q = activities + 0.5 * _log_standard_pressure_ratio(
                 gas_pressures[driver]

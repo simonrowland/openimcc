@@ -1431,7 +1431,14 @@ def _wt_to_mol(vector: np.ndarray, parent_oxides: Sequence[str]) -> np.ndarray:
         [_OXIDE_MOLAR_MASS_G_MOL[name] for name in parent_oxides],
         dtype=float,
     )
-    return vector / molar_masses
+    mol = vector / molar_masses
+    underflowed = (vector > 0.0) & (mol == 0.0)
+    if np.any(underflowed):
+        index = int(np.flatnonzero(underflowed)[0])
+        raise ImccCompositionIncompleteError(
+            f"positive {parent_oxides[index]} weight underflows during conversion to moles"
+        )
+    return mol
 
 
 def load_datapack(path: str | Path | None = None) -> ImccLoadedDatapack:

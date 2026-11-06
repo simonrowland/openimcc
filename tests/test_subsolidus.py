@@ -199,6 +199,28 @@ def test_positive_subnormal_pressures_use_log_differences():
     )
 
 
+def test_underflowed_positive_activity_ratio_is_numeric_out_of_range():
+    result = _evaluate(
+        _host("FeS_troilite", "FeS", "troilite", activity=2.0),
+        1000.0,
+        {"S2": 1.0},
+        {"Fe": 5.0e-324},
+    )
+    assert result["status"] == "numeric_out_of_range"
+    assert result["notices"][0]["code"] == "numeric_out_of_range"
+
+
+@pytest.mark.parametrize("oxygen_Pa", [1.0e20, 1.0e308])
+def test_underflowed_activity_ratio_with_finite_pressure_returns(oxygen_Pa):
+    # The host/product ratio underflows to 0, but the log-difference keeps the
+    # equilibrium pressure finite, so the activity term must not take log(0).
+    result = _evaluate(
+        _host("CaSO4", "CaSO4", "anhydrite", activity=2.0), 800.0,
+        {"SO2": 1.0, "O2": oxygen_Pa}, {"CaO": 5.0e-324},
+    )
+    assert result["status"] == "supported"
+
+
 @pytest.mark.parametrize(
     ("target_log_pressure_eq", "expected_status"),
     [(-750.0, "supported"), (-800.0, "numeric_out_of_range")],

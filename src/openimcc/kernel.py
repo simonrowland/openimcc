@@ -2258,6 +2258,13 @@ def _solve_imcc_sf04_with_seed(
     # renormalized. Unit check: moles / moles, dimensionless.
     # Sanity: |1.0000005 - 1| = 5e-7 < 1e-6, hence accepted.
     x = parent_mol / basis
+    underflowed = (parent_mol > 0.0) & (x == 0.0)
+    if np.any(underflowed):
+        index = int(np.flatnonzero(underflowed)[0])
+        raise ImccCompositionIncompleteError(
+            f"positive {datapack.parent_oxides[index]} amount has an "
+            "unrepresentable normalized mole fraction"
+        )
 
     # --- Active parent/complex subset ----------------------------------------
     # A parent with zero analytical moles cannot supply a complex.

@@ -1565,6 +1565,16 @@ def test_positive_parent_underflow_is_not_dropped_or_logged_as_zero() -> None:
         )
 
 
+def test_positive_element_underflow_during_parent_conversion_is_refused() -> None:
+    with pytest.raises(RedoxNumericalError, match="Al"):
+        evaluate_redox(
+            {"Fe": 1.0, "Si": 1.0, "Al": 5.0e-324},
+            2200.0,
+            "imposed",
+            lambda_imposed=-4.0,
+        )
+
+
 def test_populated_manganese_parent_is_not_reported_as_last_resort() -> None:
     result = evaluate_redox(
         {"Fe": 1.0, "Mn": 0.1, "Cr": 0.2, "O": 1.5}, 2000.0, "closed"

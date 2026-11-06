@@ -578,7 +578,13 @@ def _inventory_parent_moles(
         count = float(record["parent_formula_atoms"].get(element, 0.0))
         if count <= 0.0:
             raise RedoxInputError(f"parent formula for {element} has no {element}")
-        parent_moles[parent_index[parent_name]] += amount / count
+        parent_amount = amount / count
+        if parent_amount == 0.0:
+            raise RedoxNumericalError(
+                f"positive {element} inventory underflows during conversion "
+                f"to {parent_name} moles"
+            )
+        parent_moles[parent_index[parent_name]] += parent_amount
 
     na = element_moles.get("Na", 0.0)
     potassium = element_moles.get("K", 0.0)
