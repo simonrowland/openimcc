@@ -355,6 +355,14 @@ def active_liquid_standards(
         else _resolve_profile("openimcc")
     )
     active_gas_pack = selected.gas_datapack if gas_pack is None else gas_pack
+    published_condensate_digest = None
+    if selected.name == "published":
+        published_profile = (
+            selected if isinstance(profile, str) else _resolve_profile("published")
+        )
+        published_condensate_digest = (
+            published_profile.gas_datapack.condensate_table_digest
+        )
     recognized: dict[str, str] = {}
     unknown: dict[str, str] = {}
     for row_name, row in active_gas_pack.oxide_df.iterrows():
@@ -378,7 +386,10 @@ def active_liquid_standards(
             except gas.ImccGasUnrecognizedSourceError:
                 # The published profile names its LAM tables directly in Ref;
                 # those table IDs are not aliases in the default-table map.
-                if selected.name == "published":
+                if (
+                    active_gas_pack.condensate_table_digest
+                    == published_condensate_digest
+                ):
                     standard_id = source_ref
                 else:
                     unknown.setdefault(oxide, _active_reference_unknown(source_ref))

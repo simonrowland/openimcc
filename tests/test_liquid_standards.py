@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 import shutil
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -305,8 +306,14 @@ def test_active_standards_include_all_eight_melt_parents_and_other_active_oxides
         active_liquid_standards("other")
 
 
+@pytest.mark.parametrize(
+    "published_profile_kind",
+    ("named", "object"),
+    ids=("published-name", "published-object"),
+)
 def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
     tmp_path: Path,
+    published_profile_kind: str,
 ) -> None:
     gas_dir = ROOT / "src/openimcc/data/gas"
     condensate_path = tmp_path / "condensate.csv"
@@ -318,8 +325,8 @@ def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
 
     changed = False
     for row in rows:
-        if row["species_name"] == "MgO(l)" and not changed:
-            row["Ref"] = "LAM1987"
+        if row["species_name"] == "MgO(l)":
+            row["Ref"] = "NOT-A-TABLE"
             row["validity_kind"] = "none"
             row["continuation_kind"] = "none"
             row["cp_extension"] = "false"
@@ -353,7 +360,7 @@ def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
     active = active_liquid_standards(gas_pack=custom_gas_pack)
     marker = active["MgO"]
     assert marker.startswith("reference-unknown(Ref=")
-    assert "LAM1987" in marker
+    assert "NOT-A-TABLE" in marker
     assert {oxide: value for oxide, value in active.items() if oxide != "MgO"} == {
         oxide: value for oxide, value in default.items() if oxide != "MgO"
     }
@@ -369,6 +376,36 @@ def test_custom_condensate_unknown_ref_is_reported_for_only_its_oxide(
     assert unknown_records[0].active == marker
     assert unknown_records[0].row_key is None
     assert not any(record.kind == "mismatch" for record in mg_records)
+
+    if published_profile_kind == "named":
+        published_profile = "published"
+        published_gas_pack = custom_gas_pack
+    else:
+        published_profile = replace(
+            load_profile("published"), gas_datapack=custom_gas_pack
+        )
+        published_gas_pack = None
+    published_active = active_liquid_standards(
+        published_profile, gas_pack=published_gas_pack
+    )
+    published_records = check_pack_standards(
+        PACK_DIR / "imcc-sf04-d066-v4.json",
+        published_profile,
+        gas_pack=published_gas_pack,
+    )
+    published_mg_records = [
+        record for record in published_records if record.oxide == "MgO"
+    ]
+    published_unknown_records = [
+        record
+        for record in published_mg_records
+        if record.kind == "reference-unknown"
+    ]
+    assert (
+        published_active["MgO"],
+        [record.kind for record in published_mg_records],
+        [record.active for record in published_unknown_records],
+    ) == (marker, ["reference-unknown"], [marker])
 
 
 def test_declared_standard_without_an_active_liquid_row_is_not_active(
