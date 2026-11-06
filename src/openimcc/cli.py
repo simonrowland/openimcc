@@ -683,10 +683,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         # exit 2 so a caller can distinguish "the model declined" from "the
         # invocation was wrong" (exit 1).
         payload = _refusal_payload(exc)
-        if getattr(args, "json", False):
-            print(json.dumps(payload, indent=2, sort_keys=True))
-        else:
-            print(f"refused [{payload['code']}]: {payload['reason']}")
+        try:
+            if getattr(args, "json", False):
+                print(json.dumps(payload, indent=2, sort_keys=True))
+            else:
+                print(f"refused [{payload['code']}]: {payload['reason']}")
+        except (OSError, ValueError):
+            pass
         return EXIT_REFUSED
     except (ValueError, OSError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)

@@ -15,6 +15,7 @@ Two things are pinned here:
 from __future__ import annotations
 
 import ast
+import io
 import json
 import re
 from pathlib import Path
@@ -149,6 +150,15 @@ def test_out_of_domain_is_a_typed_refusal_not_a_crash(capsys):
     assert payload["status"] == "refused"
     assert payload["code"] == "imcc_T_outside_datapack_domain"
     assert "900" in payload["reason"]
+
+
+def test_out_of_domain_refusal_returns_code_with_closed_stdout(monkeypatch):
+    closed_stdout = io.StringIO()
+    closed_stdout.close()
+    monkeypatch.setenv("PYTHON_COLORS", "0")
+    monkeypatch.setattr(cli.sys, "stdout", closed_stdout)
+
+    assert cli.main(_solve_argv(T_OUT_OF_DOMAIN, "--json")) == cli.EXIT_REFUSED
 
 
 def test_extrapolation_flag_turns_the_refusal_into_a_flagged_answer(capsys):
