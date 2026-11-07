@@ -650,7 +650,9 @@ def test_cao_sio2_activity_bias_notice_severities_at_1933(scored_v5_pack) -> Non
     assert _cao_sio2_bias_notices(by_weight) == (_CAO_SIO2_MODERATE,)
 
 
-def test_cao_sio2_activity_bias_notice_skips_lunar_basalts_and_low_xcao() -> None:
+def test_cao_sio2_activity_bias_notice_skips_lunar_basalts_and_low_xcao(
+    scored_v5_pack,
+) -> None:
     lunar_mare = {
         "Al2O3": 14.2,
         "CaO": 11.4,
@@ -671,10 +673,12 @@ def test_cao_sio2_activity_bias_notice_skips_lunar_basalts_and_low_xcao() -> Non
         "TiO2": 1.587,
     }
     for composition in (lunar_mare, low_ti_mare):
-        result = evaluate(composition, 1933.0, basis_type="wt")
+        result = evaluate(
+            composition, 1933.0, scored_v5_pack, basis_type="wt"
+        )
         assert _cao_sio2_bias_notices(result) == ()
 
-    low_x = evaluate({"CaO": 0.30, "SiO2": 0.70}, 1933.0)
+    low_x = evaluate({"CaO": 0.30, "SiO2": 0.70}, 1933.0, scored_v5_pack)
     assert _cao_sio2_bias_notices(low_x) == ()
 
 
@@ -702,10 +706,10 @@ def test_cao_sio2_activity_bias_notice_boundaries(scored_v5_pack) -> None:
     binary = {"CaO": 0.50, "SiO2": 0.50}
     assert _cao_sio2_bias_notices(evaluate(binary, 1873.0, scored_v5_pack)) == (_CAO_SIO2_MODERATE,)
     assert _cao_sio2_bias_notices(evaluate(binary, 1933.0, scored_v5_pack)) == (_CAO_SIO2_MODERATE,)
-    assert _cao_sio2_bias_notices(evaluate(binary, 1872.0)) == ()
-    assert _cao_sio2_bias_notices(evaluate(binary, 1934.0)) == ()
+    assert _cao_sio2_bias_notices(evaluate(binary, 1872.0, scored_v5_pack)) == ()
+    assert _cao_sio2_bias_notices(evaluate(binary, 1934.0, scored_v5_pack)) == ()
     # 1973 K is an unvalidated model map, not a notice boundary.
-    assert _cao_sio2_bias_notices(evaluate(binary, 1973.0)) == ()
+    assert _cao_sio2_bias_notices(evaluate(binary, 1973.0, scored_v5_pack)) == ()
 
     # Share 0.98 exactly, each other parent below 0.01, x(CaO)=0.50.
     at_share = evaluate(

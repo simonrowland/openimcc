@@ -43,7 +43,7 @@ K_AL_OVERSEQUESTRATION_NOTICE = (
 )
 ANORTHITE_ROW_SENSITIVITY_NOTICE = (
     "anorthite-row-sensitivity: this is a model-sensitivity disclosure; "
-    "the default row was chosen on thermochemical consistency. Model-output "
+    "the D066 v5 row was chosen on thermochemical consistency. Model-output "
     "shifts, not observed residuals: the isolated published FC87 row swap "
     "raises p(Na) and p(K) about 0.13–0.21 dex in basalt and regolith "
     "compositions, and p(Na) about 0.5 dex in a Na-bearing highland "

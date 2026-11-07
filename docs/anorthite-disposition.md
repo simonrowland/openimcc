@@ -292,7 +292,7 @@ cover the MgO-free CAS compositions in these measurements. Its Kume 2000
 summary does not include the single-laboratory 1933 K Stolyarova Table 3
 slopes or the isolated anorthite-row comparison.
 
-Each entry below is log₁₀(FC87-swap/default) at log₁₀ fO₂ = −8; these are
+Each entry below reports the log₁₀ change from unmodified D066 v5 to the otherwise-identical pack with the FC87 row substituted, at log₁₀ fO₂ = −8; these are
 model-output shifts, not observed measurements:
 
 | Composition | Δlog₁₀ a(Na₂O), 1800 / 2100 K | Δlog₁₀ a(K₂O), 1800 / 2100 K | Δlog₁₀ p(Na), 1800 / 2100 K | Δlog₁₀ p(K), 1800 / 2100 K |

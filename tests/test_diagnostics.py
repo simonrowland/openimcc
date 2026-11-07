@@ -691,7 +691,9 @@ def test_excess_interaction_enthalpy_in_mixing_endpoints_and_dissolution(
         T_range_K=(300.0, 1000.0),
     )
     candidate = load_datapack(candidate_path)
-    ideal = load_datapack()
+    ideal = load_datapack(
+        Path(__file__).parents[1] / "src/openimcc/data/packs/imcc-sf04-d066-v5.json"
+    )
 
     composition = {"Na2O": 1.0, "CaO": 1.0, "SiO2": 2.0}
     endmembers = {
@@ -707,7 +709,7 @@ def test_excess_interaction_enthalpy_in_mixing_endpoints_and_dissolution(
         candidate, composition, 1800.0,
         endmembers=endmembers, endmember_fractions=fractions,
     )
-    assert candidate_mix["excess_enthalpy_kJ"] - ideal_mix["excess_enthalpy_kJ"] == pytest.approx(-15.58330295013684)
+    assert candidate_mix["excess_enthalpy_kJ"] - ideal_mix["excess_enthalpy_kJ"] == pytest.approx(-15.0)
     assert candidate_mix["total_enthalpy_kJ"] - candidate_mix["association_enthalpy_kJ"] == pytest.approx(-15.0)
     for endpoint in candidate_mix["endmember_endpoints"].values():
         assert endpoint["excess_interaction_enthalpy_kJ_per_formula"] == pytest.approx(

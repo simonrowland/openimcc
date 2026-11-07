@@ -28,6 +28,8 @@ generations; each family has one current `opt-in`, while historical entries
 point to a shipped successor with `superseded_by`. The manifest is the source
 for current candidate and default listings. These fields describe packs and
 do not select or change runtime loading.
+`superseded_by` names the pack that replaces it in recommended use; it need
+not have a higher version.
 
 ## 1. What a pack contains
 
