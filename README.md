@@ -70,6 +70,61 @@ you want this.
 It pairs with them rather than competing: activities from here feed a vapour
 model, a volatility calculation, or an evaporation-flux term.
 
+## How it compares
+
+A separate empirical battery of published measurements scores `openimcc` and
+other engines on every row each engine can predict. The error is
+log10(predicted / measured) in dex. Each comparison below uses only the rows
+both engines score.
+
+Scored on 7 November 2026 with `openimcc` 66ec4a3, whose default melt pack was
+then D066 v5. The default is now D066 v4 (next section); these figures have not
+yet been re-scored with it.
+
+| Observable | Compared with | Shared rows | RMS, `openimcc` vs other | ≥ 1700 K (rows) | < 1700 K (rows) |
+|---|---|--:|---|---|---|
+| Vapour pressure | VapoRock | 894 | **1.19** vs 1.25 | **1.08** vs 1.14 (753) | **1.67** vs 1.69 (141) |
+| Vapour pressure | alphaMELTS | 507 | **1.48** vs 1.91 | **1.42** vs 1.90 (371) | **1.64** vs 1.93 (136) |
+| Vapour pressure | ThermoEngine | 74 | 1.61 vs **1.30** | **1.30** vs 1.61 (43) | 1.95 vs **0.68** (31) |
+| Melt activity | ThermoEngine | 113 | **0.25** vs 0.78 | 0.31 vs **0.29** (58) | **0.16** vs 1.08 (55) |
+| Fe3+/Fe2+ | MELTS (alphaMELTS and ThermoEngine agree) | 64 | 0.38 vs **0.28** | **0.14** vs 0.15 (26) | 0.47 vs **0.34** (38) |
+
+Bold marks the lower error. Against VapoRock, `openimcc` is better on Ca, CaO
+(5 rows), K, Mg, O, O2, TiO and TiO2, worse on Na, and slightly worse on the
+aluminium vapour species. Redox matches the MELTS family above 1700 K and
+trails it below. The melt-activity rows still include two sources whose input
+is the analysed melt itself, where a single-liquid solve returns the
+measurement; they are not yet excluded. Most battery rows, or their sources,
+were used to choose `openimcc` melt packs, so these are in-sample figures;
+held-out rows are still too few to report separately.
+
+On `openimcc`'s own comparison with 63 Knudsen-cell vapour measurements above
+1700 K, using the default pack and each cell's source-derived oxygen pressure,
+one source's 18 rows carry about 83% of the squared error and two Al2O(g)
+points about 5% more. That source's printed CaO(g)/Ca(g) pressure ratio is
+about 3.7 dex higher than standard gas thermochemistry predicts at its own
+oxygen pressure, far beyond the ±21 kJ/mol (about 0.55 dex) uncertainty of the
+reference CaO(g) data. It is flagged as internally inconsistent and kept in the
+score.
+
+### Default melt pack
+
+D066 v4 is the default. It was chosen by scoring candidate packs built on
+standard-consistent liquid references against measured data, split at 1700 K,
+the lower temperature bound of the association data. Median absolute error in
+dex:
+
+| Observable | D066 v5 | D066 v4 |
+|---|--:|--:|
+| Redox, ≥ 1700 K (18 rows) | **0.042** | 0.052 |
+| Redox, < 1700 K (32 rows) | 0.223 | **0.153** |
+| Melt activity, ≥ 1700 K (111 rows) | 0.406 | **0.328** |
+| Melt activity, < 1700 K (41 rows) | 0.277 | **0.250** |
+| FeO activity, < 1700 K (33 rows) | 0.320 | **0.278** |
+| SiO evolution, ≥ 1700 K (88 rows) | 0.421 | **0.291** |
+
+D066 v5 remains loadable by version or path.
+
 ## Install
 
 Python >= 3.12 is required. Until the first release is published, install from
