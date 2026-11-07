@@ -178,3 +178,23 @@ fusion values scatter by about 10–19 kJ/mol.
 The silicate composition distance is evaluated only after renormalizing the
 candidate crystal's oxide sub-basis. The temperature window is inclusive.
 Notices do not establish a liquidus or identify the first stable crystal.
+
+## Below the 1700 K association floor: heat-capacity continuation tested, not built
+
+`temperature-domain-extension` marks association rows evaluated below their
+1700 K source domain with a zero reaction heat capacity (ΔrCp = 0), so
+log10 K keeps its A + B/T form. A source-derived alternative was tested:
+log10 K = A + B/T + C[ln(T/T0) + T0/T − 1] with C = ΔrCp/(R ln 10) and
+T0 = 1800 K. The bracket and its first derivative vanish at T0, so log K and
+its slope are unchanged there. Nonzero C values combined measured
+formula-liquid heat capacities with the existing parent heat-capacity
+references: anorthite, akermanite and ilmenite, plus fayalite from the
+slope of the liquid enthalpies of Stebbins & Carmichael (1984; 11 points,
+1520–1705 K). Fayalite gives 270 ± 16 J/(mol K), so its association has
+ΔrCp = +50 ± 16 J/(mol K). These uncertainties are one standard error from
+the enthalpy-slope fit; parent heat-capacity uncertainty is not included. Rows without a measured formula-liquid heat
+capacity keep C = 0. Scored against the same measured rows as D066 v4, the
+continuation moved the median FeO-activity and redox errors below 1700 K by
+less than 0.004 dex. With fayalite included, the FeO error was slightly
+worse. The continuation is therefore not used, and the 1700 K floor and the
+ΔrCp = 0 notice stay.
