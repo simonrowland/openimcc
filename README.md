@@ -89,9 +89,18 @@ yet been re-scored with it.
 | Melt activity | ThermoEngine | 113 | **0.25** vs 0.78 | 0.31 vs **0.29** (58) | **0.16** vs 1.08 (55) |
 | Fe3+/Fe2+ | MELTS (alphaMELTS and ThermoEngine agree) | 64 | 0.38 vs **0.28** | **0.14** vs 0.15 (26) | 0.47 vs **0.34** (38) |
 
-Bold marks the lower error. Against VapoRock, `openimcc` is better on Ca, CaO
-(5 rows), K, Mg, O, O2, TiO and TiO2, worse on Na, and slightly worse on the
-aluminium vapour species. Redox matches the MELTS family above 1700 K and
+Bold marks the lower error. The VapoRock and alphaMELTS vapour-pressure lines
+are provisional: the battery later found that, on rows where the source gives no
+total pressure, it had scored those two engines' partial pressures against a
+defaulted 1e-6 bar total pressure. That affected 876 VapoRock and 491 alphaMELTS
+row scores, so nearly all of the VapoRock comparison and most of the alphaMELTS
+one rest on it. `openimcc` never used that default. The corrected scoring
+re-evaluates those rows at the pressure the cell itself sets (the sum of its
+partial pressures) and refuses only rows whose result depends on the assumed
+pressure; both comparisons will be recomputed. On the same
+provisional rows, against VapoRock, `openimcc` is better on Ca, CaO (5 rows), K,
+Mg, O, O2, TiO and TiO2, worse on Na, and slightly worse on the aluminium vapour
+species. Redox matches the MELTS family above 1700 K and
 trails it below. The melt-activity rows still include two sources whose input
 is the analysed melt itself, where a single-liquid solve returns the
 measurement; they are not yet excluded. Most battery rows, or their sources,
