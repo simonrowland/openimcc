@@ -77,35 +77,32 @@ other engines on every row each engine can predict. The error is
 log10(predicted / measured) in dex. Each comparison below uses only the rows
 both engines score.
 
-Scored on 7 November 2026 with `openimcc` 66ec4a3, whose default melt pack was
-then D066 v5. The default is now D066 v4 (next section); these figures have not
-yet been re-scored with it.
+Scored in November 2026 with `openimcc` 4efa9d8 (default D066 v4) on a
+candidate revision of the battery. That revision includes its correction for
+Knudsen-cell pressures and is not yet released.
 
 | Observable | Compared with | Shared rows | RMS, `openimcc` vs other | ≥ 1700 K (rows) | < 1700 K (rows) |
 |---|---|--:|---|---|---|
-| Vapour pressure | VapoRock | 894 | **1.19** vs 1.25 | **1.08** vs 1.14 (753) | **1.67** vs 1.69 (141) |
-| Vapour pressure | alphaMELTS | 507 | **1.48** vs 1.91 | **1.42** vs 1.90 (371) | **1.64** vs 1.93 (136) |
-| Vapour pressure | ThermoEngine | 74 | 1.61 vs **1.30** | **1.30** vs 1.61 (43) | 1.95 vs **0.68** (31) |
 | Melt activity | ThermoEngine | 113 | **0.25** vs 0.78 | 0.31 vs **0.29** (58) | **0.16** vs 1.08 (55) |
-| Fe3+/Fe2+ | MELTS (alphaMELTS and ThermoEngine agree) | 64 | 0.38 vs **0.28** | **0.14** vs 0.15 (26) | 0.47 vs **0.34** (38) |
+| Fe3+/Fe2+ | MELTS (alphaMELTS and ThermoEngine agree) | 64 | 0.33 vs **0.28** | **0.145** vs 0.153 (26) | 0.41 vs **0.34** (38) |
+| Vapour pressure | VapoRock | 31 | **1.95** vs 2.00 | — | **1.95** vs 2.00 (31) |
+| Vapour pressure | alphaMELTS | 31 | 1.95 vs **1.37** | — | 1.95 vs **1.37** (31) |
+| Vapour pressure | ThermoEngine | 31 | 1.95 vs **0.68** | — | 1.95 vs **0.68** (31) |
 
-Bold marks the lower error. The VapoRock and alphaMELTS vapour-pressure lines
-are provisional: the battery later found that, on rows where the source gives no
-total pressure, it had scored those two engines' partial pressures against a
-defaulted 1e-6 bar total pressure. That affected 876 VapoRock and 491 alphaMELTS
-row scores, so nearly all of the VapoRock comparison and most of the alphaMELTS
-one rest on it. `openimcc` never used that default. The corrected scoring
-re-evaluates those rows at the pressure the cell itself sets (the sum of its
-partial pressures) and refuses only rows whose result depends on the assumed
-pressure; both comparisons will be recomputed. On the same
-provisional rows, against VapoRock, `openimcc` is better on Ca, CaO (5 rows), K,
-Mg, O, O2, TiO and TiO2, worse on Na, and slightly worse on the aluminium vapour
-species. Redox matches the MELTS family above 1700 K and
-trails it below. The melt-activity rows still include two sources whose input
-is the analysed melt itself, where a single-liquid solve returns the
-measurement; they are not yet excluded. Most battery rows, or their sources,
-were used to choose `openimcc` melt packs, so these are in-sample figures;
-held-out rows are still too few to report separately.
+Bold marks the lower error. Redox matches the MELTS family above 1700 K and
+trails it below. The vapour comparisons are thin. The released battery revision
+scores VapoRock, alphaMELTS and ThermoEngine partial pressures against a
+defaulted 1e-6 bar total pressure where the source gives none. The candidate
+removes that default and refuses the rows that depended on it, so only 31 vapour
+rows are scored by both `openimcc` and another engine, all of them Na below
+1700 K. A later battery revision will re-score those rows at the pressure the cell
+itself sets (the sum of its partial pressures), refusing only rows whose result
+depends on the assumed pressure. `openimcc` scores 1,914 vapour rows on
+its own, with an RMS of 1.22 dex. The melt-activity rows still include two
+sources whose input is the analysed melt itself, where a single-liquid solve
+returns the measurement; they are not yet excluded. Most battery rows, or their
+sources, were used to choose `openimcc` melt packs, so these are in-sample
+figures; held-out rows are still too few to report separately.
 
 On `openimcc`'s own comparison with 63 Knudsen-cell vapour measurements above
 1700 K, using the default pack and each cell's source-derived oxygen pressure,
@@ -131,6 +128,12 @@ dex:
 | Melt activity, < 1700 K (41 rows) | 0.277 | **0.250** |
 | FeO activity, < 1700 K (33 rows) | 0.320 | **0.278** |
 | SiO evolution, ≥ 1700 K (88 rows) | 0.421 | **0.291** |
+
+On the battery, moving the default from v5 to v4 lowered the redox RMS from 0.36
+to 0.32 dex on the same 69 rows. Residue-composition RMS fell from 1.09 to
+1.05 dex on 86 rows, Vapour pressure was essentially unchanged (1.21 to 1.22 dex on the same 1,914
+rows). Melt-activity coverage fell from 683 to 642 rows, with RMS 1.36 to
+1.40 dex; that comparison is not like-for-like because the rows differ.
 
 D066 v5 remains loadable by version or path.
 
