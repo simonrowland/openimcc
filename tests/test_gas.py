@@ -24,7 +24,7 @@ import pandas as pd
 import pytest
 import yaml
 
-from openimcc import EvidenceReference, evaluate
+from openimcc import EvidenceReference, LiquidReferenceAuthority, evaluate
 from openimcc import gas as gas_module
 from tools import build_gas_tables
 from openimcc.gas import (
@@ -5919,9 +5919,9 @@ def _oxygen_balance_hashes(
         if dataclasses.is_dataclass(value):
             # The receipt records the source revision and environment, so the
             # pinned digests omit it; test_receipt.py pins it separately.
-            # Evidence DOI and locator fields are structured views of the
-            # existing basis strings, so reconstruct the old representation
-            # here to keep these output pins focused on behavior.
+            # Reconstruct the old basis text for established DOI metadata so
+            # these output pins remain stable when citation identifiers are
+            # added as structured fields.
             fields = {}
             for field in dataclasses.fields(value):
                 if field.name in {"receipt", "doi", "locator"}:
@@ -5931,6 +5931,13 @@ def _oxygen_balance_hashes(
                     isinstance(value, EvidenceReference)
                     and field.name == "basis"
                     and value.doi
+                    and (value.author, value.year) not in {
+                        ("JANAF Al-100/Al-101", 1998),
+                        ("JANAF Mg-009", 1998),
+                        ("JANAF O-044", 1998),
+                        ("JANAF O-038 and Connolly", 2016),
+                        ("Plante", 1979),
+                    }
                 ):
                     field_value += "; DOI " + " and ".join(value.doi)
                 fields[field.name] = hex_values(field_value)
@@ -6755,6 +6762,11 @@ def test_saturation_preserves_liquid_reference_status_and_notices(
     )
     assert saturation_notices == direct_notices
     assert saturation_notices
+    assert any(
+        notice.code == "liquid-reference-corroborated-calculation"
+        and notice.status.authority is LiquidReferenceAuthority.CORROBORATED_CALCULATION
+        for notice in saturation_notices
+    )
     assert all(
         notice.status in saturation.liquid_reference_status.values()
         for notice in saturation_notices

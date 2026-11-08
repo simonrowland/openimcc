@@ -8,6 +8,7 @@ import pytest
 from openimcc import (
     CertificationStatus,
     AuthorityWindow,
+    EvidenceReference,
     ImccGasResult,
     LiquidReferenceAuthority,
     FeOLiquidStandard,
@@ -22,6 +23,23 @@ from openimcc import (
     liquid_reference_authority,
     liquid_reference_records,
 )
+
+
+def test_every_liquid_reference_evidence_has_a_doi_or_locator() -> None:
+    references = []
+    for record in liquid_reference_records():
+        references.extend(record.evidence_ref)
+        for window in record.additional_windows:
+            references.extend(window.evidence_ref)
+    references.extend(feo_liquid_standard("published").source_citations)
+
+    assert references
+    assert all(isinstance(reference, EvidenceReference) for reference in references)
+    assert all(reference.doi or reference.locator for reference in references), [
+        (reference.author, reference.year, reference.basis)
+        for reference in references
+        if not (reference.doi or reference.locator)
+    ]
 
 
 def test_authority_enum_and_inclusive_window_boundaries() -> None:
@@ -582,7 +600,7 @@ def test_authority_requires_the_source_row_its_evidence_assessed() -> None:
 
 
 def test_evidence_dois_are_structured_without_changing_identifiers() -> None:
-    old_doi_strings = (
+    citation_doi_strings = (
         "DOI 10.1016/0016-7037(82)90383-0",
         "DOI 10.1111/j.1151-2916.1984.tb19155.x",
         "DOI 10.1063/1.5141841",
@@ -597,6 +615,15 @@ def test_evidence_dois_are_structured_without_changing_identifiers() -> None:
         "DOI 10.1111/j.1151-2916.1992.tb04216.x",
         "DOI 10.1143/JJAP.43.1496",
         "DOI 10.1016/j.oceram.2026.101029",
+        "DOI 10.18434/T42S31",
+        "DOI 10.18434/T42S31",
+        "DOI 10.18434/T42S31",
+        "DOI 10.18434/T42S31",
+        "DOI 10.18434/T42S31",
+        "DOI 10.18434/T42S31",
+        "DOI 10.1002/2016JE005059",
+        "DOI 10.6028/NBS.SP.561v1",
+        "DOI 10.6028/NBS.SP.561v1",
         "DOI 10.1063/1.555706",
         "DOI 10.1016/j.oceram.2026.101029",
         "DOI 10.1111/j.1151-2916.1992.tb04216.x",
@@ -608,7 +635,7 @@ def test_evidence_dois_are_structured_without_changing_identifiers() -> None:
     )
     expected_dois = [
         doi
-        for old_string in old_doi_strings
+        for old_string in citation_doi_strings
         for doi in re.findall(r"10[.]\d{4,9}/[^\s;]+", old_string)
     ]
     references = []
@@ -626,6 +653,8 @@ def test_evidence_dois_are_structured_without_changing_identifiers() -> None:
         "run 17c3-2", "NASA/TP-2002-211556",
         "Vol. IV, Book 1 p. 377; Book 2 p. 406",
         "Table 2 p. 154",
+        "O-038", "NBS Special Publication 561/1, pp. 265–281",
+        "Mg-009", "Al-100/Al-101", "O-044", "Na-013",
     }
 
 
