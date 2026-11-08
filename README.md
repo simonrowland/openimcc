@@ -131,9 +131,9 @@ dex:
 
 On the battery, moving the default from v5 to v4 lowered the redox RMS from 0.36
 to 0.32 dex on the same 69 rows. Residue-composition RMS fell from 1.09 to
-1.05 dex on 86 rows, Vapour pressure was essentially unchanged (1.21 to 1.22 dex on the same 1,914
-rows). Melt-activity coverage fell from 683 to 642 rows, with RMS 1.36 to
-1.40 dex; that comparison is not like-for-like because the rows differ.
+1.05 dex on 86 rows. Vapour pressure was essentially unchanged (1.21 to 1.22 dex on the same 1,914
+rows). Melt activity was also essentially unchanged: both packs score the same
+602 rows, with RMS 1.412 dex for v5 and 1.409 dex for v4.
 
 D066 v5 remains loadable by version or path.
 
