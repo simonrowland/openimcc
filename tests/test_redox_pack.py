@@ -30,6 +30,9 @@ from tools.liquid_from_solid import liquid_from_solid
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v4.json"
+DEFAULT_PACK_PATH = (
+    ROOT / "src/openimcc/data/packs/openimcc-redox-v5.json"
+)
 SOURCE_PATH = ROOT / "data-src/redox-thermochemistry.json"
 PROVENANCE_SUCCESSOR_PATHS = (
     PACK_PATH,
@@ -38,6 +41,7 @@ PROVENANCE_SUCCESSOR_PATHS = (
     ROOT / "src/openimcc/data/packs/openimcc-redox-ti-candidate-v3.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v3.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json",
+    ROOT / "src/openimcc/data/packs/openimcc-redox-v5.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-ti-candidate-v4.json",
     ROOT / "src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json",
 )
@@ -238,7 +242,7 @@ def test_finite_number_refuses_integer_beyond_float_range() -> None:
 
 
 def test_default_redox_pack_is_pinned_to_manifest_bytes(tmp_path, monkeypatch):
-    content = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    content = json.loads(DEFAULT_PACK_PATH.read_text(encoding="utf-8"))
     content["thermo_species"]["FeO(l)"]["row"]["dG_A"] += 1.0
     content["canonical_content_digest"] = canonical_redox_digest(content)
     altered_bytes = json.dumps(content).encode("utf-8")
@@ -246,7 +250,7 @@ def test_default_redox_pack_is_pinned_to_manifest_bytes(tmp_path, monkeypatch):
     package_root = tmp_path / "package"
     pack_dir = package_root / "packs"
     pack_dir.mkdir(parents=True)
-    (pack_dir / PACK_PATH.name).write_bytes(altered_bytes)
+    (pack_dir / DEFAULT_PACK_PATH.name).write_bytes(altered_bytes)
     (pack_dir / "MANIFEST.json").write_bytes(
         (PACK_PATH.parent / "MANIFEST.json").read_bytes()
     )
@@ -270,7 +274,7 @@ def test_invalid_manifest_encoding_is_a_chained_redox_input_error(
     package_root = tmp_path / "package"
     pack_dir = package_root / "packs"
     pack_dir.mkdir(parents=True)
-    (pack_dir / PACK_PATH.name).write_bytes(PACK_PATH.read_bytes())
+    (pack_dir / DEFAULT_PACK_PATH.name).write_bytes(DEFAULT_PACK_PATH.read_bytes())
     (pack_dir / "MANIFEST.json").write_bytes(b"\xff")
     monkeypatch.setattr(redox_pack_module, "files", lambda _package: package_root)
 

@@ -45,17 +45,19 @@ def _lifecycle_manifest() -> dict:
             {
                 "file": "openimcc-redox-default.json",
                 "datapack_version": "redox-v4",
-                "role": "default",
+                "role": "historical",
+                "superseded_by": "openimcc-redox-cr-v2.json",
             },
             {
-                "file": "redox-cr-v1.json",
+                "file": "openimcc-redox-cr-v1.json",
                 "role": "historical",
                 "family": "redox-cr",
-                "superseded_by": "redox-cr-v2.json",
+                "superseded_by": "openimcc-redox-cr-v2.json",
             },
             {
-                "file": "redox-cr-v2.json",
-                "role": "opt-in",
+                "file": "openimcc-redox-cr-v2.json",
+                "datapack_version": "redox-v4",
+                "role": "default",
                 "family": "redox-cr",
             },
         ]
@@ -75,7 +77,10 @@ def test_lifecycle_roles_reject_invalid_metadata() -> None:
     manifest["packs"][0]["role"] = "primary"
     manifest["packs"][2]["superseded_by"] = "absent.json"
     manifest["packs"].append(
-        {"file": "redox-cr-v3.json", "role": "opt-in", "family": "redox-cr"}
+        {"file": "openimcc-redox-cr-v3.json", "role": "opt-in", "family": "redox-cr"}
+    )
+    manifest["packs"].append(
+        {"file": "openimcc-redox-cr-v4.json", "role": "opt-in", "family": "redox-cr"}
     )
 
     issues = packmanifest._validate_roles(
@@ -84,12 +89,12 @@ def test_lifecycle_roles_reject_invalid_metadata() -> None:
 
     assert any("invalid or missing role" in issue for issue in issues)
     assert any("not in the manifest" in issue for issue in issues)
-    assert any("exactly one current opt-in" in issue for issue in issues)
+    assert any("at most one current opt-in" in issue for issue in issues)
 
 
 def test_lifecycle_roles_reject_self_supersession() -> None:
     manifest = _lifecycle_manifest()
-    manifest["packs"][2]["superseded_by"] = "redox-cr-v1.json"
+    manifest["packs"][2]["superseded_by"] = "openimcc-redox-cr-v1.json"
 
     issues = packmanifest._validate_roles(
         manifest, {"melt": "melt-v2", "redox": "redox-v4"}
@@ -111,13 +116,13 @@ def test_lifecycle_roles_reject_cross_family_supersession() -> None:
 
 def test_lifecycle_roles_reject_supersession_cycle() -> None:
     manifest = _lifecycle_manifest()
-    manifest["packs"][2]["superseded_by"] = "redox-cr-v0.json"
+    manifest["packs"][2]["superseded_by"] = "openimcc-redox-cr-v0.json"
     manifest["packs"].append(
         {
-            "file": "redox-cr-v0.json",
+            "file": "openimcc-redox-cr-v0.json",
             "role": "historical",
             "family": "redox-cr",
-            "superseded_by": "redox-cr-v1.json",
+            "superseded_by": "openimcc-redox-cr-v1.json",
         }
     )
 
@@ -164,3 +169,56 @@ def test_build_preserves_existing_lifecycle_metadata(tmp_path, monkeypatch) -> N
 
     assert entry["role"] == "opt-in"
     assert entry["family"] == "example"
+
+
+def test_default_combination_has_one_reasoned_default_per_kind() -> None:
+    manifest = json.loads(packmanifest.MANIFEST.read_text(encoding="utf-8"))
+    entries = [*manifest["packs"], *manifest["tables"]]
+    defaults = {
+        kind: [
+            entry for entry in entries
+            if entry["kind"] == kind and entry["role"] == "default"
+        ]
+        for kind in packmanifest.MANIFEST_KINDS
+    }
+
+    assert all(len(kind_defaults) == 1 for kind_defaults in defaults.values())
+    assert packmanifest._validate_kind_defaults(manifest) == []
+    expected_combination = {
+        kind: {
+            "file": kind_defaults[0]["file"],
+            "sha256": kind_defaults[0]["sha256"],
+        }
+        for kind, kind_defaults in defaults.items()
+    }
+    assert manifest["DEFAULT-COMBINATION"] == expected_combination
+    assert expected_combination == packmanifest._runtime_default_combination()
+    assert all(
+        isinstance(entry.get("not_default_reason"), str)
+        and entry["not_default_reason"].strip()
+        and "\n" not in entry["not_default_reason"]
+        and "\r" not in entry["not_default_reason"]
+        for entry in entries if entry["role"] != "default"
+    )
+
+    duplicated = json.loads(json.dumps(manifest))
+    gas_default = next(
+        entry for entry in duplicated["tables"]
+        if entry["kind"] == "gas" and entry["role"] == "default"
+    )
+    duplicated["tables"].append({**gas_default, "file": "second-gas-default.csv"})
+    assert any(
+        "exactly one gas default" in issue
+        for issue in packmanifest._validate_kind_defaults(duplicated)
+    )
+
+    missing_reason = json.loads(json.dumps(manifest))
+    non_default = next(
+        entry for entry in missing_reason["tables"]
+        if entry["role"] != "default"
+    )
+    non_default.pop("not_default_reason")
+    assert any(
+        "one-line not_default_reason" in issue
+        for issue in packmanifest._validate_kind_defaults(missing_reason)
+    )

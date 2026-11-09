@@ -1,0 +1,704 @@
+{
+  "fragment_schema_version": "openimcc-redox-fragment.v1",
+  "fragment_id": "imcc-yb-associate-pack-notice",
+  "element": "Yb",
+  "parent_registry": [
+    {
+      "element": "Yb",
+      "parent_oxide": "Yb2O3(l)",
+      "parent_formula_atoms": {
+        "Yb": 2,
+        "O": 3
+      },
+      "parent_standard_state": "liquid oxide",
+      "elemental_reference_state": "Yb(cr)",
+      "parent_oxidation_state": 3,
+      "known_oxidation_states": [
+        3
+      ],
+      "redox_thermochemistry_status": "registered_unpopulated"
+    }
+  ],
+  "standards": {
+    "Yb2O3(l)": {
+      "role": "parent activity standard",
+      "selected_dfH298_kJ_mol": -1814.5,
+      "selected_S298_J_mol_K": 133.1,
+      "crystal_C_phase_Cp_coefficients": [
+        130.6438,
+        0.00334628,
+        0,
+        0,
+        -1448200
+      ],
+      "crystal_C_phase_Cp_powers": [
+        0,
+        1,
+        2,
+        3,
+        -2
+      ],
+      "solid_transition_temperature_K": 2687,
+      "solid_transition_enthalpy_kJ_mol": 27,
+      "fusion_temperature_K": 2707,
+      "H_to_liquid_fusion_enthalpy_kJ_mol": 84,
+      "C_to_liquid_total_enthalpy_kJ_mol": 111,
+      "liquid_Cp_J_mol_K": 146,
+      "derivation": "Integrate the printed C-phase Cp through 2687 K, add the C-to-H transition enthalpy 27 kJ/mol, integrate H-phase Cp to 2707 K, then add the H-to-liquid fusion enthalpy 84 kJ/mol. The total C-to-liquid increment is 27 + 84 = 111 kJ/mol; at 2707 K the liquid Gibbs function joins the crystal Gibbs function. The liquid Cp is the printed 146 J/(mol K).",
+      "anchor_phase": "C-type crystal at 298.15 K; the liquid Gibbs function is constructed through the C-to-H transition and fusion."
+    },
+    "Yb2SiO5(l)": {
+      "role": "constructed liquid association standard",
+      "formula_atoms": {
+        "Yb": 2,
+        "Si": 1,
+        "O": 5
+      },
+      "source_dfH298_from_elements_kJ_mol": -2774.75,
+      "source_dfH298_from_oxides_kJ_mol": -49.45,
+      "selected_dfH298_kJ_mol": -2769.439,
+      "selected_S298_J_mol_K": 174.5,
+      "selected_S298_status": "provisional secondary tabulation",
+      "solid_Cp_J_mol_K": 199.547102832,
+      "solid_Cp_basis": "Dulong-Petit high-temperature estimate, 3 n R, for 8 atoms per formula unit",
+      "fusion_temperature_K": 2223.15,
+      "fusion_temperature_source_value_C": 1950,
+      "fusion_temperature_source_status": "approximate phase-diagram liquidus",
+      "fusion_enthalpy_kJ_mol": 114.99059930249436,
+      "fusion_enthalpy_status": "provisional estimate",
+      "fusion_entropy_J_mol_K": 51.72417484312545,
+      "fusion_entropy_estimate_basis": "Measured Yb2Si2O7 fusion entropy scaled by the formula atom ratio 8/11",
+      "liquid_Cp_J_mol_K": 233.6,
+      "liquid_Cp_estimate_basis": "Yb2O3(l) Cp scaled by formula atom count: 146 * 8/5",
+      "liquid_Cp_spread_J_mol_K": 46.72,
+      "derivation": "The primary drop-solution value from oxides is the target for this liquid association: ΔHrxn(298) = −49.45 kJ/mol. Rebase the crystalline product enthalpy on the matching crystalline oxide anchors: ΔfH298(Yb2SiO5) = −1814.5 + (−905.489) + (−49.45) = −2769.439 kJ/mol. Liang et al.'s independent elemental formation value is −2774.75 kJ/mol, 5.31 kJ/mol from this rebased value and within the printed ±8.35 kJ/mol oxide-cycle uncertainty. Solid Cp uses 3 n R; fusion entropy is 151000/2123.15 * 8/11 = 51.7241748 J/(mol K), giving ΔHfus = 114.990599 kJ/mol at 2223.15 K. Liquid Cp is 146 * 8/5 = 233.6 J/(mol K). Units: the Hess terms are kJ/mol, Cp is J/(mol K), and ΔHfus = T ΔS/1000 is kJ/mol.",
+      "anchor_phase": "Crystalline silicate at 298.15 K; the liquid Gibbs function is constructed through fusion and liquid Cp."
+    },
+    "Yb2Si2O7(l)": {
+      "role": "constructed liquid association standard",
+      "formula_atoms": {
+        "Yb": 2,
+        "Si": 2,
+        "O": 7
+      },
+      "source_dfH298_from_oxides_kJ_mol": -158.87,
+      "source_dfH298_from_oxides_spread_kJ_mol": 19.88,
+      "selected_dfH298_kJ_mol": -3784.348,
+      "selected_S298_J_mol_K": 216,
+      "selected_S298_status": "provisional secondary tabulation",
+      "solid_Cp_J_mol_K": 274.377266394,
+      "solid_Cp_basis": "Dulong-Petit high-temperature estimate, 3 n R, for 11 atoms per formula unit",
+      "fusion_temperature_K": 2123.15,
+      "fusion_temperature_source_value_C": 1850,
+      "fusion_temperature_source_status": "approximate phase-diagram liquidus",
+      "fusion_enthalpy_kJ_mol": 151,
+      "fusion_enthalpy_spread_kJ_mol": 8,
+      "fusion_entropy_J_mol_K": 71.120740409,
+      "liquid_Cp_J_mol_K": 321.2,
+      "liquid_Cp_estimate_basis": "Yb2O3(l) Cp scaled by formula atom count: 146 * 11/5",
+      "liquid_Cp_spread_J_mol_K": 64.24,
+      "derivation": "At 42 mol% SiO2, Costa et al. report ΔHs(Yb2O3)=+2.41, ΔHs(SiO2)=−12.53, and ΔHs(Yb2Si2O7)=+136.22 kJ/mol in Table 3. The Hess target is ΔHrxn(oxides) = 2.41 + 2(−12.53) − 136.22 = −158.87 kJ/mol; independent two-sigma spreads combine as sqrt(13.44^2 + 4(6.40^2) + 7.13^2) = 19.88 kJ/mol. Rebase the crystalline product enthalpy on the matching crystalline oxide anchors: ΔfH298(Yb2Si2O7) = −1814.5 + 2(−905.489) − 158.87 = −3784.348 kJ/mol. Fusion is measured at 151 ± 8 kJ/mol; the phase-diagram temperature is 2123.15 K, so ΔSfus = 151000/2123.15 = 71.1207 J/(mol K). Solid Cp uses 3 n R and liquid Cp is 146 * 11/5 = 321.2 J/(mol K). Units: the Hess target is kJ/mol, Cp is J/(mol K), and ΔHfus = T ΔS/1000 is kJ/mol.",
+      "anchor_phase": "Crystalline silicate at 298.15 K; the liquid Gibbs function is constructed through fusion and liquid Cp."
+    }
+  },
+  "thermo_species": {
+    "Yb2O3(l)": {
+      "formula_atoms": {
+        "Yb": 2,
+        "O": 3
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "range_flags": [
+        "The 1200–2707 K branch is a constructed supercooled liquid continuation; the source liquid begins at 2707 K.",
+        "The C-to-H transition at 2687 K is retained separately from fusion at 2707 K.",
+        "The 146 J/(mol K) liquid heat capacity is assessed by Konings et al. as an estimate."
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200,
+            2000
+          ],
+          "row": {
+            "dH298_R": -218.234188229049,
+            "dG_A": -23.2147277931971,
+            "dG_B": 64.2809792854888,
+            "dG_C": -33.7799516477961,
+            "dG_D": 9.91924637830558,
+            "dG_E": -1.19644405565562
+          }
+        },
+        {
+          "T_domain_K": [
+            2000,
+            2707
+          ],
+          "row": {
+            "dH298_R": -218.234188229049,
+            "dG_A": -11.0817642484615,
+            "dG_B": 38.6413842580606,
+            "dG_C": -13.3139682650867,
+            "dG_D": 2.61171099615629,
+            "dG_E": -0.21252192876736
+          }
+        },
+        {
+          "T_domain_K": [
+            2707,
+            3000
+          ],
+          "row": {
+            "dH298_R": -218.234188229049,
+            "dG_A": 0.329433814845321,
+            "dG_B": 21.8559999975748,
+            "dG_C": -4.02727980118067,
+            "dG_D": 0.321160600524192,
+            "dG_E": 0
+          }
+        }
+      ],
+      "construction": {
+        "crystal_source": "Konings et al. (2014), Table 88, C/H/liquid phase chain",
+        "solid_transition_temperature_K": 2687,
+        "solid_transition_enthalpy_kJ_mol": 27,
+        "fusion_temperature_K": 2707,
+        "fusion_enthalpy_kJ_mol": 84,
+        "liquid_heat_capacity_j_mol_k": 146,
+        "total_crystal_to_liquid_enthalpy_kJ_mol": 111,
+        "fit_intervals_K": [
+          [
+            1200,
+            2000
+          ],
+          [
+            2000,
+            2707
+          ],
+          [
+            2707,
+            3000
+          ]
+        ],
+        "runtime_T_K": [
+          1200,
+          3000
+        ],
+        "fitter": "tools.build_gas_tables._konings_condensate_rows"
+      },
+      "provenance": {
+        "source": "Konings et al., J. Phys. Chem. Ref. Data 43 (2014), Table 88, pp. 013101-83–84; independent fusion check: Fyhrie et al. (2019), Table 2.",
+        "source_url": "https://doi.org/10.1063/1.4825256",
+        "tier": "tier3_published_thermochemistry",
+        "selection_rationale": "The central function integrates the printed C/H/liquid phase chain, retaining the 2687 K solid transition, 2707 K fusion point, and 146 J/(mol K) liquid Cp. The resulting C-to-liquid enthalpy is 27 + 84 = 111 kJ/mol; Fyhrie et al.'s independent drop-and-catch value is 102 ± 10 kJ/mol and is used only as a consistency check."
+      },
+      "accuracy_band": {
+        "value": 20,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Conservative source-uncertainty allowance for the printed formation enthalpy, solid transition, and fusion increments; excludes the energy penalty of supercooling."
+      },
+      "band_basis": {
+        "kind": "source_uncertainty",
+        "explanation": "Printed phase-chain uncertainties plus an independent fusion calorimetry cross-check.",
+        "provenance": "Konings et al. Table 88; Fyhrie et al. Table 2"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "An independent fusion enthalpy measurement is cited as a calorimetric cross-check; no same-standard equilibrium dataset was found."
+      },
+      "fit_residual": null
+    },
+    "Yb2SiO5(l)": {
+      "formula_atoms": {
+        "Yb": 2,
+        "Si": 1,
+        "O": 5
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "range_flags": [
+        "The liquid standard is supercooled below the approximate 2223.15 K melting point.",
+        "Fusion enthalpy is estimated from the measured Yb2Si2O7 fusion entropy per formula atom.",
+        "Crystal Cp uses a constant Dulong-Petit estimate and liquid Cp is scaled from Yb2O3(l); both are provisional."
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200,
+            1600
+          ],
+          "row": {
+            "dH298_R": -333.086950683311,
+            "dG_A": -15.6896032597256,
+            "dG_B": 68.3040171835198,
+            "dG_C": -34.5321529887833,
+            "dG_D": 10.6359517765696,
+            "dG_E": -1.39627140585565
+          }
+        },
+        {
+          "T_domain_K": [
+            1600,
+            2200
+          ],
+          "row": {
+            "dH298_R": -333.086950683311,
+            "dG_A": -9.4857933313355,
+            "dG_B": 52.9060910410394,
+            "dG_C": -20.1332769578547,
+            "dG_D": 4.6236737365041,
+            "dG_E": -0.450524747092598
+          }
+        },
+        {
+          "T_domain_K": [
+            2200,
+            3000
+          ],
+          "row": {
+            "dH298_R": -333.086950683311,
+            "dG_A": -2.40710156018588,
+            "dG_B": 40.0039332210809,
+            "dG_C": -11.2705503075896,
+            "dG_D": 1.90465137041107,
+            "dG_E": -0.136226511564315
+          }
+        }
+      ],
+      "construction": {
+        "standard_dfH298_kJ_mol": -2769.439,
+        "standard_S298_J_mol_k": 174.5,
+        "solid_heat_capacity_J_mol_K": 199.547102832,
+        "fusion_temperature_K": 2223.15,
+        "fusion_entropy_J_mol_K": 51.724174843,
+        "fusion_enthalpy_kJ_mol": 114.990599302,
+        "liquid_heat_capacity_J_mol_K": 233.6,
+        "solid_Cp_spread_J_mol_K": 59.86413085,
+        "fusion_entropy_spread_J_mol_K": 18,
+        "liquid_Cp_spread_J_mol_K": 46.72,
+        "fit_intervals_K": [
+          [
+            1200,
+            1600
+          ],
+          [
+            1600,
+            2200
+          ],
+          [
+            2200,
+            3000
+          ]
+        ],
+        "runtime_T_K": [
+          1200,
+          3000
+        ],
+        "fitter": "tools.build_gas_tables._fit_condensate_values"
+      },
+      "provenance": {
+        "source": "Liang et al., J. Mater. Res. 14 (1999), pp. 1181–1185; corrected Costa & Jacobson thermochemical cycle, Table 2; Al Nasiri et al., J. Am. Ceram. Soc. 99 (2016), pp. 589–596; Toropov & Bondar (1961), pp. 1278–1285.",
+        "source_url": "https://doi.org/10.1557/JMR.1999.0158",
+        "tier": "tier4_systematic_estimate",
+        "selection_rationale": "The association enthalpy uses Liang et al.'s primary drop-solution result from oxides, −49.45 ± 8.35 kJ/mol, rebased on the current Yb2O3(l) and SiO2(l) parent standards. The independent elemental formation value, −2774.75 ± 8.21 kJ/mol, differs from the rebased value by 5.31 kJ/mol. The corrected Costa & Jacobson Table 2 cycle independently gives −2774 ± 11 kJ/mol from elements. The 1950 °C melting point is taken from the published Yb2O3–SiO2 phase diagram. No direct monosilicate fusion enthalpy or liquid Cp was found; both are provisional estimates."
+      },
+      "accuracy_band": {
+        "value": 80,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Provisional envelope for the source enthalpy and entropy, superheated solid-Cp continuation, estimated fusion entropy, estimated liquid Cp, and polynomial fit residual."
+      },
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "Primary formation enthalpy is combined with approximate melting temperature, estimated fusion entropy, Dulong-Petit solid Cp, and an oxide-scaled liquid Cp.",
+        "provenance": "Liang et al.; Al Nasiri et al.; Toropov & Bondar; Yb2O3(l) parent standard"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "Published silica activities concern coexisting solid phases, not this constructed liquid standard; no liquid activity fit or independent same-standard check is claimed."
+      },
+      "fit_residual": {
+        "value": 0.688483996782452,
+        "unit": "J mol^-1 species",
+        "target_source": "Constructed crystalline Cp, fusion, and liquid Cp standard",
+        "comparison_method": "Maximum absolute fitted Gibbs residual on the 100 K construction nodes",
+        "temperature_range": [
+          1200,
+          3000
+        ],
+        "held_out_or_in_sample": "in_sample"
+      }
+    },
+    "Yb2Si2O7(l)": {
+      "formula_atoms": {
+        "Yb": 2,
+        "Si": 2,
+        "O": 7
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "range_flags": [
+        "The liquid standard is supercooled below the approximate 2123.15 K melting point.",
+        "Fusion enthalpy is measured, but the solid Cp function and liquid Cp are provisional estimates.",
+        "No composition-independent liquid activity measurement was located."
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200,
+            1600
+          ],
+          "row": {
+            "dH298_R": -455.152446269619,
+            "dG_A": -23.1384940823054,
+            "dG_B": 92.3998542406434,
+            "dG_C": -46.3917282990777,
+            "dG_D": 14.2341587862446,
+            "dG_E": -1.86411962497954
+          }
+        },
+        {
+          "T_domain_K": [
+            1600,
+            2200
+          ],
+          "row": {
+            "dH298_R": -455.152446269619,
+            "dG_A": -14.882942436575,
+            "dG_B": 71.9161819911065,
+            "dG_C": -27.24335080955,
+            "dG_D": 6.24131306428069,
+            "dG_E": -0.607225611455705
+          }
+        },
+        {
+          "T_domain_K": [
+            2200,
+            3000
+          ],
+          "row": {
+            "dH298_R": -455.152446269619,
+            "dG_A": -5.36003094671574,
+            "dG_B": 54.5627525235856,
+            "dG_C": -15.3255274040643,
+            "dG_D": 2.58578324200243,
+            "dG_E": -0.184761668065999
+          }
+        }
+      ],
+      "construction": {
+        "standard_dfH298_kJ_mol": -3784.348,
+        "standard_S298_J_mol_k": 216,
+        "solid_heat_capacity_J_mol_K": 274.377266394,
+        "fusion_temperature_K": 2123.15,
+        "fusion_entropy_J_mol_K": 71.120740409,
+        "fusion_enthalpy_kJ_mol": 151,
+        "liquid_heat_capacity_J_mol_K": 321.2,
+        "solid_Cp_spread_J_mol_K": 82.313179918,
+        "fusion_entropy_spread_J_mol_K": 3.77,
+        "liquid_Cp_spread_J_mol_K": 64.24,
+        "fit_intervals_K": [
+          [
+            1200,
+            1600
+          ],
+          [
+            1600,
+            2200
+          ],
+          [
+            2200,
+            3000
+          ]
+        ],
+        "runtime_T_K": [
+          1200,
+          3000
+        ],
+        "fitter": "tools.build_gas_tables._fit_condensate_values"
+      },
+      "provenance": {
+        "source": "Costa et al., J. Am. Ceram. Soc. 105 (2022), Table 3; Costa et al., J. Am. Ceram. Soc. 102 (2019), Table 4; NASA/TM-20230004256, Fig. 6; Toropov & Bondar (1961), pp. 1278–1285.",
+        "source_url": "https://doi.org/10.1111/jace.18715",
+        "tier": "tier4_systematic_estimate",
+        "selection_rationale": "The crystal formation Hess target is calculated from Costa et al.'s 42 mol% SiO2 Table 3 solution enthalpies; its 19.88 kJ/mol two-sigma spread is propagated from the three printed values. Costa et al. report a direct 151 ± 8 kJ/mol fusion enthalpy. The 1850 °C phase-diagram melting point is approximate. NASA/TM-20230004256 explicitly presents the high-temperature Cp model as a screening estimate; the central crystal Cp uses 3 n R and liquid Cp scales the measured Yb2O3(l) value by formula atom count."
+      },
+      "accuracy_band": {
+        "value": 100,
+        "unit": "kJ mol^-1 species",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Provisional envelope for Hess formation enthalpy, secondary S298, Dulong-Petit crystal Cp, liquid Cp scaled from Yb2O3(l), phase-diagram Tm, and polynomial fit residual."
+      },
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "Independent formation Hess target and fusion enthalpy are measured; crystal Cp, S298 authority, and liquid Cp remain provisional.",
+        "provenance": "Costa et al. Tables 3–4; NASA/TM-20230004256; Yb2O3(l) parent standard"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "The CMAS interaction measurements are composition-specific and do not provide a dilute liquid activity coefficient; they were not used to fit the standard."
+      },
+      "fit_residual": null
+    }
+  },
+  "rows": [
+    {
+      "row": 101,
+      "complex": "Yb2SiO5(l)",
+      "role": "complex",
+      "nu": {
+        "Yb2O3(l)": 1,
+        "SiO2(l)": 1
+      },
+      "reactants": {
+        "Yb2O3(l)": 1,
+        "SiO2(l)": 1
+      },
+      "products": {
+        "Yb2SiO5(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "Yb2O3(l) + SiO2(l) = Yb2SiO5(l)",
+      "phase_or_construction": "Monosilicate-derived liquid association reference; pure-liquid Gibbs function is constructed from the crystal formation enthalpy and provisional fusion/Cp estimates.",
+      "method": "Assemble product-positive standard Gibbs terms with the existing condensate phi evaluator and the existing silica reference.",
+      "standard_gibbs_terms": [
+        {
+          "species": "Yb2SiO5(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "Yb2O3(l)",
+          "coefficient": -1
+        },
+        {
+          "species": "SiO2(l)",
+          "coefficient": -1
+        }
+      ],
+      "T_domain_K": [
+        1323,
+        2473
+      ],
+      "uncertainty_note": "Provisional construction; source formation enthalpy and the estimated fusion/Cp terms are not adjusted to any battery observation. The domain is the requested pyrolysis window.",
+      "range_flags": [
+        "imcc_yb_associate_pack_notice",
+        "Most of this interval is a supercooled monosilicate liquid standard below the approximate 2223 K melting point.",
+        "Monosilicate fusion enthalpy and both solid/liquid Cp continuations are estimated; no dilute liquid activity data validate this associate."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "Liang et al. (1999), pp. 1181–1185; corrected Costa & Jacobson Table 2; Toropov & Bondar (1961), pp. 1278–1285.",
+        "source_url": "https://doi.org/10.1557/JMR.1999.0158",
+        "tier": "tier4_systematic_estimate",
+        "selection_rationale": "The reaction stoichiometry is fixed by Yb2SiO5 crystal chemistry. Its formation enthalpy from oxides is measured independently of the activity data. The liquid standard uses a phase-diagram melting point, an estimated fusion entropy scaled from Yb2Si2O7 per atom, and provisional Cp estimates. The Costa & Jacobson solid-phase silica activity measurements remain held out and are not a liquid-melt fit target."
+      },
+      "accuracy_band": {
+        "value": 160,
+        "unit": "kJ mol^-1 reaction",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Conservative provisional allowance for both constructed parent/product liquid standards and the monosilicate formation/fusion/Cp uncertainty; not a statistical confidence interval."
+      },
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The association target is independent, but the monosilicate fusion and heat-capacity functions are estimated.",
+        "provenance": "Liang et al.; Konings et al.; existing SiO2(l) reference"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "Available silica activity measurements are for coexisting solid phases and do not independently validate this liquid association."
+      },
+      "fit_residual": null
+    },
+    {
+      "row": 102,
+      "complex": "Yb2Si2O7(l)",
+      "role": "complex",
+      "nu": {
+        "Yb2O3(l)": 1,
+        "SiO2(l)": 2
+      },
+      "reactants": {
+        "Yb2O3(l)": 1,
+        "SiO2(l)": 2
+      },
+      "products": {
+        "Yb2Si2O7(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "Yb2O3(l) + 2 SiO2(l) = Yb2Si2O7(l)",
+      "phase_or_construction": "Disilicate-derived liquid association reference; crystal formation and fusion enthalpies are measured, while Cp/S298 terms are provisional.",
+      "method": "Assemble product-positive standard Gibbs terms with the existing condensate phi evaluator and the existing silica reference.",
+      "standard_gibbs_terms": [
+        {
+          "species": "Yb2Si2O7(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "Yb2O3(l)",
+          "coefficient": -1
+        },
+        {
+          "species": "SiO2(l)",
+          "coefficient": -2
+        }
+      ],
+      "T_domain_K": [
+        1323,
+        2473
+      ],
+      "uncertainty_note": "The 42 mol% SiO2 CMAS Hess target is independent of the battery. The reported CMAS activities are not used to tune this standard or either reaction.",
+      "range_flags": [
+        "imcc_yb_associate_pack_notice",
+        "The liquid standard is supercooled below the approximate 2123 K melting point.",
+        "Crystal Cp and liquid Cp are provisional estimates; no composition-independent liquid activity data validate this associate."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "Costa et al. (2022), Table 3; Costa et al. (2019), Table 4; Toropov & Bondar (1961), pp. 1278–1285.",
+        "source_url": "https://doi.org/10.1111/jace.18715",
+        "tier": "tier4_systematic_estimate",
+        "selection_rationale": "The reaction standard enthalpy comes from a same-solvent Hess cycle using printed Yb2O3, SiO2, and Yb2Si2O7 drop-solution values at 42 mol% SiO2. The Yb2Si2O7 fusion enthalpy is independently measured. Its solid Cp and liquid Cp are provisional; CMAS composition-specific data were not fitted."
+      },
+      "accuracy_band": {
+        "value": 180,
+        "unit": "kJ mol^-1 reaction",
+        "temperature_points_or_range": "T_domain_K",
+        "coverage": "Conservative provisional allowance for the measured Hess spread, two constructed parent references, secondary S298, solid Cp estimate, liquid Cp estimate, and phase-diagram Tm; not a statistical confidence interval."
+      },
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "Independent formation and fusion data are available, but high-temperature crystal Cp, liquid Cp, and entropy authority remain limited.",
+        "provenance": "Costa et al. Tables 3–4; Konings et al.; existing SiO2(l) reference"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No composition-independent Yb2O3-SiO2 liquid activity dataset was located; CMAS interaction measurements remain out-of-domain for this check."
+      },
+      "fit_residual": null
+    }
+  ],
+  "flags": [
+    "imcc_yb_associate_pack_notice",
+    "Provisional opt-in Yb-silicate association fragment; pack identity and source-domain notice are not validated.",
+    "This fragment represents Yb through caller-supplied Yb2O3 activity and does not model Yb2+/Yb3+ melt speciation."
+  ],
+  "citations": [
+    {
+      "id": "konings-yb2o3",
+      "citation": "Konings et al., The Thermodynamic Properties of the f-Elements and their Compounds, Part 2, J. Phys. Chem. Ref. Data 43 (2014), Table 88, pp. 013101-83–84; Table 89, p. 013101-85.",
+      "url": "https://doi.org/10.1063/1.4825256",
+      "location": "Table 88 and Table 89"
+    },
+    {
+      "id": "fyhrie-yb2o3-fusion",
+      "citation": "Fyhrie et al., Energetics of Melting of Yb2O3 and Lu2O3 from Drop and Catch Calorimetry and First Principles Computations, J. Chem. Thermodyn. 132 (2019), 405–410.",
+      "url": "https://doi.org/10.1016/j.jct.2019.01.008",
+      "location": "Table 2"
+    },
+    {
+      "id": "liang-yb2sio5",
+      "citation": "Liang, Navrotsky, Ludwig, Seifert, and Aldinger, Enthalpy of formation of rare-earth silicates Y2SiO5 and Yb2SiO5 and N-containing silicate Y10(SiO4)6N2, J. Mater. Res. 14 (1999), 1181–1185.",
+      "url": "https://doi.org/10.1557/JMR.1999.0158",
+      "location": "pp. 1181–1185"
+    },
+    {
+      "id": "costa-corrigendum-yb2sio5",
+      "citation": "Costa and Jacobson, Corrigendum to Mass spectrometric measurements of the silica activity in the Yb2O3–SiO2 system, J. Eur. Ceram. Soc. 35 (2015), 4259–4267; corrigendum (2018).",
+      "url": "https://doi.org/10.1016/j.jeurceramsoc.2018.03.007",
+      "location": "Corrected Table 2"
+    },
+    {
+      "id": "alnasiri-mononsilicate-cp",
+      "citation": "Al Nasiri et al., Thermal Properties of Rare-Earth Monosilicates for EBC on Si-Based Ceramic Composites, J. Am. Ceram. Soc. 99 (2016), 589–596.",
+      "url": "https://doi.org/10.1111/jace.13982",
+      "location": "pp. 589–596"
+    },
+    {
+      "id": "costa-yb2si2o7-hess",
+      "citation": "Costa et al., Energetics of Reactions between Ceramic Coating Materials and Molten CMAS, J. Am. Ceram. Soc. 105 (2022), 7795–7805.",
+      "url": "https://doi.org/10.1111/jace.18715",
+      "location": "Table 3"
+    },
+    {
+      "id": "costa-yb2si2o7-fusion",
+      "citation": "Costa et al., Thermodynamics of Reaction between Gas-Turbine Ceramic Coatings and Ingested CMAS Corrodents, J. Am. Ceram. Soc. 102 (2019), 2948–2964.",
+      "url": "https://doi.org/10.1111/jace.16113",
+      "location": "Table 4; reprinted in Costa et al. (2022), Table 4"
+    },
+    {
+      "id": "nasa-yb-silicate-cp",
+      "citation": "Bodenschatz, An Ensemble Neural Network Model for Predicting Rare-Earth Oxide and Silicate Heat Capacities at High Temperature, NASA/TM-20230004256 (2023).",
+      "url": "https://ntrs.nasa.gov/citations/20230004256",
+      "location": "Fig. 6, pp. 8–10"
+    },
+    {
+      "id": "toropov-yb-silicate-phase-diagram",
+      "citation": "Toropov and Bondar, Silicates of the Rare Earth Elements, Bulletin of the Academy of Sciences of the USSR, Division of Chemical Science 10(8) (1961), 1278–1285; phase diagram reproduced in Bakan et al. (2017), Fig. 5.",
+      "url": "https://juser.fz-juelich.de/record/837846/files/Bakan%20J%20Therm%20Spray%20Tech%20%282017%29.pdf?version=1",
+      "location": "Yb2O3–SiO2 phase diagram, Fig. 5"
+    },
+    {
+      "id": "paksoy-s298-secondary",
+      "citation": "Paksoy et al., Corrosion Science 207 (2022), 110555.",
+      "url": "https://doi.org/10.1016/j.corsci.2022.110555",
+      "location": "Table A1; S298 values only, provisionally"
+    },
+    {
+      "id": "janaf-silica-crystal",
+      "citation": "Chase, NIST-JANAF Thermochemical Tables, 4th ed., NIST SRD 13 (1998), SiO2 high-cristobalite table O-035; formation enthalpy at 298.15 K.",
+      "url": "https://janaf.nist.gov/tables/O-035.html",
+      "location": "Table O-035, 298.15 K row"
+    },
+    {
+      "id": "costa-jacobson-2015-heldout-activity",
+      "citation": "Costa and Jacobson, Mass spectrometric measurements of the silica activity in the Yb2O3-SiO2 system and implications to assess the degradation of silicate-based coatings in combustion environments, J. Eur. Ceram. Soc. 35 (2015), 4259-4267; corrigendum (2018).",
+      "url": "https://doi.org/10.1016/j.jeurceramsoc.2015.07.019",
+      "location": "Reported Yb2O3 + Yb2SiO5 and Yb2SiO5 + Yb2Si2O7 two-phase fields; not used as liquid fit data"
+    }
+  ]
+}

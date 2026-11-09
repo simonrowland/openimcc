@@ -1008,14 +1008,50 @@ def test_redox_path_and_loaded_object_checks_match_for_every_shipped_pack() -> N
 
 def test_default_melt_and_redox_tables_have_no_declared_mismatches() -> None:
     records = check_pack_standards(
-        load_datapack(), redox_pack=load_redox_pack()
+        load_datapack(),
+        gas_pack=load_gas_datapack(),
+        redox_pack=load_redox_pack(),
     )
     assert not [
         record for record in records
         if record.kind in {"mismatch", "redox-mismatch"}
     ]
-    assert any(record.kind == "reference-unknown" for record in records)
-    assert not any(record.kind == "undeclared" for record in records)
+    reference_unknown = [
+        record for record in records if record.kind == "reference-unknown"
+    ]
+    assert [(record.oxide, record.active) for record in reference_unknown] == [
+        ("K2O", "K-012")
+    ] * 4
+    assert not any(
+        record.kind in {"undeclared", "not-active"} for record in records
+    )
+    # The promoted redox row uses Cr2O3(l) as a formula-only parent. Its JANAF
+    # Cr-015 liquid estimate and labelled supercooled continuation remain in
+    # the default condensate input, including the 2603 K fusion marker.
+    gas_pack = load_gas_datapack()
+    cr_liquid_rows = gas_pack.oxide_df.loc["Cr2O3(l)"]
+    assert set(cr_liquid_rows["table_id"]) == {"Cr-015"}
+    assert "generated_constant_cp_extrapolation_fit" in set(
+        cr_liquid_rows["construction_method"]
+    )
+    assert cr_liquid_rows["supercooled_continuation"].any()
+    assert 2603.0 in set(cr_liquid_rows["fusion_temperature_K"])
+    cr_standard = pack_liquid_standards(load_redox_pack())
+    assert cr_standard.standards["Cr2O3"] == "Cr-015"
+    assert cr_standard.standard_basis["Cr2O3"] == "source"
+    assert "JANAF Cr-015 liquid estimate" in cr_standard.standard_citations[
+        "Cr2O3"
+    ]
+    notices = evaluate_redox(
+        {"Fe": 1.0, "O": 1.25}, 1800.0, "closed", profile="openimcc"
+    ).notices
+    assert len(notices) == 4
+    assert all(
+        isinstance(notice, PackStandardNotice)
+        and notice.kind == "reference-unknown"
+        and notice.oxide == "K2O"
+        for notice in notices
+    )
     assert not any(
         record.oxide == "FeO" and record.kind == "non-source-basis"
         for record in records

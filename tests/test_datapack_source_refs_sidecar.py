@@ -21,7 +21,8 @@ from test_melt_source_transcriptions import (
 ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src" / "openimcc" / "data" / "packs"
 SIDECAR_PATH = ROOT / "src" / "openimcc" / "data" / "source-refs-sidecar.json"
-MANIFEST_SHA256 = "015bc933e89c9587c1d2e2577e2da0415acf56757656fbafcbf789db43577ffc"
+# Re-pinned for the redox v5 default and four-kind default combination.
+MANIFEST_SHA256 = "e56c8572e647cc66b86037b7f4164c06c329df775fe27c86edf28ef78360ad44"
 
 
 def _pack_data() -> dict[str, dict[str, Any]]:

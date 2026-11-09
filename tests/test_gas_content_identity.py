@@ -46,28 +46,31 @@ from openimcc.gas import (
 ROOT = Path(__file__).resolve().parents[1]
 GAS_DATA = ROOT / "src/openimcc/data/gas"
 PACK_DIR = ROOT / "src/openimcc/data/packs"
-TABLE_FILES = ("gas-shomate.csv", "condensate.csv")
+TABLE_FILES = ("gas-shomate-default-v1.csv", "condensate-default-v1.csv")
+# These pins cover the versioned default after the 1 bar correction, molecule
+# additions, and O-035 crystal promotion.
 PACKAGED_GAS_TABLE_DIGEST = (
-    "aa19dde33be4b6cb1b9aca47611dccab803f8baaccf3ea9305d4159873383072"
+    "a72b7eb724d174e99319dd717a61631748283a2957a85decb704b5d2eca84b20"
 )
 PACKAGED_CONDENSATE_TABLE_DIGEST = (
-    "a4da7be91b64cfdb9db7797560d24fc74e5b532ea082f51d8cf70558ba71a8ec"
+    "a8c12fb657b3104661cf726876fcd58781ebfc9f58be59f028eb3ab02a6e6d65"
 )
 PACKAGED_FULL_GAS_TABLE_DIGEST = (
-    "2efbe131d82a95725f00a725b7ab06ffbad004e223d4f1ff556adbf2153bfc71"
+    "4d069a8951cd11e0d2edb37420e3aa04e4927c51c6eee00bbc53368b20d6c492"
 )
 PACKAGED_FULL_CONDENSATE_TABLE_DIGEST = (
-    "0fe31e8868ce85b32a67e779f3f265418d14baeacaea4fca15eb3f4d64871cbd"
+    "493c67d5ba23b75767cc3ce4bd6e571bd2400162b3affdbbc581a7b0ae75362e"
 )
 PACKAGED_ENGINE_BINDING_DIGESTS = {
-    "v1": "c5ba5c28059ed1d1d4734518523820724e065ebc5382c631c6a4cd723a580a44",
-    "ext": "ffcd0804dddc041e9a6b9a98f8637c169b05dbfdcb0bbcac93abc04f6dc2d023",
+    "v1": "3d1f6d0a0958061d023d84acd9d6a4c04edbb6285fb30fb5cfd871b138516603",
+    "ext": "c06c7583ec660c78c4ab799b76f60ac9d53ccb9579bcb49b56421f6f3d958e0b",
 }
 PACKAGED_FULL_ENGINE_BINDING_DIGESTS = {
-    "v1": "880d70111d0c28b1a7b59ae63a135b31778d6f36026018edea7af00d2d693504",
-    "ext": "144fd367e55c4e58aba83a1b39e1f0f3f203babb1ff0f1cffc6990326225a633",
+    "v1": "8c4e0d32bf4c9b73a00c6be5955ed95ebad4e8c9433d9f614593e5150a3196fb",
+    "ext": "b11c2172d400997974f1117ae916d59bc82d1b1c65d976e7233c635c955cf58c",
 }
 ADDED_GAS_SPECIES = {
+    "Si2O2(g)", "AlSiO(g)",
     "TeO(g)", "SbO(g)",
     "Au+(g)", "Au-(g)", "Hg+(g)", "Pd+(g)", "Pt+(g)", "Pt-(g)",
     "Ta(g)", "TaO(g)", "TaO2(g)", "Be(g)", "BeO(g)", "Be2O(g)",
@@ -209,8 +212,7 @@ def test_mgo_supercooled_coefficient_changes_only_condensate_and_combined_identi
 ) -> None:
     melt_pack = load_datapack(PACK_DIR / "imcc-sf04-v1.0.2.json")
     original = _load_tables(tmp_path / "original")
-    gas_path, _ = _copy_tables(tmp_path / "changed")
-    condensate_path = tmp_path / "changed/condensate.csv"
+    gas_path, condensate_path = _copy_tables(tmp_path / "changed")
     fields, rows = _read_csv(condensate_path)
     row = next(
         row
@@ -234,8 +236,7 @@ def test_gas_cell_change_only_changes_gas_and_combined_identity(
 ) -> None:
     melt_pack = load_datapack(PACK_DIR / "imcc-sf04-v1.0.2.json")
     original = _load_tables(tmp_path / "original")
-    _, condensate_path = _copy_tables(tmp_path / "changed")
-    gas_path = tmp_path / "changed/gas-shomate.csv"
+    gas_path, condensate_path = _copy_tables(tmp_path / "changed")
     fields, rows = _read_csv(gas_path)
     row = next(row for row in rows if row["species_name"] == "Na(g)")
     row["A"] = format(float(row["A"]) + 0.25, ".17g")
@@ -365,15 +366,15 @@ def test_reordering_rows_preserves_identity_and_gas_evaluation(
 @pytest.mark.parametrize(
     ("filename", "species", "coefficient"),
     (
-        ("gas-shomate.csv", "Na(g)", "A"),
-        ("condensate.csv", "MgO(l)", "dG_A"),
+        (TABLE_FILES[0], "Na(g)", "A"),
+        (TABLE_FILES[1], "MgO(l)", "dG_A"),
     ),
 )
 def test_loader_refuses_duplicate_interval_starts(
     tmp_path: Path, filename: str, species: str, coefficient: str
 ) -> None:
     gas_path, condensate_path = _copy_tables(tmp_path)
-    table_path = gas_path if filename == "gas-shomate.csv" else condensate_path
+    table_path = gas_path if filename == TABLE_FILES[0] else condensate_path
     fields, rows = _read_csv(table_path)
     original = next(row for row in rows if row["species_name"] == species)
     duplicate = dict(original)
@@ -429,7 +430,7 @@ def test_duplicate_gas_interval_probe_exposes_order_dependent_evaluation(
 
 @pytest.mark.parametrize(
     ("filename", "species", "bound"),
-    (("gas-shomate.csv", "Na(g)", "T_min"), ("condensate.csv", "MgO(l)", "T_min")),
+    ((TABLE_FILES[0], "Na(g)", "T_min"), (TABLE_FILES[1], "MgO(l)", "T_min")),
 )
 @pytest.mark.parametrize("raw_bound", ("-inf", "inf", "NaN"))
 def test_loader_refuses_non_finite_interval_bounds(
@@ -463,8 +464,8 @@ def test_loader_refuses_invalid_interval_bound_spellings(
 @pytest.mark.parametrize(
     ("filename", "species", "coefficient", "first", "second"),
     (
-        ("gas-shomate.csv", "Na(g)", "A", "1500", "1500.0"),
-        ("condensate.csv", "MgO(l)", "dG_A", "1500", "1500.0"),
+        (TABLE_FILES[0], "Na(g)", "A", "1500", "1500.0"),
+        (TABLE_FILES[1], "MgO(l)", "dG_A", "1500", "1500.0"),
     ),
 )
 def test_loader_refuses_duplicate_starts_after_float64_normalization(
@@ -487,7 +488,7 @@ def test_loader_refuses_duplicate_starts_after_float64_normalization(
     duplicate[coefficient] = format(float(original[coefficient]) + 1.0, ".17g")
     rows.append(duplicate)
     _write_csv(table_path, fields, rows)
-    if filename == "condensate.csv":
+    if filename == TABLE_FILES[1]:
         original_read_csv = pd.read_csv
 
         def read_csv_with_raw_bound(*args, **kwargs):
@@ -619,7 +620,16 @@ def test_invalid_direct_bounds_refuse_identity_and_evaluation(
 def test_direct_exact_bounds_are_canonicalized(dtype: object) -> None:
     loaded = load_gas_datapack()
     frame = loaded.gas_df.copy(deep=True)
-    frame["T_min"] = frame["T_min"].astype(dtype)
+    exact_integer_bounds = frame["T_min"].map(float).map(float.is_integer)
+    frame["T_min"] = frame["T_min"].astype(object)
+    if dtype == "int64":
+        frame.loc[exact_integer_bounds, "T_min"] = frame.loc[
+            exact_integer_bounds, "T_min"
+        ].astype("int64")
+    else:
+        frame.loc[exact_integer_bounds, "T_min"] = frame.loc[
+            exact_integer_bounds, "T_min"
+        ].map(lambda value: str(int(value)))
     pack = replace(loaded, gas_df=frame)
     assert pack.gas_table_digest == loaded.gas_table_digest
     assert pack.gas_df["T_min"].dtype == np.dtype("float64")
@@ -647,8 +657,16 @@ def test_evaluated_float_coefficients_and_exact_widenings_match(
     loaded = load_gas_datapack()
     frame_name = "gas_df" if table_name == "gas" else "oxide_df"
     narrow_frame = getattr(loaded, frame_name).copy(deep=True)
+    if table_name == "gas":
+        # AlSiO's source fit contains coefficients outside float16's range;
+        # this check only needs the Na and O2 rows used by the evaluation.
+        narrow_rows = narrow_frame.index.isin(("Na(g)", "O2(g)"))
+    else:
+        narrow_rows = narrow_frame.index == "Na2O(l)"
     for column in columns:
-        narrow_frame[column] = narrow_frame[column].astype(storage_dtype)
+        narrow_frame.loc[narrow_rows, column] = narrow_frame.loc[
+            narrow_rows, column
+        ].astype(storage_dtype)
     narrow = replace(loaded, **{frame_name: narrow_frame})
 
     digest_name = "gas_table_digest" if table_name == "gas" else "condensate_table_digest"

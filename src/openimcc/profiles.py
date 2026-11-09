@@ -65,17 +65,17 @@ def load_profile(name: str) -> Profile:
         from openimcc.gas import load_gas_datapack
 
         gas = load_gas_datapack(
-            gas_path=_DATA_DIR / "gas" / "gas-shomate.csv",
-            oxide_path=_DATA_DIR / "gas" / "condensate.csv",
+            gas_path=_DATA_DIR / "gas" / "gas-shomate-default-v1.csv",
+            oxide_path=_DATA_DIR / "gas" / "condensate-default-v1.csv",
         )
         return Profile(
             name="openimcc",
             melt_pack=load_datapack(),
             gas_datapack=gas,
-            redox_pack_path=_PACKS_DIR / "openimcc-redox-v4.json",
+            redox_pack_path=_PACKS_DIR / "openimcc-redox-v5.json",
             provenance=(
-                "D066 v4 melt, packaged openimcc gas and condensate tables, "
-                "and openimcc redox v4."
+                "D066 v4 melt, versioned openimcc gas and condensate tables, "
+                "and the v5 Cr, Sr, Li, Zn, and Yb redox pack."
             ),
         )
     if name == "published":

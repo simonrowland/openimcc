@@ -20,7 +20,7 @@ from typing import Any, Mapping
 from openimcc.kernel import ImccRefusal
 from openimcc.json_utils import reject_duplicate_json_keys
 
-_PACK_NAME = "openimcc-redox-v4.json"
+_PACK_NAME = "openimcc-redox-v5.json"
 _SCHEMA = "openimcc-redox-pack.v2"
 _HISTORICAL_CANDIDATE_VERSIONS = {
     "1.4.0-cr-candidate", "1.5.0-ti-candidate", "1.6.0-cr-ti-candidate",
@@ -30,6 +30,7 @@ _HISTORICAL_CANDIDATE_VERSIONS = {
 # Historical versions remain recognized for immutable pack and reproducibility pins.
 _CANDIDATE_VERSIONS = _HISTORICAL_CANDIDATE_VERSIONS | {
     "1.7.0-cr-candidate", "1.8.0-ti-candidate", "1.9.0-cr-ti-candidate",
+    "1.8.0-cr-candidate",
 }
 
 

@@ -2,19 +2,20 @@ from __future__ import annotations
 
 import math
 import json
+from dataclasses import fields
 from pathlib import Path
 
 import pytest
 
 from openimcc import evaluate_redox
-from openimcc.redox import RedoxNumericalError
+from openimcc.redox import RedoxInputError, RedoxNumericalError
 from openimcc.redox_pack import canonical_redox_digest, load_redox_pack
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CANDIDATE = ROOT / "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json"
-DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v4.json"
-CURRENT_DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v4.json"
+LEGACY_DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v4.json"
+CURRENT_DEFAULT = ROOT / "src/openimcc/data/packs/openimcc-redox-v5.json"
 
 
 def _candidate_result(T: float, log10_f_o2: float, inventory=None):
@@ -169,11 +170,39 @@ def test_candidate_oxygen_capacity_matches_total_fixed_point_difference():
     assert relative_error < 1.0e-4
 
 
+def test_fe_free_cr_redox_row_requires_imposed_fugacity():
+    inventory = {"Cr": 0.1, "Si": 0.2, "O": 0.55}
+    with pytest.raises(RedoxInputError, match="requires an imposed oxygen fugacity"):
+        evaluate_redox(inventory, 1800.0, "closed", redox_pack_path=CANDIDATE)
+
+    imposed = evaluate_redox(
+        inventory,
+        1800.0,
+        "imposed",
+        lambda_imposed=math.log(1.0e-8),
+        redox_pack_path=CANDIDATE,
+    )
+    assert imposed.ferrous_fe_mol == 0.0
+    assert imposed.ferric_fe_mol == 0.0
+    assert imposed.chromous_cr_mol > 0.0
+
+
 def test_candidate_loader_and_default_outputs_remain_identical_across_sweep():
     candidate = load_redox_pack(CANDIDATE)
-    default = load_redox_pack(CURRENT_DEFAULT)
+    legacy_default = load_redox_pack(LEGACY_DEFAULT)
+    default = load_redox_pack()
+    assert default.content["thermo_species"]["FeO(l)"] == candidate.content[
+        "thermo_species"
+    ]["FeO(l)"]
+    assert default.content["rows"][: len(candidate.rows)] == candidate.rows
+    assert candidate.rows[:6] == legacy_default.rows
+    assert candidate.rows[6]["complex"] == "CrO(l)-effective"
+    assert candidate.rows[6]["range_flags"] == (
+        "Model is for 1 bar; pressure is not modelled.",
+        "Direct isothermal XANES calibration is at 1673 K; variable-temperature data extend to 1773 K.",
+        "Major-cation compositions outside the demonstrated CMAS and basaltic range are flagged during evaluation.",
+    )
     assert candidate.rows[-1]["composition_coefficients"]["Fe3+O1.5"] == 0.37
-    assert not any("Cr" in row["complex"] for row in default.rows)
     for T, inventory in [
         (1800.0, {"Fe": 1.0, "O": 1.25}),
         (2200.0, {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65}),
@@ -183,16 +212,29 @@ def test_candidate_loader_and_default_outputs_remain_identical_across_sweep():
         assert default_result == evaluate_redox(
             inventory, T, "closed", redox_pack_path=CURRENT_DEFAULT
         )
-        candidate_result = evaluate_redox(
-            inventory, T, "closed", redox_pack_path=DEFAULT
-        )
-        assert candidate_result.oxygen_capacity_mol_per_ln_f_o2 == evaluate_redox(
+        previous_default = evaluate_redox(
             inventory, T, "closed", redox_pack_path=CANDIDATE
-        ).oxygen_capacity_mol_per_ln_f_o2
+        )
+        assert default_result.species_moles["CrO(l)-effective"] == 0.0
+        assert all(
+            default_result.species_moles[name] == value
+            for name, value in previous_default.species_moles.items()
+        )
+        assert all(
+            default_result.parent_moles[name] == value
+            for name, value in previous_default.parent_moles.items()
+        )
+        assert all(
+            getattr(default_result, item.name) == getattr(previous_default, item.name)
+            for item in fields(default_result)
+            if item.name not in {
+                "parent_moles", "species_moles", "redox_pack_digest", "receipt"
+            }
+        )
 
 
-def test_composition_coefficients_are_rejected_by_default_pack(tmp_path):
-    content = json.loads(DEFAULT.read_text())
+def test_legacy_standard_pack_rejects_composition_coefficients(tmp_path):
+    content = json.loads(LEGACY_DEFAULT.read_text())
     content["rows"][1]["composition_coefficients"] = {"MgO": 1.0}
     content["canonical_content_digest"] = canonical_redox_digest(content)
     path = tmp_path / "default-with-candidate-field.json"

@@ -12,6 +12,7 @@ import math
 from typing import Mapping
 
 from openimcc._constants import MOLAR_MASS_G_MOL, R_J_MOL_K as _R
+from openimcc.activity_fragments import load_activity_fragment
 from openimcc.kernel import ImccRefusal, PackRowParticipation
 from openimcc.model import (
     ImccLoadedDatapack,
@@ -21,6 +22,7 @@ from openimcc.model import (
 
 _LN10 = math.log(10.0)
 _LOG10_MAX_FLOAT = math.log10(float.fromhex("0x1.fffffffffffffp+1023"))
+
 
 # Forward notices by their source family and score metadata, never by prose.
 _MELT_NOTICE_FORWARD_CODES = {
@@ -225,26 +227,28 @@ def _log10_sum(log_values: tuple[float, ...]) -> float:
 
 def _capacity_logs(
     one_oxygen: Mapping[str, float],
-    cations: Mapping[str, float],
     T_K: float,
 ) -> tuple[float, float]:
-    # Boulliung & Wood (2023), Eq. 7. X values are single-oxygen-basis oxide
-    # fractions; the published concentration unit is wt% S.
-    log_cs2 = 0.225 + (
-        25237.0 * one_oxygen.get("FeO", 0.0)
-        + 5214.0 * one_oxygen.get("CaO", 0.0)
-        + 12705.0 * one_oxygen.get("MnO", 0.0)
-        + 19829.0 * one_oxygen.get("K2O", 0.0)
-        - 1109.0 * one_oxygen.get("SiO2", 0.0)
-        - 8879.0
+    rows = load_activity_fragment("S")["rows"]
+    assert isinstance(rows, dict)
+    sulfide_fit = rows["sulfide_capacity_eq_7"]["row"]
+    sulfate_fit = rows["sulfate_capacity_eq_9"]["row"]
+
+    # Both published fits use single-oxygen-basis oxide fractions and return
+    # log10 capacity in wt% S. Terms divided by T carry kelvin units.
+    log_cs2 = float(sulfide_fit["intercept"]) + (
+        math.fsum(
+            float(coefficient) * one_oxygen.get(component, 0.0)
+            for component, coefficient in sulfide_fit["terms_K"].items()
+        )
+        + float(sulfide_fit["constant_K"])
     ) / T_K
-    # Boulliung & Wood (2022), Eq. 5. X values are single-cation fractions.
-    log_cs6 = -12.659 + (
-        3692.0 * cations.get("Ca", 0.0)
-        - 7592.0 * cations.get("Si", 0.0)
-        - 13736.0 * cations.get("Ti", 0.0)
-        + 3762.0 * cations.get("Al", 0.0)
-        + 34483.0
+    log_cs6 = float(sulfate_fit["intercept"]) + (
+        math.fsum(
+            float(coefficient) * one_oxygen.get(component, 0.0)
+            for component, coefficient in sulfate_fit["terms_K"].items()
+        )
+        + float(sulfate_fit["constant_K"])
     ) / T_K
     return log_cs2, log_cs6
 
@@ -447,11 +451,11 @@ def evaluate_sulfur(
     one_oxygen, cations = _fractions(formula_moles)
     # These capacity fits use the requested full composition, independent of
     # which oxides the melt pack can represent.
-    log_cs2, log_cs6 = _capacity_logs(one_oxygen, cations, T)
+    log_cs2, log_cs6 = _capacity_logs(one_oxygen, T)
     notices: list[SulfurNotice] = []
     _out_of_range(
         notices, code="capacity-temperature-outside-calibration",
-        model="Boulliung-Wood-2023/2022", axis="temperature_K", value=T,
+        model="Boulliung-Wood-2023-Eq-7-and-Eq-9", axis="temperature_K", value=T,
         lower=1473.0, upper=1773.0, unit="K",
     )
     for model, bounds in (
@@ -459,9 +463,10 @@ def evaluate_sulfur(
             "SiO2": (39.9, 61.6), "FeO": (0.0, 16.9), "CaO": (4.1, 22.3),
             "TiO2": (0.0, 8.34), "Na2O": (0.13, 7.77),
         }),
-        ("Boulliung-Wood-2022-Eq-5", {
+        ("Boulliung-Wood-2023-Eq-9", {
             "SiO2": (39.9, 73.2), "FeO": (0.0, 16.9), "CaO": (1.0, 22.3),
-            "TiO2": (0.0, 8.34), "Na2O": (0.0, 7.77),
+            "TiO2": (0.0, 8.34), "Na2O": (0.0, 7.77), "K2O": (0.0, 8.6),
+            "MgO": (0.3, 17.4), "MnO": (0.0, 2.45), "Al2O3": (10.9, 22.9),
         }),
     ):
         for oxide, (lo, hi) in bounds.items():
@@ -475,8 +480,8 @@ def evaluate_sulfur(
         if value > 0.0:
             notices.append(_notice(
                 "capacity-composition-component-outside-calibration",
-                f"{oxide} is not represented in the Boulliung-Wood capacity calibrations",
-                model="Boulliung-Wood-2023/2022", axis=f"{oxide}_wt_percent",
+                f"{oxide} is not represented in the Boulliung-Wood 2023 capacity fits",
+                model="Boulliung-Wood-2023-Eq-7-and-Eq-9", axis=f"{oxide}_wt_percent",
                 value=value, interval=(0.0, 0.0), distance=value,
                 distance_unit="wt%",
             ))
@@ -492,7 +497,7 @@ def evaluate_sulfur(
     )
     if pressure < 1.0:
         decades = math.log10(1.0 / pressure)
-        for model in ("Boulliung-Wood-capacities", "Smythe-2017-SCSS"):
+        for model in ("Boulliung-Wood-2023-capacities", "Smythe-2017-SCSS"):
             notices.append(_notice(
                 "pressure-below-calibration", "model calibrated at atmospheric pressure",
                 model=model, axis="total_pressure_bar", value=pressure,
@@ -501,8 +506,8 @@ def evaluate_sulfur(
     elif pressure > 1.0:
         notices.append(_notice(
             "capacity-pressure-outside-calibration",
-            "Boulliung-Wood capacities were calibrated at atmospheric pressure",
-            model="Boulliung-Wood-capacities", axis="total_pressure_bar", value=pressure,
+            "Boulliung-Wood 2023 capacities were calibrated at atmospheric pressure",
+            model="Boulliung-Wood-2023-capacities", axis="total_pressure_bar", value=pressure,
             interval=(1.0, 1.0), distance=math.log10(pressure),
             distance_unit="decades above 1 bar",
         ))
@@ -848,6 +853,19 @@ def evaluate_sulfur(
             )
             log_fs2 = 2.0 * (log_target_wt - log_a)
 
+    if (
+        log10_fS2 is None
+        and input_total_ppm is not None
+        and sulfur_fields_available
+        and log_fs2 is not None
+    ):
+        notices.append(_notice(
+            "imcc_sulfur_parent_domain_notice",
+            "S2 activity is derived from total sulfur and fO2 using the Boulliung-Wood 2023 Eq. 7 and Eq. 9 capacity fits; calibrated for dry silicate melts at 1473-1773 K and 1 atm. See capacity temperature, pressure, composition, and component notices for departures from the fitted domain.",
+            model="Boulliung-Wood-2023-Eq-7-and-Eq-9",
+            axis="temperature_K", value=T, interval=(1473.0, 1773.0),
+        ))
+
     dissolved_s2 = dissolved_s6 = predicted_total = dissolved_total = None
     capacity_predicted_s2 = capacity_predicted_s6 = None
     dissolved_mol = excess_ppm = excess_s_mol = None
@@ -930,7 +948,7 @@ def evaluate_sulfur(
             notices.append(_notice(
                 "sulfate-saturation-and-so2-degassing-not-modelled",
                 "dissolved S6+ exceeds S2-; sulfate saturation (including anhydrite) and SO2 degassing are not modelled",
-                model="Boulliung-Wood-2022-Eq-5", axis="dissolved_S6_to_S2_ratio",
+                model="Boulliung-Wood-2023-Eq-9", axis="dissolved_S6_to_S2_ratio",
                 value=dissolved_s6 / dissolved_s2 if dissolved_s2 > 0.0 else math.inf,
             ))
         if (
@@ -944,7 +962,7 @@ def evaluate_sulfur(
             ))
         for model, value, maximum in (
             ("Boulliung-Wood-2023-Eq-7", capacity_predicted_s2, 3500.0),
-            ("Boulliung-Wood-2022-Eq-5", capacity_predicted_s6, 4090.0),
+            ("Boulliung-Wood-2023-Eq-9", capacity_predicted_s6, 4090.0),
         ):
             if value is not None and value > maximum:
                 notices.append(_notice(

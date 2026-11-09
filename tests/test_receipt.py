@@ -91,7 +91,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     )
     _assert_parent_numbers(
         [balance_pO2, balanced["Na"]],
-        [5.153813984425113e-06, 1.7708333617693686e-05],
+        [5.153813984439131e-06, 1.7708333617681644e-05],
     )
     balance_receipt = _assert_json_receipt(balanced)
     assert balance_receipt.data_digests == {
@@ -106,7 +106,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     )
     _assert_parent_numbers(
         [saturation.P_sat_bar, saturation.pO2_bar],
-        [2.364904552832983e-05, 4.578522594411507e-06],
+        [2.3649045528363337e-05, 4.578522594437829e-06],
     )
     saturation_receipt = _assert_json_receipt(saturation)
     assert saturation_receipt.data_digests == {
@@ -124,7 +124,7 @@ def test_receipts_cover_each_result_entrypoint_and_existing_digests():
     )
     _assert_parent_numbers(
         [boiling_temperature, boiling.P_sat_bar],
-        [1897.101053865526, 4.865657946350161e-05],
+        [1897.1010538597138, 4.8656579463500894e-05],
     )
     boiling_receipt = _assert_json_receipt(boiling)
     assert boiling_receipt.data_digests == {

@@ -67,9 +67,9 @@ def test_default_tables_remain_byte_identical_and_candidate_prefixes_match() -> 
 
 
 def test_candidate_tables_load_and_preserve_gas_and_liquid_seams(
-    packaged_gas_pack,
+    legacy_packaged_gas_pack,
 ) -> None:
-    default = packaged_gas_pack
+    default = legacy_packaged_gas_pack
     candidate = load_gas_datapack(str(GAS_CANDIDATE), str(OXIDE_CANDIDATE))
 
     for species, *_ in build_gas_tables.HIGH_TEMP_GAS_CARDS:
@@ -111,8 +111,9 @@ def test_candidate_tables_load_and_preserve_gas_and_liquid_seams(
     _assert_close(gb + 3000.0 * sb, gh + 3000.0 * sh)
 
 
-def test_candidate_results_match_defaults_below_3000_k(packaged_gas_pack) -> None:
-    default = packaged_gas_pack
+def test_candidate_results_match_defaults_below_3000_k(legacy_packaged_gas_pack) -> None:
+    # These immutable candidates extend the original SF04 tables.
+    default = legacy_packaged_gas_pack
     candidate = load_gas_datapack(str(GAS_CANDIDATE), str(OXIDE_CANDIDATE))
     base = evaluate_gas(ACTIVITIES, 2500.0, 1.0e-10, default)
     high = evaluate_gas(ACTIVITIES, 2500.0, 1.0e-10, candidate)
@@ -154,7 +155,7 @@ def test_high_temperature_gas_and_basalt_melt_runs_are_flagged() -> None:
         assert any("rough high-temperature extension" in (flag or "") for flag in result.domain_flags.values())
 
 
-def test_v2_candidate_loads_preserves_prefixes_and_all_seams(packaged_gas_pack) -> None:
+def test_v2_candidate_loads_preserves_prefixes_and_all_seams(legacy_packaged_gas_pack) -> None:
     default_gas = ROOT / "src/openimcc/data/gas/gas-shomate.csv"
     default_oxide = ROOT / "src/openimcc/data/gas/condensate.csv"
     v1_gas = ROOT / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv"
@@ -168,7 +169,8 @@ def test_v2_candidate_loads_preserves_prefixes_and_all_seams(packaged_gas_pack) 
         assert v1.read_bytes().splitlines()[:len(lines)] == lines
         assert v2.read_bytes().splitlines()[:len(lines)] == lines
 
-    default = packaged_gas_pack
+    # Compare the high-temperature extension against the table version it extends.
+    default = legacy_packaged_gas_pack
     v2 = load_gas_datapack(str(GAS_CANDIDATE_V2), str(OXIDE_CANDIDATE_V2))
     for species, *_ in build_gas_tables.HIGH_TEMP_GAS_CARDS:
         base = default.gas_df.loc[species].sort_values("T_min").iloc[-1]

@@ -12,6 +12,7 @@ import pytest
 
 from openimcc._constants import R_J_MOL_K
 from openimcc import (
+    ImccComponentOutsideDomainError,
     ImccCompositionOutsideValidatedEnvelopeError,
     ImccDatapack,
     ImccMalformedDatapackError,
@@ -179,15 +180,23 @@ def test_extension_row_nonfinite_domain_is_malformed(
 
 
 @pytest.mark.parametrize("component", ["S", "P2O5"])
-def test_plain_pack_sp_input_has_explanatory_typed_refusal(component: str) -> None:
+def test_plain_pack_accepts_trace_sp_but_refuses_over_limit(component: str) -> None:
     pack = load_datapack(BASE_DATAPACK)
-    with pytest.raises(ImccSPComponentRequiresExtensionError) as exc:
-        evaluate({"SiO2": 1.0, component: 0.01}, 2500.0, pack)
-    assert exc.value.code == "imcc_sp_extension_required"
+    result = evaluate(
+        {"SiO2": 0.99, component: 0.01},
+        1800.0,
+        pack,
+        allow_extrapolation=True,
+    )
+    assert any(
+        getattr(notice, "code", None) == "trace_components_outside_melt_model"
+        for notice in result.labels.notices
+    )
+
+    with pytest.raises(ImccComponentOutsideDomainError) as exc:
+        evaluate({"SiO2": 0.98, component: 0.02}, 1800.0, pack)
+    assert exc.value.code == "imcc_component_outside_domain"
     assert component in str(exc.value)
-    assert "S/P EXT component class" in str(exc.value)
-    assert "model_id='IMCC-SF04-EXT'" in str(exc.value)
-    assert "enable_sp_extension=True" in str(exc.value)
 
 
 def test_extension_requires_explicit_flag(tmp_path: Path) -> None:

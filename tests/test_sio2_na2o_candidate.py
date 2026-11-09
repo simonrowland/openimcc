@@ -211,8 +211,11 @@ def test_redox_candidate_uses_the_same_silica_standard() -> None:
     gas = _candidate_gas()
     assert candidate.version == "1.7.0-sio2-na2o-candidate"
     assert candidate.canonical_digest == "78de6c0591af964d39d2f1282534e23eb78a7c2334e74d4ad6510f91f0e20fe1"
-    assert default.version == "1.7.0"
-    assert default.canonical_digest == "9dd2422e618d74ae0a5761f9b4343e38d5b88f5986a6ffd801cdabd8002334c4"
+    # The redox v5 default retains the existing SiO2(l) standard-state row.
+    assert default.version == "1.8.0-cr-candidate"
+    assert default.canonical_digest == (
+        "b927cf95fe788016d37ccfac87a9c80bbb15ec519aa624d929e3106c1759adf0"
+    )
     wrapper = candidate.content["thermo_species"]["SiO2(l)"]
     assert "Candidate SiO2(l) standard" in wrapper["range_flags"][0]
     assert "Richet, Bottinga & Tequi" in wrapper["provenance"]["source"]

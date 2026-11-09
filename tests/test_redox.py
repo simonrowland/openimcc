@@ -13,6 +13,7 @@ import pytest
 import openimcc.redox as redox_module
 
 from openimcc import (
+    ImccComponentOutsideDomainError,
     ImccLiquidStandardMismatchError,
     ImccRefusal,
     ImccTOutsideDatapackDomainError,
@@ -39,7 +40,7 @@ from openimcc.model import ImccMalformedDatapackError
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v4.json"
+DEFAULT_REDOX_PACK_PATH = ROOT / "src/openimcc/data/packs/openimcc-redox-v5.json"
 
 
 def _formula_atoms() -> dict[str, dict[str, float]]:
@@ -72,6 +73,28 @@ def _inventory_with_parent_oxygen(
         for element, amount in element_moles.items()
     )
     return {**element_moles, "O": oxygen + excess_oxygen}
+
+
+def _assert_redox_parent_mass_balance(result, redox_pack, melt_pack) -> None:
+    balances = {
+        parent: float(result.species_moles[parent])
+        for parent in result.parent_moles
+    }
+    for parent_index, parent in enumerate(melt_pack.parent_oxides):
+        for complex_index, name in enumerate(melt_pack.kernel_datapack.reactions):
+            balances[parent] += (
+                float(result.species_moles.get(name, 0.0))
+                * float(melt_pack.kernel_datapack.nu[parent_index, complex_index])
+            )
+    for row in redox_pack.rows:
+        if row.get("role") != "complex":
+            continue
+        amount = float(result.species_moles.get(str(row["complex"]), 0.0))
+        for parent, coefficient in row.get("nu", {}).items():
+            name = str(parent).removesuffix("(l)")
+            balances[name] += amount * float(coefficient)
+    for parent, amount in result.parent_moles.items():
+        assert balances[parent] == pytest.approx(amount, abs=2e-11)
 
 
 def _assert_valence_totals_conserve(result, inventory: dict[str, float]) -> None:
@@ -763,7 +786,7 @@ def test_redox_pack_symlink_loop_is_a_typed_refusal(monkeypatch):
     ("inventory", "endpoint"),
     [
         ({"Fe": 1.0, "Si": 0.5, "O": 0.5}, "reductant_exceeds_reducible_oxygen"),
-        ({"Na": 0.1, "O": 1.2}, "alkali_couple_incomplete"),
+        ({"Na": 0.1, "O": 1.2}, "closed_oxygen_mismatch_without_redox_couple"),
         ({"Fe": 1.0, "O": 1.5}, "fully_oxidised_inventory_limit"),
         ({"Fe": 1.0, "O": 2.0}, "fully_oxidised_inventory_limit"),
     ],
@@ -782,6 +805,122 @@ def test_missing_fe_and_bad_mode_refuse_without_partial_results() -> None:
         evaluate_redox({"O": 1.0}, 2200.0, "closed")
     with pytest.raises(RedoxInputError):
         evaluate_redox(_fe_only_inventory(), 2200.0, "unknown")  # type: ignore[arg-type]
+
+
+def test_fe_free_single_valence_sr_uses_packaged_associates_without_f_o2() -> None:
+    redox_pack = load_redox_pack()
+    melt_pack = load_datapack()
+
+    result = evaluate_redox(
+        {"Sr": 1.0, "Al": 2.0, "O": 4.0},
+        1800.0,
+        "closed",
+    )
+
+    assert result.ferric_fe_mol == 0.0
+    assert result.ferrous_fe_mol == 0.0
+    assert "RED: no_modelled_redox_couple" in result.flags
+    assert result.oxygen_residual_mol == pytest.approx(0.0, abs=2e-12)
+    assert all(
+        math.isfinite(value) and value > 0.0
+        for value in result.parent_activity.values()
+    )
+    assert result.parent_activity["SrO"] > 0.0
+    assert result.parent_activity["Al2O3"] > 0.0
+    _assert_redox_parent_mass_balance(result, redox_pack, melt_pack)
+
+    with pytest.raises(RedoxEndpointError, match="parent-oxide stoichiometry"):
+        evaluate_redox(
+            {"Sr": 1.0, "Al": 2.0, "O": 4.01},
+            1800.0,
+            "closed",
+        )
+
+
+def test_fe_free_manganese_associates_do_not_require_fo2() -> None:
+    inventory = {"Mn": 0.4, "Si": 0.6, "O": 1.6}
+    lambda_imposed = math.log(1.0e-8)
+
+    closed = evaluate_redox(inventory, 1800.0, "closed")
+    imposed = evaluate_redox(
+        inventory,
+        1800.0,
+        "imposed",
+        lambda_imposed=lambda_imposed,
+    )
+
+    assert closed.parent_activity == imposed.parent_activity
+    assert closed.species_moles == imposed.species_moles
+    assert closed.ferric_fe_mol == imposed.ferric_fe_mol == 0.0
+    assert closed.ferrous_fe_mol == imposed.ferrous_fe_mol == 0.0
+    assert "RED: no_modelled_redox_couple" in closed.flags
+    assert "RED: no_modelled_redox_couple" in imposed.flags
+    manganese_flag = next(
+        flag for flag in imposed.flags if "Mn(3+) unmodelled" in flag
+    )
+    assert "ln(fO2/bar)" in manganese_flag
+    assert "ELEVATED" not in manganese_flag
+    assert all(
+        math.isfinite(value) and value > 0.0
+        for value in imposed.parent_activity.values()
+    )
+    assert imposed.parent_activity["MnO"] > 0.0
+    assert imposed.parent_activity["SiO2"] > 0.0
+    _assert_redox_parent_mass_balance(
+        imposed, load_redox_pack(), load_datapack()
+    )
+
+    air = evaluate_redox(
+        inventory,
+        1800.0,
+        "imposed",
+        lambda_imposed=math.log(1.0e-4),
+    )
+    cold = evaluate_redox(inventory, 1700.0, "closed")
+    assert any(
+        "Mn(3+) unmodelled" in flag and "ELEVATED" in flag
+        for flag in air.flags
+    )
+    assert any(
+        "Mn(3+) unmodelled" in flag and "ELEVATED" in flag
+        for flag in cold.flags
+    )
+
+
+@pytest.mark.parametrize("alkali", ["Na", "K"])
+def test_fe_free_single_alkali_uses_associates(alkali: str) -> None:
+    inventory = {alkali: 0.1, "Si": 0.5, "Ca": 0.4, "O": 1.45}
+    lambda_imposed = math.log(1.0e-8)
+
+    closed = evaluate_redox(inventory, 1800.0, "closed")
+    imposed = evaluate_redox(
+        inventory,
+        1800.0,
+        "imposed",
+        lambda_imposed=lambda_imposed,
+    )
+
+    assert closed.parent_activity == imposed.parent_activity
+    assert closed.species_moles == imposed.species_moles
+    assert closed.ferric_fe_mol == imposed.ferric_fe_mol == 0.0
+    assert closed.ferrous_fe_mol == imposed.ferrous_fe_mol == 0.0
+    assert "RED: no_modelled_redox_couple" in closed.flags
+    assert "RED: no_modelled_redox_couple" in imposed.flags
+    assert all(
+        math.isfinite(value) and value > 0.0
+        for value in closed.parent_activity.values()
+    )
+    assert closed.parent_activity[f"{alkali}2O"] > 0.0
+    assert closed.parent_activity["CaO"] > 0.0
+    assert closed.parent_activity["SiO2"] > 0.0
+    _assert_redox_parent_mass_balance(
+        closed, load_redox_pack(), load_datapack()
+    )
+
+
+def test_fe_free_inventory_outside_all_models_keeps_typed_refusal() -> None:
+    with pytest.raises(ImccComponentOutsideDomainError):
+        evaluate_redox({"Xx": 1.0, "O": 1.0}, 1800.0, "closed")
 
 
 def test_imposed_mode_resolves_the_metal_amount_below_saturation() -> None:
@@ -1556,7 +1695,7 @@ def test_unrowed_positive_parent_is_reported_as_red_flagged_last_resort() -> Non
     # Mn has sourced rows (parent and association rows), so it is not a
     # last-resort parent.
     assert all_active.last_resort_ideal_parents == (
-        "Cr", "Ni", "Co", "P", "V", "Eu", "Ce", "S"
+        "Cr", "Ni", "Co", "P", "V", "Eu", "Ce", "S", "Yb"
     )
     assert any(
         flag.startswith("RED:")
@@ -2239,7 +2378,7 @@ def test_redox_pack_path_refuses_missing_unreadable_and_bad_digest(
     monkeypatch.undo()
     mismatched = _write_synthetic_redox_pack(tmp_path)
     content = json.loads(mismatched.read_text(encoding="utf-8"))
-    content["version"] = "changed-without-rehash"
+    content["thermo_species"]["FeO(l)"]["row"]["dG_A"] += 1.0
     mismatched.write_text(json.dumps(content), encoding="utf-8")
     with pytest.raises(
         ValueError, match="canonical content digest mismatch"
@@ -2385,7 +2524,8 @@ def test_unmodelled_couple_detection_uses_non_iron_redox_rows(
     )
     records = {record["element"]: record for record in result.unmodelled_redox_couples}
     assert "Mn" not in records
-    assert records["Cr"]["unmodelled_states"] == (2, 6)
+    assert records["Cr"]["modelled_states"] == (2, 3)
+    assert records["Cr"]["unmodelled_states"] == (6,)
     assert result.element_moles_by_oxidation_state["Mn"].get(3, 0.0) > 0.0
     assert sum(flag == "RED: unmodelled_redox_couples" for flag in result.flags) == 1
 
@@ -2415,8 +2555,8 @@ def test_unmodelled_redox_couples_are_presence_only_and_flagged_once() -> None:
     lunar = evaluate_redox(lunar_inventory, 1800.0, "closed")
     records = {record["element"]: record for record in lunar.unmodelled_redox_couples}
     assert set(records) == {"Cr", "Ti", "V", "Mn", "Eu", "Ce", "P", "S"}
-    assert records["Cr"]["modelled_states"] == (3,)
-    assert records["Cr"]["unmodelled_states"] == (2, 6)
+    assert records["Cr"]["modelled_states"] == (2, 3)
+    assert records["Cr"]["unmodelled_states"] == (6,)
     assert records["Ti"]["modelled_states"] == (4,)
     assert records["Ti"]["unmodelled_states"] == (3,)
     assert records["Mn"]["unmodelled_states"] == (3,)

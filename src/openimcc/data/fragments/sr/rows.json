@@ -1,0 +1,1188 @@
+{
+  "schema": "openimcc.redox_fragment.v1",
+  "fragment_id": "imcc_sr_associate_pack_notice",
+  "element": "Sr",
+  "status": "opt_in_provisional_fragment",
+  "notice": {
+    "id": "imcc_sr_associate_pack_notice",
+    "status": "provisional",
+    "message": "Opt-in Sr-bearing melt rows use provisional liquid association standards; this fragment has not been validated for general use."
+  },
+  "source_selection_rail": [
+    "standard_state_consistency",
+    "primary_measurement",
+    "domain_match",
+    "systematic_estimate"
+  ],
+  "parent_registry": [
+    {
+      "element": "Sr",
+      "parent_oxide": "SrO(l)",
+      "parent_formula_atoms": {
+        "Sr": 1,
+        "O": 1
+      },
+      "parent_standard_state": "pure liquid SrO at 1 bar",
+      "elemental_reference_state": "Sr(l)",
+      "parent_oxidation_state": 2,
+      "known_oxidation_states": [
+        2
+      ]
+    }
+  ],
+  "thermo_species": {
+    "Sr(l)": {
+      "formula_atoms": {
+        "Sr": 1
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200.0,
+        3000.0
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200.0,
+            1600.0
+          ],
+          "row": {
+            "dH298_R": 0.10956811544392343,
+            "dG_A": 3.890916308932476,
+            "dG_B": 6.3174118939540245,
+            "dG_C": -2.0837115381523588,
+            "dG_D": 0.45366370387395905,
+            "dG_E": -0.04394423110002964
+          }
+        },
+        {
+          "T_domain_K": [
+            1600.0,
+            2000.0
+          ],
+          "row": {
+            "dH298_R": 0.10956811544392343,
+            "dG_A": 3.9495284336183776,
+            "dG_B": 6.183872232150563,
+            "dG_C": -1.9705999740926643,
+            "dG_D": 0.41154607699856377,
+            "dG_E": -0.03814597235087639
+          }
+        },
+        {
+          "T_domain_K": [
+            2000.0,
+            2400.0
+          ],
+          "row": {
+            "dH298_R": 0.10956811544392343,
+            "dG_A": 4.184848828860314,
+            "dG_B": 5.713369922906562,
+            "dG_C": -1.6170933580193658,
+            "dG_D": 0.2932546301815257,
+            "dG_E": -0.023271620548793295
+          }
+        },
+        {
+          "T_domain_K": [
+            2400.0,
+            2800.0
+          ],
+          "row": {
+            "dH298_R": 0.10956811544392343,
+            "dG_A": 4.482738290015403,
+            "dG_B": 5.215376963882029,
+            "dG_C": -1.3044410960148871,
+            "dG_D": 0.20588659708648074,
+            "dG_E": -0.014103010088156568
+          }
+        },
+        {
+          "T_domain_K": [
+            2800.0,
+            3000.0
+          ],
+          "row": {
+            "dH298_R": 0.10956811544392343,
+            "dG_A": 4.7234051843193265,
+            "dG_B": 4.8654108509494876,
+            "dG_C": -1.113490410054564,
+            "dG_D": 0.15955452558613803,
+            "dG_E": -0.00988493449362318
+          }
+        }
+      ],
+      "range_flags": [
+        "JANAF liquid Sr table is continued above its 1685.492 K 1 bar fugacity marker as a metastable pure-liquid standard."
+      ],
+      "provenance_class": "janaf_direct_liquid",
+      "provenance": {
+        "source": "NIST-JANAF Sr(l), Table Sr-004",
+        "source_url": "https://janaf.nist.gov/tables/Sr-004.html",
+        "tier": "tier1_direct_assessed",
+        "selection_rationale": "Direct liquid elemental standard fit to JANAF printed liquid H, S and Cp functions; Cp=39.463 J mol^-1 K^-1. The metastable liquid branch is used above its normal boiling marker as a reference state."
+      },
+      "fit_residual": {
+        "value": 3.3718923514243217e-06,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Source-derived standard Gibbs function before condensate_phi encoding.",
+        "comparison_method": "Maximum absolute residual over 17 source-construction nodes in each interval.",
+        "temperature_range": [
+          1200.0,
+          3000.0
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "Thermodynamic construction uncertainty is not numerically bounded; per-interval encoding residual is separately reported when available.",
+        "provenance": "Chase 1998, DOI 10.18434/T42S31, Table Sr-004"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check is selected as a fitting target; battery rows remain report-only."
+      },
+      "source_citations": [
+        "Chase 1998, DOI 10.18434/T42S31, Table Sr-004"
+      ]
+    },
+    "SrO(l)": {
+      "formula_atoms": {
+        "Sr": 1,
+        "O": 1
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200.0,
+        3000.0
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200.0,
+            1500.0
+          ],
+          "row": {
+            "dH298_R": -62.2159270859085,
+            "dG_A": 7.94471977966743,
+            "dG_B": 4.60964962880538,
+            "dG_C": 1.13472321888623,
+            "dG_D": -1.18337339205821,
+            "dG_E": 0.257766838590358
+          }
+        },
+        {
+          "T_domain_K": [
+            1500.0,
+            1980.0
+          ],
+          "row": {
+            "dH298_R": -62.2159270859085,
+            "dG_A": 6.86258537907879,
+            "dG_B": 7.75884389962601,
+            "dG_C": -2.30467233637872,
+            "dG_D": 0.486798608529392,
+            "dG_E": -0.0464006532559411
+          }
+        },
+        {
+          "T_domain_K": [
+            1980.0,
+            2000.0
+          ],
+          "row": {
+            "dH298_R": -62.2159270859085,
+            "dG_A": 4.30979299562114,
+            "dG_B": 11.2569035191391,
+            "dG_C": -3.70268846351728,
+            "dG_D": 0.537589684732574,
+            "dG_E": 0.0
+          }
+        },
+        {
+          "T_domain_K": [
+            2000.0,
+            2470.0
+          ],
+          "row": {
+            "dH298_R": -62.2159270859085,
+            "dG_A": 8.00161815151166,
+            "dG_B": 5.87557972328289,
+            "dG_C": -1.13729945969029,
+            "dG_D": 0.162280949852464,
+            "dG_E": -0.0117664812778261
+          }
+        },
+        {
+          "T_domain_K": [
+            2470.0,
+            2500.0
+          ],
+          "row": {
+            "dH298_R": -62.2159270859085,
+            "dG_A": -4.90234961599845,
+            "dG_B": 21.3071841868081,
+            "dG_C": -7.21546215264398,
+            "dG_D": 0.920927068647092,
+            "dG_E": 0.0
+          }
+        },
+        {
+          "T_domain_K": [
+            2500.0,
+            3000.0
+          ],
+          "row": {
+            "dH298_R": -62.2159270859085,
+            "dG_A": 11.4913909610331,
+            "dG_B": 0.667914503306987,
+            "dG_C": 1.78095935012771,
+            "dG_D": -0.566158273209785,
+            "dG_E": 0.0566401972713461
+          }
+        }
+      ],
+      "range_flags": [
+        "Supercooled liquid standard below 2938 K; the direct O-014 liquid function is used without alteration."
+      ],
+      "provenance_class": "janaf_direct_liquid",
+      "provenance": {
+        "source": "NIST-JANAF SrO(l), Table O-014",
+        "source_url": "https://janaf.nist.gov/tables/O-014.html",
+        "tier": "tier1_direct_assessed",
+        "selection_rationale": "O-014 liquid source-fit coefficients are copied from the existing condensate table. The source-aligned crystal/liquid marker is 2938 K; derive ΔSfus=25.63386 J mol^-1 K^-1 and ΔHfus=TfusΔSfus=75.3108 kJ mol^-1, consistent with the independent 75.00 kJ mol^-1 handbook value. Liquid Cp at the marker is 66.944 J mol^-1 K^-1."
+      },
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "Thermodynamic construction uncertainty is not numerically bounded; per-interval encoding residual is separately reported when available.",
+        "provenance": "Chase 1998, DOI 10.18434/T42S31, Tables O-013 and O-014; Handbook of Inorganic Compounds, 2nd ed., entry 3076"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check is selected as a fitting target; battery rows remain report-only."
+      },
+      "source_citations": [
+        "Chase 1998, DOI 10.18434/T42S31, Tables O-013 and O-014",
+        "Handbook of Inorganic Compounds, 2nd ed., entry 3076"
+      ]
+    },
+    "SrSiO3(l)": {
+      "formula_atoms": {
+        "Sr": 1,
+        "Si": 1,
+        "O": 3
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200.0,
+        3000.0
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200.0,
+            1600.0
+          ],
+          "row": {
+            "dH298_R": -196.6813822013699,
+            "dG_A": -12.93474267764816,
+            "dG_B": 42.996181057704355,
+            "dG_C": -21.393820679253604,
+            "dG_D": 6.533441691030361,
+            "dG_E": -0.8533348371026875
+          }
+        },
+        {
+          "T_domain_K": [
+            1600.0,
+            2000.0
+          ],
+          "row": {
+            "dH298_R": -196.6813822013699,
+            "dG_A": -9.80296587894079,
+            "dG_B": 35.06347737186534,
+            "dG_C": -13.833626543358081,
+            "dG_D": 3.3207106352145526,
+            "dG_E": -0.33975298893924677
+          }
+        },
+        {
+          "T_domain_K": [
+            2000.0,
+            2400.0
+          ],
+          "row": {
+            "dH298_R": -196.6813822013699,
+            "dG_A": -7.061826752487128,
+            "dG_B": 29.53296467322118,
+            "dG_C": -9.640344997164442,
+            "dG_D": 1.9046980025224782,
+            "dG_E": -0.1600739234119054
+          }
+        },
+        {
+          "T_domain_K": [
+            2400.0,
+            2800.0
+          ],
+          "row": {
+            "dH298_R": -196.6813822013699,
+            "dG_A": -4.648373160816019,
+            "dG_B": 25.485419527655168,
+            "dG_C": -7.091079701874002,
+            "dG_D": 1.190058087423355,
+            "dG_E": -0.08484031860552228
+          }
+        },
+        {
+          "T_domain_K": [
+            2800.0,
+            3000.0
+          ],
+          "row": {
+            "dH298_R": -196.6813822013699,
+            "dG_A": -2.98985140207613,
+            "dG_B": 23.071352982823306,
+            "dG_C": -5.772639797462697,
+            "dG_D": 0.8698490075476107,
+            "dG_E": -0.055660973713715416
+          }
+        }
+      ],
+      "range_flags": [
+        "Supercooled liquid below 1853.15 K.",
+        "Crystal Cp above 1000 K is a constant-Cp continuation.",
+        "Fusion entropy and associated liquid Cp are systematic estimates; provisional."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "Huntelaar et al. (1992), formation enthalpy and crystal thermophysical functions; Fields et al. (1972), liquidus",
+        "source_url": "https://doi.org/10.1016/S0021-9614(05)80042-4",
+        "tier": "tier3_flagged_estimate",
+        "selection_rationale": "Measured crystal ΔfH°298, S°298 and H/Cp functions through 1000 K; 1000 K Cp is held constant to the measured 1853.15 K melting point. Fusion entropy is the 17-pair class-C per-atom mean. Liquid Cp is estimated additively as SrO(l)+SiO2(l). No melt activity or battery value is fitted."
+      },
+      "fit_residual": {
+        "value": 0.00011371262883767486,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Source-derived standard Gibbs function before condensate_phi encoding.",
+        "comparison_method": "Maximum absolute residual over 17 source-construction nodes in each interval.",
+        "temperature_range": [
+          1200.0,
+          3000.0
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "Thermodynamic construction uncertainty is not numerically bounded; per-interval encoding residual is separately reported when available.",
+        "provenance": "Huntelaar et al. 1992, DOI 10.1016/S0021-9614(05)80042-4, pp. 139–143; Huntelaar et al. 1992, DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp. 805–806; Fields et al. 1972, DOI 10.1111/j.1151-2916.1972.tb13448.x, pp. 585–588; NIST-JANAF, DOI 10.18434/T42S31, Tables O-014 and O-038; 17-pair class-C calibration, NIST-JANAF DOI 10.18434/T42S31"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check is selected as a fitting target; battery rows remain report-only."
+      },
+      "source_citations": [
+        "Huntelaar et al. 1992, DOI 10.1016/S0021-9614(05)80042-4, pp. 139–143",
+        "Huntelaar et al. 1992, DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp. 805–806",
+        "Fields et al. 1972, DOI 10.1111/j.1151-2916.1972.tb13448.x, pp. 585–588",
+        "NIST-JANAF, DOI 10.18434/T42S31, Tables O-014 and O-038",
+        "17-pair class-C calibration, NIST-JANAF DOI 10.18434/T42S31"
+      ]
+    },
+    "Sr2SiO4(l)": {
+      "formula_atoms": {
+        "Sr": 2,
+        "Si": 1,
+        "O": 4
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200.0,
+        3000.0
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200.0,
+            1600.0
+          ],
+          "row": {
+            "dH298_R": -277.31196902201344,
+            "dG_A": -30.496388453320694,
+            "dG_B": 82.38736652611784,
+            "dG_C": -45.53568615728876,
+            "dG_D": 14.689076379216544,
+            "dG_E": -1.9841593915987614
+          }
+        },
+        {
+          "T_domain_K": [
+            1600.0,
+            2000.0
+          ],
+          "row": {
+            "dH298_R": -277.31196902201344,
+            "dG_A": -22.774408800552322,
+            "dG_B": 62.76384499130472,
+            "dG_C": -26.772981468165963,
+            "dG_D": 6.69029921943915,
+            "dG_E": -0.7014824587321064
+          }
+        },
+        {
+          "T_domain_K": [
+            2000.0,
+            2400.0
+          ],
+          "row": {
+            "dH298_R": -277.31196902201344,
+            "dG_A": -16.804331758640245,
+            "dG_B": 50.700297254989486,
+            "dG_C": -17.612444053284904,
+            "dG_D": 3.59227270476983,
+            "dG_E": -0.3077893616166417
+          }
+        },
+        {
+          "T_domain_K": [
+            2400.0,
+            2800.0
+          ],
+          "row": {
+            "dH298_R": -277.31196902201344,
+            "dG_A": -11.936682803596327,
+            "dG_B": 42.530063778418565,
+            "dG_C": -12.46230584482548,
+            "dG_D": 2.147332767311185,
+            "dG_E": -0.15554904665119929
+          }
+        },
+        {
+          "T_domain_K": [
+            2800.0,
+            3000.0
+          ],
+          "row": {
+            "dH298_R": -277.31196902201344,
+            "dG_A": -8.745757490969106,
+            "dG_B": 37.88405659237625,
+            "dG_C": -9.9241098278722,
+            "dG_D": 1.5306930629877167,
+            "dG_E": -0.09934014592633023
+          }
+        }
+      ],
+      "range_flags": [
+        "Supercooled liquid below 2598.15 K.",
+        "Crystal Cp above 1000 K is a constant-Cp continuation.",
+        "Fusion entropy and associated liquid Cp are systematic estimates; provisional."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "Huntelaar et al. (1992), formation enthalpy and crystal thermophysical functions; Fields et al. (1972), liquidus",
+        "source_url": "https://doi.org/10.1016/S0021-9614(05)80042-4",
+        "tier": "tier3_flagged_estimate",
+        "selection_rationale": "Measured crystal ΔfH°298, S°298 and H/Cp functions through 1000 K; 1000 K Cp is held constant to the measured 2598.15 K melting point. Fusion entropy is the 17-pair class-C per-atom mean. Liquid Cp is estimated additively as 2 SrO(l)+SiO2(l). No melt activity or battery value is fitted."
+      },
+      "fit_residual": {
+        "value": 0.0003028364675119519,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Source-derived standard Gibbs function before condensate_phi encoding.",
+        "comparison_method": "Maximum absolute residual over 17 source-construction nodes in each interval.",
+        "temperature_range": [
+          1200.0,
+          3000.0
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "Thermodynamic construction uncertainty is not numerically bounded; per-interval encoding residual is separately reported when available.",
+        "provenance": "Huntelaar et al. 1992, DOI 10.1016/S0021-9614(05)80042-4, pp. 139–143; Huntelaar et al. 1992, DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp. 805–806; Fields et al. 1972, DOI 10.1111/j.1151-2916.1972.tb13448.x, pp. 585–588; NIST-JANAF, DOI 10.18434/T42S31, Tables O-014 and O-038; 17-pair class-C calibration, NIST-JANAF DOI 10.18434/T42S31"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check is selected as a fitting target; battery rows remain report-only."
+      },
+      "source_citations": [
+        "Huntelaar et al. 1992, DOI 10.1016/S0021-9614(05)80042-4, pp. 139–143",
+        "Huntelaar et al. 1992, DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp. 805–806",
+        "Fields et al. 1972, DOI 10.1111/j.1151-2916.1972.tb13448.x, pp. 585–588",
+        "NIST-JANAF, DOI 10.18434/T42S31, Tables O-014 and O-038",
+        "17-pair class-C calibration, NIST-JANAF DOI 10.18434/T42S31"
+      ]
+    },
+    "SrAl2O4(l)": {
+      "formula_atoms": {
+        "Sr": 1,
+        "Al": 2,
+        "O": 4
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200.0,
+        3000.0
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200.0,
+            1600.0
+          ],
+          "row": {
+            "dH298_R": -282.27055767571494,
+            "dG_A": -7.812229369716122,
+            "dG_B": 29.484094894741844,
+            "dG_C": -5.0423274095725565,
+            "dG_D": -0.1199550655710469,
+            "dG_E": 0.1547645471186088
+          }
+        },
+        {
+          "T_domain_K": [
+            1600.0,
+            2000.0
+          ],
+          "row": {
+            "dH298_R": -282.27055767571494,
+            "dG_A": -9.313039659704796,
+            "dG_B": 33.42119837165169,
+            "dG_C": -8.923182586674761,
+            "dG_D": 1.5832855107934,
+            "dG_E": -0.1260044095744087
+          }
+        },
+        {
+          "T_domain_K": [
+            2000.0,
+            2400.0
+          ],
+          "row": {
+            "dH298_R": -282.27055767571494,
+            "dG_A": -8.95464696140196,
+            "dG_B": 32.73698827977619,
+            "dG_C": -8.43377669339128,
+            "dG_D": 1.427858331332228,
+            "dG_E": -0.10751556589838002
+          }
+        },
+        {
+          "T_domain_K": [
+            2400.0,
+            2800.0
+          ],
+          "row": {
+            "dH298_R": -282.27055767571494,
+            "dG_A": -7.8149949812631325,
+            "dG_B": 30.84015488571917,
+            "dG_C": -7.248167767402088,
+            "dG_D": 1.0980232949565252,
+            "dG_E": -0.07305614219562516
+          }
+        },
+        {
+          "T_domain_K": [
+            2800.0,
+            3000.0
+          ],
+          "row": {
+            "dH298_R": -282.27055767571494,
+            "dG_A": -6.705115574106711,
+            "dG_B": 29.227731505066085,
+            "dG_C": -6.369206615162383,
+            "dG_D": 0.8849506166773515,
+            "dG_E": -0.053675832477430546
+          }
+        }
+      ],
+      "range_flags": [
+        "Supercooled liquid below the assessed 2233 K marker.",
+        "Ye et al. Table 4 lists competing experimental markers 2063, 2238 and 2288 K; 2233 K is the assessment value and is provisional.",
+        "Fusion entropy and associated liquid Cp are systematic estimates; provisional."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "Ye et al. (2007), assessed SrO·Al2O3 high-temperature Gibbs relation and melting point; Brisi & Abbattista (1960), oxide-formation enthalpy",
+        "source_url": "https://doi.org/10.1007/s11669-007-9086-x",
+        "tier": "tier3_flagged_estimate",
+        "selection_rationale": "Crystal reference uses ΔfH°298=−592.036−1675.692−79.2=−2346.928 kJ mol^-1 from JANAF SrO(cr), Al2O3(cr), and the measured −79.2 kJ mol^-1 formation-from-oxides target. At 2233 K the Ye high-phase Hess relation gives Gcr=G(SrO,cr)+G(Al2O3,cr)−79.2 kJ/mol. Fusion entropy is the 17-pair class-C per-atom mean; liquid Cp is estimated additively as SrO(l)+Al2O3(l)."
+      },
+      "fit_residual": {
+        "value": 0.00010209977021440864,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Source-derived standard Gibbs function before condensate_phi encoding.",
+        "comparison_method": "Maximum absolute residual over 17 source-construction nodes in each interval.",
+        "temperature_range": [
+          1200.0,
+          3000.0
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "Thermodynamic construction uncertainty is not numerically bounded; per-interval encoding residual is separately reported when available.",
+        "provenance": "Ye et al. 2007, DOI 10.1007/s11669-007-9086-x, Tables 1, 3–4, pp. 364–365; Brisi & Abbattista 1960, Ann. Chimica 50, pp. 165–169, value transcribed in Ye et al. Table 3; NIST-JANAF, DOI 10.18434/T42S31, Tables O-013, Al-096, O-014 and Al-100; 17-pair class-C calibration, NIST-JANAF DOI 10.18434/T42S31"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check is selected as a fitting target; battery rows remain report-only."
+      },
+      "source_citations": [
+        "Ye et al. 2007, DOI 10.1007/s11669-007-9086-x, Tables 1, 3–4, pp. 364–365",
+        "Brisi & Abbattista 1960, Ann. Chimica 50, pp. 165–169, value transcribed in Ye et al. Table 3",
+        "NIST-JANAF, DOI 10.18434/T42S31, Tables O-013, Al-096, O-014 and Al-100",
+        "17-pair class-C calibration, NIST-JANAF DOI 10.18434/T42S31"
+      ]
+    }
+  },
+  "rows": [
+    {
+      "row": 7,
+      "complex": "SrO(l)",
+      "role": "parent_reference",
+      "nu": {},
+      "reactants": {
+        "Sr(l)": 1,
+        "O2(g)": 0.5
+      },
+      "products": {
+        "SrO(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": -0.5,
+      "reaction": "Sr(l) + 1/2 O2(g) = SrO(l)",
+      "phase_or_construction": "Direct JANAF O-014 liquid reference, checked against the O-013 crystal function at the 2938 K transition.",
+      "method": "Use the O-014 liquid standard and JANAF Sr(l)/O2(g) standards; the crystal/liquid transition gives ΔSfus=25.63386 J mol^-1 K^-1 and ΔHfus=2938 K×ΔSfus=75.3108 kJ mol^-1. The 66.944 J mol^-1 K^-1 liquid Cp and direct liquid table are retained.",
+      "standard_gibbs_terms": [
+        {
+          "species": "SrO(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "Sr(l)",
+          "coefficient": -1
+        },
+        {
+          "species": "O2(g)",
+          "coefficient": -0.5
+        }
+      ],
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "uncertainty_note": "No row-specific numerical accuracy band is claimed. Associate fusion entropy and liquid Cp estimates are flagged provisional; battery activity observations are report-only.",
+      "range_flags": [
+        "Supercooled SrO(l) standard below 2938 K."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "NIST-JANAF SrO Tables O-013/O-014 and Sr(l) Table Sr-004",
+        "source_url": "https://janaf.nist.gov/tables/O-014.html",
+        "tier": "tier1_direct_assessed",
+        "selection_rationale": "The parent standard uses the exact source liquid row already present in the gas condensate table; no activity data were used."
+      },
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "The fusion entropy, liquid Cp and (for SrAl2O4) selected melting marker are provisional estimates; no numerical reaction uncertainty band is claimed.",
+        "provenance": "Independent source-derived crystal functions plus explicitly flagged liquid construction."
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check is selected as a fitting target; battery rows remain report-only."
+      },
+      "source_citations": [
+        "Chase 1998, DOI 10.18434/T42S31, Tables O-013/O-014 and Sr-004",
+        "Handbook of Inorganic Compounds, 2nd ed., entry 3076"
+      ]
+    },
+    {
+      "row": 8,
+      "complex": "SrSiO3(l)",
+      "role": "complex",
+      "nu": {
+        "SrO(l)": 1,
+        "SiO2(l)": 1
+      },
+      "reactants": {
+        "SrO(l)": 1,
+        "SiO2(l)": 1
+      },
+      "products": {
+        "SrSiO3(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "SrO(l) + SiO2(l) = SrSiO3(l)",
+      "phase_or_construction": "Rhodonite-composition liquid association standard constructed from measured SrSiO3 crystal thermochemistry and the measured congruent melting point.",
+      "method": "At Tfus=1853.15 K extend the measured 1000 K crystal Cp=129.226 J mol^-1 K^-1 as constant; use ΔSfus=5 atoms×8.297530569=41.48765 J mol^-1 K^-1 and Cp_liquid=66.944+85.772=152.716 J mol^-1 K^-1. H_l(T)=H_s(Tfus)+TfusΔSfus+Cp_l(T−Tfus); S_l(T)=S_s(Tfus)+ΔSfus+Cp_l ln(T/Tfus). Units give J/mol and J/(mol K); at Tfus, G_l=G_s. Sanity G(1853.15 K)=−2017.327 kJ/mol.",
+      "standard_gibbs_terms": [
+        {
+          "species": "SrSiO3(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "SrO(l)",
+          "coefficient": -1
+        },
+        {
+          "species": "SiO2(l)",
+          "coefficient": -1
+        }
+      ],
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "uncertainty_note": "No row-specific numerical accuracy band is claimed. Associate fusion entropy and liquid Cp estimates are flagged provisional; battery activity observations are report-only.",
+      "range_flags": [
+        "Supercooled liquid below 1853.15 K.",
+        "Crystal Cp above 1000 K is a constant-Cp continuation.",
+        "Fusion entropy and liquid Cp are systematic estimates; provisional."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "Huntelaar et al. (1992) and Fields et al. (1972)",
+        "source_url": "https://doi.org/10.1016/S0021-9614(05)80042-4",
+        "tier": "tier3_flagged_estimate",
+        "selection_rationale": "Crystal formation and thermophysical properties are independently measured; the only liquid quantities estimated are the fusion entropy and additive component Cp."
+      },
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "The fusion entropy, liquid Cp and (for SrAl2O4) selected melting marker are provisional estimates; no numerical reaction uncertainty band is claimed.",
+        "provenance": "Independent source-derived crystal functions plus explicitly flagged liquid construction."
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check is selected as a fitting target; battery rows remain report-only."
+      },
+      "source_citations": [
+        "Huntelaar et al. (1992), DOI 10.1016/S0021-9614(05)80042-4, pp.139–143",
+        "Huntelaar et al. (1992), DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp.805–806",
+        "Fields et al. (1972), DOI 10.1111/j.1151-2916.1972.tb13448.x, pp.585–588",
+        "JANAF DOI 10.18434/T42S31, Tables O-014/O-038",
+        "17-pair class-C calibration"
+      ]
+    },
+    {
+      "row": 9,
+      "complex": "Sr2SiO4(l)",
+      "role": "complex",
+      "nu": {
+        "SrO(l)": 2,
+        "SiO2(l)": 1
+      },
+      "reactants": {
+        "SrO(l)": 2,
+        "SiO2(l)": 1
+      },
+      "products": {
+        "Sr2SiO4(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "2 SrO(l) + SiO2(l) = Sr2SiO4(l)",
+      "phase_or_construction": "Orthosilicate liquid association standard constructed from measured Sr2SiO4 crystal thermochemistry and the measured congruent melting point.",
+      "method": "At Tfus=2598.15 K extend the measured 1000 K crystal Cp=194.694 J mol^-1 K^-1 as constant; use ΔSfus=7 atoms×8.297530569=58.08271 J mol^-1 K^-1 and Cp_liquid=2×66.944+85.772=219.660 J mol^-1 K^-1. H_l(T)=H_s(Tfus)+TfusΔSfus+Cp_l(T−Tfus); S_l(T)=S_s(Tfus)+ΔSfus+Cp_l ln(T/Tfus). Units give J/mol and J/(mol K); at Tfus, G_l=G_s. Sanity G(2598.15 K)=−3278.026 kJ/mol.",
+      "standard_gibbs_terms": [
+        {
+          "species": "Sr2SiO4(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "SrO(l)",
+          "coefficient": -2
+        },
+        {
+          "species": "SiO2(l)",
+          "coefficient": -1
+        }
+      ],
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "uncertainty_note": "No row-specific numerical accuracy band is claimed. Associate fusion entropy and liquid Cp estimates are flagged provisional; battery activity observations are report-only.",
+      "range_flags": [
+        "Supercooled liquid below 2598.15 K.",
+        "Crystal Cp above 1000 K is a constant-Cp continuation.",
+        "Fusion entropy and liquid Cp are systematic estimates; provisional."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "Huntelaar et al. (1992) and Fields et al. (1972)",
+        "source_url": "https://doi.org/10.1016/S0021-9614(05)80042-4",
+        "tier": "tier3_flagged_estimate",
+        "selection_rationale": "Crystal formation and thermophysical properties are independently measured; the only liquid quantities estimated are the fusion entropy and additive component Cp."
+      },
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "The fusion entropy, liquid Cp and (for SrAl2O4) selected melting marker are provisional estimates; no numerical reaction uncertainty band is claimed.",
+        "provenance": "Independent source-derived crystal functions plus explicitly flagged liquid construction."
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check is selected as a fitting target; battery rows remain report-only."
+      },
+      "source_citations": [
+        "Huntelaar et al. (1992), DOI 10.1016/S0021-9614(05)80042-4, pp.139–143",
+        "Huntelaar et al. (1992), DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp.805–806",
+        "Fields et al. (1972), DOI 10.1111/j.1151-2916.1972.tb13448.x, pp.585–588",
+        "JANAF DOI 10.18434/T42S31, Tables O-014/O-038",
+        "17-pair class-C calibration"
+      ]
+    },
+    {
+      "row": 10,
+      "complex": "SrAl2O4(l)",
+      "role": "complex",
+      "nu": {
+        "SrO(l)": 1,
+        "Al2O3(l)": 1
+      },
+      "reactants": {
+        "SrO(l)": 1,
+        "Al2O3(l)": 1
+      },
+      "products": {
+        "SrAl2O4(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "SrO(l) + Al2O3(l) = SrAl2O4(l)",
+      "phase_or_construction": "Aluminate liquid association standard built by a Hess cycle from the assessed high-temperature SrAl2O4 crystal Gibbs function and an assessed fusion marker.",
+      "method": "Hf298(cr)=−592.036−1675.692−79.2=−2346.928 kJ/mol. At Tfus=2233 K, Ye et al. give Gcr=G(SrO,cr)+G(Al2O3,cr)−79.2 kJ/mol; use component JANAF enthalpy/entropy and ΔSfus=7×8.297530569=58.08271 J mol^-1 K^-1. Cp_liquid=66.944+192.464=259.408 J mol^-1 K^-1. Use the same H_l/S_l fusion equations; at Tfus, G_l=G_cr. Units check: Hess offset kJ/mol; TΔS and CpΔT are J/mol before conversion. Sanity G(2233 K)=−3002.667 kJ/mol.",
+      "standard_gibbs_terms": [
+        {
+          "species": "SrAl2O4(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "SrO(l)",
+          "coefficient": -1
+        },
+        {
+          "species": "Al2O3(l)",
+          "coefficient": -1
+        }
+      ],
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "uncertainty_note": "No row-specific numerical accuracy band is claimed. Associate fusion entropy and liquid Cp estimates are flagged provisional; battery activity observations are report-only.",
+      "range_flags": [
+        "Supercooled liquid below assessed 2233 K marker.",
+        "The assessed 2233 K marker differs from reported values 2063, 2238 and 2288 K; marker choice is provisional.",
+        "Fusion entropy and liquid Cp are systematic estimates; provisional."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "Ye et al. (2007), Brisi & Abbattista (1960), NIST-JANAF component tables",
+        "source_url": "https://doi.org/10.1007/s11669-007-9086-x",
+        "tier": "tier3_flagged_estimate",
+        "selection_rationale": "Use the independently measured oxide-formation enthalpy and the published assessed high-phase Gibbs relation. The fusion temperature is assessed, not a unique primary measurement; no melt activity data were fitted."
+      },
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "The fusion entropy, liquid Cp and (for SrAl2O4) selected melting marker are provisional estimates; no numerical reaction uncertainty band is claimed.",
+        "provenance": "Independent source-derived crystal functions plus explicitly flagged liquid construction."
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent equilibrium check is selected as a fitting target; battery rows remain report-only."
+      },
+      "source_citations": [
+        "Ye et al. (2007), DOI 10.1007/s11669-007-9086-x, Tables 1, 3–4, pp.364–365",
+        "Brisi & Abbattista (1960), Ann. Chimica 50, pp.165–169, as transcribed in Table 3",
+        "JANAF DOI 10.18434/T42S31, Tables O-013/Al-096/O-014/Al-100",
+        "17-pair class-C calibration"
+      ]
+    }
+  ],
+  "standards": {
+    "SrO(l)": {
+      "formation_enthalpy_298_kJ_mol": -517.292,
+      "crystal_formation_enthalpy_298_kJ_mol": -592.036,
+      "fusion_temperature_K": 2938.0,
+      "fusion_entropy_J_mol_K": 25.63385884933618,
+      "fusion_enthalpy_kJ_mol": 75.31227729934969,
+      "liquid_Cp_J_mol_K": 66.944,
+      "printed_anchor_2900K": {
+        "O-013_S_J_mol_K": 183.013,
+        "O-013_Hinc_kJ_mol": 155.921,
+        "O-014_S_J_mol_K": 208.677,
+        "O-014_Hinc_kJ_mol": 156.579
+      },
+      "derivation": {
+        "premise": "JANAF O-013 and O-014 share the 2938 K crystal/liquid marker.",
+        "algebra": "ΔSfus=S_l(Tm)−S_cr(Tm); ΔHfus=TmΔSfus. For T away from Tm, G_l(T)=G_s(Tm)−S_s(Tm)(T−Tm)+ΔHfus(1−T/Tm)+Cp_l[(T−Tm)−T ln(T/Tm)].",
+        "units_check": "TΔS is J mol^-1; Cp terms are J mol^-1; ΔHfus=75.3108 kJ mol^-1.",
+        "sanity_value": "At 2938 K the liquid and crystal Gibbs functions coincide; 75.3108 kJ/mol differs by 0.3108 kJ/mol from the Handbook entry value 75.00 kJ/mol."
+      },
+      "citations": [
+        "Chase 1998, DOI 10.18434/T42S31, Tables O-013/O-014",
+        "Lide, Handbook of Inorganic Compounds, 2nd ed., entry 3076"
+      ]
+    },
+    "Sr(l)": {
+      "formation_enthalpy_298_kJ_mol": 0.911,
+      "entropy_298_J_mol_K": 50.901,
+      "Cp_J_mol_K": 39.463,
+      "printed_anchor_1800K": {
+        "Hinc_kJ_mol": 59.267,
+        "S_J_mol_K": 121.853
+      },
+      "derivation": {
+        "premise": "Direct metastable liquid Sr function in JANAF Sr-004.",
+        "algebra": "H(T)=0.911+Cp(T−298.15)/1000; S(T)=50.901+Cp ln(T/298.15); G=H−TS.",
+        "units_check": "CpΔT/1000 is kJ/mol; Cp ln(T/Tref) is J/(mol K).",
+        "sanity_value": "The construction reproduces the printed 1800 K Hinc=59.267 kJ/mol and S=121.853 J/(mol K)."
+      },
+      "citations": [
+        "Chase 1998, DOI 10.18434/T42S31, Table Sr-004"
+      ]
+    },
+    "SrSiO3(l)": {
+      "crystal_formation_enthalpy_298_kJ_mol": -1635.3,
+      "fusion_temperature_K": 1853.15,
+      "fusion_temperature_source": "1580 ± 15 °C from Fields et al.; Eskola Table I independently lists 1580 °C.",
+      "fusion_entropy_J_mol_K": 41.48765284502836,
+      "fusion_enthalpy_kJ_mol": 76.8828438697643,
+      "crystal_1000K": {
+        "Hinc_kJ_mol": 79.976,
+        "S_J_mol_K": 229.082,
+        "Cp_J_mol_K": 129.226
+      },
+      "liquid_Cp_J_mol_K": 152.716,
+      "derivation": {
+        "premise": "Measured crystal ΔfH°, S and Cp through 1000 K; use the measured congruent Tfus and explicitly estimate only high-temperature crystal continuation, fusion entropy and liquid Cp.",
+        "algebra": "H_s(Tm)=Hf298+Hinc1000+Cp1000(Tm−1000)/1000; S_s(Tm)=S1000+Cp1000 ln(Tm/1000). ΔSfus=5×8.297530569. Cp_l=Cp(SrO(l))+Cp(SiO2(l)). H_l=H_s(Tm)+TmΔSfus+Cp_l(T−Tm); S_l=S_s(Tm)+ΔSfus+Cp_l ln(T/Tm); G_l=H_l−TS_l.",
+        "units_check": "H and G in kJ/mol after converting J/mol by 1000; entropy in J/(mol K).",
+        "sanity_value": "Hinc_s(Tm)=190.225 kJ/mol; S_s(Tm)=308.800 J/(mol K); ΔHfus=76.883 kJ/mol; G_l(Tm)=−2017.327 kJ/mol."
+      },
+      "citations": [
+        "Huntelaar et al. 1992, DOI 10.1016/S0021-9614(05)80042-4, pp.139–143",
+        "Huntelaar et al. 1992, DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp.805–806",
+        "Fields et al. 1972, DOI 10.1111/j.1151-2916.1972.tb13448.x, pp.585–588",
+        "Eskola 1922, Table I, p.335",
+        "NIST-JANAF DOI 10.18434/T42S31, Tables O-014/O-038",
+        "17-pair class-C calibration"
+      ]
+    },
+    "Sr2SiO4(l)": {
+      "crystal_formation_enthalpy_298_kJ_mol": -2305.7,
+      "fusion_temperature_K": 2598.15,
+      "fusion_temperature_source": "2325 ± 15 °C from Fields et al.",
+      "fusion_entropy_J_mol_K": 58.082713983039696,
+      "fusion_enthalpy_kJ_mol": 150.9076033350346,
+      "crystal_1000K": {
+        "Hinc_kJ_mol": 118.607,
+        "S_J_mol_K": 353.753,
+        "Cp_J_mol_K": 194.694
+      },
+      "liquid_Cp_J_mol_K": 219.66000000000003,
+      "derivation": {
+        "premise": "Measured crystal ΔfH°, S and Cp through 1000 K; use the measured congruent Tfus and explicitly estimate only high-temperature crystal continuation, fusion entropy and liquid Cp.",
+        "algebra": "H_s(Tm)=Hf298+Hinc1000+Cp1000(Tm−1000)/1000; S_s(Tm)=S1000+Cp1000 ln(Tm/1000). ΔSfus=7×8.297530569. Cp_l=2Cp(SrO(l))+Cp(SiO2(l)). Apply the same H_l, S_l and G_l fusion equations as for SrSiO3.",
+        "units_check": "H and G in kJ/mol after converting J/mol by 1000; entropy in J/(mol K).",
+        "sanity_value": "Hinc_s(Tm)=429.757 kJ/mol; S_s(Tm)=539.647 J/(mol K); ΔHfus=150.908 kJ/mol; G_l(Tm)=−3278.026 kJ/mol."
+      },
+      "citations": [
+        "Huntelaar et al. 1992, DOI 10.1016/S0021-9614(05)80042-4, pp.139–143",
+        "Huntelaar et al. 1992, DOI 10.1016/0022-3697(92)90193-H, Tables 4–5, pp.805–806",
+        "Fields et al. 1972, DOI 10.1111/j.1151-2916.1972.tb13448.x, pp.585–588",
+        "NIST-JANAF DOI 10.18434/T42S31, Tables O-014/O-038",
+        "17-pair class-C calibration"
+      ]
+    },
+    "SrAl2O4(l)": {
+      "crystal_formation_enthalpy_298_kJ_mol": -2346.928,
+      "fusion_temperature_K": 2233.0,
+      "fusion_temperature_source": "Ye et al. assessment 2233 K; competing reported values 2063, 2238 and 2288 K in Table 4.",
+      "fusion_entropy_J_mol_K": 58.082713983039696,
+      "fusion_enthalpy_kJ_mol": 129.69870032412763,
+      "crystal_at_fusion": {
+        "SrO_crystal_Hinc_kJ_mol": 111.24320537,
+        "SrO_crystal_S_J_mol_K": 165.5308855381756,
+        "Al2O3_crystal_Hinc_kJ_mol": 241.73286139500001,
+        "Al2O3_crystal_S_J_mol_K": 286.1998175058851,
+        "formation_from_oxides_kJ_mol": -79.2
+      },
+      "liquid_Cp_J_mol_K": 259.408,
+      "derivation": {
+        "premise": "Use Ye et al. high-temperature crystal Hess relation from 932 to 2233 K, based on measured SrAl2O4 formation from oxides, with JANAF component crystal functions.",
+        "algebra": "Hf298=−592.036−1675.692−79.2=−2346.928 kJ/mol. G_s(Tm)=G_SrO,cr+G_Al2O3,cr−79.2 kJ/mol; S_s(Tm)=S_SrO,cr+S_Al2O3,cr. ΔSfus=7×8.297530569; Cp_l=Cp(SrO(l))+Cp(Al2O3(l)); apply H_l, S_l and G_l fusion equations.",
+        "units_check": "Hess offset is kJ/mol, JANAF Hinc is kJ/mol, and TΔS/CpΔT convert from J/mol to kJ/mol.",
+        "sanity_value": "At 2233 K the source Hess cycle gives G_s=G_l=−3002.667 kJ/mol; ΔHfus=129.699 kJ/mol."
+      },
+      "citations": [
+        "Ye et al. 2007, DOI 10.1007/s11669-007-9086-x, Tables 1, 3–4, pp.364–365",
+        "Brisi & Abbattista 1960, Ann. Chimica 50, pp.165–169, transcribed in Ye et al. Table 3",
+        "NIST-JANAF DOI 10.18434/T42S31, Tables O-013/Al-096/O-014/Al-100",
+        "17-pair class-C calibration"
+      ]
+    }
+  },
+  "citations": [
+    {
+      "id": "janaf",
+      "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, 4th ed., NIST SRD 13.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/"
+    },
+    {
+      "id": "sr-element",
+      "citation": "NIST-JANAF, Strontium liquid, Table Sr-004, printed cells at 298.15 and 1800 K.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/tables/Sr-004.html"
+    },
+    {
+      "id": "sro",
+      "citation": "NIST-JANAF, SrO crystal/liquid, Tables O-013 and O-014; fusion marker and printed functions.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/tables/O-014.html"
+    },
+    {
+      "id": "silicate-formation",
+      "citation": "Huntelaar, M. E., Cordfunke, E. H. P., and Ouweltjes, W. (1992), The standard molar enthalpies of formation of SrSiO3(s) and Sr2SiO4(s), Journal of Chemical Thermodynamics 24(2), 139–143.",
+      "doi": "10.1016/S0021-9614(05)80042-4",
+      "url": "https://doi.org/10.1016/S0021-9614(05)80042-4"
+    },
+    {
+      "id": "silicate-cp",
+      "citation": "Huntelaar, M. E., Cordfunke, E. H. P., and Westrum, E. F. Jr. (1992), The heat capacity and derived thermophysical properties of some alkaline earth silicates and zirconates from 5 to 1000 K—I. Crystalline SrSiO3 and Sr2SiO4, Journal of Physics and Chemistry of Solids 53(6), 801–806; Tables 4–5.",
+      "doi": "10.1016/0022-3697(92)90193-H",
+      "url": "https://doi.org/10.1016/0022-3697(92)90193-H"
+    },
+    {
+      "id": "sr-silicate-melting",
+      "citation": "Fields, J. M. Jr., Dear, P. S., and Brown, J. J. Jr. (1972), Phase Equilibria in the System BaO-SrO-SiO2, Journal of the American Ceramic Society 55(12), 585–588; congruent melting temperatures in the abstract and phase diagram.",
+      "doi": "10.1111/j.1151-2916.1972.tb13448.x",
+      "url": "https://doi.org/10.1111/j.1151-2916.1972.tb13448.x"
+    },
+    {
+      "id": "sr-silicate-primary-melting",
+      "citation": "Eskola, P. (1922), The Silicates of Strontium and Barium, American Journal of Science, 5th series, 4(23), 331–375; SrSiO3 melting Table I, p. 335.",
+      "doi": null,
+      "url": "https://ajsonline.org/api/v1/articles/60947-the-silicates-of-strontium-and-barium.pdf"
+    },
+    {
+      "id": "aluminate",
+      "citation": "Ye, X., Zhuang, W., Wang, J., Yuan, W., and Qiao, Z. (2007), Thermodynamic Description of SrO-Al2O3 System and Comparison with Similar Systems, Journal of Phase Equilibria and Diffusion 28, 362–368; Tables 1, 3, and 4, pp. 364–365.",
+      "doi": "10.1007/s11669-007-9086-x",
+      "url": "https://doi.org/10.1007/s11669-007-9086-x"
+    },
+    {
+      "id": "aluminate-primary-formation",
+      "citation": "Brisi, C., and Abbattista, F. (1960), Searches on the Heats of Formation of the Strontium Aluminates, Annali di Chimica 50, 165–169; SrO·Al2O3 heat of formation from oxides as transcribed in Ye et al. (2007), Table 3, p. 365.",
+      "doi": null,
+      "url": "https://doi.org/10.1007/s11669-007-9086-x"
+    },
+    {
+      "id": "fusion-entropy-rule",
+      "citation": "Seventeen measured class-C crystal/liquid pairs from NIST-JANAF, calibrated in the existing liquid-from-solid input census; mean 8.297530569 J mol^-1 K^-1 per formula atom, leave-one-out maximum residual 46.401260148 J mol^-1 K^-1 and RMS 17.845205293 J mol^-1 K^-1.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/"
+    },
+    {
+      "id": "alumina-liquid",
+      "citation": "NIST-JANAF, alpha-Al2O3 crystal Table Al-096 and liquid Table Al-100, including liquid Cp=192.464 J mol^-1 K^-1.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/tables/Al-100.html"
+    },
+    {
+      "id": "silica-liquid",
+      "citation": "NIST-JANAF, high-cristobalite SiO2 Table O-035 and liquid SiO2 Table O-038, liquid Cp=85.772 J mol^-1 K^-1.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/tables/O-038.html"
+    },
+    {
+      "id": "sro-fusion-check",
+      "citation": "Lide, D. R. (ed.), Handbook of Inorganic Compounds, 2nd ed. (2005), entry 3076, Strontium oxide; enthalpy of fusion 75.00 kJ mol^-1.",
+      "doi": null,
+      "url": "https://ndl.ethernet.edu.et/bitstream/123456789/76396/1/20.pdf"
+    }
+  ],
+  "fusion_entropy_estimate": {
+    "value_per_formula_atom_J_mol_K": 8.297530569005671,
+    "calibration_pairs": 17,
+    "leave_one_out_max_residual_J_mol_K": 46.40126014755481,
+    "leave_one_out_rms_residual_J_mol_K": 17.84520529327536,
+    "method": "Arithmetic mean of measured class-C JANAF ΔSfus per formula atom; multiply by total atom count.",
+    "source": "Existing liquid-from-solid input census; JANAF DOI 10.18434/T42S31."
+  }
+}

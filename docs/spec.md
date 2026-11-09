@@ -31,7 +31,7 @@ change the base model.
 ### 1.1 Named data profiles
 
 `load_profile("openimcc")` selects D066 v4, the packaged openimcc gas and
-condensate tables, and redox v4. `load_profile("published")` selects the
+condensate tables, and redox v5. `load_profile("published")` selects the
 frozen SF04 melt records and the shared JANAF gas table with the LAM1984/1987
 condensate rows used by the published comparison. The latter reproduces the
 paper's records, including the known frozen-metadata errata. Profiles have no
@@ -247,9 +247,8 @@ finds the redox state that satisfies that inventory together with the
 parent-oxide balance. The standard-state redox datapack has its own schema,
 temperature evidence intervals, identity digest, and row-level provenance.
 The default standard state uses the D&G/Masson primary-measurement FeO(l)
-re-anchor. Cr, Ti, and combined Cr+Ti candidate packs and candidate-only
-composition-conditioned terms remain opt-in; their candidate-specific rows are
-not silently promoted into the default redox model.
+re-anchor and includes the evidence-flagged CrO(l)-effective row. Ti-only and
+combined Cr+Ti candidate packs remain opt-in.
 `evaluate_redox()` accepts keyword-only `redox_pack_path` and
 `melt_pack_path` selectors. A supplied `melt_pack_path` is loaded through the
 normal `load_datapack()` identity gate; `None` keeps the packaged melt pack.

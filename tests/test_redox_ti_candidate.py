@@ -20,7 +20,8 @@ PACK_DIR = ROOT / "src/openimcc/data/packs"
 TI = PACK_DIR / "openimcc-redox-ti-candidate-v4.json"
 CR = PACK_DIR / "openimcc-redox-cr-candidate-v4.json"
 CR_TI = PACK_DIR / "openimcc-redox-cr-ti-candidate-v4.json"
-DEFAULT = PACK_DIR / "openimcc-redox-v4.json"
+LEGACY_DEFAULT = PACK_DIR / "openimcc-redox-v4.json"
+CURRENT_DEFAULT = PACK_DIR / "openimcc-redox-v5.json"
 
 
 _MW = {
@@ -484,18 +485,18 @@ def test_cr_candidate_v3_outputs_pin_corrected_homologue():
         assert observed == pytest.approx(stored, rel=1e-12, abs=1e-15)
 
 
-def test_default_output_digests_pin_corrected_redox_homologue():
+def test_default_output_digests_pin_combined_redox_default():
     cases = [
         (1800.0, {"Fe": 1.0, "O": 1.25}),
         (2200.0, {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65}),
         (2500.0, {"Fe": 0.7, "Si": 0.2, "Mg": 0.1, "O": 1.0}),
     ]
-    # The D066 v4 default changes the mixed Fe-Mg-Si endpoint;
-    # the redox datapack and equations remain unchanged.
+    # Re-pinned for the combined default; Sr, Li, Zn, and Yb add zero-valued
+    # parent and species entries without changing prior values for these inputs.
     expected = (
-        "22aa16d3e716accfa736676672a97b25cd503eeef5183fa07e9d79f7bec819a1",
-        "18340e4531b21326f5e21005c3565dd2f9f377d98d01ab18e409d97dc473391b",
-        "cc2276fb2152a13ca17d1d9eefbaf97999a6c4b13705a8141f5f4278ee437acf",
+        "bfd4a5b5bb59ffcb90b91a50a0d223b7e60d725b42fd12606005878c4f3921cd",
+        "aa6aaaaa81b6c686f75ef65141f45bd53b2a11f357f262726fc12d3faf30eb34",
+        "2ff434a9fb9fec4538a861c53ffb756dad4e2c777d44a36f10f7b7c5404ea263",
     )
     actual = [
         _legacy_output_digest(evaluate_redox(feed, temperature, "closed"))
@@ -519,8 +520,8 @@ def test_optical_basicity_term_rejects_unknown_kind_or_fields(tmp_path, mutation
         load_redox_pack(path)
 
 
-def test_default_pack_rejects_the_new_composition_term(tmp_path):
-    content = json.loads(DEFAULT.read_text())
+def test_legacy_standard_pack_rejects_the_new_composition_term(tmp_path):
+    content = json.loads(LEGACY_DEFAULT.read_text())
     content["rows"][1]["composition_term"] = {
         "kind": "optical_basicity", "A": -1.84, "B_lambda": 3.44,
         "C_over_T": 6262.5, "lambda_range": [0.586, 0.635],
@@ -532,7 +533,7 @@ def test_default_pack_rejects_the_new_composition_term(tmp_path):
         load_redox_pack(path)
 
 
-def test_new_candidate_packs_select_explicitly_and_default_pack_is_unchanged():
+def test_new_candidate_packs_select_explicitly_and_current_default_is_versioned():
     assert load_redox_pack(TI).version == "1.8.0-ti-candidate"
     assert load_redox_pack(CR_TI).version == "1.9.0-cr-ti-candidate"
     combined = _imposed(
@@ -542,13 +543,16 @@ def test_new_candidate_packs_select_explicitly_and_default_pack_is_unchanged():
     )
     assert combined.titanous_ti_mol > 0.0
     assert combined.chromous_cr_mol > 0.0
-    default_bytes = hashlib.sha256(DEFAULT.read_bytes()).hexdigest()
+    assert load_redox_pack().version == "1.8.0-cr-candidate"
+    default_bytes = hashlib.sha256(CURRENT_DEFAULT.read_bytes()).hexdigest()
     for temperature, feed in [
         (1800.0, {"Fe": 1.0, "O": 1.25}),
         (2200.0, {"Fe": 1.0, "Mn": 0.1, "Si": 0.2, "Al": 0.1, "O": 1.65}),
         (2500.0, {"Fe": 0.7, "Si": 0.2, "Mg": 0.1, "O": 1.0}),
     ]:
         implicit = evaluate_redox(feed, temperature, "closed")
-        explicit = evaluate_redox(feed, temperature, "closed", redox_pack_path=DEFAULT)
+        explicit = evaluate_redox(
+            feed, temperature, "closed", redox_pack_path=CURRENT_DEFAULT
+        )
         assert implicit == explicit
-    assert hashlib.sha256(DEFAULT.read_bytes()).hexdigest() == default_bytes
+    assert hashlib.sha256(CURRENT_DEFAULT.read_bytes()).hexdigest() == default_bytes

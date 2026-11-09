@@ -811,7 +811,39 @@ class ImccResult:
             ) from None
 
     def activity(self, name: str) -> float:
-        """Return one parent-oxide activity by name."""
+        """Return one modeled parent or registered trace activity by name."""
+        notices = getattr(self.labels, "notices", ())
+        if name in self.parent_oxides:
+            for notice in notices:
+                if (
+                    getattr(notice, "major_oxide", None) == name
+                    and not getattr(notice, "scoreable", True)
+                ):
+                    bound = float(getattr(notice, "bias_bound_dex", math.inf))
+                    raise ImccComponentOutsideDomainError(
+                        f"{name} row refused: trace-component bias bound "
+                        f"{bound:.12g} dex exceeds 0.01 dex"
+                    )
+            return float(self.parent_activity[self._parent_index(name)])
+        for notice in notices:
+            if getattr(notice, "oxide", None) == name and hasattr(
+                notice, "activity"
+            ):
+                activity = float(getattr(notice, "activity"))
+                if not math.isfinite(activity) or activity < 0.0:
+                    raise ImccComponentOutsideDomainError(
+                        f"registered trace activity for {name!r} is unavailable"
+                    )
+                return activity
+            estimates = getattr(notice, "activities", {})
+            estimate = estimates.get(name)
+            if estimate is not None:
+                activity = float(estimate.activity)
+                if not math.isfinite(activity) or activity < 0.0:
+                    raise ImccComponentOutsideDomainError(
+                        f"registered trace activity for {name!r} is unavailable"
+                    )
+                return activity
         return float(self.parent_activity[self._parent_index(name)])
 
     def gamma(self, name: str) -> float:

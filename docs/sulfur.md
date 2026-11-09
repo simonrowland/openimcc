@@ -79,22 +79,25 @@ compositions and includes iron-free CMAS melts; reported axes include SiO2
 standard error is 0.09 log unit (R² = 0.96). This is an empirical capacity,
 not an activity model for dissolved sulfur.
 
-Boulliung and Wood (2022), Eq. 5, is the central sulfate capacity:
+Boulliung and Wood (2023), Eq. 9, refits the measured Boulliung and Wood
+(2022) sulfate capacities on the same single-oxygen basis as Eq. 7:
 
 ```text
-log10 C_S6+ = -12.659
-  + (3692 X_Ca - 7592 X_Si - 13736 X_Ti + 3762 X_Al + 34483) / T
+log10 C_S6+ = -12.948
+  + (28649 X_Na2O + 15602 X_CaO + 9496 X_MgO + 16016 X_MnO
+     + 4194 X_Al0.67O + 29244) / T
 log10 [S6+] = log10 C_S6+ + 0.5 log10 fS2 + 1.5 log10 fO2
 ```
 
-The X values are single-cation fractions (`Al` denotes the AlO1.5 component).
-The paper measured 14 melts at 1 atm and 1473–1773 K in oxidizing air/SO2
-mixtures, spanning basanite through Fe/Ti-rich lunar basalt, andesite, dacite,
-and rhyolite. Reported axes include SiO2 39.9–73.2 wt%, FeO 0–16.9 wt%, CaO
-1.0–22.3 wt%, TiO2 0–8.34 wt%, and Na2O 0–7.77 wt%. The fit standard error is
-0.154 log unit (R² = 0.985); the highest measured sulfate concentration is
-about 4090 ppm. Major-element analytical uncertainty dominates the model's
-composition uncertainty.
+The X values are single-oxygen fractions (`X_Al0.67O` is the Al2O3
+contribution on that basis). The 2023 refit uses the 14 melt compositions
+measured in 2022 at 1 atm and 1473–1773 K, from basanite through Fe/Ti-rich
+lunar basalt, andesite, dacite, and rhyolite. The 2023 Eq. 9 fit standard error
+is 0.14 log unit (R² = 0.988). The original measurements span SiO2 39.9–73.2
+wt%, FeO 0–16.9 wt%, CaO 1.0–22.3 wt%, TiO2 0–8.34 wt%, Na2O 0–7.77 wt%,
+MgO 0.3–17.4 wt%, MnO 0–2.45 wt%, and Al2O3 10.9–22.9 wt%. The highest
+measured sulfate concentration is about 4090 ppm. Major-element analytical
+uncertainty dominates the model's composition uncertainty.
 
 The species fraction follows directly from the ratio of the two dissolution
 equations:
@@ -116,6 +119,28 @@ not modelled; SCAS is not calculated. With a fixed `log10_fS2`, SCSS caps
 S2- and any predicted S2- capacity overrun is assigned to the caller's
 sulfide liquid, while the supplied fugacity remains the capacity condition.
 This fixed-fugacity excess is not a bulk-inventory balance.
+
+### Deriving the gas-parent activity
+
+The fragment does not claim an S2(l) standard Gibbs row. It uses the two
+published capacities to derive `log10 fS2` from a caller's total sulfur and
+`log10 fO2`. At fixed composition, temperature, and oxygen fugacity, both
+dissolved species scale with `sqrt(fS2)`. With capacities and total sulfur in
+wt% S:
+
+```text
+log10 fS2 = 2 (log10 S_total
+  - log10(10^(log10 C_S2- - 0.5 log10 fO2)
+         + 10^(log10 C_S6+ + 1.5 log10 fO2)))
+a(S2) = fS2 / 1 bar
+```
+
+The gas-parent activity is dimensionless and uses the gas tables' 1-bar
+standard. A derived activity carries
+`imcc_sulfur_parent_domain_notice`; separate typed capacity notices identify
+temperature, pressure, composition, or unsupported-component departures from
+the fitted domain. Capacities alone do not determine activity: the caller must
+also supply total sulfur and oxygen fugacity.
 
 ### Capacity comparisons
 

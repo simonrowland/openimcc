@@ -110,14 +110,15 @@ def test_boulliung_wood_capacity_equations_match_printed_fits():
         - 1109 * oxygen["SiO2"]
         - 8879
     ) / T
-    # Boulliung & Wood (2022), Eq. 5, GCA 336, pp. 150-164;
-    # single-cation fractions, wt% S.
-    log_cs6 = -12.659 + (
-        3692 * cations.get("Ca", 0.0)
-        - 7592 * cations.get("Si", 0.0)
-        - 13736 * cations.get("Ti", 0.0)
-        + 3762 * cations.get("Al", 0.0)
-        + 34483
+    # Boulliung & Wood (2023), Eq. 9, journal p. 7; single-oxygen fractions,
+    # wt% S. Al2O3 contributes as the Al0.67O component.
+    log_cs6 = -12.948 + (
+        28649 * oxygen.get("Na2O", 0.0)
+        + 15602 * oxygen.get("CaO", 0.0)
+        + 9496 * oxygen.get("MgO", 0.0)
+        + 16016 * oxygen.get("MnO", 0.0)
+        + 4194 * oxygen.get("Al2O3", 0.0)
+        + 29244
     ) / T
 
     assert result.log10_sulfide_capacity_wt_percent == pytest.approx(log_cs2)
@@ -458,9 +459,9 @@ def test_in_range_sulfur_outputs_match_pins():
         fixed.scss_oneill_2021_ppm,
     ) == (
         -4.499963122582615,
-        6.351387475884598,
-        0.03162568650138272,
-        0.03162568650138273,
+        6.312086884975784,
+        0.03162566707016028,
+        0.03162566707016028,
         2320.431822704818,
         5326.88582447564,
     )
@@ -473,9 +474,9 @@ def test_in_range_sulfur_outputs_match_pins():
         inventory.capacity_predicted_total_s_ppm,
         inventory.dissolved_total_s_ppm,
     ) == (
-        -3.000079923104596,
+        -3.0000793894323685,
         100.0,
-        100.00000000000001,
+        100.0,
     )
 
 

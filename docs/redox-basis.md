@@ -77,10 +77,9 @@ is returned as `melt_pack_binding_digest`.
 
 ## Chromium candidate pack
 
-`src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json` is opt-in and is
-not the default. Select it with
-`evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json")`.
-The manifest records its `opt-in` role and candidate family.
+`src/openimcc/data/packs/openimcc-redox-v5.json` is the default redox pack. It
+retains the Cr correction and adds the Sr, Li, Zn, and Yb association rows;
+the Cr-only v4 pack remains available for historical reproduction.
 It adds `1/2 Cr2O3 = CrO + 1/4 O2` using O’Neill & Berry (2021)'s 1-bar
 composition and temperature relation. The Cr K is conditioned on normalized
 single-cation oxide fractions. Since the Fe and Cr rows are solved together,
@@ -97,6 +96,9 @@ uncertainty. The row flags its 1-bar scope, the 1673 K isothermal calibration,
 the 1773 K variable-temperature limit, and compositions outside the demonstrated
 CMAS and basaltic range; pressure is not modelled. It does not define a
 composition-independent CrO Gibbs function.
+The Cr2O3(l) parent is formula-only in the redox pack; the default condensate
+retains the JANAF Cr-015 liquid estimate, its labelled constant-Cp supercooled
+continuation, and its 2603 K fusion marker.
 
 Earlier Cr/Ti candidate generations remain loadable for historical reproduction
 and are marked `historical` in `MANIFEST.json`; `superseded_by` identifies the
@@ -111,7 +113,9 @@ Two additional packs are opt-in. Select the Ti-only row with
 or select the combined Cr+Ti candidate with
 `evaluate_redox(inventory, T_K, mode, redox_pack_path="src/openimcc/data/packs/openimcc-redox-cr-ti-candidate-v4.json")`.
 The manifest marks both as opt-ins, not defaults. The Ti-only pack starts from
-the default redox v4 pack; the combined pack carries both empirical rows.
+the standard-state redox v4 pack; the combined pack carries both empirical
+rows. The v5 default includes the Cr row and the Sr, Li, Zn, and Yb
+associations; the Cr-Ti pack remains opt-in.
 
 The Ti row uses `TiO2 = TiO1.5 + 1/4 O2`, so `nu_O2=+1/4`. Berry et al.
 (2024), equation 7, supplies `log10 K' = -1.84 + 3.44 Lambda + 6262.5/T`.

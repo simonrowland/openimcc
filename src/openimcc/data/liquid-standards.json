@@ -2551,7 +2551,7 @@
       "file": "openimcc-redox-cr-candidate-v4.json",
       "pack_type": "redox",
       "model_id": "openimcc-redox-pack.v2",
-      "model_description": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity; default composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
       "version": "1.7.0-cr-candidate",
       "canonical_content_digest": "7125e4f808b580eb5d5d6c4a32dc52206dfa1e74d1d8fd8c42f557a83d11c8a1",
       "standards": {
@@ -2560,7 +2560,7 @@
         "MnO": "MnO-liquid-construction",
         "SiO2": "SiO2-RBT84-CANDIDATE",
         "Al2O3": "Al-100",
-        "Cr2O3": "undeclared"
+        "Cr2O3": "Cr-015"
       },
       "standard_citations": {
         "FeO": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
@@ -2568,15 +2568,9 @@
         "MnO": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
         "SiO2": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.SiO2(l).provenance; Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8; JANAF O-035 crystal reference and measured fusion anchor; https://doi.org/10.1111/j.1151-2916.1984.tb19155.x",
         "Al2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
-        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024"
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.Cr2O3(l) formula-only parent and O’Neill & Berry (2021) effective K; src/openimcc/data/gas/condensate-default-v1.csv#Cr2O3(l) JANAF Cr-015 liquid estimate, 2603 K fusion marker, and labelled constant-Cp supercooled continuation; https://doi.org/10.1016/j.gca.2021.03.024"
       },
-      "undeclared": {
-        "Cr2O3": {
-          "reason": "The candidate metadata names this parent and its composition-conditioned relation but does not bind the liquid reference to a table identifier.",
-          "citation": "src/openimcc/data/packs/openimcc-redox-cr-candidate-v4.json#thermo_species.Cr2O3(l).provenance; O’Neill & Berry (2021); https://doi.org/10.1016/j.gca.2021.03.024",
-          "standard_id": "undeclared"
-        }
-      },
+      "undeclared": {},
       "row_overrides": {},
       "row_override_citations": {},
       "row_diagnostics": {},
@@ -2585,11 +2579,10 @@
         "FeO1.5": "source",
         "MnO": "operational",
         "SiO2": "source",
-        "Al2O3": "source"
+        "Al2O3": "source",
+        "Cr2O3": "source"
       },
-      "row_override_basis": {},
-      "declaration_status": "candidate-unresolved",
-      "undeclared_reason": "Candidate-specific composition-conditioned parent references remain unresolved; established inherited redox standards are declared above."
+      "row_override_basis": {}
     },
     "65d8225c751e5119100e7f693fd5480c55af9aea586c4268d00260a51bf92af7": {
       "file": "openimcc-redox-cr-candidate-v3.json",
@@ -3092,6 +3085,43 @@
         "MnO": "operational",
         "SiO2": "source",
         "Al2O3": "source"
+      },
+      "row_override_basis": {}
+    },
+    "94279c8627a13ae7af3416f20d1e38867b79842d0054990c7b47108d23b4a968": {
+      "file": "openimcc-redox-v5.json",
+      "pack_type": "redox",
+      "model_id": "openimcc-redox-pack.v2",
+      "model_description": "Element-based redox thermochemistry with standard-state reaction rows and Sr, Li, Zn, and Yb association rows; default composition-conditioned chromium effective K.",
+      "version": "1.8.0-cr-candidate",
+      "canonical_content_digest": "b927cf95fe788016d37ccfac87a9c80bbb15ec519aa624d929e3106c1759adf0",
+      "standards": {
+        "FeO": "DG46-MASSON65",
+        "FeO1.5": "Fe2O3-l-construction(Fe-030 cr + Lesher-Spera fusion)/2",
+        "MnO": "MnO-liquid-construction",
+        "SiO2": "SiO2-RBT84-CANDIDATE",
+        "Al2O3": "Al-100",
+        "Cr2O3": "Cr-015"
+      },
+      "standard_citations": {
+        "FeO": "src/openimcc/data/packs/openimcc-redox-v5.json#thermo_species.FeO(l).provenance; Darken & Gurry (1946), Tables IIIA, IIIB, VI; Masson (1965), Eq. 17; NIST-JANAF CO and CO2; https://doi.org/10.1021/ja01209a030",
+        "FeO1.5": "src/openimcc/data/packs/openimcc-redox-v5.json#thermo_species.FeO1.5(l).terms; thermo_species.Fe2O3(l).construction and provenance; one half of the metastable Fe2O3(l) liquid construction from the Fe-030 hematite crystal and 114.5 kJ/mol at 1895 K fusion input from Lesher and Spera supplemental Table S5.5 (secondary transcription, checked against Sugawara and Akaogi 2004); https://magma.geol.ucsb.edu/papers/EoV_complete.pdf; hematite crystal: https://janaf.nist.gov/tables/Fe-030.html; alternate fusion estimate: https://doi.org/10.2138/am-2004-11-1202; liquid heat capacity: https://doi.org/10.1007/BF00310746",
+        "MnO": "src/openimcc/data/packs/openimcc-redox-v5.json#thermo_species.MnO(l).provenance; IVTAN Table 1435 MnO crystal function with the measured MnO melting temperature; liquid function built with the tool's Tier 3 fusion-entropy and crystal-Cp estimates.; https://www.chem.msu.ru/rus/tsiv/Mn/print-MnO_c.html",
+        "SiO2": "src/openimcc/data/packs/openimcc-redox-v5.json#thermo_species.SiO2(l).provenance; Richet, Bottinga & Tequi (1984), J. Am. Ceram. Soc. 67, C-6–C-8; JANAF O-035 crystal reference and measured fusion anchor; https://doi.org/10.1111/j.1151-2916.1984.tb19155.x",
+        "Al2O3": "src/openimcc/data/packs/openimcc-redox-v5.json#thermo_species.Al2O3(l).provenance; NIST-JANAF Al-100 supercooled liquid function as packaged in the Al-100-SC-CP interval; https://janaf.nist.gov/tables/Al-100.txt",
+        "Cr2O3": "src/openimcc/data/packs/openimcc-redox-v5.json#thermo_species.Cr2O3(l) formula-only parent and O’Neill & Berry (2021) effective K; src/openimcc/data/gas/condensate-default-v1.csv#Cr2O3(l) JANAF Cr-015 liquid estimate, 2603 K fusion marker, and labelled constant-Cp supercooled continuation; https://doi.org/10.1016/j.gca.2021.03.024"
+      },
+      "undeclared": {},
+      "row_overrides": {},
+      "row_override_citations": {},
+      "row_diagnostics": {},
+      "standard_basis": {
+        "FeO": "source",
+        "FeO1.5": "source",
+        "MnO": "operational",
+        "SiO2": "source",
+        "Al2O3": "source",
+        "Cr2O3": "source"
       },
       "row_override_basis": {}
     },

@@ -1,0 +1,507 @@
+{
+  "schema": "openimcc-redox-fragment.v1",
+  "element": "Zn",
+  "parent_registry": [
+    {
+      "element": "Zn",
+      "parent_oxide": "ZnO(l)",
+      "parent_formula_atoms": {
+        "Zn": 1,
+        "O": 1
+      },
+      "parent_standard_state": "Pure liquid ZnO at 1 bar, constructed from TSIV Table 1603.",
+      "elemental_reference_state": "Zn(l)",
+      "parent_oxidation_state": 2,
+      "known_oxidation_states": [
+        0,
+        2
+      ],
+      "redox_thermochemistry_status": "populated"
+    }
+  ],
+  "thermo_species": {
+    "Zn(l)": {
+      "formula_atoms": {
+        "Zn": 1
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200,
+        2000
+      ],
+      "range_flags": [
+        "The JANAF liquid-Zn standard is tabulated above its 1180.173 K one-bar fugacity marker; this is a liquid reference state, not a vapor-pressure claim."
+      ],
+      "row": {
+        "dH298_R": 0.784055482537982,
+        "dG_A": 4.33972667861997,
+        "dG_B": 4.7422143111549,
+        "dG_C": -1.50735133713522,
+        "dG_D": 0.322793266889563,
+        "dG_E": -0.0313675649121716
+      },
+      "construction": {
+        "reference_enthalpy_298_kJ_mol": 6.519,
+        "source_nodes_K": [
+          1200,
+          1300,
+          1400,
+          1500,
+          1600,
+          1700,
+          1800,
+          1900,
+          2000
+        ],
+        "method": "Fit JANAF liquid-Zn H-H(298.15 K) and S nodes to the condensate phi polynomial. G(T)=(Hf,298+Hinc)×1000−T×S; coefficients were fitted to source nodes, not melt activity or battery data.",
+        "sanity_anchor_1300_K": {
+          "enthalpy_increment_kJ_mol": 30.684,
+          "entropy_J_mol_K": 94.914,
+          "source_G_J_mol": -86185.2
+        },
+        "max_abs_source_G_residual_J_mol": 0.575
+      },
+      "provenance": {
+        "source": "NIST-JANAF Thermochemical Tables, Fourth Edition, Zn-003, liquid zinc; Chase (1998).",
+        "source_url": "https://janaf.nist.gov/tables/Zn-003.html",
+        "tier": "tier1_direct_assessed",
+        "selection_rationale": "Direct liquid-Zn JANAF H and S nodes set the elemental liquid standard. The 298.15 K liquid reference enthalpy is the printed +6.519 kJ/mol; the source fit spans 1200–2000 K and has a maximum Gibbs residual of 0.575 J/mol."
+      },
+      "fit_residual": {
+        "value": 0.575,
+        "unit": "J mol^-1 species",
+        "target_source": "NIST-JANAF Zn-003 liquid zinc H and S rows at 1200–2000 K",
+        "comparison_method": "Maximum absolute Gibbs residual of the quartic condensate-phi fit against the printed H and S nodes.",
+        "temperature_range": [
+          1200,
+          2000
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The 0.575 J/mol value is a polynomial transcription residual, not a thermochemical accuracy interval; JANAF does not supply a numeric uncertainty for these nodes.",
+        "provenance": "NIST-JANAF Zn-003"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No independent liquid-Zn standard-state check was identified."
+      }
+    },
+    "ZnO(l)": {
+      "formula_atoms": {
+        "Zn": 1,
+        "O": 1
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "range_flags": [
+        "The liquid branch is constructed below the 2250 ± 30 K melting point; ΔHfus and liquid Cp are estimates, not independent measured liquid-property rows."
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200,
+            1700
+          ],
+          "row": {
+            "dH298_R": -42.1554604432524,
+            "dG_A": -17.5325112506206,
+            "dG_B": 36.9363992810267,
+            "dG_C": -21.7794281227113,
+            "dG_D": 7.09373583764061,
+            "dG_E": -0.948114308650385
+          }
+        },
+        {
+          "T_domain_K": [
+            1700,
+            1750
+          ],
+          "row": {
+            "dH298_R": -42.1554604432524,
+            "dG_A": -9.91431828814299,
+            "dG_B": 18.8707675131128,
+            "dG_C": -5.69385212245057,
+            "dG_D": 0.72030227056219,
+            "dG_E": 0
+          }
+        },
+        {
+          "T_domain_K": [
+            1750,
+            3000
+          ],
+          "row": {
+            "dH298_R": -42.1554604432524,
+            "dG_A": -10.0652693158483,
+            "dG_B": 19.963617036143,
+            "dG_C": -7.15555785322814,
+            "dG_D": 1.43293979190103,
+            "dG_E": -0.117748650384118
+          }
+        }
+      ],
+      "construction": {
+        "source_table_id": "TSIV-1603-LFS-CP-EXT-2250",
+        "formation_enthalpy_298_kJ_mol": -350.5,
+        "fusion_temperature_K": 2250,
+        "fusion_temperature_uncertainty_K": 30,
+        "crystal_enthalpy_increment_at_fusion_kJ_mol": 112.162,
+        "liquid_enthalpy_increment_at_fusion_kJ_mol": 182.162,
+        "fusion_enthalpy_kJ_mol": 70,
+        "source_fusion_enthalpy_estimate_kJ_mol": 70,
+        "source_fusion_enthalpy_uncertainty_kJ_mol": 10,
+        "liquid_heat_capacity_J_mol_K": 67,
+        "liquid_heat_capacity_status": "estimated",
+        "derivation": "TSIV Table 1603 uses ΔfH°298(ZnO,cr)=-350.5 kJ/mol. At 2250 K its printed H°−H°(0) values are 112.162 kJ/mol for crystal and 182.162 kJ/mol for liquid, so ΔHfus=182.162−112.162=70.000 kJ/mol, matching the reported 70±10 kJ/mol estimate. The liquid Cp is estimated as 67 J mol^-1 K^-1. The shipped condensate coefficients are reused unchanged."
+      },
+      "provenance": {
+        "source": "TSIV, thermodynamic properties of ZnO(cr,l), Table 1603; source values and constructed liquid branch.",
+        "source_url": "https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html",
+        "tier": "tier4_systematic_estimate",
+        "selection_rationale": "Reuse the immutable default ZnO(l) condensate row sourced to TSIV Table 1603. Its crystal formation enthalpy is based on matched acid-solution calorimetry; fusion enthalpy and liquid heat capacity are explicitly estimated by the source."
+      },
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "The 70±10 kJ/mol fusion estimate does not bound the estimated liquid heat capacity or the extrapolated standard Gibbs function; no complete accuracy interval is claimed.",
+        "provenance": "TSIV Table 1603"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No independent ZnO(l) standard-state check is added; the shipped source construction is retained without refitting."
+      }
+    },
+    "Zn2SiO4(l)": {
+      "formula_atoms": {
+        "Zn": 2,
+        "Si": 1,
+        "O": 4
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200,
+        2000
+      ],
+      "range_flags": [
+        "imcc_zn_activity_domain_notice: this is a provisional single-associate willemite construction, not a calibrated ZnO activity model for phosphate-poor basalt or regolith melts.",
+        "The liquid standard is supercooled below 1785.15 K and uses a constant oxide-additive liquid Cp estimate; no direct Zn2SiO4(l) Cp measurement is represented.",
+        "The measured α→β transition near 1773.15 K is included; no additional composition-dependent interaction data are supplied."
+      ],
+      "row": {
+        "dH298_R": -197.379341924897,
+        "dG_A": -14.9392372611689,
+        "dG_B": 51.8304847162389,
+        "dG_C": -22.4375662800643,
+        "dG_D": 5.97806860894633,
+        "dG_E": -0.680110117714622
+      },
+      "construction": {
+        "solid_formation_enthalpy_298_kJ_mol": -1641.10316,
+        "solid_formation_enthalpy_derivation": "King (1951), Table III, p. 657: 2ZnO(cr)+SiO2(quartz)→Zn2SiO4(cr), ΔH=-6990±140 cal/mol. Re-anchor to TSIV ZnO ΔfH°=-350.500 kJ/mol and JANAF quartz ΔfH°=-910.857 kJ/mol: 2(-350.500)+(-910.857)+(-6990×4.184/1000)=-1641.10316 kJ/mol. Barin's compiled -1641.5671 kJ/mol differs by 0.464 kJ/mol, within the source and oxide-anchor uncertainty.",
+        "solid_entropy_298_J_mol_K": 131.378,
+        "crystal_heat_capacity_source": "Barin (1989), transcribed by Jeon et al. (2025), Table 2, p. 47006; equation in J mol^-1 K^-1 over 298–1800 K.",
+        "crystal_heat_capacity_equation": {
+          "constant": 180.07936,
+          "T": 0.013589632,
+          "T_minus_2": -2528556.71904,
+          "T_minus_0_5": -685.68429632,
+          "T_minus_3": 156170176.512
+        },
+        "alpha_beta_transition": {
+          "temperature_K": 1773.15,
+          "enthalpy_kJ_mol": 0.13,
+          "source_temperature_uncertainty_K": 2,
+          "source": "Zaitseva et al. (2019), Table 1 and Fig. 4, p. 3."
+        },
+        "fusion": {
+          "temperature_K": 1785.15,
+          "source_temperature_uncertainty_K": 2,
+          "enthalpy_kJ_mol": 106.44,
+          "source": "Zaitseva et al. (2019), Fig. 4, p. 3."
+        },
+        "liquid_heat_capacity_estimate_J_mol_K": 215.39,
+        "liquid_heat_capacity_estimate_derivation": "Cp[Zn2SiO4(l)]≈2Cp[ZnO(l)]+Cp[SiO2(l)]=2(67)+81.39=215.39 J mol^-1 K^-1. The ZnO liquid Cp is estimated in TSIV Table 1603; the silica liquid Cp at the fusion anchor is based on Richet et al. (1984), DOI 10.1111/j.1151-2916.1984.tb19155.x. The sum is held constant from 1200–2000 K as a provisional estimate.",
+        "liquid_standard_algebra": "Integrate the Barin crystal Cp equation from 298.15 K to 1785.15 K; add the measured 0.13 kJ/mol α→β transition at 1773.15 K; add ΔHfus=106.44 kJ/mol and ΔSfus=ΔHfus/Tfus. Continue the liquid as H_l(T)=H_cr(Tfus)+ΔHfus+Cp_l(T−Tfus) and S_l(T)=S_cr(Tfus)+ΔSfus+Cp_l ln(T/Tfus). Fit G=(Hf,298+Hinc)×1000−T×S to the existing condensate-phi row form.",
+        "fit_source_nodes_K": [
+          1200,
+          1300,
+          1400,
+          1500,
+          1600,
+          1700,
+          1800,
+          1900,
+          2000
+        ],
+        "fit_max_abs_G_residual_J_mol": 3.25,
+        "sanity_anchor_1400_K_G_J_mol": -1960475,
+        "provisional": true
+      },
+      "provenance": {
+        "source": "King (1951), willemite formation enthalpy from ZnO and quartz; Barin crystal S and Cp as transcribed by Jeon et al. (2025); Zaitseva et al. (2019), transition and fusion; oxide-additive estimated liquid Cp.",
+        "source_url": "https://doi.org/10.1021/ja01146a046",
+        "tier": "tier4_systematic_estimate",
+        "selection_rationale": "The reaction enthalpy is a primary calorimetric value re-anchored to the active ZnO and quartz standards. A directly observed willemite transition and melting event set the phase steps. The absent liquid Cp is filled only by a flagged oxide-additive estimate; no phosphate activity measurements or battery rows select this row."
+      },
+      "fit_residual": {
+        "value": 3.25,
+        "unit": "J mol^-1 species",
+        "target_source": "Willemite crystal H and S reconstructed from printed Barin Cp and S298, King formation enthalpy, and Zaitseva transition/fusion anchors with the stated liquid-Cp estimate.",
+        "comparison_method": "Maximum absolute Gibbs residual of the quartic condensate-phi fit over nine 100 K nodes from 1200–2000 K.",
+        "temperature_range": [
+          1200,
+          2000
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "The fusion enthalpy has no stated uncertainty and the oxide-additive liquid Cp has no measured uncertainty. The polynomial residual is only a numerical fit check; a quantitative accuracy interval is not supportable.",
+        "provenance": "King (1951); Zaitseva et al. (2019); Barin (1989) as transcribed by Jeon et al. (2025)."
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No independent Zn2SiO4(l) activity measurement in a regolith-like melt was identified; phosphate-family activity data are outside this row's standard-state derivation."
+      }
+    }
+  },
+  "rows": [
+    {
+      "row": 1,
+      "complex": "ZnO(l)",
+      "role": "parent_reference",
+      "nu": {},
+      "reactants": {
+        "Zn(l)": 1,
+        "O2(g)": 0.5
+      },
+      "products": {
+        "ZnO(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": -0.5,
+      "reaction": "Zn(l) + 1/2 O2(g) = ZnO(l)",
+      "phase_or_construction": "Pure liquid ZnO standard retained from the immutable TSIV-1603 condensate row; fusion and liquid Cp follow the published construction.",
+      "method": "Assemble product-positive Gibbs terms with the JANAF liquid-Zn, O2(g), and TSIV ZnO(l) standards.",
+      "standard_gibbs_terms": [
+        {
+          "species": "ZnO(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "Zn(l)",
+          "coefficient": -1
+        },
+        {
+          "species": "O2(g)",
+          "coefficient": -0.5
+        }
+      ],
+      "T_domain_K": [
+        1200,
+        2000
+      ],
+      "uncertainty_note": "The ZnO fusion enthalpy is estimated as 70±10 kJ/mol and its liquid Cp is estimated as 67 J mol^-1 K^-1; no complete reaction accuracy band is claimed.",
+      "range_flags": [
+        "Zn(l) uses a JANAF liquid reference above its one-bar fugacity marker; the standard remains a condensed liquid reference."
+      ],
+      "provenance_class": "janaf_direct_liquid",
+      "provenance": {
+        "source": "NIST-JANAF Zn-003 liquid zinc and O-029 oxygen; TSIV Table 1603 ZnO(cr,l).",
+        "source_url": "https://janaf.nist.gov/tables/Zn-003.html",
+        "tier": "tier4_systematic_estimate",
+        "selection_rationale": "The liquid-metal and oxygen standards are direct JANAF functions; the product reuses the TSIV ZnO liquid construction without changing the shipped table."
+      },
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "The reaction inherits the source ZnO fusion and liquid-Cp estimates; no complete numeric band is available.",
+        "provenance": "TSIV Table 1603 and NIST-JANAF Zn-003/O-029"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No independent liquid-Zn oxidation check is added in this fragment."
+      }
+    },
+    {
+      "row": 2,
+      "complex": "Zn2SiO4(l)",
+      "role": "complex",
+      "nu": {
+        "ZnO(l)": 2,
+        "SiO2(l)": 1
+      },
+      "reactants": {
+        "ZnO(l)": 2,
+        "SiO2(l)": 1
+      },
+      "products": {
+        "Zn2SiO4(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "2 ZnO(l) + SiO2(l) = Zn2SiO4(l)",
+      "phase_or_construction": "Willemite-derived liquid association standard from the independently sourced crystal formation enthalpy, measured transition and fusion, and a provisional oxide-additive liquid Cp estimate.",
+      "method": "Assemble product-positive Gibbs terms with the constructed Zn2SiO4(l) standard and existing ZnO(l)/SiO2(l) standards.",
+      "standard_gibbs_terms": [
+        {
+          "species": "Zn2SiO4(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "ZnO(l)",
+          "coefficient": -2
+        },
+        {
+          "species": "SiO2(l)",
+          "coefficient": -1
+        }
+      ],
+      "T_domain_K": [
+        1200,
+        2000
+      ],
+      "uncertainty_note": "The King reaction enthalpy and Barin crystal function are source-grounded; the direct fusion enthalpy has no stated uncertainty and the liquid Cp is an unbounded oxide-additive estimate. No statistical or accuracy interval is claimed.",
+      "range_flags": [
+        "imcc_zn_activity_domain_notice: provisional willemite single-associate model; no general lunar-basalt or phosphate-poor ZnO activity calibration is established.",
+        "The liquid standard is supercooled below 1785.15 K and uses an estimated constant liquid Cp over 1200–2000 K."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "King (1951), Table III, p. 657; Barin (1989) crystal data as transcribed in Jeon et al. (2025), Table 2, p. 47006; Zaitseva et al. (2019), Table 1 and Fig. 4, p. 3; Richet et al. (1984).",
+        "source_url": "https://doi.org/10.1021/ja01146a046",
+        "tier": "tier4_systematic_estimate",
+        "selection_rationale": "The independent primary formation reaction and fusion event determine the solid and phase-change anchors. Crystal Cp is taken from the published Barin assessment; missing liquid Cp is filled by an explicit estimate. The phosphate activity family is not used to select or fit the row."
+      },
+      "fit_residual": {
+        "value": 3.25,
+        "unit": "J mol^-1 species",
+        "target_source": "Printed crystal Cp, formation and fusion anchors, and estimated liquid Cp recorded in the Zn2SiO4(l) standard construction.",
+        "comparison_method": "Maximum absolute Gibbs residual of the source-node quartic fit.",
+        "temperature_range": [
+          1200,
+          2000
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "none",
+        "explanation": "The fit residual is not a thermochemical accuracy measure; the dominant estimated liquid Cp has no reported uncertainty.",
+        "provenance": "King (1951); Zaitseva et al. (2019); Jeon et al. (2025)."
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "The available ZnO-phosphate vapor data do not validate a willemite-derived associate in a silicate regolith melt and were not used as a calibration target."
+      }
+    }
+  ],
+  "flags": [
+    {
+      "id": "imcc_zn_activity_domain_notice",
+      "severity": "provisional",
+      "message": "Report this notice whenever the Zn2SiO4(l) row participates: the single-associate activity model is a thermochemical estimate, not a measured or broadly calibrated ZnO activity model for phosphate-poor basalt/regolith melts."
+    }
+  ],
+  "citations": [
+    {
+      "key": "janaf_zn_liquid",
+      "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, Fourth Edition, Zn-003, liquid zinc.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/tables/Zn-003.html",
+      "locator": "Zn-003, liquid rows 1200–2000 K; 298.15 K Hf anchor."
+    },
+    {
+      "key": "zno_liquid",
+      "citation": "TSIV, ZnO(cr,l) thermodynamic functions, Table 1603.",
+      "doi": null,
+      "url": "https://www.chem.msu.ru/rus/tsiv/Zn/print-ZnO_c.html",
+      "locator": "Table 1603; source discussion of ΔfH298, Tm, ΔHfus, liquid Cp, and paired 2250 K crystal/liquid H values."
+    },
+    {
+      "key": "king_willemite_formation",
+      "citation": "King, E. G. (1951), Heats of Formation of Crystalline Calcium Orthosilicate, Tricalcium Silicate and Zinc Orthosilicate, JACS 73(2), 656–658.",
+      "doi": "10.1021/ja01146a046",
+      "url": "https://doi.org/10.1021/ja01146a046",
+      "locator": "Table III, p. 657; reaction 2ZnO(cr)+SiO2(quartz)→Zn2SiO4(cr), −6990±140 cal/mol."
+    },
+    {
+      "key": "janaf_quartz",
+      "citation": "Chase, M. W. Jr. (1998), NIST-JANAF Thermochemical Tables, Fourth Edition, O-037, quartz.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/tables/O-037.html",
+      "locator": "O-037, 298.15 K quartz formation enthalpy, −910.857 kJ/mol."
+    },
+    {
+      "key": "willemite_crystal_thermo",
+      "citation": "Barin, I. (1989), Thermochemical Data of Pure Substances; crystal data and Cp equation transcribed by Jeon, Michallik, and Lindberg (2025), Phase equilibria and thermodynamic optimization of the ZnO–SiO2 and MgO–ZnO–SiO2 systems, Ceramics International 51(25PC), 47003–47013.",
+      "doi": "10.1016/j.ceramint.2025.07.405",
+      "url": "https://doi.org/10.1016/j.ceramint.2025.07.405",
+      "locator": "Table 2, p. 47006; Barin values for ΔfH298, S298, and crystal Cp over 298–1800 K."
+    },
+    {
+      "key": "willemite_transition_and_fusion",
+      "citation": "Zaitseva et al. (2019), Synthesis, Crystal and Thermal Properties of Solid Solution Zn2−2xCu2xSiO4 with Willemite Structure, Russian Journal of Inorganic Chemistry 64(1), 1–6.",
+      "doi": "10.1134/S0036023619010224",
+      "url": "https://sciencejournals.ru/view-article/?a=NergKhim1901022Zaitseva&j=nergkhim&n=1&v=64&y=2019",
+      "locator": "Table 1 and Fig. 4, p. 3; Zn2SiO4 α→β event at 1500°C (0.13 kJ/mol) and melting at 1512°C (106.44 kJ/mol)."
+    },
+    {
+      "key": "silica_liquid_cp",
+      "citation": "Richet, P., Bottinga, Y., and Tequi, C. (1984), Heat capacity of silicate liquids. I. Sodium, potassium, calcium, aluminum silicate liquids, Journal of the American Ceramic Society.",
+      "doi": "10.1111/j.1151-2916.1984.tb19155.x",
+      "url": "https://doi.org/10.1111/j.1151-2916.1984.tb19155.x",
+      "locator": "J. Am. Ceram. Soc. 67, C-6–C-8 (1984); measured liquid-silica heat-capacity source used for the 81.39 J mol^-1 K^-1 additive estimate at the willemite fusion anchor."
+    }
+  ],
+  "battery_smoke": {
+    "observations": 5,
+    "species": "Zn",
+    "source": "ZnO–P2O5 vaporization source, Table 2; 1300 K points.",
+    "inside_process_window_1323_2473_K": 0,
+    "unlocked_by_this_fragment": 0,
+    "reason": "The joined battery coverage has no complete composition or oxygen-fugacity inputs for these points; the points are also below the stated process window. No source values are inferred and no predicted-versus-printed pair is supportable."
+  }
+}

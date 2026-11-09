@@ -54,7 +54,7 @@ _DEFAULT_DATAPACK_PATH = (
     Path(__file__).parent / "data" / "packs" / DEFAULT_MELT_PACK_NAME
 )
 _DEFAULT_REDOX_PACK_PATH = (
-    Path(__file__).parent / "data" / "packs" / "openimcc-redox-v4.json"
+    Path(__file__).parent / "data" / "packs" / "openimcc-redox-v5.json"
 )
 _BERRY_OPTICAL_BASICITY = {
     # Berry et al. (2024, GCA 366, Table 1 and supplementary text) give the
@@ -285,6 +285,11 @@ class _LiquidState:
     J: np.ndarray
     solver_path: str
     iterations: int
+    residual_inf: float
+    residual_l2: float
+    total_displacement: float
+    continuation_stages: int
+    inner_fallback_fired: bool
     composition_redox_iterations: int = 0
 
 
@@ -367,6 +372,37 @@ def _parent_oxygen_counts(
         ],
         dtype=np.float64,
     )
+
+
+def _active_oxygen_changing_elements(
+    parent_moles: np.ndarray, redox_pack: RedoxPack
+) -> tuple[str, ...]:
+    """Return elements with an available oxygen-changing redox-pack row."""
+    parent_names = _redox_parent_names(redox_pack)
+    rows = _redox_complex_rows(redox_pack)
+    if not rows:
+        return ()
+    nu = _redox_complex_stoichiometry(parent_names, rows)
+    oxygen_delta = np.asarray(
+        [
+            float(
+                redox_pack.content["thermo_species"][str(row["complex"])]
+                ["formula_atoms"].get("O", 0.0)
+            )
+            for row in rows
+        ],
+        dtype=np.float64,
+    ) - _parent_oxygen_counts(parent_names, redox_pack) @ nu
+    active = np.all(
+        (nu <= 0.0) | (parent_moles[:, np.newaxis] > 0.0), axis=0
+    ) & (oxygen_delta != 0.0)
+    elements: list[str] = []
+    for column in np.flatnonzero(active):
+        for index in np.flatnonzero(nu[:, column] > 0.0):
+            element = str(redox_pack.parents[int(index)]["element"])
+            if element not in elements:
+                elements.append(element)
+    return tuple(elements)
 
 
 def _complex_oxygen_data(
@@ -603,21 +639,8 @@ def _inventory_parent_moles(
             )
         parent_moles[parent_index[parent_name]] += parent_amount
 
-    na = element_moles.get("Na", 0.0)
-    potassium = element_moles.get("K", 0.0)
-    fe_index = parent_index["FeO"]
-    if (na > 0.0) != (potassium > 0.0) and parent_moles[fe_index] == 0.0:
-        raise RedoxEndpointError(
-            "the supplied alkali inventory does not contain both Na and K",
-            endpoint="alkali_couple_incomplete",
-            flags=("alkali_couple_incomplete",),
-        )
     if not np.any(parent_moles > 0.0):
         raise RedoxNoLiveCoupleError("inventory has no supported liquid parents")
-    if parent_moles[fe_index] <= 0.0:
-        raise RedoxNoLiveCoupleError(
-            "a finite Fe redox state requires a positive total Fe inventory"
-        )
     return parent_moles, oxygen
 
 
@@ -737,11 +760,11 @@ def _active_inner_once(
         g,
         D,
         iterations,
-        _residual_inf,
-        _residual_l2,
-        _displacement,
+        residual_inf,
+        residual_l2,
+        total_displacement,
         solver_path,
-        _continuation_stages,
+        continuation_stages,
         inner_fallback_fired,
     ) = solve_active_warm(
         x_target,
@@ -777,6 +800,11 @@ def _active_inner_once(
         J=J,
         solver_path=solver_path,
         iterations=iterations,
+        residual_inf=float(residual_inf),
+        residual_l2=float(residual_l2),
+        total_displacement=float(total_displacement),
+        continuation_stages=int(continuation_stages),
+        inner_fallback_fired=bool(inner_fallback_fired),
     )
 
 
@@ -1296,6 +1324,31 @@ def _unmodelled_redox_couples(
     return tuple(records)
 
 
+def _unmodelled_redox_state_flags(
+    records: Sequence[Mapping[str, Any]],
+    temperature_K: float,
+    lambda_value: float | None,
+) -> tuple[str, ...]:
+    elevated = temperature_K < 1773.15 or (
+        lambda_value is not None and lambda_value >= math.log(1.0e-4)
+    )
+    flags: list[str] = []
+    for record in records:
+        element = str(record["element"])
+        for state in record["unmodelled_states"]:
+            oxidation_state = int(state)
+            state_label = (
+                f"{oxidation_state}+" if oxidation_state > 0 else str(oxidation_state)
+            )
+            flag = f"RED: {element}({state_label}) unmodelled"
+            if lambda_value is not None:
+                flag += f"; ln(fO2/bar)={lambda_value:.6g}"
+            if elevated:
+                flag += "; ELEVATED"
+            flags.append(flag)
+    return tuple(flags)
+
+
 def _oxygen_residual(
     state: _LiquidState,
     species_moles: Mapping[str, float],
@@ -1392,7 +1445,6 @@ def _response(
 ) -> _Response:
     parent_names = _redox_parent_names(redox_pack)
     fe_index = parent_names.index("FeO")
-    active_fe = int(np.flatnonzero(state.active_parent == fe_index)[0])
     shift = state.complex_lambda_shift[state.active_complex]
     oxygen_delta = state.complex_oxygen_deltas[state.active_complex]
     M = state.nu - np.outer(state.x_target, state.S - 1.0)
@@ -1417,6 +1469,20 @@ def _response(
         for delta, amount_prime in zip(oxygen_delta, d_complex_lambda)
     )
 
+    if not np.any(state.active_parent == fe_index):
+        # The imposed-fO2 oxygen response remains defined without Fe, but the
+        # metal and Fe-saturation derivatives do not.
+        oxygen_mol = _state_species(state, base_datapack, redox_pack)[2]
+        return _Response(
+            oxygen_mol=oxygen_mol,
+            oxygen_capacity=float(capacity),
+            oxygen_derivative_m=0.0,
+            lambda_sat_derivative_m=0.0,
+            y_lambda=y_lambda,
+            y_m=np.zeros_like(y_lambda),
+        )
+
+    active_fe = int(np.flatnonzero(state.active_parent == fe_index)[0])
     parent_prime = np.zeros(len(parent_names), dtype=np.float64)
     parent_prime[fe_index] = -1.0
     basis_prime = -1.0
@@ -1940,7 +2006,7 @@ def _assemble_result(
         active_fraction_by_index.get(index, 0.0)
         for index in range(len(base_datapack.reactions))
     )
-    return RedoxResult(
+    result = RedoxResult(
         temperature_K=temperature_K,
         mode=mode,
         lambda_ln_f_o2=float(lambda_value),
@@ -1989,6 +2055,7 @@ def _assemble_result(
         ),
         _pack_standard_notices=pack_standard_notices,
     )
+    return result
 
 
 def _evaluate_redox_with_packs(
@@ -2006,7 +2073,7 @@ def _evaluate_redox_with_packs(
     melt_pack_path: str | Path | None = None,
     strict_pack_standards: bool = False,
     standards_profile: str | Profile | None = None,
-) -> RedoxResult:
+) -> tuple[RedoxResult, _LiquidState]:
     """Solve an imposed- or closed-oxygen Fe liquid equilibrium.
 
     ``inventory`` contains elemental moles, with oxygen counted as mol O
@@ -2127,9 +2194,75 @@ def _evaluate_redox_with_packs(
             raise RedoxInputError(
                 "warm_start length must match the positive parent set"
             )
-    ln_k_fe = _ln_k_fe(redox_pack, temperature)
-    total_fe = float(parent_moles[fe_index])
     fallback_counter = [0]
+    total_fe = float(parent_moles[fe_index])
+    if total_fe == 0.0:
+        oxygen_redox_elements = _active_oxygen_changing_elements(
+            parent_moles, redox_pack
+        )
+        if oxygen_redox_elements and mode != "imposed":
+            names = ", ".join(oxygen_redox_elements)
+            raise RedoxInputError(
+                f"Fe-free inventory with an oxygen-changing redox reaction "
+                f"for {names} requires an imposed oxygen fugacity"
+            )
+        solve_lambda = lambda_value if mode == "imposed" else 0.0
+        if mode == "closed":
+            stoichiometric_oxygen = math.fsum(
+                float(amount) * float(oxygen_count)
+                for amount, oxygen_count in zip(
+                    parent_moles, oxygen_parent_counts
+                )
+            )
+            oxygen_residual = stoichiometric_oxygen - float(oxygen_inventory)
+            if abs(oxygen_residual) > tolerance * max(
+                abs(stoichiometric_oxygen), 1.0
+            ):
+                raise RedoxEndpointError(
+                    "closed oxygen inventory does not match parent-oxide "
+                    "stoichiometry without an oxygen-changing redox reaction",
+                    endpoint="closed_oxygen_mismatch_without_redox_couple",
+                    flags=("closed_oxygen_mismatch_without_redox_couple",),
+                    oxygen_residual_mol=oxygen_residual,
+                )
+        state = _active_inner(
+            parent_moles,
+            temperature,
+            solve_lambda,
+            base_datapack,
+            redox_pack,
+            fallback_counter=fallback_counter,
+            y_init=y_seed,
+            tol=tolerance,
+            max_iter=iterations,
+        )
+        result = _assemble_result(
+            mode=mode,
+            temperature_K=temperature,
+            lambda_value=solve_lambda,
+            lambda_sat=0.0,
+            state=state,
+            metal_moles=0.0,
+            oxygen_inventory=oxygen_inventory,
+            base_datapack=base_datapack,
+            loaded_datapack=loaded,
+            redox_pack=redox_pack,
+            oxygen_parent_counts=oxygen_parent_counts,
+            tolerance=tolerance,
+            fallback_counter=fallback_counter,
+            pack_standard_notices=standard_notices,
+        )
+        state_flags = _unmodelled_redox_state_flags(
+            result.unmodelled_redox_couples,
+            temperature,
+            solve_lambda if mode == "imposed" else None,
+        )
+        flags = (*result.flags, *state_flags)
+        if not oxygen_redox_elements:
+            flags = (*flags, "RED: no_modelled_redox_couple")
+        result = replace(result, flags=flags)
+        return result, state
+    ln_k_fe = _ln_k_fe(redox_pack, temperature)
 
     if mode == "imposed":
         state = _active_inner(
@@ -2298,7 +2431,7 @@ def _evaluate_redox_with_packs(
                 1000.0, buffered_lambda, lambda_value
             ):
                 if lambda_value >= lambda_sat - near_lambda_tolerance:
-                    return _assemble_result(
+                    result = _assemble_result(
                         mode="imposed",
                         temperature_K=temperature,
                         lambda_value=lambda_value,
@@ -2314,13 +2447,14 @@ def _evaluate_redox_with_packs(
                         fallback_counter=fallback_counter,
                         pack_standard_notices=standard_notices,
                     )
+                    return result, state
                 raise RedoxEndpointError(
                     "imposed oxygen inventory is inconsistent with Fe saturation",
                     endpoint="imposed_inventory_inconsistent",
                     flags=("imposed_inventory_inconsistent",),
                     lambda_bound=buffered_lambda,
                 )
-            return _assemble_result(
+            result = _assemble_result(
                 mode="imposed",
                 temperature_K=temperature,
                 lambda_value=lambda_value,
@@ -2336,6 +2470,7 @@ def _evaluate_redox_with_packs(
                 fallback_counter=fallback_counter,
                 pack_standard_notices=standard_notices,
             )
+            return result, buffered_state
         if buffered:
             metal_low = 0.0
             metal_high = float(np.nextafter(total_fe, 0.0))
@@ -2392,7 +2527,7 @@ def _evaluate_redox_with_packs(
                     metal_high = metal
             else:
                 raise RedoxNumericalError("imposed saturation extent did not converge")
-            return _assemble_result(
+            result = _assemble_result(
                 mode="imposed",
                 temperature_K=temperature,
                 lambda_value=lambda_value,
@@ -2408,6 +2543,7 @@ def _evaluate_redox_with_packs(
                 fallback_counter=fallback_counter,
                 pack_standard_notices=standard_notices,
             )
+            return result, buffered_state
         if lambda_value < lambda_sat - near_lambda_tolerance:
             raise RedoxEndpointError(
                 "imposed oxygen fugacity is below the pure-Fe saturation bound, "
@@ -2416,7 +2552,7 @@ def _evaluate_redox_with_packs(
                 flags=("lambda_below_dissolved_fe_saturation_range",),
                 lambda_bound=lambda_sat,
             )
-        return _assemble_result(
+        result = _assemble_result(
             mode="imposed",
             temperature_K=temperature,
             lambda_value=lambda_value,
@@ -2432,6 +2568,7 @@ def _evaluate_redox_with_packs(
             fallback_counter=fallback_counter,
             pack_standard_notices=standard_notices,
         )
+        return result, state
 
     if oxygen_inventory is None:
         raise RedoxNumericalError(
@@ -2531,7 +2668,7 @@ def _evaluate_redox_with_packs(
                 tol=tolerance,
                 max_iter=iterations,
             )
-            return _assemble_result(
+            result = _assemble_result(
                 mode="closed",
                 temperature_K=temperature,
                 lambda_value=0.0,
@@ -2547,6 +2684,7 @@ def _evaluate_redox_with_packs(
                 fallback_counter=fallback_counter,
                 pack_standard_notices=standard_notices,
             )
+            return result, oxidised_state
 
     lambda_sat_zero, sat_state = _saturation_state(
         parent_moles,
@@ -2650,7 +2788,7 @@ def _evaluate_redox_with_packs(
                         state, state_species, redox_pack, oxygen_inventory
                     )
                 if abs(ledger_residual) <= ledger_tolerance:
-                    return _assemble_result(
+                    result = _assemble_result(
                         mode="closed",
                         temperature_K=temperature,
                         lambda_value=lam,
@@ -2666,6 +2804,7 @@ def _evaluate_redox_with_packs(
                         fallback_counter=fallback_counter,
                         pack_standard_notices=standard_notices,
                     )
+                    return result, state
                 response = _response(state, base_datapack, redox_pack)
                 candidate = (
                     lam - ledger_residual / response.oxygen_capacity
@@ -2775,7 +2914,7 @@ def _evaluate_redox_with_packs(
             math.ulp(max(abs(oxygen_inventory), 1.0)),
         )
         if abs(residual) <= max(oxygen_tolerance, representable_tolerance):
-            return _assemble_result(
+            result = _assemble_result(
                 mode="closed",
                 temperature_K=temperature,
                 lambda_value=lam,
@@ -2791,6 +2930,7 @@ def _evaluate_redox_with_packs(
                 fallback_counter=fallback_counter,
                 pack_standard_notices=standard_notices,
             )
+            return result, state
         if residual > 0.0:
             metal_low = metal
             residual_low = residual
@@ -2830,7 +2970,7 @@ def evaluate_redox(
     missing declarations before solving; unresolved references remain notices.
     """
     if profile is None:
-        result = _evaluate_redox_with_packs(
+        result, _state = _evaluate_redox_with_packs(
             inventory,
             T_K,
             mode,
@@ -2870,7 +3010,7 @@ def evaluate_redox(
             raise _unreadable_pack(
                 selected.redox_pack_path, exc, description="redox datapack"
             ) from exc
-        result = _evaluate_redox_with_packs(
+        result, _state = _evaluate_redox_with_packs(
             inventory,
             T_K,
             mode,

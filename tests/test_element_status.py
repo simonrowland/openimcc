@@ -675,6 +675,7 @@ def _ion_bound_maxima() -> dict[str, dict[str, object]]:
     # These status values are pinned to the published source run, including its
     # JANAF Fe-019 FeO standard. Keep that explicit when the package default moves.
     pack = load_gas_datapack(
+        gas_path=ROOT / "src/openimcc/data/gas/gas-shomate.csv",
         oxide_path=ROOT / "src/openimcc/data/gas/condensate-feo-janaf-legacy.csv"
     )
     # The screen is also pinned to the melt identity used by its source values.
@@ -1466,6 +1467,7 @@ def _c4_rows_cover_domain(
                         "fitted", "generated_constant_cp_extrapolation_fit",
                         "integrated_printed_Cp_then_fitted",
                         "constructed_from_equilibrium_and_condensed_function_with_held_cp_continuation",
+                        "published_gibbs_function", "molecular_constants",
                     }
                     or not source.get("source", {}).get("citation")
                 ):

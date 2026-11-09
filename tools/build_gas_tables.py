@@ -1849,6 +1849,99 @@ def build_oxide_molecule_candidate(gas_input: Path, gas_output: Path) -> int:
     return len(generated)
 
 
+def build_default_combination_gas(
+    base_gas_input: Path,
+    standard_state_gas_input: Path,
+    oxide_molecule_gas_input: Path,
+    gas_output: Path,
+) -> dict[str, int]:
+    """Combine the 1-bar corrections and the two source-based molecule rows.
+
+    The standard-state candidate is the base table with only 54 Shomate G
+    values changed. The oxide-molecule candidate retains the base rows and
+    appends seven intervals for Si2O2(g) and AlSiO(g). Those molecules already
+    use 1 bar, so their rows are copied without another correction.
+    """
+
+    def read_rows(path: Path) -> list[dict[str, str]]:
+        with path.open(encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            if tuple(reader.fieldnames or ()) != RUNTIME_COLUMNS:
+                raise ValueError(f"{path} has an unexpected runtime gas-table header")
+            return list(reader)
+
+    def keyed(rows: list[dict[str, str]], path: Path) -> dict[tuple[str, str], dict[str, str]]:
+        result = {(row["species_name"], row["T_interval"]): row for row in rows}
+        if len(result) != len(rows):
+            raise ValueError(f"{path} has duplicate species intervals")
+        return result
+
+    base_rows = read_rows(base_gas_input)
+    standard_rows = read_rows(standard_state_gas_input)
+    molecule_rows = read_rows(oxide_molecule_gas_input)
+    base_by_key = keyed(base_rows, base_gas_input)
+    standard_by_key = keyed(standard_rows, standard_state_gas_input)
+    molecule_by_key = keyed(molecule_rows, oxide_molecule_gas_input)
+    if base_by_key.keys() != standard_by_key.keys():
+        raise ValueError("standard-state candidate changed the base gas row set")
+    if not base_by_key.keys() <= molecule_by_key.keys():
+        raise ValueError("oxide-molecule candidate removed a base gas row")
+
+    # Premise: changing a 1 atm gas standard to 1 bar changes S° by
+    # R ln(1.01325), so the Shomate entropy constant G changes by that amount
+    # while every other coefficient stays fixed. G is in J/(mol K); the
+    # correction is also J/(mol K). The audited 54 rows cover two intervals
+    # for each of 27 species, a direct check against accidental double edits.
+    expected_entropy_delta = R_J_MOL_K * ATM_TO_BAR_S_OVER_R
+    corrected_keys = []
+    for key, base in base_by_key.items():
+        standard = standard_by_key[key]
+        changed = [column for column in RUNTIME_COLUMNS if base[column] != standard[column]]
+        if not changed:
+            continue
+        if changed != ["G"] or not math.isclose(
+            float(standard["G"]) - float(base["G"]),
+            expected_entropy_delta,
+            rel_tol=0.0,
+            abs_tol=1.0e-12,
+        ):
+            raise ValueError(f"unexpected standard-state change in {key!r}")
+        corrected_keys.append(key)
+    corrected_species = {species for species, _interval in corrected_keys}
+    if len(corrected_keys) != 54 or len(corrected_species) != 27:
+        raise ValueError(
+            "standard-state candidate must correct 54 rows for 27 species; "
+            f"found {len(corrected_keys)} rows for {len(corrected_species)} species"
+        )
+
+    added_keys = molecule_by_key.keys() - base_by_key.keys()
+    added_species = {species for species, _interval in added_keys}
+    if added_species != {"Si2O2(g)", "AlSiO(g)"} or len(added_keys) != 7:
+        raise ValueError("oxide-molecule candidate must add seven Si2O2/AlSiO intervals")
+    if molecule_by_key.keys() != base_by_key.keys() | added_keys:
+        raise ValueError("oxide-molecule candidate has an unexpected row set")
+    for key, base in base_by_key.items():
+        if molecule_by_key[key] != base:
+            raise ValueError(f"oxide-molecule candidate changed base row {key!r}")
+
+    # Combine already-built source candidates: corrected base rows first,
+    # then the molecule intervals exactly as generated from their 1-bar sources.
+    output_rows = standard_rows + [
+        row for row in molecule_rows if (row["species_name"], row["T_interval"]) in added_keys
+    ]
+    gas_output.parent.mkdir(parents=True, exist_ok=True)
+    with gas_output.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=RUNTIME_COLUMNS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(output_rows)
+    return {
+        "base_rows": len(base_rows),
+        "corrected_rows": len(corrected_keys),
+        "corrected_species": len(corrected_species),
+        "added_rows": len(added_keys),
+    }
+
+
 def _shomate_source_fields(fit: dict[str, Any]) -> dict[str, Any]:
     return {
         "_source_rows": fit["_source_rows"],
@@ -9256,6 +9349,16 @@ def main() -> None:
         default=repository / "src/openimcc/data/gas/gas-shomate-oxide-molecule-candidate.csv",
     )
     parser.add_argument(
+        "--default-combination",
+        action="store_true",
+        help="combine the 1 bar correction and source-based oxide-molecule rows",
+    )
+    parser.add_argument(
+        "--default-combination-output",
+        type=Path,
+        default=repository / "src/openimcc/data/gas/gas-shomate-default-v1.csv",
+    )
+    parser.add_argument(
         "--high-temperature-gas-output", type=Path,
         default=repository / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv",
     )
@@ -9276,6 +9379,20 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    if args.default_combination:
+        counts = build_default_combination_gas(
+            packaged_gas,
+            repository / "src/openimcc/data/gas/gas-shomate-standard-state-candidate.csv",
+            repository / "src/openimcc/data/gas/gas-shomate-oxide-molecule-candidate.csv",
+            args.default_combination_output,
+        )
+        print(
+            f"default gas combination: {counts['base_rows']} base rows, "
+            f"{counts['corrected_rows']} corrected rows across "
+            f"{counts['corrected_species']} species, "
+            f"{counts['added_rows']} oxide-molecule rows"
+        )
+        return
     if args.standard_state_candidate:
         counts = build_standard_state_candidate_tables(
             repository / "src/openimcc/data/gas/gas-shomate.csv",

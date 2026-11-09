@@ -24,6 +24,8 @@ GAS_DIR = ROOT / "src/openimcc/data/gas"
 BASE_GAS = GAS_DIR / "gas-shomate.csv"
 BASE_OXIDE = GAS_DIR / "condensate.csv"
 CANDIDATE_GAS = GAS_DIR / "gas-shomate-oxide-molecule-candidate.csv"
+STANDARD_STATE_GAS = GAS_DIR / "gas-shomate-standard-state-candidate.csv"
+DEFAULT_GAS = GAS_DIR / "gas-shomate-default-v1.csv"
 PROVENANCE = GAS_DIR / "PROVENANCE.yaml"
 
 
@@ -51,6 +53,30 @@ def _numeric_gas_row(row: dict[str, str]) -> dict[str, object]:
     }
 
 
+def test_provenance_file_digests_match_packaged_tables() -> None:
+    provenance = yaml.safe_load(PROVENANCE.read_text(encoding="utf-8"))
+    file_digests: list[tuple[str, str]] = []
+
+    def collect(value: object) -> None:
+        if isinstance(value, dict):
+            filename = value.get("file")
+            digest = value.get("sha256")
+            if isinstance(filename, str) and isinstance(digest, str):
+                file_digests.append((filename, digest))
+            for nested in value.values():
+                collect(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                collect(nested)
+
+    collect(provenance)
+    assert file_digests
+    for filename, expected in file_digests:
+        path = GAS_DIR / filename
+        assert path.is_file(), filename
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected, filename
+
+
 def test_candidate_builder_is_reproducible_and_keeps_default_bytes(
     tmp_path: Path,
 ) -> None:
@@ -58,6 +84,13 @@ def test_candidate_builder_is_reproducible_and_keeps_default_bytes(
     assert build_gas_tables.build_oxide_molecule_candidate(BASE_GAS, rebuilt) == 7
     assert rebuilt.read_bytes() == CANDIDATE_GAS.read_bytes()
     assert CANDIDATE_GAS.read_bytes().startswith(BASE_GAS.read_bytes())
+    # The default combination has its own raw-byte pins after promotion.
+    assert hashlib.sha256(DEFAULT_GAS.read_bytes()).hexdigest() == (
+        "7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36"
+    )
+    assert hashlib.sha256((GAS_DIR / "condensate-default-v1.csv").read_bytes()).hexdigest() == (
+        "1913f0c5d48b24f61576f75d4ae845f4ddf7943d40d517f62ce8dc1e9af5018b"
+    )
 
     assert hashlib.sha256(BASE_GAS.read_bytes()).hexdigest() == (
         "e01c363ac6bb526b5e8ee6df300963652e0771585e9348e6456afef5cacb8058"
@@ -66,11 +99,13 @@ def test_candidate_builder_is_reproducible_and_keeps_default_bytes(
         "1b9149eb9d53ffd7d96872b25b27144bca902a71b963fcec9b6bf9cec37127a0"
     )
     default_pack = load_gas_datapack()
-    explicit_default = load_gas_datapack(
+    historical_default = load_gas_datapack(
         gas_path=BASE_GAS, oxide_path=BASE_OXIDE
     )
-    assert default_pack.gas_table_digest == explicit_default.gas_table_digest
     assert default_pack.gas_table_digest == (
+        "4d069a8951cd11e0d2edb37420e3aa04e4927c51c6eee00bbc53368b20d6c492"
+    )
+    assert historical_default.gas_table_digest == (
         "2efbe131d82a95725f00a725b7ab06ffbad004e223d4f1ff556adbf2153bfc71"
     )
     provenance = yaml.safe_load(PROVENANCE.read_text(encoding="utf-8"))
@@ -81,6 +116,26 @@ def test_candidate_builder_is_reproducible_and_keeps_default_bytes(
     assert candidate["sha256"] == hashlib.sha256(
         CANDIDATE_GAS.read_bytes()
     ).hexdigest()
+
+
+def test_default_combination_builder_applies_only_the_intended_gas_changes(
+    tmp_path: Path,
+) -> None:
+    rebuilt = tmp_path / DEFAULT_GAS.name
+    counts = build_gas_tables.build_default_combination_gas(
+        BASE_GAS, STANDARD_STATE_GAS, CANDIDATE_GAS, rebuilt
+    )
+
+    assert counts == {
+        "base_rows": 678,
+        "corrected_rows": 54,
+        "corrected_species": 27,
+        "added_rows": 7,
+    }
+    assert rebuilt.read_bytes() == DEFAULT_GAS.read_bytes()
+    assert DEFAULT_GAS.read_bytes() == CANDIDATE_GAS.read_bytes().replace(
+        BASE_GAS.read_bytes(), STANDARD_STATE_GAS.read_bytes(), 1
+    )
 
 
 def test_published_functions_reproduce_printed_source_anchors() -> None:
@@ -167,21 +222,27 @@ def test_published_functions_reproduce_printed_source_anchors() -> None:
         reaction_regression("AlSiO", temperature, mullite, ("Al", "SiO"))
 
 
-def test_opt_in_table_selects_both_channels_and_flags_alsio_extrapolation() -> None:
+def test_default_table_selects_both_channels_and_flags_alsio_extrapolation() -> None:
     default_pack = load_gas_datapack()
     candidate_pack = load_gas_datapack(
         gas_path=CANDIDATE_GAS, oxide_path=BASE_OXIDE
     )
+    historical_pack = load_gas_datapack(gas_path=BASE_GAS, oxide_path=BASE_OXIDE)
     parents = ("SiO2", "Al2O3")
     default_channels, default_omitted = default_gas_channels(parents, default_pack)
     candidate_channels, _candidate_omitted = default_gas_channels(
         parents, candidate_pack
     )
+    historical_channels, _historical_omitted = default_gas_channels(
+        parents, historical_pack
+    )
     default_names = {name for name, _reaction in default_channels}
     candidate_names = {name for name, _reaction in candidate_channels}
-    assert not {"Si2O2", "AlSiO"} & default_names
+    historical_names = {name for name, _reaction in historical_channels}
+    assert {"Si2O2", "AlSiO"} <= default_names
     assert not {"Si2O2", "AlSiO"} & set(default_omitted)
     assert {"Si2O2", "AlSiO"} <= candidate_names
+    assert not {"Si2O2", "AlSiO"} & historical_names
 
     metadata = gas_channel_metadata(
         {"Al2O3": 0.6, "SiO2": 0.4}, 1800.0, candidate_pack

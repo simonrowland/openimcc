@@ -997,7 +997,7 @@ _OXIDE_PROVENANCE_AUTHORITY = {
     "CaO": "janaf_fitted",
     "Al2O3": "janaf_fitted",
     "SiO2": "janaf_fitted",
-    "SiO2(cr)": "lam1987_transcribed",
+    "SiO2(cr)": "janaf_fitted",
     "Na2O": "janaf_fitted",
     "K2O": "estimated_systematic",
     "FeO": "primary_measurement_reanchored",
@@ -1129,6 +1129,7 @@ _LAM1987_SOURCE_TABLE_IDS = {
     "CaO": "LH87 Table 2",
     "Al2O3": "LH87 Table 2 / Table 3",
     "SiO2": "LH87 Table 2",
+    "SiO2(cr)": "LH87 Table 2",
 }
 _PROVENANCE_AUTHORITY_RANK = {
     "secondary_transcription_unverified_primary": 0,
@@ -1489,11 +1490,12 @@ ELEMENT_STATUS: dict[str, dict[str, object]] = {   'O': {   'status': 'input (fO
                                   'upstream_sha256': {   'Ca-007': 'ddd7d08df4aaf34beeaead89af83e7281f850eb453e859483f16520d61e98724',
                                                          'D-020': 'c9be269f34eb1a7ffd2c599a8540c44ba002cd5602db4efdab94bb27bd8e1dfd'},
                                   'user_agent': 'openimcc-janaf-vendor/1.0'}},
-    'Al': {   'status': 'complete',
-              'criteria': {'C1': True, 'C2': True, 'C3': True, 'C4': True},
+    'Al': {   'status': 'gas-partial',
+              'criteria': {'C1': True, 'C2': True, 'C3': True, 'C4': False},
               'validation': 'unvalidated',
               'reason': 'The JANAF Al2O3(l) parent covers 1200-3000 K with a labelled continuation '
-                        'below 2500 K; Al2(g) now covers the 1200-1500 K interval; joint C3 '
+                        'below 2500 K; Al2(g) now covers the 1200-1500 K interval; AlSiO(g) '
+                        'has source-based coverage through 2200 K and is flagged when extrapolated; joint C3 '
                         'closure-screen maximum 4.273e-06 at 2800 K and fO2=1e-4 within the '
                         '<=1-bar neutral-pressure domain; unmodeled positive molecular ions and '
                         'thermal electrons from walls or other sources remain outside the '

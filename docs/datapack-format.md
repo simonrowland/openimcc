@@ -15,7 +15,7 @@ the immutable pack bytes:
 
 | Role | Meaning | Example |
 |---|---|---|
-| `default` | Pack loaded when no pack or profile argument is given. | `imcc-sf04-d066-v4.json`; `openimcc-redox-v4.json` |
+| `default` | Pack loaded when no pack or profile argument is given. | `imcc-sf04-d066-v4.json`; `openimcc-redox-v5.json` |
 | `opt-in` | Current candidate generation available by explicit selection. | Current candidate packs are listed in the manifest by family. |
 | `historical` | Superseded generation whose `superseded_by` names its successor. | Earlier D066 and redox versions. |
 | `reproduction` | Pack retained to reproduce a published record or specific experiment. | `imcc-sf04-d066-v1-kcaalsi2o7.json`; `imcc-sf04-v1.0.2.json` |
@@ -24,8 +24,9 @@ The KCa sensitivity pack is marked `reproduction`: D066 v5 disables its
 KCaAlSi2O7 row, so that experiment cannot be reproduced through v5 as a
 successor. `profile="published"` selects `imcc-sf04-v1.0.2.json`, which is
 also marked `reproduction`. Candidate entries use `family` to group
-generations; each family has one current `opt-in`, while historical entries
-point to a shipped successor with `superseded_by`. The manifest is the source
+generations; each family has at most one current `opt-in` plus its selected
+`default`, while historical entries point to a shipped successor with
+`superseded_by`. The manifest is the source
 for current candidate and default listings. These fields describe packs and
 do not select or change runtime loading.
 `superseded_by` names the pack that replaces it in recommended use; it need
@@ -437,8 +438,9 @@ ext-v1 and ext-v3 fail the frozen canonical hash, while ext-v2 fails the fixed
 parent-basis check because it includes CoO. Git history retains them as
 research records. The current default melt pack is
 `imcc-sf04-d066-v4.json`; D066 v1–v5 remain loadable by version or path. The
-redox default is `openimcc-redox-v4.json`, with redox v1–v3 available as
-loadable history. The complete shipped pack list is recorded in
+redox default is `openimcc-redox-v5.json`; the Cr-only candidate v4, redox v4,
+and redox v1–v3 remain loadable historical packs. The complete shipped pack
+list is recorded in
 `src/openimcc/data/packs/MANIFEST.json`.
 
 The nested screen and gas-inventory fields are descriptive only; the loader
@@ -786,10 +788,11 @@ predicting whether the current loader accepts a pack.
 
 ## Redox thermochemistry component
 
-`openimcc-redox-v4.json` (`1.7.0`) is the default, separate, versioned
-thermochemistry component. The previous default, `openimcc-redox-v3.json`
-(`1.6.0`), and `openimcc-redox-v1.json` and `openimcc-redox-v2.json` remain
-available as frozen historical versions.
+`openimcc-redox-v5.json` (`1.8.0-cr-candidate`) is the default, separate,
+versioned thermochemistry component. It retains the Cr correction and adds
+Sr, Li, Zn, and Yb associate rows. The previous Cr-only default,
+`openimcc-redox-cr-candidate-v4.json` (`1.7.0-cr-candidate`), redox v4
+(`1.7.0`), and redox v1–v3 remain available as frozen historical versions.
 The legacy `load_datapack()` path does not load it and the legacy eight-parent
 pack identity remains unchanged. `openimcc.redox_pack.load_redox_pack()` reads
 this schema and validates the N-parent registry, row balances, reference-state
@@ -803,14 +806,15 @@ digests answer different questions. The canonical digest is a stable component
 identity independent of JSON whitespace, while the manifest catches any byte
 change.
 
-The opt-in Cr, Ti, and combined Cr+Ti redox candidate packs keep anchor datasets
+The Cr-only default and opt-in Ti and combined Cr+Ti packs keep anchor datasets
 separate from held-out checks in `dataset_provenance`. Their current files and
 the earlier frozen versions are identified by `role`, `family`, and
 `superseded_by` in `MANIFEST.json`; the same registry identifies the current
 FeO-liquid and other candidate families. Candidate-only composition-conditioned
 rows have no composition-independent Gibbs function; their effective K values
-are solved with the melt rows through a fixed point. The default redox pack
-does not accept candidate-only fields.
+are solved with the melt rows through a fixed point. The Cr-only default
+retains its 1 bar, 1673–1773 K evidence-domain flags; its Cr₂O₃(l) parent is a
+formula basis and is not Gibbs-evaluated by the redox pack.
 
 Top-level redox fields:
 

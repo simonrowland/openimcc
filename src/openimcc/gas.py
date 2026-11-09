@@ -38,7 +38,11 @@ from openimcc._constants import (
     ATOMIC_MASS_G_MOL as _ATOMIC_MASS_G_MOL,
     R_PUBLISHED_GAS_J_MOL_K as R_J_MOL_K,
 )
-from openimcc.kernel import ImccRefusal, _canonical_published_serialization
+from openimcc.kernel import (
+    ImccComponentOutsideDomainError,
+    ImccRefusal,
+    _canonical_published_serialization,
+)
 from openimcc.liquid_reference import (
     CertificationStatus,
     LiquidReferenceAuthority,
@@ -52,6 +56,15 @@ from openimcc.standards import (
     _cached_check_pack_standards,
     _pack_standard_notices,
     _raise_for_strict_pack_standards,
+)
+from openimcc.trace_components import (
+    TraceActivityEstimate,
+    TraceActivityFlag,
+    TraceGasChannelRefusal,
+    TraceMajorBiasFlag,
+    resolve_trace_activity,
+    trace_component_rule,
+    trace_fractions_from_wt,
 )
 from openimcc.gas_data import (
     ELEMENT_STATUS,
@@ -345,8 +358,8 @@ _VAPOROCK_ENV_VAR = "OPENIMCC_VAPOROCK_ROOT"
 _GAS_TABLE_RELPATH = Path("src") / "vaporock" / "data" / "JANAF-vapor-data-full.csv"
 _CONDENSATE_TABLE_RELPATH = Path("data") / "condensate-thermo-data.csv"
 _PACKAGED_DATA_PACKAGE = "openimcc.data.gas"
-_PACKAGED_GAS_NAME = "gas-shomate.csv"
-_PACKAGED_CONDENSATE_NAME = "condensate.csv"
+_PACKAGED_GAS_NAME = "gas-shomate-default-v1.csv"
+_PACKAGED_CONDENSATE_NAME = "condensate-default-v1.csv"
 _SOURCE_VALIDITY_TEXT_COLUMNS = (
     "validity_kind", "continuation_kind", "cp_extension", "construction_method",
     "table_id", "source_label", "source_liquid_marker", "supercooled_continuation",
@@ -559,14 +572,25 @@ class ImccGasResult(MappingABC[str, float]):
     @property
     def notices(
         self,
-    ) -> tuple[PGasPressureNotice | LiquidReferenceNotice | PackStandardNotice, ...]:
-        """Typed notices from per-channel domain flags and liquid-reference status."""
-        return (
-            *_gas_result_notices(
+    ) -> tuple[object, ...]:
+        """Typed notices from channel flags, omissions, and liquid references."""
+        notices: list[object] = list(
+            _gas_result_notices(
                 self._values, self.domain_flags, self.liquid_reference_status
-            ),
-            *self._pack_standard_notices,
+            )
         )
+        for flag in (*self.domain_flags.values(), *self.omitted_channels.values()):
+            if isinstance(flag, TraceActivityFlag):
+                notices.append(flag)
+                notices.extend(flag.major_flags)
+            elif isinstance(flag, TraceMajorBiasFlag):
+                notices.append(flag)
+                notices.extend(flag.additional_major_flags)
+            elif isinstance(flag, TraceGasChannelRefusal):
+                notices.append(flag)
+                notices.extend(flag.major_flags)
+        notices.extend(self._pack_standard_notices)
+        return tuple(notices)
 
 
 @dataclass(frozen=True)
@@ -3145,8 +3169,158 @@ def evaluate_gas(
         )
         act = {name: float(arr[i]) for i, name in enumerate(parent_oxides)}
 
+    trace_fractions: Mapping[str, float] = {}
+    trace_activity_estimates: dict[str, TraceActivityEstimate] = {}
+    major_bias_flags: dict[str, TraceMajorBiasFlag] = {}
+    if composition_wt_pct is not None:
+        from openimcc.model import evaluate as evaluate_melt
+
+        melt_composition = {
+            name: amount
+            for name, amount in composition_wt_pct.items()
+            if name in IMCC_PARENT_OXIDES or trace_component_rule(name) is not None
+        }
+        composition_moles, trace_fractions = trace_fractions_from_wt(
+            melt_composition
+        )
+        if trace_fractions:
+            major_total = math.fsum(
+                composition_moles.get(name, 0.0) for name in IMCC_PARENT_OXIDES
+            )
+            if major_total > 0.0:
+                melt_result = evaluate_melt(
+                    melt_composition,
+                    T,
+                    profile=profile,
+                    basis_type="wt",
+                    allow_extrapolation=True,
+                    allow_out_of_envelope=True,
+                )
+                weighted_trace = math.fsum(
+                    (1.0 + trace_component_rule(oxide).nu) * x_trace
+                    for oxide, x_trace in trace_fractions.items()
+                    if not trace_component_rule(oxide).full_component
+                )
+                if weighted_trace > 0.08:
+                    raise ImccComponentOutsideDomainError(
+                        "trace-component bound is outside its finite input range"
+                    )
+                for index, major in enumerate(IMCC_PARENT_OXIDES):
+                    if composition_moles.get(major, 0.0) <= 0.0:
+                        continue
+                    x_free = float(melt_result.parent_x_star[index])
+                    bound = (
+                        math.inf
+                        if x_free <= 0.0
+                        else math.log10(1.0 + weighted_trace / x_free)
+                    )
+                    major_bias_flags[major] = TraceMajorBiasFlag(
+                        major, x_free, bound, bound <= 0.01
+                    )
+            for oxide, x_trace in trace_fractions.items():
+                trace_activity_estimates[oxide] = resolve_trace_activity(
+                    oxide,
+                    x_trace,
+                    composition_moles,
+                    T,
+                    fO2_bar=p_O2,
+                )
+
+            carrier_estimates: dict[str, list[TraceActivityEstimate]] = {}
+            for oxide, estimate in trace_activity_estimates.items():
+                carrier = trace_component_rule(oxide).gas_parent_oxide
+                if carrier is not None:
+                    carrier_estimates.setdefault(carrier, []).append(estimate)
+            allowed_trace_parents = (
+                set(parent_oxides)
+                if parent_oxides_explicit
+                else set(_REACTION_PARENT_OXIDES)
+            )
+            for carrier, estimates in carrier_estimates.items():
+                if carrier not in allowed_trace_parents:
+                    continue
+                if carrier not in act:
+                    act[carrier] = math.fsum(item.activity for item in estimates)
+
     if reactions is None or (include_ions and requested_channels is not None):
         reactions, omitted_channels = _default_reactions(tuple(act), datapack, T)
+
+    omitted_channels = dict(omitted_channels)
+
+    trace_blockers = tuple(
+        oxide
+        for oxide, x_trace in trace_fractions.items()
+        if oxide in {"Cl", "F", "S", "SO3"}
+        and x_trace > 0.001 * (1.0 + 1.0e-12)
+    )
+
+    def channel_elements(species: str) -> set[str]:
+        formula = re.sub(r"\((?:g|l|s)\)$", "", species)
+        formula = re.sub(r"[+-]+$", "", formula)
+        return set(re.findall(r"[A-Z][a-z]?", formula))
+
+    def gas_trace_refusal(
+        species: str,
+        reaction: tuple[str, float, float] | None,
+    ) -> TraceGasChannelRefusal | None:
+        elements = channel_elements(species)
+        if trace_blockers and elements & {"Na", "K"}:
+            return TraceGasChannelRefusal(
+                species,
+                "Na/K vapour channels are unavailable with halogen or sulfur traces above 0.1 mol%",
+                triggers=trace_blockers,
+            )
+        if trace_blockers and "S" in elements:
+            return TraceGasChannelRefusal(
+                species,
+                "sulfur-bearing channels are unavailable with halogen or sulfur traces above 0.1 mol%",
+                triggers=trace_blockers,
+            )
+        if reaction is not None:
+            oxide, _, _ = reaction
+            parents = {oxide, _side_parent(species)}
+            mixed = _MIXED_GAS_REACTION_SIDE_PARENTS.get(species)
+            if mixed is not None:
+                parents.add(mixed[0])
+            refused = tuple(
+                major_bias_flags[parent]
+                for parent in parents
+                if parent in major_bias_flags
+                and not major_bias_flags[parent].scoreable
+            )
+            if refused:
+                return TraceGasChannelRefusal(
+                    species,
+                    "major gas row exceeds the 0.01 dex trace bias limit",
+                    major_flags=refused,
+                )
+        return None
+
+    if requested_channels is not None:
+        selected_refusal = next(
+            (
+                refusal
+                for species in requested_channels
+                if (
+                    refusal := gas_trace_refusal(
+                        species,
+                        _GAS_REACTIONS.get(species),
+                    )
+                ) is not None
+            ),
+            None,
+        )
+        if selected_refusal is not None:
+            raise ImccComponentOutsideDomainError(str(selected_refusal))
+    if requested_channels is None or include_ions:
+        retained_reactions = []
+        for gas_name, reaction in reactions:
+            refusal = gas_trace_refusal(gas_name, reaction)
+            if refusal is None:
+                retained_reactions.append((gas_name, reaction))
+            else:
+                omitted_channels[gas_name] = refusal
+        reactions = tuple(retained_reactions)
 
     for gas_name, (oxide, _n_gas, _n_O2) in reactions:
         if not oxide:
@@ -3502,7 +3676,39 @@ def evaluate_gas(
                 gas_name,
             )
         result[gas_name] = float(p_gas)
-        domain_flags[gas_name] = "; ".join(flags) or None
+        elements = channel_elements(gas_name) - {"O"}
+        channel_estimates = tuple(
+            estimate
+            for oxide_name, estimate in trace_activity_estimates.items()
+            if elements & set(re.findall(r"[A-Z][a-z]?", oxide_name)) - {"O"}
+        )
+        channel_major_flags: list[TraceMajorBiasFlag] = []
+        major_parents = {oxide, _side_parent(gas_name)}
+        mixed_parent = _MIXED_GAS_REACTION_SIDE_PARENTS.get(gas_name)
+        if mixed_parent is not None:
+            major_parents.add(mixed_parent[0])
+        for major_parent in major_parents:
+            major_flag = major_bias_flags.get(major_parent)
+            if major_flag is not None:
+                channel_major_flags.append(major_flag)
+        if channel_estimates:
+            domain_flags[gas_name] = TraceActivityFlag(
+                channel_estimates,
+                context="gas",
+                prior_flags=tuple(flags),
+                major_flags=tuple(channel_major_flags),
+            )
+        elif channel_major_flags:
+            domain_flags[gas_name] = TraceMajorBiasFlag(
+                channel_major_flags[0].major_oxide,
+                channel_major_flags[0].x_free,
+                channel_major_flags[0].bias_bound_dex,
+                channel_major_flags[0].scoreable,
+                prior_flags=tuple(flags),
+                additional_major_flags=tuple(channel_major_flags[1:]),
+            )
+        else:
+            domain_flags[gas_name] = "; ".join(flags) or None
         provenance_class[gas_name] = _channel_provenance(
             gas_name, oxide_row, datapack, pressure_rows
         )

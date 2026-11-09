@@ -698,7 +698,9 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
         if current is None or row["T_range_K"][1] > current["T_range_K"][1]:
             oxide_rows[row["species_name"]] = row
     public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES)
-    assert set(gas_rows) == {f"{name}(g)" for name in public_gas_channels}
+    assert set(gas_rows) == {
+        f"{name}(g)" for name in public_gas_channels
+    } | {"Si2O2(g)", "AlSiO(g)"}
     assert set(low_gas_rows) == (
         build_gas_tables.LOW_T_GAS_SPECIES
         | {"Na2O", "K2O"}
@@ -722,6 +724,7 @@ def test_vendored_source_hashes_and_provenance_are_row_complete() -> None:
             "HCl", "HF", "NaCl", "(NaCl)2", "KCl", "(KCl)2",
             "NaF", "(NaF)2", "KF", "(KF)2",
         }
+        | {"Si2O2", "AlSiO"}
     )
     assert len(oxide_rows) == 78
 
@@ -1139,7 +1142,8 @@ def test_lh87_transcription_matches_packaged_rows_and_has_a_valid_hash() -> None
         row for row in gas_provenance["rows"]
         if row.get("species_name") == "SiO2(cr)"
     )
-    assert silica_row["source"]["transcription"] == "data-src/lh87/lh87.yaml"
+    assert silica_row["source_table_id"] == "O-035"
+    assert silica_row["source_path"] == "data-src/janaf/O-035.yaml"
 
 
 def test_janaf_gas_provenance_hashes_source_files_and_preserves_upstream_hashes() -> None:
@@ -1169,8 +1173,8 @@ def test_shipped_thermochemical_rows_have_unique_exact_provenance_joins() -> Non
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     records = provenance["rows"]
     shipped_tables = {
-        "gas-shomate.csv": "gas",
-        "condensate.csv": "condensate",
+        "gas-shomate-default-v1.csv": "gas",
+        "condensate-default-v1.csv": "condensate",
         "condensate-sio2-na2o-janaf-legacy.csv": "condensate",
     }
     joined = 0
@@ -1195,11 +1199,14 @@ def test_shipped_thermochemical_rows_have_unique_exact_provenance_joins() -> Non
                         or csv_row["species_name"] not in {"SiO2(l)", "Na2O(l)"}
                         or record.get("table_id") == csv_row.get("table_id")
                     )
-                    and (
-                        record.get("runtime_ref")
-                        or record.get("table_id")
-                        or record.get("source_table_id")
-                    ) == csv_row["Ref"]
+                    and bool(
+                        {csv_row["Ref"], csv_row.get("table_id")}
+                        & {
+                            record.get("runtime_ref"),
+                            record.get("table_id"),
+                            record.get("source_table_id"),
+                        }
+                    )
                     and tuple(map(float, record["T_range_K"])) == interval
                 ]
                 assert len(matches) == 1, (
@@ -1230,7 +1237,7 @@ def test_shipped_thermochemical_rows_have_unique_exact_provenance_joins() -> Non
                         runtime_cp,
                     )
                 joined += 1
-    assert joined == 946
+    assert joined == 953
 
 
 def test_measured_liquid_provenance_and_feo_transcription_hashes() -> None:
@@ -1554,14 +1561,16 @@ def test_trace_rows_have_complete_source_hashes_and_fit_intervals() -> None:
             ).hexdigest()
 
 
-def test_trace_gas_fits_match_every_declared_source_node(packaged_gas_pack) -> None:
+def test_trace_gas_fits_match_every_declared_source_node(
+    legacy_packaged_gas_pack,
+) -> None:
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     rows = {
         (row["species_name"], row.get("T_interval", 1)): row
         for row in provenance["rows"]
         if row["table"] == "gas"
     }
-    pack = packaged_gas_pack
+    pack = legacy_packaged_gas_pack
 
     for species_name, table_id, *_ in build_gas_tables.TRACE_JANAF_GAS_SOURCES:
         source_rows = build_gas_tables._janaf_text_source_rows(JANAF_DATA, table_id)
@@ -3952,9 +3961,9 @@ def test_fitted_gas_rows_reproduce_every_complete_janaf_g_app_row(
 
 
 def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients(
-    packaged_gas_pack,
+    legacy_packaged_gas_pack,
 ) -> None:
-    pack = packaged_gas_pack
+    pack = legacy_packaged_gas_pack
     provenance = yaml.safe_load(PROVENANCE_PATH.read_text(encoding="utf-8"))
     low_provenance = {
         row["species_name"]: row
@@ -4005,7 +4014,7 @@ def test_low_gas_rows_reproduce_janaf_nodes_and_generated_coefficients(
         "(KCl)2(g)", "NaF(g)", "(NaF)2(g)", "KF(g)", "(KF)2(g)",
     } | {
         source[0] for source in build_gas_tables.CONSTRUCTED_SAHA_ION_SOURCES
-    }
+    } | {"Si2O2(g)", "AlSiO(g)"}
     for species in build_gas_tables.LOW_T_GAS_SPECIES:
         table_id = GAS_TABLE_IDS[species]
         row = _gas_row_for_interval(pack, species, 2)
@@ -7240,6 +7249,8 @@ def test_every_m_plus_matches_saha_with_level_populations(
                 "Hf": {1500.0: 1.2358482922, 2500.0: 0.7939976229},
                 "Th": {1500.0: 4.4960411241, 2500.0: 2.5579593377},
             }[element][temperature]
+            if element == "Th":
+                expected /= 1.01325
             assert fitted_k / saha_k == pytest.approx(expected, rel=5e-5)
             if element == "Th":
                 selected_anchor_offset_kj_mol = (
@@ -7259,7 +7270,7 @@ def test_every_m_plus_matches_saha_with_level_populations(
                 )
                 expected_residual = {1500.0: 6.261, 2500.0: 7.037}[
                     temperature
-                ]
+                ] - R_J_MOL_K * temperature * math.log(1.01325) / 1000.0
                 assert cause_residual_kj_mol == pytest.approx(
                     expected_residual, abs=0.001
                 )
@@ -7272,6 +7283,7 @@ def test_every_m_plus_matches_saha_with_level_populations(
                 1500.0: 0.9775126419,
                 2500.0: 0.9924499829,
             }[temperature]
+            expected_ratio /= 1.01325
             assert fitted_k / saha_k == pytest.approx(
                 expected_ratio, rel=5e-5
             ), element
@@ -9308,9 +9320,11 @@ def test_species_thermo_public_api_uses_runtime_rows_and_refuses_extrapolation(
     )
     assert liquid.source_row_id == "LAM1987"
     assert crystal.source_row_id == "LAM1987"
-    assert default_crystal == crystal
+    assert default_crystal.source_row_id == "O-035"
+    assert default_crystal.source_table_id == "O-035"
+    assert default_crystal != crystal
     assert liquid.source_table_id == "LH87 Table 2"
-    assert default_crystal.source_table_id == "LH87 Table 2"
+    assert default_crystal.source_table_id == "O-035"
     assert liquid.derivatives_fit_implied is True
     assert crystal.derivatives_fit_implied is True
     assert feo_liquid.derivatives_fit_implied is True

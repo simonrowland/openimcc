@@ -1,0 +1,164 @@
+{
+  "schema": "openimcc-p2o5-activity-fragment.v1",
+  "element": "P",
+  "parent_activity": "P2O5",
+  "units": {
+    "composition": "mole fraction of oxide formula units",
+    "temperature": "K",
+    "activity": "dimensionless, relative to the declared pure-liquid P2O5 standard"
+  },
+  "standards": {
+    "suito_turkdogan_pearson_liquid_1atm": {
+      "reaction": "P2(g) + 5/2 O2(g) = P2O5(l)",
+      "gas_standard_pressure": "1 atm",
+      "delta_g_standard_j_mol": {
+        "intercept": -1534480.0,
+        "slope_j_mol_k": 506.26
+      },
+      "flags": ["provisional_approximate_hypothetical_liquid_standard"],
+      "citation": "turkdogan-2000-old-standard"
+    },
+    "jung_hudon_liquid_1bar": {
+      "reaction": "P2(g) + 5/2 O2(g) = P2O5(l)",
+      "source_gas_standard_pressure": "1 atm, inferred from the assessment convention",
+      "target_gas_standard_pressure": "1 bar",
+      "delta_n_gas": -3.5,
+      "pressure_ratio_atm_per_bar": 1.01325,
+      "delta_g_standard_j_mol_before_pressure_correction": {
+        "intercept": -1616372.0,
+        "slope_j_mol_k": 539.0
+      },
+      "pressure_correction_equation": "G_1bar = G_1atm - delta_n_gas * R * T * ln(1.01325)",
+      "flags": ["source_uncertainty_not_quantified", "no_liquid_pressure_correction"],
+      "citation": "jung-hudon-p2o5"
+    },
+    "turkdogan_2000_revised_liquid_1atm": {
+      "reaction": "P2(g) + 5/2 O2(g) = P2O5(l)",
+      "gas_standard_pressure": "1 atm",
+      "delta_g_standard_j_mol": {
+        "intercept": -1655480.0,
+        "slope_j_mol_k": 571.0
+      },
+      "flags": ["estimated_standard_state", "provisional_estimate"],
+      "citation": "turkdogan-2000-revised-standard"
+    }
+  },
+  "rows": {
+    "suito_inoue_1984_eq14_no_mn": {
+      "component": "P2O5",
+      "property": "log10_activity_coefficient",
+      "source_standard": "suito_turkdogan_pearson_liquid_1atm",
+      "equation": "log10(gamma) = -1.02 * (23*x_CaO + 17*x_MgO + 8*x_Fe_tO - 26*x_P2O5) - 22990/T + 9.490",
+      "coefficients": {
+        "bracket_multiplier": -1.02,
+        "mole_fraction_terms": {
+          "CaO": 23.0,
+          "MgO": 17.0,
+          "FeO": 8.0,
+          "P2O5": -26.0
+        },
+        "inverse_temperature_k": -22990.0,
+        "constant": 9.490
+      },
+      "calibration_windows": [
+        {
+          "system": "CaO-MgO-saturated-Fe_tO-SiO2-P2O5, no MnO",
+          "P2O5_wt_pct": [0.2, 1.0],
+          "temperature_K": [1823.0, 1923.0],
+          "citation": "suito-inoue-1981-low-p"
+        },
+        {
+          "system": "CaO-MgO-saturated-Fe_tO-SiO2-P2O5, no MnO",
+          "P2O5_wt_pct": [4.0, 5.0],
+          "temperature_K": [1873.15, 1873.15],
+          "citation": "suito-inoue-1984-high-p"
+        }
+      ],
+      "derivation": {
+        "premise": "Suito and Inoue report Eq. 14 as a no-Mn P2O5 activity-coefficient relation on the earlier Turkdogan-Pearson hypothetical-liquid standard. Their coefficient of x_P2O5 was obtained by combining prior low-P data with their 4-5 wt% measurements.",
+        "algebra": "log10(a_JH,1bar) = log10(x_P2O5) + log10(gamma_Suito,1atm) + (G_Suito,1atm - G_JH,1bar)/(R*T*ln(10)).",
+        "units_check": "Mole fractions and gamma are dimensionless; 22990/T is dimensionless with 22990 in kelvin; each Gibbs coefficient evaluates to J mol^-1 P2O5; R*T is J mol^-1.",
+        "sanity_point": {
+          "temperature_K": 1873.0,
+          "mole_fractions": {"CaO": 0.4, "MgO": 0.08, "FeO": 0.12, "SiO2": 0.39, "P2O5": 0.01},
+          "log10_gamma_on_source_standard": -14.269626054458088,
+          "expected_order_of_magnitude_activity_on_jung_hudon_1bar_standard": "2e-16"
+        }
+      },
+      "flags": [
+        "opt_in_empirical_activity_helper",
+        "provisional_old_liquid_standard",
+        "no_mn_term",
+        "not_fitted_to_battery_rows"
+      ],
+      "citations": ["suito-inoue-1984", "suito-inoue-1981-low-p", "turkdogan-2000-old-standard", "jung-hudon-p2o5"]
+    },
+    "turkdogan_2000_eq13": {
+      "component": "P2O5",
+      "property": "comparison_log10_activity_coefficient",
+      "source_standard": "suito_turkdogan_pearson_liquid_1atm",
+      "equation": "log10(gamma) = -11.85 - 0.1343*BO",
+      "coefficients": {
+        "intercept": -11.85,
+        "intercept_spread_dex": 0.75,
+        "BO_weight_pct_terms": {"CaO": 1.0, "MgO": 0.33},
+        "slope_per_wt_pct_BO": -0.1343
+      },
+      "derivation": "Comparison only; add log10(x_P2O5) and convert from the old 1-atm liquid standard before comparing with the central result.",
+      "flags": ["comparison_spread_not_uncertainty_interval"],
+      "citations": ["turkdogan-2000-eq13", "turkdogan-2000-old-standard"]
+    },
+    "turkdogan_2000_eq25": {
+      "component": "P2O5",
+      "property": "comparison_log10_activity_coefficient",
+      "source_standard": "turkdogan_2000_revised_liquid_1atm",
+      "equation": "log10(gamma) = -9.84 - 0.142*BO",
+      "coefficients": {
+        "intercept": -9.84,
+        "BO_weight_pct_terms": {"CaO": 1.0, "MgO": 0.33},
+        "slope_per_wt_pct_BO": -0.142
+      },
+      "derivation": "Comparison only; add log10(x_P2O5) and convert from the revised 1-atm liquid standard before comparing with the central result.",
+      "flags": ["comparison_spread_not_uncertainty_interval", "provisional_revised_standard"],
+      "citations": ["turkdogan-2000-eq25", "turkdogan-2000-revised-standard"]
+    }
+  },
+  "citations": {
+    "suito-inoue-1984": {
+      "citation": "Suito, H. and Inoue, R. (1984), Phosphorus Distribution between MgO-saturated CaO-FetO-SiO2-P2O5-MnO Slags and Liquid Iron, Transactions of the Iron and Steel Institute of Japan 24(1), 40-46.",
+      "doi": "10.2355/isijinternational1966.24.40",
+      "locator": "p. 45, Section IV.2, Eq. 14 (no-Mn form); pp. 45-46, Section IV.2, separate MnO coefficient 13 +/- 9. The synopsis on p. 40 gives the 1550-1650 C experiment range and slag systems."
+    },
+    "suito-inoue-1981-low-p": {
+      "citation": "Suito, H., Inoue, R. and Takada, M. (1981), Phosphorus Distribution between Liquid Iron and MgO Saturated Slags of the System CaO-MgO-FeOx-SiO2, Transactions of the Iron and Steel Institute of Japan 21(4), 250-259.",
+      "doi": "10.2355/isijinternational1966.21.250",
+      "locator": "Prior low-P dataset used in Suito and Inoue (1984), p. 45, Section IV.2; Turkdogan (2000), Table 1, p. 965 reports its P2O5 interval as 0.2-1.0 wt%."
+    },
+    "turkdogan-2000-old-standard": {
+      "citation": "Turkdogan, E. T. (2000), Assessment of P2O5 Activity Coefficients in Molten Slags, ISIJ International 40(10), 964-970.",
+      "doi": "10.2355/isijinternational.40.964",
+      "locator": "p. 964, Eq. 4: earlier approximate hypothetical-liquid P2O5 standard, Delta G degree = -1534480 + 506.26*T J mol^-1."
+    },
+    "turkdogan-2000-eq13": {
+      "citation": "Turkdogan, E. T. (2000), Assessment of P2O5 Activity Coefficients in Molten Slags, ISIJ International 40(10), 964-970.",
+      "doi": "10.2355/isijinternational.40.964",
+      "locator": "p. 965, Eq. 13; BO = wt% CaO + 0.33 wt% MgO; the intercept is reported as -11.85 +/- 0.75."
+    },
+    "turkdogan-2000-revised-standard": {
+      "citation": "Turkdogan, E. T. (2000), Assessment of P2O5 Activity Coefficients in Molten Slags, ISIJ International 40(10), 964-970.",
+      "doi": "10.2355/isijinternational.40.964",
+      "locator": "p. 966, Eq. 23: revised estimated hypothetical-liquid P2O5 standard, Delta G degree = -1655480 + 571.0*T J mol^-1."
+    },
+    "turkdogan-2000-eq25": {
+      "citation": "Turkdogan, E. T. (2000), Assessment of P2O5 Activity Coefficients in Molten Slags, ISIJ International 40(10), 964-970.",
+      "doi": "10.2355/isijinternational.40.964",
+      "locator": "p. 967, Eq. 25; BO = wt% CaO + 0.33 wt% MgO."
+    },
+    "jung-hudon-p2o5": {
+      "citation": "Jung, I.-H. and Hudon, P. (2012), Thermodynamic Assessment of P2O5, Journal of the American Ceramic Society 95(11), 3665-3672; equation reproduced in Jung et al. (2013), Thermodynamic Database of P2O5-containing Oxide Systems for the Dephosphorization Process in Steelmaking, High Temperature Materials and Processes 32(3), 247-254.",
+      "doi": "10.1111/j.1551-2916.2012.05382.x",
+      "equation_doi": "10.1515/htmp-2012-0132",
+      "locator": "Jung et al. (2013), Eq. 3: P2(g) + 5/2 O2(g) = P2O5(l), Delta G degree = -1616372 + 539.0*T J mol^-1; assessment does not quantify numeric uncertainty."
+    }
+  }
+}

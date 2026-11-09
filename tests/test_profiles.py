@@ -48,15 +48,16 @@ def test_named_profiles_load(name: str, melt_version: str, has_redox: bool) -> N
 
     assert profile.name == name
     assert profile.melt_pack.version == melt_version
-    assert profile.gas_datapack.gas_path.name == "gas-shomate.csv"
     assert profile.provenance
     assert (profile.redox_pack_path is not None) is has_redox
     if name == "published":
+        assert profile.gas_datapack.gas_path.name == "gas-shomate.csv"
         assert profile.gas_datapack.oxide_path.name == "condensate.csv"
         assert "sf04-published" in str(profile.gas_datapack.oxide_path)
     else:
-        assert profile.gas_datapack.oxide_path.name == "condensate.csv"
-        assert profile.redox_pack_path.name == "openimcc-redox-v4.json"
+        assert profile.gas_datapack.gas_path.name == "gas-shomate-default-v1.csv"
+        assert profile.gas_datapack.oxide_path.name == "condensate-default-v1.csv"
+        assert profile.redox_pack_path.name == "openimcc-redox-v5.json"
     with pytest.raises(FrozenInstanceError):
         profile.name = "published"
 
@@ -122,7 +123,7 @@ def test_explicit_packs_and_profiles_are_mutually_exclusive(packaged_gas_pack) -
     with pytest.raises(ProfileConflictError):
         evaluate_redox(
             {"Fe": 1.0, "O": 1.25}, 2200.0, "closed",
-            redox_pack_path="openimcc-redox-v4.json", profile="openimcc",
+            redox_pack_path="openimcc-redox-cr-candidate-v4.json", profile="openimcc",
         )
 
 

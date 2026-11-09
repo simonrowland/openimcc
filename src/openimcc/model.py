@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
     ImccCompositionIncompleteError,
+    ImccConvergence,
     ImccDatapack,
     ImccFerricInputUnsupportedError,
     ImccInvalidWarmStartError,
@@ -61,6 +62,14 @@ from openimcc.kernel import (
 )
 from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.receipt import build_calculation_receipt
+from openimcc.trace_components import (
+    TraceActivityFlag,
+    TraceActivityEstimate,
+    TraceComponentsOutsideMeltModelNotice,
+    TraceMajorBiasFlag,
+    _resolve_trace_activity,
+    trace_component_rule,
+)
 
 
 DEFAULT_MELT_PACK_NAME = "imcc-sf04-d066-v4.json"
@@ -2065,6 +2074,7 @@ def evaluate(
         supplied_sp_names.update(
             name for name in _SP_EXTENSION_PARENTS
             if float(composition.get(name, 0.0)) != 0.0
+            and trace_component_rule(name) is None
         )
     elif len(composition) > len(_EXPECTED_PARENT_OXIDES):
         supplied_sp_names.update(_SP_EXTENSION_PARENTS)
@@ -2094,9 +2104,21 @@ def evaluate(
                 "caller's redox model before calling IMCC-SF04"
             )
         unknown = set(composition.keys()) - set(parent_oxides)
-        if unknown:
+        unsupported = {
+            name for name in unknown if trace_component_rule(name) is None
+        }
+        if unsupported:
             raise ImccComponentOutsideDomainError(
                 f"component(s) outside IMCC-SF04 domain: {sorted(unknown)}"
+            )
+        trace_amounts_raw = {
+            name: _amount_as_float(composition[name], f"composition value for {name}")
+            for name in unknown
+            if trace_component_rule(name) is not None
+        }
+        if any(amount < 0.0 for amount in trace_amounts_raw.values()):
+            raise ImccCompositionIncompleteError(
+                "composition contains negative values"
             )
         vector = np.array(
             [float(composition.get(name, 0.0)) for name in parent_oxides],
@@ -2125,6 +2147,7 @@ def evaluate(
             ],
             dtype=float,
         )
+        trace_amounts_raw = {}
 
     if not np.all(np.isfinite(vector)):
         raise ImccCompositionIncompleteError(
@@ -2141,6 +2164,12 @@ def evaluate(
     # this total with the converted mole sum below.
     with np.errstate(over="ignore"):
         total = float(vector.sum())
+        if trace_amounts_raw:
+            total = float(
+                np.asarray(
+                    (*vector.tolist(), *trace_amounts_raw.values()), dtype=float
+                ).sum()
+            )
     if total <= 0.0:
         raise ImccCompositionIncompleteError("composition total is zero")
 
@@ -2161,9 +2190,50 @@ def evaluate(
             )
 
     # Convert wt to mol before the cache boundary (E8).
+    trace_moles: dict[str, float] = {}
     if basis_type == "wt":
+        if trace_amounts_raw:
+            trace_moles = {
+                name: amount / trace_component_rule(name).molar_mass_g_mol
+                for name, amount in trace_amounts_raw.items()
+            }
         vector = _wt_to_mol(vector, parent_oxides)
         basis = float(vector.sum())
+    elif trace_amounts_raw:
+        trace_moles = dict(trace_amounts_raw)
+        basis = float(vector.sum())
+
+    trace_fractions: dict[str, float] = {}
+    unmodelled_trace_fractions: dict[str, float] = {}
+    if trace_moles:
+        # Threshold fractions use the complete supplied mixture. Formula-unit
+        # moles divided by total formula-unit moles are dimensionless and tend
+        # to zero with the trace loading.
+        total_component_moles = math.fsum((float(vector.sum()), *trace_moles.values()))
+        if not math.isfinite(total_component_moles) or total_component_moles <= 0.0:
+            raise ImccCompositionIncompleteError("composition total is zero")
+        trace_fractions = {
+            name: amount / total_component_moles
+            for name, amount in trace_moles.items()
+            if amount > 0.0
+        }
+        unmodelled_trace_fractions = {
+            name: amount
+            for name, amount in trace_fractions.items()
+            if not trace_component_rule(name).full_component
+        }
+        # The tiny relative slack absorbs binary conversion noise at the
+        # inclusive decimal limits without extending either physical cutoff.
+        if any(
+            amount > 0.01 * (1.0 + 1.0e-12)
+            for amount in unmodelled_trace_fractions.values()
+        ) or math.fsum(unmodelled_trace_fractions.values()) > 0.02 * (
+            1.0 + 1.0e-12
+        ):
+            raise ImccComponentOutsideDomainError(
+                "component(s) outside IMCC-SF04 domain: "
+                f"{sorted(unmodelled_trace_fractions)}"
+            )
 
     # X_Me2O = (n_Na2O + n_K2O) / sum(n_oxide) over the canonical
     # 8-oxide mol vector. Treat the boundary as inclusive within a 1e-5
@@ -2600,6 +2670,158 @@ def evaluate(
     }
     coverage: Mapping[str, str] = result.labels.coverage
     flags = list(result.labels.flags)
+    trace_notice: TraceComponentsOutsideMeltModelNotice | None = None
+    trace_activity_flags: list[TraceActivityFlag] = []
+    trace_major_flags: list[TraceMajorBiasFlag] = []
+    redox_pack_participation: tuple[PackRowParticipation, ...] | None = None
+    if trace_fractions:
+        composition_moles = {
+            name: float(amount)
+            for name, amount in zip(parent_oxides, vector, strict=True)
+            if amount > 0.0
+        }
+        composition_moles.update(trace_moles)
+        trace_activity_estimates = {}
+        for oxide, x_trace in trace_fractions.items():
+            rule = trace_component_rule(oxide)
+            try:
+                estimate, redox_result, redox_state = _resolve_trace_activity(
+                    oxide, x_trace, composition_moles, float(T_K)
+                )
+            except ImccRefusal:
+                if rule is None or not rule.full_component:
+                    raise
+                estimate = TraceActivityEstimate(
+                    oxide, math.nan, x_trace,
+                    "source_grounded_associate_activity_unavailable",
+                )
+                redox_result = None
+                redox_state = None
+            if (
+                redox_result is not None
+                and redox_state is not None
+                and rule is not None
+                and rule.full_component
+            ):
+                # Reuse every normalized field and convergence diagnostic from
+                # the same redox equilibrium that supplied the Mn activity.
+                redox_parent_oxides = tuple(redox_result.parent_moles)
+                species_names = tuple(redox_result.species_moles)
+                parent_mol = np.asarray(
+                    [redox_result.parent_moles[name] for name in redox_parent_oxides],
+                    dtype=float,
+                )
+                species_total = math.fsum(redox_result.species_moles.values())
+                species_x = np.asarray(
+                    [redox_result.species_moles[name] / species_total
+                     for name in species_names],
+                    dtype=float,
+                )
+                parent_x_star = np.asarray(
+                    [species_x[species_names.index(name)] for name in redox_parent_oxides],
+                    dtype=float,
+                )
+                parent_x = parent_mol / float(redox_state.basis)
+                parent_activity = np.asarray(
+                    [redox_result.parent_activity.get(name, 0.0)
+                     for name in redox_parent_oxides],
+                    dtype=float,
+                )
+                parent_gamma = np.divide(
+                    parent_activity,
+                    parent_x,
+                    out=np.zeros_like(parent_activity),
+                    where=parent_x > 0.0,
+                )
+                complex_x = species_x[len(redox_parent_oxides):]
+                coverage = {
+                    name: result.labels.coverage.get(
+                        name, result.labels.evidence_class
+                    )
+                    for name in species_names
+                }
+                result = replace(
+                    result,
+                    parent_oxides=redox_parent_oxides,
+                    parent_mol=parent_mol,
+                    basis=float(redox_state.basis),
+                    parent_x=parent_x,
+                    parent_x_star=parent_x_star,
+                    parent_activity=parent_activity,
+                    parent_gamma=parent_gamma,
+                    complex_x=complex_x,
+                    species_x=species_x,
+                    species_names=species_names,
+                    D=float(redox_state.D),
+                    convergence=ImccConvergence(
+                        iterations=redox_state.iterations,
+                        residual_inf=redox_state.residual_inf,
+                        residual_l2=redox_state.residual_l2,
+                        total_displacement=redox_state.total_displacement,
+                        solver_path=redox_state.solver_path,
+                        continuation_stages=redox_state.continuation_stages,
+                    ),
+                    labels=replace(
+                        result.labels,
+                        coverage=coverage,
+                        flags=tuple(dict.fromkeys(
+                            (*result.labels.flags, *redox_result.flags)
+                        )),
+                    ),
+                    extrapolated=(
+                        result.extrapolated
+                        or bool(redox_result.extrapolated_redox_rows)
+                    ),
+                )
+                flags = list(dict.fromkeys((*flags, *redox_result.flags)))
+                redox_pack_participation = redox_result.pack_row_participation
+            trace_activity_estimates[oxide] = estimate
+            trace_activity_flags.append(TraceActivityFlag(estimate))
+
+        # Premise: an unmodelled trace contributes at most (1+ν_t)x_t units
+        # that can displace or bind a major; x_free,major is the solved
+        # unassociated major fraction in the renormalised melt. Algebra: the
+        # worst relative perturbation is r = Σ_t(1+ν_t)x_t/x_free,major, so
+        # the activity ratio is at most 1+r and b_major = log10(1+r) dex.
+        # Every x and r is dimensionless; the logarithm is therefore a
+        # dimensionless log10 activity difference in dex. As trace loading
+        # tends to zero, b tends to zero. The input limits give
+        # Σ(1+ν)x ≤ 4·0.02 = 0.08 (ν≤3), so the old scalar denominator would
+        # stay at least 0.92 and finite. Here x_free=0 gives an infinite bound
+        # and that major row is refused before division.
+        weighted_trace = math.fsum(
+            (1.0 + trace_component_rule(oxide).nu) * x_trace
+            for oxide, x_trace in unmodelled_trace_fractions.items()
+        )
+        if weighted_trace > 0.08:
+            raise ImccComponentOutsideDomainError(
+                "trace-component bound is outside its finite input range"
+            )
+        major_bias_bounds: dict[str, float] = {}
+        if weighted_trace > 0.0:
+            for index, major in enumerate(parent_oxides):
+                if vector[index] <= 0.0:
+                    continue
+                x_free = float(result.parent_x_star[index])
+                bound = (
+                    math.inf
+                    if x_free <= 0.0
+                    else math.log10(1.0 + weighted_trace / x_free)
+                )
+                major_bias_bounds[major] = bound
+                scoreable = bound <= 0.01
+                major_flag = TraceMajorBiasFlag(
+                    major, x_free, bound, scoreable
+                )
+                trace_major_flags.append(major_flag)
+                flags.append(str(major_flag))
+        if unmodelled_trace_fractions:
+            trace_notice = TraceComponentsOutsideMeltModelNotice(
+                unmodelled_trace_fractions,
+                math.fsum(unmodelled_trace_fractions.values()),
+                major_bias_bounds,
+                trace_activity_estimates,
+            )
     # Infer network-forming parent oxides from the loaded pack: their declared
     # formula implies a formal cation charge of at least +3, and their nu row
     # participates in a complex with another parent. This selects acid sinks
@@ -2694,6 +2916,10 @@ def evaluate(
         )
 
     notices = []
+    if trace_notice is not None:
+        notices.append(trace_notice)
+    notices.extend(trace_activity_flags)
+    notices.extend(trace_major_flags)
     if _melt_notice_score(
         "feo-hess-candidate", (model_id, binding_digest)
     ) == "scored":
@@ -2901,10 +3127,14 @@ def evaluate(
         result,
         labels=adapter_labels,
         receipt=receipt,
-        pack_row_participation=_pack_row_participation(
-            kernel_pack,
-            dict(zip(parent_oxides, vector, strict=True)),
-            result.complex_x,
-            inactive_row_details,
+        pack_row_participation=(
+            redox_pack_participation
+            if redox_pack_participation is not None
+            else _pack_row_participation(
+                kernel_pack,
+                dict(zip(parent_oxides, vector, strict=True)),
+                result.complex_x,
+                inactive_row_details,
+            )
         ),
     )

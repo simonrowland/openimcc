@@ -663,6 +663,21 @@ def test_migration_reproduces_committed_outputs_from_baseline(tmp_path: Path) ->
                 f"duplicate committed comparison key: {comparison_key}"
             )
             committed_rows[comparison_key] = row
+        # The new default combination adds the Si2O2/AlSiO molecules and the
+        # O-035 silica crystal interval after this migration baseline.
+        expected_added_intervals |= {
+            key for key in committed_rows
+            if key[:2] in {
+                ("gas", "Si2O2(g)"),
+                ("gas", "AlSiO(g)"),
+            }
+            or key[:3] == ("condensate", "SiO2(cr)", "O-035")
+        }
+        # The O-035 crystal row replaces the historical LAM1987 interval.
+        expected_removed_intervals |= {
+            key for key in migrated_rows
+            if key[:2] == ("condensate", "SiO2(cr)")
+        }
         assert set(committed_rows) - set(migrated_rows) == set(
             expected_added_intervals
         )

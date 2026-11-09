@@ -15,12 +15,17 @@ def test_janaf_cristobalite_candidate_closes_against_the_existing_liquid(
     packaged_gas_pack,
 ) -> None:
     default = packaged_gas_pack
+    historical = load_gas_datapack(
+        gas_path=GAS / "gas-shomate.csv", oxide_path=GAS / "condensate.csv"
+    )
     candidate = load_gas_datapack(
         gas_path=GAS / "gas-shomate.csv", oxide_path=CRYSTAL_CANDIDATE
     )
 
     assert default.condensate_table_digest != candidate.condensate_table_digest
-    assert species_thermo("SiO2", "cr", 1996.0, default).source_row_id == "LAM1987"
+    assert default.condensate_table_digest != historical.condensate_table_digest
+    assert species_thermo("SiO2", "cr", 1996.0, historical).source_row_id == "LAM1987"
+    assert species_thermo("SiO2", "cr", 1996.0, default).source_row_id == "O-035"
     crystal_row = species_thermo("SiO2", "cr", 1996.0, candidate)
     assert crystal_row.source_row_id == "O-035"
     assert crystal_row.source_table_id == "O-035"
@@ -39,6 +44,10 @@ def test_janaf_cristobalite_candidate_closes_against_the_existing_liquid(
         1996.0: 0.0,
     }
     for temperature in expected_default:
+        historical_delta_g = (
+            species_thermo("SiO2", "l", temperature, historical).G_J_mol
+            - species_thermo("SiO2", "cr", temperature, historical).G_J_mol
+        )
         default_delta_g = (
             species_thermo("SiO2", "l", temperature, default).G_J_mol
             - species_thermo("SiO2", "cr", temperature, default).G_J_mol
@@ -47,14 +56,20 @@ def test_janaf_cristobalite_candidate_closes_against_the_existing_liquid(
             species_thermo("SiO2", "l", temperature, candidate).G_J_mol
             - species_thermo("SiO2", "cr", temperature, candidate).G_J_mol
         )
+        historical_conversion = -historical_delta_g / (
+            R_J_MOL_K * temperature * math.log(10.0)
+        )
         default_conversion = -default_delta_g / (
             R_J_MOL_K * temperature * math.log(10.0)
         )
         candidate_conversion = -candidate_delta_g / (
             R_J_MOL_K * temperature * math.log(10.0)
         )
-        assert default_conversion == pytest.approx(
+        assert historical_conversion == pytest.approx(
             expected_default[temperature], abs=1e-9
+        )
+        assert default_conversion == pytest.approx(
+            expected_candidate[temperature], abs=1e-9
         )
         assert candidate_conversion == pytest.approx(
             expected_candidate[temperature], abs=1e-9

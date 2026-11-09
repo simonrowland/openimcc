@@ -2,10 +2,57 @@
 
 ## Unreleased
 
-- Added the opt-in `gas-shomate-oxide-molecule-candidate.csv` table with
-  source-based Si₂O₂(g) and AlSiO(g) channels. Si₂O₂ is covered from 298 to
-  3000 K; AlSiO is source-based through 2200 K and is flagged when extrapolated.
-  The packaged default gas and condensate tables remain unchanged.
+### Default combination
+
+| Kind | File | SHA-256 |
+| --- | --- | --- |
+| Melt | `imcc-sf04-d066-v4.json` | `5ad550f626a49ebd683211b6f5fd6d0269eb3f2eec93d714bf7ccb2475e82d29` |
+| Redox | `openimcc-redox-v5.json` | `94279c8627a13ae7af3416f20d1e38867b79842d0054990c7b47108d23b4a968` |
+| Gas | `gas-shomate-default-v1.csv` | `7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36` |
+| Condensate | `condensate-default-v1.csv` | `1913f0c5d48b24f61576f75d4ae845f4ddf7943d40d517f62ce8dc1e9af5018b` |
+
+- The versioned gas default includes the Bulletin 672 1 atm-to-1 bar entropy
+  correction and the Si₂O₂(g)/AlSiO(g) channels. The versioned condensate
+  default uses the O-035 SiO₂(cr) correction.
+
+- The redox v5 default retains the Cr correction and adds Sr, Li, Zn, and Yb
+  association rows. Ni, P, S, and Co activity helpers load their fragment data
+  through one shared registry.
+
+- Added source-based Si₂O₂(g) and AlSiO(g) channels. Si₂O₂ is covered from 298
+  to 3000 K; AlSiO is source-based through 2200 K and is flagged when
+  extrapolated.
+
+- Promoted the Cr redox pack as the default. Its effective Cr(II)/Cr(III) row
+  is limited to 1 bar, calibrated at 1673 K with variable-temperature evidence
+  through 1773 K, and flagged outside the demonstrated CMAS and basaltic range.
+  The Cr₂O₃(l) parent remains formula-only in redox; the default condensate
+  retains the JANAF Cr-015 liquid estimate, its labelled constant-Cp
+  supercooled continuation, and its 2603 K fusion marker. Cr-Ti remains opt-in.
+
+- `evaluate_redox()` computes Fe-free inventories without an Fe sentinel.
+  Inventories with no available oxygen-changing redox row use associate
+  speciation directly, and closed mode checks oxygen against oxide
+  stoichiometry. An imposed fO2 is required only when the selected pack has an
+  available oxygen-changing row for a present component. Unmodelled valences
+  carry per-state flags with the supplied fO2 and an `ELEVATED` marker at
+  oxidising fO2 or below 1773.15 K. Extension parent activities from the
+  selected redox pack remain available through this melt-first path.
+
+- `evaluate()` accepts registered unmodelled components outside the eight-oxide
+  melt model at up to 1 mol% each and 2 mol% combined. It renormalizes the major
+  oxides and reports the typed `trace_components_outside_melt_model` notice with
+  per-major `bias_bound_dex`; rows above 0.01 dex are refused individually.
+  Modeled associates such as MnO remain full components. Trace activities use
+  source-grounded rows or helpers, published `γ·x` guides, or a flagged ideal
+  estimate. In gas evaluation, Cl, F, S, or SO3 above 0.1 mol% refuses Na/K and
+  sulfur-bearing channels. The `γ·x` guide values (MnO 1.9 and CrO1.5 31.1) are
+  cited to Sossi and Fegley (2018), Table 2, pp. 409–410,
+  doi:10.2138/rmg.2018.84.11.
+
+- The trace-component activity ladder uses registered Ni, Co, P, and S helpers
+  before published γ·x guides or ideal mixing. It also uses the redox-v5
+  associate rows for Sr, Li, Zn, Yb, Mn, and Cr when available.
 
 - Gas, gas-saturation, and redox results now expose typed liquid-standard
   notices when pack declarations conflict with active tables or are missing.

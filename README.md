@@ -39,6 +39,31 @@ species vector, and the **degree of association D** (total moles in, moles of
 species out — D > 1 means an associated solution, D = 1 would be ideal oxide
 mixing).
 
+## Trace components outside the eight-oxide melt model
+
+`evaluate()` accepts registered unmodelled components outside the eight model
+oxides when each is at most 1 mol% and their combined amount is at most 2 mol%.
+It solves the eight majors after renormalizing over those majors. A typed
+`trace_components_outside_melt_model` notice lists each trace mole fraction,
+the total, and a per-major `bias_bound_dex`. That bound uses the solved free
+major fraction and the registered maximum binding stoichiometry. A major row
+is scoreable only when its bound is at most 0.01 dex; a larger bound refuses
+that major's `activity()` request while preserving the other rows. Components
+with modeled associate rows, such as MnO in the redox pack, remain full
+components and do not enter the trace bound.
+
+Each registered component uses the best available activity estimate: source
+associate rows or helpers first, then a published `γ·x` guide, then ideal
+mixing `a = x`. The final rung is flagged `ideal_mixing_assumption` and is an
+estimate, not a bound. The current `γ·x` table uses γ(MnO) = 1.9 and
+γ(CrO1.5) = 31.1 as guides from Sossi and Fegley (2018, Table 2,
+pp. 409–410, [doi:10.2138/rmg.2018.84.11](https://doi.org/10.2138/rmg.2018.84.11)).
+The shared registration table is in `openimcc.trace_components`.
+
+In `evaluate_gas()`, Cl, F, S, or SO3 above 0.1 mol% causes Na/K vapor
+channels and sulfur-bearing channels to be refused with typed channel notices;
+at or below that amount they follow the activity ladder like other traces.
+
 The reported derived-property checks are documented in [Diagnostics](docs/diagnostics.md).
 
 ## Reproducibility receipt
@@ -864,7 +889,7 @@ buffer offset such as ΔIW.
 ### Published SF04 versus openimcc derivations
 
 `load_profile("openimcc")` selects the D066 v4 melt pack, the default
-openimcc gas and condensate tables, and redox v4. This is the source-railed,
+openimcc gas and condensate tables, and redox v5. This is the source-railed,
 re-derived set. `load_profile("published")` selects the frozen
 `imcc-sf04-v1.0.2.json` melt records, the shared JANAF gas table, and the
 LAM1984/1987 condensate table in `sf04-published`. It reproduces the paper's
@@ -1206,6 +1231,24 @@ Fe(II) count from parent stoichiometry, while redox-pack species use declared
 valence metadata. Fe metal is included at state `0` when present.
 `ferric_fe_mol` and `ferrous_fe_mol` alias the Fe entries at states `3` and `2`.
 
+Fe-free inventories use associate speciation without an Fe saturation solve.
+An imposed fO2 is required only when an oxygen-changing redox row in the
+selected pack can run on the inventory's present parents. Otherwise the melt
+activities do not depend on fO2; closed mode checks oxygen against
+parent-oxide stoichiometry and the result includes
+`RED: no_modelled_redox_couple`. Ferric and ferrous Fe amounts are zero.
+Known oxidation states without oxygen-changing rows remain disclosed in
+`unmodelled_redox_couples` and receive per-state `unmodelled` flags. Such a
+flag carries `ln(fO2/bar)` when supplied and is marked `ELEVATED` at
+`fO2 >= 1e-4 bar` or below 1773.15 K. Gas vapour channels that consume or
+produce oxygen still require fO2 as before.
+
+Extension parent activities supplied by a selected redox pack are returned on
+`RedoxResult.parent_activity`. Use `evaluate_redox()` as the melt stage for
+those packs; `evaluate()` only loads melt-pack rows. `evaluate_gas()` can consume
+the extension activities when their parent names are included in
+`parent_oxides`.
+
 Build Fe3+/sum-Fe from this mapping. For the full Fe inventory, divide state
 `3` by the sum of Fe state amounts; for dissolved-only Fe, use states `2` and
 `3` in the denominator and leave metal state `0` out. The
@@ -1219,29 +1262,11 @@ The keyword-only `redox_pack_path` argument selects a validated redox
 component. Relative paths resolve against the process working directory;
 omitting the argument uses the packaged default.
 
-The opt-in Cr2+/Cr3+ candidate and its evidence domain are documented in
-[`docs/redox-basis.md`](docs/redox-basis.md). Its `opt-in` role and candidate
-family are recorded in `src/openimcc/data/packs/MANIFEST.json`. Select it with:
-
-```python
-from importlib.resources import as_file, files
-from openimcc import evaluate_redox
-
-inventory = {"Fe": 1.0, "Cr": 0.01, "O": 1.0}
-candidate = files("openimcc.data").joinpath(
-    "packs", "openimcc-redox-cr-candidate-v4.json"
-)
-with as_file(candidate) as candidate_path:
-    result = evaluate_redox(
-        inventory,
-        1673.0,
-        "closed",
-        redox_pack_path=candidate_path,
-    )
-```
-
-Leaving `redox_pack_path` unset continues to use the packaged default
-`openimcc-redox-v4.json`.
+The packaged redox v5 default includes the Cr2+/Cr3+ row and the Sr, Li, Zn,
+and Yb associate rows. The Cr evidence domain is documented in
+[`docs/redox-basis.md`](docs/redox-basis.md); pack roles and digests are in
+`src/openimcc/data/packs/MANIFEST.json`. Leaving `redox_pack_path` unset loads
+`openimcc-redox-v5.json`.
 
 ## The empirical bench
 
@@ -1498,8 +1523,8 @@ MgTiO3, Mg2TiO4 and MgSiO3 (0.27 kJ/mol). On the liquid branch at
 2600–3000 K, its MgAl2O4 row differs by +5.0 to +6.0 kJ/mol (0.10–0.11 dex).
 The current default melt pack is `imcc-sf04-d066-v4.json`. D066 v5 remains
 loadable by version or path and adds five Hess-cycle association-A refits to
-the v4 pack. D066 v1–v3 also remain loadable; `openimcc-redox-v4.json` is the
-redox default. See
+the v4 pack. D066 v1–v3 also remain loadable;
+`openimcc-redox-v5.json` is the redox default. See
 [`docs/liquid-from-solid.md`](docs/liquid-from-solid.md) for the source choice
 and derivation.
 
@@ -1514,7 +1539,7 @@ explicit constant-Cp continuation, which every affected gas result flags.
 
 The frozen published reproduction pack remains unchanged: every row is its
 source's published value. The current default melt and redox packs are D066 v4
-and redox v4, respectively; their source corrections and provenance are
+and redox v5, respectively; their source corrections and provenance are
 recorded in the packs.
 
 ### Independently pinned behaviour

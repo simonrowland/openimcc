@@ -1,0 +1,105 @@
+{
+  "element": "Co",
+  "parent_oxide": "CoO",
+  "rows": [
+    {
+      "row": "CoO-liquid-dilute-activity",
+      "role": "dilute_activity_coefficient",
+      "component": "CoO",
+      "standard_state": "pure liquid CoO(l), 1 bar",
+      "gamma_mean": 1.51,
+      "gamma_reported_spread": 0.28,
+      "experiment_count": 76,
+      "composition_basis": "simple oxide formula-unit mole fraction",
+      "domain": {
+        "temperature_K": [1573.15, 1873.15],
+        "log10_fO2_over_IW": [-3.0, 1.5],
+        "FeO_wt_pct": [0.0, 12.0],
+        "MgO_wt_pct": [4.0, 30.0],
+        "MgO_no_reported_increase_through_wt_pct": 20.0
+      },
+      "derivation": {
+        "premise": "Holzheid, Palme, and Chakraborty report the pooled CoO liquid-standard activity coefficient from 76 silicate-melt experiments; for trace Co, use the dilute relation.",
+        "algebra": "a_CoO = gamma_CoO * x_CoO = 1.51 * n_CoO / sum(n_oxide).",
+        "units_check": "gamma and oxide mole fraction are dimensionless, so activity is dimensionless.",
+        "sanity": {
+          "x_CoO": 0.001,
+          "activity": 0.00151,
+          "activity_range_from_reported_spread": [0.00123, 0.00179]
+        }
+      },
+      "flags": [
+        "provisional_pooled_coefficient_not_composition_specific",
+        "reported_spread_is_not_relabelled_as_a_confidence_interval",
+        "dilute_limit_has_no_published_numeric_upper_bound",
+        "source_reports_a_small_gamma_increase_above_20_wt_pct_MgO"
+      ],
+      "citation": {
+        "authors": "Holzheid, A., Palme, H., and Chakraborty, S.",
+        "year": 1997,
+        "title": "The activities of NiO, CoO and FeO in silicate melts",
+        "journal": "Chemical Geology",
+        "volume": 139,
+        "issue": "1-4",
+        "pages": "21-38",
+        "doi": "10.1016/S0009-2541(97)00030-2",
+        "url": "https://doi.org/10.1016/S0009-2541(97)00030-2"
+      }
+    }
+  ],
+  "standards": [
+    {
+      "species": "CoO(l)",
+      "standard_state": "pure liquid",
+      "source_reference": "TSIV-1334",
+      "citation": "Gurvich, Veyts, and Medvedev, Thermodynamic Properties of Individual Substances, Volume IV, Table 1334, CoO(cr,l).",
+      "url": "https://www.chem.msu.ru/rus/tsiv/Co/print-CoO_c.html",
+      "printed_values": {
+        "fusion_temperature_K": 2090.0,
+        "fusion_temperature_uncertainty_K": 10.0,
+        "enthalpy_298_minus_H0_kJ_mol": 9.449,
+        "crystal_at_fusion": {
+          "F_J_mol_K": 108.388,
+          "S_J_mol_K": 164.085,
+          "H_minus_H0_kJ_mol": 116.405
+        },
+        "liquid_at_fusion": {
+          "F_J_mol_K": 108.388,
+          "S_J_mol_K": 183.223,
+          "H_minus_H0_kJ_mol": 156.405,
+          "Cp_J_mol_K": 67.0
+        },
+        "formation_enthalpy_298_kJ_mol": -238.0,
+        "entropy_298_J_mol_K": 52.83,
+        "fusion_enthalpy_kJ_mol": 40.0,
+        "fusion_enthalpy_source_status": "estimated"
+      },
+      "derivation": {
+        "premise": "Table 1334 gives paired CoO crystal and liquid rows at 2090 K, with equal F = S - (H-H0)/T values; it labels the liquid heat capacity and fusion enthalpy as estimates.",
+        "algebra": "Delta_H_fus = 156.405 - 116.405 = 40.000 kJ/mol; Delta_S_fus = 183.223 - 164.085 = 19.138 J/(mol K), consistent with 40000/2090 = 19.139 J/(mol K). For the liquid branch, H_l(T)=H_cr(Tm)+Delta_H_fus+Cp_l(T-Tm), S_l(T)=S_cr(Tm)+Delta_S_fus+Cp_l*ln(T/Tm), and G_l=H_l-T*S_l.",
+        "units_check": "Enthalpy differences are kJ/mol before conversion to J/mol; Cp*(T-Tm) is J/mol; Cp*ln(T/Tm) is J/(mol K).",
+        "sanity": "At Tm=2090 K, equal printed F values and Delta_H_fus approximately Tm*Delta_S_fus make G_l(Tm)=G_cr(Tm).",
+        "liquid_heat_capacity_J_mol_K": 67.0
+      },
+      "flags": [
+        "fusion_enthalpy_is_estimated_by_source",
+        "liquid_heat_capacity_is_estimated_by_source",
+        "the_existing_gas_table_uses_a_supercooled_liquid_continuation_below_2090_K"
+      ]
+    }
+  ],
+  "flags": [
+    "This is an opt-in trace-solute estimate and does not modify the default melt or gas tables.",
+    "The CoO(l) standard is already present in the shipped gas table; its source values are documented here without changing that table."
+  ],
+  "citations": [
+    {
+      "citation": "Holzheid, A., Palme, H., and Chakraborty, S. (1997), The activities of NiO, CoO and FeO in silicate melts, Chemical Geology 139(1-4), 21-38.",
+      "doi": "10.1016/S0009-2541(97)00030-2"
+    },
+    {
+      "citation": "Gurvich, L. V., Veyts, I. V., and Medvedev, V. A., Thermodynamic Properties of Individual Substances, Volume IV, Table 1334, CoO(cr,l).",
+      "url": "https://www.chem.msu.ru/rus/tsiv/Co/print-CoO_c.html"
+    }
+  ]
+}

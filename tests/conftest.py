@@ -32,6 +32,19 @@ def packaged_gas_pack():
 
 
 @pytest.fixture(scope="session")
+def legacy_packaged_gas_pack():
+    """Load the immutable tables that preceded the versioned default."""
+    from openimcc.gas import load_gas_datapack
+
+    root = Path(__file__).resolve().parents[1]
+    data = root / "src/openimcc/data/gas"
+    return load_gas_datapack(
+        gas_path=data / "gas-shomate.csv",
+        oxide_path=data / "condensate.csv",
+    )
+
+
+@pytest.fixture(scope="session")
 def sf04_gas_pack():
     """Load the preserved LAM parent rows with the shared JANAF gas table."""
     from openimcc.gas import load_gas_datapack

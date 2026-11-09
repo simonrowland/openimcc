@@ -1,0 +1,108 @@
+{
+  "schema": "openimcc-activity-fragment.v1",
+  "element": "Ni",
+  "parent_oxide": "NiO",
+  "standards": [
+    {
+      "species": "NiO(l)",
+      "reference_state": "pure liquid NiO at 1 bar",
+      "provided_by": "existing default gas condensate table",
+      "source": "Gurvich et al., Thermodynamic Properties of Individual Substances, Volume IV, Table 2026",
+      "source_url": "https://www.chem.msu.ru/rus/tsiv/Ni/print-NiO_c.html",
+      "source_anchors": {
+        "fusion_temperature_K": 2228,
+        "fusion_enthalpy_kJ_mol": 42.0,
+        "liquid_heat_capacity_j_mol_K": 67.0
+      }
+    }
+  ],
+  "rows": [
+    {
+      "row": 1,
+      "name": "NiO dilute-solute activity",
+      "role": "melt_activity_coefficient",
+      "equation": "a_NiO = gamma_NiO(l) * x_NiO",
+      "standard_state": "NiO(l)",
+      "gamma_NiO_l": 2.7,
+      "reported_spread": {
+        "value": 0.52,
+        "unit": "dimensionless",
+        "interpretation": "Reported plus/minus spread; not identified as a standard error."
+      },
+      "experiment_count": 77,
+      "T_domain_K": [
+        1573.15,
+        1873.15
+      ],
+      "fO2_relative_to_IW": [
+        -3.0,
+        1.5
+      ],
+      "composition_domain": {
+        "matrix": "metal-saturated silicate melts",
+        "FeO_wt_pct": [
+          0.0,
+          12.0
+        ],
+        "MgO_wt_pct": [
+          4.0,
+          30.0
+        ],
+        "full_multicomponent_limits_reported": false
+      },
+      "range_flags": [
+        "Provisional transfer from the measured metal-saturated silicate-melt composition family to regolith-like melts.",
+        "The source abstract does not specify a numerical upper mole-fraction limit for dilute NiO.",
+        "Outside the reported temperature, oxygen-fugacity, FeO, or MgO intervals the central value is an extrapolation."
+      ],
+      "construction": {
+        "premise": "Holzheid, Palme, and Chakraborty report a mean gamma_NiO(l) of 2.70 +/- 0.52 from 77 experiments, relative to pure liquid NiO and simple oxide mole fractions.",
+        "algebra": "For dilute NiO, a_NiO = gamma_NiO(l) * x_NiO; no parameter is fitted to battery rows.",
+        "units_check": "gamma_NiO(l), x_NiO, and a_NiO are dimensionless.",
+        "sanity_value": {
+          "x_NiO": 0.001,
+          "gamma_NiO_l": 2.7,
+          "a_NiO": 0.0027
+        }
+      },
+      "provenance_class": "primary-measured-activity",
+      "provenance": {
+        "source": "Holzheid, A.; Palme, H.; Chakraborty, S. (1997), The activities of NiO, CoO and FeO in silicate melts.",
+        "doi": "10.1016/S0009-2541(97)00030-2",
+        "source_locator": "Chemical Geology 139, pp. 21-38; abstract reports gamma_NiO(l), its spread, 77 experiments, and the stated temperature, fO2, FeO, and MgO limits.",
+        "tier": "primary_measurement",
+        "selection_rationale": "The measured coefficient uses the same pure-liquid NiO standard as the existing gas parent row and is independent of the simulator battery."
+      },
+      "independent_check": {
+        "status": "not_applicable",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "The reported activity experiments define this helper's central coefficient; no separate same-standard Ni activity set is used as a held-out check."
+      }
+    }
+  ],
+  "flags": [
+    {
+      "code": "imcc_ni_activity_domain_notice",
+      "status": "proposed",
+      "description": "Opt-in NiO activity estimate with reported source-domain checks and provisional composition transfer."
+    }
+  ],
+  "citations": [
+    {
+      "citation": "Holzheid, A.; Palme, H.; Chakraborty, S. (1997). The activities of NiO, CoO and FeO in silicate melts. Chemical Geology 139, 21-38.",
+      "doi": "10.1016/S0009-2541(97)00030-2",
+      "source_locator": "Abstract; experiment range and reported mean coefficient."
+    },
+    {
+      "citation": "Gurvich et al. Thermodynamic Properties of Individual Substances, Volume IV, Table 2026.",
+      "source_url": "https://www.chem.msu.ru/rus/tsiv/Ni/print-NiO_c.html",
+      "source_locator": "NiO crystal/liquid functions and 2228 K fusion marker for the existing gas-table standard."
+    }
+  ]
+}

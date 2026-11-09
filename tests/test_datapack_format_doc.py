@@ -242,15 +242,20 @@ def test_redox_candidate_docs_follow_manifest_roles() -> None:
         if entry.get("datapack_version") in _CANDIDATE_VERSIONS
     ]
     current = [entry for entry in candidates if entry["role"] == "opt-in"]
+    defaults = [entry for entry in candidates if entry["role"] == "default"]
     format_doc = " ".join(DOC.read_text(encoding="utf-8").split())
     redox_basis = " ".join(
         (ROOT / "docs" / "redox-basis.md").read_text(encoding="utf-8").split()
     )
 
     assert {entry["datapack_version"] for entry in candidates} == _CANDIDATE_VERSIONS
-    assert len(current) == 3
+    assert len(current) == 2
+    assert [entry["file"] for entry in defaults] == [
+        "openimcc-redox-v5.json"
+    ]
     assert all(entry["family"] for entry in candidates)
     assert all(entry["file"] in redox_basis for entry in current)
+    assert defaults[0]["file"] in redox_basis
     assert "`role`, `family`, and `superseded_by` in `MANIFEST.json`" in format_doc
     assert "marked `historical` in `MANIFEST.json`" in redox_basis
 
@@ -333,6 +338,7 @@ def test_shipped_pack_inventory_excludes_retired_and_private_records() -> None:
         "openimcc-redox-v2.json",
         "openimcc-redox-v3.json",
         "openimcc-redox-v4.json",
+        "openimcc-redox-v5.json",
     }
 
 
@@ -510,6 +516,7 @@ def test_every_shipped_pack_loads() -> None:
         "openimcc-redox-v2.json",
         "openimcc-redox-v3.json",
         "openimcc-redox-v4.json",
+        "openimcc-redox-v5.json",
     ]
     for name in names:
         if name.startswith("openimcc-redox-"):

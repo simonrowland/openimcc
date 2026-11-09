@@ -1,13 +1,33 @@
 {
+  "DEFAULT-COMBINATION": {
+    "condensate": {
+      "file": "condensate-default-v1.csv",
+      "sha256": "1913f0c5d48b24f61576f75d4ae845f4ddf7943d40d517f62ce8dc1e9af5018b"
+    },
+    "gas": {
+      "file": "gas-shomate-default-v1.csv",
+      "sha256": "7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36"
+    },
+    "melt": {
+      "file": "imcc-sf04-d066-v4.json",
+      "sha256": "5ad550f626a49ebd683211b6f5fd6d0269eb3f2eec93d714bf7ccb2475e82d29"
+    },
+    "redox": {
+      "file": "openimcc-redox-v5.json",
+      "sha256": "94279c8627a13ae7af3416f20d1e38867b79842d0054990c7b47108d23b4a968"
+    }
+  },
   "packs": [
     {
       "bytes": 90041,
       "datapack_version": "1.0.3-d066-ext-v1",
       "family": "d066-sp-extension",
       "file": "imcc-sf04-d066-ext-v1.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution: 46 melt species = 8 unbound parent oxides + 38 complexes; x_j = K_j(T) * prod_i (x_i*)^nu_ij; log10 K_j = A_j + B_j/T (T in K)",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Opt-in candidate retained for explicit evaluation, not selected as a default.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -27,9 +47,11 @@
       "datapack_version": "1.0.9-d066-feo-hess-candidate",
       "family": "melt-feo-liquid",
       "file": "imcc-sf04-d066-feo-hess-candidate.json",
+      "kind": "melt",
       "model": "Opt-in D066 v5 candidate with mixing-inclusive five-row-method Hess A refits for Fe2SiO4 and FeTiO3; FeAl2O4 and all B values remain unchanged.",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Opt-in candidate retained for explicit evaluation, not selected as a default.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -49,9 +71,11 @@
       "datapack_version": "1.0.3-d066-feo-liquid-candidate",
       "family": "melt-feo-liquid",
       "file": "imcc-sf04-d066-feo-liquid-candidate.json",
+      "kind": "melt",
       "model": "Opt-in IMCC-SF04 associated-solution candidate with the stoichiometric FeO(l) standard-state correction applied to every Fe-bearing association.",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by imcc-sf04-d066-feo-hess-candidate.json.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -72,9 +96,11 @@
       "datapack_version": "1.0.6-d066-sio2-na2o-candidate",
       "family": "melt-sio2-na2o",
       "file": "imcc-sf04-d066-sio2-na2o-candidate.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution candidate with SiO2(l) and Na2O(l) standards re-referenced to measured silicate-liquid heat capacities.",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Opt-in candidate retained for explicit evaluation, not selected as a default.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -93,9 +119,11 @@
       "bytes": 75386,
       "datapack_version": "1.0.3-d066-v1-kcaalsi2o7",
       "file": "imcc-sf04-d066-v1-kcaalsi2o7.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution: 46 melt species = 8 unbound parent oxides + 38 complexes; x_j = K_j(T) * prod_i (x_i*)^nu_ij; log10 K_j = A_j + B_j/T (T in K)",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained to reproduce a published or historical baseline.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -114,9 +142,11 @@
       "bytes": 75368,
       "datapack_version": "1.0.3-d066-v1",
       "file": "imcc-sf04-d066-v1.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution: 46 melt species = 8 unbound parent oxides + 38 complexes; x_j = K_j(T) * prod_i (x_i*)^nu_ij; log10 K_j = A_j + B_j/T (T in K)",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by imcc-sf04-d066-v2.json.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -136,9 +166,11 @@
       "bytes": 80044,
       "datapack_version": "1.0.4-d066-v2",
       "file": "imcc-sf04-d066-v2.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution with the D066 translations, the measured MgAl2O4 fusion correction, and the D&G/Masson FeO(l) standard-state re-anchor applied consistently to Fe-bearing associations.",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by imcc-sf04-d066-v3.json.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -158,9 +190,11 @@
       "bytes": 83169,
       "datapack_version": "1.0.5-d066-v3",
       "file": "imcc-sf04-d066-v3.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution with the D066 translations, the measured MgAl2O4 fusion correction, and the D&G/Masson FeO(l) standard-state re-anchor applied consistently to Fe-bearing associations.",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by imcc-sf04-d066-v4.json.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -180,6 +214,7 @@
       "bytes": 93681,
       "datapack_version": "1.0.6-d066-v4",
       "file": "imcc-sf04-d066-v4.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution with measured silicate-liquid SiO2(l) and Na2O(l) heat capacities and re-referenced D066 associations.",
       "n_rows": 38,
       "n_screened_not_activated": 0,
@@ -201,9 +236,11 @@
       "bytes": 97169,
       "datapack_version": "1.0.7-d066-v5",
       "file": "imcc-sf04-d066-v5.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution with measured silicate-liquid SiO2(l) and Na2O(l) heat capacities, re-referenced D066 associations, and five source-based association A refits.",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by imcc-sf04-d066-v4.json.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -224,9 +261,11 @@
       "datapack_version": "1.0.2-ext-sp-2",
       "family": "sf04-sp-extension",
       "file": "imcc-sf04-ext-v4.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution: 46 melt species = 8 unbound parent oxides + 38 complexes; x_j = K_j(T) * prod_i (x_i*)^nu_ij; log10 K_j = A_j + B_j/T (T in K)",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Opt-in candidate retained for explicit evaluation, not selected as a default.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -245,9 +284,11 @@
       "bytes": 61796,
       "datapack_version": "1.0.2",
       "file": "imcc-sf04-v1.0.2.json",
+      "kind": "melt",
       "model": "IMCC ideal associated solution: 46 melt species = 8 unbound parent oxides + 38 complexes; x_j = K_j(T) * prod_i (x_i*)^nu_ij; log10 K_j = A_j + B_j/T (T in K)",
       "n_rows": 38,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained to reproduce a published or historical baseline.",
       "provenance_classes": {
         "authority_by_publication": 28,
         "janaf_direct_liquid": 9,
@@ -267,9 +308,11 @@
       "datapack_version": "1.5.0-cr-candidate",
       "family": "redox-cr",
       "file": "openimcc-redox-cr-candidate-v2.json",
+      "kind": "redox",
       "model": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-cr-candidate-v3.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -285,9 +328,11 @@
       "datapack_version": "1.6.0-cr-candidate",
       "family": "redox-cr",
       "file": "openimcc-redox-cr-candidate-v3.json",
+      "kind": "redox",
       "model": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-cr-candidate-v4.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -303,26 +348,31 @@
       "datapack_version": "1.7.0-cr-candidate",
       "family": "redox-cr",
       "file": "openimcc-redox-cr-candidate-v4.json",
+      "kind": "redox",
       "model": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-v5.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
         "measured-melt-composition-conditioned-effective-k": 1
       },
       "provenance_split": null,
-      "role": "opt-in",
-      "sha256": "5b7df312058a1886082185e47ea87a2a8f0b1041e9fea52a6bca8178ef2092c6"
+      "role": "historical",
+      "sha256": "5b7df312058a1886082185e47ea87a2a8f0b1041e9fea52a6bca8178ef2092c6",
+      "superseded_by": "openimcc-redox-v5.json"
     },
     {
       "bytes": 101192,
       "datapack_version": "1.4.0-cr-candidate",
       "family": "redox-cr",
       "file": "openimcc-redox-cr-candidate.json",
+      "kind": "redox",
       "model": "Element-based redox thermochemistry with standard-state reaction rows; opt-in composition-conditioned chromium effective K",
       "n_rows": 7,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-cr-candidate-v2.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -338,9 +388,11 @@
       "datapack_version": "1.7.0-cr-ti-candidate",
       "family": "redox-cr-ti",
       "file": "openimcc-redox-cr-ti-candidate-v2.json",
+      "kind": "redox",
       "model": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 8,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-cr-ti-candidate-v3.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -356,9 +408,11 @@
       "datapack_version": "1.8.0-cr-ti-candidate",
       "family": "redox-cr-ti",
       "file": "openimcc-redox-cr-ti-candidate-v3.json",
+      "kind": "redox",
       "model": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 8,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-cr-ti-candidate-v4.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -374,9 +428,11 @@
       "datapack_version": "1.9.0-cr-ti-candidate",
       "family": "redox-cr-ti",
       "file": "openimcc-redox-cr-ti-candidate-v4.json",
+      "kind": "redox",
       "model": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack on standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity, with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 8,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Opt-in candidate retained for explicit evaluation, not selected as a default.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -391,9 +447,11 @@
       "datapack_version": "1.6.0-cr-ti-candidate",
       "family": "redox-cr-ti",
       "file": "openimcc-redox-cr-ti-candidate.json",
+      "kind": "redox",
       "model": "Composition-conditioned Cr2+/Cr3+ and Ti3+/Ti4+ reduction rows; opt-in combined candidate pack.",
       "n_rows": 8,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-cr-ti-candidate-v2.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -409,9 +467,11 @@
       "datapack_version": "1.6.0-feo-liquid-candidate",
       "family": "redox-feo-liquid",
       "file": "openimcc-redox-feo-liquid-candidate-v2.json",
+      "kind": "redox",
       "model": "Opt-in FeO(l) stoichiometric re-anchor candidate derived from Darken & Gurry (1946), with Fe-bearing association constants transformed consistently.",
       "n_rows": 6,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Opt-in candidate retained for explicit evaluation, not selected as a default.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1
@@ -425,9 +485,11 @@
       "datapack_version": "1.5.0-feo-liquid-candidate",
       "family": "redox-feo-liquid",
       "file": "openimcc-redox-feo-liquid-candidate.json",
+      "kind": "redox",
       "model": "Opt-in FeO(l) stoichiometric re-anchor candidate derived from Darken & Gurry (1946), with Fe-bearing association constants transformed consistently.",
       "n_rows": 6,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-feo-liquid-candidate-v2.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1
@@ -442,9 +504,11 @@
       "datapack_version": "1.7.0-sio2-na2o-candidate",
       "family": "redox-sio2-na2o",
       "file": "openimcc-redox-sio2-na2o-candidate.json",
+      "kind": "redox",
       "model": "Element-based redox thermochemistry candidate using the measured silicate-liquid SiO2(l) heat capacity.",
       "n_rows": 6,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Opt-in candidate retained for explicit evaluation, not selected as a default.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1
@@ -458,9 +522,11 @@
       "datapack_version": "1.6.0-ti-candidate",
       "family": "redox-ti",
       "file": "openimcc-redox-ti-candidate-v2.json",
+      "kind": "redox",
       "model": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-ti-candidate-v3.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -476,9 +542,11 @@
       "datapack_version": "1.7.0-ti-candidate",
       "family": "redox-ti",
       "file": "openimcc-redox-ti-candidate-v3.json",
+      "kind": "redox",
       "model": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-ti-candidate-v4.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -494,9 +562,11 @@
       "datapack_version": "1.8.0-ti-candidate",
       "family": "redox-ti",
       "file": "openimcc-redox-ti-candidate-v4.json",
+      "kind": "redox",
       "model": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack on standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity, with D&G/Masson FeO(l) standard-state reference",
       "n_rows": 7,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Opt-in candidate retained for explicit evaluation, not selected as a default.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -511,9 +581,11 @@
       "datapack_version": "1.5.0-ti-candidate",
       "family": "redox-ti",
       "file": "openimcc-redox-ti-candidate.json",
+      "kind": "redox",
       "model": "Composition-conditioned Ti3+/Ti4+ reduction row based on Berry et al. (2024); opt-in candidate pack.",
       "n_rows": 7,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-ti-candidate-v2.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1,
@@ -528,9 +600,11 @@
       "bytes": 92702,
       "datapack_version": "1.4.0",
       "file": "openimcc-redox-v1.json",
+      "kind": "redox",
       "model": "Element-based redox thermochemistry with standard-state reaction rows",
       "n_rows": 6,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-v2.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1
@@ -544,9 +618,11 @@
       "bytes": 93976,
       "datapack_version": "1.5.0",
       "file": "openimcc-redox-v2.json",
+      "kind": "redox",
       "model": "Element-based redox thermochemistry with standard-state reaction rows",
       "n_rows": 6,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-v3.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1
@@ -560,9 +636,11 @@
       "bytes": 94876,
       "datapack_version": "1.6.0",
       "file": "openimcc-redox-v3.json",
+      "kind": "redox",
       "model": "Element-based redox thermochemistry with standard-state reaction rows",
       "n_rows": 6,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Retained for reproducibility; superseded by openimcc-redox-v4.json.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1
@@ -576,17 +654,182 @@
       "bytes": 96545,
       "datapack_version": "1.7.0",
       "file": "openimcc-redox-v4.json",
+      "kind": "redox",
       "model": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity.",
       "n_rows": 6,
       "n_screened_not_activated": 0,
+      "not_default_reason": "Superseded for default use by the Cr redox pack; retained for exact reproduction.",
       "provenance_classes": {
         "extension-compound-thermo": 5,
         "janaf_direct_liquid": 1
       },
       "provenance_split": null,
+      "role": "historical",
+      "sha256": "fe39de4bed783ad3f15fc6581371ea35a21eb58c9f3ae9ed1e489aaf70b16dfe",
+      "superseded_by": "openimcc-redox-cr-candidate-v4.json"
+    },
+    {
+      "bytes": 204850,
+      "datapack_version": "1.8.0-cr-candidate",
+      "family": "redox-cr",
+      "file": "openimcc-redox-v5.json",
+      "kind": "redox",
+      "model": "Element-based redox thermochemistry with standard-state reaction rows using measured silicate-liquid SiO2(l) heat capacity; opt-in composition-conditioned chromium effective K; D&G/Masson FeO(l) standard-state reference; Sr, Li, Zn, and Yb association rows.",
+      "n_rows": 18,
+      "n_screened_not_activated": 0,
+      "provenance_classes": {
+        "extension-compound-thermo": 15,
+        "janaf_direct_liquid": 2,
+        "measured-melt-composition-conditioned-effective-k": 1
+      },
+      "provenance_split": null,
       "role": "default",
-      "sha256": "fe39de4bed783ad3f15fc6581371ea35a21eb58c9f3ae9ed1e489aaf70b16dfe"
+      "sha256": "94279c8627a13ae7af3416f20d1e38867b79842d0054990c7b47108d23b4a968"
     }
   ],
-  "schema": "openimcc-pack-manifest.v1"
+  "schema": "openimcc-pack-manifest.v1",
+  "tables": [
+    {
+      "bytes": 68467,
+      "file": "condensate-default-v1.csv",
+      "kind": "condensate",
+      "n_rows": 262,
+      "role": "default",
+      "sha256": "1913f0c5d48b24f61576f75d4ae845f4ddf7943d40d517f62ce8dc1e9af5018b"
+    },
+    {
+      "bytes": 52200,
+      "file": "condensate-feo-janaf-legacy.csv",
+      "kind": "condensate",
+      "n_rows": 201,
+      "not_default_reason": "Retained to reproduce the earlier FeO condensate selection.",
+      "role": "reproduction",
+      "sha256": "8f49fa828f3d5cbd65b16f39d586b4273aa6fcb08136dc4c64bc9466eb17d8fc"
+    },
+    {
+      "bytes": 29572,
+      "file": "condensate-feo-liquid-candidate.csv",
+      "kind": "condensate",
+      "n_rows": 201,
+      "not_default_reason": "FeO liquid-standard candidate remains opt-in.",
+      "role": "opt-in",
+      "sha256": "1269189c0151c2671dd5115b0a0a0f6e33d89965bb5382a3114f119053541964"
+    },
+    {
+      "bytes": 71542,
+      "file": "condensate-hight-candidate-v2.csv",
+      "kind": "condensate",
+      "n_rows": 273,
+      "not_default_reason": "High-temperature candidate remains opt-in pending its own default review.",
+      "role": "opt-in",
+      "sha256": "ec7b65a66613d0485cdcc7fa810ace3d97ff50416bbd5e21357bc90de904c003"
+    },
+    {
+      "bytes": 70639,
+      "file": "condensate-hight-candidate.csv",
+      "kind": "condensate",
+      "n_rows": 272,
+      "not_default_reason": "High-temperature candidate remains opt-in pending its own default review.",
+      "role": "opt-in",
+      "sha256": "aca172c1d435e520e8a16f5a58ce5ae67c191c1fafc34bf98c080d447efb973d"
+    },
+    {
+      "bytes": 68503,
+      "file": "condensate-sio2-janaf-cr-candidate.csv",
+      "kind": "condensate",
+      "n_rows": 262,
+      "not_default_reason": "Byte-immutable O-035 source candidate; its crystal row is copied into the versioned default.",
+      "role": "opt-in",
+      "sha256": "1e4e3a8ec33be1e9951dcc91fac7c2b878da08004af08a061aa33f3144718638"
+    },
+    {
+      "bytes": 53472,
+      "file": "condensate-sio2-na2o-janaf-legacy.csv",
+      "kind": "condensate",
+      "n_rows": 206,
+      "not_default_reason": "Retained to reproduce the earlier JANAF condensate rows.",
+      "role": "reproduction",
+      "sha256": "f043655289dc7da97a00998c34d41295647b2851636ecf68071348aa217f132b"
+    },
+    {
+      "bytes": 55396,
+      "file": "condensate-sio2-na2o-liquid-candidate.csv",
+      "kind": "condensate",
+      "n_rows": 212,
+      "not_default_reason": "Measured-Cp liquid candidate retained for explicit comparison.",
+      "role": "opt-in",
+      "sha256": "24ee772b2ea5dca42f518c68a1d71f875a8e6ce7c8714b9659ad2fdba5235b14"
+    },
+    {
+      "bytes": 68463,
+      "file": "condensate-standard-state-candidate.csv",
+      "kind": "condensate",
+      "n_rows": 262,
+      "not_default_reason": "Hg(l) candidate remains opt-in because its high-temperature branch is referenced to Hg(g).",
+      "role": "opt-in",
+      "sha256": "92fb8701bffb2e2e10fbeaaf47d5083dab696cf151c55c1335aa1a019ac3e10b"
+    },
+    {
+      "bytes": 68394,
+      "file": "condensate.csv",
+      "kind": "condensate",
+      "n_rows": 262,
+      "not_default_reason": "Retained for published-profile and historical comparisons; openimcc uses the versioned O-035 default.",
+      "role": "reproduction",
+      "sha256": "1b9149eb9d53ffd7d96872b25b27144bca902a71b963fcec9b6bf9cec37127a0"
+    },
+    {
+      "bytes": 156926,
+      "file": "gas-shomate-default-v1.csv",
+      "kind": "gas",
+      "n_rows": 685,
+      "role": "default",
+      "sha256": "7f6f03cfae5f818df95a4a03e4bf2b43b9b1da08795eff8f1550e18620ccef36"
+    },
+    {
+      "bytes": 168245,
+      "file": "gas-shomate-hight-candidate-v2.csv",
+      "kind": "gas",
+      "n_rows": 724,
+      "not_default_reason": "High-temperature candidate remains opt-in pending its own default review.",
+      "role": "opt-in",
+      "sha256": "72fdc5614289e666234d12e928f71e0ef3ba2cc988b85d1af9068415f73b4032"
+    },
+    {
+      "bytes": 161462,
+      "file": "gas-shomate-hight-candidate.csv",
+      "kind": "gas",
+      "n_rows": 708,
+      "not_default_reason": "High-temperature candidate remains opt-in pending its own default review.",
+      "role": "opt-in",
+      "sha256": "4dc41e150e22beb90f6b6b8dec67b0f4d993b5984e2e3ce1ec792d52b4c0f036"
+    },
+    {
+      "bytes": 156923,
+      "file": "gas-shomate-oxide-molecule-candidate.csv",
+      "kind": "gas",
+      "n_rows": 685,
+      "not_default_reason": "Source overlay retained for comparison; its seven molecule rows are included in the default.",
+      "role": "opt-in",
+      "sha256": "a33a26b6bfe9a6e6a914a4acd83f45c7d63c20624fd8380b4ece6d9851c22be1"
+    },
+    {
+      "bytes": 154486,
+      "file": "gas-shomate-standard-state-candidate.csv",
+      "kind": "gas",
+      "n_rows": 678,
+      "not_default_reason": "Standalone correction table retained for comparison; its corrected rows are included in the default.",
+      "role": "opt-in",
+      "sha256": "d16227a5cc6740cfba3262b7e27e94baf962c0301910ad7062cff01c433716f5"
+    },
+    {
+      "bytes": 154483,
+      "file": "gas-shomate.csv",
+      "kind": "gas",
+      "n_rows": 678,
+      "not_default_reason": "Retained for the published profile and historical comparisons; openimcc uses the versioned default.",
+      "role": "reproduction",
+      "sha256": "e01c363ac6bb526b5e8ee6df300963652e0771585e9348e6456afef5cacb8058"
+    }
+  ]
 }

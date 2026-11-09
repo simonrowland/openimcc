@@ -1,0 +1,784 @@
+{
+  "schema": "openimcc-redox-fragment.v1",
+  "element": "Li",
+  "notice": "imcc_li_associate_pack_notice",
+  "flags": [
+    "opt_in_unvalidated_pack_identity",
+    "provisional_mixed_source_standards",
+    "source_domain_1323_2473_K",
+    "provisional_li4_phase_relation"
+  ],
+  "source_selection_rail": [
+    "standard_state_consistency",
+    "primary_measurement",
+    "domain_match",
+    "systematic_estimate"
+  ],
+  "parent_registry_additions": [
+    {
+      "element": "Li",
+      "parent_oxide": "Li2O(l)",
+      "parent_formula_atoms": {
+        "Li": 2,
+        "O": 1
+      },
+      "parent_standard_state": "pure liquid Li2O at 1 bar; JANAF Li-015 reference",
+      "elemental_reference_state": "Li(g) at 1 bar; JANAF Li-005 reference",
+      "parent_oxidation_state": 1,
+      "known_oxidation_states": [
+        1
+      ],
+      "redox_thermochemistry_status": "populated"
+    }
+  ],
+  "thermo_species_additions": {
+    "Li(g)": {
+      "formula_atoms": {
+        "Li": 1
+      },
+      "evaluator": "janaf_shomate",
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200.0,
+            1500.0
+          ],
+          "row": {
+            "A": 20.7332311763766,
+            "B": 0.135891462797421,
+            "C": -0.122331576504846,
+            "D": 0.0360625697951749,
+            "E": 0.00392057284519137,
+            "F": 153.123663963921,
+            "G": 163.850658693204
+          }
+        },
+        {
+          "T_domain_K": [
+            1500.0,
+            3000.0
+          ],
+          "row": {
+            "A": 23.1637401177987,
+            "B": -1.57896889436743,
+            "C": 0.0800056728279445,
+            "D": 0.10260782560593,
+            "E": -1.19347619126451,
+            "F": 150.297003199307,
+            "G": 164.868881670171
+          }
+        }
+      ],
+      "range_flags": [],
+      "provenance": {
+        "source": "NIST-JANAF lithium gas table Li-005",
+        "source_url": "https://janaf.nist.gov/tables/Li-005.html",
+        "tier": "tier1_direct_assessed",
+        "selection_rationale": "Reuses the existing source-fitted Li(g) rows as the elemental 1 bar standard across the process window."
+      },
+      "fit_residual": {
+        "value": 0.00120117583448882,
+        "unit": "kJ mol^-1 species",
+        "target_source": "NIST-JANAF Li-005 tabular values as fitted in the existing gas table",
+        "comparison_method": "maximum absolute Gibbs residual over source nodes",
+        "temperature_range": [
+          1200,
+          3000
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "Source-fit residual only; no separate accuracy band is assigned.",
+        "provenance": "NIST-JANAF Li-005"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "The elemental reference is a source standard, not a standalone activity prediction."
+      }
+    },
+    "Li2O(l)": {
+      "formula_atoms": {
+        "Li": 2,
+        "O": 1
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200.0,
+            1400.0
+          ],
+          "row": {
+            "dH298_R": -66.5403196115494,
+            "dG_A": 5.54790630090229,
+            "dG_B": -0.929020193704004,
+            "dG_C": 12.7837625399088,
+            "dG_D": -8.10972516871752,
+            "dG_E": 1.73181423078672
+          }
+        },
+        {
+          "T_domain_K": [
+            1400.0,
+            1980.0
+          ],
+          "row": {
+            "dH298_R": -66.5403196115494,
+            "dG_A": 1.70902837999337,
+            "dG_B": 11.6052137807541,
+            "dG_C": -2.65763884732427,
+            "dG_D": 0.37858276428658,
+            "dG_E": -0.0216312649313106
+          }
+        },
+        {
+          "T_domain_K": [
+            1980.0,
+            2000.0
+          ],
+          "row": {
+            "dH298_R": -66.5403196115494,
+            "dG_A": -0.912503318101426,
+            "dG_B": 15.4176797142336,
+            "dG_C": -4.41774176890015,
+            "dG_D": 0.589947268295546,
+            "dG_E": 0.0
+          }
+        },
+        {
+          "T_domain_K": [
+            2000.0,
+            3000.0
+          ],
+          "row": {
+            "dH298_R": -66.5403196115494,
+            "dG_A": 1.73600054607031,
+            "dG_B": 11.6238452467224,
+            "dG_C": -2.72248846650135,
+            "dG_D": 0.415817884444197,
+            "dG_E": -0.0280508167458595
+          }
+        }
+      ],
+      "range_flags": [
+        "The liquid branch is supercooled below its 1843 K crystal-liquid transition.",
+        "Its coefficients intentionally match the existing Li-015 gas condensate rows."
+      ],
+      "provenance": {
+        "source": "NIST-JANAF Li2O crystal/liquid tables Li-014 and Li-015",
+        "source_url": "https://janaf.nist.gov/tables/Li-015.html",
+        "tier": "tier1_direct_assessed",
+        "selection_rationale": "The existing Li-015 liquid standard is retained exactly so the redox parent and shipped gas channels share one Li2O(l) reference. Its fusion enthalpy is independently reconstructed from the paired crystal/liquid H and S functions."
+      },
+      "fit_residual": {
+        "value": 0.00723382854519878,
+        "unit": "kJ mol^-1 species",
+        "target_source": "NIST-JANAF Li-015 tabular values as fitted in the existing gas table",
+        "comparison_method": "maximum absolute Gibbs residual over source nodes",
+        "temperature_range": [
+          1200,
+          3000
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "fit_only",
+        "explanation": "The recorded fit residual is not an accuracy estimate.",
+        "provenance": "NIST-JANAF Li-015"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No row-specific independent Li2O(l) activity check is part of this fragment."
+      }
+    },
+    "Li2SiO3(l)": {
+      "formula_atoms": {
+        "Li": 2,
+        "Si": 1,
+        "O": 3
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200,
+            1500
+          ],
+          "row": {
+            "dH298_R": -197.98032363948,
+            "dG_A": -6.8850721262267,
+            "dG_B": 17.8148820285454,
+            "dG_C": 12.2338137059457,
+            "dG_D": -11.2324620946544,
+            "dG_E": 2.55195038956738
+          }
+        },
+        {
+          "T_domain_K": [
+            1500,
+            2000
+          ],
+          "row": {
+            "dH298_R": -197.98032363948,
+            "dG_A": -15.1950374373207,
+            "dG_B": 44.2154931950119,
+            "dG_C": -18.7501200762074,
+            "dG_D": 4.73830173999042,
+            "dG_E": -0.505516729672942
+          }
+        },
+        {
+          "T_domain_K": [
+            2000,
+            3000
+          ],
+          "row": {
+            "dH298_R": -197.98032363948,
+            "dG_A": -8.78381513842139,
+            "dG_B": 31.6909933329591,
+            "dG_C": -9.51837625359384,
+            "dG_D": 1.69513695502612,
+            "dG_E": -0.127005961593383
+          }
+        }
+      ],
+      "range_flags": [
+        "The pure-liquid standard is supercooled below 1474 K.",
+        "Provisional mixed-source construction: Téqui et al. report ΔHfus=71.3 ± 0.6 kJ/mol, while the older JANAF Li-021 branch implies about 28.03 kJ/mol; the Li-021 liquid Cp 167.36 J mol^-1 K^-1 is retained.",
+        "The Li-020 high-temperature crystal heat-capacity curve is assessed rather than a new Li-specific fit."
+      ],
+      "provenance": {
+        "source": "de Abreu and Fabrichnaya 2024 Table 5 p. 315; NIST-JANAF Li-020/Li-021; Téqui et al. 1992 pp. 2601–2604",
+        "source_url": "https://doi.org/10.1111/j.1151-2916.1992.tb05621.x",
+        "tier": "tier3_primary_measurement_with_assessed_reference",
+        "selection_rationale": "Crystal formation H and S use the printed Table 5 primary anchors; the crystal thermal curve is Li-020; direct fusion calorimetry supersedes the older Li-021 fusion value, while Li-021 Cp is retained because a compatible numeric liquid-Cp row is published there. This mixed source standard is flagged provisional."
+      },
+      "construction": {
+        "Hf298_kJ_mol": -1646.1,
+        "S298_J_mol_K": 79.8,
+        "fusion_temperature_K": 1474.0,
+        "fusion_enthalpy_kJ_mol": 71.3,
+        "fusion_entropy_J_mol_K": 48.37177747625509,
+        "liquid_heat_capacity_J_mol_K": 167.36,
+        "liquid_Cp_source": "NIST-JANAF Li-021, transition row at 1474 K",
+        "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"
+      },
+      "fit_residual": {
+        "value": 0.004358806321761222,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Li2SiO3 liquid construction from listed crystal, fusion, and Cp anchors",
+        "comparison_method": "maximum absolute fitted Gibbs residual on 25 K grid",
+        "temperature_range": [
+          1200,
+          3000
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "The construction residual is numerical fit error only; source disagreement and phase extrapolation are not represented as an accuracy band.",
+        "provenance": "Li-020; de Abreu and Fabrichnaya Table 5; Téqui et al.; Li-021"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "The older JANAF fusion branch conflicts with the selected direct calorimetry; no row-specific activity check is treated as independent."
+      }
+    },
+    "Li4SiO4(l)": {
+      "formula_atoms": {
+        "Li": 4,
+        "Si": 1,
+        "O": 4
+      },
+      "evaluator": "condensate_phi",
+      "T_domain_K": [
+        1200,
+        3000
+      ],
+      "intervals": [
+        {
+          "T_domain_K": [
+            1200,
+            1500
+          ],
+          "row": {
+            "dH298_R": -280.102287664167,
+            "dG_A": -12.0230018051167,
+            "dG_B": 30.1906412973269,
+            "dG_C": 20.4991105794673,
+            "dG_D": -19.679132239262,
+            "dG_E": 4.55807143971329
+          }
+        },
+        {
+          "T_domain_K": [
+            1500,
+            2000
+          ],
+          "row": {
+            "dH298_R": -280.102287664167,
+            "dG_A": -26.4600565964273,
+            "dG_B": 76.7760559011308,
+            "dG_C": -34.8144335451527,
+            "dG_D": 9.0896210550466,
+            "dG_E": -0.988621483921514
+          }
+        },
+        {
+          "T_domain_K": [
+            2000,
+            3000
+          ],
+          "row": {
+            "dH298_R": -280.102287664167,
+            "dG_A": -13.7067726299062,
+            "dG_B": 51.7853688751794,
+            "dG_C": -16.3372272506125,
+            "dG_D": 2.98028164068589,
+            "dG_E": -0.226491573323487
+          }
+        }
+      ],
+      "range_flags": [
+        "The pure-liquid standard is supercooled below 1531 K.",
+        "Provisional entropy: S298=126 J mol^-1 K^-1 is the 2024 assessed value, not a direct measurement.",
+        "The Kleykamp crystal enthalpy fit is measured through 1300 K and extrapolated 231 K to the 1531 K fusion point.",
+        "The effective liquid Cp is inferred by Hess closure to the Ihle et al. liquid KEMS reaction enthalpy; it is not a direct Cp measurement.",
+        "The independently printed solid KEMS reaction differs by about 40.7 kJ/mol when combined with the selected Li2SiO3 solution-calorimetry Hf anchor; the source inconsistency remains unresolved.",
+        "Li4SiO4 phase behavior differs across the literature; this constructed pure-liquid standard does not assert congruent stable melting at 1531 K."
+      ],
+      "provenance": {
+        "source": "Kleykamp 1996 pp. 191–201; KfK 4677 Table 9 p. 60; de Abreu and Fabrichnaya 2024 Table 5 p. 315",
+        "source_url": "https://doi.org/10.1016/S0040-6031(96)02996-6",
+        "tier": "tier3_primary_measurement_with_provisional_entropy_cp",
+        "selection_rationale": "Crystal Hf and fusion enthalpy use primary calorimetry/KEMS anchors. The 298 K entropy is the 2024 assessed value; the liquid Cp is inferred by Hess closure against the independently printed liquid KEMS reaction enthalpy, not directly measured."
+      },
+      "construction": {
+        "Hf298_kJ_mol": -2328.9,
+        "S298_J_mol_K": 126.0,
+        "entropy_status": "provisional, assessed in de Abreu and Fabrichnaya 2024 Table 5",
+        "fusion_temperature_K": 1531.0,
+        "fusion_enthalpy_kJ_mol": 53.0,
+        "fusion_entropy_J_mol_K": 34.617896799477464,
+        "crystal_H_increment_at_fusion_kJ_mol": 334.84311577051636,
+        "crystal_Cp_at_fusion_J_mol_K": 391.49912250341197,
+        "liquid_heat_capacity_J_mol_K": 233.910853705249,
+        "liquid_Cp_method": "Hess closure to Ihle et al. 1989 Table 9 liquid KEMS reaction",
+        "liquid_Hf298_closure_kJ_mol": -2229.43388022,
+        "fitter": "tools.liquid_from_solid.LiquidConstruction.fit_condensate_row"
+      },
+      "fit_residual": {
+        "value": 0.008282881311515666,
+        "unit": "kJ mol^-1 species",
+        "target_source": "Li4SiO4 liquid construction from listed crystal, fusion, entropy, and Hess Cp anchors",
+        "comparison_method": "maximum absolute fitted Gibbs residual on 25 K grid",
+        "temperature_range": [
+          1200,
+          3000
+        ],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "No statistical band is assigned; entropy and liquid Cp remain provisional and source discrepancies are explicitly flagged.",
+        "provenance": "Kleykamp 1996; Ihle et al. 1989 Table 9; de Abreu and Fabrichnaya Table 5"
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "The liquid KEMS enthalpy is used as a construction anchor, not an independent holdout; the solid KEMS reaction exposes an unresolved source inconsistency."
+      }
+    }
+  },
+  "rows": [
+    {
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "A source-derived opt-in reaction standard; no equilibrium activities were used to fit this row.",
+        "provenance": "Li thermochemistry fragment"
+      },
+      "complex": "Li2O(l)",
+      "role": "parent_reference",
+      "nu": {},
+      "reactants": {
+        "Li(g)": 2,
+        "O2(g)": 0.5
+      },
+      "products": {
+        "Li2O(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": -0.5,
+      "reaction": "2 Li(g) + 1/2 O2(g) = Li2O(l)",
+      "phase_or_construction": "Pure liquid Li2O from the existing JANAF Li-015 liquid reference.",
+      "method": "Use the source-fitted Li2O(l) standard and JANAF Li(g)/O2(g) reference terms without refitting.",
+      "standard_gibbs_terms": [
+        {
+          "species": "Li2O(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "Li(g)",
+          "coefficient": -2
+        },
+        {
+          "species": "O2(g)",
+          "coefficient": -0.5
+        }
+      ],
+      "T_domain_K": [
+        1323,
+        2473
+      ],
+      "uncertainty_note": "The liquid row is source-assessed; its transition enthalpy is reconstructed from paired JANAF crystal/liquid functions.",
+      "range_flags": [
+        "The Li2O(l) reference is supercooled below 1843 K."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "NIST-JANAF Li2O crystal/liquid tables Li-014 and Li-015",
+        "source_url": "https://janaf.nist.gov/tables/Li-015.html",
+        "tier": "tier1_direct_assessed",
+        "selection_rationale": "The existing Li-015 liquid standard is retained exactly so the redox parent and shipped gas channels share one Li2O(l) reference. Its fusion enthalpy is independently reconstructed from the paired crystal/liquid H and S functions."
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "No independent reaction check is bundled with the fragment."
+      }
+    },
+    {
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "A source-derived opt-in reaction standard; no equilibrium activities were used to fit this row.",
+        "provenance": "Li thermochemistry fragment"
+      },
+      "complex": "Li2SiO3(l)",
+      "role": "complex",
+      "nu": {
+        "Li2O(l)": 1,
+        "SiO2(l)": 1
+      },
+      "reactants": {
+        "Li2O(l)": 1,
+        "SiO2(l)": 1
+      },
+      "products": {
+        "Li2SiO3(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "Li2O(l) + SiO2(l) = Li2SiO3(l)",
+      "phase_or_construction": "Metasilicate-derived liquid association standard from crystal thermochemistry and fusion.",
+      "method": "Hess standard ΔG is G[Li2SiO3(l)] - G[Li2O(l)] - G[SiO2(l)] on the existing redox liquid references.",
+      "standard_gibbs_terms": [
+        {
+          "species": "Li2SiO3(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "Li2O(l)",
+          "coefficient": -1
+        },
+        {
+          "species": "SiO2(l)",
+          "coefficient": -1
+        }
+      ],
+      "T_domain_K": [
+        1323,
+        2473
+      ],
+      "uncertainty_note": "The mixed source standard is provisional because the newer direct fusion measurement conflicts with the older JANAF liquid branch.",
+      "range_flags": [
+        "The pure-liquid standard is supercooled below 1474 K.",
+        "Provisional mixed-source construction: Téqui et al. report ΔHfus=71.3 ± 0.6 kJ/mol, while the older JANAF Li-021 branch implies about 28.03 kJ/mol; the Li-021 liquid Cp 167.36 J mol^-1 K^-1 is retained.",
+        "The Li-020 high-temperature crystal heat-capacity curve is assessed rather than a new Li-specific fit."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "NIST-JANAF Li-020 crystal function; de Abreu and Fabrichnaya 2024 Table 5; Tequi, Grinspan, and Richet 1992 fusion measurement; JANAF Li-021 liquid Cp",
+        "source_url": "https://doi.org/10.1111/j.1151-2916.1992.tb05621.x",
+        "tier": "tier3_primary_measurement_with_assessed_reference",
+        "selection_rationale": "Crystal formation H and S use the printed Table 5 primary anchors; the crystal thermal curve is Li-020; direct fusion calorimetry supersedes the older Li-021 fusion value, while Li-021 Cp is retained because a compatible numeric liquid-Cp row is published there. This mixed source standard is flagged provisional."
+      },
+      "independent_check": {
+        "status": "not_found",
+        "equilibrium": null,
+        "primary_source": null,
+        "conditions": null,
+        "measured_value": null,
+        "predicted_value": null,
+        "miss": null,
+        "miss_to_band_ratio": null,
+        "reason": "The incompatible JANAF liquid fusion branch is disclosed; no activity data were used."
+      }
+    },
+    {
+      "fit_residual": null,
+      "accuracy_band": null,
+      "band_basis": {
+        "kind": "measured_construction",
+        "explanation": "A source-derived opt-in reaction standard; no equilibrium activities were used to fit this row.",
+        "provenance": "Li thermochemistry fragment"
+      },
+      "complex": "Li4SiO4(l)",
+      "role": "complex",
+      "nu": {
+        "Li2O(l)": 2,
+        "SiO2(l)": 1
+      },
+      "reactants": {
+        "Li2O(l)": 2,
+        "SiO2(l)": 1
+      },
+      "products": {
+        "Li4SiO4(l)": 1
+      },
+      "external_oxygen_stoich_product_positive": 0,
+      "reaction": "2 Li2O(l) + SiO2(l) = Li4SiO4(l)",
+      "phase_or_construction": "Orthosilicate-derived liquid association standard from crystal thermochemistry, fusion, and a KEMS Hess closure.",
+      "method": "Hess standard ΔG is G[Li4SiO4(l)] - 2 G[Li2O(l)] - G[SiO2(l)] on the shared liquid references.",
+      "standard_gibbs_terms": [
+        {
+          "species": "Li4SiO4(l)",
+          "coefficient": 1
+        },
+        {
+          "species": "Li2O(l)",
+          "coefficient": -2
+        },
+        {
+          "species": "SiO2(l)",
+          "coefficient": -1
+        }
+      ],
+      "T_domain_K": [
+        1323,
+        2473
+      ],
+      "uncertainty_note": "The central liquid Cp is inferred from one published KEMS enthalpy; entropy and solid/liquid source conflicts remain provisional. The phase relation is also source-disputed.",
+      "range_flags": [
+        "The pure-liquid standard is supercooled below 1531 K.",
+        "Provisional entropy: S298=126 J mol^-1 K^-1 is the 2024 assessed value, not a direct measurement.",
+        "The Kleykamp crystal enthalpy fit is measured through 1300 K and extrapolated 231 K to the 1531 K fusion point.",
+        "The effective liquid Cp is inferred by Hess closure to the Ihle et al. liquid KEMS reaction enthalpy; it is not a direct Cp measurement.",
+        "The independently printed solid KEMS reaction differs by about 40.7 kJ/mol when combined with the selected Li2SiO3 solution-calorimetry Hf anchor; the source inconsistency remains unresolved.",
+        "Li4SiO4 phase behavior differs across the literature; the 1531 K pure-liquid standard is a thermodynamic association reference."
+      ],
+      "provenance_class": "extension-compound-thermo",
+      "provenance": {
+        "source": "Kleykamp 1996 pp. 191–201; KfK 4677 Table 9 p. 60; de Abreu and Fabrichnaya 2024 Table 5 p. 315",
+        "source_url": "https://doi.org/10.1016/S0040-6031(96)02996-6",
+        "tier": "tier3_primary_measurement_with_provisional_entropy_cp",
+        "selection_rationale": "Crystal Hf and fusion enthalpy use primary calorimetry/KEMS anchors. The 298 K entropy is the 2024 assessed value; the liquid Cp is inferred by Hess closure against the independently printed liquid KEMS reaction enthalpy, not directly measured."
+      },
+      "independent_check": {
+        "status": "tested",
+        "equilibrium": "Li4SiO4(cr) = 2Li(g) + 1/2O2(g) + Li2SiO3(cr)",
+        "primary_source": "Ihle, Penzhorn, and Schuster, KfK 4677, Table 9 p. 60; Fusion Eng. Des. 8 (1989), pp. 393–397, DOI 10.1016/S0920-3796(89)80138-3",
+        "conditions": "298 K standard reaction enthalpy; KEMS Type A and Type B Li4SiO4 specimens.",
+        "measured_value": "960.70±2.38 kJ/mol (Type A); 957.26±2.69 kJ/mol (Type B)",
+        "predicted_value": "1001.40 kJ/mol from selected Li4SiO4 and Li2SiO3 formation enthalpies and JANAF Li(g).",
+        "miss": "40.70 kJ/mol (Type A); 44.14 kJ/mol (Type B).",
+        "miss_to_band_ratio": null,
+        "reason": "This separate solid KEMS reaction is not used to fit the liquid Cp and does not close with the selected Li2SiO3 solution-calorimetry enthalpy. The discrepancy is unresolved; no statistical accuracy band is assigned."
+      }
+    }
+  ],
+  "standards": {
+    "Li2O(l)": {
+      "premise": "JANAF provides paired crystal and liquid branches with a marked transition at 1843 K. The liquid standard must match Li-015, already used by the gas table.",
+      "algebra": "At 1843 K: ΔHfus = [(-553.247 + 144.742) - (-598.730 + 131.649)] kJ/mol = 58.576 kJ/mol. ΔSfus = 213.153 - 181.370 = 31.783 J/(mol K); Tm ΔSfus = 58.576069 kJ/mol; Cp_liquid=100.416 J/(mol K). The retained Li-015 branch follows G_l(T)=G_cr(Tm)-S_cr(Tm)(T-Tm)+ΔHfus(1-T/Tm)+Cp_l[(T-Tm)-T ln(T/Tm)]; the existing fitted coefficients are copied unchanged from the gas condensate rows.",
+      "units_check": "The fusion enthalpy difference is kJ/mol; J/(mol K) × K / 1000 = kJ/mol. Every term in the closed Gibbs expression is J/mol before conversion to the table units.",
+      "sanity_value": "ΔHfus and TmΔSfus agree to 0.000069 kJ/mol at printed precision; ΔGfus(Tm)=0.",
+      "flags": [
+        "Source-derived; liquid branch is supercooled below 1843 K."
+      ],
+      "citations": [
+        {
+          "citation": "Chase, NIST-JANAF Thermochemical Tables, 4th ed., Monograph 9, Tables Li-014 and Li-015, 298.15 K and 1843 K rows.",
+          "doi": "10.18434/T42S31",
+          "url": "https://janaf.nist.gov/tables/Li-015.html"
+        }
+      ]
+    },
+    "Li2SiO3(l)": {
+      "premise": "Use primary Table 5 crystal Hf/S anchors, the JANAF Li-020 crystal thermal function, direct Téqui fusion calorimetry, and the published Li-021 liquid Cp.",
+      "algebra": "At 1474 K, Hcr = -1646.1 + 169.896 kJ/mol. The selected crystal entropy is 79.8 + (298.915 - 80.295) = 298.420 J/(mol K), combining the Table 5 AC value with the Li-020 entropy increment. ΔSfus=71.3 kJ/mol / 1474 K=48.371778 J/(mol K), so G_liquid(Tm)=G_crystal(Tm)=-1916.075 kJ/mol.",
+      "units_check": "T×S converts J/mol to J/mol; enthalpy inputs are kJ/mol.",
+      "sanity_value": "G_liquid(1474 K)=-1916.075 kJ/mol; JANAF Li-021 implies ΔHfus≈28.033 kJ/mol, versus direct Téqui calorimetry 71.3±0.6 kJ/mol, so the mixed-source liquid branch is provisional.",
+      "flags": [
+        "Provisional mixed-source standard.",
+        "JANAF Li-021 implies ΔHfus≈28.033 kJ/mol; direct Téqui value is 71.3±0.6 kJ/mol."
+      ],
+      "citations": [
+        {
+          "citation": "de Abreu and Fabrichnaya, Critical Experiments and Thermodynamic Modeling of the Li2O-SiO2 System, Solids 5 (2024), Table 5, p. 315.",
+          "doi": "10.3390/solids5020020",
+          "url": "https://www.mdpi.com/2673-6497/5/2/20"
+        },
+        {
+          "citation": "Téqui, Grinspan, and Richet, Thermodynamic Properties of Alkali Silicates: Heat Capacity of Li2SiO3 and Lithium-Bearing Melts, J. Am. Ceram. Soc. 75 (1992), pp. 2601–2604.",
+          "doi": "10.1111/j.1151-2916.1992.tb05621.x",
+          "url": "https://doi.org/10.1111/j.1151-2916.1992.tb05621.x"
+        },
+        {
+          "citation": "NIST-JANAF Tables Li-020 and Li-021, Li2SiO3 crystal and liquid transition rows at 1474 K.",
+          "doi": "10.18434/T42S31",
+          "url": "https://janaf.nist.gov/tables/Li-021.html"
+        }
+      ]
+    },
+    "Li4SiO4(l)": {
+      "premise": "Use Ihle KEM crystal ΔHf, Kleykamp crystal enthalpy/fusion calorimetry, the provisional 2024 assessed S298, and a liquid Cp inferred by Hess closure to the liquid KEMS reaction.",
+      "algebra": "Kleykamp reports H(T)-H(298.15)=-17156+73.694T+0.103210T²-4163115/T J/mol through 1300 K; differentiate for Cp and extrapolate 231 K to 1531 K, giving Hinc=334.843116 kJ/mol. Integrating Cp/T from 298.15 K with the provisional Table 5 S298=126 J/(mol K) gives Scr(1531)=523.582429 J/(mol K). ΔHfus=53 kJ/mol, ΔSfus=53000/1531=34.617897 J/(mol K). The liquid Cp is solved so ΔH298[Li4SiO4(l)→2Li(g)+1/2O2(g)+Li2SiO3(l)]=946.34 kJ/mol, giving 233.910854 J/(mol K).",
+      "units_check": "Kleykamp H is J/mol and is divided by 1000 for kJ/mol. Cp/T integrates to J/(mol K); the KEMS Hess target is kJ/mol, with Cp·ΔT divided by 1000.",
+      "sanity_value": "H_liquid(298.15 K)=-2229.433880 kJ/mol and the source KEMS reaction closes at 946.340 kJ/mol.",
+      "flags": [
+        "Provisional S298=126 J/(mol K) is assessed, not measured.",
+        "Liquid Cp is inferred from the KEMS reaction and is not an independent holdout.",
+        "Selected Li2SiO3 solution-calorimetry Hf predicts the Ihle solid KEMS reaction at 1001.4 kJ/mol versus 960.70±2.38 kJ/mol; unresolved source conflict.",
+        "Li4SiO4 melting is described differently across phase-equilibrium sources; the 1531 K pure-liquid standard is an association construction and does not assert congruent melting."
+      ],
+      "citations": [
+        {
+          "citation": "Chase, NIST-JANAF Thermochemical Tables, 4th ed., Monograph 9, Table Li-005, Li(g).",
+          "doi": "10.18434/T42S31",
+          "url": "https://janaf.nist.gov/tables/Li-005.html"
+        },
+        {
+          "citation": "de Abreu and Fabrichnaya, Critical Experiments and Thermodynamic Modeling of the Li2O-SiO2 System, Solids 5 (2024), Table 5, p. 315.",
+          "doi": "10.3390/solids5020020",
+          "url": "https://www.mdpi.com/2673-6497/5/2/20"
+        },
+        {
+          "citation": "NIST-JANAF Tables Li-020 and Li-021, Li2SiO3 crystal and liquid transition rows at 1474 K.",
+          "doi": "10.18434/T42S31",
+          "url": "https://janaf.nist.gov/tables/Li-021.html"
+        },
+        {
+          "citation": "Kleykamp, Enthalpy, heat capacity, second-order transitions and enthalpy of fusion of Li4SiO4 by high-temperature calorimetry, Thermochim. Acta 287 (1996), pp. 191–201.",
+          "doi": "10.1016/S0040-6031(96)02996-6",
+          "url": "https://doi.org/10.1016/S0040-6031(96)02996-6"
+        },
+        {
+          "citation": "KfK/Euratom Semi-Annual Report, KfK 4677 (November 1989), section BS NN-D-8, Table 9, p. 60; reports the solid and liquid Li4SiO4 KEMS reaction enthalpies.",
+          "url": "https://publikationen.bibliothek.kit.edu/270028373/18331037"
+        },
+        {
+          "citation": "Ihle, Penzhorn, and Schuster, The thermochemistry of lithium silicates in view of their use as breeder materials, Fusion Eng. Des. 8 (1989), pp. 393–397.",
+          "doi": "10.1016/S0920-3796(89)80138-3",
+          "url": "https://doi.org/10.1016/S0920-3796(89)80138-3"
+        }
+      ]
+    },
+    "Li(g)": {
+      "premise": "Use the existing JANAF Li-005 gas standard fitted in the immutable gas table.",
+      "algebra": "Copy the two Li(g) source-fit intervals; no new fitting or standard-state conversion is applied.",
+      "units_check": "Shomate H is kJ/mol, S is J/(mol K), and the evaluator returns J/mol.",
+      "sanity_value": "At 2000 K, the source-node absolute Gibbs function is -162.012 kJ/mol.",
+      "flags": [],
+      "citations": [
+        {
+          "citation": "Chase, NIST-JANAF Thermochemical Tables, 4th ed., Monograph 9, Table Li-005, Li(g).",
+          "doi": "10.18434/T42S31",
+          "url": "https://janaf.nist.gov/tables/Li-005.html"
+        }
+      ]
+    }
+  },
+  "citations": [
+    {
+      "citation": "Chase, NIST-JANAF Thermochemical Tables, 4th ed., Monograph 9, Tables Li-014 and Li-015, 298.15 K and 1843 K rows.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/tables/Li-015.html"
+    },
+    {
+      "citation": "Chase, NIST-JANAF Thermochemical Tables, 4th ed., Monograph 9, Table Li-005, Li(g).",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/tables/Li-005.html"
+    },
+    {
+      "citation": "de Abreu and Fabrichnaya, Critical Experiments and Thermodynamic Modeling of the Li2O-SiO2 System, Solids 5 (2024), Table 5, p. 315.",
+      "doi": "10.3390/solids5020020",
+      "url": "https://www.mdpi.com/2673-6497/5/2/20"
+    },
+    {
+      "citation": "Téqui, Grinspan, and Richet, Thermodynamic Properties of Alkali Silicates: Heat Capacity of Li2SiO3 and Lithium-Bearing Melts, J. Am. Ceram. Soc. 75 (1992), pp. 2601–2604.",
+      "doi": "10.1111/j.1151-2916.1992.tb05621.x",
+      "url": "https://doi.org/10.1111/j.1151-2916.1992.tb05621.x"
+    },
+    {
+      "citation": "NIST-JANAF Tables Li-020 and Li-021, Li2SiO3 crystal and liquid transition rows at 1474 K.",
+      "doi": "10.18434/T42S31",
+      "url": "https://janaf.nist.gov/tables/Li-021.html"
+    },
+    {
+      "citation": "Kleykamp, Enthalpy, heat capacity, second-order transitions and enthalpy of fusion of Li4SiO4 by high-temperature calorimetry, Thermochim. Acta 287 (1996), pp. 191–201.",
+      "doi": "10.1016/S0040-6031(96)02996-6",
+      "url": "https://doi.org/10.1016/S0040-6031(96)02996-6"
+    },
+    {
+      "citation": "KfK/Euratom Semi-Annual Report, KfK 4677 (November 1989), section BS NN-D-8, Table 9, p. 60; reports the solid and liquid Li4SiO4 KEMS reaction enthalpies.",
+      "url": "https://publikationen.bibliothek.kit.edu/270028373/18331037"
+    },
+    {
+      "citation": "Ihle, Penzhorn, and Schuster, The thermochemistry of lithium silicates in view of their use as breeder materials, Fusion Eng. Des. 8 (1989), pp. 393–397.",
+      "doi": "10.1016/S0920-3796(89)80138-3",
+      "url": "https://doi.org/10.1016/S0920-3796(89)80138-3"
+    }
+  ]
+}

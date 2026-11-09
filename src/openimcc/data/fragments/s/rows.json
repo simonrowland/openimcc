@@ -1,0 +1,137 @@
+{
+  "schema": "openimcc.sulfur-activity-fragment.v1",
+  "element": "S",
+  "parent_activity": "a(S2) = f(S2) / 1 bar",
+  "standards": {
+    "S2(g)": {
+      "reference_pressure_bar": 1.0,
+      "source": "NIST-JANAF, Sulfur (S2), table S-012; standard-state pressure 0.1 MPa",
+      "doi": "10.18434/T42S31",
+      "source_url": "https://janaf.nist.gov/tables/S-012.html"
+    },
+    "O2(g)": {
+      "reference_pressure_bar": 1.0,
+      "source": "NIST-JANAF, Oxygen (O2), table O-029; standard-state pressure 0.1 MPa",
+      "doi": "10.18434/T42S31",
+      "source_url": "https://janaf.nist.gov/tables/O-029.html"
+    }
+  },
+  "calibration": {
+    "temperature_K": [1473.0, 1773.0],
+    "pressure_atm": 1.0,
+    "composition_basis": "dry silicate melt, oxide mole fractions on a single-oxygen basis",
+    "oxide_fraction_term_names": {
+      "SiO2": "X_Si0.5O",
+      "Al2O3": "X_Al0.67O"
+    },
+    "sulfur_concentration_unit": "wt% S"
+  },
+  "rows": {
+    "sulfide_capacity_eq_7": {
+      "row": {
+        "intercept": 0.225,
+        "terms_K": {
+          "FeO": 25237.0,
+          "CaO": 5214.0,
+          "MnO": 12705.0,
+          "K2O": 19829.0,
+          "SiO2": -1109.0
+        },
+        "constant_K": -8879.0
+      },
+      "coefficient_standard_errors": {
+        "intercept": 0.190,
+        "FeO": 784.0,
+        "CaO": 838.0,
+        "MnO": 4420.0,
+        "K2O": 7139.0,
+        "SiO2": 337.0,
+        "constant_K": 408.0
+      },
+      "fit_residual": {
+        "value": 0.09,
+        "unit": "log10(wt% S)",
+        "target_source": "Boulliung and Wood (2023), Eq. 7 sulfide capacity regression",
+        "comparison_method": "published in-sample regression standard error; R2 = 0.96",
+        "temperature_range": [1473.0, 1773.0],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "reaction": "0.5 S2(g) + O2-(melt) = 0.5 O2(g) + S2-(melt)",
+      "provenance": {
+        "source": "Boulliung and Wood (2023), Contributions to Mineralogy and Petrology 178:56",
+        "doi": "10.1007/s00410-023-02033-9",
+        "source_url": "https://link.springer.com/article/10.1007/s00410-023-02033-9",
+        "source_location": "Eq. 7, p. 6; composition ranges in Table 1, p. 3",
+        "tier": "tier2_primary_measurement",
+        "selection_rationale": "The equation combines measured sulfide capacities from 13 melts at 1473-1773 K with O'Neill and Mavrogenes (2002) data at 1673 K; no scored battery rows were used."
+      }
+    },
+    "sulfate_capacity_eq_9": {
+      "row": {
+        "intercept": -12.948,
+        "terms_K": {
+          "Na2O": 28649.0,
+          "CaO": 15602.0,
+          "MgO": 9496.0,
+          "MnO": 16016.0,
+          "Al2O3": 4194.0
+        },
+        "constant_K": 29244.0
+      },
+      "coefficient_standard_errors": {
+        "intercept": 0.278,
+        "Na2O": 4040.0,
+        "CaO": 1645.0,
+        "MgO": 1279.0,
+        "MnO": 7128.0,
+        "Al2O3": 1163.0,
+        "constant_K": 493.0
+      },
+      "fit_residual": {
+        "value": 0.14,
+        "unit": "log10(wt% S)",
+        "target_source": "Boulliung and Wood (2023), Eq. 9 sulfate capacity regression",
+        "comparison_method": "published in-sample regression standard error; R2 = 0.988",
+        "temperature_range": [1473.0, 1773.0],
+        "held_out_or_in_sample": "in_sample"
+      },
+      "accuracy_band": null,
+      "reaction": "0.5 S2(g) + 1.5 O2(g) + O2-(melt) = SO4^2-(melt)",
+      "provenance": {
+        "source": "Boulliung and Wood (2023), Contributions to Mineralogy and Petrology 178:56; sulfate data of Boulliung and Wood (2022)",
+        "doi": "10.1007/s00410-023-02033-9",
+        "source_url": "https://link.springer.com/article/10.1007/s00410-023-02033-9",
+        "source_location": "Eq. 9, p. 7; underlying sulfate data and calibration compositions, Table 1, p. 151, Boulliung and Wood (2022)",
+        "underlying_data_doi": "10.1016/j.gca.2022.08.032",
+        "tier": "tier2_primary_measurement",
+        "selection_rationale": "This is the 2023 single-oxygen-basis refit of measured sulfate capacities, paired by the authors with Eq. 7 for sulfur speciation; no scored battery rows were used."
+      }
+    }
+  },
+  "activity_closure": {
+    "premise": "The Fincham-Richardson dissolution relations give both dissolved sulfur species as proportional to sqrt(fS2) at fixed temperature, melt composition, and fO2.",
+    "algebra": "log10[S2-] = log10(CS2-) + 0.5(log10(fS2)-log10(fO2)); log10[S6+] = log10(CS6+) + 0.5log10(fS2) + 1.5log10(fO2). Therefore log10(fS2) = 2(log10(S_total,wt%) - log10(10^(log10(CS2-)-0.5log10(fO2)) + 10^(log10(CS6+)+1.5log10(fO2)))).",
+    "units_check": "Both capacities and S_total are wt% S; oxide fractions are dimensionless; fS2 and fO2 are fugacity ratios to the 1-bar gas standards. The resulting activity is the dimensionless ratio fS2/(1 bar).",
+    "provenance": {
+      "source": "Boulliung and Wood (2023), Contributions to Mineralogy and Petrology 178:56",
+      "doi": "10.1007/s00410-023-02033-9",
+      "source_url": "https://link.springer.com/article/10.1007/s00410-023-02033-9",
+      "source_location": "Capacity/speciation relations in Eqs. 2 and 4, p. 2; closure uses capacity fits Eqs. 7 and 9, pp. 6-7"
+    },
+    "sanity_value": {
+      "composition": "N-MORB, Smythe et al. (2017), Table 3",
+      "composition_source_doi": "10.2138/am-2017-5800CCBY",
+      "capacity_equation_source_doi": "10.1007/s00410-023-02033-9",
+      "temperature_K": 1673.0,
+      "log10_fO2": -8.97,
+      "total_s_ppm": 500.0,
+      "expected_log10_fS2_approx": -2.57,
+      "expected_a_S2_approx": 0.0027
+    },
+    "flags": [
+      "imcc_sulfur_parent_domain_notice",
+      "No S2(l) Gibbs standard is claimed; the helper derives the gas parent from measured capacity/speciation and caller-provided total sulfur and fO2."
+    ]
+  }
+}

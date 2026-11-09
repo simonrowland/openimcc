@@ -73,6 +73,28 @@ from openimcc.gas import (
     _SF04_REACTIONS,
 )
 
+_STANDARD_STATE_ENTROPY_CORRECTION_J_MOL_K = R_J_MOL_K * math.log(1.01325)
+
+
+def _standard_state_corrected_gas_species() -> frozenset[str]:
+    root = Path(__file__).resolve().parents[1] / "src/openimcc/data/gas"
+    candidate_path = (
+        root / "gas-shomate-standard-state-candidate.csv"
+    )
+    base_path = root / "gas-shomate.csv"
+    with base_path.open(encoding="utf-8", newline="") as handle:
+        base_rows = {
+            (row["species_name"], row["T_interval"]): row
+            for row in csv.DictReader(handle)
+        }
+    with candidate_path.open(encoding="utf-8", newline="") as handle:
+        return frozenset(
+            row["species_name"].removesuffix("(g)")
+            for row in csv.DictReader(handle)
+            if row["G"]
+            != base_rows[(row["species_name"], row["T_interval"])]["G"]
+        )
+
 
 # These are independent lg10(p/bar) references, rounded to three decimals.
 # For every gas record, the source-side calculation uses the JANAF record's
@@ -270,14 +292,15 @@ def test_default_tables_are_packaged_and_load_without_environment(
     monkeypatch.delenv("OPENIMCC_VAPOROCK_ROOT", raising=False)
     gas_path = default_gas_database_path()
     oxide_path = default_condensate_database_path()
-    assert gas_path.name == "gas-shomate.csv"
-    assert oxide_path.name == "condensate.csv"
+    assert gas_path.name == "gas-shomate-default-v1.csv"
+    assert oxide_path.name == "condensate-default-v1.csv"
     assert gas_path.is_file()
     assert oxide_path.is_file()
     assert len(gas_pack.gas_df) == (
         63
         + len(build_gas_tables.LOW_T_GAS_SPECIES)
         + 2
+        + 7  # Si2O2 and AlSiO source intervals in the default combination.
         + len(_ION_GAS_SPECIES)
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
@@ -677,7 +700,9 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     public_gas_channels = set(IMCC_GAS_CHANNEL_SPECIES)
     assert set(gas_pack.gas_df.index) == {
         f"{species}(g)" for species in public_gas_channels
-    } | {f"{species}(g)" for species in _ION_GAS_SPECIES} | {
+    } | {"Si2O2(g)", "AlSiO(g)"} | {
+        f"{species}(g)" for species in _ION_GAS_SPECIES
+    } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_NASA_SOURCES
     } | {
         source[0] for source in build_gas_tables.TRACE_ION_GAS_BURCAT_SOURCES
@@ -698,6 +723,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     assert len(low_rows) == (
         len(build_gas_tables.LOW_T_GAS_SPECIES)
         + 2
+        + 2  # Si2O2 and AlSiO add their second fitted intervals.
         + len(low_trace_species)
         + len(build_gas_tables.TRACE_ION_GAS_NASA_SOURCES)
         + len(build_gas_tables.TRACE_ION_NASA_SOURCES)
@@ -711,7 +737,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     )
     assert set(low_rows.index) == {
         f"{species}(g)" for species in build_gas_tables.LOW_T_GAS_SPECIES
-    } | {"Na2O(g)", "K2O(g)"} | {
+    } | {"Na2O(g)", "K2O(g)", "Si2O2(g)", "AlSiO(g)"} | {
         f"{species}(g)" for species in low_trace_species
     } | {
         f"{species}(g)" for species in (
@@ -756,6 +782,7 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     }
     reviewed_trace_species.add("Rh(g)")
     reviewed_trace_species.add("Re(g)")
+    reviewed_trace_species.update({"Si2O2(g)", "AlSiO(g)"})
     ordinary_high_rows = neutral_high_rows.loc[
         ~neutral_high_rows.index.isin(reviewed_trace_species)
         & ~neutral_high_rows.index.isin(
@@ -783,12 +810,20 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
     trace_low_species |= {
         "Hg(g)", "Au(g)", "Pd(g)", "Pt(g)", "PtO2(g)", "Ir(g)", "Os(g)"
     }
+    molecule_low_species = {"Si2O2(g)", "AlSiO(g)"}
     lowered_trace_species = {
         "H2O(g)", "Zn(g)", "Cd(g)", "Pb(g)", "PbO(g)", "PbO2(g)",
         "HCl(g)", "HF(g)", "NaCl(g)", "(NaCl)2(g)", "KCl(g)", "(KCl)2(g)",
         "NaF(g)", "(NaF)2(g)", "KF(g)", "(KF)2(g)",
     }
-    legacy_low_rows = low_rows.loc[~low_rows.index.isin(trace_low_species)]
+    molecule_low_rows = low_rows.loc[low_rows.index.isin(molecule_low_species)]
+    assert {
+        species: (float(row["T_min"]), float(row["T_max"]))
+        for species, row in molecule_low_rows.iterrows()
+    } == {"Si2O2(g)": (1000.0, 1687.0), "AlSiO(g)": (933.61, 1000.0)}
+    legacy_low_rows = low_rows.loc[
+        ~low_rows.index.isin(trace_low_species | molecule_low_species)
+    ]
     trace_low_rows = low_rows.loc[
         low_rows.index.isin(trace_low_species - lowered_trace_species)
     ]
@@ -817,6 +852,8 @@ def test_runtime_schemas_and_interval_ranges(gas_pack: ImccGasDatapack) -> None:
         )
     )
     expected_t_max.loc["PtO2(g)"] = 1900.0
+    expected_t_max.loc["Si2O2(g)"] = 1000.0
+    expected_t_max.loc["AlSiO(g)"] = 933.61
     assert (high_rows["T_max"].astype(float) == expected_t_max).all()
 
 
@@ -1146,6 +1183,7 @@ def test_default_janaf_basalt_at_1800_predicts_and_flags_source_rows(
         "Al2O2",
         "Al2",
         "Al",
+        "AlSiO",
     }
     assert all(result.domain_flags[species] is not None for species in flagged)
     assert all(
@@ -1947,7 +1985,7 @@ _PRE_GATED_CHANNELS = tuple(
     and species not in _RARE_EARTH_CHANNELS
     and species not in build_gas_tables.TRACE_GAS_SPECIES
     and species not in {"Hg", "Au", "Pd", "Pt", "PtO2", "Ru", "Rh", "Ir", "Os", "Re2O7"}
-)
+) + ("Si2O2", "AlSiO")
 _SF04_CHANNELS = tuple(
     species for species in _PRE_GATED_CHANNELS if species not in _TI_CHANNELS
 )
@@ -2007,17 +2045,33 @@ def test_readme_basalt_outputs_match_interval_1_at_and_above_1500_k(
                 allow_extrapolation=True,
             )
             assert current.unit == interval_1_only.unit
-            assert tuple(current) == tuple(interval_1_only)
+            retained = tuple(
+                species for species in current
+                if species not in {"Si2O2", "AlSiO"}
+            )
+            assert retained == tuple(
+                species for species in interval_1_only
+                if species not in {"Si2O2", "AlSiO"}
+            )
             assert {
-                species: float(current[species]).hex() for species in current
+                species: float(current[species]).hex() for species in retained
             } == {
                 species: float(interval_1_only[species]).hex()
-                for species in interval_1_only
+                for species in retained
             }
-            assert dict(current.domain_flags) == dict(interval_1_only.domain_flags)
-            assert dict(current.provenance_class) == dict(
-                interval_1_only.provenance_class
-            )
+            assert {
+                species: current.domain_flags[species] for species in retained
+            } == {
+                species: interval_1_only.domain_flags[species]
+                for species in retained
+            }
+            assert {
+                species: current.provenance_class[species]
+                for species in retained
+            } == {
+                species: interval_1_only.provenance_class[species]
+                for species in retained
+            }
 
 
 _OPTIONAL_PS_GAS_SPECIES = (
@@ -2712,7 +2766,7 @@ def test_oxygen_balance_includes_each_dict_only_nonoxide_parent(
         parent_oxides=("SiO2", "MgO"),
     )
     assert root == pytest.approx(5.2556661572007086e-08, rel=1e-12)
-    assert len(pressures) == 9
+    assert len(pressures) == 10
     assert "Na" not in pressures
 
     extras = (
@@ -3268,7 +3322,7 @@ def test_override_without_tio2_parent_keeps_the_sf04_default_set(
     activities = _quickstart_activities(2200.0)
     result = evaluate_gas(activities, 2200.0, 1.0e-10, legacy)
     packaged = evaluate_gas(activities, 2200.0, 1.0e-10, gas_pack)
-    assert len(_SF04_CHANNELS) == 27
+    assert len(_SF04_CHANNELS) == 29
     assert tuple(result) == _SF04_CHANNELS
     # Same gas rows and SF04 parent rows, so every value is bit-identical.
     assert dict(result) == {species: packaged[species] for species in _SF04_CHANNELS}
@@ -3594,13 +3648,15 @@ def test_default_set_follows_parent_oxides_without_key_errors(
     # and the Na2O/K2O identity channels; Cr, V and Nb stay out until their
     # caller-supplied parent activities are present.
     assert tuple(packaged) == _PRE_GATED_CHANNELS
-    assert tuple(packaged)[-8:] == (
+    assert tuple(packaged)[-10:] == (
         *_TI_CHANNELS,
         "Al2",
         "Si2",
         "Si3",
         "Na2O",
         "K2O",
+        "Si2O2",
+        "AlSiO",
     )
 
     seven = tuple(name for name in activities if name != "TiO2")
@@ -3625,7 +3681,9 @@ def test_default_set_follows_parent_oxides_without_key_errors(
     silica_only = evaluate_gas(
         {"SiO2": 0.5}, 2200.0, 1.0e-10, gas_pack, parent_oxides=("SiO2",)
     )
-    assert tuple(silica_only) == ("SiO", "SiO2", "O", "Si", "O2", "Si2", "Si3")
+    assert tuple(silica_only) == (
+        "SiO", "SiO2", "O", "Si", "O2", "Si2", "Si3", "Si2O2"
+    )
 
     # An explicit channel whose parent is not supplied refuses, typed.
     for species, parents in (("Ti", seven), ("Na", ("SiO2",))):
@@ -3919,7 +3977,7 @@ def test_thallium_channels_and_oxygen_balance(
         gas_species=("Tl", "Tl2O"),
         allow_extrapolation=False,
     )
-    expected = {"Tl": 8.624304489890012, "Tl2O": 0.023561701919532385}
+    expected = {"Tl": 8.738576524381013, "Tl2O": 0.02387389446996616}
     assert set(result._values) == set(expected)
     assert [result._values[name] for name in expected] == pytest.approx(
         list(expected.values()), rel=1.0e-12
@@ -3930,7 +3988,7 @@ def test_thallium_channels_and_oxygen_balance(
     root, balanced, diagnostics = evaluate_gas_oxygen_balance(
         activities, 2000.0, gas_pack, parent_oxides=("Tl2O",)
     )
-    assert root == pytest.approx(0.008771107026886694, rel=1.0e-12)
+    assert root == pytest.approx(0.008864145760797113, rel=1.0e-12)
     assert diagnostics["residual"] < 1.0e-12
     assert {"Tl", "Tl2O", "O2"}.issubset(balanced)
 
@@ -4215,6 +4273,9 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
     rebuilt_lfs = {"MnO(l)", "As2O3(l)", "Sb2O3(l)", "Ag2O(l)"}
     lowered_gas_rows = {"H2O(g)", "Zn(g)", "Cd(g)", "Pb(g)", "PbO(g)", "PbO2(g)"}
     root = Path(__file__).resolve().parents[1]
+    corrected_gas_species = {
+        f"{species}(g)" for species in _standard_state_corrected_gas_species()
+    }
     for relpath, current_path in (
         ("src/openimcc/data/gas/gas-shomate.csv", gas_pack.gas_path),
         ("src/openimcc/data/gas/condensate.csv", gas_pack.oxide_path),
@@ -4235,7 +4296,11 @@ def test_existing_coefficient_rows_match_the_base_pack_exactly(
         for old_row in csv.DictReader(old_lines):
             fields = [old_row[column] for column in old_columns]
             species = old_row["species_name"]
-            if species in rebuilt_lfs | {"FeO(l)", "Na2O(l)", "SiO2(l)"}:
+            if species in (
+                rebuilt_lfs
+                | {"FeO(l)", "Na2O(l)", "SiO2(l)", "SiO2(cr)"}
+                | corrected_gas_species
+            ):
                 continue
             if relpath.endswith("gas-shomate.csv") and species in lowered_gas_rows and fields[2] == "2":
                 continue
@@ -4431,12 +4496,15 @@ def test_trace_channels_match_hand_calculated_mass_action_at_2000_k(
         ("Tl", "Tl2O", "P672-Tl-g", "P672-Tl2O-l", 1200.0),
         ("Tl2O", "Tl2O", "P672-Tl2O-g", "P672-Tl2O-l", 1200.0),
     )
+    corrected_gas_species = _standard_state_corrected_gas_species()
     for case in cases:
         gas_species, parent, gas_table, parent_table = case[:4]
         temperature = case[4] if len(case) == 5 else 2000.0
         reaction_parent, n_gas, n_o2 = _SF04_REACTIONS[gas_species]
         assert reaction_parent == parent
         gas_g = _trace_source_apparent_gibbs(gas_table, temperature)
+        if gas_species in corrected_gas_species:
+            gas_g -= temperature * _STANDARD_STATE_ENTROPY_CORRECTION_J_MOL_K
         parent_g = _trace_source_apparent_gibbs(parent_table, temperature)
         oxygen_g = _janaf_apparent_gibbs("O-029", temperature)
         # Premise: oxide(l) = n_gas*E(g) + n_O2*O2(g). Algebra:
@@ -4656,7 +4724,11 @@ def test_sb4_reaction_closes_to_printed_pankratz_cells(
         sb4 = _nearest_interval_row(gas_pack.gas_df, "Sb4(g)", temperature)
         delta_g = _janaf_gibbs(temperature, sb4) - 2 * _janaf_gibbs(temperature, sb2)
         log10_k = -delta_g / (R_J_MOL_K * temperature * math.log(10.0))
-        assert log10_k == pytest.approx(printed_log10_k, abs=0.002)
+        corrected_log10_k = printed_log10_k - (
+            _STANDARD_STATE_ENTROPY_CORRECTION_J_MOL_K
+            / (R_J_MOL_K * math.log(10.0))
+        )
+        assert log10_k == pytest.approx(corrected_log10_k, abs=0.002)
 
 
 def test_teo_matches_nureg_table_30_and_anchored_mass_action(
@@ -4822,6 +4894,7 @@ def test_teo_matches_nureg_table_30_and_anchored_mass_action(
             + 0.5 * _janaf_gibbs(temperature, oxygen_row)
             + (teo_delta_g_cal - te_delta_g_cal) * 4.184
             + anchor_correction
+            + temperature * _STANDARD_STATE_ENTROPY_CORRECTION_J_MOL_K
         )
         assert _janaf_gibbs(temperature, teo_row) == pytest.approx(
             expected_gibbs, abs=10.0
@@ -5020,6 +5093,7 @@ def test_sbo_matches_kelley_nbs_sohn_and_records_nureg_disagreement(
         ) - (sb_g - sb_l) * 4.184
         expected_gibbs = (
             _janaf_gibbs(temperature, _nearest_interval_row(gas_pack.gas_df, "Sb(g)", temperature))
+            + temperature * _STANDARD_STATE_ENTROPY_CORRECTION_J_MOL_K
             + 0.5
             * _janaf_gibbs(
                 temperature, _nearest_interval_row(gas_pack.gas_df, "O2(g)", temperature)
@@ -5052,6 +5126,7 @@ def test_sbo_matches_kelley_nbs_sohn_and_records_nureg_disagreement(
             - _janaf_gibbs(
                 temperature, _nearest_interval_row(gas_pack.gas_df, "Sb(g)", temperature)
             )
+            - temperature * _STANDARD_STATE_ENTROPY_CORRECTION_J_MOL_K
             - 0.5
             * _janaf_gibbs(
                 temperature, _nearest_interval_row(gas_pack.gas_df, "O2(g)", temperature)
@@ -5276,7 +5351,7 @@ def _deny_gas_table_reads(
 
 
 def test_oxygen_balance_records_whether_the_total_pressure_is_knudsen(
-    gas_pack: ImccGasDatapack,
+    legacy_packaged_gas_pack: ImccGasDatapack,
 ) -> None:
     activities = {
         "SiO2": 0.45,
@@ -5286,10 +5361,10 @@ def test_oxygen_balance_records_whether_the_total_pressure_is_knudsen(
         "Al2O3": 0.15,
     }
     low_p, low_gas, low_diag = evaluate_gas_oxygen_balance(
-        activities, 1800.0, gas_pack, allow_extrapolation=False
+        activities, 1800.0, legacy_packaged_gas_pack, allow_extrapolation=False
     )
     high_p, high_gas, high_diag = evaluate_gas_oxygen_balance(
-        activities, 3000.0, gas_pack, allow_extrapolation=False
+        activities, 3000.0, legacy_packaged_gas_pack, allow_extrapolation=False
     )
     low_total = math.fsum(float(value) for value in low_gas.values())
     high_total = math.fsum(float(value) for value in high_gas.values())
@@ -5313,10 +5388,12 @@ def test_pure_silica_oxygen_balance_matches_analytic_flux_limit(
     # For SiO2(l) -> SiO + 1/2 O2, one O atom per SiO molecule leaves the
     # melt. In the O/O2/SiO limit, 2 pO2/sqrt(MO2) + pO/sqrt(MO) equals
     # pSiO/sqrt(MSiO); rearrange that relation to predict pO2. The Si term is
-    # retained as its small, explicit stoichiometric correction.
+    # retained as its small, explicit stoichiometric correction. Si2O2 also
+    # consumes one O2 per molecule.
     expected = (
         gas["SiO"] / math.sqrt(44.084)
         + 2.0 * gas["Si"] / math.sqrt(28.085)
+        + 2.0 * gas["Si2O2"] / math.sqrt(88.168)
         - gas["O"] / math.sqrt(15.999)
     ) * math.sqrt(31.998) / 2.0
     assert pressures_o2 == pytest.approx(expected, rel=1e-10)
@@ -5869,7 +5946,8 @@ _OXYGEN_BALANCE_SF04_NUMERIC_HEX_SHA256 = ('84568009b644523fb3c2df932903f027b740
 # Re-pinned when SF04-pack liquids stopped inheriting openimcc liquid-reference
 # authority; the numeric pins above are unchanged.
 _OXYGEN_BALANCE_SF04_RESULT_HEX_SHA256 = tuple(["e16778b4b30c0441907e504c185177f1b545898f27d2ba2045a0d15a542f8771", "baae1d177e96eb410423d796cbb32df1fe216affb2dbb0df3f005e6790e661e2", "45b26a00ac5b828f9f1933e3e497112176b8999295c9405b41029cbb9d4a75ee", "80cca71e721b0e6ee91932a95bf940ba06eb79b7ae3ebe8fb145e67eb999f245", "1e65a83e0e201cfeea8e796b5029c1dd64bd6c7bedbeff6228ce8fadbae83d60", "361d571f96e88be7830cf68e39f9f7eb8d84ed46a6c9747bbab2b9b13d714a34", "b0fbab2b9f25f01e3c4ce0965b45b6fa49773e1eb23bd0c55c03302522681af8", "e214c211a572b2d9d450546be685aa92d4436ae610250f2ae532b7c59f7545b7", "f3782726c4de68000abee8fc9d4038f6b632df206422ef9c9177b1b875c37793", "94f67505326f9862a01940cff138b665e1d05fad15240a7a79970d9fc8772a09", "99835d86c5209d97131fadedd9af1c6fa1e38e50d33b8292209b72b4770e4288", "184ba321711e81edc8c7548fc32a1beea3a742ace2bcfde21c5ae91b93529577", "f497995bc969964d48382fe3f1bb7a69d31e34e0fc9b2600f2582b45153ac07a", "9a87846fd84f0f74f379549da44108d15c1a7738fd4e22bc422bb3126fc593ed", "00bc98c9be3ed165c8e796fd89f3347ecb634676a78245c6e9d6b8e71821a20d", "cde241bd299aac140dbc060ba5118bc0990b8daac3ea88f12b6c18b3c84cd502", "cf0431382c8083403ce558bbfa54cdf1c3766ddf47816e833976f348fa8f8ddb", "0a131a691bbe9584e4e437d00cb673dac403296d2cb5012a3d09d18465b74c4f", "27f85d2e09849e723925525967096f0b6444071cf2315abd560e7418cd6c304d", "26a07a9ad45e0188e7cd9b75626d087b8f086966d5589fc26346b9cbc006a0b5", "3130a1894173a5641872a006ced9667eb6c90f8ae52d62edaddb2f9b1a2e44c0", "21729a5958ec018784adf2cc463c5fba579af15bf2927f0a2c775dcba3fb4395", "c6773e31999b43042348ac3ef5f5410ea9a98440ffbe1b46740bf79fc4d23ada", "4ae2c07a4af274a945c98b733de128bca1a57eedddfc94858d4393930fb5a8bd", "4d7981f1b9d6f516cf420cadb420acd3e3432578b0b19ab57470d6f9a3458e8e", "43808c21fd89df6aa98c639774f44fabf4f52d2947890d4d6ed70e239e807c7f", "ce1dfd47afbce46fbd90c9a2910f8b835887808734c6ef157a746e0f3bd7bcf7", "527e17590386adf34141df1427a96bffcaab2ca52d4b03dd954d516f1fc23e60", "d13f73d8f9c6263d58a4b443e136fcfc6bf1113d6dab1d3ba42d636afe093893", "c3145b2f33bea5c9834c40109c3deeb11b0a4709c3e7d42590a2fd1055357256", "1a67bc0895682b2322e90e7b0ee9e581b661ebdd43523aa84099cedd0f26190e", "a94264531677494925eb8f62548bbd7cf0f8a32789423bbac3a9d5c34f832229", "1a96f1477ac1df239af62247e93904c955aaffe74c18b672cb061fbe8b862412", "f16fe718b50a99b66590b107dcb67d4f01751b7d4eab3dff22f4927b42a11ab4", "ff7c9466399cdcee150ecdd4f3f8361b253154ce22ea1a060265ce5fed97b91f", "b2cece741067f00249a3b08ca4655d95051b64ea3d049bc856dd79d734b14f8e", "2607382c2b1e560475fc1918ad01466949af077795fcbe5739606d64e498c3a8", "dcd5ff00701c49f2f78866c2fd160dda3f1b78bd29d5ab74cefb051a28e81990", "e6c9550d0e8df0ba79d24094ad1de412287fedc9ffcd278bc69bafd6d5aab708", "58291167c897a0eca7ebb47083537b68c8f34bfc5280d692d7724c204edaf632", "d998b1b56768d869766740494dc8b6a8e6e581a3f97b2ab88517856ea47dad37", "5e02919730e96cde78a2109f9446291ebadc0e15b9b1fe97b501495e82906df9", "bf97c57f882ba83b096d44032e392220fd2324e70c682b6470999f494e20a2bf", "3171df2eec1914d9ef1f8c420ddcb19514fa89b7470c21f48ab6921baee7b6f9", "72d8d87f4e1f5b844a4dae1abd528e6c660a1fa0ae1137fa0160b2d681e059df", "171d71d344bc02199374d5853ba1010b28523d35b0e40553f4a1418337419947", "e10091fb59f84c6fc66818a48c8f4b5e9e434b0417d135d72d85a4b937dd6c2f", "cbd95bde19d82d15df56fbc48de23aad524d76aab5e041347adb0bebe68af554", "a770c1a6ce4a5645e82d3e5e7071369a391e1754d10006df453789c46f702f6b", "bbd45bf935e342c3fa0342a91efa8d6cd3f1344aa36dc1418293693f13ec567f"])
-_OXYGEN_BALANCE_DEFAULT_NUMERIC_HEX_SHA256 = ('ae8572790f312f96bb8e2d275a7695abf4bcfaea975bf121581ab24b6192a957', 'f6ecb08052b4a27b513f966f3085399d4a1ee58db2b83b35135adc910bceea62', 'b7b4b18b11eb7c931a6db12f39c68e1f54680ffe6938542f96acc68d3acd6677', '819bd7ec07bece92e9b2359d51d72429e93d2ae04f1446638c1e230e4a473c6d', 'a448783800eac17449a3aa0c3f808c7f8dbcb2d5fdd98028a0e0dd97f2cf853f', 'a24e0d42aee12e9d498922a9d9c4ee6c68d3a0f9f227c76e86e36b7f448b7821', '011bab00cb73effd4e9e1dacd75a07bb6874113dcc125b3d5c89fadfeef295d6', '01018c5a41a67a3cd083632bb94dd7fc1704fa700e4f6bda02899f8bd90e8a5c', 'e967a08ac9468c40af0897cac5b7a42ae962be8ca61b63f6cbb3f2bde79d4a34', '92edb220e9c82746b9578cd994bdcf1b36c112dd6f640c70449dc46e169df9ee', 'af07e6e5a393c9a4b9aac8728ff970bda4398b3b0868c09c6da7bd09bbd23f84', 'e649d70d5278a669cd83a6fb74f3ce4b357d08aff73bbfb3fa04348b332c6bb5', '54b2d0878e4e65716f86dfa1a28d95c5f27f937f8af9d3a6593f5420db143cd3', '7b6d388e8aa3ae4c179e427b83ffdd2269d479ac47fc7fffbb2cb1cce98197c9', '6a8a622fa66b1a27c8052cbd3e6e79223d8258356eaf81fbfd2c1e36166e38e1', '39d610344fdf831325a98aa4b2f1e3931563876a1adcf2a2677f83bc992bda84', '760afc4e3435c02ebf915144c66934e99de3b3775f0fba9895e54a7858a78b2c', '68117e6a6584bd5bc7dd218811a32e006e4b01d4a2da8a9f60bcfeeb92158a3b', '113e188277373e4d17393d6dd9015c8d43c157a6386c51f7ff7ae4cd3960dc75', '4bec7c0a51954dc825c5a5c1893695f9d74040257e18102ba3b3ee7ff9e8ba2b', 'a290e4f2007851dc711dfc4119b1e35950b36182dd9bf986a84d29882d9794e0', 'a2e5f1158d149e9dba05dd42b81df773c6b99005cd2e03bc65a243d2f7ba0bba', '127a6087caba5eab4d5aa3c50f95020bde227f3cfa1f509df266a8d14bdbb263', '86757483768c7a0af96d0302f4dc1365eb1d1ce93d5b0d3a4e87cc55fb995b56', '9ecc9bb6acb8bd3c8c1b03570fd1697f5538646596493ca94ed9dd7273492e1c', '491acb8321bfa980cf75460627d11a853fd304825b9514de950b06dc0868bbda', '10669df2b80169afb5e628a1e61f10543d6373b4f4dccbc25c6dd3c7d94fe6a3', '9c962083ded5ad20427e40f3a4eca65c4b8810f3e3d1e435ba9b41f7347e7210', '2548022b038396e9752f26032d3030f2af9dd2dcab6b73cb4bbd7288dc73a837', 'b171e3e85d96a7b3534840f28a6029e729acf775847760aa10818d0c9efa733e', '38ce9a2f96786313e889f5398e55c1414124c7039b339166db384191a198263d', '81614006757e7e1d1b06f03cc5e5859d07a3694d66ec0589ed7eba6aa98235a1', 'f2f9406a3cf38082fa55b26fd2a62c45e309d552b6f5c36c7b6cd60706609e8a', '9681bcb7ca95b5140a2afd6750a6f603a4e842a180bbefa64b988c2a2fe17cba', 'f630b4482ca9ce2ac90f330f0e3795701ef21f8d8438ba0a235f812c5cb5076d', '3213716f42914e013b5b3005820f23adf29889b2d0ede1b3cf7308dfd1fd1768', '7a4ca07dd3545173a300193aee0fe55a9dbceff61e2b32e50704385b1a665b50', 'a7d5972c52feae0a41460915708b035eeba3c4a21c08ac01ea0c321cbb8fb6ca', 'ff6dc4409483ad820d04d57e04bfec028143322ba63266537908a8c5e8e32aeb', 'f30bb8bf618a5968f527478f8bc511c07b182c47eff477d884e632f8707ad260', '345bb7487b8317c5d9fb8f578aca5a78fb86cd68533d99c9986aa7c0d3c6dd01', '84b9f001c8b90f0ab4300b833b58fa7f8f745355bc989f9b45e0a557111c8f53', '99c74d05e0c4a53c68c481bd55dca6edf7a23222144d8b45b373e749e0f75a0b', '213441400b1aebcf90b4d20c3928fa1ea5c07d28508e042c099ed528512fd139', '86b5726d34dc13fd4c5320d169bfd5f1f51c8b1bbc86e5585201ecdc2b1b99ca', '915bbd2580d872593fa0cfd141d9cab8f80b441a31eca1456f9211d4445ac02b', 'fe3666568e0c5ab050b4d5ef16fe10b7ac6ba517865cb3e2b7787e84218959ff', '4dd3ab378a5668a427ecaa0ab17e5ad981bc9c86d7365c4b829e540fb4ae80bc', '2f59a19365cd617e1c8ad79963da36d71d73b3af46963e5f0f9ca73cc94fa45e', 'fc84bf0ce2b8b6884ae2a55c37c8a2e1121c14eb3722d0920b18728e531c186f')
+# Re-pinned for the versioned defaults: Si2O2 and AlSiO alter oxygen-balance numeric results and channel metadata.
+_OXYGEN_BALANCE_DEFAULT_NUMERIC_HEX_SHA256 = ('1627aef1a82edd8d1a3a4db8b0de54c3c12f2bfd9902aa289b156c1c0c13eda5', '68551580bf4f81517716755b0a360abf36a48e8ed3e32ef2ae948cc406f1090c', 'f817d5679eb83d418b77097c79c2f1affb677b813907ad3e1a4a2b00eeee9221', 'a9463e1cc2e6d6709742f79153120d87a0bba19a64374552e1abad7fa5a4ddc0', '13f18bfd2a169cde008c366e4d7d3d9ac52361f6d2267cabfe5cfc122febbf00', 'fc673ebf47f7f8d1d899b6ce23e10139d1e2354a572b7c5b24ce0bdafb4edae8', '69220b354007bb9e91f552b8fed1f41d817edcd23eb535f509d0246d420a5935', 'a0a3b9fb508f913d367252338ab6313165dc058da8c26152b7125b2871d73f13', 'b5f8fffb03dfaa139dd8f866961b7a5e93ef3414a0a5fa149868a6463ddc42b6', 'c62485cc8894c8f05957a9fb9df1dbfadcd42bda715f6b336ea799a1aa5bc335', '950561080246fb5e5eaf4dbdc8a07bb50a699ce874f68fc3072d14069a368c02', 'b6c89199b4f17144ff6e9cf35dc41af2fae51986ffa5220f58e903ba2d0136b7', 'c71fa919afd16d4f3450146d1744dbbf08c6fce526f2058cd562c61ceda99a9b', '70f43d7c10bba82b6f4dcee97b51a516aa3a439028586c25f3aeeebd04eebd88', 'ebe75c15cef30a18cb92133e9be7a1ae863677f25e71d144d2bd5daad3140904', '956750991c53e9d4c1a52913e8d89239f7df78ba834c3d60245297d869335a74', '56e6a2eb2d825f588f99cf3eeab47bd1e903472e4528f2741b042109f8528abf', '81367109b51e89160510cdbeb51e1989dd2e2e6c6163f2d8ee73096029872da1', 'f5fe79d23baa9541f9e8f88392b75e52998c56d175ddbe3bcebfdecd732af859', '9852abb4764d27fbc72aad285d29990f54d0821a66df06f7bcc20bf0d7850a5d', '2c708c04b89f3236e201cea6aeaefec1bf52cd4b29e9eebae7c2844b32ab2b3a', 'd4c127a8479a180f0b363bdb9715e680b8a51738868f9b9da8cbc6eb1ad726eb', '72d5c423109ba70531db2231e45be27c503f8a368edef9b1a124499b3e6c1e72', '9d3322252a1068255a8dbd6ff2ce997d37751d524578637b57741cd756914392', '6aad44ebbfb78e5667324ffecb4a33d47445802241a39924d8bf79affbd9260a', 'd94430fb2bce7d2ab3bbd3b6fd6b34d63f66616bbc7cb4e499ffadaac8dbd98e', 'f3dc192543f9c3df87970a6b5c658495d6d76e3e333dc4c6daa0e1b74c2c5e6d', '82c854c24e81e2575328472db94c3dad37c82e05753bb5af460656b90495f212', 'a554420d0c2c8bd4a845876858094cb760b09401732c23be3550f809d97d6e8c', '453b25a21a70e1725405ea99d6ff31e378d601fdb548758e3363a3d2626d953f', '21fe73617f75a768afbfaebc7ed7edf21d68f180020e0b01a5b48031b992a5a8', 'a07b9ad844c1464d451d5794c1a194dabee22b51126cffb4638b14a952156e39', '4ddc6caeab11c58f0e154df930948360c5c9ea484a8e157b51edc7f476db233a', 'e3627a534bca2747e636d7d81c0851e02ab5e7bcba13b05ab38560bf50b6e246', '9db6fed80638c6d984926e261b03c7f1f266d747c944036c5f98d7f6d85139b2', '41aa546b9050304a75a1d9bcc4a5704ae63774702037838ae5b6d4bff342d485', '080afef72bf38e8cb2185d44e899a8ab14791db0def945617e58a240b6d49179', '05cff4af1a5aa2c9bb4b7f6cc47e6dad9faf98aec7e55bb5867ffb1067e0ed86', '7df96894c1ec4144e0e2737bdec8e79043710a3d5c22b111ae17e90d30691ff2', '09819a5e42f5856fb53b4b27da2aab61edff1a9561e54cc1f087408093aeac07', 'ecfea7a688525c1c8c09411d8d09629218636847741f1853fff63d7d997583bf', '10c726ab2d602a825f158ab617fb5d6cd6e5a30f052dea2ea1b9cb1833f5bcf5', '3561f46daa74849d832b6ab6d5b8ec93a34db5ad3daaa30dc3e9524be6890653', 'fc9c0666c89752777b3ef1b5bdcc7759f87ba30c174ec11cbbecadb5b9c2bf5d', '54be952d488a5fc97a816cbca5ce787ba2e87f7a533d542838ee2ae2fb145113', '24da81cd1a4fe03230998a7006189cdfd11448c8fa3b08c0745eb297009c38a5', 'a7971e68a963fca4c1e9c965cdcbbf4ec7c94ffee4f215639ff6964a25518dae', '659fd8d82e817ae014d19f7a7f99a08cd4cab668645ca6091e914d86d4f74b55', '0af80dfe5e0fdab69eb5ecc51ac28a105f4f390ed348e62e1eaa9222e41a1bb9', 'c3ba3b49248c7b26a965edb7d586b23d4f6d18bc362d0757842f20cf7874174e')
 # Re-pinned after preserving Plante scope (1-based index: T, K2O):
 # 2: 2000 K, K2O=0.01; 3: 2400 K, K2O=0.01; 5: 2000 K, K2O=0.005; 6: 2400 K, K2O=0.005
 # 8: 2000 K, K2O=0.005; 9: 2400 K, K2O=0.005; 11: 2000 K, K2O=0.005; 12: 2400 K, K2O=0.005
@@ -5880,7 +5958,7 @@ _OXYGEN_BALANCE_DEFAULT_NUMERIC_HEX_SHA256 = ('ae8572790f312f96bb8e2d275a7695abf
 # The numeric SHA-256 hashes are unchanged for every listed case.
 # Only K2O-derived channel entries in domain_flags and
 # liquid_reference_status differ in the canonical result payload.
-_OXYGEN_BALANCE_DEFAULT_RESULT_HEX_SHA256 = tuple(["5ff37a7ec574647d480124f5baad38962cb981f4bbbd35047158410a5007b3f2", "2d74cdc803cee0e4a942595c9cf309fa7cf40c33914b37c261959e337ae46ec7", "d2efd0dfdbb3846b0ed228bd69412f40f995ea8a217aa7d80563bfb2b696264a", "aab9135faea787554fe8510e65ad806458f81b11f9254b65ee3337e8e0036049", "7d090221896426fc06a814bdb0854d4b22407505a50d526604f648bdd9adfd25", "7c8b2624e14d74e4f649e86818fea9801689bc52c3c892c6dfe8f3c6df6be251", "590558320dbc6a2fe3a83f4235d3f14431bfd23e03c58b1c2771087d515f2c49", "733f0de5cbbfb46e3ee39b4aebd7fdf123ded8502884647138156bba77e38d9e", "9ddabe65fd8f131292840f661e20a135ce68ca7c05f461f72833918aaf58b06f", "e9439db6e4fdd86957e00391761b50425a211026928585c305d918b769108fa9", "378406a3f4a7a106ac36a796ea84d283c26531d1401091aaa8f0a977a415d9b9", "f93643d4afae8eaddfa2027f136b6a16cebdbe3e4547273eea75d45a608306fb", "e5ec683fba5b631ba5bde8b92cb198d8d27bc9d559ece86346526ce1a7f4ad14", "b77475392042741ecdcafaf4bb03cc6dbfce889d0932a5e2c5abc74a86bb7327", "8c01c340d8f97c3498bb00ae23be12731f770049171842150fb7054b627640a3", "2c4b09ef5c757a153ca54e08495fdf7083d8f18c21a1633f111050cf729a0d54", "301e47b542a9a19a7cc5a67d1281af978d8008e45b150384df91defd8b88fcc5", "b39f8699679f45048daeef2989e5dff827d8d3b8bcf351c129fcd1a229f1b546", "48a2fd6a69f4e68473e921319013aec893e8ea741ab10970d2449e3029273d3d", "775a8213984c32697eb3027401f7e2be07c7b31a0326ac377799b48665d30a4e", "c359b15ce30ce3a1105b33aafcef4359ea7dd53e1a2cb4f0f2c90e4b5e9347ce", "d527e533fffa8cf24b9b0874e764c221f069b3821dd7f265ba8cf05fbcbb6895", "3dfb1f6cef5db9c049a873038167719edf7e03f6f25358ca1587fa0d009c6f54", "ba38bec4f555ff924c3eec95c7eee1a71cd84bd1ec192caf105f28941971c6b5", "631b540d6332e4ebfca510f03cfb38c5093f39a563fd3fa387f1f9fb157b9d0a", "454a21d8c03f99ddc0b14fa77f5c3b3dee633c76aaf50295c384bea62e566f3c", "24963036bad55cdc8d4a16cfd85a561b41c82c4ed892c329ce4453d3c68b65b0", "9332ec9c78bc1a2f413a81c1afa5079e137dc3f190af94abff0a5141f3c55c2d", "5b0f4c437913eaf2790e239ae1e31afd7afd4c9e38d67c5d587cd63345d7a6c1", "24386c2df103e3bfe42a934a347e41a105f81986aeaee74eb1536d6186ed214f", "18ae3d22d127ae48fd3117263b4c92e0fa5a817c7ff73793b936b098ab82f993", "ec59ca2b0c22d367b1f228e2f7ae36261fd8f281d016fcfcb27e5e38e17c7ca5", "989e67424a81962b629381aecdead273f43c2aecb8029cc857224e8e13fbf032", "98824518bc44063cda2da7f63b4787da6f49e76eed88bf6061c38e9a7a7e28e2", "27dfe6a858d94efa0b54583bd78ba02ccac1d9094f88e064ff7e6e48c9aaaae8", "3f9076fa6d5cc413ad328c6367d05f918f61a96a56122a80616d861965a5bd27", "b09f1d15263f8eac46714453e2fd4be7ef61ceb2a23ada1d8498e783d8885537", "ceb40ca02c24c8d0f4777ce67020c228ad8c7c08261f8e834f1e37984c551b4f", "8676fb7922abe4de7d3b886ea08c2dc0ac4cb85ba80d8580687fec732d30e578", "26e22339d406e3535c41493b30868a68636b30f377d66b82184e7dfa7d4bfb21", "629803af767e37194c7717b3079a363ef013ff3c6b29447fe01d77af0d9e586d", "919356307dbf26240d11452b93bbc393549d3f6cac7d2fe1ef05e3428aef2a54", "7882a4b8477c66a35723df3a69d7a5da8d4bc511160599bb2b4c64896a555280", "73557973ecf4fc7b68248a8477fc75680b1d2472fcc0c9c3ff005a5434a248b1", "fcc1bb51f7c5cc0f56f8da1a6ace5df20508fc15ce601ae1e60b9d90a79ab898", "b0431414df1042a2f973f167f68c1c9c1baeecdaf9ffb04a79faec431089e175", "24f81a47404a23397aab8192e64d9e8f56d8aff536c952904b972cf92e4d4661", "07d85eb248b0002be31adffba592ccacb857d8de1b53610db27a1646ca86fcce", "bec4f05934d4bb7890e92021082d16e7a00ea21e74b1e3410ea4c7408fb4668d", "47db2ad9f6c84d65eba53db134f6da01afba192dec4d44f02514a92077edf51c"])
+_OXYGEN_BALANCE_DEFAULT_RESULT_HEX_SHA256 = ('38b70142fbc5d625ea0bfe1ee216d8aec92b0159d99a7979d36e0407c6fb297d', '92eb76f38f8ab5a673369f6efd9c47ba60ab470e95e7a9eb4f4471fd20501ad5', '03cd4371d8e63de9d01f008f10ba06998ab34120e1ec2822ab7d6ba43d9bd587', '83578e1324e5c44a49f0d913b258ab91f7e539bb46cd6b42d01d7e9d593ffb3a', '4e6a29f49efdb2346ff6e67018430efd0c52c97489874d961701fd809edf718e', '345da805e0ef8d9712441ff5952c3c85f0ef9273e963e236b23e931a812c7084', 'b71445da457437bc893030a823d7910374853d1e871c3a1a2050b56c509d01c4', '492f2a2fbc01858dc6338a228a8e6f786090dcf1ac40c240d90128d35a413bd9', 'dc115650267cf8e44d038752de44352085f61d1920e08932ad6c3fd5eb892c56', '9e927f259e1a44d20a8cd15b86724b01183db68c62c6a8624ecbe03e8c3fd4a3', '618c5516f77bd5f22b1c533579149916f55bdf192fbbf381c7eee117b4862c55', '441b34aa2981dbd063b591625d62961d52eaf503e9dabf304cda0cb59d6447e8', 'f8dbdcba073c5c40cf1558d8cae17342addf8983f759b5c72dd66894cf60f3c8', '2aff5bfbd141ac273cb20f832849def9ed96502ff5180bf09df3ab25056ceaaa', '71d9c7e49647e180e3203b8295d3b006a03aa5f58e8c6c21f041ace279a1e630', 'a512429f5d2f069bbf212d80a8f373f879d8c2c70b3a7adca867d2e118de7bc8', '392e45fde51591efebe877fa2604e4445f53cc6af4318b498adde48b7fe54623', 'a4413cf8949c4fcbb267a1e4cbf81915663950794e8ead0e5cab6b138e588a68', '7f75fd646e3aed3e91ffa810e2ef1e2ce7a7334da24ad1f285da6054fa6d708f', '835fa3989bcab0b3f563e3f31aa3179f412a5f315640e0fc457bc2b76a198ebe', '20c3c06766be9b5fb258ebc80f481dd248d956e1f761c7983097960fe1f55863', 'b8a82ecbc06f4c984cdb83b439c68395e2957c50c9a5a9eec5cc900c3858edf7', '15c25a43b058dfb8d9cbc04bbc610958a8f888d5c7742fb0b1bbdf0efee591cf', '63ddc1b91fd6292eab9b5af74175a03a7f599b1b97b33c2f0e9c6181210da907', '5a9ef9eee27ec9c535b93f8a3d382f2baab6eb37d07082d24cdf66033f0486bb', 'b69083dabf11d50c040269d0dce13ceae0424fcd42c5e522b71cb83c322f93f3', '7fddc009841ac9f0dd59ef2e1430fe7e93a9a9b6eb1863e341c24c78edb185a5', '9c1defeb529b2c301ae790f3f976e9bf3295d446ab086432f1c6514ccd6de632', 'cd5f0efc8d2f5eeb00584642e9b66a2e938cf0b506f5915b7ed2974a7f76e079', '8cb0cf56b1b08223f10c6764088858cb318671cd6f3b843cd787dbfbd8369dbd', 'bd40b80ee91689e0ee1a14512f53a5ea0392cda368056ec2a0a706fb9842e67f', 'a021ca86c38591423f2d57bbb24bb1a117da1a0276e8504637cc7f68a715c543', '39915ccc7581d217ef04904bd111c2954807d2d457b7576ca34013a9a80450b7', '10f1b2ea6dd3dd2601664b498d160cca8aed9d27962ccbcc48a2e9c7b3c2caee', 'f8ea8947c8b85298307b206d632e0a791d1390528f261746eff466ec4a1feff4', '09dda7217a2265361bb04df2084a0874eb8668099f9398b8b756cd8625859e98', 'd3426e06dbfb86812cc94cc27707effcfccc7673b26918b0b489d830c25fd508', 'bfecdfca22ea4737897bf74590d8084cc0c09f5ae6f749b78f1d4e1389eec10b', '383db90aa68e4d51ac1698201ccaaeaed4bd532543e2832c9e85b29a1f5b039e', 'f9f192bfa1ac5a8c6edd7d527429797b63af62000c8afa9c6c0bfd4b869d566a', 'cd66cef7816db6b375d05f680d32c6dc546ccb16326ccc9321827a6721db3881', '554177b01a3758f2c1796eddbbd605cc029a1572603beac48697ecc025475440', '7412b5daff968d1ffecc1e349ae8dcae1888970bf42f9a61dc7c3a913bae5f11', '0ff27e2fab16fcc0299de1b0998ee37e76df354a0bb3044b57841df93a80ccd1', '4a9e38bcbae96b145bf13460805c8f786f6d9dafe0a385655071feeb0a125d6e', 'c4050eea0a4b637e9522ee5bcbc19ebb0a07fb024cbed7e3f51900b917ba268f', '3ddf35e33bfe8fbbf59b3a4ffa916766daedbf1e34d69463467b24eb7b1a9712', 'da97d9ae0efb691e4dea42949c2ca7b17fd46d25e8d2709643c955e9edcc32ab', 'd2577cd181962ab778bf6f901b1dcbb7cf8dabf3f9d63f594f1b55937a525ebb', 'fe71c6f31982c9bcf6fd4d58f29b84c315b1e8eeabe394c79109422d83c65d04')
 
 def _oxygen_balance_hashes(
     gas_pack: ImccGasDatapack,
@@ -6083,7 +6161,7 @@ def test_weighted_oxygen_root_exact_limits_and_frozen_fluxes(
         for name, data in channels.items()
     }
     species = oxygen_balance_species_metadata({
-        name: gas_module._SF04_REACTIONS[name][0] for name in channels
+        name: gas_module._GAS_REACTIONS[name][0] for name in channels
     })
     pressure_model = lambda logp: dict(evaluate_gas(
         activities, 2000.0, 10.0**logp, gas_pack, parent_oxides=parents,
@@ -6609,10 +6687,10 @@ def test_weighted_oxygen_root_can_exclude_an_imposed_gas_reservoir(
     metadata = gas_module.gas_channel_metadata(activities, 2000.0, gas_pack)
     channels = {name: item for name, item in metadata.items() if item.available}
     species_data = oxygen_balance_species_metadata({
-        name: gas_module._SF04_REACTIONS[name][0] for name in channels
+        name: gas_module._GAS_REACTIONS[name][0] for name in channels
     })
     weights = {
-        name: 0.0 if gas_module._SF04_REACTIONS[name][0] == "N2"
+        name: 0.0 if gas_module._GAS_REACTIONS[name][0] == "N2"
         else item.oxygen_atoms-item.parent_oxygen_demand
         for name, item in channels.items()
     }
