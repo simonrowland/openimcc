@@ -49,7 +49,7 @@ def _element_inventory(
 # legacy-solver reference call's CPU. See the gate for the spread allowance.
 # The key is the public chip name (on Darwin, `sysctl -n machdep.cpu.brand_string`),
 # never a host name: the same chip shares a ceiling, and a different chip does not.
-# Recorded after the cold-start fix on the development laptop's chip.
+# Original v4 values were recorded after the cold-start fix on the laptop.
 _DEV_CPU_CLASS = "Apple M5 Max"
 _COLD_REFERENCE_COMPOSITION = {
     "SiO2": 0.50,
@@ -62,6 +62,14 @@ _COLD_REFERENCE_COMPOSITION = {
     "K2O": 0.002,
 }
 _COLD_REFERENCE_TEMPERATURE = 1734.15
+# Rebased for redox-v5: it has 21 parents and 18 rows, versus v4's 17 and 6.
+# These fixtures still have 12 active parents; the composition-conditioned Cr
+# row adds one active complex column (41 to 42 for trace, 40 to 41 for closed
+# natural melt). The returned states take 20 and 32 composition fixed-point
+# updates, and cProfile records 128 and 356 inner solves per evaluation (v4:
+# 9 and 15). The Sr/Li/Zn/Yb associates are absent from these inventories and
+# do not enter the Newton matrix. Basalt has no Cr and keeps the v4 baseline.
+# The values below record the measured v5 cost of the active Cr row.
 _COLD_COST_BASELINES: dict[str, dict[str, tuple[float, ...]]] = {
     # Values are five independent run medians. Each run is the median of five
     # trial medians, each from seven interleaved solve/reference pairs. Ratios
@@ -69,35 +77,35 @@ _COLD_COST_BASELINES: dict[str, dict[str, tuple[float, ...]]] = {
     _DEV_CPU_CLASS: {
         "basalt": (0.00378906, 0.00373555, 0.00372911, 0.00368432, 0.00366756),
         "basalt_with_traces": (
-            0.00481097,
-            0.00479506,
-            0.00472397,
-            0.00490507,
-            0.00490697,
+            0.00837669,
+            0.00752019,
+            0.00785226,
+            0.00747123,
+            0.00743009,
         ),
         "closed_natural_melt": (
-            0.00553817,
-            0.00566824,
-            0.00566409,
-            0.00572298,
-            0.00576032,
+            0.00930890,
+            0.01001366,
+            0.00946519,
+            0.00918098,
+            0.00876849,
         ),
     },
     "Apple M3 Ultra": {
         "basalt": (0.00384046, 0.00368501, 0.00375076, 0.00372141, 0.00375380),
         "basalt_with_traces": (
-            0.00483423,
-            0.00483398,
-            0.00414773,
-            0.00448994,
-            0.00448712,
+            0.00733076,
+            0.00734667,
+            0.00720310,
+            0.00733635,
+            0.00744185,
         ),
         "closed_natural_melt": (
-            0.00531161,
-            0.00539129,
-            0.00608211,
-            0.00542010,
-            0.00583425,
+            0.00854165,
+            0.00846905,
+            0.00847944,
+            0.00847693,
+            0.00840150,
         ),
     },
 }
