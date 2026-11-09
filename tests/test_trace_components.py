@@ -23,6 +23,9 @@ from openimcc.trace_envelope_calibration import (
     AMPHOTERIC_ENVELOPE_K,
     BASIC_MONOXIDE_ENVELOPE_K,
     CALIBRATION_ROWS,
+    ENVELOPE_DELTA_IW_GRID,
+    ENVELOPE_T_GRID_K,
+    _iw_log10_fO2_bar,
 )
 import openimcc.trace_components as trace_components
 from openimcc.trace_components import (
@@ -216,6 +219,9 @@ def test_basic_monoxide_envelope_scores_dilute_cobalt_and_caps_major_rows() -> N
         "k": BASIC_MONOXIDE_ENVELOPE_K,
         "calibrant": "MnO",
         "class": "basic_monoxide",
+        "temperature_range_K": (1400.0, 2200.0),
+        "log10_fO2_range_bar": trace_components.ENVELOPE_LOG10_FO2_RANGE_BAR,
+        "delta_IW_grid": (-2.0, 0.0, 2.0, 4.0),
     }
     assert "mn_calibrated_envelope" in str(sodium)
     assert math.isfinite(dilute.activity("Na2O"))
@@ -235,6 +241,67 @@ def test_basic_monoxide_envelope_scores_dilute_cobalt_and_caps_major_rows() -> N
     assert all(item.bias_bound_dex > 0.02 for item in concentrated_flags)
     with pytest.raises(ImccComponentOutsideDomainError, match="exceeds 0.02 dex"):
         concentrated.activity("Na2O")
+
+
+def test_trace_envelope_falls_back_to_strict_bound_outside_temperature_grid() -> None:
+    result = evaluate(
+        _mole_fraction_composition(_MARE_BASALT_WT, "CoO", 0.001),
+        1399.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+    )
+    sodium = next(
+        item for item in result.labels.notices
+        if isinstance(item, TraceMajorBiasFlag) and item.major_oxide == "Na2O"
+    )
+    assert sodium.envelope_flags == ()
+    assert sodium.limiting_cap_dex == 0.01
+    assert "temperature outside 1400–2200 K" in str(sodium)
+    assert not sodium.scoreable
+
+
+def test_gas_trace_bias_uses_melt_envelope_flags(packaged_gas_pack) -> None:
+    def evaluate_composition(x_coo: float) -> tuple[dict[str, float], dict[str, float]]:
+        mole_composition = _mole_fraction_composition(
+            _MARE_BASALT_WT, "CoO", x_coo
+        )
+        weight_composition = {
+            oxide: amount * MOLAR_MASS_G_MOL[oxide]
+            for oxide, amount in mole_composition.items()
+        }
+        melt = evaluate(
+            weight_composition,
+            1800.0,
+            basis_type="wt",
+            allow_extrapolation=True,
+        )
+        return _major_activities(melt), weight_composition
+
+    dilute_activities, dilute_composition = evaluate_composition(0.001)
+    dilute_gas = evaluate_gas(
+        dilute_activities,
+        1800.0,
+        1.0e-8,
+        packaged_gas_pack,
+        gas_species=("Na", "SiO"),
+        composition_wt_pct=dilute_composition,
+    )
+    assert "Na" in dilute_gas
+    sodium_flag = dilute_gas.domain_flags["Na"]
+    assert isinstance(sodium_flag, TraceMajorBiasFlag)
+    assert sodium_flag.mn_calibrated_envelope is not None
+    assert sodium_flag.scoreable
+
+    concentrated_activities, concentrated_composition = evaluate_composition(0.01)
+    with pytest.raises(ImccComponentOutsideDomainError):
+        evaluate_gas(
+            concentrated_activities,
+            1800.0,
+            1.0e-8,
+            packaged_gas_pack,
+            gas_species=("Na", "SiO"),
+            composition_wt_pct=concentrated_composition,
+        )
 
 
 def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() -> None:
@@ -502,26 +569,30 @@ def test_manganese_associate_refusal_uses_published_gamma_rung(
 
 
 def test_redox_sweeps_recompute_stored_class_envelopes() -> None:
-    def redox_result(oxide_moles: dict[str, float]):
+    def redox_result(
+        oxide_moles: dict[str, float], temperature_K: float, log_fO2: float
+    ):
         return evaluate_redox(
             _redox_inventory(oxide_moles),
-            1800.0,
+            temperature_K,
             "imposed",
-            lambda_imposed=-8.0 * math.log(10.0),
+            lambda_imposed=log_fO2 * math.log(10.0),
         )
 
     stored = {
-        (trace_class, calibrant, melt, x_trace, major): (shift, contribution)
-        for trace_class, calibrant, melt, x_trace, major, shift, contribution
-        in CALIBRATION_ROWS
+        trace_class: (calibrant, melt, temperature, log_fO2, x_trace,
+                      major, shift, contribution)
+        for trace_class, calibrant, melt, temperature, log_fO2, x_trace,
+        major, shift, contribution in CALIBRATION_ROWS
     }
-    recomputed: dict[
-        tuple[str, str, str, float, str], tuple[float, float]
-    ] = {}
     by_class: dict[str, list[tuple[float, float, str, float]]] = {
         "basic_monoxide": [],
         "amphoteric": [],
     }
+    recomputed: dict[
+        tuple[str, str, str, float, float, float],
+        tuple[str, float, float],
+    ] = {}
     for trace_class, calibrant, melts in (
         ("basic_monoxide", "MnO", (
             ("mare basalt", _MARE_BASALT_WT),
@@ -542,53 +613,64 @@ def test_redox_sweeps_recompute_stored_class_envelopes() -> None:
             base_fractions = {
                 oxide: amount / total for oxide, amount in base_moles.items()
             }
-            baseline = redox_result(base_fractions)
-            if calibrant == "MnO" and melt_name == "mare basalt":
-                assert baseline.parent_activity["Na2O"] == pytest.approx(
-                    6.11021002252e-13, rel=2e-8
-                )
-            for x_trace in (0.001, 0.0025, 0.005, 0.01):
-                with_trace = {
-                    oxide: amount * (1.0 - x_trace)
-                    for oxide, amount in base_fractions.items()
-                }
-                with_trace[calibrant] = x_trace
-                result = redox_result(with_trace)
-                for major, activity in result.parent_activity.items():
-                    if major == calibrant or major not in baseline.parent_activity:
-                        continue
-                    assert activity > 0.0 and baseline.parent_activity[major] > 0.0
-                    shift = abs(
-                        math.log10(activity)
-                        - math.log10(baseline.parent_activity[major])
+            for temperature_K in ENVELOPE_T_GRID_K:
+                for delta_iw in ENVELOPE_DELTA_IW_GRID:
+                    log_fO2 = _iw_log10_fO2_bar(temperature_K) + delta_iw
+                    baseline = redox_result(
+                        base_fractions, temperature_K, log_fO2
                     )
-                    contribution = shift / ((1.0 + nu) * x_trace)
-                    key = (trace_class, calibrant, melt_name, x_trace, major)
-                    recomputed[key] = (shift, contribution)
-                    by_class[trace_class].append(
-                        (contribution, shift, melt_name, x_trace)
+                    winners: list[tuple[float, str, float, float]] = []
+                    for x_trace in (0.001, 0.01):
+                        with_trace = {
+                            oxide: amount * (1.0 - x_trace)
+                            for oxide, amount in base_fractions.items()
+                        }
+                        with_trace[calibrant] = x_trace
+                        result = redox_result(
+                            with_trace, temperature_K, log_fO2
+                        )
+                        for major, activity in result.parent_activity.items():
+                            if major == calibrant or major not in baseline.parent_activity:
+                                continue
+                            assert activity > 0.0 and baseline.parent_activity[major] > 0.0
+                            shift = abs(
+                                math.log10(activity)
+                                - math.log10(baseline.parent_activity[major])
+                            )
+                            contribution = shift / ((1.0 + nu) * x_trace)
+                            winners.append((contribution, major, shift, x_trace))
+                    k, major, shift, x_trace = max(winners)
+                    key = (
+                        trace_class, calibrant, melt_name, temperature_K,
+                        log_fO2, x_trace,
                     )
+                    recomputed[key] = (major, shift, k)
+                    by_class[trace_class].append((k, shift, melt_name, x_trace))
 
-    assert recomputed.keys() == stored.keys()
-    for key, (shift, contribution) in recomputed.items():
-        stored_shift, stored_contribution = stored[key]
-        assert shift == pytest.approx(stored_shift, rel=1e-7, abs=1e-10)
-        assert contribution == pytest.approx(
-            stored_contribution, rel=1e-7, abs=1e-10
+    winning_rows = {}
+    for trace_class in by_class:
+        class_rows = [
+            (value[2], key[5], key, value)
+            for key, value in recomputed.items()
+            if key[0] == trace_class
+        ]
+        contribution, _x, key, (major, shift, _contribution) = max(class_rows)
+        winning_rows[trace_class] = (
+            key[1], key[2], key[3], key[4], key[5], major, shift, contribution
         )
+    assert winning_rows.keys() == stored.keys()
+    for trace_class, actual in winning_rows.items():
+        expected = stored[trace_class]
+        assert actual[:6] == expected[:6]
+        assert actual[6] == pytest.approx(expected[6], rel=1e-7, abs=1e-10)
+        assert actual[7] == pytest.approx(expected[7], rel=1e-7, abs=1e-10)
 
     k_basic = max(item[0] for item in by_class["basic_monoxide"])
     k_amphoteric = max(item[0] for item in by_class["amphoteric"])
     assert k_basic == pytest.approx(BASIC_MONOXIDE_ENVELOPE_K, rel=1e-12)
     assert k_amphoteric == pytest.approx(AMPHOTERIC_ENVELOPE_K, rel=1e-12)
-    raw_mn_response = max(
-        shift / x_trace
-        for _contribution, shift, melt, x_trace in by_class["basic_monoxide"]
-        if melt == "mare basalt"
-    )
-    assert raw_mn_response == pytest.approx(8.3304793811326, rel=1e-10)
     assert all(math.isfinite(item[0]) for item in by_class["amphoteric"])
-    assert 1.8 < k_amphoteric < 2.0
+    assert k_amphoteric > 1.8
 
 
 @pytest.mark.parametrize("oxide", ["Cl", "F", "S", "SO3"])

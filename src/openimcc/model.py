@@ -62,6 +62,9 @@ from openimcc.kernel import (
 )
 from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.receipt import build_calculation_receipt
+from openimcc.trace_envelope_calibration import (
+    ENVELOPE_T_RANGE_K,
+)
 from openimcc.trace_components import (
     AMPHOTERIC_ENVELOPE_K,
     BASIC_MONOXIDE_ENVELOPE_K,
@@ -2811,9 +2814,13 @@ def evaluate(
                 amphoteric_weighted += contribution
             else:
                 strict_weighted += contribution
+        envelope_in_temperature_domain = (
+            ENVELOPE_T_RANGE_K[0] <= float(T_K) <= ENVELOPE_T_RANGE_K[1]
+        )
         calibrated_bounds: list[tuple[str, float]] = []
         envelope_flags: list[tuple[str, float, str, str]] = []
-        if basic_monoxide_weighted > 0.0:
+        envelope_fallback_flags: list[str] = []
+        if basic_monoxide_weighted > 0.0 and envelope_in_temperature_domain:
             calibrated_bounds.append((
                 "basic_monoxide",
                 BASIC_MONOXIDE_ENVELOPE_K * basic_monoxide_weighted,
@@ -2824,7 +2831,14 @@ def evaluate(
                 "MnO",
                 "basic_monoxide",
             ))
-        if amphoteric_weighted > 0.0:
+        elif basic_monoxide_weighted > 0.0:
+            strict_weighted += basic_monoxide_weighted
+            envelope_fallback_flags.append(
+                "mn_calibrated_envelope_not_used: temperature outside "
+                f"{ENVELOPE_T_RANGE_K[0]:g}–{ENVELOPE_T_RANGE_K[1]:g} K; "
+                "using strict per-major bound"
+            )
+        if amphoteric_weighted > 0.0 and envelope_in_temperature_domain:
             calibrated_bounds.append((
                 "amphoteric",
                 AMPHOTERIC_ENVELOPE_K * amphoteric_weighted,
@@ -2835,6 +2849,13 @@ def evaluate(
                 "Cr2O3",
                 "amphoteric",
             ))
+        elif amphoteric_weighted > 0.0:
+            strict_weighted += amphoteric_weighted
+            envelope_fallback_flags.append(
+                "cr_calibrated_envelope_not_used: temperature outside "
+                f"{ENVELOPE_T_RANGE_K[0]:g}–{ENVELOPE_T_RANGE_K[1]:g} K; "
+                "using strict per-major bound"
+            )
         major_bias_bounds: dict[str, float] = {}
         if weighted_trace > 0.0:
             for index, major in enumerate(parent_oxides):
@@ -2885,6 +2906,7 @@ def evaluate(
                     scoreable,
                     limiting_bound_dex=limiting_bound,
                     limiting_cap_dex=limiting_cap,
+                    prior_flags=tuple(envelope_fallback_flags),
                     envelope_flags=tuple(envelope_flags),
                 )
                 trace_major_flags.append(major_flag)

@@ -13,6 +13,9 @@ from openimcc.kernel import ImccRefusal
 from openimcc.trace_envelope_calibration import (
     AMPHOTERIC_ENVELOPE_K,
     BASIC_MONOXIDE_ENVELOPE_K,
+    ENVELOPE_DELTA_IW_GRID,
+    ENVELOPE_LOG10_FO2_RANGE_BAR,
+    ENVELOPE_T_RANGE_K,
 )
 
 
@@ -244,8 +247,23 @@ class TraceMajorBiasFlag(str):
         envelope_flags: tuple[tuple[str, float, str, str], ...] = (),
     ):
         disposition = "scoreable" if scoreable else "refused"
+        envelope_domains = {
+            "mn_calibrated_envelope": {
+                "temperature_range_K": ENVELOPE_T_RANGE_K,
+                "log10_fO2_range_bar": ENVELOPE_LOG10_FO2_RANGE_BAR,
+                "delta_IW_grid": ENVELOPE_DELTA_IW_GRID,
+            },
+            "cr_calibrated_envelope": {
+                "temperature_range_K": ENVELOPE_T_RANGE_K,
+                "log10_fO2_range_bar": ENVELOPE_LOG10_FO2_RANGE_BAR,
+                "delta_IW_grid": ENVELOPE_DELTA_IW_GRID,
+            },
+        }
         envelope_text = tuple(
-            f'{name} {{k: {k:.12g}, calibrant: "{calibrant}", class: "{trace_class}"}}'
+            f'{name} {{k: {k:.12g}, calibrant: "{calibrant}", '
+            f'class: "{trace_class}", T_K: '
+            f'{envelope_domains[name]["temperature_range_K"]}, log10_fO2/bar: '
+            f'{envelope_domains[name]["log10_fO2_range_bar"]}}}'
             for name, k, calibrant, trace_class in envelope_flags
         )
         message = "; ".join((
@@ -266,10 +284,15 @@ class TraceMajorBiasFlag(str):
         flag.prior_flags = tuple(prior_flags)
         flag.additional_major_flags = tuple(additional_major_flags)
         flag.envelope_flags = tuple(envelope_flags)
+        flag.envelope_domains = MappingProxyType({
+            name: MappingProxyType(envelope_domains[name])
+            for name, *_rest in envelope_flags
+        })
         flag.mn_calibrated_envelope = next(
             (
                 MappingProxyType({
                     "k": k, "calibrant": calibrant, "class": trace_class,
+                    **envelope_domains[name],
                 })
                 for name, k, calibrant, trace_class in envelope_flags
                 if name == "mn_calibrated_envelope"
@@ -280,6 +303,7 @@ class TraceMajorBiasFlag(str):
             (
                 MappingProxyType({
                     "k": k, "calibrant": calibrant, "class": trace_class,
+                    **envelope_domains[name],
                 })
                 for name, k, calibrant, trace_class in envelope_flags
                 if name == "cr_calibrated_envelope"

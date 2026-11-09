@@ -3196,27 +3196,11 @@ def evaluate_gas(
                     allow_extrapolation=True,
                     allow_out_of_envelope=True,
                 )
-                weighted_trace = math.fsum(
-                    (1.0 + trace_component_rule(oxide).nu) * x_trace
-                    for oxide, x_trace in trace_fractions.items()
-                    if not trace_component_rule(oxide).full_component
-                )
-                if weighted_trace > 0.08:
-                    raise ImccComponentOutsideDomainError(
-                        "trace-component bound is outside its finite input range"
-                    )
-                for index, major in enumerate(IMCC_PARENT_OXIDES):
-                    if composition_moles.get(major, 0.0) <= 0.0:
-                        continue
-                    x_free = float(melt_result.parent_x_star[index])
-                    bound = (
-                        math.inf
-                        if x_free <= 0.0
-                        else math.log10(1.0 + weighted_trace / x_free)
-                    )
-                    major_bias_flags[major] = TraceMajorBiasFlag(
-                        major, x_free, bound, bound <= 0.01
-                    )
+                major_bias_flags = {
+                    item.major_oxide: item
+                    for item in melt_result.labels.notices
+                    if isinstance(item, TraceMajorBiasFlag)
+                }
             for oxide, x_trace in trace_fractions.items():
                 trace_activity_estimates[oxide] = resolve_trace_activity(
                     oxide,
@@ -3291,7 +3275,7 @@ def evaluate_gas(
             if refused:
                 return TraceGasChannelRefusal(
                     species,
-                    "major gas row exceeds the 0.01 dex trace bias limit",
+                    "major gas row exceeds the applicable trace bias limit",
                     major_flags=refused,
                 )
         return None
@@ -3699,14 +3683,21 @@ def evaluate_gas(
                 major_flags=tuple(channel_major_flags),
             )
         elif channel_major_flags:
-            domain_flags[gas_name] = TraceMajorBiasFlag(
-                channel_major_flags[0].major_oxide,
-                channel_major_flags[0].x_free,
-                channel_major_flags[0].bias_bound_dex,
-                channel_major_flags[0].scoreable,
-                prior_flags=tuple(flags),
-                additional_major_flags=tuple(channel_major_flags[1:]),
-            )
+            if len(channel_major_flags) == 1:
+                domain_flags[gas_name] = channel_major_flags[0]
+            else:
+                first_major_flag = channel_major_flags[0]
+                domain_flags[gas_name] = TraceMajorBiasFlag(
+                    first_major_flag.major_oxide,
+                    first_major_flag.x_free,
+                    first_major_flag.bias_bound_dex,
+                    all(item.scoreable for item in channel_major_flags),
+                    limiting_bound_dex=first_major_flag.limiting_bound_dex,
+                    limiting_cap_dex=first_major_flag.limiting_cap_dex,
+                    prior_flags=tuple(flags),
+                    additional_major_flags=tuple(channel_major_flags[1:]),
+                    envelope_flags=first_major_flag.envelope_flags,
+                )
         else:
             domain_flags[gas_name] = "; ".join(flags) or None
         provenance_class[gas_name] = _channel_provenance(

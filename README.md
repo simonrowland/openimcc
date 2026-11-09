@@ -51,6 +51,12 @@ NiO, and ZnO use the measured MnO-calibrated envelope
 separate Cr₂O₃-calibrated envelope with the same cap. Other classes, including
 acidic P₂O₅, retain the strict per-major bound based on the solved free-major
 fraction and registered maximum binding stoichiometry, capped at 0.01 dex.
+The two empirical envelopes apply from 1400 to 2200 K. Their calibration
+spans ΔIW −2, 0, +2, and +4 at each temperature, or absolute
+log₁₀(fO₂/bar) from about −14.87 to −1.80. Outside the temperature range,
+`evaluate()` uses the strict per-major bound. The oxygen-fugacity range is
+recorded on each envelope flag; `evaluate()` has no fO₂ input, so the stored
+`k` is the maximum across that full range.
 Rows above their applicable cap refuse that major's `activity()` request while
 preserving the other rows. The calibration table and derivation are beside the
 shared trace registration. Components with modeled associate rows, such as
