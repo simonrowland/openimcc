@@ -8,8 +8,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
+from threading import RLock
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Literal
+
+from openimcc.kernel import ImccRefusal
 
 if TYPE_CHECKING:
     from openimcc.gas import ImccGasDatapack
@@ -68,6 +71,185 @@ class LiquidStandardMismatch:
     diagnostic_delta_g_j_mol: Mapping[str, Any] | None = None
     diagnostic_label: str | None = None
     equivalent_delta_log10_K: Mapping[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class PackStandardNotice:
+    """Typed disclosure of a pack's liquid-standard relationship to its tables."""
+
+    code: str
+    message: str
+    oxide: str
+    declared_standard_id: str
+    active_standard_id: str | None
+    row_key: str | None
+    kind: StandardCheckKind
+
+
+class ImccLiquidStandardMismatchError(ImccRefusal):
+    """Raised when strict evaluation finds a known liquid-standard conflict."""
+
+    code = "imcc_liquid_standard_mismatch"
+
+    def __init__(self, mismatches: Sequence[LiquidStandardMismatch]) -> None:
+        self.mismatches = tuple(mismatches)
+        details = "; ".join(
+            f"{record.oxide}"
+            f"{f' row {record.row_key}' if record.row_key is not None else ''}: "
+            f"declared {record.declared!r}, active {record.active!r}"
+            for record in self.mismatches
+        )
+        super().__init__(f"liquid-standard mismatch: {details}")
+
+
+_STANDARD_CHECK_CACHE: dict[
+    tuple[Any, ...], tuple[LiquidStandardMismatch, ...]
+] = {}
+_STANDARD_CHECK_CACHE_LOCK = RLock()
+_CORRECTNESS_CHECK_KINDS = frozenset(
+    {"mismatch", "not-active", "undeclared", "redox-mismatch"}
+)
+_NOTICE_CHECK_KINDS = _CORRECTNESS_CHECK_KINDS | {"reference-unknown"}
+
+
+def _pack_standard_identity(pack: Any) -> tuple[Any, ...] | None:
+    digest = getattr(pack, "binding_digest", None)
+    if not isinstance(digest, str):
+        digest = getattr(pack, "canonical_digest", None)
+    if not isinstance(digest, str):
+        digest = getattr(pack, "pack_digest", None)
+    if isinstance(digest, str):
+        return "digest", digest
+    return None
+
+
+def _gas_table_identity(pack: Any) -> tuple[Any, ...] | None:
+    gas_digest = getattr(pack, "gas_table_digest", None)
+    condensate_digest = getattr(pack, "condensate_table_digest", None)
+    if isinstance(gas_digest, str) and isinstance(condensate_digest, str):
+        return "digest", gas_digest, condensate_digest
+    return None
+
+
+def _standard_table_identity(
+    profile: str | Profile | None,
+    gas_pack: ImccGasDatapack | None,
+) -> tuple[Any, ...] | None:
+    from openimcc.profiles import Profile
+
+    if isinstance(profile, Profile):
+        profile_name = profile.name
+        active_gas_pack = profile.gas_datapack if gas_pack is None else gas_pack
+        redox_identity = ("digest", profile.redox_pack.canonical_digest)
+    else:
+        profile_name = "openimcc" if profile is None else profile
+        active_gas_pack = gas_pack
+        redox_identity = ("profile", profile_name)
+        if active_gas_pack is None:
+            active_gas_pack = ("profile", profile_name)
+    gas_identity = (
+        active_gas_pack
+        if isinstance(active_gas_pack, tuple)
+        else _gas_table_identity(active_gas_pack)
+    )
+    if gas_identity is None:
+        return None
+    return profile_name, gas_identity, redox_identity
+
+
+def _cached_check_pack_standards(
+    pack: Any,
+    profile: str | Profile | None = None,
+    *,
+    gas_pack: ImccGasDatapack | None = None,
+    redox_pack: Any = None,
+) -> tuple[LiquidStandardMismatch, ...]:
+    """Reuse a check while both pack and active table identities stay fixed."""
+    pack_identity = _pack_standard_identity(pack)
+    table_identity = _standard_table_identity(profile, gas_pack)
+    redox_identity = None if redox_pack is None else _pack_standard_identity(redox_pack)
+    if pack_identity is None or table_identity is None or (
+        redox_pack is not None and redox_identity is None
+    ):
+        return tuple(
+            check_pack_standards(
+                pack,
+                profile,
+                gas_pack=gas_pack,
+                redox_pack=redox_pack,
+            )
+        )
+    key = (pack_identity, table_identity, redox_identity)
+    with _STANDARD_CHECK_CACHE_LOCK:
+        cached = _STANDARD_CHECK_CACHE.get(key)
+        if cached is not None:
+            return cached
+        records = tuple(
+            check_pack_standards(
+                pack,
+                profile,
+                gas_pack=gas_pack,
+                redox_pack=redox_pack,
+            )
+        )
+        if len(_STANDARD_CHECK_CACHE) >= 64:
+            _STANDARD_CHECK_CACHE.pop(next(iter(_STANDARD_CHECK_CACHE)))
+        _STANDARD_CHECK_CACHE[key] = records
+        return records
+
+
+def _pack_standard_notices(
+    records: Sequence[LiquidStandardMismatch],
+) -> tuple[PackStandardNotice, ...]:
+    notices: list[PackStandardNotice] = []
+    for record in records:
+        if record.kind not in _NOTICE_CHECK_KINDS:
+            continue
+        row = f" in row {record.row_key}" if record.row_key is not None else ""
+        if record.kind == "reference-unknown":
+            message = (
+                f"{record.oxide}{row} has an unresolved liquid-standard reference; "
+                f"declared {record.declared!r}, active {record.active!r}."
+            )
+        elif record.kind == "undeclared":
+            message = (
+                f"{record.oxide}{row} has no liquid-standard declaration; "
+                f"active standard is {record.active!r}."
+            )
+        elif record.kind == "not-active":
+            message = (
+                f"{record.oxide}{row} declares {record.declared!r}, which is not "
+                "active in the selected liquid tables."
+            )
+        else:
+            message = (
+                f"{record.oxide}{row} declares {record.declared!r}, while the "
+                f"active liquid standard is {record.active!r}."
+            )
+        notices.append(
+            PackStandardNotice(
+                code=f"liquid-standard-{record.kind}",
+                message=message,
+                oxide=record.oxide,
+                declared_standard_id=record.declared,
+                active_standard_id=record.active,
+                row_key=record.row_key,
+                kind=record.kind,
+            )
+        )
+    return tuple(notices)
+
+
+def _raise_for_strict_pack_standards(
+    records: Sequence[LiquidStandardMismatch], strict: bool,
+) -> None:
+    if not strict:
+        return
+    mismatches = tuple(
+        record for record in records if record.kind in _CORRECTNESS_CHECK_KINDS
+    )
+    if mismatches:
+        raise ImccLiquidStandardMismatchError(mismatches)
 
 
 class PackRowLiquidStandards(dict[str, str]):
@@ -347,7 +529,6 @@ def active_liquid_standards(
     from openimcc import gas
     from openimcc.liquid_reference import feo_liquid_standard
     from openimcc.profiles import _resolve_profile
-    from openimcc.redox_pack import load_redox_pack
 
     selected = (
         _resolve_profile(profile)
@@ -414,11 +595,7 @@ def active_liquid_standards(
 
     # FeO1.5(l) is half a metastable Fe2O3(l) construction. Fe-030 is its
     # hematite crystal basis, not a JANAF liquid table.
-    redox_pack = (
-        load_redox_pack(selected.redox_pack_path)
-        if selected.redox_pack_path is not None
-        else load_redox_pack()
-    )
+    redox_pack = selected.redox_pack
     species = redox_pack.content["thermo_species"]
     feo15 = species.get("FeO1.5(l)", {})
     fe2o3 = species.get("Fe2O3(l)", {})
@@ -717,7 +894,9 @@ def check_pack_standards(
 
 
 __all__ = [
+    "ImccLiquidStandardMismatchError",
     "LiquidStandardMismatch",
+    "PackStandardNotice",
     "PackLiquidStandards",
     "active_liquid_standards",
     "check_pack_standards",

@@ -13,8 +13,10 @@ import pytest
 import openimcc.redox as redox_module
 
 from openimcc import (
+    ImccLiquidStandardMismatchError,
     ImccRefusal,
     ImccTOutsideDatapackDomainError,
+    PackStandardNotice,
     RedoxEndpointError,
     RedoxInputError,
     RedoxNoLiveCoupleError,
@@ -1172,6 +1174,41 @@ def test_evaluate_redox_refuses_boolean_numeric_controls(mode, lambda_imposed, k
         )
 
 
+def test_evaluate_redox_pack_standard_notices_and_strict_refusal() -> None:
+    from openimcc.profiles import load_profile
+
+    v1_pack = load_datapack(
+        ROOT / "src/openimcc/data/packs/imcc-sf04-d066-v1.json"
+    )
+    with pytest.raises(ImccLiquidStandardMismatchError, match="FeO") as refused:
+        evaluate_redox(
+            _fe_only_inventory(),
+            2200.0,
+            "closed",
+            melt_pack=v1_pack,
+            strict_pack_standards=True,
+        )
+    assert {record.oxide for record in refused.value.mismatches} == {
+        "FeO",
+        "SiO2",
+        "Na2O",
+    }
+
+    result = evaluate_redox(
+        _fe_only_inventory(),
+        2200.0,
+        "closed",
+        profile=load_profile("openimcc"),
+        strict_pack_standards=True,
+    )
+    assert all(isinstance(notice, PackStandardNotice) for notice in result.notices)
+    assert not any(
+        notice.kind in {"mismatch", "redox-mismatch", "undeclared", "not-active"}
+        for notice in result.notices
+    )
+    assert any(notice.kind == "reference-unknown" for notice in result.notices)
+
+
 def test_default_redox_manifest_is_checked_via_evaluate_redox(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
@@ -2211,6 +2248,22 @@ def test_redox_pack_path_refuses_missing_unreadable_and_bad_digest(
             _fe_only_inventory(), 2200.0, "closed", redox_pack_path=mismatched
         )
     assert isinstance(refusal.value, RedoxInputError)
+
+
+def test_profile_redox_pack_refuses_missing_file_without_exposing_path(
+    tmp_path: Path,
+) -> None:
+    from dataclasses import replace
+    from openimcc.model import ImccMalformedDatapackError
+    from openimcc.profiles import load_profile
+
+    missing = tmp_path / "missing-profile-redox.json"
+    profile = replace(load_profile("openimcc"), redox_pack_path=missing)
+    with pytest.raises(ImccMalformedDatapackError) as refusal:
+        evaluate_redox(_fe_only_inventory(), 2200.0, "closed", profile=profile)
+    assert isinstance(refusal.value, ImccRefusal)
+    assert str(tmp_path) not in str(refusal.value)
+    assert missing.name in str(refusal.value)
 
 
 def test_rounded_basalt_species_reproduce_the_ferrous_fe_correction() -> None:

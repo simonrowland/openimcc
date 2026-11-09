@@ -998,6 +998,27 @@ extrapolated.
 
 ## API
 
+### Liquid-standard compatibility
+
+`evaluate_gas()`, `evaluate_gas_saturation()`, and `evaluate_redox()` compare
+the selected melt and redox pack declarations with the active liquid tables.
+Their results expose typed `PackStandardNotice` objects through `notices`;
+each notice reports the oxide, declared and active standard IDs, check kind,
+and row key when the declaration is row-specific. Gas evaluation uses the
+melt pack and tables selected by `profile`. When evaluating a standalone gas
+datapack without a profile, no melt pack is selected, so no pack-standard check
+is available. Use the same profile that selected the melt pack when evaluating
+its gas.
+
+The keyword-only `strict_pack_standards=True` option refuses known standard-ID
+mismatches and missing or inactive declarations with
+`ImccLiquidStandardMismatchError`. The default is `False`. Rows marked
+`reference-unknown` are predicted and flagged with typed notices; they do not
+cause strict refusal. The default D066 v4 pack has no correctness-mismatch
+notices, while its four disclosed K2O `reference-unknown` rows remain flagged.
+Non-source-basis records remain informational and are not notices.
+Plain `evaluate()` has no gas table to compare, so it does not run this check.
+
 ### Melt pack-row participation
 
 When a melt solve succeeds, `evaluate()`, `evaluate_redox()`, and

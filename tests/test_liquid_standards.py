@@ -16,7 +16,9 @@ import pytest
 
 import openimcc.standards as standards_module
 from openimcc import (
+    ImccLiquidStandardMismatchError,
     LiquidStandardMismatch,
+    PackStandardNotice,
     active_liquid_standards,
     check_pack_standards,
     evaluate,
@@ -24,8 +26,15 @@ from openimcc import (
     pack_liquid_standards,
     pack_row_liquid_standards,
 )
-from openimcc.gas import R_J_MOL_K, load_gas_datapack, species_thermo
-from openimcc.redox_pack import load_redox_pack
+from openimcc.gas import (
+    R_J_MOL_K,
+    evaluate_gas,
+    evaluate_gas_saturation,
+    load_gas_datapack,
+    species_thermo,
+)
+from openimcc.redox import evaluate_redox
+from openimcc.redox_pack import canonical_redox_digest, load_redox_pack
 from openimcc.profiles import ProfileError, load_profile
 
 
@@ -537,6 +546,299 @@ def test_d066_v1_mixed_standards_are_caught_and_v4_matches_default() -> None:
         and record.kind == "mismatch"
         for record in v4_published
     )
+
+
+def test_gas_evaluators_report_pack_standard_notices_and_strict_refusals() -> None:
+    from openimcc.profiles import Profile
+
+    default_profile = load_profile("openimcc")
+    v1_profile = replace(
+        default_profile,
+        melt_pack=load_datapack(PACK_DIR / "imcc-sf04-d066-v1.json"),
+    )
+    assert isinstance(v1_profile, Profile)
+
+    v1_gas = evaluate_gas(
+        {"SiO2": 1.0},
+        2000.0,
+        1.0e-8,
+        profile=v1_profile,
+        gas_species=("SiO",),
+    )
+    v1_mismatch_notices = tuple(
+        notice
+        for notice in v1_gas.notices
+        if isinstance(notice, PackStandardNotice) and notice.kind == "mismatch"
+    )
+    assert {notice.oxide for notice in v1_mismatch_notices} == {
+        "FeO",
+        "SiO2",
+        "Na2O",
+    }
+    expected = {
+        (record.oxide, record.declared, record.active, record.row_key)
+        for record in check_pack_standards(
+            v1_profile.melt_pack, gas_pack=default_profile.gas_datapack
+        )
+        if record.kind == "mismatch"
+    }
+    assert {
+        (
+            notice.oxide,
+            notice.declared_standard_id,
+            notice.active_standard_id,
+            notice.row_key,
+        )
+        for notice in v1_mismatch_notices
+    } == expected
+    assert all(isinstance(notice, PackStandardNotice) for notice in v1_mismatch_notices)
+    with pytest.raises(ImccLiquidStandardMismatchError, match="FeO") as refused:
+        evaluate_gas(
+            {"SiO2": 1.0},
+            2000.0,
+            1.0e-8,
+            profile=v1_profile,
+            gas_species=("SiO",),
+            strict_pack_standards=True,
+        )
+    assert {record.oxide for record in refused.value.mismatches} == {
+        "FeO",
+        "SiO2",
+        "Na2O",
+    }
+    with pytest.raises(ImccLiquidStandardMismatchError):
+        evaluate_gas_saturation(
+            {"CaO": 1.0},
+            1800.0,
+            profile=v1_profile,
+            parent_oxides=("CaO",),
+            strict_pack_standards=True,
+        )
+
+    v4_gas = evaluate_gas(
+        {"SiO2": 1.0},
+        2000.0,
+        1.0e-8,
+        profile=default_profile,
+        gas_species=("SiO",),
+        strict_pack_standards=True,
+    )
+    v4_pack_notices = tuple(
+        notice for notice in v4_gas.notices if isinstance(notice, PackStandardNotice)
+    )
+    correctness_kinds = {"mismatch", "redox-mismatch", "undeclared", "not-active"}
+    assert not {notice.kind for notice in v4_pack_notices} & correctness_kinds
+    assert all(isinstance(notice, PackStandardNotice) for notice in v4_pack_notices)
+    expected_unknown = {
+        (record.oxide, record.declared, record.active, record.row_key)
+        for record in check_pack_standards(
+            default_profile.melt_pack, gas_pack=default_profile.gas_datapack
+        )
+        if record.kind == "reference-unknown"
+    }
+    actual_unknown = {
+        (
+            notice.oxide,
+            notice.declared_standard_id,
+            notice.active_standard_id,
+            notice.row_key,
+        )
+        for notice in v4_pack_notices
+        if notice.kind == "reference-unknown"
+    }
+    assert len(expected_unknown) == 4
+    assert {item[0] for item in expected_unknown} == {"K2O"}
+    assert actual_unknown == expected_unknown
+    assert len(v4_pack_notices) == 4
+
+    v4_saturation = evaluate_gas_saturation(
+        {"CaO": 1.0},
+        1800.0,
+        profile=default_profile,
+        parent_oxides=("CaO",),
+        strict_pack_standards=True,
+    )
+    saturation_pack_notices = tuple(
+        notice
+        for notice in v4_saturation.notices
+        if isinstance(notice, PackStandardNotice)
+    )
+    assert all(isinstance(notice, PackStandardNotice) for notice in saturation_pack_notices)
+    assert {
+        (
+            notice.oxide,
+            notice.declared_standard_id,
+            notice.active_standard_id,
+            notice.row_key,
+        )
+        for notice in saturation_pack_notices
+    } == expected_unknown
+    assert len(saturation_pack_notices) == 4
+    assert not {notice.kind for notice in saturation_pack_notices} & correctness_kinds
+
+
+def test_gas_saturation_rejects_datapack_with_profile() -> None:
+    from openimcc.profiles import ProfileConflictError
+
+    profile = load_profile("openimcc")
+    with pytest.raises(ProfileConflictError, match="cannot be combined"):
+        evaluate_gas_saturation(
+            {}, 1800.0, profile.gas_datapack, profile=profile
+        )
+
+
+def test_evaluator_standard_check_cache_uses_pack_and_table_identity(monkeypatch) -> None:
+    profile = load_profile("openimcc")
+    original_check = standards_module.check_pack_standards
+    calls = 0
+
+    def counted_check(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original_check(*args, **kwargs)
+
+    monkeypatch.setattr(standards_module, "_STANDARD_CHECK_CACHE", {})
+    monkeypatch.setattr(standards_module, "check_pack_standards", counted_check)
+    activities = {"CaO": 1.0}
+    for _ in range(2):
+        evaluate_gas(
+            activities,
+            1800.0,
+            1.0e-8,
+            profile=profile,
+            gas_species=("Ca",),
+        )
+    assert calls == 1
+
+    oxide_df = profile.gas_datapack.oxide_df
+    dataframe_type = type(oxide_df)
+    original_iterrows = dataframe_type.iterrows
+    table_iterations = 0
+
+    def counted_iterrows(frame):
+        nonlocal table_iterations
+        if frame is oxide_df:
+            table_iterations += 1
+        return original_iterrows(frame)
+
+    monkeypatch.setattr(dataframe_type, "iterrows", counted_iterrows)
+    standards_module._cached_check_pack_standards(
+        profile.melt_pack, profile, gas_pack=profile.gas_datapack
+    )
+    assert table_iterations == 0
+    with monkeypatch.context() as path_patches:
+        path_patches.setattr(
+            Path,
+            "resolve",
+            lambda *args, **kwargs: pytest.fail("cache hit resolved a path"),
+        )
+        path_patches.setattr(
+            Path,
+            "stat",
+            lambda *args, **kwargs: pytest.fail("cache hit stated a path"),
+        )
+        standards_module._cached_check_pack_standards(
+            profile.melt_pack, profile, gas_pack=profile.gas_datapack
+        )
+
+    changed_oxide = profile.gas_datapack.oxide_df.copy()
+    changed_oxide.loc["SiO2(l)", "table_id"] = "synthetic-source-table"
+    changed_tables = replace(profile.gas_datapack, oxide_df=changed_oxide)
+    changed_profile = replace(profile, gas_datapack=changed_tables)
+    evaluate_gas(
+        activities,
+        1800.0,
+        1.0e-8,
+        profile=changed_profile,
+        gas_species=("Ca",),
+    )
+    assert calls == 2
+
+
+def test_profile_redox_pack_is_loaded_and_bound_to_content_digest(tmp_path) -> None:
+    original = load_profile("openimcc")
+    source = PACK_DIR / "openimcc-redox-v4.json"
+    custom_path = tmp_path / "custom-redox.json"
+    custom_path.write_bytes(source.read_bytes())
+    old_profile = replace(original, redox_pack_path=custom_path)
+    old_redox_pack = old_profile.redox_pack
+    assert old_profile.redox_pack is old_redox_pack
+
+    old_records = standards_module._cached_check_pack_standards(
+        old_profile.melt_pack,
+        old_profile,
+        gas_pack=old_profile.gas_datapack,
+        redox_pack=old_redox_pack,
+    )
+    old_feo15 = active_liquid_standards(old_profile)["FeO1.5"]
+    inventory = {"Fe": 1.0, "O": 1.25}
+    old_result = evaluate_redox(inventory, 2200.0, "closed", profile=old_profile)
+    content = json.loads(custom_path.read_text(encoding="utf-8"))
+    content["thermo_species"]["Fe2O3(l)"]["construction"][
+        "crystal_source_table"
+    ] = "Fe-031"
+    content["canonical_content_digest"] = canonical_redox_digest(content)
+    custom_path.write_text(json.dumps(content), encoding="utf-8")
+
+    assert old_profile.redox_pack is old_redox_pack
+    assert old_profile.redox_pack.canonical_digest != content["canonical_content_digest"]
+    assert active_liquid_standards(old_profile)["FeO1.5"] == old_feo15
+    new_profile = replace(original, redox_pack_path=custom_path)
+    assert new_profile.redox_pack.canonical_digest == content["canonical_content_digest"]
+    assert "FeO1.5" not in active_liquid_standards(new_profile)
+    old_result_after_edit = evaluate_redox(
+        inventory, 2200.0, "closed", profile=old_profile
+    )
+    new_result = evaluate_redox(inventory, 2200.0, "closed", profile=new_profile)
+    assert old_result_after_edit.redox_pack_digest == old_result.redox_pack_digest
+    assert old_result_after_edit.notices == old_result.notices
+    assert new_result.redox_pack_digest == new_profile.redox_pack.canonical_digest
+    assert new_result.notices != old_result.notices
+    old_records_after_edit = standards_module._cached_check_pack_standards(
+        old_profile.melt_pack,
+        old_profile,
+        gas_pack=old_profile.gas_datapack,
+        redox_pack=old_profile.redox_pack,
+    )
+    new_records = standards_module._cached_check_pack_standards(
+        new_profile.melt_pack,
+        new_profile,
+        gas_pack=new_profile.gas_datapack,
+        redox_pack=new_profile.redox_pack,
+    )
+    assert old_records_after_edit == old_records
+    assert new_records != old_records
+    old_notices = standards_module._pack_standard_notices(old_records)
+    assert all(isinstance(notice, PackStandardNotice) for notice in old_notices)
+    new_notices = standards_module._pack_standard_notices(new_records)
+    assert all(isinstance(notice, PackStandardNotice) for notice in new_notices)
+    assert new_notices != old_notices
+
+
+def test_standard_cache_uses_supplied_pack_digests_and_skips_unknown_identity(
+    monkeypatch,
+) -> None:
+    calls = 0
+
+    def counted_check(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return []
+
+    monkeypatch.setattr(standards_module, "_STANDARD_CHECK_CACHE", {})
+    monkeypatch.setattr(standards_module, "check_pack_standards", counted_check)
+    first = SimpleNamespace(canonical_digest="custom-pack-content")
+    second = SimpleNamespace(canonical_digest="custom-pack-content")
+    standards_module._cached_check_pack_standards(first)
+    standards_module._cached_check_pack_standards(second)
+    assert calls == 1
+
+    no_digest_first = SimpleNamespace()
+    no_digest_second = SimpleNamespace()
+    standards_module._cached_check_pack_standards(no_digest_first)
+    standards_module._cached_check_pack_standards(no_digest_first)
+    standards_module._cached_check_pack_standards(no_digest_second)
+    assert calls == 4
 
 
 def test_loaded_objects_paths_and_row_overrides_resolve_to_registry() -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -11,6 +12,7 @@ from openimcc.model import ImccLoadedDatapack, load_datapack
 
 if TYPE_CHECKING:
     from openimcc.gas import ImccGasDatapack
+    from openimcc.redox_pack import RedoxPack
 
 
 _DATA_DIR = Path(__file__).parent / "data"
@@ -44,6 +46,13 @@ class Profile:
     gas_datapack: ImccGasDatapack
     redox_pack_path: Path | None
     provenance: str
+
+    @cached_property
+    def redox_pack(self) -> RedoxPack:
+        """Return the redox pack selected by this profile, loaded once."""
+        from openimcc.redox_pack import load_redox_pack
+
+        return load_redox_pack(self.redox_pack_path)
 
 
 def load_profile(name: str) -> Profile:

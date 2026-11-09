@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field, replace
+from dataclasses import InitVar, dataclass, field, replace
 from fractions import Fraction
 import math
 from numbers import Real
@@ -39,6 +39,12 @@ from openimcc.redox_pack import (
 )
 from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.receipt import CalculationReceipt, build_calculation_receipt
+from openimcc.standards import (
+    PackStandardNotice,
+    _cached_check_pack_standards,
+    _pack_standard_notices,
+    _raise_for_strict_pack_standards,
+)
 
 if TYPE_CHECKING:
     from openimcc.profiles import Profile
@@ -232,6 +238,16 @@ class RedoxResult:
         default=None, compare=False, hash=False
     )
     pack_row_participation: tuple[PackRowParticipation, ...] = ()
+    _pack_standard_notices: InitVar[tuple[PackStandardNotice, ...]] = ()
+
+    def __post_init__(
+        self, _pack_standard_notices: tuple[PackStandardNotice, ...]
+    ) -> None:
+        object.__setattr__(self, "_pack_standard_notices", _pack_standard_notices)
+
+    @property
+    def notices(self) -> tuple[PackStandardNotice, ...]:
+        return self._pack_standard_notices
 
     @property
     def speciation(self) -> Mapping[str, float]:
@@ -1794,6 +1810,7 @@ def _assemble_result(
     oxygen_parent_counts: np.ndarray,
     tolerance: float,
     fallback_counter: list[int],
+    pack_standard_notices: tuple[PackStandardNotice, ...] = (),
 ) -> RedoxResult:
     parent_values, species_values, oxygen_mol = _state_species(
         state, base_datapack, redox_pack
@@ -1970,6 +1987,7 @@ def _assemble_result(
             base_complex_mole_fractions,
             loaded_datapack._inactive_row_details,
         ),
+        _pack_standard_notices=pack_standard_notices,
     )
 
 
@@ -1984,7 +2002,10 @@ def _evaluate_redox_with_packs(
     max_iter: int = 100,
     melt_pack: ImccLoadedDatapack | None = None,
     redox_pack_path: str | Path | None = None,
+    loaded_redox_pack: RedoxPack | None = None,
     melt_pack_path: str | Path | None = None,
+    strict_pack_standards: bool = False,
+    standards_profile: str | Profile | None = None,
 ) -> RedoxResult:
     """Solve an imposed- or closed-oxygen Fe liquid equilibrium.
 
@@ -2064,7 +2085,9 @@ def _evaluate_redox_with_packs(
             "excess-Gibbs terms"
         )
     base_datapack = loaded.kernel_datapack
-    if redox_pack_path is None:
+    if loaded_redox_pack is not None:
+        redox_pack = loaded_redox_pack
+    elif redox_pack_path is None:
         redox_pack = _load_default_redox_pack()
     else:
         try:
@@ -2073,6 +2096,13 @@ def _evaluate_redox_with_packs(
             raise _unreadable_pack(
                 Path(redox_pack_path), exc, description="redox datapack"
             ) from exc
+    standard_records = _cached_check_pack_standards(
+        loaded,
+        standards_profile,
+        redox_pack=redox_pack,
+    )
+    _raise_for_strict_pack_standards(standard_records, strict_pack_standards)
+    standard_notices = _pack_standard_notices(standard_records)
     parent_names = _redox_parent_names(redox_pack)
     fe_index = parent_names.index("FeO")
     oxygen_parent_counts = _parent_oxygen_counts(parent_names, redox_pack)
@@ -2282,6 +2312,7 @@ def _evaluate_redox_with_packs(
                         oxygen_parent_counts=oxygen_parent_counts,
                         tolerance=tolerance,
                         fallback_counter=fallback_counter,
+                        pack_standard_notices=standard_notices,
                     )
                 raise RedoxEndpointError(
                     "imposed oxygen inventory is inconsistent with Fe saturation",
@@ -2303,6 +2334,7 @@ def _evaluate_redox_with_packs(
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
                 fallback_counter=fallback_counter,
+                pack_standard_notices=standard_notices,
             )
         if buffered:
             metal_low = 0.0
@@ -2374,6 +2406,7 @@ def _evaluate_redox_with_packs(
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
                 fallback_counter=fallback_counter,
+                pack_standard_notices=standard_notices,
             )
         if lambda_value < lambda_sat - near_lambda_tolerance:
             raise RedoxEndpointError(
@@ -2397,6 +2430,7 @@ def _evaluate_redox_with_packs(
             oxygen_parent_counts=oxygen_parent_counts,
             tolerance=tolerance,
             fallback_counter=fallback_counter,
+            pack_standard_notices=standard_notices,
         )
 
     if oxygen_inventory is None:
@@ -2511,6 +2545,7 @@ def _evaluate_redox_with_packs(
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
                 fallback_counter=fallback_counter,
+                pack_standard_notices=standard_notices,
             )
 
     lambda_sat_zero, sat_state = _saturation_state(
@@ -2629,6 +2664,7 @@ def _evaluate_redox_with_packs(
                         oxygen_parent_counts=oxygen_parent_counts,
                         tolerance=tolerance,
                         fallback_counter=fallback_counter,
+                        pack_standard_notices=standard_notices,
                     )
                 response = _response(state, base_datapack, redox_pack)
                 candidate = (
@@ -2753,6 +2789,7 @@ def _evaluate_redox_with_packs(
                 oxygen_parent_counts=oxygen_parent_counts,
                 tolerance=tolerance,
                 fallback_counter=fallback_counter,
+                pack_standard_notices=standard_notices,
             )
         if residual > 0.0:
             metal_low = metal
@@ -2785,8 +2822,13 @@ def evaluate_redox(
     redox_pack_path: str | Path | None = None,
     melt_pack_path: str | Path | None = None,
     profile: str | Profile | None = None,
+    strict_pack_standards: bool = False,
 ) -> RedoxResult:
-    """Solve redox using explicit pack paths or one named data profile."""
+    """Solve redox using explicit pack paths or one named data profile.
+
+    ``strict_pack_standards`` refuses known liquid-standard mismatches and
+    missing declarations before solving; unresolved references remain notices.
+    """
     if profile is None:
         result = _evaluate_redox_with_packs(
             inventory,
@@ -2799,6 +2841,7 @@ def evaluate_redox(
             melt_pack=melt_pack,
             redox_pack_path=redox_pack_path,
             melt_pack_path=melt_pack_path,
+            strict_pack_standards=strict_pack_standards,
         )
     else:
         from openimcc.profiles import (
@@ -2821,6 +2864,12 @@ def evaluate_redox(
                 "the SF04 publication has no redox model; use "
                 "profile='openimcc' or pass explicit packs"
             )
+        try:
+            selected_redox_pack = selected.redox_pack
+        except OSError as exc:
+            raise _unreadable_pack(
+                selected.redox_pack_path, exc, description="redox datapack"
+            ) from exc
         result = _evaluate_redox_with_packs(
             inventory,
             T_K,
@@ -2829,7 +2878,9 @@ def evaluate_redox(
             warm_start,
             tol=tol,
             max_iter=max_iter,
-            redox_pack_path=selected.redox_pack_path,
+            loaded_redox_pack=selected_redox_pack,
+            strict_pack_standards=strict_pack_standards,
+            standards_profile=selected,
         )
         result = replace(result, profile=selected.name)
 

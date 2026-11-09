@@ -7,6 +7,14 @@
   3000 K; AlSiO is source-based through 2200 K and is flagged when extrapolated.
   The packaged default gas and condensate tables remain unchanged.
 
+- Gas, gas-saturation, and redox results now expose typed liquid-standard
+  notices when pack declarations conflict with active tables or are missing.
+  `strict_pack_standards=True` refuses known conflicts; disclosed
+  `reference-unknown` rows remain predicted-and-flagged notices and never cause
+  refusal. D066 v4 has no correctness-mismatch notices and retains its four
+  K2O reference-unknown notices. Non-source-basis records remain informational.
+  Numeric results and published pack and table bytes are unchanged.
+
 - Switched the default melt pack from D066 v5 to D066 v4 after standard-consistent
   configurations favored v4 on five of six metrics at and above 1700 K and tied
   or favored it below; v5 leads only on in-domain redox by 0.010 dex. Default

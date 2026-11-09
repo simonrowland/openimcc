@@ -47,6 +47,12 @@ from openimcc.liquid_reference import (
 )
 from openimcc.receipt import CalculationReceipt, build_calculation_receipt
 from openimcc.scalar_boundary import is_declared_real_scalar
+from openimcc.standards import (
+    PackStandardNotice,
+    _cached_check_pack_standards,
+    _pack_standard_notices,
+    _raise_for_strict_pack_standards,
+)
 from openimcc.gas_data import (
     ELEMENT_STATUS,
     IMCC_GAS_CHANNEL_SPECIES,
@@ -463,6 +469,26 @@ def _gas_result_notices(
     return tuple(notices)
 
 
+def _gas_pack_standard_notices(
+    datapack: ImccGasDatapack,
+    profile: str | Profile | None,
+    strict: bool,
+) -> tuple[PackStandardNotice, ...]:
+    if profile is None:
+        return ()
+    from openimcc.profiles import Profile as LoadedProfile, _resolve_profile
+
+    selected = (
+        profile if isinstance(profile, LoadedProfile) else _resolve_profile(profile)
+    )
+    melt_pack = selected.melt_pack
+    records = _cached_check_pack_standards(
+        melt_pack, profile, gas_pack=datapack
+    )
+    _raise_for_strict_pack_standards(records, strict)
+    return _pack_standard_notices(records)
+
+
 @dataclass(frozen=True)
 class ImccGasResult(MappingABC[str, float]):
     """Immutable gas pressures and channel metadata, including default omissions."""
@@ -477,10 +503,14 @@ class ImccGasResult(MappingABC[str, float]):
     receipt: CalculationReceipt | None = field(
         default=None, compare=False, hash=False
     )
+    _pack_standard_notices: InitVar[tuple[PackStandardNotice, ...]] = ()
 
     def __post_init__(
-        self, _profile_identity: tuple[str | None, str, str] | None
+        self,
+        _profile_identity: tuple[str | None, str, str] | None,
+        _pack_standard_notices: tuple[PackStandardNotice, ...],
     ) -> None:
+        object.__setattr__(self, "_pack_standard_notices", _pack_standard_notices)
         object.__setattr__(self, "_values", MappingProxyType(dict(self._values)))
         object.__setattr__(
             self, "domain_flags", MappingProxyType(dict(self.domain_flags))
@@ -527,10 +557,15 @@ class ImccGasResult(MappingABC[str, float]):
         return len(self._values)
 
     @property
-    def notices(self) -> tuple[PGasPressureNotice | LiquidReferenceNotice, ...]:
+    def notices(
+        self,
+    ) -> tuple[PGasPressureNotice | LiquidReferenceNotice | PackStandardNotice, ...]:
         """Typed notices from per-channel domain flags and liquid-reference status."""
-        return _gas_result_notices(
-            self._values, self.domain_flags, self.liquid_reference_status
+        return (
+            *_gas_result_notices(
+                self._values, self.domain_flags, self.liquid_reference_status
+            ),
+            *self._pack_standard_notices,
         )
 
 
@@ -551,10 +586,14 @@ class ImccGasSaturationResult:
         default=None, compare=False, hash=False
     )
     liquid_reference_status: Mapping[str, CertificationStatus] = field(default_factory=dict)
+    _pack_standard_notices: InitVar[tuple[PackStandardNotice, ...]] = ()
 
     def __post_init__(
-        self, _profile_identity: tuple[str | None, str, str] | None
+        self,
+        _profile_identity: tuple[str | None, str, str] | None,
+        _pack_standard_notices: tuple[PackStandardNotice, ...],
     ) -> None:
+        object.__setattr__(self, "_pack_standard_notices", _pack_standard_notices)
         for name in ("species_pressures_bar", "channel_pressures_bar", "mole_fractions", "diagnostics", "domain_flags"):
             object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
         object.__setattr__(
@@ -580,10 +619,17 @@ class ImccGasSaturationResult:
         return identity[2] if identity is not None else None
 
     @property
-    def notices(self) -> tuple[PGasPressureNotice | LiquidReferenceNotice, ...]:
+    def notices(
+        self,
+    ) -> tuple[PGasPressureNotice | LiquidReferenceNotice | PackStandardNotice, ...]:
         """Typed notices for the saturated vapor's pressures and liquid references."""
-        return _gas_result_notices(
-            self.species_pressures_bar, self.domain_flags, self.liquid_reference_status
+        return (
+            *_gas_result_notices(
+                self.species_pressures_bar,
+                self.domain_flags,
+                self.liquid_reference_status,
+            ),
+            *self._pack_standard_notices,
         )
 
 
@@ -2822,6 +2868,7 @@ def evaluate_gas(
     *,
     composition_wt_pct: Mapping[str, float] | None = None,
     profile: str | Profile | None = None,
+    strict_pack_standards: bool = False,
 ) -> ImccGasResult:
     """Compute equilibrium partial pressures for the SF04 retained gas set.
 
@@ -2882,6 +2929,9 @@ def evaluate_gas(
         Optional melt composition keyed by oxide, in weight percent. This is
         used to resolve composition-scoped liquid-reference authority such as
         the K2O(l) measured-pressure window.
+    strict_pack_standards:
+        If True, refuse when the selected melt pack has a known liquid-standard
+        mismatch or missing declaration for the active tables.
 
     Returns
     -------
@@ -2959,6 +3009,9 @@ def evaluate_gas(
     suppress_receipt = _consume_trial_receipt_suppression()
     requested_parent_oxides = parent_oxides
     datapack, profile_name = _select_gas_datapack(datapack, profile)
+    pack_standard_notices = _gas_pack_standard_notices(
+        datapack, profile, strict_pack_standards
+    )
     parent_oxides_explicit = parent_oxides is not None
     if parent_oxides is None:
         parent_oxides = IMCC_PARENT_OXIDES
@@ -3552,6 +3605,7 @@ def evaluate_gas(
         omitted_channels=omitted_channels,
         liquid_reference_status=liquid_statuses,
         _profile_identity=identity,
+        _pack_standard_notices=pack_standard_notices,
         receipt=(
             None
             if suppress_receipt
@@ -4596,6 +4650,7 @@ def evaluate_gas_saturation(
     allow_extrapolation: bool = False,
     log10_pO2_bracket: tuple[float, float] = (-100.0, 100.0),
     profile: str | Profile | None = None,
+    strict_pack_standards: bool = False,
 ) -> ImccGasSaturationResult:
     """Solve saturated vapor over a fixed melt composition and temperature.
 
@@ -4606,6 +4661,15 @@ def evaluate_gas_saturation(
     suppress_receipt = _consume_trial_receipt_suppression()
     requested_parent_oxides = parent_oxides
     datapack, profile_name = _select_gas_datapack(datapack, profile)
+    if profile is None:
+        selected_profile = None
+    else:
+        from openimcc.profiles import _resolve_profile
+
+        selected_profile = _resolve_profile(profile)
+    pack_standard_notices = _gas_pack_standard_notices(
+        datapack, selected_profile, strict_pack_standards
+    )
     if parent_oxides is None:
         if isinstance(parent_activities, Mapping):
             parents = tuple(k for k in parent_activities if k in _REACTION_PARENT_OXIDES)
@@ -4682,9 +4746,14 @@ def evaluate_gas_saturation(
         token = _SUPPRESS_TRIAL_RECEIPTS.set(True)
         try:
             return evaluate_gas(
-                parent_activities, temperature_K, 10.0 ** logp, datapack,
+                parent_activities,
+                temperature_K,
+                10.0 ** logp,
+                datapack if selected_profile is None else None,
                 parent_oxides=parents, allow_extrapolation=allow_extrapolation,
                 include_ions=include_ions,
+                profile=selected_profile,
+                strict_pack_standards=strict_pack_standards,
             )
         finally:
             _SUPPRESS_TRIAL_RECEIPTS.reset(token)
@@ -4740,6 +4809,7 @@ def evaluate_gas_saturation(
          "omitted_channels": omitted},
         result.domain_flags,
         _profile_identity=identity,
+        _pack_standard_notices=pack_standard_notices,
         receipt=(
             None
             if suppress_receipt

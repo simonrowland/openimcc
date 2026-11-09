@@ -64,7 +64,9 @@ from openimcc.redox import (
     evaluate_redox,
 )
 from openimcc.standards import (
+    ImccLiquidStandardMismatchError,
     LiquidStandardMismatch,
+    PackStandardNotice,
     PackLiquidStandards,
     active_liquid_standards,
     check_pack_standards,
@@ -302,6 +304,7 @@ __all__ = [
     # well as from the shell. Exporting only the leaves would force callers to
     # enumerate them and to re-enumerate on every release.
     "ImccRefusal",
+    "ImccLiquidStandardMismatchError",
     "ImccTOutsideDatapackDomainError",
     "ImccCompositionOutsideValidatedEnvelopeError",
     "ImccCompositionIncompleteError",
@@ -339,6 +342,7 @@ __all__ = [
     "RedoxNumericalError",
     # --- liquid reference standards --------------------------------------
     "PackLiquidStandards",
+    "PackStandardNotice",
     "LiquidStandardMismatch",
     "active_liquid_standards",
     "pack_liquid_standards",
