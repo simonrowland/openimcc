@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from scipy.interpolate import CubicHermiteSpline
 from scipy.optimize import linprog
 
 # Keep package imports available when this file is invoked as a script.
@@ -1522,6 +1523,330 @@ def _fit_shomate_values(
         ],
         "_reference_kJ": float(reference),
     }
+
+
+_LH87_R_J_MOL_K = 8.3144
+_LH87_GIBBS_Q: dict[str, tuple[tuple[float, float, tuple[float, ...]], ...]] = {
+    # NIST JPCRD Table 2 coefficients for q = -(G° - H°298)/(R T).
+    # Columns B–E are printed with 10^3, 10^6, 10^9, and 10^12 scale factors.
+    "Si2O2": (
+        (298.0, 1000.0, (40.398, -26.536, 71.564, -65.861, 22.009)),
+        (1000.0, 3000.0, (33.340, 10.626, -2.860, 0.509, -0.040)),
+    ),
+    "Al(s)": ((298.0, 933.61, (4.343, -8.33, 22.815, -20.407, 6.705)),),
+    "Al(l)": ((933.61, 2900.0, (-0.766, 8.831, -3.7833, 0.9296, -0.0931)),),
+    "Si(s)": (
+        (298.0, 1000.0, (3.101, -7.304, 19.833, -17.696, 5.73)),
+        (1000.0, 1687.0, (1.052, 3.254, -0.7263, 0.0850, 0.0)),
+    ),
+    "Si(l)": ((1687.0, 3600.0, (-8.152, 13.849, -5.0426, 0.961, -0.07316)),),
+    "O2": (
+        (298.0, 1000.0, (25.757, -9.743, 26.812, -24.157, 7.6845)),
+        (1000.0, 3000.0, (22.987, 4.5769, -1.2107, 0.2154, -0.01686)),
+    ),
+}
+_NASA_ALSIO_T_K = np.asarray(
+    [298.15, 1500.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2100.0, 2200.0]
+)
+_NASA_ALSIO_Q0_J_MOL_K = np.asarray(
+    [229.78, 300.66, 303.93, 307.03, 309.97, 312.77, 315.44, 317.99, 320.43]
+)
+_NASA_ALSIO_H_INC_KJ_MOL = np.asarray(
+    [11.058, 75.706, 81.413, 87.134, 92.865, 98.605, 104.35, 110.11, 115.87]
+)
+
+
+def _gibbs_q(coefficients: tuple[float, ...], temperature: float) -> tuple[float, float, float]:
+    """Evaluate q, dq/dT, and d²q/dT² for the NIST Gibbs-function polynomial."""
+    a, b, c, d, e = coefficients
+    b *= 1.0e-3
+    c *= 1.0e-6
+    d *= 1.0e-9
+    e *= 1.0e-12
+    t = temperature
+    return (
+        a + b * t + c * t**2 + d * t**3 + e * t**4,
+        b + 2.0 * c * t + 3.0 * d * t**2 + 4.0 * e * t**3,
+        2.0 * c + 6.0 * d * t + 12.0 * e * t**2,
+    )
+
+
+def _lh87_q(species: str, temperature: float) -> tuple[float, float, float]:
+    """Return the LH87 q polynomial for the stable elemental phase at T."""
+    if species == "Al":
+        phase = "Al(s)" if temperature < 933.61 else "Al(l)"
+    elif species == "Si":
+        phase = "Si(s)" if temperature < 1687.0 else "Si(l)"
+    else:
+        phase = species
+    ranges = _LH87_GIBBS_Q[phase]
+    selected = next(
+        (coefficients for low, high, coefficients in ranges if low <= temperature < high),
+        ranges[-1][2],
+    )
+    return _gibbs_q(selected, temperature)
+
+
+def _lh87_element_state(species: str, temperature: float) -> dict[str, float]:
+    q, dq, d2q = _lh87_q(species, temperature)
+    gas_constant = _LH87_R_J_MOL_K
+    return {
+        "enthalpy_increment": gas_constant * temperature**2 * dq,
+        "entropy": gas_constant * (q + temperature * dq),
+        "heat_capacity": gas_constant * (2.0 * temperature * dq + temperature**2 * d2q),
+    }
+
+
+def _alsio_rrho_state(temperature: float) -> dict[str, float]:
+    """Calculate AlSiO ideal-gas H, S, and Cp from NASA TN D-7123 Table VII."""
+    # Premise: NASA TN D-7123 Table VII gives a bent Cs molecule (sigma=1),
+    # angle 145 degrees, Al-O 1.66 A, Si-O 1.60 A, modes 679/417/1151 cm^-1,
+    # and ground-state degeneracy 2. Build the three principal moments from
+    # those bond lengths and atomic masses; use nonlinear rigid-rotor and
+    # harmonic-oscillator partition functions with p°=1 atm.
+    # Unit check: convert A to m, g/mol to kg per molecule, and cm^-1 to K;
+    # all log partition-function arguments are dimensionless. Sanity at
+    # 1700 K is checked against Table VIII's printed q0=307.03 J/(mol K) and
+    # H-H0=87.134 kJ/mol after its tabulated-anchor correction below.
+    h_planck = 6.62607015e-34
+    boltzmann = 1.380649e-23
+    avogadro = 6.02214076e23
+    speed_of_light = 299792458.0
+    gas_constant = _LH87_R_J_MOL_K
+    masses_g_mol = np.asarray([26.9815385, 28.085, 15.999])
+    angle = math.radians(145.0)
+    coordinates = np.asarray(
+        [[0.0, 0.0], [1.66e-10, 0.0],
+         [1.66e-10 + 1.60e-10 * math.cos(angle),
+          1.60e-10 * math.sin(angle)]]
+    )
+    center = np.average(coordinates, axis=0, weights=masses_g_mol)
+    relative = coordinates - center
+    masses_kg = masses_g_mol * 1.0e-3 / avogadro
+    moments = np.asarray(
+        [
+            np.sum(masses_kg * relative[:, 1] ** 2),
+            np.sum(masses_kg * relative[:, 0] ** 2),
+            np.sum(masses_kg * np.sum(relative**2, axis=1)),
+        ]
+    )
+    rotational_temperatures = h_planck**2 / (
+        8.0 * math.pi**2 * boltzmann * moments
+    )
+    mass_kg = float(np.sum(masses_g_mol)) * 1.0e-3 / avogadro
+    standard_pressure_pa = 101325.0
+    translational_entropy = gas_constant * (
+        math.log(
+            ((2.0 * math.pi * mass_kg * boltzmann * temperature) / h_planck**2) ** 1.5
+            * (boltzmann * temperature / standard_pressure_pa)
+        )
+        + 2.5
+    )
+    rotational_entropy = gas_constant * (
+        math.log(
+            math.sqrt(math.pi)
+            * temperature**1.5
+            / math.sqrt(float(np.prod(rotational_temperatures)))
+        )
+        + 1.5
+    )
+    frequencies_cm = np.asarray([679.0, 417.0, 1151.0])
+    vibrational_temperatures = (
+        h_planck * speed_of_light * 100.0 * frequencies_cm / boltzmann
+    )
+    x = vibrational_temperatures / temperature
+    exp_x = np.exp(x)
+    exp_minus_x = np.exp(-x)
+    vibrational_enthalpy = gas_constant * np.sum(
+        vibrational_temperatures / np.expm1(x)
+    )
+    vibrational_entropy = gas_constant * np.sum(
+        x / np.expm1(x) - np.log1p(-exp_minus_x)
+    )
+    vibrational_cp = gas_constant * np.sum(
+        x**2 * exp_x / np.expm1(x) ** 2
+    )
+    enthalpy_increment = 4.0 * gas_constant * temperature + vibrational_enthalpy
+    entropy = (
+        translational_entropy
+        + rotational_entropy
+        + vibrational_entropy
+        + gas_constant * math.log(2.0)
+    )
+    heat_capacity = 4.0 * gas_constant + vibrational_cp
+    return {
+        "enthalpy_increment": float(enthalpy_increment),
+        "entropy": float(entropy),
+        "heat_capacity": float(heat_capacity),
+        "q0": float(entropy - enthalpy_increment / temperature),
+    }
+
+
+def _alsio_source_spline() -> CubicHermiteSpline:
+    """Anchor the Table VII RRHO function to every printed Table VIII value."""
+    raw = [_alsio_rrho_state(float(T)) for T in _NASA_ALSIO_T_K]
+    source_h = _NASA_ALSIO_H_INC_KJ_MOL * 1000.0
+    source_g = -_NASA_ALSIO_T_K * _NASA_ALSIO_Q0_J_MOL_K
+    source_s = _NASA_ALSIO_Q0_J_MOL_K + source_h / _NASA_ALSIO_T_K
+    raw_h = np.asarray([row["enthalpy_increment"] for row in raw])
+    raw_s = np.asarray([row["entropy"] for row in raw])
+    raw_g = raw_h - _NASA_ALSIO_T_K * raw_s
+    correction_g = source_g - raw_g
+    correction_g_prime = raw_s - source_s
+    return CubicHermiteSpline(
+        _NASA_ALSIO_T_K, correction_g, correction_g_prime, extrapolate=False
+    )
+
+
+def _alsio_source_molecule_state(
+    temperature: float, correction: CubicHermiteSpline
+) -> dict[str, float]:
+    raw = _alsio_rrho_state(temperature)
+    correction_g = float(correction(temperature))
+    correction_g_prime = float(correction.derivative()(temperature))
+    correction_g_second = float(correction.derivative(2)(temperature))
+    enthalpy_increment = raw["enthalpy_increment"] + correction_g - temperature * correction_g_prime
+    entropy = raw["entropy"] - correction_g_prime
+    heat_capacity = raw["heat_capacity"] - temperature * correction_g_second
+    q0 = entropy - enthalpy_increment / temperature
+    return {
+        "enthalpy_increment": enthalpy_increment,
+        "entropy": entropy,
+        "heat_capacity": heat_capacity,
+        "q0": q0,
+    }
+
+
+def _oxide_molecule_source_state(
+    species: str, temperature: float, alsio_correction: CubicHermiteSpline | None = None,
+) -> dict[str, float]:
+    """Return source-based molecular H, S, Cp, and G for a candidate gas.
+
+    Both functions retain the molecule's elemental formation enthalpy at
+    298 K and its full molecular thermal H/S/Cp. This is the convention of
+    packaged SiO(g) and SiO2(g), whose functions are combined directly by the
+    runtime reaction evaluator. Si2O2 uses NIST JPCRD Tables 2-3, including
+    ΔfH°298/R = -43.22 kK. AlSiO uses NASA TN D-7123 Tables VII, VIII and
+    XIII, with ΔfH°298 = 19.8 kJ/mol; its Table VIII molecular H/S anchors
+    are reconstructed from Table VII RRHO constants. NIST states p°=1 atm
+    and reports calculated partial pressures in bar; its molecular q function
+    is converted from 1 atm to 1 bar by adding R ln(1.01325) to entropy,
+    without subtracting elemental thermal functions. NASA TN
+    D-7123's AlSiO ideal-gas partition function also uses 1 atm; convert that
+    molecule to 1 bar with S°(1 bar)=S°(1 atm)+R ln(1.01325).
+
+    Unit check: q is dimensionless; R*T*q and T*S are J/mol; enthalpy table
+    values in kJ/mol are converted to J/mol before forming G=H-TS. Before the
+    1 atm-to-1 bar conversion, source sanity values are G°(Si2O2, 2000 K)=
+    -469.472 kJ/mol and G°(AlSiO, 1700 K)=-513.209 kJ/mol.
+    """
+    gas_constant = _LH87_R_J_MOL_K
+    if species == "Si2O2":
+        q, dq, d2q = _lh87_q("Si2O2", temperature)
+        reference = -43.22e3 * gas_constant
+        enthalpy_increment = gas_constant * temperature**2 * dq
+        enthalpy = reference + enthalpy_increment
+        entropy = (
+            gas_constant * (q + temperature * dq)
+            + gas_constant * math.log(1.01325)
+        )
+        heat_capacity = gas_constant * (2.0 * temperature * dq + temperature**2 * d2q)
+    elif species == "AlSiO":
+        if alsio_correction is None:
+            raise ValueError("AlSiO source correction is required")
+        molecule = _alsio_source_molecule_state(temperature, alsio_correction)
+        molecule_h298 = _NASA_ALSIO_H_INC_KJ_MOL[0] * 1000.0
+        reference = 19.8e3
+        enthalpy_increment = molecule["enthalpy_increment"] - molecule_h298
+        entropy = molecule["entropy"] + gas_constant * math.log(1.01325)
+        heat_capacity = molecule["heat_capacity"]
+        enthalpy = reference + enthalpy_increment
+    else:
+        raise ValueError(f"unknown oxide-molecule candidate {species!r}")
+    return {
+        "formation_enthalpy": reference / 1000.0,
+        "enthalpy_increment": enthalpy_increment / 1000.0,
+        "entropy": entropy,
+        "heat_capacity": heat_capacity,
+        "formation_gibbs": enthalpy - temperature * entropy,
+    }
+
+
+def build_oxide_molecule_candidate(gas_input: Path, gas_output: Path) -> int:
+    """Append source-derived Si2O2 and AlSiO rows to an opt-in gas table."""
+    source_bytes = gas_input.read_bytes()
+    source_text = source_bytes.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(source_text, newline=""))
+    if tuple(reader.fieldnames or ()) != RUNTIME_COLUMNS:
+        raise ValueError(f"{gas_input} has an unexpected runtime gas-table header")
+    source_rows = list(reader)
+    candidate_names = {"Si2O2(g)", "AlSiO(g)"}
+    if any(row["species_name"] in candidate_names for row in source_rows):
+        raise ValueError("base gas table already contains an oxide-molecule candidate")
+
+    correction = _alsio_source_spline()
+    candidate_specs = (
+        ("Si2O2", (298.0, 1000.0, 1687.0, 3000.0), "Si", 2, 2,
+         "Lamoreaux et al. (1987), Tables 2-3, DOI 10.1063/1.555799",
+         "published_gibbs_function", "LH87", "Tables 2 and 3", 298.0, 3000.0),
+        ("AlSiO", (298.15, 933.61, 1000.0, 1687.0, 2200.0), "Al", 1, 1,
+         "Stearns and Kohl (1972), NASA TN D-7123, Tables VII, VIII, XIII",
+         "molecular_constants", "NASA-TN-D-7123", "Tables VII, VIII and XIII",
+         298.15, 2200.0),
+    )
+    generated: list[dict[str, object]] = []
+    for species, boundaries, cation, cat_num, oxy_num, ref, method, table_id, source_label, source_min, source_max in candidate_specs:
+        state_correction = correction if species == "AlSiO" else None
+        for interval, (start, end) in enumerate(zip(boundaries[:-1], boundaries[1:]), 1):
+            grid = np.arange(start, end, 25.0)
+            temperatures = sorted({float(start), float(end), *map(float, grid)})
+            source_rows_for_fit = []
+            for temperature in temperatures:
+                source_temperature = (
+                    float(np.nextafter(end, start))
+                    if temperature == end and end in {933.61, 1000.0, 1687.0}
+                    else temperature
+                )
+                thermo = _oxide_molecule_source_state(
+                    species, source_temperature, state_correction
+                )
+                source_rows_for_fit.append(
+                    {
+                        "temperature": temperature,
+                        "heat_capacity": thermo["heat_capacity"],
+                        "entropy": thermo["entropy"],
+                        "enthalpy_increment": thermo["enthalpy_increment"],
+                    }
+                )
+            reference = _oxide_molecule_source_state(
+                species, 298.15 if species == "AlSiO" else 298.0, state_correction
+            )["formation_enthalpy"]
+            fit = _fit_shomate_values(source_rows_for_fit, reference)
+            row: dict[str, object] = _empty_source_validity_fields()
+            row.update(
+                {
+                    "species_name": f"{species}(g)", "state": "g",
+                    "T_interval": interval, "cation": cation,
+                    "cat_num": cat_num, "oxy_num": oxy_num,
+                    "T_min": start, "T_max": end,
+                    **{key: fit[key] for key in "ABCDEFG"}, "H": 0,
+                    "Ref": ref, "validity_kind": "coverage",
+                    "construction_method": method, "table_id": table_id,
+                    "source_label": source_label,
+                    "source_fit_min_K": source_min,
+                    "source_fit_max_K": source_max,
+                    "source_limit_K": source_max,
+                }
+            )
+            generated.append(row)
+
+    buffer = io.StringIO(newline="")
+    writer = csv.writer(buffer, lineterminator="\n")
+    for row in generated:
+        writer.writerow([row.get(column, "") for column in RUNTIME_COLUMNS])
+    prefix = source_bytes if source_bytes.endswith(b"\n") else source_bytes + b"\n"
+    gas_output.write_bytes(prefix + buffer.getvalue().encode("utf-8"))
+    return len(generated)
 
 
 def _shomate_source_fields(fit: dict[str, Any]) -> dict[str, Any]:
@@ -8921,6 +9246,16 @@ def main() -> None:
         default=repository / "src/openimcc/data/gas/condensate-standard-state-candidate.csv",
     )
     parser.add_argument(
+        "--oxide-molecule-candidate",
+        action="store_true",
+        help="build opt-in Si2O2 and AlSiO gas rows from published source functions",
+    )
+    parser.add_argument(
+        "--oxide-molecule-candidate-output",
+        type=Path,
+        default=repository / "src/openimcc/data/gas/gas-shomate-oxide-molecule-candidate.csv",
+    )
+    parser.add_argument(
         "--high-temperature-gas-output", type=Path,
         default=repository / "src/openimcc/data/gas/gas-shomate-hight-candidate.csv",
     )
@@ -8953,6 +9288,12 @@ def main() -> None:
             f"{counts['oxide_rows']} thermochemical oxide row, "
             f"{counts['oxide_metadata_rows']} oxide row labels normalized"
         )
+        return
+    if args.oxide_molecule_candidate:
+        count = build_oxide_molecule_candidate(
+            packaged_gas, args.oxide_molecule_candidate_output
+        )
+        print(f"oxide-molecule candidate: {count} gas rows")
         return
     if args.high_temperature_v2_thermo is not None:
         build_high_temperature_candidates_v2(

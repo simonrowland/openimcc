@@ -3508,18 +3508,23 @@ def test_trace_parent_reactions_balance_every_element() -> None:
         product_oxygen = n_gas * gas_atoms.get("O", 0) + 2.0 * n_o2
         assert parent_oxygen == pytest.approx(product_oxygen)
 
-    from openimcc.gas import _ALKALI_HALIDE_REACTION_OXIDES
+    from openimcc.gas import _GAS_REACTIONS, _SIDE_REACTION_OXIDES
 
-    for species, (parent, n_oxide, n_o2) in _ALKALI_HALIDE_REACTION_OXIDES.items():
+    for species, (side_parent, n_side, n_o2) in _SIDE_REACTION_OXIDES.items():
+        parent, n_main, _main_n_o2 = _GAS_REACTIONS[species]
         parent_atoms = atom_counts(parent)
+        side_atoms = atom_counts(side_parent)
         gas_atoms = atom_counts(species)
-        for element in ("Na", "K"):
-            assert parent_atoms.get(element, 0) * n_oxide == pytest.approx(
-                gas_atoms.get(element, 0)
+        elements = set(parent_atoms) | set(side_atoms) | set(gas_atoms) | {"O"}
+        for element in elements:
+            reactants = (
+                parent_atoms.get(element, 0) * n_main
+                + side_atoms.get(element, 0) * n_side
             )
-        assert parent_atoms.get("O", 0) * n_oxide == pytest.approx(
-            gas_atoms.get("O", 0) + 2.0 * n_o2
-        )
+            products = gas_atoms.get(element, 0) + (
+                2.0 * n_o2 if element == "O" else 0.0
+            )
+            assert reactants == pytest.approx(products), (species, element)
 
 
 def test_all_candidate_liquid_sources_cover_the_fit_interval() -> None:
@@ -6275,7 +6280,7 @@ def test_mixed_compilation_pairs_have_disclosure_or_named_exception(
         if not parent:
             continue
         rows = [row for row in gas_rows if row["species_name"] == f"{species}(g)"]
-        side_reactant = gas_module._ALKALI_HALIDE_REACTION_OXIDES.get(species)
+        side_reactant = gas_module._SIDE_REACTION_OXIDES.get(species)
         parent_name = side_reactant[0] if side_reactant else parent
         parents = [
             row for row in parent_rows

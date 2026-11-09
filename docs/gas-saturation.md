@@ -90,3 +90,27 @@ missing-table status using the same reaction tables and
 effusion closures remain convenience policies; a cross-engine simulator uses
 the weighted root with the same conductance and control policy for every
 engine.
+
+## Opt-in oxide-molecule gas table
+
+`gas-shomate-oxide-molecule-candidate.csv` adds two source-based channels. Load
+it with `load_gas_datapack(gas_path=..., oxide_path=...)`; the packaged default
+gas and condensate tables remain unchanged.
+
+| Species | Formation reaction | Source range | Source |
+| --- | --- | --- | --- |
+| Si₂O₂(g) | 2 SiO₂(l) → Si₂O₂(g) + O₂(g) | 298–3000 K | Lamoreaux, Hildenbrand & Brewer (1987), DOI [10.1063/1.555799](https://doi.org/10.1063/1.555799), Tables 2–3 |
+| AlSiO(g) | ½ Al₂O₃(l) + SiO₂(l) → AlSiO(g) + 5/4 O₂(g) | 298.15–2200 K | Stearns & Kohl (1972), [NASA TN D-7123](https://ntrs.nasa.gov/api/citations/19730004411/downloads/19730004411.pdf), Tables VII(b), VIII and XIII |
+
+Both sources use a 1 atm ideal-gas standard; the NASA report's pressure is
+inferred from its molecular partition-function calculation. The candidate
+converts AlSiO's formation function to the runtime 1 bar convention. The
+Si₂O₂ range covers its published function through 3000 K. AlSiO is source-based
+through 2200 K; calls above that limit require `allow_extrapolation=True` and
+return a temperature-domain flag. The gas evaluator flags extrapolation by
+default; pass `allow_extrapolation=False` to refuse calls outside a selected
+row interval.
+
+CaSiO₃(g), CaTiO₃(g), MgAlO(g) and Al₂O₃(g) remain outside this table. Knudsen
+experiments identify these species, but no independent standard Gibbs function
+for them was located for this version.

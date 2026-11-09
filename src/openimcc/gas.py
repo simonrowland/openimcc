@@ -57,7 +57,7 @@ from openimcc.gas_data import (
     IMCC_GAS_WORKBOOK_IN_DOMAIN_SPECIES,
     IMCC_PARENT_OXIDES,
     IMCC_SF04_WORKBOOK_GRID_K,
-    _ALKALI_HALIDE_REACTION_OXIDES,
+    _SIDE_REACTION_OXIDES,
     _CONDENSED_PARENT_PHASE_ROWS,
     _CONDENSED_PARENT_ROWS,
     _CONSTRUCTED_SAHA_C3_RESULTS,
@@ -68,6 +68,7 @@ from openimcc.gas_data import (
     _GAS_PHASE_PARENT_ROWS,
     _GAS_PRESSURE_COLUMNS,
     _GAS_PROVENANCE_AUTHORITY,
+    _GAS_REACTIONS,
     _HALIDE_REACTIONS,
     _HYDROGEN_HALIDE_PARENTS,
     _ION_PROVENANCE_CLASS,
@@ -75,6 +76,7 @@ from openimcc.gas_data import (
     _LAM1987_SOURCE_TABLE_IDS,
     _LAM_PARENT_REF_AUTHORITIES,
     _MIXED_GAS_REACTION_SIDE_PARENTS,
+    _OPT_IN_GAS_TABLE_CHANNELS,
     _NASA_ION_GAS_SPECIES,
     _OXIDE_PRESSURE_COLUMNS,
     _OXIDE_PROVENANCE_AUTHORITY,
@@ -791,11 +793,24 @@ def _side_parent(species: str) -> str | None:
     halide = _HYDROGEN_HALIDE_PARENTS.get(species)
     if halide is not None:
         return halide
-    alkali = _ALKALI_HALIDE_REACTION_OXIDES.get(species)
-    if alkali is not None:
-        return alkali[0]
+    side_oxide = _SIDE_REACTION_OXIDES.get(species)
+    if side_oxide is not None:
+        return side_oxide[0]
     mixed = _MIXED_GAS_REACTION_SIDE_PARENTS.get(species)
     return mixed[0] if mixed is not None else None
+
+
+def _side_reaction_parent_oxygen_demand(species: str) -> float:
+    """Return O atoms supplied by both parent oxides in a side reaction."""
+    side_parent, side_coefficient, _n_o2 = _SIDE_REACTION_OXIDES[species]
+    main_parent, main_coefficient, _main_n_o2 = _GAS_REACTIONS[species]
+    main_oxygen = (
+        _formula_atoms(main_parent).get("O", 0) * main_coefficient
+        if main_parent not in _GAS_PHASE_PARENT_ROWS
+        else 0.0
+    )
+    side_oxygen = _formula_atoms(side_parent).get("O", 0) * side_coefficient
+    return float(main_oxygen + side_oxygen)
 
 
 
@@ -815,14 +830,14 @@ def _default_reactions(
     active datapack. Gas-only source rows stay outside the runtime channel set
     until this same rule can be satisfied. Missing optional rows are returned
     by channel name; channels whose parent activity was not supplied are not
-    reported. Channel order is the ``_SF04_REACTIONS`` order.
+    reported. Channel order is the ``_GAS_REACTIONS`` order.
     """
     parents = set(available_parents)
     gas_rows = set(datapack.gas_df.index)
     oxide_rows = set(datapack.oxide_df.index)
     selected = []
     omitted: dict[str, str] = {}
-    for name, reaction in _SF04_REACTIONS.items():
+    for name, reaction in _GAS_REACTIONS.items():
         oxide = reaction[0]
         if oxide and oxide not in parents:
             continue
@@ -851,6 +866,8 @@ def _default_reactions(
                 if side_row not in side_rows:
                     missing_rows.append(side_row)
             if missing_rows:
+                if name in _OPT_IN_GAS_TABLE_CHANNELS and gas_row in missing_rows:
+                    continue
                 omitted[name] = (
                     "missing from active table: " + ", ".join(missing_rows)
                 )
@@ -893,11 +910,11 @@ def gas_species_provenance(species: str) -> dict[str, str | None]:
             "gas_authority": authority,
             "condensate_authority": None,
         }
-    if species not in _SF04_REACTIONS:
+    if species not in _GAS_REACTIONS:
         raise ImccGasSpeciesNotFoundError(
             f"unknown retained gas species {species!r}"
         )
-    oxide, _, _ = _SF04_REACTIONS[species]
+    oxide, _, _ = _GAS_REACTIONS[species]
     gas_authority = _GAS_PROVENANCE_AUTHORITY[species]
     oxide_authority = (
         None
@@ -908,7 +925,7 @@ def gas_species_provenance(species: str) -> dict[str, str | None]:
     authorities = [gas_authority]
     if oxide_authority is not None:
         authorities.append(oxide_authority)
-    side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(species)
+    side_reactant = _SIDE_REACTION_OXIDES.get(species)
     if side_reactant is not None:
         condensate_authority = _OXIDE_PROVENANCE_AUTHORITY[side_reactant[0]]
         authorities.append(condensate_authority)
@@ -2967,13 +2984,13 @@ def evaluate_gas(
         neutral_requests = tuple(
             name for name in requested_channels if name not in requested_ions
         )
-        missing = [name for name in neutral_requests if name not in _SF04_REACTIONS]
+        missing = [name for name in neutral_requests if name not in _GAS_REACTIONS]
         if missing:
             raise ImccGasSpeciesNotFoundError(
                 f"no IMCC-SF04 gas channel for species {missing!r}"
             )
         reactions = tuple(
-            (name, _SF04_REACTIONS[name]) for name in neutral_requests
+            (name, _GAS_REACTIONS[name]) for name in neutral_requests
         )
 
     if not is_declared_real_scalar(T_K, allow_numeric_str=True):
@@ -3024,7 +3041,7 @@ def evaluate_gas(
             name
             for name in activities
             if name not in _REACTION_PARENT_OXIDES
-            and name not in _SF04_REACTIONS
+            and name not in _GAS_REACTIONS
         )
         if unknown_activities:
             raise ImccGasUnknownActivityError(
@@ -3108,8 +3125,8 @@ def evaluate_gas(
     # G°(O2, T) is needed only for reactions that produce or consume O2.
     needs_O2_row = any(n_O2 != 0.0 for _, (_, _, n_O2) in reactions) or any(
         species in _HALIDE_REACTIONS
-        and species in _ALKALI_HALIDE_REACTION_OXIDES
-        and _ALKALI_HALIDE_REACTION_OXIDES[species][2] != 0.0
+        and species in _SIDE_REACTION_OXIDES
+        and _SIDE_REACTION_OXIDES[species][2] != 0.0
         for species, _reaction in reactions
     )
     O2_row = None
@@ -3293,13 +3310,12 @@ def evaluate_gas(
             Kp = _finite_equilibrium_exp(-dG / (R_J_MOL_K * T))
             p_gas = Kp * a_oxide**n_gas * act[hydrogen_halide_parent]**0.5
         else:
-            side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(gas_name)
+            side_reactant = _SIDE_REACTION_OXIDES.get(gas_name)
         if not hydrogen_halide_parent and side_reactant:
-            # Halide rows balance an oxide liquid plus X2(g). The side table
-            # gives n_oxide and n_O2 explicitly; with product coefficient one,
-            # Kp puts product-side oxygen in the denominator, so the pO2
-            # exponent is -n_O2. This also leaves the X2 exponent in the main
-            # reaction tuple, preserving the single gas-parent rule.
+            # Side-reaction rows balance the main parent plus another oxide.
+            # The side table gives the extra oxide and O2 coefficients;
+            # with product coefficient one, Kp puts product-side oxygen in
+            # the denominator, so the pO2 exponent is -n_O2.
             side_oxide, n_oxide, side_n_O2 = side_reactant
             side_name = f"{side_oxide}(l)"
             side_row = _oxide_row_for_T(
@@ -3698,7 +3714,7 @@ def gas_channel_metadata(
     if isinstance(activities, Mapping):
         unknown = sorted(
             name for name in activities
-            if name not in _REACTION_PARENT_OXIDES and name not in _SF04_REACTIONS
+            if name not in _REACTION_PARENT_OXIDES and name not in _GAS_REACTIONS
         )
         if unknown:
             raise ImccGasUnknownActivityError(
@@ -3756,7 +3772,7 @@ def gas_channel_metadata(
     channels, omitted = _default_reactions(parents, datapack, temperature)
     selected_by_name = dict(channels)
     selected_by_name.update(
-        (name, _SF04_REACTIONS[name]) for name in omitted
+        (name, _GAS_REACTIONS[name]) for name in omitted
     )
     for species, (parent, _n_gas, _n_o2) in channels:
         if parent:
@@ -3788,10 +3804,11 @@ def gas_channel_metadata(
     for name, (parent, n_gas, n_o2) in selected_by_name.items():
         data = base[name]
         exponent: float | None = data.pO2_exponent
-        side = _ALKALI_HALIDE_REACTION_OXIDES.get(name)
+        side = _SIDE_REACTION_OXIDES.get(name)
         if side:
             data = data._replace(
-                parent_oxygen_demand=side[1], pO2_exponent=-side[2]
+                parent_oxygen_demand=_side_reaction_parent_oxygen_demand(name),
+                pO2_exponent=-side[2],
             )
             exponent = -side[2]
         elif parent in _GAS_PHASE_PARENT_ROWS:
@@ -4385,15 +4402,16 @@ def evaluate_gas_oxygen_balance(
     })
     for species, (parent, n_gas, n_O2) in balance_channels:
         data = species_data[species]
-        side_reactant = _ALKALI_HALIDE_REACTION_OXIDES.get(species)
+        side_reactant = _SIDE_REACTION_OXIDES.get(species)
         if side_reactant:
             _oxide, n_oxide, n_O2 = side_reactant
-            # Every side-table oxide here has one O atom per formula. Thus
-            # demand is n_oxide O atoms: n_O2 = demand/2 and the product-gas
-            # fugacity exponent is -n_O2. This covers MO (one O per M2+),
-            # M2O (half O per M+), and dimers by the same scaled balance.
+            # The side reaction can consume oxygen from its main condensed
+            # parent as well as the additional oxide. Count both reactants;
+            # the oxygen coefficient determines the product-side pO2 power.
             data = data._replace(
-                parent_oxygen_demand=n_oxide,
+                parent_oxygen_demand=(
+                    _side_reaction_parent_oxygen_demand(species)
+                ),
                 pO2_exponent=-n_O2,
             )
             species_data[species] = data
@@ -4613,9 +4631,13 @@ def evaluate_gas_saturation(
             # Gas-parent channels (for example sulfur oxidation) borrow no
             # oxygen from the melt, so their vapor oxygen is all net oxygen.
             parent_o = float(_formula_atoms(species).get("O", 0))
-        elif species in _ALKALI_HALIDE_REACTION_OXIDES:
-            # The side table expresses oxygen demand per product molecule.
-            parent_o = -_ALKALI_HALIDE_REACTION_OXIDES[species][1]
+        elif species in _SIDE_REACTION_OXIDES:
+            # The complete reaction can draw oxygen from both condensed
+            # parent oxides, then return some as product-side O2.
+            parent_o = (
+                _formula_atoms(species).get("O", 0)
+                - _side_reaction_parent_oxygen_demand(species)
+            )
         elif species in _HALIDE_REACTIONS or species in _HYDROGEN_HALIDE_PARENTS:
             parent_o = 0.0
         elif parent:
@@ -4623,8 +4645,8 @@ def evaluate_gas_saturation(
         else:
             parent_o = float(_formula_atoms(species).get("O", 0))
         weights[species] = parent_o
-        if species in _ALKALI_HALIDE_REACTION_OXIDES:
-            exponent = -_ALKALI_HALIDE_REACTION_OXIDES[species][2]
+        if species in _SIDE_REACTION_OXIDES:
+            exponent = -_SIDE_REACTION_OXIDES[species][2]
         elif species in _HYDROGEN_HALIDE_PARENTS:
             exponent = 0.0
         elif parent in _GAS_PHASE_PARENT_ROWS:

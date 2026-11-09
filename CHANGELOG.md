@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added the opt-in `gas-shomate-oxide-molecule-candidate.csv` table with
+  source-based Si₂O₂(g) and AlSiO(g) channels. Si₂O₂ is covered from 298 to
+  3000 K; AlSiO is source-based through 2200 K and is flagged when extrapolated.
+  The packaged default gas and condensate tables remain unchanged.
+
 - Switched the default melt pack from D066 v5 to D066 v4 after standard-consistent
   configurations favored v4 on five of six metrics at and above 1700 K and tied
   or favored it below; v5 leads only on in-domain redox by 0.010 dex. Default

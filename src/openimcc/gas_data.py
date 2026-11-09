@@ -376,9 +376,8 @@ _SF04_REACTIONS: dict[str, tuple[str, float, float]] = {
     "PtO2": ("Pt", 1.0, -1.0),
 }
 
-# Append oxide + halogen reactions after every pre-existing channel. For MO,
-# MO + X2 = MX2 + 1/2 O2 and MO + 1/2 X2 = MX + 1/2 O2; dimer rows scale
-# both reactants by two. For M2O, the oxide and O2 coefficients are halved.
+# Append oxide + halogen reactions after every pre-existing channel. The map
+# records each additional oxide reactant and the product-side O2 coefficient.
 _HALIDE_REACTIONS: dict[str, tuple[str, float, float]] = {
     "BaBr": ("Br2", 0.5, 0.0),
     "BaBr2": ("Br2", 1, 0.0),
@@ -449,6 +448,11 @@ _SF04_REACTIONS.update(
         "Re2O7": ("Re", 0.5, -1.75),
     }
 )
+_OPT_IN_GAS_REACTIONS: dict[str, tuple[str, float, float]] = {
+    "Si2O2": ("SiO2", 0.5, 0.5),
+    "AlSiO": ("Al2O3", 0.5, 1.25),
+}
+_GAS_REACTIONS = {**_SF04_REACTIONS, **_OPT_IN_GAS_REACTIONS}
 
 
 # Parent activity keys omit phase suffixes. A gas-phase parent's G° is read
@@ -473,7 +477,7 @@ _CONDENSED_PARENT_PHASE_ROWS: dict[str, tuple[float, str, str]] = {
     "Rh": (2237.0, "Rh(cr)", "Rh(l)"),
     "Ir": (2720.0, "Ir(cr)", "Ir(l)"),
 }
-_ALKALI_HALIDE_REACTION_OXIDES = {
+_SIDE_REACTION_OXIDES = {
     "NaBr": ("Na2O", 0.5, 0.25),
     "(NaBr)2": ("Na2O", 1.0, 0.5),
     "KBr": ("K2O", 0.5, 0.25),
@@ -553,6 +557,8 @@ _ALKALI_HALIDE_REACTION_OXIDES = {
     "(CsBr)2": ("Cs2O", 1, 0.5),
     "CsI": ("Cs2O", 0.5, 0.25),
     "(CsI)2": ("Cs2O", 1, 0.5),
+    # 1/2 Al2O3(l) + SiO2(l) = AlSiO(g) + 5/4 O2(g).
+    "AlSiO": ("SiO2", 1, 1.25),
 }
 _HYDROGEN_HALIDE_PARENTS = {
     "HCl": "Cl2", "HF": "F2", "HBr": "Br2", "HI": "I2",
@@ -560,6 +566,9 @@ _HYDROGEN_HALIDE_PARENTS = {
 _MIXED_GAS_REACTION_SIDE_PARENTS = {"PS": ("S2", 1.0)}
 
 
+# These reactions belong to the opt-in oxide-molecule table and are available
+# only when that table is explicitly selected.
+_OPT_IN_GAS_TABLE_CHANNELS = frozenset(_OPT_IN_GAS_REACTIONS)
 IMCC_GAS_CHANNEL_SPECIES = tuple(_SF04_REACTIONS)
 
 # Channels that a default evaluate_gas call includes only when the active
@@ -582,6 +591,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
         "Al2",
         "Si2",
         "Si3",
+        "Si2O2",
+        "AlSiO",
         "Cr",
         "CrO",
         "CrO2",
@@ -779,9 +790,8 @@ _DATAPACK_OPTIONAL_CHANNELS = frozenset(
     }
 )
 
-
 _REACTION_PARENT_OXIDES = frozenset(
-    reaction[0] for reaction in _SF04_REACTIONS.values() if reaction[0]
+    reaction[0] for reaction in _GAS_REACTIONS.values() if reaction[0]
 )
 
 
@@ -795,6 +805,9 @@ _GAS_PROVENANCE_AUTHORITY = {
     for species in (*IMCC_GAS_CHANNEL_SPECIES, "Mn", "Ni", "Co")
     if species not in {"NiO", "CoO"}
 }
+_GAS_PROVENANCE_AUTHORITY.update(
+    {"Si2O2": "published_fitted", "AlSiO": "published_fitted"}
+)
 _GAS_PROVENANCE_AUTHORITY["Hg"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY["Au"] = "published_fitted"
 _GAS_PROVENANCE_AUTHORITY["Pd"] = "published_fitted"

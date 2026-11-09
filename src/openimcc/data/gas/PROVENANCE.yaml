@@ -2699,3 +2699,65 @@ candidate_gas_files:
       constant of documented 1 atm source rows by R ln(1.01325); keeps all
       enthalpy and Cp coefficients and all other rows unchanged.
     load_with: load_gas_datapack(gas_path=..., oxide_path=...)
+  - file: gas-shomate-oxide-molecule-candidate.csv
+    status: opt_in_oxide_molecule_candidate
+    sha256: a33a26b6bfe9a6e6a914a4acd83f45c7d63c20624fd8380b4ece6d9851c22be1
+    source: >-
+      Lamoreaux, Hildenbrand & Brewer (1987), DOI 10.1063/1.555799,
+      Tables 2-3 (Si2O2); Stearns & Kohl (1972), NASA TN D-7123,
+      Tables VII(b), VIII and XIII (AlSiO).
+    source_references:
+      - citation: Lamoreaux, Hildenbrand & Brewer (1987), DOI 10.1063/1.555799
+        locator: Tables 2 and 3, Si2O2 rows
+        url: https://doi.org/10.1063/1.555799
+      - citation: Stearns & Kohl (1972), NASA TN D-7123
+        locator: Tables VII(b), VIII and XIII, AlSiO rows
+        url: https://ntrs.nasa.gov/api/citations/19730004411/downloads/19730004411.pdf
+    construction: >-
+      Copies gas-shomate.csv byte-for-byte and appends seven molecular-function
+      rows. For Si2O2, uses the NIST Table 2 molecular q=-(G°-H°298)/(RT)
+      polynomials and Table 3 ΔfH°298/R=-43.22 kK without subtracting the
+      elemental thermal functions. For AlSiO, builds molecular H/S/Cp with
+      nonlinear rigid-rotator/harmonic-oscillator functions from Table VII(b),
+      then anchors molecular H and q to every printed Table VIII value; Table
+      XIII supplies ΔfH°298=19.8 kJ/mol. Table VII(b)'s ideal-gas standard
+      pressure is 1 atm; its molecular entropy receives +R ln(1.01325) to
+      convert to the table's 1 bar convention. NIST's Si2O2 molecular function
+      uses 1 atm too, so its entropy receives the same conversion; Δνgas=0
+      only means the formation reaction's equilibrium constant is invariant
+      when all reaction gas standards change together. The separate
+      row intervals split the Si and Al reference melting transitions. No KEMS
+      partial pressures enter either function. Unit check: q is dimensionless,
+      R*T*q and T*S are J/mol, and source enthalpies in kJ/mol are converted
+      before G=H-TS. The printed molecular Gibbs anchors before pressure
+      1 atm-to-1 bar conversion are -469.472 kJ/mol for Si2O2 at 2000 K and
+      -513.209 kJ/mol for AlSiO at 1700 K.
+    valid_temperature_ranges_K:
+      Si2O2: [298.0, 3000.0]
+      AlSiO: [298.15, 2200.0]
+    standard_states:
+      Si2O2: >-
+        NIST explicitly takes the gas standard pressure as 1 atm; its molecular
+        entropy is converted to the runtime 1 bar standard by adding
+        R ln(1.01325). Elements use their 298.15 K standard reference states.
+        Δνgas=0 makes the formation reaction's equilibrium constant invariant
+        to a common pressure-standard change, but does not convert the stored
+        molecular Gibbs function.
+      AlSiO: >-
+        The NASA report's molecular standard pressure is inferred as 1 atm
+        from the ideal-gas partition-function calculation. Its molecular
+        entropy is converted to 1 bar by adding R ln(1.01325).
+    extrapolation: >-
+      The Si2O2 source range ends at 3000 K. The AlSiO source range ends at
+      2200 K; temperatures above that range return the row-domain flag when
+      allow_extrapolation=True and are refused by default.
+    source_verification:
+      Si2O2: >-
+        Reproduces the Table 2 molecular Gibbs-function polynomial with the
+        Table 3 enthalpy-of-formation anchor; independent equilibrium checks
+        combine it with the packaged SiO(g) function.
+      AlSiO: >-
+        Reproduces each Table VIII printed q and H-H0 anchor within its printed
+        rounding; independent equilibrium checks use the Table XIII formation
+        enthalpy and packaged Al(g) and SiO(g) functions.
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)

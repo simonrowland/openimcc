@@ -2427,7 +2427,7 @@ def test_new_halide_mixed_source_parent_bands_recompute_from_cards(
         band = row["accuracy_band"]["value"]
         assert band["kind"] == "mixed_source_parent_scale_inconsistency"
         assert set(map(int, band["values_J_per_mol"])) == set(range(1200, 3001, 100))
-        oxide, n_oxide, n_o2 = gas_module._ALKALI_HALIDE_REACTION_OXIDES[name]
+        oxide, n_oxide, n_o2 = gas_module._SIDE_REACTION_OXIDES[name]
         parent, n_parent, _ = gas_module._SF04_REACTIONS[name]
         for temperature in range(1200, 3001, 100):
             nasa_parent = band["comparison_records"]["halogen_parent"]
@@ -5599,7 +5599,7 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
     })
     assert tuple(metadata) == tuple(name for name, _ in channels)
     for name, (parent, n_gas, n_o2) in channels:
-        if name in gas_module._ALKALI_HALIDE_REACTION_OXIDES:
+        if name in gas_module._SIDE_REACTION_OXIDES:
             continue  # evaluate_gas_oxygen_balance supplies the side-oxide demand.
         expected = (
             n_o2
@@ -5615,21 +5615,13 @@ def test_oxygen_balance_metadata_exponents_match_all_gas_channels() -> None:
             )
 
 
-def test_alkali_halides_use_half_oxygen_per_alkali_in_balance_metadata() -> None:
+def test_side_oxide_reactions_balance_parent_oxygen_metadata() -> None:
     import openimcc.gas as gas_module
 
-    for species, (oxide, n_oxide, n_o2) in gas_module._ALKALI_HALIDE_REACTION_OXIDES.items():
+    for species, (_oxide, _n_oxide, n_o2) in gas_module._SIDE_REACTION_OXIDES.items():
         atoms = gas_module._formula_atoms(species)
-        oxide_atoms = gas_module._formula_atoms(oxide)
-        metal_atoms = sum(
-            count for element, count in atoms.items()
-            if element != "X" and element in oxide_atoms and element != "O"
-        )
-        oxide_metal_atoms = sum(
-            count for element, count in oxide_atoms.items() if element != "O"
-        )
-        assert n_oxide == pytest.approx(metal_atoms / oxide_metal_atoms)
-        assert n_o2 == pytest.approx(n_oxide / 2.0)
+        expected_demand = gas_module._side_reaction_parent_oxygen_demand(species)
+        assert expected_demand - atoms.get("O", 0) == pytest.approx(2.0 * n_o2)
 
 
 def test_oxygen_balance_molar_masses_sum_repeated_formula_tokens() -> None:
