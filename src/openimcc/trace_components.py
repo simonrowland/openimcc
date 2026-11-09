@@ -10,6 +10,10 @@ from typing import Any, Literal
 
 from openimcc._constants import MOLAR_MASS_G_MOL
 from openimcc.kernel import ImccRefusal
+from openimcc.trace_envelope_calibration import (
+    AMPHOTERIC_ENVELOPE_K,
+    BASIC_MONOXIDE_ENVELOPE_K,
+)
 
 
 _SOSSI_FEGLY_2018 = (
@@ -24,6 +28,10 @@ class TraceComponentRule:
     nu: int
     nu_reason: str
     activity_model: Literal["redox_associates", "activity_fragment", "ideal"]
+    trace_class: Literal[
+        "basic_monoxide", "basic_oxide", "acidic", "amphoteric", "non_oxide"
+    ]
+    trace_class_reason: str
     gas_parent_oxide: str | None = None
     gamma: float | None = None
     gamma_species: str | None = None
@@ -42,84 +50,117 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             MOLAR_MASS_G_MOL["MnO"], 1,
             "one monoxide unit can bind at most one major-oxide unit",
             "redox_associates", gas_parent_oxide="MnO", gamma=1.9, gamma_species="MnO",
+            trace_class="basic_monoxide",
+            trace_class_reason="MnO is a basic divalent monoxide and the modelled class calibrant",
             gamma_reference=_SOSSI_FEGLY_2018, full_component=True,
         ),
         "P2O5": TraceComponentRule(
             MOLAR_MASS_G_MOL["P2O5"], 3,
             "three major-oxide units per phosphate formula unit is the specified maximum",
-            "activity_fragment", activity_fragment="P", gas_parent_oxide="P2O5",
+            "activity_fragment", trace_class="acidic",
+            trace_class_reason="P(V) oxide is an acidic network-forming oxide",
+            activity_fragment="P", gas_parent_oxide="P2O5",
         ),
         "Cr2O3": TraceComponentRule(
             MOLAR_MASS_G_MOL["Cr2O3"], 1,
             "one major-oxide unit per chromium-oxide formula unit is the specified maximum",
-            "redox_associates", gas_parent_oxide="Cr2O3", gamma=31.1, gamma_species="CrO1.5",
+            "redox_associates", trace_class="amphoteric",
+            trace_class_reason="Cr(III) oxide is amphoteric and has a separate redox calibrant",
+            gas_parent_oxide="Cr2O3", gamma=31.1, gamma_species="CrO1.5",
             gamma_reference=_SOSSI_FEGLY_2018,
         ),
         "NiO": TraceComponentRule(
             MOLAR_MASS_G_MOL["NiO"], 1,
             "one monoxide unit can bind at most one major-oxide unit", "activity_fragment",
+            trace_class="basic_monoxide",
+            trace_class_reason="NiO is a basic divalent monoxide",
             activity_fragment="Ni",
             gas_parent_oxide="NiO",
         ),
         "CoO": TraceComponentRule(
             MOLAR_MASS_G_MOL["CoO"], 1,
             "one monoxide unit can bind at most one major-oxide unit", "activity_fragment",
+            trace_class="basic_monoxide",
+            trace_class_reason="CoO is a basic divalent monoxide",
             activity_fragment="Co",
             gas_parent_oxide="CoO",
         ),
         "SrO": TraceComponentRule(
             MOLAR_MASS_G_MOL["Sr"] + _O_MASS, 1,
             "one monoxide unit can bind at most one major-oxide unit", "redox_associates",
+            trace_class="basic_monoxide",
+            trace_class_reason="SrO is a basic alkaline-earth monoxide",
             gas_parent_oxide="SrO",
         ),
         "SO3": TraceComponentRule(
             MOLAR_MASS_G_MOL["S"] + 3.0 * _O_MASS, 1,
             "one sulfate formula unit can bind at most one major-oxide unit", "ideal",
+            trace_class="acidic",
+            trace_class_reason="SO3 is an acidic sulfur(VI) oxide",
             gas_parent_oxide="S2",
         ),
         "S": TraceComponentRule(
             MOLAR_MASS_G_MOL["S"], 1,
             "one sulfur component unit can bind at most one major-oxide unit", "activity_fragment",
+            trace_class="non_oxide",
+            trace_class_reason="S is an elemental trace component, not an oxide",
             activity_fragment="S",
             gas_parent_oxide="S2",
         ),
         "Li2O": TraceComponentRule(
             2.0 * MOLAR_MASS_G_MOL["Li"] + _O_MASS, 1,
             "one alkali-oxide unit can bind at most one major-oxide unit", "redox_associates",
+            trace_class="basic_oxide",
+            trace_class_reason="Li2O is a basic alkali oxide but not a monoxide formula",
             gas_parent_oxide="Li2O",
         ),
         "Li": TraceComponentRule(
             MOLAR_MASS_G_MOL["Li"], 1,
             "one lithium component unit can bind at most one major-oxide unit", "ideal",
+            trace_class="non_oxide",
+            trace_class_reason="Li is an elemental trace component, not an oxide",
             gas_parent_oxide="Li2O",
         ),
         "ZnO": TraceComponentRule(
             MOLAR_MASS_G_MOL["Zn"] + _O_MASS, 1,
             "one monoxide unit can bind at most one major-oxide unit", "redox_associates",
+            trace_class="basic_monoxide",
+            trace_class_reason="ZnO is a basic divalent monoxide",
             gas_parent_oxide="ZnO",
         ),
         "Zn": TraceComponentRule(
             MOLAR_MASS_G_MOL["Zn"], 1,
             "one zinc component unit can bind at most one major-oxide unit", "ideal",
+            trace_class="non_oxide",
+            trace_class_reason="Zn is an elemental trace component, not an oxide",
             gas_parent_oxide="ZnO",
         ),
         "Cl": TraceComponentRule(
             MOLAR_MASS_G_MOL["Cl"], 1,
             "one halogen component unit can bind at most one major-oxide unit", "ideal",
+            trace_class="non_oxide",
+            trace_class_reason="Cl is an elemental trace component, not an oxide",
             gas_parent_oxide="Cl2",
         ),
         "F": TraceComponentRule(
             MOLAR_MASS_G_MOL["F"], 1,
             "one halogen component unit can bind at most one major-oxide unit", "ideal",
+            trace_class="non_oxide",
+            trace_class_reason="F is an elemental trace component, not an oxide",
             gas_parent_oxide="F2",
         ),
         "Yb2O3": TraceComponentRule(
             2.0 * MOLAR_MASS_G_MOL["Yb"] + 3.0 * _O_MASS, 1,
             "one rare-earth oxide unit can bind at most one major-oxide unit", "redox_associates",
+            trace_class="basic_oxide",
+            trace_class_reason="Yb2O3 is a basic rare-earth oxide but not a monoxide formula",
             gas_parent_oxide="Yb2O3",
         ),
     }
 )
+
+_TRACE_ENVELOPE_CAP_DEX = 0.02
+_TRACE_STRICT_BOUND_CAP_DEX = 0.01
 
 
 @dataclass(frozen=True)
@@ -196,13 +237,21 @@ class TraceMajorBiasFlag(str):
         bias_bound_dex: float,
         scoreable: bool,
         *,
+        limiting_bound_dex: float | None = None,
+        limiting_cap_dex: float = _TRACE_STRICT_BOUND_CAP_DEX,
         prior_flags: tuple[str, ...] = (),
         additional_major_flags: tuple["TraceMajorBiasFlag", ...] = (),
+        envelope_flags: tuple[tuple[str, float, str, str], ...] = (),
     ):
         disposition = "scoreable" if scoreable else "refused"
+        envelope_text = tuple(
+            f'{name} {{k: {k:.12g}, calibrant: "{calibrant}", class: "{trace_class}"}}'
+            for name, k, calibrant, trace_class in envelope_flags
+        )
         message = "; ".join((
             f"trace_major_activity_bound: {major_oxide} x_free={x_free:.12g} "
             f"bias_bound_dex={bias_bound_dex:.12g} row={disposition}",
+            *envelope_text,
             *prior_flags,
         ))
         flag = super().__new__(cls, message)
@@ -210,14 +259,71 @@ class TraceMajorBiasFlag(str):
         flag.x_free = x_free
         flag.bias_bound_dex = bias_bound_dex
         flag.scoreable = scoreable
+        flag.limiting_bound_dex = (
+            bias_bound_dex if limiting_bound_dex is None else limiting_bound_dex
+        )
+        flag.limiting_cap_dex = limiting_cap_dex
         flag.prior_flags = tuple(prior_flags)
         flag.additional_major_flags = tuple(additional_major_flags)
+        flag.envelope_flags = tuple(envelope_flags)
+        flag.mn_calibrated_envelope = next(
+            (
+                MappingProxyType({
+                    "k": k, "calibrant": calibrant, "class": trace_class,
+                })
+                for name, k, calibrant, trace_class in envelope_flags
+                if name == "mn_calibrated_envelope"
+            ),
+            None,
+        )
+        flag.cr_calibrated_envelope = next(
+            (
+                MappingProxyType({
+                    "k": k, "calibrant": calibrant, "class": trace_class,
+                })
+                for name, k, calibrant, trace_class in envelope_flags
+                if name == "cr_calibrated_envelope"
+            ),
+            None,
+        )
         return flag
 
     def __reduce__(self):
-        return type(self), (
-            self.major_oxide, self.x_free, self.bias_bound_dex, self.scoreable
+        return _restore_trace_major_bias_flag, (
+            self.major_oxide,
+            self.x_free,
+            self.bias_bound_dex,
+            self.scoreable,
+            self.limiting_bound_dex,
+            self.limiting_cap_dex,
+            self.prior_flags,
+            self.additional_major_flags,
+            self.envelope_flags,
         )
+
+
+def _restore_trace_major_bias_flag(
+    major_oxide: str,
+    x_free: float,
+    bias_bound_dex: float,
+    scoreable: bool,
+    limiting_bound_dex: float,
+    limiting_cap_dex: float,
+    prior_flags: tuple[str, ...],
+    additional_major_flags: tuple[TraceMajorBiasFlag, ...],
+    envelope_flags: tuple[tuple[str, float, str, str], ...],
+) -> TraceMajorBiasFlag:
+    return TraceMajorBiasFlag(
+        major_oxide,
+        x_free,
+        bias_bound_dex,
+        scoreable,
+        limiting_bound_dex=limiting_bound_dex,
+        limiting_cap_dex=limiting_cap_dex,
+        prior_flags=prior_flags,
+        additional_major_flags=additional_major_flags,
+        envelope_flags=envelope_flags,
+    )
 
 
 class TraceComponentsOutsideMeltModelNotice(str):

@@ -819,10 +819,17 @@ class ImccResult:
                     getattr(notice, "major_oxide", None) == name
                     and not getattr(notice, "scoreable", True)
                 ):
-                    bound = float(getattr(notice, "bias_bound_dex", math.inf))
+                    bound = float(
+                        getattr(
+                            notice,
+                            "limiting_bound_dex",
+                            getattr(notice, "bias_bound_dex", math.inf),
+                        )
+                    )
+                    cap = float(getattr(notice, "limiting_cap_dex", 0.01))
                     raise ImccComponentOutsideDomainError(
                         f"{name} row refused: trace-component bias bound "
-                        f"{bound:.12g} dex exceeds 0.01 dex"
+                        f"{bound:.12g} dex exceeds {cap:g} dex"
                     )
             return float(self.parent_activity[self._parent_index(name)])
         for notice in notices:

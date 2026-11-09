@@ -42,13 +42,15 @@
 - `evaluate()` accepts registered unmodelled components outside the eight-oxide
   melt model at up to 1 mol% each and 2 mol% combined. It renormalizes the major
   oxides and reports the typed `trace_components_outside_melt_model` notice with
-  per-major `bias_bound_dex`; rows above 0.01 dex are refused individually.
-  Modeled associates such as MnO remain full components. Trace activities use
-  source-grounded rows or helpers, published `γ·x` guides, or a flagged ideal
-  estimate. In gas evaluation, Cl, F, S, or SO3 above 0.1 mol% refuses Na/K and
-  sulfur-bearing channels. The `γ·x` guide values (MnO 1.9 and CrO1.5 31.1) are
-  cited to Sossi and Fegley (2018), Table 2, pp. 409–410,
-  doi:10.2138/rmg.2018.84.11.
+  per-major `bias_bound_dex`. Basic-monoxide traces use the measured MnO-class
+  envelope and amphoteric Cr2O3 uses its measured Cr2O3-class envelope, both
+  capped at 0.02 dex. Other classes, including acidic P2O5, retain the strict
+  per-major bound capped at 0.01 dex. Modeled associates such as MnO remain full
+  components. Trace activities use source-grounded rows or helpers, published
+  `γ·x` guides, or a flagged ideal estimate. In gas evaluation, Cl, F, S, or SO3
+  above 0.1 mol% refuses Na/K and sulfur-bearing channels. The `γ·x` guide
+  values (MnO 1.9 and CrO1.5 31.1) are cited to Sossi and Fegley (2018),
+  Table 2, pp. 409–410, doi:10.2138/rmg.2018.84.11.
 
 - The trace-component activity ladder uses registered Ni, Co, P, and S helpers
   before published γ·x guides or ideal mixing. It also uses the redox-v5

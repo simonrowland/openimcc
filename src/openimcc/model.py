@@ -63,6 +63,10 @@ from openimcc.kernel import (
 from openimcc.scalar_boundary import is_declared_real_scalar
 from openimcc.receipt import build_calculation_receipt
 from openimcc.trace_components import (
+    AMPHOTERIC_ENVELOPE_K,
+    BASIC_MONOXIDE_ENVELOPE_K,
+    _TRACE_ENVELOPE_CAP_DEX,
+    _TRACE_STRICT_BOUND_CAP_DEX,
     TraceActivityFlag,
     TraceActivityEstimate,
     TraceComponentsOutsideMeltModelNotice,
@@ -2778,17 +2782,15 @@ def evaluate(
             trace_activity_estimates[oxide] = estimate
             trace_activity_flags.append(TraceActivityFlag(estimate))
 
-        # Premise: an unmodelled trace contributes at most (1+ν_t)x_t units
-        # that can displace or bind a major; x_free,major is the solved
-        # unassociated major fraction in the renormalised melt. Algebra: the
-        # worst relative perturbation is r = Σ_t(1+ν_t)x_t/x_free,major, so
-        # the activity ratio is at most 1+r and b_major = log10(1+r) dex.
-        # Every x and r is dimensionless; the logarithm is therefore a
-        # dimensionless log10 activity difference in dex. As trace loading
-        # tends to zero, b tends to zero. The input limits give
-        # Σ(1+ν)x ≤ 4·0.02 = 0.08 (ν≤3), so the old scalar denominator would
-        # stay at least 0.92 and finite. Here x_free=0 gives an infinite bound
-        # and that major row is refused before division.
+        # The input limits give Σ(1+ν)x ≤ 4·0.02 = 0.08 (ν≤3), which keeps
+        # the strict bound finite when x_free > 0. For the calibrated basic
+        # monoxide and amphoteric classes, use their measured class envelope
+        # k·Σ(1+ν)x. All other traces retain the mass-balance bound: the worst
+        # relative perturbation is r = Σ(1+ν)x/x_free, hence
+        # b = log10(1+r) dex. For mixed classes the dex contributions add,
+        # which is conservative by the triangle inequality. Empirical rows
+        # must satisfy the 0.02 dex envelope cap; any strict contribution must
+        # also satisfy its original 0.01 dex cap.
         weighted_trace = math.fsum(
             (1.0 + trace_component_rule(oxide).nu) * x_trace
             for oxide, x_trace in unmodelled_trace_fractions.items()
@@ -2797,21 +2799,93 @@ def evaluate(
             raise ImccComponentOutsideDomainError(
                 "trace-component bound is outside its finite input range"
             )
+        basic_monoxide_weighted = 0.0
+        amphoteric_weighted = 0.0
+        strict_weighted = 0.0
+        for oxide, x_trace in unmodelled_trace_fractions.items():
+            rule = trace_component_rule(oxide)
+            contribution = (1.0 + rule.nu) * x_trace
+            if rule.trace_class == "basic_monoxide":
+                basic_monoxide_weighted += contribution
+            elif rule.trace_class == "amphoteric":
+                amphoteric_weighted += contribution
+            else:
+                strict_weighted += contribution
+        calibrated_bounds: list[tuple[str, float]] = []
+        envelope_flags: list[tuple[str, float, str, str]] = []
+        if basic_monoxide_weighted > 0.0:
+            calibrated_bounds.append((
+                "basic_monoxide",
+                BASIC_MONOXIDE_ENVELOPE_K * basic_monoxide_weighted,
+            ))
+            envelope_flags.append((
+                "mn_calibrated_envelope",
+                BASIC_MONOXIDE_ENVELOPE_K,
+                "MnO",
+                "basic_monoxide",
+            ))
+        if amphoteric_weighted > 0.0:
+            calibrated_bounds.append((
+                "amphoteric",
+                AMPHOTERIC_ENVELOPE_K * amphoteric_weighted,
+            ))
+            envelope_flags.append((
+                "cr_calibrated_envelope",
+                AMPHOTERIC_ENVELOPE_K,
+                "Cr2O3",
+                "amphoteric",
+            ))
         major_bias_bounds: dict[str, float] = {}
         if weighted_trace > 0.0:
             for index, major in enumerate(parent_oxides):
                 if vector[index] <= 0.0:
                     continue
                 x_free = float(result.parent_x_star[index])
-                bound = (
+                strict_bound = (
                     math.inf
-                    if x_free <= 0.0
-                    else math.log10(1.0 + weighted_trace / x_free)
+                    if x_free <= 0.0 and strict_weighted > 0.0
+                    else (
+                        math.log10(1.0 + strict_weighted / x_free)
+                        if strict_weighted > 0.0
+                        else 0.0
+                    )
+                )
+                bound = strict_bound + math.fsum(
+                    contribution for _trace_class, contribution in calibrated_bounds
                 )
                 major_bias_bounds[major] = bound
-                scoreable = bound <= 0.01
+                has_empirical_envelope = bool(calibrated_bounds)
+                scoreable = (
+                    strict_bound <= _TRACE_STRICT_BOUND_CAP_DEX
+                    and all(
+                        contribution <= _TRACE_ENVELOPE_CAP_DEX
+                        for _trace_class, contribution in calibrated_bounds
+                    )
+                    and bound <= (
+                        _TRACE_ENVELOPE_CAP_DEX
+                        if has_empirical_envelope
+                        else _TRACE_STRICT_BOUND_CAP_DEX
+                    )
+                )
+                limiting_bound = (
+                    strict_bound
+                    if strict_bound > _TRACE_STRICT_BOUND_CAP_DEX
+                    else bound
+                )
+                limiting_cap = (
+                    _TRACE_STRICT_BOUND_CAP_DEX
+                    if strict_bound > _TRACE_STRICT_BOUND_CAP_DEX
+                    or not has_empirical_envelope
+                    else _TRACE_ENVELOPE_CAP_DEX
+                )
                 major_flag = TraceMajorBiasFlag(
-                    major, x_free, bound, scoreable
+                    major,
+                    x_free,
+                    bound,
+                    scoreable,
+                    limiting_bound_dex=limiting_bound,
+                    limiting_cap_dex=limiting_cap,
+                    envelope_flags=tuple(envelope_flags),
                 )
                 trace_major_flags.append(major_flag)
                 flags.append(str(major_flag))
