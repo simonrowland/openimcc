@@ -166,48 +166,46 @@ def test_ga_in_anchors_are_liquid_coefficients_without_a_second_fusion_step() ->
 
 
 def test_bischof_table8_s1_closure_literals_use_the_component_mole_fraction() -> None:
-    # Table 8 source x and the printed S1 pressure ratios are independent source
-    # literals; do not source any of these expected values from the helper rows.
+    # p scales with gamma (a=(gamma*x)^2, n_gas=2); printed p is three figures (<=0.5%) and gamma four (<=0.2%), so rel=5e-3.
+    candidate_path = (
+        Path(__file__).resolve().parents[2]
+        / "src/openimcc/data/gas/condensate-ga-in-kems-candidate.csv"
+    )
+    pack = load_gas_datapack(oxide_path=candidate_path)
+    # Table 8 x(MO1.5). S1 1_low rows below are that row's gamma, p(M) and p(O2) in Pa.
+    x_ga = 0.0172
+    x_in = 6.9e-5
     source_rows = (
-        (1586.4, 0.0172, 0.036, 0.938, 6.9e-5, 0.017, 1.069),
-        (1630.8, 0.0172, 0.036, 0.937, 6.9e-5, 0.017, 1.070),
-        (1674.2, 0.0172, 0.036, 0.940, 6.9e-5, 0.017, 1.071),
-        (1695.4, 0.0172, 0.036, 0.940, 6.9e-5, 0.017, 1.074),
+        (1586.4, 0.000112, 0.0632, 4.04e-05, 0.0527, 6.69e-05),
+        (1630.8, 0.00027, 0.0285, 6.45e-05, 0.0377, 0.000117),
+        (1674.2, 0.000681, 0.0248, 0.000166, 0.0301, 0.000197),
+        (1695.4, 0.00106, 0.0246, 0.000273, 0.0254, 0.000234),
     )
     expected_closures = (
-        (0.938, 1.069),
-        (0.937, 1.070),
-        (0.940, 1.071),
-        (0.940, 1.074),
+        (0.9166, 1.0449),
+        (0.9159, 1.0461),
+        (0.9190, 1.0463),
+        (0.9187, 1.0494),
     )
-    major_wt = {"SiO2": 50.34, "Al2O3": 15.40, "MgO": 10.80, "CaO": 23.46}
 
     for source_row, expected in zip(source_rows, expected_closures, strict=True):
-        temperature, ga_x, ga_gamma, ga_closure, in_x, in_gamma, in_closure = source_row
-        activities = []
-        for oxide, x, gamma, power in (
-            ("Ga2O3", ga_x, ga_gamma, 2),
-            ("In2O3", in_x, in_gamma, 2),
-        ):
-            major_moles = {
-                name: amount / MOLAR_MASS_G_MOL[name]
-                for name, amount in major_wt.items()
-            }
-            major_total = math.fsum(major_moles.values())
-            parent_moles = x * major_total / (power * (1.0 - x))
-            result = evaluate_review_gamma_activity(
-                oxide.removesuffix("2O3"),
-                {**major_moles, oxide: parent_moles},
-                temperature,
-                parent_oxide=oxide,
-            )
-            assert result.source_mole_fraction == pytest.approx(x, abs=1e-15)
-            assert result.gamma == gamma
-            activities.append(result.activity)
-        assert activities == pytest.approx(
-            ((ga_gamma * ga_x) ** 2, (in_gamma * in_x) ** 2), rel=1e-14
+        temperature, p_o2_pa, ga_gamma, p_ga_pa, in_gamma, p_in_pa = source_row
+        predicted = evaluate_gas(
+            {
+                "Ga2O3": (ga_gamma * x_ga) ** 2,
+                "In2O3": (in_gamma * x_in) ** 2,
+            },
+            temperature,
+            p_o2_pa / 1.0e5,
+            pack,
+            parent_oxides=("Ga2O3", "In2O3"),
+            gas_species=("Ga", "In"),
         )
-        assert (ga_closure, in_closure) == expected
+        closure = (
+            predicted["Ga"] / (p_ga_pa / 1.0e5),
+            predicted["In"] / (p_in_pa / 1.0e5),
+        )
+        assert closure == pytest.approx(expected, rel=5.0e-3)
 
 
 def test_as_parent_wording_and_inactive_ge_v_rows() -> None:

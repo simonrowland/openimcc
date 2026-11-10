@@ -45,14 +45,16 @@ When the default condensate table is active, each Ga/In gas flag carries the num
 
 ## Closure against Bischof Table S1
 
-The earlier Table 9 activity with analytical ppm gave these `p/p(S1)` ratios. The closure uses Table 8 `x` (Ga 0.0172; In 6.9×10⁻⁵), printed central γ (Ga 0.036; In 0.017), and the opt-in parent. The earlier and closure columns use different source compositions, so read the latter as the Table 8/S1 closure check:
+The earlier Table 9 activity with analytical ppm gave the prior `p/p(S1)` ratios below. The closure uses Table 8 `x` (Ga 0.0172; In 6.9×10⁻⁵), each S1 row's own γ (Ga 0.0632, 0.0285, 0.0248, 0.0246; In 0.0527, 0.0377, 0.0301, 0.0254), activity `(γ x)^2`, and the opt-in parent. The earlier and closure columns use different source compositions, so read the latter as the Table 8/S1 closure check:
 
 | T (K) | Ga prior | Ga Table 8 closure | In prior | In Table 8 closure |
 | ---: | ---: | ---: | ---: | ---: |
-| 1586.4 | 3.29 | 0.938 | 24.1 | 1.069 |
-| 1630.8 | 5.57 | 0.937 | 27.6 | 1.070 |
-| 1674.2 | 5.00 | 0.940 | 28.6 | 1.071 |
-| 1695.4 | 4.47 | 0.940 | 31.1 | 1.074 |
+| 1586.4 | 3.29 | 0.9166 | 24.1 | 1.0449 |
+| 1630.8 | 5.57 | 0.9159 | 27.6 | 1.0461 |
+| 1674.2 | 5.00 | 0.9190 | 28.6 | 1.0463 |
+| 1695.4 | 4.47 | 0.9187 | 31.1 | 1.0494 |
+
+With the single printed central γ (Ga 0.036; In 0.017) the same comparison is Ga 0.52/1.16/1.33/1.34 and In 0.34/0.47/0.59/0.70. The central value does not capture the per-row γ spread, which is why the endpoint band is surfaced to callers.
 
 These closures use Table 8's measured component fractions; the analytical-ppm column is not substituted for those `x` values. Runtime callers instead supply a melt composition, from which openimcc computes the same formula-unit `x_source` basis.
 
