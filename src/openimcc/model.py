@@ -49,6 +49,7 @@ from openimcc.kernel import (
     ImccRefusal,
     ImccResult,
     ImccTOutsideDatapackDomainError,
+    ImccTraceMajorBiasError,
     _KernelBindingManifest,
     _PUBLISHED_DATAPACK_SHA256,
     _PUBLISHED_MODEL_ID,
@@ -864,6 +865,53 @@ class ImccSPComponentRequiresExtensionError(ImccComponentOutsideDomainError):
     """Raised when S/P input lacks the EXT model plus explicit enable flag."""
 
     code = "imcc_sp_extension_required"
+
+
+class ImccTraceLimitExceededError(ImccComponentOutsideDomainError):
+    """Raised when unmodelled trace components exceed their input limits."""
+
+    code = "imcc_trace_limit_exceeded"
+
+    def __init__(
+        self,
+        fractions: Mapping[str, float],
+        full_component_exempt: Sequence[str],
+    ) -> None:
+        self._components = tuple(sorted(fractions))
+        self._fractions = MappingProxyType({
+            name: fractions[name] for name in self._components
+        })
+        self._per_component_limit = _TRACE_COMPONENT_MAX_MOLE_FRACTION
+        self._total_limit = _TRACE_COMPONENT_MAX_TOTAL_MOLE_FRACTION
+        self._full_component_exempt = tuple(sorted(full_component_exempt))
+        message = (
+            "component(s) outside IMCC-SF04 domain: "
+            f"{list(self._components)}; fractions={dict(self._fractions)}; "
+            f"limits={{per_component: {self._per_component_limit:g}, "
+            f"total: {self._total_limit:g}}}; "
+            f"full_component_exempt={list(self._full_component_exempt)}"
+        )
+        super().__init__(message)
+
+    @property
+    def components(self) -> tuple[str, ...]:
+        return self._components
+
+    @property
+    def fractions(self) -> Mapping[str, float]:
+        return self._fractions
+
+    @property
+    def per_component_limit(self) -> float:
+        return self._per_component_limit
+
+    @property
+    def total_limit(self) -> float:
+        return self._total_limit
+
+    @property
+    def full_component_exempt(self) -> tuple[str, ...]:
+        return self._full_component_exempt
 
 
 @dataclass(frozen=True)
@@ -2241,9 +2289,15 @@ def evaluate(
         ) * (
             1.0 + 1.0e-12
         ):
-            raise ImccComponentOutsideDomainError(
-                "component(s) outside IMCC-SF04 domain: "
-                f"{sorted(unmodelled_trace_fractions)}"
+            full_component_exempt = tuple(
+                name
+                for name in trace_fractions
+                if (rule := trace_component_rule(name)) is not None
+                and rule.full_component
+            )
+            raise ImccTraceLimitExceededError(
+                unmodelled_trace_fractions,
+                full_component_exempt,
             )
 
     # X_Me2O = (n_Na2O + n_K2O) / sum(n_oxide) over the canonical

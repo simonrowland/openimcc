@@ -6,7 +6,13 @@ import math
 import numpy as np
 import pytest
 
-from openimcc import evaluate, load_datapack, supported_trace_oxides
+from openimcc import (
+    ImccTraceLimitExceededError,
+    ImccTraceMajorBiasError,
+    evaluate,
+    load_datapack,
+    supported_trace_oxides,
+)
 from openimcc._constants import MOLAR_MASS_G_MOL
 from openimcc.gas import (
     TraceActivityFlag,
@@ -225,8 +231,8 @@ def test_trace_thresholds_are_inclusive_and_keep_the_existing_refusal() -> None:
             basis_type="wt",
             allow_extrapolation=True,
         )
-    assert str(individual_error.value) == (
-        "component(s) outside IMCC-SF04 domain: ['NiO']"
+    assert str(individual_error.value).startswith(
+        "component(s) outside IMCC-SF04 domain: ['NiO'];"
     )
 
     above_total_limit = _weight_composition(
@@ -239,7 +245,7 @@ def test_trace_thresholds_are_inclusive_and_keep_the_existing_refusal() -> None:
             basis_type="wt",
             allow_extrapolation=True,
         )
-    assert str(total_error.value) == (
+    assert str(total_error.value).startswith(
         "component(s) outside IMCC-SF04 domain: ['CoO', 'NiO', 'SrO']"
     )
 
@@ -250,6 +256,54 @@ def test_trace_thresholds_are_inclusive_and_keep_the_existing_refusal() -> None:
             basis_type="wt",
             allow_extrapolation=True,
         )
+
+
+@pytest.mark.parametrize(
+    ("traces", "components"),
+    [
+        ({"NiO": 0.0101, "MnO": 0.05}, ("NiO",)),
+        ({"NiO": 0.007, "CoO": 0.007, "SrO": 0.007},
+         ("CoO", "NiO", "SrO")),
+    ],
+)
+def test_trace_limit_error_has_read_only_structured_details(
+    traces: dict[str, float], components: tuple[str, ...]
+) -> None:
+    with pytest.raises(ImccTraceLimitExceededError) as refused:
+        evaluate(
+            _weight_composition(traces),
+            1800.0,
+            basis_type="wt",
+            allow_extrapolation=True,
+        )
+
+    error = refused.value
+    assert isinstance(error, ImccComponentOutsideDomainError)
+    assert error.code == "imcc_trace_limit_exceeded"
+    assert error.components == components
+    assert error.fractions == pytest.approx(
+        {name: traces[name] for name in components}, abs=1.0e-15
+    )
+    assert error.per_component_limit == (
+        trace_components._TRACE_COMPONENT_MAX_MOLE_FRACTION
+    )
+    assert error.total_limit == (
+        trace_components._TRACE_COMPONENT_MAX_TOTAL_MOLE_FRACTION
+    )
+    assert error.full_component_exempt == (("MnO",) if "MnO" in traces else ())
+    assert str(error).startswith(
+        f"component(s) outside IMCC-SF04 domain: {list(components)}"
+    )
+    with pytest.raises(AttributeError):
+        error.components = ()
+    with pytest.raises(TypeError):
+        error.fractions[components[0]] = 0.0
+
+
+def test_unknown_component_refusal_is_not_a_trace_limit_error() -> None:
+    with pytest.raises(ImccComponentOutsideDomainError) as unknown:
+        evaluate({"SiO2": 1.0, "Unknown": 1.0}, 1800.0)
+    assert not isinstance(unknown.value, ImccTraceLimitExceededError)
 
 
 def test_per_major_bounds_flag_rows_and_trace_target_returns_estimate() -> None:
@@ -273,8 +327,13 @@ def test_per_major_bounds_flag_rows_and_trace_target_returns_estimate() -> None:
         math.log10(1.0 + 4.0 * 0.002 / silica_flag.x_free)
     )
     refused = next(item for item in flags if not item.scoreable)
-    with pytest.raises(ImccComponentOutsideDomainError, match="exceeds 0.01 dex"):
+    with pytest.raises(ImccTraceMajorBiasError, match="exceeds 0.01 dex") as error:
         result.activity(refused.major_oxide)
+    assert isinstance(error.value, ImccComponentOutsideDomainError)
+    assert error.value.code == refused.code
+    assert error.value.major_oxide == refused.major_oxide
+    with pytest.raises(AttributeError):
+        error.value.major_oxide = "MgO"
     assert result.activity("P2O5") == pytest.approx(notice.activities["P2O5"].activity)
 
 
@@ -389,7 +448,7 @@ def test_gas_trace_bias_uses_melt_envelope_flags(packaged_gas_pack) -> None:
     assert any("±0.76 dex pO2" in flag for flag in magnesium_flag.prior_flags)
 
     concentrated_activities, concentrated_composition = evaluate_composition(0.01)
-    with pytest.raises(ImccComponentOutsideDomainError):
+    with pytest.raises(ImccTraceMajorBiasError) as refusal:
         evaluate_gas(
             concentrated_activities,
             1800.0,
@@ -398,6 +457,9 @@ def test_gas_trace_bias_uses_melt_envelope_flags(packaged_gas_pack) -> None:
             gas_species=("Na", "SiO"),
             composition_wt_pct=concentrated_composition,
         )
+    assert isinstance(refusal.value, ImccComponentOutsideDomainError)
+    assert refusal.value.code == TraceMajorBiasFlag.code
+    assert refusal.value.major_oxide == "Na2O"
 
 
 def test_activity_ladder_uses_source_rows_helpers_and_the_shared_registration() -> None:

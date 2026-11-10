@@ -17,6 +17,7 @@ from openimcc import (
     ImccDatapack,
     ImccMalformedDatapackError,
     ImccSPComponentRequiresExtensionError,
+    ImccTraceLimitExceededError,
     evaluate,
     load_datapack,
 )
@@ -193,9 +194,12 @@ def test_plain_pack_accepts_trace_sp_but_refuses_over_limit(component: str) -> N
         for notice in result.labels.notices
     )
 
-    with pytest.raises(ImccComponentOutsideDomainError) as exc:
+    with pytest.raises(ImccTraceLimitExceededError) as exc:
         evaluate({"SiO2": 0.98, component: 0.02}, 1800.0, pack)
-    assert exc.value.code == "imcc_component_outside_domain"
+    assert isinstance(exc.value, ImccComponentOutsideDomainError)
+    assert exc.value.code == "imcc_trace_limit_exceeded"
+    assert exc.value.components == (component,)
+    assert exc.value.fractions[component] == 0.02
     assert component in str(exc.value)
 
 

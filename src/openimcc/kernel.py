@@ -113,6 +113,20 @@ class ImccComponentOutsideDomainError(ImccRefusal):
     code = "imcc_component_outside_domain"
 
 
+class ImccTraceMajorBiasError(ImccComponentOutsideDomainError):
+    """Raised when a major row exceeds its trace-bias scoring limit."""
+
+    code = "trace_major_activity_bound"
+
+    def __init__(self, message: str, major_oxide: str) -> None:
+        self._major_oxide = major_oxide
+        super().__init__(message)
+
+    @property
+    def major_oxide(self) -> str:
+        return self._major_oxide
+
+
 class ImccSpeciesNotFoundError(ImccComponentOutsideDomainError):
     """Raised when a result lookup names no parent oxide."""
 
@@ -827,9 +841,10 @@ class ImccResult:
                         )
                     )
                     cap = float(getattr(notice, "limiting_cap_dex", 0.01))
-                    raise ImccComponentOutsideDomainError(
+                    raise ImccTraceMajorBiasError(
                         f"{name} row refused: trace-component bias bound "
-                        f"{bound:.12g} dex exceeds {cap:g} dex"
+                        f"{bound:.12g} dex exceeds {cap:g} dex",
+                        name,
                     )
             return float(self.parent_activity[self._parent_index(name)])
         for notice in notices:

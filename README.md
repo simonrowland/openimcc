@@ -1029,6 +1029,14 @@ code on exit 2. Pass `--allow-extrapolation` or `--allow-out-of-envelope` to
 turn a refusal into an answer, and the answer is **flagged** — never silently
 extrapolated.
 
+`ImccTraceLimitExceededError` identifies rejected trace inputs with
+`components`, `fractions` (mole fractions over the complete mixture),
+`per_component_limit`, `total_limit`, and `full_component_exempt`. It keeps
+the `ImccComponentOutsideDomainError` base class and uses the
+`imcc_trace_limit_exceeded` code. `ImccTraceMajorBiasError` is raised when a
+major row is refused by the trace-bias limit; it keeps that base class and
+exposes the notice code as `code` and the affected oxide as `major_oxide`.
+
 ## API
 
 ### Supported trace components

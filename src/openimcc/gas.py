@@ -41,6 +41,7 @@ from openimcc._constants import (
 from openimcc.kernel import (
     ImccComponentOutsideDomainError,
     ImccRefusal,
+    ImccTraceMajorBiasError,
     _canonical_published_serialization,
 )
 from openimcc.liquid_reference import (
@@ -3344,6 +3345,14 @@ def evaluate_gas(
             None,
         )
         if selected_refusal is not None:
+            if selected_refusal.major_flags:
+                major_oxide = min(
+                    flag.major_oxide
+                    for flag in selected_refusal.major_flags
+                )
+                raise ImccTraceMajorBiasError(
+                    str(selected_refusal), major_oxide
+                )
             raise ImccComponentOutsideDomainError(str(selected_refusal))
     if requested_channels is None or include_ions:
         retained_reactions = []
