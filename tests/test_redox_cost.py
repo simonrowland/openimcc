@@ -65,11 +65,13 @@ _COLD_REFERENCE_TEMPERATURE = 1734.15
 # Rebased for redox-v5: it has 21 parents and 18 rows, versus v4's 17 and 6.
 # These fixtures still have 12 active parents; the composition-conditioned Cr
 # row adds one active complex column (41 to 42 for trace, 40 to 41 for closed
-# natural melt). The returned states take 20 and 32 composition fixed-point
-# updates, and cProfile records 128 and 356 inner solves per evaluation (v4:
-# 9 and 15). The Sr/Li/Zn/Yb associates are absent from these inventories and
-# do not enter the Newton matrix. Basalt has no Cr and keeps the v4 baseline.
-# The values below record the measured v5 cost of the active Cr row.
+# natural melt). Before Anderson acceleration, the returned states took 20 and
+# 32 composition fixed-point updates and cProfile recorded 128 and 356 inner
+# solves per evaluation (v4: 9 and 15). They now take 7 and 8 updates and 65
+# and 115 inner solves. The Sr/Li/Zn/Yb associates are absent from these
+# inventories and do not enter the Newton matrix. Basalt has no Cr and keeps
+# its prior baseline. The Cr values below are five new run medians per chip;
+# the local measurements use M5 Max and the remote gate reaches M3 Ultra.
 _COLD_COST_BASELINES: dict[str, dict[str, tuple[float, ...]]] = {
     # Values are five independent run medians. Each run is the median of five
     # trial medians, each from seven interleaved solve/reference pairs. Ratios
@@ -77,35 +79,35 @@ _COLD_COST_BASELINES: dict[str, dict[str, tuple[float, ...]]] = {
     _DEV_CPU_CLASS: {
         "basalt": (0.00378906, 0.00373555, 0.00372911, 0.00368432, 0.00366756),
         "basalt_with_traces": (
-            0.00837669,
-            0.00752019,
-            0.00785226,
-            0.00747123,
-            0.00743009,
+            0.00621913,
+            0.00650781,
+            0.00604345,
+            0.00617380,
+            0.00626567,
         ),
         "closed_natural_melt": (
-            0.00930890,
-            0.01001366,
-            0.00946519,
-            0.00918098,
-            0.00876849,
+            0.00669640,
+            0.00666512,
+            0.00657505,
+            0.00661673,
+            0.00664248,
         ),
     },
     "Apple M3 Ultra": {
         "basalt": (0.00384046, 0.00368501, 0.00375076, 0.00372141, 0.00375380),
         "basalt_with_traces": (
-            0.00733076,
-            0.00734667,
-            0.00720310,
-            0.00733635,
-            0.00744185,
+            0.00533617,
+            0.00520448,
+            0.00505638,
+            0.00650448,
+            0.00549489,
         ),
         "closed_natural_melt": (
-            0.00854165,
-            0.00846905,
-            0.00847944,
-            0.00847693,
-            0.00840150,
+            0.00589986,
+            0.00560087,
+            0.00618191,
+            0.00645192,
+            0.00581225,
         ),
     },
 }
@@ -161,6 +163,20 @@ def test_cold_cost_baseline_lookup_does_not_cross_cpu_classes() -> None:
     )
     assert _cold_baseline("not-a-recorded-chip", "basalt") is None
     assert _cold_baseline(_DEV_CPU_CLASS, "missing-fixture") is None
+
+
+def test_cpu_class_uses_darwin_brand_string_instead_of_architecture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setattr(platform, "machine", lambda: "arm64")
+
+    def brand_string(command: list[str], **kwargs: object) -> str:
+        assert command == ["sysctl", "-n", "machdep.cpu.brand_string"]
+        return "Apple M5 Max\n"
+
+    monkeypatch.setattr(subprocess, "check_output", brand_string)
+    assert _cpu_class() == "Apple M5 Max"
 
 
 def test_cold_cost_budget_caps_at_a_1_9_ratio() -> None:

@@ -1016,13 +1016,29 @@ def _active_inner(
 
     # Composition-conditioned Cr and Ti rows share one mass-action solve.
     # Their effective K values use valence fractions from that same solution.
+    # The Cr map slopes measured on trace and closed melts are -0.435 and
+    # -0.078. Half-relaxation therefore contracts by |(1+s)/2| = 0.283 and
+    # 0.461, but needs 20-32 solves from the initial 7-9 ln(K) gap. Anderson
+    # m=1 chooses alpha to minimize ||(1-alpha)r_k + alpha*r_(k-1)||, where
+    # r=g(x)-x; alpha=<r_k, r_k-r_(k-1)>/||r_k-r_(k-1)||^2. Mixing g(x_k) and
+    # g(x_(k-1)) by these weights preserves the fixed point and, for an affine
+    # scalar map, cancels its residual exactly. The smooth Cr map is locally
+    # affine, so this secant step accelerates it; half-relaxation remains the
+    # safe fallback when the residual difference is degenerate or extrapolates
+    # too far. A 1e-14 floor for both the outer fixed-point criterion and its
+    # inner balance solve keeps the returned activity within the pin tolerance
+    # despite changes in the iteration path.
     applied: dict[str, float] = {str(row["complex"]): 0.0 for row in composition_rows}
+    names = tuple(applied)
+    previous_residual: tuple[float, ...] | None = None
+    previous_desired: dict[str, float] | None = None
     state: _LiquidState | None = None
     for count in range(1, 257):
         state = _active_inner_once(
             parent_moles, temperature_K, lambda_value, base_datapack, redox_pack,
             fallback_counter=fallback_counter, exclude_fe_redox=exclude_fe_redox,
-            y_init=y_init if state is None else state.y, tol=tol, max_iter=max_iter,
+            y_init=y_init if state is None else state.y,
+            tol=min(tol, 1.0e-14), max_iter=max_iter,
             composition_ln_k=applied,
         )
         desired = _composition_conditioned_effective_ln_k(
@@ -1033,12 +1049,39 @@ def _active_inner(
              for name in desired),
             default=0.0,
         )
-        if relative_change < 1.0e-10:
+        if relative_change < 1.0e-14:
             return replace(state, composition_redox_iterations=count)
-        applied = {
-            name: 0.5 * (applied[name] + value)
-            for name, value in desired.items()
-        }
+        residual = tuple(desired[name] - applied[name] for name in names)
+        if previous_residual is None or previous_desired is None:
+            applied = {
+                name: 0.5 * (applied[name] + desired[name])
+                for name in names
+            }
+        else:
+            residual_delta = tuple(
+                current - previous
+                for current, previous in zip(residual, previous_residual)
+            )
+            denominator = math.fsum(value * value for value in residual_delta)
+            alpha = (
+                math.fsum(current * delta for current, delta in zip(residual, residual_delta))
+                / denominator
+                if denominator > 1.0e-24
+                else math.inf
+            )
+            if math.isfinite(alpha) and abs(alpha) <= 10.0:
+                applied = {
+                    name: (1.0 - alpha) * desired[name]
+                    + alpha * previous_desired[name]
+                    for name in names
+                }
+            else:
+                applied = {
+                    name: 0.5 * (applied[name] + desired[name])
+                    for name in names
+                }
+        previous_residual = residual
+        previous_desired = desired
     raise RedoxNumericalError("composition-conditioned redox fixed point did not converge")
 
 
