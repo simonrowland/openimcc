@@ -1031,6 +1031,12 @@ extrapolated.
 
 ## API
 
+### Supported trace components
+
+`openimcc.supported_trace_oxides()` returns a frozen, name-sorted tuple with each component's class, activity source, full-component flag, and applicable limits.
+Keep the loaded melt parents and supported names present in the feed in one composition: `composition = {name: feed[name] for name in (*load_datapack().parent_oxides, *(item.oxide for item in supported_trace_oxides())) if name in feed}`; then run `result = evaluate(composition, 1800, basis_type="mol")`.
+Read activities with `dict(zip(result.parent_oxides, result.parent_activity, strict=True))`; this includes MnO's full-component activity when MnO is supplied.
+
 ### Liquid-standard compatibility
 
 `evaluate_gas()`, `evaluate_gas_saturation()`, and `evaluate_redox()` compare

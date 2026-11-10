@@ -96,6 +96,7 @@ from openimcc.sulfur import (
     SulfurResult,
     evaluate_sulfur,
 )
+from openimcc.trace_components import supported_trace_oxides
 
 
 def _resolve_version() -> str:
@@ -290,6 +291,7 @@ __all__ = [
     "Profile",
     "list_excess_gibbs_interactions",
     "evaluate",
+    "supported_trace_oxides",
     "engine_binding_identity",
     "EngineBindingIdentity",
     "label_research_datapack",

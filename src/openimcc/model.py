@@ -69,6 +69,8 @@ from openimcc.trace_components import (
     AMPHOTERIC_ENVELOPE_K,
     BASIC_MONOXIDE_ENVELOPE_K,
     _TRACE_ENVELOPE_CAP_DEX,
+    _TRACE_COMPONENT_MAX_MOLE_FRACTION,
+    _TRACE_COMPONENT_MAX_TOTAL_MOLE_FRACTION,
     _TRACE_STRICT_BOUND_CAP_DEX,
     TraceActivityFlag,
     TraceActivityEstimate,
@@ -2232,9 +2234,11 @@ def evaluate(
         # The tiny relative slack absorbs binary conversion noise at the
         # inclusive decimal limits without extending either physical cutoff.
         if any(
-            amount > 0.01 * (1.0 + 1.0e-12)
+            amount > _TRACE_COMPONENT_MAX_MOLE_FRACTION * (1.0 + 1.0e-12)
             for amount in unmodelled_trace_fractions.values()
-        ) or math.fsum(unmodelled_trace_fractions.values()) > 0.02 * (
+        ) or math.fsum(unmodelled_trace_fractions.values()) > (
+            _TRACE_COMPONENT_MAX_TOTAL_MOLE_FRACTION
+        ) * (
             1.0 + 1.0e-12
         ):
             raise ImccComponentOutsideDomainError(

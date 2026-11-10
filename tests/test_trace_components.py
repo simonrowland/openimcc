@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
 import math
 
 import numpy as np
 import pytest
 
-from openimcc import evaluate, load_datapack
+from openimcc import evaluate, load_datapack, supported_trace_oxides
 from openimcc._constants import MOLAR_MASS_G_MOL
 from openimcc.gas import (
     TraceActivityFlag,
@@ -95,6 +96,82 @@ def _mole_fraction_composition(
         },
         trace_oxide: x_trace,
     }
+
+
+def test_supported_trace_listing_matches_registry_and_shared_limits() -> None:
+    supported = supported_trace_oxides()
+    assert isinstance(supported, tuple)
+    assert tuple(item.oxide for item in supported) == tuple(
+        sorted(trace_components._TRACE_COMPONENT_RULES)
+    )
+
+    source_kinds = {
+        "redox_associates": "redox_associates",
+        "activity_fragment": "helper",
+        "review_gamma": "review_gamma",
+        "ideal": "ideal_flagged",
+    }
+    for item in supported:
+        rule = trace_components._TRACE_COMPONENT_RULES[item.oxide]
+        assert item.trace_class == rule.trace_class
+        assert item.full_component is rule.full_component
+        assert item.activity_source == source_kinds[rule.activity_model]
+        assert item.max_mole_fraction == (
+            None
+            if rule.full_component
+            else trace_components._TRACE_COMPONENT_MAX_MOLE_FRACTION
+        )
+        assert item.max_total_mole_fraction == (
+            None
+            if rule.full_component
+            else trace_components._TRACE_COMPONENT_MAX_TOTAL_MOLE_FRACTION
+        )
+        assert (
+            item.gas_channel_blocked_above_mole_fraction
+            == rule.gas_channel_blocked_above_mole_fraction
+        )
+        if rule.gas_channel_blocked_above_mole_fraction is not None:
+            assert (
+                item.gas_channel_blocked_above_mole_fraction
+                == trace_components._TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION
+            )
+
+    with pytest.raises(FrozenInstanceError):
+        supported[0].oxide = "changed"
+
+
+def test_supported_trace_listing_is_deterministic() -> None:
+    first = supported_trace_oxides()
+    second = supported_trace_oxides()
+    assert first == second
+    assert tuple(item.oxide for item in first) == tuple(
+        sorted(item.oxide for item in second)
+    )
+
+
+def test_supported_trace_components_are_accepted_at_dilute_loading() -> None:
+    for item in supported_trace_oxides():
+        composition = _mole_fraction_composition(
+            _MARE_BASALT_WT, item.oxide, 0.001
+        )
+        try:
+            evaluate(
+                composition, 1800.0, basis_type="mol", allow_extrapolation=True
+            )
+        except Exception as error:
+            pytest.fail(f"{item.oxide} was refused at dilute loading: {error}")
+
+
+def test_mno_is_returned_as_a_full_component_when_supplied() -> None:
+    result = evaluate(
+        _mole_fraction_composition(_MARE_BASALT_WT, "MnO", 0.001),
+        1800.0,
+        basis_type="mol",
+        allow_extrapolation=True,
+    )
+    assert "MnO" in result.parent_oxides
+    mno_activity = result.parent_activity[result.parent_oxides.index("MnO")]
+    assert math.isfinite(float(mno_activity))
 
 
 _OXIDE_ATOMS = {

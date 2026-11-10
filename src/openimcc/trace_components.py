@@ -24,6 +24,11 @@ _SOSSI_FEGLY_2018 = (
     "doi:10.2138/rmg.2018.84.11"
 )
 
+# Caller composition limits, distinct from the per-major bias caps below.
+_TRACE_COMPONENT_MAX_MOLE_FRACTION = 0.01
+_TRACE_COMPONENT_MAX_TOTAL_MOLE_FRACTION = 0.02
+_TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION = 0.001
+
 
 @dataclass(frozen=True)
 class TraceComponentRule:
@@ -42,6 +47,7 @@ class TraceComponentRule:
     gamma_species: str | None = None
     gamma_reference: str | None = None
     full_component: bool = False
+    gas_channel_blocked_above_mole_fraction: float | None = None
     activity_fragment: Literal["Ni", "Co", "P", "S"] | None = None
     review_gamma_element: Literal[
         "Sn", "Ga", "In", "Cu", "Ge", "As", "Bi", "Pb", "W"
@@ -124,6 +130,9 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class="acidic",
             trace_class_reason="SO3 is an acidic sulfur(VI) oxide",
             gas_parent_oxide="S2",
+            gas_channel_blocked_above_mole_fraction=(
+                _TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION
+            ),
         ),
         "S": TraceComponentRule(
             MOLAR_MASS_G_MOL["S"], 1,
@@ -132,6 +141,9 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class_reason="S is an elemental trace component, not an oxide",
             activity_fragment="S",
             gas_parent_oxide="S2",
+            gas_channel_blocked_above_mole_fraction=(
+                _TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION
+            ),
         ),
         "Li2O": TraceComponentRule(
             2.0 * MOLAR_MASS_G_MOL["Li"] + _O_MASS, 1,
@@ -167,6 +179,9 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class="non_oxide",
             trace_class_reason="Cl is an elemental trace component, not an oxide",
             gas_parent_oxide="Cl2",
+            gas_channel_blocked_above_mole_fraction=(
+                _TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION
+            ),
         ),
         "F": TraceComponentRule(
             MOLAR_MASS_G_MOL["F"], 1,
@@ -174,6 +189,9 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class="non_oxide",
             trace_class_reason="F is an elemental trace component, not an oxide",
             gas_parent_oxide="F2",
+            gas_channel_blocked_above_mole_fraction=(
+                _TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION
+            ),
         ),
         "Yb2O3": TraceComponentRule(
             2.0 * MOLAR_MASS_G_MOL["Yb"] + 3.0 * _O_MASS, 1,
@@ -543,6 +561,73 @@ class TraceGasChannelRefusal(str):
 
 def trace_component_rule(oxide: str) -> TraceComponentRule | None:
     return _TRACE_COMPONENT_RULES.get(oxide)
+
+
+@dataclass(frozen=True)
+class SupportedTraceOxide:
+    """Registered trace component and its source and concentration limits."""
+
+    oxide: str
+    trace_class: Literal[
+        "basic_monoxide", "basic_oxide", "acidic", "amphoteric", "non_oxide"
+    ]
+    full_component: bool
+    activity_source: Literal[
+        "redox_associates", "helper", "review_gamma", "ideal_flagged"
+    ]
+    max_mole_fraction: float | None
+    max_total_mole_fraction: float | None
+    gas_channel_blocked_above_mole_fraction: float | None
+
+
+def supported_trace_oxides() -> tuple[SupportedTraceOxide, ...]:
+    """List registered trace components in deterministic name order.
+
+    Entries include registered elemental components such as S, Cl, and F;
+    ``trace_class`` distinguishes those from oxide formulas.
+    """
+    from openimcc.activity_fragments import load_activity_fragment
+
+    supported: list[SupportedTraceOxide] = []
+    for oxide, rule in sorted(_TRACE_COMPONENT_RULES.items()):
+        if rule.activity_fragment is not None:
+            load_activity_fragment(rule.activity_fragment)
+        if rule.review_gamma_element is not None:
+            load_activity_fragment(rule.review_gamma_element)
+
+        if rule.activity_model == "redox_associates":
+            activity_source = "redox_associates"
+        elif rule.activity_model == "activity_fragment":
+            activity_source = "helper"
+        elif rule.activity_model == "review_gamma":
+            activity_source = "review_gamma"
+        elif rule.activity_model == "ideal":
+            activity_source = "ideal_flagged"
+        else:
+            raise ValueError(f"unknown trace activity source {rule.activity_model!r}")
+
+        supported.append(
+            SupportedTraceOxide(
+                oxide=oxide,
+                trace_class=rule.trace_class,
+                full_component=rule.full_component,
+                activity_source=activity_source,
+                max_mole_fraction=(
+                    None
+                    if rule.full_component
+                    else _TRACE_COMPONENT_MAX_MOLE_FRACTION
+                ),
+                max_total_mole_fraction=(
+                    None
+                    if rule.full_component
+                    else _TRACE_COMPONENT_MAX_TOTAL_MOLE_FRACTION
+                ),
+                gas_channel_blocked_above_mole_fraction=(
+                    rule.gas_channel_blocked_above_mole_fraction
+                ),
+            )
+        )
+    return tuple(supported)
 
 
 def _activity_fragment_registered(element: str) -> bool:

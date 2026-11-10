@@ -62,6 +62,7 @@ from openimcc.trace_components import (
     TraceActivityFlag,
     TraceGasChannelRefusal,
     TraceMajorBiasFlag,
+    _TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION,
     ParentLiquidStandardOffset,
     resolve_trace_activity,
     trace_component_rule,
@@ -3273,8 +3274,15 @@ def evaluate_gas(
     trace_blockers = tuple(
         oxide
         for oxide, x_trace in trace_fractions.items()
-        if oxide in {"Cl", "F", "S", "SO3"}
-        and x_trace > 0.001 * (1.0 + 1.0e-12)
+        if (
+            (rule := trace_component_rule(oxide)) is not None
+            and rule.gas_channel_blocked_above_mole_fraction is not None
+            and x_trace
+            > rule.gas_channel_blocked_above_mole_fraction * (1.0 + 1.0e-12)
+        )
+    )
+    gas_blocking_limit_mol_percent = (
+        100.0 * _TRACE_GAS_CHANNEL_BLOCKING_MOLE_FRACTION
     )
 
     def channel_elements(species: str) -> set[str]:
@@ -3290,13 +3298,15 @@ def evaluate_gas(
         if trace_blockers and elements & {"Na", "K"}:
             return TraceGasChannelRefusal(
                 species,
-                "Na/K vapour channels are unavailable with halogen or sulfur traces above 0.1 mol%",
+                "Na/K vapour channels are unavailable with halogen or sulfur traces "
+                f"above {gas_blocking_limit_mol_percent:g} mol%",
                 triggers=trace_blockers,
             )
         if trace_blockers and "S" in elements:
             return TraceGasChannelRefusal(
                 species,
-                "sulfur-bearing channels are unavailable with halogen or sulfur traces above 0.1 mol%",
+                "sulfur-bearing channels are unavailable with halogen or sulfur "
+                f"traces above {gas_blocking_limit_mol_percent:g} mol%",
                 triggers=trace_blockers,
             )
         if reaction is not None:
