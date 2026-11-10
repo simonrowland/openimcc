@@ -1,0 +1,58 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Ga",
+  "rows": [
+    {
+      "row": "GaO1.5-liquid-KEMS-1700K",
+      "parent_oxide": "Ga2O3",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          0.03,
+          0.042
+        ],
+        "temperature_K": [
+          1700.0,
+          1700.0
+        ]
+      },
+      "fusion_conversion": null,
+      "component": "GaO1.5(l)",
+      "component_basis": "liquid GaO1.5 component mole fraction; two units per Ga2O3 parent, as used by Bischof",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "pure liquid Ga2O3 on the Bischof KEMS parent standard; use the opt-in KEMS condensate table",
+      "composition_screen": {
+        "kind": "an_di_target",
+        "major_wt_pct": {
+          "SiO2": 50.34,
+          "Al2O3": 15.4,
+          "MgO": 10.8,
+          "CaO": 23.46
+        },
+        "tolerance_wt_pct": 0.75
+      },
+      "temperature_window_K": [
+        1550.0,
+        1740.0
+      ],
+      "log10_fO2_source": {
+        "range": [
+          1.5,
+          2.5
+        ],
+        "unit": "delta_iw"
+      },
+      "source_citation": "Bischof, Sossi, Sergeev, Müller & Schmidt (2023), Geochimica et Cosmochimica Acta 360, 1–15, doi:10.1016/j.gca.2023.08.027",
+      "source_locator": "Section 4.4.4, p. 9; gamma(GaO1.5)=0.036(6) at 1700 K; Table 8 note a and source-x anchor",
+      "source_x_anchor": {
+        "concentration_ppm": 429.0,
+        "x_source": 0.0172
+      },
+      "limitations": [
+        "The gamma anchor is for the An-Di eutectic at Delta IW +1.5 to +2.5.",
+        "Table 8 reports x(GaO1.5)=0.0172 for 429 ppm, about 47 times the ordinary mole fraction reconstructed from that composition; its note says this x from the 695 ppm 2_low run is also used for 429 ppm in 1_low. Runtime x_source is calculated from caller composition on the declared GaO1.5 component basis."
+      ]
+    }
+  ]
+}

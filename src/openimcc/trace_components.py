@@ -30,7 +30,9 @@ class TraceComponentRule:
     molar_mass_g_mol: float
     nu: int
     nu_reason: str
-    activity_model: Literal["redox_associates", "activity_fragment", "ideal"]
+    activity_model: Literal[
+        "redox_associates", "activity_fragment", "review_gamma", "ideal"
+    ]
     trace_class: Literal[
         "basic_monoxide", "basic_oxide", "acidic", "amphoteric", "non_oxide"
     ]
@@ -41,6 +43,7 @@ class TraceComponentRule:
     gamma_reference: str | None = None
     full_component: bool = False
     activity_fragment: Literal["Ni", "Co", "P", "S"] | None = None
+    review_gamma_element: Literal["Sn", "Ga", "In", "Cu", "Ge", "As", "Bi"] | None = None
 
 
 _O_MASS = MOLAR_MASS_G_MOL["O"]
@@ -159,6 +162,76 @@ _TRACE_COMPONENT_RULES = MappingProxyType(
             trace_class_reason="Yb2O3 is a basic rare-earth oxide but not a monoxide formula",
             gas_parent_oxide="Yb2O3",
         ),
+        "SnO": TraceComponentRule(
+            MOLAR_MASS_G_MOL["Sn"] + _O_MASS,
+            1,
+            "one tin monoxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="SnO is an amphoteric trace oxide in the silicate slag source",
+            gas_parent_oxide="SnO",
+            review_gamma_element="Sn",
+        ),
+        "Ga2O3": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["Ga"] + 3.0 * _O_MASS,
+            1,
+            "one gallium sesquioxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="Ga2O3 is a trivalent trace oxide with a direct liquid-component activity estimate",
+            gas_parent_oxide="Ga2O3",
+            review_gamma_element="Ga",
+        ),
+        "In2O3": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["In"] + 3.0 * _O_MASS,
+            1,
+            "one indium sesquioxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="In2O3 is a trivalent trace oxide with a direct liquid-component activity estimate",
+            gas_parent_oxide="In2O3",
+            review_gamma_element="In",
+        ),
+        "Cu2O": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["Cu"] + _O_MASS,
+            1,
+            "one cuprous oxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="Cu2O is a cuprous trace oxide with a published melt activity estimate",
+            gas_parent_oxide="Cu2O",
+            review_gamma_element="Cu",
+        ),
+        "GeO2": TraceComponentRule(
+            MOLAR_MASS_G_MOL["Ge"] + 2.0 * _O_MASS,
+            1,
+            "one germanium dioxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="acidic",
+            trace_class_reason="GeO2 is an acidic trace oxide with a published melt activity estimate",
+            gas_parent_oxide="GeO2",
+            review_gamma_element="Ge",
+        ),
+        "As2O3": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["As"] + 3.0 * _O_MASS,
+            1,
+            "one arsenic sesquioxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="acidic",
+            trace_class_reason="As2O3 is an acidic trace oxide with a published liquid-from-solid parent estimate",
+            gas_parent_oxide="As2O3",
+            review_gamma_element="As",
+        ),
+        "Bi2O3": TraceComponentRule(
+            2.0 * MOLAR_MASS_G_MOL["Bi"] + 3.0 * _O_MASS,
+            1,
+            "one bismuth sesquioxide unit can bind at most one major-oxide unit",
+            "review_gamma",
+            trace_class="basic_oxide",
+            trace_class_reason="Bi2O3 is a trivalent trace oxide with a published melt activity estimate",
+            gas_parent_oxide="Bi2O3",
+            review_gamma_element="Bi",
+        ),
     }
 )
 
@@ -174,6 +247,8 @@ class TraceActivityEstimate:
     code: str
     gamma: float | None = None
     reference: str | None = None
+    activity_range: tuple[float, float] | None = None
+    x_source: float | None = None
 
 
 class TraceActivityFlag(str):
@@ -185,6 +260,8 @@ class TraceActivityFlag(str):
     x: float
     gamma: float | None
     reference: str | None
+    activity_range: tuple[float, float] | None
+    x_source: float | None
     estimates: tuple[TraceActivityEstimate, ...]
     major_flags: tuple["TraceMajorBiasFlag", ...]
 
@@ -205,6 +282,13 @@ class TraceActivityFlag(str):
             )
             if item.gamma is not None:
                 message += f" gamma={item.gamma:.12g}"
+            if item.activity_range is not None:
+                message += (
+                    f" activity_range=[{item.activity_range[0]:.12g},"
+                    f" {item.activity_range[1]:.12g}]"
+                )
+            if item.x_source is not None:
+                message += f" x_source={item.x_source:.12g}"
             if item.reference:
                 message += f"; {item.reference}"
             estimate_text.append(message)
@@ -218,6 +302,8 @@ class TraceActivityFlag(str):
         flag.x = first.x
         flag.gamma = first.gamma
         flag.reference = first.reference
+        flag.activity_range = first.activity_range
+        flag.x_source = first.x_source
         flag.estimates = tuple(estimates)
         flag.major_flags = tuple(major_flags)
         return flag
@@ -424,7 +510,7 @@ def trace_component_rule(oxide: str) -> TraceComponentRule | None:
 def _activity_fragment_registered(element: str) -> bool:
     """Return whether the trace activity table registers this helper fragment."""
     return any(
-        rule.activity_fragment == element
+        rule.activity_fragment == element or rule.review_gamma_element == element
         for rule in _TRACE_COMPONENT_RULES.values()
     )
 
@@ -520,6 +606,30 @@ def _resolve_trace_activity(
                     None,
                     None,
                 )
+    if rule.activity_model == "review_gamma" and rule.review_gamma_element is not None:
+        from openimcc.review_gamma_activity import evaluate_review_gamma_activity
+
+        result = evaluate_review_gamma_activity(
+            rule.review_gamma_element,
+            composition_moles,
+            T_K,
+            parent_oxide=rule.gas_parent_oxide or oxide,
+            fO2_bar=fO2_bar,
+        )
+        return (
+            TraceActivityEstimate(
+                oxide,
+                result.activity,
+                x,
+                result.notice.code,
+                result.gamma,
+                result.reference,
+                result.activity_range,
+                result.source_mole_fraction,
+            ),
+            None,
+            None,
+        )
     if rule.gamma is not None:
         return (
             TraceActivityEstimate(

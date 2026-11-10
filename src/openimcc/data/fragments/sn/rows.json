@@ -1,0 +1,127 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Sn",
+  "rows": [
+    {
+      "row": "SnO-FCS-1573K",
+      "parent_oxide": "SnO",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          5.0,
+          6.2
+        ],
+        "temperature_K": [
+          1573.0,
+          1573.0
+        ]
+      },
+      "fusion_conversion": null,
+      "component": "SnO(l)",
+      "component_basis": "liquid SnO formula-unit mole fraction",
+      "source_units_per_parent": 1,
+      "parent_power": 1,
+      "parent_standard_state": "pure liquid SnO, 1 bar",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": [
+          "FeO",
+          "CaO",
+          "SiO2"
+        ],
+        "select_tie_by_family": true,
+        "require_exact_family": true
+      },
+      "temperature_window_K": [
+        1573.0,
+        1573.0
+      ],
+      "log10_fO2_source": null,
+      "source_citation": "Sossi & Fegley (2018), Reviews in Mineralogy and Geochemistry 84, Table 2, pp. 409–410, doi:10.2138/rmg.2018.84.11",
+      "source_locator": "Table 2 row FeO-CaO-SiO2, citing Takeda & Yazawa (1989)",
+      "limitations": [
+        "The FCS band is transferred provisionally outside its reported 1573 K composition and oxygen-potential conditions."
+      ]
+    },
+    {
+      "row": "SnO-fayalite-binary-1573K",
+      "parent_oxide": "SnO",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          1.0,
+          2.0
+        ],
+        "temperature_K": [
+          1573.0,
+          1573.0
+        ]
+      },
+      "fusion_conversion": null,
+      "component": "SnO(l)",
+      "component_basis": "liquid SnO formula-unit mole fraction",
+      "source_units_per_parent": 1,
+      "parent_power": 1,
+      "parent_standard_state": "pure liquid SnO, 1 bar",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": [
+          "FeO",
+          "SiO2"
+        ],
+        "select_tie_by_family": true,
+        "require_exact_family": true
+      },
+      "temperature_window_K": [
+        1573.0,
+        1573.0
+      ],
+      "log10_fO2_source": null,
+      "source_citation": "Takeda, Yazawa, Chit & Ujiie (1990), Materials Transactions 31(9), 793–801, doi:10.2320/matertrans1989.31.793",
+      "source_locator": "Abstract, p. 793; binary fayalite slag range",
+      "limitations": [
+        "The binary endpoint applies only to the FeO-SiO2 binary fayalite slag."
+      ]
+    },
+    {
+      "row": "SnO-ferrite-binary-1573K",
+      "parent_oxide": "SnO",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          1.0,
+          2.0
+        ],
+        "temperature_K": [
+          1573.0,
+          1573.0
+        ]
+      },
+      "fusion_conversion": null,
+      "component": "SnO(l)",
+      "component_basis": "liquid SnO formula-unit mole fraction",
+      "source_units_per_parent": 1,
+      "parent_power": 1,
+      "parent_standard_state": "pure liquid SnO, 1 bar",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": [
+          "FeO",
+          "CaO"
+        ],
+        "select_tie_by_family": true,
+        "require_exact_family": true
+      },
+      "temperature_window_K": [
+        1573.0,
+        1573.0
+      ],
+      "log10_fO2_source": null,
+      "source_citation": "Takeda, Yazawa, Chit & Ujiie (1990), Materials Transactions 31(9), 793–801, doi:10.2320/matertrans1989.31.793",
+      "source_locator": "Abstract, p. 793; binary ferrite slag range",
+      "limitations": [
+        "The binary endpoint applies only to the FeO-CaO binary ferrite slag."
+      ]
+    }
+  ]
+}

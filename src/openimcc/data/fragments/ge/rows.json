@@ -1,0 +1,52 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Ge",
+  "rows": [
+    {
+      "row": "GeO2-1573K",
+      "parent_oxide": "GeO2",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          0.24,
+          1.5
+        ],
+        "temperature_K": [
+          1573.0,
+          1573.0
+        ]
+      },
+      "fusion_conversion": null,
+      "component": "GeO2(l)",
+      "component_basis": "liquid GeO2 formula-unit mole fraction",
+      "source_units_per_parent": 1,
+      "parent_power": 1,
+      "parent_standard_state": "pure liquid GeO2, 1 bar",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": [
+          "FeO",
+          "CaO",
+          "MgO",
+          "SiO2"
+        ]
+      },
+      "temperature_window_K": [
+        1573.0,
+        1573.0
+      ],
+      "log10_fO2_source": {
+        "range": [
+          -8.0,
+          -8.0
+        ],
+        "unit": "atm"
+      },
+      "source_citation": "Shuva et al. (2016), Metallurgical and Materials Transactions B 47, 2889–2903, doi:10.1007/s11663-016-0759-x",
+      "source_locator": "GeO2 melt activity result at 1573 K, summarized in Sossi & Fegley (2018), Table 2",
+      "limitations": [
+        "The source result is for a specific Fe-Ca-Mg-Si oxide melt and oxygen potential."
+      ]
+    }
+  ]
+}

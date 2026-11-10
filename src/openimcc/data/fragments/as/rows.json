@@ -1,0 +1,51 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "As",
+  "rows": [
+    {
+      "row": "AsO1.5-1573K",
+      "parent_oxide": "As2O3",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          0.03,
+          0.56
+        ],
+        "temperature_K": [
+          1573.0,
+          1573.0
+        ]
+      },
+      "fusion_conversion": null,
+      "component": "AsO1.5(l)",
+      "component_basis": "liquid AsO1.5 component mole fraction",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "tier-4 liquid-from-solid As2O3 parent estimate; 1 bar gas standard",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": [
+          "FeO",
+          "CaO",
+          "SiO2"
+        ]
+      },
+      "temperature_window_K": [
+        1573.0,
+        1573.0
+      ],
+      "log10_fO2_source": {
+        "range": [
+          -9.0,
+          -6.508638306
+        ],
+        "unit": "atm"
+      },
+      "source_citation": "Chen & Jahanshahi (2010), Metallurgical and Materials Transactions B 41, 1166–1174, doi:10.1007/s11663-010-9430-0",
+      "source_locator": "AsO1.5 activity estimate at 1573 K, summarized in Sossi & Fegley (2018), Table 2",
+      "limitations": [
+        "The As2O3 gas parent is a tier-4 liquid-from-solid estimate, so the activity reference does not imply independently measured pure-liquid As2O3 thermochemistry."
+      ]
+    }
+  ]
+}

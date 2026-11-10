@@ -2668,6 +2668,29 @@ candidate_condensate_files:
       the NiO(l) and CoO(l) supercooled rows; their thermochemical coefficients
       are unchanged. The Hg(l) row remains flagged.
     load_with: load_gas_datapack(gas_path=..., oxide_path=...)
+  - file: condensate-ga-in-kems-candidate.csv
+    status: opt_in_measured_parent_standard_correction
+    sha256: 8253686397a70e435e15db28ba096624bbccaefde26f88d8c7806db74d6f0af5
+    source: >-
+      Bischof, Sossi, Sergeev, Müller & Schmidt (2023), Determination of
+      activities and condensation temperatures of GaO1.5 and InO1.5 in
+      anorthite-diopside eutectic melts by Knudsen Effusion Mass Spectrometry,
+      Geochimica et Cosmochimica Acta 360, 1–15, DOI 10.1016/j.gca.2023.08.027,
+      Eqs. (20)–(21). Their liquid component K fits derive from the measured
+      solid Ga2O3/In2O3 KEMS pressures in Bischof et al. (2023), Calphad 80,
+      102507, DOI 10.1016/j.calphad.2022.102507, Section 3.2, Figures 7–8,
+      and supplementary figure data.
+    construction: >-
+      Copies condensate.csv and replaces only Ga2O3(l) and In2O3(l) over
+      1550–1740 K. The liquid-component fits have ln K=-A/T+B at p°=1 atm.
+      For each parent reaction, ln K(1 bar)=2[-A/T+B+1.75 ln(1.01325)];
+      combine this parent K with the shipped JANAF gas Gibbs functions to
+      construct the liquid-parent Gibbs function, then fit the runtime
+      condensate form. The source K is measured pressure data; FactSage Gibbs
+      functions in the Calphad paper are used for separate third-law analyses,
+      not for these fitted constants. Rows outside 1550–1740 K retain the
+      copied table functions. This correction remains opt-in.
+    load_with: load_gas_datapack(gas_path=..., oxide_path=...)
 
 candidate_gas_files:
   - file: gas-shomate-hight-candidate-v2.csv

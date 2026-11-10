@@ -1,0 +1,51 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Bi",
+  "rows": [
+    {
+      "row": "BiO1.5-1573K",
+      "parent_oxide": "Bi2O3",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          0.3,
+          0.5
+        ],
+        "temperature_K": [
+          1573.0,
+          1573.0
+        ]
+      },
+      "fusion_conversion": null,
+      "component": "BiO1.5(l)",
+      "component_basis": "liquid BiO1.5 component mole fraction",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "pure liquid Bi2O3, 1 bar",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": [
+          "FeO",
+          "CaO",
+          "SiO2"
+        ]
+      },
+      "temperature_window_K": [
+        1573.0,
+        1573.0
+      ],
+      "log10_fO2_source": {
+        "range": [
+          -6.0,
+          -6.0
+        ],
+        "unit": "atm"
+      },
+      "source_citation": "Paulina, Swinbourne & Kho (2013), Transactions of the Institutions of Mining and Metallurgy, Section C 122, 79–86, doi:10.1179/1743285512Y.0000000033",
+      "source_locator": "BiO1.5 melt activity estimate at 1573 K, summarized in Sossi & Fegley (2018), Table 2",
+      "limitations": [
+        "The source result is for an Fe-Ca-Si oxide slag at the reported oxygen potential."
+      ]
+    }
+  ]
+}

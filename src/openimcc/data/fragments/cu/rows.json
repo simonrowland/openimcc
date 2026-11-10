@@ -1,0 +1,95 @@
+{
+  "schema": "openimcc-review-gamma-activity.v1",
+  "element": "Cu",
+  "rows": [
+    {
+      "row": "CuO0.5-1573K",
+      "parent_oxide": "Cu2O",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          9.0,
+          11.0
+        ],
+        "temperature_K": [
+          1573.0,
+          1573.0
+        ]
+      },
+      "fusion_conversion": null,
+      "component": "CuO0.5(l)",
+      "component_basis": "liquid CuO0.5 component mole fraction",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "pure liquid Cu2O, 1 bar",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": [
+          "SiO2",
+          "Al2O3",
+          "CaO",
+          "MgO",
+          "FeO"
+        ]
+      },
+      "temperature_window_K": [
+        1573.0,
+        1573.0
+      ],
+      "log10_fO2_source": {
+        "range": [
+          -13.6,
+          -9.1
+        ],
+        "unit": "bar"
+      },
+      "source_citation": "Holzheid & Lodders (2001), Geochimica et Cosmochimica Acta 65, 1933–1951, doi:10.1016/S0016-7037(01)00545-2",
+      "source_locator": "KEMS melt activity results, summarized in Sossi & Fegley (2018), Table 2",
+      "selection_note": "The melt-family label is a screen flag, not the temperature-row selector.",
+      "limitations": [
+        "The family and oxygen-fugacity screens reflect the reported melt experiments."
+      ]
+    },
+    {
+      "row": "CuO0.5-1923K",
+      "parent_oxide": "Cu2O",
+      "gamma_law": {
+        "kind": "range",
+        "gamma_endpoints": [
+          3.5,
+          3.5
+        ],
+        "temperature_K": [
+          1923.0,
+          1923.0
+        ]
+      },
+      "fusion_conversion": null,
+      "component": "CuO0.5(l)",
+      "component_basis": "liquid CuO0.5 component mole fraction",
+      "source_units_per_parent": 2,
+      "parent_power": 2,
+      "parent_standard_state": "pure liquid Cu2O, 1 bar",
+      "composition_screen": {
+        "kind": "family_oxide_set",
+        "oxides": [
+          "SiO2",
+          "Al2O3",
+          "CaO",
+          "MgO"
+        ]
+      },
+      "temperature_window_K": [
+        1500.0,
+        2100.0
+      ],
+      "log10_fO2_source": null,
+      "source_citation": "Wood & Wade (2013), Contributions to Mineralogy and Petrology 166, 911–921, doi:10.1007/s00410-013-0896-z",
+      "source_locator": "Table 2 value at 1923 K, summarized in Sossi & Fegley (2018)",
+      "selection_note": "The melt-family label is a screen flag, not the temperature-row selector.",
+      "limitations": [
+        "The source gives no numeric oxygen-fugacity window for this estimate."
+      ]
+    }
+  ]
+}
