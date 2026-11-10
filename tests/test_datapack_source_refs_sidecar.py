@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACK_DIR = ROOT / "src" / "openimcc" / "data" / "packs"
 SIDECAR_PATH = ROOT / "src" / "openimcc" / "data" / "source-refs-sidecar.json"
 # Re-pinned for the opt-in Ga/In KEMS condensate table.
-MANIFEST_SHA256 = "363113ac09a28f5904209c37c774045064ade04896dd53798b36de73c5f44fa8"
+MANIFEST_SHA256 = "bde434b17d87249162b0ef7cecefd8e5a4520269ba9d08cb64d2d1cced455224"
 
 
 def _pack_data() -> dict[str, dict[str, Any]]:

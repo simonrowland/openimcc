@@ -48,11 +48,11 @@ def evaluate_review_gamma_activity(
 ) -> ReviewGammaActivityResult:
     """Return ``a(parent) = (gamma * x_source)**k`` and its endpoint band.
 
-    Range rows use the geometric centre for the reported point and preserve
-    the printed endpoints through the activity conversion. Temperature picks
-    the nearest source row. A family screen selects a row only when its row
-    explicitly requests that choice; otherwise family membership supplies a
-    domain flag and never changes the selected coefficient.
+    Bare ranges use the geometric centre; a source-printed central value is
+    used when provided. Printed endpoints propagate through the activity
+    conversion. Temperature picks the nearest source row. A family screen
+    selects a row only when explicitly requested; otherwise it supplies a
+    domain flag and does not change the selected coefficient.
     """
     temperature = float(T_K)
     if not math.isfinite(temperature) or temperature <= 0.0:
@@ -162,7 +162,7 @@ def evaluate_review_gamma_activity(
     reference = (
         f"{row['source_citation']}; {row['source_locator']}; "
         f"{row['component']} gamma endpoints {gamma_range[0]:g}–{gamma_range[1]:g}; "
-        f"geometric-centre point {gamma:g}; {row['component_basis']}; "
+        f"point {gamma:g}; {row['component_basis']}; "
         f"a({parent_oxide})=(gamma*x_source)^{parent_power:g}; "
         f"{row['parent_standard_state']}"
     )
@@ -287,7 +287,10 @@ def _gamma_for_row(
         low, high = map(float, law["gamma_endpoints"])
         if low <= 0.0 or high < low:
             raise ValueError("gamma endpoints must be positive and ordered")
-        return math.sqrt(low * high), (low, high)
+        point = float(law.get("gamma_point", math.sqrt(low * high)))
+        if not low <= point <= high:
+            raise ValueError("gamma point must lie within its printed endpoints")
+        return point, (low, high)
     if law["kind"] == "log10_linear":
         gamma = 10.0 ** (float(law["A_K"]) / temperature + float(law["B"]))
         return gamma, (gamma, gamma)

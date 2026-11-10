@@ -11,6 +11,7 @@
           0.005,
           0.029
         ],
+        "gamma_point": 0.017,
         "temperature_K": [
           1674.0,
           1674.0
@@ -18,7 +19,7 @@
       },
       "fusion_conversion": null,
       "component": "InO1.5(l)",
-      "component_basis": "liquid InO1.5 component mole fraction; two units per In2O3 parent, as used by Bischof",
+      "component_basis": "liquid InO1.5 formula-unit mole fraction; runtime expands In2O3 into two MO1.5 formula units, matching Bischof's Table 8 x basis",
       "source_units_per_parent": 2,
       "parent_power": 2,
       "parent_standard_state": "pure liquid In2O3 on the Bischof KEMS parent standard; use the opt-in KEMS condensate table",
@@ -51,7 +52,7 @@
       },
       "limitations": [
         "The gamma anchor is for the An-Di eutectic at Delta IW +1.5 to +2.5.",
-        "Table 8 reports x(InO1.5)=6.9e-5 for the 0.0065-0.05 ppm 1_low polytherm surface range; at 0.05 ppm the runtime bulk-derived x_source is about 2650 times smaller.",
+        "Table 8 reports x(InO1.5)=6.9e-5 for the 0.0065-0.05 ppm 1_low polytherm surface range; this LA-ICP-MS-derived component mole fraction is distinct from the analytical-ppm column. Runtime x_source is calculated from caller composition on the declared formula-unit MO1.5 basis.",
         "No solid-to-liquid fusion term is applied because the measured component gamma is already liquid-standard."
       ]
     }

@@ -11,6 +11,7 @@
           0.03,
           0.042
         ],
+        "gamma_point": 0.036,
         "temperature_K": [
           1700.0,
           1700.0
@@ -18,7 +19,7 @@
       },
       "fusion_conversion": null,
       "component": "GaO1.5(l)",
-      "component_basis": "liquid GaO1.5 component mole fraction; two units per Ga2O3 parent, as used by Bischof",
+      "component_basis": "liquid GaO1.5 formula-unit mole fraction; runtime expands Ga2O3 into two MO1.5 formula units, matching Bischof's Table 8 x basis",
       "source_units_per_parent": 2,
       "parent_power": 2,
       "parent_standard_state": "pure liquid Ga2O3 on the Bischof KEMS parent standard; use the opt-in KEMS condensate table",
@@ -51,7 +52,7 @@
       },
       "limitations": [
         "The gamma anchor is for the An-Di eutectic at Delta IW +1.5 to +2.5.",
-        "Table 8 reports x(GaO1.5)=0.0172 for 429 ppm, about 47 times the ordinary mole fraction reconstructed from that composition; its note says this x from the 695 ppm 2_low run is also used for 429 ppm in 1_low. Runtime x_source is calculated from caller composition on the declared GaO1.5 component basis."
+        "Table 8's x(GaO1.5)=0.0172 for 429 ppm is its LA-ICP-MS-derived component mole fraction, distinct from the paper's analytical-ppm column; the note says this x from the 695 ppm 2_low run is also used for 429 ppm in 1_low. Runtime x_source is calculated from caller composition on the declared formula-unit MO1.5 basis."
       ]
     }
   ]

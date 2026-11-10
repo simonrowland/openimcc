@@ -2681,15 +2681,17 @@ candidate_condensate_files:
       102507, DOI 10.1016/j.calphad.2022.102507, Section 3.2, Figures 7–8,
       and supplementary figure data.
     construction: >-
-      Copies condensate.csv and replaces only Ga2O3(l) and In2O3(l) over
-      1550–1740 K. The liquid-component fits have ln K=-A/T+B at p°=1 atm.
-      For each parent reaction, ln K(1 bar)=2[-A/T+B+1.75 ln(1.01325)];
+      Copies condensate-default-v1.csv and replaces only Ga2O3(l) and In2O3(l) over
+      1550–1740 K. The liquid-component fits have ln K=-A/T+B at p0=1e5 Pa.
+      For each parent reaction, ln K=2[-A/T+B];
       combine this parent K with the shipped JANAF gas Gibbs functions to
       construct the liquid-parent Gibbs function, then fit the runtime
-      condensate form. The source K is measured pressure data; FactSage Gibbs
-      functions in the Calphad paper are used for separate third-law analyses,
-      not for these fitted constants. Rows outside 1550–1740 K retain the
-      copied table functions. This correction remains opt-in.
+      condensate form. The source K is measured pressure data (GCA Eqs. 20–21);
+      FactSage Gibbs functions in the Calphad paper are used for separate
+      third-law analyses, citing Chaplygin (1975), Hultgren et al. (1973),
+      Medvedev et al. (1981), and Barin (1995), not for these fitted constants.
+      Rows outside 1550–1740 K retain the copied table functions. This
+      correction remains opt-in.
     load_with: load_gas_datapack(gas_path=..., oxide_path=...)
 
 candidate_gas_files:

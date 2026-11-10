@@ -62,6 +62,7 @@ from openimcc.trace_components import (
     TraceActivityFlag,
     TraceGasChannelRefusal,
     TraceMajorBiasFlag,
+    ParentLiquidStandardOffset,
     resolve_trace_activity,
     trace_component_rule,
     trace_fractions_from_wt,
@@ -3202,13 +3203,51 @@ def evaluate_gas(
                     if isinstance(item, TraceMajorBiasFlag)
                 }
             for oxide, x_trace in trace_fractions.items():
-                trace_activity_estimates[oxide] = resolve_trace_activity(
+                estimate = resolve_trace_activity(
                     oxide,
                     x_trace,
                     composition_moles,
                     T,
                     fO2_bar=p_O2,
                 )
+                if (
+                    datapack.condensate_table_digest
+                    == _packaged_pressure_signatures()[1]
+                    and oxide in {"Ga2O3", "In2O3"}
+                ):
+                    element = "Ga" if oxide == "Ga2O3" else "In"
+                    slope, intercept = {
+                        "Ga": (112079.0, 40.3),
+                        "In": (90606.0, 33.1),
+                    }[element]
+                    gas_row = _nearest_interval_row(
+                        datapack.gas_df, f"{element}(g)", T, True
+                    )
+                    oxygen_row = _nearest_interval_row(
+                        datapack.gas_df, "O2(g)", T, True
+                    )
+                    parent_row = _nearest_interval_row(
+                        datapack.oxide_df, oxide + "(l)", T, True
+                    )
+                    default_parent_k_log = -(
+                        2.0 * _janaf_gibbs(T, gas_row)
+                        + 1.5 * _janaf_gibbs(T, oxygen_row)
+                        - _lamor_gibbs(T, parent_row)
+                    ) / (R_J_MOL_K * T)
+                    bischof_parent_k_log = 2.0 * (
+                        -slope / T + intercept
+                    )
+                    estimate = replace(
+                        estimate,
+                        parent_liquid_standard_offset=ParentLiquidStandardOffset(
+                            code="parent_liquid_standard_offset",
+                            factor=math.exp(
+                                0.5 * (default_parent_k_log - bischof_parent_k_log)
+                            ),
+                            recommendation="Select the opt-in Ga/In KEMS condensate table.",
+                        ),
+                    )
+                trace_activity_estimates[oxide] = estimate
 
             carrier_estimates: dict[str, list[TraceActivityEstimate]] = {}
             for oxide, estimate in trace_activity_estimates.items():

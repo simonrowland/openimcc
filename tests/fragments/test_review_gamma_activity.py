@@ -80,7 +80,10 @@ def test_printed_gamma_ranges_and_activity_bands_are_independent_literals(
     x_source = source_units * parent_moles / (
         total - parent_moles + source_units * parent_moles
     )
-    gamma = math.sqrt(gamma_low * gamma_high)
+    gamma = {
+        "Ga": 0.036,
+        "In": 0.017,
+    }.get(element, math.sqrt(gamma_low * gamma_high))
     assert result.gamma == pytest.approx(gamma)
     assert result.gamma_range == (gamma_low, gamma_high)
     assert result.source_mole_fraction == pytest.approx(x_source)
@@ -153,13 +156,58 @@ def test_ga_in_anchors_are_liquid_coefficients_without_a_second_fusion_step() ->
         "In", _composition_moles("In2O3", _CASES[2][6]), 1674.0,
         parent_oxide="In2O3",
     )
-    assert ga.gamma == pytest.approx(math.sqrt(0.030 * 0.042))
+    assert ga.gamma == 0.036
     assert ga.gamma_range == (0.030, 0.042)
-    assert indium.gamma == pytest.approx(math.sqrt(0.005 * 0.029))
+    assert indium.gamma == 0.017
     assert indium.gamma_range == (0.005, 0.029)
     assert "published x_source anchor 0.0172 at 429 ppm" in ga.reference
-    assert "about 47 times the ordinary mole fraction" in ga.reference
+    assert "declared formula-unit MO1.5 basis" in ga.reference
     assert "published x_source anchor 6.9e-05 at 0.05 ppm" in indium.reference
+
+
+def test_bischof_table8_s1_closure_literals_use_the_component_mole_fraction() -> None:
+    # Table 8 source x and the printed S1 pressure ratios are independent source
+    # literals; do not source any of these expected values from the helper rows.
+    source_rows = (
+        (1586.4, 0.0172, 0.036, 0.938, 6.9e-5, 0.017, 1.069),
+        (1630.8, 0.0172, 0.036, 0.937, 6.9e-5, 0.017, 1.070),
+        (1674.2, 0.0172, 0.036, 0.940, 6.9e-5, 0.017, 1.071),
+        (1695.4, 0.0172, 0.036, 0.940, 6.9e-5, 0.017, 1.074),
+    )
+    expected_closures = (
+        (0.938, 1.069),
+        (0.937, 1.070),
+        (0.940, 1.071),
+        (0.940, 1.074),
+    )
+    major_wt = {"SiO2": 50.34, "Al2O3": 15.40, "MgO": 10.80, "CaO": 23.46}
+
+    for source_row, expected in zip(source_rows, expected_closures, strict=True):
+        temperature, ga_x, ga_gamma, ga_closure, in_x, in_gamma, in_closure = source_row
+        activities = []
+        for oxide, x, gamma, power in (
+            ("Ga2O3", ga_x, ga_gamma, 2),
+            ("In2O3", in_x, in_gamma, 2),
+        ):
+            major_moles = {
+                name: amount / MOLAR_MASS_G_MOL[name]
+                for name, amount in major_wt.items()
+            }
+            major_total = math.fsum(major_moles.values())
+            parent_moles = x * major_total / (power * (1.0 - x))
+            result = evaluate_review_gamma_activity(
+                oxide.removesuffix("2O3"),
+                {**major_moles, oxide: parent_moles},
+                temperature,
+                parent_oxide=oxide,
+            )
+            assert result.source_mole_fraction == pytest.approx(x, abs=1e-15)
+            assert result.gamma == gamma
+            activities.append(result.activity)
+        assert activities == pytest.approx(
+            ((ga_gamma * ga_x) ** 2, (in_gamma * in_x) ** 2), rel=1e-14
+        )
+        assert (ga_closure, in_closure) == expected
 
 
 def test_as_parent_wording_and_inactive_ge_v_rows() -> None:
@@ -197,11 +245,7 @@ def test_bischof_parent_standard_candidate_matches_the_liquid_kems_constants() -
                 2.0 * _janaf_gibbs(temperature, gas_row)
                 + 1.5 * _janaf_gibbs(temperature, oxygen_row)
             )
-            ln_component_k_bar = (
-                -slope / temperature
-                + intercept
-                + 1.75 * math.log(1.01325)
-            )
+            ln_component_k_bar = -slope / temperature + intercept
             source_parent_gibbs = product_gibbs + (
                 2.0 * R_J_MOL_K * temperature * ln_component_k_bar
             )
@@ -224,6 +268,51 @@ def test_bischof_parent_standard_candidate_matches_the_liquid_kems_constants() -
 
             assert before_pressure_ratio > 1.0
             assert after_pressure_ratio == pytest.approx(1.0, abs=2.0e-6)
+
+
+def test_default_pack_carries_temperature_dependent_parent_standard_offsets() -> None:
+    temperatures = (1586.4, 1630.8, 1674.2, 1695.4)
+    expected = {
+        "Ga2O3": (9.37, 6.52, 4.65, 3.96),
+        "In2O3": (47.0, 37.1, 29.8, 26.8),
+    }
+    major = {"SiO2": 50.34, "Al2O3": 15.40, "MgO": 10.80, "CaO": 23.46}
+
+    for oxide, factors in expected.items():
+        composition = _composition_moles(oxide, major)
+        for temperature, expected_factor in zip(temperatures, factors, strict=True):
+            # The gas-path annotation is added by evaluate_gas; verify its
+            # calculation independently from the helper's JSON and the pack rows.
+            default_pack = load_gas_datapack()
+            element = oxide.removesuffix("2O3")
+            gas_row = _nearest_interval_row(default_pack.gas_df, f"{element}(g)", temperature, True)
+            oxygen_row = _nearest_interval_row(default_pack.gas_df, "O2(g)", temperature, True)
+            oxide_row = _nearest_interval_row(default_pack.oxide_df, f"{oxide}(l)", temperature, True)
+            default_log_k = -(
+                2.0 * _janaf_gibbs(temperature, gas_row)
+                + 1.5 * _janaf_gibbs(temperature, oxygen_row)
+                - _lamor_gibbs(temperature, oxide_row)
+            ) / (R_J_MOL_K * temperature)
+            slope, intercept = {
+                "Ga2O3": (112079.0, 40.3),
+                "In2O3": (90606.0, 33.1),
+            }[oxide]
+            factor = math.exp(
+                0.5 * (default_log_k - 2.0 * (-slope / temperature + intercept))
+            )
+            assert factor == pytest.approx(expected_factor, rel=0.01)
+
+    ga_result = evaluate_gas(
+        {}, 1674.2, 1e-5, datapack=default_pack,
+        composition_wt_pct={**major, "Ga2O3": 0.001},
+        parent_oxides=("Ga2O3",), gas_species="Ga",
+    )
+    flag = ga_result.domain_flags["Ga"]
+    assert isinstance(flag, TraceActivityFlag)
+    assert flag.parent_liquid_standard_offset is not None
+    assert flag.parent_liquid_standard_offset.code == "parent_liquid_standard_offset"
+    assert flag.parent_liquid_standard_offset.factor == pytest.approx(4.65, rel=0.01)
+    assert "Select the opt-in Ga/In KEMS condensate table." in str(flag)
 
 
 def test_all_seven_trace_rows_preserve_nontrace_gas_channels_bit_for_bit() -> None:

@@ -240,6 +240,15 @@ _TRACE_STRICT_BOUND_CAP_DEX = 0.01
 
 
 @dataclass(frozen=True)
+class ParentLiquidStandardOffset:
+    """Pressure factor caused by the default parent liquid standard."""
+
+    code: Literal["parent_liquid_standard_offset"]
+    factor: float
+    recommendation: str
+
+
+@dataclass(frozen=True)
 class TraceActivityEstimate:
     oxide: str
     activity: float
@@ -249,6 +258,7 @@ class TraceActivityEstimate:
     reference: str | None = None
     activity_range: tuple[float, float] | None = None
     x_source: float | None = None
+    parent_liquid_standard_offset: ParentLiquidStandardOffset | None = None
 
 
 class TraceActivityFlag(str):
@@ -262,6 +272,7 @@ class TraceActivityFlag(str):
     reference: str | None
     activity_range: tuple[float, float] | None
     x_source: float | None
+    parent_liquid_standard_offset: ParentLiquidStandardOffset | None
     estimates: tuple[TraceActivityEstimate, ...]
     major_flags: tuple["TraceMajorBiasFlag", ...]
 
@@ -289,6 +300,12 @@ class TraceActivityFlag(str):
                 )
             if item.x_source is not None:
                 message += f" x_source={item.x_source:.12g}"
+            if item.parent_liquid_standard_offset is not None:
+                offset = item.parent_liquid_standard_offset
+                message += (
+                    f" {offset.code}={offset.factor:.12g}; "
+                    f"{offset.recommendation}"
+                )
             if item.reference:
                 message += f"; {item.reference}"
             estimate_text.append(message)
@@ -304,6 +321,7 @@ class TraceActivityFlag(str):
         flag.reference = first.reference
         flag.activity_range = first.activity_range
         flag.x_source = first.x_source
+        flag.parent_liquid_standard_offset = first.parent_liquid_standard_offset
         flag.estimates = tuple(estimates)
         flag.major_flags = tuple(major_flags)
         return flag
